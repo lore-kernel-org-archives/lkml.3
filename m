@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756565Ab3LTCb0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 21:31:26 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:14760 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753830Ab3LTCbZ (ORCPT
+	id S932164Ab3LTCh7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 21:37:59 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:47000 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755938Ab3LTCh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 21:31:25 -0500
-Message-ID: <1387506681.8363.55.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v3 13/14] mm, hugetlb: retry if failed to allocate and
- there is concurrent user
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>
-Date: Thu, 19 Dec 2013 18:31:21 -0800
-In-Reply-To: <20131219170202.0df2d82a2adefa3ab616bdaa@linux-foundation.org>
-References: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com>
-	 <1387349640-8071-14-git-send-email-iamjoonsoo.kim@lge.com>
-	 <20131219170202.0df2d82a2adefa3ab616bdaa@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Thu, 19 Dec 2013 21:37:57 -0500
+Message-ID: <52B3AD7D.2020104@hitachi.com>
+Date: Fri, 20 Dec 2013 11:37:49 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-arch@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH -tip v6 06/22] [BUGFIX] x86: Prohibit probing on memcpy/memset
+References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal> <20131219090409.14309.25677.stgit@kbuild-fedora.novalocal> <CAGdX0WFKYHqXrVQ6LBw0YgH_H6cP=LZVCBe1iOvEXsHQPD8Zmg@mail.gmail.com>
+In-Reply-To: <CAGdX0WFKYHqXrVQ6LBw0YgH_H6cP=LZVCBe1iOvEXsHQPD8Zmg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-12-19 at 17:02 -0800, Andrew Morton wrote:
-> On Wed, 18 Dec 2013 15:53:59 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+Hi Jovi,
+
+(2013/12/19 18:37), Jovi Zhangwei wrote:
+> Hi Masami,
 > 
-> > If parallel fault occur, we can fail to allocate a hugepage,
-> > because many threads dequeue a hugepage to handle a fault of same address.
-> > This makes reserved pool shortage just for a little while and this cause
-> > faulting thread who can get hugepages to get a SIGBUS signal.
-> > 
-> > To solve this problem, we already have a nice solution, that is,
-> > a hugetlb_instantiation_mutex. This blocks other threads to dive into
-> > a fault handler. This solve the problem clearly, but it introduce
-> > performance degradation, because it serialize all fault handling.
-> > 
-> > Now, I try to remove a hugetlb_instantiation_mutex to get rid of
-> > performance degradation.
-> 
-> So the whole point of the patch is to improve performance, but the
-> changelog doesn't include any performance measurements!
-> 
-> Please, run some quantitative tests and include a nice summary of the
-> results in the changelog.
+> On Thu, Dec 19, 2013 at 5:04 PM, Masami Hiramatsu
+> <masami.hiramatsu.pt@hitachi.com> wrote:
+>> memcpy/memset functions are fundamental functions and
+>> those are involved in kprobe's exception handling.
+>> Prohibit probing on them to avoid kernel crash.
+>>
+> Would you please let me know the LKML link of that bugfix, I cannot
+> find it in my LKML fold.
 
-I was actually spending this afternoon testing these patches with Oracle
-(I haven't seen any issues so far) and unless Joonsoo already did so, I
-want to run these by the libhugetlb test cases - I got side tracked by
-futexes though :/
+Yeah, that was found in my testing environment.
 
-Please do consider that performance wise I haven't seen much in
-particular. The thing is, I started dealing with this mutex once I
-noticed it as the #1 hot lock in Oracle DB starts, but then once the
-faults are done, it really goes away. So I wouldn't say that the mutex
-is a bottleneck except for the first few minutes.
+> No objection on this patch. :) just want to know more, It seems there
+> have no problem to probe memcpy in my box, maybe I didn't hit the
+> crash code path.
 
-> 
-> This is terribly important, because if the performance benefit is
-> infinitesimally small or negative, the patch goes into the bit bucket ;)
+Ah, I see. Originally the problem happened when I put a probe on
+__memcpy. And it looks the instances of memcpy and __memcpy are
+same on x86-64. Thus I decided to blacklist both. (memset/__memset too)
+Have you ever tried to probe __memcpy on your box?
 
-Well, this mutex is infinitesimally ugly and needs to die (as long as
-performance isn't hurt).
+Thank you,
 
-Thanks,
-Davidlohr
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
