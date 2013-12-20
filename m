@@ -1,99 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250Ab3LTIbS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 03:31:18 -0500
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:58806 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755013Ab3LTIbP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 03:31:15 -0500
-MIME-Version: 1.0
-In-Reply-To: <52B3CABE.1080903@hitachi.com>
-References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
-	<20131219090409.14309.25677.stgit@kbuild-fedora.novalocal>
-	<CAGdX0WFKYHqXrVQ6LBw0YgH_H6cP=LZVCBe1iOvEXsHQPD8Zmg@mail.gmail.com>
-	<52B3AD7D.2020104@hitachi.com>
-	<CAGdX0WENxTPhFDtcEW6LFhk1SNZc6mEK+JsCDOJmfK8_PS1rxg@mail.gmail.com>
-	<52B3CABE.1080903@hitachi.com>
-Date: Fri, 20 Dec 2013 16:31:13 +0800
-Message-ID: <CAGdX0WEev84sOyu-uzkDOmQFi_=mza7cPzyC0VkRZe0fD_1+jQ@mail.gmail.com>
-Subject: Re: [PATCH -tip v6 06/22] [BUGFIX] x86: Prohibit probing on memcpy/memset
-From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-arch@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755359Ab3LTIb1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 03:31:27 -0500
+Received: from mga09.intel.com ([134.134.136.24]:24983 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755187Ab3LTIbR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 03:31:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,519,1384329600"; 
+   d="scan'208";a="427700612"
+From: Lv Zheng <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>
+Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org
+Subject: [UPDATE RFC PATCH 15/15] ACPI/thinkpad: Fix wrong <acpi/acpi.h> inclusion in Thinkpad ACPI users.
+Date: Fri, 20 Dec 2013 16:30:42 +0800
+Message-Id: <b6ef94e61a18b87939cf9495a1c9212c1b7f5465.1387528106.git.lv.zheng@intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <cover.1387336613.git.lv.zheng@intel.com>
+References: <cover.1387336613.git.lv.zheng@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 20, 2013 at 12:42 PM, Masami Hiramatsu
-<masami.hiramatsu.pt@hitachi.com> wrote:
-> (2013/12/20 12:07), Jovi Zhangwei wrote:
->> On Fri, Dec 20, 2013 at 10:37 AM, Masami Hiramatsu
->> <masami.hiramatsu.pt@hitachi.com> wrote:
->>> Hi Jovi,
->>>
->>> (2013/12/19 18:37), Jovi Zhangwei wrote:
->>>> Hi Masami,
->>>>
->>>> On Thu, Dec 19, 2013 at 5:04 PM, Masami Hiramatsu
->>>> <masami.hiramatsu.pt@hitachi.com> wrote:
->>>>> memcpy/memset functions are fundamental functions and
->>>>> those are involved in kprobe's exception handling.
->>>>> Prohibit probing on them to avoid kernel crash.
->>>>>
->>>> Would you please let me know the LKML link of that bugfix, I cannot
->>>> find it in my LKML fold.
->>>
->>> Yeah, that was found in my testing environment.
->>>
->>>> No objection on this patch. :) just want to know more, It seems there
->>>> have no problem to probe memcpy in my box, maybe I didn't hit the
->>>> crash code path.
->>>
->>> Ah, I see. Originally the problem happened when I put a probe on
->>> __memcpy. And it looks the instances of memcpy and __memcpy are
->>> same on x86-64. Thus I decided to blacklist both. (memset/__memset too)
->>> Have you ever tried to probe __memcpy on your box?
->>>
->> Hmm, still no crash, __memcpy and __memset are both tested.
->>
->> I use below kprobe related config:
->>
->> CONFIG_KPROBES=y
->> CONFIG_JUMP_LABEL=y
->> CONFIG_OPTPROBES=y
->> CONFIG_KPROBES_ON_FTRACE=y
->
-> Hmm, I've added some debugging options.
->
-> CONFIG_SLUB_DEBUG=y
-> CONFIG_X86_DEBUGCTLMSR=y
-> CONFIG_PNP_DEBUG_MESSAGES=y
-> CONFIG_DEBUG_INFO=y
-> CONFIG_DEBUG_FS=y
-> CONFIG_DEBUG_KERNEL=y
-> CONFIG_DEBUG_STACK_USAGE=y
-> CONFIG_DEBUG_MEMORY_INIT=y
-> CONFIG_DEBUG_STACKOVERFLOW=y
-> CONFIG_DEBUG_SPINLOCK=y
-> CONFIG_DEBUG_MUTEXES=y
-> CONFIG_DEBUG_LOCK_ALLOC=y
-> CONFIG_DEBUG_LOCKDEP=y
-> CONFIG_DEBUG_BUGVERBOSE=y
-> CONFIG_DEBUG_RODATA=y
-> CONFIG_DEBUG_BOOT_PARAMS=y
->
-> I guess some of them might cause it.
->
-I recompiled the kernel with those config enabled, unfortunately still no crash,
-I tested on 3.13.0-rc4, a fedora kvm box.
+CONFIG_ACPI dependent code should include <linux/acpi.h> instead of
+directly including <acpi/acpi.h>.  This patch cleans up such wrong
+inclusions for Thinkpad ACPI users.
 
-Jovi
+Cc: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>
+Cc: Jaroslav Kysela <perex@perex.cz>
+Cc: Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org
+Cc: ibm-acpi-devel@lists.sourceforge.net
+Cc: platform-driver-x86@vger.kernel.org
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+---
+ sound/pci/hda/patch_conexant.c |    2 +-
+ sound/pci/hda/patch_realtek.c  |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
+index 3fbf288..6df4c35 100644
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -3243,7 +3243,7 @@ enum {
+ #if IS_ENABLED(CONFIG_THINKPAD_ACPI)
+ 
+ #include <linux/thinkpad_acpi.h>
+-#include <acpi/acpi.h>
++#include <linux/acpi.h>
+ 
+ static int (*led_set_func)(int, bool);
+ 
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 34de5dc..5dca90e 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -3726,7 +3726,7 @@ static void alc290_fixup_mono_speakers(struct hda_codec *codec,
+ #if IS_ENABLED(CONFIG_THINKPAD_ACPI)
+ 
+ #include <linux/thinkpad_acpi.h>
+-#include <acpi/acpi.h>
++#include <linux/acpi.h>
+ 
+ static int (*led_set_func)(int, bool);
+ 
+-- 
+1.7.10
+
