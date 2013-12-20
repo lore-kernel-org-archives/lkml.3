@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170Ab3LTQqK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 11:46:10 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:33620 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753056Ab3LTQqH (ORCPT
+	id S1756387Ab3LTQq5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 11:46:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53027 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753614Ab3LTQq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 11:46:07 -0500
+	Fri, 20 Dec 2013 11:46:56 -0500
+Date: Fri, 20 Dec 2013 08:47:05 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Cc: fengguang.wu@intel.com, jim.epost@gmail.com, sfr@canb.auug.org.au,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kbuild-all@01.org
+Subject: Re: [PATCH 1/2] GenWQE: Fix endian issues detected by sparse
+Message-ID: <20131220164705.GA24804@kroah.com>
+References: <CA+r1Zhimt7Xusnc4kkkVqfoRhfZRnreMmZqaN7WP7rSpZ3XTvw@mail.gmail.com>
+ <1387553171-31469-1-git-send-email-haver@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20131220114439.23af09fc@redhat.com>
-References: <cover.1387193771.git.vdavydov@parallels.com>
-	<abff42910c131a9c94a7518de59b283ee0a2dcd1.1387193771.git.vdavydov@parallels.com>
-	<20131220092659.0ed23cf5@redhat.com>
-	<CAA6-i6pDqDemeQ+s4EorOx39qmNAtAfVYfg0Z2wtTEu-S7mY=A@mail.gmail.com>
-	<20131220100332.0c5c1ad5@redhat.com>
-	<20131220114439.23af09fc@redhat.com>
-Date: Fri, 20 Dec 2013 20:46:05 +0400
-Message-ID: <CAA6-i6oJrUquFa3Y=+vGCDjh7z8ZOxT20QuyWweyrrKGOeBGAA@mail.gmail.com>
-Subject: Re: [PATCH v14 16/18] vmpressure: in-kernel notifications
-From: Glauber Costa <glommer@gmail.com>
-To: Luiz Capitulino <lcapitulino@redhat.com>
-Cc: Vladimir Davydov <vdavydov@parallels.com>, dchinner@redhat.com,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, devel@openvz.org,
-        Glauber Costa <glommer@openvz.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387553171-31469-1-git-send-email-haver@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 20, 2013 at 8:44 PM, Luiz Capitulino <lcapitulino@redhat.com> wrote:
-> On Fri, 20 Dec 2013 10:03:32 -0500
-> Luiz Capitulino <lcapitulino@redhat.com> wrote:
->
->> > The answer for all of your questions above can be summarized by noting
->> > that for the lack of other users (at the time), this patch does the bare minimum
->> > for memcg needs. I agree, for instance, that it would be good to pass the level
->> > but since memcg won't do anything with thta, I didn't pass it.
->> >
->> > That should be extended if you need to.
->>
->> That works for me. That is, including this minimal version first and
->> extending it when we get in-tree users.
->
-> Btw, there's something I was thinking just right now. If/when we
-> convert shrink functions to use this API, they will come to depend
-> on CONFIG_MEMCG=y. IOW, they won't work if CONFIG_MEMCG=n.
->
-> Is this acceptable (this is an honest question)? Because today, they
-> do work when CONFIG_MEMCG=n. Should those shrink functions use the
-> shrinker API as a fallback?
+On Fri, Dec 20, 2013 at 04:26:10PM +0100, Frank Haverkamp wrote:
+> Fengguang Wu used CF=-D__CHECK_ENDIAN__ to check the GenWQE driver for
+> endian issues. Sparse found a couple of those. Most of them were caused
+> by not correctly handling __be64/32 and __u64/32. Those I was able to
+> fix with appropriate castings.
+> 
+> One more serious issue was the ATS entry in struct genwqe_ddcb_cmd.
+> The kernel expected it in big-endian, but the type was defined __u64.
+> I decided that it is better to keep the interface consistent using
+> host endian byte-odering instead of having a mixture. With this change
+> the kernel likes to see host endian byte order for the ATS entry. That
+> would have been an interface change, if someone would have used the
+> driver already. Since this is not the case, I hope it is ok to fix it
+> now.
+> 
+> For the genqwe_readq/writeq/readl/writel functions I enforced the casts.
+> 
+> It still complains, as far as I can see, about some copy_to/from_user()
+> usages:
+> 
+>   CHECK   char-misc/drivers/misc/genwqe/card_dev.c
+> char-misc/arch/x86/include/asm/uaccess.h:625:18: warning: incorrect type in argument 1 (different modifiers)
+> char-misc/arch/x86/include/asm/uaccess.h:625:18:    expected void *<noident>
+> char-misc/arch/x86/include/asm/uaccess.h:625:18:    got void const *from
+> char-misc/arch/x86/include/asm/uaccess.h:625:18: warning: incorrect type in argument 1 (different modifiers)
+> char-misc/arch/x86/include/asm/uaccess.h:625:18:    expected void *<noident>
+> char-misc/arch/x86/include/asm/uaccess.h:625:18:    got void const *from
+> char-misc/arch/x86/include/asm/uaccess.h:625:18: warning: incorrect type in argument 1 (different modifiers)
+> char-misc/arch/x86/include/asm/uaccess.h:625:18:    expected void *<noident>
+> char-misc/arch/x86/include/asm/uaccess.h:625:18:    got void const *from
+> char-misc/arch/x86/include/asm/uaccess.h:625:18: warning: incorrect type in argument 1 (different modifiers)
+> char-misc/arch/x86/include/asm/uaccess.h:625:18:    expected void *<noident>
+> char-misc/arch/x86/include/asm/uaccess.h:625:18:    got void const *from
+>   CC [M]  drivers/misc/genwqe/card_dev.o
+>   CHECK   char-misc/drivers/misc/genwqe/card_ddcb.c
+> char-misc/arch/x86/include/asm/uaccess.h:625:18: warning: incorrect type in argument 1 (different modifiers)
+> char-misc/arch/x86/include/asm/uaccess.h:625:18:    expected void *<noident>
+> char-misc/arch/x86/include/asm/uaccess.h:625:18:    got void const *from
+> char-misc/arch/x86/include/asm/uaccess.h:625:18: warning: incorrect type in argument 1 (different modifiers)
+> char-misc/arch/x86/include/asm/uaccess.h:625:18:    expected void *<noident>
+> char-misc/arch/x86/include/asm/uaccess.h:625:18:    got void const *from
+>   CC [M]  drivers/misc/genwqe/card_ddcb.o
+>   LD [M]  drivers/misc/genwqe/genwqe_card.o
+> 
+> I appreciate some help from you to figure out what is causig those, and
+> making a proposal how to fix them.
+> 
+> I included the missing header file to fix the
+> implicit-function-declaration warning when using dynamic_hex_dump.
+> 
+> Signed-off-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
 
-If you have a non-memcg user, that should obviously be available for
-CONFIG_MEMCG=n
+In the future (I missed this as well), please use a "Reported-by:" tag
+to document who reported the problem to you.
+
+thanks,
+
+greg k-h
