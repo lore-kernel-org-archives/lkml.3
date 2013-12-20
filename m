@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab3LTVbv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 16:31:51 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:62937 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753512Ab3LTVbt (ORCPT
+	id S1754955Ab3LTVdw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 16:33:52 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:41512 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752551Ab3LTVdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 16:31:49 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: joeyli <jlee@suse.com>, Alessandro Zummo <a.zummo@towertech.it>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
-        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
-        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        x86@kernel.org,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, Borislav Petkov <bp@suse.de>
-Subject: Re: [RFC PATCH 00/14] Support timezone of ACPI TAD and EFI TIME
-Date: Fri, 20 Dec 2013 22:45:11 +0100
-Message-ID: <2787644.ytU7M33B4r@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <52B4B242.5010002@zytor.com>
-References: <1387439053-8711-1-git-send-email-jlee@suse.com> <1387517916.3539.4446.camel@linux-s257.site> <52B4B242.5010002@zytor.com>
+	Fri, 20 Dec 2013 16:33:51 -0500
+Date: Fri, 20 Dec 2013 22:33:48 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>
+Subject: Re: [PATCH] pid: change task_struct::pid to read-only
+Message-ID: <20131220213348.GE7959@laptop.programming.kicks-ass.net>
+References: <8aa73d2b884439496f87d5f34c12ba9b4b40f7e5.1377032086.git.rgb@redhat.com>
+ <ae3d74e79649d9e4962d0da030fb4852ddc5b8d1.1387227114.git.rgb@redhat.com>
+ <20131217153611.GA18321@redhat.com>
+ <20131217154004.GA21656@redhat.com>
+ <20131220190157.GA1452@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131220190157.GA1452@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, December 20, 2013 01:10:26 PM H. Peter Anvin wrote:
-> On 12/19/2013 09:38 PM, joeyli wrote:
-> > 
-> > If don't use EFI time, then the first priority is using ACPI TAD if it
-> > present. Due to ACPI TAD is a generic acpi device that's need OS parsing
-> > DSDT table before set system time.
-> > 
-> > Either move DSDT parser from subsystem initial stage to start_kernel or
-> > move timekeeping initial to after DSDT be parsed. Which one you think is
-> > more possible and risk less? Then I will try that way.
-> > 
+On Fri, Dec 20, 2013 at 08:01:57PM +0100, Oleg Nesterov wrote:
+> The only problem is that
 > 
-> I discussed the DSDT/SSDT parsing issue with Rafael and he claims it
-> would require a lot of restructuring.  Unfortunately ACPI is at this
-> point done rather late, as I understand.  All of this is a big problem.
+> 	#define ASSIGN_CONST(l, r)      (*(typeof(r) *)&(l) = (r))
+> 
+> obviously can't work in this case ;) We need something more clever.
 
-My understanding, however, is that to use the TAD, we don't actually need to
-create a struct acpi_device for it.  We just need a handle to the ACPICA
-object which can be found using acpi_get_devices() as soon as the namespace
-has been extracted from the DSDT and friends.  That in turn happens in
-acpi_early_init(), which is called from start_kernel() right before
-efi_late_init().
+Hmm indeed, C++ has both the const_cast<>() thingy and the template
+system is powerful enough to actually implement const_cast<>() inside
+the language.
 
-Is that early enough?
+But I cannot find anything useful for C. Your attempt to use the rvalue
+type to hopefully obtain a const-less lvalue type is clever, but does
+indeed fail where the rvalue is const too.
 
-Rafael
 
