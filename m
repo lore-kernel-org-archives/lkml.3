@@ -1,43 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281Ab3LTRJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 12:09:58 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:58662 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753639Ab3LTRJ5 (ORCPT
+	id S1755647Ab3LTROJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 12:14:09 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35496 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753342Ab3LTROG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 12:09:57 -0500
-Message-ID: <52B479E1.7020204@gmail.com>
-Date: Fri, 20 Dec 2013 10:09:53 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 20 Dec 2013 12:14:06 -0500
+Date: Fri, 20 Dec 2013 18:13:43 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com,
+        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
+        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
+        claudio@evidence.eu.com, michael@amarulasolutions.com,
+        fchecconi@gmail.com, tommaso.cucinotta@sssup.it, juri.lelli@gmail.com,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
+        jkacur@redhat.com
+Subject: Re: [PATCH 09/13] sched: Add bandwidth management for sched_dl
+Message-ID: <20131220171343.GL2480@laptop.programming.kicks-ass.net>
+References: <20131217122720.950475833@infradead.org>
+ <20131217123353.180539582@infradead.org>
+ <20131218165508.GB30183@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Joseph Schuchart <joseph.schuchart@tu-dresden.de>,
-        Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        thomas.ilsche@tu-dresden.de, linux-kernel@vger.kernel.org,
-        Fr??d??ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] Perf: Correct Assumptions about Sample Timestamps in
- Passes
-References: <528484CB.7@tu-dresden.de> <20131114083930.GC16543@gmail.com> <528490DE.4080204@tu-dresden.de> <20131114100552.GA5064@gmail.com> <528E1EE6.9040407@tu-dresden.de> <20131127135137.GA24403@gmail.com> <52B437AA.4090102@tu-dresden.de>
-In-Reply-To: <52B437AA.4090102@tu-dresden.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131218165508.GB30183@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/13, 5:27 AM, Joseph Schuchart wrote:
-> I know this comes late, but: As far as I can see, your change does not
-> preserve the logic of the code I suggested. The idea was to first gather
-> all the maximum timestamps of all cpus (that is, the last timestamp seen
-> on each cpu) and then determine the minimum of these maxima. These are
-> two distinct steps that I think cannot be combined in one update. Your
+On Wed, Dec 18, 2013 at 05:55:08PM +0100, Peter Zijlstra wrote:
 
-  A number of people have reported similar problems -- timestamps below 
-last flush time. This approach would solve that problem for data 
-processed from files, so it would be a good improvement.
+> If the purpose is to fail hotplug because taking out the CPU would end
+> up in over-subscription, then we need a DOWN_PREPARE handler.
 
-David
+Juri just said (on IRC) that that was indeed the intended purpose.
+
+---
+Subject: sched, deadline: Fix hotplug admission control
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Thu Dec 19 11:54:45 CET 2013
+
+The current hotplug admission control is broken because:
+
+  CPU_DYING -> migration_call() -> migrate_tasks() -> __migrate_task()
+
+cannot fail and hard assumes it _will_ move all tasks off of the dying
+cpu, failing this will break hotplug.
+
+The much simpler solution is a DOWN_PREPARE handler that fails when
+removing one CPU gets us below the total allocated bandwidth.
+
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ kernel/sched/core.c |   68 ++++++++++++++++------------------------------------
+ 1 file changed, 21 insertions(+), 47 deletions(-)
+
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1886,9 +1886,9 @@ inline struct dl_bw *dl_bw_of(int i)
+ 	return &cpu_rq(i)->rd->dl_bw;
+ }
+ 
+-static inline int __dl_span_weight(struct rq *rq)
++static inline int dl_bw_cpus(int i)
+ {
+-	return cpumask_weight(rq->rd->span);
++	return cpumask_weight(cpu_rq(i)->rd->span);
+ }
+ #else
+ inline struct dl_bw *dl_bw_of(int i)
+@@ -1896,7 +1896,7 @@ inline struct dl_bw *dl_bw_of(int i)
+ 	return &cpu_rq(i)->dl.dl_bw;
+ }
+ 
+-static inline int __dl_span_weight(struct rq *rq)
++static inline int dl_bw_cpus(int i)
+ {
+ 	return 1;
+ }
+@@ -1937,7 +1937,7 @@ static int dl_overflow(struct task_struc
+ 	u64 period = attr->sched_period;
+ 	u64 runtime = attr->sched_runtime;
+ 	u64 new_bw = dl_policy(policy) ? to_ratio(period, runtime) : 0;
+-	int cpus = __dl_span_weight(task_rq(p));
++	int cpus = dl_bw_cpus(task_cpu(p));
+ 	int err = -1;
+ 
+ 	if (new_bw == p->dl.dl_bw)
+@@ -4523,42 +4523,6 @@ int set_cpus_allowed_ptr(struct task_str
+ EXPORT_SYMBOL_GPL(set_cpus_allowed_ptr);
+ 
+ /*
+- * When dealing with a -deadline task, we have to check if moving it to
+- * a new CPU is possible or not. In fact, this is only true iff there
+- * is enough bandwidth available on such CPU, otherwise we want the
+- * whole migration procedure to fail over.
+- */
+-static inline
+-bool set_task_cpu_dl(struct task_struct *p, unsigned int cpu)
+-{
+-	struct dl_bw *dl_b = dl_bw_of(task_cpu(p));
+-	struct dl_bw *cpu_b = dl_bw_of(cpu);
+-	int ret = 1;
+-	u64 bw;
+-
+-	if (dl_b == cpu_b)
+-		return 1;
+-
+-	raw_spin_lock(&dl_b->lock);
+-	raw_spin_lock(&cpu_b->lock);
+-
+-	bw = cpu_b->bw * cpumask_weight(cpu_rq(cpu)->rd->span);
+-	if (dl_bandwidth_enabled() &&
+-	    bw < cpu_b->total_bw + p->dl.dl_bw) {
+-		ret = 0;
+-		goto unlock;
+-	}
+-	dl_b->total_bw -= p->dl.dl_bw;
+-	cpu_b->total_bw += p->dl.dl_bw;
+-
+-unlock:
+-	raw_spin_unlock(&cpu_b->lock);
+-	raw_spin_unlock(&dl_b->lock);
+-
+-	return ret;
+-}
+-
+-/*
+  * Move (not current) task off this cpu, onto dest cpu. We're doing
+  * this because either it can't run here any more (set_cpus_allowed()
+  * away from this CPU, or CPU going down), or because we're
+@@ -4590,13 +4554,6 @@ static int __migrate_task(struct task_st
+ 		goto fail;
+ 
+ 	/*
+-	 * If p is -deadline, proceed only if there is enough
+-	 * bandwidth available on dest_cpu
+-	 */
+-	if (unlikely(dl_task(p)) && !set_task_cpu_dl(p, dest_cpu))
+-		goto fail;
+-
+-	/*
+ 	 * If we're not on a rq, the next wake-up will ensure we're
+ 	 * placed properly.
+ 	 */
+@@ -4985,6 +4942,23 @@ migration_call(struct notifier_block *nf
+ 	unsigned long flags;
+ 	struct rq *rq = cpu_rq(cpu);
+ 
++	switch (action) {
++	case CPU_DOWN_PREPARE: /* explicitly allow suspend */
++		{
++			struct dl_bw *dl_b = dl_bw_of(cpu);
++			int cpus = dl_bw_cpus(cpu);
++			bool overflow;
++
++			raw_spin_lock_irqsave(&dl_b->lock, flags);
++			overflow = __dl_overflow(dl_b, cpus-1, 0, 0);
++			raw_spin_unlock_irqrestore(&dl_b->lock, flags);
++
++			if (overflow)
++				return notifier_from_errno(-EBUSY);
++		}
++		break;
++	}
++
+ 	switch (action & ~CPU_TASKS_FROZEN) {
+ 
+ 	case CPU_UP_PREPARE:
