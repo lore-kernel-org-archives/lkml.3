@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754954Ab3LTJLp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 04:11:45 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50009 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab3LTJLj (ORCPT
+	id S1755283Ab3LTJMX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 04:12:23 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:55763 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755022Ab3LTJMD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 04:11:39 -0500
-Date: Fri, 20 Dec 2013 10:11:13 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Joe Perches <joe@perches.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Davidlohr Bueso <davidlohr@hp.com>,
-        linux-kernel@vger.kernel.org, mingo@redhat.com, dvhart@linux.intel.com,
-        tglx@linutronix.de, paulmck@linux.vnet.ibm.com, efault@gmx.de,
-        jeffm@suse.com, torvalds@linux-foundation.org, jason.low2@hp.com,
-        Waiman.Long@hp.com, tom.vaden@hp.com, scott.norton@hp.com,
-        aswin@hp.com
-Subject: Re: [PATCH v3 4/4] futex: Avoid taking hb lock if nothing to wakeup
-Message-ID: <20131220091113.GB21999@twins.programming.kicks-ass.net>
-References: <1387478746-5436-1-git-send-email-davidlohr@hp.com>
- <1387478746-5436-5-git-send-email-davidlohr@hp.com>
- <20131219192532.GB564@gmail.com>
- <1387481345.5494.1.camel@buesod1.americas.hpqcorp.net>
- <20131219194213.GA824@gmail.com>
- <1387492517.2353.29.camel@joe-AO722>
+	Fri, 20 Dec 2013 04:12:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387492517.2353.29.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CACRpkdbQNEj83fnDX0ppPNJYgu1cMGxbk6n6M05wVNK9LEvDKw@mail.gmail.com>
+References: <1378889173-7437-1-git-send-email-jose.goncalves@inov.pt>
+	<CACRpkdYbCzOJ9k8AyriM9quafx=dseK6w1DYjyrJ9F53ka8TEw@mail.gmail.com>
+	<52AA6909.8050200@inov.pt>
+	<0bc301cef7e5$319ac0c0$94d04240$@kernel.org>
+	<CACRpkdbQNEj83fnDX0ppPNJYgu1cMGxbk6n6M05wVNK9LEvDKw@mail.gmail.com>
+Date: Fri, 20 Dec 2013 10:12:02 +0100
+Message-ID: <CACRpkda5e-1ndyZzdZX+KZB=mCV6RM5nJ-nv_-yt1UEv_GhLLw@mail.gmail.com>
+Subject: Re: [PATCH] ARM: S3C24XX: Fix configuration of gpio port sizes on S3C24XX.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Kukjin Kim <kgene@kernel.org>
+Cc: =?ISO-8859-1?Q?Jos=E9_Miguel_Gon=E7alves?= <jose.goncalves@inov.pt>,
+        Tomasz Figa <t.figa@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 02:35:17PM -0800, Joe Perches wrote:
-> On Thu, 2013-12-19 at 20:42 +0100, Ingo Molnar wrote:
-> > * Davidlohr Bueso <davidlohr@hp.com> wrote:
-> > 
-> > > On Thu, 2013-12-19 at 20:25 +0100, Ingo Molnar wrote:
-> > > > * Davidlohr Bueso <davidlohr@hp.com> wrote:
-> > > > 
-> > > > > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> > > > > Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-> > > > > Signed-off-by: Jason Low <jason.low2@hp.com>
-> > > > 
-> > > > So, that's not a valid SOB sequence either, the person sending me a 
-> > > > patch should be the last person in the SOB chain 
-> > > 
-> > > Which is why I had it like that in the original version.
-> > 
-> > The problem with that order was that the first person should be the 
-> > primary author and in the 'From' tag.
-> > 
-> > A SOB chain is intended to depict the true propagation/route of a 
-> > patch, from author, through maintainers who handle and forward it, to 
-> > the maintainer who applies it to a Git tree. The patch starts up with 
-> > a single SOB (the primary author's) and every 'hop' after that adds a 
-> > SOB to the tail of the existing SOB chain.
-> 
-> Multiple "Signed-off-by:"s are also used when there are
-> multiple authors of a single patch.
+On Fri, Dec 13, 2013 at 10:37 AM, Linus Walleij
+<linus.walleij@linaro.org> wrote:
+> On Fri, Dec 13, 2013 at 10:24 AM,  <kgene@kernel.org> wrote:
+>> José Miguel Gonçalves wrote:
+> (..)
+>>> Was this patch forgotten?
+>>>
+>> Hi Jose,
+>>
+>> Sorry about missing your patch. It's my fault :( and as you know, at this
+>> moment the file will be removed by Linus' patch...
+>
+> Oh I can certainly rebase the patch onto my tree if I just
+> get an ACK for it...
 
-Abused; which is exactly what we're saying is not correct.
+Kukjin, can I have your ACK for this patch?
 
-While doing so we've also found people abusing SoB where Reviewed-by was
-meant and other 'creative' use.
-
-
+Yours,
+Linus Walleij
