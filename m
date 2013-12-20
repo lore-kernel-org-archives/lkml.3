@@ -1,110 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457Ab3LTSAm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 13:00:42 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:45234 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984Ab3LTSAk (ORCPT
+	id S1752692Ab3LTSBI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 13:01:08 -0500
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:43486 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752575Ab3LTSBG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 13:00:40 -0500
-Date: Fri, 20 Dec 2013 15:00:31 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "David A. Long" <dave.long@linaro.org>, systemtap@sourceware.org,
-        yrl.pp-manager.tt@hitachi.com, Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH -tip 1/3] [CLEANUP] perf-probe: Expand given path to
- absolute path
-Message-ID: <20131220180031.GA28878@ghostprotocols.net>
-References: <20131220100255.7169.19384.stgit@kbuild-fedora.novalocal>
- <20131220100257.7169.60537.stgit@kbuild-fedora.novalocal>
+	Fri, 20 Dec 2013 13:01:06 -0500
+Date: Fri, 20 Dec 2013 20:01:13 +0200
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Aaro Koskinen <aaro.koskinen@nsn.com>, "Hans J. Koch" <hjk@hansjkoch.de>,
+        linux-kernel@vger.kernel.org, Michal Simek <michal.simek@xilinx.com>
+Subject: Re: [PATCH] uio: fix devm_request_irq usage
+Message-ID: <20131220180113.GF2881@blackmetal.musicnaut.iki.fi>
+References: <1387549187-10068-1-git-send-email-aaro.koskinen@nsn.com>
+ <20131220164913.GA29422@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131220100257.7169.60537.stgit@kbuild-fedora.novalocal>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <20131220164913.GA29422@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Dec 20, 2013 at 10:02:57AM +0000, Masami Hiramatsu escreveu:
-> Expand given path to absolute path in option parser,
-> except for a module name. Instead of expanding it later,
-> this get the absolute path in early stage.
+Hi,
 
-What is the problem this solves?
-
-Can you provide some output showing the problem, i.e. before you apply
-this patch?
-
-Then can you provide the output after the patch is applied?
-
-- Arnaldo
- 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> ---
->  tools/perf/builtin-probe.c    |    9 +++++++++
->  tools/perf/util/probe-event.c |   11 ++---------
->  2 files changed, 11 insertions(+), 9 deletions(-)
+On Fri, Dec 20, 2013 at 08:49:13AM -0800, Greg Kroah-Hartman wrote:
+> On Fri, Dec 20, 2013 at 04:19:47PM +0200, Aaro Koskinen wrote:
+> > Commit e6789cd3dfb553077606ccafeb05e0043f072481 (uio: Simplify uio error
+> > path by using devres functions) converted uio to use devm_request_irq().
+> > This introduced a change in behaviour since the IRQ is associated with
+> > the parent device instead of the created UIO device. The IRQ will remain
+> > active after uio_unregister_device() is called, and some drivers will
+> > crash because of this. The patch fixes this.
 > 
-> diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-> index 6ea9e85..b40d064 100644
-> --- a/tools/perf/builtin-probe.c
-> +++ b/tools/perf/builtin-probe.c
-> @@ -180,6 +180,15 @@ static int opt_set_target(const struct option *opt, const char *str,
->  		else
->  			return ret;
->  
-> +		/* Expand given path to absolute path, except for modulename */
-> +		if (params.uprobes || strchr(str, '/')) {
-> +			str = realpath(str, NULL);
-> +			if (!str) {
-> +				pr_warning("Failed to find the path of %s.\n",
-> +					   str);
-> +				return ret;
-> +			}
-> +		}
->  		params.target = str;
->  		ret = 0;
->  	}
-> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> index d7cff57..05be5de 100644
-> --- a/tools/perf/util/probe-event.c
-> +++ b/tools/perf/util/probe-event.c
-> @@ -2281,7 +2281,7 @@ static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
->  	struct perf_probe_point *pp = &pev->point;
->  	struct symbol *sym;
->  	struct map *map = NULL;
-> -	char *function = NULL, *name = NULL;
-> +	char *function = NULL;
->  	int ret = -EINVAL;
->  	unsigned long long vaddr = 0;
->  
-> @@ -2297,12 +2297,7 @@ static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
->  		goto out;
->  	}
->  
-> -	name = realpath(exec, NULL);
-> -	if (!name) {
-> -		pr_warning("Cannot find realpath for %s.\n", exec);
-> -		goto out;
-> -	}
-> -	map = dso__new_map(name);
-> +	map = dso__new_map(exec);
->  	if (!map) {
->  		pr_warning("Cannot find appropriate DSO for %s.\n", exec);
->  		goto out;
-> @@ -2367,7 +2362,5 @@ out:
->  	}
->  	if (function)
->  		free(function);
-> -	if (name)
-> -		free(name);
->  	return ret;
->  }
-> 
+> What drivers crash because of this?  Any in-kernel drivers?
+
+I saw a crash with Intel DPDK (http://www.dpdk.org/) igb_uio
+driver. Basically, they do:
+
+	uio_unregister_device
+	pci_disable_msix <-- this will BUG() if there is an active IRQ
+
+I cannot test any of the in-tree UIO drivers, but at least some
+of them seem to release resources the IRQ handler might use after
+uio_unregister_device(). So if the IRQ fires results would not probably
+be very good.
+
+A.
