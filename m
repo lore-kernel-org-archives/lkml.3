@@ -1,84 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882Ab3LTSsF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 13:48:05 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:52447 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752575Ab3LTSr7 (ORCPT
+	id S1753366Ab3LTSsM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 13:48:12 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:19629 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752950Ab3LTSsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 13:47:59 -0500
-X-AuditID: cbfee61b-b7f456d000006dfd-90-52b490de3217
+	Fri, 20 Dec 2013 13:48:08 -0500
+X-AuditID: cbfee61a-b7fb26d00000724f-bd-52b490e7a6a0
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: rjw@rjwysocki.net
 Cc: daniel.lezcano@linaro.org, lenb@kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, kyungmin.park@samsung.com,
-        b.zolnierkie@samsung.com, Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH v2 1/9] ARM: EXYNOS: cpuidle: fix AFTR mode check
-Date: Fri, 20 Dec 2013 19:47:23 +0100
-Message-id: <1387565251-7051-2-git-send-email-b.zolnierkie@samsung.com>
+        b.zolnierkie@samsung.com, Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Subject: [PATCH v2 3/9] POWERPC: pseries: cpuidle: use the common
+ cpuidle_[un]register() routines
+Date: Fri, 20 Dec 2013 19:47:25 +0100
+Message-id: <1387565251-7051-4-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-reply-to: <1387565251-7051-1-git-send-email-b.zolnierkie@samsung.com>
 References: <1387565251-7051-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMLMWRmVeSWpSXmKPExsVy+t9jQd17E7YEGTz+xGexccZ6Vot5n2Ut
-	ehdcZbM42/SG3WLnw7dsFpd3zWGz+Nx7hNFixvl9TBa/v/9jtThz+hKrA5fHplWdbB53ru1h
-	8zg/YyGjx5ar7SwefVtWMXp83iQXwBbFZZOSmpNZllqkb5fAlbFwanHBVr6K9xOnsDcwfuPu
-	YuTgkBAwkXjSXtjFyAlkiklcuLeeDcQWEpjOKPHoknkXIxeQ3cUkcebQVFaQBJuAlcTE9lWM
-	ILaIgKjE5d0TWECKmAXamSRuzutgBkkICzhKTJu5gRlkAYuAqkTPvkQQk1fAXaKlxQJil6JE
-	97MJYLs4BTwkZr9azgSx113iRNdv5gmMvAsYGVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525i
-	BAfdM+kdjKsaLA4xCnAwKvHwSkRuCRJiTSwrrsw9xCjBwawkwnuzDSjEm5JYWZValB9fVJqT
-	WnyIUZqDRUmc92CrdaCQQHpiSWp2ampBahFMlomDU6qBcdKtA9y3Lsh/NOj64HvovGBre3dm
-	pPqdVUmbfyU2RbSYh/k0Rqa7V3mXfFc6zb3r1Tv5yjn+n3csE2W7u7Rh+Y9zqpUOOzLk5cRt
-	66WZe1a+8Q24f2Cfae7pqaFTbd3nOAR++HYz4nfzuyOBt0XD5ydzNwjFhpqa3zWdJ8tVfDxy
-	3p+sU5+MlViKMxINtZiLihMBl0zlczYCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDLMWRmVeSWpSXmKPExsVy+t9jQd3nE7YEGUzfJ26xccZ6Vot5n2Ut
+	1jfmW5xtesNusfPhWzaLy7vmsFl87j3CaDHj/D4mi9/f/7FanDl9idWBy2PTqk42jzvX9rB5
+	PDi0mcXj/IyFjB5brrazePRtWcXo8XmTXAB7FJdNSmpOZllqkb5dAlfG5RW9jAUzpSt2TTvM
+	2sD4U6yLkZNDQsBE4v/TQ4wQtpjEhXvr2boYuTiEBKYzShw6sgHK6WKSOHGrkRWkik3ASmJi
+	+yqwDhEBUYnLuyewgBQxC0xkktiyfiITSEJYIFli78f9YEUsAqoS/y9MZQexeQXcJZatWsQC
+	sU5RovvZBDYQm1PAQ2L2q+VgvUJANSe6fjNPYORdwMiwilE0tSC5oDgpPddQrzgxt7g0L10v
+	OT93EyM4DJ9J7WBc2WBxiFGAg1GJh7cgekuQEGtiWXFl7iFGCQ5mJRHem21AId6UxMqq1KL8
+	+KLSnNTiQ4zSHCxK4rwHWq0DhQTSE0tSs1NTC1KLYLJMHJxSDYzWr7NeyDHHrk3jutqxvMhk
+	FadJ7fdkT/kF5tr9Jqm37LM+/PdZ9Kzyp12f/kGt2Y+bJBS8HmrXpVxgVu6Lc2/evIDj/8w7
+	KZ/dfJg7zpWlWViYvn3HufvOXCWV9bw7PDs8jRaa/RH3SGy8MGN7y/K2wlTZu217be9tVWs/
+	VzVVcLfz9KOOTUosxRmJhlrMRcWJABxw8vc/AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The EXYNOS cpuidle driver code assumes that cpuidle core will handle
-dev->state_count smaller than drv->state_count but currently this is
-untrue (dev->state_count is used only for handling cpuidle state sysfs
-entries and drv->state_count is used for all other cases) and will not
-be fixed in the future as dev->state_count is planned to be removed.
-
-Fix the issue by checking for the max supported idle state in AFTR
-state's ->enter handler (exynos4_enter_lowpower()) and entering AFTR
-mode only when cores other than CPU0 are offline.
+It is now possible to use the common cpuidle_[un]register() routines
+(instead of open-coding them) so do it.
 
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
 ---
- arch/arm/mach-exynos/cpuidle.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ arch/powerpc/platforms/pseries/processor_idle.c | 57 ++-----------------------
+ 1 file changed, 3 insertions(+), 54 deletions(-)
 
-diff --git a/arch/arm/mach-exynos/cpuidle.c b/arch/arm/mach-exynos/cpuidle.c
-index da65b03..f57cb91 100644
---- a/arch/arm/mach-exynos/cpuidle.c
-+++ b/arch/arm/mach-exynos/cpuidle.c
-@@ -172,8 +172,8 @@ static int exynos4_enter_lowpower(struct cpuidle_device *dev,
+diff --git a/arch/powerpc/platforms/pseries/processor_idle.c b/arch/powerpc/platforms/pseries/processor_idle.c
+index 8aa8c40..94134a5 100644
+--- a/arch/powerpc/platforms/pseries/processor_idle.c
++++ b/arch/powerpc/platforms/pseries/processor_idle.c
+@@ -28,7 +28,6 @@ struct cpuidle_driver pseries_idle_driver = {
+ #define MAX_IDLE_STATE_COUNT	2
+ 
+ static int max_idle_state = MAX_IDLE_STATE_COUNT - 1;
+-static struct cpuidle_device __percpu *pseries_cpuidle_devices;
+ static struct cpuidle_state *cpuidle_state_table;
+ 
+ static inline void idle_loop_prolog(unsigned long *in_purr)
+@@ -191,7 +190,7 @@ static int pseries_cpuidle_add_cpu_notifier(struct notifier_block *n,
  {
- 	int new_index = index;
+ 	int hotcpu = (unsigned long)hcpu;
+ 	struct cpuidle_device *dev =
+-			per_cpu_ptr(pseries_cpuidle_devices, hotcpu);
++			per_cpu_ptr(cpuidle_devices, hotcpu);
  
--	/* This mode only can be entered when other core's are offline */
--	if (num_online_cpus() > 1)
-+	/* AFTR can only be entered when cores other than CPU0 are offline */
-+	if (num_online_cpus() > 1 || dev->cpu != 0)
- 		new_index = drv->safe_state_index;
+ 	if (dev && cpuidle_get_driver()) {
+ 		switch (action) {
+@@ -248,48 +247,6 @@ static int pseries_cpuidle_driver_init(void)
+ 	return 0;
+ }
  
- 	if (new_index == 0)
-@@ -235,10 +235,6 @@ static int exynos_cpuidle_probe(struct platform_device *pdev)
- 		device = &per_cpu(exynos4_cpuidle_device, cpu_id);
- 		device->cpu = cpu_id;
- 
--		/* Support IDLE only */
--		if (cpu_id != 0)
--			device->state_count = 1;
+-/* pseries_idle_devices_uninit(void)
+- * unregister cpuidle devices and de-allocate memory
+- */
+-static void pseries_idle_devices_uninit(void)
+-{
+-	int i;
+-	struct cpuidle_device *dev;
 -
- 		ret = cpuidle_register_device(device);
- 		if (ret) {
- 			dev_err(&pdev->dev, "failed to register cpuidle device\n");
+-	for_each_possible_cpu(i) {
+-		dev = per_cpu_ptr(pseries_cpuidle_devices, i);
+-		cpuidle_unregister_device(dev);
+-	}
+-
+-	free_percpu(pseries_cpuidle_devices);
+-	return;
+-}
+-
+-/* pseries_idle_devices_init()
+- * allocate, initialize and register cpuidle device
+- */
+-static int pseries_idle_devices_init(void)
+-{
+-	int i;
+-	struct cpuidle_device *dev;
+-
+-	pseries_cpuidle_devices = alloc_percpu(struct cpuidle_device);
+-	if (pseries_cpuidle_devices == NULL)
+-		return -ENOMEM;
+-
+-	for_each_possible_cpu(i) {
+-		dev = per_cpu_ptr(pseries_cpuidle_devices, i);
+-		dev->cpu = i;
+-		if (cpuidle_register_device(dev)) {
+-			printk(KERN_DEBUG \
+-				"cpuidle_register_device %d failed!\n", i);
+-			return -EIO;
+-		}
+-	}
+-
+-	return 0;
+-}
+-
+ /*
+  * pseries_idle_probe()
+  * Choose state table for shared versus dedicated partition
+@@ -325,19 +282,12 @@ static int __init pseries_processor_idle_init(void)
+ 		return retval;
+ 
+ 	pseries_cpuidle_driver_init();
+-	retval = cpuidle_register_driver(&pseries_idle_driver);
++	retval = cpuidle_register(&pseries_idle_driver, NULL);
+ 	if (retval) {
+ 		printk(KERN_DEBUG "Registration of pseries driver failed.\n");
+ 		return retval;
+ 	}
+ 
+-	retval = pseries_idle_devices_init();
+-	if (retval) {
+-		pseries_idle_devices_uninit();
+-		cpuidle_unregister_driver(&pseries_idle_driver);
+-		return retval;
+-	}
+-
+ 	register_cpu_notifier(&setup_hotplug_notifier);
+ 	printk(KERN_DEBUG "pseries_idle_driver registered\n");
+ 
+@@ -348,8 +298,7 @@ static void __exit pseries_processor_idle_exit(void)
+ {
+ 
+ 	unregister_cpu_notifier(&setup_hotplug_notifier);
+-	pseries_idle_devices_uninit();
+-	cpuidle_unregister_driver(&pseries_idle_driver);
++	cpuidle_unregister(&pseries_idle_driver);
+ 
+ 	return;
+ }
 -- 
 1.8.2.3
 
