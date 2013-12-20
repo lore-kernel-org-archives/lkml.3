@@ -1,39 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756784Ab3LTQtF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 11:49:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53034 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755870Ab3LTQtD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 11:49:03 -0500
-Date: Fri, 20 Dec 2013 08:49:13 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Aaro Koskinen <aaro.koskinen@nsn.com>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, linux-kernel@vger.kernel.org,
-        Michal Simek <michal.simek@xilinx.com>
-Subject: Re: [PATCH] uio: fix devm_request_irq usage
-Message-ID: <20131220164913.GA29422@kroah.com>
-References: <1387549187-10068-1-git-send-email-aaro.koskinen@nsn.com>
+	id S1756892Ab3LTQtm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 11:49:42 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45755 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756797Ab3LTQtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 11:49:33 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20131220103755.GA14784@pd.tnic>
+References: <1387439515-8926-1-git-send-email-jlee@suse.com> <1387439515-8926-7-git-send-email-jlee@suse.com> <20131219140918.GF3145@console-pimps.org> <1387513491.3539.4345.camel@linux-s257.site> <52B3C7F8.3040901@zytor.com> <20131220103755.GA14784@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387549187-10068-1-git-send-email-aaro.koskinen@nsn.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [RFC PATCH 06/14] rtc-efi: register rtc-efi device when EFI enabled
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 20 Dec 2013 08:48:04 -0800
+To: Borislav Petkov <bp@alien8.de>
+CC: joeyli <jlee@suse.com>, Matt Fleming <matt@console-pimps.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
+        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
+        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
+        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        x86@kernel.org,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-acpi@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+Message-ID: <bdf7e604-0aad-4064-ba4c-89f8bb7d82cf@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 20, 2013 at 04:19:47PM +0200, Aaro Koskinen wrote:
-> Commit e6789cd3dfb553077606ccafeb05e0043f072481 (uio: Simplify uio error
-> path by using devres functions) converted uio to use devm_request_irq().
-> This introduced a change in behaviour since the IRQ is associated with
-> the parent device instead of the created UIO device. The IRQ will remain
-> active after uio_unregister_device() is called, and some drivers will
-> crash because of this. The patch fixes this.
+The only real use case for the RTC TZ is compatibility with other operating systems that don't keep the time in UTC, at least as far as I can tell.  However, that is a fairly big one, especially in VM deployments.
 
-What drivers crash because of this?  Any in-kernel drivers?
+Borislav Petkov <bp@alien8.de> wrote:
+>On Thu, Dec 19, 2013 at 08:30:48PM -0800, H. Peter Anvin wrote:
+>> On 12/19/2013 08:24 PM, joeyli wrote:
+>> > I agreed, but userspace application should not be too often to
+>access
+>> > RTC. Maybe only when system boot and set timezone.
+>>
+>> This is, quite frankly, an idiotic argument.
+>
+>TBH, I've been struggling with the question too - and it might even be
+>a
+>stupid question - but what is that absolute need to be able to get the
+>TZ in userspace? Why should I care?
+>
+>Can we get some use cases for stupid people like me please?
+>
+>Thanks.
 
-thanks,
-
-greg k-h
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
