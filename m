@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756404Ab3LTLFe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 06:05:34 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58007 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755186Ab3LTLFc (ORCPT
+	id S1756727Ab3LTLH4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 06:07:56 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:49483 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755888Ab3LTLHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 06:05:32 -0500
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: kernel@pengutronix.de, Pavel Machek <pavel@ucw.cz>,
-        Stephen Warren <swarren@nvidia.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH 1/2] reset: Mark function as static in core.c
-Date: Fri, 20 Dec 2013 12:05:24 +0100
-Message-Id: <1387537525-23389-1-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 1.8.5.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 20 Dec 2013 06:07:55 -0500
+From: Wenliang Fan <fanwlexca@gmail.com>
+To: dan.carpenter@oracle.com, gregkh@linuxfoundation.org,
+        klmckinney1@gmail.com, tulinizer@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Wenliang Fan <fanwlexca@gmail.com>
+Subject: [PATCH] drivers/staging/bcm: Integer overflow
+Date: Fri, 20 Dec 2013 19:07:38 +0800
+Message-Id: <1387537658-32640-1-git-send-email-fanwlexca@gmail.com>
+X-Mailer: git-send-email 1.8.5.rc1.28.g7061504
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rashika Kheria <rashika.kheria@gmail.com>
+The checking condition in 'validateFlash2xReadWrite()' is not
+sufficient. A large number invalid would cause an integer overflow and
+pass the condition, which could cause further integer overflows in
+'Bcmchar.c:bcm_char_ioctl()'.
 
-This patch marks the function of_reset_simple_xlate() as static in
-core.c because it is not used outside this file.
-
-Thus, it also eliminate the following warning in core.c:
-drivers/reset/core.c:46:5: warning: no previous prototype for ‘of_reset_simple_xlate’ [-Wmissing-prototypes]
-
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+Signed-off-by: Wenliang Fan <fanwlexca@gmail.com>
 ---
-Left the _put function as is and also removed the EXPORT_SYMBOL_GPL for _xlate.
----
- drivers/reset/core.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/staging/bcm/nvm.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/reset/core.c b/drivers/reset/core.c
-index b3d99a1..6c80ea6 100644
---- a/drivers/reset/core.c
-+++ b/drivers/reset/core.c
-@@ -43,8 +43,8 @@ struct reset_control {
-  * This simple translation function should be used for reset controllers
-  * with 1:1 mapping, where reset lines can be indexed by number without gaps.
-  */
--int of_reset_simple_xlate(struct reset_controller_dev *rcdev,
--			  const struct of_phandle_args *reset_spec)
-+static int of_reset_simple_xlate(struct reset_controller_dev *rcdev,
-+				 const struct of_phandle_args *reset_spec)
- {
- 	if (WARN_ON(reset_spec->args_count != rcdev->of_reset_n_cells))
- 		return -EINVAL;
-@@ -54,7 +54,6 @@ int of_reset_simple_xlate(struct reset_controller_dev *rcdev,
+diff --git a/drivers/staging/bcm/nvm.c b/drivers/staging/bcm/nvm.c
+index 9e5f955..3165da8 100644
+--- a/drivers/staging/bcm/nvm.c
++++ b/drivers/staging/bcm/nvm.c
+@@ -3944,6 +3944,15 @@ int validateFlash2xReadWrite(struct bcm_mini_adapter *Adapter, struct bcm_flash2
  
- 	return reset_spec->args[0];
- }
--EXPORT_SYMBOL_GPL(of_reset_simple_xlate);
+ 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, NVM_RW, DBG_LVL_ALL, "End offset :%x\n", uiSectEndOffset);
  
- /**
-  * reset_controller_register - register a reset controller device
++	/* psFlash2xReadWrite->offset and uiNumOfBytes are user controlled and can lead to integer overflows */
++	if (psFlash2xReadWrite->offset > uiSectEndOffset) {
++		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "Invalid Request....");
++		return false;
++	}
++	if (uiNumOfBytes > uiSectEndOffset) {
++		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "Invalid Request....");
++		return false;
++	}
+ 	/* Checking the boundary condition */
+ 	if ((uiSectStartOffset + psFlash2xReadWrite->offset + uiNumOfBytes) <= uiSectEndOffset)
+ 		return TRUE;
 -- 
-1.8.5.1
+1.8.5.rc1.28.g7061504
 
