@@ -1,121 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751101Ab3LTFAp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 00:00:45 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:64144 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766Ab3LTFAn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 00:00:43 -0500
-X-AuditID: 9c930179-b7bedae000000f15-d0-52b3cefa781c
-Date: Fri, 20 Dec 2013 14:00:49 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH v3 13/14] mm, hugetlb: retry if failed to allocate and
- there is concurrent user
-Message-ID: <20131220050049.GB1370@lge.com>
-References: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1387349640-8071-14-git-send-email-iamjoonsoo.kim@lge.com>
- <20131219170202.0df2d82a2adefa3ab616bdaa@linux-foundation.org>
- <20131220015810.GA1084@lge.com>
- <20131219181520.8a3bfb26.akpm@linux-foundation.org>
+	id S1751325Ab3LTFHJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 00:07:09 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52637 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750766Ab3LTFHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 00:07:08 -0500
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <balbi@ti.com>, <kishon@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <s.nawrocki@samsung.com>, <jg1.han@samsung.com>, <mporter@linaro.org>,
+        <andrew@lunn.ch>, <k.debski@samsung.com>, <gautamvivek1987@gmail.com>,
+        <heikki.krogerus@linux.intel.com>, <yuvaraj.cd@gmail.com>,
+        <george.cherian@ti.com>
+Subject: [PATCH v2 1/2] phy: phy-core: increment refcounting variables only on 'success'
+Date: Fri, 20 Dec 2013 10:36:49 +0530
+Message-ID: <1387516009-12804-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1387463504-4415-1-git-send-email-kishon@ti.com>
+References: <1387463504-4415-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131219181520.8a3bfb26.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 06:15:20PM -0800, Andrew Morton wrote:
-> On Fri, 20 Dec 2013 10:58:10 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> 
-> > On Thu, Dec 19, 2013 at 05:02:02PM -0800, Andrew Morton wrote:
-> > > On Wed, 18 Dec 2013 15:53:59 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> > > 
-> > > > If parallel fault occur, we can fail to allocate a hugepage,
-> > > > because many threads dequeue a hugepage to handle a fault of same address.
-> > > > This makes reserved pool shortage just for a little while and this cause
-> > > > faulting thread who can get hugepages to get a SIGBUS signal.
-> > > > 
-> > > 
-> > > So if I'm understanding this correctly...  if N threads all generate a
-> > > fault against the same address, they will all dive in and allocate a
-> > > hugepage, will then do an enormous memcpy into that page and will then
-> > > attempt to instantiate the page in pagetables.  All threads except one
-> > > will lose the race and will free the page again!  This sounds terribly
-> > > inefficient; it would be useful to write a microbenchmark which
-> > > triggers this scenario so we can explore the impact.
-> > 
-> > Yes, you understand correctly, I think.
-> > 
-> > I have an idea to prevent this overhead. It is that marking page when it
-> > is zeroed and unmarking when it is mapped to page table. If page mapping
-> > is failed due to current thread, the zeroed page will keep the marker and
-> > later we can determine if it is zeroed or not.
-> 
-> Well OK, but the other threads will need to test that in-progress flag
-> and then do <something>.  Where <something> will involve some form of
-> open-coded sleep/wakeup thing.  To avoid all that wheel-reinventing we
-> can avoid using an internal flag and use an external flag instead. 
-> There's one in struct mutex!
+Increment 'init_count' only if the 'init' callback succeeded and decrement
+'init_count' only if the 'exit' callback succeded. Increment 'power_count'
+only if 'power_on' callback succeded and if it failed disable the clocks using
+phy_pm_runtime_put_sync(). Also decrement 'power_count' only if 'power_off'
+callback succeded and if it failed do not disable the clocks.
 
-My idea consider only hugetlb_no_page() and doesn't need a sleep.
-It just set <some> page flag after zeroing and if some thread takes
-the page with this flag when faulting, simply use it without zeroing.
+Reported-by: George Cherian <george.cherian@ti.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+Changes from v1:
+Fixed power_off to call phy_pm_runtime_put only when there is no error in
+power_off callback
 
-> 
-> I doubt if the additional complexity of the external flag is worth it,
-> but convincing performance testing results would sway me ;) Please have
-> a think about it all.
-> 
-> > If you want to include this functionality in this series, I can do it ;)
-> > Please let me know your decision.
-> > 
-> > > I'm wondering if a better solution to all of this would be to make
-> > > hugetlb_instantiation_mutex an array of, say, 1024 mutexes and index it
-> > > with a hash of the faulting address.  That will 99.9% solve the
-> > > performance issue which you believe exists without introducing this new
-> > > performance issue?
-> > 
-> > Yes, that approach would solve the performance issue.
-> > IIRC, you already suggested this idea roughly 6 months ago and it is
-> > implemented by Davidlohr. I remembered that there is a race issue on
-> > COW case with this approach. See following link for more information.
-> > https://lkml.org/lkml/2013/8/7/142
-> 
-> That seems to be unrelated to hugetlb_instantiation_mutex?
+ drivers/phy/phy-core.c |   22 ++++++++++++++--------
+ 1 file changed, 14 insertions(+), 8 deletions(-)
 
-Yes, it is related to hugetlb_instantiation_mutex. In the link, I mentioned
-about race condition of table mutex patches which is for replacing
-hugetlb_instantiation_mutex, although conversation isn't easy to follow-up.
+diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+index 03cf8fb..27b8f3f 100644
+--- a/drivers/phy/phy-core.c
++++ b/drivers/phy/phy-core.c
+@@ -155,13 +155,14 @@ int phy_init(struct phy *phy)
+ 		return ret;
+ 
+ 	mutex_lock(&phy->mutex);
+-	if (phy->init_count++ == 0 && phy->ops->init) {
++	if (phy->init_count == 0 && phy->ops->init) {
+ 		ret = phy->ops->init(phy);
+ 		if (ret < 0) {
+ 			dev_err(&phy->dev, "phy init failed --> %d\n", ret);
+ 			goto out;
+ 		}
+ 	}
++	++phy->init_count;
+ 
+ out:
+ 	mutex_unlock(&phy->mutex);
+@@ -179,13 +180,14 @@ int phy_exit(struct phy *phy)
+ 		return ret;
+ 
+ 	mutex_lock(&phy->mutex);
+-	if (--phy->init_count == 0 && phy->ops->exit) {
++	if (phy->init_count == 1 && phy->ops->exit) {
+ 		ret = phy->ops->exit(phy);
+ 		if (ret < 0) {
+ 			dev_err(&phy->dev, "phy exit failed --> %d\n", ret);
+ 			goto out;
+ 		}
+ 	}
++	--phy->init_count;
+ 
+ out:
+ 	mutex_unlock(&phy->mutex);
+@@ -203,16 +205,20 @@ int phy_power_on(struct phy *phy)
+ 		return ret;
+ 
+ 	mutex_lock(&phy->mutex);
+-	if (phy->power_count++ == 0 && phy->ops->power_on) {
++	if (phy->power_count == 0 && phy->ops->power_on) {
+ 		ret = phy->ops->power_on(phy);
+ 		if (ret < 0) {
+ 			dev_err(&phy->dev, "phy poweron failed --> %d\n", ret);
+ 			goto out;
+ 		}
+ 	}
++	++phy->power_count;
++	mutex_unlock(&phy->mutex);
++	return 0;
+ 
+ out:
+ 	mutex_unlock(&phy->mutex);
++	phy_pm_runtime_put_sync(phy);
+ 
+ 	return ret;
+ }
+@@ -223,19 +229,19 @@ int phy_power_off(struct phy *phy)
+ 	int ret = -ENOTSUPP;
+ 
+ 	mutex_lock(&phy->mutex);
+-	if (--phy->power_count == 0 && phy->ops->power_off) {
++	if (phy->power_count == 1 && phy->ops->power_off) {
+ 		ret =  phy->ops->power_off(phy);
+ 		if (ret < 0) {
+ 			dev_err(&phy->dev, "phy poweroff failed --> %d\n", ret);
+-			goto out;
++			mutex_unlock(&phy->mutex);
++			return ret;
+ 		}
+ 	}
+-
+-out:
++	--phy->power_count;
+ 	mutex_unlock(&phy->mutex);
+ 	phy_pm_runtime_put(phy);
+ 
+-	return ret;
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(phy_power_off);
+ 
+-- 
+1.7.10.4
 
-> 
-> > And we need 1-3 patches to prevent other theorectical race issue
-> > regardless any approaches.
-> 
-> Yes, I'll be going through patches 1-12 very soon, thanks.
-
-Okay. Thanks :)
-
-> 
-> 
-> And to reiterate: I'm very uncomfortable mucking around with
-> performance patches when we have run no tests to measure their
-> magnitude, or even whether they are beneficial at all!
-
-Okay. I will keep in mind it. :)
-
-Thanks.
