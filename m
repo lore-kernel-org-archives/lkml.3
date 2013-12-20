@@ -1,211 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754955Ab3LTQjs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 11:39:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10691 "EHLO mx1.redhat.com"
+	id S1755124Ab3LTQod (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 11:44:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52037 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753327Ab3LTQjq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 11:39:46 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Michel Lespinasse <walken@google.com>,
-        Andi Kleen <ak@linux.intel.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        Yang Zhang <yang.z.zhang@Intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>, janet.morgan@Intel.com,
-        tony.luck@Intel.com, ruiv.wang@gmail.com, gong.chen@linux.intel.com
-Subject: [PATCH] x86: Add check for number of available vectors before CPU down [v3]
-Date: Fri, 20 Dec 2013 10:50:09 -0500
-Message-Id: <1387554609-9823-1-git-send-email-prarit@redhat.com>
+	id S1753342Ab3LTQoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 11:44:32 -0500
+Date: Fri, 20 Dec 2013 16:44:26 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Alex Shi <alex.shi@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        H Peter Anvin <hpa@zytor.com>, Linux-X86 <x86@kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] Fix ebizzy performance regression due to X86 TLB
+ range flush v2
+Message-ID: <20131220164426.GD11295@suse.de>
+References: <1386964870-6690-1-git-send-email-mgorman@suse.de>
+ <20131218072814.GA798@localhost>
+ <20131219143449.GN11295@suse.de>
+ <20131220155143.GA22595@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20131220155143.GA22595@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I tested across various systems with both the linux.git and linux-next.git
-trees and do not see any false positives.  The patch behaves as expected on
-a system with 590 IRQs allocated at boot time; the system refuses to down cpu
-62.
+On Fri, Dec 20, 2013 at 11:51:43PM +0800, Fengguang Wu wrote:
+> On Thu, Dec 19, 2013 at 02:34:50PM +0000, Mel Gorman wrote:
+> > On Wed, Dec 18, 2013 at 03:28:14PM +0800, Fengguang Wu wrote:
+> > > Hi Mel,
+> > > 
+> > > I'd like to share some test numbers with your patches applied on top of v3.13-rc3.
+> > > 
+> > > Basically there are
+> > > 
+> > > 1) no big performance changes
+> > > 
+> > >   76628486           -0.7%   76107841       TOTAL vm-scalability.throughput
+> > >     407038           +1.2%     412032       TOTAL hackbench.throughput
+> > >      50307           -1.5%      49549       TOTAL ebizzy.throughput
+> > > 
+> > 
+> > I'm assuming this was an ivybridge processor.
+> 
+> The test boxes brickland2 and lkp-ib03 are ivybridge; lkp-snb01 is sandybridge.
+> 
 
-P.
+Ok.
 
-----8<----
+> > How many threads were ebizzy tested with?
+> 
+> The below case has params string "400%-5-30", which means
+> 
+>         nr_threads = 400% * nr_cpu = 4 * 48 = 192
+>         iterations = 5
+>         duration = 30
+> 
+>       v3.13-rc3       eabb1f89905a0c809d13
+> ---------------  -------------------------  
+>      50307 ~ 1%      -1.5%      49549 ~ 0%  lkp-ib03/micro/ebizzy/400%-5-30
+>      50307           -1.5%      49549       TOTAL ebizzy.throughput
+> 
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64791
+That is a limited range of threads to test with but ok.
 
-When a cpu is downed on a system, the irqs on the cpu are assigned to other cpus.  It is possible, however, that when a cpu is downed there aren't enough free vectors on the remaining cpus to account for the vectors from the cpu that is being downed.
+> > The memory ranges used by the vm scalability benchmarks are
+> > probably too large to be affected by the series but I'm guessing.
+> 
+> Do you mean these lines?
+> 
+>    3345155 ~ 0%      -0.3%    3335172 ~ 0%  brickland2/micro/vm-scalability/16G-shm-pread-rand-mt
+>   33249939 ~ 0%      +3.3%   34336155 ~ 1%  brickland2/micro/vm-scalability/1T-shm-pread-seq     
+> 
+> The two cases run 128 threads/processes, each accessing randomly/sequentially
+> a 64GB shm file concurrently. Sorry the 16G/1T prefixes are somehow misleading.
+> 
 
-This results in an interesting "overflow" condition where irqs are "assigned" to a CPU but are not handled.
+It's ok, the conclusion is still the same. The regions are still too
+large to be really affected the series.
 
-For example, when downing cpus on a 1-64 logical processor system:
+> > I doubt hackbench is doing any flushes and the 1.2% is noise.
+> 
+> Here are the proc-vmstat.nr_tlb_remote_flush numbers for hackbench:
+> 
+>        513 ~ 3%  +4.3e+16%  2.192e+17 ~85%  lkp-nex05/micro/hackbench/800%-process-pipe
+>        603 ~ 3%  +7.7e+16%  4.669e+17 ~13%  lkp-nex05/micro/hackbench/800%-process-socket
+>       6124 ~17%  +5.7e+15%  3.474e+17 ~26%  lkp-nex05/micro/hackbench/800%-threads-pipe
+>       7565 ~49%  +5.5e+15%  4.128e+17 ~68%  lkp-nex05/micro/hackbench/800%-threads-socket
+>      21252 ~ 6%  +1.3e+15%  2.728e+17 ~39%  lkp-snb01/micro/hackbench/1600%-threads-pipe
+>      24516 ~16%  +8.3e+14%  2.034e+17 ~53%  lkp-snb01/micro/hackbench/1600%-threads-socket
+> 
 
-<snip>
-[  232.021745] smpboot: CPU 61 is now offline
-[  238.480275] smpboot: CPU 62 is now offline
-[  245.991080] ------------[ cut here ]------------
-[  245.996270] WARNING: CPU: 0 PID: 0 at net/sched/sch_generic.c:264 dev_watchdog+0x246/0x250()
-[  246.005688] NETDEV WATCHDOG: p786p1 (ixgbe): transmit queue 0 timed out
-[  246.013070] Modules linked in: lockd sunrpc iTCO_wdt iTCO_vendor_support sb_edac ixgbe microcode e1000e pcspkr joydev edac_core lpc_ich ioatdma ptp mdio mfd_core i2c_i801 dca pps_core i2c_core wmi acpi_cpufreq isci libsas scsi_transport_sas
-[  246.037633] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.12.0+ #14
-[  246.044451] Hardware name: Intel Corporation S4600LH ........../SVRBD-ROW_T, BIOS SE5C600.86B.01.08.0003.022620131521 02/26/2013
-[  246.057371]  0000000000000009 ffff88081fa03d40 ffffffff8164fbf6 ffff88081fa0ee48
-[  246.065728]  ffff88081fa03d90 ffff88081fa03d80 ffffffff81054ecc ffff88081fa13040
-[  246.074073]  0000000000000000 ffff88200cce0000 0000000000000040 0000000000000000
-[  246.082430] Call Trace:
-[  246.085174]  <IRQ>  [<ffffffff8164fbf6>] dump_stack+0x46/0x58
-[  246.091633]  [<ffffffff81054ecc>] warn_slowpath_common+0x8c/0xc0
-[  246.098352]  [<ffffffff81054fb6>] warn_slowpath_fmt+0x46/0x50
-[  246.104786]  [<ffffffff815710d6>] dev_watchdog+0x246/0x250
-[  246.110923]  [<ffffffff81570e90>] ? dev_deactivate_queue.constprop.31+0x80/0x80
-[  246.119097]  [<ffffffff8106092a>] call_timer_fn+0x3a/0x110
-[  246.125224]  [<ffffffff8106280f>] ? update_process_times+0x6f/0x80
-[  246.132137]  [<ffffffff81570e90>] ? dev_deactivate_queue.constprop.31+0x80/0x80
-[  246.140308]  [<ffffffff81061db0>] run_timer_softirq+0x1f0/0x2a0
-[  246.146933]  [<ffffffff81059a80>] __do_softirq+0xe0/0x220
-[  246.152976]  [<ffffffff8165fedc>] call_softirq+0x1c/0x30
-[  246.158920]  [<ffffffff810045f5>] do_softirq+0x55/0x90
-[  246.164670]  [<ffffffff81059d35>] irq_exit+0xa5/0xb0
-[  246.170227]  [<ffffffff8166062a>] smp_apic_timer_interrupt+0x4a/0x60
-[  246.177324]  [<ffffffff8165f40a>] apic_timer_interrupt+0x6a/0x70
-[  246.184041]  <EOI>  [<ffffffff81505a1b>] ? cpuidle_enter_state+0x5b/0xe0
-[  246.191559]  [<ffffffff81505a17>] ? cpuidle_enter_state+0x57/0xe0
-[  246.198374]  [<ffffffff81505b5d>] cpuidle_idle_call+0xbd/0x200
-[  246.204900]  [<ffffffff8100b7ae>] arch_cpu_idle+0xe/0x30
-[  246.210846]  [<ffffffff810a47b0>] cpu_startup_entry+0xd0/0x250
-[  246.217371]  [<ffffffff81646b47>] rest_init+0x77/0x80
-[  246.223028]  [<ffffffff81d09e8e>] start_kernel+0x3ee/0x3fb
-[  246.229165]  [<ffffffff81d0989f>] ? repair_env_string+0x5e/0x5e
-[  246.235787]  [<ffffffff81d095a5>] x86_64_start_reservations+0x2a/0x2c
-[  246.242990]  [<ffffffff81d0969f>] x86_64_start_kernel+0xf8/0xfc
-[  246.249610] ---[ end trace fb74fdef54d79039 ]---
-[  246.254807] ixgbe 0000:c2:00.0 p786p1: initiating reset due to tx timeout
-[  246.262489] ixgbe 0000:c2:00.0 p786p1: Reset adapter
-Last login: Mon Nov 11 08:35:14 from 10.18.17.119
-[root@(none) ~]# [  246.792676] ixgbe 0000:c2:00.0 p786p1: detected SFP+: 5
-[  249.231598] ixgbe 0000:c2:00.0 p786p1: NIC Link is Up 10 Gbps, Flow Control: RX/TX
-[  246.792676] ixgbe 0000:c2:00.0 p786p1: detected SFP+: 5
-[  249.231598] ixgbe 0000:c2:00.0 p786p1: NIC Link is Up 10 Gbps, Flow Control: RX/TX
+This is a surprise. The differences I can understand because of changes
+in accounting but not the flushes themselves. The only flushes I would
+expect are when the process exits and the regions are torn down.
 
-(last lines keep repeating.  ixgbe driver is dead until module reload.)
+The exception would be if automatic NUMA balancing was enabled and this
+was a NUMA machine. In that case, NUMA hinting faults could be migrating
+memory and triggering flushes.
 
-If the downed cpu has more vectors than are free on the remaining cpus on the
-system, it is possible that some vectors are "orphaned" even though they are
-assigned to a cpu.  In this case, since the ixgbe driver had a watchdog, the
-watchdog fired and notified that something was wrong.
+Could you do something like
 
-This patch adds a function, check_vectors(), to compare the number of vectors
-on the CPU going down and compares it to the number of vectors available on
-the system.  If there aren't enough vectors for the CPU to go down, an
-error is returned and propogated back to userspace.
+# perf probe native_flush_tlb_others
+# cd /sys/kernel/debug/tracing
+# echo sym-offset > trace_options
+# echo sym-addr > trace_options
+# echo stacktrace > trace_options
+# echo 1 > events/probe/native_flush_tlb_others/enable
+# cat trace_pipe > /tmp/log
 
-v2: Do not need to look at percpu irqs
-v3: Need to check affinity to prevent counting of MSIs in IOAPIC Lowest
-    Priority Mode
+and get a breakdown of what the source of these remote flushes are
+please?
 
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Yang Zhang <yang.z.zhang@Intel.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: janet.morgan@intel.com
-Cc: tony.luck@intel.com
-Cc: ruiv.wang@gmail.com
-Cc: gong.chen@linux.intel.com
----
- arch/x86/include/asm/irq.h |    1 +
- arch/x86/kernel/irq.c      |   44 ++++++++++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/smpboot.c  |    6 ++++++
- 3 files changed, 51 insertions(+)
+> This time, the ebizzy params are refreshed and the test case is
+> exercised in all our test machines. The results that have changed are:
+> 
+>       v3.13-rc3       eabb1f89905a0c809d13  
+> ---------------  -------------------------  
+>        873 ~ 0%      +0.7%        879 ~ 0%  lkp-a03/micro/ebizzy/200%-100-10
+>        873 ~ 0%      +0.7%        879 ~ 0%  lkp-a04/micro/ebizzy/200%-100-10
+>        873 ~ 0%      +0.8%        880 ~ 0%  lkp-a06/micro/ebizzy/200%-100-10
+>      49242 ~ 0%      -1.2%      48650 ~ 0%  lkp-ib03/micro/ebizzy/200%-100-10
+>      26176 ~ 0%      -1.6%      25760 ~ 0%  lkp-sbx04/micro/ebizzy/200%-100-10
+>       2738 ~ 0%      +0.2%       2744 ~ 0%  lkp-t410/micro/ebizzy/200%-100-10
+>      80776           -1.2%      79793       TOTAL ebizzy.throughput
+> 
 
-diff --git a/arch/x86/include/asm/irq.h b/arch/x86/include/asm/irq.h
-index 0ea10f27..dfd7372 100644
---- a/arch/x86/include/asm/irq.h
-+++ b/arch/x86/include/asm/irq.h
-@@ -25,6 +25,7 @@ extern void irq_ctx_init(int cpu);
- 
- #ifdef CONFIG_HOTPLUG_CPU
- #include <linux/cpumask.h>
-+extern int check_vectors(void);
- extern void fixup_irqs(void);
- extern void irq_force_complete_move(int);
- #endif
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 22d0687..483f111 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -262,6 +262,50 @@ __visible void smp_trace_x86_platform_ipi(struct pt_regs *regs)
- EXPORT_SYMBOL_GPL(vector_used_by_percpu_irq);
- 
- #ifdef CONFIG_HOTPLUG_CPU
-+/*
-+ * This cpu is going to be removed and its vectors migrated to the remaining
-+ * online cpus.  Check to see if there are enough vectors in the remaining cpus.
-+ */
-+int check_vectors(void)
-+{
-+	int irq, cpu;
-+	unsigned int vector, this_count, count;
-+	struct irq_desc *desc;
-+	struct irq_data *data;
-+	struct cpumask *affinity;
-+
-+	this_count = 0;
-+	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
-+		irq = __this_cpu_read(vector_irq[vector]);
-+		if (irq >= 0) {
-+			desc = irq_to_desc(irq);
-+			data = irq_desc_get_irq_data(desc);
-+			affinity = data->affinity;
-+			if (irq_has_action(irq) || !irqd_is_per_cpu(data) ||
-+			    !cpumask_subset(affinity, cpu_online_mask))
-+				this_count++;
-+		}
-+	}
-+
-+	count = 0;
-+	for_each_online_cpu(cpu) {
-+		if (cpu == smp_processor_id())
-+			continue;
-+		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS;
-+		     vector++) {
-+			if (per_cpu(vector_irq, cpu)[vector] < 0)
-+				count++;
-+		}
-+	}
-+
-+	if (count < this_count) {
-+		pr_warn("CPU %d disable failed: CPU has %u vectors assigned and there are only %u available.\n",
-+			smp_processor_id(), this_count, count);
-+		return -ERANGE;
-+	}
-+	return 0;
-+}
-+
- /* A cpu has been removed from cpu_online_mask.  Reset irq affinities. */
- void fixup_irqs(void)
- {
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 85dc05a..7ac6654 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1312,6 +1312,12 @@ void cpu_disable_common(void)
- 
- int native_cpu_disable(void)
- {
-+	int ret;
-+
-+	ret = check_vectors();
-+	if (ret)
-+		return ret;
-+
- 	clear_local_APIC();
- 
- 	cpu_disable_common();
+No change on lkp-ib03 which I would have expected some difference. Thing
+is, for ebizzy to notice the number of TLB entries matter. On both
+machines I tested, the last level TLB had 512 entries. How many entries
+are on the last level TLB on lkp-ib03?
+
+> > I do see a few major regressions like this
+> > 
+> > >     324497 ~ 0%    -100.0%          0 ~ 0%  brickland2/micro/vm-scalability/16G-truncate
+> > 
+> > but I have no idea what the test is doing and whether something happened
+> > that the test broke that time or if it's something to be really
+> > concerned about.
+> 
+> This test case simply creates sparse files, populate them with zeros,
+> then delete them in parallel. Here $mem is physical memory size 128G,
+> $nr_cpu is 120.
+> 
+> for i in `seq $nr_cpu`
+> do      
+>         create_sparse_file $SPARSE_FILE-$i $((mem / nr_cpu))
+>         cp $SPARSE_FILE-$i /dev/null
+> done
+> 
+> for i in `seq $nr_cpu`
+> do      
+>         rm $SPARSE_FILE-$i &
+> done
+> 
+
+In itself, that does not explain why the result was 0 with the series
+applied. The 3.13-rc3 result was "324497". 324497 what?
+
 -- 
-1.7.9.3
-
+Mel Gorman
+SUSE Labs
