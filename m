@@ -1,201 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab3LTKqL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 05:46:11 -0500
-Received: from www.linutronix.de ([62.245.132.108]:60163 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756482Ab3LTKqC (ORCPT
+	id S1756904Ab3LTKqY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 05:46:24 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:62856 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756066Ab3LTKqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 05:46:02 -0500
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        =?UTF-8?q?Sami=20Pietik=C3=A4inen?= <Sami.Pietikainen@wapice.com>,
-        tglx@linutronix.de, Benedikt Spranger <b.spranger@linutronix.de>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 2/2] clocksource: TCLIB: Allow higher clock rates for clock events
-Date: Fri, 20 Dec 2013 11:45:41 +0100
-Message-Id: <1387536341-7452-3-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 1.8.5.1
-In-Reply-To: <1387536341-7452-1-git-send-email-bigeasy@linutronix.de>
-References: <1387536341-7452-1-git-send-email-bigeasy@linutronix.de>
+	Fri, 20 Dec 2013 05:46:19 -0500
+Date: Fri, 20 Dec 2013 11:46:15 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-arch@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH -tip v6 00/22] kprobes: introduce NOKPROBE_SYMBOL(),
+ cleanup and fixes crash bugs
+Message-ID: <20131220104615.GA22609@gmail.com>
+References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
+ <y0m38loefhx.fsf@fche.csb>
+ <52B3C5E6.2040802@hitachi.com>
+ <20131220082056.GA15934@gmail.com>
+ <52B40E79.8040701@hitachi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52B40E79.8040701@hitachi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benedikt Spranger <b.spranger@linutronix.de>
 
-As default the TCLIB uses the 32KiHz base clock rate for clock events.
-Add a compile time selection to allow higher clock resulution.
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-(fixed up by Sami Pietikäinen <Sami.Pietikainen@wapice.com> around v3.12)
+> (2013/12/20 17:20), Ingo Molnar wrote:
+> > 
+> > * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> > 
+> >>>  But a closer look indicates that the insertion of kprobes is 
+> >>> taking about three (!!) orders of magnitude longer than before, as 
+> >>> judged by the rate of increase of 'wc -l 
+> >>> /sys/kernel/debug/kprobes/list'.
+> >>
+> >> Right, because kprobes are not designed for thousands of probes.
+> > 
+> > Then this needs to be fixed, because right now this bug is making it 
+> > near impossible to properly test kprobes robustness.
+> > 
+> > For example a hash table (hashed by probe address) could be used in 
+> > addition to the list, to speed up basic operations.
+> 
+> kprobe itself is already using hlist (6bits hash table).
+> Maybe we'd better expand the table bits. However, the iteration
+> of the list on debugfs is just doing seq_printf()s. I'm not exactly
+> sure what Frank complaints about...
 
-Signed-off-by: Benedikt Spranger <b.spranger@linutronix.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-[bigeasy: update against v3.13-rc4]
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- drivers/clocksource/tcb_clksrc.c | 37 ++++++++++++++++++++++---------------
- drivers/misc/Kconfig             | 12 ++++++++++--
- 2 files changed, 32 insertions(+), 17 deletions(-)
+Well, Frank reported that the test he performed takes hours to finish, 
+and he mentioned a specific script line he used to produce that:
 
-diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_clksrc.c
-index 00fdd11..df62eaa 100644
---- a/drivers/clocksource/tcb_clksrc.c
-+++ b/drivers/clocksource/tcb_clksrc.c
-@@ -23,8 +23,7 @@
-  *     this 32 bit free-running counter. the second channel is not used.
-  *
-  *   - The third channel may be used to provide a 16-bit clockevent
-- *     source, used in either periodic or oneshot mode.  This runs
-- *     at 32 KiHZ, and can handle delays of up to two seconds.
-+ *     source, used in either periodic or oneshot mode.
-  *
-  * A boot clocksource and clockevent source are also currently needed,
-  * unless the relevant platforms (ARM/AT91, AVR32/AT32) are changed so
-@@ -74,6 +73,7 @@ static struct clocksource clksrc = {
- struct tc_clkevt_device {
- 	struct clock_event_device	clkevt;
- 	struct clk			*clk;
-+	u32				freq;
- 	void __iomem			*regs;
- };
- 
-@@ -82,13 +82,6 @@ static struct tc_clkevt_device *to_tc_clkevt(struct clock_event_device *clkevt)
- 	return container_of(clkevt, struct tc_clkevt_device, clkevt);
- }
- 
--/* For now, we always use the 32K clock ... this optimizes for NO_HZ,
-- * because using one of the divided clocks would usually mean the
-- * tick rate can never be less than several dozen Hz (vs 0.5 Hz).
-- *
-- * A divided clock could be good for high resolution timers, since
-- * 30.5 usec resolution can seem "low".
-- */
- static u32 timer_clock;
- 
- static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
-@@ -111,11 +104,12 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 	case CLOCK_EVT_MODE_PERIODIC:
- 		clk_prepare_enable(tcd->clk);
- 
--		/* slow clock, count up to RC, then irq and restart */
-+		/* count up to RC, then irq and restart */
- 		__raw_writel(timer_clock
- 				| ATMEL_TC_WAVE | ATMEL_TC_WAVESEL_UP_AUTO,
- 				regs + ATMEL_TC_REG(2, CMR));
--		__raw_writel((32768 + HZ/2) / HZ, tcaddr + ATMEL_TC_REG(2, RC));
-+		__raw_writel((tcd->freq + HZ / 2) / HZ,
-+				tcaddr + ATMEL_TC_REG(2, RC));
- 
- 		/* Enable clock and interrupts on RC compare */
- 		__raw_writel(ATMEL_TC_CPCS, regs + ATMEL_TC_REG(2, IER));
-@@ -128,7 +122,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 	case CLOCK_EVT_MODE_ONESHOT:
- 		clk_prepare_enable(tcd->clk);
- 
--		/* slow clock, count up to RC, then irq and stop */
-+		/* count up to RC, then irq and stop */
- 		__raw_writel(timer_clock | ATMEL_TC_CPCSTOP
- 				| ATMEL_TC_WAVE | ATMEL_TC_WAVESEL_UP_AUTO,
- 				regs + ATMEL_TC_REG(2, CMR));
-@@ -157,8 +151,12 @@ static struct tc_clkevt_device clkevt = {
- 		.name		= "tc_clkevt",
- 		.features	= CLOCK_EVT_FEAT_PERIODIC
- 					| CLOCK_EVT_FEAT_ONESHOT,
-+#ifdef CONFIG_ATMEL_TCB_CLKSRC_USE_SLOW_CLOCK
- 		/* Should be lower than at91rm9200's system timer */
- 		.rating		= 125,
-+#else
-+		.rating		= 200,
-+#endif
- 		.set_next_event	= tc_next_event,
- 		.set_mode	= tc_mode,
- 	},
-@@ -184,8 +182,9 @@ static struct irqaction tc_irqaction = {
- 	.handler	= ch2_irq,
- };
- 
--static int __init setup_clkevents(struct atmel_tc *tc, int clk32k_divisor_idx)
-+static int __init setup_clkevents(struct atmel_tc *tc, int divisor_idx)
- {
-+	unsigned divisor = atmel_tc_divisors[divisor_idx];
- 	int ret;
- 	struct clk *t2_clk = tc->clk[2];
- 	int irq = tc->irq[2];
-@@ -200,7 +199,11 @@ static int __init setup_clkevents(struct atmel_tc *tc, int clk32k_divisor_idx)
- 	clkevt.clk = t2_clk;
- 	tc_irqaction.dev_id = &clkevt;
- 
--	timer_clock = clk32k_divisor_idx;
-+	timer_clock = divisor_idx;
-+	if (!divisor)
-+		clkevt.freq = 32768;
-+	else
-+		clkevt.freq = clk_get_rate(t2_clk) / divisor;
- 
- 	clkevt.clkevt.cpumask = cpumask_of(0);
- 
-@@ -208,7 +211,7 @@ static int __init setup_clkevents(struct atmel_tc *tc, int clk32k_divisor_idx)
- 	if (ret)
- 		return ret;
- 
--	clockevents_config_and_register(&clkevt.clkevt, 32768, 1, 0xffff);
-+	clockevents_config_and_register(&clkevt.clkevt, clkevt.freq, 1, 0xffff);
- 
- 	return ret;
- }
-@@ -345,7 +348,11 @@ static int __init tcb_clksrc_init(void)
- 		goto err_disable_t1;
- 
- 	/* channel 2:  periodic and oneshot timer support */
-+#ifdef CONFIG_ATMEL_TCB_CLKSRC_USE_SLOW_CLOCK
- 	ret = setup_clkevents(tc, clk32k_divisor_idx);
-+#else
-+	ret = setup_clkevents(tc, best_divisor_idx);
-+#endif
- 	if (ret)
- 		goto err_unregister_clksrc;
- 
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index a3e291d..4a7d7d6 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -78,8 +78,7 @@ config ATMEL_TCB_CLKSRC
- 	  are combined to make a single 32-bit timer.
- 
- 	  When GENERIC_CLOCKEVENTS is defined, the third timer channel
--	  may be used as a clock event device supporting oneshot mode
--	  (delays of up to two seconds) based on the 32 KiHz clock.
-+	  may be used as a clock event device supporting oneshot mode.
- 
- config ATMEL_TCB_CLKSRC_BLOCK
- 	int
-@@ -93,6 +92,15 @@ config ATMEL_TCB_CLKSRC_BLOCK
- 	  TC can be used for other purposes, such as PWM generation and
- 	  interval timing.
- 
-+config ATMEL_TCB_CLKSRC_USE_SLOW_CLOCK
-+	bool "TC Block use 32 KiHz clock"
-+	depends on ATMEL_TCB_CLKSRC
-+	default y
-+	help
-+	  Select this to use 32 KiHz base clock rate as TC block clock
-+	  source for clock events.
-+
-+
- config DUMMY_IRQ
- 	tristate "Dummy IRQ handler"
- 	default n
--- 
-1.8.5.1
+  # stap -te "probe kprobe.function("*") {}"
 
+I suspect an equivalent perf probe sequence would be something like:
+
+  # for FUNC in $(grep -iw t /proc/kallsyms | cut -d' ' -f3); do date; perf probe -a $FUNC; done
+
+(totally untested.)
+
+Can you reproduce that slowdown, using his method?
+
+I can reproduce one weirdness, with just 13 probes added, 'perf probe 
+-l' [which should really be 'perf probe list'!] executes very slowly:
+
+ # perf stat --null --repeat 3 perf probe -l
+
+ Performance counter stats for 'perf probe -l' (3 runs):
+
+       0.763640098 seconds time elapsed                                          ( +-  1.61% )
+
+0.7 seconds is ridiculously long.
+
+Also, here's another bugreport as well: while playing around with 
+'perf probe' I found that its usability is still very poor. For 
+example I mis-remembered the syntax and typed the obvious way to :
+
+ # perf probe add __schedule
+ Failed to find path of kernel module.
+ Failed to open debuginfo file.
+   Error: Failed to add events. (-2)
+
+why the heck does a simple and obvious 'perf probe add' not work, why 
+is the strange syntax of 'perf probe -a' forced? Every other perf 
+subcommand uses clean command spaces - see for example 'perf bench'.
+
+Also, the error message is totally misleading and uninformative to the 
+level of being passive-aggressive. An error message should directly 
+relate to the mistake performed and should give a good way out of the 
+situation. Who the heck cares that there was no debuginfo file to 
+open? Who cares that the 'path of kernel module' was not found? It has 
+no relation to the bug.
+
+An informative error message would be:
+
+ # perf probe add __schedule
+ Error: Could not find symbol 'add'.
+
+and that's it. No 'failed to add events' message - obviously the event 
+is not enabled if we cannot find the symbol name.
+
+Thanks,
+
+	Ingo
