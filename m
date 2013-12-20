@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab3LTRfd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 12:35:33 -0500
-Received: from mga03.intel.com ([143.182.124.21]:33298 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756625Ab3LTRfc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 12:35:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,522,1384329600"; 
-   d="scan'208";a="329342523"
-Date: Fri, 20 Dec 2013 09:40:25 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86: intel-mid: sfi_handle_*_dev() should check for
- pdata error code
-Message-ID: <20131220174025.GA5186@psi-dev26.jf.intel.com>
-References: <1387244246-20714-1-git-send-email-david.a.cohen@linux.intel.com>
- <1387518179-4316-1-git-send-email-david.a.cohen@linux.intel.com>
- <1387518179-4316-2-git-send-email-david.a.cohen@linux.intel.com>
- <20131220084953.GB21133@gmail.com>
+	id S932137Ab3LTRgU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 12:36:20 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60806 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756769Ab3LTRgN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 12:36:13 -0500
+Message-ID: <52B48007.7050002@wwwdotorg.org>
+Date: Fri, 20 Dec 2013 10:36:07 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131220084953.GB21133@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Mark Zhang <nvmarkzhang@gmail.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        swarren@nvidia.com, will.deacon@arm.com, grant.likely@linaro.org,
+        robherring2@gmail.com, joro@8bytes.org, mark.rutland@arm.com,
+        devicetree@vger.kernel.org, lorenzo.pieralisi@arm.com,
+        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        galak@codeaurora.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv7 06/12] ARM: tegra: create a DT header defining SWGROUP
+ ID
+References: <1386835033-4701-1-git-send-email-hdoyu@nvidia.com> <1386835033-4701-7-git-send-email-hdoyu@nvidia.com> <52B1568F.1050305@gmail.com> <52B1CCF1.2040907@wwwdotorg.org> <20131220123554.GQ27787@ulmo.nvidia.com>
+In-Reply-To: <20131220123554.GQ27787@ulmo.nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+On 12/20/2013 05:35 AM, Thierry Reding wrote:
+> On Wed, Dec 18, 2013 at 09:27:29AM -0700, Stephen Warren wrote:
+>> On 12/18/2013 01:02 AM, Mark Zhang wrote:
+>>> On 12/12/2013 03:57 PM, Hiroshi Doyu wrote:
+>>>> Create a header file to define the swgroup IDs used by the IOMMU(SMMU)
+>>>> binding. "swgroup" is a group of H/W clients which a Tegra SoC
+>>>> supports. This unique ID can be used to calculate MC_SMMU_<swgroup
+>>>> name>_ASID_0 register offset and MC_<swgroup name>_HOTRESET_*_0
+>>>> register bit. This will allow the same header to be used by both
+>>>> device tree files, and drivers implementing this binding, which
+>>>> guarantees that the two stay in sync. This also makes device trees
+>>>> more readable by using names instead of magic numbers. For HOTRESET
+>>>> bit shifting we need another conversion table, which will come later.
+>>
+>>>> diff --git a/include/dt-bindings/memory/tegra-swgroup.h b/include/dt-bindings/memory/tegra-swgroup.h
+>>
+>>>> +#define TEGRA_SWGROUP_MPE	11	/* 0x264 */
+>>>> +#define TEGRA_SWGROUP_MSENC	SWGROUP_MPE
+>>>
+>>> Need to change this to:
+>>>
+>>> #define TEGRA_SWGROUP_MSENC	11
+>>>
+>>> The reason is that, this makes "TEGRA_SWGROUP_BIT" doesn't work. So if I
+>>> write "TEGRA_SWGROUP_CELLS(MSENC)" in dt, that causes a dt compiling error.
+>>
+>> I guess it's because TEGRA_SWGROUP_BIT needs to expand its argument
+>> twice, which can be done.
+>>
+>> That all said, just defining all the names directly to constants is
+>> probably the most direct fix.
+> 
+> Erm... isn't this simply a typo, where:
+> 
+> 	#define TEGRA_SWGROUP_MSENC	SWGROUP_MPE
+> 
+> should simply be
+> 
+> 	#define TEGRA_SWGROUP_MSENC	TEGRA_SWGROUP_MPE
+> 
+> ?
+> 
+> That certainly works for me.
 
-On Fri, Dec 20, 2013 at 09:49:53AM +0100, Ingo Molnar wrote:
-> 
-> * David Cohen <david.a.cohen@linux.intel.com> wrote:
-> 
-> > Prevent sfi_handle_*_dev() to register device in case
-> > intel_mid_sfi_get_pdata() failed to execute.
-> > 
-> > Since 'NULL' is a valid return value, this patch makes
-> > sfi_handle_*_dev() functions to use IS_ERR() to validate returned pdata.
-> 
-> Is this bug triggering in practice? If not then please say so in the 
-> changelog. If yes then is this patch desired for v3.13 merging and 
-
-Despite the bug exists and the patch is fixing it, it is really unlikely
-to happen regularly unless the hw has wrong FW. OTOH it is pretty useful
-during development of platform code to spot and fix errors and typos
-faster. I don't think there's need to go to 3.13. It can be applied for
-next version after the patch set I sent it in reply to.
-
-> also please fix the changelog to conform to the standard changelog 
-> style:
-> 
->  - first describe the symptoms of the bug - how does a user notice?
-> 
->  - then describe how the code behaves today and how that is causing
->    the bug
-> 
->  - and then only describe how it's fixed.
-> 
-> The first item is the most important one - while developers 
-> (naturally) tend to concentrate on the least important point, the last 
-> one.
-
-I'll amend the description.
-
-Br, David
-
-> 
-> Thanks,
-> 
-> 	Ingo
+You're right. I guess ## is defined to re-expand its result, so
+TEGRA_SWGROUP_BIT(ISP2) -> TEGRA_SWGROUP_##ISP2 -> TEGRA_SWGROUP_ISP2 ->
+TEGRA_SWGROUP_ISP -> 8.
