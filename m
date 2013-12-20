@@ -1,102 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422754Ab3LTNwa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 08:52:30 -0500
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:37598 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1422680Ab3LTNw0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 08:52:26 -0500
-From: Michael Hoefler <michael.hoefler@studium.uni-erlangen.de>
-To: michael.hoefler@studium.uni-erlangen.de
-Cc: linux-kernel@i4.cs.fau.de, Christoph Kohl <christoph.kohl@t-online.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rupert Muchembled <rupert@rmuch.net>, Chad Williamson <chad@dahc.us>,
-        devel@driverdev.osuosl.org (open list:STAGING SUBSYSTEM),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCHv2 3/3] silicom: remaining checkpatch issues in bypass.c
-Date: Fri, 20 Dec 2013 14:51:13 +0100
-Message-Id: <1387547475-7135-4-git-send-email-michael.hoefler@studium.uni-erlangen.de>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1387547475-7135-1-git-send-email-michael.hoefler@studium.uni-erlangen.de>
-References: <1387547475-7135-1-git-send-email-michael.hoefler@studium.uni-erlangen.de>
+	id S1030214Ab3LTN4E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 08:56:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48718 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030189Ab3LTN4C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 08:56:02 -0500
+Date: Fri, 20 Dec 2013 13:55:56 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alex Shi <alex.shi@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, H Peter Anvin <hpa@zytor.com>,
+        Linux-X86 <x86@kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 0/4] Fix ebizzy performance regression due to X86 TLB
+ range flush v2
+Message-ID: <20131220135556.GB11295@suse.de>
+References: <20131216125923.GS11295@suse.de>
+ <20131216134449.GA3034@gmail.com>
+ <20131217092124.GV11295@suse.de>
+ <20131217110051.GA27701@gmail.com>
+ <20131219142405.GM11295@suse.de>
+ <20131219164925.GA29546@gmail.com>
+ <20131220111303.GZ11295@suse.de>
+ <20131220111818.GA23349@gmail.com>
+ <20131220115854.GA11295@suse.de>
+ <20131220122019.GA24479@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20131220122019.GA24479@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In this patch we fix some "logical" errors in bypass.c of the silicom bypass
-driver (in staging).
+On Fri, Dec 20, 2013 at 01:20:19PM +0100, Ingo Molnar wrote:
+> 
+> * Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > tlb_flushall_shift == -1	Always use flush all
+> > tlb_flushall_shift == 1		Aggressively use individual flushes
+> > tlb_flushall_shift == 6		Conservatively use individual flushes
+> > 
+> > IvyBridge was too aggressive using individual flushes and my patch 
+> > makes it less aggressive.
+> > 
+> > Intel's code for this currently looks like
+> > 
+> >         switch ((c->x86 << 8) + c->x86_model) {
+> >         case 0x60f: /* original 65 nm celeron/pentium/core2/xeon, "Merom"/"Conroe" */
+> >         case 0x616: /* single-core 65 nm celeron/core2solo "Merom-L"/"Conroe-L" */
+> >         case 0x617: /* current 45 nm celeron/core2/xeon "Penryn"/"Wolfdale" */
+> >         case 0x61d: /* six-core 45 nm xeon "Dunnington" */
+> >                 tlb_flushall_shift = -1;
+> >                 break;
+> >         case 0x61a: /* 45 nm nehalem, "Bloomfield" */
+> >         case 0x61e: /* 45 nm nehalem, "Lynnfield" */
+> >         case 0x625: /* 32 nm nehalem, "Clarkdale" */
+> >         case 0x62c: /* 32 nm nehalem, "Gulftown" */
+> >         case 0x62e: /* 45 nm nehalem-ex, "Beckton" */
+> >         case 0x62f: /* 32 nm Xeon E7 */
+> >                 tlb_flushall_shift = 6;
+> >                 break;
+> >         case 0x62a: /* SandyBridge */
+> >         case 0x62d: /* SandyBridge, "Romely-EP" */
+> >                 tlb_flushall_shift = 5;
+> >                 break;
+> >         case 0x63a: /* Ivybridge */
+> >                 tlb_flushall_shift = 2;
+> >                 break;
+> >         default:
+> >                 tlb_flushall_shift = 6;
+> >         }
+> > 
+> > That default shift of "6" is already conservative which is why I 
+> > don't think we need to change anything there. AMD is slightly more 
+> > aggressive in their choices but not enough to panic.
+> 
+> Lets face it, the per model tunings are most likely crap: the only 
+> place where it significantly deviated from '6' was Ivybridge - and 
+> there it was causing a regression.
+> 
+> With your patch we'll have 6 everywhere, except on SandyBridge where 
+> it's slightly more agressive at 5 - which is probably noise.
+> 
+> So my argument is that we should use '6' _everywhere_ and do away with 
+> the pretense that we do per model tunings...
+> 
 
-Checkpatch complains about the following errors:
- - unnecessary forward declarations in a source file
- - assignment in if condition
+Understood. I prototyped a suitable patch and stuck it in a queue. I
+also took the libery of adding a patch that also reset IvyBridge to 6
+out of curiousity. I'll post a suitable series once I have results.
 
-In addition to that the __init and __exit macros were missing at the init and
-cleanup function.
-
-There are still two warnings left for this file related to too many leadingtabs
-at nested blocks. I did not touch this issue becasue the code needs really some
-refactoring. And since i do not have the appropriate hardware to test the code,
-i do not change the functionality in any way.
-
-Signed-off-by: Michael Hoefler <michael.hoefler@studium.uni-erlangen.de>
-Signed-off-by: Christoph Kohl <christoph.kohl@t-online.de>
----
- drivers/staging/silicom/bypasslib/bypass.c | 15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/staging/silicom/bypasslib/bypass.c b/drivers/staging/silicom/bypasslib/bypass.c
-index ff0c517..9b771c9 100644
---- a/drivers/staging/silicom/bypasslib/bypass.c
-+++ b/drivers/staging/silicom/bypasslib/bypass.c
-@@ -40,9 +40,6 @@ MODULE_AUTHOR("www.silicom.co.il");
- 
- MODULE_LICENSE("GPL");
- 
--int init_lib_module(void);
--void cleanup_lib_module(void);
--
- static int do_cmd(struct net_device *dev, struct ifreq *ifr, int cmd, int *data)
- {
- 	int ret = -1;
-@@ -151,9 +148,10 @@ static int is_bypass_dev(int if_index)
- 	int data = 0;
- 
- 	while ((pdev = pci_get_class(PCI_CLASS_NETWORK_ETHERNET << 8, pdev))) {
--		if ((dev = pci_get_drvdata(pdev)) != NULL)
--			if (((dev = pci_get_drvdata(pdev)) != NULL) &&
--			    (dev->ifindex == if_index)) {
-+		dev = pci_get_drvdata(pdev);
-+		if (dev != NULL) {
-+			dev = pci_get_drvdata(pdev);
-+			if ((dev != NULL) && (dev->ifindex == if_index)) {
- 				if ((pdev->vendor == SILICOM_VID) &&
- 				    (pdev->device >= SILICOM_BP_PID_MIN) &&
- 				    (pdev->device <= SILICOM_BP_PID_MAX)) {
-@@ -183,6 +181,7 @@ static int is_bypass_dev(int if_index)
- #endif
- 				return -1;
- 			}
-+		}
- 	}
-  send_cmd:
- 	ret = do_cmd(dev, &ifr, IS_BYPASS, &data);
-@@ -526,13 +525,13 @@ static int get_bypass_info(int if_index, struct bp_info *bp_info)
- }
- EXPORT_SYMBOL(get_bypass_info);
- 
--int init_lib_module(void)
-+int __init init_lib_module(void)
- {
- 	printk(VERSION);
- 	return 0;
- }
- 
--void cleanup_lib_module(void)
-+void __exit cleanup_lib_module(void)
- {
- }
- 
 -- 
-1.8.1.2
-
+Mel Gorman
+SUSE Labs
