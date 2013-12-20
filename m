@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040Ab3LTPO3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 10:14:29 -0500
-Received: from mail-bn1lp0155.outbound.protection.outlook.com ([207.46.163.155]:54975
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752799Ab3LTPO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 10:14:27 -0500
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "bp@alien8.de" <bp@alien8.de>
-CC: "samer.el-haj-mahmoud@hp.com" <samer.el-haj-mahmoud@hp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jlee@suse.com" <jlee@suse.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "Elliott@hp.com" <Elliott@hp.com>, "werner@suse.com" <werner@suse.com>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "x86@kernel.org" <x86@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "oneukum@suse.de" <oneukum@suse.de>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "trenn@suse.de" <trenn@suse.de>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "JBeulich@suse.com" <JBeulich@suse.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "matt@console-pimps.org" <matt@console-pimps.org>
-Subject: Re: [RFC PATCH 06/14] rtc-efi: register rtc-efi device when EFI
- enabled
-Thread-Topic: [RFC PATCH 06/14] rtc-efi: register rtc-efi device when EFI
- enabled
-Thread-Index: AQHO/I+EcJVR10sMOECiIBe66SHBappbjsKAgADu+ICAAAGqAIAAZpKAgABNPoA=
-Date: Fri, 20 Dec 2013 15:14:23 +0000
-Message-ID: <1387552463.17961.2.camel@x230>
-References: <1387439515-8926-1-git-send-email-jlee@suse.com>
-	 <1387439515-8926-7-git-send-email-jlee@suse.com>
-	 <20131219140918.GF3145@console-pimps.org>
-	 <1387513491.3539.4345.camel@linux-s257.site> <52B3C7F8.3040901@zytor.com>
-	 <20131220103755.GA14784@pd.tnic>
-In-Reply-To: <20131220103755.GA14784@pd.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [176.35.175.187]
-x-forefront-prvs: 0066D63CE6
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(51704005)(199002)(189002)(24454002)(377424004)(377454003)(479174003)(81816001)(80022001)(81686001)(77096001)(56776001)(66066001)(19580405001)(69226001)(83322001)(80976001)(74366001)(79102001)(2656002)(76796001)(76786001)(65816001)(63696002)(81542001)(81342001)(33716001)(59766001)(33646001)(77982001)(87936001)(87266001)(85306002)(54316002)(85852003)(19580395003)(53806001)(83072002)(76482001)(47976001)(50986001)(47736001)(54356001)(4396001)(74876001)(74706001)(49866001)(56816005)(90146001)(51856001)(46102001)(31966008)(47446002)(74662001)(74502001)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR05MB421;H:BN1PR05MB423.namprd05.prod.outlook.com;CLIP:176.35.175.187;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <92B7898EFB5493428003ABBCD41DE64A@namprd05.prod.outlook.com>
+	id S1754805Ab3LTPO7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 10:14:59 -0500
+Received: from 15.mo4.mail-out.ovh.net ([91.121.62.11]:43604 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753070Ab3LTPO6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 10:14:58 -0500
+X-Greylist: delayed 16799 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Dec 2013 10:14:57 EST
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+In-Reply-To: <CAAVeFuJ=s8e8g5LG2CVAkS3guj-HRUYrwKxywFxq36sNpAjQGQ@mail.gmail.com>
+References: <1387239745-2890-1-git-send-email-jjhiblot@traphandler.com>
+	<CAAVeFuKAGfnnsbtBg=zfmciyMdZHgrX_EpecqPjG=oO6rZdWag@mail.gmail.com>
+	<CACh+v5MUsYW-=qaVubzt8CWRGxibKDB3PjMZ6AaeDYgeTNzONA@mail.gmail.com>
+	<CAAVeFuJ=s8e8g5LG2CVAkS3guj-HRUYrwKxywFxq36sNpAjQGQ@mail.gmail.com>
+Date: Fri, 20 Dec 2013 09:40:04 +0100
+Message-ID: <CACh+v5NhUzoRc4YuPJdSia21XTDh8tLo=oBZyo7Re7deOTjUdA@mail.gmail.com>
+Subject: Re: [PATCH] Tracing events with GPIOs
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-Ovh-Tracer-Id: 173107112583059480
+X-Ovh-Remote: 209.85.192.171 (mail-pd0-f171.google.com)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBKFEWsX013897
 
-On Fri, 2013-12-20 at 11:37 +0100, Borislav Petkov wrote:
-> On Thu, Dec 19, 2013 at 08:30:48PM -0800, H. Peter Anvin wrote:
-> > On 12/19/2013 08:24 PM, joeyli wrote:
-> > > I agreed, but userspace application should not be too often to access
-> > > RTC. Maybe only when system boot and set timezone.
-> >
-> > This is, quite frankly, an idiotic argument.
-> 
-> TBH, I've been struggling with the question too - and it might even be a
-> stupid question - but what is that absolute need to be able to get the
-> TZ in userspace? Why should I care?
-> 
-> Can we get some use cases for stupid people like me please?
-
-Dual-boot environments will tend to have the RTC in local time, not UTC.
-That means that userspace has to reprogram the clock over daylight
-savings changes, and to do that it must know whether another OS has
-already done so.
-
--- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+2013/12/20 Alexandre Courbot <gnurou@gmail.com>:
+> On Thu, Dec 19, 2013 at 8:38 PM, Jean-Jacques Hiblot
+> <jjhiblot@traphandler.com> wrote:
+>> 2013/12/19 Alexandre Courbot <gnurou@gmail.com>:
+>>> The problems I can see so far:
+>>>
+>>> - Using gpiod, GPIOs are not specified as integers, but are typically
+>>> mapped to a given (device, function) pair (device can be NULL) using
+>>> device tree/platform data/ACPI and obtained by the corresponding
+>>> device driver through gpiod_get(). You would need to find a different
+>>> way to specify GPIOs, maybe using the gpio_chip's label and the GPIO
+>>> hardware number.
+>>>
+>>> - Even if you do so, there is currently no way to arbitrarily obtain a
+>>> GPIO that has not been explicitly mapped to a (device, function), and
+>>> IIUC you need to specify the tracing GPIO freely from user-space. This
+>>> hints that we will need to add a function that is sensibly the same as
+>>> gpio_request_one() to the gpiod API, but I wonder if that does not
+>>> defeats the purpose somehow.
+>>
+>> This is something I was wondering about for another reason. In many
+>> cases the GPIOs that are physically available for probing will be
+>> limited to the GPIOs already assigned a function (backlight control
+>> for example), others are usually not routed except in eval boards or
+>> early prototypes. And consequently those GPIOs will be requested by a
+>> driver long before a probe is set.
+>> It would be nice not to have to remove the driver to be able to use
+>> this GPIO  as a probe. Maybe a gpiod_steal() interface and a flag
+>> indicating that the GPIO can be safely stolen?
+>
+> Mmm an explicit way to hijack a GPIO does not sound very safe. Do you
+> have concrete cases where you need to do so? I guess most boards you
+> may want to use this patch with would have at least some spare GPIOs
+> with pins somewhere on the board for this kind of purpose.
+It's not always true. There are quite a few platforms where GPIOs is a
+scarce resource (ppc for example). For example, the board I'm working
+on at the moment is built around a APM powerpc which has only 16
+GPIOs. Of those 16 GPIOS, some are not routed and most of the others
+are hidden by the shielding so that I can probe only those that go to
+external connectors.
+IMHO it's probably the case for most of the boards that go into a
+final product where EMI and space constraints are tight.
+But I agree that's not safe. I thought that maybe a flag indicating
+when it is safe would help (on my board that would be : ok to use the
+GPIO that turns on or off the backlight, not ok to use the GPIO that
+controls the power supply)
