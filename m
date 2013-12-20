@@ -1,54 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab3LTQ35 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 11:29:57 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56669 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752840Ab3LTQ3z (ORCPT
+	id S1755283Ab3LTQeW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 11:34:22 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33993 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754458Ab3LTQeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 11:29:55 -0500
-Message-ID: <52B4707F.4040303@wwwdotorg.org>
-Date: Fri, 20 Dec 2013 09:29:51 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 20 Dec 2013 11:34:20 -0500
+Date: Fri, 20 Dec 2013 13:34:13 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Chunwei Chen <tuxoko@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH] perf config: ignore generated files in feature-checks
+Message-ID: <20131220163413.GB17780@ghostprotocols.net>
+References: <1387441761-2153-1-git-send-email-tuxoko@gmail.com>
+ <20131219115833.GA11279@gmail.com>
+ <CAK1sfuYn1iLUHWwUTdm755D0YpuAcROsj5rp=4-Vg5qc57bFfw@mail.gmail.com>
+ <20131219154642.GA24658@gmail.com>
+ <CAK1sfubfVtqfoKMpeB1h+ooq0+ogJvM0FFDu1Wyc9i16CqGfaw@mail.gmail.com>
+ <20131219171027.GD30382@gmail.com>
+ <52B3C4A8.3070809@gmail.com>
 MIME-Version: 1.0
-To: bilhuang <bilhuang@nvidia.com>, Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v5 1/1] cpufreq: tegra: Re-model Tegra20 cpufreq driver
-References: <1387451926-21373-1-git-send-email-bilhuang@nvidia.com>	<CAKohpomCPJYd+d_NnM9gxwQ7bH6C6=iLxbiWZbfNcjZ8Bi+2wA@mail.gmail.com>	<52B41B18.30302@nvidia.com> <CAKohpontQwTc4KP7XMvtkvS2sQTyF+ngXnXfbJ1ev+MLEp-H0g@mail.gmail.com> <52B41F1B.3030005@nvidia.com>
-In-Reply-To: <52B41F1B.3030005@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52B3C4A8.3070809@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2013 03:42 AM, bilhuang wrote:
-> On 12/20/2013 06:33 PM, Viresh Kumar wrote:
->> On 20 December 2013 15:55, bilhuang <bilhuang@nvidia.com> wrote:
->>> Don't you think it worth creating a file here so this can be shared to
->>> arm64?
->>
->> We will see how to handle virtual devices when we will start getting
->> arm64 SoCs. Probably we might end up writing a single file in cpufreq,
->> if required, that will create virtual devices for every arm64 platform..
->>
->> So, some people might use it and others wouldn't.. But no platform
->> specific files for such stuff. So, the best we can do for now is to move
->> these to platform code as we are talking about arm32 SoC's for now
->> which do have a mach-* directory..
->>
-> OK thanks, this is suggested by Stephen earlier, I'll let him comment in
-> case he might think otherwise.
+Em Fri, Dec 20, 2013 at 12:16:40PM +0800, Chunwei Chen escreveu:
+> >From 362201bf3259cc01c99531766395fdba0c0f3789 Mon Sep 17 00:00:00 2001
+> From: Chunwei Chen <tuxoko@gmail.com>
+> Date: Thu, 19 Dec 2013 15:41:22 +0800
+> Subject: [PATCH] perf config: ignore generated files in feature-checks
+> 
+> 1. Rename the test-* binary files to test-*.bin for easier pattern matching as
+>    suggested by Ingo.
+> 2. Ignore *.bin and *.d files.
+> 
+> Signed-off-by: Chunwei Chen <tuxoko@gmail.com>
 
-No, I definitely don't agree here. The rules for arch/arm64 are: no
-platform-specific code. We should immediately start planning for that.
-If this means renaming the file that creates the virtual device from
-tegra-cpufreq.c to something else, so be it, but we shouldn't go
-backwards and push stuff into the arch directories.
+Please make sure it applies to the perf/core branch in:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git
+
+Just tried and it didn't applies.
+
+- Arnaldo
+
+> ---
+>  tools/perf/config/Makefile                  |   6 +-
+>  tools/perf/config/feature-checks/.gitignore |   2 +
+>  tools/perf/config/feature-checks/Makefile   | 114 ++++++++++++++--------------
+>  3 files changed, 62 insertions(+), 60 deletions(-)
+>  create mode 100644 tools/perf/config/feature-checks/.gitignore
+> 
+> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+> index f7d11a8..40e08d1 100644
+> --- a/tools/perf/config/Makefile
+> +++ b/tools/perf/config/Makefile
+> @@ -102,7 +102,7 @@ endif
+>  
+>  feature_check = $(eval $(feature_check_code))
+>  define feature_check_code
+> -  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS="$(LDFLAGS)" LIBUNWIND_LIBS="$(LIBUNWIND_LIBS)" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
+> +  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS="$(LDFLAGS)" LIBUNWIND_LIBS="$(LIBUNWIND_LIBS)" -C config/feature-checks test-$1.bin >/dev/null 2>/dev/null && echo 1 || echo 0)
+>  endef
+>  
+>  feature_set = $(eval $(feature_set_code))
+> @@ -150,7 +150,7 @@ CORE_FEATURE_TESTS =			\
+>  # to skip the print-out of the long features list if the file
+>  # existed before and after it was built:
+>  #
+> -ifeq ($(wildcard $(OUTPUT)config/feature-checks/test-all),)
+> +ifeq ($(wildcard $(OUTPUT)config/feature-checks/test-all.bin),)
+>    test-all-failed := 1
+>  else
+>    test-all-failed := 0
+> @@ -180,7 +180,7 @@ ifeq ($(feature-all), 1)
+>    #
+>    $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_set,$(feat)))
+>  else
+> -  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS=$(LDFLAGS) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
+> +  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS=$(LDFLAGS) -i -j -C config/feature-checks $(addsuffix .bin,$(CORE_FEATURE_TESTS)) >/dev/null 2>&1)
+>    $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_check,$(feat)))
+>  endif
+>  
+> diff --git a/tools/perf/config/feature-checks/.gitignore b/tools/perf/config/feature-checks/.gitignore
+> new file mode 100644
+> index 0000000..80f3da0
+> --- /dev/null
+> +++ b/tools/perf/config/feature-checks/.gitignore
+> @@ -0,0 +1,2 @@
+> +*.d
+> +*.bin
+> diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+> index 87e7900..e2bc0ed 100644
+> --- a/tools/perf/config/feature-checks/Makefile
+> +++ b/tools/perf/config/feature-checks/Makefile
+> @@ -1,94 +1,94 @@
+>  
+>  FILES=					\
+> -	test-all			\
+> -	test-backtrace			\
+> -	test-bionic			\
+> -	test-dwarf			\
+> -	test-fortify-source		\
+> -	test-glibc			\
+> -	test-gtk2			\
+> -	test-gtk2-infobar		\
+> -	test-hello			\
+> -	test-libaudit			\
+> -	test-libbfd			\
+> -	test-liberty			\
+> -	test-liberty-z			\
+> -	test-cplus-demangle		\
+> -	test-libelf			\
+> -	test-libelf-getphdrnum		\
+> -	test-libelf-mmap		\
+> -	test-libnuma			\
+> -	test-libperl			\
+> -	test-libpython			\
+> -	test-libpython-version		\
+> -	test-libslang			\
+> -	test-libunwind			\
+> -	test-libunwind-debug-frame	\
+> -	test-on-exit			\
+> -	test-stackprotector-all		\
+> -	test-stackprotector		\
+> -	test-timerfd
+> +	test-all.bin			\
+> +	test-backtrace.bin		\
+> +	test-bionic.bin			\
+> +	test-dwarf.bin			\
+> +	test-fortify-source.bin		\
+> +	test-glibc.bin			\
+> +	test-gtk2.bin			\
+> +	test-gtk2-infobar.bin		\
+> +	test-hello.bin			\
+> +	test-libaudit.bin		\
+> +	test-libbfd.bin			\
+> +	test-liberty.bin		\
+> +	test-liberty-z.bin		\
+> +	test-cplus-demangle.bin		\
+> +	test-libelf.bin			\
+> +	test-libelf-getphdrnum.bin	\
+> +	test-libelf-mmap.bin		\
+> +	test-libnuma.bin		\
+> +	test-libperl.bin		\
+> +	test-libpython.bin		\
+> +	test-libpython-version.bin	\
+> +	test-libslang.bin		\
+> +	test-libunwind.bin		\
+> +	test-libunwind-debug-frame.bin	\
+> +	test-on-exit.bin		\
+> +	test-stackprotector-all.bin	\
+> +	test-stackprotector.bin		\
+> +	test-timerfd.bin
+>  
+>  CC := $(CC) -MD
+>  
+>  all: $(FILES)
+>  
+> -BUILD = $(CC) $(CFLAGS) $(LDFLAGS) -o $(OUTPUT)$@ $@.c
+> +BUILD = $(CC) $(CFLAGS) $(LDFLAGS) -o $(OUTPUT)$@ $(patsubst %.bin,%.c,$@)
+>  
+>  ###############################
+>  
+> -test-all:
+> +test-all.bin:
+>  	$(BUILD) -Werror -fstack-protector -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma $(LIBUNWIND_LIBS) -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
+>  
+> -test-hello:
+> +test-hello.bin:
+>  	$(BUILD)
+>  
+> -test-stackprotector-all:
+> +test-stackprotector-all.bin:
+>  	$(BUILD) -Werror -fstack-protector-all
+>  
+> -test-stackprotector:
+> +test-stackprotector.bin:
+>  	$(BUILD) -Werror -fstack-protector -Wstack-protector
+>  
+> -test-fortify-source:
+> +test-fortify-source.bin:
+>  	$(BUILD) -O2 -Werror -D_FORTIFY_SOURCE=2
+>  
+> -test-bionic:
+> +test-bionic.bin:
+>  	$(BUILD)
+>  
+> -test-libelf:
+> +test-libelf.bin:
+>  	$(BUILD) -lelf
+>  
+> -test-glibc:
+> +test-glibc.bin:
+>  	$(BUILD)
+>  
+> -test-dwarf:
+> +test-dwarf.bin:
+>  	$(BUILD) -ldw
+>  
+> -test-libelf-mmap:
+> +test-libelf-mmap.bin:
+>  	$(BUILD) -lelf
+>  
+> -test-libelf-getphdrnum:
+> +test-libelf-getphdrnum.bin:
+>  	$(BUILD) -lelf
+>  
+> -test-libnuma:
+> +test-libnuma.bin:
+>  	$(BUILD) -lnuma
+>  
+> -test-libunwind:
+> +test-libunwind.bin:
+>  	$(BUILD) $(LIBUNWIND_LIBS) -lelf
+>  
+> -test-libunwind-debug-frame:
+> +test-libunwind-debug-frame.bin:
+>  	$(BUILD) $(LIBUNWIND_LIBS) -lelf
+>  
+> -test-libaudit:
+> +test-libaudit.bin:
+>  	$(BUILD) -laudit
+>  
+> -test-libslang:
+> +test-libslang.bin:
+>  	$(BUILD) -I/usr/include/slang -lslang
+>  
+> -test-gtk2:
+> +test-gtk2.bin:
+>  	$(BUILD) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
+>  
+> -test-gtk2-infobar:
+> +test-gtk2-infobar.bin:
+>  	$(BUILD) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
+>  
+>  grep-libs  = $(filter -l%,$(1))
+> @@ -100,7 +100,7 @@ PERL_EMBED_LIBADD = $(call grep-libs,$(PERL_EMBED_LDOPTS))
+>  PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
+>  FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
+>  
+> -test-libperl:
+> +test-libperl.bin:
+>  	$(BUILD) $(FLAGS_PERL_EMBED)
+>  
+>  override PYTHON := python
+> @@ -117,31 +117,31 @@ PYTHON_EMBED_LIBADD = $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
+>  PYTHON_EMBED_CCOPTS = $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
+>  FLAGS_PYTHON_EMBED = $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
+>  
+> -test-libpython:
+> +test-libpython.bin:
+>  	$(BUILD) $(FLAGS_PYTHON_EMBED)
+>  
+> -test-libpython-version:
+> +test-libpython-version.bin:
+>  	$(BUILD) $(FLAGS_PYTHON_EMBED)
+>  
+> -test-libbfd:
+> +test-libbfd.bin:
+>  	$(BUILD) -DPACKAGE='"perf"' -lbfd -ldl
+>  
+> -test-liberty:
+> +test-liberty.bin:
+>  	$(CC) -o $(OUTPUT)$@ test-libbfd.c -DPACKAGE='"perf"' -lbfd -ldl -liberty
+>  
+> -test-liberty-z:
+> +test-liberty-z.bin:
+>  	$(CC) -o $(OUTPUT)$@ test-libbfd.c -DPACKAGE='"perf"' -lbfd -ldl -liberty -lz
+>  
+> -test-cplus-demangle:
+> +test-cplus-demangle.bin:
+>  	$(BUILD) -liberty
+>  
+> -test-on-exit:
+> +test-on-exit.bin:
+>  	$(BUILD)
+>  
+> -test-backtrace:
+> +test-backtrace.bin:
+>  	$(BUILD)
+>  
+> -test-timerfd:
+> +test-timerfd.bin:
+>  	$(BUILD)
+>  
+>  -include *.d
+> -- 
+> 1.8.5.2
