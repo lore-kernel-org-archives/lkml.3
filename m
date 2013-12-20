@@ -1,50 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006Ab3LTJt1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 04:49:27 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:60940 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754952Ab3LTJtZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 04:49:25 -0500
-From: Qixue Xiao <s2exqx@gmail.com>
+	id S1755832Ab3LTKD0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 05:03:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42036 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755690Ab3LTKDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 05:03:23 -0500
+From: Dave Young <dyoung@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: xiaoqixue_1@163.com, xuyongjiande@gmail.com, chyyuu@gmail.com
-Subject: [PATCH] tty: an overflow of multiplication in drivers/tty/cyclades.c
-Date: Fri, 20 Dec 2013 17:49:11 +0800
-Message-Id: <1387532951-9100-1-git-send-email-xiaoqixue_1@163.com>
-X-Mailer: git-send-email 1.7.9.5
+Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
+        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
+        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.infradead.org, bp@alien8.de, greg@kroah.com,
+        matt@console-pimps.org, toshi.kani@hp.com, akpm@linux-foundation.org,
+        mingo@kernel.org, msalter@redhat.com, leif.lindholm@linaro.org
+Subject: [PATCH v7 01/12] x86/mm: sparse warning fix for early_memremap
+Date: Fri, 20 Dec 2013 18:02:11 +0800
+Message-Id: <1387533742-18018-2-git-send-email-dyoung@redhat.com>
+In-Reply-To: <1387533742-18018-1-git-send-email-dyoung@redhat.com>
+References: <1387533742-18018-1-git-send-email-dyoung@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-there is an overflow in the code :
-cyz_polling_cycle = (arg * HZ) / 1000,
-the multiplicator arg comes from user, so it may be an overflow if
-arg is a big number. And the value of cyc_polling_cycle will be
-wrong when it is used next time.
+There's a lot of sparse warnings for code like below:
+void *a = early_memremap(phys_addr, size);
 
-Reported-by: Qixue Xiao <xiaoqixue_1@163.com>
-Suggested-by: Yongjian Xu <xuyongjiande@gmail.com>
-Suggested-by: Yu Chen <chyyuu@gmail.com>
-Signed-off-by: Qixue Xiao <xiaoqixue_1@163.com>
+early_memremap intend to map kernel memory with ioremap facility, the return
+pointer should be a kernel ram pointer instead of iomem one.
+
+For making the function clearer and supressing sparse warnings this patch
+do below two things:
+1. cast to (__force void *) for the return value of early_memremap
+2. add early_memunmap function and pass (__force void __iomem *) to iounmap
+
+>From Boris:
+> Ingo told me yesterday, it makes sense too. I'd guess we can try it.
+> FWIW, all callers of early_memremap use the memory they get remapped as
+> normal memory so we should be safe.
+
+Signed-off-by: Dave Young <dyoung@redhat.com>
 ---
- drivers/tty/cyclades.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/include/asm/io.h |  3 ++-
+ arch/x86/mm/ioremap.c     | 10 +++++++---
+ 2 files changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/tty/cyclades.c b/drivers/tty/cyclades.c
-index 33f83fe..a57bb5a 100644
---- a/drivers/tty/cyclades.c
-+++ b/drivers/tty/cyclades.c
-@@ -2709,6 +2709,8 @@ cy_ioctl(struct tty_struct *tty,
- 		break;
- #ifndef CONFIG_CYZ_INTR
- 	case CYZSETPOLLCYCLE:
-+		if (arg > LONG_MAX / HZ)
-+			return -ENODEV;
- 		cyz_polling_cycle = (arg * HZ) / 1000;
- 		break;
- 	case CYZGETPOLLCYCLE:
+diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+index 34f69cb..1db414f 100644
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -325,9 +325,10 @@ extern void early_ioremap_init(void);
+ extern void early_ioremap_reset(void);
+ extern void __iomem *early_ioremap(resource_size_t phys_addr,
+ 				   unsigned long size);
+-extern void __iomem *early_memremap(resource_size_t phys_addr,
++extern void *early_memremap(resource_size_t phys_addr,
+ 				    unsigned long size);
+ extern void early_iounmap(void __iomem *addr, unsigned long size);
++extern void early_memunmap(void *addr, unsigned long size);
+ extern void fixup_early_ioremap(void);
+ extern bool is_early_ioremap_ptep(pte_t *ptep);
+ 
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index 799580c..bbb4504 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -562,10 +562,9 @@ early_ioremap(resource_size_t phys_addr, unsigned long size)
+ }
+ 
+ /* Remap memory */
+-void __init __iomem *
+-early_memremap(resource_size_t phys_addr, unsigned long size)
++void __init *early_memremap(resource_size_t phys_addr, unsigned long size)
+ {
+-	return __early_ioremap(phys_addr, size, PAGE_KERNEL);
++	return (__force void *)__early_ioremap(phys_addr, size, PAGE_KERNEL);
+ }
+ 
+ void __init early_iounmap(void __iomem *addr, unsigned long size)
+@@ -620,3 +619,8 @@ void __init early_iounmap(void __iomem *addr, unsigned long size)
+ 	}
+ 	prev_map[slot] = NULL;
+ }
++
++void __init early_memunmap(void *addr, unsigned long size)
++{
++	early_iounmap((__force void __iomem *)addr, size);
++}
 -- 
-1.7.9.5
+1.8.3.1
 
