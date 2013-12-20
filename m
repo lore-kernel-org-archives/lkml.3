@@ -1,110 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755870Ab3LTJad (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 04:30:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43761 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755536Ab3LTJa1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 04:30:27 -0500
-Date: Fri, 20 Dec 2013 09:30:22 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, lsf-pc@lists.linux-foundation.org
-Subject: LSF/MM 2014 Call For Proposals
-Message-ID: <20131220093022.GV11295@suse.de>
+	id S1755949Ab3LTJbp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 04:31:45 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:64383 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755895Ab3LTJbl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 04:31:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1387451926-21373-1-git-send-email-bilhuang@nvidia.com>
+References: <1387451926-21373-1-git-send-email-bilhuang@nvidia.com>
+Date: Fri, 20 Dec 2013 15:01:40 +0530
+Message-ID: <CAKohpomCPJYd+d_NnM9gxwQ7bH6C6=iLxbiWZbfNcjZ8Bi+2wA@mail.gmail.com>
+Subject: Re: [PATCH v5 1/1] cpufreq: tegra: Re-model Tegra20 cpufreq driver
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Bill Huang <bilhuang@nvidia.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The annual Linux Storage, Filesystem and Memory Management Summit for
-2014 will be held on March 24th and 25th before the Linux Foundation
-Collaboration summit at The Meritage Resort, Napa Valley, CA.
+On 19 December 2013 16:48, Bill Huang <bilhuang@nvidia.com> wrote:
+> diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+> index ce52ed9..22dfc43 100644
+> --- a/drivers/cpufreq/Kconfig.arm
+> +++ b/drivers/cpufreq/Kconfig.arm
+> @@ -225,6 +225,18 @@ config ARM_TEGRA_CPUFREQ
+>         help
+>           This adds the CPUFreq driver support for TEGRA SOCs.
+>
+> +config ARM_TEGRA20_CPUFREQ
+> +       bool "NVIDIA TEGRA20"
+> +       depends on ARM_TEGRA_CPUFREQ && ARCH_TEGRA_2x_SOC
 
-	http://events.linuxfoundation.org/events/linux-storage-filesystem-and-mm-summit
-	http://events.linuxfoundation.org/events/collaboration-summit
+Probably just in case you agree to my next comment:
 
-Note that we are running LSF/MM a little earlier in 2014 than in previous
-years.
+            depends on ARCH_TEGRA_2x_SOC
 
-On behalf of the committee I would like to issue a call for agenda proposals
-that are suitable for cross-track discussion as well as more technical
-subjects for discussion in the breakout sessions.
 
-1) Suggestions for agenda topics should be sent before January 31st
-2014 to:
+> +       default y
+> +       help
+> +         This enables Tegra20 cpufreq functionality, it adds
+> +         Tegra20 CPU frequency ladder and the call back functions
+> +         to set CPU rate. All the non-SoC dependant codes are
+> +         controlled by the config ARM_TEGRA_CPUFREQ.
+> +
+> +         If in doubt, say N.
 
-	lsf-pc@lists.linux-foundation.org
 
-and cc the Linux list or lists that are most interested in it:
+> diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
+>  /*
+> + * Copyright (c) 2013, NVIDIA Corporation. All rights reserved.
+>   *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+>   *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+>   */
+>
+>  #include <linux/kernel.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/of.h>
+> +#include <linux/tegra-cpufreq.h>
+> +
+> +int __init tegra_cpufreq_init(void)
+> +{
+> +       struct device_node *root;
+> +
+> +       root = of_find_node_by_path("/");
+> +       if (root) {
+> +               struct platform_device_info devinfo;
+> +               const char *compat;
+> +               int i;
+> +
+> +               memset(&devinfo, 0, sizeof(devinfo));
+> +               i = of_property_count_strings(root, "compatible");
+> +               if (i > 0) {
+> +                       of_property_read_string_index(
+> +                               root, "compatible", i - 1, &compat);
+> +                       devinfo.name = kasprintf(
+> +                                       GFP_KERNEL, "%s-cpufreq", compat);
+> +                       platform_device_register_full(&devinfo);
+> +               }
+>         }
+> +EXPORT_SYMBOL(tegra_cpufreq_init);
 
-	ATA: linux-ide@vger.kernel.org
-	FS: linux-fsdevel@vger.kernel.org
-	MM: linux-mm@kvack.org
-	SCSI: linux-scsi@vger.kernel.org
+Probably above is all that is present in this file. This is just about adding
+the right cpufreq device so that right driver can get probed.
 
-People who need more time for visa applications should send proposals before
-January 15th. The committee will complete the first round of selections
-on that date to accommodate applications.
+I don't think this code is present at the right place. We don't need a file
+in cpufreq/ which is there just to add a device :) ..
 
-Please remember to tag your subject with [LSF/MM TOPIC] to make it
-easier to track. Agenda topics and attendees will be selected by the
-program committee, but the final agenda will be formed by consensus of
-the attendees on the day.
+Probably move this piece of code to arch/mach-tegra where you are calling
+init.
 
-We will try to cap attendance at around 25-30 per track to facilitate
-discussions although the final numbers will depend on the room sizes at
-the venue.
-
-2) Requests to attend the summit should be sent to:
-
-	lsf-pc@lists.linux-foundation.org
-
-Please summarize what expertise you will bring to the meeting, and what
-you would like to discuss. Please also tag your email with [LSF/MM ATTEND]
-so there is less chance of it getting lost in the large mail pile.
-
-Presentations are allowed to guide discussion, but are strongly
-discouraged. There will be no recording or audio bridge. However, we expect
-that written minutes will be published as we did in previous years
-
-2013:
-	http://lwn.net/Articles/548089/
-
-2012:
-	http://lwn.net/Articles/490114/
-	http://lwn.net/Articles/490501/
-
-2011:
-	http://lwn.net/Articles/436871/
-	http://lwn.net/Articles/437066/
-
-3) If you have feedback on last year's meeting that we can use to
-improve this year's, please also send that to:
-
-	lsf-pc@lists.linux-foundation.org
-
-Thank you on behalf of the program committee:
-
-Storage:
-	James Bottomley
-	Martin K. Petersen
-
-Filesystems:
-	Trond Myklebust
-	Jeff Layton
-	Dave Chinner
-	Jan Kara
-	Ted Ts'o
-
-MM:
-	Rik van Riel
-	Michel Lespinasse
-
--- 
-Mel Gorman
-SUSE Labs
+And so remove ARM_TEGRA_CPUFREQ config option completely.
