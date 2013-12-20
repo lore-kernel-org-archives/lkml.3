@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932523Ab3LTMx2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 07:53:28 -0500
-Received: from smtp-vbr9.xs4all.nl ([194.109.24.29]:4647 "EHLO
-	smtp-vbr9.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932341Ab3LTMx0 (ORCPT
+	id S932549Ab3LTNCj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 08:02:39 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:63373 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932089Ab3LTNCh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 07:53:26 -0500
-Message-ID: <52B43DB0.8020107@xs4all.nl>
-Date: Fri, 20 Dec 2013 13:53:04 +0100
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Fri, 20 Dec 2013 08:02:37 -0500
 MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-CC: Hans Verkuil <hans.verkuil@cisco.com>, devel@driverdev.osuosl.org,
+In-Reply-To: <52B43DB0.8020107@xs4all.nl>
+References: <1387293923-27236-1-git-send-email-prabhakar.csengg@gmail.com>
+ <CA+V-a8sdCuO1U3Egn62g_QivmVUEXzF4RgKbi-Ksm7JZEY-KKA@mail.gmail.com> <52B43DB0.8020107@xs4all.nl>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Fri, 20 Dec 2013 18:32:16 +0530
+Message-ID: <CA+V-a8tzXtPS5pjGqpno74-9s3gruJhBJ+WD23n1w2jsR7uZGA@mail.gmail.com>
+Subject: Re: [PATCH] media: davinci_vpfe: fix build error
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>, devel@driverdev.osuosl.org,
         DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         LMML <linux-media@vger.kernel.org>
-Subject: Re: [PATCH] media: davinci_vpfe: fix build error
-References: <1387293923-27236-1-git-send-email-prabhakar.csengg@gmail.com> <CA+V-a8sdCuO1U3Egn62g_QivmVUEXzF4RgKbi-Ksm7JZEY-KKA@mail.gmail.com>
-In-Reply-To: <CA+V-a8sdCuO1U3Egn62g_QivmVUEXzF4RgKbi-Ksm7JZEY-KKA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I just made a patch myself that I added to the pull request I just posted.
+Hi Hans,
 
-You didn't CC me or CC the linux-media list when you posted your patch, so I
-never saw it.
+On Fri, Dec 20, 2013 at 6:23 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
+> I just made a patch myself that I added to the pull request I just posted.
+>
+> You didn't CC me or CC the linux-media list when you posted your patch, so I
+> never saw it.
+>
+I dont know why this patch didnt make up in linux-media but its
+present DLOS [1].
+I posted it the same day when you pinged me about this issue. Anyway your patch
+too didnt reach me and I also cannot find it in the ML. May be you
+directly issued the pull ?
+
+[1] https://patchwork.kernel.org/patch/3362211/
 
 Regards,
-
-	Hans
-
-On 12/20/2013 01:47 PM, Prabhakar Lad wrote:
-> Hi Hans,
-> 
-> On Tue, Dec 17, 2013 at 8:55 PM, Lad, Prabhakar
-> <prabhakar.csengg@gmail.com> wrote:
->> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
->>
->> This patch includes linux/delay.h required for msleep,
->> which fixes following build error.
->>
->> dm365_isif.c: In function ‘isif_enable’:
->> dm365_isif.c:129:2: error: implicit declaration of function ‘msleep’
->>
-> Will you pick this patch or shall I go ahead and  issue a pull to Mauro ?
-> 
-> Regards,
-> --Prabhakar Lad
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+--Prabhakar Lad
