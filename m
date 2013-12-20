@@ -1,73 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110Ab3LTOp1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 09:45:27 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:38959 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771Ab3LTOp0 (ORCPT
+	id S1754312Ab3LTOqX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 09:46:23 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:33582 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799Ab3LTOqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 09:45:26 -0500
-Message-ID: <52B457EF.9060204@linaro.org>
-Date: Fri, 20 Dec 2013 22:45:03 +0800
-From: Alex Shi <alex.shi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 20 Dec 2013 09:46:21 -0500
 MIME-Version: 1.0
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "pjt@google.com" <pjt@google.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "jason.low2@hp.com" <jason.low2@hp.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] sched: bias to target cpu load to reduce task moving
-References: <1386061556-28233-1-git-send-email-alex.shi@linaro.org> <1386061556-28233-5-git-send-email-alex.shi@linaro.org> <20131217141012.GG10134@e103034-lin> <20131217153809.GP21999@twins.programming.kicks-ass.net> <52B2F5D0.2050707@linaro.org> <20131220111926.GA11605@e103034-lin>
-In-Reply-To: <20131220111926.GA11605@e103034-lin>
+In-Reply-To: <20131219183310.GF32508@gmail.com>
+References: <1387448038-8260-1-git-send-email-dh.herrmann@gmail.com>
+	<1387473881-26179-1-git-send-email-dh.herrmann@gmail.com>
+	<20131219183310.GF32508@gmail.com>
+Date: Fri, 20 Dec 2013 15:46:20 +0100
+Message-ID: <CANq1E4QsSje7ZD01EucKt_dGo5UuMyWNeB1Xnnx+p2bMRCNn-A@mail.gmail.com>
+Subject: Re: [PATCH v4] x86: sysfb: remove sysfb when probing real hw
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        stable <stable@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2013 07:19 PM, Morten Rasmussen wrote:
->> @@ -4132,10 +4137,10 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p, int this_cpu)
->> >  
->> >  		for_each_cpu(i, sched_group_cpus(group)) {
->> >  			/* Bias balancing toward cpus of our domain */
->> > -			if (local_group)
->> > +			if (i == this_cpu)
-> What is the motivation for changing the local_group load calculation?
-> Now the load contributions of all cpus in the local group, except
-> this_cpu, will contribute more as their contribution (this_load) is
-> determined using target_load() instead.
-> 
-> If I'm not mistaken, that will lead to more frequent load balancing as
-> the local_group bias has been reduced. That is the opposite of your
-> intentions based on your comment in target_load().
+Hi
 
-Good catch. will reconsider this again. :)
-> 
->> >  				load = source_load(i);
->> >  			else
->> > -				load = target_load(i);
->> > +				load = target_load(i, sd->imbalance_pct);
-> You scale by sd->imbalance_pct instead of 100+(sd->imbalance_pct-100)/2
-> that you removed above. sd->imbalance_pct may have been arbitrarily
-> chosen in the past, but changing it may affect behavior. 
-> 
+On Thu, Dec 19, 2013 at 7:33 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * David Herrmann <dh.herrmann@gmail.com> wrote:
+>
+>> +/*
+>> + * Unregister the sysfb and prevent new sysfbs from getting registered. Can be
+>> + * called from any context except recursively or from sysfb_register().
+>> + * Used by remove_conflicting_framebuffers() and friends.
+>> + */
+>> +void sysfb_unregister(const struct apertures_struct *apert, bool primary)
+>> +{
+>> +     mutex_lock(&sysfb_lock);
+>> +     if (!IS_ERR(sysfb_dev) && sysfb_dev) {
+>> +             if (sysfb_match(apert, primary)) {
+>> +                     platform_device_unregister(sysfb_dev);
+>> +                     sysfb_dev = ERR_PTR(-EALREADY);
+>> +             }
+>> +     } else {
+>> +             /* if !sysfb_dev, set err so no new sysfb is probed later */
+>> +             sysfb_dev = ERR_PTR(-EALREADY);
+>
+> Just a small detail: we can get into this 'else' branch not just with
+> NULL, but also with IS_ERR(sysfb_dev). In that case we override
+> whatever error code is contained in sysfb_dev and overwrite it with
+> ERR_PTR(-EALREADY).
+>
+> (Probably not a big deal, because we don't actually ever seem to
+> extract the error code from the pointer, but wanted to mention it.)
 
+Yepp, I know, but that's just fine.
 
--- 
+>> +#ifdef CONFIG_X86_SYSFB
+>> +#include <asm/sysfb.h>
+>> +#endif
+>
+> Pet peeve, this looks sexier:
+>
+> #ifdef CONFIG_X86_SYSFB
+> # include <asm/sysfb.h>
+> #endif
+>
+>> @@ -1604,6 +1607,17 @@ static void do_remove_conflicting_framebuffers(struct apertures_struct *a,
+>>       }
+>>  }
+>>
+>> +static void remove_conflicting_sysfb(const struct apertures_struct *apert,
+>> +                                  bool primary)
+>> +{
+>> +     if (!apert)
+>> +             return;
+>> +
+>> +#ifdef CONFIG_X86_SYSFB
+>> +     sysfb_unregister(apert, primary);
+>> +#endif
+>> +}
+>
+> So why not make sysfb_unregister() accept a !apert parameter (it would
+> simply return), at which point remove_conflicting_sysfb() could be
+> eliminated and just be replaced with a direct sysfb_unregister() call
+> - with no #ifdefs.
+>
+> We only need #ifdefs for the sysfb_unregister() declaration in the .h
+> file.
+
+I can do that but we still need the #ifdef. sysfb is an x86-asm header
+so it's not available on other archs. Even with #ifdef in the header I
+still need it around the actual function call.
+
 Thanks
-    Alex
+David
+
+> At first sight this looks simpler and cleaner for the fix itself - no
+> need for extra cleanups for this detail.
+>
+> Thanks,
+>
+>         Ingo
