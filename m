@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218Ab3LTWZv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 17:25:51 -0500
-Received: from mail.ispras.ru ([83.149.199.45]:37139 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751810Ab3LTWZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 17:25:49 -0500
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: [PATCH] e1000: avoid potential deadlock in e1000_do_[read|write]_eeprom()
-Date: Sat, 21 Dec 2013 02:25:20 +0400
-Message-Id: <1387578320-26525-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.3.2
+	id S1755688Ab3LTW1N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 17:27:13 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:50022 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755355Ab3LTW1L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 17:27:11 -0500
+From: Olof Johansson <olof@lixom.net>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, Olof Johansson <olof@lixom.net>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: [PATCH] mm: fix build of split ptlock code
+Date: Fri, 20 Dec 2013 14:28:05 -0800
+Message-Id: <1387578485-11829-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If eeprom->word_size is zero, e1000_do_[read|write]_eeprom() invoke
-e1000_init_eeprom_params() to reinit eeprom params.
-That is not a good idea since e1000_init_eeprom_params() calls
-e1000_read_eeprom() if eeprom->type is e1000_eeprom_spi.
-That means a deadlock on e1000_eeprom_lock.
+Commit 597d795a2a78 ('mm: do not allocate page->ptl dynamically, if
+spinlock_t fits to long') restructures some allocators that are compiled
+even if USE_SPLIT_PTLOCKS arn't used. It results in compilation failure:
 
-At the same time it is unclear if the reinit is needed at all.
-e1000_init_eeprom_params() is called from probe, so
-it should succeed before any activities of the module start.
+mm/memory.c:4282:6: error: 'struct page' has no member named 'ptl'
+mm/memory.c:4288:12: error: 'struct page' has no member named 'ptl'
 
-The patch suggests to remove the try to reinit eeprom params.
+Add in the missing ifdef.
 
-Found by Linux Driver Verification project (linuxtesting.org).
-
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Fixes: 597d795a2a78 ('mm: do not allocate page->ptl dynamically, if spinlock_t fits to long')
+Signed-off-by: Olof Johansson <olof@lixom.net>
+Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Hugh Dickins <hughd@google.com>
 ---
- drivers/net/ethernet/intel/e1000/e1000_hw.c | 8 --------
- 1 file changed, 8 deletions(-)
+ mm/memory.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/intel/e1000/e1000_hw.c b/drivers/net/ethernet/intel/e1000/e1000_hw.c
-index 2879b9631e15..a0317348ebde 100644
---- a/drivers/net/ethernet/intel/e1000/e1000_hw.c
-+++ b/drivers/net/ethernet/intel/e1000/e1000_hw.c
-@@ -3982,10 +3982,6 @@ static s32 e1000_do_read_eeprom(struct e1000_hw *hw, u16 offset, u16 words,
- 		return E1000_SUCCESS;
- 	}
+diff --git a/mm/memory.c b/mm/memory.c
+index b6e211b..6768ce9 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -4271,7 +4271,7 @@ void copy_user_huge_page(struct page *dst, struct page *src,
+ }
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE || CONFIG_HUGETLBFS */
  
--	/* If eeprom is not yet detected, do so now */
--	if (eeprom->word_size == 0)
--		e1000_init_eeprom_params(hw);
--
- 	/* A check for invalid values:  offset too large, too many words, and
- 	 * not enough words.
- 	 */
-@@ -4162,10 +4158,6 @@ static s32 e1000_do_write_eeprom(struct e1000_hw *hw, u16 offset, u16 words,
- 		return E1000_SUCCESS;
- 	}
- 
--	/* If eeprom is not yet detected, do so now */
--	if (eeprom->word_size == 0)
--		e1000_init_eeprom_params(hw);
--
- 	/* A check for invalid values:  offset too large, too many words, and
- 	 * not enough words.
- 	 */
+-#if ALLOC_SPLIT_PTLOCKS
++#if USE_SPLIT_PTE_PTLOCKS && ALLOC_SPLIT_PTLOCKS
+ bool ptlock_alloc(struct page *page)
+ {
+ 	spinlock_t *ptl;
 -- 
-1.8.3.2
+1.7.10.4
 
