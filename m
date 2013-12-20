@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700Ab3LTRDu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 12:03:50 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:50279 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754250Ab3LTRDt (ORCPT
+	id S1755766Ab3LTRFp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 12:05:45 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:48672 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753639Ab3LTRFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 12:03:49 -0500
-X-Originating-IP: 50.43.14.201
-Date: Fri, 20 Dec 2013 09:03:09 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Joe Perches <joe@perches.com>
-Cc: Ravi Patel <rapatel@apm.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Andy Whitcroft <apw@canonical.com>, Kumar Sankaran <ksankaran@apm.com>,
-        Loc Ho <lho@apm.com>, Keyur Chudgar <kchudgar@apm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: checkpatch.pl error might be false positive
-Message-ID: <20131220170308.GA26163@leaf>
-References: <CAN1v_PvS3dH6HVQ90d=3cfsSdMgieyoDNp3VN-vrHv-aqSFEAw@mail.gmail.com>
- <1387491348.2353.20.camel@joe-AO722>
- <20131220075634.GA21784@leaf>
- <1387528630.2353.39.camel@joe-AO722>
- <20131220091621.GC21784@leaf>
- <1387531432.2353.44.camel@joe-AO722>
+	Fri, 20 Dec 2013 12:05:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387531432.2353.44.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131220170159.GA15634@kroah.com>
+References: <1387547475-7135-1-git-send-email-michael.hoefler@studium.uni-erlangen.de>
+	<1387547475-7135-2-git-send-email-michael.hoefler@studium.uni-erlangen.de>
+	<CADKvho6HF9A6agDXwrg7UPcOS0YQh3bPmGzPjOAEO8tZ8cveTw@mail.gmail.com>
+	<20131220170159.GA15634@kroah.com>
+Date: Fri, 20 Dec 2013 22:35:43 +0530
+Message-ID: <CADKvho4s3cQKyrK5jEt6xAoKhfEQ8LZyQnh7tXrY6Kw3V8bPKw@mail.gmail.com>
+Subject: Re: [PATCHv2 1/3] silicom: fix whitespace issues in bypass.c
+From: Gokulnath A <gokul.linux@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Michael Hoefler <michael.hoefler@studium.uni-erlangen.de>,
+        "open list:STAGING SUBSYSTEM" <devel@driverdev.osuosl.org>,
+        linux-kernel@i4.cs.fau.de, Christoph Kohl <christoph.kohl@t-online.de>,
+        open list <linux-kernel@vger.kernel.org>,
+        Rupert Muchembled <rupert@rmuch.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 20, 2013 at 01:23:52AM -0800, Joe Perches wrote:
-> On Fri, 2013-12-20 at 01:16 -0800, Josh Triplett wrote:
-> > Duplicating the regex seems awful.  Could you put it in a variable?
-> 
-> awful is a strong word and I don't have any
-> issue with the duplication.  Using a variable
-> is just as confusing as any duplication.
+On Fri, Dec 20, 2013 at 10:31 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Fri, Dec 20, 2013 at 08:36:48PM +0530, Gokulnath A wrote:
+>> Hello Michael,
+>>
+>> On Fri, Dec 20, 2013 at 7:21 PM, Michael Hoefler
+>> <michael.hoefler@studium.uni-erlangen.de> wrote:
+>> > This patch addresses several problems in bypass.c found by checkpatch.
+>> > Furthermore it removes/adds some empty lines to make the code more readable.
+>> >
+>> > The following problems are fixed:
+>> >  - line over 80 characters
+>> >  - space after logical operator !
+>> >  - spaces instead of tabs
+>> >  - missing empty line after local declarations
+>> >  - empty line after {
+>> >
+>>
+>> Please do one thing per patch, As Greg suggested for me in previous mail
+>> conversations. Here you could have at least 3 or 4 patches.
+>> For example, first patch would be a fix for line over 80 characters,
+>> followed by the other problems as mentioned above by you.
+>
+> Nah, all of these are affecting the same macros, so it's ok, I'll take
+> it as-is.
 
-Fair enough; I don't care that much.  For your patch:
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+ok. Sorry for the comments and thanks for information.
 
-- Josh Triplett
+>
+> thanks,
+>
+> greg k-h
