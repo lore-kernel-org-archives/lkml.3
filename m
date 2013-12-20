@@ -1,137 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474Ab3LTFcE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 00:32:04 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:46410 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751284Ab3LTFcB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 00:32:01 -0500
-Message-ID: <52B3D64A.7000002@gmail.com>
-Date: Thu, 19 Dec 2013 22:31:54 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, acme@ghostprotocols.net
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] perf tools: Fix bug for perf kvm report without guestmount.
-References: <52A7637E.8080007@cn.fujitsu.com> <1387211216-19794-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-In-Reply-To: <1387211216-19794-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752496Ab3LTFiR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 00:38:17 -0500
+Received: from mga02.intel.com ([134.134.136.20]:63643 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751179Ab3LTFiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 00:38:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,518,1384329600"; 
+   d="scan'208";a="455297469"
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, David Cohen <david.a.cohen@linux.intel.com>
+Subject: [PATCH 1/2] x86: intel-mid: return proper error code from get_gpio_by_name()
+Date: Thu, 19 Dec 2013 21:42:58 -0800
+Message-Id: <1387518179-4316-1-git-send-email-david.a.cohen@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1387244246-20714-1-git-send-email-david.a.cohen@linux.intel.com>
+References: <1387244246-20714-1-git-send-email-david.a.cohen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/13, 9:26 AM, Dongsheng Yang wrote:
-> Currently, if we use perf kvm --guestkallsyms --guestmodules report,
-> we can not get the perf information from perf data file. The all sample
-> are shown as unknown.
->
-> Reproducing steps:
-> 	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules record -a sleep 1
-> 	[ perf record: Woken up 1 times to write data ]
-> 	[ perf record: Captured and wrote 0.624 MB perf.data.guest (~27260 samples) ]
-> 	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules report |grep %
-> 	   100.00%  [guest/6471]  [unknown]         [g] 0xffffffff8164f330
->
-> This bug was introduced by 207b57926 (perf kvm: Fix regression with guest machine creation).
->
-> commit 207b5792696206663a38e525b9793644895bad3b
-> Author: David Ahern <dsahern@gmail.com>
-> Date:   Sun Jul 1 16:11:37 2012 -0600
->
->      perf kvm: Fix regression with guest machine creation
->
-> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> index c3e399b..56142d0 100644
-> --- a/tools/perf/util/session.c
-> +++ b/tools/perf/util/session.c
-> @@ -926,7 +926,7 @@ static struct machine *
->                  else
->                          pid = event->ip.pid;
->
-> -               return perf_session__find_machine(session, pid);
-> +               return perf_session__findnew_machine(session, pid);
->          }
->
->          return perf_session__find_host_machine(session);
+get_gpio_by_name() should return an error code instead of hardcoded -1.
 
-Adding the diff to the commit message confuses git-am. Resubmit the 
-patch with just the commit id that introduced the change.
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+---
+ arch/x86/platform/intel-mid/sfi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> In original code, it uses perf_session__find_machine(), it means we deliver symbol to machine
-> which has the same pid, if no machine found, deliver it to *default* guest. But if we use
-> perf_session__findnew_machine() here, if no machine was found, new machine with pid will be built
-> and added. Then the default guest which with pid == 0 will never get a symbol.
->
-> And because the new machine initialized here has no kernel map created, the symbol delivered to
-> it will be marked as "unknown".
->
-> This patch here is to revert commit 207b57926 and fix the SEGFAULT bug in another way.
->
-> Verification steps:
-> 	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
-> 	[ perf record: Woken up 1 times to write data ]
-> 	[ perf record: Captured and wrote 0.651 MB perf.data.guest (~28437 samples) ]
-> 	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules report |grep %
-> 	    22.64%    :6471  [guest.kernel.kallsyms]  [g] update_rq_clock.part.70
-> 	    19.99%    :6471  [guest.kernel.kallsyms]  [g] d_free
-> 	    18.46%    :6471  [guest.kernel.kallsyms]  [g] bio_phys_segments
-> 	    16.25%    :6471  [guest.kernel.kallsyms]  [g] dequeue_task
-> 	    12.78%    :6471  [guest.kernel.kallsyms]  [g] __switch_to
-> 	     7.91%    :6471  [guest.kernel.kallsyms]  [g] scheduler_tick
-> 	     1.75%    :6471  [guest.kernel.kallsyms]  [g] native_apic_mem_write
-> 	     0.21%    :6471  [guest.kernel.kallsyms]  [g] apic_timer_interrupt
->
-> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-> ---
->      Changelog since V1:
->          * More commit message.
->
->   tools/perf/util/session.c | 7 ++++++-
->   1 file changed, 6 insertions(+), 1 deletion(-)
->
-> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> index 989b2e3..a12dfdd 100644
-> --- a/tools/perf/util/session.c
-> +++ b/tools/perf/util/session.c
-> @@ -830,6 +830,7 @@ static struct machine *
->   					       struct perf_sample *sample)
->   {
->   	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
-> +	struct machine *machine;
->
->   	if (perf_guest &&
->   	    ((cpumode == PERF_RECORD_MISC_GUEST_KERNEL) ||
-> @@ -842,7 +843,11 @@ static struct machine *
->   		else
->   			pid = sample->pid;
->
-> -		return perf_session__findnew_machine(session, pid);
-> +		machine = perf_session__find_machine(session, pid);
-> +		if (!machine)
-> +			machine = perf_session__findnew_machine(session,
-> +						DEFAULT_GUEST_KERNEL_ID);
-> +		return machine;
->   	}
->
->   	return &session->machines.host;
->
-
-And for this change you can add an
-Acked-by: David Ahern <dsahern@gmail.com>
-
-So this patch fixes the behavior for defaulting to a guest machine with 
-the --guestkallsyms / --guestmodules options. And for the curious, last 
-properly working version of perf-kvm for --guestkallsyms + 
---guestmodules options is v3.2. Thanks for digging into it the regression.
-
-With this patch the only degradation for these options appears to be the 
-comm change. I'd like to see it stay [guest/<pid>], but was not able to 
-find a quick solution for that.
-
-David
-
-
+diff --git a/arch/x86/platform/intel-mid/sfi.c b/arch/x86/platform/intel-mid/sfi.c
+index 80a52288555c..c67b9a2f48a1 100644
+--- a/arch/x86/platform/intel-mid/sfi.c
++++ b/arch/x86/platform/intel-mid/sfi.c
+@@ -224,7 +224,7 @@ int get_gpio_by_name(const char *name)
+ 		if (!strncmp(name, pentry->pin_name, SFI_NAME_LEN))
+ 			return pentry->pin_no;
+ 	}
+-	return -1;
++	return -EINVAL;
+ }
+ 
+ void __init intel_scu_device_register(struct platform_device *pdev)
+-- 
+1.8.4.2
 
