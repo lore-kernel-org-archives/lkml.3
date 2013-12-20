@@ -1,57 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932224Ab3LTB6d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 20:58:33 -0500
-Received: from [213.199.154.204] ([213.199.154.204]:32776 "EHLO
-	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S932065Ab3LTB5u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 20:57:50 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z551bizzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <broonie@kernel.org>, <alsa-devel@alsa-project.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCHv4 3/4] ARM: dts: Enable SAI ALSA SoC DAI device for Vybrid VF610 TOWER board.
-Date: Fri, 20 Dec 2013 09:03:06 +0800
-Message-ID: <1387501387-2151-3-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1387501387-2151-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1387501387-2151-1-git-send-email-Li.Xiubo@freescale.com>
-MIME-Version: 1.0
+	id S932182Ab3LTCEW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 21:04:22 -0500
+Received: from [218.249.94.241] ([218.249.94.241]:37604 "EHLO mail.cs2c.com.cn"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755875Ab3LTCEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 21:04:20 -0500
+X-ns-mid: postfix-52B39F91-24444479424
+BANMAU_FRONT_USER_AUTHED: 1
+BANMAU_FRONT_RESULT: 00
+BANMAU_FRONT_SUSPICION_REASON: 0
+X-Forward-For: 112.65.134.2
+Subject: [alpha PATCH v2]  enable syscall audit function at alpha
+ architecture
+From: =?gb2312?Q?=B2=CC=D5=FD=C1=FA?= <zhenglong.cai@cs2c.com.cn>
+Reply-To: zhenglong.cai@cs2c.com.cn
+To: linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org,
+        Matt Turner <mattst88@gmail.com>
 Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Date: Fri, 20 Dec 2013 10:04:10 +0800
+Message-ID: <1387505050.2603.22.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds and enables the SAI device.
+Enable system-call auditing support at alpha architecture
+v2: add missing audit.c
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- arch/arm/boot/dts/vf610-twr.dts | 6 ++++++
- 1 file changed, 6 insertions(+)
+Signed-off-by: Zhenglong.cai <zhenglong.cai@cs2c.com.cn>
 
-diff --git a/arch/arm/boot/dts/vf610-twr.dts b/arch/arm/boot/dts/vf610-twr.dts
-index c8047ca..e60c20c 100644
---- a/arch/arm/boot/dts/vf610-twr.dts
-+++ b/arch/arm/boot/dts/vf610-twr.dts
-@@ -74,6 +74,12 @@
- 	status = "okay";
- };
+ arch/alpha/Kconfig                   |    3 ++
+ arch/alpha/include/asm/ptrace.h      |    5 +++
+ arch/alpha/include/asm/thread_info.h |    2 +
+ arch/alpha/kernel/Makefile           |    1 +
+ arch/alpha/kernel/audit.c            |   60
+++++++++++++++++++++++++++++++++++
+ arch/alpha/kernel/entry.S            |    6 +++-
+ arch/alpha/kernel/ptrace.c           |    4 ++
+ init/Kconfig                         |    2 +-
+ 8 files changed, 81 insertions(+), 2 deletions(-)
+
+diff --git a/arch/alpha/Kconfig b/arch/alpha/Kconfig
+index d39dc9b..f23ab8b 100644
+--- a/arch/alpha/Kconfig
++++ b/arch/alpha/Kconfig
+@@ -16,6 +16,7 @@ config ALPHA
+ 	select ARCH_WANT_IPC_PARSE_VERSION
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
++	select AUDIT_ARCH
+ 	select GENERIC_CLOCKEVENTS
+ 	select GENERIC_SMP_IDLE_THREAD
+ 	select GENERIC_STRNCPY_FROM_USER
+@@ -76,6 +77,8 @@ config GENERIC_ISA_DMA
+ source "init/Kconfig"
+ source "kernel/Kconfig.freezer"
  
-+&sai2 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_sai2_1>;
-+	status = "okay";
++config AUDIT_ARCH
++	bool
+ 
+ menu "System setup"
+ 
+diff --git a/arch/alpha/include/asm/ptrace.h
+b/arch/alpha/include/asm/ptrace.h
+index 2112850..9047c2f 100644
+--- a/arch/alpha/include/asm/ptrace.h
++++ b/arch/alpha/include/asm/ptrace.h
+@@ -19,4 +19,9 @@
+ 
+ #define force_successful_syscall_return() (current_pt_regs()->r0 = 0)
+ 
++static inline unsigned long regs_return_value(struct pt_regs *regs)
++{
++	return regs->r0;
++}
++
+ #endif
+diff --git a/arch/alpha/include/asm/thread_info.h
+b/arch/alpha/include/asm/thread_info.h
+index 453597b..3d6ce6d 100644
+--- a/arch/alpha/include/asm/thread_info.h
++++ b/arch/alpha/include/asm/thread_info.h
+@@ -70,6 +70,7 @@ register struct thread_info *__current_thread_info
+__asm__("$8");
+ #define TIF_NOTIFY_RESUME	1	/* callback before returning to user */
+ #define TIF_SIGPENDING		2	/* signal pending */
+ #define TIF_NEED_RESCHED	3	/* rescheduling necessary */
++#define TIF_SYSCALL_AUDIT	4	/* syscall audit active */
+ #define TIF_DIE_IF_KERNEL	9	/* dik recursion lock */
+ #define TIF_MEMDIE		13	/* is terminating due to OOM killer */
+ 
+@@ -77,6 +78,7 @@ register struct thread_info *__current_thread_info
+__asm__("$8");
+ #define _TIF_SIGPENDING		(1<<TIF_SIGPENDING)
+ #define _TIF_NEED_RESCHED	(1<<TIF_NEED_RESCHED)
+ #define _TIF_NOTIFY_RESUME	(1<<TIF_NOTIFY_RESUME)
++#define _TIF_SYSCALL_AUDIT	(1<<TIF_SYSCALL_AUDIT)
+ 
+ /* Work to do on interrupt/exception return.  */
+ #define _TIF_WORK_MASK		(_TIF_SIGPENDING | _TIF_NEED_RESCHED | \
+diff --git a/arch/alpha/kernel/Makefile b/arch/alpha/kernel/Makefile
+index 0d54650..3ecac01 100644
+--- a/arch/alpha/kernel/Makefile
++++ b/arch/alpha/kernel/Makefile
+@@ -17,6 +17,7 @@ obj-$(CONFIG_SRM_ENV)	+= srm_env.o
+ obj-$(CONFIG_MODULES)	+= module.o
+ obj-$(CONFIG_PERF_EVENTS) += perf_event.o
+ obj-$(CONFIG_RTC_DRV_ALPHA) += rtc.o
++obj-$(CONFIG_AUDIT)	+= audit.o
+ 
+ ifdef CONFIG_ALPHA_GENERIC
+ 
+diff --git a/arch/alpha/kernel/audit.c b/arch/alpha/kernel/audit.c
+new file mode 100644
+index 0000000..96a9d18
+--- /dev/null
++++ b/arch/alpha/kernel/audit.c
+@@ -0,0 +1,60 @@
++#include <linux/init.h>
++#include <linux/types.h>
++#include <linux/audit.h>
++#include <asm/unistd.h>
++
++static unsigned dir_class[] = {
++#include <asm-generic/audit_dir_write.h>
++~0U
 +};
 +
- &uart1 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&pinctrl_uart1_1>;
--- 
-1.8.4
++static unsigned read_class[] = {
++#include <asm-generic/audit_read.h>
++~0U
++};
++
++static unsigned write_class[] = {
++#include <asm-generic/audit_write.h>
++~0U
++};
++
++static unsigned chattr_class[] = {
++#include <asm-generic/audit_change_attr.h>
++~0U
++};
++
++static unsigned signal_class[] = {
++#include <asm-generic/audit_signal.h>
++~0U
++};
++
++int audit_classify_arch(int arch)
++{
++	return 0;
++}
++
++int audit_classify_syscall(int abi, unsigned syscall)
++{
++	switch(syscall) {
++	case __NR_open:
++		return 2;
++	case __NR_openat:
++		return 3;
++	case __NR_execve:
++		return 5;
++	default:
++		return 0;
++	}
++}
++
++static int __init audit_classes_init(void)
++{
++	audit_register_class(AUDIT_CLASS_WRITE, write_class);
++	audit_register_class(AUDIT_CLASS_READ, read_class);
++	audit_register_class(AUDIT_CLASS_DIR_WRITE, dir_class);
++	audit_register_class(AUDIT_CLASS_CHATTR, chattr_class);
++	audit_register_class(AUDIT_CLASS_SIGNAL, signal_class);
++	return 0;
++}
++
++__initcall(audit_classes_init);
+diff --git a/arch/alpha/kernel/entry.S b/arch/alpha/kernel/entry.S
+index a969b95..98703d9 100644
+--- a/arch/alpha/kernel/entry.S
++++ b/arch/alpha/kernel/entry.S
+@@ -465,7 +465,11 @@ entSys:
+ 	.cfi_rel_offset	$16, SP_OFF+24
+ 	.cfi_rel_offset	$17, SP_OFF+32
+ 	.cfi_rel_offset	$18, SP_OFF+40
+-	blbs	$3, strace
++#ifdef CONFIG_AUDITSYSCALL
++	lda     $6, _TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT
++	and     $3, $6, $3
++#endif
++	bne     $3, strace
+ 	beq	$4, 1f
+ 	ldq	$27, 0($5)
+ 1:	jsr	$26, ($27), alpha_ni_syscall
+diff --git a/arch/alpha/kernel/ptrace.c b/arch/alpha/kernel/ptrace.c
+index 2a4a80f..86d8351 100644
+--- a/arch/alpha/kernel/ptrace.c
++++ b/arch/alpha/kernel/ptrace.c
+@@ -14,6 +14,7 @@
+ #include <linux/security.h>
+ #include <linux/signal.h>
+ #include <linux/tracehook.h>
++#include <linux/audit.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+@@ -316,15 +317,18 @@ long arch_ptrace(struct task_struct *child, long
+request,
+ asmlinkage unsigned long syscall_trace_enter(void)
+ {
+ 	unsigned long ret = 0;
++	struct pt_regs *regs = current_pt_regs();
+ 	if (test_thread_flag(TIF_SYSCALL_TRACE) &&
+ 	    tracehook_report_syscall_entry(current_pt_regs()))
+ 		ret = -1UL;
++	audit_syscall_entry(AUDIT_ARCH_ALPHA, regs->r0, regs->r16, regs->r17,
+regs->r18, regs->r19);
+ 	return ret ?: current_pt_regs()->r0;
+ }
+ 
+ asmlinkage void
+ syscall_trace_leave(void)
+ {
++	audit_syscall_exit(current_pt_regs());
+ 	if (test_thread_flag(TIF_SYSCALL_TRACE))
+ 		tracehook_report_syscall_exit(current_pt_regs(), 0);
+ }
+diff --git a/init/Kconfig b/init/Kconfig
+index 79383d3..e58a6d8 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -284,7 +284,7 @@ config AUDIT
+ 
+ config AUDITSYSCALL
+ 	bool "Enable system-call auditing support"
+-	depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML ||
+SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT))
++	depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML ||
+SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT) || ALPHA)
+ 	default y if SECURITY_SELINUX
+ 	help
+ 	  Enable low-overhead system-call auditing infrastructure that
 
 
