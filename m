@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab3LTWQK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 17:16:10 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48527 "EHLO mail.zytor.com"
+	id S1755218Ab3LTWZv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 17:25:51 -0500
+Received: from mail.ispras.ru ([83.149.199.45]:37139 "EHLO mail.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752320Ab3LTWQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 17:16:08 -0500
-Message-ID: <52B4C180.40904@zytor.com>
-Date: Fri, 20 Dec 2013 14:15:28 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Thomas Renninger <trenn@suse.de>
-CC: joeyli <jlee@suse.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
-        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
-        werner@suse.com, JBeulich@suse.com, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, x86@kernel.org,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, Borislav Petkov <bp@suse.de>
-Subject: Re: [RFC PATCH 00/14] Support timezone of ACPI TAD and EFI TIME
-References: <1387439053-8711-1-git-send-email-jlee@suse.com> <1387512357.3539.4317.camel@linux-s257.site> <52B3C5F0.1060303@zytor.com> <1775986.qxTh3ADDRn@skinner>
-In-Reply-To: <1775986.qxTh3ADDRn@skinner>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751810Ab3LTWZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 17:25:49 -0500
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] e1000: avoid potential deadlock in e1000_do_[read|write]_eeprom()
+Date: Sat, 21 Dec 2013 02:25:20 +0400
+Message-Id: <1387578320-26525-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2013 02:53 AM, Thomas Renninger wrote:
-> On Thursday, December 19, 2013 08:22:08 PM H. Peter Anvin wrote:
->> On 12/19/2013 08:05 PM, joeyli wrote:
->>> Then that means the priority of PNP0B0x is higher then "CMOS RTC Not
->>> Present" flag. ACPI spec doesn't have clear definition on this.
->>
->> According to the Microsoft requirements documents, such a platform is
->> broken and shouldn't exist.
-> 
-> Is this a public document?
-> Probably not but if, a pointer in this thread would help.
-> Does Microsoft mention ACPI Time and Alarm Device interface in
-> such a document already?
-> 
+If eeprom->word_size is zero, e1000_do_[read|write]_eeprom() invoke
+e1000_init_eeprom_params() to reinit eeprom params.
+That is not a good idea since e1000_init_eeprom_params() calls
+e1000_read_eeprom() if eeprom->type is e1000_eeprom_spi.
+That means a deadlock on e1000_eeprom_lock.
 
-This is the document... I can't remember who sent me the link to it:
+At the same time it is unclear if the reinit is needed at all.
+e1000_init_eeprom_params() is called from probe, so
+it should succeed before any activities of the module start.
 
-http://goo.gl/R7S9Mk
+The patch suggests to remove the try to reinit eeprom params.
 
-	-hpa
+Found by Linux Driver Verification project (linuxtesting.org).
+
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/net/ethernet/intel/e1000/e1000_hw.c | 8 --------
+ 1 file changed, 8 deletions(-)
+
+diff --git a/drivers/net/ethernet/intel/e1000/e1000_hw.c b/drivers/net/ethernet/intel/e1000/e1000_hw.c
+index 2879b9631e15..a0317348ebde 100644
+--- a/drivers/net/ethernet/intel/e1000/e1000_hw.c
++++ b/drivers/net/ethernet/intel/e1000/e1000_hw.c
+@@ -3982,10 +3982,6 @@ static s32 e1000_do_read_eeprom(struct e1000_hw *hw, u16 offset, u16 words,
+ 		return E1000_SUCCESS;
+ 	}
+ 
+-	/* If eeprom is not yet detected, do so now */
+-	if (eeprom->word_size == 0)
+-		e1000_init_eeprom_params(hw);
+-
+ 	/* A check for invalid values:  offset too large, too many words, and
+ 	 * not enough words.
+ 	 */
+@@ -4162,10 +4158,6 @@ static s32 e1000_do_write_eeprom(struct e1000_hw *hw, u16 offset, u16 words,
+ 		return E1000_SUCCESS;
+ 	}
+ 
+-	/* If eeprom is not yet detected, do so now */
+-	if (eeprom->word_size == 0)
+-		e1000_init_eeprom_params(hw);
+-
+ 	/* A check for invalid values:  offset too large, too many words, and
+ 	 * not enough words.
+ 	 */
+-- 
+1.8.3.2
 
