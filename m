@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283Ab3LTJMX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 04:12:23 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:55763 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755022Ab3LTJMD convert rfc822-to-8bit (ORCPT
+	id S1755492Ab3LTJNN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 04:13:13 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:44656 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755022Ab3LTJNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 04:12:03 -0500
+	Fri, 20 Dec 2013 04:13:05 -0500
+Date: Fri, 20 Dec 2013 12:12:55 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Wenliang Fan <fanwlexca@gmail.com>
+Cc: gregkh <gregkh@linuxfoundation.org>, klmckinney1 <klmckinney1@gmail.com>,
+        tulinizer <tulinizer@gmail.com>, devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/staging/bcm: Integer overflow
+Message-ID: <20131220091255.GR5443@mwanda>
+References: <1387523596-29543-1-git-send-email-fanwlexca@gmail.com>
+ <20131220081633.GL28413@mwanda>
+ <CAPLUJPaJiiaervQTPoYES3C9mvTx2gGGXizrEMN3GA6jY=b0Mw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdbQNEj83fnDX0ppPNJYgu1cMGxbk6n6M05wVNK9LEvDKw@mail.gmail.com>
-References: <1378889173-7437-1-git-send-email-jose.goncalves@inov.pt>
-	<CACRpkdYbCzOJ9k8AyriM9quafx=dseK6w1DYjyrJ9F53ka8TEw@mail.gmail.com>
-	<52AA6909.8050200@inov.pt>
-	<0bc301cef7e5$319ac0c0$94d04240$@kernel.org>
-	<CACRpkdbQNEj83fnDX0ppPNJYgu1cMGxbk6n6M05wVNK9LEvDKw@mail.gmail.com>
-Date: Fri, 20 Dec 2013 10:12:02 +0100
-Message-ID: <CACRpkda5e-1ndyZzdZX+KZB=mCV6RM5nJ-nv_-yt1UEv_GhLLw@mail.gmail.com>
-Subject: Re: [PATCH] ARM: S3C24XX: Fix configuration of gpio port sizes on S3C24XX.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Kukjin Kim <kgene@kernel.org>
-Cc: =?ISO-8859-1?Q?Jos=E9_Miguel_Gon=E7alves?= <jose.goncalves@inov.pt>,
-        Tomasz Figa <t.figa@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPLUJPaJiiaervQTPoYES3C9mvTx2gGGXizrEMN3GA6jY=b0Mw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 10:37 AM, Linus Walleij
-<linus.walleij@linaro.org> wrote:
-> On Fri, Dec 13, 2013 at 10:24 AM,  <kgene@kernel.org> wrote:
->> José Miguel Gonçalves wrote:
-> (..)
->>> Was this patch forgotten?
->>>
->> Hi Jose,
->>
->> Sorry about missing your patch. It's my fault :( and as you know, at this
->> moment the file will be removed by Linus' patch...
->
-> Oh I can certainly rebase the patch onto my tree if I just
-> get an ACK for it...
+On Fri, Dec 20, 2013 at 04:51:45PM +0800, Wenliang Fan wrote:
+> Thanks for your advice.
+> But the variable 'psFlash2xReadWrite->offset' in '
+> *drivers/staging/bcm/nvm.c*:validateFlash2xReadWrite()' is also comes from
+> user space, which would cause an integer overflow in the following line:
+> 
+> if ((uiSectStartOffset + psFlash2xReadWrite->offset + uiNumOfBytes) <=
+> uiSectEndOffset)
+> 
+> in '*drivers/staging/bcm/**nvm.c*: validateFlash2xReadWrite()',
+> and another integer overflow in the following line:
+> 
+> 
+> ReadOffset = ReadOffset + ReadBytes; (or WriteOffset = WriteOffset +
+> WriteBytes;)
+> 
+> in '*drivers/staging/bcm/**Bcmchar.c*: bcm_char_ioctl()'.
+> 
 
-Kukjin, can I have your ACK for this patch?
+Alright, fine.  But the new check is messy.  Do it like this:
 
-Yours,
-Linus Walleij
+	/* these are user controlled and can lead to integer overflows */
+	if (psFlash2xReadWrite->offset > uiSectEndOffset)
+		return false;
+	if (uiNumOfBytes > uiSectEndOffset)
+		return false;
+	if (uiSectStartOffset + psFlash2xReadWrite->offset + uiNumOfBytes > uiSectEndOffset)
+		return false;
+
+	return true;
+
+That way each step is simpler to understand.  People are too fond of
+compound conditions... *grumble*.
+
+regards,
+dan carpenter
+
