@@ -1,94 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932557Ab3LTNFD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 08:05:03 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:64835 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932321Ab3LTNFB (ORCPT
+	id S932551Ab3LTNYe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 08:24:34 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:29307 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932321Ab3LTNYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 08:05:01 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH V2 0/3] PM: Enable option of re-use runtime PM callbacks at system suspend
-Date: Fri, 20 Dec 2013 14:18:22 +0100
-Message-ID: <1605004.ViTQsllvdk@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAPDyKFrS6k1Zd5=XQX4ODk2=obo89bk-Z6aJvv+3WsrHw3nGbg@mail.gmail.com>
-References: <1386682662-17633-1-git-send-email-ulf.hansson@linaro.org> <CAPDyKFrS6k1Zd5=XQX4ODk2=obo89bk-Z6aJvv+3WsrHw3nGbg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Fri, 20 Dec 2013 08:24:32 -0500
+X-AuditID: cbfee61a-b7fb26d00000724f-a6-52b4450d3abf
+From: Kamil Debski <k.debski@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org
+Cc: kyungmin.park@samsung.com, kishon@ti.com, t.figa@samsung.com,
+        s.nawrocki@samsung.com, m.szyprowski@samsung.com,
+        gautam.vivek@samsung.com, mat.krawczuk@gmail.com,
+        yulgon.kim@samsung.com, p.paneri@samsung.com,
+        av.tikhomirov@samsung.com, jg1.han@samsung.com, galak@codeaurora.org,
+        matt.porter@linaro.org, k.debski@samsung.com,
+        tjakobi@math.uni-bielefeld.de, stern@rowland.harvard.edu
+Subject: [PATCH v5 0/9] phy: Add new Exynos USB 2.0 PHY driver
+Date: Fri, 20 Dec 2013 14:24:06 +0100
+Message-id: <1387545857-9472-1-git-send-email-k.debski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJLMWRmVeSWpSXmKPExsVy+t9jQV0+1y1BBh+u8Fks2X2D1WL+kXOs
+	Fv1vFrJatF05yG5xeeElVosfry+wWVx42sNmcbbpDVBs1xw2ixnn9zFZLFrWymyx9shddouz
+	/bfZLCY2TWO3OL+lk8ni8Jt2VosJv4Ha1s94zWLRtvoDq0XH2YPsDiIel/t6mTx2zrrL7nHn
+	2h42j3/H2D1m3/3B6NG3ZRWjx/Eb25k8Pm+SC+CI4rJJSc3JLEst0rdL4Mo4dOQXY8EW84ql
+	9xqZGhhXaXUxcnJICJhIXH7xkBHCFpO4cG89WxcjF4eQwHRGiUP3D7JCOB1MEmsvzQJyODjY
+	BDQlVt3zAGkQEaiRmHLrCjtIDbNAF7PEhG2n2UBqhAXsJKY8lAepYRFQldj+9gjYAl4BZ4mV
+	j5cxgZRICChIzJlkM4GRewEjwypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4AB+JrWDcWWD
+	xSFGAQ5GJR7eBtvNQUKsiWXFlbmHGCU4mJVEePu1twQJ8aYkVlalFuXHF5XmpBYfYpTmYFES
+	5z3Qah0oJJCeWJKanZpakFoEk2Xi4JRqYFzOdVzj8ZnISVGbu8pSm7ferHr26cKiM/r3BF7x
+	JsX4z3Z+Fm4VvEOCXb70g11rVpPG16hn8lufMaWkbDgy9d+XWu3Gnc2Bh6NuOMn9NqwLZfm0
+	sFNkMcsshukKBaZ2b169OcmlcIi7SZ1pq/RXK66GrZVX0l8EPn6bt2LFZvmHv5eH/6tOuqrE
+	UpyRaKjFXFScCAClo/pqXAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, December 20, 2013 09:43:16 AM Ulf Hansson wrote:
-> On 10 December 2013 14:37, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> > To put devices into low power state during system suspend, it is convenient
-> > for some runtime PM supported power domains, subsystems and drivers to have
-> > the option of re-using and invoking the runtime PM callbacks from their system
-> > PM callbacks.
-> >
-> > The benefit is that we don't need to implement wrapper functions which
-> > handles runtime PM resourses, typically called from both runtime PM and system
-> > PM callbacks.
-> >
-> > Some new helper macros for defining the PM callbacks are added.
-> >
-> > SET_PM_RUNTIME_PM_OPS; to define runtime PM callbacks for CONFIG_PM instead of
-> > CONFIG_PM_RUNTIME.
-> >
-> > SET_LATE_SYSTEM_SLEEP_PM_OPS; to define common late/early system PM callbacks,
-> > same approach is applicable to the existing SET_SYSTEM_SLEEP_PM_OPS which
-> > defines common suspend/resume system PM callbacks.
-> >
-> > A minor fix was needed for the platform bus, which runtime PM callbacks are set
-> > to the pm_generic_runtime_suspend|resume functions. These were implemented only
-> > for CONFIG_PM_RUNTIME and thus the platform bus prevented driver's runtime PM
-> > callbacks to be invoked when only CONFIG_PM_SLEEP was used. We move them into
-> > CONFIG_PM to resolve the problem.
-> >
-> > Changes in v2:
-> >         Updated commit messages to try to better reflect the changes.
-> >         Removed the below patches from this patch set. Let's leave those to be
-> >         addressed separately, if needed.
-> >         - PM / Sleep: Add pm_generic functions to re-use runtime PM callbacks
-> >         - drm/exynos: Convert to suspend_late/resume_early callbacks for fimc
-> >
-> >
-> > Ulf Hansson (3):
-> >   PM / Runtime: Add second macro for definition of runtime PM callbacks
-> >   PM / Runtime: Implement the pm_generic_runtime functions for
-> >     CONFIG_PM
-> >   PM / Sleep: Add macro to define common late/early system PM callbacks
-> >
-> >  drivers/base/power/generic_ops.c |    4 ++--
-> >  include/linux/pm.h               |   21 +++++++++++++++++++++
-> >  include/linux/pm_runtime.h       |   12 ++++++++----
-> >  3 files changed, 31 insertions(+), 6 deletions(-)
-> >
-> > --
-> > 1.7.9.5
-> >
-> 
-> Hi,
-> 
-> Just wanted to send a kind ping on this patchset.
-> 
-> Would be nice to try to conclude on the way forward after the quite
-> long and good discussions we had around this topic.
+Hi,
 
-Sorry, I was traveling last week.  I'm processing my backlog now, hopefully
-I'll get to your patches shortly.
+This is the fifth version of the patchset. It adds a new Exynos USB 2.0 PHY
+driver. The driver uses the Generic PHY Framework.
 
-Thanks,
-Rafael
+I would like to thank everyone who contributed with comments and took the time
+to read through the patches in the previous versions of this patchset.
+We had a lengthy discussion with Kishon about how the driver should look like.
+This patchset contains the updated version of my original idea, where support
+for Exynos 4210 and 4212 is done in separate files. Kishon's idea is to join
+these two into a single file. I have prepared two alternative version which I
+will send soon after this patchset.
+
+Just like the fourth version this patch depends on:
+[PATCH V11 1/3] ARM: dts: Add pmu sysreg node to exynos5250 and exynos5420 dtsi
+files [1].
+
+Best wishes,
+Kamil Debski
+
+[1] - http://www.spinics.net/lists/linux-samsung-soc/msg24528.html
+
+----------------
+Changes from v4:
+1) phy: core: Add an exported of_phy_get function
+- the new exported function of_phy_get was changed to take the phy's name as a
+  parameter instead of the index
+2) phy: core: Add devm_of_phy_get to phy-core
+- fixes made in the comments to devm_of_phy_get
+3) phy: Add new Exynos USB PHY driver
+- move the documentation from a new to an existing file - samsung-phy.txt
+- fix typos and uppercase hex addresses
+- add more explanations to Kconfig (checkpatch still complains, but I find it
+  hard to think what else could I add)
+- add selects MFD_SYSCON as the driver needs it (Thank you, Tobias!)
+- cleanup included headers in both *.c and .h files
+- use BIT(x) macro instead of (1 << x)
+- replaced HOST and DEV with PHY0 and PHY1 in phy-exynos4212-usb2.c, the
+  registers are described as PHYx in the documentation hence the decision to
+  leave the PHYx naming
+- fixed typo in exynos4210_rate_to_clk reg -> *reg
+- change hax_mode_switch and enabled type to bool
+4) usb: ehci-s5p: Change to use phy provided by the generic phy framework
+- Put the issue of phy->otg in order - since the new phy driver does not provide
+  this field. With the new driver the switch between host and device is done in
+  power_on of the respective host and device phys.
+5) usb: s3c-hsotg: Use the new Exynos USB phy driver with the generic phy
+   framework
+- fixed the example in the documentation
+6) phy: Add support for S5PV210 to the Exynos USB PHY driver
+- include files cleanup
+- use BIT(x) macro instead of (1 << x)
+7) phy: Add Exynos 5250 support to the Exynos USB 2.0 PHY driver
+- include files cleanup
+- use BIT(x) macro instead of (1 << x)
+8) dts: Add usb2phy to Exynos 4
+- no changes
+9) dts: Add usb2phy to Exynos 5250
+- no changes
+
+----------------
+Changes from v3:
+- using PMU and system registers indirectly via syscon
+- change labelling
+- change Kconfig name
+- fixed typos/stray whitespace
+- move of_phy_provider_register() to the end of probe
+- add a regular error return code to the rate_to_clk functions
+- cleanup code and remove unused code
+- change struct names to avoid collisions
+- add mechanism to support multiple phys by the ehci driver
+
+----------------
+Changes from v2:
+- rebase all patches to the usb-next branch
+- fixes in the documentation file
+  - remove wrong entries in the phy node (ranges, and #address- & #size-cells)
+  - add clocks and clock-names as required properites
+  - rephrase a few sentences
+- fixes in the ehci-exynos.c file
+  - move phy_name variable next to phy in exynos_ehci_hcd
+  - remove otg from exynos_ehci_hcd as it was no longer used
+  - move devm_phy_get after the Exynos5440 skip_phy check
+- fixes in the s3c-hsotg.c file
+  - cosmetic fixes (remove empty line that was wrongfully added)
+- fixes in the main driver
+  - remove cpu_type in favour for a boolean flag matched with the compatible
+    value
+  - rename files, structures, variables and Kconfig entires - change from simple
+    "uphy" to "usb2_phy"
+  - fix multiline comments style
+  - simplify #ifdefs in of_device_id
+  - fix Kconfig description
+  - change dev_info to dev_dbg where reasonable
+  - cosmetic changes (remove wrongful blank lines)
+  - remove unnecessary reference counting
+
+----------------
+Changes from v1:
+- the changes include minor fixes of the hardware initialization of the PHY
+  module
+- some other minor fixes were introduced
+
+----------------------
+Original cover letter:
+
+Hi,
+
+This patch adds a new drive for USB PHYs for Samsung SoCs. The driver is
+using the Generic PHY Framework created by Kishon Vijay Abrahan I. It
+can be found here https://lkml.org/lkml/2013/8/21/29. This patch adds
+support to Exynos4 family of SoCs. Support for Exynos3 and Exynos5 is
+planned to be added in the near future.
+
+I welcome your comments.
+
+----------------------
+
+[1] https://lkml.org/lkml/2013/8/21/29
+
+Kamil Debski (8):
+  phy: core: Add an exported of_phy_get function
+  phy: core: Add devm_of_phy_get to phy-core
+  phy: Add new Exynos USB PHY driver
+  usb: ehci-s5p: Change to use phy provided by the generic phy
+    framework
+  usb: s3c-hsotg: Use the new Exynos USB phy driver with the generic
+    phy framework
+  phy: Add Exynos 5250 support to the Exynos USB 2.0 PHY driver
+  dts: Add usb2phy to Exynos 4
+  dts: Add usb2phy to Exynos 5250
+
+Mateusz Krawczuk (1):
+  phy: Add support for S5PV210 to the Exynos USB PHY driver
+
+ .../devicetree/bindings/arm/samsung/pmu.txt        |    2 +
+ .../devicetree/bindings/phy/samsung-phy.txt        |   57 +++
+ .../devicetree/bindings/usb/samsung-hsotg.txt      |    4 +
+ Documentation/devicetree/bindings/usb/usb-ehci.txt |   35 ++
+ arch/arm/boot/dts/exynos4.dtsi                     |   31 ++
+ arch/arm/boot/dts/exynos4210.dtsi                  |   17 +
+ arch/arm/boot/dts/exynos4x12.dtsi                  |   17 +
+ arch/arm/boot/dts/exynos5250.dtsi                  |   33 +-
+ drivers/phy/Kconfig                                |   50 +++
+ drivers/phy/Makefile                               |    5 +
+ drivers/phy/phy-core.c                             |   76 +++-
+ drivers/phy/phy-exynos4210-usb2.c                  |  257 +++++++++++++
+ drivers/phy/phy-exynos4212-usb2.c                  |  306 +++++++++++++++
+ drivers/phy/phy-exynos5250-usb2.c                  |  406 ++++++++++++++++++++
+ drivers/phy/phy-s5pv210-usb2.c                     |  199 ++++++++++
+ drivers/phy/phy-samsung-usb2.c                     |  238 ++++++++++++
+ drivers/phy/phy-samsung-usb2.h                     |   69 ++++
+ drivers/usb/gadget/s3c-hsotg.c                     |   11 +-
+ drivers/usb/host/ehci-exynos.c                     |   97 +++--
+ include/linux/phy/phy.h                            |    3 +
+ 20 files changed, 1853 insertions(+), 60 deletions(-)
+ create mode 100644 drivers/phy/phy-exynos4210-usb2.c
+ create mode 100644 drivers/phy/phy-exynos4212-usb2.c
+ create mode 100644 drivers/phy/phy-exynos5250-usb2.c
+ create mode 100644 drivers/phy/phy-s5pv210-usb2.c
+ create mode 100644 drivers/phy/phy-samsung-usb2.c
+ create mode 100644 drivers/phy/phy-samsung-usb2.h
+
+-- 
+1.7.9.5
 
