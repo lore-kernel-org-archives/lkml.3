@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358Ab3LTVvG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 16:51:06 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:56802 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751951Ab3LTVvE (ORCPT
+	id S1755184Ab3LTVwg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 16:52:36 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:54489 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581Ab3LTVwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 16:51:04 -0500
-Date: Fri, 20 Dec 2013 21:50:56 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, joeyli <jlee@suse.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
-        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
-        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        x86@kernel.org,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, Borislav Petkov <bp@suse.de>
-Subject: Re: [RFC PATCH 00/14] Support timezone of ACPI TAD and EFI TIME
-Message-ID: <20131220215056.GA29501@console-pimps.org>
-References: <1387439053-8711-1-git-send-email-jlee@suse.com>
- <1387517916.3539.4446.camel@linux-s257.site>
- <52B4B242.5010002@zytor.com>
- <2787644.ytU7M33B4r@vostro.rjw.lan>
- <52B4BA0A.1030902@zytor.com>
+	Fri, 20 Dec 2013 16:52:33 -0500
+Message-ID: <52B4BC23.4080102@linaro.org>
+Date: Fri, 20 Dec 2013 22:52:35 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52B4BA0A.1030902@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>, rjw@rjwysocki.net
+CC: lenb@kernel.org, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        kyungmin.park@samsung.com
+Subject: Re: [PATCH v2 6/9] intel_idle: do C1E promotion disable quirk for
+ hotplugged CPUs
+References: <1387565251-7051-1-git-send-email-b.zolnierkie@samsung.com> <1387565251-7051-7-git-send-email-b.zolnierkie@samsung.com>
+In-Reply-To: <1387565251-7051-7-git-send-email-b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Dec, at 01:43:38PM, H. Peter Anvin wrote:
-> 
-> Possibly... will have to investigate.  I would also ask if the same
-> applies to the PNP0B0x devices -- all we really need there is the
-> presence/absence indication and the I/O port base.
+On 12/20/2013 07:47 PM, Bartlomiej Zolnierkiewicz wrote:
+> If the system is booted with some CPUs offline C1E promotion disable quirk
+> won't be applied because on_each_cpu() in intel_idle_cpuidle_driver_init()
+> operates only on online CPUs. Fix it by adding the C1E promotion disable
+> handling to intel_idle_cpu_init() (which is also called during CPU_ONLINE
+> operation).
+>
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Len Brown <lenb@kernel.org>
 
-It's worth noting that efi_late_init() exists solely because the ACPI
-infrastructure to find the BGRT table isn't available any earlier.
+Reviewed-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-If we could setup ACPI earlier that would be awesome.
+> ---
+>   drivers/idle/intel_idle.c | 3 +++
+>   1 file changed, 3 insertions(+)
+>
+> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+> index 92d1206..38da3fb 100644
+> --- a/drivers/idle/intel_idle.c
+> +++ b/drivers/idle/intel_idle.c
+> @@ -683,6 +683,9 @@ static int intel_idle_cpu_init(int cpu)
+>   	if (icpu->auto_demotion_disable_flags)
+>   		smp_call_function_single(cpu, auto_demotion_disable, NULL, 1);
+>
+> +	if (icpu->disable_promotion_to_c1e)
+> +		smp_call_function_single(cpu, c1e_promotion_disable, NULL, 1);
+> +
+>   	return 0;
+>   }
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
