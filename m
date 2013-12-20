@@ -1,101 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932164Ab3LTTKc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 14:10:32 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38566 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754078Ab3LTTJg (ORCPT
+	id S932125Ab3LTTKa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 14:10:30 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:37433 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754034Ab3LTTJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Dec 2013 14:09:36 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, Arun Sharma <asharma@fb.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 01/35] perf sort: Compare addresses if no symbol info
-Date: Fri, 20 Dec 2013 16:08:36 -0300
-Message-Id: <1387566550-3524-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1387566550-3524-1-git-send-email-acme@infradead.org>
-References: <1387566550-3524-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+From: David Brown <davidb@codeaurora.org>
+To: arm@kernel.org
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        David Brown <davidb@codeaurora.org>
+Subject: [PATCH 4/7] ARM: msm: Simplify ARCH_MSM_DT config
+Date: Fri, 20 Dec 2013 11:09:17 -0800
+Message-Id: <1387566560-23948-5-git-send-email-davidb@codeaurora.org>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1387566560-23948-1-git-send-email-davidb@codeaurora.org>
+References: <1387566560-23948-1-git-send-email-davidb@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-If a hist entry doesn't have symbol information, compare it with its
-address.  Currently it only compares its level or whether it's NULL.
+This doesn't need to be a def_bool y. Instead we can have every
+DT supported platform select ARCH_MSM_DT and we achieve the same
+thing with less chance of conflicts.
 
-This can lead to an undesired result like an overhead exceeds 100%
-especially when callchain accumulation is enabled by later patch.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arun Sharma <asharma@fb.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Rodrigo Campos <rodrigo@sdfg.com.ar>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1387344086-12744-2-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: David Brown <davidb@codeaurora.org>
 ---
- tools/perf/util/sort.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ arch/arm/mach-msm/Kconfig | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 8b0bb1f4494a..68a4fd2f505e 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -161,6 +161,11 @@ struct sort_entry sort_dso = {
+diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+index 5e5782d..702553b 100644
+--- a/arch/arm/mach-msm/Kconfig
++++ b/arch/arm/mach-msm/Kconfig
+@@ -44,6 +44,7 @@ endchoice
  
- /* --sort symbol */
+ config ARCH_MSM8X60
+ 	bool "MSM8X60"
++	select ARCH_MSM_DT
+ 	select ARM_GIC
+ 	select CPU_V7
+ 	select GPIO_MSM_V2
+@@ -52,6 +53,7 @@ config ARCH_MSM8X60
  
-+static int64_t _sort__addr_cmp(u64 left_ip, u64 right_ip)
-+{
-+	return (int64_t)(right_ip - left_ip);
-+}
-+
- static int64_t _sort__sym_cmp(struct symbol *sym_l, struct symbol *sym_r)
- {
- 	u64 ip_l, ip_r;
-@@ -183,7 +188,7 @@ sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
- 	int64_t ret;
+ config ARCH_MSM8960
+ 	bool "MSM8960"
++	select ARCH_MSM_DT
+ 	select ARM_GIC
+ 	select CPU_V7
+ 	select HAVE_SMP
+@@ -60,6 +62,7 @@ config ARCH_MSM8960
  
- 	if (!left->ms.sym && !right->ms.sym)
--		return right->level - left->level;
-+		return _sort__addr_cmp(left->ip, right->ip);
+ config ARCH_MSM8974
+ 	bool "MSM8974"
++	select ARCH_MSM_DT
+ 	select ARM_GIC
+ 	select CPU_V7
+ 	select HAVE_ARM_ARCH_TIMER
+@@ -68,8 +71,7 @@ config ARCH_MSM8974
+ 	select USE_OF
  
- 	/*
- 	 * comparing symbol address alone is not enough since it's a
-@@ -372,7 +377,7 @@ sort__sym_from_cmp(struct hist_entry *left, struct hist_entry *right)
- 	struct addr_map_symbol *from_r = &right->branch_info->from;
+ config ARCH_MSM_DT
+-	def_bool y
+-	depends on (ARCH_MSM8X60 || ARCH_MSM8960 || ARCH_MSM8974)
++	bool
+ 	select SPARSE_IRQ
+ 	select USE_OF
  
- 	if (!from_l->sym && !from_r->sym)
--		return right->level - left->level;
-+		return _sort__addr_cmp(from_l->addr, from_r->addr);
- 
- 	return _sort__sym_cmp(from_l->sym, from_r->sym);
- }
-@@ -384,7 +389,7 @@ sort__sym_to_cmp(struct hist_entry *left, struct hist_entry *right)
- 	struct addr_map_symbol *to_r = &right->branch_info->to;
- 
- 	if (!to_l->sym && !to_r->sym)
--		return right->level - left->level;
-+		return _sort__addr_cmp(to_l->addr, to_r->addr);
- 
- 	return _sort__sym_cmp(to_l->sym, to_r->sym);
- }
 -- 
-1.8.1.4
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
