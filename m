@@ -1,47 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752290Ab3LTSbp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 13:31:45 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34006 "EHLO
+	id S1752799Ab3LTSb7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 13:31:59 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:34025 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751536Ab3LTSbo (ORCPT
+	with ESMTP id S1752616Ab3LTSb4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 13:31:44 -0500
-Date: Fri, 20 Dec 2013 18:30:50 +0000
+	Fri, 20 Dec 2013 13:31:56 -0500
+Date: Fri, 20 Dec 2013 18:31:52 +0000
 From: Mark Brown <broonie@kernel.org>
-To: Arnaud Ebalard <arno@natisbad.org>
-Cc: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>, jason@lakedaemon.net,
-        Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        linux-arm-kernel@lists.infradead.org, Rob Landley <rob@landley.net>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Peter Huewe <peter.huewe@infineon.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thierry Reding <treding@nvidia.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Message-ID: <20131220183050.GB31886@sirena.org.uk>
-References: <87siton6ke.fsf@natisbad.org>
- <20131219164624.GV2609@titan.lakedaemon.net>
- <20131219175738.1dad3ade@linux.lan.towertech.it>
- <8761qk32pj.fsf@natisbad.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20131220183152.GC31886@sirena.org.uk>
+References: <1387508269.10796.1.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oMfk58fZ06Sy4zVm"
+	protocol="application/pgp-signature"; boundary="0/mZ2nErRHiqrPHn"
 Content-Disposition: inline
-In-Reply-To: <8761qk32pj.fsf@natisbad.org>
+In-Reply-To: <1387508269.10796.1.camel@phoenix>
 X-Cookie: Go climb a gravity well!
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [rtc-linux] Re: Can someone Ack and queue a patch for RTC
- subsytem?
+Subject: Re: [PATCH] regulator: as3722: Don't set
+ min_uV/uV_step/linear_min_sel for linear_ranges
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -49,41 +32,36 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---oMfk58fZ06Sy4zVm
+--0/mZ2nErRHiqrPHn
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Thu, Dec 19, 2013 at 11:17:44PM +0100, Arnaud Ebalard wrote:
+On Fri, Dec 20, 2013 at 10:57:49AM +0800, Axel Lin wrote:
+> These settings are not used when using linear_ranges and it makes the code
+> looks confusing. Thus remove them.
 
-> All NETGEAR ReadyNAS 102, 104 and 2120 have an ISL 12057 RTC chip which
-> is used as main RTC clock but can also provide alarm. But the alarm
-> interrupt line of the chip is *not* connected to the SoC. It is
-> connected to some power component and can be used to wake up the NAS
-> when it is completely off and the alarm rings.
+Applied, thanks.
 
-Can the PMIC or whatever function as an interrupt controller and report
-the interrupt on to the SoC?
-
---oMfk58fZ06Sy4zVm
+--0/mZ2nErRHiqrPHn
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJStIzXAAoJELSic+t+oim9h98P/3GpohQAvYG7zgqjRp2BOOSF
-NUgM0DHhXGM8Pn9Kg82wZvbrj52UIey8xl61n3Bzp3FXFgK9i8fPJRZ0dLhfKBOF
-E96/vbDIIBGmZwt27mpVbX1JBUS6x2sqDtALoG9+BqVSZz8cIstbkOFXELVqVsqS
-+OuZRKyJbC6IIk2PnLHe/inS7FYjxLAY+gk+zXPtya5ZvGomAMmvk00OVzsJaxOY
-jQFug/6/C+3131w2bCZhuLocIdbUz+rjo2iwmrCjWwht0qIm/YkSSIf9w523WYnv
-rFwe6CRi+b5lz6xTLvslq0NbxhCPMF2XW0I6fjfNjz7i34Ck6jm9hltDHkMkXfL+
-kxjTVhyPtG6Tvcw/aHe2fLaP26Fi05f0PCLMFkWAcJF8AUbNO2+VZ5/rJyo+9XG9
-tpmZD4uTHJVBGNdCFXNwkYkGw5+csSgRTix3WsDhi7RUOdHIJB1vPdKs1GWVw3zA
-3C8MOXxGeCrwteprDN93bYItTEaJNN9gA3N08RwTm8EN5vw7xSmG+njj72GdCgg2
-2p29CKgptgszpnbOV8rf95Ut3DwPD3ktNKlYTG8sPTBYtHEb3TQp1sIvKHrhsYqw
-sygzlOX22uwq9EWWZx/P9qzjBm011fztun2WA25fM677f8a328YId9medI5Xy5Ml
-cBxeCQQ6qQqmGeqzgxdx
-=lMVy
+iQIcBAEBAgAGBQJStI0UAAoJELSic+t+oim90WwP/1p/8Oijld5P8qEaASi1kVwg
+eIo6DJvJRtfd5WjpB7nD//aQRrzrHF6TpAwXiKVM8/mNuK05wioPQTM46ucgdhvl
+Tv/ruepuFaT04qeS0SA5bCOAdijOnnxNHGEe71WUD3gudy6RtC5vB+BdHN/IJIqd
+7D5tZu8iGhZFPa3aQyMDvW8Kx2S4YJfloG1jpo8NRRKaxsFb1we0yhvUOb6v1mp/
+5g1cLxO7HY+DjfDkYP1hU1YTPewg+6ZsS3UQ+D1X1wrxkgLHKwrQJXUelAkpQ9Ex
+XpEO8Y7UcOpFpNjmIttIKBMUVUYwG9dxPyWlZ96xl25Kmmps7Ufz3zjjaFDqb+K0
+5UuL+DpDQzjfbmrMQHwyk6kPuRtJ6Zgk5L17aNWKX88iKCiUwsrpq+zEIcP/VLLG
++wxyfo12BH+ghXHmVEu12oqOIPwBeM5IuLRmlTvQ5UbJ2ppxI/OF2yJ2xTXuxm8l
+La0ZNY4fJBRU+3FhbPrMZDYPquJMNTsv4T6y9o4gyRRSWsyz1/8kymicx+1tVGK/
+Q0AvIhqrxC2cfMPpDUKrntlJuR4MS/TqbKci9zZcm04rHKGFhf8GHf3dF+AgKvCe
+6XkZYcdE+OmcaKHXFsYMYolACEeOrJvHnMZxtttH/PzoA/v18VwjtVmw3rw78agq
+B4OuT2JVGnm6VQFApTeB
+=CNHT
 -----END PGP SIGNATURE-----
 
---oMfk58fZ06Sy4zVm--
+--0/mZ2nErRHiqrPHn--
