@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529Ab3LTEV6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 23:21:58 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39391 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751838Ab3LTEV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 23:21:57 -0500
-Message-ID: <52B3C5A6.3070805@zytor.com>
-Date: Thu, 19 Dec 2013 20:20:54 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753885Ab3LTEWJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 23:22:09 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:40778 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753550Ab3LTEWG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 23:22:06 -0500
+Message-ID: <52B3C5E6.2040802@hitachi.com>
+Date: Fri, 20 Dec 2013 13:21:58 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: joeyli <jlee@suse.com>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
-        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
-        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        x86@kernel.org,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 03/14] rtc: block registration of rtc-cmos when CMOS RTC
- Not Present
-References: <1387439053-8711-1-git-send-email-jlee@suse.com>	 <1387439053-8711-4-git-send-email-jlee@suse.com>	 <6fc9a2f9-eae7-4588-a092-f338053ec96a@email.android.com> <1387511650.3539.4294.camel@linux-s257.site>
-In-Reply-To: <1387511650.3539.4294.camel@linux-s257.site>
-X-Enigmail-Version: 1.6
+To: "Frank Ch. Eigler" <fche@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-arch@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH -tip v6 00/22] kprobes: introduce NOKPROBE_SYMBOL(), cleanup
+ and fixes crash bugs
+References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal> <y0m38loefhx.fsf@fche.csb>
+In-Reply-To: <y0m38loefhx.fsf@fche.csb>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2013 07:54 PM, joeyli wrote:
-> Hi hpa, 
+(2013/12/20 5:46), Frank Ch. Eigler wrote:
 > 
-> 於 四，2013-12-19 於 06:38 -0800，H. Peter Anvin 提到：
->> Where did you find a platform with "no CMOS" set and a PNP RTC? I find the expect behavior in that case to be quite ambiguous and it is not at all clear to me that what you have here is the right thing.
+> Hi, Masami -
 > 
-> Actually there doesn't have the box both with "No CMOS" and PNP device. 
-> I choice to totally block rtc-cmos driver when "No CMOS RTC" because the
-> definition in ACPI spec:
 > 
-> CMOS RTC Not Present
+> masami.hiramatsu.pt wrote:
 > 
-> If set, indicates that the CMOS RTC is either not implemented, or
-> does not exist at the legacy addresses. OSPM uses the Control
-> Method Time and Alarm Namespace device instead.
-> ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>> Here is the version 6 of NOKPROBE_SYMBOL series. :)
+>> [...]
 > 
-> It suggest us using ACPI TAD interface when this flag present. But, I
-> agreed your point for this is ambiguous due to ACPI spec didn't clear
-> define the relationship between PNP0B0x.
+> Some preliminary results from building these on top of tip/master on
+> x86-64.  
 > 
-> Maybe we can do more detail check in cmos_init when "No CMOS RTC" set:
->  + check if have ACPI TAD device, then block rtc-cmos
->  + check if no ACPI TAD device, but have PNP0B0x, then we use PNP0b0x.
+> # stap -te "probe kprobe.function("*") {}"
 > 
+> starts up OK, without crashes, which looks like great progress.
 
-I think the only thing we should use that bit for is to inhibit the
-last-resort probing of I/O ports 0x70-0x73... if at all.
+That's a good news :)
 
-	-hpa
+>  But a
+> closer look indicates that the insertion of kprobes is taking about
+> three (!!) orders of magnitude longer than before, as judged by the
+> rate of increase of 'wc -l /sys/kernel/debug/kprobes/list'.
+
+Right, because kprobes are not designed for thousands of probes.
+
+>  So, one
+> has to let the thing run for several hours just to get all the kprobes
+> inserted, never mind letting stress-testing begin.
+> 
+> For reference, here's the steady-state "perf top" output during all this
+> insertion work:
+> 
+>  54.81%  [kernel]                    [k] _raw_spin_unlock_irqrestore
+>  38.13%  [kernel]                    [k] __slab_alloc
+>   1.11%  [kernel]                    [k] kprobe_ftrace_handler
+>   0.88%  [kernel]                    [k] _raw_spin_unlock_irq
+
+Hmm, interesting. Those probes are registered as disabled?
+Thank you,
+
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
