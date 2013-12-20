@@ -1,48 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030335Ab3LTOFM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 09:05:12 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:43423 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030219Ab3LTOFJ (ORCPT
+	id S932522Ab3LTOHc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 09:07:32 -0500
+Received: from ringil.hengli.com.au ([178.18.16.133]:45349 "EHLO
+	ringil.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932397Ab3LTOHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 09:05:09 -0500
-Date: Fri, 20 Dec 2013 14:04:59 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: sameo@linux.intel.com, micky_ching@realsil.com.cn,
-        yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next] mfd: rtsx: fix sparse non static symbol warning
-Message-ID: <20131220140459.GH3709@lee--X1>
-References: <CAPgLHd8bi1rcqSx1YpCVLVmmv8jt97Hh7nvSsqc03YfGh7Jorw@mail.gmail.com>
+	Fri, 20 Dec 2013 09:07:31 -0500
+Date: Fri, 20 Dec 2013 22:07:24 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Tom Lendacky <thomas.lendacky@amd.com>
+Cc: davem@davemloft.net, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] crypto: ccp - code fixes/cleanup
+Message-ID: <20131220140724.GA356@gondor.apana.org.au>
+References: <20131210163827.24304.36256.stgit@tlendack-t1.amdoffice.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPgLHd8bi1rcqSx1YpCVLVmmv8jt97Hh7nvSsqc03YfGh7Jorw@mail.gmail.com>
+In-Reply-To: <20131210163827.24304.36256.stgit@tlendack-t1.amdoffice.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Dec 2013, Wei Yongjun wrote:
-
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Tue, Dec 10, 2013 at 10:38:27AM -0600, Tom Lendacky wrote:
+> The following series implements fixes and cleanup for some reported
+> errors and suggestions (sparse errors, randconfig build errors and
+> pr_err usage).
 > 
-> Fixes the following sparse warning:
-> 
-> drivers/mfd/rtl8411.c:473:6: warning:
->  symbol 'rtl8411_init_common_params' was not declared. Should it be static?
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  drivers/mfd/rtl8411.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> This patch series is based on the cryptodev-2.6 kernel tree.
 
-Applied, thanks.
-
+All applied.  Thanks!
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
