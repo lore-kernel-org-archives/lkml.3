@@ -1,78 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932125Ab3LTTKa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 14:10:30 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:37433 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754034Ab3LTTJg (ORCPT
+	id S1756474Ab3LTTK2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 14:10:28 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38564 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754003Ab3LTTJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Dec 2013 14:09:36 -0500
-From: David Brown <davidb@codeaurora.org>
-To: arm@kernel.org
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        David Brown <davidb@codeaurora.org>
-Subject: [PATCH 4/7] ARM: msm: Simplify ARCH_MSM_DT config
-Date: Fri, 20 Dec 2013 11:09:17 -0800
-Message-Id: <1387566560-23948-5-git-send-email-davidb@codeaurora.org>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1387566560-23948-1-git-send-email-davidb@codeaurora.org>
-References: <1387566560-23948-1-git-send-email-davidb@codeaurora.org>
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 27/35] perf report: Rename 'perf_report' to 'report'
+Date: Fri, 20 Dec 2013 16:09:02 -0300
+Message-Id: <1387566550-3524-28-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1387566550-3524-1-git-send-email-acme@infradead.org>
+References: <1387566550-3524-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-This doesn't need to be a def_bool y. Instead we can have every
-DT supported platform select ARCH_MSM_DT and we achieve the same
-thing with less chance of conflicts.
+Reduce typing, functions use class__method convention, so unlikely to
+clash with other libraries.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: David Brown <davidb@codeaurora.org>
+This actually was discussed in the "Link:" referenced message below.
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/20131112113427.GA4053@ghostprotocols.net
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/arm/mach-msm/Kconfig | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ tools/perf/builtin-report.c | 73 +++++++++++++++++++--------------------------
+ 1 file changed, 31 insertions(+), 42 deletions(-)
 
-diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index 5e5782d..702553b 100644
---- a/arch/arm/mach-msm/Kconfig
-+++ b/arch/arm/mach-msm/Kconfig
-@@ -44,6 +44,7 @@ endchoice
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 8424053b399a..da156a44cb15 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -39,7 +39,7 @@
+ #include <dlfcn.h>
+ #include <linux/bitmap.h>
  
- config ARCH_MSM8X60
- 	bool "MSM8X60"
-+	select ARCH_MSM_DT
- 	select ARM_GIC
- 	select CPU_V7
- 	select GPIO_MSM_V2
-@@ -52,6 +53,7 @@ config ARCH_MSM8X60
+-struct perf_report {
++struct report {
+ 	struct perf_tool	tool;
+ 	struct perf_session	*session;
+ 	bool			force, use_tui, use_gtk, use_stdio;
+@@ -60,14 +60,14 @@ struct perf_report {
+ 	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
+ };
  
- config ARCH_MSM8960
- 	bool "MSM8960"
-+	select ARCH_MSM_DT
- 	select ARM_GIC
- 	select CPU_V7
- 	select HAVE_SMP
-@@ -60,6 +62,7 @@ config ARCH_MSM8960
+-static int perf_report_config(const char *var, const char *value, void *cb)
++static int report__config(const char *var, const char *value, void *cb)
+ {
+ 	if (!strcmp(var, "report.group")) {
+ 		symbol_conf.event_group = perf_config_bool(var, value);
+ 		return 0;
+ 	}
+ 	if (!strcmp(var, "report.percent-limit")) {
+-		struct perf_report *rep = cb;
++		struct report *rep = cb;
+ 		rep->min_percent = strtof(value, NULL);
+ 		return 0;
+ 	}
+@@ -75,7 +75,7 @@ static int perf_report_config(const char *var, const char *value, void *cb)
+ 	return perf_default_config(var, value, cb);
+ }
  
- config ARCH_MSM8974
- 	bool "MSM8974"
-+	select ARCH_MSM_DT
- 	select ARM_GIC
- 	select CPU_V7
- 	select HAVE_ARM_ARCH_TIMER
-@@ -68,8 +71,7 @@ config ARCH_MSM8974
- 	select USE_OF
+-static int report__resolve_callchain(struct perf_report *rep, struct symbol **parent,
++static int report__resolve_callchain(struct report *rep, struct symbol **parent,
+ 				     struct perf_evsel *evsel, struct addr_location *al,
+ 				     struct perf_sample *sample, struct machine *machine)
+ {
+@@ -93,14 +93,11 @@ static int hist_entry__append_callchain(struct hist_entry *he, struct perf_sampl
+ 	return callchain_append(he->callchain, &callchain_cursor, sample->period);
+ }
  
- config ARCH_MSM_DT
--	def_bool y
--	depends on (ARCH_MSM8X60 || ARCH_MSM8960 || ARCH_MSM8974)
-+	bool
- 	select SPARSE_IRQ
- 	select USE_OF
+-static int perf_report__add_mem_hist_entry(struct perf_tool *tool,
+-					   struct addr_location *al,
+-					   struct perf_sample *sample,
+-					   struct perf_evsel *evsel,
+-					   struct machine *machine,
+-					   union perf_event *event)
++static int report__add_mem_hist_entry(struct perf_tool *tool, struct addr_location *al,
++				      struct perf_sample *sample, struct perf_evsel *evsel,
++				      struct machine *machine, union perf_event *event)
+ {
+-	struct perf_report *rep = container_of(tool, struct perf_report, tool);
++	struct report *rep = container_of(tool, struct report, tool);
+ 	struct symbol *parent = NULL;
+ 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 	struct hist_entry *he;
+@@ -150,13 +147,11 @@ out:
+ 	return err;
+ }
+ 
+-static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
+-					struct addr_location *al,
+-					struct perf_sample *sample,
+-					struct perf_evsel *evsel,
+-				      struct machine *machine)
++static int report__add_branch_hist_entry(struct perf_tool *tool, struct addr_location *al,
++					 struct perf_sample *sample, struct perf_evsel *evsel,
++					 struct machine *machine)
+ {
+-	struct perf_report *rep = container_of(tool, struct perf_report, tool);
++	struct report *rep = container_of(tool, struct report, tool);
+ 	struct symbol *parent = NULL;
+ 	unsigned i;
+ 	struct hist_entry *he;
+@@ -208,13 +203,11 @@ out:
+ 	return err;
+ }
+ 
+-static int perf_evsel__add_hist_entry(struct perf_tool *tool,
+-				      struct perf_evsel *evsel,
+-				      struct addr_location *al,
+-				      struct perf_sample *sample,
+-				      struct machine *machine)
++static int report__add_hist_entry(struct perf_tool *tool, struct perf_evsel *evsel,
++				  struct addr_location *al, struct perf_sample *sample,
++				  struct machine *machine)
+ {
+-	struct perf_report *rep = container_of(tool, struct perf_report, tool);
++	struct report *rep = container_of(tool, struct report, tool);
+ 	struct symbol *parent = NULL;
+ 	struct hist_entry *he;
+ 	int err = report__resolve_callchain(rep, &parent, evsel, al, sample, machine);
+@@ -246,7 +239,7 @@ static int process_sample_event(struct perf_tool *tool,
+ 				struct perf_evsel *evsel,
+ 				struct machine *machine)
+ {
+-	struct perf_report *rep = container_of(tool, struct perf_report, tool);
++	struct report *rep = container_of(tool, struct report, tool);
+ 	struct addr_location al;
+ 	int ret;
+ 
+@@ -263,21 +256,18 @@ static int process_sample_event(struct perf_tool *tool,
+ 		return 0;
+ 
+ 	if (sort__mode == SORT_MODE__BRANCH) {
+-		ret = perf_report__add_branch_hist_entry(tool, &al, sample,
+-							 evsel, machine);
++		ret = report__add_branch_hist_entry(tool, &al, sample, evsel, machine);
+ 		if (ret < 0)
+ 			pr_debug("problem adding lbr entry, skipping event\n");
+ 	} else if (rep->mem_mode == 1) {
+-		ret = perf_report__add_mem_hist_entry(tool, &al, sample,
+-						      evsel, machine, event);
++		ret = report__add_mem_hist_entry(tool, &al, sample, evsel, machine, event);
+ 		if (ret < 0)
+ 			pr_debug("problem adding mem entry, skipping event\n");
+ 	} else {
+ 		if (al.map != NULL)
+ 			al.map->dso->hit = 1;
+ 
+-		ret = perf_evsel__add_hist_entry(tool, evsel, &al, sample,
+-						 machine);
++		ret = report__add_hist_entry(tool, evsel, &al, sample, machine);
+ 		if (ret < 0)
+ 			pr_debug("problem incrementing symbol period, skipping event\n");
+ 	}
+@@ -290,7 +280,7 @@ static int process_read_event(struct perf_tool *tool,
+ 			      struct perf_evsel *evsel,
+ 			      struct machine *machine __maybe_unused)
+ {
+-	struct perf_report *rep = container_of(tool, struct perf_report, tool);
++	struct report *rep = container_of(tool, struct report, tool);
+ 
+ 	if (rep->show_threads) {
+ 		const char *name = evsel ? perf_evsel__name(evsel) : "unknown";
+@@ -309,7 +299,7 @@ static int process_read_event(struct perf_tool *tool,
+ }
+ 
+ /* For pipe mode, sample_type is not currently set */
+-static int perf_report__setup_sample_type(struct perf_report *rep)
++static int report__setup_sample_type(struct report *rep)
+ {
+ 	struct perf_session *session = rep->session;
+ 	u64 sample_type = perf_evlist__combined_sample_type(session->evlist);
+@@ -354,8 +344,7 @@ static void sig_handler(int sig __maybe_unused)
+ 	session_done = 1;
+ }
+ 
+-static size_t hists__fprintf_nr_sample_events(struct perf_report *rep,
+-					      struct hists *hists,
++static size_t hists__fprintf_nr_sample_events(struct hists *hists, struct report *rep,
+ 					      const char *evname, FILE *fp)
+ {
+ 	size_t ret;
+@@ -392,7 +381,7 @@ static size_t hists__fprintf_nr_sample_events(struct perf_report *rep,
+ }
+ 
+ static int perf_evlist__tty_browse_hists(struct perf_evlist *evlist,
+-					 struct perf_report *rep,
++					 struct report *rep,
+ 					 const char *help)
+ {
+ 	struct perf_evsel *pos;
+@@ -405,7 +394,7 @@ static int perf_evlist__tty_browse_hists(struct perf_evlist *evlist,
+ 		    !perf_evsel__is_group_leader(pos))
+ 			continue;
+ 
+-		hists__fprintf_nr_sample_events(rep, hists, evname, stdout);
++		hists__fprintf_nr_sample_events(hists, rep, evname, stdout);
+ 		hists__fprintf(hists, true, 0, 0, rep->min_percent, stdout);
+ 		fprintf(stdout, "\n\n");
+ 	}
+@@ -425,7 +414,7 @@ static int perf_evlist__tty_browse_hists(struct perf_evlist *evlist,
+ 	return 0;
+ }
+ 
+-static int __cmd_report(struct perf_report *rep)
++static int __cmd_report(struct report *rep)
+ {
+ 	int ret = -EINVAL;
+ 	u64 nr_samples;
+@@ -449,7 +438,7 @@ static int __cmd_report(struct perf_report *rep)
+ 	if (rep->show_threads)
+ 		perf_read_values_init(&rep->show_threads_values);
+ 
+-	ret = perf_report__setup_sample_type(rep);
++	ret = report__setup_sample_type(rep);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -568,7 +557,7 @@ static int __cmd_report(struct perf_report *rep)
+ static int
+ parse_callchain_opt(const struct option *opt, const char *arg, int unset)
+ {
+-	struct perf_report *rep = (struct perf_report *)opt->value;
++	struct report *rep = (struct report *)opt->value;
+ 	char *tok, *tok2;
+ 	char *endptr;
+ 
+@@ -688,7 +677,7 @@ static int
+ parse_percent_limit(const struct option *opt, const char *str,
+ 		    int unset __maybe_unused)
+ {
+-	struct perf_report *rep = opt->value;
++	struct report *rep = opt->value;
+ 
+ 	rep->min_percent = strtof(str, NULL);
+ 	return 0;
+@@ -706,7 +695,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		"perf report [<options>]",
+ 		NULL
+ 	};
+-	struct perf_report report = {
++	struct report report = {
+ 		.tool = {
+ 			.sample		 = process_sample_event,
+ 			.mmap		 = perf_event__process_mmap,
+@@ -822,7 +811,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		.mode  = PERF_DATA_MODE_READ,
+ 	};
+ 
+-	perf_config(perf_report_config, &report);
++	perf_config(report__config, &report);
+ 
+ 	argc = parse_options(argc, argv, options, report_usage, 0);
  
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.1.4
 
