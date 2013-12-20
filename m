@@ -1,231 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249Ab3LTXkM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 18:40:12 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49200 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753320Ab3LTXj5 (ORCPT
+	id S1754738Ab3LTXk7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 18:40:59 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:23440 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752457Ab3LTXk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 18:39:57 -0500
-Date: Fri, 20 Dec 2013 15:39:23 -0800
-From: tip-bot for Prarit Bhargava <tipbot@zytor.com>
-Message-ID: <tip-5fd782a0553cf9572bd38cb877ee6fbf070ef651@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        seiji.aguchi@hds.com, tony.luck@intel.com, gong.chen@linux.intel.com,
-        yang.z.zhang@intel.com, ruiv.wang@gmail.com, janet.morgan@intel.com,
-        ak@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com,
-        prarit@redhat.com, walken@google.com, paul.gortmaker@windriver.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        seiji.aguchi@hds.com, tony.luck@intel.com, yang.z.zhang@intel.com,
-        gong.chen@linux.intel.com, ruiv.wang@gmail.com, janet.morgan@intel.com,
-        ak@linux.intel.com, tglx@linutronix.de, walken@google.com,
-        prarit@redhat.com, hpa@linux.intel.com, paul.gortmaker@windriver.com
-In-Reply-To: <1387554609-9823-1-git-send-email-prarit@redhat.com>
-References: <1387554609-9823-1-git-send-email-prarit@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86:
-  Add check for number of available vectors before CPU down
-Git-Commit-ID: 5fd782a0553cf9572bd38cb877ee6fbf070ef651
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 20 Dec 2013 18:40:57 -0500
+Message-ID: <52B4D581.40103@oracle.com>
+Date: Fri, 20 Dec 2013 18:40:49 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 20 Dec 2013 15:39:30 -0800 (PST)
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: module: BUG in copy_module_from_fd
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5fd782a0553cf9572bd38cb877ee6fbf070ef651
-Gitweb:     http://git.kernel.org/tip/5fd782a0553cf9572bd38cb877ee6fbf070ef651
-Author:     Prarit Bhargava <prarit@redhat.com>
-AuthorDate: Fri, 20 Dec 2013 10:50:09 -0500
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 20 Dec 2013 15:24:04 -0800
+Hi all,
 
-x86: Add check for number of available vectors before CPU down
+While fuzzing with trinity inside a KVM tools guest running latest -next kernel, I've stumbled on 
+the following spew.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64791
+This reproduced twice with the same call trace, so I suspect it's something specific with the way
+the module subsystem calls vfs_getattr rather than something odd in vfs.
 
-When a cpu is downed on a system, the irqs on the cpu are assigned to
-other cpus.  It is possible, however, that when a cpu is downed there
-aren't enough free vectors on the remaining cpus to account for the
-vectors from the cpu that is being downed.
+[ 1694.568277] BUG: unable to handle kernel paging request at ffff88022adf8010
+[ 1694.570053] IP: [<ffffffff812d77ed>] generic_fillattr+0xd/0xa0
+[ 1694.570053] PGD 8577067 PUD 42effb067 PMD 42eea4067 PTE 800000022adf8060
+[ 1694.570053] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 1694.570053] Dumping ftrace buffer:
+[ 1694.570053]    (ftrace buffer empty)
+[ 1694.570053] Modules linked in:
+[ 1694.570053] CPU: 60 PID: 35977 Comm: trinity-child60 Tainted: G        W    3.13.0-r
+c4-next-20131219-sasha-00014-g94c0243-dirty #4166
+[ 1694.570053] task: ffff8801064b8000 ti: ffff88013b56a000 task.ti: ffff88013b56a000
+[ 1694.570053] waiting module removal not supported: please upgrade
+[ 1694.570053] RIP: 0010:[<ffffffff812d77ed>]  [<ffffffff812d77ed>] generic_fillattr+0x
+d/0xa0
+[ 1694.570053] RSP: 0018:ffff88013b56bdd8  EFLAGS: 00010246
+[ 1694.570053] RAX: ffff88022adf8000 RBX: ffff88018d5202d0 RCX: ffff8801584537b0
+[ 1694.570053] RDX: 0000000000000001 RSI: ffff88013b56be28 RDI: ffff88022c450550
+[ 1694.570053] RBP: ffff88013b56bdd8 R08: ffff88022c450550 R09: 0000000000000000
+[ 1694.570053] R10: 0000000000000001 R11: 0000000000000000 R12: ffff88013b56be28
+[ 1694.570053] R13: ffff88013b56bee8 R14: 0000000000000000 R15: 0000000000000193
+[ 1694.570053] FS:  00007f9d4b25f700(0000) GS:ffff880066000000(0000) knlGS:000000000000
+0000
+[ 1694.570053] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 1694.570053] CR2: ffff88022adf8010 CR3: 000000013b565000 CR4: 00000000000006e0
+[ 1694.570053] Stack:
+[ 1694.570053]  ffff88013b56bde8 ffffffff812d78b8 ffff88013b56be08 ffffffff812d7ea7
+[ 1694.570053]  ffff88018d5202c0 0000000000000000 ffff88013b56bec8 ffffffff811d76e5
+[ 1694.570053]  0000000000000001 ffffffff811759a6 ffff88013b56be58 ffffffff81194e1a
+[ 1694.570053] Call Trace:
+[ 1694.570053]  [<ffffffff812d78b8>] vfs_getattr_nosec+0x38/0x40
+[ 1694.570053]  [<ffffffff812d7ea7>] vfs_getattr+0x37/0x50
+[ 1694.570053]  [<ffffffff811d76e5>] copy_module_from_fd+0x65/0x150
+[ 1694.570053]  [<ffffffff811759a6>] ? vtime_account_user+0x96/0xb0
+[ 1694.570053]  [<ffffffff81194e1a>] ? __lock_release+0x1da/0x1f0
+[ 1694.570053]  [<ffffffff811759a6>] ? vtime_account_user+0x96/0xb0
+[ 1694.570053]  [<ffffffff81249358>] ? context_tracking_user_exit+0xb8/0x1d0
+[ 1694.570053]  [<ffffffff819dfc88>] ? security_capable+0x18/0x20
+[ 1694.570053]  [<ffffffff811dd443>] SyS_finit_module+0xa3/0x100
+[ 1694.570053]  [<ffffffff843a6fd0>] tracesys+0xdd/0xe2
+[ 1694.570053] Code: 89 c8 48 8b 5d d8 4c 8b 65 e0 4c 8b 6d e8 4c 8b 75 f0 4c 8b 7d f8 c9 c3 90 90 
+90 90 90 90 55 48 89 e5 66 66 66 66 90 48 8b 47 28 <8b> 40 10 89 46 08 48 8b 47 40 48 89 06 0f b7 07 
+66 89 46 0c 8b
+[ 1694.570053] RIP  [<ffffffff812d77ed>] generic_fillattr+0xd/0xa0
+[ 1694.570053]  RSP <ffff88013b56bdd8>
+[ 1694.570053] CR2: ffff88022adf8010
 
-This results in an interesting "overflow" condition where irqs are
-"assigned" to a CPU but are not handled.
 
-For example, when downing cpus on a 1-64 logical processor system:
-
-<snip>
-[  232.021745] smpboot: CPU 61 is now offline
-[  238.480275] smpboot: CPU 62 is now offline
-[  245.991080] ------------[ cut here ]------------
-[  245.996270] WARNING: CPU: 0 PID: 0 at net/sched/sch_generic.c:264 dev_watchdog+0x246/0x250()
-[  246.005688] NETDEV WATCHDOG: p786p1 (ixgbe): transmit queue 0 timed out
-[  246.013070] Modules linked in: lockd sunrpc iTCO_wdt iTCO_vendor_support sb_edac ixgbe microcode e1000e pcspkr joydev edac_core lpc_ich ioatdma ptp mdio mfd_core i2c_i801 dca pps_core i2c_core wmi acpi_cpufreq isci libsas scsi_transport_sas
-[  246.037633] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.12.0+ #14
-[  246.044451] Hardware name: Intel Corporation S4600LH ........../SVRBD-ROW_T, BIOS SE5C600.86B.01.08.0003.022620131521 02/26/2013
-[  246.057371]  0000000000000009 ffff88081fa03d40 ffffffff8164fbf6 ffff88081fa0ee48
-[  246.065728]  ffff88081fa03d90 ffff88081fa03d80 ffffffff81054ecc ffff88081fa13040
-[  246.074073]  0000000000000000 ffff88200cce0000 0000000000000040 0000000000000000
-[  246.082430] Call Trace:
-[  246.085174]  <IRQ>  [<ffffffff8164fbf6>] dump_stack+0x46/0x58
-[  246.091633]  [<ffffffff81054ecc>] warn_slowpath_common+0x8c/0xc0
-[  246.098352]  [<ffffffff81054fb6>] warn_slowpath_fmt+0x46/0x50
-[  246.104786]  [<ffffffff815710d6>] dev_watchdog+0x246/0x250
-[  246.110923]  [<ffffffff81570e90>] ? dev_deactivate_queue.constprop.31+0x80/0x80
-[  246.119097]  [<ffffffff8106092a>] call_timer_fn+0x3a/0x110
-[  246.125224]  [<ffffffff8106280f>] ? update_process_times+0x6f/0x80
-[  246.132137]  [<ffffffff81570e90>] ? dev_deactivate_queue.constprop.31+0x80/0x80
-[  246.140308]  [<ffffffff81061db0>] run_timer_softirq+0x1f0/0x2a0
-[  246.146933]  [<ffffffff81059a80>] __do_softirq+0xe0/0x220
-[  246.152976]  [<ffffffff8165fedc>] call_softirq+0x1c/0x30
-[  246.158920]  [<ffffffff810045f5>] do_softirq+0x55/0x90
-[  246.164670]  [<ffffffff81059d35>] irq_exit+0xa5/0xb0
-[  246.170227]  [<ffffffff8166062a>] smp_apic_timer_interrupt+0x4a/0x60
-[  246.177324]  [<ffffffff8165f40a>] apic_timer_interrupt+0x6a/0x70
-[  246.184041]  <EOI>  [<ffffffff81505a1b>] ? cpuidle_enter_state+0x5b/0xe0
-[  246.191559]  [<ffffffff81505a17>] ? cpuidle_enter_state+0x57/0xe0
-[  246.198374]  [<ffffffff81505b5d>] cpuidle_idle_call+0xbd/0x200
-[  246.204900]  [<ffffffff8100b7ae>] arch_cpu_idle+0xe/0x30
-[  246.210846]  [<ffffffff810a47b0>] cpu_startup_entry+0xd0/0x250
-[  246.217371]  [<ffffffff81646b47>] rest_init+0x77/0x80
-[  246.223028]  [<ffffffff81d09e8e>] start_kernel+0x3ee/0x3fb
-[  246.229165]  [<ffffffff81d0989f>] ? repair_env_string+0x5e/0x5e
-[  246.235787]  [<ffffffff81d095a5>] x86_64_start_reservations+0x2a/0x2c
-[  246.242990]  [<ffffffff81d0969f>] x86_64_start_kernel+0xf8/0xfc
-[  246.249610] ---[ end trace fb74fdef54d79039 ]---
-[  246.254807] ixgbe 0000:c2:00.0 p786p1: initiating reset due to tx timeout
-[  246.262489] ixgbe 0000:c2:00.0 p786p1: Reset adapter
-Last login: Mon Nov 11 08:35:14 from 10.18.17.119
-[root@(none) ~]# [  246.792676] ixgbe 0000:c2:00.0 p786p1: detected SFP+: 5
-[  249.231598] ixgbe 0000:c2:00.0 p786p1: NIC Link is Up 10 Gbps, Flow Control: RX/TX
-[  246.792676] ixgbe 0000:c2:00.0 p786p1: detected SFP+: 5
-[  249.231598] ixgbe 0000:c2:00.0 p786p1: NIC Link is Up 10 Gbps, Flow Control: RX/TX
-
-(last lines keep repeating.  ixgbe driver is dead until module reload.)
-
-If the downed cpu has more vectors than are free on the remaining cpus on the
-system, it is possible that some vectors are "orphaned" even though they are
-assigned to a cpu.  In this case, since the ixgbe driver had a watchdog, the
-watchdog fired and notified that something was wrong.
-
-This patch adds a function, check_vectors(), to compare the number of vectors
-on the CPU going down and compares it to the number of vectors available on
-the system.  If there aren't enough vectors for the CPU to go down, an
-error is returned and propogated back to userspace.
-
-v2: Do not need to look at percpu irqs
-v3: Need to check affinity to prevent counting of MSIs in IOAPIC Lowest
-    Priority Mode
-
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Link: http://lkml.kernel.org/r/1387554609-9823-1-git-send-email-prarit@redhat.com
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Yang Zhang <yang.z.zhang@Intel.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Janet Morgan <janet.morgan@intel.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Ruiv Wang <ruiv.wang@gmail.com>
-Cc: Gong Chen <gong.chen@linux.intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: <stable@vger.kernel.org> # see note below
-[ hpa: I'm tagging this for -stable, as it is a serious failure on
-  these large systems, but this is definitely a policy call for the
-  -stable maintainers. ]
----
- arch/x86/include/asm/irq.h |  1 +
- arch/x86/kernel/irq.c      | 44 ++++++++++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/smpboot.c  |  6 ++++++
- 3 files changed, 51 insertions(+)
-
-diff --git a/arch/x86/include/asm/irq.h b/arch/x86/include/asm/irq.h
-index 0ea10f27..dfd7372 100644
---- a/arch/x86/include/asm/irq.h
-+++ b/arch/x86/include/asm/irq.h
-@@ -25,6 +25,7 @@ extern void irq_ctx_init(int cpu);
- 
- #ifdef CONFIG_HOTPLUG_CPU
- #include <linux/cpumask.h>
-+extern int check_vectors(void);
- extern void fixup_irqs(void);
- extern void irq_force_complete_move(int);
- #endif
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 22d0687..483f111 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -262,6 +262,50 @@ __visible void smp_trace_x86_platform_ipi(struct pt_regs *regs)
- EXPORT_SYMBOL_GPL(vector_used_by_percpu_irq);
- 
- #ifdef CONFIG_HOTPLUG_CPU
-+/*
-+ * This cpu is going to be removed and its vectors migrated to the remaining
-+ * online cpus.  Check to see if there are enough vectors in the remaining cpus.
-+ */
-+int check_vectors(void)
-+{
-+	int irq, cpu;
-+	unsigned int vector, this_count, count;
-+	struct irq_desc *desc;
-+	struct irq_data *data;
-+	struct cpumask *affinity;
-+
-+	this_count = 0;
-+	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
-+		irq = __this_cpu_read(vector_irq[vector]);
-+		if (irq >= 0) {
-+			desc = irq_to_desc(irq);
-+			data = irq_desc_get_irq_data(desc);
-+			affinity = data->affinity;
-+			if (irq_has_action(irq) || !irqd_is_per_cpu(data) ||
-+			    !cpumask_subset(affinity, cpu_online_mask))
-+				this_count++;
-+		}
-+	}
-+
-+	count = 0;
-+	for_each_online_cpu(cpu) {
-+		if (cpu == smp_processor_id())
-+			continue;
-+		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS;
-+		     vector++) {
-+			if (per_cpu(vector_irq, cpu)[vector] < 0)
-+				count++;
-+		}
-+	}
-+
-+	if (count < this_count) {
-+		pr_warn("CPU %d disable failed: CPU has %u vectors assigned and there are only %u available.\n",
-+			smp_processor_id(), this_count, count);
-+		return -ERANGE;
-+	}
-+	return 0;
-+}
-+
- /* A cpu has been removed from cpu_online_mask.  Reset irq affinities. */
- void fixup_irqs(void)
- {
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 85dc05a..7ac6654 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1312,6 +1312,12 @@ void cpu_disable_common(void)
- 
- int native_cpu_disable(void)
- {
-+	int ret;
-+
-+	ret = check_vectors();
-+	if (ret)
-+		return ret;
-+
- 	clear_local_APIC();
- 
- 	cpu_disable_common();
+Thanks,
+Sasha
