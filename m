@@ -1,47 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496Ab3LTFiR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 00:38:17 -0500
+	id S1752799Ab3LTFiT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 00:38:19 -0500
 Received: from mga02.intel.com ([134.134.136.20]:63643 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751179Ab3LTFiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 00:38:16 -0500
+	id S1751289Ab3LTFiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 00:38:17 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,518,1384329600"; 
-   d="scan'208";a="455297469"
+   d="scan'208";a="455297470"
 From: David Cohen <david.a.cohen@linux.intel.com>
 To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, David Cohen <david.a.cohen@linux.intel.com>
-Subject: [PATCH 1/2] x86: intel-mid: return proper error code from get_gpio_by_name()
-Date: Thu, 19 Dec 2013 21:42:58 -0800
-Message-Id: <1387518179-4316-1-git-send-email-david.a.cohen@linux.intel.com>
+Subject: [PATCH 2/2] x86: intel-mid: sfi_handle_*_dev() should check for pdata error code
+Date: Thu, 19 Dec 2013 21:42:59 -0800
+Message-Id: <1387518179-4316-2-git-send-email-david.a.cohen@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1387244246-20714-1-git-send-email-david.a.cohen@linux.intel.com>
+In-Reply-To: <1387518179-4316-1-git-send-email-david.a.cohen@linux.intel.com>
 References: <1387244246-20714-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1387518179-4316-1-git-send-email-david.a.cohen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get_gpio_by_name() should return an error code instead of hardcoded -1.
+Prevent sfi_handle_*_dev() to register device in case
+intel_mid_sfi_get_pdata() failed to execute.
+
+Since 'NULL' is a valid return value, this patch makes
+sfi_handle_*_dev() functions to use IS_ERR() to validate returned pdata.
 
 Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
 ---
- arch/x86/platform/intel-mid/sfi.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/platform/intel-mid/sfi.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
 diff --git a/arch/x86/platform/intel-mid/sfi.c b/arch/x86/platform/intel-mid/sfi.c
-index 80a52288555c..c67b9a2f48a1 100644
+index c67b9a2f48a1..438306ebed05 100644
 --- a/arch/x86/platform/intel-mid/sfi.c
 +++ b/arch/x86/platform/intel-mid/sfi.c
-@@ -224,7 +224,7 @@ int get_gpio_by_name(const char *name)
- 		if (!strncmp(name, pentry->pin_name, SFI_NAME_LEN))
- 			return pentry->pin_no;
- 	}
--	return -1;
-+	return -EINVAL;
- }
+@@ -337,6 +337,8 @@ static void __init sfi_handle_ipc_dev(struct sfi_device_table_entry *pentry,
+ 	pr_debug("IPC bus, name = %16.16s, irq = 0x%2x\n",
+ 		pentry->name, pentry->irq);
+ 	pdata = intel_mid_sfi_get_pdata(dev, pentry);
++	if (IS_ERR(pdata))
++		return;
  
- void __init intel_scu_device_register(struct platform_device *pdev)
+ 	pdev = platform_device_alloc(pentry->name, 0);
+ 	if (pdev == NULL) {
+@@ -370,6 +372,8 @@ static void __init sfi_handle_spi_dev(struct sfi_device_table_entry *pentry,
+ 		spi_info.chip_select);
+ 
+ 	pdata = intel_mid_sfi_get_pdata(dev, &spi_info);
++	if (IS_ERR(pdata))
++		return;
+ 
+ 	spi_info.platform_data = pdata;
+ 	if (dev->delay)
+@@ -395,6 +399,8 @@ static void __init sfi_handle_i2c_dev(struct sfi_device_table_entry *pentry,
+ 		i2c_info.addr);
+ 	pdata = intel_mid_sfi_get_pdata(dev, &i2c_info);
+ 	i2c_info.platform_data = pdata;
++	if (IS_ERR(pdata))
++		return;
+ 
+ 	if (dev->delay)
+ 		intel_scu_i2c_device_register(pentry->host_num, &i2c_info);
 -- 
 1.8.4.2
 
