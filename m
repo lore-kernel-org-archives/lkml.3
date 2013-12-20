@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137Ab3LTRgU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 12:36:20 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60806 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756769Ab3LTRgN (ORCPT
+	id S1756917Ab3LTRhN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 12:37:13 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:36066 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753107Ab3LTRhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 12:36:13 -0500
-Message-ID: <52B48007.7050002@wwwdotorg.org>
-Date: Fri, 20 Dec 2013 10:36:07 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Mark Zhang <nvmarkzhang@gmail.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        swarren@nvidia.com, will.deacon@arm.com, grant.likely@linaro.org,
-        robherring2@gmail.com, joro@8bytes.org, mark.rutland@arm.com,
-        devicetree@vger.kernel.org, lorenzo.pieralisi@arm.com,
-        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-        galak@codeaurora.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv7 06/12] ARM: tegra: create a DT header defining SWGROUP
- ID
-References: <1386835033-4701-1-git-send-email-hdoyu@nvidia.com> <1386835033-4701-7-git-send-email-hdoyu@nvidia.com> <52B1568F.1050305@gmail.com> <52B1CCF1.2040907@wwwdotorg.org> <20131220123554.GQ27787@ulmo.nvidia.com>
-In-Reply-To: <20131220123554.GQ27787@ulmo.nvidia.com>
-X-Enigmail-Version: 1.5.2
+	Fri, 20 Dec 2013 12:37:10 -0500
+Date: Fri, 20 Dec 2013 12:37:07 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: tglx@linutronix.de, mingo@redhat.com, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, juri.lelli@gmail.com,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
+        jkacur@redhat.com
+Subject: Re: [PATCH 09/13] sched: Add bandwidth management for sched_dl
+Message-ID: <20131220123707.44fb7192@gandalf.local.home>
+In-Reply-To: <20131220171343.GL2480@laptop.programming.kicks-ass.net>
+References: <20131217122720.950475833@infradead.org>
+	<20131217123353.180539582@infradead.org>
+	<20131218165508.GB30183@twins.programming.kicks-ass.net>
+	<20131220171343.GL2480@laptop.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2013 05:35 AM, Thierry Reding wrote:
-> On Wed, Dec 18, 2013 at 09:27:29AM -0700, Stephen Warren wrote:
->> On 12/18/2013 01:02 AM, Mark Zhang wrote:
->>> On 12/12/2013 03:57 PM, Hiroshi Doyu wrote:
->>>> Create a header file to define the swgroup IDs used by the IOMMU(SMMU)
->>>> binding. "swgroup" is a group of H/W clients which a Tegra SoC
->>>> supports. This unique ID can be used to calculate MC_SMMU_<swgroup
->>>> name>_ASID_0 register offset and MC_<swgroup name>_HOTRESET_*_0
->>>> register bit. This will allow the same header to be used by both
->>>> device tree files, and drivers implementing this binding, which
->>>> guarantees that the two stay in sync. This also makes device trees
->>>> more readable by using names instead of magic numbers. For HOTRESET
->>>> bit shifting we need another conversion table, which will come later.
->>
->>>> diff --git a/include/dt-bindings/memory/tegra-swgroup.h b/include/dt-bindings/memory/tegra-swgroup.h
->>
->>>> +#define TEGRA_SWGROUP_MPE	11	/* 0x264 */
->>>> +#define TEGRA_SWGROUP_MSENC	SWGROUP_MPE
->>>
->>> Need to change this to:
->>>
->>> #define TEGRA_SWGROUP_MSENC	11
->>>
->>> The reason is that, this makes "TEGRA_SWGROUP_BIT" doesn't work. So if I
->>> write "TEGRA_SWGROUP_CELLS(MSENC)" in dt, that causes a dt compiling error.
->>
->> I guess it's because TEGRA_SWGROUP_BIT needs to expand its argument
->> twice, which can be done.
->>
->> That all said, just defining all the names directly to constants is
->> probably the most direct fix.
-> 
-> Erm... isn't this simply a typo, where:
-> 
-> 	#define TEGRA_SWGROUP_MSENC	SWGROUP_MPE
-> 
-> should simply be
-> 
-> 	#define TEGRA_SWGROUP_MSENC	TEGRA_SWGROUP_MPE
-> 
-> ?
-> 
-> That certainly works for me.
+On Fri, 20 Dec 2013 18:13:43 +0100
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-You're right. I guess ## is defined to re-expand its result, so
-TEGRA_SWGROUP_BIT(ISP2) -> TEGRA_SWGROUP_##ISP2 -> TEGRA_SWGROUP_ISP2 ->
-TEGRA_SWGROUP_ISP -> 8.
+
+> @@ -4985,6 +4942,23 @@ migration_call(struct notifier_block *nf
+>  	unsigned long flags;
+>  	struct rq *rq = cpu_rq(cpu);
+>  
+> +	switch (action) {
+> +	case CPU_DOWN_PREPARE: /* explicitly allow suspend */
+> +		{
+> +			struct dl_bw *dl_b = dl_bw_of(cpu);
+> +			int cpus = dl_bw_cpus(cpu);
+> +			bool overflow;
+> +
+> +			raw_spin_lock_irqsave(&dl_b->lock, flags);
+> +			overflow = __dl_overflow(dl_b, cpus-1, 0, 0);
+> +			raw_spin_unlock_irqrestore(&dl_b->lock, flags);
+> +
+> +			if (overflow)
+> +				return notifier_from_errno(-EBUSY);
+
+Is it possible to have a race here to create a new deadline task that
+may work with cpus but not cpus-1? That is, if a new deadline task is
+currently being created as a CPU is going offline, this check happens
+first while the creation is spinning on the dl_b->lock, and it sets
+overflow to false, then once the lock is released, the new deadline
+task makes the condition true.
+
+Should the system call have a get_online_cpus() somewhere?
+
+-- Steve
+
+
+> +		}
+> +		break;
+> +	}
+> +
+>  	switch (action & ~CPU_TASKS_FROZEN) {
+>  
+>  	case CPU_UP_PREPARE:
+
