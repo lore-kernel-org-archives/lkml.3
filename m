@@ -1,119 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab3LTIQq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 03:16:46 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:21597 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753088Ab3LTIQp (ORCPT
+	id S1754824Ab3LTIRT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 03:17:19 -0500
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:36672 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616Ab3LTIRS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 03:16:45 -0500
-Date: Fri, 20 Dec 2013 11:16:33 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Wenliang Fan <fanwlexca@gmail.com>
-Cc: gregkh@linuxfoundation.org, klmckinney1@gmail.com, tulinizer@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/staging/bcm: Integer overflow
-Message-ID: <20131220081633.GL28413@mwanda>
-References: <1387523596-29543-1-git-send-email-fanwlexca@gmail.com>
+	Fri, 20 Dec 2013 03:17:18 -0500
+Date: Fri, 20 Dec 2013 09:17:13 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>, Davidlohr Bueso <davidlohr@hp.com>,
+        linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org,
+        tglx@linutronix.de, paulmck@linux.vnet.ibm.com, efault@gmx.de,
+        jeffm@suse.com, torvalds@linux-foundation.org, jason.low2@hp.com,
+        Waiman.Long@hp.com, tom.vaden@hp.com, scott.norton@hp.com,
+        aswin@hp.com
+Subject: Re: [PATCH v4 3/4] futex: Document ordering guarantees
+Message-ID: <20131220081713.GC12937@gmail.com>
+References: <1387485950-7320-1-git-send-email-davidlohr@hp.com>
+ <1387485950-7320-4-git-send-email-davidlohr@hp.com>
+ <52B35C64.3050504@infradead.org>
+ <1387486823.5494.5.camel@buesod1.americas.hpqcorp.net>
+ <1387487274.3510.18.camel@dvhart-mobl4.amr.corp.intel.com>
+ <52B37BAA.60200@infradead.org>
+ <1387495199.3510.38.camel@dvhart-mobl4.amr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1387523596-29543-1-git-send-email-fanwlexca@gmail.com>
+In-Reply-To: <1387495199.3510.38.camel@dvhart-mobl4.amr.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 20, 2013 at 03:13:16PM +0800, Wenliang Fan wrote:
-> The checking condition in 'validateFlash2xReadWrite()' is not sufficient.
-> A large number invalid would cause an integer overflow and pass
-> the condition, which could cause further integer overflows in
-> 'Bcmchar.c:bcm_char_ioctl()'.
+
+* Darren Hart <dvhart@linux.intel.com> wrote:
+
+> On Thu, 2013-12-19 at 15:05 -0800, Randy Dunlap wrote:
+> > On 12/19/13 13:07, Darren Hart wrote:
+> > > On Thu, 2013-12-19 at 13:00 -0800, Davidlohr Bueso wrote:
+> > >> On Thu, 2013-12-19 at 12:51 -0800, Randy Dunlap wrote:
+> > >>> On 12/19/13 12:45, Davidlohr Bueso wrote:
+> > >>>> From: Thomas Gleixner <tglx@linutronix.de>
+> > >>>>
+> > >>>> That's essential, if you want to hack on futexes.
+> > >>>>
+> > >>>> Cc: Ingo Molnar <mingo@kernel.org>
+> > >>>> Cc: Darren Hart <dvhart@linux.intel.com>
+> > >>>> Acked-by: Peter Zijlstra <peterz@infradead.org>
+> > >>>> Cc: Thomas Gleixner <tglx@linutronix.de>
+> > >>>> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > >>>> Cc: Mike Galbraith <efault@gmx.de>
+> > >>>> Cc: Jeff Mahoney <jeffm@suse.com>
+> > >>>> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> > >>>> Cc: Scott Norton <scott.norton@hp.com>
+> > >>>> Cc: Tom Vaden <tom.vaden@hp.com>
+> > >>>> Cc: Aswin Chandramouleeswaran <aswin@hp.com>
+> > >>>> Cc: Waiman Long <Waiman.Long@hp.com>
+> > >>>> Cc: Jason Low <jason.low2@hp.com>
+> > >>>> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> > >>>> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> > >>>> ---
+> > >>>>  kernel/futex.c | 57 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> > >>>>  1 file changed, 57 insertions(+)
+> > >>>>
+> > >>>> diff --git a/kernel/futex.c b/kernel/futex.c
+> > >>>> index 577481d..af1fc31 100644
+> > >>>> --- a/kernel/futex.c
+> > >>>> +++ b/kernel/futex.c
+> > >>>> @@ -69,6 +69,63 @@
+> > >>>>  
+> > >>>>  #include "locking/rtmutex_common.h"
+> > >>>>  
+> > >>>> +/*
+> > >>>> + * Basic futex operation and ordering guarantees:
+> > >>>> + *
+> > >>>> + * The waiter reads the futex value in user space and calls
+> > >>>> + * futex_wait(). It computes the hash bucket and acquires the hash
+> > >>>
+> > >>> does                It
+> > >>> refer to "the waiter" or to futex_wait()?
+> > >>> I read it as referring to the waiter, but ISTM that the comments are using It
+> > >>> to refer to futex_wait()... ???
+> > >>>
+> > >>
+> > >> Yes, it refers to futex_wait(), which IMO in a futex context is pretty
+> > >> clear.
+> > > 
+> > > 
+> > > Agreed.
+> > > 
+> > > 
+> > 
+> > I'll just have to get by with disagreeing with both of you then.
+> > I say that the pronoun's antecedent is ambiguous (unclear).
+> > 
 > 
+> You are correct from a purely grammatical perspective, no argument 
+> there. I just feel that the comment is clear enough from the context 
+> - although perhaps people that hack on futexes should be excluded 
+> from having an opinion here as we are biased :-)
 
-This patch has a couple typos and it breaks the build.
+It doesn't really matter that to _you_ (the futex expert) the sentence 
+seems unambiguous, such comments are mostly meant for new people 
+reading the code, such as Randy!
 
-On the other hand it's a real bug because uiNumOfBytes comes from the
-user in bcm_char_ioctl().  This function doesn't seem to be restricted
-to privaleged users, which is terrifying.
+So guys please fix the comment instead of arguing about it.
 
-I think it would be cleaner to fix it in the caller instead of here.
+Thanks,
 
-Please look over this totally untested patch and send something like
-that, if that's ok.
-
-diff --git a/drivers/staging/bcm/Bcmchar.c b/drivers/staging/bcm/Bcmchar.c
-index 62415342ee28..2ea885e36077 100644
---- a/drivers/staging/bcm/Bcmchar.c
-+++ b/drivers/staging/bcm/Bcmchar.c
-@@ -1456,8 +1456,7 @@ cntrlEnd:
- 	case IOCTL_BCM_FLASH2X_SECTION_READ: {
- 		struct bcm_flash2x_readwrite sFlash2xRead = {0};
- 		PUCHAR pReadBuff = NULL;
--		UINT NOB = 0;
--		UINT BuffSize = 0;
-+		UINT NOB;
- 		UINT ReadBytes = 0;
- 		UINT ReadOffset = 0;
- 		void __user *OutPutBuff;
-@@ -1480,19 +1479,17 @@ cntrlEnd:
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "\nsFlash2xRead.numOfBytes :%x", sFlash2xRead.numOfBytes);
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "\nsFlash2xRead.bVerify :%x\n", sFlash2xRead.bVerify);
- 
-+		if (sFlash2xRead.numOfBytes > Adapter->uiSectorSize)
-+			sFlash2xRead.numOfBytes = Adapter->uiSectorSize;
-+		NOB = sFlash2xRead.numOfBytes;
-+
- 		/* This was internal to driver for raw read. now it has ben exposed to user space app. */
- 		if (validateFlash2xReadWrite(Adapter, &sFlash2xRead) == false)
- 			return STATUS_FAILURE;
- 
--		NOB = sFlash2xRead.numOfBytes;
--		if (NOB > Adapter->uiSectorSize)
--			BuffSize = Adapter->uiSectorSize;
--		else
--			BuffSize = NOB;
--
- 		ReadOffset = sFlash2xRead.offset;
- 		OutPutBuff = IoBuffer.OutputBuffer;
--		pReadBuff = (PCHAR)kzalloc(BuffSize , GFP_KERNEL);
-+		pReadBuff = (PCHAR)kzalloc(sFlash2xRead.numOfBytes, GFP_KERNEL);
- 
- 		if (pReadBuff == NULL) {
- 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "Memory allocation failed for Flash 2.x Read Structure");
-@@ -1548,8 +1545,7 @@ cntrlEnd:
- 		struct bcm_flash2x_readwrite sFlash2xWrite = {0};
- 		PUCHAR pWriteBuff;
- 		void __user *InputAddr;
--		UINT NOB = 0;
--		UINT BuffSize = 0;
-+		UINT NOB;
- 		UINT WriteOffset = 0;
- 		UINT WriteBytes = 0;
- 
-@@ -1580,19 +1576,17 @@ cntrlEnd:
- 			return -EINVAL;
- 		}
- 
-+		if (sFlash2xWrite.numOfBytes > Adapter->uiSectorSize)
-+			sFlash2xWrite.numOfBytes = Adapter->uiSectorSize;
-+		NOB = sFlash2xWrite.numOfBytes;
-+
- 		if (validateFlash2xReadWrite(Adapter, &sFlash2xWrite) == false)
- 			return STATUS_FAILURE;
- 
- 		InputAddr = sFlash2xWrite.pDataBuff;
- 		WriteOffset = sFlash2xWrite.offset;
--		NOB = sFlash2xWrite.numOfBytes;
--
--		if (NOB > Adapter->uiSectorSize)
--			BuffSize = Adapter->uiSectorSize;
--		else
--			BuffSize = NOB;
- 
--		pWriteBuff = kmalloc(BuffSize, GFP_KERNEL);
-+		pWriteBuff = kmalloc(sFlash2xWrite.numOfBytes, GFP_KERNEL);
- 
- 		if (pWriteBuff == NULL)
- 			return -ENOMEM;
+	Ingo
