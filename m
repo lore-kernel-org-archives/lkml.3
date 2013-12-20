@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932198Ab3LTTKe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 14:10:34 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38569 "EHLO
+	id S932164Ab3LTTKc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 14:10:32 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38566 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754081Ab3LTTJh (ORCPT
+	with ESMTP id S1754078Ab3LTTJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 14:09:37 -0500
+	Fri, 20 Dec 2013 14:09:36 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, Arun Sharma <asharma@fb.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 23/35] tools lib traceevent: Use global QUIET_LINK build output
-Date: Fri, 20 Dec 2013 16:08:58 -0300
-Message-Id: <1387566550-3524-24-git-send-email-acme@infradead.org>
+Subject: [PATCH 01/35] perf sort: Compare addresses if no symbol info
+Date: Fri, 20 Dec 2013 16:08:36 -0300
+Message-Id: <1387566550-3524-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1387566550-3524-1-git-send-email-acme@infradead.org>
 References: <1387566550-3524-1-git-send-email-acme@infradead.org>
@@ -29,75 +29,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Using global QUIET_LINK build output variable and getting rid of local
-print_static_lib_build, print_plugin_build and print_shared_lib_compile.
+If a hist entry doesn't have symbol information, compare it with its
+address.  Currently it only compares its level or whether it's NULL.
 
-We no longer distinguish between shared and static library in the build
-message. It's differenced by the built file suffix, like:
+This can lead to an undesired result like an overhead exceeds 100%
+especially when callchain accumulation is enabled by later patch.
 
-  $ make
-    ...
-    LINK     libtraceevent.a
-    LINK     libtraceevent.so
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1387460527-15030-7-git-send-email-jolsa@redhat.com
+Cc: Rodrigo Campos <rodrigo@sdfg.com.ar>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1387344086-12744-2-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/Makefile | 11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
+ tools/perf/util/sort.c | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-index 24203cc14649..51be8ab76f9f 100644
---- a/tools/lib/traceevent/Makefile
-+++ b/tools/lib/traceevent/Makefile
-@@ -152,14 +152,9 @@ override CFLAGS += $(udis86-flags) -D_GNU_SOURCE
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 8b0bb1f4494a..68a4fd2f505e 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -161,6 +161,11 @@ struct sort_entry sort_dso = {
  
- ifeq ($(VERBOSE),1)
-   Q =
--  print_shared_lib_compile =
--  print_plugin_build =
-   print_install =
- else
-   Q = @
--  print_shared_lib_compile =	echo '  BUILD    SHARED LIB '$(OBJ);
--  print_plugin_build =		echo '  BUILD    PLUGIN '$(OBJ);
--  print_static_lib_build =	echo '  BUILD    STATIC LIB '$(OBJ);
-   print_install =		echo '  INSTALL  '$1;
- endif
+ /* --sort symbol */
  
-@@ -216,10 +211,10 @@ all: all_cmd
- all_cmd: $(CMD_TARGETS)
++static int64_t _sort__addr_cmp(u64 left_ip, u64 right_ip)
++{
++	return (int64_t)(right_ip - left_ip);
++}
++
+ static int64_t _sort__sym_cmp(struct symbol *sym_l, struct symbol *sym_r)
+ {
+ 	u64 ip_l, ip_r;
+@@ -183,7 +188,7 @@ sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
+ 	int64_t ret;
  
- libtraceevent.so: $(PEVENT_LIB_OBJS)
--	$(Q)$(do_compile_shared_library)
-+	$(QUIET_LINK)$(CC) --shared $^ -o $@
+ 	if (!left->ms.sym && !right->ms.sym)
+-		return right->level - left->level;
++		return _sort__addr_cmp(left->ip, right->ip);
  
- libtraceevent.a: $(PEVENT_LIB_OBJS)
--	$(Q)$(do_build_static_lib)
-+	$(QUIET_LINK)$(RM) $@; $(AR) rcs $@ $^
+ 	/*
+ 	 * comparing symbol address alone is not enough since it's a
+@@ -372,7 +377,7 @@ sort__sym_from_cmp(struct hist_entry *left, struct hist_entry *right)
+ 	struct addr_map_symbol *from_r = &right->branch_info->from;
  
- plugins: $(PLUGINS)
+ 	if (!from_l->sym && !from_r->sym)
+-		return right->level - left->level;
++		return _sort__addr_cmp(from_l->addr, from_r->addr);
  
-@@ -230,7 +225,7 @@ $(PLUGIN_OBJS): %.o : $(src)/%.c
- 	$(QUIET_CC_FPIC)$(CC) -c $(CFLAGS) -fPIC -o $@ $<
+ 	return _sort__sym_cmp(from_l->sym, from_r->sym);
+ }
+@@ -384,7 +389,7 @@ sort__sym_to_cmp(struct hist_entry *left, struct hist_entry *right)
+ 	struct addr_map_symbol *to_r = &right->branch_info->to;
  
- $(PLUGINS): %.so: %.o
--	$(Q)$(do_plugin_build)
-+	$(QUIET_LINK)$(CC) $(CFLAGS) -shared -nostartfiles -o $@ $<
+ 	if (!to_l->sym && !to_r->sym)
+-		return right->level - left->level;
++		return _sort__addr_cmp(to_l->addr, to_r->addr);
  
- define make_version.h
- 	(echo '/* This file is automatically generated. Do not modify. */';		\
+ 	return _sort__sym_cmp(to_l->sym, to_r->sym);
+ }
 -- 
 1.8.1.4
 
