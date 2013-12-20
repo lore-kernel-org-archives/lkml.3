@@ -1,109 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756850Ab3LTA2N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 19:28:13 -0500
-Received: from mga01.intel.com ([192.55.52.88]:60547 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753917Ab3LTA2L convert rfc822-to-8bit (ORCPT
+	id S1756721Ab3LTAhj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 19:37:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47232 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756516Ab3LTAhi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 19:28:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,516,1384329600"; 
-   d="scan'208";a="447304872"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: Takashi Iwai <tiwai@suse.de>, Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-CC: "Brown, Len" <len.brown@intel.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "ibm-acpi-devel@lists.sourceforge.net" 
-	<ibm-acpi-devel@lists.sourceforge.net>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lv Zheng <zetalog@gmail.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>
-Subject: RE: [alsa-devel] [RFC PATCH 15/15] ACPI/thinkpad: Fix wrong
- <acpi/acpi.h> inclusion in Thinkpad ACPI users.
-Thread-Topic: [alsa-devel] [RFC PATCH 15/15] ACPI/thinkpad: Fix wrong
- <acpi/acpi.h> inclusion in Thinkpad ACPI users.
-Thread-Index: AQHO++YZuXv36/5GrUCXFs8cRgdj8ppZZfSAgALRnJA=
-Date: Fri, 20 Dec 2013 00:28:02 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E8802499192@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1387336613.git.lv.zheng@intel.com>
-	<f82182940fe88b1b6428eecc2df1cb1684f0ca80.1387336613.git.lv.zheng@intel.com>
-	<20131218114117.GB29631@khazad-dum.debian.net> <s5hd2kuux4o.wl%tiwai@suse.de>
-In-Reply-To: <s5hd2kuux4o.wl%tiwai@suse.de>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 19 Dec 2013 19:37:38 -0500
+Date: Thu, 19 Dec 2013 16:37:36 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: xqx12 <s2exqx@gmail.com>
+Cc: giometti@enneenne.com, linux-kernel@vger.kernel.org, chyyuu@gmail.com,
+        xuyongjiande@gmail.com, xqx12 <xiaoqixue_1@163.com>
+Subject: Re: [PATCH] a multiplication overflow in drivers/pps/pps.c
+Message-Id: <20131219163736.56144b5368be511af2df5a73@linux-foundation.org>
+In-Reply-To: <1387352171-3811-1-git-send-email-xiaoqixue_1@163.com>
+References: <1387352171-3811-1-git-send-email-xiaoqixue_1@163.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Takashi and Henrique
+On Wed, 18 Dec 2013 15:36:11 +0800 xqx12 <s2exqx@gmail.com> wrote:
 
-Thanks for reviewing and commenting.
+> there is an overflow in the following code :
+> 
+> ticks = fdata.timeout.sec * HZ;
+> 
+> while ticks is a signed 64-bit, but the result of fdata.timeout.sec *
+> HZ will be converted be 32-bit first. So ticks will be a wrong value
+> after multiplication overflow.
 
-> From: linux-acpi-owner@vger.kernel.org [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Takashi Iwai
-> Sent: Wednesday, December 18, 2013 9:06 PM
-> 
-> At Wed, 18 Dec 2013 09:41:17 -0200,
-> Henrique de Moraes Holschuh wrote:
-> >
-> > On Wed, 18 Dec 2013, Lv Zheng wrote:
-> > > CONFIG_ACPI dependent code should include <linux/acpi.h> instead of
-> > > directly including <acpi/acpi.h>.  This patch cleans up such wrong
-> > > inclusions for Thinkpad ACPI users.
-> >
-> > ...
-> >
-> > >  drivers/platform/x86/thinkpad_acpi.c |    1 -
-> > >  include/linux/thinkpad_acpi.h        |    2 ++
-> > >  sound/pci/hda/patch_conexant.c       |    1 -
-> > >  sound/pci/hda/patch_realtek.c        |    1 -
-> >
-> > I'd prefer if you left the include outside of thinkpad_acpi.h, and just fix
-> > the include in the two ALSA users.
-> 
-> Agreed.
-> 
-> > We might add some extra stuff to thinkpad_acpi.h someday, and not everything
-> > thinkpad_acpi does that might be useful to export to other areas of the
-> > kernel would require acpi.h.
-> >
-> > Looking at patch_conexant and patch_realtek, it might be better to actually
-> > move the "am I running on a thinkpad" stuff they use acpi.h for into
-> > thinkpad_acpi, and provide a prototype for that in thinkpad_acpi.h.
-> 
-> True, but we don't want to bind with thinkpad_acpi before identified
-> that it's a thinkpad, so the code needs to be in hd-audio codec
-> driver.
-> 
+When fixing a bug, please always include a full description of the
+user-visible effects of that bug.  This helps others decide which
+kernel version(s) should be fixed.
 
-It looks to me like that there is a relationship between two Henrique's suggestions.
-His opinion is all ACPI stuff should be bound into thinkpad_acpi.c, that's why he suggested not to include <linux/acpi.h> in <linux/thinkpad_acpi.h>.
-So we might address both of them in order to follow.
+> ...
+>
+> --- a/drivers/pps/pps.c
+> +++ b/drivers/pps/pps.c
+> @@ -164,7 +164,7 @@ static long pps_cdev_ioctl(struct file *file,
+>  			dev_dbg(pps->dev, "timeout %lld.%09d\n",
+>  					(long long) fdata.timeout.sec,
+>  					fdata.timeout.nsec);
+> -			ticks = fdata.timeout.sec * HZ;
+> +			ticks = (s64)(fdata.timeout.sec) * HZ;
+>  			ticks += fdata.timeout.nsec / (NSEC_PER_SEC / HZ);
+>  
+>  			if (ticks != 0) {
 
-I'm not sure if your opinion is: the hd-audio codec driver's needs cannot be met by addressing the second comment.
-And I'm not the right person that is able to test such code restructuring work.
-The target of this patchset is cleaning up wrong <acpi/acpi.h> inclusions, so let me focus on the first comment.
+pps_fdata.timeout.sec has type __s64, so the patch should be a no-op?
 
-Can I just update this patch with <acpi/acpi.h> inclusions replaced by <linux/acpi.h> inclusions?
+Did you really observe a runtime problem from this?  If so, I suspect
+your compiler is busted.
 
-Thanks and best regards
--Lv
 
-> 
-> thanks,
-> 
-> Takashi
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
