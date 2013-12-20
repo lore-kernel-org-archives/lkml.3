@@ -1,55 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756050Ab3LTKEJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 05:04:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3869 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755540Ab3LTKED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 05:04:03 -0500
-From: Dave Young <dyoung@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
-        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
-        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
-        kexec@lists.infradead.org, bp@alien8.de, greg@kroah.com,
-        matt@console-pimps.org, toshi.kani@hp.com, akpm@linux-foundation.org,
-        mingo@kernel.org, msalter@redhat.com, leif.lindholm@linaro.org
-Subject: [PATCH v7 05/12] efi: reserve boot service fix
-Date: Fri, 20 Dec 2013 18:02:15 +0800
-Message-Id: <1387533742-18018-6-git-send-email-dyoung@redhat.com>
-In-Reply-To: <1387533742-18018-1-git-send-email-dyoung@redhat.com>
-References: <1387533742-18018-1-git-send-email-dyoung@redhat.com>
+	id S932287Ab3LTKIo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 05:08:44 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:35756 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932226Ab3LTKIh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 05:08:37 -0500
+Subject: [PATCH -tip  0/3] perf-probe: Dwarf support for uprobes
+To: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "David A. Long" <dave.long@linaro.org>, systemtap@sourceware.org,
+        yrl.pp-manager.tt@hitachi.com, Namhyung Kim <namhyung@kernel.org>
+Date: Fri, 20 Dec 2013 10:02:55 +0000
+Message-ID: <20131220100255.7169.19384.stgit@kbuild-fedora.novalocal>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code check boot service region with kernel text region by:
-start+size >= __pa_symbol(_text)
-The end of the above region should be start + size - 1 instead.
+Hi,
 
-I see this problem in ovmf + Fedora 19 grub boot:
-text start: 1000000 md start: 800000 md size: 800000
+Here is the series of perf-probe patches which adds 
+dwarf(debuginfo) support for uprobes.
 
-Signed-off-by: Dave Young <dyoung@redhat.com>
-Acked-by: Borislav Petkov <bp@suse.de>
-Acked-by: Toshi Kani <toshi.kani@hp.com>
+Currently perf-probe doesn't support debuginfo for uprobes.
+The lack of the debuginfo support for uprobes sometimes
+confuses users (or makes them cry) because they can't use
+perf-probe as for kprobes case, and that is not what I hope.
+
+So I tried to add debuginfo support for uprobes on
+perf-probe. Actually, this is not completely done yet.
+We still need to add some features for make it perfect.
+However, this series can provide minimum debuginfo
+support for uprobes.
+
+For example)
+- Shows the probe-able lines of the given function
+----
+# ./perf probe -x perf --line map__load
+<map__load@/home/fedora/ksrc/linux-2.6/tools/perf/util/map.c:0>
+      0  int map__load(struct map *map, symbol_filter_t filter)
+      1  {
+      2         const char *name = map->dso->long_name;
+                int nr;
+
+      5         if (dso__loaded(map->dso, map->type))
+      6                 return 0;
+
+      8         nr = dso__load(map->dso, map, filter);
+      9         if (nr < 0) {
+     10                 if (map->dso->has_build_id) {
+----
+
+- Shows the available variables of the given line
+----
+# ./perf probe -x perf --vars map__load:8
+Available variables at map__load:8
+        @<map__load+96>
+                char*   name
+                struct map*     map
+                symbol_filter_t filter
+        @<map__find_symbol+112>
+                char*   name
+                symbol_filter_t filter
+        @<map__find_symbol_by_name+136>
+                char*   name
+                symbol_filter_t filter
+        @<map_groups__find_symbol_by_name+176>
+                char*   name
+                struct map*     map
+                symbol_filter_t filter
+----
+
+- Set a probe with available vars on the given line
+----
+# ./perf probe -x perf --add 'map__load:8 $vars'
+
+Added new events:
+  probe_perf:map__load (on map__load:8 with $vars)
+  probe_perf:map__load_1 (on map__load:8 with $vars)
+  probe_perf:map__load_2 (on map__load:8 with $vars)
+  probe_perf:map__load_3 (on map__load:8 with $vars)
+
+You can now use it in all perf tools, such as:
+
+        perf record -e probe_perf:map__load_3 -aR sleep 1
+----
+
+To complete this requires Namhyung's uprobe
+fetch-method updates which is almost done on LKML.
+
+TODO:
+ - Convert data symbol name in arguments to address
+   offset value.
+ - Support distro style debuginfo path (/usr/lib/debug/...)
+
 ---
- arch/x86/platform/efi/efi.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index b1e07a4..f022294 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -438,7 +438,7 @@ void __init efi_reserve_boot_services(void)
- 		 * - Not within any part of the kernel
- 		 * - Not the bios reserved area
- 		*/
--		if ((start+size >= __pa_symbol(_text)
-+		if ((start + size > __pa_symbol(_text)
- 				&& start <= __pa_symbol(_end)) ||
- 			!e820_all_mapped(start, start+size, E820_RAM) ||
- 			memblock_is_region_reserved(start, size)) {
+Masami Hiramatsu (3):
+      [CLEANUP] perf-probe: Expand given path to absolute path
+      perf-probe: Support dwarf on uprobe events
+      perf-probe: Use the actual address as a hint for uprobes
+
+
+ tools/perf/builtin-probe.c     |   11 ++
+ tools/perf/util/probe-event.c  |  247 +++++++++++++++++++++++++++-------------
+ tools/perf/util/probe-event.h  |    1 
+ tools/perf/util/probe-finder.c |    1 
+ 4 files changed, 176 insertions(+), 84 deletions(-)
+
 -- 
-1.8.3.1
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
