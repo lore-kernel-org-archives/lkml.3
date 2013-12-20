@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140Ab3LTTJv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 14:09:51 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38509 "EHLO
+	id S1755018Ab3LTTJt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 14:09:49 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38461 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752690Ab3LTTJa (ORCPT
+	with ESMTP id S1751201Ab3LTTJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 14:09:30 -0500
+	Fri, 20 Dec 2013 14:09:28 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 20/35] tools lib traceevent: Remove print_app_build variable
-Date: Fri, 20 Dec 2013 16:08:55 -0300
-Message-Id: <1387566550-3524-21-git-send-email-acme@infradead.org>
+Subject: [PATCH 14/35] perf record: Use perf_data_file__write for output file
+Date: Fri, 20 Dec 2013 16:08:49 -0300
+Message-Id: <1387566550-3524-15-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1387566550-3524-1-git-send-email-acme@infradead.org>
 References: <1387566550-3524-1-git-send-email-acme@infradead.org>
@@ -31,54 +30,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Removing print_app_build variable, because it's not needed.
+Changing the file output code to use the newly
+added perf_data_file__write interface.
+
+No functional change intended.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1387460527-15030-4-git-send-email-jolsa@redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/Makefile | 6 ------
- 1 file changed, 6 deletions(-)
+ tools/perf/builtin-record.c | 23 +++++++++--------------
+ 1 file changed, 9 insertions(+), 14 deletions(-)
 
-diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-index 0d9cbb426b44..022c987d25b6 100644
---- a/tools/lib/traceevent/Makefile
-+++ b/tools/lib/traceevent/Makefile
-@@ -151,7 +151,6 @@ override CFLAGS += $(udis86-flags) -D_GNU_SOURCE
- ifeq ($(VERBOSE),1)
-   Q =
-   print_compile =
--  print_app_build =
-   print_fpic_compile =
-   print_shared_lib_compile =
-   print_plugin_obj_compile =
-@@ -160,7 +159,6 @@ ifeq ($(VERBOSE),1)
- else
-   Q = @
-   print_compile =		echo '  CC       '$(OBJ);
--  print_app_build =		echo '  BUILD    '$(OBJ);
-   print_fpic_compile =		echo '  CC FPIC  '$(OBJ);
-   print_shared_lib_compile =	echo '  BUILD    SHARED LIB '$(OBJ);
-   print_plugin_obj_compile =	echo '  CC FPIC  '$(OBJ);
-@@ -173,10 +171,6 @@ do_fpic_compile =					\
- 	($(print_fpic_compile)				\
- 	$(CC) -c $(CFLAGS) $(EXT) -fPIC $< -o $@)
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index c1c1200d2f0a..8eed3d752c80 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -76,24 +76,19 @@ struct perf_record {
+ 	long			samples;
+ };
  
--do_app_build =						\
--	($(print_app_build)				\
--	$(CC) $^ -rdynamic -o $@ $(CONFIG_LIBS) $(LIBS))
+-static int perf_record__write(struct perf_record *rec, void *buf, size_t size)
++static ssize_t perf_record__write(struct perf_record *rec,
++				  void *buf, size_t size)
+ {
+-	struct perf_data_file *file = &rec->file;
 -
- do_compile_shared_library =			\
- 	($(print_shared_lib_compile)		\
- 	$(CC) --shared $^ -o $@)
+-	while (size) {
+-		ssize_t ret = write(file->fd, buf, size);
+-
+-		if (ret < 0) {
+-			pr_err("failed to write perf data, error: %m\n");
+-			return -1;
+-		}
+-
+-		size -= ret;
+-		buf += ret;
++	struct perf_session *session = rec->session;
++	ssize_t ret;
+ 
+-		rec->bytes_written += ret;
++	ret = perf_data_file__write(session->file, buf, size);
++	if (ret < 0) {
++		pr_err("failed to write perf data, error: %m\n");
++		return -1;
+ 	}
+ 
++	rec->bytes_written += ret;
+ 	return 0;
+ }
+ 
 -- 
 1.8.1.4
 
