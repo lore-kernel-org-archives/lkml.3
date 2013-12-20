@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753029Ab3LTU5s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 15:57:48 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:50759 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938Ab3LTU5q (ORCPT
+	id S1754482Ab3LTVAG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 16:00:06 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:62763 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751514Ab3LTVAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 15:57:46 -0500
-Message-ID: <52B4AF43.8070608@samsung.com>
-Date: Sat, 21 Dec 2013 05:57:39 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
-MIME-Version: 1.0
+	Fri, 20 Dec 2013 16:00:03 -0500
+From: Arnd Bergmann <arnd@arndb.de>
 To: Linus Walleij <linus.walleij@linaro.org>
-CC: Kukjin Kim <kgene@kernel.org>,
-        =?ISO-8859-1?Q?Jos=E9_Miguel_Gon=E7?= =?ISO-8859-1?Q?alves?= 
-	<jose.goncalves@inov.pt>,
-        Tomasz Figa <t.figa@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+Subject: Re: [PATCH v3 3/6] pinctrl: Make PINCTRL selectable by defconfig/menuconfig
+Date: Fri, 20 Dec 2013 21:58:34 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Heiko St?bner" <heiko@sntech.de>, Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-Subject: Re: [PATCH] ARM: S3C24XX: Fix configuration of gpio port sizes on
- S3C24XX.
-References: <1378889173-7437-1-git-send-email-jose.goncalves@inov.pt>	<CACRpkdYbCzOJ9k8AyriM9quafx=dseK6w1DYjyrJ9F53ka8TEw@mail.gmail.com>	<52AA6909.8050200@inov.pt>	<0bc301cef7e5$319ac0c0$94d04240$@kernel.org>	<CACRpkdbQNEj83fnDX0ppPNJYgu1cMGxbk6n6M05wVNK9LEvDKw@mail.gmail.com> <CACRpkda5e-1ndyZzdZX+KZB=mCV6RM5nJ-nv_-yt1UEv_GhLLw@mail.gmail.com>
-In-Reply-To: <CACRpkda5e-1ndyZzdZX+KZB=mCV6RM5nJ-nv_-yt1UEv_GhLLw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+        Rob Herring <rob.herring@calxeda.com>, Sherman Yin <syin@broadcom.com>,
+        "bcm-kernel-feedback-list" <bcm-kernel-feedback-list@broadcom.com>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+References: <1381174108-25168-1-git-send-email-syin@broadcom.com> <20131217001842.GB3840@sonymobile.com> <CACRpkdY-MM7OoMq_L90YRADy=oaDoV1wAOccVz90LqfRfEh=3Q@mail.gmail.com>
+In-Reply-To: <CACRpkdY-MM7OoMq_L90YRADy=oaDoV1wAOccVz90LqfRfEh=3Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312202158.34805.arnd@arndb.de>
+X-Provags-ID: V02:K0:wq//Lm6KNx1BUvst9m/KpakVr195RSY4xz1wiGPWb2U
+ lU3cUhbEKqaIrzTXjqEToVYnOy964wdST2TF3di3nK7/bR/zjh
+ PAXHIjta7bpqXu8Z34h2GvuxpVGU+Jn4jnAG/+/OEcVIfC0/BZ
+ Wfh13NJ7Lx7wEeWPTepS6/sm3DtxhgvLGxSPSTav4Vusumj8fb
+ mQbcldxz6YWIvvegtEgne9qLkSHmFzpmzGamKxiFKi3u6q3Jlx
+ LpS6OYmOnLr0/nXxiPpu/K6yFakcceLv9Hg1ICzLYG3dr0fABW
+ 3Lm9UEFyojVd7ooD3ZyZRpCpn7t99gB1njA+489EEQm08tmolc
+ fVLqXuQUFDSl2EESaVJM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/13 18:12, Linus Walleij wrote:
-> On Fri, Dec 13, 2013 at 10:37 AM, Linus Walleij
-> <linus.walleij@linaro.org>  wrote:
->> On Fri, Dec 13, 2013 at 10:24 AM,<kgene@kernel.org>  wrote:
->>> José Miguel Gonçalves wrote:
->> (..)
->>>> Was this patch forgotten?
->>>>
->>> Hi Jose,
->>>
->>> Sorry about missing your patch. It's my fault :( and as you know, at this
->>> moment the file will be removed by Linus' patch...
->>
->> Oh I can certainly rebase the patch onto my tree if I just
->> get an ACK for it...
->
-> Kukjin, can I have your ACK for this patch?
->
+On Friday 20 December 2013, Linus Walleij wrote:
+> On Tue, Dec 17, 2013 at 1:18 AM, Bjorn Andersson
+> <bjorn.andersson@sonymobile.com> wrote:
+> 
+> > No matter how we build the individual pinctrl drivers we will always
+> > need the pinctrl framework in a multi-soc zImage; so I can't see that
+> > we gain anything from being able to compile PINCTRL as a module.
+> 
+> I discussed this matter with Christian on IRC and I believe we could
+> basically do "select PINCTRL" on ARCH_MULTIPLATFORM as the
+> vast majority of multiplatforms appear to be using this anyway, this
+> would make the submenu for pin control pop up in menuconfig
+> for this, and make it possible to move different subdrivers to modules
+> if desired.
+> 
+> MULTIPLATFORM does not seem to be about saving footprint bytes
+> on a very fine-granular level anyway, more about doing the module
+> loading/unloading approach to footprint.
 
-Sure, please go ahead with my ack.
+Let's review the list of platforms that don't select PINCTRL. There
+are some platforms that are indeed sensitive about memory footprint,
+and I promised people that converting to multiplatform won't cause
+a significant increase in kernel binary size as long as no other
+platforms are enabled.
 
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-
-Thanks and Merry Christmas :-)
-
-- Kukjin
+	Arnd
