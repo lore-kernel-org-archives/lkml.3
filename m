@@ -1,140 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866Ab3LTImu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 03:42:50 -0500
-Received: from smtp-out-111.synserver.de ([212.40.185.111]:1031 "EHLO
-	smtp-out-044.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752524Ab3LTImt (ORCPT
+	id S1755059Ab3LTInT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 03:43:19 -0500
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:59126 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754939Ab3LTInR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 03:42:49 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 26073
-Message-ID: <52B3F531.3090107@metafoo.de>
-Date: Fri, 20 Dec 2013 08:43:45 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Fri, 20 Dec 2013 03:43:17 -0500
 MIME-Version: 1.0
-To: Apelete Seketeli <apelete@seketeli.net>
-CC: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: [PATCH] arch: mips: update platform data for JZ4740 usb device
- controller
-References: <1387487503-26161-1-git-send-email-apelete@seketeli.net> <1387487503-26161-2-git-send-email-apelete@seketeli.net>
-In-Reply-To: <1387487503-26161-2-git-send-email-apelete@seketeli.net>
+In-Reply-To: <1386682662-17633-1-git-send-email-ulf.hansson@linaro.org>
+References: <1386682662-17633-1-git-send-email-ulf.hansson@linaro.org>
+Date: Fri, 20 Dec 2013 09:43:16 +0100
+Message-ID: <CAPDyKFrS6k1Zd5=XQX4ODk2=obo89bk-Z6aJvv+3WsrHw3nGbg@mail.gmail.com>
+Subject: Re: [PATCH V2 0/3] PM: Enable option of re-use runtime PM callbacks
+ at system suspend
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kevin Hilman <khilman@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2013 10:11 PM, Apelete Seketeli wrote:
-> The platform data already available in tree for JZ4740 USB Device
-> Controller was previously used by an out-of-tree USB gadget driver
-> which was not relying on the musb driver and was written by Ingenic
-> and the Qi-Hardware community.
-> 
-> Update platform data for JZ4740 USB device controller to be used with
-> musb driver.
-> 
-> Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
+On 10 December 2013 14:37, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> To put devices into low power state during system suspend, it is convenient
+> for some runtime PM supported power domains, subsystems and drivers to have
+> the option of re-using and invoking the runtime PM callbacks from their system
+> PM callbacks.
+>
+> The benefit is that we don't need to implement wrapper functions which
+> handles runtime PM resourses, typically called from both runtime PM and system
+> PM callbacks.
+>
+> Some new helper macros for defining the PM callbacks are added.
+>
+> SET_PM_RUNTIME_PM_OPS; to define runtime PM callbacks for CONFIG_PM instead of
+> CONFIG_PM_RUNTIME.
+>
+> SET_LATE_SYSTEM_SLEEP_PM_OPS; to define common late/early system PM callbacks,
+> same approach is applicable to the existing SET_SYSTEM_SLEEP_PM_OPS which
+> defines common suspend/resume system PM callbacks.
+>
+> A minor fix was needed for the platform bus, which runtime PM callbacks are set
+> to the pm_generic_runtime_suspend|resume functions. These were implemented only
+> for CONFIG_PM_RUNTIME and thus the platform bus prevented driver's runtime PM
+> callbacks to be invoked when only CONFIG_PM_SLEEP was used. We move them into
+> CONFIG_PM to resolve the problem.
+>
+> Changes in v2:
+>         Updated commit messages to try to better reflect the changes.
+>         Removed the below patches from this patch set. Let's leave those to be
+>         addressed separately, if needed.
+>         - PM / Sleep: Add pm_generic functions to re-use runtime PM callbacks
+>         - drm/exynos: Convert to suspend_late/resume_early callbacks for fimc
+>
+>
+> Ulf Hansson (3):
+>   PM / Runtime: Add second macro for definition of runtime PM callbacks
+>   PM / Runtime: Implement the pm_generic_runtime functions for
+>     CONFIG_PM
+>   PM / Sleep: Add macro to define common late/early system PM callbacks
+>
+>  drivers/base/power/generic_ops.c |    4 ++--
+>  include/linux/pm.h               |   21 +++++++++++++++++++++
+>  include/linux/pm_runtime.h       |   12 ++++++++----
+>  3 files changed, 31 insertions(+), 6 deletions(-)
+>
+> --
+> 1.7.9.5
+>
 
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Hi,
 
-> ---
->  arch/mips/include/asm/mach-jz4740/platform.h |    1 +
->  arch/mips/jz4740/board-qi_lb60.c             |    1 +
->  arch/mips/jz4740/platform.c                  |   40 +++++++++++++++-----------
->  3 files changed, 26 insertions(+), 16 deletions(-)
-> 
-> diff --git a/arch/mips/include/asm/mach-jz4740/platform.h b/arch/mips/include/asm/mach-jz4740/platform.h
-> index 05988c2..069b43a 100644
-> --- a/arch/mips/include/asm/mach-jz4740/platform.h
-> +++ b/arch/mips/include/asm/mach-jz4740/platform.h
-> @@ -21,6 +21,7 @@
->  
->  extern struct platform_device jz4740_usb_ohci_device;
->  extern struct platform_device jz4740_udc_device;
-> +extern struct platform_device jz4740_udc_xceiv_device;
->  extern struct platform_device jz4740_mmc_device;
->  extern struct platform_device jz4740_rtc_device;
->  extern struct platform_device jz4740_i2c_device;
-> diff --git a/arch/mips/jz4740/board-qi_lb60.c b/arch/mips/jz4740/board-qi_lb60.c
-> index 8a5ec0e..c01900e 100644
-> --- a/arch/mips/jz4740/board-qi_lb60.c
-> +++ b/arch/mips/jz4740/board-qi_lb60.c
-> @@ -427,6 +427,7 @@ static struct platform_device qi_lb60_audio_device = {
->  
->  static struct platform_device *jz_platform_devices[] __initdata = {
->  	&jz4740_udc_device,
-> +	&jz4740_udc_xceiv_device,
->  	&jz4740_mmc_device,
->  	&jz4740_nand_device,
->  	&qi_lb60_keypad,
-> diff --git a/arch/mips/jz4740/platform.c b/arch/mips/jz4740/platform.c
-> index df65677..1be41e2 100644
-> --- a/arch/mips/jz4740/platform.c
-> +++ b/arch/mips/jz4740/platform.c
-> @@ -21,6 +21,8 @@
->  
->  #include <linux/dma-mapping.h>
->  
-> +#include <linux/usb/musb.h>
-> +
->  #include <asm/mach-jz4740/platform.h>
->  #include <asm/mach-jz4740/base.h>
->  #include <asm/mach-jz4740/irq.h>
-> @@ -56,29 +58,35 @@ struct platform_device jz4740_usb_ohci_device = {
->  	.resource	= jz4740_usb_ohci_resources,
->  };
->  
-> -/* UDC (USB gadget controller) */
-> -static struct resource jz4740_usb_gdt_resources[] = {
-> -	{
-> -		.start	= JZ4740_UDC_BASE_ADDR,
-> -		.end	= JZ4740_UDC_BASE_ADDR + 0x1000 - 1,
-> -		.flags	= IORESOURCE_MEM,
-> +/* USB Device Controller */
-> +struct platform_device jz4740_udc_xceiv_device = {
-> +	.name = "usb_phy_gen_xceiv",
-> +	.id   = 0,
-> +};
-> +
-> +static struct resource jz4740_udc_resources[] = {
-> +	[0] = {
-> +		.start = JZ4740_UDC_BASE_ADDR,
-> +		.end   = JZ4740_UDC_BASE_ADDR + 0x10000 - 1,
-> +		.flags = IORESOURCE_MEM,
->  	},
-> -	{
-> -		.start	= JZ4740_IRQ_UDC,
-> -		.end	= JZ4740_IRQ_UDC,
-> -		.flags	= IORESOURCE_IRQ,
-> +	[1] = {
-> +		.start = JZ4740_IRQ_UDC,
-> +		.end   = JZ4740_IRQ_UDC,
-> +		.flags = IORESOURCE_IRQ,
-> +		.name  = "mc",
->  	},
->  };
->  
->  struct platform_device jz4740_udc_device = {
-> -	.name		= "jz-udc",
-> -	.id		= -1,
-> -	.dev = {
-> -		.dma_mask = &jz4740_udc_device.dev.coherent_dma_mask,
-> +	.name = "musb-jz4740",
-> +	.id   = -1,
-> +	.dev  = {
-> +		.dma_mask          = &jz4740_udc_device.dev.coherent_dma_mask,
->  		.coherent_dma_mask = DMA_BIT_MASK(32),
->  	},
-> -	.num_resources	= ARRAY_SIZE(jz4740_usb_gdt_resources),
-> -	.resource	= jz4740_usb_gdt_resources,
-> +	.num_resources = ARRAY_SIZE(jz4740_udc_resources),
-> +	.resource      = jz4740_udc_resources,
->  };
->  
->  /* MMC/SD controller */
-> 
+Just wanted to send a kind ping on this patchset.
 
+Would be nice to try to conclude on the way forward after the quite
+long and good discussions we had around this topic.
+
+Kind regards
+Uffe
