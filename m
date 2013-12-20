@@ -1,48 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755739Ab3LTJX6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 04:23:58 -0500
-Received: from smtprelay0201.hostedemail.com ([216.40.44.201]:57486 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755665Ab3LTJX4 (ORCPT
+	id S1755425Ab3LTJ0s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 04:26:48 -0500
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:39373 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754787Ab3LTJ0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 04:23:56 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3868:3870:3871:3872:3873:4250:4321:5007:6119:7652:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13095:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: fold95_3f0d31d7e9f18
-X-Filterd-Recvd-Size: 1560
-Message-ID: <1387531432.2353.44.camel@joe-AO722>
-Subject: Re: checkpatch.pl error might be false positive
-From: Joe Perches <joe@perches.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Ravi Patel <rapatel@apm.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Andy Whitcroft <apw@canonical.com>, Kumar Sankaran <ksankaran@apm.com>,
-        Loc Ho <lho@apm.com>, Keyur Chudgar <kchudgar@apm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 20 Dec 2013 01:23:52 -0800
-In-Reply-To: <20131220091621.GC21784@leaf>
-References: <CAN1v_PvS3dH6HVQ90d=3cfsSdMgieyoDNp3VN-vrHv-aqSFEAw@mail.gmail.com>
-	 <1387491348.2353.20.camel@joe-AO722> <20131220075634.GA21784@leaf>
-	 <1387528630.2353.39.camel@joe-AO722> <20131220091621.GC21784@leaf>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 20 Dec 2013 04:26:43 -0500
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org, monstr@monstr.eu,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        microblaze-uclinux@itee.uq.edu.au
+Subject: [PATCH] microblaze: timer: Use generic sched_clock implementation
+Date: Fri, 20 Dec 2013 10:26:29 +0100
+Message-Id: <8d9086d9fb20805f533fe5762a6ab5d6460b783d.1387531581.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-16918-1387531589-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-12-20 at 01:16 -0800, Josh Triplett wrote:
-> Duplicating the regex seems awful.  Could you put it in a variable?
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-awful is a strong word and I don't have any
-issue with the duplication.  Using a variable
-is just as confusing as any duplication.
+--=_mimegpg-monstr-desktop-16918-1387531589-0001
 
-Using a separate test and message for the GPL
-vs the FSF bits would likely be better anyway.
+Remove sched_clock from the driver and use setup_check_clock
+function.
 
-You're the original FSF address patch submitter,
-fix it as you think appropriate.
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
 
+Thomas: Can you please review this patch?
+I would like to be sure that I have done it correctly.
+
+Thanks,
+Michal
+---
+ arch/microblaze/Kconfig        |  1 +
+ arch/microblaze/kernel/timer.c | 27 ++++++++-------------------
+ 2 files changed, 9 insertions(+), 19 deletions(-)
+
+diff --git a/arch/microblaze/Kconfig b/arch/microblaze/Kconfig
+index e23cccd..9a4339f 100644
+--- a/arch/microblaze/Kconfig
++++ b/arch/microblaze/Kconfig
+@@ -30,6 +30,7 @@ config MICROBLAZE
+ 	select MODULES_USE_ELF_RELA
+ 	select CLONE_BACKWARDS3
+ 	select CLKSRC_OF
++	select GENERIC_SCHED_CLOCK
+
+ config SWAP
+ 	def_bool n
+diff --git a/arch/microblaze/kernel/timer.c b/arch/microblaze/kernel/timer.c
+index 3e39b10..7ad0d2e 100644
+--- a/arch/microblaze/kernel/timer.c
++++ b/arch/microblaze/kernel/timer.c
+@@ -12,12 +12,12 @@
+ #include <linux/interrupt.h>
+ #include <linux/delay.h>
+ #include <linux/sched.h>
++#include <linux/sched_clock.h>
+ #include <linux/clk.h>
+ #include <linux/clockchips.h>
+ #include <linux/of_address.h>
+ #include <linux/of_irq.h>
+ #include <asm/cpuinfo.h>
+-#include <linux/cnt32_to_63.h>
+
+ static void __iomem *timer_baseaddr;
+
+@@ -167,10 +167,15 @@ static __init void xilinx_clockevent_init(void)
+ 	clockevents_register_device(&clockevent_xilinx_timer);
+ }
+
++static u32 xilinx_clock_read(void)
++{
++	return in_be32(timer_baseaddr + TCR1);
++}
++
+ static cycle_t xilinx_read(struct clocksource *cs)
+ {
+ 	/* reading actual value of timer 1 */
+-	return (cycle_t) (in_be32(timer_baseaddr + TCR1));
++	return (cycle_t)xilinx_clock_read();
+ }
+
+ static struct timecounter xilinx_tc = {
+@@ -222,12 +227,6 @@ static int __init xilinx_clocksource_init(void)
+ 	return 0;
+ }
+
+-/*
+- * We have to protect accesses before timer initialization
+- * and return 0 for sched_clock function below.
+- */
+-static int timer_initialized;
+-
+ static void __init xilinx_timer_init(struct device_node *timer)
+ {
+ 	u32 irq;
+@@ -263,18 +262,8 @@ static void __init xilinx_timer_init(struct device_node *timer)
+ #endif
+ 	xilinx_clocksource_init();
+ 	xilinx_clockevent_init();
+-	timer_initialized = 1;
+-}
+-
+-unsigned long long notrace sched_clock(void)
+-{
+-	if (timer_initialized) {
+-		struct clocksource *cs = &clocksource_microblaze;
+
+-		cycle_t cyc = cnt32_to_63(cs->read(NULL)) & LLONG_MAX;
+-		return clocksource_cyc2ns(cyc, cs->mult, cs->shift);
+-	}
+-	return 0;
++	setup_sched_clock(xilinx_clock_read, 32, timer_clock_freq);
+ }
+
+ CLOCKSOURCE_OF_DECLARE(xilinx_timer, "xlnx,xps-timer-1.00.a",
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-16918-1387531589-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlK0DUUACgkQykllyylKDCH+HwCeK6d9Udthrx9Vpnsi4wx9jP50
+i7gAn3GzQc1ruIeflK7drvtXgO7D3oVX
+=9X4j
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-16918-1387531589-0001--
