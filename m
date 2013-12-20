@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab3LTDLW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 22:11:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46435 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752098Ab3LTDLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 22:11:21 -0500
-Message-ID: <1387509074.2919.36.camel@localhost>
-Subject: Re: [PATCH] audit: listen in all network namespaces
-From: Eric Paris <eparis@redhat.com>
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com,
-        Steve Grubb <sgrubb@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>
-Date: Thu, 19 Dec 2013 22:11:14 -0500
-In-Reply-To: <52B3AF8F.5040607@cn.fujitsu.com>
-References: <1374006760-7687-1-git-send-email-rgb@redhat.com>
-		 <52B26F1A.9070308@cn.fujitsu.com>
-	 <1387478422.29366.33.camel@flatline.rdu.redhat.com>
-	 <52B3AF8F.5040607@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752700Ab3LTDNM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 22:13:12 -0500
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:48761 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751771Ab3LTDNK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 22:13:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <1387506141.8363.47.camel@buesod1.americas.hpqcorp.net>
+References: <1387478746-5436-1-git-send-email-davidlohr@hp.com>
+	<1387478746-5436-5-git-send-email-davidlohr@hp.com>
+	<CA+55aFxY_sMes2=0tz0qTKH5-fpAaLji_xd9CdU-u2JxxNN6pA@mail.gmail.com>
+	<1387496569.8363.12.camel@buesod1.americas.hpqcorp.net>
+	<CA+55aFyay84UKWEbAZ=8bT-KV5gq-+1fWgS52gRQv=qZJzMSOQ@mail.gmail.com>
+	<1387506141.8363.47.camel@buesod1.americas.hpqcorp.net>
+Date: Thu, 19 Dec 2013 19:13:09 -0800
+X-Google-Sender-Auth: v8vD-AjXv3AcPz4KhaRbceDDPZM
+Message-ID: <CA+55aFyrZmG6rNpY22OK3UQi18e=4UQyh8a3tpxY+QVCbNxXkw@mail.gmail.com>
+Subject: Re: [PATCH v3 4/4] futex: Avoid taking hb lock if nothing to wakeup
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>, Jeff Mahoney <jeffm@suse.com>,
+        Jason Low <jason.low2@hp.com>, Waiman Long <Waiman.Long@hp.com>,
+        Tom Vaden <tom.vaden@hp.com>, "Norton, Scott J" <scott.norton@hp.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-12-20 at 10:46 +0800, Gao feng wrote:
-> On 12/20/2013 02:40 AM, Eric Paris wrote:
-> > On Thu, 2013-12-19 at 11:59 +0800, Gao feng wrote:
-> >> On 07/17/2013 04:32 AM, Richard Guy Briggs wrote:
+On Thu, Dec 19, 2013 at 6:22 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+>
+> Ok so when I replied I was thinking about the plist really and not the
+> hb->lock ticket counter. Yeah, what you propose does make sense for
+> waiters. However in wake paths we have to decrement  the counter nwake
+> times (per each call to __unqueue_futex()), and if we rely on the
+> ticket, then we do it only once, in the unlock, so the counter doesn't
+> reflect the actual waitqueue size. Or am I missing something with ticket
+> spinlocks (I'm not very familiar with that code)?
 
-> >> we have to store audit_sock
-> >> into auditns(auditns will be passed to kauditd_send_skb),
-> >> this will cause auditns have to get a reference of netns.
-> >> and for some reason(netfilter audit target), netns will
-> >> get reference of auditns too. this is terrible...
-> > 
-> > I'm not sure I agree/understand this entirely...
-> > 
-> 
-> Yes, the audit_sock is created and destroyed by net namespace,
-> so if auditns wants to use audit_sock, it must prevent netns
-> from being destroyed. so auditns has to get reference of netns.
+So that's why I suggested checking the ticket lock _and_ the state of
+the node list.
 
-Namespace == mind blown.  Ok, so:
+The ticket lock state gives you the racy window before the entry has
+actually been added to the node list, and then after the lock has been
+released, the fact that the list isn't empty gives you the rest.
 
- auditd in audit_ns2 and net_ns2. <--- ONLY process in net_ns2
- some process in audit_ns2 and net_ns3
+I think we might have to order the two reads with an smp_rmb - making
+sure that we check the lock state first - but I think it should be
+otherwise pretty solid.
 
-Lets assume that auditd is killed improperly/dies.  Because the last
-process in net_ns2 is gone net_ns2 is invalid/freed.
+And maybe there is some reason it doesn't work, but I'd really like to
+understand it (and I'd like to avoid the extra atomics for the waiters
+count if it at all can be avoided)
 
-Today in the kernel the way we detect auditd is gone is by using the
-socket and getting ECONNREFUSSED.  So here you think that audit_ns2
-should hold a reference on net_ns2, to make sure that socket is always
-valid.
+> Btw, I tried using spin_is_contended + plist_head_empty and we run into
+> a whole bunch of nasty issues which I have yet to sit down and look
+> into.
 
-I instead propose that we could run all audit_ns and reset the audit_pid
-in that namespace and the audit_sock in the namespace to 0/null inside
-audit_net_exit.  Since obviously if the net_ns disappeared, the auditd
-which was running in any audit namespace in that net_ns isn't running
-any more.  We didn't need to hold a reference on the net_ns.  We just
-have to clear the skb_queue, reset the audit_pid to 0, and reset the
-socket to NULL...
+Yeah, I said "spin_contended()" myself initially, but it needs to be
+"spin_is_locked()". It's hopefully unlikely to ever actually be
+contended (which in ticket lock terms is "head is _more_ than one away
+from the tail").
 
-Maybe the one magic socket is the right answer.  I'm not arguing against
-your solution.  I'm really trying to understand why we are going that
-way...
-
-> and in some case, netns will get reference of auditns too. this
-> is complex than making audit_sock global and getting rid of this
-> reference.
-
-This I haven't even started to try to wrap my head around...
-
+            Linus
