@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753427Ab3LTVGO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 16:06:14 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47898 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752201Ab3LTVGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 16:06:08 -0500
-Message-ID: <52B4B0ED.7030600@zytor.com>
-Date: Fri, 20 Dec 2013 13:04:45 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754249Ab3LTVI6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 16:08:58 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:61228 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752629Ab3LTVI4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 16:08:56 -0500
+Message-ID: <52B4B1E3.2020108@samsung.com>
+Date: Sat, 21 Dec 2013 06:08:51 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-To: Matthew Garrett <matthew.garrett@nebula.com>,
-        "bp@alien8.de" <bp@alien8.de>
-CC: "samer.el-haj-mahmoud@hp.com" <samer.el-haj-mahmoud@hp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jlee@suse.com" <jlee@suse.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "Elliott@hp.com" <Elliott@hp.com>, "werner@suse.com" <werner@suse.com>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "oneukum@suse.de" <oneukum@suse.de>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "trenn@suse.de" <trenn@suse.de>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "JBeulich@suse.com" <JBeulich@suse.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "matt@console-pimps.org" <matt@console-pimps.org>
-Subject: Re: [RFC PATCH 06/14] rtc-efi: register rtc-efi device when EFI enabled
-References: <1387439515-8926-1-git-send-email-jlee@suse.com>	 <1387439515-8926-7-git-send-email-jlee@suse.com>	 <20131219140918.GF3145@console-pimps.org>	 <1387513491.3539.4345.camel@linux-s257.site> <52B3C7F8.3040901@zytor.com>	 <20131220103755.GA14784@pd.tnic> <1387552463.17961.2.camel@x230>
-In-Reply-To: <1387552463.17961.2.camel@x230>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+To: Doug Anderson <dianders@chromium.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Simon Glass <sjg@chromium.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Olof Johansson <olof@lixom.net>, Kukjin Kim <kgene.kim@samsung.com>,
+        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] ARM: dts: Add the missing "\" key in non-US keyboards
+ for exynos5250-snow
+References: <1387492578-22068-1-git-send-email-dianders@chromium.org> <1387492578-22068-2-git-send-email-dianders@chromium.org>
+In-Reply-To: <1387492578-22068-2-git-send-email-dianders@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2013 07:14 AM, Matthew Garrett wrote:
-> On Fri, 2013-12-20 at 11:37 +0100, Borislav Petkov wrote:
->> On Thu, Dec 19, 2013 at 08:30:48PM -0800, H. Peter Anvin wrote:
->>> On 12/19/2013 08:24 PM, joeyli wrote:
->>>> I agreed, but userspace application should not be too often to access
->>>> RTC. Maybe only when system boot and set timezone.
->>>
->>> This is, quite frankly, an idiotic argument.
->>
->> TBH, I've been struggling with the question too - and it might even be a
->> stupid question - but what is that absolute need to be able to get the
->> TZ in userspace? Why should I care?
->>
->> Can we get some use cases for stupid people like me please?
-> 
-> Dual-boot environments will tend to have the RTC in local time, not UTC.
-> That means that userspace has to reprogram the clock over daylight
-> savings changes, and to do that it must know whether another OS has
-> already done so.
-> 
+On 12/20/13 07:36, Doug Anderson wrote:
+> When the exynos5250 device tree was sent upstream the keyboard mapping
+> was missing the 2nd instance of the "\" key.  There are two copies of
+> the "\" because it simply has a different row and column on US and
+> non-US keyboards.
+>
+> For more details, see the previous patch in this series: (mkbp: Fix
+> problems with backslash).
+>
+> Signed-off-by: Doug Anderson<dianders@chromium.org>
+> ---
+>   arch/arm/boot/dts/exynos5250-snow.dts | 1 +
+>   1 file changed, 1 insertion(+)
+>
+> diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
+> index fd711e2..28fe2e2 100644
+> --- a/arch/arm/boot/dts/exynos5250-snow.dts
+> +++ b/arch/arm/boot/dts/exynos5250-snow.dts
+> @@ -130,6 +130,7 @@
+>   							0x04060024	/* J */
+>   							0x04080027	/* ; */
+>   							0x04090026	/* L */
+> +							0x040a002b	/* \ */
+>   							0x040b001c	/* ENTER */
+>
+>   							0x0501002c	/* Z */
 
-Actually, it doesn't have to reprogram the clock ... it just needs to
-know if another OS has already done so.  All Linux needs to do is to be
-able to derive UTC from whatever the RTC is set to and to be able to
-keep it consistent.
+OK, Applied this(2/3) and next one(3/3) into fixes for v3.14.
 
-	-hpa
+If these patches should be sent for 3.13 or before, please let me know.
 
+Thanks and Merry Christmas ;-)
+
+- Kukjin
