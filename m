@@ -1,149 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254Ab3LTVQB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 16:16:01 -0500
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:55590
-	"EHLO hallynmail2" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755091Ab3LTVP7 (ORCPT
+	id S1755665Ab3LTVQO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 16:16:14 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:44736 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755102Ab3LTVQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 16:15:59 -0500
-Date: Fri, 20 Dec 2013 21:15:57 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Eric Paris <eparis@redhat.com>,
-        Richard Guy Briggs <rgb@redhat.com>,
-        containers@lists.linux-foundation.org,
-        Serge Hallyn <serge.hallyn@ubuntu.com>, linux-kernel@vger.kernel.org,
-        linux-audit@redhat.com, ebiederm@xmission.com
-Subject: Re: [RFC Part1 PATCH 00/20 v2] Add namespace support for audit
-Message-ID: <20131220211557.GA418@mail.hallyn.com>
-References: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
- <529EE877.7030701@cn.fujitsu.com>
- <20131206221241.GD22445@mail.hallyn.com>
- <52A52599.3070502@cn.fujitsu.com>
- <20131209182619.GD6849@sergelap>
- <52A6CDE1.8090404@cn.fujitsu.com>
- <20131210165152.GA6028@sergelap>
- <1386705056.23829.13.camel@flatline.rdu.redhat.com>
- <20131210203648.GA5835@mail.hallyn.com>
- <52AE75D7.4020604@cn.fujitsu.com>
+	Fri, 20 Dec 2013 16:16:11 -0500
+Message-ID: <52B4B39C.2010202@linaro.org>
+Date: Fri, 20 Dec 2013 22:16:12 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52AE75D7.4020604@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>, rjw@rjwysocki.net
+CC: lenb@kernel.org, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        kyungmin.park@samsung.com, Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH v2 1/9] ARM: EXYNOS: cpuidle: fix AFTR mode check
+References: <1387565251-7051-1-git-send-email-b.zolnierkie@samsung.com> <1387565251-7051-2-git-send-email-b.zolnierkie@samsung.com>
+In-Reply-To: <1387565251-7051-2-git-send-email-b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Gao feng (gaofeng@cn.fujitsu.com):
-> On 12/11/2013 04:36 AM, Serge E. Hallyn wrote:
-> > Quoting Eric Paris (eparis@redhat.com):
-> >> On Tue, 2013-12-10 at 10:51 -0600, Serge Hallyn wrote:
-> >>> Quoting Gao feng (gaofeng@cn.fujitsu.com):
-> >>>> On 12/10/2013 02:26 AM, Serge Hallyn wrote:
-> >>>>> Quoting Gao feng (gaofeng@cn.fujitsu.com):
-> >>>>>> On 12/07/2013 06:12 AM, Serge E. Hallyn wrote:
-> >>>>>>> Quoting Gao feng (gaofeng@cn.fujitsu.com):
-> >>>>>>>> Hi
-> >>>>>>>>
-> >>>>>>>> On 10/24/2013 03:31 PM, Gao feng wrote:
-> >>>>>>>>> Here is the v1 patchset: http://lwn.net/Articles/549546/
-> >>>>>>>>>
-> >>>>>>>>> The main target of this patchset is allowing user in audit
-> >>>>>>>>> namespace to generate the USER_MSG type of audit message,
-> >>>>>>>>> some userspace tools need to generate audit message, or
-> >>>>>>>>> these tools will broken.
-> >>>>>>>>>
-> >>>>>>>>
-> >>>>>>>> I really need this feature, right now,some process such as
-> >>>>>>>> logind are broken in container becase we leak of this feature.
-> >>>>>>>
-> >>>>>>> Your set doesn't address loginuid though right?  How exactly do you
-> >>>>>>> expect to do that?  If user violates MAC policy and audit msg is
-> >>>>>>> sent to init user ns by mac subsys, you need the loginuid from
-> >>>>>>> init_audit_ns.  where will that be stored if you allow updates
-> >>>>>>> of loginuid in auditns?
-> >>>>>>>
-> >>>>>> This patchset doesn't include the loginuid part.
-> >>>>>>
-> >>>>>> the loginuid is stored in task as before.
-> >>>>>> In my opinion, when task creates a new audit namespace, this task's
-> >>>>>> loginuid will be reset to zero, so the children tasks can set their
-> >>>>>> loginuid. Does this change break the MAC?
-> >>>>>
-> >>>>> I think so, yes.  In an LSPP selinux environment, if the task
-> >>>>> manages to trigger an selinux deny rule which is audited, then
-> >>>>> the loginuid must make sense on the host.  Now presumably it
-> >>>>> will get translated to the mapped host uid, and we can figure
-> >>>>> out the host uid owning it through /etc/subuid.  But that adds
-> >>>>> /etc/subuid as a new part of the TCB without any warning <shrug>
-> >>>>> So in that sense, for LSPP, it breaks it.
-> >>>>>
-> >>>>
-> >>>> Looks like my opinion is incorrect.
-> >>>>
-> >>>> In the audit-next tree, Eric added a new audit feature to allow privileged
-> >>>> user to disable AUDIT_LOGINUID_IMMUTABLE. after AUDIT_LOGINUID_IMMUTABLE
-> >>>> is disabled, the privileged user can reset/set the loginuid of task. I
-> >>>> think this way is safe since only privileged user can do the change.
-> >>>>
-> >>>> So I will not change the loginuid part.
-> >>>>
-> >>>> Thanks for your information Serge :)
-> >>>
-> >>> Unfortunately this makes the patchset much less compelling :)  The
-> >>> problem I was looking into is that a container running in a user
-> >>> namespace cannot (bc he has ns_capable(CAP_AUDIT_*) but not
-> >>> capable(CAP_AUDIT_*)) set loginuids at all.
-> >>>
-> >>> Which from an LSPP pov is correct;  which is why I was hoping you were
-> >>> going to have the audit namespaces be hierarchical, with a task in a
-> >>> level 2 audit ns having two loginuids - one in his own auditns, and
-> >>> one in the initial one.
-> >>
-> >> Right now user namespace + audit is just total crud.  We all know
-> >> this...  (I'm not sure pid is must better, but I digress)   All thoughts
-> >> around loginuid in the kernel right this very moment only make sense in
-> >> the initial user namespace and all permission checks are in the initial
-> >> user namespace as well.
-> >>
-> >> I think I'm a proponent of the hierarchical approach to audit
-> >> namespaces.  An audit namespace would hold a reference to the
-> >> pid/user/whatever namespace it was created in/with.  Each audit
-> >> namespace should have it's own set of filter rules, etc.  Instead of
-> >> just storing 'loginuid' we store 'loginuid+user namespace'.   When the
-> > 
-> > So long as the kernel stores the kuid_t (which the only sane thing to
-> > do) that is a non-issue.
-> > 
-> >> kernel creates a record it should translate the loginuid to the
-> >> namespace of the audit namespace and send the record.
-> > 
-> > Yup, that should go without saying.  Use kuid_t in kernel and translate
-> > at the kernel-user boundary.
-> > 
-> 
-> I can implement audit namespace as a hierarchy, give per auditns a level value
-> and a pointer which point to parent auditns.
-> 
-> but for the loginuid part, I think we can implement it after we push the audit
-> ns into the upstream.
-> 
-> Is this ok?
+On 12/20/2013 07:47 PM, Bartlomiej Zolnierkiewicz wrote:
+> The EXYNOS cpuidle driver code assumes that cpuidle core will handle
+> dev->state_count smaller than drv->state_count but currently this is
+> untrue (dev->state_count is used only for handling cpuidle state sysfs
+> entries and drv->state_count is used for all other cases) and will not
+> be fixed in the future as dev->state_count is planned to be removed.
+>
+> Fix the issue by checking for the max supported idle state in AFTR
+> state's ->enter handler (exynos4_enter_lowpower()) and entering AFTR
+> mode only when cores other than CPU0 are offline.
+>
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
+> ---
+>   arch/arm/mach-exynos/cpuidle.c | 8 ++------
+>   1 file changed, 2 insertions(+), 6 deletions(-)
+>
+> diff --git a/arch/arm/mach-exynos/cpuidle.c b/arch/arm/mach-exynos/cpuidle.c
+> index da65b03..f57cb91 100644
+> --- a/arch/arm/mach-exynos/cpuidle.c
+> +++ b/arch/arm/mach-exynos/cpuidle.c
+> @@ -172,8 +172,8 @@ static int exynos4_enter_lowpower(struct cpuidle_device *dev,
+>   {
+>   	int new_index = index;
+>
+> -	/* This mode only can be entered when other core's are offline */
+> -	if (num_online_cpus() > 1)
+> +	/* AFTR can only be entered when cores other than CPU0 are offline */
+> +	if (num_online_cpus() > 1 || dev->cpu != 0)
+>   		new_index = drv->safe_state_index;
+>
+>   	if (new_index == 0)
+> @@ -235,10 +235,6 @@ static int exynos_cpuidle_probe(struct platform_device *pdev)
+>   		device = &per_cpu(exynos4_cpuidle_device, cpu_id);
+>   		device->cpu = cpu_id;
+>
+> -		/* Support IDLE only */
+> -		if (cpu_id != 0)
+> -			device->state_count = 1;
+> -
+>   		ret = cpuidle_register_device(device);
+>   		if (ret) {
+>   			dev_err(&pdev->dev, "failed to register cpuidle device\n");
+>
 
-Well as I"ve said the loginuid part is the only one that interests
-me.  I'll be out most of the rest of the year, but I'll review any
-patchset you send for what seems to me to be correctness :)
+Hi Bartlomiej,
 
-> >> It's a pretty major rewrite, but at least it makes sense.  Things like
-> >> AVC's might show up in multiple audit logs, but in every log they would
-> >> make sense to the admin of that namespace...
-> >>
-> >> But what the hell do I know...
-> > 
-> > Exactly how it would all affect selinux.  I'm happy it seems we agree.
-> 
-> This idea looks good to me, I will Investigate this. :)
-> 
-> Thanks.
+thanks for this cleanup. May be you can also add another patch to switch 
+to the generic cpuidle_register function ?
+
+Thanks
+   -- Daniel
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
