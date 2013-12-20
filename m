@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756781Ab3LTTKw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 14:10:52 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38544 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753512Ab3LTTJd (ORCPT
+	id S1756738Ab3LTTKu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 14:10:50 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:37414 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753543Ab3LTTJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Dec 2013 14:09:33 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 15/35] perf record: Simplify perf_record__write
-Date: Fri, 20 Dec 2013 16:08:50 -0300
-Message-Id: <1387566550-3524-16-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1387566550-3524-1-git-send-email-acme@infradead.org>
-References: <1387566550-3524-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+From: David Brown <davidb@codeaurora.org>
+To: arm@kernel.org
+Cc: Josh Cartwright <joshc@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        David Brown <davidb@codeaurora.org>
+Subject: [PATCH 1/7] ARM: msm: trout: fix uninit var warning
+Date: Fri, 20 Dec 2013 11:09:14 -0800
+Message-Id: <1387566560-23948-2-git-send-email-davidb@codeaurora.org>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1387566560-23948-1-git-send-email-davidb@codeaurora.org>
+References: <1387566560-23948-1-git-send-email-davidb@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Josh Cartwright <joshc@codeaurora.org>
 
-1. Since all callers either test if it is less than zero or assign its
-   result to an int variable, convert it from ssize_t to int;
+Fix the following warning when !CONFIG_MMC:
 
-2. There is just one use for the 'session' variable, so use rec->session
-   directly instead;
+arch/arm/mach-msm/board-trout.c: In function 'trout_init':
+arch/arm/mach-msm/board-trout.c:67:6: warning: unused variable 'rc' [-Wunused-variable]
+  int rc;
+      ^
 
-3. No need to store the result of perf_data_file__write, since that
-   result is either 'size' or -1, the later making the error result to
-   be stored in 'errno' and accessed thru printf's %m in the pr_err
-   call.
+Also, while we're here, rework explicit printk(KERN_CRIT..) to use
+pr_crit.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-xwsk964dp681fica3xlqhjin@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+Signed-off-by: David Brown <davidb@codeaurora.org>
 ---
- tools/perf/builtin-record.c | 11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
+ arch/arm/mach-msm/board-trout.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 8eed3d752c80..e8d606caf747 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -76,19 +76,14 @@ struct perf_record {
- 	long			samples;
- };
+diff --git a/arch/arm/mach-msm/board-trout.c b/arch/arm/mach-msm/board-trout.c
+index ccf6621..015d544 100644
+--- a/arch/arm/mach-msm/board-trout.c
++++ b/arch/arm/mach-msm/board-trout.c
+@@ -13,6 +13,7 @@
+  * GNU General Public License for more details.
+  *
+  */
++#define pr_fmt(fmt) "%s: " fmt, __func__
  
--static ssize_t perf_record__write(struct perf_record *rec,
--				  void *buf, size_t size)
-+static int perf_record__write(struct perf_record *rec, void *bf, size_t size)
- {
--	struct perf_session *session = rec->session;
--	ssize_t ret;
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+@@ -68,12 +69,11 @@ static void __init trout_init(void)
+ 
+ 	platform_add_devices(devices, ARRAY_SIZE(devices));
+ 
+-#ifdef CONFIG_MMC
+-        rc = trout_init_mmc(system_rev);
+-        if (rc)
+-                printk(KERN_CRIT "%s: MMC init failure (%d)\n", __func__, rc);
+-#endif
 -
--	ret = perf_data_file__write(session->file, buf, size);
--	if (ret < 0) {
-+	if (perf_data_file__write(rec->session->file, bf, size) < 0) {
- 		pr_err("failed to write perf data, error: %m\n");
- 		return -1;
- 	}
- 
--	rec->bytes_written += ret;
-+	rec->bytes_written += size;
- 	return 0;
++	if (IS_ENABLED(CONFIG_MMC)) {
++		rc = trout_init_mmc(system_rev);
++		if (rc)
++			pr_crit("MMC init failure (%d)\n", rc);
++	}
  }
  
+ static struct map_desc trout_io_desc[] __initdata = {
 -- 
-1.8.1.4
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
