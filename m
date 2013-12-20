@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755158Ab3LTHz4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 02:55:56 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:54386 "EHLO song.cn.fujitsu.com"
+	id S1755099Ab3LTHzz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 02:55:55 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:5187 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754589Ab3LTHzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754586Ab3LTHzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Dec 2013 02:55:01 -0500
 X-IronPort-AV: E=Sophos;i="4.95,519,1384272000"; 
-   d="scan'208";a="9296754"
+   d="scan'208";a="9296752"
 From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, namhyung.kim@lge.com, jolsa@redhat.com,
         dsahern@gmail.com, Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH 7/7] perf tools: Add support of user space symbols for guest in perf kvm record.
-Date: Fri, 20 Dec 2013 15:53:02 -0500
-Message-Id: <6cc400bcb3ec920ebd69090da8d1c5dc76a9ef1e.1387572416.git.yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH 6/7] perf tools: Add support of user space symbols for guest in perf kvm top.
+Date: Fri, 20 Dec 2013 15:53:01 -0500
+Message-Id: <c223056929649d74ea4f742945e5ebd561807ad2.1387572416.git.yangds.fnst@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <cover.1387572416.git.yangds.fnst@cn.fujitsu.com>
 References: <cover.1387572416.git.yangds.fnst@cn.fujitsu.com>
@@ -27,58 +27,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	# perf kvm --guestmount /tmp/guestmount/ record -a sleep 1
-	[ perf record: Woken up 1 times to write data ]
-	[ perf record: Captured and wrote 0.828 MB perf.data.guest (~36163 samples) ]
-
-	# perf kvm --guestmount /tmp/guestmount/ report
-	Samples: 4K of event 'cycles', Event count (approx.): 2662750816
-	  8.67%  [guest/9217]  dd                            [u] 0x0000000000004e90
-	  6.62%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] fget_light
-	  6.17%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] system_call
-	  5.97%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] __srcu_read_lock
-	  5.53%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] __srcu_read_unlock
-	  5.47%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] __audit_syscall_exit
-	  5.38%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] fsnotify
-	  5.32%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] system_call_after_swapgs
-	  4.45%  [guest/9217]  libc-2.17.so                  [u] __GI___libc_write
-	  4.15%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] sys_write
-	  3.97%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] vfs_read
-	  3.78%  [guest/9217]  libc-2.17.so                  [u] __GI___libc_read
+	# perf kvm --guestmount /tmp/guestmount/ top
+	Samples: 1K of event 'cycles', Event count (approx.): 259112905
+	 17.34%  libcrypto.so.1.0.1e  [u] 0x000000000007d971
+	  5.60%  [guest.kernel]       [g] kallsyms_expand_symbol
+	  5.44%  libcrypto.so.1.0.1e  [u] md5_block_asm_data_order
+	  4.09%  [guest.kernel]       [g] number.isra.1
+	  3.59%  [guest.kernel]       [g] vsnprintf
+	  3.52%  sshd                 [u] 0x00000000000441c0
+	  2.37%  [guest.kernel]       [g] format_decode
+	  2.36%  [guest.kernel]       [g] memcpy
+	  2.11%  [guest.kernel]       [g] strnlen
 
 Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 ---
- tools/perf/builtin-record.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ tools/perf/builtin-top.c | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index c1c1200..ac1e540 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -279,6 +279,9 @@ static void perf_event__synthesize_guest_os(struct machine *machine, void *data)
- {
- 	int err;
- 	struct perf_tool *tool = data;
-+	struct perf_record *rec = container_of(tool, struct perf_record, tool);
-+	struct perf_record_opts *opts = &rec->opts;
-+	struct perf_evlist *evsel_list = rec->evlist;
- 	/*
- 	 *As for guest kernel when processing subcommand record&report,
- 	 *we arrange module mmap prior to guest kernel mmap and trigger
-@@ -305,6 +308,13 @@ static void perf_event__synthesize_guest_os(struct machine *machine, void *data)
- 	if (err < 0)
- 		pr_err("Couldn't record guest kernel [%d]'s reference"
- 		       " relocation symbol.\n", machine->pid);
-+
-+	err = __machine__synthesize_threads(machine, tool, &opts->target, evsel_list->threads,
-+					    process_synthesized_event, opts->sample_address);
-+
-+	if (err < 0)
-+		pr_err("Couldn't record guest userspace [%d]'s reference"
-+		       " relocation symbol.\n", machine->pid);
- }
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 03d37a7..670bd0b 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -821,11 +821,9 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
+ 			break;
+ 		case PERF_RECORD_MISC_GUEST_USER:
+ 			++top->guest_us_samples;
+-			/*
+-			 * TODO: we don't process guest user from host side
+-			 * except simple counting.
+-			 */
+-			/* Fall thru */
++			machine = perf_session__find_machine(session,
++							     sample.pid);
++			break;
+ 		default:
+ 			goto next_event;
+ 		}
+@@ -912,6 +910,7 @@ static int __cmd_top(struct perf_top *top)
+ 	struct perf_record_opts *opts = &top->record_opts;
+ 	pthread_t thread;
+ 	int ret;
++	struct rb_node *nd;
  
- static struct perf_event_header finished_round_event = {
+ 	top->session = perf_session__new(NULL, false, NULL);
+ 	if (top->session == NULL)
+@@ -931,6 +930,12 @@ static int __cmd_top(struct perf_top *top)
+ 
+ 	machine__synthesize_threads(&top->session->machines.host, &opts->target,
+ 				    top->evlist->threads, false);
++
++	for (nd = rb_first(&top->session->machines.guests); nd; nd = rb_next(nd)) {
++		struct machine *pos = rb_entry(nd, struct machine, rb_node);
++		machine__synthesize_threads(pos, &opts->target, top->evlist->threads, false);
++	}
++
+ 	ret = perf_top__start_counters(top);
+ 	if (ret)
+ 		goto out_delete;
 -- 
 1.8.2.1
 
