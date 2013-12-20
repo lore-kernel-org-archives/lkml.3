@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422669Ab3LTMrZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 07:47:25 -0500
-Received: from smarthost01d.mail.zen.net.uk ([212.23.1.7]:36445 "EHLO
+	id S1422652Ab3LTMrX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 07:47:23 -0500
+Received: from smarthost01d.mail.zen.net.uk ([212.23.1.7]:42140 "EHLO
 	smarthost01d.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932508Ab3LTMrD (ORCPT
+	by vger.kernel.org with ESMTP id S932519Ab3LTMrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Dec 2013 07:47:03 -0500
-Message-ID: <1387543554.3404.34.camel@linaro1.home>
-Subject: Re: [PATCH v4 05/16] ARM: use a function table for determining
- instruction interpreter actions
+Message-ID: <1387543568.3404.36.camel@linaro1.home>
+Subject: Re: [PATCH v4 02/16] ARM: move shared uprobe/kprobe definitions
+ into new include file
 From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
 To: David Long <dave.long@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org,
@@ -24,10 +24,10 @@ Cc: linux-arm-kernel@lists.infradead.org,
         Paul Mackerras <paulus@samba.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         linux-kernel@vger.kernel.org
-Date: Fri, 20 Dec 2013 12:45:54 +0000
-In-Reply-To: <1387166930-13182-6-git-send-email-dave.long@linaro.org>
+Date: Fri, 20 Dec 2013 12:46:08 +0000
+In-Reply-To: <1387166930-13182-3-git-send-email-dave.long@linaro.org>
 References: <1387166930-13182-1-git-send-email-dave.long@linaro.org>
-	 <1387166930-13182-6-git-send-email-dave.long@linaro.org>
+	 <1387166930-13182-3-git-send-email-dave.long@linaro.org>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.4.4-3 
 Mime-Version: 1.0
@@ -40,120 +40,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Sun, 2013-12-15 at 23:08 -0500, David Long wrote:
 > From: "David A. Long" <dave.long@linaro.org>
 > 
-> Make the instruction interpreter call back to semantic action functions
-> through a function pointer array provided by the invoker.  The interpreter
-> decodes the instructions into groups and uses the group number to index
-> into the supplied array.  kprobes and uprobes code will each supply their
-> own array of functions.
+> Separate the kprobe-only definitions from the definitions needed by
+> both kprobes and uprobes.
 > 
 > Signed-off-by: David A. Long <dave.long@linaro.org>
 > ---
-
-Because I've been very slow in reviewing these I've only just noticed
-that some of the the comments I made on version one of this patch didn't
-get a response. I've copied them again below (slightly edited)  and
-heavily trimmed the patch...
-
->  arch/arm/kernel/kprobes-arm.c    |  41 +++++++++++
->  arch/arm/kernel/kprobes-common.c |   3 +-
->  arch/arm/kernel/kprobes-thumb.c  |  92 ++++++++++++++++++------
->  arch/arm/kernel/kprobes.c        |  10 ++-
->  arch/arm/kernel/kprobes.h        |  14 ++--
->  arch/arm/kernel/probes-arm.c     | 114 +++++++++++++++---------------
->  arch/arm/kernel/probes-arm.h     |  37 ++++++++++
->  arch/arm/kernel/probes-thumb.c   | 149 +++++++++++++++++++--------------------
->  arch/arm/kernel/probes-thumb.h   |  14 ++--
->  arch/arm/kernel/probes.c         |  13 ++--
->  arch/arm/kernel/probes.h         |  15 ++--
->  11 files changed, 325 insertions(+), 177 deletions(-)
+>  arch/arm/include/asm/kprobes.h | 15 +--------------
+>  arch/arm/include/asm/probes.h  | 18 ++++++++++++++++++
+>  2 files changed, 19 insertions(+), 14 deletions(-)
+>  create mode 100644 arch/arm/include/asm/probes.h
 > 
-> diff --git a/arch/arm/kernel/kprobes-arm.c b/arch/arm/kernel/kprobes-arm.c
-> index a359475..ee329ff 100644
-> --- a/arch/arm/kernel/kprobes-arm.c
-> +++ b/arch/arm/kernel/kprobes-arm.c
-> @@ -299,3 +299,44 @@ emulate_rdlo12rdhi16rn0rm8_rwflags_nopc(struct kprobe *p, struct pt_regs *regs)
->  	regs->uregs[rdhi] = rdhiv;
->  	regs->ARM_cpsr = (regs->ARM_cpsr & ~APSR_MASK) | (cpsr & APSR_MASK);
->  }
-> +
-> +const union decode_item kprobes_arm_actions[] = {
+> diff --git a/arch/arm/include/asm/kprobes.h b/arch/arm/include/asm/kprobes.h
+> index f82ec22..30fc11b 100644
+> --- a/arch/arm/include/asm/kprobes.h
+> +++ b/arch/arm/include/asm/kprobes.h
+> @@ -28,21 +28,8 @@
+>  #define kretprobe_blacklist_size	0
+>  
+>  typedef u32 kprobe_opcode_t;
+> -
+>  struct kprobe;
+> -typedef void (kprobe_insn_handler_t)(struct kprobe *, struct pt_regs *);
+> -typedef unsigned long (kprobe_check_cc)(unsigned long);
+> -typedef void (kprobe_insn_singlestep_t)(struct kprobe *, struct pt_regs *);
+> -typedef void (kprobe_insn_fn_t)(void);
+> -
+> -/* Architecture specific copy of original instruction. */
+> -struct arch_specific_insn {
+> -	kprobe_opcode_t			*insn;
+> -	kprobe_insn_handler_t		*insn_handler;
+> -	kprobe_check_cc			*insn_check_cc;
+> -	kprobe_insn_singlestep_t	*insn_singlestep;
+> -	kprobe_insn_fn_t		*insn_fn;
+> -};
+> +#include <asm/probes.h>
+>  
+>  struct prev_kprobe {
+>  	struct kprobe *kp;
+> diff --git a/arch/arm/include/asm/probes.h b/arch/arm/include/asm/probes.h
+> new file mode 100644
+> index 0000000..21da148
+> --- /dev/null
+> +++ b/arch/arm/include/asm/probes.h
+> @@ -0,0 +1,18 @@
 
-I think it's best if we don't reuse the decode_item type here, this is a
-different sort of table so probably best to have it's own union. Also,
-if we do that, then decode_item can be simplified as it won't need to
-have function pointers in it, i.e. we could end up with...
+This new file doesn't have any copyright/license notice, I suggest you
+copy the one from kprobes.h and include a note to say this new files
+contents were copied, e.g. start it like...
 
-union decode_action {
-        kprobe_insn_handler_t   *handler;
-        kprobe_custom_decode_t  *decoder;
-};
-
-union decode_item {
-        u32                     bits;
-        const union decode_item *table;
-};
-
-typedef enum kprobe_insn (kprobe_custom_decode_t)(kprobe_opcode_t,
-                                                  struct arch_specific_insn *,
-                                                  union decode_action *actions);
-
-
-A second point, I think it would be a good idea to make sure these
-action arrays are the size we expect by adding an entry at the end of
-the relevant enumeration and using that to set the size of the arrays.
-E.g. for this one
-
-enum probes_arm_action {
-        ...
-        ...
-        NUM_PROBES_ARM_ACTIONS
-};
-
-and then use it like:
-
-const union decode_action kprobes_arm_actions[NUM_PROBES_ARM_ACTIONS] = {
-
-That way, we at least make any uninitialised entries are null (I
-assume?) which is safer than accidentally indexing beyond the array.
-
-
-> +	[PROBES_EMULATE_NONE] = {.handler = kprobe_emulate_none},
-> +	[PROBES_SIMULATE_NOP] = {.handler = kprobe_simulate_nop},
-> +	[PROBES_PRELOAD_IMM] = {.handler = kprobe_simulate_nop},
-
+/*
+ * arch/arm/include/asm/probes.h
+ *
+ * Original contents copied from arch/arm/include/asm/kprobes.h
+ * which contains the following notice...
+ *
+ * Copyright (C) 2006, 2007 Motorola Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
 [...]
 
 
-> diff --git a/arch/arm/kernel/probes.h b/arch/arm/kernel/probes.h
-> index d14d224..2238972 100644
-> --- a/arch/arm/kernel/probes.h
-> +++ b/arch/arm/kernel/probes.h
-> @@ -131,7 +131,8 @@ void __kprobes kprobe_simulate_nop(struct kprobe *p, struct pt_regs *regs);
->  void __kprobes kprobe_emulate_none(struct kprobe *p, struct pt_regs *regs);
->  
->  enum kprobe_insn __kprobes
-> -kprobe_decode_ldmstm(kprobe_opcode_t insn, struct arch_specific_insn *asi);
-> +kprobe_decode_ldmstm(kprobe_opcode_t insn, struct arch_specific_insn *asi,
-> +		struct decode_header *h);
->  
->  /*
->   * Test if load/store instructions writeback the address register.
-> @@ -334,7 +335,7 @@ struct decode_custom {
->  
->  #define DECODE_CUSTOM(_mask, _value, _decoder)			\
->  	DECODE_HEADER(DECODE_TYPE_CUSTOM, _mask, _value, 0),	\
-> -	{.decoder = (_decoder)}
-> +	{.bits = (_decoder)}
->  
+> +#ifndef _ASM_PROBES_H
+> +#define _ASM_PROBES_H
+> +
+> +typedef void (kprobe_insn_handler_t)(struct kprobe *, struct pt_regs *);
+> +typedef unsigned long (kprobe_check_cc)(unsigned long);
+> +typedef void (kprobe_insn_singlestep_t)(struct kprobe *, struct pt_regs *);
+> +typedef void (kprobe_insn_fn_t)(void);
+> +
+> +/* Architecture specific copy of original instruction. */
+> +struct arch_specific_insn {
+> +	kprobe_opcode_t			*insn;
+> +	kprobe_insn_handler_t		*insn_handler;
+> +	kprobe_check_cc			*insn_check_cc;
+> +	kprobe_insn_singlestep_t	*insn_singlestep;
+> +	kprobe_insn_fn_t		*insn_fn;
+> +};
+> +
+> +#endif
 
-This third and final comment is probably just bike shedding...
 
-'bits' looks a bit funny here. I've been trying to think of a way of
-making it nicer but it's difficult. The actual value is one of three
-different enums, so if we were to add another members to decode_item it
-would just have to be "int action", at least that would read nicer in
-these macros and where it gets read out in probes_decode_insn.
 
--- 
-Tixy
 
