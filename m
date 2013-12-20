@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756530Ab3LTRBv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 12:01:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53105 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754955Ab3LTRBu (ORCPT
+	id S1756661Ab3LTRCY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 12:02:24 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:52648 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756128Ab3LTRCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 12:01:50 -0500
-Date: Fri, 20 Dec 2013 09:01:59 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Gokulnath A <gokul.linux@gmail.com>
-Cc: Michael Hoefler <michael.hoefler@studium.uni-erlangen.de>,
-        "open list:STAGING SUBSYSTEM" <devel@driverdev.osuosl.org>,
-        linux-kernel@i4.cs.fau.de, Christoph Kohl <christoph.kohl@t-online.de>,
-        open list <linux-kernel@vger.kernel.org>,
-        Rupert Muchembled <rupert@rmuch.net>
-Subject: Re: [PATCHv2 1/3] silicom: fix whitespace issues in bypass.c
-Message-ID: <20131220170159.GA15634@kroah.com>
-References: <1387547475-7135-1-git-send-email-michael.hoefler@studium.uni-erlangen.de>
- <1387547475-7135-2-git-send-email-michael.hoefler@studium.uni-erlangen.de>
- <CADKvho6HF9A6agDXwrg7UPcOS0YQh3bPmGzPjOAEO8tZ8cveTw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADKvho6HF9A6agDXwrg7UPcOS0YQh3bPmGzPjOAEO8tZ8cveTw@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Fri, 20 Dec 2013 12:02:23 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Cc: Jan Beulich <jbeulich@suse.com>, P J P <ppandit@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] Makefile: fix order of INITRD_COMPRESS-y assignments
+Date: Fri, 20 Dec 2013 12:02:07 -0500
+Message-Id: <1387558927-17674-1-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 20, 2013 at 08:36:48PM +0530, Gokulnath A wrote:
-> Hello Michael,
-> 
-> On Fri, Dec 20, 2013 at 7:21 PM, Michael Hoefler
-> <michael.hoefler@studium.uni-erlangen.de> wrote:
-> > This patch addresses several problems in bypass.c found by checkpatch.
-> > Furthermore it removes/adds some empty lines to make the code more readable.
-> >
-> > The following problems are fixed:
-> >  - line over 80 characters
-> >  - space after logical operator !
-> >  - spaces instead of tabs
-> >  - missing empty line after local declarations
-> >  - empty line after {
-> >
-> 
-> Please do one thing per patch, As Greg suggested for me in previous mail
-> conversations. Here you could have at least 3 or 4 patches.
-> For example, first patch would be a fix for line over 80 characters,
-> followed by the other problems as mentioned above by you.
+Commit 7ac181568342ec (fix build with make 3.80) changed how the
+Makefile handles the INITRD_COMPRESS-y assignment in order to make it
+work properly with older versions of make. Unfortunately, it also
+changes the behavior of how that assignment works when multiple
+CONFIG_RD_* options are set, such that they are now preferred in the
+reverse order of the way they were before.
 
-Nah, all of these are affecting the same macros, so it's ok, I'll take
-it as-is.
+Reverse the order of assignments to try and preserve the earlier
+precedence in this situation.
 
-thanks,
+Cc: Jan Beulich <jbeulich@suse.com>
+Cc: P J P <ppandit@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ Makefile | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-greg k-h
+diff --git a/Makefile b/Makefile
+index 89cee86..fb76899 100644
+--- a/Makefile
++++ b/Makefile
+@@ -733,11 +733,11 @@ export mod_strip_cmd
+ # This shall be used by the dracut(8) tool while creating an initramfs image.
+ #
+ INITRD_COMPRESS-y                  := gzip
+-INITRD_COMPRESS-$(CONFIG_RD_BZIP2) := bzip2
+-INITRD_COMPRESS-$(CONFIG_RD_LZMA)  := lzma
+-INITRD_COMPRESS-$(CONFIG_RD_XZ)    := xz
+-INITRD_COMPRESS-$(CONFIG_RD_LZO)   := lzo
+ INITRD_COMPRESS-$(CONFIG_RD_LZ4)   := lz4
++INITRD_COMPRESS-$(CONFIG_RD_LZO)   := lzo
++INITRD_COMPRESS-$(CONFIG_RD_XZ)    := xz
++INITRD_COMPRESS-$(CONFIG_RD_LZMA)  := lzma
++INITRD_COMPRESS-$(CONFIG_RD_BZIP2) := bzip2
+ export INITRD_COMPRESS := $(INITRD_COMPRESS-y)
+ 
+ ifdef CONFIG_MODULE_SIG_ALL
+-- 
+1.8.4.2
+
