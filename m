@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756824Ab3LTAzZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 19:55:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47348 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756362Ab3LTAzX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 19:55:23 -0500
-Date: Thu, 19 Dec 2013 16:55:26 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andreas Noever <andreas.noever@gmail.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: How to reserve pci bus numbers for hotplug?
-Message-ID: <20131220005526.GB17307@kroah.com>
-References: <CAMxnaaWgUPRb3L2aKpUu62F73GR2iXOfd6LUnTkU0O=Gq-E_sQ@mail.gmail.com>
- <20131214220145.GA27585@kroah.com>
- <CAMxnaaXzvxTJc+fP_E9fQhMTsVcj2PCJCsp=PNae3Pv47JONdQ@mail.gmail.com>
+	id S1756797Ab3LTBA6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 20:00:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63700 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756362Ab3LTBA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 20:00:56 -0500
+Date: Thu, 19 Dec 2013 20:00:42 -0500
+From: Dave Jones <davej@redhat.com>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Kent Overstreet <kmo@daterainc.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Christoph Lameter <cl@gentwo.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: bad page state in 3.13-rc4
+Message-ID: <20131220010042.GA32112@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Benjamin LaHaise <bcrl@kvack.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Kent Overstreet <kmo@daterainc.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-mm <linux-mm@kvack.org>, Christoph Lameter <cl@gentwo.org>,
+	Al Viro <viro@zeniv.linux.org.uk>
+References: <20131219155313.GA25771@redhat.com>
+ <CA+55aFyoXCDNfHb+r5b=CgKQLPA1wrU_Tmh4ROZNEt5TPjpODA@mail.gmail.com>
+ <20131219181134.GC25385@kmo-pixel>
+ <20131219182920.GG30640@kvack.org>
+ <CA+55aFzCo_r7ZGHk+zqUjmCW2w7-7z9oxEJjhR66tZ4qZPxnvw@mail.gmail.com>
+ <20131219192621.GA9228@kvack.org>
+ <CA+55aFz=tEkVAx9VndtCXApDxcw+5T-BxMsVuXp+vMSb05f8Aw@mail.gmail.com>
+ <20131219195352.GB9228@kvack.org>
+ <20131219202416.GA14519@redhat.com>
+ <20131219233854.GD10905@kvack.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMxnaaXzvxTJc+fP_E9fQhMTsVcj2PCJCsp=PNae3Pv47JONdQ@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20131219233854.GD10905@kvack.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 14, 2013 at 11:15:39PM +0100, Andreas Noever wrote:
-> On Sat, Dec 14, 2013 at 11:01 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Thu, Dec 12, 2013 at 12:37:50AM +0100, Andreas Noever wrote:
-> >>
-> >> If I could get Linux to assign enough resources (bus numbers for now)
-> >> then I could drop the acpi_osi parameter and make thunderbolt work
-> >> after suspend... So, is there an easy way to fix this? (Quirks,
-> >> reconfiguring bus number assignments from a platform driver, ...?)
-> >
-> > I think you are going to have to do a lot more here, what is needed is a
-> > whole connection manager for Thunderbolt, emulating what the BIOS does,
-> > in order to get all of this working properly.
-> >
-> > But don't let that stop you from trying, however the work involved is
-> > really not trivial at all.
-> >
-> > good luck,
-> >
-> > greg k-h
-> 
-> Actually the thunderbolt part is already working (for non chaining
-> devices, see https://lkml.org/lkml/2013/11/28/492 if you are
-> interested). I can completely bootstrap the tb side of things. The
-> only problem is that if power has been cut by the firmware (during
-> boot without osi_acpi=Darwin or after a suspend/resume cycle) then
-> Linux does not allocate enough PCI resources...
+On Thu, Dec 19, 2013 at 06:38:54PM -0500, Benjamin LaHaise wrote:
+ > On Thu, Dec 19, 2013 at 03:24:16PM -0500, Dave Jones wrote:
+ > > Yes. Note the original trace in this thread was a VM_BUG_ON(atomic_read(&page->_count) <= 0);
+ > > 
+ > > Right after these crashes btw, the box locks up solid. So bad that traces don't
+ > > always make it over usb-serial. Annoying.
+ > 
+ > I think I finally have an idea what's going on now.  Kent's changes in 
+ > e34ecee2ae791df674dfb466ce40692ca6218e43 are broken and result in a memory 
+ > leak of the aio kioctx.  This eventually leads to the system running out of 
+ > memory, which ends up triggering the otherwise hard to hit error paths in 
+ > aio_setup_ring().  Linus' suggested changes should fix the badness in the 
+ > aio_setup_ring(), but more work has to be done to fix up the percpu 
+ > reference counting tie in with the aio code.  I'll fix this up in the 
+ > morning if nobody beats me to it over night, as I'm just heading out right 
+ > now.
 
-Ah, that's nice to know, I didn't realize that.
+That would explain why I'm having difficulty repeating it in a hurry if it
+takes hours of runtime for the leak to reach a point where it becomes a problem.
 
-There should be some Intel people around on the list that has access to
-a Thunderbolt monitor for testing.  Or, if needed, I can see if I can
-expense one, as it would be good to get this working :)
+	Dave
 
-thanks,
-
-greg k-h
