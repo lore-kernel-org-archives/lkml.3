@@ -1,73 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700Ab3LTDNM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 22:13:12 -0500
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:48761 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771Ab3LTDNK (ORCPT
+	id S1752575Ab3LTDT6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 22:19:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48618 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab3LTDTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 22:13:10 -0500
+	Thu, 19 Dec 2013 22:19:55 -0500
+Date: Thu, 19 Dec 2013 19:20:02 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Ravi Patel <rapatel@apm.com>
+Cc: arnd@arndb.de, davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com,
+        Keyur Chudgar <kchudgar@apm.com>
+Subject: Re: [PATCH 2/4] misc: xgene: Add base driver for APM X-Gene SoC
+ Queue Manager/Traffic Manager
+Message-ID: <20131220032002.GA32310@kroah.com>
+References: <1387507503-7565-1-git-send-email-rapatel@apm.com>
+ <1387507503-7565-3-git-send-email-rapatel@apm.com>
 MIME-Version: 1.0
-In-Reply-To: <1387506141.8363.47.camel@buesod1.americas.hpqcorp.net>
-References: <1387478746-5436-1-git-send-email-davidlohr@hp.com>
-	<1387478746-5436-5-git-send-email-davidlohr@hp.com>
-	<CA+55aFxY_sMes2=0tz0qTKH5-fpAaLji_xd9CdU-u2JxxNN6pA@mail.gmail.com>
-	<1387496569.8363.12.camel@buesod1.americas.hpqcorp.net>
-	<CA+55aFyay84UKWEbAZ=8bT-KV5gq-+1fWgS52gRQv=qZJzMSOQ@mail.gmail.com>
-	<1387506141.8363.47.camel@buesod1.americas.hpqcorp.net>
-Date: Thu, 19 Dec 2013 19:13:09 -0800
-X-Google-Sender-Auth: v8vD-AjXv3AcPz4KhaRbceDDPZM
-Message-ID: <CA+55aFyrZmG6rNpY22OK3UQi18e=4UQyh8a3tpxY+QVCbNxXkw@mail.gmail.com>
-Subject: Re: [PATCH v3 4/4] futex: Avoid taking hb lock if nothing to wakeup
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, Jeff Mahoney <jeffm@suse.com>,
-        Jason Low <jason.low2@hp.com>, Waiman Long <Waiman.Long@hp.com>,
-        Tom Vaden <tom.vaden@hp.com>, "Norton, Scott J" <scott.norton@hp.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387507503-7565-3-git-send-email-rapatel@apm.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 6:22 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
->
-> Ok so when I replied I was thinking about the plist really and not the
-> hb->lock ticket counter. Yeah, what you propose does make sense for
-> waiters. However in wake paths we have to decrement  the counter nwake
-> times (per each call to __unqueue_futex()), and if we rely on the
-> ticket, then we do it only once, in the unlock, so the counter doesn't
-> reflect the actual waitqueue size. Or am I missing something with ticket
-> spinlocks (I'm not very familiar with that code)?
+On Thu, Dec 19, 2013 at 06:45:01PM -0800, Ravi Patel wrote:
+> --- /dev/null
+> +++ b/drivers/misc/xgene/qmtm/Kconfig
+> @@ -0,0 +1,8 @@
+> +config XGENE_QMTM
+> +	tristate "APM X-Gene QMTM driver"
+> +	depends on ARCH_XGENE
 
-So that's why I suggested checking the ticket lock _and_ the state of
-the node list.
+What does it need from this arch in order to build?  What would be
+needed to get it to build on other arches so that it gets some actualy
+build testing?
 
-The ticket lock state gives you the racy window before the entry has
-actually been added to the node list, and then after the lock has been
-released, the fact that the list isn't empty gives you the rest.
 
-I think we might have to order the two reads with an smp_rmb - making
-sure that we check the lock state first - but I think it should be
-otherwise pretty solid.
+> --- /dev/null
+> +++ b/drivers/misc/xgene/qmtm/xgene_qmtm_main.c
+> @@ -0,0 +1,765 @@
+> +/*
+> + * AppliedMicro X-Gene SOC Queue Manager/Traffic Manager driver
+> + *
+> + * Copyright (c) 2013 Applied Micro Circuits Corporation.
+> + * Author: Ravi Patel <rapatel@apm.com>
+> + *         Keyur Chudgar <kchudgar@apm.com>
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
 
-And maybe there is some reason it doesn't work, but I'd really like to
-understand it (and I'd like to avoid the extra atomics for the waiters
-count if it at all can be avoided)
+Are you _sure_ about "any later version"?  I have to ask.
 
-> Btw, I tried using spin_is_contended + plist_head_empty and we run into
-> a whole bunch of nasty issues which I have yet to sit down and look
-> into.
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-Yeah, I said "spin_contended()" myself initially, but it needs to be
-"spin_is_locked()". It's hopefully unlikely to ever actually be
-contended (which in ticket lock terms is "head is _more_ than one away
-from the tail").
+No need for this paragraph, the kernel has a copy of the GPL in it
+already.
 
-            Linus
+> +/* CSR Address Macros */
+> +#define CSR_QM_CONFIG_ADDR                                           0x00000004
+> +#define  QM_ENABLE_WR(src)                      (((u32)(src)<<31) & 0x80000000)
+> +
+> +#define CSR_PBM_ADDR                                                 0x00000008
+> +#define  OVERWRITE_WR(src)                      (((u32)(src)<<31) & 0x80000000)
+> +#define  SLVID_PBN_WR(src)                          (((u32)(src)) & 0x000003ff)
+> +#define  SLAVE_ID_SHIFT                                                       6
+
+Interesting way to align #defines, that's going to break badly over
+time, please just left align them like the rest of the kernel, using
+tabs.
+
+> +EXPORT_SYMBOL(xgene_qmtm_set_qinfo);
+
+EXPORT_SYMBOL_GPL() for this and the other exports perhaps?  (sorry, I
+have to ask.)
+
+> +/*
+> + * Physical or free pool queue state (pq or fp)
+> + */
+> +struct storm_qmtm_pq_fp_qstate {
+> +	/* word 0 31:0 */
+> +	u32 resize_qid:10;
+> +	u32 resize_start:1;
+> +	u32 resize_done:1;
+> +	u32 cfgtmvqen:1;	/* enable pq to belong to vq */
+> +	u32 cfgtmvq:10;		/* parent vq */
+> +	u32 cfgsaben:1;		/* enable SAB broadcasting */
+> +	u32 cpu_notify:8;	/* cfgcpusab */
+> +
+> +	/* word 1 63:32 */
+> +	u32 cfgnotifyqne:1;	/* enable queue not empty interrupt */
+> +	u32 nummsg:16;
+> +	u32 headptr:15;
+> +
+> +	/* word 2 95:64 */
+> +	u32 cfgcrid:1;
+> +	u32 rid:3;
+> +	u32 qcoherent:1;
+> +	u64 cfgstartaddr:34;	/* 27/7 split */
+> +
+> +	/* word 3 127:96 */
+> +	u32 vc_chanctl:2;
+> +	u32 vc_chanid:2;
+> +	u32 slot_pending:6;
+> +	u32 stashing:1;
+> +	u32 reserved_0:1;
+> +	u32 cfgacceptlerr:1;
+> +	u32 fp_mode:3;		/* free pool mode */
+> +	u32 cfgqsize:3;		/* queue size, see xgene_qmtm_qsize */
+> +	u32 qstatelock:1;
+> +	u32 cfgRecombBuf:1;
+> +	u32 cfgRecombBufTimeoutL:4;	/* 4/3 split */
+> +
+> +	/* word 4 159:128 */
+> +	u32 cfgRecombBufTimeoutH:3;	/* 4/3 split */
+> +	u32 cfgselthrsh:3;	/* associated threshold set */
+> +	u32 resv2:13;
+> +	u32 cfgqtype:2;		/* queue type, refer xgene_qmtm_qtype */
+> +	u32 resv1:11;
+> +} __packed;
+
+u64 for a bitfield?  Is that even valid C?  This is pretty scary from a
+bitfield perspective, what about different endian and addressing modes?
+
+Any chance to just use shifts to access the fields properly, like most
+drivers do, in a endian-neutral way to get the data out and into the
+structures?
+
+Same goes for the other structures in this file.
+
+thanks,
+
+greg k-h
