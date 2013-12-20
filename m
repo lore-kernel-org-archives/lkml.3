@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756636Ab3LTJfx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 04:35:53 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:30854 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756496Ab3LTJf0 (ORCPT
+	id S1755790Ab3LTJh4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 04:37:56 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:43050 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755020Ab3LTJhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 04:35:26 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-34-52b40f5c55d9
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 2/2] mfd: max77693: Set proper maximum register for MUIC regmap
-Date: Fri, 20 Dec 2013 10:35:08 +0100
-Message-id: <1387532108-9813-2-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1387532108-9813-1-git-send-email-k.kozlowski@samsung.com>
-References: <1387532108-9813-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJJMWRmVeSWpSXmKPExsVy+t/xa7ox/FuCDL6c1rR4/cLQ4mzTG3aL
-	+1+PMlpc3jWHzWLtkbvsFqe7WR3YPO5c28PmMe9koEffllWMHp83yQWwRHHZpKTmZJalFunb
-	JXBlLJu+hblgIk/FuskTmRsYu7m6GDk5JARMJJbO28MMYYtJXLi3nq2LkYtDSGApo8TkWd0s
-	EE4fk8Tn9hVMIFVsAsYSm5cvYQOxRQSyJH5MWw1WxCzQyyjx4N0vRpCEsIC/xKdTj1lAbBYB
-	VYnG2VtZQWxeATeJs2/+Aq3jAFqnIDFnkg1ImFPAXeLs1v1g5UJAJW/u/meawMi7gJFhFaNo
-	amlyQXFSeq6hXnFibnFpXrpecn7uJkZI8HzZwbj4mNUhRgEORiUe3gbbzUFCrIllxZW5hxgl
-	OJiVRHg5ngOFeFMSK6tSi/Lji0pzUosPMTJxcEo1MIbev3+Mteh38HzFk1/Vfr5bbWa2jCld
-	86OPc+I0iwJHR1FND8MI5h/5nguqvv7f4fw0Q+99GFdn2X2HELv1xQq3P6XWb78snHmg2Czw
-	f8mq+8JLDvA4yRoZrpvyOyRn07dn0RwH/xyu3PKrQyP/DYP246knr84y2/9K5WlgevC6Y8cv
-	qDD8VFNiKc5INNRiLipOBAAmRYjX/AEAAA==
+	Fri, 20 Dec 2013 04:37:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131217001842.GB3840@sonymobile.com>
+References: <1381174108-25168-1-git-send-email-syin@broadcom.com>
+	<1386787041-6035-1-git-send-email-syin@broadcom.com>
+	<1386787041-6035-4-git-send-email-syin@broadcom.com>
+	<CACRpkdauqYNiby-ta3c_he2ovG__0e6ubmzZ8Bx1cP_OzK4=LQ@mail.gmail.com>
+	<CAEPRUYpsp_FVobY_DeEQU2+rCD7q7T=p7k++XvG-22x-OWHY8Q@mail.gmail.com>
+	<CACRpkdY2BExGiL6HBg7zn_szJQMnSNsxOSuo7RyrRmrz=cVe2A@mail.gmail.com>
+	<20131217001842.GB3840@sonymobile.com>
+Date: Fri, 20 Dec 2013 10:37:51 +0100
+Message-ID: <CACRpkdY-MM7OoMq_L90YRADy=oaDoV1wAOccVz90LqfRfEh=3Q@mail.gmail.com>
+Subject: Re: [PATCH v3 3/6] pinctrl: Make PINCTRL selectable by defconfig/menuconfig
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: Christian Daudt <bcm@fixthebug.org>, Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Heiko St?bner" <heiko@sntech.de>, Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Sherman Yin <syin@broadcom.com>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MUIC block in max77693 has different I2C address than PMIC. The
-driver allocated two regmaps: for PMIC and MUIC. However it used the
-same regmap_config (with max_register field) for both regmaps. Actual
-maximum address of register for MUIC is different than for PMIC.
+On Tue, Dec 17, 2013 at 1:18 AM, Bjorn Andersson
+<bjorn.andersson@sonymobile.com> wrote:
 
-Define another regmap_config for MUIC with proper max_register value.
+> No matter how we build the individual pinctrl drivers we will always
+> need the pinctrl framework in a multi-soc zImage; so I can't see that
+> we gain anything from being able to compile PINCTRL as a module.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
----
- drivers/mfd/max77693.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+I discussed this matter with Christian on IRC and I believe we could
+basically do "select PINCTRL" on ARCH_MULTIPLATFORM as the
+vast majority of multiplatforms appear to be using this anyway, this
+would make the submenu for pin control pop up in menuconfig
+for this, and make it possible to move different subdrivers to modules
+if desired.
 
-diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
-index 9f92463f4f7e..3873a54e16ff 100644
---- a/drivers/mfd/max77693.c
-+++ b/drivers/mfd/max77693.c
-@@ -107,6 +107,12 @@ static const struct regmap_config max77693_regmap_config = {
- 	.max_register = MAX77693_PMIC_REG_END,
- };
- 
-+static const struct regmap_config max77693_regmap_muic_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+	.max_register = MAX77693_MUIC_REG_END,
-+};
-+
- static int max77693_i2c_probe(struct i2c_client *i2c,
- 			      const struct i2c_device_id *id)
- {
-@@ -153,7 +159,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
- 	 * before call max77693-muic probe() function.
- 	 */
- 	max77693->regmap_muic = devm_regmap_init_i2c(max77693->muic,
--					 &max77693_regmap_config);
-+					 &max77693_regmap_muic_config);
- 	if (IS_ERR(max77693->regmap_muic)) {
- 		ret = PTR_ERR(max77693->regmap_muic);
- 		dev_err(max77693->dev,
--- 
-1.7.9.5
+MULTIPLATFORM does not seem to be about saving footprint bytes
+on a very fine-granular level anyway, more about doing the module
+loading/unloading approach to footprint.
 
+(That drivers such as clk, regulator, pin control, GPIO, irqchip are
+usually impossible to rmmod as their tentacles will invariably be
+in all drivers everywhere is another issue, but this approach will solve
+modular *loading* atleast.)
+
+Yours,
+Linus Walleij
