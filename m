@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756008Ab3LTTKF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 14:10:05 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38529 "EHLO
+	id S1756781Ab3LTTKw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 14:10:52 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38544 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753001Ab3LTTJb (ORCPT
+	with ESMTP id S1753512Ab3LTTJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 14:09:31 -0500
+	Fri, 20 Dec 2013 14:09:33 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 28/35] perf ui browser: Remove misplaced __maybe_unused
-Date: Fri, 20 Dec 2013 16:09:03 -0300
-Message-Id: <1387566550-3524-29-git-send-email-acme@infradead.org>
+Subject: [PATCH 15/35] perf record: Simplify perf_record__write
+Date: Fri, 20 Dec 2013 16:08:50 -0300
+Message-Id: <1387566550-3524-16-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1387566550-3524-1-git-send-email-acme@infradead.org>
 References: <1387566550-3524-1-git-send-email-acme@infradead.org>
@@ -31,7 +31,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-The 'browser' arg _is_ used, so ditch the misplaced attribute.
+1. Since all callers either test if it is less than zero or assign its
+   result to an int variable, convert it from ssize_t to int;
+
+2. There is just one use for the 'session' variable, so use rec->session
+   directly instead;
+
+3. No need to store the result of perf_data_file__write, since that
+   result is either 'size' or -1, the later making the error result to
+   be stored in 'errno' and accessed thru printf's %m in the pr_err
+   call.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -42,25 +51,39 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-bo4dabkip5iikhk3x384ac46@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-xwsk964dp681fica3xlqhjin@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browser.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/builtin-record.c | 11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
-index cbaa7af45513..94223d404f43 100644
---- a/tools/perf/ui/browser.c
-+++ b/tools/perf/ui/browser.c
-@@ -268,7 +268,7 @@ int ui_browser__show(struct ui_browser *browser, const char *title,
- 	return err ? 0 : -1;
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 8eed3d752c80..e8d606caf747 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -76,19 +76,14 @@ struct perf_record {
+ 	long			samples;
+ };
+ 
+-static ssize_t perf_record__write(struct perf_record *rec,
+-				  void *buf, size_t size)
++static int perf_record__write(struct perf_record *rec, void *bf, size_t size)
+ {
+-	struct perf_session *session = rec->session;
+-	ssize_t ret;
+-
+-	ret = perf_data_file__write(session->file, buf, size);
+-	if (ret < 0) {
++	if (perf_data_file__write(rec->session->file, bf, size) < 0) {
+ 		pr_err("failed to write perf data, error: %m\n");
+ 		return -1;
+ 	}
+ 
+-	rec->bytes_written += ret;
++	rec->bytes_written += size;
+ 	return 0;
  }
  
--void ui_browser__hide(struct ui_browser *browser __maybe_unused)
-+void ui_browser__hide(struct ui_browser *browser)
- {
- 	pthread_mutex_lock(&ui__lock);
- 	ui_helpline__pop();
 -- 
 1.8.1.4
 
