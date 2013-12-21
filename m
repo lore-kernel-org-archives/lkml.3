@@ -1,73 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab3LUAlp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 19:41:45 -0500
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:33599 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab3LUAlo (ORCPT
+	id S1752709Ab3LUAn5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 19:43:57 -0500
+Received: from mail-qc0-f201.google.com ([209.85.216.201]:59414 "EHLO
+	mail-qc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386Ab3LUAnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 19:41:44 -0500
-MIME-Version: 1.0
-Date: Fri, 20 Dec 2013 16:41:43 -0800
-X-Google-Sender-Auth: rE21YtMAYCzyLVYLaLyvResYBIw
-Message-ID: <CA+55aFzYZEmNEHQVgWS6usVnDVi-8ar7ZzP+eUGrqoO2OP66kA@mail.gmail.com>
-Subject: Broken initrd compression settings in 3.13
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: P J P <ppandit@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Jan Beulich <JBeulich@suse.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 20 Dec 2013 19:43:55 -0500
+From: Colin Cross <ccross@android.com>
+To: linux-kernel@vger.kernel.org
+Cc: Colin Cross <ccross@android.com>, Sumit Semwal <sumit.semwal@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Airlie <airlied@linux.ie>, Inki Dae <inki.dae@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org (open list:DMA BUFFER SHARIN...),
+        dri-devel@lists.freedesktop.org (open list:DMA BUFFER SHARIN...),
+        linaro-mm-sig@lists.linaro.org (open list:DMA BUFFER SHARIN...),
+        linux-arm-kernel@lists.infradead.org (moderated list:ARM/S5P EXYNOS
+	AR...),
+        linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...)
+Subject: [PATCH] dma-buf: avoid using IS_ERR_OR_NULL
+Date: Fri, 20 Dec 2013 16:43:50 -0800
+Message-Id: <1387586630-1954-1-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.8.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So commit 1bf49dd4be0b ("./Makefile: export initial ramdisk
-compression config option") seems to be totally broken.
+dma_buf_map_attachment and dma_buf_vmap can return NULL or
+ERR_PTR on a error.  This encourages a common buggy pattern in
+callers:
+	sgt = dma_buf_map_attachment(attach, DMA_BIDIRECTIONAL);
+	if (IS_ERR_OR_NULL(sgt))
+                return PTR_ERR(sgt);
 
-And I'm not saying that because Jan fixed a make-3.80 incompatibility
-in commit 7ac181568342 ("fix build with make 3.80")
+This causes the caller to return 0 on an error.  IS_ERR_OR_NULL
+is almost always a sign of poorly-defined error handling.
 
-I'm saying that because it sets and exports the INITRD_COMPRESS
-environment variable completely incorrectly, as far as I can tell.
+This patch converts dma_buf_map_attachment to always return
+ERR_PTR, and fixes the callers that incorrectly handled NULL.
+There are a few more callers that were not checking for NULL
+at all, which would have dereferenced a NULL pointer later.
+There are also a few more callers that correctly handled NULL
+and ERR_PTR differently, I left those alone but they could also
+be modified to delete the NULL check.
 
-And it looks like nobody noticed, because apparently dracut didn't use
-to care about that INITRD_COMPRESS environment variable at all. But as
-of a F20 update yesterday, apparently dracut actually does care, and
-as a result nothing actually works.
+This patch also converts dma_buf_vmap to always return NULL.
+All the callers to dma_buf_vmap only check for NULL, and would
+have dereferenced an ERR_PTR and panic'd if one was ever
+returned. This is not consistent with the rest of the dma buf
+APIs, but matches the expectations of all of the callers.
 
-That setting is f*cking moronic. It sets INITRD_COMPRESS to 'lz4' if
-RD_LZ4 is set. But RD_LZ4 is *always* set (unless you go into some
-expert settings), so basically what that commit does is to always set
-INITRD_COMPRESS to lz4.
+Signed-off-by: Colin Cross <ccross@android.com>
+---
+ drivers/base/dma-buf.c                         | 18 +++++++++++-------
+ drivers/gpu/drm/drm_prime.c                    |  2 +-
+ drivers/gpu/drm/exynos/exynos_drm_dmabuf.c     |  2 +-
+ drivers/media/v4l2-core/videobuf2-dma-contig.c |  2 +-
+ 4 files changed, 14 insertions(+), 10 deletions(-)
 
-Why is that wrong?
+diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
+index 1e16cbd61da2..cfe1d8bc7bb8 100644
+--- a/drivers/base/dma-buf.c
++++ b/drivers/base/dma-buf.c
+@@ -251,9 +251,8 @@ EXPORT_SYMBOL_GPL(dma_buf_put);
+  * @dmabuf:	[in]	buffer to attach device to.
+  * @dev:	[in]	device to be attached.
+  *
+- * Returns struct dma_buf_attachment * for this attachment; may return negative
+- * error codes.
+- *
++ * Returns struct dma_buf_attachment * for this attachment; returns ERR_PTR on
++ * error.
+  */
+ struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
+ 					  struct device *dev)
+@@ -319,9 +318,8 @@ EXPORT_SYMBOL_GPL(dma_buf_detach);
+  * @attach:	[in]	attachment whose scatterlist is to be returned
+  * @direction:	[in]	direction of DMA transfer
+  *
+- * Returns sg_table containing the scatterlist to be returned; may return NULL
+- * or ERR_PTR.
+- *
++ * Returns sg_table containing the scatterlist to be returned; returns ERR_PTR
++ * on error.
+  */
+ struct sg_table *dma_buf_map_attachment(struct dma_buf_attachment *attach,
+ 					enum dma_data_direction direction)
+@@ -334,6 +332,8 @@ struct sg_table *dma_buf_map_attachment(struct dma_buf_attachment *attach,
+ 		return ERR_PTR(-EINVAL);
+ 
+ 	sg_table = attach->dmabuf->ops->map_dma_buf(attach, direction);
++	if (!sg_table)
++		sg_table = ERR_PTR(-ENOMEM);
+ 
+ 	return sg_table;
+ }
+@@ -544,6 +544,8 @@ EXPORT_SYMBOL_GPL(dma_buf_mmap);
+  * These calls are optional in drivers. The intended use for them
+  * is for mapping objects linear in kernel space for high use objects.
+  * Please attempt to use kmap/kunmap before thinking about these interfaces.
++ *
++ * Returns NULL on error.
+  */
+ void *dma_buf_vmap(struct dma_buf *dmabuf)
+ {
+@@ -566,7 +568,9 @@ void *dma_buf_vmap(struct dma_buf *dmabuf)
+ 	BUG_ON(dmabuf->vmap_ptr);
+ 
+ 	ptr = dmabuf->ops->vmap(dmabuf);
+-	if (IS_ERR_OR_NULL(ptr))
++	if (WARN_ON_ONCE(IS_ERR(ptr)))
++		ptr = NULL;
++	if (!ptr)
+ 		goto out_unlock;
+ 
+ 	dmabuf->vmap_ptr = ptr;
+diff --git a/drivers/gpu/drm/drm_prime.c b/drivers/gpu/drm/drm_prime.c
+index 56805c39c906..bb516fdd195d 100644
+--- a/drivers/gpu/drm/drm_prime.c
++++ b/drivers/gpu/drm/drm_prime.c
+@@ -471,7 +471,7 @@ struct drm_gem_object *drm_gem_prime_import(struct drm_device *dev,
+ 	get_dma_buf(dma_buf);
+ 
+ 	sgt = dma_buf_map_attachment(attach, DMA_BIDIRECTIONAL);
+-	if (IS_ERR_OR_NULL(sgt)) {
++	if (IS_ERR(sgt)) {
+ 		ret = PTR_ERR(sgt);
+ 		goto fail_detach;
+ 	}
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c b/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c
+index 59827cc5e770..c786cd4f457b 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c
+@@ -224,7 +224,7 @@ struct drm_gem_object *exynos_dmabuf_prime_import(struct drm_device *drm_dev,
+ 	get_dma_buf(dma_buf);
+ 
+ 	sgt = dma_buf_map_attachment(attach, DMA_BIDIRECTIONAL);
+-	if (IS_ERR_OR_NULL(sgt)) {
++	if (IS_ERR(sgt)) {
+ 		ret = PTR_ERR(sgt);
+ 		goto err_buf_detach;
+ 	}
+diff --git a/drivers/media/v4l2-core/videobuf2-dma-contig.c b/drivers/media/v4l2-core/videobuf2-dma-contig.c
+index 33d3871d1e13..880be0782dd9 100644
+--- a/drivers/media/v4l2-core/videobuf2-dma-contig.c
++++ b/drivers/media/v4l2-core/videobuf2-dma-contig.c
+@@ -719,7 +719,7 @@ static int vb2_dc_map_dmabuf(void *mem_priv)
+ 
+ 	/* get the associated scatterlist for this buffer */
+ 	sgt = dma_buf_map_attachment(buf->db_attach, buf->dma_dir);
+-	if (IS_ERR_OR_NULL(sgt)) {
++	if (IS_ERR(sgt)) {
+ 		pr_err("Error getting dmabuf scatterlist\n");
+ 		return -EINVAL;
+ 	}
+-- 
+1.8.5.1
 
-It's wrong because
-
- (a) most sane people don't even have lz4 _installed_, so dracut won't
-actually succeed
-
- (b) there's no way to select the compression level (unlike the
-INITRAMFS_COMPRESSION thing that actually has a choice)
-
- (c) even if you *do* have lz4, it doesn't actually work, because
-while that causes the new F20 dracut to compress the initramfs with
-lz4, the end result is completely broken, because the F20 "lsinitrd"
-scripts don't understand the end result, so now the whole kernel
-install fails.
-
-Now, it could be argued that this is a F20 bug, and the fact that F20
-has a dracut that can generate a lz4 initrd, but has other tools that
-then cannot handle it is arguably indeed a buglet in F20. So the (c)
-part is arguably a F20 problem.
-
-HOWEVER.
-
-(a) and (b) are very much kernel bugs.
-
-I'm going to remove that export of INITRD_COMPRESS, since right now
-that value is broken and useless. No way does it make sense to
-mindlessly default to a compressor that most people don't have, and
-that doesn't work with most tools.
-
-             Linus
