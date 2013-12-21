@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870Ab3LUKWq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 05:22:46 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:38716 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751291Ab3LUKWp (ORCPT
+	id S1754063Ab3LUKXe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 05:23:34 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:39231 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528Ab3LUKXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 05:22:45 -0500
-Date: Sat, 21 Dec 2013 15:50:29 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
+	Sat, 21 Dec 2013 05:23:33 -0500
+From: Sachin Kamat <sachin.kamat@linaro.org>
 To: linux-kernel@vger.kernel.org
-Cc: Paul Zimmerman <paulz@synopsys.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
-        josh@joshtriplett.org
-Subject: [PATCH] drivers: dwc2: Mark function as static in core.c
-Message-ID: <20131221102029.GA3151@rashika>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: lee.jones@linaro.org, sameo@linux.intel.com, sachin.kamat@linaro.org
+Subject: [PATCH 1/1] mfd: max14577: Remove redundant of_match_ptr helper
+Date: Sat, 21 Dec 2013 15:50:16 +0530
+Message-Id: <1387621216-9745-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark function dwc2_set_param_uframe_sched() as static in core.c because
-it is not used outside this file.
+'max14577_dt_match' is always compiled in. Hence the
+helper macro is not needed.
 
-This eliminates the following warning in core.c:
-drivers/staging/dwc2/core.c:2739:5: warning: no previous prototype for ‘dwc2_set_param_uframe_sched’ [-Wmissing-prototypes]
-
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
 ---
- drivers/staging/dwc2/core.c |    2 +-
+ drivers/mfd/max14577.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/dwc2/core.c b/drivers/staging/dwc2/core.c
-index 6d001b5..c029cb6 100644
---- a/drivers/staging/dwc2/core.c
-+++ b/drivers/staging/dwc2/core.c
-@@ -2736,7 +2736,7 @@ int dwc2_get_hwparams(struct dwc2_hsotg *hsotg)
- 	return 0;
- }
- 
--int dwc2_set_param_uframe_sched(struct dwc2_hsotg *hsotg, int val)
-+static int dwc2_set_param_uframe_sched(struct dwc2_hsotg *hsotg, int val)
- {
- 	int retval = 0;
- 
+diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
+index a5e1c370c609..ac514fb2b877 100644
+--- a/drivers/mfd/max14577.c
++++ b/drivers/mfd/max14577.c
+@@ -221,7 +221,7 @@ static struct i2c_driver max14577_i2c_driver = {
+ 		.name = "max14577",
+ 		.owner = THIS_MODULE,
+ 		.pm = &max14577_pm,
+-		.of_match_table = of_match_ptr(max14577_dt_match),
++		.of_match_table = max14577_dt_match,
+ 	},
+ 	.probe = max14577_i2c_probe,
+ 	.remove = max14577_i2c_remove,
 -- 
 1.7.9.5
 
