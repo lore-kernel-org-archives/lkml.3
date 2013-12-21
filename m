@@ -1,49 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053Ab3LUUYd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 15:24:33 -0500
-Received: from smtprelay-h31.telenor.se ([213.150.131.4]:47287 "EHLO
-	smtprelay-h31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755723Ab3LUUYb (ORCPT
+	id S1756135Ab3LUU2A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 15:28:00 -0500
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:62964 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755723Ab3LUU16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 15:24:31 -0500
-X-SENDER-IP: [85.230.168.69]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Aq0hAOL3tVJV5qhFPGdsb2JhbAANS4tTsgOBKQMBAQEBOIJaAQEBAQIBeAYLCyEWDwkDAgECATEUBgEMCAEBh3gNsCKaQxePLIQ2AQOsGoE/
-X-IronPort-AV: E=Sophos;i="4.95,528,1384297200"; 
-   d="scan'208";a="438325724"
-Message-ID: <52B5F96D.9050400@euromail.se>
-Date: Sat, 21 Dec 2013 21:26:21 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sat, 21 Dec 2013 15:27:58 -0500
 MIME-Version: 1.0
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Edel Maks <edelmaks@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/3] HID: multitouch: add support of other generic collections
- in hid-mt
-References: <1387470191-9725-1-git-send-email-benjamin.tissoires@redhat.com> <1387470191-9725-4-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1387470191-9725-4-git-send-email-benjamin.tissoires@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Date: Sat, 21 Dec 2013 12:27:57 -0800
+X-Google-Sender-Auth: ao41keVLhH5yvoDSzXkPm3MNxCA
+Message-ID: <CA+55aFxZ2u+M72u3HSD7TVY2+WRRi27pYC=_4Wawr5y1m8DfnQ@mail.gmail.com>
+Subject: [RFC] speeding up the stat() family of system calls...
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Cc: "the arch/x86 maintainers" <x86@kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=bcaec5314425f4dbd304ee113ad5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+--bcaec5314425f4dbd304ee113ad5
+Content-Type: text/plain; charset=UTF-8
 
-> The ANTEC Touch Pad is a device which can switch from a multitouch
-> touchpad to a mouse. It thus presents several generic collections which
-> are currently ignored by hid-multitouch. Enable them by using the generic
-> protocol. Adding also a suffix for them depending on their application.
+Here's both x86 people and filesystem people involved, because this
+hacky RFC patch touches both.
 
-In what way does this and the preceeding patches differ from "else if (is_pen ||
-export_all_inputs)"? Adding a functional pattern which then is converted to a
-generic case, such that the usual branching is bound to occur anyways, seems
-unnecessary.
+NOTE NOTE NOTE! I've modified "cp_new_stat()" in place, in a way that
+is x86-64 specific. So the attached patch *only* works on x86-64, and
+will very actively break on anything else. That's intentional, because
+that way it's more obvious how the code changes, but a real patch
+would create a *new* cp_new_stat() for x86-64, and conditionalize the
+existing generic "cp_new_stat()" on not already having an
+architecture-optimized one.
 
-Thanks,
-Henrik
+Basically, under some filesystem loads, "stat()" and friends are the
+most common ops (think tree traversal, but also things like git
+verifying the index). And our "cp_new_stat()" function (which is the
+common interface, ignoring 32-bit legacy stuff) is generic, but
+actually pretty disgusting. It copies things to a temporary 'struct
+stat' buffer on the kernel stack, and then uses copy_to_user() to copy
+it to user space. The double copy is quite noticeable in profiles, and
+it generates a big stack frame too.
 
+By doing an architecture-specific cp_new_stat() function, we can
+improve on that.
+
+HOWEVER. On x86, doing an efficient field-at-a-time copy also requires
+us to use put_user_try() and put_user_catch() in order to not have
+tons of clac/stac instructions for the extended permission testing.
+And the implementation of that was actually fairly non-optimal, so to
+actually get the code I wanted, I had to change how that all worked
+too, using "asm_volatile_goto()".
+
+Thus both x86 and FS people on the list.
+
+Comments? This would obviously be a 3.14 issue, I'm not suggesting
+we'd do this now. I just want to lay the ground-work..
+
+It's tested in the sense that "it works for me", and profiles look nice, but..
+
+               Linus
+
+--bcaec5314425f4dbd304ee113ad5
+Content-Type: application/octet-stream; name=vfs-stat-improvement
+Content-Disposition: attachment; filename=vfs-stat-improvement
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hphbgag20
+
+IGFyY2gveDg2L2luY2x1ZGUvYXNtL3VhY2Nlc3MuaCB8IDYwICsrKysrKysrKysrKysrKysrKysr
+Ky0tLS0tLS0tLS0tLS0tLS0KIGZzL3N0YXQuYyAgICAgICAgICAgICAgICAgICAgICB8IDY3ICsr
+KysrKysrKysrKysrKysrKysrKysrKystLS0tLS0tLS0tLS0tLS0tLQogMiBmaWxlcyBjaGFuZ2Vk
+LCA3NCBpbnNlcnRpb25zKCspLCA1MyBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9hcmNoL3g4
+Ni9pbmNsdWRlL2FzbS91YWNjZXNzLmggYi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS91YWNjZXNzLmgK
+aW5kZXggOGVjNTdjMDdiMTI1Li5iNmY2ODE2YjliYmEgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L2lu
+Y2x1ZGUvYXNtL3VhY2Nlc3MuaAorKysgYi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS91YWNjZXNzLmgK
+QEAgLTE5NywxMyArMTk3LDEyIEBAIF9fdHlwZW9mX18oX19idWlsdGluX2Nob29zZV9leHByKHNp
+emVvZih4KSA+IHNpemVvZigwVUwpLCAwVUxMLCAwVUwpKQogCQkgICAgIDogIkEiICh4KSwgInIi
+IChhZGRyKSwgImkiIChlcnJyZXQpLCAiMCIgKGVycikpCiAKICNkZWZpbmUgX19wdXRfdXNlcl9h
+c21fZXhfdTY0KHgsIGFkZHIpCQkJCQlcCi0JYXNtIHZvbGF0aWxlKEFTTV9TVEFDICJcbiIJCQkJ
+CVwKKwlhc21fdm9sYXRpbGVfZ290bygJCQkJCQlcCiAJCSAgICAgIjE6CW1vdmwgJSVlYXgsMCgl
+MSlcbiIJCQlcCiAJCSAgICAgIjI6CW1vdmwgJSVlZHgsNCglMSlcbiIJCQlcCi0JCSAgICAgIjM6
+ICIgQVNNX0NMQUMgIlxuIgkJCQlcCi0JCSAgICAgX0FTTV9FWFRBQkxFX0VYKDFiLCAyYikJCQkJ
+XAotCQkgICAgIF9BU01fRVhUQUJMRV9FWCgyYiwgM2IpCQkJCVwKLQkJICAgICA6IDogIkEiICh4
+KSwgInIiIChhZGRyKSkKKwkJICAgICBfQVNNX0VYVEFCTEVfRVgoMWIsICVsW3B1dF91c2VyX2Zh
+aWxdKQkJXAorCQkgICAgIF9BU01fRVhUQUJMRV9FWCgyYiwgJWxbcHV0X3VzZXJfZmFpbF0pCQlc
+CisJCSAgICAgOiA6ICJBIiAoeCksICJyIiAoYWRkcikgOiA6IHB1dF91c2VyX2ZhaWwpCiAKICNk
+ZWZpbmUgX19wdXRfdXNlcl94OCh4LCBwdHIsIF9fcmV0X3B1KQkJCQlcCiAJYXNtIHZvbGF0aWxl
+KCJjYWxsIF9fcHV0X3VzZXJfOCIgOiAiPWEiIChfX3JldF9wdSkJXApAQCAtNDI0LDIzICs0MjMs
+OSBAQCBzdHJ1Y3QgX19sYXJnZV9zdHJ1Y3QgeyB1bnNpZ25lZCBsb25nIGJ1ZlsxMDBdOyB9Owog
+CQkgICAgIDogbHR5cGUoeCksICJtIiAoX19tKGFkZHIpKSwgImkiIChlcnJyZXQpLCAiMCIgKGVy
+cikpCiAKICNkZWZpbmUgX19wdXRfdXNlcl9hc21fZXgoeCwgYWRkciwgaXR5cGUsIHJ0eXBlLCBs
+dHlwZSkJCQlcCi0JYXNtIHZvbGF0aWxlKCIxOgltb3YiaXR5cGUiICUicnR5cGUiMCwlMVxuIgkJ
+XAotCQkgICAgICIyOlxuIgkJCQkJCVwKLQkJICAgICBfQVNNX0VYVEFCTEVfRVgoMWIsIDJiKQkJ
+CQlcCi0JCSAgICAgOiA6IGx0eXBlKHgpLCAibSIgKF9fbShhZGRyKSkpCi0KLS8qCi0gKiB1YWNj
+ZXNzX3RyeSBhbmQgY2F0Y2gKLSAqLwotI2RlZmluZSB1YWNjZXNzX3RyeQlkbyB7CQkJCQkJXAot
+CWN1cnJlbnRfdGhyZWFkX2luZm8oKS0+dWFjY2Vzc19lcnIgPSAwOwkJCQlcCi0Jc3RhYygpOwkJ
+CQkJCQkJXAotCWJhcnJpZXIoKTsKLQotI2RlZmluZSB1YWNjZXNzX2NhdGNoKGVycikJCQkJCQlc
+Ci0JY2xhYygpOwkJCQkJCQkJXAotCShlcnIpIHw9IChjdXJyZW50X3RocmVhZF9pbmZvKCktPnVh
+Y2Nlc3NfZXJyID8gLUVGQVVMVCA6IDApOwlcCi19IHdoaWxlICgwKQorCWFzbV92b2xhdGlsZV9n
+b3RvKCIxOgltb3YiaXR5cGUiICUicnR5cGUiMCwlMVxuIgkJXAorCQkgICAgIF9BU01fRVhUQUJM
+RV9FWCgxYiwgJWxbcHV0X3VzZXJfZmFpbF0pCQlcCisJCSAgICAgOiA6IGx0eXBlKHgpLCAibSIg
+KF9fbShhZGRyKSkgOiA6IHB1dF91c2VyX2ZhaWwpCiAKIC8qKgogICogX19nZXRfdXNlcjogLSBH
+ZXQgYSBzaW1wbGUgdmFyaWFibGUgZnJvbSB1c2VyIHNwYWNlLCB3aXRoIGxlc3MgY2hlY2tpbmcu
+CkBAIC00OTksOCArNDg0LDE4IEBAIHN0cnVjdCBfX2xhcmdlX3N0cnVjdCB7IHVuc2lnbmVkIGxv
+bmcgYnVmWzEwMF07IH07CiAgKglnZXRfdXNlcl9leCguLi4pOwogICogfSBnZXRfdXNlcl9jYXRj
+aChlcnIpCiAgKi8KLSNkZWZpbmUgZ2V0X3VzZXJfdHJ5CQl1YWNjZXNzX3RyeQotI2RlZmluZSBn
+ZXRfdXNlcl9jYXRjaChlcnIpCXVhY2Nlc3NfY2F0Y2goZXJyKQorLyoKKyAqIHVhY2Nlc3NfdHJ5
+IGFuZCBjYXRjaAorICovCisjZGVmaW5lIGdldF91c2VyX3RyeQlkbyB7CQkJCQkJXAorCWN1cnJl
+bnRfdGhyZWFkX2luZm8oKS0+dWFjY2Vzc19lcnIgPSAwOwkJCQlcCisJc3RhYygpOwkJCQkJCQkJ
+XAorCWJhcnJpZXIoKTsKKworI2RlZmluZSBnZXRfdXNlcl9jYXRjaChlcnIpCQkJCQkJXAorCWNs
+YWMoKTsJCQkJCQkJCVwKKwkoZXJyKSB8PSAoY3VycmVudF90aHJlYWRfaW5mbygpLT51YWNjZXNz
+X2VyciA/IC1FRkFVTFQgOiAwKTsJXAorfSB3aGlsZSAoMCkKIAogI2RlZmluZSBnZXRfdXNlcl9l
+eCh4LCBwdHIpCWRvIHsJCQkJCVwKIAl1bnNpZ25lZCBsb25nIF9fZ3VlX3ZhbDsJCQkJCVwKQEAg
+LTUwOCw4ICs1MDMsMjEgQEAgc3RydWN0IF9fbGFyZ2Vfc3RydWN0IHsgdW5zaWduZWQgbG9uZyBi
+dWZbMTAwXTsgfTsKIAkoeCkgPSAoX19mb3JjZSBfX3R5cGVvZl9fKCoocHRyKSkpX19ndWVfdmFs
+OwkJCVwKIH0gd2hpbGUgKDApCiAKLSNkZWZpbmUgcHV0X3VzZXJfdHJ5CQl1YWNjZXNzX3RyeQot
+I2RlZmluZSBwdXRfdXNlcl9jYXRjaChlcnIpCXVhY2Nlc3NfY2F0Y2goZXJyKQorLyoKKyAqIHVh
+Y2Nlc3NfdHJ5IGFuZCBjYXRjaAorICovCisjZGVmaW5lIHB1dF91c2VyX3RyeQlkbyB7CQlcCisJ
+c3RhYygpOwkJCQlcCisJYmFycmllcigpOworCisjZGVmaW5lIHB1dF91c2VyX2NhdGNoKGVycikJ
+CVwKKwlpZiAoMCkgewkJCVwKK3B1dF91c2VyX2ZhaWw6CQkJCVwKKwkJKGVycikgPSAtRUZBVUxU
+OwlcCisJfQkJCQlcCisJY2xhYygpOwkJCQlcCit9IHdoaWxlICgwKQorCiAKICNkZWZpbmUgcHV0
+X3VzZXJfZXgoeCwgcHRyKQkJCQkJCVwKIAlfX3B1dF91c2VyX3NpemVfZXgoKF9fdHlwZW9mX18o
+KihwdHIpKSkoeCksIChwdHIpLCBzaXplb2YoKihwdHIpKSkKZGlmZiAtLWdpdCBhL2ZzL3N0YXQu
+YyBiL2ZzL3N0YXQuYwppbmRleCBhZTBjM2NlZjk5MjcuLjViZmEzZGFlNTk5OSAxMDA2NDQKLS0t
+IGEvZnMvc3RhdC5jCisrKyBiL2ZzL3N0YXQuYwpAQCAtMjI4LDM5ICsyMjgsNTIgQEAgU1lTQ0FM
+TF9ERUZJTkUyKGZzdGF0LCB1bnNpZ25lZCBpbnQsIGZkLCBzdHJ1Y3QgX19vbGRfa2VybmVsX3N0
+YXQgX191c2VyICosIHN0YXQKIAogc3RhdGljIGludCBjcF9uZXdfc3RhdChzdHJ1Y3Qga3N0YXQg
+KnN0YXQsIHN0cnVjdCBzdGF0IF9fdXNlciAqc3RhdGJ1ZikKIHsKLQlzdHJ1Y3Qgc3RhdCB0bXA7
+CisJaW50IGVycjsKKwl0eXBlb2Yoc3RhdGJ1Zi0+c3RfaW5vKSBzdF9pbm87CisJdHlwZW9mKHN0
+YXRidWYtPnN0X25saW5rKSBzdF9ubGluazsKKworCWlmICghYWNjZXNzX29rKFZFUklGWV9XUklU
+RSwgc3RhdGJ1Ziwgc2l6ZW9mKCpzdGF0YnVmKSkpCisJCXJldHVybiAtRUZBVUxUOwogCiAJaWYg
+KCF2YWxpZF9kZXYoc3RhdC0+ZGV2KSB8fCAhdmFsaWRfZGV2KHN0YXQtPnJkZXYpKQogCQlyZXR1
+cm4gLUVPVkVSRkxPVzsKLSNpZiBCSVRTX1BFUl9MT05HID09IDMyCi0JaWYgKHN0YXQtPnNpemUg
+PiBNQVhfTk9OX0xGUykKLQkJcmV0dXJuIC1FT1ZFUkZMT1c7Ci0jZW5kaWYKIAotCUlOSVRfU1RS
+VUNUX1NUQVRfUEFERElORyh0bXApOwotCXRtcC5zdF9kZXYgPSBlbmNvZGVfZGV2KHN0YXQtPmRl
+dik7Ci0JdG1wLnN0X2lubyA9IHN0YXQtPmlubzsKLQlpZiAoc2l6ZW9mKHRtcC5zdF9pbm8pIDwg
+c2l6ZW9mKHN0YXQtPmlubykgJiYgdG1wLnN0X2lubyAhPSBzdGF0LT5pbm8pCisJc3RfaW5vID0g
+c3RhdC0+aW5vOworCWlmIChzaXplb2Yoc3RfaW5vKSA8IHNpemVvZihzdGF0LT5pbm8pICYmIHN0
+X2lubyAhPSBzdGF0LT5pbm8pCiAJCXJldHVybiAtRU9WRVJGTE9XOwotCXRtcC5zdF9tb2RlID0g
+c3RhdC0+bW9kZTsKLQl0bXAuc3RfbmxpbmsgPSBzdGF0LT5ubGluazsKLQlpZiAodG1wLnN0X25s
+aW5rICE9IHN0YXQtPm5saW5rKQorCXN0X25saW5rID0gc3RhdC0+bmxpbms7CisJaWYgKHN0X25s
+aW5rICE9IHN0YXQtPm5saW5rKQogCQlyZXR1cm4gLUVPVkVSRkxPVzsKLQlTRVRfVUlEKHRtcC5z
+dF91aWQsIGZyb21fa3VpZF9tdW5nZWQoY3VycmVudF91c2VyX25zKCksIHN0YXQtPnVpZCkpOwot
+CVNFVF9HSUQodG1wLnN0X2dpZCwgZnJvbV9rZ2lkX211bmdlZChjdXJyZW50X3VzZXJfbnMoKSwg
+c3RhdC0+Z2lkKSk7Ci0JdG1wLnN0X3JkZXYgPSBlbmNvZGVfZGV2KHN0YXQtPnJkZXYpOwotCXRt
+cC5zdF9zaXplID0gc3RhdC0+c2l6ZTsKLQl0bXAuc3RfYXRpbWUgPSBzdGF0LT5hdGltZS50dl9z
+ZWM7Ci0JdG1wLnN0X210aW1lID0gc3RhdC0+bXRpbWUudHZfc2VjOwotCXRtcC5zdF9jdGltZSA9
+IHN0YXQtPmN0aW1lLnR2X3NlYzsKLSNpZmRlZiBTVEFUX0hBVkVfTlNFQwotCXRtcC5zdF9hdGlt
+ZV9uc2VjID0gc3RhdC0+YXRpbWUudHZfbnNlYzsKLQl0bXAuc3RfbXRpbWVfbnNlYyA9IHN0YXQt
+Pm10aW1lLnR2X25zZWM7Ci0JdG1wLnN0X2N0aW1lX25zZWMgPSBzdGF0LT5jdGltZS50dl9uc2Vj
+OwotI2VuZGlmCi0JdG1wLnN0X2Jsb2NrcyA9IHN0YXQtPmJsb2NrczsKLQl0bXAuc3RfYmxrc2l6
+ZSA9IHN0YXQtPmJsa3NpemU7Ci0JcmV0dXJuIGNvcHlfdG9fdXNlcihzdGF0YnVmLCZ0bXAsc2l6
+ZW9mKHRtcCkpID8gLUVGQVVMVCA6IDA7CisKKwllcnIgPSAwOworCXB1dF91c2VyX3RyeSB7CisJ
+CXR5cGVvZihzdGF0YnVmLT5zdF91aWQpIHN0X3VpZDsKKwkJdHlwZW9mKHN0YXRidWYtPnN0X2dp
+ZCkgc3RfZ2lkOworCisJCXB1dF91c2VyX2V4KGVuY29kZV9kZXYoc3RhdC0+ZGV2KSwgJnN0YXRi
+dWYtPnN0X2Rldik7CisJCXB1dF91c2VyX2V4KHN0X2lubywgJnN0YXRidWYtPnN0X2lubyk7CisJ
+CXB1dF91c2VyX2V4KHN0X25saW5rLCAmc3RhdGJ1Zi0+c3RfbmxpbmspOworCQlwdXRfdXNlcl9l
+eChzdGF0LT5tb2RlLCAmc3RhdGJ1Zi0+c3RfbW9kZSk7CisJCVNFVF9VSUQoc3RfdWlkLCBmcm9t
+X2t1aWRfbXVuZ2VkKGN1cnJlbnRfdXNlcl9ucygpLCBzdGF0LT51aWQpKTsKKwkJcHV0X3VzZXJf
+ZXgoc3RfdWlkLCAmc3RhdGJ1Zi0+c3RfdWlkKTsKKwkJU0VUX0dJRChzdF9naWQsIGZyb21fa2dp
+ZF9tdW5nZWQoY3VycmVudF91c2VyX25zKCksIHN0YXQtPmdpZCkpOworCQlwdXRfdXNlcl9leChz
+dF9naWQsICZzdGF0YnVmLT5zdF9naWQpOworCQlwdXRfdXNlcl9leCgwLCAmc3RhdGJ1Zi0+X19w
+YWQwKTsKKwkJcHV0X3VzZXJfZXgoZW5jb2RlX2RldihzdGF0LT5yZGV2KSwgJnN0YXRidWYtPnN0
+X3JkZXYpOworCQlwdXRfdXNlcl9leChzdGF0LT5zaXplLCAmc3RhdGJ1Zi0+c3Rfc2l6ZSk7CisJ
+CXB1dF91c2VyX2V4KHN0YXQtPmJsa3NpemUsICZzdGF0YnVmLT5zdF9ibGtzaXplKTsKKwkJcHV0
+X3VzZXJfZXgoc3RhdC0+YmxvY2tzLCAmc3RhdGJ1Zi0+c3RfYmxvY2tzKTsKKwkJcHV0X3VzZXJf
+ZXgoc3RhdC0+YXRpbWUudHZfc2VjLCAmc3RhdGJ1Zi0+c3RfYXRpbWUpOworCQlwdXRfdXNlcl9l
+eChzdGF0LT5hdGltZS50dl9uc2VjLCAmc3RhdGJ1Zi0+c3RfYXRpbWVfbnNlYyk7CisJCXB1dF91
+c2VyX2V4KHN0YXQtPm10aW1lLnR2X3NlYywgJnN0YXRidWYtPnN0X210aW1lKTsKKwkJcHV0X3Vz
+ZXJfZXgoc3RhdC0+bXRpbWUudHZfbnNlYywgJnN0YXRidWYtPnN0X210aW1lX25zZWMpOworCQlw
+dXRfdXNlcl9leChzdGF0LT5jdGltZS50dl9zZWMsICZzdGF0YnVmLT5zdF9jdGltZSk7CisJCXB1
+dF91c2VyX2V4KHN0YXQtPmN0aW1lLnR2X25zZWMsICZzdGF0YnVmLT5zdF9jdGltZV9uc2VjKTsK
+KwkJcHV0X3VzZXJfZXgoMCwgJnN0YXRidWYtPl9fdW51c2VkWzBdKTsKKwkJcHV0X3VzZXJfZXgo
+MCwgJnN0YXRidWYtPl9fdW51c2VkWzFdKTsKKwkJcHV0X3VzZXJfZXgoMCwgJnN0YXRidWYtPl9f
+dW51c2VkWzJdKTsKKwl9IHB1dF91c2VyX2NhdGNoKGVycik7CisJcmV0dXJuIGVycjsKIH0KIAog
+U1lTQ0FMTF9ERUZJTkUyKG5ld3N0YXQsIGNvbnN0IGNoYXIgX191c2VyICosIGZpbGVuYW1lLAo=
+--bcaec5314425f4dbd304ee113ad5--
