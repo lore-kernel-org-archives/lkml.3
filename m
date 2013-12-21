@@ -1,88 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753107Ab3LUCab (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 21:30:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2817 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752135Ab3LUCaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 21:30:30 -0500
-Date: Fri, 20 Dec 2013 21:33:21 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, P J P <ppandit@redhat.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Broken initrd compression settings in 3.13
-Message-ID: <20131220213321.32d59343@corrin.poochiereds.net>
-In-Reply-To: <CA+55aFwwXKAs0dyJJ2FAcJj-okqqLYQsPsSask1p_nXvyrtWXw@mail.gmail.com>
-References: <CA+55aFzYZEmNEHQVgWS6usVnDVi-8ar7ZzP+eUGrqoO2OP66kA@mail.gmail.com>
-	<20131220173935.0812cc4e.akpm@linux-foundation.org>
-	<CA+55aFwwXKAs0dyJJ2FAcJj-okqqLYQsPsSask1p_nXvyrtWXw@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753911Ab3LUCcA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 21:32:00 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:64202 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752515Ab3LUCb6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 21:31:58 -0500
+X-IronPort-AV: E=Sophos;i="4.95,525,1384329600"; 
+   d="scan'208";a="4287923"
+Message-ID: <52B4FD8E.1010009@broadcom.com>
+Date: Fri, 20 Dec 2013 18:31:42 -0800
+From: Sherman Yin <syin@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>, Mark Brown <broonie@kernel.org>
+CC: Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 5/6] ARM: pinctrl: Add Broadcom Capri pinctrl driver
+References: <1381174108-25168-1-git-send-email-syin@broadcom.com>	<1386787041-6035-1-git-send-email-syin@broadcom.com>	<1386787041-6035-6-git-send-email-syin@broadcom.com> <CACRpkdaeZCodKv6R+4ZS3o-5u=QQuV3JidEp7uaLsN9aYG7bqA@mail.gmail.com> <52B23618.2040508@broadcom.com>
+In-Reply-To: <52B23618.2040508@broadcom.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Dec 2013 18:15:29 -0800
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On 13-12-18 03:56 PM, Sherman Yin wrote:
+> On 13-12-12 12:54 PM, Linus Walleij wrote:
 
-> On Fri, Dec 20, 2013 at 5:39 PM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > On Fri, 20 Dec 2013 16:41:43 -0800 Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> >>
-> >>  (a) most sane people don't even have lz4 _installed_, so dracut won't
-> >> actually succeed
-> >>
-> >>  (b) there's no way to select the compression level (unlike the
-> >> INITRAMFS_COMPRESSION thing that actually has a choice)
-> >>
-> >>  (c) even if you *do* have lz4, it doesn't actually work, because
-> >> while that causes the new F20 dracut to compress the initramfs with
-> >> lz4, the end result is completely broken, because the F20 "lsinitrd"
-> >> scripts don't understand the end result, so now the whole kernel
-> >> install fails.
-> >>
-> >> (a) and (b) are very much kernel bugs.
-> >
-> > Jeff sent the below this morning.  Will that fix (a)?
-> 
-> Yes, it fixes (a), at least to some degree, in that at least
-> defaulting to bzip2 is a lot more sane than defaulting to lz4. I
-> suspect most everybody has bzip2 installed. And at least on my current
-> F20 install, it looks like lsinitrd understands to use zcat, bzcat or
-> xzcat on the resulting initrd image (and bzcat does that bzip2
-> decoding).
-> 
-> So I think Jeff's patch at least fixes the symptoms.
-> 
-> That said, I think it does nothing *but* fix the symptoms, and we're
-> actually still better off with the 3.12 behavior which was to never
-> set INITRD_COMPRESS at all. Because quite frankly, there's currently
-> no way for the kernel to know what the right compressor is. bz2 may
-> well work, but can you guarantee it? I certainly can't..
-> 
-> Now, if we asked the user, that would be a different thing. But right
-> now we very much don't ask the user, and we just pick one at random.
-> 
-> We're better off not picking a compression method at all, at which
-> point the distro "installkernel" will do whatever the distro does.
-> 
->             Linus
+>>> +/*
+>>> + * Write to the register using the value and mask if current value
+>>> is different
+>>> + */
+>>> +static void capri_reg_write(struct pinctrl_dev *pctldev,
+>>> +                           void __iomem *reg,
+>>> +                           u32 val,
+>>> +                           u32 mask)
+>>> +{
+>>> +       u32 old_val;
+>>> +       u32 new_val;
+>>> +
+>>> +       old_val = readl(reg);
+>>> +       new_val = (old_val & ~mask) | (val & mask);
+>>> +
+>>> +       if (new_val == old_val) {
+>>> +               dev_dbg(pctldev->dev,
+>>> +                       "Reg 0x%p=0x%x (no change)\n",
+>>> +                       reg, old_val);
+>>> +               return;
+>>> +       }
+>>> +
+>>> +       dev_dbg(pctldev->dev,
+>>> +               "Reg 0x%p change from 0x%x to 0x%x\n",
+>>> +               reg, old_val, new_val);
+>>> +       writel(new_val, reg);
+>>> +}
+>>
+>> This is a reimplementation of regmap for MMIO.
+>> See drivers/base/regmap/regmap-mmio.c
+>> Notice how regmap_update_bits() is used throughout the
+>> kernel.
+>>
+>> If you want to do this, use regmap.
+>
+> Ok.
 
-Perhaps a better solution for this would be to instead export an
-env var with a list of the compression algorithms that the kernel
-supports. Then installkernel or dracut could use that info to make a
-semi-intelligent decision based on that and what tools are installed.
+As you can see in v4 of my patchset, I've changed my driver to use the 
+mmio regmap.  However, as I was tracing through regmap_update_bits(), it 
+looks like I have to go through a lot of checks and function pointers 
+just to do a simple write to a register.  Also, I have to select 
+REGMAP_MMIO which brings in a bunch of code as well.
 
-...or maybe a separate env var for each one that it supports:
+I understand the benefits of using common code, but in this case it 
+seems there is a lot of extra code and run-time overhead to use regmap. 
+  In the end it also doesn't buy much in terms of functionality.
 
-    $INITRD_COMPRESS_LZ4
-    $INITRD_COMPRESS_BZIP2
-    $INITRD_COMPRESS_GZIP
+Just a quick note - it looks like the 2nd parameter of 
+regmap_update_bits() wants the offset of a register (offset from 
+regmap_mmio_context.regs).  So calling the parameter "reg" is a little 
+confusing, at least in the MMIO case.
 
-...etc.
-
--- 
-Jeff Layton <jlayton@redhat.com>
+Regards,
+Sherman
