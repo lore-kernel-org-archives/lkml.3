@@ -1,120 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755059Ab3LUK6S (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 05:58:18 -0500
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:37128 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754887Ab3LUK6R convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 05:58:17 -0500
-X-Originating-IP: 50.43.14.201
-Date: Sat, 21 Dec 2013 02:58:10 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kevin McKinney <klmckinney1@gmail.com>,
-        Lisa Nguyen <lisa@xenapiadmin.com>,
-        Mihnea Dobrescu-Balaur <mihneadb@gmail.com>,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCH 2/2] drivers: bcm: Remove unused function in nvm.c
-Message-ID: <20131221105810.GI3611@leaf>
-References: <20131221103321.GA3332@rashika>
+	id S1753865Ab3LULiv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 06:38:51 -0500
+Received: from verein.lst.de ([213.95.11.211]:59966 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753303Ab3LULit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Dec 2013 06:38:49 -0500
+Date: Sat, 21 Dec 2013 12:38:45 +0100
+From: Torsten Duwe <duwe@lst.de>
+To: Kees Cook <keescook@chromium.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
+        kexec@lists.infradead.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Jones <pjones@redhat.com>
+Subject: Re: [PATCH 4/6] kexec: A new system call, kexec_file_load, for in
+	kernel kexec
+Message-ID: <20131221113845.GA9002@lst.de>
+References: <20131121191907.GA26366@srcf.ucam.org> <20131122185706.GK4046@redhat.com> <87vbzju6ql.fsf@xmission.com> <20131125163920.GC23094@redhat.com> <87fvqj2vxz.fsf@xmission.com> <20131126142759.GA5473@redhat.com> <20131219125439.GA6379@lst.de> <20131220141917.GB27063@redhat.com> <87a9fvqfs4.fsf@xmission.com> <CAGXu5jKJ88J-++nvkPVvghkXbN+_mB=T1siSDF7yoXQ-d-ONxg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131221103321.GA3332@rashika>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CAGXu5jKJ88J-++nvkPVvghkXbN+_mB=T1siSDF7yoXQ-d-ONxg@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 21, 2013 at 04:03:22PM +0530, Rashika Kheria wrote:
-> Remove unused function PropagateCalParamsFromEEPROMToMemory() in nvm.c.
+On Fri, Dec 20, 2013 at 03:20:16PM -0800, Kees Cook wrote:
 > 
-> This eliminates the following warning in nvm.c:
-> drivers/staging/bcm/nvm.c:1369:5: warning: no previous prototype for ‘PropagateCalParamsFromEEPROMToMemory’ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> If we're doing fd origin verification (not signatures), can't we
+> continue to use a regular bzImage?
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+I imagine the verification function is separated from the new kexec.
+It gets passed the proposed new kernel file*, an optional signature
+file*, and maybe hints about the kernel format and system security state.
 
->  drivers/staging/bcm/nvm.c |   61 ---------------------------------------------
->  1 file changed, 61 deletions(-)
-> 
-> diff --git a/drivers/staging/bcm/nvm.c b/drivers/staging/bcm/nvm.c
-> index 9e5f955..6f40f17 100644
-> --- a/drivers/staging/bcm/nvm.c
-> +++ b/drivers/staging/bcm/nvm.c
-> @@ -1355,67 +1355,6 @@ BeceemFlashBulkWriteStatus_EXIT:
->  }
->  
->  /*
-> - * Procedure:	PropagateCalParamsFromEEPROMToMemory
-> - *
-> - * Description: Dumps the calibration section of EEPROM to DDR.
-> - *
-> - * Arguments:
-> - *		Adapter    - ptr to Adapter object instance
-> - * Returns:
-> - *		OSAL_STATUS_CODE
-> - *
-> - */
-> -
-> -int PropagateCalParamsFromEEPROMToMemory(struct bcm_mini_adapter *Adapter)
-> -{
-> -	PCHAR pBuff = kmalloc(BUFFER_4K, GFP_KERNEL);
-> -	unsigned int uiEepromSize = 0;
-> -	unsigned int uiIndex = 0;
-> -	unsigned int uiBytesToCopy = 0;
-> -	unsigned int uiCalStartAddr = EEPROM_CALPARAM_START;
-> -	unsigned int uiMemoryLoc = EEPROM_CAL_DATA_INTERNAL_LOC;
-> -	unsigned int value;
-> -	int Status = 0;
-> -
-> -	if (!pBuff)
-> -		return -ENOMEM;
-> -
-> -	if (0 != BeceemEEPROMBulkRead(Adapter, &uiEepromSize, EEPROM_SIZE_OFFSET, 4)) {
-> -		kfree(pBuff);
-> -		return -1;
-> -	}
-> -
-> -	uiEepromSize >>= 16;
-> -	if (uiEepromSize > 1024 * 1024) {
-> -		kfree(pBuff);
-> -		return -1;
-> -	}
-> -
-> -	uiBytesToCopy = MIN(BUFFER_4K, uiEepromSize);
-> -
-> -	while (uiBytesToCopy) {
-> -		if (0 != BeceemEEPROMBulkRead(Adapter, (PUINT)pBuff, uiCalStartAddr, uiBytesToCopy)) {
-> -			Status = -1;
-> -			break;
-> -		}
-> -		wrm(Adapter, uiMemoryLoc, (PCHAR)(((PULONG)pBuff) + uiIndex), uiBytesToCopy);
-> -		uiMemoryLoc += uiBytesToCopy;
-> -		uiEepromSize -= uiBytesToCopy;
-> -		uiCalStartAddr += uiBytesToCopy;
-> -		uiIndex += uiBytesToCopy / 4;
-> -		uiBytesToCopy = MIN(BUFFER_4K, uiEepromSize);
-> -
-> -	}
-> -	value = 0xbeadbead;
-> -	wrmalt(Adapter, EEPROM_CAL_DATA_INTERNAL_LOC - 4, &value, sizeof(value));
-> -	value = 0xbeadbead;
-> -	wrmalt(Adapter, EEPROM_CAL_DATA_INTERNAL_LOC - 8, &value, sizeof(value));
-> -	kfree(pBuff);
-> -
-> -	return Status;
-> -}
-> -
-> -/*
->   * Procedure:	PropagateCalParamsFromFlashToMemory
->   *
->   * Description: Dumps the calibration section of EEPROM to DDR.
-> -- 
-> 1.7.9.5
-> 
+With that function, you can do whatever you want. If you want to take
+an early positive exit due to the location of the new kernel, you're fine.
+
+	Torsten
+
