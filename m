@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752320Ab3LUBAG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 20:00:06 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43720 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750895Ab3LUBAE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 20:00:04 -0500
-Message-ID: <52B4E815.8030304@gmail.com>
-Date: Fri, 20 Dec 2013 18:00:05 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Alexis Berlemont <alexis.berlemont@gmail.com>,
-        linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: perf and Kconfig
-References: <CAMesUR48C3zBo_UJByjC9GSqK6V=W_-WDQrsAoGye2yNADD3NQ@mail.gmail.com>
-In-Reply-To: <CAMesUR48C3zBo_UJByjC9GSqK6V=W_-WDQrsAoGye2yNADD3NQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753614Ab3LUBKr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 20:10:47 -0500
+Received: from mga09.intel.com ([134.134.136.24]:19751 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751797Ab3LUBKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 20:10:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,524,1384329600"; 
+   d="scan'208";a="428104821"
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, david.a.cohen@linux.intel.com
+Subject: [PATCH v2 3/3] x86: intel-mid: return proper error code from get_gpio_by_name()
+Date: Fri, 20 Dec 2013 17:15:13 -0800
+Message-Id: <1387588513-25701-4-git-send-email-david.a.cohen@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1387588513-25701-1-git-send-email-david.a.cohen@linux.intel.com>
+References: <1387518179-4316-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1387588513-25701-1-git-send-email-david.a.cohen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[adding perf maintainers]
+get_gpio_by_name() should return an error code instead of hardcoded -1.
 
-On 12/20/13, 5:39 PM, Alexis Berlemont wrote:
-> Hi,
->
-> Here is a proposal of a small contribution which tries to fulfill the
-> task "Use Kconfig to allow selecting features and build minimal
-> version of perf,..." displayed on the todo page of the perf
-> wiki (https://perf.wiki.kernel.org/index.php/Todo).
->
-> I tried to continue the work started by David Ahern
-> (https://github.com/dsahern/linux.git branch:perf-config). This
-> version relies on the features detection tests available in
-> linux/tools/perf/config/feature-checks so as to enable some
-> configuration options (at least by default).
->
-> This little task is not complete; more Kconfig options should be added
-> for each perf tool (top, record, report, ...).
->
-> I just wanted to ask whether you consider this proposal as interesting
-> enough for inclusion and if you are ok with the way it is implemented.
->
-> The code is available here: https://github.com/aberlemont/linux.git
-> - branch: perf-config.
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+---
+ arch/x86/platform/intel-mid/sfi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I know Jiri has an attempt in his tree and there have been a few 
-discussions since then as well. I'll take a look at it next week. I 
-would like to see it completed; I just don't have the time to do it.
+diff --git a/arch/x86/platform/intel-mid/sfi.c b/arch/x86/platform/intel-mid/sfi.c
+index 1d5d20b088fa..438306ebed05 100644
+--- a/arch/x86/platform/intel-mid/sfi.c
++++ b/arch/x86/platform/intel-mid/sfi.c
+@@ -224,7 +224,7 @@ int get_gpio_by_name(const char *name)
+ 		if (!strncmp(name, pentry->pin_name, SFI_NAME_LEN))
+ 			return pentry->pin_no;
+ 	}
+-	return -1;
++	return -EINVAL;
+ }
+ 
+ void __init intel_scu_device_register(struct platform_device *pdev)
+-- 
+1.8.4.2
 
-David
