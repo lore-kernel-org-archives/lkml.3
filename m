@@ -1,97 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443Ab3LUA1q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 19:27:46 -0500
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:57142 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657Ab3LUA1o (ORCPT
+	id S1752343Ab3LUAdV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 19:33:21 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:35663 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750895Ab3LUAdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 19:27:44 -0500
+	Fri, 20 Dec 2013 19:33:19 -0500
+Message-ID: <52B4E1C6.6070808@oracle.com>
+Date: Fri, 20 Dec 2013 19:33:10 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <1385429290-25397-11-git-send-email-yinghai@kernel.org>
-References: <1385429290-25397-1-git-send-email-yinghai@kernel.org> <1385429290-25397-11-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 20 Dec 2013 17:27:23 -0700
-Message-ID: <CAErSpo7THxjUQ=EWxicPYCwQCHReJ=sxPyPPRFv4QQ=ex6wmOA@mail.gmail.com>
-Subject: Re: [PATCH v2 10/10] intel-gtt: Read 64bit for gmar_bus_addr
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>
-Content-Type: text/plain; charset=UTF-8
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: module: BUG in copy_module_from_fd
+References: <52B4D581.40103@oracle.com>
+In-Reply-To: <52B4D581.40103@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 6:28 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> That bar could be 64bit pref mem and above 4G.
+On 12/20/2013 06:40 PM, Sasha Levin wrote:
+> Hi all,
 >
-> -v2: refresh to 3.13-rc1
+> While fuzzing with trinity inside a KVM tools guest running latest -next kernel, I've stumbled on
+> the following spew.
 >
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: David Airlie <airlied@linux.ie>
-> Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> ---
->  drivers/char/agp/intel-gtt.c | 14 ++++++++++----
->  1 file changed, 10 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/char/agp/intel-gtt.c b/drivers/char/agp/intel-gtt.c
-> index b8e2014..b929e9d 100644
-> --- a/drivers/char/agp/intel-gtt.c
-> +++ b/drivers/char/agp/intel-gtt.c
-> @@ -609,8 +609,10 @@ static bool intel_gtt_can_wc(void)
->  static int intel_gtt_init(void)
->  {
->         u32 gma_addr;
-> +       u32 addr_hi = 0;
->         u32 gtt_map_size;
->         int ret;
-> +       int pos;
->
->         ret = intel_private.driver->setup();
->         if (ret != 0)
-> @@ -660,13 +662,17 @@ static int intel_gtt_init(void)
->         }
->
->         if (INTEL_GTT_GEN <= 2)
-> -               pci_read_config_dword(intel_private.pcidev, I810_GMADDR,
-> -                                     &gma_addr);
-> +               pos = I810_GMADDR;
->         else
-> -               pci_read_config_dword(intel_private.pcidev, I915_GMADDR,
-> -                                     &gma_addr);
-> +               pos = I915_GMADDR;
-> +
-> +       pci_read_config_dword(intel_private.pcidev, pos, &gma_addr);
-> +
-> +       if (gma_addr & PCI_BASE_ADDRESS_MEM_TYPE_64)
-> +               pci_read_config_dword(intel_private.pcidev, pos + 4, &addr_hi);
+> This reproduced twice with the same call trace, so I suspect it's something specific with the way
+> the module subsystem calls vfs_getattr rather than something odd in vfs.
 
-Why are we reading these BARs directly anyway?  These look like
-standard PCI BARs (I810_GMADDR == 0x10 and I915_GMADDR == 0x18), so
-the PCI core should already be reading them correctly, shouldn't it?
-Can't we just use pcibios_resource_to_bus(pci_resource_start())?
+Sorry, forget that. Just got one that has nothing to do with modules:
 
-It looks like i810_setup(), i830_setup(), and i9xx_setup() have the
-same problem and should also be using pci_resource_start() or
-something similar.
+BUG: unable to handle kernel paging request at ffff880429d40010
+[ 2935.385056] IP: [<ffffffff812d792d>] generic_fillattr+0xd/0xa0
+[ 2935.386268] PGD 857a067 PUD 857d067 PMD 42fe93067 PTE 8000000429d40060
+[ 2935.387998] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 2935.389936] Dumping ftrace buffer:
+[ 2935.390321]    (ftrace buffer empty)
+[ 2935.390321] Modules linked in:
+[ 2935.390321] CPU: 22 PID: 57475 Comm: trinity-c598 Tainted: G        W    3.13.0-rc4-
+next-20131220-sasha-00014-gd62f590-dirty #2
+[ 2935.390321] task: ffff88005d880000 ti: ffff88004e3be000 task.ti: ffff88004e3be000
+[ 2935.390321] RIP: 0010:[<ffffffff812d792d>]  [<ffffffff812d792d>] generic_fillattr+0x
+d/0xa0
+[ 2935.390321] RSP: 0018:ffff88004e3bfe58  EFLAGS: 00010246
+[ 2935.390321] RAX: ffff880429d40000 RBX: ffff88015bf9e5d0 RCX: ffff88015b700a20
+[ 2935.390321] RDX: 0000000000000000 RSI: ffff88004e3bfee8 RDI: ffff88042a078550
+[ 2935.390321] RBP: ffff88004e3bfe58 R08: ffff88042a078550 R09: 0000000000000000
+[ 2935.390321] R10: 0000000000000001 R11: 0000000000000000 R12: ffff88004e3bfee8
+[ 2935.390321] R13: ffff88004e3bfee8 R14: 0000000000000000 R15: 0000000000000010
+[ 2935.390321] FS:  00007ff7f4855700(0000) GS:ffff880161a00000(0000) knlGS:000000000000
+0000
+[ 2935.390321] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 2935.390321] CR2: ffff880429d40010 CR3: 0000000035487000 CR4: 00000000000006e0
+[ 2935.390321] Stack:
+[ 2935.390321]  ffff88004e3bfe68 ffffffff812d79f8 ffff88004e3bfe88 ffffffff812d7fe7
+[ 2935.390321]  ffff88015bf9e5c0 0000000000000000 ffff88004e3bfed8 ffffffff812d81f2
+[ 2935.390321]  ffff88004e3bfeb8 ffff88005d880000 ffffffff81249435 0000000000000256
+[ 2935.390321] Call Trace:
+[ 2935.390321]  [<ffffffff812d79f8>] vfs_getattr_nosec+0x38/0x40
+[ 2935.390321]  [<ffffffff812d7fe7>] vfs_getattr+0x37/0x50
+[ 2935.390321]  [<ffffffff812d81f2>] vfs_fstat+0x42/0x70
+[ 2935.390321]  [<ffffffff81249435>] ? context_tracking_user_exit+0x195/0x1d0
+[ 2935.390321]  [<ffffffff812d852f>] SYSC_newfstat+0x1f/0x40
+[ 2935.390321]  [<ffffffff8119302d>] ? trace_hardirqs_on+0xd/0x10
+[ 2935.390321]  [<ffffffff8107a852>] ? syscall_trace_enter+0x32/0x290
+[ 2935.390321]  [<ffffffff843b5ef1>] ? tracesys+0x7e/0xe2
+[ 2935.390321]  [<ffffffff812d855e>] SyS_newfstat+0xe/0x10
+[ 2935.390321]  [<ffffffff843b5f50>] tracesys+0xdd/0xe2
 
-And I'm confused because the i915_gmch_probe() path fills in
-gtt->mappable_base with the bus address, but the gen6_gmch_probe()
-path uses the resource, i.e., the CPU, address.  That looks broken to
-me.
-
-agp_serverworks_probe() looks like another place that should not be
-reading the BARs directly.
-
->
->         intel_private.gma_bus_addr = (gma_addr & PCI_BASE_ADDRESS_MEM_MASK);
-> +       intel_private.gma_bus_addr |= (u64)addr_hi << 32;
->
->         return 0;
->  }
-> --
-> 1.8.1.4
->
+Thanks,
+Sasha
