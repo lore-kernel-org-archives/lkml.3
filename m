@@ -1,49 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755151Ab3LUQnC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 11:43:02 -0500
-Received: from mta-out.inet.fi ([195.156.147.13]:38544 "EHLO jenni2.inet.fi"
+	id S1754805Ab3LUQuH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 11:50:07 -0500
+Received: from plane.gmane.org ([80.91.229.3]:57483 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753519Ab3LUQnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 11:43:00 -0500
-X-Greylist: delayed 362 seconds by postgrey-1.27 at vger.kernel.org; Sat, 21 Dec 2013 11:42:59 EST
-Date: Sat, 21 Dec 2013 18:36:48 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Olof Johansson <olof@lixom.net>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, akpm@linux-foundation.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH] mm: fix build of split ptlock code
-Message-ID: <20131221163648.GA25306@node.dhcp.inet.fi>
-References: <1387578485-11829-1-git-send-email-olof@lixom.net>
-MIME-Version: 1.0
+	id S1753217Ab3LUQuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Dec 2013 11:50:05 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Holger Freyther <holger@freyther.de>
+Subject: Re: [PATCH v1] xhci: Switch Intel Lynx Point ports to EHCI on shutdown
+Date: Sat, 21 Dec 2013 16:45:17 +0000 (UTC)
+Message-ID: <loom.20131221T174326-538@post.gmane.org>
+References: <52B31EDA.60908@compulab.co.il> <52B327D5.3080805@compulab.co.il> <20131219182110.GC3573@xanatos> <52B41EC7.1070704@compulab.co.il> <20131220234547.GC2835@xanatos>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387578485-11829-1-git-send-email-olof@lixom.net>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 91.65.247.193 (Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 20, 2013 at 02:28:05PM -0800, Olof Johansson wrote:
-> Commit 597d795a2a78 ('mm: do not allocate page->ptl dynamically, if
-> spinlock_t fits to long') restructures some allocators that are compiled
-> even if USE_SPLIT_PTLOCKS arn't used. It results in compilation failure:
-> 
-> mm/memory.c:4282:6: error: 'struct page' has no member named 'ptl'
-> mm/memory.c:4288:12: error: 'struct page' has no member named 'ptl'
-> 
-> Add in the missing ifdef.
-> 
-> Fixes: 597d795a2a78 ('mm: do not allocate page->ptl dynamically, if spinlock_t fits to long')
-> Signed-off-by: Olof Johansson <olof@lixom.net>
-> Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Cc: Hugh Dickins <hughd@google.com>
+Sarah Sharp <sarah.a.sharp <at> linux.intel.com> writes:
 
-Sorry, for that.
+Good Afternoon,
 
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 
--- 
- Kirill A. Shutemov
+> Also, do you have an HP system, or is this a different vendor?
+
+for what its worth. I do have an Ivybridge laptop and I do see
+immediate wake-ups from suspend to ram from time to time. When
+this happens I do modprobe -r xhci_hcd and the machine goes to
+sleep as expected. This is on an Acer Aspire S5.
+
+holger 
+
