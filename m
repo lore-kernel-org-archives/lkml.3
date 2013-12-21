@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755734Ab3LUQ0r (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 11:26:47 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:45055 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754020Ab3LUQ0p (ORCPT
+	id S1755867Ab3LUQaE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 11:30:04 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51442 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754063Ab3LUQaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 11:26:45 -0500
+	Sat, 21 Dec 2013 11:30:02 -0500
+Date: Sat, 21 Dec 2013 09:30:00 -0700
+From: Jens Axboe <axboe@kernel.dk>
+To: Matias Bjorling <m@bjorling.me>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] null_blk: documentation, defaults and mapping
+Message-ID: <20131221163000.GE13340@kernel.dk>
+References: <1387581061-25987-1-git-send-email-m@bjorling.me>
 MIME-Version: 1.0
-In-Reply-To: <52B5C034.50800@linux.com>
-References: <1387641453-13803-1-git-send-email-standby24x7@gmail.com>
-	<52B5C034.50800@linux.com>
-Date: Sun, 22 Dec 2013 01:26:44 +0900
-Message-ID: <CALLJCT2r1Qs1aHt2gVAobOx209y_asqcQu83J0rQTVxMax+oMA@mail.gmail.com>
-Subject: Re: [PATCH] [trivial] doc: cgroups: Fix typo in doc/cgroups
-From: Masanari Iida <standby24x7@gmail.com>
-To: Levente Kurusa <levex@linux.com>
-Cc: "trivial@kernel.org" <trivial@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387581061-25987-1-git-send-email-m@bjorling.me>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 22, 2013 at 1:22 AM, Levente Kurusa <levex@linux.com> wrote:
+On Sat, Dec 21 2013, Matias Bjorling wrote:
 > Hi,
->
-> spotted one more typo.
->
-> On 12/21/2013 04:57 PM, Masanari Iida wrote:
->> diff --git a/Documentation/cgroups/resource_counter.txt b/Documentation/cgroups/resource_counter.txt
->> index c4d99ed..52e1da1 100644
->> --- a/Documentation/cgroups/resource_counter.txt
->> +++ b/Documentation/cgroups/resource_counter.txt
->> @@ -97,8 +97,8 @@ to work with it.
->>               (struct res_counter *rc, struct res_counter *top,
->>                unsinged long val)
->                  ^^^^^^^^^^ should be unsigned.
->
-> --
-> Regards,
-> Levente Kurusa
+> 
+> These three patches cover:
+> 
+> * Incorporated the feedback from Randy Dunlap into documentation.
+>   Can be merged with the previous documentation commit (6824518).
+> * Set use_per_node_hctx to false per default to save resources.
+> * Allow submit_queues and use_per_node_hctx to be used simultanesly.
+>   If the submit_queues is a multiple of nr_online_nodes, its trivial. Simply map
+>   them to the nodes. For example: 8 submit queues are mapped as node0[0,1],
+>   node1[2,3], ...
+>   If uneven, we are left with an uneven number of submit_queues that must be
+>   mapped. These are mapped toward the first node and onward. E.g. 5
+>   submit queues mapped onto 4 nodes are mapped as node0[0,1], node1[2], ...
 
-That typo was reported some times ago.
-https://lkml.org/lkml/2013/12/5/468
-So I didn't fix it by myself.
+Thanks, applied.
 
-Thanks
-Masanari
+-- 
+Jens Axboe
+
