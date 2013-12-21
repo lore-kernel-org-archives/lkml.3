@@ -1,40 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756580Ab3LUPzS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 10:55:18 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34090 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756511Ab3LUPzO (ORCPT
+	id S1756430Ab3LUPy6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 10:54:58 -0500
+Received: from relay.parallels.com ([195.214.232.42]:38892 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755924Ab3LUPyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 10:55:14 -0500
-Date: Sat, 21 Dec 2013 15:54:42 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>, Anson Huang <b20788@freescale.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Message-ID: <20131221155442.GP30815@sirena.org.uk>
-References: <1387546930-32513-1-git-send-email-festevam@gmail.com>
- <20131221074900.GA6849@S2101-09.ap.freescale.net>
- <CAOMZO5Dg-NJ+rvFM=8Pb8ChcUMu803zqCX-1XMJJ6TBqarczfw@mail.gmail.com>
+	Sat, 21 Dec 2013 10:54:24 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <mhocko@suse.cz>
+CC: <glommer@gmail.com>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>
+Subject: [PATCH 02/11] memcg, slab: kmem_cache_create_memcg(): fix memleak on fail path
+Date: Sat, 21 Dec 2013 19:53:53 +0400
+Message-ID: <36af4620739c61830f5556fe8164c67d40a6a182.1387640541.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1387640541.git.vdavydov@parallels.com>
+References: <cover.1387640541.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOMZO5Dg-NJ+rvFM=8Pb8ChcUMu803zqCX-1XMJJ6TBqarczfw@mail.gmail.com>
-X-Cookie: You will outgrow your usefulness.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 217.42.81.147
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] regulator: anatop-regulator: Remove unneeded check
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain
+X-Originating-IP: [10.24.25.198]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 21, 2013 at 12:25:50PM -0200, Fabio Estevam wrote:
+We do not free the cache's memcg_params if __kmem_cache_create fails.
+Fix this.
 
-> I see. Then we can do this instead, so that the successful probe and
-> the error path are clearer:
+Plus, rename memcg_register_cache() to memcg_alloc_cache_params(),
+because it actually does not register the cache anywhere, but simply
+initialize kmem_cache::memcg_params.
 
-Yes, that's going to cause fewer surprises.
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Glauber Costa <glommer@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Balbir Singh <bsingharora@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ include/linux/memcontrol.h |   14 +++++++++-----
+ mm/memcontrol.c            |   11 ++++++++---
+ mm/slab_common.c           |    3 ++-
+ 3 files changed, 19 insertions(+), 9 deletions(-)
+
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index b3e7a66..5e6541f 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -497,8 +497,9 @@ void __memcg_kmem_commit_charge(struct page *page,
+ void __memcg_kmem_uncharge_pages(struct page *page, int order);
+ 
+ int memcg_cache_id(struct mem_cgroup *memcg);
+-int memcg_register_cache(struct mem_cgroup *memcg, struct kmem_cache *s,
+-			 struct kmem_cache *root_cache);
++int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
++			     struct kmem_cache *root_cache);
++void memcg_free_cache_params(struct kmem_cache *s);
+ void memcg_release_cache(struct kmem_cache *cachep);
+ void memcg_cache_list_add(struct mem_cgroup *memcg, struct kmem_cache *cachep);
+ 
+@@ -640,13 +641,16 @@ static inline int memcg_cache_id(struct mem_cgroup *memcg)
+ 	return -1;
+ }
+ 
+-static inline int
+-memcg_register_cache(struct mem_cgroup *memcg, struct kmem_cache *s,
+-		     struct kmem_cache *root_cache)
++static inline int memcg_alloc_cache_params(struct mem_cgroup *memcg,
++		struct kmem_cache *s, struct kmem_cache *root_cache)
+ {
+ 	return 0;
+ }
+ 
++static inline void memcg_free_cache_params(struct kmem_cache *s);
++{
++}
++
+ static inline void memcg_release_cache(struct kmem_cache *cachep)
+ {
+ }
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index bf5e894..8c47910 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3195,8 +3195,8 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
+ 	return 0;
+ }
+ 
+-int memcg_register_cache(struct mem_cgroup *memcg, struct kmem_cache *s,
+-			 struct kmem_cache *root_cache)
++int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
++			     struct kmem_cache *root_cache)
+ {
+ 	size_t size;
+ 
+@@ -3224,6 +3224,11 @@ int memcg_register_cache(struct mem_cgroup *memcg, struct kmem_cache *s,
+ 	return 0;
+ }
+ 
++void memcg_free_cache_params(struct kmem_cache *s)
++{
++	kfree(s->memcg_params);
++}
++
+ void memcg_release_cache(struct kmem_cache *s)
+ {
+ 	struct kmem_cache *root;
+@@ -3252,7 +3257,7 @@ void memcg_release_cache(struct kmem_cache *s)
+ 
+ 	css_put(&memcg->css);
+ out:
+-	kfree(s->memcg_params);
++	memcg_free_cache_params(s);
+ }
+ 
+ /*
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index f70df3e..70f9e24 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -205,7 +205,7 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+ 	if (!s->name)
+ 		goto out_free_cache;
+ 
+-	err = memcg_register_cache(memcg, s, parent_cache);
++	err = memcg_alloc_cache_params(memcg, s, parent_cache);
+ 	if (err)
+ 		goto out_free_cache;
+ 
+@@ -235,6 +235,7 @@ out_unlock:
+ 	return s;
+ 
+ out_free_cache:
++	memcg_free_cache_params(s);
+ 	kfree(s->name);
+ 	kmem_cache_free(kmem_cache, s);
+ 	goto out_unlock;
+-- 
+1.7.10.4
+
