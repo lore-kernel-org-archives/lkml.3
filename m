@@ -1,46 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab3LUDc6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 22:32:58 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50727 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752692Ab3LUDc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 22:32:57 -0500
-Message-ID: <52B50BBB.9070806@zytor.com>
-Date: Fri, 20 Dec 2013 19:32:11 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Vivek Goyal <vgoyal@redhat.com>, Torsten Duwe <duwe@lst.de>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        Peter Jones <pjones@redhat.com>, Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH 4/6] kexec: A new system call, kexec_file_load, for in
- kernel kexec
-References: <20131121190350.GC17070@kroah.com>	<20131121190620.GA25951@srcf.ucam.org>	<20131121191305.GK16208@redhat.com>	<20131121191907.GA26366@srcf.ucam.org>	<20131122185706.GK4046@redhat.com> <87vbzju6ql.fsf@xmission.com>	<20131125163920.GC23094@redhat.com> <87fvqj2vxz.fsf@xmission.com>	<20131126142759.GA5473@redhat.com> <20131219125439.GA6379@lst.de>	<20131220141917.GB27063@redhat.com> <87a9fvqfs4.fsf@xmission.com>	<52B4D0C6.2000505@zytor.com> <87ioujf0ox.fsf@xmission.com>
-In-Reply-To: <87ioujf0ox.fsf@xmission.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753753Ab3LUDsb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 22:48:31 -0500
+Received: from exprod5og112.obsmtp.com ([64.18.0.24]:35409 "HELO
+	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752515Ab3LUDsa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 22:48:30 -0500
+X-Greylist: delayed 320 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Dec 2013 22:48:30 EST
+From: Iyappan Subramanian <isubramanian@apm.com>
+To: davem@davemloft.net
+Cc: gregkh@linuxfoundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com,
+        Iyappan Subramanian <isubramanian@apm.com>,
+        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
+Subject: [PATCH 0/5] drivers: net: Adding support for APM X-Gene SoC Ethernet base driver
+Date: Fri, 20 Dec 2013 19:42:51 -0800
+Message-Id: <1387597376-29303-1-git-send-email-isubramanian@apm.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2013 05:32 PM, Eric W. Biederman wrote:
-> 
-> Stuff and nonsense.  bzImage is just an ugly wrapper around an ELF
-> image.
-> 
+APM X-Gene SoC Ethernet subsystem communicates with a central Queue Manager
+ (QMTM) using messages for transmit, receive and allocating data buffers.
+ There are multiple ethernet interfaces in APM X-Gene SoC.
 
-Not really.  We put the ELF image in there to help Xen and presumably
-kexec, but there are actually quite a few issues with it... for one
-thing, as currently built there are megabytes of zeroes in it for no
-good reason.
+Signed-off-by: Iyappan Subramanian <isubramanian@apm.com>
+Signed-off-by: Ravi Patel <rapatel@apm.com>
+Signed-off-by: Keyur Chudgar <kchudgar@apm.com>
+---
+Iyappan Subramanian (5):
+  Documentation: APM X-Gene SoC Ethernet DTS binding documentation
+  arm64: dts: APM X-Gene SoC Ethernet device tree nodes
+  drivers: net: APM X-Gene SoC Ethernet base driver
+  drivers: net: APM X-Gene SoC Ethernet driver error handling
+  drivers: net: APM X-Gene SoC Ethernet driver ethtool support
 
-Even if you don't need the entry code, the additional metadata is
-meaningful.
+ .../devicetree/bindings/net/apm-xgene-enet.txt     |   67 +
+ MAINTAINERS                                        |    7 +
+ arch/arm64/boot/dts/apm-mustang.dts                |    8 +
+ arch/arm64/boot/dts/apm-storm.dtsi                 |   19 +
+ drivers/net/ethernet/Kconfig                       |    1 +
+ drivers/net/ethernet/Makefile                      |    1 +
+ drivers/net/ethernet/apm/Kconfig                   |    1 +
+ drivers/net/ethernet/apm/Makefile                  |    5 +
+ drivers/net/ethernet/apm/xgene/Kconfig             |   10 +
+ drivers/net/ethernet/apm/xgene/Makefile            |   12 +
+ drivers/net/ethernet/apm/xgene/xgene_enet_common.c |  497 ++++++
+ drivers/net/ethernet/apm/xgene/xgene_enet_common.h |  450 ++++++
+ drivers/net/ethernet/apm/xgene/xgene_enet_csr.h    |  427 ++++++
+ drivers/net/ethernet/apm/xgene/xgene_enet_err.c    |  715 +++++++++
+ drivers/net/ethernet/apm/xgene/xgene_enet_mac.c    |  520 +++++++
+ drivers/net/ethernet/apm/xgene/xgene_enet_main.c   | 1609 ++++++++++++++++++++
+ drivers/net/ethernet/apm/xgene/xgene_enet_main.h   |  177 +++
+ drivers/net/ethernet/apm/xgene/xgene_enet_tools.c  |  296 ++++
+ 18 files changed, 4822 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/net/apm-xgene-enet.txt
+ create mode 100644 drivers/net/ethernet/apm/Kconfig
+ create mode 100644 drivers/net/ethernet/apm/Makefile
+ create mode 100644 drivers/net/ethernet/apm/xgene/Kconfig
+ create mode 100644 drivers/net/ethernet/apm/xgene/Makefile
+ create mode 100644 drivers/net/ethernet/apm/xgene/xgene_enet_common.c
+ create mode 100644 drivers/net/ethernet/apm/xgene/xgene_enet_common.h
+ create mode 100644 drivers/net/ethernet/apm/xgene/xgene_enet_csr.h
+ create mode 100644 drivers/net/ethernet/apm/xgene/xgene_enet_err.c
+ create mode 100644 drivers/net/ethernet/apm/xgene/xgene_enet_mac.c
+ create mode 100644 drivers/net/ethernet/apm/xgene/xgene_enet_main.c
+ create mode 100644 drivers/net/ethernet/apm/xgene/xgene_enet_main.h
+ create mode 100644 drivers/net/ethernet/apm/xgene/xgene_enet_tools.c
 
-	-hpa
-
+-- 
+1.7.9.5
 
