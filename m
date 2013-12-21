@@ -1,260 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700Ab3LUSuv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 13:50:51 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:44399 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754678Ab3LUSut (ORCPT
+	id S1755906Ab3LUSwh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 13:52:37 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:57640 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755723Ab3LUSwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 13:50:49 -0500
-Date: Sat, 21 Dec 2013 11:50:45 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: Re: [PATCH v2 10/10] intel-gtt: Read 64bit for gmar_bus_addr
-Message-ID: <20131221185045.GA22728@google.com>
-References: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
- <1385429290-25397-11-git-send-email-yinghai@kernel.org>
- <CAErSpo7THxjUQ=EWxicPYCwQCHReJ=sxPyPPRFv4QQ=ex6wmOA@mail.gmail.com>
- <CAE9FiQUDkuBnuYo4OfZncFw6k22PcapgjqzapVFt5UneiqoVDQ@mail.gmail.com>
+	Sat, 21 Dec 2013 13:52:35 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ravi Patel <rapatel@apm.com>
+Subject: Re: [PATCH V2 1/4] Documentation: Add documentation for APM X-Gene SoC Queue Manager/Traffic Manager DTS binding
+Date: Sat, 21 Dec 2013 19:52:20 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: gregkh@linuxfoundation.org, davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com,
+        Keyur Chudgar <kchudgar@apm.com>
+References: <1387594651-25771-1-git-send-email-rapatel@apm.com> <1387594651-25771-2-git-send-email-rapatel@apm.com>
+In-Reply-To: <1387594651-25771-2-git-send-email-rapatel@apm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQUDkuBnuYo4OfZncFw6k22PcapgjqzapVFt5UneiqoVDQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312211952.20375.arnd@arndb.de>
+X-Provags-ID: V02:K0:+uicLni6/K7UxtLaY4QexTgJn6sGGvbJosfhwzIWjOl
+ WBkMaIRpRC/GkH6HYD03XPehl93+wOztnoIwLxL+8eMRGZY9YF
+ 3yXKyVS6moPTXmw6AeleAbNhCYHwwdrFXbMf5vWweIBMbQ14tP
+ DocCPriS3EzxIbhDJn1/fRQ3OVQZPkxSfMEjuiqI8UADYixixH
+ xbLXSlCmviZ4uHCMy3dmVLAmlf55lxFJRxe686l2DSMnZv+M6X
+ UIdcgBI8nyjBkR5zJd230+8VkBwEPe90vBHVtT0ScF1FvswShP
+ 9MaZjTey9xHLf/25XJR2usYMIGmHuJsc9Ouf7ZTdCJdMccOyXT
+ /JHCtxBMiy0QnHIowmk4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Daniel]
-
-On Fri, Dec 20, 2013 at 05:19:38PM -0800, Yinghai Lu wrote:
-> On Fri, Dec 20, 2013 at 4:27 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+On Saturday 21 December 2013, Ravi Patel wrote:
+>  create mode 100644 Documentation/devicetree/bindings/misc/apm-xgene-qmtm.txt
 > 
-> > Why are we reading these BARs directly anyway?  These look like
-> > standard PCI BARs (I810_GMADDR == 0x10 and I915_GMADDR == 0x18), so
-> > the PCI core should already be reading them correctly, shouldn't it?
-> > Can't we just use pcibios_resource_to_bus(pci_resource_start())?
-> >
-> > It looks like i810_setup(), i830_setup(), and i9xx_setup() have the
-> > same problem and should also be using pci_resource_start() or
-> > something similar.
-> 
-> Agreed.
-> 
-> should be sth like:
-> 
-> 
-> Index: linux-2.6/drivers/char/agp/intel-gtt.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/char/agp/intel-gtt.c
-> +++ linux-2.6/drivers/char/agp/intel-gtt.c
-> @@ -608,9 +608,9 @@ static bool intel_gtt_can_wc(void)
-> 
->  static int intel_gtt_init(void)
->  {
-> -       u32 gma_addr;
-> +       struct pci_bus_region r;
->         u32 gtt_map_size;
-> -       int ret;
-> +       int ret, idx;
-> 
->         ret = intel_private.driver->setup();
->         if (ret != 0)
-> @@ -660,13 +660,14 @@ static int intel_gtt_init(void)
->         }
-> 
->         if (INTEL_GTT_GEN <= 2)
-> -               pci_read_config_dword(intel_private.pcidev, I810_GMADDR,
-> -                                     &gma_addr);
-> +               idx = 0; /* I810_GMADDR */
->         else
-> -               pci_read_config_dword(intel_private.pcidev, I915_GMADDR,
-> -                                     &gma_addr);
-> +               idx = 2; /* I915_GMADDR */
-> 
-> -       intel_private.gma_bus_addr = (gma_addr & PCI_BASE_ADDRESS_MEM_MASK);
-> +       pcibios_resource_to_bus(intel_private.pcidev->bus, &r,
-> +                               &intel_private.pcidev->resource[idx]);
+> diff --git a/Documentation/devicetree/bindings/misc/apm-xgene-qmtm.txt b/Documentation/devicetree/bindings/misc/apm-xgene-qmtm.txt
+> new file mode 100644
+> index 0000000..c3fcbd2
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/misc/apm-xgene-qmtm.txt
+> @@ -0,0 +1,51 @@
+> +* APM X-Gene SoC Queue Manager/Traffic Manager nodes
 > +
-> +       intel_private.gma_bus_addr = r.start;
-> 
->         return 0;
->  }
+> +QMTM nodes are defined to describe on-chip Queue Managers in APM X-Gene SoC.
+> +APM X-Gene SoC Ethernet, PktDMA (XOR Engine), and Security Engine subsystems
+> +communicate with a central Queue Manager using messages which include
+> +information about the work to be performed and the location of the associated
+> +data buffers. There are multiple instances of QMTM. Each QMTM instance has its
+> +own node. Its corresponding clock nodes are shown below.
+> +
+> +Required properties:
+> +- compatible		: Shall be "apm,xgene-qmtm-lite" for QMLite instance
+> +- reg			: First memory resource shall be the QMTM CSR memory
+> +			  resource.
+> +			  Second memory resource shall be the QMTM IO-Fabric
+> +			  memory resource.
+> +- slave-name		: Shall be "CPU_QMTM3" which is receiver for ingress
+> +			  work messages for the QMTM. Here receiver is CPU.
 
-I think it's even worse than we first thought.  Not only does the current
-code fail on 64-bit BARs, but it also ignores the CPU/bus address
-difference, and I think we want the CPU address.  So I think we need
-something like these:
+What is that string used for? Who decides what strings are valid in the
+future? Why does the device even need to know the name of the receiver,
+shouldn't that have a separate node?
 
+> +- interrupts		: First interrupt resource shall be the QMTM Error
+> +			  interrupt.
+> +			  Remaining interrupt resources shall be the Ingress
+> +			  work message interrupt mapping for receiver,
+> +			  receiving work messages for the QMTM.
+> +- clocks		: Reference to the clock entry.
+> +
+> +Optional properties:
+> +- status		: Shall be "ok" if enabled or "disabled" if disabled.
+> +			  Default is "ok".
+> +
+> +Example:
+> +		qmlclk: qmlclk {
+> +			compatible = "apm,xgene-device-clock";
+> +			#clock-cells = <1>;
+> +			clock-names = "qmlclk";
+> +			status = "ok";
+> +			csr-offset = <0x0>;
+> +			csr-mask = <0x3>;
+> +			enable-offset = <0x8>;
+> +			enable-mask = <0x3>;
+> +		};
 
-commit 8ba262d78f9d218672486c62ba6a1c7a073bd272
-Author: Bjorn Helgaas <bhelgaas@google.com>
-Date:   Sat Dec 21 10:49:58 2013 -0700
+This looks like an invalid node, which makes a bad example. Why do you 
+have a "clock-names" entry here but no "clocks"?
 
-    agp/intel: Rename "*_bus_addr" to "*_phys_addr"
-    
-    We're dealing with CPU physical addresses here, which may be different from
-    bus addresses, so rename "gtt_bus_addr" to "gtt_phys_addr" and
-    "gma_bus_addr" to "gma_phys_addr" to avoid confusion.
-    
-    No functional change.
-    
-    Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> +		qmlite: qmtm@17030000 {
+> +			compatible = "apm,xgene-qmtm-lite";
+> +			reg = <0x0 0x17030000 0x0 0x10000>,
+> +			      <0x0 0x10000000 0x0 0x400000>;
+> +			slave-name = "CPU_QMTM3";
+> +			interrupts = <0x0 0x40 0x4>,
+> +				     <0x0 0x3c 0x4>;
+> +			status = "ok";
+> +			#clock-cells = <1>;
+> +			clocks = <&qmlclk 0>;
+> +		};
 
-diff --git a/drivers/char/agp/intel-gtt.c b/drivers/char/agp/intel-gtt.c
-index b8e2014cb9cb..dca04a6aa7f8 100644
---- a/drivers/char/agp/intel-gtt.c
-+++ b/drivers/char/agp/intel-gtt.c
-@@ -64,7 +64,7 @@ static struct _intel_private {
- 	struct pci_dev *pcidev;	/* device one */
- 	struct pci_dev *bridge_dev;
- 	u8 __iomem *registers;
--	phys_addr_t gtt_bus_addr;
-+	phys_addr_t gtt_phys_addr;
- 	u32 PGETBL_save;
- 	u32 __iomem *gtt;		/* I915G */
- 	bool clear_fake_agp; /* on first access via agp, fill with scratch */
-@@ -78,7 +78,7 @@ static struct _intel_private {
- 	int refcount;
- 	/* Whether i915 needs to use the dmar apis or not. */
- 	unsigned int needs_dmar : 1;
--	phys_addr_t gma_bus_addr;
-+	phys_addr_t gma_phys_addr;
- 	/*  Size of memory reserved for graphics by the BIOS */
- 	unsigned int stolen_size;
- 	/* Total number of gtt entries. */
-@@ -191,7 +191,7 @@ static int i810_setup(void)
- 	writel(virt_to_phys(gtt_table) | I810_PGETBL_ENABLED,
- 	       intel_private.registers+I810_PGETBL_CTL);
- 
--	intel_private.gtt_bus_addr = reg_addr + I810_PTE_BASE;
-+	intel_private.gtt_phys_addr = reg_addr + I810_PTE_BASE;
- 
- 	if ((readl(intel_private.registers+I810_DRAM_CTL)
- 		& I810_DRAM_ROW_0) == I810_DRAM_ROW_0_SDRAM) {
-@@ -636,10 +636,10 @@ static int intel_gtt_init(void)
- 
- 	intel_private.gtt = NULL;
- 	if (intel_gtt_can_wc())
--		intel_private.gtt = ioremap_wc(intel_private.gtt_bus_addr,
-+		intel_private.gtt = ioremap_wc(intel_private.gtt_phys_addr,
- 					       gtt_map_size);
- 	if (intel_private.gtt == NULL)
--		intel_private.gtt = ioremap(intel_private.gtt_bus_addr,
-+		intel_private.gtt = ioremap(intel_private.gtt_phys_addr,
- 					    gtt_map_size);
- 	if (intel_private.gtt == NULL) {
- 		intel_private.driver->cleanup();
-@@ -666,7 +666,7 @@ static int intel_gtt_init(void)
- 		pci_read_config_dword(intel_private.pcidev, I915_GMADDR,
- 				      &gma_addr);
- 
--	intel_private.gma_bus_addr = (gma_addr & PCI_BASE_ADDRESS_MEM_MASK);
-+	intel_private.gma_phys_addr = (gma_addr & PCI_BASE_ADDRESS_MEM_MASK);
- 
- 	return 0;
- }
-@@ -796,7 +796,7 @@ static int i830_setup(void)
- 	if (!intel_private.registers)
- 		return -ENOMEM;
- 
--	intel_private.gtt_bus_addr = reg_addr + I810_PTE_BASE;
-+	intel_private.gtt_phys_addr = reg_addr + I810_PTE_BASE;
- 
- 	return 0;
- }
-@@ -821,7 +821,7 @@ static int intel_fake_agp_configure(void)
- 	    return -EIO;
- 
- 	intel_private.clear_fake_agp = true;
--	agp_bridge->gart_bus_addr = intel_private.gma_bus_addr;
-+	agp_bridge->gart_bus_addr = intel_private.gma_phys_addr;
- 
- 	return 0;
- }
-@@ -1123,13 +1123,13 @@ static int i9xx_setup(void)
- 	case 3:
- 		pci_read_config_dword(intel_private.pcidev,
- 				      I915_PTEADDR, &gtt_addr);
--		intel_private.gtt_bus_addr = gtt_addr;
-+		intel_private.gtt_phys_addr = gtt_addr;
- 		break;
- 	case 5:
--		intel_private.gtt_bus_addr = reg_addr + MB(2);
-+		intel_private.gtt_phys_addr = reg_addr + MB(2);
- 		break;
- 	default:
--		intel_private.gtt_bus_addr = reg_addr + KB(512);
-+		intel_private.gtt_phys_addr = reg_addr + KB(512);
- 		break;
- 	}
- 
-@@ -1409,7 +1409,7 @@ void intel_gtt_get(size_t *gtt_total, size_t *stolen_size,
- {
- 	*gtt_total = intel_private.gtt_total_entries << PAGE_SHIFT;
- 	*stolen_size = intel_private.stolen_size;
--	*mappable_base = intel_private.gma_bus_addr;
-+	*mappable_base = intel_private.gma_phys_addr;
- 	*mappable_end = intel_private.gtt_mappable_entries << PAGE_SHIFT;
- }
- EXPORT_SYMBOL(intel_gtt_get);
+#clock-cells is neither a required nor an optional property for
+"apm,xgene-qmtm-lite" according to the documentation above. Please
+make the example match the specification.
 
-commit 31349de4ce32a0c2c2d14df35717544e94d56066
-Author: Bjorn Helgaas <bhelgaas@google.com>
-Date:   Sat Dec 21 10:09:19 2013 -0700
-
-    intel-gtt: Use CPU address (not BAR value) for GART
-    
-    There were two problems here:
-    
-      1) The GMADR can be either a 32-bit or a 64-bit BAR, but we only read the
-         low 32 bits, so this failed if GMADR was above 4GB.
-    
-      2) The value read from the BAR is a bus address, not a CPU physical
-         address, and these may be different.
-    
-    Use pci_resource_start() instead of reading the BAR directly to remove the
-    BAR size and bus/CPU address issue, as gen8_gmch_probe() already does.
-    
-    Reference: http://lkml.kernel.org/r/1385429290-25397-11-git-send-email-yinghai@kernel.org
-    Based-on-patch-by: Yinghai Lu <yinghai@kernel.org>
-    Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-
-diff --git a/drivers/char/agp/intel-gtt.c b/drivers/char/agp/intel-gtt.c
-index dca04a6aa7f8..35169ff0ffe1 100644
---- a/drivers/char/agp/intel-gtt.c
-+++ b/drivers/char/agp/intel-gtt.c
-@@ -610,7 +610,7 @@ static int intel_gtt_init(void)
- {
- 	u32 gma_addr;
- 	u32 gtt_map_size;
--	int ret;
-+	int ret, bar;
- 
- 	ret = intel_private.driver->setup();
- 	if (ret != 0)
-@@ -660,14 +660,12 @@ static int intel_gtt_init(void)
- 	}
- 
- 	if (INTEL_GTT_GEN <= 2)
--		pci_read_config_dword(intel_private.pcidev, I810_GMADDR,
--				      &gma_addr);
-+		bar = 0;	/* I810_GMADDR */
- 	else
--		pci_read_config_dword(intel_private.pcidev, I915_GMADDR,
--				      &gma_addr);
--
--	intel_private.gma_phys_addr = (gma_addr & PCI_BASE_ADDRESS_MEM_MASK);
-+		bar = 2;	/* I915_GMADDR */
- 
-+	intel_private.gma_phys_addr = pci_resource_start(intel_private.pcidev,
-+							 bar);
- 	return 0;
- }
- 
+	Arnd
