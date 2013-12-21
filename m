@@ -1,107 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874Ab3LUCqL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 21:46:11 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:22990 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752114Ab3LUCqI (ORCPT
+	id S1753519Ab3LUC5o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 21:57:44 -0500
+Received: from exprod5og107.obsmtp.com ([64.18.0.184]:52313 "HELO
+	exprod5og107.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752135Ab3LUC5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 21:46:08 -0500
-Date: Fri, 20 Dec 2013 18:45:54 -0800
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
-        Richard Hansen <rhansen@rhansen.org>
-Subject: Re: [PATCH v2] fuse: Fix IOC_[GS]ET{FLAGS,VERSION} argument size
- brokenness.
-Message-ID: <20131221024554.GA20750@birch.djwong.org>
-References: <20131219232739.GA10192@birch.djwong.org>
- <20131220233534.GC10192@birch.djwong.org>
- <99199002-0C82-42B6-B237-163561AD821B@dilger.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <99199002-0C82-42B6-B237-163561AD821B@dilger.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Fri, 20 Dec 2013 21:57:42 -0500
+From: Ravi Patel <rapatel@apm.com>
+To: arnd@arndb.de, gregkh@linuxfoundation.org, davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        jcm@redhat.com, patches@apm.com, Ravi Patel <rapatel@apm.com>,
+        Keyur Chudgar <kchudgar@apm.com>
+Subject: [PATCH V2 0/4] misc: xgene: Add support for APM X-Gene SoC Queue Manager/Traffic Manager
+Date: Fri, 20 Dec 2013 18:57:27 -0800
+Message-Id: <1387594651-25771-1-git-send-email-rapatel@apm.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 20, 2013 at 07:09:23PM -0700, Andreas Dilger wrote:
-> To be honest, FS_IOC_SETVERSION isn't used by many/any users, so it might be
-> better to avoid doing anything with that for now.
-> 
-> In the past we even talked about adding a deprecation warning for that ioctl
-> since it adds complexity for little value. 
+This patch adds support for APM X-Gene SoC Queue Manager/Traffic Manager.
+ QMTM is required by APM X-Gene SoC Ethernet, PktDMA (XOR Engine) and
+ Security Engine subsystems. All subsystems communicate with QMTM using
+ messages which include information about the work to be performed and
+ the location of associated data buffers.  
 
-I suspect that most FUSE servers don't handle any of these four ioctls,
-but so long as they're there, we ought to make them less surprising to
-userspace.
+V2:
+ * Adding COMPILE_TEST dependency for QMTM in Kconfig
+ * Updated license banner as per review comments
+ * Fixed alignment for macros
+ * Changed EXPORT_SYMBOL to EXPORT_SYMBOL_GPL
 
-As far as getting rid of SETVERSION, I think that's best left to a fs driver
-(or a fuse server) to make that decision, unless everyone wants to eliminate
-SETVERSION entirely?  I don't remember anyone complaining when I proposed to
-disable SETVERSION on metadata_csum ext4 filesystems, but that's hardly
-conclusive. :)
+V1:
+ * inital version
 
-The only providers of SETVERSION seem to be ext[234], reiser3, and ocfs2.
+Signed-off-by: Ravi Patel <rapatel@apm.com>
+Signed-off-by: Keyur Chudgar <kchudgar@apm.com>
+---
+Ravi Patel (4):
+  Documentation: Add documentation for APM X-Gene SoC Queue
+    Manager/Traffic Manager DTS binding
+  misc: xgene: Add base driver for APM X-Gene SoC Queue Manager/Traffic
+    Manager
+  arm64: boot: dts: Add DTS entries for APM X-Gene SoC Queue
+    Manager/Traffic Manager
+  misc: xgene: Add error handling for APM X-Gene SoC Queue
+    Manager/Traffic Manager
 
---D
+ .../devicetree/bindings/misc/apm-xgene-qmtm.txt    |   51 ++
+ MAINTAINERS                                        |    7 +
+ arch/arm64/boot/dts/apm-storm.dtsi                 |   17 +
+ drivers/misc/Kconfig                               |    1 +
+ drivers/misc/Makefile                              |    1 +
+ drivers/misc/xgene/Kconfig                         |    1 +
+ drivers/misc/xgene/Makefile                        |    5 +
+ drivers/misc/xgene/qmtm/Kconfig                    |    9 +
+ drivers/misc/xgene/qmtm/Makefile                   |    7 +
+ drivers/misc/xgene/qmtm/xgene_qmtm_error.c         |  283 ++++++++
+ drivers/misc/xgene/qmtm/xgene_qmtm_main.c          |  765 ++++++++++++++++++++
+ drivers/misc/xgene/qmtm/xgene_qmtm_main.h          |  138 ++++
+ drivers/misc/xgene/qmtm/xgene_qmtm_storm.c         |  370 ++++++++++
+ drivers/misc/xgene/qmtm/xgene_qmtm_storm.h         |  139 ++++
+ include/misc/xgene/xgene_qmtm.h                    |  277 +++++++
+ 15 files changed, 2071 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/misc/apm-xgene-qmtm.txt
+ create mode 100644 drivers/misc/xgene/Kconfig
+ create mode 100644 drivers/misc/xgene/Makefile
+ create mode 100644 drivers/misc/xgene/qmtm/Kconfig
+ create mode 100644 drivers/misc/xgene/qmtm/Makefile
+ create mode 100644 drivers/misc/xgene/qmtm/xgene_qmtm_error.c
+ create mode 100644 drivers/misc/xgene/qmtm/xgene_qmtm_main.c
+ create mode 100644 drivers/misc/xgene/qmtm/xgene_qmtm_main.h
+ create mode 100644 drivers/misc/xgene/qmtm/xgene_qmtm_storm.c
+ create mode 100644 drivers/misc/xgene/qmtm/xgene_qmtm_storm.h
+ create mode 100644 include/misc/xgene/xgene_qmtm.h
 
-> 
-> Cheers, Andreas
-> 
-> > On Dec 20, 2013, at 16:35, "Darrick J. Wong" <darrick.wong@oracle.com> wrote:
-> > 
-> > The IOC_[GS]ETFLAGS and IOC_[GS]ETVERSION ioctls, despite being
-> > defined to take a "long" parameter, actually take "int" parameters.
-> > FUSE unfortunately assumed that the ioctl definitions never lie, and
-> > transfers a long's worth of data in and out of userspace, which causes
-> > stack smashing in chattr, and other bugs elsewhere.
-> > 
-> > So, special-case this in FUSE so that we don't crash userland.
-> > 
-> > v2: Do the same for the IOC_[GS]ETVERSION ioctls, as Richard Hansen
-> >    points out.
-> > 
-> > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-> > ---
-> > fs/fuse/file.c |   16 ++++++++++++++++
-> > 1 file changed, 16 insertions(+)
-> > 
-> > diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-> > index 7e70506..f8766ab 100644
-> > --- a/fs/fuse/file.c
-> > +++ b/fs/fuse/file.c
-> > @@ -2385,6 +2385,22 @@ long fuse_do_ioctl(struct file *file, unsigned int cmd, unsigned long arg,
-> >        iov->iov_base = (void __user *)arg;
-> >        iov->iov_len = _IOC_SIZE(cmd);
-> > 
-> > +        /*
-> > +         * The IOC_[GS]ETFLAGS and IOC_[GS]ETVERSION ioctls take int
-> > +         * parameters even though the ioctl definition specifies long.
-> > +         * Userland has been expecting int for ages (and chattr
-> > +         * segfaults on FUSE filesystems), so special case that here.
-> > +         * The IOC32 variants were declared with int, so they don't
-> > +         * need this correction.
-> > +         */
-> > +        switch (cmd) {
-> > +        case FS_IOC_GETFLAGS:
-> > +        case FS_IOC_SETFLAGS:
-> > +        case FS_IOC_GETVERSION:
-> > +        case FS_IOC_SETVERSION:
-> > +            iov->iov_len = sizeof(int);
-> > +        }
-> > +
-> >        if (_IOC_DIR(cmd) & _IOC_WRITE) {
-> >            in_iov = iov;
-> >            in_iovs = 1;
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+1.7.9.5
+
