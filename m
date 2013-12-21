@@ -1,77 +1,526 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874Ab3LUCPj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 21:15:39 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:10649 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755734Ab3LUCPe (ORCPT
+	id S1755150Ab3LUCOx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 21:14:53 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:35132 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752612Ab3LUCOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 21:15:34 -0500
+	Fri, 20 Dec 2013 21:14:08 -0500
 X-IronPort-AV: E=Sophos;i="4.95,525,1384329600"; 
-   d="scan'208";a="4514733"
-Message-ID: <52B4F9BD.1010100@broadcom.com>
-Date: Fri, 20 Dec 2013 18:15:25 -0800
+   d="scan'208";a="4284172"
 From: Sherman Yin <syin@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Linus Walleij <linus.walleij@linaro.org>
-CC: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Heiko St?bner <heiko@sntech.de>,
-        Pawel Moll <pawel.moll@arm.com>,
+To: Mark Brown <broonie@kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        =?UTF-8?q?Heiko=20St=C3=BCbner?= <heiko@sntech.de>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 3/6] pinctrl: Make PINCTRL selectable by defconfig/menuconfig
-References: <1381174108-25168-1-git-send-email-syin@broadcom.com> <20131217001842.GB3840@sonymobile.com> <CACRpkdY-MM7OoMq_L90YRADy=oaDoV1wAOccVz90LqfRfEh=3Q@mail.gmail.com> <201312202158.34805.arnd@arndb.de>
-In-Reply-To: <201312202158.34805.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Matt Porter <matt.porter@linaro.org>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        <bcm-kernel-feedback-list@broadcom.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Sherman Yin <syin@broadcom.com>
+Subject: [PATCH v4 2/4] pinctrl: Add pinctrl binding for Broadcom Capri SoCs
+Date: Fri, 20 Dec 2013 18:13:34 -0800
+Message-ID: <1387592016-13740-3-git-send-email-syin@broadcom.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1387592016-13740-1-git-send-email-syin@broadcom.com>
+References: <1386787041-6035-1-git-send-email-syin@broadcom.com>
+ <1387592016-13740-1-git-send-email-syin@broadcom.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-12-20 12:58 PM, Arnd Bergmann wrote:
-> On Friday 20 December 2013, Linus Walleij wrote:
->> On Tue, Dec 17, 2013 at 1:18 AM, Bjorn Andersson
->> <bjorn.andersson@sonymobile.com> wrote:
->>
->>> No matter how we build the individual pinctrl drivers we will always
->>> need the pinctrl framework in a multi-soc zImage; so I can't see that
->>> we gain anything from being able to compile PINCTRL as a module.
->>
->> I discussed this matter with Christian on IRC and I believe we could
->> basically do "select PINCTRL" on ARCH_MULTIPLATFORM as the
->> vast majority of multiplatforms appear to be using this anyway, this
->> would make the submenu for pin control pop up in menuconfig
->> for this, and make it possible to move different subdrivers to modules
->> if desired.
->>
->> MULTIPLATFORM does not seem to be about saving footprint bytes
->> on a very fine-granular level anyway, more about doing the module
->> loading/unloading approach to footprint.
->
-> Let's review the list of platforms that don't select PINCTRL. There
-> are some platforms that are indeed sensitive about memory footprint,
-> and I promised people that converting to multiplatform won't cause
-> a significant increase in kernel binary size as long as no other
-> platforms are enabled.
->
-> 	Arnd
->
+Adds pinctrl driver devicetree binding for Broadcom Capri (BCM281xx) SoCs.
 
-Ok, for this driver, I'll just select PINCTRL under the ARCH_BCM_MOBILE. 
-  We can move this to ARCH_MULTIPLATFORM once we're sure this is okay 
-for other platforms.
+Signed-off-by: Sherman Yin <syin@broadcom.com>
+Reviewed-by: Christian Daudt <bcm@fixthebug.org>
+Reviewed-by: Matt Porter <matt.porter@linaro.org>
+---
+v4: Changed valid values for "bias-pull-up" property for I2C pins.  Expanded
+    pin configuration node example.
+v3: Use generic pin config properties instead of brcm-specific ones.  Clarified
+    pin types (standard, i2c, hdmi).
+v2: Use hyphens instead of underscore in DT property names.
+---
+ .../bindings/pinctrl/brcm,capri-pinctrl.txt        |  461 ++++++++++++++++++++
+ 1 file changed, 461 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/brcm,capri-pinctrl.txt
 
-Regards,
-Sherman
+diff --git a/Documentation/devicetree/bindings/pinctrl/brcm,capri-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/brcm,capri-pinctrl.txt
+new file mode 100644
+index 0000000..9e9e9ef
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pinctrl/brcm,capri-pinctrl.txt
+@@ -0,0 +1,461 @@
++Broadcom Capri Pin Controller
++
++This is a pin controller for the Broadcom BCM281xx SoC family, which includes
++BCM11130, BCM11140, BCM11351, BCM28145, and BCM28155 SoCs.
++
++=== Pin Controller Node ===
++
++Required Properties:
++
++- compatible:	Must be "brcm,capri-pinctrl".
++- reg:		Base address of the PAD Controller register block and the size
++		of the block.
++
++For example, the following is the bare minimum node:
++
++	pinctrl@35004800 {
++		compatible = "brcm,capri-pinctrl";
++		reg = <0x35004800 0x430>;
++	};
++
++As a pin controller device, in addition to the required properties, this node
++should also contain the pin configuration nodes that client devices reference,
++if any.
++
++=== Pin Configuration Node ===
++
++Each pin configuration node is a sub-node of the pin controller node and is a
++container of an arbitrary number of subnodes, called pin group nodes in this
++document.
++
++Please refer to the pinctrl-bindings.txt in this directory for details of the
++common pinctrl bindings used by client devices, including the definition of a
++"pin configuration node".
++
++=== Pin Group Node ===
++
++A pin group node specifies the desired pin mux and/or pin configuration for an
++arbitrary number of pins.  The name of the pin group node is optional and not
++used.
++
++A pin group node only affects the properties specified in the node, and has no
++effect on any properties that are omitted.
++
++The pin group node accepts a subset of the generic pin config properties. For
++details generic pin config properties, please refer to pinctrl-bindings.txt
++and <include/linux/pinctrl/pinconfig-generic.h>.
++
++Each pin controlled by this pin controller belong to one of three types:
++Standard, I2C, and HDMI.  Each type accepts a different set of pin config
++properties.  A list of pins and their types is provided below.
++
++Required Properties (applicable to all pins):
++
++- pins:		Multiple strings.  Specifies the name(s) of one or more pins to
++		be configured by this node.
++
++Optional Properties (for standard pins):
++
++- function:			String. Specifies the pin mux selection. Values
++				must be one of: "alt1", "alt2", "alt3", "alt4"
++- input-schmitt-enable:		No arguments. Enable schmitt-trigger mode.
++- input-schmitt-disable:	No arguments. Disable schmitt-trigger mode.
++- bias-pull-up:			No arguments. Pull up on pin.
++- bias-pull-down:		No arguments. Pull down on pin.
++- bias-disable:			No arguments. Disable pin bias.
++- slew-rate:			Integer. Meaning depends on configured pin mux:
++				*_SCL or *_SDA:
++					0: Standard(100kbps)& Fast(400kbps) mode
++					1: Highspeed (3.4Mbps) mode
++				IC_DM or IC_DP:
++					0: normal slew rate
++					1: fast slew rate
++				Otherwise:
++					0: fast slew rate
++					1: normal slew rate
++- input-enable:			No arguements. Enable input (does not affect
++				output.)
++- input-disable:		No arguements. Disable input (does not affect
++				output.)
++- drive-strength:		Integer. Drive strength in mA.  Valid values are
++				2, 4, 6, 8, 10, 12, 14, 16 mA.
++
++Optional Properties (for I2C pins):
++
++- function:			String. Specifies the pin mux selection. Values
++				must be one of: "alt1", "alt2", "alt3", "alt4"
++- bias-pull-up:			Integer. Pull up strength in Ohm. There are 3
++				pull-up resisitors (1.2k, 1.8k, 2.7k) available
++				in parallel for I2C pins, so the valid values
++				are: 568, 720, 831, 1080, 1200, 1800, 2700 Ohm.
++- bias-disable:			No arguments. Disable pin bias.
++- slew-rate:			Integer. Meaning depends on configured pin mux:
++				*_SCL or *_SDA:
++					0: Standard(100kbps)& Fast(400kbps) mode
++					1: Highspeed (3.4Mbps) mode
++				IC_DM or IC_DP:
++					0: normal slew rate
++					1: fast slew rate
++				Otherwise:
++					0: fast slew rate
++					1: normal slew rate
++- input-enable:			No arguements. Enable input (does not affect
++				output.)
++- input-disable:		No arguements. Disable input (does not affect
++				output.)
++
++Optional Properties (for HDMI pins):
++
++- function:			String. Specifies the pin mux selection. Values
++				must be one of: "alt1", "alt2", "alt3", "alt4"
++- slew-rate:			Integer. Controls slew rate.
++					0: Standard(100kbps)& Fast(400kbps) mode
++					1: Highspeed (3.4Mbps) mode
++- input-enable:			No arguements. Enable input (does not affect
++				output.)
++- input-disable:		No arguements. Disable input (does not affect
++				output.)
++
++Example:
++// pin controller node
++pinctrl@35004800 {
++	compatible = "brcm,capri-pinctrl";
++	reg = <0x35004800 0x430>;
++
++	// pin configuration node
++	dev_a_default: dev_a_active {
++		//group node defining 1 standard pin
++		grp_1 {
++			pins		= "std_pin1";
++			function	= "alt1";
++			input-schmitt-enable;
++			bias-disable;
++			slew-rate	= <1>;
++			drive-strength	= <4>;
++		};
++
++		// group node defining 2 I2C pins
++		grp_2 {
++			pins		= "i2c_pin1", "i2c_pin2";
++			function	= "alt2";
++			bias-pull-up	= <720>;
++			input-enable;
++		};
++
++		// group node defining 2 HDMI pins
++		grp_3 {
++			pins		= "hdmi_pin1", "hdmi_pin2";
++			function	= "alt3";
++			slew-rate	= <1>;
++		};
++
++		// other pin group nodes
++		...
++	};
++
++	// other pin configuration nodes
++	...
++};
++
++In the example above, "dev_a_active" is a pin configuration node with a number
++of sub-nodes.  In the pin group node "grp_1", one pin, "std_pin1", is defined in
++the "pins" property.  Thus, the remaining properties in the "grp_1" node applies
++only to this pin, including the following settings:
++ - setting pinmux to "alt1"
++ - enabling schmitt-trigger (hystersis) mode
++ - disabling pin bias
++ - setting the slew-rate to 1
++ - setting the drive strength to 4 mA
++Note that neither "input-enable" nor "input-disable" was specified - the pinctrl
++subsystem will therefore leave this property unchanged from whatever state it
++was in before applying these changes.
++
++The "pins" property in the pin group node "grp_2" specifies two pins -
++"i2c_pin1" and "i2c_pin2"; the remaining properties in this pin group node,
++therefore, applies to both of these pins.  The properties include:
++ - setting pinmux to "alt2"
++ - setting pull-up resistance to 720 Ohm (ie. enabling 1.2k and 1.8k resistors
++   in parallel)
++ - enabling both pins' input
++"slew-rate" is not specified in this pin group node, so the slew-rate for these
++pins are left as-is.
++
++Finally, "grp_3" defines two HDMI pins.  The following properties are applied to
++both pins:
++ - setting pinmux to "alt3"
++ - setting slew-rate to 1; for HDMI pins, this corresponds to the 3.4 Mbps
++   Highspeed mode
++The input is neither enabled or disabled, and is left untouched.
++
++=== Pin Names and Type ===
++
++The following are valid pin names and their pin types:
++
++	"adcsync",		Standard
++	"bat_rm",		Standard
++	"bsc1_scl",		I2C
++	"bsc1_sda",		I2C
++	"bsc2_scl",		I2C
++	"bsc2_sda",		I2C
++	"classgpwr",		Standard
++	"clk_cx8",		Standard
++	"clkout_0",		Standard
++	"clkout_1",		Standard
++	"clkout_2",		Standard
++	"clkout_3",		Standard
++	"clkreq_in_0",		Standard
++	"clkreq_in_1",		Standard
++	"cws_sys_req1",		Standard
++	"cws_sys_req2",		Standard
++	"cws_sys_req3",		Standard
++	"digmic1_clk",		Standard
++	"digmic1_dq",		Standard
++	"digmic2_clk",		Standard
++	"digmic2_dq",		Standard
++	"gpen13",		Standard
++	"gpen14",		Standard
++	"gpen15",		Standard
++	"gpio00",		Standard
++	"gpio01",		Standard
++	"gpio02",		Standard
++	"gpio03",		Standard
++	"gpio04",		Standard
++	"gpio05",		Standard
++	"gpio06",		Standard
++	"gpio07",		Standard
++	"gpio08",		Standard
++	"gpio09",		Standard
++	"gpio10",		Standard
++	"gpio11",		Standard
++	"gpio12",		Standard
++	"gpio13",		Standard
++	"gpio14",		Standard
++	"gps_pablank",		Standard
++	"gps_tmark",		Standard
++	"hdmi_scl",		HDMI
++	"hdmi_sda",		HDMI
++	"ic_dm",		Standard
++	"ic_dp",		Standard
++	"kp_col_ip_0",		Standard
++	"kp_col_ip_1",		Standard
++	"kp_col_ip_2",		Standard
++	"kp_col_ip_3",		Standard
++	"kp_row_op_0",		Standard
++	"kp_row_op_1",		Standard
++	"kp_row_op_2",		Standard
++	"kp_row_op_3",		Standard
++	"lcd_b_0",		Standard
++	"lcd_b_1",		Standard
++	"lcd_b_2",		Standard
++	"lcd_b_3",		Standard
++	"lcd_b_4",		Standard
++	"lcd_b_5",		Standard
++	"lcd_b_6",		Standard
++	"lcd_b_7",		Standard
++	"lcd_g_0",		Standard
++	"lcd_g_1",		Standard
++	"lcd_g_2",		Standard
++	"lcd_g_3",		Standard
++	"lcd_g_4",		Standard
++	"lcd_g_5",		Standard
++	"lcd_g_6",		Standard
++	"lcd_g_7",		Standard
++	"lcd_hsync",		Standard
++	"lcd_oe",		Standard
++	"lcd_pclk",		Standard
++	"lcd_r_0",		Standard
++	"lcd_r_1",		Standard
++	"lcd_r_2",		Standard
++	"lcd_r_3",		Standard
++	"lcd_r_4",		Standard
++	"lcd_r_5",		Standard
++	"lcd_r_6",		Standard
++	"lcd_r_7",		Standard
++	"lcd_vsync",		Standard
++	"mdmgpio0",		Standard
++	"mdmgpio1",		Standard
++	"mdmgpio2",		Standard
++	"mdmgpio3",		Standard
++	"mdmgpio4",		Standard
++	"mdmgpio5",		Standard
++	"mdmgpio6",		Standard
++	"mdmgpio7",		Standard
++	"mdmgpio8",		Standard
++	"mphi_data_0",		Standard
++	"mphi_data_1",		Standard
++	"mphi_data_2",		Standard
++	"mphi_data_3",		Standard
++	"mphi_data_4",		Standard
++	"mphi_data_5",		Standard
++	"mphi_data_6",		Standard
++	"mphi_data_7",		Standard
++	"mphi_data_8",		Standard
++	"mphi_data_9",		Standard
++	"mphi_data_10",		Standard
++	"mphi_data_11",		Standard
++	"mphi_data_12",		Standard
++	"mphi_data_13",		Standard
++	"mphi_data_14",		Standard
++	"mphi_data_15",		Standard
++	"mphi_ha0",		Standard
++	"mphi_hat0",		Standard
++	"mphi_hat1",		Standard
++	"mphi_hce0_n",		Standard
++	"mphi_hce1_n",		Standard
++	"mphi_hrd_n",		Standard
++	"mphi_hwr_n",		Standard
++	"mphi_run0",		Standard
++	"mphi_run1",		Standard
++	"mtx_scan_clk",		Standard
++	"mtx_scan_data",	Standard
++	"nand_ad_0",		Standard
++	"nand_ad_1",		Standard
++	"nand_ad_2",		Standard
++	"nand_ad_3",		Standard
++	"nand_ad_4",		Standard
++	"nand_ad_5",		Standard
++	"nand_ad_6",		Standard
++	"nand_ad_7",		Standard
++	"nand_ale",		Standard
++	"nand_cen_0",		Standard
++	"nand_cen_1",		Standard
++	"nand_cle",		Standard
++	"nand_oen",		Standard
++	"nand_rdy_0",		Standard
++	"nand_rdy_1",		Standard
++	"nand_wen",		Standard
++	"nand_wp",		Standard
++	"pc1",			Standard
++	"pc2",			Standard
++	"pmu_int",		Standard
++	"pmu_scl",		I2C
++	"pmu_sda",		I2C
++	"rfst2g_mtsloten3g",	Standard
++	"rgmii_0_rx_ctl",	Standard
++	"rgmii_0_rxc",		Standard
++	"rgmii_0_rxd_0",	Standard
++	"rgmii_0_rxd_1",	Standard
++	"rgmii_0_rxd_2",	Standard
++	"rgmii_0_rxd_3",	Standard
++	"rgmii_0_tx_ctl",	Standard
++	"rgmii_0_txc",		Standard
++	"rgmii_0_txd_0",	Standard
++	"rgmii_0_txd_1",	Standard
++	"rgmii_0_txd_2",	Standard
++	"rgmii_0_txd_3",	Standard
++	"rgmii_1_rx_ctl",	Standard
++	"rgmii_1_rxc",		Standard
++	"rgmii_1_rxd_0",	Standard
++	"rgmii_1_rxd_1",	Standard
++	"rgmii_1_rxd_2",	Standard
++	"rgmii_1_rxd_3",	Standard
++	"rgmii_1_tx_ctl",	Standard
++	"rgmii_1_txc",		Standard
++	"rgmii_1_txd_0",	Standard
++	"rgmii_1_txd_1",	Standard
++	"rgmii_1_txd_2",	Standard
++	"rgmii_1_txd_3",	Standard
++	"rgmii_gpio_0",		Standard
++	"rgmii_gpio_1",		Standard
++	"rgmii_gpio_2",		Standard
++	"rgmii_gpio_3",		Standard
++	"rtxdata2g_txdata3g1",	Standard
++	"rtxen2g_txdata3g2",	Standard
++	"rxdata3g0",		Standard
++	"rxdata3g1",		Standard
++	"rxdata3g2",		Standard
++	"sdio1_clk",		Standard
++	"sdio1_cmd",		Standard
++	"sdio1_data_0",		Standard
++	"sdio1_data_1",		Standard
++	"sdio1_data_2",		Standard
++	"sdio1_data_3",		Standard
++	"sdio4_clk",		Standard
++	"sdio4_cmd",		Standard
++	"sdio4_data_0",		Standard
++	"sdio4_data_1",		Standard
++	"sdio4_data_2",		Standard
++	"sdio4_data_3",		Standard
++	"sim_clk",		Standard
++	"sim_data",		Standard
++	"sim_det",		Standard
++	"sim_resetn",		Standard
++	"sim2_clk",		Standard
++	"sim2_data",		Standard
++	"sim2_det",		Standard
++	"sim2_resetn",		Standard
++	"sri_c",		Standard
++	"sri_d",		Standard
++	"sri_e",		Standard
++	"ssp_extclk",		Standard
++	"ssp0_clk",		Standard
++	"ssp0_fs",		Standard
++	"ssp0_rxd",		Standard
++	"ssp0_txd",		Standard
++	"ssp2_clk",		Standard
++	"ssp2_fs_0",		Standard
++	"ssp2_fs_1",		Standard
++	"ssp2_fs_2",		Standard
++	"ssp2_fs_3",		Standard
++	"ssp2_rxd_0",		Standard
++	"ssp2_rxd_1",		Standard
++	"ssp2_txd_0",		Standard
++	"ssp2_txd_1",		Standard
++	"ssp3_clk",		Standard
++	"ssp3_fs",		Standard
++	"ssp3_rxd",		Standard
++	"ssp3_txd",		Standard
++	"ssp4_clk",		Standard
++	"ssp4_fs",		Standard
++	"ssp4_rxd",		Standard
++	"ssp4_txd",		Standard
++	"ssp5_clk",		Standard
++	"ssp5_fs",		Standard
++	"ssp5_rxd",		Standard
++	"ssp5_txd",		Standard
++	"ssp6_clk",		Standard
++	"ssp6_fs",		Standard
++	"ssp6_rxd",		Standard
++	"ssp6_txd",		Standard
++	"stat_1",		Standard
++	"stat_2",		Standard
++	"sysclken",		Standard
++	"traceclk",		Standard
++	"tracedt00",		Standard
++	"tracedt01",		Standard
++	"tracedt02",		Standard
++	"tracedt03",		Standard
++	"tracedt04",		Standard
++	"tracedt05",		Standard
++	"tracedt06",		Standard
++	"tracedt07",		Standard
++	"tracedt08",		Standard
++	"tracedt09",		Standard
++	"tracedt10",		Standard
++	"tracedt11",		Standard
++	"tracedt12",		Standard
++	"tracedt13",		Standard
++	"tracedt14",		Standard
++	"tracedt15",		Standard
++	"txdata3g0",		Standard
++	"txpwrind",		Standard
++	"uartb1_ucts",		Standard
++	"uartb1_urts",		Standard
++	"uartb1_urxd",		Standard
++	"uartb1_utxd",		Standard
++	"uartb2_urxd",		Standard
++	"uartb2_utxd",		Standard
++	"uartb3_ucts",		Standard
++	"uartb3_urts",		Standard
++	"uartb3_urxd",		Standard
++	"uartb3_utxd",		Standard
++	"uartb4_ucts",		Standard
++	"uartb4_urts",		Standard
++	"uartb4_urxd",		Standard
++	"uartb4_utxd",		Standard
++	"vc_cam1_scl",		I2C
++	"vc_cam1_sda",		I2C
++	"vc_cam2_scl",		I2C
++	"vc_cam2_sda",		I2C
++	"vc_cam3_scl",		I2C
++	"vc_cam3_sda",		I2C
+-- 
+1.7.9.5
+
