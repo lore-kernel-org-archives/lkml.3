@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755612Ab3LURcJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 12:32:09 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:20771 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753252Ab3LURcH (ORCPT
+	id S1755800Ab3LURfX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 12:35:23 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:40932 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754867Ab3LURfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 12:32:07 -0500
-Date: Sat, 21 Dec 2013 18:30:37 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Anthony Olech <anthony.olech.opensource@diasemi.com>,
-        lm-sensors@lm-sensors.org, Anton Vorontsov <anton@enomsg.org>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        David Dajun Chen <david.chen@diasemi.com>
-Subject: Re: [lm-sensors] [PATCH V1] fix adc to voltage calculation in
- da9052  power driver
-Message-ID: <20131221183037.2ad91f86@endymion.delvare>
-In-Reply-To: <20131219181049.GA6854@roeck-us.net>
-References: <201312181524.rBIFOv96017094@swsrvapps-02.lan>
-	<20131218163234.714a166c@endymion.delvare>
-	<24DF37198A1E704D9811D8F72B87EB51847ABF61@NB-EX-MBX02.diasemi.com>
-	<20131218172402.GA18892@roeck-us.net>
-	<24DF37198A1E704D9811D8F72B87EB51847AC2C3@NB-EX-MBX02.diasemi.com>
-	<20131219155454.40100f4d@endymion.delvare>
-	<20131219181049.GA6854@roeck-us.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	Sat, 21 Dec 2013 12:35:21 -0500
+Date: Sat, 21 Dec 2013 17:35:15 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Dave Young <dyoung@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        bp@alien8.de, greg@kroah.com, toshi.kani@hp.com,
+        akpm@linux-foundation.org, mingo@kernel.org, msalter@redhat.com,
+        leif.lindholm@linaro.org
+Subject: Re: [PATCH v7 00/12] kexec kernel efi runtime support
+Message-ID: <20131221173515.GE29501@console-pimps.org>
+References: <1387533742-18018-1-git-send-email-dyoung@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387533742-18018-1-git-send-email-dyoung@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter, hi Anthony,
+On Fri, 20 Dec, at 06:02:10PM, Dave Young wrote:
+> Here is the V7 patchset for supporting kexec kernel efi runtime.
+> Per pervious discussion I pass the 1st kernel efi runtime mapping
+> via setup_data to 2nd kernel. Besides of the runtime mapping
+> info I also pass the fw_vendor, runtime, config table, smbios
+> physical address in setup_data. EFI spec mentioned fw_vendor,
+> runtime, config table addresses will be converted to virt address
+> after entering virtual mode, but we will use it as physical address
+> in efi_init. For smbios EFI spec did not mention about the address
+> updating, but during my test on a HP workstation, the bios will
+> convert it to Virt addr, thus pass it in setup_data as well.
 
-On Thu, 19 Dec 2013 10:10:49 -0800, Guenter Roeck wrote:
-> On Thu, Dec 19, 2013 at 03:54:54PM +0100, Jean Delvare wrote:
-> > BTW, you (and we) probably shouldn't waste too much energy on this.
-> > ADCs are only accurate to some degree anyway. If you take the
-> > components connected to the input into consideration, the accuracy gets
-> > even worse. For example, if the input voltage must be scaled down to
-> > fit in the ADC's range, you need at least one resistor, which in best
-> > cases will have a 1% accurate value (known as tolerance.) That's ten
-> > times the LSB of your 10-bit ADC, at which point / 1023 or / 1024
-> > really makes no practical difference. Sub-percent tolerant resistors are
-> > expensive and rare in consumer electronics in my experience.
->
-> True, but on the other side (and after looking into the datasheet)
-> the driver already calculated the voltage on adc4..6 correctly,
-> so unless you disagree I would like to apply the hwmon patch to -next
-> for consistency.
+OK Dave, I've pulled patches 3-12 into the 'kexec' branch at,
 
-The datasheet isn't the best quality I've seen. The gain values
-mentioned to not even match the formulas in the same cell... But I can't
-object to implementing conversions the way the datasheet says, no
-matter how suspicious.
+  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git
 
-I don't really know what tree the patch is based on. Anthony said
-linux-next but I can't see ichg_reg_to_mA there.
+I plan on sending this branch to the tip folks this week for further
+testing.
 
-If volt_reg_to_mv is updated then you certainly want to update
-vbbat_reg_to_mv the same way, as it diverges from the datasheet just
-the same.
+Please have a look and make sure I haven't messed anything up when
+dropping the first two patches (though they were very small and trival).
 
-Also, please update Documentation/hwmon/da9052 so that the
-documentation matches the actual driver code.
-
-I really would like to hear what David Dajun Chen has to say about
-that. He must have had a reason to use different conversions formulas
-than the datasheet specifies.
+Toshi, if you could grab that branch and give it a test, that'd be
+excellent.
 
 -- 
-Jean Delvare
+Matt Fleming, Intel Open Source Technology Center
