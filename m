@@ -1,81 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000Ab3LUJIR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 04:08:17 -0500
-Received: from ozlabs.org ([203.10.76.45]:33554 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751651Ab3LUJIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 04:08:11 -0500
-Date: Sat, 21 Dec 2013 20:04:36 +1100
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH v3 01/14] mm, hugetlb: unify region structure handling
-Message-ID: <20131221090436.GD15958@voom.redhat.com>
-References: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1387349640-8071-2-git-send-email-iamjoonsoo.kim@lge.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="C+ts3FVlLX8+P6JN"
-Content-Disposition: inline
-In-Reply-To: <1387349640-8071-2-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753560Ab3LUJMs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 04:12:48 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:49341 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753107Ab3LUJMh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Dec 2013 04:12:37 -0500
+Message-ID: <1387617104.30230.7.camel@marge.simpson.net>
+Subject: Re: CONFIG_NO_HZ_FULL + CONFIG_PREEMPT_RT_FULL = nogo
+From: Mike Galbraith <bitbucket@online.de>
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Sat, 21 Dec 2013 10:11:44 +0100
+In-Reply-To: <20131220154146.GA18672@breakpoint.cc>
+References: <1383228427.5272.36.camel@marge.simpson.net>
+	 <alpine.DEB.2.02.1311061842160.23353@ionos.tec.linutronix.de>
+	 <1383794799.5441.16.camel@marge.simpson.net>
+	 <1383798668.5441.25.camel@marge.simpson.net>
+	 <alpine.DEB.2.02.1311071158350.23353@ionos.tec.linutronix.de>
+	 <20131220154146.GA18672@breakpoint.cc>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:RvW4vB0QNs6e6j5kk1v39SBUo/qr03T970ao3gvX552
+ pQuSCHljTH4jDpYwtNmuVZX0iWHuSUl/fXLMHxrG9E0wK3xbVq
+ BEWYnhqzbjqH1gaLEObMcL7xAAIuXTmNDhsTn0GpjLbZk8cgfG
+ s7wYlq8gjw47a+n83J2+2n1QiaPcg7IHhEU2dyrgsLkyP0i1Mh
+ UHnmwJGXhEHaxx+voL94N6cEvW7YFnE3CJO79UxQ/iuLOK9M52
+ IxWSMHIqUFvH2VOp9AIkbKxoc+yXs44IyqoK0KeOf0w5XjCks7
+ KYsKVS5a2foZ5A+wxzGsJI5ff9VPknAtF8tU40kzKWRB+ePHBJ
+ 8rDEzmV/5Dare932o8KmkANYtqPAIt8O1RzdqjYbQ7x3e2LI09
+ 9YDiko+/AEcWg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2013-12-20 at 16:41 +0100, Sebastian Andrzej Siewior wrote: 
+> On 07.11.13, Thomas Gleixner wrote:
+> > below should address that issue. If that works on mainline we can
+> > adapt it for RT (needs a trylock(&base->lock) there).
+> 
+> okay, so this is waht I'm going to take for -RT:
 
---C+ts3FVlLX8+P6JN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Works, modulo noisy workqueues.
 
-On Wed, Dec 18, 2013 at 03:53:47PM +0900, Joonsoo Kim wrote:
-> Currently, to track a reserved and allocated region, we use two different
-> ways for MAP_SHARED and MAP_PRIVATE. For MAP_SHARED, we use
-> address_mapping's private_list and, for MAP_PRIVATE, we use a resv_map.
-> Now, we are preparing to change a coarse grained lock which protect
-> a region structure to fine grained lock, and this difference hinder it.
-> So, before changing it, unify region structure handling.
->=20
-> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+rtbox:~ # sleep 35 && killall pert& cgexec -g cpuset:rtcpus taskset -c 3 pert 5
+[1] 5660
+2400.05 MHZ CPU
+perturbation threshold 0.018 usecs.
+pert/s:       33 >15.75us:        2 min:  0.04 max: 24.14 avg:  2.51 sum/s:    84us overhead: 0.01%
+pert/s:       35 >15.54us:        3 min:  0.04 max: 24.89 avg:  2.39 sum/s:    84us overhead: 0.01%
+pert/s:       30 >15.27us:        2 min:  0.04 max: 23.03 avg:  2.64 sum/s:    80us overhead: 0.01%
+pert/s:       34 >15.12us:        3 min:  0.04 max: 25.03 avg:  2.51 sum/s:    86us overhead: 0.01%
+pert/s:       31 >14.93us:        2 min:  0.04 max: 23.86 avg:  2.60 sum/s:    83us overhead: 0.01%
+Terminated
 
-Reviewed-by: David Gibson <david@gibson.dropbear.id.au>
---=20
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
+> diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+> index 79a7a35..bdbf77db 100644
+> --- a/include/linux/hrtimer.h
+> +++ b/include/linux/hrtimer.h
+> @@ -461,9 +461,8 @@ extern int schedule_hrtimeout_range_clock(ktime_t *expires,
+>  		unsigned long delta, const enum hrtimer_mode mode, int clock);
+>  extern int schedule_hrtimeout(ktime_t *expires, const enum hrtimer_mode mode);
+>  
+> -/* Soft interrupt function to run the hrtimer queues: */
+> +/* Called from the periodic timer tick */
+>  extern void hrtimer_run_queues(void);
+> -extern void hrtimer_run_pending(void);
+>  
+>  /* Bootup initialization: */
+>  extern void __init hrtimers_init(void);
+> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+> index c383841..7aa442e 100644
+> --- a/kernel/hrtimer.c
+> +++ b/kernel/hrtimer.c
+> @@ -1694,30 +1694,6 @@ static void run_hrtimer_softirq(struct softirq_action *h)
+>  }
+>  
+>  /*
+> - * Called from timer softirq every jiffy, expire hrtimers:
+> - *
+> - * For HRT its the fall back code to run the softirq in the timer
+> - * softirq context in case the hrtimer initialization failed or has
+> - * not been done yet.
+> - */
+> -void hrtimer_run_pending(void)
+> -{
+> -	if (hrtimer_hres_active())
+> -		return;
+> -
+> -	/*
+> -	 * This _is_ ugly: We have to check in the softirq context,
+> -	 * whether we can switch to highres and / or nohz mode. The
+> -	 * clocksource switch happens in the timer interrupt with
+> -	 * xtime_lock held. Notification from there only sets the
+> -	 * check bit in the tick_oneshot code, otherwise we might
+> -	 * deadlock vs. xtime_lock.
+> -	 */
+> -	if (tick_check_oneshot_change(!hrtimer_is_hres_enabled()))
+> -		hrtimer_switch_to_hres();
+> -}
+> -
+> -/*
+>   * Called from hardirq context every jiffy
+>   */
+>  void hrtimer_run_queues(void)
+> @@ -1730,6 +1706,13 @@ void hrtimer_run_queues(void)
+>  	if (hrtimer_hres_active())
+>  		return;
+>  
+> +	/*
+> +	 * Check whether we can switch to highres mode.
+> +	 */
+> +	if (tick_check_oneshot_change(!hrtimer_is_hres_enabled())
+> +	    && hrtimer_switch_to_hres())
+> +		return;
+> +
+>  	for (index = 0; index < HRTIMER_MAX_CLOCK_BASES; index++) {
+>  		base = &cpu_base->clock_base[index];
+>  		if (!timerqueue_getnext(&base->active))
+> diff --git a/kernel/timer.c b/kernel/timer.c
+> index b06c647..46467be 100644
+> --- a/kernel/timer.c
+> +++ b/kernel/timer.c
+> @@ -1443,8 +1443,6 @@ static void run_timer_softirq(struct softirq_action *h)
+>  	irq_work_run();
+>  #endif
+>  
+> -	hrtimer_run_pending();
+> -
+>  	if (time_after_eq(jiffies, base->timer_jiffies))
+>  		__run_timers(base);
+>  }
+> @@ -1454,8 +1452,27 @@ static void run_timer_softirq(struct softirq_action *h)
+>   */
+>  void run_local_timers(void)
+>  {
+> +	struct tvec_base *base = __this_cpu_read(tvec_bases);
+> +
+>  	hrtimer_run_queues();
+> -	raise_softirq(TIMER_SOFTIRQ);
+> +	/*
+> +	 * We can access this lockless as we are in the timer
+> +	 * interrupt. If there are no timers queued, nothing to do in
+> +	 * the timer softirq.
+> +	 */
+> +	if (!spin_do_trylock(&base->lock)) {
+> +		raise_softirq(TIMER_SOFTIRQ);
+> +		return;
+> +	}
+> +	if (!base->active_timers)
+> +		goto out;
+> +
+> +	/* Check whether the next pending timer has expired */
+> +	if (time_before_eq(base->next_timer, jiffies))
+> +		raise_softirq(TIMER_SOFTIRQ);
+> +out:
+> +	rt_spin_unlock_after_trylock_in_irq(&base->lock);
+> +
+>  }
+>  
+>  #ifdef __ARCH_WANT_SYS_ALARM
 
---C+ts3FVlLX8+P6JN
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJStVmkAAoJEGw4ysog2bOSA1wQAIncZZbCbbw2oxX879TVjs5/
-kELr9xxGpMH8dOD5wGYNA0FcoEFEJpHbHHQKxX3WexsIrqxkdX9XyXl1ozJ/a+fW
-gQ9VsXgLMCMbo2Y0YATGSUjUG9tMGGhPqh8unfAXr2wfQ57poTLJwJ1XoszFnAr7
-D3axSN6YM6/3IHUwuDdsQe39x0Otrm+tiMkk5gdHdgLRlVS3MxL82JlGq7GsNafg
-9KHCgXfxCM6hopCEz/yiNNdDX4WEm0OB8pEEyn6yTLf+Nk3GZvtVBjEwu2T4XUY3
-K+Qqx3vcEC1OAOFDtN4mxbhJ9qvL8ffPYHs7EzwNeHCgx6PnoP4xjMV1ObTbmalj
-4A0lnW2EWVdAbsXMAnodxKJQO2l22QrZMWB1v2YY+VXXIxWYd68oyz16tnUH/kC5
-lF55KEEFY1+pZ6iJtWZtezhIVfCW+RZyMTPrjvTyW0AFsXHSVaMUHDuWh4OyRVD0
-SZWhOwM63+VNxbele2icIfVHP4OI6b3W8Obxg47oA4mfAODeMfJDIxFbp/5opdsT
-fNOWCyif7hy2AmFSwyDgLToovfh73LUeXRgkanHcjN/kY2+9dc23rRqChzOaAkXw
-NzartPVbhM4Cv/urMtgv/tUr1Yhp6wDG8+onD55KMjU27k9iUQhH5G9GN3ZQS5yQ
-29Rm9IEo/a+rAMwm3DIV
-=xC18
------END PGP SIGNATURE-----
-
---C+ts3FVlLX8+P6JN--
