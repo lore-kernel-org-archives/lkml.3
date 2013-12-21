@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab3LUMV5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 07:21:57 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:51506 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753790Ab3LUMVz (ORCPT
+	id S1753753Ab3LUMgI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 07:36:08 -0500
+Received: from smtp4.mundo-r.com ([212.51.32.151]:31666 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751651Ab3LUMgG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 07:21:55 -0500
-Date: Sat, 21 Dec 2013 12:21:48 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, joeyli <jlee@suse.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
-        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
-        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        x86@kernel.org,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, Borislav Petkov <bp@suse.de>
-Subject: Re: [RFC PATCH 00/14] Support timezone of ACPI TAD and EFI TIME
-Message-ID: <20131221122148.GB29501@console-pimps.org>
-References: <1387439053-8711-1-git-send-email-jlee@suse.com>
- <52B4BA0A.1030902@zytor.com>
- <20131220215056.GA29501@console-pimps.org>
- <3476450.BMEcId2Lgj@vostro.rjw.lan>
+	Sat, 21 Dec 2013 07:36:06 -0500
+X-Greylist: delayed 587 seconds by postgrey-1.27 at vger.kernel.org; Sat, 21 Dec 2013 07:36:06 EST
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhAFACaItVJbdWOb/2dsb2JhbABYgwuEDrY9gRIWdIIlAQEBBCMECwFGEAsYAgIFIQICDwIQNgYNAQUCAodsAxUBsR6TAA2GUheBKYtpgS9kB4JugUgBA5YrgWyMWoU6gy6BZw
+X-IPAS-Result: AhAFACaItVJbdWOb/2dsb2JhbABYgwuEDrY9gRIWdIIlAQEBBCMECwFGEAsYAgIFIQICDwIQNgYNAQUCAodsAxUBsR6TAA2GUheBKYtpgS9kB4JugUgBA5YrgWyMWoU6gy6BZw
+X-IronPort-AV: E=Sophos;i="4.95,527,1384297200"; 
+   d="scan'208";a="133241931"
+Message-ID: <52B58911.30707@igalia.com>
+Date: Sat, 21 Dec 2013 13:26:57 +0100
+From: =?UTF-8?B?SmF2aWVyIE11w7Fveg==?= <jmunhoz@igalia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3476450.BMEcId2Lgj@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rashika Kheria <rashika.kheria@gmail.com>
+CC: linux-kernel@vger.kernel.org, Teddy Wang <teddy.wang@siliconmotion.com.cn>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peter Huewe <peterhuewe@gmx.de>, Martin Berglund <martin@rogsta.net>,
+        Ebru Akagunduz <ebru.akagunduz@gmail.com>, devel@driverdev.osuosl.org,
+        josh@joshtriplett.org
+Subject: Re: [PATCH] drivers: sm7xxfb: Mark function as static in sm7xxfb.c
+References: <20131221101413.GA2946@rashika>
+In-Reply-To: <20131221101413.GA2946@rashika>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Dec, at 11:18:56PM, Rafael J. Wysocki wrote:
+On 12/21/2013 11:14 AM, Rashika Kheria wrote:
+> Mark function smtcfb_setmode() as static in sm7xxfb.c because it is not
+> used outside this file.
 > 
-> I'm not sure 100%, but I *think* we need to do that with interrupts enabled.
-> At least after mm_init(), because it relies on things initialized there if I
-> remember correctly.
+> This eliminates the following warning in sm7xxfb.c:
+> drivers/staging/sm7xxfb/sm7xxfb.c:588:6: warning: no previous prototype for ‘smtcfb_setmode’ [-Wmissing-prototypes]
 > 
-> From what I can tell at the moment, it might be possible to move it before
-> efi_enter_virtual_mode() if that would help.
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 
-Actually yeah, that would be super useful, and I think we'd be able to
-get rid of the whole efi_late_init() stuff because we'd no longer need
-to hang on to the EFI_BOOT_SERVICES* regions after
-SetVirtualAddressMap().
+Acked-by: Javier M. Mellid <jmunhoz@igalia.com>
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+> ---
+>  drivers/staging/sm7xxfb/sm7xxfb.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/sm7xxfb/sm7xxfb.c b/drivers/staging/sm7xxfb/sm7xxfb.c
+> index ba199ff..f08b216 100644
+> --- a/drivers/staging/sm7xxfb/sm7xxfb.c
+> +++ b/drivers/staging/sm7xxfb/sm7xxfb.c
+> @@ -585,7 +585,7 @@ static void smtc_set_timing(struct smtcfb_info *sfb)
+>  	}
+>  }
+>  
+> -void smtcfb_setmode(struct smtcfb_info *sfb)
+> +static void smtcfb_setmode(struct smtcfb_info *sfb)
+>  {
+>  	switch (sfb->fb.var.bits_per_pixel) {
+>  	case 32:
+> 
+
