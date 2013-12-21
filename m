@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079Ab3LUAJj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 19:09:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49396 "EHLO
+	id S1754433Ab3LUAJx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 19:09:53 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49405 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657Ab3LUAJh (ORCPT
+	with ESMTP id S1753519Ab3LUAJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 19:09:37 -0500
-Date: Fri, 20 Dec 2013 16:09:26 -0800
+	Fri, 20 Dec 2013 19:09:51 -0500
+Date: Fri, 20 Dec 2013 16:09:36 -0800
 From: "tip-bot for H.J. Lu" <tipbot@zytor.com>
-Message-ID: <tip-b70fedc15892de8bc78f711d7821dd0916cc5508@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, hjl.tools@gmail.com
+Message-ID: <tip-79dbbc60493f357912d5f1da5a23147ba0c01c7a@git.kernel.org>
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
+        hjl.tools@gmail.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, hjl.tools@gmail.com
-In-Reply-To: <CAMe9rOquPtWEro0GQ=Z95pZJ=c7GGkSHynjN4FbiB4p445x-Ng@mail.gmail.com>
-References: <CAMe9rOquPtWEro0GQ=Z95pZJ=c7GGkSHynjN4FbiB4p445x-Ng@mail.gmail.com>
+        arnd@arndb.de, tglx@linutronix.de, hpa@linux.intel.com,
+        hjl.tools@gmail.com
+In-Reply-To: <CAMe9rOrcppHvC5g8U9n7D+pxVGdu1G598pge3Erfw7Pr-iEpAQ@mail.gmail.com>
+References: <CAMe9rOrcppHvC5g8U9n7D+pxVGdu1G598pge3Erfw7Pr-iEpAQ@mail.gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/x32] x86, x32: Use __kernel_long_t/
- __kernel_ulong_t in x86-64 stat.h
-Git-Commit-ID: b70fedc15892de8bc78f711d7821dd0916cc5508
+Subject: [tip:x86/x32] x86, x32: Use __kernel_long_t for __statfs_word
+Git-Commit-ID: 79dbbc60493f357912d5f1da5a23147ba0c01c7a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,88 +29,42 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 20 Dec 2013 16:09:32 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 20 Dec 2013 16:09:42 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b70fedc15892de8bc78f711d7821dd0916cc5508
-Gitweb:     http://git.kernel.org/tip/b70fedc15892de8bc78f711d7821dd0916cc5508
+Commit-ID:  79dbbc60493f357912d5f1da5a23147ba0c01c7a
+Gitweb:     http://git.kernel.org/tip/79dbbc60493f357912d5f1da5a23147ba0c01c7a
 Author:     H.J. Lu <hjl.tools@gmail.com>
-AuthorDate: Mon, 16 Dec 2013 16:09:51 -0800
+AuthorDate: Mon, 16 Dec 2013 16:12:57 -0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 20 Dec 2013 16:04:35 -0800
+CommitDate: Fri, 20 Dec 2013 16:06:21 -0800
 
-x86, x32: Use __kernel_long_t/__kernel_ulong_t in x86-64 stat.h
+x86, x32: Use __kernel_long_t for __statfs_word
 
-Both x32 and x86-64 use the same stat system call interface.  But x32
-long is 32-bit.  This patch changes x86 uapi <asm/stat.h> to use
- __kernel_long_t/__kernel_ulong_t in x86-64 stat.
+x32 statfs system call is the same as x86-64 statfs system call, which
+uses 64-bit integer for __statfs_word.  This patch defines __statfs_word
+as __kernel_long_t instead of long.
 
 Signed-off-by: H.J. Lu <hjl.tools@gmail.com>
-Link: http://lkml.kernel.org/r/CAMe9rOquPtWEro0GQ=Z95pZJ=c7GGkSHynjN4FbiB4p445x-Ng@mail.gmail.com
+Link: http://lkml.kernel.org/r/CAMe9rOrcppHvC5g8U9n7D%2BpxVGdu1G598pge3Erfw7Pr-iEpAQ@mail.gmail.com
+Cc: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/uapi/asm/stat.h | 42 +++++++++++++++++++++-------------------
- 1 file changed, 22 insertions(+), 20 deletions(-)
+ include/uapi/asm-generic/statfs.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/uapi/asm/stat.h b/arch/x86/include/uapi/asm/stat.h
-index 7b3ddc3..bc03eb5 100644
---- a/arch/x86/include/uapi/asm/stat.h
-+++ b/arch/x86/include/uapi/asm/stat.h
-@@ -1,6 +1,8 @@
- #ifndef _ASM_X86_STAT_H
- #define _ASM_X86_STAT_H
- 
-+#include <asm/posix_types.h>
-+
- #define STAT_HAVE_NSEC 1
- 
- #ifdef __i386__
-@@ -78,26 +80,26 @@ struct stat64 {
- #else /* __i386__ */
- 
- struct stat {
--	unsigned long	st_dev;
--	unsigned long	st_ino;
--	unsigned long	st_nlink;
--
--	unsigned int	st_mode;
--	unsigned int	st_uid;
--	unsigned int	st_gid;
--	unsigned int	__pad0;
--	unsigned long	st_rdev;
--	long		st_size;
--	long		st_blksize;
--	long		st_blocks;	/* Number 512-byte blocks allocated. */
--
--	unsigned long	st_atime;
--	unsigned long	st_atime_nsec;
--	unsigned long	st_mtime;
--	unsigned long	st_mtime_nsec;
--	unsigned long	st_ctime;
--	unsigned long   st_ctime_nsec;
--	long		__unused[3];
-+	__kernel_ulong_t	st_dev;
-+	__kernel_ulong_t	st_ino;
-+	__kernel_ulong_t	st_nlink;
-+
-+	unsigned int		st_mode;
-+	unsigned int		st_uid;
-+	unsigned int		st_gid;
-+	unsigned int		__pad0;
-+	__kernel_ulong_t	st_rdev;
-+	__kernel_long_t		st_size;
-+	__kernel_long_t		st_blksize;
-+	__kernel_long_t		st_blocks;	/* Number 512-byte blocks allocated. */
-+
-+	__kernel_ulong_t	st_atime;
-+	__kernel_ulong_t	st_atime_nsec;
-+	__kernel_ulong_t	st_mtime;
-+	__kernel_ulong_t	st_mtime_nsec;
-+	__kernel_ulong_t	st_ctime;
-+	__kernel_ulong_t	st_ctime_nsec;
-+	__kernel_long_t		__unused[3];
- };
- 
- /* We don't need to memset the whole thing just to initialize the padding */
+diff --git a/include/uapi/asm-generic/statfs.h b/include/uapi/asm-generic/statfs.h
+index 0999647..cb89cc7 100644
+--- a/include/uapi/asm-generic/statfs.h
++++ b/include/uapi/asm-generic/statfs.h
+@@ -13,7 +13,7 @@
+  */
+ #ifndef __statfs_word
+ #if __BITS_PER_LONG == 64
+-#define __statfs_word long
++#define __statfs_word __kernel_long_t
+ #else
+ #define __statfs_word __u32
+ #endif
