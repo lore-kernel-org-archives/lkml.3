@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755867Ab3LUQaE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 11:30:04 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:51442 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754063Ab3LUQaC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 11:30:02 -0500
-Date: Sat, 21 Dec 2013 09:30:00 -0700
-From: Jens Axboe <axboe@kernel.dk>
-To: Matias Bjorling <m@bjorling.me>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] null_blk: documentation, defaults and mapping
-Message-ID: <20131221163000.GE13340@kernel.dk>
-References: <1387581061-25987-1-git-send-email-m@bjorling.me>
+	id S1755151Ab3LUQnC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 11:43:02 -0500
+Received: from mta-out.inet.fi ([195.156.147.13]:38544 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753519Ab3LUQnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Dec 2013 11:43:00 -0500
+X-Greylist: delayed 362 seconds by postgrey-1.27 at vger.kernel.org; Sat, 21 Dec 2013 11:42:59 EST
+Date: Sat, 21 Dec 2013 18:36:48 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Olof Johansson <olof@lixom.net>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, akpm@linux-foundation.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH] mm: fix build of split ptlock code
+Message-ID: <20131221163648.GA25306@node.dhcp.inet.fi>
+References: <1387578485-11829-1-git-send-email-olof@lixom.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1387581061-25987-1-git-send-email-m@bjorling.me>
+In-Reply-To: <1387578485-11829-1-git-send-email-olof@lixom.net>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 21 2013, Matias Bjorling wrote:
-> Hi,
+On Fri, Dec 20, 2013 at 02:28:05PM -0800, Olof Johansson wrote:
+> Commit 597d795a2a78 ('mm: do not allocate page->ptl dynamically, if
+> spinlock_t fits to long') restructures some allocators that are compiled
+> even if USE_SPLIT_PTLOCKS arn't used. It results in compilation failure:
 > 
-> These three patches cover:
+> mm/memory.c:4282:6: error: 'struct page' has no member named 'ptl'
+> mm/memory.c:4288:12: error: 'struct page' has no member named 'ptl'
 > 
-> * Incorporated the feedback from Randy Dunlap into documentation.
->   Can be merged with the previous documentation commit (6824518).
-> * Set use_per_node_hctx to false per default to save resources.
-> * Allow submit_queues and use_per_node_hctx to be used simultanesly.
->   If the submit_queues is a multiple of nr_online_nodes, its trivial. Simply map
->   them to the nodes. For example: 8 submit queues are mapped as node0[0,1],
->   node1[2,3], ...
->   If uneven, we are left with an uneven number of submit_queues that must be
->   mapped. These are mapped toward the first node and onward. E.g. 5
->   submit queues mapped onto 4 nodes are mapped as node0[0,1], node1[2], ...
+> Add in the missing ifdef.
+> 
+> Fixes: 597d795a2a78 ('mm: do not allocate page->ptl dynamically, if spinlock_t fits to long')
+> Signed-off-by: Olof Johansson <olof@lixom.net>
+> Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> Cc: Hugh Dickins <hughd@google.com>
 
-Thanks, applied.
+Sorry, for that.
+
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 
 -- 
-Jens Axboe
-
+ Kirill A. Shutemov
