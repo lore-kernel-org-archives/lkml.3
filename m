@@ -1,43 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629Ab3LUAjX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 19:39:23 -0500
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:34249 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797Ab3LUAjW (ORCPT
+	id S1753512Ab3LUAlp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 19:41:45 -0500
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:33599 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730Ab3LUAlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 19:39:22 -0500
+	Fri, 20 Dec 2013 19:41:44 -0500
 MIME-Version: 1.0
-Date: Sat, 21 Dec 2013 01:39:21 +0100
-Message-ID: <CAMesUR48C3zBo_UJByjC9GSqK6V=W_-WDQrsAoGye2yNADD3NQ@mail.gmail.com>
-Subject: perf and Kconfig
-From: Alexis Berlemont <alexis.berlemont@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Fri, 20 Dec 2013 16:41:43 -0800
+X-Google-Sender-Auth: rE21YtMAYCzyLVYLaLyvResYBIw
+Message-ID: <CA+55aFzYZEmNEHQVgWS6usVnDVi-8ar7ZzP+eUGrqoO2OP66kA@mail.gmail.com>
+Subject: Broken initrd compression settings in 3.13
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: P J P <ppandit@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Jan Beulich <JBeulich@suse.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+So commit 1bf49dd4be0b ("./Makefile: export initial ramdisk
+compression config option") seems to be totally broken.
 
-Here is a proposal of a small contribution which tries to fulfill the
-task "Use Kconfig to allow selecting features and build minimal
-version of perf,..." displayed on the todo page of the perf
-wiki (https://perf.wiki.kernel.org/index.php/Todo).
+And I'm not saying that because Jan fixed a make-3.80 incompatibility
+in commit 7ac181568342 ("fix build with make 3.80")
 
-I tried to continue the work started by David Ahern
-(https://github.com/dsahern/linux.git branch:perf-config). This
-version relies on the features detection tests available in
-linux/tools/perf/config/feature-checks so as to enable some
-configuration options (at least by default).
+I'm saying that because it sets and exports the INITRD_COMPRESS
+environment variable completely incorrectly, as far as I can tell.
 
-This little task is not complete; more Kconfig options should be added
-for each perf tool (top, record, report, ...).
+And it looks like nobody noticed, because apparently dracut didn't use
+to care about that INITRD_COMPRESS environment variable at all. But as
+of a F20 update yesterday, apparently dracut actually does care, and
+as a result nothing actually works.
 
-I just wanted to ask whether you consider this proposal as interesting
-enough for inclusion and if you are ok with the way it is implemented.
+That setting is f*cking moronic. It sets INITRD_COMPRESS to 'lz4' if
+RD_LZ4 is set. But RD_LZ4 is *always* set (unless you go into some
+expert settings), so basically what that commit does is to always set
+INITRD_COMPRESS to lz4.
 
-The code is available here: https://github.com/aberlemont/linux.git
-- branch: perf-config.
+Why is that wrong?
 
-Alexis.
+It's wrong because
+
+ (a) most sane people don't even have lz4 _installed_, so dracut won't
+actually succeed
+
+ (b) there's no way to select the compression level (unlike the
+INITRAMFS_COMPRESSION thing that actually has a choice)
+
+ (c) even if you *do* have lz4, it doesn't actually work, because
+while that causes the new F20 dracut to compress the initramfs with
+lz4, the end result is completely broken, because the F20 "lsinitrd"
+scripts don't understand the end result, so now the whole kernel
+install fails.
+
+Now, it could be argued that this is a F20 bug, and the fact that F20
+has a dracut that can generate a lz4 initrd, but has other tools that
+then cannot handle it is arguably indeed a buglet in F20. So the (c)
+part is arguably a F20 problem.
+
+HOWEVER.
+
+(a) and (b) are very much kernel bugs.
+
+I'm going to remove that export of INITRD_COMPRESS, since right now
+that value is broken and useless. No way does it make sense to
+mindlessly default to a compressor that most people don't have, and
+that doesn't work with most tools.
+
+             Linus
