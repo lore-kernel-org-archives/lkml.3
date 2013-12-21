@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab3LUBpa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 20:45:30 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:59130 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753217Ab3LUBpZ (ORCPT
+	id S1754573Ab3LUBpf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 20:45:35 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:52715 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754131Ab3LUBpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 20:45:25 -0500
+	Fri, 20 Dec 2013 20:45:32 -0500
 From: Andy Lutomirski <luto@amacapital.net>
 To: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org
 Cc: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
         linux-kernel@vger.kernel.org,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Rui Wang <ruiv.wang@gmail.com>, Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v6 1/4] Move Intel SNB device ids from sb_edac to pci_ids.h
-Date: Fri, 20 Dec 2013 17:45:10 -0800
-Message-Id: <f8fd16815cdd5d7ba24c424328c817ca9dd7bd47.1387588711.git.luto@amacapital.net>
+Subject: [PATCH v6 4/4] i2c, i2c_imc: Add DIMM bus code
+Date: Fri, 20 Dec 2013 17:45:13 -0800
+Message-Id: <15eccfa508fd0f55230c4274e3e968f91a123b73.1387588711.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <cover.1387588711.git.luto@amacapital.net>
 References: <cover.1387588711.git.luto@amacapital.net>
@@ -25,85 +25,208 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The i2c_imc driver will use two of them, and moving only part of
-the list seems messier.
+Add i2c_scan_dimm_bus to declare that a particular i2c_adapter
+contains DIMMs.  This will probe (and autoload modules!) for useful
+SMBUS devices that live on DIMMs.  i2c_imc calls it.
 
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Rui Wang <ruiv.wang@gmail.com>
+As more SMBUS-addressable DIMM components become supported, this
+code can be extended to probe for them.
+
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- drivers/edac/sb_edac.c  | 30 ------------------------------
- include/linux/pci_ids.h | 15 +++++++++++++++
- 2 files changed, 15 insertions(+), 30 deletions(-)
+ drivers/i2c/busses/Kconfig    |  4 ++
+ drivers/i2c/busses/Makefile   |  4 ++
+ drivers/i2c/busses/dimm-bus.c | 97 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/i2c/busses/i2c-imc.c  |  3 ++
+ include/linux/i2c/dimm-bus.h  | 24 +++++++++++
+ 5 files changed, 132 insertions(+)
+ create mode 100644 drivers/i2c/busses/dimm-bus.c
+ create mode 100644 include/linux/i2c/dimm-bus.h
 
-diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
-index d7f1b57..06426f6 100644
---- a/drivers/edac/sb_edac.c
-+++ b/drivers/edac/sb_edac.c
-@@ -52,36 +52,6 @@ static int probed;
- #define GET_BITFIELD(v, lo, hi)	\
- 	(((v) & GENMASK_ULL(hi, lo)) >> (lo))
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index 0fe76cc..8b46ad8 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -135,6 +135,10 @@ config I2C_ISMT
+ 	  This driver can also be built as a module.  If so, the module will be
+ 	  called i2c-ismt.
  
--/*
-- * sbridge Memory Controller Registers
-- */
--
--/*
-- * FIXME: For now, let's order by device function, as it makes
-- * easier for driver's development process. This table should be
-- * moved to pci_id.h when submitted upstream
-- */
--#define PCI_DEVICE_ID_INTEL_SBRIDGE_SAD0	0x3cf4	/* 12.6 */
--#define PCI_DEVICE_ID_INTEL_SBRIDGE_SAD1	0x3cf6	/* 12.7 */
--#define PCI_DEVICE_ID_INTEL_SBRIDGE_BR		0x3cf5	/* 13.6 */
--#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_HA0	0x3ca0	/* 14.0 */
--#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TA	0x3ca8	/* 15.0 */
--#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_RAS	0x3c71	/* 15.1 */
--#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD0	0x3caa	/* 15.2 */
--#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD1	0x3cab	/* 15.3 */
--#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD2	0x3cac	/* 15.4 */
--#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD3	0x3cad	/* 15.5 */
--#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_DDRIO	0x3cb8	/* 17.0 */
--
--	/*
--	 * Currently, unused, but will be needed in the future
--	 * implementations, as they hold the error counters
--	 */
--#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_ERR0	0x3c72	/* 16.2 */
--#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_ERR1	0x3c73	/* 16.3 */
--#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_ERR2	0x3c76	/* 16.6 */
--#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_ERR3	0x3c77	/* 16.7 */
--
- /* Devices 12 Function 6, Offsets 0x80 to 0xcc */
- static const u32 sbridge_dram_rule[] = {
- 	0x80, 0x88, 0x90, 0x98, 0xa0,
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index 97fbecd..6dc4b18 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -2812,7 +2812,22 @@
- #define PCI_DEVICE_ID_INTEL_UNC_R2PCIE	0x3c43
- #define PCI_DEVICE_ID_INTEL_UNC_R3QPI0	0x3c44
- #define PCI_DEVICE_ID_INTEL_UNC_R3QPI1	0x3c45
-+#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_RAS	0x3c71	/* 15.1 */
-+#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_ERR0	0x3c72	/* 16.2 */
-+#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_ERR1	0x3c73	/* 16.3 */
-+#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_ERR2	0x3c76	/* 16.6 */
-+#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_ERR3	0x3c77	/* 16.7 */
-+#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_HA0	0x3ca0	/* 14.0 */
-+#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TA	0x3ca8	/* 15.0 */
-+#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD0	0x3caa	/* 15.2 */
-+#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD1	0x3cab	/* 15.3 */
-+#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD2	0x3cac	/* 15.4 */
-+#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD3	0x3cad	/* 15.5 */
-+#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_DDRIO	0x3cb8	/* 17.0 */
- #define PCI_DEVICE_ID_INTEL_JAKETOWN_UBOX	0x3ce0
-+#define PCI_DEVICE_ID_INTEL_SBRIDGE_SAD0	0x3cf4	/* 12.6 */
-+#define PCI_DEVICE_ID_INTEL_SBRIDGE_BR		0x3cf5	/* 13.6 */
-+#define PCI_DEVICE_ID_INTEL_SBRIDGE_SAD1	0x3cf6	/* 12.7 */
- #define PCI_DEVICE_ID_INTEL_IOAT_SNB	0x402f
- #define PCI_DEVICE_ID_INTEL_5100_16	0x65f0
- #define PCI_DEVICE_ID_INTEL_5100_19	0x65f3
++config I2C_DIMM_BUS
++       tristate
++       default n
++
+ config I2C_IMC
+ 	tristate "Intel iMC (LGA 2011) SMBus Controller"
+ 	depends on PCI && X86
+diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
+index ea2a6a5..91827cb 100644
+--- a/drivers/i2c/busses/Makefile
++++ b/drivers/i2c/busses/Makefile
+@@ -25,6 +25,10 @@ obj-$(CONFIG_I2C_SIS96X)	+= i2c-sis96x.o
+ obj-$(CONFIG_I2C_VIA)		+= i2c-via.o
+ obj-$(CONFIG_I2C_VIAPRO)	+= i2c-viapro.o
+ 
++# DIMM busses
++obj-$(CONFIG_I2C_DIMM_BUS)	+= dimm-bus.o
++obj-$(CONFIG_I2C_IMC)		+= i2c-imc.o
++
+ # Mac SMBus host controller drivers
+ obj-$(CONFIG_I2C_HYDRA)		+= i2c-hydra.o
+ obj-$(CONFIG_I2C_POWERMAC)	+= i2c-powermac.o
+diff --git a/drivers/i2c/busses/dimm-bus.c b/drivers/i2c/busses/dimm-bus.c
+new file mode 100644
+index 0000000..0968428
+--- /dev/null
++++ b/drivers/i2c/busses/dimm-bus.c
+@@ -0,0 +1,97 @@
++/*
++ * Copyright (c) 2013 Andrew Lutomirski <luto@amacapital.net>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2
++ * as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
++
++#include <linux/i2c.h>
++#include <linux/bug.h>
++#include <linux/module.h>
++#include <linux/i2c/dimm-bus.h>
++
++static bool probe_addr(struct i2c_adapter *adapter, int addr)
++{
++	/*
++	 * So far, all known devices that live on DIMMs can be safely
++	 * and reliably detected by trying to read a byte at address
++	 * zero.  (The exception is the SPD write protection control,
++	 * which can't be probed and requires special hardware and/or
++	 * quick writes to access, and has no driver.)
++	 */
++	union i2c_smbus_data dummy;
++	return i2c_smbus_xfer(adapter, addr, 0, I2C_SMBUS_READ, 0,
++			      I2C_SMBUS_BYTE_DATA, &dummy) >= 0;
++}
++
++/**
++ * i2c_scan_dimm_bus() - Scans an SMBUS segment known to contain DIMMs
++ * @adapter: The SMBUS adapter to scan
++ *
++ * This function tells the DIMM-bus code that the adapter is known to
++ * contain DIMMs.  i2c_scan_dimm_bus will probe for devices known to
++ * live on DIMMs.
++ *
++ * Do NOT call this function on general-purpose system SMBUS segments
++ * unless you know that the only things on the bus are DIMMs.
++ * Otherwise is it very likely to mis-identify other things on the
++ * bus.
++ *
++ * Callers are advised not to set adapter->class = I2C_CLASS_SPD.
++ */
++void i2c_scan_dimm_bus(struct i2c_adapter *adapter)
++{
++	struct i2c_board_info info = {};
++	int slot;
++
++	/*
++	 * We probe with "read byte data".  If any DIMM SMBUS driver can't
++	 * support that access type, this function should be updated.
++	 */
++	if (WARN_ON(!i2c_check_functionality(adapter,
++					  I2C_FUNC_SMBUS_READ_BYTE_DATA)))
++		return;
++
++	/*
++	 * Addresses on DIMMs use the three low bits to identify the slot
++	 * and the four high bits to identify the device type.  Known
++	 * devices are:
++	 *
++	 *  - 0x50 - 0x57: SPD (Serial Presence Detect) EEPROM
++	 *  - 0x30 - 0x37: SPD WP control -- not worth trying to probe
++	 *  - 0x18 - 0x1f: TSOD (Temperature Sensor on DIMM)
++	 *
++	 * There may be more some day.
++	 */
++	for (slot = 0; slot < 8; slot++) {
++		/* If there's no SPD, then assume there's no DIMM here. */
++		if (!probe_addr(adapter, 0x50 | slot))
++			continue;
++
++		strcpy(info.type, "spd");
++		info.addr = 0x50 | slot;
++		i2c_new_device(adapter, &info);
++
++		if (probe_addr(adapter, 0x18 | slot)) {
++			/* This is a temperature sensor. */
++			strcpy(info.type, "jc42");
++			info.addr = 0x18 | slot;
++			i2c_new_device(adapter, &info);
++		}
++	}
++}
++EXPORT_SYMBOL(i2c_scan_dimm_bus);
++
++MODULE_AUTHOR("Andrew Lutomirski <luto@amacapital.net>");
++MODULE_DESCRIPTION("i2c DIMM bus support");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/i2c/busses/i2c-imc.c b/drivers/i2c/busses/i2c-imc.c
+index c846077..437d8d8 100644
+--- a/drivers/i2c/busses/i2c-imc.c
++++ b/drivers/i2c/busses/i2c-imc.c
+@@ -15,6 +15,7 @@
+  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+  */
+ 
++#include <linux/i2c/dimm-bus.h>
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/delay.h>
+@@ -421,6 +422,8 @@ static int imc_init_channel(struct imc_priv *priv, int i, int socket)
+ 		return err;
+ 	}
+ 
++	i2c_scan_dimm_bus(&ch->adapter);
++
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/i2c/dimm-bus.h b/include/linux/i2c/dimm-bus.h
+new file mode 100644
+index 0000000..3d44df4
+--- /dev/null
++++ b/include/linux/i2c/dimm-bus.h
+@@ -0,0 +1,24 @@
++/*
++ * Copyright (c) 2013 Andrew Lutomirski <luto@amacapital.net>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2
++ * as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
++
++#ifndef _I2C_DIMM_BUS
++#define _I2C_DIMM_BUS
++
++struct i2c_adapter;
++void i2c_scan_dimm_bus(struct i2c_adapter *adapter);
++
++#endif /* _I2C_DIMM_BUS */
 -- 
 1.8.3.1
 
