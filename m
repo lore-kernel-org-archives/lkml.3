@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756376Ab3LUPy4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 10:54:56 -0500
-Received: from relay.parallels.com ([195.214.232.42]:38891 "EHLO
+	id S1756117Ab3LUPyT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 10:54:19 -0500
+Received: from relay.parallels.com ([195.214.232.42]:38793 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756179Ab3LUPyY (ORCPT
+	with ESMTP id S1755929Ab3LUPyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 10:54:24 -0500
+	Sat, 21 Dec 2013 10:54:15 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <mhocko@suse.cz>
 CC: <glommer@gmail.com>, <akpm@linux-foundation.org>,
@@ -14,11 +14,10 @@ CC: <glommer@gmail.com>, <akpm@linux-foundation.org>,
         <cgroups@vger.kernel.org>, <devel@openvz.org>,
         Johannes Weiner <hannes@cmpxchg.org>,
         Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>
-Subject: [PATCH 04/11] memcg, slab: fix barrier usage when accessing memcg_caches
-Date: Sat, 21 Dec 2013 19:53:55 +0400
-Message-ID: <519657f631ee090942106f77f203c2b9e3453345.1387640542.git.vdavydov@parallels.com>
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH 07/11] memcg: get rid of kmem_cache_dup
+Date: Sat, 21 Dec 2013 19:53:58 +0400
+Message-ID: <e9251d4e7a9feaa495ddcabfa89d0f74bd10e191.1387640542.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1387640541.git.vdavydov@parallels.com>
 References: <cover.1387640541.git.vdavydov@parallels.com>
@@ -29,22 +28,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Each root kmem_cache has pointers to per-memcg caches stored in its
-memcg_params::memcg_caches array. Whenever we want to allocate a slab
-for a memcg, we access this array to get per-memcg cache to allocate
-from (see memcg_kmem_get_cache()). The access must be lock-free for
-performance reasons, so we should use barriers to assert the kmem_cache
-is up-to-date.
+kmem_cache_dup() is only called from memcg_create_kmem_cache(). The
+latter, in fact, does nothing besides this, so let's fold
+kmem_cache_dup() into memcg_create_kmem_cache().
 
-First, we should place a write barrier immediately before setting the
-pointer to it in the memcg_caches array in order to make sure nobody
-will see a partially initialized object. Second, we should issue a read
-barrier before dereferencing the pointer to conform to the write
-barrier.
-
-However, currently the barrier usage looks rather strange. We have a
-write barrier *after* setting the pointer and a read barrier *before*
-reading the pointer, which is incorrect. This patch fixes this.
+This patch also makes the memcg_cache_mutex private to
+memcg_create_kmem_cache(), because it is not used anywhere else.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 Cc: Michal Hocko <mhocko@suse.cz>
@@ -52,90 +41,77 @@ Cc: Glauber Costa <glommer@gmail.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Balbir Singh <bsingharora@gmail.com>
 Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- mm/memcontrol.c |   24 ++++++++++--------------
- mm/slab.h       |   12 +++++++++++-
- 2 files changed, 21 insertions(+), 15 deletions(-)
+ mm/memcontrol.c |   39 ++++++++-------------------------------
+ 1 file changed, 8 insertions(+), 31 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index f8eb994..999e7d4 100644
+index 56fc410..ce25f77 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -3238,12 +3238,14 @@ void memcg_register_cache(struct kmem_cache *s)
- 	list_add(&s->memcg_params->list, &memcg->memcg_slab_caches);
- 	mutex_unlock(&memcg->slab_caches_mutex);
- 
--	root->memcg_params->memcg_caches[id] = s;
- 	/*
--	 * the readers won't lock, make sure everybody sees the updated value,
--	 * so they won't put stuff in the queue again for no reason
-+	 * Since readers won't lock (see cache_from_memcg_idx()), we need a
-+	 * barrier here to ensure nobody will see the kmem_cache partially
-+	 * initialized.
- 	 */
--	wmb();
-+	smp_wmb();
-+
-+	root->memcg_params->memcg_caches[id] = s;
+@@ -3391,27 +3391,16 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
+ 	schedule_work(&cachep->memcg_params->destroy);
  }
  
- void memcg_unregister_cache(struct kmem_cache *s)
-@@ -3569,7 +3571,7 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
- 					  gfp_t gfp)
- {
- 	struct mem_cgroup *memcg;
--	int idx;
-+	struct kmem_cache *memcg_cachep;
- 
- 	VM_BUG_ON(!cachep->memcg_params);
- 	VM_BUG_ON(!cachep->memcg_params->is_root_cache);
-@@ -3583,15 +3585,9 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
- 	if (!memcg_can_account_kmem(memcg))
- 		goto out;
- 
--	idx = memcg_cache_id(memcg);
+-/*
+- * This lock protects updaters, not readers. We want readers to be as fast as
+- * they can, and they will either see NULL or a valid cache value. Our model
+- * allow them to see NULL, in which case the root memcg will be selected.
+- *
+- * We need this lock because multiple allocations to the same cache from a non
+- * will span more than one worker. Only one of them can create the cache.
+- */
+-static DEFINE_MUTEX(memcg_cache_mutex);
 -
--	/*
--	 * barrier to mare sure we're always seeing the up to date value.  The
--	 * code updating memcg_caches will issue a write barrier to match this.
--	 */
--	read_barrier_depends();
--	if (likely(cache_from_memcg_idx(cachep, idx))) {
--		cachep = cache_from_memcg_idx(cachep, idx);
-+	memcg_cachep = cache_from_memcg_idx(cachep, memcg_cache_id(memcg));
-+	if (likely(memcg_cachep)) {
-+		cachep = memcg_cachep;
- 		goto out;
- 	}
- 
-diff --git a/mm/slab.h b/mm/slab.h
-index 0859c42..72d1f9d 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -163,9 +163,19 @@ static inline const char *cache_name(struct kmem_cache *s)
- static inline struct kmem_cache *
- cache_from_memcg_idx(struct kmem_cache *s, int idx)
+-/*
+- * Called with memcg_cache_mutex held
+- */
+-static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
+-					 struct kmem_cache *s)
++static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
++						  struct kmem_cache *s)
  {
-+	struct kmem_cache *cachep;
-+
- 	if (!s->memcg_params)
- 		return NULL;
--	return s->memcg_params->memcg_caches[idx];
-+	cachep = s->memcg_params->memcg_caches[idx];
-+
-+	/*
-+	 * Make sure we will access the up-to-date value. The code updating
-+	 * memcg_caches issues a write barrier to match this (see
-+	 * memcg_register_cache()).
-+	 */
-+	smp_read_barrier_depends();
-+	return cachep;
+ 	struct kmem_cache *new;
+ 	static char *tmp_name = NULL;
++	static DEFINE_MUTEX(mutex);	/* protects tmp_name */
+ 
+-	lockdep_assert_held(&memcg_cache_mutex);
++	BUG_ON(!memcg_can_account_kmem(memcg));
+ 
++	mutex_lock(&mutex);
+ 	/*
+ 	 * kmem_cache_create_memcg duplicates the given name and
+ 	 * cgroup_name for this name requires RCU context.
+@@ -3434,25 +3423,13 @@ static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
+ 
+ 	if (new)
+ 		new->allocflags |= __GFP_KMEMCG;
++	else
++		new = s;
+ 
++	mutex_unlock(&mutex);
+ 	return new;
  }
  
- static inline struct kmem_cache *memcg_root_cache(struct kmem_cache *s)
+-static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
+-						  struct kmem_cache *cachep)
+-{
+-	struct kmem_cache *new_cachep;
+-
+-	BUG_ON(!memcg_can_account_kmem(memcg));
+-
+-	mutex_lock(&memcg_cache_mutex);
+-	new_cachep = kmem_cache_dup(memcg, cachep);
+-	if (new_cachep == NULL)
+-		new_cachep = cachep;
+-	mutex_unlock(&memcg_cache_mutex);
+-	return new_cachep;
+-}
+-
+ void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
+ {
+ 	struct kmem_cache *c;
 -- 
 1.7.10.4
 
