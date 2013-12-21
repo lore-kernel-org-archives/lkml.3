@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754433Ab3LUAJx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 19:09:53 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49405 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519Ab3LUAJv (ORCPT
+	id S1753443Ab3LUA1q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 19:27:46 -0500
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:57142 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657Ab3LUA1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 19:09:51 -0500
-Date: Fri, 20 Dec 2013 16:09:36 -0800
-From: "tip-bot for H.J. Lu" <tipbot@zytor.com>
-Message-ID: <tip-79dbbc60493f357912d5f1da5a23147ba0c01c7a@git.kernel.org>
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
-        hjl.tools@gmail.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, tglx@linutronix.de, hpa@linux.intel.com,
-        hjl.tools@gmail.com
-In-Reply-To: <CAMe9rOrcppHvC5g8U9n7D+pxVGdu1G598pge3Erfw7Pr-iEpAQ@mail.gmail.com>
-References: <CAMe9rOrcppHvC5g8U9n7D+pxVGdu1G598pge3Erfw7Pr-iEpAQ@mail.gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/x32] x86, x32: Use __kernel_long_t for __statfs_word
-Git-Commit-ID: 79dbbc60493f357912d5f1da5a23147ba0c01c7a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 20 Dec 2013 19:27:44 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1385429290-25397-11-git-send-email-yinghai@kernel.org>
+References: <1385429290-25397-1-git-send-email-yinghai@kernel.org> <1385429290-25397-11-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 20 Dec 2013 17:27:23 -0700
+Message-ID: <CAErSpo7THxjUQ=EWxicPYCwQCHReJ=sxPyPPRFv4QQ=ex6wmOA@mail.gmail.com>
+Subject: Re: [PATCH v2 10/10] intel-gtt: Read 64bit for gmar_bus_addr
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 20 Dec 2013 16:09:42 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  79dbbc60493f357912d5f1da5a23147ba0c01c7a
-Gitweb:     http://git.kernel.org/tip/79dbbc60493f357912d5f1da5a23147ba0c01c7a
-Author:     H.J. Lu <hjl.tools@gmail.com>
-AuthorDate: Mon, 16 Dec 2013 16:12:57 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 20 Dec 2013 16:06:21 -0800
+On Mon, Nov 25, 2013 at 6:28 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> That bar could be 64bit pref mem and above 4G.
+>
+> -v2: refresh to 3.13-rc1
+>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: David Airlie <airlied@linux.ie>
+> Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> ---
+>  drivers/char/agp/intel-gtt.c | 14 ++++++++++----
+>  1 file changed, 10 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/char/agp/intel-gtt.c b/drivers/char/agp/intel-gtt.c
+> index b8e2014..b929e9d 100644
+> --- a/drivers/char/agp/intel-gtt.c
+> +++ b/drivers/char/agp/intel-gtt.c
+> @@ -609,8 +609,10 @@ static bool intel_gtt_can_wc(void)
+>  static int intel_gtt_init(void)
+>  {
+>         u32 gma_addr;
+> +       u32 addr_hi = 0;
+>         u32 gtt_map_size;
+>         int ret;
+> +       int pos;
+>
+>         ret = intel_private.driver->setup();
+>         if (ret != 0)
+> @@ -660,13 +662,17 @@ static int intel_gtt_init(void)
+>         }
+>
+>         if (INTEL_GTT_GEN <= 2)
+> -               pci_read_config_dword(intel_private.pcidev, I810_GMADDR,
+> -                                     &gma_addr);
+> +               pos = I810_GMADDR;
+>         else
+> -               pci_read_config_dword(intel_private.pcidev, I915_GMADDR,
+> -                                     &gma_addr);
+> +               pos = I915_GMADDR;
+> +
+> +       pci_read_config_dword(intel_private.pcidev, pos, &gma_addr);
+> +
+> +       if (gma_addr & PCI_BASE_ADDRESS_MEM_TYPE_64)
+> +               pci_read_config_dword(intel_private.pcidev, pos + 4, &addr_hi);
 
-x86, x32: Use __kernel_long_t for __statfs_word
+Why are we reading these BARs directly anyway?  These look like
+standard PCI BARs (I810_GMADDR == 0x10 and I915_GMADDR == 0x18), so
+the PCI core should already be reading them correctly, shouldn't it?
+Can't we just use pcibios_resource_to_bus(pci_resource_start())?
 
-x32 statfs system call is the same as x86-64 statfs system call, which
-uses 64-bit integer for __statfs_word.  This patch defines __statfs_word
-as __kernel_long_t instead of long.
+It looks like i810_setup(), i830_setup(), and i9xx_setup() have the
+same problem and should also be using pci_resource_start() or
+something similar.
 
-Signed-off-by: H.J. Lu <hjl.tools@gmail.com>
-Link: http://lkml.kernel.org/r/CAMe9rOrcppHvC5g8U9n7D%2BpxVGdu1G598pge3Erfw7Pr-iEpAQ@mail.gmail.com
-Cc: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- include/uapi/asm-generic/statfs.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+And I'm confused because the i915_gmch_probe() path fills in
+gtt->mappable_base with the bus address, but the gen6_gmch_probe()
+path uses the resource, i.e., the CPU, address.  That looks broken to
+me.
 
-diff --git a/include/uapi/asm-generic/statfs.h b/include/uapi/asm-generic/statfs.h
-index 0999647..cb89cc7 100644
---- a/include/uapi/asm-generic/statfs.h
-+++ b/include/uapi/asm-generic/statfs.h
-@@ -13,7 +13,7 @@
-  */
- #ifndef __statfs_word
- #if __BITS_PER_LONG == 64
--#define __statfs_word long
-+#define __statfs_word __kernel_long_t
- #else
- #define __statfs_word __u32
- #endif
+agp_serverworks_probe() looks like another place that should not be
+reading the BARs directly.
+
+>
+>         intel_private.gma_bus_addr = (gma_addr & PCI_BASE_ADDRESS_MEM_MASK);
+> +       intel_private.gma_bus_addr |= (u64)addr_hi << 32;
+>
+>         return 0;
+>  }
+> --
+> 1.8.1.4
+>
