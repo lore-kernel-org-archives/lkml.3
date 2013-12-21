@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754368Ab3LUCJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 21:09:26 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:57045 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885Ab3LUCJY convert rfc822-to-8bit (ORCPT
+	id S1754190Ab3LUCON (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 21:14:13 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:35132 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752320Ab3LUCOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 21:09:24 -0500
-References: <20131219232739.GA10192@birch.djwong.org> <20131220233534.GC10192@birch.djwong.org>
-Mime-Version: 1.0 (1.0)
-In-Reply-To: <20131220233534.GC10192@birch.djwong.org>
-Content-Type: text/plain;
-	charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Message-Id: <99199002-0C82-42B6-B237-163561AD821B@dilger.ca>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
-        Richard Hansen <rhansen@rhansen.org>
-X-Mailer: iPhone Mail (11B554a)
-From: Andreas Dilger <adilger@dilger.ca>
-Subject: Re: [PATCH v2] fuse: Fix IOC_[GS]ET{FLAGS,VERSION} argument size brokenness.
-Date: Fri, 20 Dec 2013 19:09:23 -0700
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
+	Fri, 20 Dec 2013 21:14:08 -0500
+X-IronPort-AV: E=Sophos;i="4.95,525,1384329600"; 
+   d="scan'208";a="4284171"
+From: Sherman Yin <syin@broadcom.com>
+To: Mark Brown <broonie@kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        =?UTF-8?q?Heiko=20St=C3=BCbner?= <heiko@sntech.de>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Matt Porter <matt.porter@linaro.org>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        <bcm-kernel-feedback-list@broadcom.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Sherman Yin <syin@broadcom.com>
+Subject: [PATCH v4 4/4] pinctrl: Enable pinctrl for Broadcom Capri SoCs
+Date: Fri, 20 Dec 2013 18:13:36 -0800
+Message-ID: <1387592016-13740-5-git-send-email-syin@broadcom.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1387592016-13740-1-git-send-email-syin@broadcom.com>
+References: <1386787041-6035-1-git-send-email-syin@broadcom.com>
+ <1387592016-13740-1-git-send-email-syin@broadcom.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To be honest, FS_IOC_SETVERSION isn't used by many/any users, so it might be better to avoid doing anything with that for now.
+Enable pinctrl for Broadcom Capri (BCM281xx) SoCs.
 
-In the past we even talked about adding a deprecation warning for that ioctl since it adds complexity for little value. 
+Signed-off-by: Sherman Yin <syin@broadcom.com>
+Reviewed-by: Christian Daudt <bcm@fixthebug.org>
+Reviewed-by: Matt Porter <matt.porter@linaro.org>
+---
+v4: no change
+v3: No change.
+v2: Use hyphens instead of underscore in DT property names.
+---
+ arch/arm/boot/dts/bcm11351.dtsi |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-Cheers, Andreas
+diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
+index b0c0610..dd8e878 100644
+--- a/arch/arm/boot/dts/bcm11351.dtsi
++++ b/arch/arm/boot/dts/bcm11351.dtsi
+@@ -142,4 +142,8 @@
+ 		status = "disabled";
+ 	};
+ 
++	pinctrl@35004800 {
++		compatible = "brcm,capri-pinctrl";
++		reg = <0x35004800 0x430>;
++	};
+ };
+-- 
+1.7.9.5
 
-> On Dec 20, 2013, at 16:35, "Darrick J. Wong" <darrick.wong@oracle.com> wrote:
-> 
-> The IOC_[GS]ETFLAGS and IOC_[GS]ETVERSION ioctls, despite being
-> defined to take a "long" parameter, actually take "int" parameters.
-> FUSE unfortunately assumed that the ioctl definitions never lie, and
-> transfers a long's worth of data in and out of userspace, which causes
-> stack smashing in chattr, and other bugs elsewhere.
-> 
-> So, special-case this in FUSE so that we don't crash userland.
-> 
-> v2: Do the same for the IOC_[GS]ETVERSION ioctls, as Richard Hansen
->    points out.
-> 
-> Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-> ---
-> fs/fuse/file.c |   16 ++++++++++++++++
-> 1 file changed, 16 insertions(+)
-> 
-> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-> index 7e70506..f8766ab 100644
-> --- a/fs/fuse/file.c
-> +++ b/fs/fuse/file.c
-> @@ -2385,6 +2385,22 @@ long fuse_do_ioctl(struct file *file, unsigned int cmd, unsigned long arg,
->        iov->iov_base = (void __user *)arg;
->        iov->iov_len = _IOC_SIZE(cmd);
-> 
-> +        /*
-> +         * The IOC_[GS]ETFLAGS and IOC_[GS]ETVERSION ioctls take int
-> +         * parameters even though the ioctl definition specifies long.
-> +         * Userland has been expecting int for ages (and chattr
-> +         * segfaults on FUSE filesystems), so special case that here.
-> +         * The IOC32 variants were declared with int, so they don't
-> +         * need this correction.
-> +         */
-> +        switch (cmd) {
-> +        case FS_IOC_GETFLAGS:
-> +        case FS_IOC_SETFLAGS:
-> +        case FS_IOC_GETVERSION:
-> +        case FS_IOC_SETVERSION:
-> +            iov->iov_len = sizeof(int);
-> +        }
-> +
->        if (_IOC_DIR(cmd) & _IOC_WRITE) {
->            in_iov = iov;
->            in_iovs = 1;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
