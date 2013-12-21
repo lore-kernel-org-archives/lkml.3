@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab3LUNzw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 08:55:52 -0500
-Received: from ozlabs.org ([203.10.76.45]:34148 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753217Ab3LUNzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 08:55:50 -0500
-Date: Sun, 22 Dec 2013 00:43:55 +1100
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH v3 02/14] mm, hugetlb: region manipulation functions take
- resv_map rather list_head
-Message-ID: <20131221134355.GA12407@voom.fritz.box>
-References: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1387349640-8071-3-git-send-email-iamjoonsoo.kim@lge.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DocE+STaALJfprDB"
-Content-Disposition: inline
-In-Reply-To: <1387349640-8071-3-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754548Ab3LUN5V (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 08:57:21 -0500
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:37635 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754142Ab3LUN5T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Dec 2013 08:57:19 -0500
+Subject: Re: [PATCH -next] misc: genwqe: remove unused including
+ <linux/version.h>
+From: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Reply-To: haver@linux.vnet.ibm.com
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: gregkh@linuxfoundation.org, yongjun_wei@trendmicro.com.cn,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CAPgLHd-SWJT8hXN0TPO5E-c2pGnJOOfUP-8NEOMAZBC-nJAQKw@mail.gmail.com>
+References: <CAPgLHd-SWJT8hXN0TPO5E-c2pGnJOOfUP-8NEOMAZBC-nJAQKw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Sat, 21 Dec 2013 14:57:06 +0100
+Message-ID: <1387634226.7575.3.camel@oc7383187364.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13122113-0542-0000-0000-0000077A255E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Wei,
 
---DocE+STaALJfprDB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Am Samstag, den 21.12.2013, 17:23 +0800 schrieb Wei Yongjun:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> Remove including <linux/version.h> that don't need it.
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+>  drivers/misc/genwqe/card_sysfs.c | 1 -
+>  drivers/misc/genwqe/card_base.h  | 1 -
+>  2 files changed, 2 deletions(-)
+> 
+> diff --git a/drivers/misc/genwqe/card_sysfs.c b/drivers/misc/genwqe/card_sysfs.c
+> index a72a992..acd97f3 100644
+> --- a/drivers/misc/genwqe/card_sysfs.c
+> +++ b/drivers/misc/genwqe/card_sysfs.c
+> @@ -24,7 +24,6 @@
+>   * debugging, please also see the debugfs interfaces of this driver.
+>   */
+> 
+> -#include <linux/version.h>
+>  #include <linux/kernel.h>
+>  #include <linux/types.h>
+>  #include <linux/module.h>
+> 
+> diff --git a/drivers/misc/genwqe/card_base.h b/drivers/misc/genwqe/card_base.h
+> index 41953e3..f034bd7 100644
+> --- a/drivers/misc/genwqe/card_base.h
+> +++ b/drivers/misc/genwqe/card_base.h
+> @@ -34,7 +34,6 @@
+>  #include <linux/semaphore.h>
+>  #include <linux/uaccess.h>
+>  #include <linux/io.h>
+> -#include <linux/version.h>
+>  #include <linux/debugfs.h>
+> 
+>  #include <linux/genwqe/genwqe_card.h>
+> 
+Thanks for removing the obsolete includes.
 
-On Wed, Dec 18, 2013 at 03:53:48PM +0900, Joonsoo Kim wrote:
-> To change a protection method for region tracking to find grained one,
-> we pass the resv_map, instead of list_head, to region manipulation
-> functions. This doesn't introduce any functional change, and it is just
-> for preparing a next step.
->=20
-> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Acked-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
 
-Reviewed-by: David Gibson <david@gibson.dropbear.id.au>
-
---=20
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
-
---DocE+STaALJfprDB
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJStZsbAAoJEGw4ysog2bOS9PcQAI9nfhpAOn9DmhrqDkuAstNt
-g7WyzXBgqrwePCSB/0llVIT8ZxI0cdfL3GX3ogkkwLVMcRiEX6MTR4yYoVjVX6EN
-ZNdAN78D+A77soDBFpDI4+1SKYAwG8S2E94L+eceq75nzGrZ9iykw+CqcLuSagOl
-WthYxjzoxPOdGF1rmMEsLZM32BFp/cHcEnNZAGBrylivb5yOm9RWvBhkBUUZO4dQ
-xQva/kHP4MzP9ktC7njHNO/TwiGmK9Wln4Kqcf+IyT6PH5G6IVCcaXMQFHvr6ZqW
-QJ6bqOBwT4V6FKE8TbDZ0NxwR0sNB26kR+nRkePyzsYNfKbuTV63P9noN3MzmypD
-ZMLo7773qUmUWw7sTux6fddr3zsZyzxUlnxKEI/PajBJ6pczAHQnBJcKDnTU2Ivd
-MEkBa8swsdggldrZP1VEfEGCIbJr8zvRjJCGtpGyvu1Ot/eDasyIPFSsVD9Np8PL
-PsYHS3SIBjH4ZlBZziEqcZPkG8xuu3hwCvuUlHltV3QGuzWANVwqC3wM3DpwixZp
-MVKeIz5HJJinYyKUx9SS0i4k8tHUEHgYkUSQqrf/bSlQYGn+O+ZnepbcJ3wazVee
-FhGKtm9rjus2/YEB3hRDuIKqpacpcmaKDH1lg1P8dTqZns76jCvs4d0ttAig3itp
-URAzCzZEBcXf9Vf0md/S
-=LC9f
------END PGP SIGNATURE-----
-
---DocE+STaALJfprDB--
