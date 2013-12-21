@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014Ab3LUUMN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 15:12:13 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:57155 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755723Ab3LUUML (ORCPT
+	id S1756053Ab3LUUYd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 15:24:33 -0500
+Received: from smtprelay-h31.telenor.se ([213.150.131.4]:47287 "EHLO
+	smtprelay-h31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755723Ab3LUUYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 15:12:11 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ravi Patel <rapatel@apm.com>
-Subject: Re: [PATCH V2 0/4] misc: xgene: Add support for APM X-Gene SoC Queue Manager/Traffic Manager
-Date: Sat, 21 Dec 2013 21:11:40 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: gregkh@linuxfoundation.org, davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com,
-        Keyur Chudgar <kchudgar@apm.com>
-References: <1387594651-25771-1-git-send-email-rapatel@apm.com>
-In-Reply-To: <1387594651-25771-1-git-send-email-rapatel@apm.com>
+	Sat, 21 Dec 2013 15:24:31 -0500
+X-SENDER-IP: [85.230.168.69]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Aq0hAOL3tVJV5qhFPGdsb2JhbAANS4tTsgOBKQMBAQEBOIJaAQEBAQIBeAYLCyEWDwkDAgECATEUBgEMCAEBh3gNsCKaQxePLIQ2AQOsGoE/
+X-IronPort-AV: E=Sophos;i="4.95,528,1384297200"; 
+   d="scan'208";a="438325724"
+Message-ID: <52B5F96D.9050400@euromail.se>
+Date: Sat, 21 Dec 2013 21:26:21 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, Edel Maks <edelmaks@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/3] HID: multitouch: add support of other generic collections
+ in hid-mt
+References: <1387470191-9725-1-git-send-email-benjamin.tissoires@redhat.com> <1387470191-9725-4-git-send-email-benjamin.tissoires@redhat.com>
+In-Reply-To: <1387470191-9725-4-git-send-email-benjamin.tissoires@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201312212111.40576.arnd@arndb.de>
-X-Provags-ID: V02:K0:+fiz274ZpcXDyh0+xYB+T0MNZrhkqr3+ES2ugT3ho3H
- 9LbYO+uBMGOMexGKPlghIGRLf44m8efVMin/rqOeFHpFtMKDYN
- odHAqIybbFpCZAD6kaDlbavXbXToJsTVIX1WeTiu1flk5UApzy
- SvANU07sgDHKgyKm9QDvIfJodiC1RqQ57zKeR+9/izl5SDFAKj
- 6YpW9Hn4olr0xqNiDEETNPj3HZiefnJ6XPl+Ai0kPRLyEpeyWv
- Fu6fQDw9RsyMHoYgtLdfJPB9R7IPss3zYQ10KJlGfNmDsi7EhV
- Iim+TOWS+zmzS+e0hsIhuR5Kemy089dcz+Sy6lws3iFJvzUlV7
- XqvAy2a48I3+vsRfvL1E=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 21 December 2013, Ravi Patel wrote:
-> This patch adds support for APM X-Gene SoC Queue Manager/Traffic Manager.
->  QMTM is required by APM X-Gene SoC Ethernet, PktDMA (XOR Engine) and
->  Security Engine subsystems. All subsystems communicate with QMTM using
->  messages which include information about the work to be performed and
->  the location of associated data buffers.  
+Hi Benjamin,
 
-Please describe here what the purpose of the qmtm is, as this is not
-entirely clear from the code.
+> The ANTEC Touch Pad is a device which can switch from a multitouch
+> touchpad to a mouse. It thus presents several generic collections which
+> are currently ignored by hid-multitouch. Enable them by using the generic
+> protocol. Adding also a suffix for them depending on their application.
 
-In particular, please describe how this differs from a dmaengine driver
-and why it is not possible to extend the dma slave API to describe qmtm
-as a dma engine.
+In what way does this and the preceeding patches differ from "else if (is_pen ||
+export_all_inputs)"? Adding a functional pattern which then is converted to a
+generic case, such that the usual branching is bound to occur anyways, seems
+unnecessary.
 
-	Arnd
+Thanks,
+Henrik
+
