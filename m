@@ -1,78 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab3LUOZw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 09:25:52 -0500
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:54086 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754262Ab3LUOZu (ORCPT
+	id S1754772Ab3LUOaJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 09:30:09 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:53065 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754020Ab3LUOaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 09:25:50 -0500
+	Sat, 21 Dec 2013 09:30:08 -0500
+Date: Sat, 21 Dec 2013 14:29:59 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org, alsa-devel@alsa-project.org
+Message-ID: <20131221142959.GH30815@sirena.org.uk>
+References: <1387468508-12286-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20131221074900.GA6849@S2101-09.ap.freescale.net>
-References: <1387546930-32513-1-git-send-email-festevam@gmail.com>
-	<20131221074900.GA6849@S2101-09.ap.freescale.net>
-Date: Sat, 21 Dec 2013 12:25:50 -0200
-Message-ID: <CAOMZO5Dg-NJ+rvFM=8Pb8ChcUMu803zqCX-1XMJJ6TBqarczfw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] regulator: anatop-regulator: Remove unneeded check
-From: Fabio Estevam <festevam@gmail.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Mark Brown <broonie@kernel.org>, Anson Huang <b20788@freescale.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387468508-12286-1-git-send-email-lee.jones@linaro.org>
+X-Cookie: You will outgrow your usefulness.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 217.42.81.147
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 00/10] ASoC: ARM: ux500: Better prepare for full Device
+ Tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 21, 2013 at 5:49 AM, Shawn Guo <shawn.guo@linaro.org> wrote:
-> On Fri, Dec 20, 2013 at 11:42:09AM -0200, Fabio Estevam wrote:
->> From: Fabio Estevam <fabio.estevam@freescale.com>
->>
->> At the 'anatop_probe_end' error path, the variable 'ret' is known to be
->> non-zero, so there is no need to check it.
->>
->> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
->> ---
->>  drivers/regulator/anatop-regulator.c | 3 +--
->>  1 file changed, 1 insertion(+), 2 deletions(-)
->>
->> diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
->> index c734d09..0a3597b 100644
->> --- a/drivers/regulator/anatop-regulator.c
->> +++ b/drivers/regulator/anatop-regulator.c
->> @@ -211,8 +211,7 @@ static int anatop_regulator_probe(struct platform_device *pdev)
->>       platform_set_drvdata(pdev, rdev);
->>
->>  anatop_probe_end:
->> -     if (ret)
->> -             kfree(sreg->name);
->> +     kfree(sreg->name);
->
-> NAK
->
-> With the change, a successful probe will end up with calling this
-> kfree() as well.
+On Thu, Dec 19, 2013 at 03:54:57PM +0000, Lee Jones wrote:
+> At this moment in time the Ux500 ASoC driver obtains its DMA information
+> via AUXDATA platform data passing. To make the driver more independent
+> we have to start extracting it from the Device Tree. This patch-set goes
+> some way to ensure the ux500 Audio driver is ready for the switch over.
 
-I see. Then we can do this instead, so that the successful probe and
-the error path are clearer:
-
---- a/drivers/regulator/anatop-regulator.c
-+++ b/drivers/regulator/anatop-regulator.c
-@@ -210,9 +210,10 @@ static int anatop_regulator_probe(struct platform_device *p
-
-        platform_set_drvdata(pdev, rdev);
-
-+       return 0;
-+
- anatop_probe_end:
--       if (ret)
--               kfree(sreg->name);
-+       kfree(sreg->name);
-
-        return ret;
- }
-
-
-Regards,
-
-Fabio Estevam
+This all looks good to me, I guess it's OK if I merge the ARM patch?
