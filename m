@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab3LUKXe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 05:23:34 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:39231 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752528Ab3LUKXd (ORCPT
+	id S1754262Ab3LUKY4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 05:24:56 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:51409 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528Ab3LUKYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 05:23:33 -0500
-From: Sachin Kamat <sachin.kamat@linaro.org>
+	Sat, 21 Dec 2013 05:24:54 -0500
+Date: Sat, 21 Dec 2013 15:52:38 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, sameo@linux.intel.com, sachin.kamat@linaro.org
-Subject: [PATCH 1/1] mfd: max14577: Remove redundant of_match_ptr helper
-Date: Sat, 21 Dec 2013 15:50:16 +0530
-Message-Id: <1387621216-9745-1-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+Cc: Lidza Louina <lidza.louina@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        josh@joshtriplett.org
+Subject: [PATCH] drivers: dgnc: Include appropriate header file in
+ dgnc_trace.c
+Message-ID: <20131221102238.GA3197@rashika>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'max14577_dt_match' is always compiled in. Hence the
-helper macro is not needed.
+Include appropriate header file dgnc/dgnc_trace.h in dgnc_trace.c
+because function dgnc_tracer_free() has its prototype declaration in the
+header file.
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+This eliminates the following warning in dgnc_trace.c:
+drivers/staging/dgnc/dgnc_trace.c:180:6: warning: no previous prototype for ‘dgnc_tracer_free’ [-Wmissing-prototypes]
+
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 ---
- drivers/mfd/max14577.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/dgnc/dgnc_trace.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
-index a5e1c370c609..ac514fb2b877 100644
---- a/drivers/mfd/max14577.c
-+++ b/drivers/mfd/max14577.c
-@@ -221,7 +221,7 @@ static struct i2c_driver max14577_i2c_driver = {
- 		.name = "max14577",
- 		.owner = THIS_MODULE,
- 		.pm = &max14577_pm,
--		.of_match_table = of_match_ptr(max14577_dt_match),
-+		.of_match_table = max14577_dt_match,
- 	},
- 	.probe = max14577_i2c_probe,
- 	.remove = max14577_i2c_remove,
+diff --git a/drivers/staging/dgnc/dgnc_trace.c b/drivers/staging/dgnc/dgnc_trace.c
+index a98b7d4..e2164e4 100644
+--- a/drivers/staging/dgnc/dgnc_trace.c
++++ b/drivers/staging/dgnc/dgnc_trace.c
+@@ -35,6 +35,7 @@
+ #include <linux/vmalloc.h>
+ 
+ #include "dgnc_driver.h"
++#include "dgnc_trace.h"
+ 
+ #define TRC_TO_CONSOLE 1
+ 
 -- 
 1.7.9.5
 
