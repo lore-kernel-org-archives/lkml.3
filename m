@@ -1,99 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab3LUBc7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 20:32:59 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:48976 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751932Ab3LUBc5 (ORCPT
+	id S1753443Ab3LUBgQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 20:36:16 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:49053 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751951Ab3LUBgO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 20:32:57 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Torsten Duwe <duwe@lst.de>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        Peter Jones <pjones@redhat.com>, Kees Cook <keescook@chromium.org>
-References: <20131121190350.GC17070@kroah.com>
-	<20131121190620.GA25951@srcf.ucam.org>
-	<20131121191305.GK16208@redhat.com>
-	<20131121191907.GA26366@srcf.ucam.org>
-	<20131122185706.GK4046@redhat.com> <87vbzju6ql.fsf@xmission.com>
-	<20131125163920.GC23094@redhat.com> <87fvqj2vxz.fsf@xmission.com>
-	<20131126142759.GA5473@redhat.com> <20131219125439.GA6379@lst.de>
-	<20131220141917.GB27063@redhat.com> <87a9fvqfs4.fsf@xmission.com>
-	<52B4D0C6.2000505@zytor.com>
-Date: Fri, 20 Dec 2013 17:32:46 -0800
-In-Reply-To: <52B4D0C6.2000505@zytor.com> (H. Peter Anvin's message of "Fri,
-	20 Dec 2013 15:20:38 -0800")
-Message-ID: <87ioujf0ox.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19D9BJfF2lVnYFWu35ilDNee/dArZbHrqc=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.1381]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;"H. Peter Anvin" <hpa@zytor.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 4/6] kexec: A new system call, kexec_file_load, for in kernel kexec
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Fri, 20 Dec 2013 20:36:14 -0500
+Message-ID: <1387589770.3119.2.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v3 4/4] futex: Avoid taking hb lock if nothing to wakeup
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>, Jeff Mahoney <jeffm@suse.com>,
+        Jason Low <jason.low2@hp.com>, Waiman Long <Waiman.Long@hp.com>,
+        Tom Vaden <tom.vaden@hp.com>, "Norton, Scott J" <scott.norton@hp.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Ingo Molnar <mingo@kernel.org>
+Date: Fri, 20 Dec 2013 17:36:10 -0800
+In-Reply-To: <CA+55aFxY_sMes2=0tz0qTKH5-fpAaLji_xd9CdU-u2JxxNN6pA@mail.gmail.com>
+References: <1387478746-5436-1-git-send-email-davidlohr@hp.com>
+	 <1387478746-5436-5-git-send-email-davidlohr@hp.com>
+	 <CA+55aFxY_sMes2=0tz0qTKH5-fpAaLji_xd9CdU-u2JxxNN6pA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"H. Peter Anvin" <hpa@zytor.com> writes:
+On Thu, 2013-12-19 at 15:14 -0800, Linus Torvalds wrote:
+> On Thu, Dec 19, 2013 at 10:45 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> >
+> > - increment the counter at queue_lock() as we always end up calling
+> >   queue_me() which adds the element to the list. Upon any error,
+> >   queue_unlock() is called for housekeeping, for which we decrement
+> >   to mach the increment done in queue_lock().
+> >
+> > - decrement the counter at __unqueue_me() to reflect when an element is
+> >   removed from the queue for wakeup related purposes.
+> 
+> I still hate this whole separate counter thing. It seems really annoying.
+> 
+> If re-ordering things didn't work out, then why can't just the counter
+> we *already* have in the spinlock itself work as the counter? Your
+> counter update logic seems to basically match when you take the
+> spinlock anyway.
 
-> On 12/20/2013 03:11 PM, Eric W. Biederman wrote:
->> 
->> In that case the chrome folks would simply have to use an ELF format
->> kernel and not a bzImage.
->> 
->
-> This is starting to feel like everything is going in the direction of a
-> massive feature regression.  bzImage may be weird (it has definitely
-> grown organically), but the features that have been added to it have
-> generally been for a reason, e.g. kernel relocation and so on.
+So the following has passed all testing, just like the atomics variant.
+Thoughts?
 
-Stuff and nonsense.  bzImage is just an ugly wrapper around an ELF
-image.
+Thanks,
+Davidlohr
 
-I am just arguing that we expose the clean portable underpinnings and
-make that work.
+diff --git a/kernel/futex.c b/kernel/futex.c
+index fcc6850..c8c7ce5 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -73,19 +73,22 @@
+  * Basic futex operation and ordering guarantees:
+  *
+  * The waiter reads the futex value in user space and calls
+- * futex_wait(). This function computes the hash bucket and acquires
+- * the hash bucket lock. After that it reads the futex user space value
+- * again and verifies that the data has not changed. If it has not
+- * changed it enqueues itself into the hash bucket, releases the hash
++ * futex_wait(). It computes the hash bucket and acquires the hash
++ * bucket lock. After that it reads the futex user space value again
++ * and verifies that the data has not changed. If it has not changed
++ * it enqueues itself into the hash bucket, releases the hash
+  * bucket lock and schedules.
+  *
+  * The waker side modifies the user space value of the futex and calls
+- * futex_wake(). This functions computes the hash bucket and acquires
+- * the hash bucket lock. Then it looks for waiters on that futex in the
+- * hash bucket and wakes them.
++ * futex_wake(). It computes the hash bucket and acquires the hash
++ * bucket lock. Then it looks for waiters on that futex in the hash
++ * bucket and wakes them.
+  *
+- * Note that the spin_lock serializes waiters and wakers, so that the
+- * following scenario is avoided:
++ * In scenarios where wakeups are called and no tasks are blocked on a futex,
++ * taking the hb spinlock can be avoided and simply return. In order for this
++ * optimization to work, ordering guarantees must exist so that the waiter
++ * being added to the list is acknowledged when the list is concurrently being
++ * checked by the waker, avoiding scenarios like the following:
+  *
+  * CPU 0                               CPU 1
+  * val = *futex;
+@@ -106,24 +109,50 @@
+  * This would cause the waiter on CPU 0 to wait forever because it
+  * missed the transition of the user space value from val to newval
+  * and the waker did not find the waiter in the hash bucket queue.
+- * The spinlock serializes that:
++ *
++ * The correct serialization ensures that a waiter either observes
++ * the changed user space value before blocking or is woken by a
++ * concurrent waker:
+  *
+  * CPU 0                               CPU 1
+  * val = *futex;
+  * sys_futex(WAIT, futex, val);
+  *   futex_wait(futex, val);
+- *   lock(hash_bucket(futex));
+- *   uval = *futex;
+- *                                     *futex = newval;
+- *                                     sys_futex(WAKE, futex);
+- *                                       futex_wake(futex);
+- *                                       lock(hash_bucket(futex));
++ *
++ *   waiters++;
++ *   mb(); (A) <-- paired with -.
++ *                              |
++ *   lock(hash_bucket(futex));  |
++ *                              |
++ *   uval = *futex;             |
++ *                              |        *futex = newval;
++ *                              |        sys_futex(WAKE, futex);
++ *                              |          futex_wake(futex);
++ *                              |
++ *                              `------->   mb(); (B)
+  *   if (uval == val)
+- *      queue();
++ *     queue();
+  *     unlock(hash_bucket(futex));
+- *     schedule();                       if (!queue_empty())
+- *                                         wake_waiters(futex);
+- *                                       unlock(hash_bucket(futex));
++ *     schedule();                         if (waiters)
++ *                                           lock(hash_bucket(futex));
++ *                                           wake_waiters(futex);
++ *                                           unlock(hash_bucket(futex));
++ *
++ * Where (A) orders the waiters increment and the futex value read -- this
++ * is guaranteed by the head counter in the hb spinlock; and where (B)
++ * orders the write to futex and the waiters read.
++ *
++ * This yields the following case (where X:=waiters, Y:=futex):
++ *
++ *	X = Y = 0
++ *
++ *	w[X]=1		w[Y]=1
++ *	MB		MB
++ *	r[Y]=y		r[X]=x
++ *
++ * Which guarantees that x==0 && y==0 is impossible; which translates back into
++ * the guarantee that we cannot both miss the futex variable change and the
++ * enqueue.
+  */
+ 
+ int __read_mostly futex_cmpxchg_enabled;
+@@ -211,6 +240,35 @@ static unsigned long __read_mostly futex_hashsize;
+ 
+ static struct futex_hash_bucket *futex_queues;
+ 
++static inline void futex_get_mm(union futex_key *key)
++{
++	atomic_inc(&key->private.mm->mm_count);
++#ifdef CONFIG_SMP
++	/*
++	 * Ensure futex_get_mm() implies a full barrier such that
++	 * get_futex_key() implies a full barrier. This is relied upon
++	 * as full barrier (B), see the ordering comment above.
++	 */
++	smp_mb__after_atomic_inc();
++#endif
++}
++
++static inline bool hb_waiters_pending(struct futex_hash_bucket *hb)
++{
++#ifdef CONFIG_SMP
++	/*
++	 * If the hash bucket is locked then we know the ticket counter
++	 * is non-zero and thus there is at least one waiter in the queue.
++	 */
++	if (spin_is_locked(&hb->lock))
++		return true;
++	smp_rmb(); /* Make sure we check the lock state first */
++	return !plist_head_empty(&hb->chain);
++#else
++	return true;
++#endif
++}
++
+ /*
+  * We hash on the keys returned from get_futex_key (see below).
+  */
+@@ -245,10 +303,10 @@ static void get_futex_key_refs(union futex_key *key)
+ 
+ 	switch (key->both.offset & (FUT_OFF_INODE|FUT_OFF_MMSHARED)) {
+ 	case FUT_OFF_INODE:
+-		ihold(key->shared.inode);
++		ihold(key->shared.inode); /* implies MB (B) */
+ 		break;
+ 	case FUT_OFF_MMSHARED:
+-		atomic_inc(&key->private.mm->mm_count);
++		futex_get_mm(key); /* implies MB (B) */
+ 		break;
+ 	}
+ }
+@@ -322,7 +380,7 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key, int rw)
+ 	if (!fshared) {
+ 		key->private.mm = mm;
+ 		key->private.address = address;
+-		get_futex_key_refs(key);
++		get_futex_key_refs(key);  /* implies MB (B) */
+ 		return 0;
+ 	}
+ 
+@@ -1052,6 +1110,11 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
+ 		goto out;
+ 
+ 	hb = hash_futex(&key);
++
++	/* Make sure we really have tasks to wakeup */
++	if (!hb_waiters_pending(hb))
++		goto out_put_key;
++
+ 	spin_lock(&hb->lock);
+ 
+ 	plist_for_each_entry_safe(this, next, &hb->chain, list) {
+@@ -1072,6 +1135,7 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
+ 	}
+ 
+ 	spin_unlock(&hb->lock);
++out_put_key:
+ 	put_futex_key(&key);
+ out:
+ 	return ret;
+@@ -1535,7 +1599,7 @@ static inline struct futex_hash_bucket *queue_lock(struct futex_q *q)
+ 	hb = hash_futex(&q->key);
+ 	q->lock_ptr = &hb->lock;
+ 
+-	spin_lock(&hb->lock);
++	spin_lock(&hb->lock); /* implies MB (A) */
+ 	return hb;
+ }
+ 
 
-It absolutely does not make sense to make a solution that only works for
-x86.  ELF is what ever other architecture uses so we absolutely have to
-make any feature we build work with ELF.
 
-At a very basic level for this feature ELF is good enough.  bzImage
-isn't.
-
-Given that in the worst case distro's will have to package a second
-binary of the same kernel in their kernel rpm.  I don't know that there
-is any point in supporting anything else except ELF in the kernel.
-Given that the package and distribution are going to have to change
-anyway to include signing a change in file format hardly seems scary.
-
-But my point above was really that ELF is sufficient for the use case of
-doing file based verification base on fd's in addition to the use case
-of using detached signatures.  Which is really a long winded way of
-saying the argument "But but but my distro only ships a bzImage today"
-is a horrible techinical argument.
-
-I am not fundamentally opposed to supporting other file formats but
-given that ELF wins on both practical and techincal grounds ELF should
-be the primary file format for kexec_file_load.  We can worry about
-other file formats once ELF is shown to work.
-
-Eric
