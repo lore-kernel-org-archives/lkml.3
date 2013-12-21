@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab3LUKEP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 05:04:15 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:15789 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752910Ab3LUKEM (ORCPT
+	id S1754226Ab3LUKF0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 05:05:26 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:47812 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751766Ab3LUKFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 05:04:12 -0500
-X-AuditID: cbfee61b-b7f456d000006dfd-2d-52b5679b04ae
-From: Chao Yu <chao2.yu@samsung.com>
-To: ??? <jaegeuk.kim@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Subject: [f2fs-dev] [PATCH 3/3] f2fs: avoid to set wrong pino of inode when
- rename dir
-Date: Sat, 21 Dec 2013 18:03:28 +0800
-Message-id: <000201cefe33$ff3c9270$fdb5b750$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac7+L4j6QBSI+mwzSCOC/KpLfyqINA==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9jAd3Z6VuDDG4sMre4vusvk8WlRe4W
-	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK+PyrfXsBcd4Ku7u
-	uM7ewDiVq4uRg0NCwETi9maXLkZOIFNM4sK99WxdjFwcQgKLGCXOrjzGCOH8YJT4v2MHI0gV
-	m4CKxPKO/0wgtoiAosSG9xvYQWxmgUyJOa8ns4LYwgIREhsufGcDsVkEVCX6mk8zg9i8ApYS
-	LUcfsUDYghI/Jt9jgejVkli/8zgThC0vsXnNW2aIixQkdpx9zQixS09i678eqF3iEhuP3GKZ
-	wCgwC8moWUhGzUIyahaSlgWMLKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxggP5mfQOxlUN
-	FocYBTgYlXh4JSK3BAmxJpYVV+YeYpTgYFYS4f0YujVIiDclsbIqtSg/vqg0J7X4EKM0B4uS
-	OO/BVutAIYH0xJLU7NTUgtQimCwTB6dUA2PvDV3l+VumHHvH93/T8r76l81TDt3qcwrmm239
-	mF+Yg33R4cjfjs9/vJ/sN+XWHmcJW/cL8jkrjHLiFy8q0jXbfbVxtk3p097D5UtmvrvSsM57
-	pUqqV/Ce7X7n3Gsc9nC6tO6Jz5qyVDA06LfiRs/fqin8jzPOPH9m13zWK9lZaqXMxFMW6ycp
-	sRRnJBpqMRcVJwIA67fabWACAAA=
+	Sat, 21 Dec 2013 05:05:24 -0500
+Date: Sat, 21 Dec 2013 11:05:00 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: tglx@linutronix.de, mingo@redhat.com, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, juri.lelli@gmail.com,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
+        jkacur@redhat.com
+Subject: Re: [PATCH 09/13] sched: Add bandwidth management for sched_dl
+Message-ID: <20131221100500.GG7959@laptop.programming.kicks-ass.net>
+References: <20131217122720.950475833@infradead.org>
+ <20131217123353.180539582@infradead.org>
+ <20131218165508.GB30183@twins.programming.kicks-ass.net>
+ <20131220171343.GL2480@laptop.programming.kicks-ass.net>
+ <20131220123707.44fb7192@gandalf.local.home>
+ <20131220174200.GX16438@laptop.programming.kicks-ass.net>
+ <20131220132323.524cf2b1@gandalf.local.home>
+ <20131220214413.GF7959@laptop.programming.kicks-ass.net>
+ <20131220182946.09ca0f04@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131220182946.09ca0f04@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we rename a dir to new name which is not exist previous,
-we will set pino of parent inode with ino of child inode in f2fs_set_link.
-It destroy consistency of pino, it should be fixed.
+On Fri, Dec 20, 2013 at 06:29:46PM -0500, Steven Rostedt wrote:
+> On Fri, 20 Dec 2013 22:44:13 +0100
+> Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> 
+> > @@ -5056,10 +5018,28 @@ static int sched_cpu_inactive(struct not
+> >  	switch (action & ~CPU_TASKS_FROZEN) {
+> >  	case CPU_DOWN_PREPARE:
+> >  		set_cpu_active((long)hcpu, false);
+> > -		return NOTIFY_OK;
+> > -	default:
+> > -		return NOTIFY_DONE;
+> > +		break;
+> >  	}
+> > +
+> > +	switch (action) {
+> > +	case CPU_DOWN_PREPARE: /* explicitly allow suspend */
+> 
+> Instead of the double switch (which is quite confusing), what about
+> just adding:
+> 
+> 	if (!(action & CPU_TASKS_FROZEN))
+> 
+> I mean, the above switch gets called for both cases, this only gets
+> called for the one case. This case is a subset of the above. I don't
+> see why an if () would not be better than a double (confusing) switch().
 
-Thanks for previous work of Shu Tan.
+I don't see the confusion in the double switch(), but sure an if would
+work too I suppose.
 
-Signed-off-by: Shu Tan <shu.tan@samsung.com>
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- fs/f2fs/dir.c   |    3 ---
- fs/f2fs/namei.c |    2 ++
- 2 files changed, 2 insertions(+), 3 deletions(-)
+> Also, it seems that this change also does not return NOTIFY_DONE if
+> something other than CPU_DOWN_PREPARE is passed in.
 
-diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
-index c6c9280..b1b32ea 100644
---- a/fs/f2fs/dir.c
-+++ b/fs/f2fs/dir.c
-@@ -256,9 +256,6 @@ void f2fs_set_link(struct inode *dir, struct f2fs_dir_entry *de,
- 	dir->i_mtime = dir->i_ctime = CURRENT_TIME;
- 	mark_inode_dirty(dir);
- 
--	/* update parent inode number before releasing dentry page */
--	F2FS_I(inode)->i_pino = dir->i_ino;
--
- 	f2fs_put_page(page, 1);
- }
- 
-diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
-index 575adac..a68838d 100644
---- a/fs/f2fs/namei.c
-+++ b/fs/f2fs/namei.c
-@@ -424,6 +424,7 @@ static int f2fs_rename(struct inode *old_dir, struct dentry *old_dentry,
- 		}
- 
- 		f2fs_set_link(new_dir, new_entry, new_page, old_inode);
-+		F2FS_I(old_inode)->i_pino = new_dir->i_ino;
- 
- 		new_inode->i_ctime = CURRENT_TIME;
- 		if (old_dir_entry)
-@@ -457,6 +458,7 @@ static int f2fs_rename(struct inode *old_dir, struct dentry *old_dentry,
- 		if (old_dir != new_dir) {
- 			f2fs_set_link(old_inode, old_dir_entry,
- 						old_dir_page, new_dir);
-+			F2FS_I(old_inode)->i_pino = new_dir->i_ino;
- 		} else {
- 			kunmap(old_dir_page);
- 			f2fs_put_page(old_dir_page, 0);
--- 
-1.7.9.5
-
+Yeah, I had a look but couldn't find an actual difference between
+NOTIFY_DONE and NOTIFY_OK. Maybe I missed it..
