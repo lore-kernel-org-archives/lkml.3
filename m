@@ -1,70 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab3LUCoz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 21:44:55 -0500
-Received: from smtp.nue.novell.com ([195.135.221.5]:59531 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752114Ab3LUCox (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Fri, 20 Dec 2013 21:44:53 -0500
-Subject: Re: [RFC PATCH 00/14] Support timezone of ACPI TAD and EFI TIME
-From: joeyli <jlee@suse.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Alessandro Zummo <a.zummo@towertech.it>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
-        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
-        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        x86@kernel.org,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, Borislav Petkov <bp@suse.de>
-In-Reply-To: <2787644.ytU7M33B4r@vostro.rjw.lan>
-References: <1387439053-8711-1-git-send-email-jlee@suse.com>
-	 <1387517916.3539.4446.camel@linux-s257.site> <52B4B242.5010002@zytor.com>
-	 <2787644.ytU7M33B4r@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 21 Dec 2013 10:43:25 +0800
-Message-ID: <1387593805.3539.4983.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1753874Ab3LUCqL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 21:46:11 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:22990 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752114Ab3LUCqI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 21:46:08 -0500
+Date: Fri, 20 Dec 2013 18:45:54 -0800
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
+        Richard Hansen <rhansen@rhansen.org>
+Subject: Re: [PATCH v2] fuse: Fix IOC_[GS]ET{FLAGS,VERSION} argument size
+ brokenness.
+Message-ID: <20131221024554.GA20750@birch.djwong.org>
+References: <20131219232739.GA10192@birch.djwong.org>
+ <20131220233534.GC10192@birch.djwong.org>
+ <99199002-0C82-42B6-B237-163561AD821B@dilger.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <99199002-0C82-42B6-B237-163561AD821B@dilger.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 五，2013-12-20 於 22:45 +0100，Rafael J. Wysocki 提到：
-> On Friday, December 20, 2013 01:10:26 PM H. Peter Anvin wrote:
-> > On 12/19/2013 09:38 PM, joeyli wrote:
-> > > 
-> > > If don't use EFI time, then the first priority is using ACPI TAD if it
-> > > present. Due to ACPI TAD is a generic acpi device that's need OS parsing
-> > > DSDT table before set system time.
-> > > 
-> > > Either move DSDT parser from subsystem initial stage to start_kernel or
-> > > move timekeeping initial to after DSDT be parsed. Which one you think is
-> > > more possible and risk less? Then I will try that way.
-> > > 
+On Fri, Dec 20, 2013 at 07:09:23PM -0700, Andreas Dilger wrote:
+> To be honest, FS_IOC_SETVERSION isn't used by many/any users, so it might be
+> better to avoid doing anything with that for now.
+> 
+> In the past we even talked about adding a deprecation warning for that ioctl
+> since it adds complexity for little value. 
+
+I suspect that most FUSE servers don't handle any of these four ioctls,
+but so long as they're there, we ought to make them less surprising to
+userspace.
+
+As far as getting rid of SETVERSION, I think that's best left to a fs driver
+(or a fuse server) to make that decision, unless everyone wants to eliminate
+SETVERSION entirely?  I don't remember anyone complaining when I proposed to
+disable SETVERSION on metadata_csum ext4 filesystems, but that's hardly
+conclusive. :)
+
+The only providers of SETVERSION seem to be ext[234], reiser3, and ocfs2.
+
+--D
+
+> 
+> Cheers, Andreas
+> 
+> > On Dec 20, 2013, at 16:35, "Darrick J. Wong" <darrick.wong@oracle.com> wrote:
 > > 
-> > I discussed the DSDT/SSDT parsing issue with Rafael and he claims it
-> > would require a lot of restructuring.  Unfortunately ACPI is at this
-> > point done rather late, as I understand.  All of this is a big problem.
-> 
-> My understanding, however, is that to use the TAD, we don't actually need to
-> create a struct acpi_device for it.  We just need a handle to the ACPICA
-> object which can be found using acpi_get_devices() as soon as the namespace
-> has been extracted from the DSDT and friends.  That in turn happens in
-> acpi_early_init(), which is called from start_kernel() right before
-> efi_late_init().
-> 
-> Is that early enough?
-> 
-> Rafael
-> 
-
-Thanks for your good suggestion, then I have a direction on using ACPI
-TAD earlier.
-
-Joey Lee
-
-
+> > The IOC_[GS]ETFLAGS and IOC_[GS]ETVERSION ioctls, despite being
+> > defined to take a "long" parameter, actually take "int" parameters.
+> > FUSE unfortunately assumed that the ioctl definitions never lie, and
+> > transfers a long's worth of data in and out of userspace, which causes
+> > stack smashing in chattr, and other bugs elsewhere.
+> > 
+> > So, special-case this in FUSE so that we don't crash userland.
+> > 
+> > v2: Do the same for the IOC_[GS]ETVERSION ioctls, as Richard Hansen
+> >    points out.
+> > 
+> > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+> > ---
+> > fs/fuse/file.c |   16 ++++++++++++++++
+> > 1 file changed, 16 insertions(+)
+> > 
+> > diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+> > index 7e70506..f8766ab 100644
+> > --- a/fs/fuse/file.c
+> > +++ b/fs/fuse/file.c
+> > @@ -2385,6 +2385,22 @@ long fuse_do_ioctl(struct file *file, unsigned int cmd, unsigned long arg,
+> >        iov->iov_base = (void __user *)arg;
+> >        iov->iov_len = _IOC_SIZE(cmd);
+> > 
+> > +        /*
+> > +         * The IOC_[GS]ETFLAGS and IOC_[GS]ETVERSION ioctls take int
+> > +         * parameters even though the ioctl definition specifies long.
+> > +         * Userland has been expecting int for ages (and chattr
+> > +         * segfaults on FUSE filesystems), so special case that here.
+> > +         * The IOC32 variants were declared with int, so they don't
+> > +         * need this correction.
+> > +         */
+> > +        switch (cmd) {
+> > +        case FS_IOC_GETFLAGS:
+> > +        case FS_IOC_SETFLAGS:
+> > +        case FS_IOC_GETVERSION:
+> > +        case FS_IOC_SETVERSION:
+> > +            iov->iov_len = sizeof(int);
+> > +        }
+> > +
+> >        if (_IOC_DIR(cmd) & _IOC_WRITE) {
+> >            in_iov = iov;
+> >            in_iovs = 1;
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
