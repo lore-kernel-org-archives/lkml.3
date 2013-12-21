@@ -1,188 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753842Ab3LUMti (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 07:49:38 -0500
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:59998 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751766Ab3LUMtf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 07:49:35 -0500
-X-Greylist: delayed 435 seconds by postgrey-1.27 at vger.kernel.org; Sat, 21 Dec 2013 07:49:35 EST
+	id S1754054Ab3LUNzw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 08:55:52 -0500
+Received: from ozlabs.org ([203.10.76.45]:34148 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753217Ab3LUNzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Dec 2013 08:55:50 -0500
+Date: Sun, 22 Dec 2013 00:43:55 +1100
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH v3 02/14] mm, hugetlb: region manipulation functions take
+ resv_map rather list_head
+Message-ID: <20131221134355.GA12407@voom.fritz.box>
+References: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1387349640-8071-3-git-send-email-iamjoonsoo.kim@lge.com>
 MIME-Version: 1.0
-In-Reply-To: <1387586630-1954-1-git-send-email-ccross@android.com>
-References: <1387586630-1954-1-git-send-email-ccross@android.com>
-Date: Sat, 21 Dec 2013 07:42:17 -0500
-Message-ID: <CAF6AEGuQSWOw6KWVo-uorJ+8M3-kLzYHdOOfdHWUDi=SkzUUVA@mail.gmail.com>
-Subject: Re: [PATCH] dma-buf: avoid using IS_ERR_OR_NULL
-From: Rob Clark <robdclark@gmail.com>
-To: Colin Cross <ccross@android.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Airlie <airlied@linux.ie>, Inki Dae <inki.dae@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Pawel Osciak <pawel@osciak.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        "open list:DMA BUFFER SHARIN..." <linux-media@vger.kernel.org>,
-        "open list:DMA BUFFER SHARIN..." <dri-devel@lists.freedesktop.org>,
-        "open list:DMA BUFFER SHARIN..." <linaro-mm-sig@lists.linaro.org>,
-        "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-arm-kernel@lists.infradead.org>,
-        "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DocE+STaALJfprDB"
+Content-Disposition: inline
+In-Reply-To: <1387349640-8071-3-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 20, 2013 at 7:43 PM, Colin Cross <ccross@android.com> wrote:
-> dma_buf_map_attachment and dma_buf_vmap can return NULL or
-> ERR_PTR on a error.  This encourages a common buggy pattern in
-> callers:
->         sgt = dma_buf_map_attachment(attach, DMA_BIDIRECTIONAL);
->         if (IS_ERR_OR_NULL(sgt))
->                 return PTR_ERR(sgt);
->
-> This causes the caller to return 0 on an error.  IS_ERR_OR_NULL
-> is almost always a sign of poorly-defined error handling.
->
-> This patch converts dma_buf_map_attachment to always return
-> ERR_PTR, and fixes the callers that incorrectly handled NULL.
-> There are a few more callers that were not checking for NULL
-> at all, which would have dereferenced a NULL pointer later.
-> There are also a few more callers that correctly handled NULL
-> and ERR_PTR differently, I left those alone but they could also
-> be modified to delete the NULL check.
->
-> This patch also converts dma_buf_vmap to always return NULL.
-> All the callers to dma_buf_vmap only check for NULL, and would
-> have dereferenced an ERR_PTR and panic'd if one was ever
-> returned. This is not consistent with the rest of the dma buf
-> APIs, but matches the expectations of all of the callers.
->
-> Signed-off-by: Colin Cross <ccross@android.com>
-> ---
->  drivers/base/dma-buf.c                         | 18 +++++++++++-------
->  drivers/gpu/drm/drm_prime.c                    |  2 +-
->  drivers/gpu/drm/exynos/exynos_drm_dmabuf.c     |  2 +-
->  drivers/media/v4l2-core/videobuf2-dma-contig.c |  2 +-
->  4 files changed, 14 insertions(+), 10 deletions(-)
->
-> diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
-> index 1e16cbd61da2..cfe1d8bc7bb8 100644
-> --- a/drivers/base/dma-buf.c
-> +++ b/drivers/base/dma-buf.c
-> @@ -251,9 +251,8 @@ EXPORT_SYMBOL_GPL(dma_buf_put);
->   * @dmabuf:    [in]    buffer to attach device to.
->   * @dev:       [in]    device to be attached.
->   *
-> - * Returns struct dma_buf_attachment * for this attachment; may return negative
-> - * error codes.
-> - *
-> + * Returns struct dma_buf_attachment * for this attachment; returns ERR_PTR on
-> + * error.
->   */
->  struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
->                                           struct device *dev)
-> @@ -319,9 +318,8 @@ EXPORT_SYMBOL_GPL(dma_buf_detach);
->   * @attach:    [in]    attachment whose scatterlist is to be returned
->   * @direction: [in]    direction of DMA transfer
->   *
-> - * Returns sg_table containing the scatterlist to be returned; may return NULL
-> - * or ERR_PTR.
-> - *
-> + * Returns sg_table containing the scatterlist to be returned; returns ERR_PTR
-> + * on error.
->   */
->  struct sg_table *dma_buf_map_attachment(struct dma_buf_attachment *attach,
->                                         enum dma_data_direction direction)
-> @@ -334,6 +332,8 @@ struct sg_table *dma_buf_map_attachment(struct dma_buf_attachment *attach,
->                 return ERR_PTR(-EINVAL);
->
->         sg_table = attach->dmabuf->ops->map_dma_buf(attach, direction);
-> +       if (!sg_table)
-> +               sg_table = ERR_PTR(-ENOMEM);
->
->         return sg_table;
->  }
-> @@ -544,6 +544,8 @@ EXPORT_SYMBOL_GPL(dma_buf_mmap);
->   * These calls are optional in drivers. The intended use for them
->   * is for mapping objects linear in kernel space for high use objects.
->   * Please attempt to use kmap/kunmap before thinking about these interfaces.
-> + *
-> + * Returns NULL on error.
->   */
->  void *dma_buf_vmap(struct dma_buf *dmabuf)
->  {
-> @@ -566,7 +568,9 @@ void *dma_buf_vmap(struct dma_buf *dmabuf)
->         BUG_ON(dmabuf->vmap_ptr);
->
->         ptr = dmabuf->ops->vmap(dmabuf);
-> -       if (IS_ERR_OR_NULL(ptr))
-> +       if (WARN_ON_ONCE(IS_ERR(ptr)))
 
-since vmap is optional, the WARN_ON might be a bit strong..  although
-it would be a bit strange for an exporter to supply a vmap fxn which
-always returned NULL, not sure about that.  Just thought I'd mention
-it in case anyone else had an opinion about that.
+--DocE+STaALJfprDB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-But either way:
+On Wed, Dec 18, 2013 at 03:53:48PM +0900, Joonsoo Kim wrote:
+> To change a protection method for region tracking to find grained one,
+> we pass the resv_map, instead of list_head, to region manipulation
+> functions. This doesn't introduce any functional change, and it is just
+> for preparing a next step.
+>=20
+> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-Reviewed-by: Rob Clark <robdclark@gmail.com>
+Reviewed-by: David Gibson <david@gibson.dropbear.id.au>
 
+--=20
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
 
-> +               ptr = NULL;
-> +       if (!ptr)
->                 goto out_unlock;
->
->         dmabuf->vmap_ptr = ptr;
-> diff --git a/drivers/gpu/drm/drm_prime.c b/drivers/gpu/drm/drm_prime.c
-> index 56805c39c906..bb516fdd195d 100644
-> --- a/drivers/gpu/drm/drm_prime.c
-> +++ b/drivers/gpu/drm/drm_prime.c
-> @@ -471,7 +471,7 @@ struct drm_gem_object *drm_gem_prime_import(struct drm_device *dev,
->         get_dma_buf(dma_buf);
->
->         sgt = dma_buf_map_attachment(attach, DMA_BIDIRECTIONAL);
-> -       if (IS_ERR_OR_NULL(sgt)) {
-> +       if (IS_ERR(sgt)) {
->                 ret = PTR_ERR(sgt);
->                 goto fail_detach;
->         }
-> diff --git a/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c b/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c
-> index 59827cc5e770..c786cd4f457b 100644
-> --- a/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c
-> +++ b/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c
-> @@ -224,7 +224,7 @@ struct drm_gem_object *exynos_dmabuf_prime_import(struct drm_device *drm_dev,
->         get_dma_buf(dma_buf);
->
->         sgt = dma_buf_map_attachment(attach, DMA_BIDIRECTIONAL);
-> -       if (IS_ERR_OR_NULL(sgt)) {
-> +       if (IS_ERR(sgt)) {
->                 ret = PTR_ERR(sgt);
->                 goto err_buf_detach;
->         }
-> diff --git a/drivers/media/v4l2-core/videobuf2-dma-contig.c b/drivers/media/v4l2-core/videobuf2-dma-contig.c
-> index 33d3871d1e13..880be0782dd9 100644
-> --- a/drivers/media/v4l2-core/videobuf2-dma-contig.c
-> +++ b/drivers/media/v4l2-core/videobuf2-dma-contig.c
-> @@ -719,7 +719,7 @@ static int vb2_dc_map_dmabuf(void *mem_priv)
->
->         /* get the associated scatterlist for this buffer */
->         sgt = dma_buf_map_attachment(buf->db_attach, buf->dma_dir);
-> -       if (IS_ERR_OR_NULL(sgt)) {
-> +       if (IS_ERR(sgt)) {
->                 pr_err("Error getting dmabuf scatterlist\n");
->                 return -EINVAL;
->         }
-> --
-> 1.8.5.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+--DocE+STaALJfprDB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJStZsbAAoJEGw4ysog2bOS9PcQAI9nfhpAOn9DmhrqDkuAstNt
+g7WyzXBgqrwePCSB/0llVIT8ZxI0cdfL3GX3ogkkwLVMcRiEX6MTR4yYoVjVX6EN
+ZNdAN78D+A77soDBFpDI4+1SKYAwG8S2E94L+eceq75nzGrZ9iykw+CqcLuSagOl
+WthYxjzoxPOdGF1rmMEsLZM32BFp/cHcEnNZAGBrylivb5yOm9RWvBhkBUUZO4dQ
+xQva/kHP4MzP9ktC7njHNO/TwiGmK9Wln4Kqcf+IyT6PH5G6IVCcaXMQFHvr6ZqW
+QJ6bqOBwT4V6FKE8TbDZ0NxwR0sNB26kR+nRkePyzsYNfKbuTV63P9noN3MzmypD
+ZMLo7773qUmUWw7sTux6fddr3zsZyzxUlnxKEI/PajBJ6pczAHQnBJcKDnTU2Ivd
+MEkBa8swsdggldrZP1VEfEGCIbJr8zvRjJCGtpGyvu1Ot/eDasyIPFSsVD9Np8PL
+PsYHS3SIBjH4ZlBZziEqcZPkG8xuu3hwCvuUlHltV3QGuzWANVwqC3wM3DpwixZp
+MVKeIz5HJJinYyKUx9SS0i4k8tHUEHgYkUSQqrf/bSlQYGn+O+ZnepbcJ3wazVee
+FhGKtm9rjus2/YEB3hRDuIKqpacpcmaKDH1lg1P8dTqZns76jCvs4d0ttAig3itp
+URAzCzZEBcXf9Vf0md/S
+=LC9f
+-----END PGP SIGNATURE-----
+
+--DocE+STaALJfprDB--
