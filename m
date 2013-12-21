@@ -1,238 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547Ab3LURzP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 12:55:15 -0500
-Received: from smtp-out-221.synserver.de ([212.40.185.221]:1055 "EHLO
-	smtp-out-142.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755169Ab3LURzN (ORCPT
+	id S1754952Ab3LUSON (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 13:14:13 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:52071 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754063Ab3LUSOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 12:55:13 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 7631
-Message-ID: <52B5C821.7040206@metafoo.de>
-Date: Sat, 21 Dec 2013 17:56:01 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Sat, 21 Dec 2013 13:14:12 -0500
+Message-ID: <52B5DA71.6070307@infradead.org>
+Date: Sat, 21 Dec 2013 10:14:09 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Apelete Seketeli <apelete@seketeli.net>
-CC: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>, John Crispin <blogic@openwrt.org>
-Subject: Re: [PATCH] mips: qi_lb60: add defconfig for Ben NanoNote
-References: <1387402619-22921-1-git-send-email-apelete@seketeli.net> <1387402619-22921-2-git-send-email-apelete@seketeli.net>
-In-Reply-To: <1387402619-22921-2-git-send-email-apelete@seketeli.net>
+To: Masanari Iida <standby24x7@gmail.com>, linux-kernel@vger.kernel.org,
+        trivial@kernel.org, gleb@kernel.org, pbonzini@redhat.com,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH] [trivial] doc: kvm: Fix typo in doc/virtual/kvm
+References: <1387642883-14786-1-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1387642883-14786-1-git-send-email-standby24x7@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2013 10:36 PM, Apelete Seketeli wrote:
-> Add defconfig for the Ben NanoNote handheld computer which is built
-> around QI_LB60 board and Ingenic JZ4740 MIPS SoC.
+On 12/21/13 08:21, Masanari Iida wrote:
+> Correct spelling typo in Documentations/virtual/kvm
 > 
-> Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
+
+Thanks.
 
 > ---
->  arch/mips/configs/qi_lb60_defconfig |  188 +++++++++++++++++++++++++++++++++++
->  1 file changed, 188 insertions(+)
->  create mode 100644 arch/mips/configs/qi_lb60_defconfig
+>  Documentation/virtual/kvm/api.txt         | 4 ++--
+>  Documentation/virtual/kvm/hypercalls.txt  | 2 +-
+>  Documentation/virtual/kvm/locking.txt     | 4 ++--
+>  Documentation/virtual/kvm/ppc-pv.txt      | 2 +-
+>  Documentation/virtual/kvm/timekeeping.txt | 2 +-
+>  5 files changed, 7 insertions(+), 7 deletions(-)
 > 
-> diff --git a/arch/mips/configs/qi_lb60_defconfig b/arch/mips/configs/qi_lb60_defconfig
-> new file mode 100644
-> index 0000000..2b96547
-> --- /dev/null
-> +++ b/arch/mips/configs/qi_lb60_defconfig
-> @@ -0,0 +1,188 @@
-> +CONFIG_MACH_JZ4740=y
-> +# CONFIG_COMPACTION is not set
-> +# CONFIG_CROSS_MEMORY_ATTACH is not set
-> +CONFIG_HZ_100=y
-> +CONFIG_PREEMPT=y
-> +# CONFIG_SECCOMP is not set
-> +# CONFIG_LOCALVERSION_AUTO is not set
-> +CONFIG_SYSVIPC=y
-> +CONFIG_LOG_BUF_SHIFT=14
-> +CONFIG_SYSCTL_SYSCALL=y
-> +CONFIG_KALLSYMS_ALL=y
-> +CONFIG_EMBEDDED=y
-> +# CONFIG_VM_EVENT_COUNTERS is not set
-> +# CONFIG_COMPAT_BRK is not set
-> +CONFIG_SLAB=y
-> +CONFIG_MODULES=y
-> +CONFIG_MODULE_UNLOAD=y
-> +# CONFIG_BLK_DEV_BSG is not set
-> +CONFIG_PARTITION_ADVANCED=y
-> +# CONFIG_EFI_PARTITION is not set
-> +# CONFIG_IOSCHED_CFQ is not set
-> +# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
-> +CONFIG_NET=y
-> +CONFIG_PACKET=y
-> +CONFIG_UNIX=y
-> +CONFIG_INET=y
-> +CONFIG_IP_MULTICAST=y
-> +CONFIG_IP_ADVANCED_ROUTER=y
-> +CONFIG_IP_MULTIPLE_TABLES=y
-> +CONFIG_IP_ROUTE_MULTIPATH=y
-> +CONFIG_IP_ROUTE_VERBOSE=y
-> +CONFIG_IP_MROUTE=y
-> +CONFIG_IP_MROUTE_MULTIPLE_TABLES=y
-> +# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
-> +# CONFIG_INET_XFRM_MODE_TUNNEL is not set
-> +# CONFIG_INET_XFRM_MODE_BEET is not set
-> +# CONFIG_INET_LRO is not set
-> +# CONFIG_INET_DIAG is not set
-> +CONFIG_TCP_CONG_ADVANCED=y
-> +# CONFIG_TCP_CONG_BIC is not set
-> +# CONFIG_TCP_CONG_CUBIC is not set
-> +CONFIG_TCP_CONG_WESTWOOD=y
-> +# CONFIG_TCP_CONG_HTCP is not set
-> +# CONFIG_IPV6 is not set
-> +CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-> +# CONFIG_FIRMWARE_IN_KERNEL is not set
-> +CONFIG_MTD=y
-> +CONFIG_MTD_BLOCK=y
-> +CONFIG_MTD_NAND=y
-> +CONFIG_MTD_NAND_JZ4740=y
-> +CONFIG_MTD_UBI=y
-> +CONFIG_NETDEVICES=y
-> +# CONFIG_WLAN is not set
-> +# CONFIG_INPUT_MOUSEDEV is not set
-> +CONFIG_INPUT_EVDEV=y
-> +# CONFIG_KEYBOARD_ATKBD is not set
-> +CONFIG_KEYBOARD_GPIO=y
-> +CONFIG_KEYBOARD_MATRIX=y
-> +# CONFIG_INPUT_MOUSE is not set
-> +CONFIG_INPUT_MISC=y
-> +# CONFIG_SERIO is not set
-> +CONFIG_LEGACY_PTY_COUNT=2
-> +# CONFIG_DEVKMEM is not set
-> +CONFIG_SERIAL_8250=y
-> +CONFIG_SERIAL_8250_CONSOLE=y
-> +# CONFIG_SERIAL_8250_DMA is not set
-> +CONFIG_SERIAL_8250_NR_UARTS=2
-> +CONFIG_SERIAL_8250_RUNTIME_UARTS=2
-> +# CONFIG_HW_RANDOM is not set
-> +CONFIG_SPI=y
-> +CONFIG_SPI_GPIO=y
-> +CONFIG_POWER_SUPPLY=y
-> +CONFIG_BATTERY_JZ4740=y
-> +CONFIG_CHARGER_GPIO=y
-> +# CONFIG_HWMON is not set
-> +CONFIG_MFD_JZ4740_ADC=y
-> +CONFIG_REGULATOR=y
-> +CONFIG_REGULATOR_FIXED_VOLTAGE=y
-> +CONFIG_FB=y
-> +CONFIG_FB_JZ4740=y
-> +CONFIG_BACKLIGHT_LCD_SUPPORT=y
-> +CONFIG_LCD_CLASS_DEVICE=y
-> +# CONFIG_BACKLIGHT_CLASS_DEVICE is not set
-> +# CONFIG_VGA_CONSOLE is not set
-> +CONFIG_FRAMEBUFFER_CONSOLE=y
-> +CONFIG_LOGO=y
-> +# CONFIG_LOGO_LINUX_MONO is not set
-> +# CONFIG_LOGO_LINUX_VGA16 is not set
-> +# CONFIG_LOGO_LINUX_CLUT224 is not set
-> +CONFIG_SOUND=y
-> +CONFIG_SND=y
-> +# CONFIG_SND_SUPPORT_OLD_API is not set
-> +# CONFIG_SND_VERBOSE_PROCFS is not set
-> +# CONFIG_SND_DRIVERS is not set
-> +# CONFIG_SND_SPI is not set
-> +# CONFIG_SND_MIPS is not set
-> +CONFIG_SND_SOC=y
-> +CONFIG_SND_JZ4740_SOC=y
-> +CONFIG_SND_JZ4740_SOC_QI_LB60=y
-> +CONFIG_USB=y
-> +CONFIG_USB_OTG_BLACKLIST_HUB=y
-> +CONFIG_USB_MUSB_HDRC=y
-> +CONFIG_USB_MUSB_GADGET=y
-> +CONFIG_USB_MUSB_JZ4740=y
-> +CONFIG_NOP_USB_XCEIV=y
-> +CONFIG_USB_GADGET=y
-> +CONFIG_USB_GADGET_DEBUG=y
-> +CONFIG_USB_ETH=y
-> +# CONFIG_USB_ETH_RNDIS is not set
-> +CONFIG_MMC=y
-> +CONFIG_MMC_UNSAFE_RESUME=y
-> +# CONFIG_MMC_BLOCK_BOUNCE is not set
-> +CONFIG_MMC_JZ4740=y
-> +CONFIG_RTC_CLASS=y
-> +CONFIG_RTC_DRV_JZ4740=y
-> +CONFIG_DMADEVICES=y
-> +CONFIG_DMA_JZ4740=y
-> +CONFIG_PWM=y
-> +CONFIG_PWM_JZ4740=y
-> +CONFIG_EXT2_FS=y
-> +CONFIG_EXT3_FS=y
-> +# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
-> +# CONFIG_EXT3_FS_XATTR is not set
-> +# CONFIG_DNOTIFY is not set
-> +CONFIG_VFAT_FS=y
-> +CONFIG_PROC_KCORE=y
-> +# CONFIG_PROC_PAGE_MONITOR is not set
-> +CONFIG_TMPFS=y
-> +CONFIG_JFFS2_FS=y
-> +CONFIG_JFFS2_SUMMARY=y
-> +CONFIG_JFFS2_COMPRESSION_OPTIONS=y
-> +# CONFIG_JFFS2_ZLIB is not set
-> +CONFIG_UBIFS_FS=y
-> +CONFIG_UBIFS_FS_ADVANCED_COMPR=y
-> +# CONFIG_NETWORK_FILESYSTEMS is not set
-> +CONFIG_NLS_CODEPAGE_437=y
-> +CONFIG_NLS_CODEPAGE_737=y
-> +CONFIG_NLS_CODEPAGE_775=y
-> +CONFIG_NLS_CODEPAGE_850=y
-> +CONFIG_NLS_CODEPAGE_852=y
-> +CONFIG_NLS_CODEPAGE_855=y
-> +CONFIG_NLS_CODEPAGE_857=y
-> +CONFIG_NLS_CODEPAGE_860=y
-> +CONFIG_NLS_CODEPAGE_861=y
-> +CONFIG_NLS_CODEPAGE_862=y
-> +CONFIG_NLS_CODEPAGE_863=y
-> +CONFIG_NLS_CODEPAGE_864=y
-> +CONFIG_NLS_CODEPAGE_865=y
-> +CONFIG_NLS_CODEPAGE_866=y
-> +CONFIG_NLS_CODEPAGE_869=y
-> +CONFIG_NLS_CODEPAGE_936=y
-> +CONFIG_NLS_CODEPAGE_950=y
-> +CONFIG_NLS_CODEPAGE_932=y
-> +CONFIG_NLS_CODEPAGE_949=y
-> +CONFIG_NLS_CODEPAGE_874=y
-> +CONFIG_NLS_ISO8859_8=y
-> +CONFIG_NLS_CODEPAGE_1250=y
-> +CONFIG_NLS_CODEPAGE_1251=y
-> +CONFIG_NLS_ASCII=y
-> +CONFIG_NLS_ISO8859_1=y
-> +CONFIG_NLS_ISO8859_2=y
-> +CONFIG_NLS_ISO8859_3=y
-> +CONFIG_NLS_ISO8859_4=y
-> +CONFIG_NLS_ISO8859_5=y
-> +CONFIG_NLS_ISO8859_6=y
-> +CONFIG_NLS_ISO8859_7=y
-> +CONFIG_NLS_ISO8859_9=y
-> +CONFIG_NLS_ISO8859_13=y
-> +CONFIG_NLS_ISO8859_14=y
-> +CONFIG_NLS_ISO8859_15=y
-> +CONFIG_NLS_KOI8_R=y
-> +CONFIG_NLS_KOI8_U=y
-> +CONFIG_NLS_UTF8=y
-> +CONFIG_PRINTK_TIME=y
-> +CONFIG_DEBUG_INFO=y
-> +CONFIG_STRIP_ASM_SYMS=y
-> +CONFIG_READABLE_ASM=y
-> +CONFIG_DEBUG_KMEMLEAK=y
-> +CONFIG_DEBUG_MEMORY_INIT=y
-> +CONFIG_DEBUG_STACKOVERFLOW=y
-> +CONFIG_PANIC_ON_OOPS=y
-> +# CONFIG_FTRACE is not set
-> +CONFIG_KGDB=y
-> +CONFIG_RUNTIME_DEBUG=y
-> +CONFIG_CRYPTO_ZLIB=y
-> +# CONFIG_CRYPTO_ANSI_CPRNG is not set
-> +CONFIG_FONTS=y
-> +CONFIG_FONT_SUN8x16=y
+> diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+> index a30035d..cbf9b15 100644
+> --- a/Documentation/virtual/kvm/api.txt
+> +++ b/Documentation/virtual/kvm/api.txt
+> @@ -2104,7 +2104,7 @@ Returns: 0 on success, -1 on error
+>  Allows setting an eventfd to directly trigger a guest interrupt.
+>  kvm_irqfd.fd specifies the file descriptor to use as the eventfd and
+>  kvm_irqfd.gsi specifies the irqchip pin toggled by this event.  When
+> -an event is tiggered on the eventfd, an interrupt is injected into
+> +an event is triggered on the eventfd, an interrupt is injected into
+>  the guest using the specified gsi pin.  The irqfd is removed using
+>  the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
+>  and kvm_irqfd.gsi.
+> @@ -2115,7 +2115,7 @@ interrupts.  When KVM_IRQFD_FLAG_RESAMPLE is set the user must pass an
+>  additional eventfd in the kvm_irqfd.resamplefd field.  When operating
+>  in resample mode, posting of an interrupt through kvm_irq.fd asserts
+>  the specified gsi in the irqchip.  When the irqchip is resampled, such
+> -as from an EOI, the gsi is de-asserted and the user is notifed via
+> +as from an EOI, the gsi is de-asserted and the user is notified via
+>  kvm_irqfd.resamplefd.  It is the user's responsibility to re-queue
+>  the interrupt if the device making use of it still requires service.
+>  Note that closing the resamplefd is not sufficient to disable the
+> diff --git a/Documentation/virtual/kvm/hypercalls.txt b/Documentation/virtual/kvm/hypercalls.txt
+> index d922d73..c8d040e 100644
+> --- a/Documentation/virtual/kvm/hypercalls.txt
+> +++ b/Documentation/virtual/kvm/hypercalls.txt
+> @@ -77,7 +77,7 @@ Usage example : A vcpu of a paravirtualized guest that is busywaiting in guest
+>  kernel mode for an event to occur (ex: a spinlock to become available) can
+>  execute HLT instruction once it has busy-waited for more than a threshold
+>  time-interval. Execution of HLT instruction would cause the hypervisor to put
+> -the vcpu to sleep until occurence of an appropriate event. Another vcpu of the
+> +the vcpu to sleep until occurrence of an appropriate event. Another vcpu of the
+>  same guest can wakeup the sleeping vcpu by issuing KVM_HC_KICK_CPU hypercall,
+>  specifying APIC ID (a1) of the vcpu to be woken up. An additional argument (a0)
+>  is used in the hypercall for future use.
+> diff --git a/Documentation/virtual/kvm/locking.txt b/Documentation/virtual/kvm/locking.txt
+> index f886941..d68af4d 100644
+> --- a/Documentation/virtual/kvm/locking.txt
+> +++ b/Documentation/virtual/kvm/locking.txt
+> @@ -112,7 +112,7 @@ The Dirty bit is lost in this case.
+>  
+>  In order to avoid this kind of issue, we always treat the spte as "volatile"
+>  if it can be updated out of mmu-lock, see spte_has_volatile_bits(), it means,
+> -the spte is always atomicly updated in this case.
+> +the spte is always atomically updated in this case.
+>  
+>  3): flush tlbs due to spte updated
+>  If the spte is updated from writable to readonly, we should flush all TLBs,
+> @@ -125,7 +125,7 @@ be flushed caused by this reason in mmu_spte_update() since this is a common
+>  function to update spte (present -> present).
+>  
+>  Since the spte is "volatile" if it can be updated out of mmu-lock, we always
+> -atomicly update the spte, the race caused by fast page fault can be avoided,
+> +atomically update the spte, the race caused by fast page fault can be avoided,
+>  See the comments in spte_has_volatile_bits() and mmu_spte_update().
+>  
+>  3. Reference
+> diff --git a/Documentation/virtual/kvm/ppc-pv.txt b/Documentation/virtual/kvm/ppc-pv.txt
+> index 4cd076f..4643cde 100644
+> --- a/Documentation/virtual/kvm/ppc-pv.txt
+> +++ b/Documentation/virtual/kvm/ppc-pv.txt
+> @@ -115,7 +115,7 @@ If any other bit changes in the MSR, please still use mtmsr(d).
+>  Patched instructions
+>  ====================
+>  
+> -The "ld" and "std" instructions are transormed to "lwz" and "stw" instructions
+> +The "ld" and "std" instructions are transformed to "lwz" and "stw" instructions
+>  respectively on 32 bit systems with an added offset of 4 to accommodate for big
+>  endianness.
+>  
+> diff --git a/Documentation/virtual/kvm/timekeeping.txt b/Documentation/virtual/kvm/timekeeping.txt
+> index df894637..76808a1 100644
+> --- a/Documentation/virtual/kvm/timekeeping.txt
+> +++ b/Documentation/virtual/kvm/timekeeping.txt
+> @@ -467,7 +467,7 @@ at any time.  This causes problems as the passage of real time, the injection
+>  of machine interrupts and the associated clock sources are no longer completely
+>  synchronized with real time.
+>  
+> -This same problem can occur on native harware to a degree, as SMM mode may
+> +This same problem can occur on native hardware to a degree, as SMM mode may
+>  steal cycles from the naturally on X86 systems when SMM mode is used by the
+>  BIOS, but not in such an extreme fashion.  However, the fact that SMM mode may
+>  cause similar problems to virtualization makes it a good justification for
 > 
 
+
+-- 
+~Randy
