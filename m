@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367Ab3LUQDs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 11:03:48 -0500
-Received: from bitsync.net ([80.83.126.10]:52365 "EHLO bitsync.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754020Ab3LUQDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 11:03:46 -0500
-Message-ID: <52B5BBDF.9010200@bitsync.net>
-Date: Sat, 21 Dec 2013 17:03:43 +0100
-From: Zlatko Calusic <zcalusic@bitsync.net>
+	id S1755414Ab3LUQGK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 11:06:10 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:38315 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754063Ab3LUQGI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Dec 2013 11:06:08 -0500
+Date: Sat, 21 Dec 2013 16:06:01 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Dave Young <dyoung@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        bp@alien8.de, greg@kroah.com, toshi.kani@hp.com,
+        akpm@linux-foundation.org, mingo@kernel.org, msalter@redhat.com,
+        leif.lindholm@linaro.org
+Subject: Re: [PATCH v7 09/12] efi: passing kexec necessary efi data via
+ setup_data
+Message-ID: <20131221160416.GD29501@console-pimps.org>
+References: <1387533742-18018-1-git-send-email-dyoung@redhat.com>
+ <1387533742-18018-10-git-send-email-dyoung@redhat.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/7] Configurable fair allocation zone policy v2r6
-References: <1386943807-29601-1-git-send-email-mgorman@suse.de> <52B068B7.4070304@bitsync.net> <20131217212327.GL11295@suse.de>
-In-Reply-To: <20131217212327.GL11295@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387533742-18018-10-git-send-email-dyoung@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.12.2013 22:23, Mel Gorman wrote:
-> On Tue, Dec 17, 2013 at 04:07:35PM +0100, Zlatko Calusic wrote:
->> On 13.12.2013 15:10, Mel Gorman wrote:
->>> Kicked this another bit today. It's still a bit half-baked but it restores
->>> the historical performance and leaves the door open at the end for playing
->>> nice with distributing file pages between nodes. Finishing this series
->>> depends on whether we are going to make the remote node behaviour of the
->>> fair zone allocation policy configurable or redefine MPOL_LOCAL. I'm in
->>> favour of the configurable option because the default can be redefined and
->>> tested while giving users a "compat" mode if we discover the new default
->>> behaviour sucks for some workload.
->>>
->>
->> I'll start a 5-day test of this patchset in a few hours, unless you
->> can send an updated one in the meantime. I intend to test it on a
->> rather boring 4GB x86_64 machine that before Johannes' work had lots
->> of trouble balancing zones. Would you recommend to use the default
->> settings, i.e. don't mess with tunables at this point?
->>
->
-> For me at least I would prefer you tested v3 of the series with the
-> default settings of not interleaving file-backed pages on remote nodes
-> by default. Johannes might request testing with that knob enabled if the
-> machine is NUMA although I doubt it is with 4G of RAM.
->
+On Fri, 20 Dec, at 06:02:19PM, Dave Young wrote:
+> @@ -133,6 +133,19 @@ extern void efi_sync_low_kernel_mappings(void);
+>  extern void efi_setup_page_tables(void);
+>  extern void __init old_map_region(efi_memory_desc_t *md);
+>  
+> +struct efi_setup_data {
+> +	u64 fw_vendor;
+> +	u64 runtime;
+> +	u64 tables;
+> +	u64 smbios;
+> +	u64 reserved[8];
+> +	efi_memory_desc_t map[0];
+> +};
 
-Tested v3 on UMA machine, with default setting. I see no regression, no 
-issues whatsoever. From what I understand, this whole series is about 
-fixing issues noticed on NUMA, so I wish you good luck with that (no 
-such hardware here). Just be extra careful not to disturb finally very 
-well balanced MM on more common machines (and especially those equipped 
-with 4GB RAM). And once again thank you Johannes for your work, you did 
-a great job.
+[...]
 
-Tested-by: Zlatko Calusic <zcalusic@bitsync.net>
+> +static void get_nr_runtime_map(void)
+> +{
+> +	if (!efi_setup)
+> +		return;
+> +
+> +	nr_efi_runtime_map = (efi_data_len - sizeof(struct efi_setup_data)) /
+> +			     sizeof(efi_memory_desc_t);
+> +}
+
+Do we actually need the 'map' entry in efi_setup_data now that you're
+passing it via efi_info (which is much better approach!)? Also, we don't
+need the global nr_efi_runtime_map or efi_runtime_map variables now,
+right?
+
 -- 
-Zlatko
-
+Matt Fleming, Intel Open Source Technology Center
