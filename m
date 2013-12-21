@@ -1,132 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab3LUXFJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 18:05:09 -0500
-Received: from smtprelay0239.hostedemail.com ([216.40.44.239]:42833 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754054Ab3LUXFG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 18:05:06 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:69:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3354:3865:3870:4321:4605:5007:6120:7652:7875:9592:10004:10400:10848:11026:11658:11914:12043:12294:12296:12438:12517:12519:12555:12679:12683,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: glove73_f0822ae5344f
-X-Filterd-Recvd-Size: 4240
-Message-ID: <1387667101.22671.6.camel@joe-AO722>
-Subject: Re: [RFC v2] ff-memless-next driver
-From: Joe Perches <joe@perches.com>
-To: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@prifuk.cz>
-Cc: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, anssi.hannula@iki.fi,
-        elias.vds@gmail.com
-Date: Sat, 21 Dec 2013 15:05:01 -0800
-In-Reply-To: <2287724.uNI0tVeDgp@geidi-prime>
-References: <2287724.uNI0tVeDgp@geidi-prime>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
+	id S1756323Ab3LUXGs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 18:06:48 -0500
+Received: from kanga.kvack.org ([205.233.56.17]:35992 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754054Ab3LUXGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Dec 2013 18:06:46 -0500
+Date: Sat, 21 Dec 2013 18:06:44 -0500
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kent Overstreet <kmo@daterainc.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Christoph Lameter <cl@gentwo.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCHes - aio / migrate page, please review] Re: bad page state in 3.13-rc4
+Message-ID: <20131221230644.GB29743@kvack.org>
+References: <CA+55aFyoXCDNfHb+r5b=CgKQLPA1wrU_Tmh4ROZNEt5TPjpODA@mail.gmail.com> <20131219181134.GC25385@kmo-pixel> <20131219182920.GG30640@kvack.org> <CA+55aFzCo_r7ZGHk+zqUjmCW2w7-7z9oxEJjhR66tZ4qZPxnvw@mail.gmail.com> <20131219192621.GA9228@kvack.org> <CA+55aFz=tEkVAx9VndtCXApDxcw+5T-BxMsVuXp+vMSb05f8Aw@mail.gmail.com> <20131219195352.GB9228@kvack.org> <20131219202416.GA14519@redhat.com> <20131219233854.GD10905@kvack.org> <20131220010042.GA32112@redhat.com>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131220010042.GA32112@redhat.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Refactoring can help reduce the line lengths.
+[ Patches inline below for people to comment on ]
 
-For example:
+On Thu, Dec 19, 2013 at 08:00:42PM -0500, Dave Jones wrote:
+> On Thu, Dec 19, 2013 at 06:38:54PM -0500, Benjamin LaHaise wrote:
+>  > On Thu, Dec 19, 2013 at 03:24:16PM -0500, Dave Jones wrote:
+>  > > Yes. Note the original trace in this thread was a VM_BUG_ON(atomic_read(&page->_count) <= 0);
+>  > > 
+>  > > Right after these crashes btw, the box locks up solid. So bad that traces don't
+>  > > always make it over usb-serial. Annoying.
+>  > 
+>  > I think I finally have an idea what's going on now.  Kent's changes in 
+>  > e34ecee2ae791df674dfb466ce40692ca6218e43 are broken and result in a memory 
+>  > leak of the aio kioctx.  This eventually leads to the system running out of 
+>  > memory, which ends up triggering the otherwise hard to hit error paths in 
+>  > aio_setup_ring().  Linus' suggested changes should fix the badness in the 
+>  > aio_setup_ring(), but more work has to be done to fix up the percpu 
+>  > reference counting tie in with the aio code.  I'll fix this up in the 
+>  > morning if nobody beats me to it over night, as I'm just heading out right 
+>  > now.
+> 
+> That would explain why I'm having difficulty repeating it in a hurry if it
+> takes hours of runtime for the leak to reach a point where it becomes a problem.
 
-Move the get_envelope function.
-Use get_envelope in set_envelope_times.
----
- drivers/input/ff-memless-next.c | 58 +++++++++++++++++++----------------------
- 1 file changed, 27 insertions(+), 31 deletions(-)
+Okay, I've put the below two patches plus Linus's change through a round 
+of tests, and it passes millions of iterations of the aio numa migratepage 
+test, as well as a number of repetitions of a few simple read and write 
+tests.  The first patch fixes the memory leak Kent introduced, while the 
+second patch makes aio_migratepage() much more paranoid and robust.  Those 
+two changes are in git://git.kvack.org/~bcrl/aio-next.git -- can a few 
+other folks please review to make sure I haven't missed anything?
 
-diff --git a/drivers/input/ff-memless-next.c b/drivers/input/ff-memless-next.c
-index 722601a..73e1127 100644
---- a/drivers/input/ff-memless-next.c
-+++ b/drivers/input/ff-memless-next.c
-@@ -104,34 +104,46 @@ static int mlnx_upload_conditional(struct mlnx_device *mlnxdev,
- 	return mlnxdev->control_effect(mlnxdev->dev, mlnxdev->private, &ecmd);
- }
+Linus, feel free to add my Signed-off-by: to your sanitization of 
+aio_setup_ring() as well, as it works okay in my testing.
+
+		-ben
+-- 
+"Thought is the essence of where you are now."
+
+ aio.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+commit 1881686f842065d2f92ec9c6424830ffc17d23b0
+Author: Benjamin LaHaise <bcrl@kvack.org>
+Date:   Sat Dec 21 15:49:28 2013 -0500
+
+    aio: fix kioctx leak introduced by "aio: Fix a trinity splat"
+    
+    e34ecee2ae791df674dfb466ce40692ca6218e43 reworked the percpu reference
+    counting to correct a bug trinity found.  Unfortunately, the change lead
+    to kioctxes being leaked because there was no final reference count to
+    put.  Add that reference count back in to fix things.
+    
+    Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+    Cc: stable@vger.kernel.org
+
+diff --git a/fs/aio.c b/fs/aio.c
+index 6efb7f6..fd1c0ba 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -652,7 +652,8 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
+ 	aio_nr += ctx->max_reqs;
+ 	spin_unlock(&aio_nr_lock);
  
-+static const struct ff_envelope *mlnx_get_envelope(const struct ff_effect *effect)
-+{
-+	static const struct ff_envelope empty;
-+
-+	switch (effect->type) {
-+	case FF_CONSTANT:
-+		return &effect->u.constant.envelope;
-+	case FF_PERIODIC:
-+		return &effect->u.periodic.envelope;
-+	case FF_RAMP:
-+		return &effect->u.ramp.envelope;
-+	default:
-+		return &empty;
-+	}
-+}
-+
- static void mlnx_set_envelope_times(struct mlnx_effect *mlnxeff)
- {
- 	const struct ff_effect *effect = &mlnxeff->effect;
-+	const struct ff_envelope *env;
+-	percpu_ref_get(&ctx->users); /* io_setup() will drop this ref */
++	percpu_ref_get(&ctx->users);	/* io_setup() will drop this ref */
++	percpu_ref_get(&ctx->reqs);	/* free_ioctx_users() will drop this */
  
- 	switch (effect->type) {
--	case FF_CONSTANT:
--		if (effect->u.constant.envelope.attack_length)
--			mlnxeff->attack_stop = mlnxeff->begin_at + msecs_to_jiffies(effect->u.constant.envelope.attack_length);
--		if (effect->replay.length && effect->u.constant.envelope.fade_length)
--			mlnxeff->fade_begin = mlnxeff->stop_at - msecs_to_jiffies(effect->u.constant.envelope.fade_length);
--		break;
- 	case FF_PERIODIC:
- 		pr_debug("Phase: %u, Offset: %d\n",
- 			 effect->u.periodic.phase, effect->u.periodic.offset);
--		if (effect->u.periodic.envelope.attack_length)
--			mlnxeff->attack_stop = mlnxeff->begin_at + msecs_to_jiffies(effect->u.periodic.envelope.attack_length);
--		if (effect->replay.length && effect->u.periodic.envelope.fade_length)
--			mlnxeff->fade_begin = mlnxeff->stop_at - msecs_to_jiffies(effect->u.periodic.envelope.fade_length);
- 		break;
-+	case FF_CONSTANT:
- 	case FF_RAMP:
--		if (effect->u.ramp.envelope.attack_length)
--			mlnxeff->attack_stop = mlnxeff->begin_at + msecs_to_jiffies(effect->u.ramp.envelope.attack_length);
--		if (effect->replay.length && effect->u.ramp.envelope.fade_length)
--			mlnxeff->fade_begin = mlnxeff->stop_at - msecs_to_jiffies(effect->u.ramp.envelope.fade_length);
- 		break;
- 	default:
--		break;
-+		return;
+ 	err = ioctx_add_table(ctx, mm);
+ 	if (err)
+
+
+ fs/aio.c                |   52 ++++++++++++++++++++++++++++++++++++++++--------
+ include/linux/migrate.h |    3 +-
+ mm/migrate.c            |   13 ++++++------
+ 3 files changed, 53 insertions(+), 15 deletions(-)
+
+commit 8e321fefb0e60bae4e2a28d20fc4fa30758d27c6
+Author: Benjamin LaHaise <bcrl@kvack.org>
+Date:   Sat Dec 21 17:56:08 2013 -0500
+
+    aio/migratepages: make aio migrate pages sane
+    
+    The arbitrary restriction on page counts offered by the core
+    migrate_page_move_mapping() code results in rather suspicious looking
+    fiddling with page reference counts in the aio_migratepage() operation.
+    To fix this, make migrate_page_move_mapping() take an extra_count parameter
+    that allows aio to tell the code about its own reference count on the page
+    being migrated.
+    
+    While cleaning up aio_migratepage(), make it validate that the old page
+    being passed in is actually what aio_migratepage() expects to prevent
+    misbehaviour in the case of races.
+    
+    Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+
+diff --git a/fs/aio.c b/fs/aio.c
+index fd1c0ba..efa708b 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -244,9 +244,14 @@ static void aio_free_ring(struct kioctx *ctx)
+ 	int i;
+ 
+ 	for (i = 0; i < ctx->nr_pages; i++) {
++		struct page *page;
+ 		pr_debug("pid(%d) [%d] page->count=%d\n", current->pid, i,
+ 				page_count(ctx->ring_pages[i]));
+-		put_page(ctx->ring_pages[i]);
++		page = ctx->ring_pages[i];
++		if (!page)
++			continue;
++		ctx->ring_pages[i] = NULL;
++		put_page(page);
  	}
+ 
+ 	put_aio_ring_file(ctx);
+@@ -280,18 +285,38 @@ static int aio_migratepage(struct address_space *mapping, struct page *new,
+ 	unsigned long flags;
+ 	int rc;
+ 
++	rc = 0;
 +
-+	env = mlnx_get_envelope(effect);
-+	if (env->attack_length)
-+		mlnxeff->attack_stop = mlnxeff->begin_at +
-+				       msecs_to_jiffies(env->attack_length);
-+	if (effect->replay.length && env->fade_length)
-+		mlnxeff->fade_begin = mlnxeff->stop_at -
-+				      msecs_to_jiffies(env->fade_length);
- }
++	/* Make sure the old page hasn't already been changed */
++	spin_lock(&mapping->private_lock);
++	ctx = mapping->private_data;
++	if (ctx) {
++		pgoff_t idx;
++		spin_lock_irqsave(&ctx->completion_lock, flags);
++		idx = old->index;
++		if (idx < (pgoff_t)ctx->nr_pages) {
++			if (ctx->ring_pages[idx] != old)
++				rc = -EAGAIN;
++		} else
++			rc = -EINVAL;
++		spin_unlock_irqrestore(&ctx->completion_lock, flags);
++	} else
++		rc = -EINVAL;
++	spin_unlock(&mapping->private_lock);
++
++	if (rc != 0)
++		return rc;
++
+ 	/* Writeback must be complete */
+ 	BUG_ON(PageWriteback(old));
+-	put_page(old);
++	get_page(new);
  
- static void mlnx_set_trip_times(struct mlnx_effect *mlnxeff,
-@@ -185,22 +197,6 @@ static void mlnx_stop_effect(struct mlnx_device *mlnxdev,
+-	rc = migrate_page_move_mapping(mapping, new, old, NULL, mode);
++	rc = migrate_page_move_mapping(mapping, new, old, NULL, mode, 1);
+ 	if (rc != MIGRATEPAGE_SUCCESS) {
+-		get_page(old);
++		put_page(new);
+ 		return rc;
  	}
- }
  
--static const struct ff_envelope *mlnx_get_envelope(const struct ff_effect *effect)
--{
--	static const struct ff_envelope empty;
+-	get_page(new);
 -
--	switch (effect->type) {
--	case FF_CONSTANT:
--		return &effect->u.constant.envelope;
--	case FF_PERIODIC:
--		return &effect->u.periodic.envelope;
--	case FF_RAMP:
--		return &effect->u.ramp.envelope;
--	default:
--		return &empty;
--	}
--}
--
- static s32 mlnx_apply_envelope(const struct mlnx_effect *mlnxeff,
- 			       const s32 level)
+ 	/* We can potentially race against kioctx teardown here.  Use the
+ 	 * address_space's private data lock to protect the mapping's
+ 	 * private_data.
+@@ -303,13 +328,24 @@ static int aio_migratepage(struct address_space *mapping, struct page *new,
+ 		spin_lock_irqsave(&ctx->completion_lock, flags);
+ 		migrate_page_copy(new, old);
+ 		idx = old->index;
+-		if (idx < (pgoff_t)ctx->nr_pages)
+-			ctx->ring_pages[idx] = new;
++		if (idx < (pgoff_t)ctx->nr_pages) {
++			/* And only do the move if things haven't changed */
++			if (ctx->ring_pages[idx] == old)
++				ctx->ring_pages[idx] = new;
++			else
++				rc = -EAGAIN;
++		} else
++			rc = -EINVAL;
+ 		spin_unlock_irqrestore(&ctx->completion_lock, flags);
+ 	} else
+ 		rc = -EBUSY;
+ 	spin_unlock(&mapping->private_lock);
+ 
++	if (rc == MIGRATEPAGE_SUCCESS)
++		put_page(old);
++	else
++		put_page(new);
++
+ 	return rc;
+ }
+ #endif
+diff --git a/include/linux/migrate.h b/include/linux/migrate.h
+index b7717d7..f015c05 100644
+--- a/include/linux/migrate.h
++++ b/include/linux/migrate.h
+@@ -55,7 +55,8 @@ extern int migrate_huge_page_move_mapping(struct address_space *mapping,
+ 				  struct page *newpage, struct page *page);
+ extern int migrate_page_move_mapping(struct address_space *mapping,
+ 		struct page *newpage, struct page *page,
+-		struct buffer_head *head, enum migrate_mode mode);
++		struct buffer_head *head, enum migrate_mode mode,
++		int extra_count);
+ #else
+ 
+ static inline void putback_lru_pages(struct list_head *l) {}
+diff --git a/mm/migrate.c b/mm/migrate.c
+index e9b7102..9194375 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -317,14 +317,15 @@ static inline bool buffer_migrate_lock_buffers(struct buffer_head *head,
+  */
+ int migrate_page_move_mapping(struct address_space *mapping,
+ 		struct page *newpage, struct page *page,
+-		struct buffer_head *head, enum migrate_mode mode)
++		struct buffer_head *head, enum migrate_mode mode,
++		int extra_count)
  {
-
-
+-	int expected_count = 0;
++	int expected_count = 1 + extra_count;
+ 	void **pslot;
+ 
+ 	if (!mapping) {
+ 		/* Anonymous page without mapping */
+-		if (page_count(page) != 1)
++		if (page_count(page) != expected_count)
+ 			return -EAGAIN;
+ 		return MIGRATEPAGE_SUCCESS;
+ 	}
+@@ -334,7 +335,7 @@ int migrate_page_move_mapping(struct address_space *mapping,
+ 	pslot = radix_tree_lookup_slot(&mapping->page_tree,
+  					page_index(page));
+ 
+-	expected_count = 2 + page_has_private(page);
++	expected_count += 1 + page_has_private(page);
+ 	if (page_count(page) != expected_count ||
+ 		radix_tree_deref_slot_protected(pslot, &mapping->tree_lock) != page) {
+ 		spin_unlock_irq(&mapping->tree_lock);
+@@ -584,7 +585,7 @@ int migrate_page(struct address_space *mapping,
+ 
+ 	BUG_ON(PageWriteback(page));	/* Writeback must be complete */
+ 
+-	rc = migrate_page_move_mapping(mapping, newpage, page, NULL, mode);
++	rc = migrate_page_move_mapping(mapping, newpage, page, NULL, mode, 0);
+ 
+ 	if (rc != MIGRATEPAGE_SUCCESS)
+ 		return rc;
+@@ -611,7 +612,7 @@ int buffer_migrate_page(struct address_space *mapping,
+ 
+ 	head = page_buffers(page);
+ 
+-	rc = migrate_page_move_mapping(mapping, newpage, page, head, mode);
++	rc = migrate_page_move_mapping(mapping, newpage, page, head, mode, 0);
+ 
+ 	if (rc != MIGRATEPAGE_SUCCESS)
+ 		return rc;
