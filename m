@@ -1,85 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754940Ab3LURxJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 12:53:09 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:60298 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754063Ab3LURxI (ORCPT
+	id S1755547Ab3LURzP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 12:55:15 -0500
+Received: from smtp-out-221.synserver.de ([212.40.185.221]:1055 "EHLO
+	smtp-out-142.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755169Ab3LURzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 12:53:08 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <52B5D582.8060303@roeck-us.net>
-Date: Sat, 21 Dec 2013 09:53:06 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Sat, 21 Dec 2013 12:55:13 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 7631
+Message-ID: <52B5C821.7040206@metafoo.de>
+Date: Sat, 21 Dec 2013 17:56:01 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>
-CC: Anthony Olech <anthony.olech.opensource@diasemi.com>,
-        lm-sensors@lm-sensors.org, Anton Vorontsov <anton@enomsg.org>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        David Dajun Chen <david.chen@diasemi.com>
-Subject: Re: [lm-sensors] [PATCH V1] fix adc to voltage calculation in da9052
-  power driver
-References: <201312181524.rBIFOv96017094@swsrvapps-02.lan>	<20131218163234.714a166c@endymion.delvare>	<24DF37198A1E704D9811D8F72B87EB51847ABF61@NB-EX-MBX02.diasemi.com>	<20131218172402.GA18892@roeck-us.net>	<24DF37198A1E704D9811D8F72B87EB51847AC2C3@NB-EX-MBX02.diasemi.com>	<20131219155454.40100f4d@endymion.delvare>	<20131219181049.GA6854@roeck-us.net> <20131221183037.2ad91f86@endymion.delvare>
-In-Reply-To: <20131221183037.2ad91f86@endymion.delvare>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Apelete Seketeli <apelete@seketeli.net>
+CC: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>, John Crispin <blogic@openwrt.org>
+Subject: Re: [PATCH] mips: qi_lb60: add defconfig for Ben NanoNote
+References: <1387402619-22921-1-git-send-email-apelete@seketeli.net> <1387402619-22921-2-git-send-email-apelete@seketeli.net>
+In-Reply-To: <1387402619-22921-2-git-send-email-apelete@seketeli.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2013 09:30 AM, Jean Delvare wrote:
-> Hi Guenter, hi Anthony,
->
-> On Thu, 19 Dec 2013 10:10:49 -0800, Guenter Roeck wrote:
->> On Thu, Dec 19, 2013 at 03:54:54PM +0100, Jean Delvare wrote:
->>> BTW, you (and we) probably shouldn't waste too much energy on this.
->>> ADCs are only accurate to some degree anyway. If you take the
->>> components connected to the input into consideration, the accuracy gets
->>> even worse. For example, if the input voltage must be scaled down to
->>> fit in the ADC's range, you need at least one resistor, which in best
->>> cases will have a 1% accurate value (known as tolerance.) That's ten
->>> times the LSB of your 10-bit ADC, at which point / 1023 or / 1024
->>> really makes no practical difference. Sub-percent tolerant resistors are
->>> expensive and rare in consumer electronics in my experience.
->>
->> True, but on the other side (and after looking into the datasheet)
->> the driver already calculated the voltage on adc4..6 correctly,
->> so unless you disagree I would like to apply the hwmon patch to -next
->> for consistency.
->
-> The datasheet isn't the best quality I've seen. The gain values
-> mentioned to not even match the formulas in the same cell... But I can't
-> object to implementing conversions the way the datasheet says, no
-> matter how suspicious.
->
-> I don't really know what tree the patch is based on. Anthony said
-> linux-next but I can't see ichg_reg_to_mA there.
->
-I didn't check the power patch, but the hwmon patch applied cleanly to
-the current upstream.
+On 12/18/2013 10:36 PM, Apelete Seketeli wrote:
+> Add defconfig for the Ben NanoNote handheld computer which is built
+> around QI_LB60 board and Ingenic JZ4740 MIPS SoC.
+> 
+> Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
 
-> If volt_reg_to_mv is updated then you certainly want to update
-> vbbat_reg_to_mv the same way, as it diverges from the datasheet just
-> the same.
->
-He is doing that in the hwmon patch. I don't see vbbat_reg_to_mv()
-in the power driver, at least not in the upstream version.
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
 
-> Also, please update Documentation/hwmon/da9052 so that the
-> documentation matches the actual driver code.
->
-You are right, that needs to be updated as well.
-
-> I really would like to hear what David Dajun Chen has to say about
-> that. He must have had a reason to use different conversions formulas
-> than the datasheet specifies.
->
-
-Hmm ... if this was done on purpose, I'd like to see a comment somewhere
-describing why the formula in the datasheet isn't used, to avoid this kind
-of back-and-forth in the future.
-
-Thanks,
-Guenter
+> ---
+>  arch/mips/configs/qi_lb60_defconfig |  188 +++++++++++++++++++++++++++++++++++
+>  1 file changed, 188 insertions(+)
+>  create mode 100644 arch/mips/configs/qi_lb60_defconfig
+> 
+> diff --git a/arch/mips/configs/qi_lb60_defconfig b/arch/mips/configs/qi_lb60_defconfig
+> new file mode 100644
+> index 0000000..2b96547
+> --- /dev/null
+> +++ b/arch/mips/configs/qi_lb60_defconfig
+> @@ -0,0 +1,188 @@
+> +CONFIG_MACH_JZ4740=y
+> +# CONFIG_COMPACTION is not set
+> +# CONFIG_CROSS_MEMORY_ATTACH is not set
+> +CONFIG_HZ_100=y
+> +CONFIG_PREEMPT=y
+> +# CONFIG_SECCOMP is not set
+> +# CONFIG_LOCALVERSION_AUTO is not set
+> +CONFIG_SYSVIPC=y
+> +CONFIG_LOG_BUF_SHIFT=14
+> +CONFIG_SYSCTL_SYSCALL=y
+> +CONFIG_KALLSYMS_ALL=y
+> +CONFIG_EMBEDDED=y
+> +# CONFIG_VM_EVENT_COUNTERS is not set
+> +# CONFIG_COMPAT_BRK is not set
+> +CONFIG_SLAB=y
+> +CONFIG_MODULES=y
+> +CONFIG_MODULE_UNLOAD=y
+> +# CONFIG_BLK_DEV_BSG is not set
+> +CONFIG_PARTITION_ADVANCED=y
+> +# CONFIG_EFI_PARTITION is not set
+> +# CONFIG_IOSCHED_CFQ is not set
+> +# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+> +CONFIG_NET=y
+> +CONFIG_PACKET=y
+> +CONFIG_UNIX=y
+> +CONFIG_INET=y
+> +CONFIG_IP_MULTICAST=y
+> +CONFIG_IP_ADVANCED_ROUTER=y
+> +CONFIG_IP_MULTIPLE_TABLES=y
+> +CONFIG_IP_ROUTE_MULTIPATH=y
+> +CONFIG_IP_ROUTE_VERBOSE=y
+> +CONFIG_IP_MROUTE=y
+> +CONFIG_IP_MROUTE_MULTIPLE_TABLES=y
+> +# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
+> +# CONFIG_INET_XFRM_MODE_TUNNEL is not set
+> +# CONFIG_INET_XFRM_MODE_BEET is not set
+> +# CONFIG_INET_LRO is not set
+> +# CONFIG_INET_DIAG is not set
+> +CONFIG_TCP_CONG_ADVANCED=y
+> +# CONFIG_TCP_CONG_BIC is not set
+> +# CONFIG_TCP_CONG_CUBIC is not set
+> +CONFIG_TCP_CONG_WESTWOOD=y
+> +# CONFIG_TCP_CONG_HTCP is not set
+> +# CONFIG_IPV6 is not set
+> +CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
+> +# CONFIG_FIRMWARE_IN_KERNEL is not set
+> +CONFIG_MTD=y
+> +CONFIG_MTD_BLOCK=y
+> +CONFIG_MTD_NAND=y
+> +CONFIG_MTD_NAND_JZ4740=y
+> +CONFIG_MTD_UBI=y
+> +CONFIG_NETDEVICES=y
+> +# CONFIG_WLAN is not set
+> +# CONFIG_INPUT_MOUSEDEV is not set
+> +CONFIG_INPUT_EVDEV=y
+> +# CONFIG_KEYBOARD_ATKBD is not set
+> +CONFIG_KEYBOARD_GPIO=y
+> +CONFIG_KEYBOARD_MATRIX=y
+> +# CONFIG_INPUT_MOUSE is not set
+> +CONFIG_INPUT_MISC=y
+> +# CONFIG_SERIO is not set
+> +CONFIG_LEGACY_PTY_COUNT=2
+> +# CONFIG_DEVKMEM is not set
+> +CONFIG_SERIAL_8250=y
+> +CONFIG_SERIAL_8250_CONSOLE=y
+> +# CONFIG_SERIAL_8250_DMA is not set
+> +CONFIG_SERIAL_8250_NR_UARTS=2
+> +CONFIG_SERIAL_8250_RUNTIME_UARTS=2
+> +# CONFIG_HW_RANDOM is not set
+> +CONFIG_SPI=y
+> +CONFIG_SPI_GPIO=y
+> +CONFIG_POWER_SUPPLY=y
+> +CONFIG_BATTERY_JZ4740=y
+> +CONFIG_CHARGER_GPIO=y
+> +# CONFIG_HWMON is not set
+> +CONFIG_MFD_JZ4740_ADC=y
+> +CONFIG_REGULATOR=y
+> +CONFIG_REGULATOR_FIXED_VOLTAGE=y
+> +CONFIG_FB=y
+> +CONFIG_FB_JZ4740=y
+> +CONFIG_BACKLIGHT_LCD_SUPPORT=y
+> +CONFIG_LCD_CLASS_DEVICE=y
+> +# CONFIG_BACKLIGHT_CLASS_DEVICE is not set
+> +# CONFIG_VGA_CONSOLE is not set
+> +CONFIG_FRAMEBUFFER_CONSOLE=y
+> +CONFIG_LOGO=y
+> +# CONFIG_LOGO_LINUX_MONO is not set
+> +# CONFIG_LOGO_LINUX_VGA16 is not set
+> +# CONFIG_LOGO_LINUX_CLUT224 is not set
+> +CONFIG_SOUND=y
+> +CONFIG_SND=y
+> +# CONFIG_SND_SUPPORT_OLD_API is not set
+> +# CONFIG_SND_VERBOSE_PROCFS is not set
+> +# CONFIG_SND_DRIVERS is not set
+> +# CONFIG_SND_SPI is not set
+> +# CONFIG_SND_MIPS is not set
+> +CONFIG_SND_SOC=y
+> +CONFIG_SND_JZ4740_SOC=y
+> +CONFIG_SND_JZ4740_SOC_QI_LB60=y
+> +CONFIG_USB=y
+> +CONFIG_USB_OTG_BLACKLIST_HUB=y
+> +CONFIG_USB_MUSB_HDRC=y
+> +CONFIG_USB_MUSB_GADGET=y
+> +CONFIG_USB_MUSB_JZ4740=y
+> +CONFIG_NOP_USB_XCEIV=y
+> +CONFIG_USB_GADGET=y
+> +CONFIG_USB_GADGET_DEBUG=y
+> +CONFIG_USB_ETH=y
+> +# CONFIG_USB_ETH_RNDIS is not set
+> +CONFIG_MMC=y
+> +CONFIG_MMC_UNSAFE_RESUME=y
+> +# CONFIG_MMC_BLOCK_BOUNCE is not set
+> +CONFIG_MMC_JZ4740=y
+> +CONFIG_RTC_CLASS=y
+> +CONFIG_RTC_DRV_JZ4740=y
+> +CONFIG_DMADEVICES=y
+> +CONFIG_DMA_JZ4740=y
+> +CONFIG_PWM=y
+> +CONFIG_PWM_JZ4740=y
+> +CONFIG_EXT2_FS=y
+> +CONFIG_EXT3_FS=y
+> +# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
+> +# CONFIG_EXT3_FS_XATTR is not set
+> +# CONFIG_DNOTIFY is not set
+> +CONFIG_VFAT_FS=y
+> +CONFIG_PROC_KCORE=y
+> +# CONFIG_PROC_PAGE_MONITOR is not set
+> +CONFIG_TMPFS=y
+> +CONFIG_JFFS2_FS=y
+> +CONFIG_JFFS2_SUMMARY=y
+> +CONFIG_JFFS2_COMPRESSION_OPTIONS=y
+> +# CONFIG_JFFS2_ZLIB is not set
+> +CONFIG_UBIFS_FS=y
+> +CONFIG_UBIFS_FS_ADVANCED_COMPR=y
+> +# CONFIG_NETWORK_FILESYSTEMS is not set
+> +CONFIG_NLS_CODEPAGE_437=y
+> +CONFIG_NLS_CODEPAGE_737=y
+> +CONFIG_NLS_CODEPAGE_775=y
+> +CONFIG_NLS_CODEPAGE_850=y
+> +CONFIG_NLS_CODEPAGE_852=y
+> +CONFIG_NLS_CODEPAGE_855=y
+> +CONFIG_NLS_CODEPAGE_857=y
+> +CONFIG_NLS_CODEPAGE_860=y
+> +CONFIG_NLS_CODEPAGE_861=y
+> +CONFIG_NLS_CODEPAGE_862=y
+> +CONFIG_NLS_CODEPAGE_863=y
+> +CONFIG_NLS_CODEPAGE_864=y
+> +CONFIG_NLS_CODEPAGE_865=y
+> +CONFIG_NLS_CODEPAGE_866=y
+> +CONFIG_NLS_CODEPAGE_869=y
+> +CONFIG_NLS_CODEPAGE_936=y
+> +CONFIG_NLS_CODEPAGE_950=y
+> +CONFIG_NLS_CODEPAGE_932=y
+> +CONFIG_NLS_CODEPAGE_949=y
+> +CONFIG_NLS_CODEPAGE_874=y
+> +CONFIG_NLS_ISO8859_8=y
+> +CONFIG_NLS_CODEPAGE_1250=y
+> +CONFIG_NLS_CODEPAGE_1251=y
+> +CONFIG_NLS_ASCII=y
+> +CONFIG_NLS_ISO8859_1=y
+> +CONFIG_NLS_ISO8859_2=y
+> +CONFIG_NLS_ISO8859_3=y
+> +CONFIG_NLS_ISO8859_4=y
+> +CONFIG_NLS_ISO8859_5=y
+> +CONFIG_NLS_ISO8859_6=y
+> +CONFIG_NLS_ISO8859_7=y
+> +CONFIG_NLS_ISO8859_9=y
+> +CONFIG_NLS_ISO8859_13=y
+> +CONFIG_NLS_ISO8859_14=y
+> +CONFIG_NLS_ISO8859_15=y
+> +CONFIG_NLS_KOI8_R=y
+> +CONFIG_NLS_KOI8_U=y
+> +CONFIG_NLS_UTF8=y
+> +CONFIG_PRINTK_TIME=y
+> +CONFIG_DEBUG_INFO=y
+> +CONFIG_STRIP_ASM_SYMS=y
+> +CONFIG_READABLE_ASM=y
+> +CONFIG_DEBUG_KMEMLEAK=y
+> +CONFIG_DEBUG_MEMORY_INIT=y
+> +CONFIG_DEBUG_STACKOVERFLOW=y
+> +CONFIG_PANIC_ON_OOPS=y
+> +# CONFIG_FTRACE is not set
+> +CONFIG_KGDB=y
+> +CONFIG_RUNTIME_DEBUG=y
+> +CONFIG_CRYPTO_ZLIB=y
+> +# CONFIG_CRYPTO_ANSI_CPRNG is not set
+> +CONFIG_FONTS=y
+> +CONFIG_FONT_SUN8x16=y
+> 
 
