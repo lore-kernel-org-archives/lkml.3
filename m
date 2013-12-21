@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711Ab3LUCeU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 21:34:20 -0500
-Received: from mga02.intel.com ([134.134.136.20]:57395 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752629Ab3LUCeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 21:34:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,525,1384329600"; 
-   d="scan'208";a="428127138"
-Message-ID: <1387593256.3510.181.camel@dvhart-mobl4.amr.corp.intel.com>
-Subject: Re: [PATCH v3 4/4] futex: Avoid taking hb lock if nothing to wakeup
-From: Darren Hart <dvhart@linux.intel.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, Jeff Mahoney <jeffm@suse.com>,
-        Jason Low <jason.low2@hp.com>, Waiman Long <Waiman.Long@hp.com>,
-        Tom Vaden <tom.vaden@hp.com>, "Norton, Scott J" <scott.norton@hp.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Ingo Molnar <mingo@kernel.org>
-Date: Fri, 20 Dec 2013 18:34:16 -0800
-In-Reply-To: <1387589770.3119.2.camel@buesod1.americas.hpqcorp.net>
-References: <1387478746-5436-1-git-send-email-davidlohr@hp.com>
-	 <1387478746-5436-5-git-send-email-davidlohr@hp.com>
-	 <CA+55aFxY_sMes2=0tz0qTKH5-fpAaLji_xd9CdU-u2JxxNN6pA@mail.gmail.com>
-	 <1387589770.3119.2.camel@buesod1.americas.hpqcorp.net>
-Organization: Intel
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753874Ab3LUCg0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 21:36:26 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:45953 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752457Ab3LUCgZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 21:36:25 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131220213321.32d59343@corrin.poochiereds.net>
+References: <CA+55aFzYZEmNEHQVgWS6usVnDVi-8ar7ZzP+eUGrqoO2OP66kA@mail.gmail.com>
+	<20131220173935.0812cc4e.akpm@linux-foundation.org>
+	<CA+55aFwwXKAs0dyJJ2FAcJj-okqqLYQsPsSask1p_nXvyrtWXw@mail.gmail.com>
+	<20131220213321.32d59343@corrin.poochiereds.net>
+Date: Fri, 20 Dec 2013 18:36:24 -0800
+X-Google-Sender-Auth: tSSxHwczRDz5S7QXtf0LrozaLno
+Message-ID: <CA+55aFyzVE91GZCD7sNzGn4x=MUjXM9SU0a_UFvVVDfxquXMzA@mail.gmail.com>
+Subject: Re: Broken initrd compression settings in 3.13
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, P J P <ppandit@redhat.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-12-20 at 17:36 -0800, Davidlohr Bueso wrote:
-> On Thu, 2013-12-19 at 15:14 -0800, Linus Torvalds wrote:
-> > On Thu, Dec 19, 2013 at 10:45 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> > >
-> > > - increment the counter at queue_lock() as we always end up calling
-> > >   queue_me() which adds the element to the list. Upon any error,
-> > >   queue_unlock() is called for housekeeping, for which we decrement
-> > >   to mach the increment done in queue_lock().
-> > >
-> > > - decrement the counter at __unqueue_me() to reflect when an element is
-> > >   removed from the queue for wakeup related purposes.
-> > 
-> > I still hate this whole separate counter thing. It seems really annoying.
-> > 
-> > If re-ordering things didn't work out, then why can't just the counter
-> > we *already* have in the spinlock itself work as the counter? Your
-> > counter update logic seems to basically match when you take the
-> > spinlock anyway.
-> 
-> So the following has passed all testing, just like the atomics variant.
-> Thoughts?
+On Fri, Dec 20, 2013 at 6:33 PM, Jeff Layton <jlayton@redhat.com> wrote:
+>
+> Perhaps a better solution for this would be to instead export an
+> env var with a list of the compression algorithms that the kernel
+> supports. Then installkernel or dracut could use that info to make a
+> semi-intelligent decision based on that and what tools are installed.
+>
+> ...or maybe a separate env var for each one that it supports:
+>
+>     $INITRD_COMPRESS_LZ4
+>     $INITRD_COMPRESS_BZIP2
+>     $INITRD_COMPRESS_GZIP
+>
+> ...etc.
 
-Do you have similar performance numbers for comparison? I presume they
-were *very* similar to the atomics version - I think you hinted at that
-in a previous post?
+Agreed, either of those would work.
 
+Of course, so does just "distro selects whatever compression method it
+thinks is best, and when you compile a kernel for that distro, you
+need to make sure that that kernel knows how to uncompress the
+initrd".
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+Which quite frankly is the sanest approach of all. *Especially*
+considering that right now we default to supporting all the initrd
+compression methods.
 
+And it has the advantage of not needing anything like this at all.
 
+When you compile a kernel, you already need to compile in support for
+the stuff the distro needs. This is no different, really.
+
+So I think the whole "kernel tells the distro what compression method
+to use" approach is broken and silly, and the wrong way around.
+
+              Linus
