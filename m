@@ -1,52 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771Ab3LUAJO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 19:09:14 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49386 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752730Ab3LUAJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 19:09:13 -0500
-Message-ID: <52B4DC15.6090004@zytor.com>
-Date: Fri, 20 Dec 2013 16:08:53 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754079Ab3LUAJj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 19:09:39 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49396 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657Ab3LUAJh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 19:09:37 -0500
+Date: Fri, 20 Dec 2013 16:09:26 -0800
+From: "tip-bot for H.J. Lu" <tipbot@zytor.com>
+Message-ID: <tip-b70fedc15892de8bc78f711d7821dd0916cc5508@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com, hjl.tools@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com, hjl.tools@gmail.com
+In-Reply-To: <CAMe9rOquPtWEro0GQ=Z95pZJ=c7GGkSHynjN4FbiB4p445x-Ng@mail.gmail.com>
+References: <CAMe9rOquPtWEro0GQ=Z95pZJ=c7GGkSHynjN4FbiB4p445x-Ng@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/x32] x86, x32: Use __kernel_long_t/
+ __kernel_ulong_t in x86-64 stat.h
+Git-Commit-ID: b70fedc15892de8bc78f711d7821dd0916cc5508
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: "Luck, Tony" <tony.luck@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Prarit Bhargava <prarit@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Michel Lespinasse <walken@google.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        "Zhang, Yang Z" <yang.z.zhang@intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "Morgan, Janet" <janet.morgan@intel.com>,
-        "ruiv.wang@gmail.com" <ruiv.wang@gmail.com>,
-        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>
-Subject: Re: [PATCH] x86: Add check for number of available vectors before
- CPU down [v3]
-References: <1387554609-9823-1-git-send-email-prarit@redhat.com> <20131220225624.GD22695@tassilo.jf.intel.com> <3908561D78D1C84285E8C5FCA982C28F31D8F0E9@ORSMSX106.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31D8F0E9@ORSMSX106.amr.corp.intel.com>
-X-Enigmail-Version: 1.6
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 20 Dec 2013 16:09:32 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2013 03:06 PM, Luck, Tony wrote:
->> I haven't double checked, but I'm assuming the hot plug locks are held
->> while you are doing this.
-> 
-> I dug into that when looking at v2 - the whole thing is under "stop_machine()"
-> so locking was not an issue.
-> 
-> Reviewed-by: Tony Luck <tony.luck@intel.com>
-> 
+Commit-ID:  b70fedc15892de8bc78f711d7821dd0916cc5508
+Gitweb:     http://git.kernel.org/tip/b70fedc15892de8bc78f711d7821dd0916cc5508
+Author:     H.J. Lu <hjl.tools@gmail.com>
+AuthorDate: Mon, 16 Dec 2013 16:09:51 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 20 Dec 2013 16:04:35 -0800
 
-Awesome, thank you!  I have queued this up for Linus already as a fix
-for 3.13, as it seems important enough.
+x86, x32: Use __kernel_long_t/__kernel_ulong_t in x86-64 stat.h
 
-	-hpa
+Both x32 and x86-64 use the same stat system call interface.  But x32
+long is 32-bit.  This patch changes x86 uapi <asm/stat.h> to use
+ __kernel_long_t/__kernel_ulong_t in x86-64 stat.
 
+Signed-off-by: H.J. Lu <hjl.tools@gmail.com>
+Link: http://lkml.kernel.org/r/CAMe9rOquPtWEro0GQ=Z95pZJ=c7GGkSHynjN4FbiB4p445x-Ng@mail.gmail.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/uapi/asm/stat.h | 42 +++++++++++++++++++++-------------------
+ 1 file changed, 22 insertions(+), 20 deletions(-)
 
+diff --git a/arch/x86/include/uapi/asm/stat.h b/arch/x86/include/uapi/asm/stat.h
+index 7b3ddc3..bc03eb5 100644
+--- a/arch/x86/include/uapi/asm/stat.h
++++ b/arch/x86/include/uapi/asm/stat.h
+@@ -1,6 +1,8 @@
+ #ifndef _ASM_X86_STAT_H
+ #define _ASM_X86_STAT_H
+ 
++#include <asm/posix_types.h>
++
+ #define STAT_HAVE_NSEC 1
+ 
+ #ifdef __i386__
+@@ -78,26 +80,26 @@ struct stat64 {
+ #else /* __i386__ */
+ 
+ struct stat {
+-	unsigned long	st_dev;
+-	unsigned long	st_ino;
+-	unsigned long	st_nlink;
+-
+-	unsigned int	st_mode;
+-	unsigned int	st_uid;
+-	unsigned int	st_gid;
+-	unsigned int	__pad0;
+-	unsigned long	st_rdev;
+-	long		st_size;
+-	long		st_blksize;
+-	long		st_blocks;	/* Number 512-byte blocks allocated. */
+-
+-	unsigned long	st_atime;
+-	unsigned long	st_atime_nsec;
+-	unsigned long	st_mtime;
+-	unsigned long	st_mtime_nsec;
+-	unsigned long	st_ctime;
+-	unsigned long   st_ctime_nsec;
+-	long		__unused[3];
++	__kernel_ulong_t	st_dev;
++	__kernel_ulong_t	st_ino;
++	__kernel_ulong_t	st_nlink;
++
++	unsigned int		st_mode;
++	unsigned int		st_uid;
++	unsigned int		st_gid;
++	unsigned int		__pad0;
++	__kernel_ulong_t	st_rdev;
++	__kernel_long_t		st_size;
++	__kernel_long_t		st_blksize;
++	__kernel_long_t		st_blocks;	/* Number 512-byte blocks allocated. */
++
++	__kernel_ulong_t	st_atime;
++	__kernel_ulong_t	st_atime_nsec;
++	__kernel_ulong_t	st_mtime;
++	__kernel_ulong_t	st_mtime_nsec;
++	__kernel_ulong_t	st_ctime;
++	__kernel_ulong_t	st_ctime_nsec;
++	__kernel_long_t		__unused[3];
+ };
+ 
+ /* We don't need to memset the whole thing just to initialize the padding */
