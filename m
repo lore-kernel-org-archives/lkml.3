@@ -1,91 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612Ab3LUGs0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 01:48:26 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:22450 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166Ab3LUGsZ (ORCPT
+	id S1752324Ab3LUHck (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 02:32:40 -0500
+Received: from mail-qe0-f67.google.com ([209.85.128.67]:41799 "EHLO
+	mail-qe0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab3LUHcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 01:48:25 -0500
-Message-ID: <1387608497.3119.17.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v3 13/14] mm, hugetlb: retry if failed to allocate and
- there is concurrent user
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Rik van Riel <riel@redhat.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>, aswin@hp.com
-Date: Fri, 20 Dec 2013 22:48:17 -0800
-In-Reply-To: <20131220140153.GC11295@suse.de>
-References: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com>
-	 <1387349640-8071-14-git-send-email-iamjoonsoo.kim@lge.com>
-	 <20131219170202.0df2d82a2adefa3ab616bdaa@linux-foundation.org>
-	 <20131220140153.GC11295@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 21 Dec 2013 02:32:39 -0500
+MIME-Version: 1.0
+Reply-To: mrnyegogo@gmail.com
+Date: Sat, 21 Dec 2013 07:32:38 +0000
+X-Google-Sender-Auth: RVljgGc-Q1Nn18EYTgW60lrxX84
+Message-ID: <CAE=+AjwKVHFPi4e5-s-qAOMB8i+-7fZAONWLStsKM9w7Suy=dQ@mail.gmail.com>
+Subject: Strictly confidential,
+From: Mr Nye Gogo <mrnyegogo@gmail.com>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-12-20 at 14:01 +0000, Mel Gorman wrote:
-> On Thu, Dec 19, 2013 at 05:02:02PM -0800, Andrew Morton wrote:
-> > On Wed, 18 Dec 2013 15:53:59 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> > 
-> > > If parallel fault occur, we can fail to allocate a hugepage,
-> > > because many threads dequeue a hugepage to handle a fault of same address.
-> > > This makes reserved pool shortage just for a little while and this cause
-> > > faulting thread who can get hugepages to get a SIGBUS signal.
-> > > 
-> > > To solve this problem, we already have a nice solution, that is,
-> > > a hugetlb_instantiation_mutex. This blocks other threads to dive into
-> > > a fault handler. This solve the problem clearly, but it introduce
-> > > performance degradation, because it serialize all fault handling.
-> > > 
-> > > Now, I try to remove a hugetlb_instantiation_mutex to get rid of
-> > > performance degradation.
-> > 
-> > So the whole point of the patch is to improve performance, but the
-> > changelog doesn't include any performance measurements!
-> > 
-> 
-> I don't really deal with hugetlbfs any more and I have not examined this
-> series but I remember why I never really cared about this mutex. It wrecks
-> fault scalability but AFAIK fault scalability almost never mattered for
-> workloads using hugetlbfs.  The most common user of hugetlbfs by far is
-> sysv shared memory. The memory is faulted early in the lifetime of the
-> workload and after that it does not matter. At worst, it hurts application
-> startup time but that is still poor motivation for putting a lot of work
-> into removing the mutex.
+-- 
 
-Yep, important hugepage workloads initially pound heavily on this lock,
-then it naturally decreases.
+Dear friend,
+I know that this message will come to you as a surprise. I am
+Nyejiowanka Gogo from Burkina Faso the Accounting and Auditing Manager
+bank of Africa (B.O.A), Ouagadougou
 
-> Microbenchmarks will be able to trigger problems in this area but it'd
-> be important to check if any workload that matters is actually hitting
-> that problem.
+I hoped that you will not expose or betray this trust and confident
+that I am about to repose on you for the mutual benefit of our
+families. I need your urgent assistance in transferring the sum of
+(usd$25m) million to your account within 10 to 14 banking days. This
+money has been dormant for years in our bank without claim. I want the
+bank to release the money to you as the nearest person to our deceased
+customer (the owner of the account) died along with his supposed next
+of kin in an air crash since July, 2000.
 
-I was thinking of writing one to actually get some numbers for this
-patchset -- I don't know of any benchmark that might stress this lock. 
+I don't want the money to go into our bank treasurer account as an
+abandoned fund. So this is the reason why I contacted you so that the
+bank can release the money to you as the next of kin to the deceased
+customer. Please I would like you to keep this proposal as a top
+secret and delete it if you are not upon receipt of your reply, I will
+give you full details on how the business will be executed and also
+note that you will have 40% of the above mentioned sum if you agree to
+handle this business with me? And 10% will be set aside for any
+expenses that warrant on the process before the fund get into your
+bank account such as telephone calls bills (etc).
 
-However I first measured the amount of cycles it costs to start an
-Oracle DB and things went south with these changes. A simple 'startup
-immediate' calls hugetlb_fault() ~5000 times. For a vanilla kernel, this
-costs ~7.5 billion cycles and with this patchset it goes up to ~27.1
-billion. While there is naturally a fair amount of variation, these
-changes do seem to do more harm than good, at least in real world
-scenarios.
+Finally send your photo or your international passports for more identification.
 
-Thanks,
-Davidlohr
+(1)Your Full Name
+(2)You Age
+(3) Sex
+(4)You Country
+(5)You Telephone Number
+(6)Your Occupation
 
+Best Regards,
+Mr. Nyejiowanka Gogo
