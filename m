@@ -1,85 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756505Ab3LVBbn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 20:31:43 -0500
-Received: from ozlabs.org ([203.10.76.45]:55171 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756099Ab3LVBbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 20:31:24 -0500
-Date: Sun, 22 Dec 2013 00:58:19 +1100
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH v3 03/14] mm, hugetlb: protect region tracking via newly
- introduced resv_map lock
-Message-ID: <20131221135819.GB12407@voom.fritz.box>
-References: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1387349640-8071-4-git-send-email-iamjoonsoo.kim@lge.com>
+	id S1756580Ab3LVBpg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 20:45:36 -0500
+Received: from exprod5og117.obsmtp.com ([64.18.0.149]:37770 "HELO
+	exprod5og117.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756099Ab3LVBpd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Dec 2013 20:45:33 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5I6of5zJg18YgZEa"
-Content-Disposition: inline
-In-Reply-To: <1387349640-8071-4-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201312212104.58732.arnd@arndb.de>
+References: <1387594651-25771-1-git-send-email-rapatel@apm.com>
+	<1387594651-25771-3-git-send-email-rapatel@apm.com>
+	<201312212104.58732.arnd@arndb.de>
+Date: Sat, 21 Dec 2013 17:45:30 -0800
+Message-ID: <CAN1v_PsVdEbi4sz8n6kU+Gor0MqT3yde+t6znHjZLwf4Q_f+tw@mail.gmail.com>
+Subject: Re: [PATCH V2 2/4] misc: xgene: Add base driver for APM X-Gene SoC
+ Queue Manager/Traffic Manager
+From: Ravi Patel <rapatel@apm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg KH <gregkh@linuxfoundation.org>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        jcm@redhat.com, "patches@apm.com" <patches@apm.com>,
+        Keyur Chudgar <kchudgar@apm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Dec 21, 2013 at 12:04 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Saturday 21 December 2013, Ravi Patel wrote:
+>> +/* CSR Address Macros */
+>> +#define CSR_QM_CONFIG_ADDR   0x00000004
+>> +#define  QM_ENABLE_WR(src)   (((u32)(src)<<31) & 0x80000000)
+>> +
+>> +#define CSR_PBM_ADDR         0x00000008
+>> +#define  OVERWRITE_WR(src)   (((u32)(src)<<31) & 0x80000000)
+>> +#define  SLVID_PBN_WR(src)   (((u32)(src)) & 0x000003ff)
+>> +#define  SLAVE_ID_SHIFT              6
+>> +
+>> +#define CSR_PBM_BUF_WR_ADDR  0x0000000c
+>> +#define CSR_PBM_BUF_RD_ADDR  0x00000010
+>> +#define  PB_SIZE_WR(src)     (((u32)(src)<<31) & 0x80000000)
+>> +#define  PREFETCH_BUF_EN_SET(dst, src) \
+>> +     (((dst) & ~0x00200000) | (((u32)(src)<<21) & 0x00200000))
+>> +#define  IS_FREE_POOL_SET(dst, src) \
+>> +     (((dst) & ~0x00100000) | (((u32)(src)<<20) & 0x00100000))
+>> +#define  TLVQ_SET(dst, src) \
+>> +     (((dst) & ~0x00080000) | (((u32)(src)<<19) & 0x00080000))
+>> +#define  CORRESPONDING_QNUM_SET(dst, src) \
+>> +     (((dst) & ~0x0007fe00) | (((u32)(src)<<9) & 0x0007fe00))
+>
+> These macros are rather unreadable and unhelpful. Can't you just
+> open-code them in the users?
 
---5I6of5zJg18YgZEa
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Sure, will take of this in next patch.
 
-On Wed, Dec 18, 2013 at 03:53:49PM +0900, Joonsoo Kim wrote:
-> There is a race condition if we map a same file on different processes.
-> Region tracking is protected by mmap_sem and hugetlb_instantiation_mutex.
-> When we do mmap, we don't grab a hugetlb_instantiation_mutex, but,
-> grab a mmap_sem. This doesn't prevent other process to modify region
-> structure, so it can be modified by two processes concurrently.
->=20
-> To solve this, I introduce a lock to resv_map and make region manipulation
-> function grab a lock before they do actual work. This makes region
-> tracking safe.
+>> +#define CSR_THRESHOLD0_SET1_ADDR     0x00000030
+>> +#define CSR_THRESHOLD1_SET1_ADDR     0x00000034
+>> +#define CSR_HYSTERESIS_ADDR          0x00000068
+>> +#define CSR_QM_MBOX_NE_INT_MODE_ADDR 0x0000017c
+>> +#define CSR_QMLITE_PBN_MAP_0_ADDR    0x00000228
+>
+> What about all the other registers in between?
 
-It's not clear to me if you're saying there is a list corruption race
-bug in the existing code, or only that there will be if the
-instantiation mutex goes away.
+All the other registers in between needs no change in values, default
+values are fine.
+These registers are not accessed and so we didn't defined them.
+Let us know if you need them for a reason.
 
---=20
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
+>> +void xgene_qmtm_wr32(struct xgene_qmtm *qmtm, u32 offset, u32 data)
+>> +{
+>> +     void *addr = (u8 *)qmtm->csr_vaddr + offset;
+>> +     writel(data, addr);
+>> +}
+>
+> Type mismatch: writel requires a "void __iomem*" pointer. Please check your
+> driver using "sparse" to find bugs like this.
 
---5I6of5zJg18YgZEa
-Content-Type: application/pgp-signature
+Sure, will take care of this in next patch
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+>> +/**
+>> + * xgene_qmtm_set_qinfo - Create and configure a queue
+>> + * @sdev:    Slave context
+>> + * @qtype:   Queue type (P_QUEUE or FP_QUEUE)
+>> + * @qsize:   Queue size see xgene_qmtm_qsize
+>> + * @qaccess: Queue access method see xgene_qmtm_qaccess
+>> + * @flags:   Queue Information flags
+>> + * @qpaddr:  If Desire Queue Physical Address to use
+>> + *
+>> + * This API will be called by APM X-Gene SOC Ethernet, PktDMA (XOR Engine),
+>> + * and Security Engine subsystems to create and configure a queue.
+>> + *
+>> + * Return:   0 on Success or -1 on Failure
+>
+> -1 on failure is not an appropriate return code. Please use standard
+> error numbers such as -EINVAL.
 
-iQIcBAEBAgAGBQJStZ57AAoJEGw4ysog2bOSBdEQAOaAOMmUK8EGKd1tAgG6wpF9
-UydrFqPy5nTreKrDrL3PwTR/EXfoK6+nnH99sh1QR19iPSpkA4sgmzKvHqCfHk31
-fBC8ry6Ghc8yyUEVCcSjwZ0UIE9sGFD+9PFB+/uLe+XzsO+bsTOk88AJQ5qyDBP6
-7FP1ECjP0DZaBWrLfUpSjZbYy8VWzjwHvLfy78C+syrflfaQ9DQEEtEdTI6ZJpmV
-D7gT45jjuLvjuPIzSMk3d73GlkJxTlrNp2r3wF5nq+73i8OmG9MBL/NcvRWmvi59
-ZxDTUPf8l34bqg8JdAIbzfRizeAPy1Wi5AXzqNs8eriJN8Esvq2mmtFm/1fTR8Hm
-VyKrLoEYN6/N6wcBAZLuwrZNe++OfowUn9+GkCkG7QEGxaMDZlDtzT4Lup8qmRvB
-tZlgujwR66m98keYa3a4CFlsnDiyfFiEvXg7Luwf419C4aH5sQlIRkHnxpv8v9Rz
-F3BKM/hnQ+VcdYKa0N5BEMCgi3yebtfbtZ0+c0ksMdPfdzUoP8EWc+MkzhbJpzRx
-mDOHOPm+nVWWgd3/hG88k/7a4/OEga+fYFaY/8UoJyL34Bi/iSRH/OnekiAi5DNi
-Esb5rRmAOCGXuWzK5b7Z2svlWqj56g/KM4fk2yGpuUf68wcGTezBqOuX7LbbX30d
-yxsXD8omoGoDjCzs99s/
-=AvLd
------END PGP SIGNATURE-----
+Sure, will take care of this in next patch
 
---5I6of5zJg18YgZEa--
+>> +     rc = of_property_read_string(pdev->dev.of_node, "slave-name", &name);
+>> +     if (rc < 0) {
+>> +             dev_err(&pdev->dev, "Failed to get QMTM Ingress slave-name\n");
+>> +             return rc;
+>> +     }
+>> +
+>> +     sdev = xgene_qmtm_get_sdev((char *)name);
+>> +     if (sdev == NULL) {
+>> +             dev_err(&pdev->dev, "Ingress Slave error\n");
+>> +             return -ENODEV;
+>> +     }
+>
+> Why are you referring to another device by a string? Shouldn't that be a phandle?
+
+Let me go through this and find the possibility.
+
+>> +static struct of_device_id xgene_qmtm_match[] = {
+>> +     {.compatible = "apm,xgene-qmtm-xge0",},
+>> +     {.compatible = "apm,xgene-qmtm-soc",},
+>> +     {.compatible = "apm,xgene-qmtm-xge2",},
+>> +     {.compatible = "apm,xgene-qmtm-lite",},
+>> +     {},
+>> +};
+>> +
+>> +MODULE_DEVICE_TABLE(of, xgene_qmtm_match);
+>
+> You don't seem to differentiate between the four different strings. Why can't
+> they just all be compatible to "apm,xgene-qmtm"?
+
+All the QMTM manages resources for different subsystems.
+So all the 4 QMTM are different, so each of them should have a unique identity.
+
+>> +
+>> +#define VIRT_TO_PHYS(x)      virt_to_phys(x)
+>> +#define PHYS_TO_VIRT(x)      phys_to_virt(x)
+>
+> These don't belong here, use the standard functions. Also, it seems unlikely that a
+> device driver actually wants physical addresses. Are these used for DMA?
+
+The memory addresses passed in this macro/function are not used for DMA.
+For creating a physical queue in the QMTM hardware, it needs the
+physical address
+of the queue kmalloc'ed by the driver,
+
+>> +static struct xgene_qmtm_sdev storm_sdev[SLAVE_MAX] = {
+>> +     [SLAVE_ETH0] = {
+>> +                     .name = "SGMII0",
+>> +                     .compatible = "apm,xgene-qmtm-soc",
+>> +                     .slave = SLAVE_ETH0,
+>> +                     .qmtm_ip = QMTM1,
+>> +                     .slave_id = QMTM_SLAVE_ID_ETH0,
+>> +                     .wq_pbn_start = 0x00,
+>> +                     .wq_pbn_count = 0x08,
+>> +                     .fq_pbn_start = 0x20,
+>> +                     .fq_pbn_count = 0x08,
+>> +                     },
+>
+> This table is backwards: the qmtm driver provides services to client drivers,
+> it should have zero knowledge about what the clients are.
+>
+> Remove this array here and put the data into properties of the client
+> drivers.
+
+QMTM is managing the queue resources in its hardware for all the clients.
+The clients meaning, Ethernet, PktDMA (XOR Engine) and Security Engine,
+has zero knowledge of its qm resources.
+So for that reason this array defining QMTM's client properties is
+defined in QMTM driver
+
+>> +     if (qinfo->flags & XGENE_SLAVE_Q_ADDR_ALLOC) {
+>> +             qinfo->qdesc->qvaddr = kzalloc(qsize, GFP_KERNEL);
+>> +             if (qinfo->qdesc->qvaddr == NULL) {
+>> +                     kfree(qinfo->qdesc);
+>> +                     rc = -ENOMEM;
+>> +                     goto _ret_set_qstate;
+>> +             }
+>> +
+>> +             qinfo->qpaddr = (u64) VIRT_TO_PHYS(qinfo->qdesc->qvaddr);
+>> +     } else {
+>> +             qinfo->qdesc->qvaddr = PHYS_TO_VIRT(qinfo->qpaddr);
+>> +             memset(qinfo->qdesc->qvaddr, 0, qsize);
+>> +     }
+>
+> This looks a lot like you are doing DMA. Please use the appropriate DMA
+> abstractions for this.
+
+Sure, will take are for the DMA abstraction in next revision.
+
+>> +struct xgene_qmtm_sdev *storm_qmtm_get_sdev(char *name)
+>> +{
+>> +     struct xgene_qmtm *qmtm = NULL;
+>> +     struct xgene_qmtm_sdev *sdev = NULL;
+>> +     struct device_node *np = NULL;
+>> +     struct platform_device *platdev;
+>> +     u8 slave;
+>> +
+>> +     for (slave = 0; slave < SLAVE_MAX; slave++) {
+>> +             sdev = &storm_sdev[slave];
+>> +             if (sdev->name && strcmp(name, sdev->name) == 0) {
+>> +                     np = of_find_compatible_node(NULL, NULL,
+>> +                             sdev->compatible);
+>> +                     break;
+>> +             }
+>> +     }
+>> +
+>> +     if (np == NULL)
+>> +             return NULL;
+>> +
+>> +     platdev = of_find_device_by_node(np);
+>> +     qmtm = platform_get_drvdata(platdev);
+>
+> Get rid of the of_find_compatible_node() here, this is another indication that
+> you are doing things backwards.
+
+Since QMTM is managing resource for its client, we have defined the mapping
+in the QMTM driver.
+So whenever QMTM client like Ethernet driver probe is called, it will
+pass on its ID/slave-name
+to get its context which is managed by QMTM
+
+>> +/* QMTM messaging structures */
+>> +/* 16 byte QMTM message format */
+>> +struct xgene_qmtm_msg16 {
+>> +     u32 UserInfo;
+>> +
+>> +     u32 FPQNum:12;
+>> +     u32 Rv2:2;
+>> +     u32 ELErr:2;
+>> +     u32 LEI:2;
+>> +     u32 NV:1;
+>> +     u32 LL:1;
+>> +     u32 PB:1;
+>> +     u32 HB:1;
+>> +     u32 Rv:1;
+>> +     u32 IN:1;
+>> +     u32 RType:4;
+>> +     u32 LErr:3;
+>> +     u32 HL:1;
+>> +
+>> +     u64 DataAddr:42;        /* 32/10 split */
+>> +     u32 Rv6:6;
+>> +     u32 BufDataLen:15;
+>> +     u32 C:1;
+>> +} __packed;
+>
+> Bitfields are generally not endian-safe. Better use raw u32 values and
+> bit masks. Also don't use __packed in hardware descriptors, as it messes
+> up atomicity of accesses.
+
+I explained in another email the reason for using bit fields.
+Let me know if you want me to paste it here again.
+
+Thanks,
+Ravi
