@@ -1,47 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756431Ab3LVW5D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Dec 2013 17:57:03 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:53078 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755932Ab3LVW5B (ORCPT
+	id S1756620Ab3LVXYS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Dec 2013 18:24:18 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:1831 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756181Ab3LVXYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Dec 2013 17:57:01 -0500
-Date: Sun, 22 Dec 2013 17:56:59 -0500 (EST)
-Message-Id: <20131222.175659.1156282573702420627.davem@davemloft.net>
-To: nhorman@tuxdriver.com
-Cc: linux-sctp@vger.kernel.org, vyasevich@gmail.com,
-        gregkh@linuxfoundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/2] sctp: Consolidate and ratelimit deprecation
- warnings
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1387297199-14363-1-git-send-email-nhorman@tuxdriver.com>
-References: <1387205049-22752-1-git-send-email-nhorman@tuxdriver.com>
-	<1387297199-14363-1-git-send-email-nhorman@tuxdriver.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Sun, 22 Dec 2013 18:24:17 -0500
+Message-ID: <1387754649.2838.1.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v4 3/4] futex: Document ordering guarantees
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        paulmck@linux.vnet.ibm.com, efault@gmx.de, jeffm@suse.com,
+        torvalds@linux-foundation.org, jason.low2@hp.com, Waiman.Long@hp.com,
+        tom.vaden@hp.com, scott.norton@hp.com, aswin@hp.com,
+        Ingo Molnar <mingo@kernel.org>
+Date: Sun, 22 Dec 2013 15:24:09 -0800
+In-Reply-To: <1387495199.3510.38.camel@dvhart-mobl4.amr.corp.intel.com>
+References: <1387485950-7320-1-git-send-email-davidlohr@hp.com>
+	 <1387485950-7320-4-git-send-email-davidlohr@hp.com>
+	 <52B35C64.3050504@infradead.org>
+	 <1387486823.5494.5.camel@buesod1.americas.hpqcorp.net>
+	 <1387487274.3510.18.camel@dvhart-mobl4.amr.corp.intel.com>
+	 <52B37BAA.60200@infradead.org>
+	 <1387495199.3510.38.camel@dvhart-mobl4.amr.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Sun, 22 Dec 2013 14:57:01 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Neil Horman <nhorman@tuxdriver.com>
-Date: Tue, 17 Dec 2013 11:19:57 -0500
-
-> The SCTP protocol has several deprecation warnings in its setsockopt path that
-> can be triggered by unprivlidged users.  Since these are not ratelimited, we can
-> spam the logs quite easily here.  Since these are all deprecation warnings, and
-> that type of warning isn't uncommon in the rest of the kernel, lets make a
-> common pr_warn_deprecated macro to produce somewhat generalized ratelimited
-> deprecation warnings easily
+On Thu, 2013-12-19 at 15:19 -0800, Darren Hart wrote:
+> On Thu, 2013-12-19 at 15:05 -0800, Randy Dunlap wrote:
+> > On 12/19/13 13:07, Darren Hart wrote:
+> > > On Thu, 2013-12-19 at 13:00 -0800, Davidlohr Bueso wrote:
+> > >> On Thu, 2013-12-19 at 12:51 -0800, Randy Dunlap wrote:
+> > >>> On 12/19/13 12:45, Davidlohr Bueso wrote:
+> > >>>> From: Thomas Gleixner <tglx@linutronix.de>
+> > >>>>
+> > >>>> That's essential, if you want to hack on futexes.
+> > >>>>
+> > >>>> Cc: Ingo Molnar <mingo@kernel.org>
+> > >>>> Cc: Darren Hart <dvhart@linux.intel.com>
+> > >>>> Acked-by: Peter Zijlstra <peterz@infradead.org>
+> > >>>> Cc: Thomas Gleixner <tglx@linutronix.de>
+> > >>>> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > >>>> Cc: Mike Galbraith <efault@gmx.de>
+> > >>>> Cc: Jeff Mahoney <jeffm@suse.com>
+> > >>>> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> > >>>> Cc: Scott Norton <scott.norton@hp.com>
+> > >>>> Cc: Tom Vaden <tom.vaden@hp.com>
+> > >>>> Cc: Aswin Chandramouleeswaran <aswin@hp.com>
+> > >>>> Cc: Waiman Long <Waiman.Long@hp.com>
+> > >>>> Cc: Jason Low <jason.low2@hp.com>
+> > >>>> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> > >>>> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> > >>>> ---
+> > >>>>  kernel/futex.c | 57 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> > >>>>  1 file changed, 57 insertions(+)
+> > >>>>
+> > >>>> diff --git a/kernel/futex.c b/kernel/futex.c
+> > >>>> index 577481d..af1fc31 100644
+> > >>>> --- a/kernel/futex.c
+> > >>>> +++ b/kernel/futex.c
+> > >>>> @@ -69,6 +69,63 @@
+> > >>>>  
+> > >>>>  #include "locking/rtmutex_common.h"
+> > >>>>  
+> > >>>> +/*
+> > >>>> + * Basic futex operation and ordering guarantees:
+> > >>>> + *
+> > >>>> + * The waiter reads the futex value in user space and calls
+> > >>>> + * futex_wait(). It computes the hash bucket and acquires the hash
+> > >>>
+> > >>> does                It
+> > >>> refer to "the waiter" or to futex_wait()?
+> > >>> I read it as referring to the waiter, but ISTM that the comments are using It
+> > >>> to refer to futex_wait()... ???
+> > >>>
+> > >>
+> > >> Yes, it refers to futex_wait(), which IMO in a futex context is pretty
+> > >> clear.
+> > > 
+> > > 
+> > > Agreed.
+> > > 
+> > > 
+> > 
+> > I'll just have to get by with disagreeing with both of you then.
+> > I say that the pronoun's antecedent is ambiguous (unclear).
+> > 
 > 
-> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+> You are correct from a purely grammatical perspective, no argument
+> there. I just feel that the comment is clear enough from the context -
+> although perhaps people that hack on futexes should be excluded from
+> having an opinion here as we are biased :-)
+> 
+> If Davidlohr is going to resubmit for other reasons, then by all means,
+> please correct this per Randy's suggestion - I just didn't want to put
+> him (Davidlohr ;-) through another round of patches for this alone.
+> 
+> Thanks for ensuring our docs are as clear as possible Randy!
 
-Neil, I really wish you would CC: netdev on all of the patches in the
-series.  Otherwise only some of them end up in patchwork, and this makes
-a lot more work for me if I want to actually apply this, which I do.
+Absolutely.
 
-Please resubmit this properly, thanks.
+I've found that we have the same grammatical error when describing
+futex_wake() as well, so I've updated the doc to say "This function"
+instead of "It".
+
+Thanks,
+Davidlohr
+
