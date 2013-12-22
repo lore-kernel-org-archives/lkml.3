@@ -1,89 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756375Ab3LVAkO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 19:40:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33776 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755141Ab3LVAkL (ORCPT
+	id S1756605Ab3LVAsN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 19:48:13 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:60883 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756269Ab3LVAsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 19:40:11 -0500
-Date: Sat, 21 Dec 2013 16:40:23 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ravi Patel <rapatel@apm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, jcm@redhat.com,
-        "patches@apm.com" <patches@apm.com>, Keyur Chudgar <kchudgar@apm.com>
-Subject: Re: [PATCH 2/4] misc: xgene: Add base driver for APM X-Gene SoC
- Queue Manager/Traffic Manager
-Message-ID: <20131222004023.GA15645@kroah.com>
-References: <1387507503-7565-1-git-send-email-rapatel@apm.com>
- <1387507503-7565-3-git-send-email-rapatel@apm.com>
- <20131220032002.GA32310@kroah.com>
- <CAN1v_PtWrRQ6i0HAOACGP4ahgMB1393GnZS-OG6LTyPcsnpvhg@mail.gmail.com>
+	Sat, 21 Dec 2013 19:48:11 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH V2 0/3] PM: Enable option of re-use runtime PM callbacks at system suspend
+Date: Sun, 22 Dec 2013 02:01:35 +0100
+Message-ID: <1670603.cXT40Mn7Pp@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1605004.ViTQsllvdk@vostro.rjw.lan>
+References: <1386682662-17633-1-git-send-email-ulf.hansson@linaro.org> <CAPDyKFrS6k1Zd5=XQX4ODk2=obo89bk-Z6aJvv+3WsrHw3nGbg@mail.gmail.com> <1605004.ViTQsllvdk@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAN1v_PtWrRQ6i0HAOACGP4ahgMB1393GnZS-OG6LTyPcsnpvhg@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 21, 2013 at 04:20:04PM -0800, Ravi Patel wrote:
-> On Thu, Dec 19, 2013 at 7:20 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Thu, Dec 19, 2013 at 06:45:01PM -0800, Ravi Patel wrote:
-> >> --- /dev/null
-> >> +++ b/drivers/misc/xgene/qmtm/Kconfig
-> >> @@ -0,0 +1,8 @@
-> >> +config XGENE_QMTM
-> >> +     tristate "APM X-Gene QMTM driver"
-> >> +     depends on ARCH_XGENE
-> >
-> > What does it need from this arch in order to build?  What would be
-> > needed to get it to build on other arches so that it gets some actualy
-> > build testing?
+On Friday, December 20, 2013 02:18:22 PM Rafael J. Wysocki wrote:
+> On Friday, December 20, 2013 09:43:16 AM Ulf Hansson wrote:
+> > On 10 December 2013 14:37, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> > > To put devices into low power state during system suspend, it is convenient
+> > > for some runtime PM supported power domains, subsystems and drivers to have
+> > > the option of re-using and invoking the runtime PM callbacks from their system
+> > > PM callbacks.
+> > >
+> > > The benefit is that we don't need to implement wrapper functions which
+> > > handles runtime PM resourses, typically called from both runtime PM and system
+> > > PM callbacks.
+> > >
+> > > Some new helper macros for defining the PM callbacks are added.
+> > >
+> > > SET_PM_RUNTIME_PM_OPS; to define runtime PM callbacks for CONFIG_PM instead of
+> > > CONFIG_PM_RUNTIME.
+> > >
+> > > SET_LATE_SYSTEM_SLEEP_PM_OPS; to define common late/early system PM callbacks,
+> > > same approach is applicable to the existing SET_SYSTEM_SLEEP_PM_OPS which
+> > > defines common suspend/resume system PM callbacks.
+> > >
+> > > A minor fix was needed for the platform bus, which runtime PM callbacks are set
+> > > to the pm_generic_runtime_suspend|resume functions. These were implemented only
+> > > for CONFIG_PM_RUNTIME and thus the platform bus prevented driver's runtime PM
+> > > callbacks to be invoked when only CONFIG_PM_SLEEP was used. We move them into
+> > > CONFIG_PM to resolve the problem.
+> > >
+> > > Changes in v2:
+> > >         Updated commit messages to try to better reflect the changes.
+> > >         Removed the below patches from this patch set. Let's leave those to be
+> > >         addressed separately, if needed.
+> > >         - PM / Sleep: Add pm_generic functions to re-use runtime PM callbacks
+> > >         - drm/exynos: Convert to suspend_late/resume_early callbacks for fimc
+> > >
+> > >
+> > > Ulf Hansson (3):
+> > >   PM / Runtime: Add second macro for definition of runtime PM callbacks
+> > >   PM / Runtime: Implement the pm_generic_runtime functions for
+> > >     CONFIG_PM
+> > >   PM / Sleep: Add macro to define common late/early system PM callbacks
+> > >
+> > >  drivers/base/power/generic_ops.c |    4 ++--
+> > >  include/linux/pm.h               |   21 +++++++++++++++++++++
+> > >  include/linux/pm_runtime.h       |   12 ++++++++----
+> > >  3 files changed, 31 insertions(+), 6 deletions(-)
+> > >
+> > > --
+> > > 1.7.9.5
+> > >
+> > 
+> > Hi,
+> > 
+> > Just wanted to send a kind ping on this patchset.
+> > 
+> > Would be nice to try to conclude on the way forward after the quite
+> > long and good discussions we had around this topic.
 > 
-> In patch v2 added, depends on ARM64 || COMPILE_TEST in order to
-> support build testing for other arches.
-> If you think we should have no dependency at all, let us know.
+> Sorry, I was traveling last week.  I'm processing my backlog now, hopefully
+> I'll get to your patches shortly.
 
-That's fine, but it's pretty obvious you didn't check this as your v2
-version can't build on non XGENE systems :(
+So I've just queued them up for 3.14.
 
-> > u64 for a bitfield?  Is that even valid C?  This is pretty scary from a
-> > bitfield perspective, what about different endian and addressing modes?
-> 
-> Currently the patch is supporting only ARM64 LE mode.
-> We will fix u64 bit-field with multiple u32 bit-fields for supporting
-> ARM32 LE Mode.
+Thanks!
 
-Don't use bitfields, use bit shifts, that way it doesn't matter what
-endian the system is that it is running on at all.
-
-> > Any chance to just use shifts to access the fields properly, like most
-> > drivers do, in a endian-neutral way to get the data out and into the
-> > structures?
-> >
-> > Same goes for the other structures in this file.
-> 
-> I agree with you that code with bit-mask and bit-shift takes care for
-> endian-neutral mode.
-> But QMTM in BE Mode, behaves differently by expecting message format
-> in memory as follow:
-> Swapping at 128 bits level.
-> a. For each 16 bytes, group of 4 bytes needs be swapped Higher to
-> lower <-> lower to higher,
-> b. As well as each bytes/bit fields in the group of 4 bytes also needs
-> to be swapped.
-> So because of 128 bit level swap, there will be complete different
-> code for bit-mask, bit-shift for BE and LE
-> So to support ARM64 BE and ARM32 BE, we are planning to just
-> re-arrange bit-fields reversely in the structures for BE and LE.
-
-I'll hold off and wait to see what you create, but I think it will be
-more complex than just using a bit shift...
-
-good luck,
-
-greg k-h
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
