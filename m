@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751Ab3LVCzx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 21:55:53 -0500
-Received: from server2.sluzby.cz ([77.93.220.217]:41500 "EHLO server.aweo.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750898Ab3LVCzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 21:55:43 -0500
-X-Greylist: delayed 473 seconds by postgrey-1.27 at vger.kernel.org; Sat, 21 Dec 2013 21:55:43 EST
-To: linux-kernel@vger.kernel.org
-Subject: Tt:Lieber Freund*
-X-PHP-Originating-Script: 33:ml.php(46) : eval()'d code
-From: Anna@server.aweo.cz, Baylo@server.aweo.cz, Esq@server.aweo.cz,
-        <b.18799@t-online.de>
-Reply-To: a.baylo@aol.com
-MIME-Version: 1.0
+	id S1754542Ab3LVC7p (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 21:59:45 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:63177 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751696Ab3LVC7o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Dec 2013 21:59:44 -0500
+Date: Sat, 21 Dec 2013 21:59:43 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tom Zanussi <tom.zanussi@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] tracing: Move tracing_alloc_snapshot() declaration
+ to tracing.h
+Message-ID: <20131221215943.655309c5@gandalf.local.home>
+In-Reply-To: <d7a0a7b99848c48e3a4abe50fc94390a1d0ca967.1387662969.git.tom.zanussi@linux.intel.com>
+References: <cover.1387662969.git.tom.zanussi@linux.intel.com>
+	<d7a0a7b99848c48e3a4abe50fc94390a1d0ca967.1387662969.git.tom.zanussi@linux.intel.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <20131222024553.C5173C5E6D@server.aweo.cz>
-Date: Sun, 22 Dec 2013 03:29:23 +0100 (CET)
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 21 Dec 2013 16:44:00 -0600
+Tom Zanussi <tom.zanussi@linux.intel.com> wrote:
 
+> tracing_alloc_snapshot() is only used internally by
+> alloc_tracing_snapshot() and trace_event_triggers.c and doesn't need
+> to be in kernel.h.  Move it to trace.h, which is more appropriate and
+> both include.
+> 
+> Reported-by: kbuild test robot <fengguang.wu@intel.com>
+> Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
 
-Lieber,
+I simply folded this patch into "tracing: Add 'snapshot' event trigger
+command".
 
+The ftrace/core branch can be rebased. I haven't put this into my
+for-next branch yet which I do not rebase (unless there's a major
+reason to do so).
 
-
-Ich bin eine Rechtsanwaeltin und ich brauche Ihre Hilfe bei der Rueckfuehrung von $ 13.5 Mio. (Dreizehn Mio. und fuenfhundert Tausend US-Dollar), hinterlegt durch einen Kunden, der mit seiner ganzen Familie hier in Barcelona starb. Ich gebe Ihnen weitere Informationen, nach Ihrer Reaktion auf diesen Vorschlag. Schicken Sie mir Ihre Telefonnummer, damit ich es Ihnen im Detail erklaeren kann.
-
-
-
-Alle Versuche, Mitglieder seiner Familie zu finden, war erfolglos
-
-
-
-Anna Baylo
-
-anna.baylo@aol.com
-
-
+-- Steve
