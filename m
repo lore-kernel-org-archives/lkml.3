@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab3LVP3K (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Dec 2013 10:29:10 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:60124 "EHLO
+	id S1755528Ab3LVP32 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Dec 2013 10:29:28 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:53387 "EHLO
 	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754077Ab3LVP3I (ORCPT
+	with ESMTP id S1755369Ab3LVP31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Dec 2013 10:29:08 -0500
+	Sun, 22 Dec 2013 10:29:27 -0500
 From: Jiang Liu <liuj97@gmail.com>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Will Deacon <will.deacon@arm.com>,
         Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
         AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH v7 1/7] arm64: introduce basic aarch64 instruction decoding helpers
-Date: Sun, 22 Dec 2013 23:25:37 +0800
-Message-Id: <1387725944-810-2-git-send-email-liuj97@gmail.com>
+Subject: [PATCH v7 2/7] arm64: introduce interfaces to hotpatch kernel and module code
+Date: Sun, 22 Dec 2013 23:25:38 +0800
+Message-Id: <1387725944-810-3-git-send-email-liuj97@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1387725944-810-1-git-send-email-liuj97@gmail.com>
 References: <1387725944-810-1-git-send-email-liuj97@gmail.com>
@@ -27,211 +25,190 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce basic aarch64 instruction decoding helper
-aarch64_get_insn_class() and aarch64_insn_hotpatch_safe().
+Introduce three interfaces to patch kernel and module code:
+aarch64_insn_patch_text_nosync():
+	patch code without synchronization, it's caller's responsibility
+	to synchronize all CPUs if needed.
+aarch64_insn_patch_text_sync():
+	patch code and always synchronize with stop_machine()
+aarch64_insn_patch_text():
+	patch code and synchronize with stop_machine() if needed
 
-Reviewed-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
 ---
- arch/arm64/include/asm/insn.h | 77 ++++++++++++++++++++++++++++++++++++
- arch/arm64/kernel/Makefile    |  2 +-
- arch/arm64/kernel/insn.c      | 91 +++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 169 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm64/include/asm/insn.h
- create mode 100644 arch/arm64/kernel/insn.c
+ arch/arm64/include/asm/insn.h |  10 +++-
+ arch/arm64/kernel/insn.c      | 119 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 128 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm64/include/asm/insn.h b/arch/arm64/include/asm/insn.h
-new file mode 100644
-index 0000000..1bdc44c
---- /dev/null
+index 1bdc44c..bf8085f 100644
+--- a/arch/arm64/include/asm/insn.h
 +++ b/arch/arm64/include/asm/insn.h
-@@ -0,0 +1,77 @@
-+/*
-+ * Copyright (C) 2013 Huawei Ltd.
-+ * Author: Jiang Liu <liuj97@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#ifndef	__ASM_INSN_H
-+#define	__ASM_INSN_H
-+#include <linux/types.h>
-+
-+/*
-+ * ARM Architecture Reference Manual for ARMv8 Profile-A, Issue A.a
-+ * Section C3.1 "A64 instruction index by encoding":
-+ * AArch64 main encoding table
-+ *  Bit position
-+ *   28 27 26 25	Encoding Group
-+ *   0  0  -  -		Unallocated
-+ *   1  0  0  -		Data processing, immediate
-+ *   1  0  1  -		Branch, exception generation and system instructions
-+ *   -  1  -  0		Loads and stores
-+ *   -  1  0  1		Data processing - register
-+ *   0  1  1  1		Data processing - SIMD and floating point
-+ *   1  1  1  1		Data processing - SIMD and floating point
-+ * "-" means "don't care"
-+ */
-+enum aarch64_insn_encoding_class {
-+	AARCH64_INSN_CLS_UNKNOWN,	/* UNALLOCATED */
-+	AARCH64_INSN_CLS_DP_IMM,	/* Data processing - immediate */
-+	AARCH64_INSN_CLS_DP_REG,	/* Data processing - register */
-+	AARCH64_INSN_CLS_DP_FPSIMD,	/* Data processing - SIMD and FP */
-+	AARCH64_INSN_CLS_LDST,		/* Loads and stores */
-+	AARCH64_INSN_CLS_BR_SYS,	/* Branch, exception generation and
-+					 * system instructions */
-+};
-+
-+enum aarch64_insn_hint_op {
-+	AARCH64_INSN_HINT_NOP	= 0x0 << 5,
-+	AARCH64_INSN_HINT_YIELD	= 0x1 << 5,
-+	AARCH64_INSN_HINT_WFE	= 0x2 << 5,
-+	AARCH64_INSN_HINT_WFI	= 0x3 << 5,
-+	AARCH64_INSN_HINT_SEV	= 0x4 << 5,
-+	AARCH64_INSN_HINT_SEVL	= 0x5 << 5,
-+};
-+
-+#define	__AARCH64_INSN_FUNCS(abbr, mask, val)	\
-+static __always_inline bool aarch64_insn_is_##abbr(u32 code) \
-+{ return (code & (mask)) == (val); } \
-+static __always_inline u32 aarch64_insn_get_##abbr##_value(void) \
-+{ return (val); }
-+
-+__AARCH64_INSN_FUNCS(b,		0xFC000000, 0x14000000)
-+__AARCH64_INSN_FUNCS(bl,	0xFC000000, 0x94000000)
-+__AARCH64_INSN_FUNCS(svc,	0xFFE0001F, 0xD4000001)
-+__AARCH64_INSN_FUNCS(hvc,	0xFFE0001F, 0xD4000002)
-+__AARCH64_INSN_FUNCS(smc,	0xFFE0001F, 0xD4000003)
-+__AARCH64_INSN_FUNCS(brk,	0xFFE0001F, 0xD4200000)
-+__AARCH64_INSN_FUNCS(hint,	0xFFFFF01F, 0xD503201F)
-+
-+#undef	__AARCH64_INSN_FUNCS
-+
-+bool aarch64_insn_is_nop(u32 insn);
-+
-+enum aarch64_insn_encoding_class aarch64_get_insn_class(u32 insn);
-+
-+bool aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn);
-+
-+#endif	/* __ASM_INSN_H */
-diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
-index 5ba2fd4..cd95a25 100644
---- a/arch/arm64/kernel/Makefile
-+++ b/arch/arm64/kernel/Makefile
-@@ -9,7 +9,7 @@ AFLAGS_head.o		:= -DTEXT_OFFSET=$(TEXT_OFFSET)
- arm64-obj-y		:= cputable.o debug-monitors.o entry.o irq.o fpsimd.o	\
- 			   entry-fpsimd.o process.o ptrace.o setup.o signal.o	\
- 			   sys.o stacktrace.o time.o traps.o io.o vdso.o	\
--			   hyp-stub.o psci.o cpu_ops.o
-+			   hyp-stub.o psci.o cpu_ops.o insn.o
+@@ -18,6 +18,9 @@
+ #define	__ASM_INSN_H
+ #include <linux/types.h>
  
- arm64-obj-$(CONFIG_COMPAT)		+= sys32.o kuser32.o signal32.o 	\
- 					   sys_compat.o
-diff --git a/arch/arm64/kernel/insn.c b/arch/arm64/kernel/insn.c
-new file mode 100644
-index 0000000..56a2498
---- /dev/null
-+++ b/arch/arm64/kernel/insn.c
-@@ -0,0 +1,91 @@
-+/*
-+ * Copyright (C) 2013 Huawei Ltd.
-+ * Author: Jiang Liu <liuj97@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#include <linux/compiler.h>
-+#include <linux/kernel.h>
-+#include <asm/insn.h>
++/* A64 instructions are always 32 bits. */
++#define	AARCH64_INSN_SIZE		4
 +
-+static int aarch64_insn_encoding_class[] = {
-+	AARCH64_INSN_CLS_UNKNOWN,
-+	AARCH64_INSN_CLS_UNKNOWN,
-+	AARCH64_INSN_CLS_UNKNOWN,
-+	AARCH64_INSN_CLS_UNKNOWN,
-+	AARCH64_INSN_CLS_LDST,
-+	AARCH64_INSN_CLS_DP_REG,
-+	AARCH64_INSN_CLS_LDST,
-+	AARCH64_INSN_CLS_DP_FPSIMD,
-+	AARCH64_INSN_CLS_DP_IMM,
-+	AARCH64_INSN_CLS_DP_IMM,
-+	AARCH64_INSN_CLS_BR_SYS,
-+	AARCH64_INSN_CLS_BR_SYS,
-+	AARCH64_INSN_CLS_LDST,
-+	AARCH64_INSN_CLS_DP_REG,
-+	AARCH64_INSN_CLS_LDST,
-+	AARCH64_INSN_CLS_DP_FPSIMD,
+ /*
+  * ARM Architecture Reference Manual for ARMv8 Profile-A, Issue A.a
+  * Section C3.1 "A64 instruction index by encoding":
+@@ -70,8 +73,13 @@ __AARCH64_INSN_FUNCS(hint,	0xFFFFF01F, 0xD503201F)
+ 
+ bool aarch64_insn_is_nop(u32 insn);
+ 
++int aarch64_insn_read(void *addr, u32 *insnp);
++int aarch64_insn_write(void *addr, u32 insn);
+ enum aarch64_insn_encoding_class aarch64_get_insn_class(u32 insn);
+-
+ bool aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn);
+ 
++int aarch64_insn_patch_text_nosync(void *addr, u32 insn);
++int aarch64_insn_patch_text_sync(void *addrs[], u32 insns[], int cnt);
++int aarch64_insn_patch_text(void *addrs[], u32 insns[], int cnt);
++
+ #endif	/* __ASM_INSN_H */
+diff --git a/arch/arm64/kernel/insn.c b/arch/arm64/kernel/insn.c
+index 56a2498..b9dac57 100644
+--- a/arch/arm64/kernel/insn.c
++++ b/arch/arm64/kernel/insn.c
+@@ -16,6 +16,10 @@
+  */
+ #include <linux/compiler.h>
+ #include <linux/kernel.h>
++#include <linux/smp.h>
++#include <linux/stop_machine.h>
++#include <linux/uaccess.h>
++#include <asm/cacheflush.h>
+ #include <asm/insn.h>
+ 
+ static int aarch64_insn_encoding_class[] = {
+@@ -60,6 +64,28 @@ bool __kprobes aarch64_insn_is_nop(u32 insn)
+ 	}
+ }
+ 
++/*
++ * In ARMv8-A, A64 instructions have a fixed length of 32 bits and are always
++ * little-endian.
++ */
++int __kprobes aarch64_insn_read(void *addr, u32 *insnp)
++{
++	int ret;
++	u32 val;
++
++	ret = probe_kernel_read(&val, addr, AARCH64_INSN_SIZE);
++	if (!ret)
++		*insnp = le32_to_cpu(val);
++
++	return ret;
++}
++
++int __kprobes aarch64_insn_write(void *addr, u32 insn)
++{
++	insn = cpu_to_le32(insn);
++	return probe_kernel_write(addr, &insn, AARCH64_INSN_SIZE);
++}
++
+ static bool __kprobes __aarch64_insn_hotpatch_safe(u32 insn)
+ {
+ 	if (aarch64_get_insn_class(insn) != AARCH64_INSN_CLS_BR_SYS)
+@@ -89,3 +115,96 @@ bool __kprobes aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn)
+ 	return __aarch64_insn_hotpatch_safe(old_insn) &&
+ 	       __aarch64_insn_hotpatch_safe(new_insn);
+ }
++
++int __kprobes aarch64_insn_patch_text_nosync(void *addr, u32 insn)
++{
++	u32 *tp = addr;
++	int ret;
++
++	/* A64 instructions must be word aligned */
++	if ((uintptr_t)tp & 0x3)
++		return -EINVAL;
++
++	ret = aarch64_insn_write(tp, insn);
++	if (ret == 0)
++		flush_icache_range((uintptr_t)tp,
++				   (uintptr_t)tp + AARCH64_INSN_SIZE);
++
++	return ret;
++}
++
++struct aarch64_insn_patch {
++	void		**text_addrs;
++	u32		*new_insns;
++	int		insn_cnt;
++	atomic_t	cpu_count;
 +};
 +
-+enum aarch64_insn_encoding_class __kprobes aarch64_get_insn_class(u32 insn)
++static int __kprobes aarch64_insn_patch_text_cb(void *arg)
 +{
-+	return aarch64_insn_encoding_class[(insn >> 25) & 0xf];
-+}
++	int i, ret = 0;
++	struct aarch64_insn_patch *pp = arg;
 +
-+/* NOP is an alias of HINT */
-+bool __kprobes aarch64_insn_is_nop(u32 insn)
-+{
-+	if (!aarch64_insn_is_hint(insn))
-+		return false;
-+
-+	switch (insn & 0xFE0) {
-+	case AARCH64_INSN_HINT_YIELD:
-+	case AARCH64_INSN_HINT_WFE:
-+	case AARCH64_INSN_HINT_WFI:
-+	case AARCH64_INSN_HINT_SEV:
-+	case AARCH64_INSN_HINT_SEVL:
-+		return false;
-+	default:
-+		return true;
++	/* The first CPU becomes master */
++	if (atomic_inc_return(&pp->cpu_count) == 1) {
++		for (i = 0; ret == 0 && i < pp->insn_cnt; i++)
++			ret = aarch64_insn_patch_text_nosync(pp->text_addrs[i],
++							     pp->new_insns[i]);
++		/*
++		 * aarch64_insn_patch_text_nosync() calls flush_icache_range(),
++		 * which ends with "dsb; isb" pair guaranteeing global
++		 * visibility.
++		 */
++		atomic_set(&pp->cpu_count, -1);
++	} else {
++		while (atomic_read(&pp->cpu_count) != -1)
++			cpu_relax();
++		isb();
 +	}
++
++	return ret;
 +}
 +
-+static bool __kprobes __aarch64_insn_hotpatch_safe(u32 insn)
++int __kprobes aarch64_insn_patch_text_sync(void *addrs[], u32 insns[], int cnt)
 +{
-+	if (aarch64_get_insn_class(insn) != AARCH64_INSN_CLS_BR_SYS)
-+		return false;
++	struct aarch64_insn_patch patch = {
++		.text_addrs = addrs,
++		.new_insns = insns,
++		.insn_cnt = cnt,
++		.cpu_count = ATOMIC_INIT(0),
++	};
 +
-+	return	aarch64_insn_is_b(insn) ||
-+		aarch64_insn_is_bl(insn) ||
-+		aarch64_insn_is_svc(insn) ||
-+		aarch64_insn_is_hvc(insn) ||
-+		aarch64_insn_is_smc(insn) ||
-+		aarch64_insn_is_brk(insn) ||
-+		aarch64_insn_is_nop(insn);
++	if (cnt <= 0)
++		return -EINVAL;
++
++	return stop_machine(aarch64_insn_patch_text_cb, &patch,
++			    cpu_online_mask);
 +}
 +
-+/*
-+ * ARM Architecture Reference Manual for ARMv8 Profile-A, Issue A.a
-+ * Section B2.6.5 "Concurrent modification and execution of instructions":
-+ * Concurrent modification and execution of instructions can lead to the
-+ * resulting instruction performing any behavior that can be achieved by
-+ * executing any sequence of instructions that can be executed from the
-+ * same Exception level, except where the instruction before modification
-+ * and the instruction after modification is a B, BL, NOP, BKPT, SVC, HVC,
-+ * or SMC instruction.
-+ */
-+bool __kprobes aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn)
++int __kprobes aarch64_insn_patch_text(void *addrs[], u32 insns[], int cnt)
 +{
-+	return __aarch64_insn_hotpatch_safe(old_insn) &&
-+	       __aarch64_insn_hotpatch_safe(new_insn);
++	int ret;
++	u32 insn;
++
++	/* Unsafe to patch multiple instructions without synchronizaiton */
++	if (cnt == 1) {
++		ret = aarch64_insn_read(addrs[0], &insn);
++		if (ret)
++			return ret;
++
++		if (aarch64_insn_hotpatch_safe(insn, insns[0])) {
++			/*
++			 * ARMv8 architecture doesn't guarantee all CPUs see
++			 * the new instruction after returning from function
++			 * aarch64_insn_patch_text_nosync(). So send IPIs to
++			 * all other CPUs to achieve instruction
++			 * synchronization.
++			 */
++			ret = aarch64_insn_patch_text_nosync(addrs[0], insns[0]);
++			kick_all_cpus_sync();
++			return ret;
++		}
++	}
++
++	return aarch64_insn_patch_text_sync(addrs, insns, cnt);
 +}
 -- 
 1.8.1.2
