@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755986Ab3LVWTh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Dec 2013 17:19:37 -0500
-Received: from imp02.mtu.ru ([62.5.255.19]:56655 "EHLO imp02.mtu.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755438Ab3LVWTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Dec 2013 17:19:35 -0500
-X-Spam-Flag: NO
-Message-ID: <52B76562.7040608@pavlinux.ru>
-Date: Mon, 23 Dec 2013 02:19:14 +0400
-From: Pavel Vasilyev <pavel@pavlinux.ru>
-Reply-To: pavel@pavlinux.ru
-Organization: Pavlinux. Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131118 Thunderbird/17.0.11
+	id S1756228Ab3LVWYN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Dec 2013 17:24:13 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:50830 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755754Ab3LVWYM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Dec 2013 17:24:12 -0500
+Date: Sun, 22 Dec 2013 14:22:03 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>,
+        Bo Shen <voice.shen@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL] at91: dt for 3.14 #2
+Message-ID: <20131222222203.GH13365@quad.lixom.net>
+References: <1387494198-20329-1-git-send-email-nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: RT <linux-rt-users@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.12.5 CRASH/FREEZE
-References: <52A9CC77.20904@linaro.org> <52AA1CC0.30307@pavlinux.ru> <20131220141008.GE10249@linutronix.de> <52B45AEB.2060508@pavlinux.ru> <52B45CD7.5030404@linutronix.de>
-In-Reply-To: <52B45CD7.5030404@linutronix.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-DCC-STREAM-Metrics: ss27-so03.mtu.ru 10003; Body=3 Fuz1=3 Fuz2=3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387494198-20329-1-git-send-email-nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-20.12.2013 19:05, Sebastian Andrzej Siewior пишет:
-> On 12/20/2013 03:57 PM, Pavel Vasilyev wrote:
->>
->> Same bug if attach to ehci hub.
->>
->> ksoftird/0 process of loading the CPU upto 100% Sometimes process
->> irq17/0 - ehci_hcd  or xhci_hcd. After taking the camera out of the
->> socket, the load does not fall, keyboard and console blocked
+On Fri, Dec 20, 2013 at 12:03:18AM +0100, Nicolas Ferre wrote:
+> Arnd, Olof, Kevin,
 > 
-> Okay, but this problem is unique to your webcam. Keyboard & mice to
-> work as usual?
-> Could please provide me the addr2line either for the ehci or xhci? I've
-> been browsing to the code and I didn't see anything obvious.
+> Some more DT material for 3.14 based on top of what I already sent (in
+> your at91/dt branch). Nothing really surprising...
 > 
+> Thanks, best regards,
+> 
+> The following changes since commit ca594844e4a53f778811c06feef60bdf36bc5fec:
+> 
+>   ARM: at91/at91rm9200ek.dts: rearrange nodes in address ascending order (2013-12-09 15:08:57 +0100)
+> 
+> are available in the git repository at:
+> 
+>   git://github.com/at91linux/linux-at91.git tags/at91-dt2
+> 
+> for you to fetch changes up to 45e5c2cb6bc1c52c7134f898ea326a422dd75761:
+> 
+>   ARM: at91/dt: add clk properties to sama5d3 TDES device node (2013-12-19 23:00:06 +0100)
 
-Too many bugs, too many computers ...
+Pulled into next/dt.
+Thanks!
 
-3.12.5-rt7 work ONLY in UP-mode!!! cmdline: nosmp maxcpus=1
-
-In SMP mode, problems arise in different places on different computers.
-On Intel Atom - USB, webcam and console. On the Opteron 285 system
-does not boot, can't mount devtmpfs, XFS partitions ...
-
-I can not get to catch the error and find a place neither in debug mode or in
-normal. Because everything is frozen completely, and get to the console or logs
-is not possible.
-I described one situation where had run top and see that the process
-ksoftirqd/0 use CPU upto 100%
-
-P.S.
-    3.12.5-rt7 still work Basic-RT mode.
-
-
-
-
-
-
--- 
-
-                                                         Pavel.
+-Olof
