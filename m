@@ -1,213 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734Ab3LVGzz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Dec 2013 01:55:55 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:50574 "EHLO
+	id S1753025Ab3LVHEG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Dec 2013 02:04:06 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:53950 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129Ab3LVGzx (ORCPT
+	with ESMTP id S1752129Ab3LVHED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Dec 2013 01:55:53 -0500
+	Sun, 22 Dec 2013 02:04:03 -0500
 From: Arnd Bergmann <arnd@arndb.de>
-To: Ravi Patel <rapatel@apm.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        jcm@redhat.com, "patches@apm.com" <patches@apm.com>,
+To: Loc Ho <lho@apm.com>
+Cc: Ravi Patel <rapatel@apm.com>, gregkh@linuxfoundation.org,
+        davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jon Masters <jcm@redhat.com>, "patches@apm.com" <patches@apm.com>,
         Keyur Chudgar <kchudgar@apm.com>
-Subject: Re: [PATCH V2 2/4] misc: xgene: Add base driver for APM X-Gene SoC Queue Manager/Traffic Manager
-Date: Sun, 22 Dec 2013 07:54:40 +0100
-Message-ID: <1671121.m7aRMI6X8q@wuerfel>
+Subject: Re: [PATCH V2 0/4] misc: xgene: Add support for APM X-Gene SoC Queue Manager/Traffic Manager
+Date: Sun, 22 Dec 2013 08:03:07 +0100
+Message-ID: <1441245.xPZLG2iNZ6@wuerfel>
 User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <CAN1v_PsVdEbi4sz8n6kU+Gor0MqT3yde+t6znHjZLwf4Q_f+tw@mail.gmail.com>
-References: <1387594651-25771-1-git-send-email-rapatel@apm.com> <201312212104.58732.arnd@arndb.de> <CAN1v_PsVdEbi4sz8n6kU+Gor0MqT3yde+t6znHjZLwf4Q_f+tw@mail.gmail.com>
+In-Reply-To: <CAPw-ZTnsu_EmOW3aZTVKAVjQsdi8qMy95y2ZcYxzgVrjGkirTA@mail.gmail.com>
+References: <1387594651-25771-1-git-send-email-rapatel@apm.com> <201312212111.40576.arnd@arndb.de> <CAPw-ZTnsu_EmOW3aZTVKAVjQsdi8qMy95y2ZcYxzgVrjGkirTA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ODso8VLUr3DeTDxISVMqKz3oqW/ehqfXPMAf3sghybW
- uvr2NrpSJ0SxJyH3bsUmQC/hzG+cthVi7c1PYnKfZ05FC1WzAM
- QX/LuRrabfGeihfCyaZmrWPwqo7Rn22PvmG0yYXsNazCKN2Dek
- rYryRRlZgGT87OExMeMTXbmIGokadTAx9hPAA3HJ3jKYO2uPOj
- 7lruZ7P7MZlLzAJ9J8Rbc1Z4oAT05cYYv6GSu+uF/YGQa///MN
- DN5q6bfFAuFnaNyrb31uX7oyzHNA1bHDeRiP3W54w0E32xWj60
- PT+TSGblOkCnUAQY0JG9eBL+bxlIaGKoOObYUR5jnwisS3NFff
- qSvXKxr2P6CfQsRkxvPI=
+X-Provags-ID: V02:K0:suj4aZN/09ccX8jUbh1ltTH6O/EDcJgNiztO15lvZNV
+ KHvTaBlC2nzEzNYnf5FHKcacpGU/sK8pJJAMJM27TriEEm+qXc
+ wIsZDnS4TEJirFvL4KCzzSA5J3zPxpzZPs6Dvqw5FruQm/bNU4
+ aQWmxqDCFUdJ8YkxgHozrAao+Sz2iSr/Uq7Opqjo2Cj3Sr5gUD
+ vItPgIY2/Sy2+pGO4W4dLYCXGoAX2ahZn/r2dhYv957AE3LmTH
+ hhoZnutNk0WKbV/IITWBxsD6jR8W2OGfTiBLVyGfYIhv/nk2+Z
+ kWV5Ix8sGRst31ngWdcfJOk7P6gRv7sUSToXJSK8kpSDGhJlHz
+ 9NjVADi6tLo79lSSGgNw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 21 December 2013 17:45:30 Ravi Patel wrote:
-> On Sat, Dec 21, 2013 at 12:04 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+On Saturday 21 December 2013 17:00:51 Loc Ho wrote:
+> On Sat, Dec 21, 2013 at 12:11 PM, Arnd Bergmann <arnd@arndb.de> wrote:
 > > On Saturday 21 December 2013, Ravi Patel wrote:
-> 
-> >> +#define CSR_THRESHOLD0_SET1_ADDR     0x00000030
-> >> +#define CSR_THRESHOLD1_SET1_ADDR     0x00000034
-> >> +#define CSR_HYSTERESIS_ADDR          0x00000068
-> >> +#define CSR_QM_MBOX_NE_INT_MODE_ADDR 0x0000017c
-> >> +#define CSR_QMLITE_PBN_MAP_0_ADDR    0x00000228
+> >> This patch adds support for APM X-Gene SoC Queue Manager/Traffic Manager.
+> >>  QMTM is required by APM X-Gene SoC Ethernet, PktDMA (XOR Engine) and
+> >>  Security Engine subsystems. All subsystems communicate with QMTM using
+> >>  messages which include information about the work to be performed and
+> >>  the location of associated data buffers.
 > >
-> > What about all the other registers in between?
-> 
-> All the other registers in between needs no change in values, default
-> values are fine.
-> These registers are not accessed and so we didn't defined them.
-> Let us know if you need them for a reason.
-
-Ok, this is fine. I was just making sure there isn't another driver
-that talks to these registers.
-
-> >> +     rc = of_property_read_string(pdev->dev.of_node, "slave-name", &name);
-> >> +     if (rc < 0) {
-> >> +             dev_err(&pdev->dev, "Failed to get QMTM Ingress slave-name\n");
-> >> +             return rc;
-> >> +     }
-> >> +
-> >> +     sdev = xgene_qmtm_get_sdev((char *)name);
-> >> +     if (sdev == NULL) {
-> >> +             dev_err(&pdev->dev, "Ingress Slave error\n");
-> >> +             return -ENODEV;
-> >> +     }
+> > Please describe here what the purpose of the qmtm is, as this is not
+> > entirely clear from the code.
 > >
-> > Why are you referring to another device by a string? Shouldn't that be a phandle?
-> 
-> Let me go through this and find the possibility.
-
-To clarify, I think the slave driver should look up a phandle to find
-the qmtm device.
-
-> >> +static struct of_device_id xgene_qmtm_match[] = {
-> >> +     {.compatible = "apm,xgene-qmtm-xge0",},
-> >> +     {.compatible = "apm,xgene-qmtm-soc",},
-> >> +     {.compatible = "apm,xgene-qmtm-xge2",},
-> >> +     {.compatible = "apm,xgene-qmtm-lite",},
-> >> +     {},
-> >> +};
-> >> +
-> >> +MODULE_DEVICE_TABLE(of, xgene_qmtm_match);
+> > In particular, please describe how this differs from a dmaengine driver
+> > and why it is not possible to extend the dma slave API to describe qmtm
+> > as a dma engine.
 > >
-> > You don't seem to differentiate between the four different strings. Why can't
-> > they just all be compatible to "apm,xgene-qmtm"?
-> 
-> All the QMTM manages resources for different subsystems.
-> So all the 4 QMTM are different, so each of them should have a unique identity.
+> [Loc Ho]
+> If the QM driver implements the DMA API, what about the actual DMA
+> engine driver which interfaces with this QM driver. We would have DMA
+> client interfaces with the X-Gene DMA driver (not available yet) via
+> DMA API which in turn interfaces with this QM driver via DMA API.
+> Won't this be kind of awkward? Also, the QM only manage messages (or
+> descriptors) which are 32-bytes or 64-bytes. It doesn't actually do
+> any data transfer of various sizes.
 
-Are you sure it's not just four instances of the same hardware block
-connected to different slaves?
+Please describe here what the purpose of the qmtm is, as this is not
+entirely clear from the code or from your reply.
 
-The "compatible" value should only identify differences in the register set.
+Greg was guessing that it's a bus controller, my best guess is a DMA
+engine. If it's something completely different, you have to let
+us know what it is so we can do a proper review rather than guessing.
 
-> >> +#define VIRT_TO_PHYS(x)      virt_to_phys(x)
-> >> +#define PHYS_TO_VIRT(x)      phys_to_virt(x)
-> >
-> > These don't belong here, use the standard functions. Also, it seems unlikely that a
-> > device driver actually wants physical addresses. Are these used for DMA?
-> 
-> The memory addresses passed in this macro/function are not used for DMA.
-> For creating a physical queue in the QMTM hardware, it needs the
-> physical address
-> of the queue kmalloc'ed by the driver,
-
-Who is accessing the physical address then? Does this get passed to
-some sort of hypervisor?
-
-> >> +static struct xgene_qmtm_sdev storm_sdev[SLAVE_MAX] = {
-> >> +     [SLAVE_ETH0] = {
-> >> +                     .name = "SGMII0",
-> >> +                     .compatible = "apm,xgene-qmtm-soc",
-> >> +                     .slave = SLAVE_ETH0,
-> >> +                     .qmtm_ip = QMTM1,
-> >> +                     .slave_id = QMTM_SLAVE_ID_ETH0,
-> >> +                     .wq_pbn_start = 0x00,
-> >> +                     .wq_pbn_count = 0x08,
-> >> +                     .fq_pbn_start = 0x20,
-> >> +                     .fq_pbn_count = 0x08,
-> >> +                     },
-> >
-> > This table is backwards: the qmtm driver provides services to client drivers,
-> > it should have zero knowledge about what the clients are.
-> >
-> > Remove this array here and put the data into properties of the client
-> > drivers.
-> 
-> QMTM is managing the queue resources in its hardware for all the clients.
-> The clients meaning, Ethernet, PktDMA (XOR Engine) and Security Engine,
-> has zero knowledge of its qm resources.
-> So for that reason this array defining QMTM's client properties is
-> defined in QMTM driver
-
-No, that's the wrong way around. Please have a look at how other
-subsystems (irq, dmaengine, clock, ...) manage the split between
-knowledge.
-
-> >> +struct xgene_qmtm_sdev *storm_qmtm_get_sdev(char *name)
-> >> +{
-> >> +     struct xgene_qmtm *qmtm = NULL;
-> >> +     struct xgene_qmtm_sdev *sdev = NULL;
-> >> +     struct device_node *np = NULL;
-> >> +     struct platform_device *platdev;
-> >> +     u8 slave;
-> >> +
-> >> +     for (slave = 0; slave < SLAVE_MAX; slave++) {
-> >> +             sdev = &storm_sdev[slave];
-> >> +             if (sdev->name && strcmp(name, sdev->name) == 0) {
-> >> +                     np = of_find_compatible_node(NULL, NULL,
-> >> +                             sdev->compatible);
-> >> +                     break;
-> >> +             }
-> >> +     }
-> >> +
-> >> +     if (np == NULL)
-> >> +             return NULL;
-> >> +
-> >> +     platdev = of_find_device_by_node(np);
-> >> +     qmtm = platform_get_drvdata(platdev);
-> >
-> > Get rid of the of_find_compatible_node() here, this is another indication that
-> > you are doing things backwards.
-> 
-> Since QMTM is managing resource for its client, we have defined the mapping
-> in the QMTM driver.
-> So whenever QMTM client like Ethernet driver probe is called, it will
-> pass on its ID/slave-name
-> to get its context which is managed by QMTM
-
-The client/slave driver should instead pass the slave ID and other
-required information, essentially the stuff from the table above,
-in an abstract form.
-
-> >> +/* QMTM messaging structures */
-> >> +/* 16 byte QMTM message format */
-> >> +struct xgene_qmtm_msg16 {
-> >> +     u32 UserInfo;
-> >> +
-> >> +     u32 FPQNum:12;
-> >> +     u32 Rv2:2;
-> >> +     u32 ELErr:2;
-> >> +     u32 LEI:2;
-> >> +     u32 NV:1;
-> >> +     u32 LL:1;
-> >> +     u32 PB:1;
-> >> +     u32 HB:1;
-> >> +     u32 Rv:1;
-> >> +     u32 IN:1;
-> >> +     u32 RType:4;
-> >> +     u32 LErr:3;
-> >> +     u32 HL:1;
-> >> +
-> >> +     u64 DataAddr:42;        /* 32/10 split */
-> >> +     u32 Rv6:6;
-> >> +     u32 BufDataLen:15;
-> >> +     u32 C:1;
-> >> +} __packed;
-> >
-> > Bitfields are generally not endian-safe. Better use raw u32 values and
-> > bit masks. Also don't use __packed in hardware descriptors, as it messes
-> > up atomicity of accesses.
-> 
-> I explained in another email the reason for using bit fields.
-> Let me know if you want me to paste it here again.
-
-No need for that. But driver code really needs to be written in an
-endian-neutral way if the CPU supports both little-endian and
-big-endian modes.
+Please provide a link to the data sheet if you are unable to explain.
 
 	Arnd
