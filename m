@@ -1,79 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756278Ab3LVUqu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Dec 2013 15:46:50 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:39916 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755210Ab3LVUqt (ORCPT
+	id S1755870Ab3LVUyV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Dec 2013 15:54:21 -0500
+Received: from mail-gg0-f178.google.com ([209.85.161.178]:58956 "EHLO
+	mail-gg0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753296Ab3LVUyU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Dec 2013 15:46:49 -0500
-Message-ID: <52B74FB1.7070306@oracle.com>
-Date: Sun, 22 Dec 2013 15:46:41 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Sun, 22 Dec 2013 15:54:20 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>, Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: kernfs: WARNING: CPU: 59 PID: 10414 at lib/debugobjects.c:260
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Transfer-Encoding: 8BIT
+To: =?utf-8?q?Uwe_Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1387570919-13627-1-git-send-email-u.kleine-koenig@pengutronix.de>
+Cc: arm@kernel.org, "Daniel Lezcano" <daniel.lezcano@linaro.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Mark Brown" <broonie@kernel.org>,
+        "Grant Likely" <grant.likely@linaro.org>,
+        "Rob Herring" <robh@kernel.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        kernel@pengutronix.de
+References: <1387569330.616105313@f421.i.mail.ru>
+ <1387570919-13627-1-git-send-email-u.kleine-koenig@pengutronix.de>
+Message-ID: <20131222205414.22761.9778@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v2] MAINTAINERS: take maintainership for Energy Micro efm32 SoCs
+Date: Sun, 22 Dec 2013 12:54:14 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Quoting Uwe Kleine-König (2013-12-20 12:21:59)
+> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Acked-by: Mark Brown <broonie@linaro.org>
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> ---
+> Hello,
+> 
+> On Fri, Dec 20, 2013 at 11:55:30PM +0400, Alexander Shiyan wrote:
+> > [...]
+> > > +F: arch/arm/boot/dts/efm32*
+> > > +F: arch/arm/configs/efm32_defconfig
+> > > +F: arch/arm/include/debug/efm32.S
+> > > +F: arch/arm/mach-efm32/
+> > > +F: drivers/clk/clk-efm32gg.c
+> > > +F: drivers/clocksource/time-efm32.c
+> > > +F: drivers/spi/spi-efm32.c
+> > > +F: drivers/tty/serial/efm32-uart.c
+> > > +F: include/dt-bindings/clock/efm32-cmu.h
+> > > +F: include/linux/platform_data/efm32-*
+> > 
+> > Maybe "N" keyword with "efm32" is better here?
+> ah, didn't know about that. Nice.
+> 
+> So the changes since v1 are:
+>  - use N: efm32
+>  - add acks from Greg and Mark
+>    I assume it's ok to keep them for v2 assuming they mean them being OK with
+>    me maintaining the efm32 stuff and not the way to express that in
+>    MAINTAINERS.
 
-While fuzzing with trinity inside a KVM tools guest running latest -next kernel, I've stumbled on 
-the following spew.
+Ack for the clock driver.
 
-Beyond regular trinity fuzzing, the machine was in the middle of attempting to offline all of it's 
-cpus (64 of them).
+Mike
 
-[  645.148744] WARNING: CPU: 59 PID: 10414 at lib/debugobjects.c:260 debug_print_object
-+0x8d/0xb0()
-[  645.150844] ODEBUG: free active (active state 0) object type: timer_list hint: delay
-ed_work_timer_fn+0x0/0x20
-[  645.152178] Modules linked in:
-[  645.152699] CPU: 59 PID: 10414 Comm: sh Tainted: G        W    3.13.0-rc4-next-20131
-220-sasha-00013-gf9a57f1-dirty #6
-[  645.154113]  0000000000000104 ffff88001a74fa68 ffffffff845d3d3c ffffffff858006ee
-[  645.155294]  ffff88001a74fab8 ffff88001a74faa8 ffffffff8112f93c ffff88001a74fad8
-[  645.155294]  ffffffff8594fab2 ffff880168f10a10 ffffffff86068c00 ffffffff8891eaf8
-[  645.157180] Call Trace:
-[  645.157697]  [<ffffffff845d3d3c>] dump_stack+0x52/0x7f
-[  645.157975]  [<ffffffff8112f93c>] warn_slowpath_common+0x8c/0xc0
-[  645.158744]  [<ffffffff8112fa26>] warn_slowpath_fmt+0x46/0x50
-[  645.158744]  [<ffffffff81adcd2d>] debug_print_object+0x8d/0xb0
-[  645.158744]  [<ffffffff81153130>] ? __queue_work+0x3f0/0x3f0
-[  645.158744]  [<ffffffff81add535>] __debug_check_no_obj_freed+0xa5/0x220
-[  645.158744]  [<ffffffff8107e346>] ? cpuid4_cache_sysfs_exit+0x46/0xc0
-[  645.158744]  [<ffffffff8107e346>] ? cpuid4_cache_sysfs_exit+0x46/0xc0
-[  645.158744]  [<ffffffff81add6c5>] debug_check_no_obj_freed+0x15/0x20
-[  645.158744]  [<ffffffff812ae4bf>] kfree+0x21f/0x2e0
-[  645.158744]  [<ffffffff8107e346>] cpuid4_cache_sysfs_exit+0x46/0xc0
-[  645.158744]  [<ffffffff8107ebea>] cache_remove_dev+0x11a/0x130
-[  645.158744]  [<ffffffff8107f128>] cacheinfo_cpu_callback+0x78/0x90
-[  645.158744]  [<ffffffff845e027e>] notifier_call_chain+0xee/0x130
-[  645.158744]  [<ffffffff8116273e>] __raw_notifier_call_chain+0xe/0x10
-[  645.158744]  [<ffffffff8112fbe0>] __cpu_notify+0x20/0x40
-[  645.158744]  [<ffffffff8112fc15>] cpu_notify_nofail+0x15/0x30
-[  645.158744]  [<ffffffff845caf75>] _cpu_down+0x195/0x2e0
-[  645.158744]  [<ffffffff8112fc97>] ? cpu_maps_update_begin+0x17/0x20
-[  645.158744]  [<ffffffff8207f745>] ? device_offline+0x55/0xd0
-[  645.158744]  [<ffffffff845c9825>] ? klist_next+0xf5/0x120
-[  645.158744]  [<ffffffff845d67cd>] ? mutex_trylock+0x1fd/0x270
-[  645.158744]  [<ffffffff845cb0f6>] cpu_down+0x36/0x50
-[  645.158744]  [<ffffffff82086034>] cpu_subsys_offline+0x14/0x20
-[  645.158744]  [<ffffffff8207f772>] device_offline+0x82/0xd0
-[  645.158744]  [<ffffffff820806d8>] online_store+0x58/0x80
-[  645.158744]  [<ffffffff8207e6d0>] dev_attr_store+0x20/0x30
-[  645.158744]  [<ffffffff8135d62f>] sysfs_kf_write+0x4f/0x70
-[  645.158744]  [<ffffffff8136160b>] kernfs_fop_write+0xdb/0x140
-[  645.158744]  [<ffffffff812d51a3>] vfs_write+0xf3/0x1e0
-[  645.158744]  [<ffffffff812d5392>] SyS_write+0x62/0xa0
-[  645.158744]  [<ffffffff845e4e90>] tracesys+0xdd/0xe2
-
-
-Thanks,
-Sasha
+> 
+> Thanks
+> Uwe
+> 
+>  MAINTAINERS | 6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 95648eb..6ea1fb2 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -867,6 +867,12 @@ S: Maintained
+>  F:     arch/arm/mach-ebsa110/
+>  F:     drivers/net/ethernet/amd/am79c961a.*
+>  
+> +ARM/ENERGY MICRO (SILICON LABS) EFM32 SUPPORT
+> +M:     Uwe Kleine-König <kernel@pengutronix.de>
+> +L:     linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> +S:     Maintained
+> +N:     efm32
+> +
+>  ARM/EZX SMARTPHONES (A780, A910, A1200, E680, ROKR E2 and ROKR E6)
+>  M:     Daniel Ribeiro <drwyrm@gmail.com>
+>  M:     Stefan Schmidt <stefan@openezx.org>
+> -- 
+> 1.8.5.1
+> 
