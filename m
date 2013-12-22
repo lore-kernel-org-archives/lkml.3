@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560Ab3LVCaL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 21:30:11 -0500
-Received: from oker.escape.de ([194.120.234.254]:58466 "EHLO oker.escape.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755718Ab3LVCaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 21:30:09 -0500
-Date: Sun, 22 Dec 2013 03:25:23 +0100
-From: Jochen Striepe <jochen@tolot.escape.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: 3.10.5: rcu_sched detected stalls on CPUs/tasks
-Message-ID: <20131222022523.GD26013@pompeji.miese-zwerge.org>
-References: <20130818184848.GA2398@pompeji.miese-zwerge.org>
- <20130909215836.GD17483@pompeji.miese-zwerge.org>
- <20130909222751.GL3966@linux.vnet.ibm.com>
- <20130914112834.GM1509@pompeji.miese-zwerge.org>
- <20130923164931.GC2322@pompeji.miese-zwerge.org>
- <20131206002614.GD15492@linux.vnet.ibm.com>
- <20131206135804.GI2208@pompeji.miese-zwerge.org>
- <20131206145441.GA24148@linux.vnet.ibm.com>
- <20131210112257.GJ2208@pompeji.miese-zwerge.org>
- <20131216224006.GA5919@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131216224006.GA5919@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756600Ab3LVCiP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 21:38:15 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:48449 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755718Ab3LVCiO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Dec 2013 21:38:14 -0500
+Message-ID: <1387679957.5567.80.camel@haakon3.risingtidesystems.com>
+Subject: [GIT PULL] target fixes for v3.13-rc5
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Sat, 21 Dec 2013 18:39:17 -0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi!
+Hi Linus,
 
-On Mon, Dec 16, 2013 at 02:40:06PM -0800, Paul E. McKenney wrote:
-> > > > > rcu: Kick CPU halfway to RCU CPU stall warning
-[...]
-> And you are quite right, there is a prerequisite commit.  I have attached
-> both, please apply in numeric order.
+Here are the outstanding target pending fixes for v3.13-rc5.
 
-Applies, compiles, and runs smoothly on top of 3.12.6. I'll send word
-if anything odd shows up.
+Please go ahead and pull from:
 
-> Because patch.2 has not yet made it to mainline, it is not yet eligible
-> for -stable.  I expect it to hit mainline in the 3.14 merge window,
-> which will likely be coming up in a few weeks.
+   git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git master 
 
-Ah, ok. Thanks for helping and informing!
+Mostly minor items this time around, the most notable being a FILEIO
+backend change to enforce hw_max_sectors based upon the current
+block_size to address a bug where large sized I/Os (> 1M) where being
+rejected.
 
+Thank you,
 
-Have a nice Christmas holiday,
-Jochen.
+--nab
+
+Andy Grover (1):
+  target: Remove extra percpu_ref_init
+
+Eric Seppanen (1):
+  iscsi-target: return -EINVAL on oversized configfs parameter
+
+Nicholas Bellinger (5):
+  iscsi-target: Fix-up all zero data-length CDBs with R/W_BIT set
+  iscsi-target: Fix incorrect np->np_thread NULL assignment
+  iser-target: Move INIT_WORK setup into isert_create_device_ib_res
+  target/file: Update hw_max_sectors based on current block_size
+  qla2xxx: Fix scsi_host leak on qlt_lport_register callback failure
+
+Roland Dreier (1):
+  target: Remove write-only stats fields and lock from struct
+    se_node_acl
+
+Shivaram Upadhyayula (1):
+  qla2xxx: Fix schedule_delayed_work() for target timeout calculations
+
+Wei Yongjun (1):
+  iser-target: fix error return code in isert_create_device_ib_res()
+
+ drivers/infiniband/ulp/isert/ib_isert.c      |   22 +++++++++++++++------
+ drivers/scsi/qla2xxx/qla_target.c            |   10 ++++++----
+ drivers/target/iscsi/iscsi_target.c          |   27 +++++++++++++-------------
+ drivers/target/iscsi/iscsi_target_configfs.c |    3 ++-
+ drivers/target/iscsi/iscsi_target_login.c    |    6 ------
+ drivers/target/target_core_device.c          |    5 +++++
+ drivers/target/target_core_file.c            |    8 ++++----
+ drivers/target/target_core_file.h            |    5 ++++-
+ drivers/target/target_core_tpg.c             |   10 +---------
+ include/target/target_core_base.h            |    5 +----
+ 10 files changed, 52 insertions(+), 49 deletions(-)
+
