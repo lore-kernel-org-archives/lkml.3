@@ -1,96 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755019Ab3LVDMD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 22:12:03 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:21591 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752697Ab3LVDLt (ORCPT
+	id S1753666Ab3LVDHq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 22:07:46 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:52478 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898Ab3LVDHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 22:11:49 -0500
-Message-Id: <20131222031147.984230034@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Sat, 21 Dec 2013 22:08:01 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Tom Zanussi <tom.zanussi@linux.intel.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        kbuild test robot <fengguang.wu@intel.com>
-Subject: [PATCH 2/2] tracing: Fix rcu handling of event_trigger_data filter field
-References: <20131222030759.339128630@goodmis.org>
-Content-Disposition: inline; filename=0002-tracing-Fix-rcu-handling-of-event_trigger_data-filte.patch
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Sat, 21 Dec 2013 22:07:45 -0500
+Message-ID: <1387681647.5412.25.camel@marge.simpson.net>
+Subject: Re: [PATCH] rcu: Eliminate softirq processing from rcutree
+From: Mike Galbraith <bitbucket@online.de>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-rt-users@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Sun, 22 Dec 2013 04:07:27 +0100
+In-Reply-To: <20131221193900.GA8427@linutronix.de>
+References: <20131221193900.GA8427@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:6pDV8omx/Mz6yk04mMeUv6Famt9ARw4ckrrtQDPnk5S
+ Vgtdf6JagtRsdAOYlxl/M3WCE6GEOuiYMIYq4QXzAH7734VnrA
+ BYFgjgrJ7OKhNwT0ro7xbzDgKIKv8ZNmVBfmTRrZNBLeCBzRlF
+ 1Il9nvVRTF0WDSrUIdmFSW/v+XL/jKhT1AjpW/LjJKtTl+YvW3
+ 15aWs6e1s26UR/XDCiNXJD+AfCSFoLBIgXsE33XRDYeuX5x0Yd
+ yYw+MdyAB5094+Tjdh9eZWb0NQEqEId27TE/6fL/aVU5MKldoV
+ aDVpwRMYXB5gSKNQqqUFu9hXAfh07YMeujYlGYMy+QmbEZQy8M
+ 8QvV7hAhKL9fAeWT0qGA8vfwgc4EVPZE94W7uOH4FnShvaAcR/
+ w7KYaW+n9mQ3A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Sat, 2013-12-21 at 20:39 +0100, Sebastian Andrzej Siewior wrote: 
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> 
+> Running RCU out of softirq is a problem for some workloads that would
+> like to manage RCU core processing independently of other softirq work,
+> for example, setting kthread priority.  This commit therefore moves the
+> RCU core work from softirq to a per-CPU/per-flavor SCHED_OTHER kthread
+> named rcuc.  The SCHED_OTHER approach avoids the scalability problems
+> that appeared with the earlier attempt to move RCU core processing to
+> from softirq to kthreads.  That said, kernels built with RCU_BOOST=y
+> will run the rcuc kthreads at the RCU-boosting priority.
 
-The filter field of the event_trigger_data structure is protected under
-RCU sched locks. It was not annotated as such, and after doing so,
-sparse pointed out several locations that required fix ups.
+I'll take this for a spin on my 64 core test box.
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace.h                | 2 +-
- kernel/trace/trace_events_trigger.c | 8 +++++---
- 2 files changed, 6 insertions(+), 4 deletions(-)
+I'm pretty sure I'll still end up having to split softirq threads again
+though, as big box has been unable to meet jitter requirements without,
+and last upstream rt kernel tested still couldn't.
 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 0380cab..02b592f 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -1057,7 +1057,7 @@ struct event_trigger_data {
- 	int				ref;
- 	struct event_trigger_ops	*ops;
- 	struct event_command		*cmd_ops;
--	struct event_filter		*filter;
-+	struct event_filter __rcu	*filter;
- 	char				*filter_str;
- 	void				*private_data;
- 	struct list_head		list;
-diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
-index 12ac8a5..f6dd115 100644
---- a/kernel/trace/trace_events_trigger.c
-+++ b/kernel/trace/trace_events_trigger.c
-@@ -67,6 +67,7 @@ event_triggers_call(struct ftrace_event_file *file, void *rec)
- {
- 	struct event_trigger_data *data;
- 	enum event_trigger_type tt = ETT_NONE;
-+	struct event_filter *filter;
- 
- 	if (list_empty(&file->triggers))
- 		return tt;
-@@ -76,7 +77,8 @@ event_triggers_call(struct ftrace_event_file *file, void *rec)
- 			data->ops->func(data);
- 			continue;
- 		}
--		if (data->filter && !filter_match_preds(data->filter, rec))
-+		filter = rcu_dereference(data->filter);
-+		if (filter && !filter_match_preds(filter, rec))
- 			continue;
- 		if (data->cmd_ops->post_trigger) {
- 			tt |= data->cmd_ops->trigger_type;
-@@ -703,7 +705,7 @@ static int set_trigger_filter(char *filter_str,
- 	if (ret)
- 		goto out;
-  assign:
--	tmp = data->filter;
-+	tmp = rcu_access_pointer(data->filter);
- 
- 	rcu_assign_pointer(data->filter, filter);
- 
-@@ -719,7 +721,7 @@ static int set_trigger_filter(char *filter_str,
- 	if (filter_str) {
- 		data->filter_str = kstrdup(filter_str, GFP_KERNEL);
- 		if (!data->filter_str) {
--			free_event_filter(data->filter);
-+			free_event_filter(rcu_access_pointer(data->filter));
- 			data->filter = NULL;
- 			ret = -ENOMEM;
- 		}
--- 
-1.8.4.3
+-Mike
 
+Hm.  Another thing I'll have to check again is btrfs locking fix, and
+generic IO deadlocks if you don't pull your plug upon first rtmutex
+block.  In 3.0, both were required for box to survive heavy fs pounding.
+Oh yeah, and the pain of rt tasks playing idle balance for SCHED_OTHER
+tasks, and nohz balancing crud, and cpupri cost when cores are isolated
+and and.. sigh, big boxen _suck_ ;-)
 
