@@ -1,43 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756134Ab3LVWi7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Dec 2013 17:38:59 -0500
-Received: from 0106ds1-hvi.0.fullrate.dk ([90.184.84.98]:15919 "EHLO
-	mail.knielsen-hq.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755438Ab3LVWi6 (ORCPT
+	id S1756303Ab3LVWrZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Dec 2013 17:47:25 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:40322 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755464Ab3LVWrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Dec 2013 17:38:58 -0500
-From: Kristian Nielsen <knielsen@knielsen-hq.org>
-To: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: GPF in aio_migratepage
-References: <20131126032645.GA32301@redhat.com>
-	<20131126060132.GA6400@redhat.com> <20131126071953.GE9244@kmo-pixel>
-	<20131126152337.GL15489@kvack.org>
-	<87d2lh6h92.fsf@frigg.knielsen-hq.org>
-	<529C5CA6.6090708@cn.fujitsu.com> <20131202174913.GA18853@redhat.com>
-	<87ob4hu66n.fsf@frigg.knielsen-hq.org>
-	<52AE6C4A.9080203@cn.fujitsu.com>
-	<871u14ty2q.fsf@frigg.knielsen-hq.org>
-	<20131222213443.GA6891@kvack.org>
-Date: Sun, 22 Dec 2013 23:38:54 +0100
-In-Reply-To: <20131222213443.GA6891@kvack.org> (Benjamin LaHaise's message of
-	"Sun, 22 Dec 2013 16:34:43 -0500")
-Message-ID: <87wqiwse81.fsf@frigg.knielsen-hq.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	Sun, 22 Dec 2013 17:47:24 -0500
+Date: Sun, 22 Dec 2013 22:47:15 +0500
+From: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>
+To: jic23@kernel.org
+Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: iio_utils.h bug?
+Message-ID: <20131222174713.GA3931@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benjamin LaHaise <bcrl@kvack.org> writes:
+Hi,
 
-> Linus just pushed out 3.13-rc5 that has changes to aio_migratepage() that 
-> should make it much more robust, as well as other fixes.  Can you please 
-> give it a spin as well and let me know if it works?  Thanks a bunch!
+A guy posted this fix on my blog. I couldn't make sense of it.
 
-Ok, will do.
+Thought I'd post it here. I'll send a proper patch file if 
+I knew what commit log I needed to write.
+And I can't exactly sign-off :s.
 
- - Kristian.
+I asked him to post but he couldn't/wouldn't.
+
+Regards
+ZubairLK
+
+
+"Defend against buffer overflow of ci_array:
+
+ code always overwrites one entry beyond end of array, now fixed
+--Craig Markwardt"
+
+iio_utils.h
+
+@@ -335,6 +335,7 @@ inline int build_channel_array(const char *device_dir,
+   while (ent = readdir(dp), ent != NULL) {
+     if (strcmp(ent->d_name + strlen(ent->d_name) - strlen("_en"),
+          "_en") == 0) {
++      int current_enabled = 0;
+       current = &(*ci_array)[count++];
+       ret = asprintf(&filename,
+                "%s/%s", scan_el_dir, ent->d_name);
+       if (ret < 0) {
+         ret = -ENOMEM;
+         /* decrement count to avoid freeing name */
+         count--;
+         goto error_cleanup_array;
+       }
+
+       sysfsfp = fopen(filename, "r");
+
+       if (sysfsfp == NULL) {
+         free(filename);
+         ret = -errno;
+         goto error_cleanup_array;
+       }
+
+-      fscanf(sysfsfp, "%u", &current->enabled);
++      fscanf(sysfsfp, "%u", &current_enabled);
+       fclose(sysfsfp);
+
+-      if (!current->enabled) {
++      if (!current_enabled) {
+         free(filename);
+         count--;
+         continue;
+       }
++      current->enabled = current_enabled;
+       current->scale = 1.0;
+       current->offset = 0;
+       current->name = strndup(ent->d_name,
