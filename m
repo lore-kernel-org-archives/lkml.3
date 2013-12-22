@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab3LVQCz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Dec 2013 11:02:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18117 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753296Ab3LVQCy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Dec 2013 11:02:54 -0500
-Date: Sun, 22 Dec 2013 17:03:21 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>
-Subject: Re: [PATCH] pid: change task_struct::pid to read-only
-Message-ID: <20131222160321.GA17510@redhat.com>
-References: <8aa73d2b884439496f87d5f34c12ba9b4b40f7e5.1377032086.git.rgb@redhat.com> <ae3d74e79649d9e4962d0da030fb4852ddc5b8d1.1387227114.git.rgb@redhat.com> <20131217153611.GA18321@redhat.com> <20131217154004.GA21656@redhat.com> <20131220190157.GA1452@redhat.com> <20131220213348.GE7959@laptop.programming.kicks-ass.net>
+	id S1755229Ab3LVQzT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Dec 2013 11:55:19 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:47142 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753578Ab3LVQzQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Dec 2013 11:55:16 -0500
+Message-ID: <52B71973.1000907@kernel.org>
+Date: Sun, 22 Dec 2013 16:55:15 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131220213348.GE7959@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] iio: ti_am335x_adc: Adjust the closing bracket in
+ tiadc_read_raw()
+References: <1387466911-3732-1-git-send-email-bigeasy@linutronix.de> <1387466911-3732-2-git-send-email-bigeasy@linutronix.de>
+In-Reply-To: <1387466911-3732-2-git-send-email-bigeasy@linutronix.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20, Peter Zijlstra wrote:
->
-> On Fri, Dec 20, 2013 at 08:01:57PM +0100, Oleg Nesterov wrote:
-> > The only problem is that
-> >
-> > 	#define ASSIGN_CONST(l, r)      (*(typeof(r) *)&(l) = (r))
-> >
-> > obviously can't work in this case ;) We need something more clever.
->
-> Hmm indeed, C++ has both the const_cast<>() thingy and the template
-> system is powerful enough to actually implement const_cast<>() inside
-> the language.
->
-> But I cannot find anything useful for C. Your attempt to use the rvalue
-> type to hopefully obtain a const-less lvalue type is clever, but does
-> indeed fail where the rvalue is const too.
+On 12/19/13 15:28, Sebastian Andrzej Siewior wrote:
+> It somehow looks like the ending bracket belongs to the if statement but
+> it does belong to the while loop. This patch moves the bracket where it
+> belongs.
+> 
+> Reviewed-by: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Acked-by: Jonathan Cameron <jic23@kernel.org>
 
-Yes.
-
-We can probably do
-
-	#define ASSIGN_CONST(l, r) ({				\
-		typeof (l) const r__ = (r);			\
-		memcpy((void *)&(l), &(r__), sizeof(l));	\
-		(l);						\
-	})
-
-gcc can actually avoid a temporary if you do
-
-		ASSIGN_CONST(tsk->pid, leader->pid);
-
-but this doesn't look very nice and assumes __builtin_memcpy().
-
-
-So, how about
-
-	#define CONST_CAST(type, lval)	\
-		(*({					\
-			(void)((type *)0 == &(lval));	\
-			(type *)&(lval);		\
-		}))					\
-
-?
-
-de_thread/copy_process can do
-
-	CONST_CAST(pid_t, tsk->pid) = leader->pid;
-
-and if "type" is wrong we have a warning.
-
-Oleg.
-
+Lee, I'm assuming you are fine taking the whole series!
+> ---
+>  drivers/iio/adc/ti_am335x_adc.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+> index d4d7482..e948454 100644
+> --- a/drivers/iio/adc/ti_am335x_adc.c
+> +++ b/drivers/iio/adc/ti_am335x_adc.c
+> @@ -341,7 +341,7 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
+>  	while (tiadc_readl(adc_dev, REG_ADCFSM) & SEQ_STATUS) {
+>  		if (time_after(jiffies, timeout))
+>  			return -EAGAIN;
+> -		}
+> +	}
+>  	map_val = chan->channel + TOTAL_CHANNELS;
+>  
+>  	/*
+> 
