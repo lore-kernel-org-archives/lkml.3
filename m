@@ -1,86 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756549Ab3LVAxL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 19:53:11 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:64875 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755858Ab3LVAxJ (ORCPT
+	id S1756375Ab3LVAkO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 19:40:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33776 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755141Ab3LVAkL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 19:53:09 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Linux PM <linux-pm@vger.kernel.org>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Gavin Hindman <gavin.hindman@intel.com>,
-        "Triplett, Josh" <josh.triplett@intel.com>
-Subject: Re: [PATCH] powercap/rapl: add support for ValleyView Soc
-Date: Sun, 22 Dec 2013 02:06:33 +0100
-Message-ID: <1553570.ISCzPqBYzN@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1386801567-26661-1-git-send-email-jacob.jun.pan@linux.intel.com>
-References: <1386801567-26661-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	Sat, 21 Dec 2013 19:40:11 -0500
+Date: Sat, 21 Dec 2013 16:40:23 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Ravi Patel <rapatel@apm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, jcm@redhat.com,
+        "patches@apm.com" <patches@apm.com>, Keyur Chudgar <kchudgar@apm.com>
+Subject: Re: [PATCH 2/4] misc: xgene: Add base driver for APM X-Gene SoC
+ Queue Manager/Traffic Manager
+Message-ID: <20131222004023.GA15645@kroah.com>
+References: <1387507503-7565-1-git-send-email-rapatel@apm.com>
+ <1387507503-7565-3-git-send-email-rapatel@apm.com>
+ <20131220032002.GA32310@kroah.com>
+ <CAN1v_PtWrRQ6i0HAOACGP4ahgMB1393GnZS-OG6LTyPcsnpvhg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN1v_PtWrRQ6i0HAOACGP4ahgMB1393GnZS-OG6LTyPcsnpvhg@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, December 11, 2013 02:39:27 PM Jacob Pan wrote:
-> This patch adds support for RAPL on Intel ValleyView based SoC
-> platforms, such as Baytrail.
+On Sat, Dec 21, 2013 at 04:20:04PM -0800, Ravi Patel wrote:
+> On Thu, Dec 19, 2013 at 7:20 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Thu, Dec 19, 2013 at 06:45:01PM -0800, Ravi Patel wrote:
+> >> --- /dev/null
+> >> +++ b/drivers/misc/xgene/qmtm/Kconfig
+> >> @@ -0,0 +1,8 @@
+> >> +config XGENE_QMTM
+> >> +     tristate "APM X-Gene QMTM driver"
+> >> +     depends on ARCH_XGENE
+> >
+> > What does it need from this arch in order to build?  What would be
+> > needed to get it to build on other arches so that it gets some actualy
+> > build testing?
 > 
-> Besides adding CPU ID, special energy unit encoding is handled
-> for ValleyView.
-> 
-> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> In patch v2 added, depends on ARM64 || COMPILE_TEST in order to
+> support build testing for other arches.
+> If you think we should have no dependency at all, let us know.
 
-Queued up for 3.14, thanks!
+That's fine, but it's pretty obvious you didn't check this as your v2
+version can't build on non XGENE systems :(
 
-> ---
->  drivers/powercap/intel_rapl.c | 13 +++++++++++--
->  1 file changed, 11 insertions(+), 2 deletions(-)
+> > u64 for a bitfield?  Is that even valid C?  This is pretty scary from a
+> > bitfield perspective, what about different endian and addressing modes?
 > 
-> diff --git a/drivers/powercap/intel_rapl.c b/drivers/powercap/intel_rapl.c
-> index 2a786c5..3c67683 100644
-> --- a/drivers/powercap/intel_rapl.c
-> +++ b/drivers/powercap/intel_rapl.c
-> @@ -833,6 +833,11 @@ static int rapl_write_data_raw(struct rapl_domain *rd,
->  	return 0;
->  }
->  
-> +static const struct x86_cpu_id energy_unit_quirk_ids[] = {
-> +	{ X86_VENDOR_INTEL, 6, 0x37},/* VLV */
-> +	{}
-> +};
-> +
->  static int rapl_check_unit(struct rapl_package *rp, int cpu)
->  {
->  	u64 msr_val;
-> @@ -853,8 +858,11 @@ static int rapl_check_unit(struct rapl_package *rp, int cpu)
->  	 * time unit: 1/time_unit_divisor Seconds
->  	 */
->  	value = (msr_val & ENERGY_UNIT_MASK) >> ENERGY_UNIT_OFFSET;
-> -	rp->energy_unit_divisor = 1 << value;
-> -
-> +	/* some CPUs have different way to calculate energy unit */
-> +	if (x86_match_cpu(energy_unit_quirk_ids))
-> +		rp->energy_unit_divisor = 1000000 / (1 << value);
-> +	else
-> +		rp->energy_unit_divisor = 1 << value;
->  
->  	value = (msr_val & POWER_UNIT_MASK) >> POWER_UNIT_OFFSET;
->  	rp->power_unit_divisor = 1 << value;
-> @@ -941,6 +949,7 @@ static void package_power_limit_irq_restore(int package_id)
->  static const struct x86_cpu_id rapl_ids[] = {
->  	{ X86_VENDOR_INTEL, 6, 0x2a},/* SNB */
->  	{ X86_VENDOR_INTEL, 6, 0x2d},/* SNB EP */
-> +	{ X86_VENDOR_INTEL, 6, 0x37},/* VLV */
->  	{ X86_VENDOR_INTEL, 6, 0x3a},/* IVB */
->  	{ X86_VENDOR_INTEL, 6, 0x45},/* HSW */
->  	/* TODO: Add more CPU IDs after testing */
+> Currently the patch is supporting only ARM64 LE mode.
+> We will fix u64 bit-field with multiple u32 bit-fields for supporting
+> ARM32 LE Mode.
+
+Don't use bitfields, use bit shifts, that way it doesn't matter what
+endian the system is that it is running on at all.
+
+> > Any chance to just use shifts to access the fields properly, like most
+> > drivers do, in a endian-neutral way to get the data out and into the
+> > structures?
+> >
+> > Same goes for the other structures in this file.
 > 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> I agree with you that code with bit-mask and bit-shift takes care for
+> endian-neutral mode.
+> But QMTM in BE Mode, behaves differently by expecting message format
+> in memory as follow:
+> Swapping at 128 bits level.
+> a. For each 16 bytes, group of 4 bytes needs be swapped Higher to
+> lower <-> lower to higher,
+> b. As well as each bytes/bit fields in the group of 4 bytes also needs
+> to be swapped.
+> So because of 128 bit level swap, there will be complete different
+> code for bit-mask, bit-shift for BE and LE
+> So to support ARM64 BE and ARM32 BE, we are planning to just
+> re-arrange bit-fields reversely in the structures for BE and LE.
+
+I'll hold off and wait to see what you create, but I think it will be
+more complex than just using a bit shift...
+
+good luck,
+
+greg k-h
