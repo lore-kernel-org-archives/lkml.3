@@ -1,75 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab3LVPIc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Dec 2013 10:08:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26350 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753424Ab3LVPIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Dec 2013 10:08:31 -0500
-Date: Sun, 22 Dec 2013 16:09:18 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Vaibhav Shinde <v.bhav.shinde@gmail.com>,
-        Ajeet Yadav <ajeet.yadav.77@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] skip increamenting nr for TASK_UNINTERRUPTIBLE
-Message-ID: <20131222150918.GB12544@redhat.com>
-References: <CAB5gotvTv7Y=rMCvO0b5Jg-fx5rLUro+OfWMD0EoLpuHCsQ8TA@mail.gmail.com> <CA+55aFwBwrindu1AJU4S7XgYyxpuBUyq=wrwdDVn2EJUuChVDg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwBwrindu1AJU4S7XgYyxpuBUyq=wrwdDVn2EJUuChVDg@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754906Ab3LVP2Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Dec 2013 10:28:25 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:33181 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752697Ab3LVP2Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Dec 2013 10:28:24 -0500
+From: Jiang Liu <liuj97@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: Jiang Liu <liuj97@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v7 0/7] Optimize jump label implementation for ARM64
+Date: Sun, 22 Dec 2013 23:25:36 +0800
+Message-Id: <1387725944-810-1-git-send-email-liuj97@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vaibhav,
+This patchset tries to optimize arch specfic jump label implementation
+for ARM64 by dynamic kernel text patching.
 
-again, I think that everything was explained by Linus, let me
-add some details.
+To enable this feature, your toolchain must support "asm goto" extension
+and "%c" constraint extesion. Current GCC for AARCH64 doesn't support
+"%c", and there's a patch for it now:
+http://gcc.gnu.org/ml/gcc-patches/2013-10/msg01314.html
 
-> > In coredump case, where thread_1 faults while thread_2 is in
-> > TASK_UNINTERRUPTIBLE state, it cannot handle the SIGKILL.
-> > Thus the process hangs on event.
-> > The coredump routine freezes until the thread state is
-> > uninterruptible.
+It has been tested on ARM Fast mode and a real hardware platform.
 
-Yes. But why we should even try to "fix" coredump in this case?
+Any comments are welcomed!
 
-> > Solution: Continue for coredump, without waiting for uninterruptible
-> >  thread,
+V6->V7:
+1) Minor format clean up
+2) Remove smp_mb() pair
 
-This can't work, please see below.
+V5->V6:
+1) optimize stop_machine() related code
+2) simplify aarch64_insn_patch_text_nosync() interface
+3) refine comments
 
-> > as it will get killed as soon as it returns from
-> >  uninterruptible state.
+V4->V5:
+1) rework the stop_machine() related code
+2) rework aarch64_insn_gen_nop()
 
-Not necessarily. It can play with ->mm before it notices the pending
-SIGKILL. And, if nothing else, the coredumping paths do not even take
-mmap_sem because we assume that the dumper is the only user.
+V3->V4:
+1) resolve a race condition in kernel text patching
+2) address other review comments
 
-But even if this doesn't happen,
+V2->V3:
+1) fix a bug in comparing signed and unsigned values
+2) detect big endian by checking __AARCH64EB__
 
-> >  Therefore do not increament thread count for threads with
-> >  TASK_UNINTERRUPTIBLE.
+V1->V2: address review comments of V1
+1) refine comments
+2) add a new interface to always synchronize with stop_machine()
+   when patching code
+3) handle endian issue when patching code
 
-This is very wrong too. This means that we can start the coredump before
-the _accounted_ thread exits (because a skipped thread can exit first and
-decrement the counter). This also means that coredump_finish() can race
-with the unaccounted threads.
+Jiang Liu (7):
+  arm64: introduce basic aarch64 instruction decoding helpers
+  arm64: introduce interfaces to hotpatch kernel and module code
+  arm64: move encode_insn_immediate() from module.c to insn.c
+  arm64: introduce aarch64_insn_gen_{nop|branch_imm}() helper functions
+  arm64, jump label: detect %c support for ARM64
+  arm64, jump label: optimize jump label implementation
+  jump_label: use defined macros instead of hard-coding for better
+    readability
 
-> >   sigaddset(&t->pending.signal, SIGKILL);
-> >   signal_wake_up(t, 1);
-> > - nr++;
-> > + if(!(t->state & TASK_UNINTERRUPTIBLE))
-> > + nr++;
+ arch/arm64/Kconfig                  |   1 +
+ arch/arm64/include/asm/insn.h       | 108 +++++++++++++
+ arch/arm64/include/asm/jump_label.h |  51 ++++++
+ arch/arm64/kernel/Makefile          |   3 +-
+ arch/arm64/kernel/insn.c            | 304 ++++++++++++++++++++++++++++++++++++
+ arch/arm64/kernel/jump_label.c      |  58 +++++++
+ arch/arm64/kernel/module.c          | 157 ++++++-------------
+ include/linux/jump_label.h          |  19 ++-
+ scripts/gcc-goto.sh                 |   2 +-
+ 9 files changed, 584 insertions(+), 119 deletions(-)
+ create mode 100644 arch/arm64/include/asm/insn.h
+ create mode 100644 arch/arm64/include/asm/jump_label.h
+ create mode 100644 arch/arm64/kernel/insn.c
+ create mode 100644 arch/arm64/kernel/jump_label.c
 
-Again, we can't simply check t->state & TASK_UNINTERRUPTIBLE. This can
-be false positive or it can sleep in TASK_UNINTERRUPTIBLE right after
-the check. And even "& TASK_UNINTERRUPTIBLE" is wrong, please look at
-TASK_KILLABLE.
-
-Oleg.
+-- 
+1.8.1.2
 
