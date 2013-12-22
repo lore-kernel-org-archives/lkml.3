@@ -1,80 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab3LVOdm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Dec 2013 09:33:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26416 "EHLO mx1.redhat.com"
+	id S1754665Ab3LVPIc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Dec 2013 10:08:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26350 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753276Ab3LVOdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Dec 2013 09:33:41 -0500
-Date: Sun, 22 Dec 2013 15:34:27 +0100
+	id S1753424Ab3LVPIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Dec 2013 10:08:31 -0500
+Date: Sun, 22 Dec 2013 16:09:18 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: naveen yadav <yad.naveen@gmail.com>,
-        Vaibhav Shinde <v.bhav.shinde@gmail.com>,
+Cc: Vaibhav Shinde <v.bhav.shinde@gmail.com>,
         Ajeet Yadav <ajeet.yadav.77@gmail.com>, Tejun Heo <tj@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] secure unlock_task_sighand() call
-Message-ID: <20131222143427.GA12544@redhat.com>
-References: <CAJ8eaTzkKtwM2Xvw_GYRrefUVJg0uzaqFNPJcNc_ffSayQiDUA@mail.gmail.com> <CA+55aFyVrrvDzUt0OU4d9YZM8C-N+ycSKEa3+-5nowUoZ=rb8w@mail.gmail.com>
+Subject: Re: [PATCH] skip increamenting nr for TASK_UNINTERRUPTIBLE
+Message-ID: <20131222150918.GB12544@redhat.com>
+References: <CAB5gotvTv7Y=rMCvO0b5Jg-fx5rLUro+OfWMD0EoLpuHCsQ8TA@mail.gmail.com> <CA+55aFwBwrindu1AJU4S7XgYyxpuBUyq=wrwdDVn2EJUuChVDg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFyVrrvDzUt0OU4d9YZM8C-N+ycSKEa3+-5nowUoZ=rb8w@mail.gmail.com>
+In-Reply-To: <CA+55aFwBwrindu1AJU4S7XgYyxpuBUyq=wrwdDVn2EJUuChVDg@mail.gmail.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Naveen,
+Vaibhav,
 
-sorry for the terse and neglectful reply yesterday.
+again, I think that everything was explained by Linus, let me
+add some details.
 
-Actually, when I re-read the Linus's email, I think he already explained
-everything, so let me repeat:
+> > In coredump case, where thread_1 faults while thread_2 is in
+> > TASK_UNINTERRUPTIBLE state, it cannot handle the SIGKILL.
+> > Thus the process hangs on event.
+> > The coredump routine freezes until the thread state is
+> > uninterruptible.
 
-On 12/21, Linus Torvalds wrote:
->
-> Did you actually *see* the problem, or was this just from looking at the code?
+Yes. But why we should even try to "fix" coredump in this case?
 
-Yes. Because this code assumes that lock_task_sighand() must not fail.
-If it fails, we have a problem which should be fixed.
+> > Solution: Continue for coredump, without waiting for uninterruptible
+> >  thread,
 
-> We have coredump serialization in exit_mm() that I think *should* make
-> this all ok - if we still see p->mm matching our mm, I don't think it
-> should be able to get to __exit_signal() and make the sighand go away,
-> so the lock_task_sighand() shouldn't ever fail.
+This can't work, please see below.
 
-Yes, exactly.
+> > as it will get killed as soon as it returns from
+> >  uninterruptible state.
 
-Note that if we ignore exec, we do not need lock_task_sighand() at all,
-we could simply do spin_lock_irq(p->sighand->siglock).
+Not necessarily. It can play with ->mm before it notices the pending
+SIGKILL. And, if nothing else, the coredumping paths do not even take
+mmap_sem because we assume that the dumper is the only user.
 
-The caller holds mm->mmap_sem for writing, if we see p->mm == mm it
-simply can not pass exit_mm() which does down_read(&mm->mmap_sem), so
-this task can not exit.
+But even if this doesn't happen,
 
-The problem is, this task can change its ->sighand in de_thread(), that
-is why we need lock_task_sighand(). But if it does exec, it can't pass
-exec_mmap() by the same reason, we hold mmap_sem.
+> >  Therefore do not increament thread count for threads with
+> >  TASK_UNINTERRUPTIBLE.
 
-> >                         if (p->mm) {
-> >                                 if (unlikely(p->mm == mm)) {
-> > -                                       lock_task_sighand(p, &flags);
-> > -                                       nr += zap_process(p, exit_code);
-> > -                                       unlock_task_sighand(p, &flags);
-> > +                                       if (lock_task_sighand(p, &flags) {
-> > +                                               nr += zap_process(p, exit_code);
+This is very wrong too. This means that we can start the coredump before
+the _accounted_ thread exits (because a skipped thread can exit first and
+decrement the counter). This also means that coredump_finish() can race
+with the unaccounted threads.
 
-But we can't silently skip a process with the same ->mm. We can't even
-skip the execing thread task if it is going to change its ->mm, even if
-it is single-threaded. Note that exec_mmap() will notice mm->core_state
-and fail. So every task with the same mm should be accounted because it
-will play with core_state->nr_threads in exit_mm(). And it should be
-killed because otherwise coredump_wait() can sleep "forever".
+> >   sigaddset(&t->pending.signal, SIGKILL);
+> >   signal_wake_up(t, 1);
+> > - nr++;
+> > + if(!(t->state & TASK_UNINTERRUPTIBLE))
+> > + nr++;
 
-So this is not the right change in any case. If lock_task_sighand() can
-fail we should fix something else.
+Again, we can't simply check t->state & TASK_UNINTERRUPTIBLE. This can
+be false positive or it can sleep in TASK_UNINTERRUPTIBLE right after
+the check. And even "& TASK_UNINTERRUPTIBLE" is wrong, please look at
+TASK_KILLABLE.
 
 Oleg.
 
