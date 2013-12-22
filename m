@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab3LVC7p (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 21:59:45 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:63177 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751696Ab3LVC7o (ORCPT
+	id S1751962Ab3LVCzi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 21:55:38 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:60983 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898Ab3LVCzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 21:59:44 -0500
-Date: Sat, 21 Dec 2013 21:59:43 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Tom Zanussi <tom.zanussi@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] tracing: Move tracing_alloc_snapshot() declaration
- to tracing.h
-Message-ID: <20131221215943.655309c5@gandalf.local.home>
-In-Reply-To: <d7a0a7b99848c48e3a4abe50fc94390a1d0ca967.1387662969.git.tom.zanussi@linux.intel.com>
-References: <cover.1387662969.git.tom.zanussi@linux.intel.com>
-	<d7a0a7b99848c48e3a4abe50fc94390a1d0ca967.1387662969.git.tom.zanussi@linux.intel.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Sat, 21 Dec 2013 21:55:36 -0500
+Message-ID: <1387680997.5567.91.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH] drivers: target: target_core_mod: use div64_u64_rem()
+ instead of operator '%' for u64
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: James Hogan <james.hogan@imgtec.com>, linux-scsi@vger.kernel.org,
+        target-devel@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sat, 21 Dec 2013 18:56:37 -0800
+In-Reply-To: <52B4F837.1010403@gmail.com>
+References: <52B4F837.1010403@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 21 Dec 2013 16:44:00 -0600
-Tom Zanussi <tom.zanussi@linux.intel.com> wrote:
+Hi Chen,
 
-> tracing_alloc_snapshot() is only used internally by
-> alloc_tracing_snapshot() and trace_event_triggers.c and doesn't need
-> to be in kernel.h.  Move it to trace.h, which is more appropriate and
-> both include.
+On Sat, 2013-12-21 at 10:08 +0800, Chen Gang wrote:
+> In kernel, need use div64_u64_rem() instead of operator '%' for u64, or
+> can not pass compiling (with allmodconfig under metag):
 > 
-> Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
+>     MODPOST 2909 modules
+>   ERROR: "__umoddi3" [drivers/target/target_core_mod.ko] undefined!
+> 
+> Also need u64 type cast for u32 variable multiply u32 variable, or will
+> cause type overflow issue.
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> ---
+>  drivers/target/target_core_alua.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
 
-I simply folded this patch into "tracing: Add 'snapshot' event trigger
-command".
+FYI, this unsigned long long division in core_alua_state_lba_dependent()
+was fixed for 32-bit in linux-next >= 12192013 code.
 
-The ftrace/core branch can be rebased. I haven't put this into my
-for-next branch yet which I do not rebase (unless there's a major
-reason to do so).
+Regardless, thanks for your patch.
 
--- Steve
+--nab
+
+> diff --git a/drivers/target/target_core_alua.c b/drivers/target/target_core_alua.c
+> index dc0d399..ff2aadc 100644
+> --- a/drivers/target/target_core_alua.c
+> +++ b/drivers/target/target_core_alua.c
+> @@ -489,7 +489,8 @@ static inline int core_alua_state_lba_dependent(
+>  			u64 first_lba = map->lba_map_first_lba;
+>  
+>  			if (segment_mult) {
+> -				start_lba = lba % (segment_size * segment_mult);
+> +				u64 tmp = (u64)segment_size * segment_mult;
+> +				div64_u64_rem(lba, tmp, &start_lba);
+>  				last_lba = first_lba + segment_size - 1;
+>  				if (start_lba >= first_lba &&
+>  				    start_lba <= last_lba) {
+
+
