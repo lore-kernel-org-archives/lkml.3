@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474Ab3LVTJh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Dec 2013 14:09:37 -0500
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:42912 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754668Ab3LVTJf (ORCPT
+	id S1755328Ab3LVTUE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Dec 2013 14:20:04 -0500
+Received: from smtpauth05h.mfg.siteprotect.com ([64.26.60.146]:33982 "EHLO
+	smtpauth05.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751227Ab3LVTUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Dec 2013 14:09:35 -0500
+	Sun, 22 Dec 2013 14:20:02 -0500
+Date: Sun, 22 Dec 2013 14:22:48 -0500 (EST)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM <linux-pm@vger.kernel.org>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Gavin Hindman <gavin.hindman@intel.com>,
+        "Triplett, Josh" <josh.triplett@intel.com>
+Subject: Re: [PATCH] powercap/rapl: add support for ValleyView Soc
+In-Reply-To: <1553570.ISCzPqBYzN@vostro.rjw.lan>
+Message-ID: <alpine.DEB.2.02.1312221420400.13165@pianoman.cluster.toy>
+References: <1386801567-26661-1-git-send-email-jacob.jun.pan@linux.intel.com> <1553570.ISCzPqBYzN@vostro.rjw.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20131221230644.GB29743@kvack.org>
-References: <CA+55aFyoXCDNfHb+r5b=CgKQLPA1wrU_Tmh4ROZNEt5TPjpODA@mail.gmail.com>
-	<20131219181134.GC25385@kmo-pixel>
-	<20131219182920.GG30640@kvack.org>
-	<CA+55aFzCo_r7ZGHk+zqUjmCW2w7-7z9oxEJjhR66tZ4qZPxnvw@mail.gmail.com>
-	<20131219192621.GA9228@kvack.org>
-	<CA+55aFz=tEkVAx9VndtCXApDxcw+5T-BxMsVuXp+vMSb05f8Aw@mail.gmail.com>
-	<20131219195352.GB9228@kvack.org>
-	<20131219202416.GA14519@redhat.com>
-	<20131219233854.GD10905@kvack.org>
-	<20131220010042.GA32112@redhat.com>
-	<20131221230644.GB29743@kvack.org>
-Date: Sun, 22 Dec 2013 11:09:34 -0800
-X-Google-Sender-Auth: eN7D1QgcvJ2SyBZ1npIEt3lHKJ4
-Message-ID: <CA+55aFx3dLwLdo90g0xo_t-iv+8k6TBy+=wQfd1UX3YbDFRFhw@mail.gmail.com>
-Subject: Re: [PATCHes - aio / migrate page, please review] Re: bad page state
- in 3.13-rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Dave Jones <davej@redhat.com>, Kent Overstreet <kmo@daterainc.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Christoph Lameter <cl@gentwo.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A02020A.52B73B61.004F,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 21, 2013 at 3:06 PM, Benjamin LaHaise <bcrl@kvack.org> wrote:
->
-> Linus, feel free to add my Signed-off-by: to your sanitization of
-> aio_setup_ring() as well, as it works okay in my testing.
+On Sun, 22 Dec 2013, Rafael J. Wysocki wrote:
+> On Wednesday, December 11, 2013 02:39:27 PM Jacob Pan wrote:
 
-Nobody commented on your request for comments, so I applied my patch
-and pulled your branch, because I'm going to do -rc5 in a few and at
-least we want this to get testing.
+> > @@ -941,6 +949,7 @@ static void package_power_limit_irq_restore(int package_id)
+> >  static const struct x86_cpu_id rapl_ids[] = {
+> >  	{ X86_VENDOR_INTEL, 6, 0x2a},/* SNB */
+> >  	{ X86_VENDOR_INTEL, 6, 0x2d},/* SNB EP */
+> > +	{ X86_VENDOR_INTEL, 6, 0x37},/* VLV */
+> >  	{ X86_VENDOR_INTEL, 6, 0x3a},/* IVB */
+> >  	{ X86_VENDOR_INTEL, 6, 0x45},/* HSW */
+> >  	/* TODO: Add more CPU IDs after testing */
 
-Dave, let's hope that the leak fixes and reference count fixes solve
-your problem.
+This isn't a problem introduced in this patch, but it made me notice it...
 
-                Linus
+Would it really hurt anyone to spell out the architectures here, rather
+than using obscure 3-letter abbreviations?  It's bad enough trying to
+map the hex model numbers to the decimal ones in /proc/cpuinfo without
+also having to remember what a VLV is.
+
+Vince
