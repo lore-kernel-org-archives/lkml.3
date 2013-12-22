@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755924Ab3LVWNp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Dec 2013 17:13:45 -0500
-Received: from smtprelay0077.hostedemail.com ([216.40.44.77]:40870 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754262Ab3LVWNo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Dec 2013 17:13:44 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:599:960:968:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2914:2915:3138:3139:3140:3141:3142:3352:3622:3865:3868:3870:3871:3872:3873:3874:4321:5007:7652:10004:10400:10848:11026:11232:11658:11914:12296:12438:12517:12519:12740:13069:13161:13229:13311:13357:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: drain14_3d71c7b5d770c
-X-Filterd-Recvd-Size: 2124
-Message-ID: <1387750419.22671.25.camel@joe-AO722>
-Subject: Re: [PATCH] drivers: firmware: edd: fixed coding style errors
-From: Joe Perches <joe@perches.com>
-To: Derek Perrin <d.roc16@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Sun, 22 Dec 2013 14:13:39 -0800
-In-Reply-To: <1387747039-14098-1-git-send-email-d.roc16@gmail.com>
-References: <1387747039-14098-1-git-send-email-d.roc16@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755986Ab3LVWTh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Dec 2013 17:19:37 -0500
+Received: from imp02.mtu.ru ([62.5.255.19]:56655 "EHLO imp02.mtu.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755438Ab3LVWTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Dec 2013 17:19:35 -0500
+X-Spam-Flag: NO
+Message-ID: <52B76562.7040608@pavlinux.ru>
+Date: Mon, 23 Dec 2013 02:19:14 +0400
+From: Pavel Vasilyev <pavel@pavlinux.ru>
+Reply-To: pavel@pavlinux.ru
+Organization: Pavlinux. Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131118 Thunderbird/17.0.11
+MIME-Version: 1.0
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: RT <linux-rt-users@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.12.5 CRASH/FREEZE
+References: <52A9CC77.20904@linaro.org> <52AA1CC0.30307@pavlinux.ru> <20131220141008.GE10249@linutronix.de> <52B45AEB.2060508@pavlinux.ru> <52B45CD7.5030404@linutronix.de>
+In-Reply-To: <52B45CD7.5030404@linutronix.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-DCC-STREAM-Metrics: ss27-so03.mtu.ru 10003; Body=3 Fuz1=3 Fuz2=3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-12-22 at 15:17 -0600, Derek Perrin wrote:
-> Fixed coding style errors. Spaces, tab and parenthesis errors.
+20.12.2013 19:05, Sebastian Andrzej Siewior пишет:
+> On 12/20/2013 03:57 PM, Pavel Vasilyev wrote:
+>>
+>> Same bug if attach to ehci hub.
+>>
+>> ksoftird/0 process of loading the CPU upto 100% Sometimes process
+>> irq17/0 - ehci_hcd  or xhci_hcd. After taking the camera out of the
+>> socket, the load does not fall, keyboard and console blocked
+> 
+> Okay, but this problem is unique to your webcam. Keyboard & mice to
+> work as usual?
+> Could please provide me the addr2line either for the ehci or xhci? I've
+> been browsing to the code and I didn't see anything obvious.
+> 
 
-There's a real error in this patch.
+Too many bugs, too many computers ...
 
-When you do whitespace only changes, please
-verify that the old and new object files produced
-are unchanged.
+3.12.5-rt7 work ONLY in UP-mode!!! cmdline: nosmp maxcpus=1
 
-One trivial bit too,
+In SMP mode, problems arise in different places on different computers.
+On Intel Atom - USB, webcam and console. On the Opteron 285 system
+does not boot, can't mount devtmpfs, XFS partitions ...
 
-> diff --git a/drivers/firmware/edd.c b/drivers/firmware/edd.c
-[]
-> @@ -62,8 +62,8 @@ struct edd_device {
->  
->  struct edd_attribute {
->  	struct attribute attr;
-> -	ssize_t(*show) (struct edd_device * edev, char *buf);
-> -	int (*test) (struct edd_device * edev);
-> +	ssize_t(*show) (struct edd_device *edev, char *buf);
-> +	int (*test) (struct edd_device *edev);
+I can not get to catch the error and find a place neither in debug mode or in
+normal. Because everything is frozen completely, and get to the console or logs
+is not possible.
+I described one situation where had run top and see that the process
+ksoftirqd/0 use CPU upto 100%
 
-I think most prefer function pointer prototypes like:
+P.S.
+    3.12.5-rt7 still work Basic-RT mode.
 
-	size_t (*show)(struct edd_device *edev, char *buf);
-	int (*test)(struct edd_device *edev);
 
-> @@ -791,7 +791,7 @@ edd_exit(void)
->  	struct edd_device *edev;
->  
->  	for (i = 0; i < edd_num_devices(); i++) {
-> -		if ((edev = edd_devices[i]))
-> +		if ((edev == edd_devices[i]))
->  			edd_device_unregister(edev);
->  	}
->  	kset_unregister(edd_kset);
 
-This is wrong.
-It's an assignment in the block and it's important.
 
-This could be rewritten as:
 
-	for (i = 0; i < edd_num_devices(); i++) {
-		edev = edd_devices[i];
-		if (edev)
-			edd_device_unregister(edev);
-	}
 
-or just remove the temporary.
+-- 
 
+                                                         Pavel.
