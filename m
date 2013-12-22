@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217Ab3LVHhX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Dec 2013 02:37:23 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:50538 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753604Ab3LVHgt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Dec 2013 02:36:49 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-kernel@vger.kernel.org, trivial@kernel.org, yann.morin.1998@free.fr,
-        linux-kbuild@vger.kernel.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH 2/2] [trivial] scripts: kconfig: Fix trailing whitespace in zconf.tab.c_shipped
-Date: Sun, 22 Dec 2013 16:36:25 +0900
-Message-Id: <1387697785-29767-2-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.8.5.2.192.g7794a68
-In-Reply-To: <1387697785-29767-1-git-send-email-standby24x7@gmail.com>
-References: <1387697785-29767-1-git-send-email-standby24x7@gmail.com>
+	id S1753898Ab3LVHry (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Dec 2013 02:47:54 -0500
+Received: from softlayer.compulab.co.il ([50.23.254.55]:55297 "EHLO
+	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752379Ab3LVHrw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Dec 2013 02:47:52 -0500
+Message-ID: <52B69925.8030409@compulab.co.il>
+Date: Sun, 22 Dec 2013 09:47:49 +0200
+From: Denis Turischev <denis.turischev@compulab.co.il>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH v1] xhci: Switch Intel Lynx Point ports to EHCI on shutdown
+References: <52B31EDA.60908@compulab.co.il> <52B327D5.3080805@compulab.co.il> <20131219182110.GC3573@xanatos> <52B41EC7.1070704@compulab.co.il> <20131220234547.GC2835@xanatos>
+In-Reply-To: <20131220234547.GC2835@xanatos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
+X-Get-Message-Sender-Via: softlayer.compulab.co.il: acl_c_relayhosts_text_entry: -unknown-@compulab.co.il|compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixed "ERROR: trailing whitespace" found by
-checkpatch.pl, in zconf.tab.c_shipped
-
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- scripts/kconfig/zconf.tab.c_shipped | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/scripts/kconfig/zconf.tab.c_shipped b/scripts/kconfig/zconf.tab.c_shipped
-index 25ae16a..c7b7639 100644
---- a/scripts/kconfig/zconf.tab.c_shipped
-+++ b/scripts/kconfig/zconf.tab.c_shipped
-@@ -1,19 +1,19 @@
- /* A Bison parser, made by GNU Bison 2.5.  */
- 
- /* Bison implementation for Yacc-like parsers in C
--   
-+
-       Copyright (C) 1984, 1989-1990, 2000-2011 Free Software Foundation, Inc.
--   
-+
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
--   
-+
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
--   
-+
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
- 
-@@ -26,7 +26,7 @@
-    special exception, which will cause the skeleton and the resulting
-    Bison output files to be licensed under the GNU General Public
-    License without this special exception.
--   
-+
-    This special exception was added by the Free Software Foundation in
-    version 2.2 of Bison.  */
- 
--- 
-1.8.5.2.192.g7794a68
+On 12/21/2013 01:45 AM, Sarah Sharp wrote:
+> On Fri, Dec 20, 2013 at 12:41:11PM +0200, Denis Turischev wrote:
+>>> Also, which kernel are you experiencing this issue on?  In 3.12, I
+>>> queued a separate patch to deal with spurious reboot issues on Lynx
+>>> Point:
+>>>
+>>> commit 638298dc66ea36623dbc2757a24fc2c4ab41b016
+>> Sorry, I indeed tested not on the latest kernel version, Ubuntu 3.13-rc3 has this patch and it works
+>> for me.
+> 
+> What does "Ubuntu 3.13-rc3" mean?  Where did you get your kernel from?
+Latest Ubuntu development kernel based on mainline 3.13-rc3.
+http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.13-rc3-trusty/
+> 
+> Also, do you have an HP system, or is this a different vendor?
+No, it's not HP system, it's Compulab's IntensePC-2 with Phoenix BIOS.
+> 
+> Sarah Sharp
+> 
 
