@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962Ab3LVCzi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Dec 2013 21:55:38 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:60983 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750898Ab3LVCzg (ORCPT
+	id S1754564Ab3LVDLu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Dec 2013 22:11:50 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:21591 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751772Ab3LVDLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 21:55:36 -0500
-Message-ID: <1387680997.5567.91.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH] drivers: target: target_core_mod: use div64_u64_rem()
- instead of operator '%' for u64
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: James Hogan <james.hogan@imgtec.com>, linux-scsi@vger.kernel.org,
-        target-devel@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sat, 21 Dec 2013 18:56:37 -0800
-In-Reply-To: <52B4F837.1010403@gmail.com>
-References: <52B4F837.1010403@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 21 Dec 2013 22:11:49 -0500
+Message-Id: <20131222030759.339128630@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Sat, 21 Dec 2013 22:07:59 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Tom Zanussi <tom.zanussi@linux.intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH 0/2] tracing: Fixes to event_triggers patches found by Fengguang's test bot
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chen,
+Tom,
 
-On Sat, 2013-12-21 at 10:08 +0800, Chen Gang wrote:
-> In kernel, need use div64_u64_rem() instead of operator '%' for u64, or
-> can not pass compiling (with allmodconfig under metag):
-> 
->     MODPOST 2909 modules
->   ERROR: "__umoddi3" [drivers/target/target_core_mod.ko] undefined!
-> 
-> Also need u64 type cast for u32 variable multiply u32 variable, or will
-> cause type overflow issue.
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> ---
->  drivers/target/target_core_alua.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
+This is the changes I made to fix the reports that Fengguang's kbuild test bot
+found. I folded in your change that fixes the bug with -ENODEV used in kernel.h.
 
-FYI, this unsigned long long division in core_alua_state_lba_dependent()
-was fixed for 32-bit in linux-next >= 12192013 code.
+Paul,
 
-Regardless, thanks for your patch.
+I've Cc'd you because the second patch is fixing up RCU notation. The filter
+is protect by rcu_sched, and the first hunk of the patch is performed
+within a rcu_read_lock_sched(), and the second hunk is done on the write
+side. The tmp variable holds the old value, the value is updated, and
+then the new value gets updated. I emailed you so that you can verify
+that this all works.
 
---nab
+Thanks!
 
-> diff --git a/drivers/target/target_core_alua.c b/drivers/target/target_core_alua.c
-> index dc0d399..ff2aadc 100644
-> --- a/drivers/target/target_core_alua.c
-> +++ b/drivers/target/target_core_alua.c
-> @@ -489,7 +489,8 @@ static inline int core_alua_state_lba_dependent(
->  			u64 first_lba = map->lba_map_first_lba;
->  
->  			if (segment_mult) {
-> -				start_lba = lba % (segment_size * segment_mult);
-> +				u64 tmp = (u64)segment_size * segment_mult;
-> +				div64_u64_rem(lba, tmp, &start_lba);
->  				last_lba = first_lba + segment_size - 1;
->  				if (start_lba >= first_lba &&
->  				    start_lba <= last_lba) {
+-- Steve
 
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+ftrace/core
+
+Head SHA1: 05741e383228a79eeec83644181255d2171f9f7c
+
+
+Steven Rostedt (Red Hat) (2):
+      tracing: Add generic tracing_lseek() function
+      tracing: Fix rcu handling of event_trigger_data filter field
+
+----
+ include/linux/ftrace.h              |  2 --
+ kernel/trace/ftrace.c               | 25 ++++++-------------------
+ kernel/trace/trace.c                | 14 +++++++++-----
+ kernel/trace/trace.h                |  4 +++-
+ kernel/trace/trace_events_trigger.c | 10 ++++++----
+ kernel/trace/trace_stack.c          |  2 +-
+ 6 files changed, 25 insertions(+), 32 deletions(-)
