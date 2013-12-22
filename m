@@ -1,82 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991Ab3LVFhR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Dec 2013 00:37:17 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:60002 "EHLO
+	id S1752734Ab3LVGzz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Dec 2013 01:55:55 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:50574 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876Ab3LVFhO (ORCPT
+	with ESMTP id S1752129Ab3LVGzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Dec 2013 00:37:14 -0500
-Message-ID: <1387690631.5412.58.camel@marge.simpson.net>
-Subject: Re: CONFIG_NO_HZ_FULL + CONFIG_PREEMPT_RT_FULL = nogo
-From: Mike Galbraith <bitbucket@online.de>
-To: muli.baron@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
-Date: Sun, 22 Dec 2013 06:37:11 +0100
-In-Reply-To: <1387689024.5412.49.camel@marge.simpson.net>
-References: <1383228427.5272.36.camel@marge.simpson.net>
-	 <alpine.DEB.2.02.1311061842160.23353@ionos.tec.linutronix.de>
-	 <1383794799.5441.16.camel@marge.simpson.net>
-	 <1383798668.5441.25.camel@marge.simpson.net>
-	 <alpine.DEB.2.02.1311071158350.23353@ionos.tec.linutronix.de>
-	 <20131220154146.GA18672@breakpoint.cc>
-	 <1387617104.30230.7.camel@marge.simpson.net> <52B5CE09.5030908@gmail.com>
-	 <1387685830.5412.37.camel@marge.simpson.net>
-	 <1387689024.5412.49.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:B2iLV4niLxajk8WytHXK1xzqStY8MWEaFhnfxIATM4E
- ytQm0zH6+95RM7/qrGozkKuonRYmdaakIVN7cZI9aT/vt2Ocls
- 8FwZbS+JrmzHGa+mamBZUNguFneWzqsMUWU4kjKhBPp4T7l+Wr
- wrRWrOGuRLOF9LONhdIkoVa3+rrfYBgvH7d9sGB7cdNTB+o7Pa
- IF7qPPYzDuHdAVg4Jvwn1KJvQ8ZS5QRlwtChTQpmxpfwcFMquP
- Ntz6xJ2Z7ORpvFKOawbw5FL6oAdisYEtYFxIFdVd69/IGCFE26
- 2YsPOQ3NdHXnZ26na8Tb7rzit6XTqEctLTf3+BdRA9CUrAzQoI
- 88TI6aRJoM2wS1jNoTK0ccx96LExgCwPf0udwMKVYogXcjUt9+
- HAdD9NfMzSjkA==
+	Sun, 22 Dec 2013 01:55:53 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ravi Patel <rapatel@apm.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        jcm@redhat.com, "patches@apm.com" <patches@apm.com>,
+        Keyur Chudgar <kchudgar@apm.com>
+Subject: Re: [PATCH V2 2/4] misc: xgene: Add base driver for APM X-Gene SoC Queue Manager/Traffic Manager
+Date: Sun, 22 Dec 2013 07:54:40 +0100
+Message-ID: <1671121.m7aRMI6X8q@wuerfel>
+User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <CAN1v_PsVdEbi4sz8n6kU+Gor0MqT3yde+t6znHjZLwf4Q_f+tw@mail.gmail.com>
+References: <1387594651-25771-1-git-send-email-rapatel@apm.com> <201312212104.58732.arnd@arndb.de> <CAN1v_PsVdEbi4sz8n6kU+Gor0MqT3yde+t6znHjZLwf4Q_f+tw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:ODso8VLUr3DeTDxISVMqKz3oqW/ehqfXPMAf3sghybW
+ uvr2NrpSJ0SxJyH3bsUmQC/hzG+cthVi7c1PYnKfZ05FC1WzAM
+ QX/LuRrabfGeihfCyaZmrWPwqo7Rn22PvmG0yYXsNazCKN2Dek
+ rYryRRlZgGT87OExMeMTXbmIGokadTAx9hPAA3HJ3jKYO2uPOj
+ 7lruZ7P7MZlLzAJ9J8Rbc1Z4oAT05cYYv6GSu+uF/YGQa///MN
+ DN5q6bfFAuFnaNyrb31uX7oyzHNA1bHDeRiP3W54w0E32xWj60
+ PT+TSGblOkCnUAQY0JG9eBL+bxlIaGKoOObYUR5jnwisS3NFff
+ qSvXKxr2P6CfQsRkxvPI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-12-22 at 06:10 +0100, Mike Galbraith wrote:
+On Saturday 21 December 2013 17:45:30 Ravi Patel wrote:
+> On Sat, Dec 21, 2013 at 12:04 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Saturday 21 December 2013, Ravi Patel wrote:
+> 
+> >> +#define CSR_THRESHOLD0_SET1_ADDR     0x00000030
+> >> +#define CSR_THRESHOLD1_SET1_ADDR     0x00000034
+> >> +#define CSR_HYSTERESIS_ADDR          0x00000068
+> >> +#define CSR_QM_MBOX_NE_INT_MODE_ADDR 0x0000017c
+> >> +#define CSR_QMLITE_PBN_MAP_0_ADDR    0x00000228
+> >
+> > What about all the other registers in between?
+> 
+> All the other registers in between needs no change in values, default
+> values are fine.
+> These registers are not accessed and so we didn't defined them.
+> Let us know if you need them for a reason.
 
-> DL980 with same rt7 patchset/config, but with nohz_full=55-63 can take a
-> while to make up its mind, but does kick in (this boot anyway).
+Ok, this is fine. I was just making sure there isn't another driver
+that talks to these registers.
 
-While rebuilding with distro config (lard=max, but nohz_full=off)...
+> >> +     rc = of_property_read_string(pdev->dev.of_node, "slave-name", &name);
+> >> +     if (rc < 0) {
+> >> +             dev_err(&pdev->dev, "Failed to get QMTM Ingress slave-name\n");
+> >> +             return rc;
+> >> +     }
+> >> +
+> >> +     sdev = xgene_qmtm_get_sdev((char *)name);
+> >> +     if (sdev == NULL) {
+> >> +             dev_err(&pdev->dev, "Ingress Slave error\n");
+> >> +             return -ENODEV;
+> >> +     }
+> >
+> > Why are you referring to another device by a string? Shouldn't that be a phandle?
+> 
+> Let me go through this and find the possibility.
 
-[ 2230.960596] ------------[ cut here ]------------
-[ 2231.008947] WARNING: CPU: 24 PID: 372 at kernel/time/tick-sched.c:161 can_stop_full_tick+0x1b3/0x1c0()
-[ 2231.136916] Modules linked in: nfsv3 nfs_acl nfs fscache lockd sunrpc autofs4 edd af_packet bridge stp llc cpufreq_conservative cpufreq_userspace cpufreq_powersave pcc_cpufreq fuse loop ipmi_si iTCO_wdt iTCO_vendor_support gpio_ich sg sr_mod cdrom joydev ipmi_msghandler netxen_nic bnx2 i7core_edac lpc_ich mfd_core edac_core acpi_power_meter pcspkr button ext3 jbd radeon ttm drm_kms_helper drm i2c_algo_bit thermal processor thermal_sys scsi_dh_rdac scsi_dh_alua scsi_dh_emc scsi_dh_hp_sw scsi_dh ata_generic ata_piix hpsa cciss
-[ 2231.633825] CPU: 24 PID: 372 Comm: ksoftirqd/24 Not tainted 3.12.6-rt7 #189
-[ 2231.633827] Hardware name: Hewlett-Packard ProLiant DL980 G7, BIOS P66 07/07/2010
-[ 2231.633831]  00000000ffffffff ffff88027459bbf8 ffffffff81573a2d ffffffff810b8583
-[ 2231.633833]  00000000000000a1 ffff88027459bc38 ffffffff8104fe1c ffff88027459bc28
-[ 2231.633834]  ffff88027710be40 ffff880277100000 0000000000000002 0000000000000000
-[ 2231.633835] Call Trace:
-[ 2231.633854]  [<ffffffff81573a2d>] dump_stack+0x4d/0xa8
-[ 2231.633863]  [<ffffffff810b8583>] ? can_stop_full_tick+0x1b3/0x1c0
-[ 2231.633872]  [<ffffffff8104fe1c>] warn_slowpath_common+0x8c/0xc0
-[ 2231.633928]  [<ffffffff8104fe6a>] warn_slowpath_null+0x1a/0x20
-[ 2231.633929]  [<ffffffff810b8583>] can_stop_full_tick+0x1b3/0x1c0
-[ 2231.633931]  [<ffffffff810b8625>] __tick_nohz_full_check+0x95/0xb0
-[ 2231.633933]  [<ffffffff810b864e>] nohz_full_kick_work_func+0xe/0x10
-[ 2231.633941]  [<ffffffff8110a0a9>] __irq_work_run+0x69/0x80
-[ 2231.633943]  [<ffffffff8110a0c9>] irq_work_run+0x9/0x10
-[ 2231.633946]  [<ffffffff8105e1f4>] run_timer_softirq+0x24/0x2d0
-[ 2231.633955]  [<ffffffff8108a2a5>] ? sched_clock_cpu+0xc5/0x110
-[ 2231.633958]  [<ffffffff8108afc5>] ? account_system_time+0x175/0x1a0
-[ 2231.633964]  [<ffffffff810560c6>] handle_softirq+0xa6/0x180
-[ 2231.633966]  [<ffffffff810562f8>] do_current_softirqs+0x158/0x230
-[ 2231.633968]  [<ffffffff81056403>] run_ksoftirqd+0x33/0x50
-[ 2231.633971]  [<ffffffff8107ee82>] smpboot_thread_fn+0x232/0x360
-[ 2231.633973]  [<ffffffff8107ec50>] ? smpboot_create_threads+0x80/0x80
-[ 2231.633977]  [<ffffffff8107571e>] kthread+0xbe/0xd0
-[ 2231.633978]  [<ffffffff81075660>] ? kthreadd+0x1d0/0x1d0
-[ 2231.633988]  [<ffffffff8157fb2c>] ret_from_fork+0x7c/0xb0
-[ 2231.633990]  [<ffffffff81075660>] ? kthreadd+0x1d0/0x1d0
-[ 2231.633992] ---[ end trace 0000000000000002 ]---
+To clarify, I think the slave driver should look up a phandle to find
+the qmtm device.
 
+> >> +static struct of_device_id xgene_qmtm_match[] = {
+> >> +     {.compatible = "apm,xgene-qmtm-xge0",},
+> >> +     {.compatible = "apm,xgene-qmtm-soc",},
+> >> +     {.compatible = "apm,xgene-qmtm-xge2",},
+> >> +     {.compatible = "apm,xgene-qmtm-lite",},
+> >> +     {},
+> >> +};
+> >> +
+> >> +MODULE_DEVICE_TABLE(of, xgene_qmtm_match);
+> >
+> > You don't seem to differentiate between the four different strings. Why can't
+> > they just all be compatible to "apm,xgene-qmtm"?
+> 
+> All the QMTM manages resources for different subsystems.
+> So all the 4 QMTM are different, so each of them should have a unique identity.
 
+Are you sure it's not just four instances of the same hardware block
+connected to different slaves?
+
+The "compatible" value should only identify differences in the register set.
+
+> >> +#define VIRT_TO_PHYS(x)      virt_to_phys(x)
+> >> +#define PHYS_TO_VIRT(x)      phys_to_virt(x)
+> >
+> > These don't belong here, use the standard functions. Also, it seems unlikely that a
+> > device driver actually wants physical addresses. Are these used for DMA?
+> 
+> The memory addresses passed in this macro/function are not used for DMA.
+> For creating a physical queue in the QMTM hardware, it needs the
+> physical address
+> of the queue kmalloc'ed by the driver,
+
+Who is accessing the physical address then? Does this get passed to
+some sort of hypervisor?
+
+> >> +static struct xgene_qmtm_sdev storm_sdev[SLAVE_MAX] = {
+> >> +     [SLAVE_ETH0] = {
+> >> +                     .name = "SGMII0",
+> >> +                     .compatible = "apm,xgene-qmtm-soc",
+> >> +                     .slave = SLAVE_ETH0,
+> >> +                     .qmtm_ip = QMTM1,
+> >> +                     .slave_id = QMTM_SLAVE_ID_ETH0,
+> >> +                     .wq_pbn_start = 0x00,
+> >> +                     .wq_pbn_count = 0x08,
+> >> +                     .fq_pbn_start = 0x20,
+> >> +                     .fq_pbn_count = 0x08,
+> >> +                     },
+> >
+> > This table is backwards: the qmtm driver provides services to client drivers,
+> > it should have zero knowledge about what the clients are.
+> >
+> > Remove this array here and put the data into properties of the client
+> > drivers.
+> 
+> QMTM is managing the queue resources in its hardware for all the clients.
+> The clients meaning, Ethernet, PktDMA (XOR Engine) and Security Engine,
+> has zero knowledge of its qm resources.
+> So for that reason this array defining QMTM's client properties is
+> defined in QMTM driver
+
+No, that's the wrong way around. Please have a look at how other
+subsystems (irq, dmaengine, clock, ...) manage the split between
+knowledge.
+
+> >> +struct xgene_qmtm_sdev *storm_qmtm_get_sdev(char *name)
+> >> +{
+> >> +     struct xgene_qmtm *qmtm = NULL;
+> >> +     struct xgene_qmtm_sdev *sdev = NULL;
+> >> +     struct device_node *np = NULL;
+> >> +     struct platform_device *platdev;
+> >> +     u8 slave;
+> >> +
+> >> +     for (slave = 0; slave < SLAVE_MAX; slave++) {
+> >> +             sdev = &storm_sdev[slave];
+> >> +             if (sdev->name && strcmp(name, sdev->name) == 0) {
+> >> +                     np = of_find_compatible_node(NULL, NULL,
+> >> +                             sdev->compatible);
+> >> +                     break;
+> >> +             }
+> >> +     }
+> >> +
+> >> +     if (np == NULL)
+> >> +             return NULL;
+> >> +
+> >> +     platdev = of_find_device_by_node(np);
+> >> +     qmtm = platform_get_drvdata(platdev);
+> >
+> > Get rid of the of_find_compatible_node() here, this is another indication that
+> > you are doing things backwards.
+> 
+> Since QMTM is managing resource for its client, we have defined the mapping
+> in the QMTM driver.
+> So whenever QMTM client like Ethernet driver probe is called, it will
+> pass on its ID/slave-name
+> to get its context which is managed by QMTM
+
+The client/slave driver should instead pass the slave ID and other
+required information, essentially the stuff from the table above,
+in an abstract form.
+
+> >> +/* QMTM messaging structures */
+> >> +/* 16 byte QMTM message format */
+> >> +struct xgene_qmtm_msg16 {
+> >> +     u32 UserInfo;
+> >> +
+> >> +     u32 FPQNum:12;
+> >> +     u32 Rv2:2;
+> >> +     u32 ELErr:2;
+> >> +     u32 LEI:2;
+> >> +     u32 NV:1;
+> >> +     u32 LL:1;
+> >> +     u32 PB:1;
+> >> +     u32 HB:1;
+> >> +     u32 Rv:1;
+> >> +     u32 IN:1;
+> >> +     u32 RType:4;
+> >> +     u32 LErr:3;
+> >> +     u32 HL:1;
+> >> +
+> >> +     u64 DataAddr:42;        /* 32/10 split */
+> >> +     u32 Rv6:6;
+> >> +     u32 BufDataLen:15;
+> >> +     u32 C:1;
+> >> +} __packed;
+> >
+> > Bitfields are generally not endian-safe. Better use raw u32 values and
+> > bit masks. Also don't use __packed in hardware descriptors, as it messes
+> > up atomicity of accesses.
+> 
+> I explained in another email the reason for using bit fields.
+> Let me know if you want me to paste it here again.
+
+No need for that. But driver code really needs to be written in an
+endian-neutral way if the CPU supports both little-endian and
+big-endian modes.
+
+	Arnd
