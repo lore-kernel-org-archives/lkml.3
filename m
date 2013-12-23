@@ -1,97 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932153Ab3LWUDI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 15:03:08 -0500
-Received: from mta-out.inet.fi ([195.156.147.13]:58957 "EHLO jenni1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750933Ab3LWUDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 15:03:06 -0500
-Date: Mon, 23 Dec 2013 22:02:55 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: mm: kernel BUG at mm/huge_memory.c:1440!
-Message-ID: <20131223200255.GA18521@node.dhcp.inet.fi>
-References: <52B88F6E.8070909@oracle.com>
+	id S1757774Ab3LWUFq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 15:05:46 -0500
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:34152 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035Ab3LWUFp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 15:05:45 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52B88F6E.8070909@oracle.com>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+Content-Transfer-Encoding: 8BIT
+To: Pawel Moll <pawel.moll@arm.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1387815830-8794-13-git-send-email-pawel.moll@arm.com>
+Cc: "Samuel Ortiz" <sameo@linux.intel.com>, "Arnd Bergmann" <arnd@arndb.de>,
+        "Jon Medhurst" <tixy@linaro.org>, arm@kernel.org,
+        "Olof Johansson" <olof@lixom.net>, "Pawel Moll" <pawel.moll@arm.com>
+References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com>
+ <1387815830-8794-13-git-send-email-pawel.moll@arm.com>
+Message-ID: <20131223200538.25490.67340@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [RFC 12/18] clk: versatile: Split config options for sp810 and
+ vexpress_osc
+Date: Mon, 23 Dec 2013 12:05:38 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 23, 2013 at 02:30:54PM -0500, Sasha Levin wrote:
-> Hi all,
+Quoting Pawel Moll (2013-12-23 08:23:44)
+> Move the Kconfig entry for Versatile (& Express) clock drivers
+> into a separate file and add individual options for sp810
+> and vexpress_osc drivers, as they are optional in some
+> configurations and may have separate dependencies.
 > 
-> While fuzzing with trinity inside a KVM tools guest running latest -next
-> kernel, I've stumbled on the following spew.
-> 
-> 	page = pmd_page(orig_pmd);
-> 	page_remove_rmap(page);
-> 	VM_BUG_ON(page_mapcount(page) < 0);
-> 	add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
-> 	VM_BUG_ON(!PageHead(page));		<=== HERE
-> 	atomic_long_dec(&tlb->mm->nr_ptes);
-> 	spin_unlock(ptl);
-> 	tlb_remove_page(tlb, page);
-> 
-> [  265.474585] kernel BUG at mm/huge_memory.c:1440!
+> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+> Cc: Mike Turquette <mturquette@linaro.org>
 
-Could you dump_page() on the bug?
+Is there a reason to continue to expose these as user-visible config
+options? I guess that with Device Tree we can just include clock nodes
+(or not) for boards that use these clocks (or do not use them).
 
-> [  265.475129] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [  265.476684] Dumping ftrace buffer:
-> [  265.477144]    (ftrace buffer empty)
-> [  265.478398] Modules linked in:
-> [  265.478807] CPU: 8 PID: 11344 Comm: trinity-c206 Tainted: G        W    3.13.0-rc5-ne
-> xt-20131223-sasha-00015-gec22156-dirty #8
-> [  265.480172] task: ffff8801cb573000 ti: ffff8801cbd3a000 task.ti: ffff8801cbd3a000
-> [  265.480172] RIP: 0010:[<ffffffff812c7f70>]  [<ffffffff812c7f70>] zap_huge_pmd+0x170/0
-> x1f0
-> [  265.480172] RSP: 0000:ffff8801cbd3bc78  EFLAGS: 00010246
-> [  265.480172] RAX: 015fffff80090018 RBX: ffff8801cbd3bde8 RCX: ffffffffffffff9c
-> [  265.480172] RDX: ffffffffffffffff RSI: 0000000000000008 RDI: ffff8800bffd2000
-> [  265.480172] RBP: ffff8801cbd3bcb8 R08: 0000000000000000 R09: 0000000000000000
-> [  265.480172] R10: 0000000000000001 R11: 0000000000000000 R12: ffffea0002856740
-> [  265.480172] R13: ffffea0002d50000 R14: 00007ff915000000 R15: 00007ff930e48fff
-> [  265.480172] FS:  00007ff934899700(0000) GS:ffff88014d400000(0000) knlGS:0000000000000
-> 000
-> [  265.480172] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  265.480172] CR2: 00007ff93428a000 CR3: 000000010babe000 CR4: 00000000000006e0
-> [  265.480172] Stack:
-> [  265.480172]  00000000000004dd ffff8801ccbfbb60 ffff8801cbd3bcb8 ffff8801cbb15540
-> [  265.480172]  00007ff915000000 00007ff930e49000 ffff8801cbd3bde8 00007ff930e48fff
-> [  265.480172]  ffff8801cbd3bd48 ffffffff812885b6 ffff88005f5d20c0 00007ff915200000
-> [  265.480172] Call Trace:
-> [  265.480172]  [<ffffffff812885b6>] unmap_page_range+0x2c6/0x410
-> [  265.480172]  [<ffffffff81288801>] unmap_single_vma+0x101/0x120
-> [  265.480172]  [<ffffffff81288881>] unmap_vmas+0x61/0xa0
-> [  265.480172]  [<ffffffff8128f730>] exit_mmap+0xd0/0x170
-> [  265.480172]  [<ffffffff81138860>] mmput+0x70/0xe0
-> [  265.480172]  [<ffffffff8113c89d>] exit_mm+0x18d/0x1a0
-> [  265.480172]  [<ffffffff811ea355>] ? acct_collect+0x175/0x1b0
-> [  265.480172]  [<ffffffff8113ed0f>] do_exit+0x26f/0x520
-> [  265.480172]  [<ffffffff8113f069>] do_group_exit+0xa9/0xe0
-> [  265.480172]  [<ffffffff8113f0b7>] SyS_exit_group+0x17/0x20
-> [  265.480172]  [<ffffffff845f10d0>] tracesys+0xdd/0xe2
-> [  265.480172] Code: 0f 0b 66 0f 1f 84 00 00 00 00 00 eb fe 66 0f 1f 44 00
-> 00 48 8b 03 f0 48 81 80 50 03 00 00 00 fe ff ff 49 8b 45 00 f6 c4 40 75 10
-> <0f> 0b 66 0f 1f 44 00 00 eb fe 66 0f 1f 44 00 00 48 8b 03 f0 48
-> [  265.480172] RIP  [<ffffffff812c7f70>] zap_huge_pmd+0x170/0x1f0
-> [  265.480172]  RSP <ffff8801cbd3bc78>
+And it seems for many configurations COMMON_CLK_VERSATILE is always
+selected, so what is the point of the other two sub-options?
+
+Thanks,
+Mike
+
+> ---
+>  drivers/clk/Kconfig            |  9 +--------
+>  drivers/clk/versatile/Kconfig  | 26 ++++++++++++++++++++++++++
+>  drivers/clk/versatile/Makefile |  5 +++--
+>  3 files changed, 30 insertions(+), 10 deletions(-)
+>  create mode 100644 drivers/clk/versatile/Kconfig
+> 
+> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+> index 5c51115..f5486a4 100644
+> --- a/drivers/clk/Kconfig
+> +++ b/drivers/clk/Kconfig
+> @@ -40,14 +40,7 @@ config COMMON_CLK_WM831X
+>            Supports the clocking subsystem of the WM831x/2x series of
+>           PMICs from Wolfson Microlectronics.
+>  
+> -config COMMON_CLK_VERSATILE
+> -       bool "Clock driver for ARM Reference designs"
+> -       depends on ARCH_INTEGRATOR || ARCH_REALVIEW || ARCH_VEXPRESS || ARM64
+> -       ---help---
+> -          Supports clocking on ARM Reference designs:
+> -         - Integrator/AP and Integrator/CP
+> -         - RealView PB1176, EB, PB11MP and PBX
+> -         - Versatile Express
+> +source "drivers/clk/versatile/Kconfig"
+>  
+>  config COMMON_CLK_MAX77686
+>         tristate "Clock driver for Maxim 77686 MFD"
+> diff --git a/drivers/clk/versatile/Kconfig b/drivers/clk/versatile/Kconfig
+> new file mode 100644
+> index 0000000..1530c93
+> --- /dev/null
+> +++ b/drivers/clk/versatile/Kconfig
+> @@ -0,0 +1,26 @@
+> +config COMMON_CLK_VERSATILE
+> +       bool "Clock driver for ARM Reference designs"
+> +       depends on ARCH_INTEGRATOR || ARCH_REALVIEW || ARCH_VEXPRESS || ARM64
+> +       ---help---
+> +          Supports clocking on ARM Reference designs:
+> +         - Integrator/AP and Integrator/CP
+> +         - RealView PB1176, EB, PB11MP and PBX
+> +         - Versatile Express
+> +
+> +config CLK_SP810
+> +       bool "Clock driver for ARM SP810 System Controller"
+> +       depends on COMMON_CLK_VERSATILE
+> +       default y if ARCH_VEXPRESS
+> +       ---help---
+> +         Supports clock muxing (REFCLK/TIMCLK to TIMERCLKEN0-3) capabilities
+> +         of the ARM SP810 System Controller cell.
+> +
+> +config CLK_VEXPRESS_OSC
+> +       bool "Clock driver for Versatile Express OSC clock generators"
+> +       depends on COMMON_CLK_VERSATILE
+> +       depends on VEXPRESS_CONFIG
+> +       default y if ARCH_VEXPRESS
+> +       ---help---
+> +         Simple regmap-based driver driving clock generators on Versatile
+> +         Express platforms hidden behind its configuration infrastructure,
+> +         commonly known as OSCs.
+> diff --git a/drivers/clk/versatile/Makefile b/drivers/clk/versatile/Makefile
+> index c16ca78..fd449f9 100644
+> --- a/drivers/clk/versatile/Makefile
+> +++ b/drivers/clk/versatile/Makefile
+> @@ -3,5 +3,6 @@ obj-$(CONFIG_ICST)              += clk-icst.o
+>  obj-$(CONFIG_ARCH_INTEGRATOR)  += clk-integrator.o
+>  obj-$(CONFIG_INTEGRATOR_IMPD1) += clk-impd1.o
+>  obj-$(CONFIG_ARCH_REALVIEW)    += clk-realview.o
+> -obj-$(CONFIG_ARCH_VEXPRESS)    += clk-vexpress.o clk-sp810.o
+> -obj-$(CONFIG_VEXPRESS_CONFIG)  += clk-vexpress-osc.o
+> +obj-$(CONFIG_ARCH_VEXPRESS)    += clk-vexpress.o
+> +obj-$(CONFIG_CLK_SP810)                += clk-sp810.o
+> +obj-$(CONFIG_CLK_VEXPRESS_OSC) += clk-vexpress-osc.o
+> -- 
+> 1.8.3.2
 > 
 > 
-> Thanks,
-> Sasha
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
- Kirill A. Shutemov
