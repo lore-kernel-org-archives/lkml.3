@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932265Ab3LWVzr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 16:55:47 -0500
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:45293 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757930Ab3LWVzO (ORCPT
+	id S932401Ab3LWV6z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 16:58:55 -0500
+Received: from zimbra13.linbit.com ([212.69.166.240]:60638 "EHLO
+	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757962Ab3LWV6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 16:55:14 -0500
-X-Originating-IP: 50.43.14.201
-Date: Mon, 23 Dec 2013 13:55:03 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Brett Rudley <brudley@broadcom.com>, Arend van Spriel <arend@broadcom.com>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
-        linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/7] net: wireless: brcm80211: Drop debug version with build
- date/time
-Message-ID: <69320ca2cc6f70265844d70b890d661dc4186f8b.1387833347.git.josh@joshtriplett.org>
-References: <cover.1387833347.git.josh@joshtriplett.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1387833347.git.josh@joshtriplett.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 23 Dec 2013 16:58:53 -0500
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 21/27] drbd: Make w_make_resync_request() static
+Date: Mon, 23 Dec 2013 22:50:50 +0100
+Message-Id: <1387835456-29695-22-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1387835456-29695-1-git-send-email-philipp.reisner@linbit.com>
+References: <1387835456-29695-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel already has this information, and individual drivers
-shouldn't duplicate that.  This also eliminates the use of __DATE__ and
-__TIME__, which make the build non-deterministic.
+From: Andreas Gruenbacher <agruen@linbit.com>
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 ---
- drivers/net/wireless/brcm80211/brcmfmac/dhd_common.c | 7 -------
- 1 file changed, 7 deletions(-)
+ drivers/block/drbd/drbd_int.h    |    1 -
+ drivers/block/drbd/drbd_worker.c |    4 ++--
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/wireless/brcm80211/brcmfmac/dhd_common.c b/drivers/net/wireless/brcm80211/brcmfmac/dhd_common.c
-index 9431af2..78e2999b 100644
---- a/drivers/net/wireless/brcm80211/brcmfmac/dhd_common.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/dhd_common.c
-@@ -32,15 +32,8 @@
- #define BRCMF_DEFAULT_SCAN_UNASSOC_TIME	40
- #define BRCMF_DEFAULT_PACKET_FILTER	"100 0 0 0 0x01 0x00"
+diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
+index 12dc970..2e262fd 100644
+--- a/drivers/block/drbd/drbd_int.h
++++ b/drivers/block/drbd/drbd_int.h
+@@ -1316,7 +1316,6 @@ extern int w_e_end_ov_req(struct drbd_work *, int);
+ extern int w_ov_finished(struct drbd_work *, int);
+ extern int w_resync_timer(struct drbd_work *, int);
+ extern int w_send_write_hint(struct drbd_work *, int);
+-extern int w_make_resync_request(struct drbd_work *, int);
+ extern int w_send_dblock(struct drbd_work *, int);
+ extern int w_send_read_req(struct drbd_work *, int);
+ extern int w_e_reissue(struct drbd_work *, int);
+diff --git a/drivers/block/drbd/drbd_worker.c b/drivers/block/drbd/drbd_worker.c
+index abcfdab..b0f6ae0 100644
+--- a/drivers/block/drbd/drbd_worker.c
++++ b/drivers/block/drbd/drbd_worker.c
+@@ -40,7 +40,7 @@
+ #include "drbd_req.h"
  
--#ifdef DEBUG
--static const char brcmf_version[] =
--	"Dongle Host Driver, version " BRCMF_VERSION_STR "\nCompiled on "
--	__DATE__ " at " __TIME__;
--#else
- static const char brcmf_version[] =
- 	"Dongle Host Driver, version " BRCMF_VERSION_STR;
--#endif
+ static int w_make_ov_request(struct drbd_work *, int);
 -
++static int w_make_resync_request(struct drbd_work *, int);
  
- bool brcmf_c_prec_enq(struct device *dev, struct pktq *q,
- 		      struct sk_buff *pkt, int prec)
+ /* endio handlers:
+  *   drbd_md_io_complete (defined here)
+@@ -565,7 +565,7 @@ static int drbd_rs_number_requests(struct drbd_device *device)
+ 	return number;
+ }
+ 
+-int w_make_resync_request(struct drbd_work *w, int cancel)
++static int w_make_resync_request(struct drbd_work *w, int cancel)
+ {
+ 	struct drbd_device_work *dw = device_work(w);
+ 	struct drbd_device *device = dw->device;
 -- 
-1.8.5.2
+1.7.9.5
 
