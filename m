@@ -1,126 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334Ab3LWMjH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 07:39:07 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:53295 "EHLO bear.ext.ti.com"
+	id S1757302Ab3LWMll (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 07:41:41 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38015 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757302Ab3LWMjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 07:39:03 -0500
-Message-ID: <52B83C3C.6090906@ti.com>
-Date: Mon, 23 Dec 2013 15:35:56 +0200
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751509Ab3LWMlj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 07:41:39 -0500
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+CC: <linux-kernel@vger.kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [RFC] drivercore: deferral race condition fix
+Date: Mon, 23 Dec 2013 14:41:31 +0200
+Message-ID: <1387802491-14513-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.8.5.2
 MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>, Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-CC: Rob Herring <rob.herring@calxeda.com>, <prabhakar.csengg@gmail.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-gpio@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 2/2] gpio: davinci: reuse for Keystone SoC
-References: <1387361272-20861-1-git-send-email-grygorii.strashko@ti.com> <1387361272-20861-3-git-send-email-grygorii.strashko@ti.com> <52B7080F.7000900@ti.com>
-In-Reply-To: <52B7080F.7000900@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.75]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/22/2013 05:41 PM, Sekhar Nori wrote:
-> On Wednesday 18 December 2013 03:37 PM, Grygorii Strashko wrote:
->> The similar GPIO HW block is used by keystone SoCs as
->> in Davinci SoCs.
->> Hence, reuse Davinci GPIO driver for Keystone taking into
->> account that Keystone contains ARM GIC IRQ controller which
->> is implemented using IRQ Chip.
->>
->> Documentation:
->> 	http://www.ti.com/lit/ug/sprugv1/sprugv1.pdf
->>
->> Cc: Linus Walleij <linus.walleij@linaro.org>
->> Cc: Alexandre Courbot <gnurou@gmail.com>
->> Cc: Sekhar Nori <nsekhar@ti.com>
->> Cc: devicetree@vger.kernel.org
->>
->> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->> ---
->>   .../devicetree/bindings/gpio/gpio-davinci.txt      |    4 +-
->>   drivers/gpio/gpio-davinci.c                        |   46 ++++++++++++++++----
->>   2 files changed, 40 insertions(+), 10 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/gpio/gpio-davinci.txt b/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
->> index a2e839d..4ce9862 100644
->> --- a/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
->> +++ b/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
->> @@ -1,7 +1,7 @@
->> -Davinci GPIO controller bindings
->> +Davinci/Keystone GPIO controller bindings
->>
->>   Required Properties:
->> -- compatible: should be "ti,dm6441-gpio"
->> +- compatible: should be "ti,dm6441-gpio", "ti,keystone-gpio"
->>
->>   - reg: Physical base address of the controller and the size of memory mapped
->>          registers.
->> diff --git a/drivers/gpio/gpio-davinci.c b/drivers/gpio/gpio-davinci.c
->> index 1b33806..38741cc 100644
->> --- a/drivers/gpio/gpio-davinci.c
->> +++ b/drivers/gpio/gpio-davinci.c
->> @@ -413,6 +413,26 @@ static const struct irq_domain_ops davinci_gpio_irq_ops = {
->>   	.xlate = irq_domain_xlate_onetwocell,
->>   };
->>
->> +static struct irq_chip *davinci_gpio_get_irq_chip(unsigned int irq)
->> +{
->> +	static struct irq_chip_type gpio_unbanked;
->> +
->> +	gpio_unbanked = *container_of(irq_get_chip(irq),
->> +				      struct irq_chip_type, chip);
->> +
->> +	return &gpio_unbanked.chip;
->> +};
->> +
->> +static struct irq_chip *keystone_gpio_get_irq_chip(unsigned int irq)
->> +{
->> +	static struct irq_chip gpio_unbanked;
->> +
->> +	gpio_unbanked = *irq_get_chip(irq);
->> +	return &gpio_unbanked;
->> +};
->> +
->> +static const struct of_device_id davinci_gpio_ids[];
->> +
->>   /*
->>    * NOTE:  for suspend/resume, probably best to make a platform_device with
->>    * suspend_late/resume_resume calls hooking into results of the set_wake()
->> @@ -433,6 +453,18 @@ static int davinci_gpio_irq_setup(struct platform_device *pdev)
->>   	struct davinci_gpio_platform_data *pdata = dev->platform_data;
->>   	struct davinci_gpio_regs __iomem *g;
->>   	struct irq_domain	*irq_domain = NULL;
->> +	const struct of_device_id *match;
->> +	struct irq_chip *irq_chip;
->> +	struct irq_chip *(*gpio_get_irq_chip)(unsigned int irq);
->> +
->> +	/*
->> +	 * Use davinci_gpio_get_irq_chip by default to handle non DT cases
->> +	 */
->> +	gpio_get_irq_chip = davinci_gpio_get_irq_chip;
->> +	match = of_match_device(of_match_ptr(davinci_gpio_ids),
->> +				dev);
->> +	if (match)
->> +		gpio_get_irq_chip = match->data;
->
-> This produces a sparse warning:
->
->    CHECK   drivers/gpio/gpio-davinci.c
-> drivers/gpio/gpio-davinci.c:467:35: warning: incorrect type in assignment (different modifiers)
-> drivers/gpio/gpio-davinci.c:467:35:    expected struct irq_chip *( *[assigned] gpio_get_irq_chip )( ... )
-> drivers/gpio/gpio-davinci.c:467:35:    got void const *const data
->
+When the kernel is built with CONFIG_PREEMPT it is possible to reach a state
+when all modules are loaded but some driver still stuck in the deferred list
+and there is a need for external event needed to kick the deferred queue
+to probe these drivers.
 
-I'll fix it, thanks.
+The issue has been observed on embedded systems with CONFIG_PREEMPT enabled
+audio support built as modules and using nfsroot for root filesystem.
+
+The following fragment of a log shows such sequence when all audio modules
+were loaded but the sound card is not present since the machine driver has
+failed to probe due to missing dependency during it's probe.
+The board is am335x-evmsk (McASP<->tlv320aic3106 codec) with davinci-evm
+machine driver:
+
+...
+[   12.615118] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: ENTER
+[   12.719969] davinci_evm sound.3: davinci_evm_probe: ENTER
+[   12.725753] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card
+[   12.753846] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component
+[   12.922051] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component DONE
+[   12.950839] davinci_evm sound.3: ASoC: platform (null) not registered
+[   12.957898] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card DONE (-517)
+[   13.099026] davinci-mcasp 4803c000.mcasp: Kicking the deferred list
+[   13.177838] davinci-mcasp 4803c000.mcasp: really_probe: probe_count = 2
+[   13.194130] davinci_evm sound.3: snd_soc_register_card failed (-517)
+[   13.346755] davinci_mcasp_driver_init: LEAVE
+[   13.377446] platform sound.3: Driver davinci_evm requests probe deferral
+[   13.592527] platform sound.3: really_probe: probe_count = 0
+
+In the log the machine driver enters it's probe at 12.719969 (this point it
+has been removed from the deferred lists). McASP driver already executing
+it's probing (12.615118) and finishes first as well.
+The machine driver tries to construct the sound card (12.950839) but did
+not found one of the components so it fails. After this McASP driver
+registers all the ASoC components and the deferred work is prepared at
+13.099026 (not that this time the machine driver is not in the lists so it
+is not going to be handled when the work is executing).
+Lastly the machine driver exit from it's probe and the core places it to the
+deferred list but there will be no other driver going to load and the
+deferred queue is not going to be kicked again - till we have external event
+like connecting USB stick, etc.
+
+The proposed solution is to try the deferred queue once more when the last
+driver is asking for deferring and we had drivers probed while this last
+driver was probing.
+
+This way we can avoid drivers stuck in the deferred queue.
+
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ drivers/base/dd.c | 22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index 06051767393f..80703de6e6ad 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -53,6 +53,10 @@ static LIST_HEAD(deferred_probe_pending_list);
+ static LIST_HEAD(deferred_probe_active_list);
+ static struct workqueue_struct *deferred_wq;
+ 
++static atomic_t probe_count = ATOMIC_INIT(0);
++static DECLARE_WAIT_QUEUE_HEAD(probe_waitqueue);
++static bool deferral_retry;
++
+ /**
+  * deferred_probe_work_func() - Retry probing devices in the active list.
+  */
+@@ -141,6 +145,11 @@ static void driver_deferred_probe_trigger(void)
+ 	if (!driver_deferred_probe_enable)
+ 		return;
+ 
++	if (atomic_read(&probe_count) > 1)
++		deferral_retry = true;
++	else
++		deferral_retry = false;
++
+ 	/*
+ 	 * A successful probe means that all the devices in the pending list
+ 	 * should be triggered to be reprobed.  Move all the deferred devices
+@@ -259,9 +268,6 @@ int device_bind_driver(struct device *dev)
+ }
+ EXPORT_SYMBOL_GPL(device_bind_driver);
+ 
+-static atomic_t probe_count = ATOMIC_INIT(0);
+-static DECLARE_WAIT_QUEUE_HEAD(probe_waitqueue);
+-
+ static int really_probe(struct device *dev, struct device_driver *drv)
+ {
+ 	int ret = 0;
+@@ -310,6 +316,16 @@ probe_failed:
+ 		/* Driver requested deferred probing */
+ 		dev_info(dev, "Driver %s requests probe deferral\n", drv->name);
+ 		driver_deferred_probe_add(dev);
++		/*
++		 * This is the last driver to load and asking to be deferred.
++		 * If other driver(s) loaded while this driver was loading, we
++		 * should try the deferred modules again to avoid missing
++		 * dependency for this driver.
++		 */
++		if (atomic_read(&probe_count) == 1 && deferral_retry) {
++			deferral_retry = false;
++			driver_deferred_probe_trigger();
++		}
+ 	} else if (ret != -ENODEV && ret != -ENXIO) {
+ 		/* driver matched but the probe failed */
+ 		printk(KERN_WARNING
+-- 
+1.8.5.2
 
