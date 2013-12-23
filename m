@@ -1,101 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757260Ab3LWK5y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 05:57:54 -0500
-Received: from mga09.intel.com ([134.134.136.24]:31074 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757203Ab3LWK5w convert rfc822-to-8bit (ORCPT
+	id S1757282Ab3LWK7g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 05:59:36 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:55385 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756868Ab3LWK7e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 05:57:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,536,1384329600"; 
-   d="scan'208,223";a="448638630"
-From: "Du, ChangbinX" <changbinx.du@intel.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "sarah.a.sharp@linux.intel.com" <sarah.a.sharp@linux.intel.com>,
-        "Lan, Tianyu" <tianyu.lan@intel.com>,
-        "burzalodowa@gmail.com" <burzalodowa@gmail.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] usb/core: fix NULL pointer dereference in
- recursively_mark_NOTATTACHED
-Thread-Topic: [PATCH] usb/core: fix NULL pointer dereference in
- recursively_mark_NOTATTACHED
-Thread-Index: Ac7/zXecO35CkBpaT+GTORmHLtV6VQ==
-Date: Mon, 23 Dec 2013 10:57:49 +0000
-Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A01A2EDE9@SHSMSX103.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 23 Dec 2013 05:59:34 -0500
+Message-ID: <52B8178F.5020607@hitachi.com>
+Date: Mon, 23 Dec 2013 19:59:27 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
+To: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-arch@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: Re: Re: [PATCH -tip v6 06/22] [BUGFIX] x86: Prohibit probing
+ on memcpy/memset
+References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal> <20131219090409.14309.25677.stgit@kbuild-fedora.novalocal> <CAGdX0WFKYHqXrVQ6LBw0YgH_H6cP=LZVCBe1iOvEXsHQPD8Zmg@mail.gmail.com> <52B3AD7D.2020104@hitachi.com> <CAGdX0WENxTPhFDtcEW6LFhk1SNZc6mEK+JsCDOJmfK8_PS1rxg@mail.gmail.com> <52B3CABE.1080903@hitachi.com> <CAGdX0WEev84sOyu-uzkDOmQFi_=mza7cPzyC0VkRZe0fD_1+jQ@mail.gmail.com> <52B40C00.2060401@hitachi.com> <CAGdX0WECaJBSX29-+fC=0XLJfAh0JvFyLTW2V8yM616L45iCQQ@mail.gmail.com>
+In-Reply-To: <CAGdX0WECaJBSX29-+fC=0XLJfAh0JvFyLTW2V8yM616L45iCQQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From ee48b3736d437af79d4fe858cdf64f241c76c339 Mon Sep 17 00:00:00 2001
-From: "Du, Changbin" <changbinx.du@intel.com>
-Date: Wed, 18 Dec 2013 16:47:21 +0800
-Subject: [PATCH] usb/core: fix NULL pointer dereference in
- recursively_mark_NOTATTACHED
+(2013/12/23 13:51), Jovi Zhangwei wrote:
+> On Fri, Dec 20, 2013 at 5:21 PM, Masami Hiramatsu
+> <masami.hiramatsu.pt@hitachi.com> wrote:
+>> (2013/12/20 17:31), Jovi Zhangwei wrote:
+>>> On Fri, Dec 20, 2013 at 12:42 PM, Masami Hiramatsu
+>>> <masami.hiramatsu.pt@hitachi.com> wrote:
+>>>> (2013/12/20 12:07), Jovi Zhangwei wrote:
+>>>>> On Fri, Dec 20, 2013 at 10:37 AM, Masami Hiramatsu
+>>>>> <masami.hiramatsu.pt@hitachi.com> wrote:
+>>>>>> Hi Jovi,
+>>>>>>
+>>>>>> (2013/12/19 18:37), Jovi Zhangwei wrote:
+>>>>>>> Hi Masami,
+>>>>>>>
+>>>>>>> On Thu, Dec 19, 2013 at 5:04 PM, Masami Hiramatsu
+>>>>>>> <masami.hiramatsu.pt@hitachi.com> wrote:
+>>>>>>>> memcpy/memset functions are fundamental functions and
+>>>>>>>> those are involved in kprobe's exception handling.
+>>>>>>>> Prohibit probing on them to avoid kernel crash.
+>>>>>>>>
+>>>>>>> Would you please let me know the LKML link of that bugfix, I cannot
+>>>>>>> find it in my LKML fold.
+>>>>>>
+>>>>>> Yeah, that was found in my testing environment.
+>>>>>>
+>>>>>>> No objection on this patch. :) just want to know more, It seems there
+>>>>>>> have no problem to probe memcpy in my box, maybe I didn't hit the
+>>>>>>> crash code path.
+>>>>>>
+>>>>>> Ah, I see. Originally the problem happened when I put a probe on
+>>>>>> __memcpy. And it looks the instances of memcpy and __memcpy are
+>>>>>> same on x86-64. Thus I decided to blacklist both. (memset/__memset too)
+>>>>>> Have you ever tried to probe __memcpy on your box?
+>>>>>>
+>>>>> Hmm, still no crash, __memcpy and __memset are both tested.
+>>>>>
+>>>>> I use below kprobe related config:
+>>>>>
+>>>>> CONFIG_KPROBES=y
+>>>>> CONFIG_JUMP_LABEL=y
+>>>>> CONFIG_OPTPROBES=y
+>>>>> CONFIG_KPROBES_ON_FTRACE=y
+>>>>
+>>>> Hmm, I've added some debugging options.
+>>>>
+>>>> CONFIG_SLUB_DEBUG=y
+>>>> CONFIG_X86_DEBUGCTLMSR=y
+>>>> CONFIG_PNP_DEBUG_MESSAGES=y
+>>>> CONFIG_DEBUG_INFO=y
+>>>> CONFIG_DEBUG_FS=y
+>>>> CONFIG_DEBUG_KERNEL=y
+>>>> CONFIG_DEBUG_STACK_USAGE=y
+>>>> CONFIG_DEBUG_MEMORY_INIT=y
+>>>> CONFIG_DEBUG_STACKOVERFLOW=y
+>>>> CONFIG_DEBUG_SPINLOCK=y
+>>>> CONFIG_DEBUG_MUTEXES=y
+>>>> CONFIG_DEBUG_LOCK_ALLOC=y
+>>>> CONFIG_DEBUG_LOCKDEP=y
+>>>> CONFIG_DEBUG_BUGVERBOSE=y
+>>>> CONFIG_DEBUG_RODATA=y
+>>>> CONFIG_DEBUG_BOOT_PARAMS=y
+>>>>
+>>>> I guess some of them might cause it.
+>>>>
+>>> I recompiled the kernel with those config enabled, unfortunately still no crash,
+>>> I tested on 3.13.0-rc4, a fedora kvm box.
+>>
+>> Hmm, it's very odd. I'm running 3.13.0-rc4 x86-64 on the fedora
+>> kvm box too. here is the full of my kconfig.
+>>
+> That configuration is still working for me, no crash for memcpy kprobe test.
 
-usb_hub_to_struct_hub() can return NULL if the hub without active
-configuration. So the result must be checked.
+Would you do __memcpy test? or memcpy test? I only had a crash on the
+__memcpy(__memset).
 
-BUG: unable to handle kernel NULL pointer dereference at 0000015c
-IP: [<c16d5fb0>] recursively_mark_NOTATTACHED+0x20/0x60
-Call Trace:
- [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
- [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
- [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
- [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
- [<c16d6082>] usb_set_device_state+0x92/0x120
- [<c16d862b>] usb_disconnect+0x2b/0x1a0
- [<c16dd4c0>] usb_remove_hcd+0xb0/0x160
- [<c19ca846>] ? _raw_spin_unlock_irqrestore+0x26/0x50
- [<c1704efc>] ehci_mid_remove+0x1c/0x30
- [<c1704f26>] ehci_mid_stop_host+0x16/0x30
- [<c16f7698>] penwell_otg_work+0xd28/0x3520
- [<c19c945b>] ? __schedule+0x39b/0x7f0
- [<c19cdb9d>] ? sub_preempt_count+0x3d/0x50
- [<c125e97d>] process_one_work+0x11d/0x3d0
- [<c19c7f4d>] ? mutex_unlock+0xd/0x10
- [<c125e0e5>] ? manage_workers.isra.24+0x1b5/0x270
- [<c125f009>] worker_thread+0xf9/0x320
- [<c19ca846>] ? _raw_spin_unlock_irqrestore+0x26/0x50
- [<c125ef10>] ? rescuer_thread+0x2b0/0x2b0
- [<c1264ac4>] kthread+0x94/0xa0
- [<c19d0f77>] ret_from_kernel_thread+0x1b/0x28
- [<c1264a30>] ? kthread_create_on_node+0xc0/0xc0
+Thank you,
 
-Signed-off-by: Du, Changbin <changbinx.du@intel.com>
----
- drivers/usb/core/hub.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+> 
+> I also posted my kernel configration at:
+>     https://gist.github.com/ktap/8091293
+> 
+> I compared two configs, no clue found yet.
+> 
+> Thanks,
+> 
+> Jovi
+> 
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index bd9dc35..01a1fe6 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1870,9 +1870,11 @@ static void recursively_mark_NOTATTACHED(struct usb_device *udev)
- 	struct usb_hub *hub = usb_hub_to_struct_hub(udev);
- 	int i;
- 
--	for (i = 0; i < udev->maxchild; ++i) {
--		if (hub->ports[i]->child)
--			recursively_mark_NOTATTACHED(hub->ports[i]->child);
-+	if (hub) {
-+		for (i = 0; i < udev->maxchild; ++i) {
-+			if (hub->ports[i]->child)
-+				recursively_mark_NOTATTACHED(hub->ports[i]->child);
-+		}
- 	}
- 	if (udev->state == USB_STATE_SUSPENDED)
- 		udev->active_duration -= jiffies;
+
 -- 
-1.8.3.2
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
