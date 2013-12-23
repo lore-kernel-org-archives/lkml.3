@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932255Ab3LWRUm (ORCPT <rfc822;w@1wt.eu>);
+	id S932298Ab3LWRUq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 12:20:46 -0500
+Received: from mga01.intel.com ([192.55.52.88]:11275 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932210Ab3LWRUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Dec 2013 12:20:42 -0500
-Received: from smtprelay0170.hostedemail.com ([216.40.44.170]:40924 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932210Ab3LWRUk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 12:20:40 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3872:4321:5007:6119:7576:7652:7903:10004:10400:10848:11026:11232:11658:11914:12043:12296:12517:12519:12740:13019:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: color23_22b535aa9ed4a
-X-Filterd-Recvd-Size: 1899
-Message-ID: <1387819238.22671.71.camel@joe-AO722>
-Subject: Re: [RESEND PATCH v2] mfd: twl6030: Fix endianness problem in IRQ
- handler
-From: Joe Perches <joe@perches.com>
-To: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        patches@linaro.org, linaro-networking@linaro.org,
-        linaro-kernel@lists.linaro.org, Danke Xie <d.xie@sta.samsung.com>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 23 Dec 2013 09:20:38 -0800
-In-Reply-To: <1387818706-6129-1-git-send-email-taras.kondratiuk@linaro.org>
-References: <1387818706-6129-1-git-send-email-taras.kondratiuk@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,538,1384329600"; 
+   d="scan'208";a="454653256"
+Message-ID: <52B870E5.3020708@intel.com>
+Date: Mon, 23 Dec 2013 09:20:37 -0800
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Ding Tianhong <dingtianhong@huawei.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        e1000-devel@lists.sourceforge.net
+Subject: Re: [E1000-devel] [PATCH 01/21] net: slight optimization of addr
+ compare for some modules
+References: <52B7C590.7070708@huawei.com>
+In-Reply-To: <52B7C590.7070708@huawei.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-12-23 at 19:11 +0200, Taras Kondratiuk wrote:
-> From: Danke Xie <d.xie@sta.samsung.com>
-> 
-> The current TWL 6030 IRQ handler assumes little endianness.
-> This change makes it endian-neutral.
-[]
-> diff --git a/drivers/mfd/twl6030-irq.c b/drivers/mfd/twl6030-irq.c
-[]
-> @@ -196,8 +197,9 @@ static irqreturn_t twl6030_irq_thread(int irq, void *data)
->  	if (sts.bytes[2] & 0x10)
->  		sts.bytes[2] |= 0x08;
->  
-> -	for (i = 0; sts.int_sts; sts.int_sts >>= 1, i++)
-> -		if (sts.int_sts & 0x1) {
-> +	int_sts = le32_to_cpu(sts.int_sts);
-> +	for (i = 0; int_sts; int_sts >>= 1, i++)
-> +		if (int_sts & 0x1) {
->  			int module_irq =
->  				irq_find_mapping(pdata->irq_domain,
->  						 pdata->irq_mapping_tbl[i]);
+On 12/22/2013 09:09 PM, Ding Tianhong wrote:
+> Use the recently added and possibly more efficient
+> ether_addr_equal_unaligned to instead of memcmp.
+>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: netdev@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: e1000-devel@lists.sourceforge.net
+> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+> ---
+>  drivers/net/bonding/bond_3ad.c                        |  2 +-
+>  drivers/net/ethernet/3com/3c509.c                     |  3 +--
+>  drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c        | 10 ++++------
+>  drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c     |  2 +-
+>  drivers/net/ethernet/broadcom/bnx2x/bnx2x_vfpf.c      |  2 +-
+>  drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c    |  2 +-
+>  drivers/net/ethernet/chelsio/cxgb3/l2t.c              |  2 +-
+>  drivers/net/ethernet/cisco/enic/enic_pp.c             |  2 +-
+>  drivers/net/ethernet/emulex/benet/be_main.c           |  2 +-
+>  drivers/net/ethernet/intel/igbvf/netdev.c             |  2 +-
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c        |  3 +--
+>  drivers/net/ethernet/mellanox/mlx4/en_netdev.c        |  4 ++--
+>  drivers/net/ethernet/mellanox/mlx4/resource_tracker.c |  2 +-
+>  drivers/net/ethernet/micrel/ksz884x.c                 |  9 ++++-----
+>  drivers/net/ethernet/neterion/vxge/vxge-main.c        |  2 +-
+>  drivers/net/ethernet/packetengines/yellowfin.c        |  8 ++------
+>  drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c    |  2 +-
+>  drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c        |  4 ++--
+>  drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c        |  4 ++--
+>  drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c      |  4 ++--
+>  drivers/net/ethernet/renesas/sh_eth.c                 |  2 +-
+>  drivers/net/ethernet/seeq/sgiseeq.c                   |  2 +-
+>  drivers/net/ethernet/sun/sunvnet.c                    |  2 +-
+>  drivers/net/ethernet/ti/cpsw_ale.c                    |  2 +-
+>  drivers/net/fddi/skfp/fplustm.c                       |  3 ++-
+>  drivers/net/plip/plip.c                               |  2 +-
+>  net/caif/cfrfml.c                                     |  2 +-
+>  27 files changed, 39 insertions(+), 47 deletions(-)
 
-instead of the
+What is it you are trying to optimize for, size or speed?  Most of these
+calls are in slow path.  Replacing the memcmp with an inline operation
+may provide little to no gain in terms of speed and in many cases as you
+might actually be increasing the resultant driver size.
 
-	for (...) {
-		if (foo & 1) {
-		
+Also I would recommend reviewing the addresses you are comparing.  It is
+likely that you could use ether_addr_equal or compare_ether_addr in many
+cases as I suspect a number of spots are using 16b aligned MAC addresses
+for both operands.
 
-maybe using ffs would be better/faster
+Thanks,
 
-	while ((bit = ffs(int_sts))) {
-
-etc...
-
-
-
+Alex
