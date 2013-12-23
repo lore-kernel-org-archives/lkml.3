@@ -1,107 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756712Ab3LWFxY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 00:53:24 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:53160 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711Ab3LWFxW (ORCPT
+	id S1756752Ab3LWF4H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 00:56:07 -0500
+Received: from canardo.mork.no ([148.122.252.1]:51542 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750973Ab3LWF4E convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 00:53:22 -0500
-Message-ID: <1387778068.5567.104.camel@haakon3.risingtidesystems.com>
-Subject: Re: [scsi-mq] WARNING: CPU: 0 PID: 99 at block/elevator.c:193
- elevator_init()
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: LKP <fnstml-lkp@cn.fujitsu.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Christoph Hellwig <hch@lst.de>
-Date: Sun, 22 Dec 2013 21:54:28 -0800
-In-Reply-To: <20131223031624.GB23200@localhost>
-References: <20131223031624.GB23200@localhost>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 23 Dec 2013 00:56:04 -0500
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH Resend] cpufreq: remove sysfs files for CPU which failed to come back after resume
+Organization: m
+References: <610b63b7594e5cd364c498f60e69b9e174db9257.1387554926.git.viresh.kumar@linaro.org>
+	<1651441.C2UQleWVoy@vostro.rjw.lan>
+Date: Mon, 23 Dec 2013 06:55:56 +0100
+In-Reply-To: <1651441.C2UQleWVoy@vostro.rjw.lan> (Rafael J. Wysocki's message
+	of "Sun, 22 Dec 2013 02:00:40 +0100")
+Message-ID: <871u14i00j.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-12-23 at 11:16 +0800, Fengguang Wu wrote:
-> Greetings,
-> 
-> I got the below dmesg and the first bad commit is
-> 
-> commit 29ff818720ce09b044652b83e9c70ef474800d54
-> Author:     Nicholas Bellinger <nab@linux-iscsi.org>
-> AuthorDate: Thu May 23 22:11:38 2013 -0700
-> Commit:     Nicholas Bellinger <nab@linux-iscsi.org>
-> CommitDate: Sun Dec 22 13:00:48 2013 +0000
-> 
->     scsi-debug: Enable scsi-mq operation
->     
->     v4 changes:
->       - Bump can_queue to 64 for performance testing
->       - Enable scsi-mq DIF support
->       - Add nop_fs_io module parameter for performance testing
->     
->     Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-> 
-> +-----------------------------------------------------+----+
-> |                                                     |    |
-> +-----------------------------------------------------+----+
-> | boot_successes                                      | 0  |
-> | boot_failures                                       | 19 |
-> | WARNING:CPU:PID:at_block/elevator.c:elevator_init() | 19 |
-> +-----------------------------------------------------+----+
-> 
-> [    4.763205]   CPU 1 -> Queue 0
-> [    4.764566] ------------[ cut here ]------------
-> [    4.764566] ------------[ cut here ]------------
-> [    4.765951] WARNING: CPU: 0 PID: 99 at block/elevator.c:193 elevator_init+0xf0/0xfb()
-> 
-> Attached are the full dmesg and kconfig.
-> 
+"Rafael J. Wysocki" <rjw@rjwysocki.net> writes:
 
-Mmm, so elevator_init() is now expecting q->sysfs_lock to be held after:
+> Bjorn, can you please check if the pm-cpufreq branch of the linux-pm.git tree
+> fixes the problem that you have reported 
 
-commit eb1c160b22655fd4ec44be732d6594fd1b1e44f4
-Author: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Date:   Tue Oct 15 16:42:16 2013 -0600
+I can confirm that it fixes the major regression.  With this branch, the
+cpufreq directory is completely removed after a cancelled userspace
+hibernate (with the acpi-cpufreq problem causing failure).  So it is
+possible to restore cpufreq by manually offlining and onlining non-boot
+cores.  No more leftover sysfs attributes.
 
-    elevator: Fix a race in elevator switching and md device initialization
+But there is still a minor regression compared to the old (v3.11)
+behaviour: Previously the cpufreq functionality would be automatically
+restored by any completed hibernate or suspend cycle, since it would
+effectively do the CPU offline/online. This automatix fixup won't happen
+with the current pm-cpufreq branch.  User intervention is now required
+to fix up cpufreq. Which is expected, due to the special handling of
+cpufreq suspend.
 
-Adding the following scsi_mq_alloc_queue() patch to quiet this warning.
+So there is still a small, small regression here, making me believe that
+my "fix" is better until the cpufreq suspend is properly fixed.  But
+it's certainly not a major problem to me either way.  Your call.
 
-Thanks Fengguang!
+> without causing any new breakage to happen?
 
---nab
-
-diff --git a/drivers/scsi/scsi-mq.c b/drivers/scsi/scsi-mq.c
-index dad720a..188509d 100644
---- a/drivers/scsi/scsi-mq.c
-+++ b/drivers/scsi/scsi-mq.c
-@@ -151,7 +151,7 @@ int scsi_mq_alloc_queue(struct Scsi_Host *sh, struct scsi_device *sdev)
-        struct request_queue *q;
-        struct request *rq;
-        struct scsi_cmnd *sc;
--       int i, j, sgl_size;
-+       int i, j, rc, sgl_size;
-        bool prot = true;
- 
-        sdev->sdev_mq_reg.ops = &scsi_mq_ops;
-@@ -181,8 +181,11 @@ int scsi_mq_alloc_queue(struct Scsi_Host *sh, struct scsi_device *sdev)
- 
-        q->sg_reserved_size = INT_MAX;
- 
--       if (elevator_init(q, NULL)) {
--               dump_stack();
-+       mutex_lock(&q->sysfs_lock);
-+       rc = elevator_init(q, NULL);
-+       mutex_unlock(&q->sysfs_lock);
-+       if (rc) {
-+               pr_err("elevator_init failed for scsi-mq: %d\n", rc);
-                return -ENOMEM;
-        }
-        /*
+I'm not going to guarantee that :-)  But I haven't noticed anything
+obvious during the 15 minutes I've been testing this branch so far.
 
 
+
+Bjørn
