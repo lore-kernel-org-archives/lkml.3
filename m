@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932158Ab3LWJN3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 04:13:29 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:43481 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190Ab3LWJN1 (ORCPT
+	id S1757220Ab3LWJQp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 04:16:45 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:34418 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757033Ab3LWJQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 04:13:27 -0500
-Message-ID: <52B7FE84.4030302@huawei.com>
-Date: Mon, 23 Dec 2013 17:12:36 +0800
-From: Ding Tianhong <dingtianhong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Mon, 23 Dec 2013 04:16:43 -0500
+Message-ID: <52B7FF61.2090908@fb.com>
+Date: Mon, 23 Dec 2013 14:46:17 +0530
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Antonio Quartulli <antonio@meshcoding.com>, Joe Perches <joe@perches.com>
-CC: Marek Lindner <mareklindner@neomailbox.ch>,
-        Simon Wunderlich <sw@simonwunderlich.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        <b.a.t.m.a.n@lists.open-mesh.org>, Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 09/21] batman-adv: slight optimization of addr compare
-References: <52B7C5C5.2050304@huawei.com> <52B7F853.8050806@meshcoding.com> <1387789163.22671.62.camel@joe-AO722> <52B7FD01.9080006@meshcoding.com>
-In-Reply-To: <52B7FD01.9080006@meshcoding.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.199]
-X-CFilter-Loop: Reflected
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>
+Subject: Re: [RFC/PATCHSET 00/18] perf report: Add support to accumulate hist
+ periods (v3)
+References: <1387344086-12744-1-git-send-email-namhyung@kernel.org>  <20131218094622.GA19240@gmail.com>  <52B17B14.5030101@fb.com> <1387377549.1717.14.camel@leonhard>
+In-Reply-To: <1387377549.1717.14.camel@leonhard>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Spam-Reason: safe
+X-FB-Internal: Safe
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2013-12-22_03:2013-12-20,2013-12-22,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/12/23 17:06, Antonio Quartulli wrote:
-> On 23/12/13 09:59, Joe Perches wrote:
->> On Mon, 2013-12-23 at 09:46 +0100, Antonio Quartulli wrote:
->>> On 23/12/13 06:10, Ding Tianhong wrote:
->>>
->>> [...]
->>>
->>>> --- a/net/batman-adv/originator.c
->>>> +++ b/net/batman-adv/originator.c
->>>> @@ -41,7 +41,7 @@ int batadv_compare_orig(const struct hlist_node *node, const void *data2)
->>>>  	const void *data1 = container_of(node, struct batadv_orig_node,
->>>>  					 hash_entry);
->>>>  
->>>> -	return (memcmp(data1, data2, ETH_ALEN) == 0 ? 1 : 0);
->>>> +	return ether_addr_equal_unaligned(data1, data2) ? 1 : 0;
->>>
->>> ether_addr_equal_unaligned() returns a bool value which is implicitly
->>> converted to 1 or 0: there is no need for the ternary if anymore.
+On 12/18/13 8:09 PM, Namhyung Kim wrote:
+> Hi Arun,
+>
+> 2013-12-18 (수), 16:08 +0530, Arun Sharma:
+>> On 12/18/13 3:16 PM, Ingo Molnar wrote:
 >>
->> Should these use batadv_compare_eth?
+>>> My main complaint that any variation of 'cumulative' or 'cumulate' is
+>>> a tongue-twister to users. I certainly won't be able to remember it
+>>> and will have to call up the manpage every time I use it - which will
+>>> be very annoying. I'd probably not use the feature much.
 >>
-> 
-> That makes sense.
-> 
-> I was wondering whether we should get rid of batadv_compare_eth() at all
-> and always use ether_addr_equal_unaligned(). The "unaligned explanation"
-> is part of the name, so there is no need to use a commented helper anymore.
-> 
-> However, until that moment it is better to get stuck to
-> batadv_compare_eth().
-> 
-> 
-> Ding, can you also follow Joe's suggestion for this patch please?
-> 
-> 
-> Thanks,
-> 
-> 
-Ok
+>> I can remember it, mainly because it's such an unusual word :)
+>> Agree that we could use something simpler/easier to remember.
+>>
+>> My other user space projects have been keeping me busy. But still very
+>> interested in this feature. Will test this patch series over the holidays.
+>
+> Thanks in advance for your test and feedback! :)
 
+Looks great! One of the features I'm missing compared to my earlier 
+--sort inclusive series of patches is that, in the --children mode, I'd 
+still like to see callchains (at least in --tui). Looks like --children 
+and -G -s pid can't be used together in this implementation.
 
+  -Arun
 
