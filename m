@@ -1,126 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756976Ab3LWHgl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 02:36:41 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:41335 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750730Ab3LWHgj (ORCPT
+	id S1757050Ab3LWHhJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 02:37:09 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:41274 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751601Ab3LWHhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 02:36:39 -0500
+	Mon, 23 Dec 2013 02:37:07 -0500
+Date: Mon, 23 Dec 2013 07:36:41 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Dave Young <dyoung@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "James.Bottomley@HansenPartnership.com" 
+	<James.Bottomley@HansenPartnership.com>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "horms@verge.net.au" <horms@verge.net.au>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "bp@alien8.de" <bp@alien8.de>, "greg@kroah.com" <greg@kroah.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        "leif.lindholm@linaro.org" <leif.lindholm@linaro.org>
+Subject: Re: [PATCH v7 00/12] kexec kernel efi runtime support
+Message-ID: <20131223073641.GA28919@console-pimps.org>
+References: <1387533742-18018-1-git-send-email-dyoung@redhat.com>
+ <20131221173515.GE29501@console-pimps.org>
+ <1387747621.1848.2.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-In-Reply-To: <52B7D990.2020206@samsung.com>
-References: <1387526987-12455-1-git-send-email-rongjun.ying@csr.com>
- <52B7B9F0.1020801@samsung.com> <CAGsJ_4xwc63kEBgmMk+E3JpYLhX0Vt1qQPcBXNtOGC2Gmo=MOw@mail.gmail.com>
- <52B7D990.2020206@samsung.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Mon, 23 Dec 2013 15:36:19 +0800
-Message-ID: <CAGsJ_4wbYkadoM5HHwbGUcwuimxiq-u9FMaWMs7wD-SXU4ybcQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] extcon: gpio: Add power resume support
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: rjying <rjying@gmail.com>, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RongJun Ying <Rongjun.Ying@csr.com>,
-        Binghua Duan <Binghua.Duan@csr.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387747621.1848.2.camel@misato.fc.hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/12/23 Chanwoo Choi <cw00.choi@samsung.com>:
-> On 12/23/2013 03:10 PM, Barry Song wrote:
->> 2013/12/23 Chanwoo Choi <cw00.choi@samsung.com>:
->>> On 12/20/2013 05:09 PM, rjying wrote:
->>>> From: Rongjun Ying <rongjun.ying@csr.com>
->>>>
->>>> After system resume, need send extcon uevent to userspace
->>>
->>> Why did extcon send uevent after wakeup from suspend?
->>>
->>> If extcon cable is attatched or detached on suspend state,
->>> Kernel can detect the interrupt about changed state of extcon.
->>
->> irq controller has lost power in suspend, so there is no pending interrupt.
->> and HW will not pend any interrupt when we hotplug cable during sleep.
->
-> No, SoC in suspend state must maintain the minimum power under 1mA
-> if completed the power-optimization on suspend state.
->
-> If user insert USB cable to target, the external interrupt connected to
-> USB port is happened. And kernel would be waked up from suspend state
-> to operate proper interrupt handler of external interrupt.
+On Sun, 22 Dec, at 02:27:01PM, Toshi Kani wrote:
+> 
+> The kexec branch is missing the following change, which is required for
+> fast reboot with multi-cpus.
+> 
+>    commit 279f1df915c3a6ed3075d98a849705bf53851f99
+>    Author: Vivek Goyal <vgoyal@redhat.com>
+>    Date:   Tue Nov 26 10:25:28 2013 +0800
+> 
+>        kexec: migrate to reboot cpu
+> 
+> With this change added, I confirmed that the branch kernel works fine.
+ 
+I can't find that commit in Linus' tree. Where is it from?
 
-no. not every USB supports that. that depends on the power domain design of SoC.
-
->
-> Also,
-> Input subsystem used gpio-keys driver for power button..
-> If user press power button in suspend state, target would be waked up from suspend state.
-> It is same case both extcon gpio and gpio-keys of input subsystem.
-
-no. it depends on the SoC design. many SoC only support 1 special key
-which can work as ON-KEY as wakeup source. and this kind of keys might
-not be GPIO at all.
-there is a special power domain which is still open for it.
-
->
->>
->>> So, kernel would execute proper operation about interrupt
->>> after wakeup from suspend state.
->>
->> kernel only save/restore the register status of gpio, how could it
->> know whether there is a pending interrupt if the HW doesn't do it?
->>
->>>
->>> I think it isn't necessary.
->>>
->>> Thanks,
->>> Chanwoo Choi
->>>
->>>>
->>>> Change-Id: I32a9e1c6646035f95765bba79a7acaccb8ce45a7
->>>>
->>>> Signed-off-by: Rongjun Ying <rongjun.ying@csr.com>
->>>> ---
->>>>  drivers/extcon/extcon-gpio.c |   17 +++++++++++++++++
->>>>  1 files changed, 17 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
->>>> index 7e0dff5..d916522 100644
->>>> --- a/drivers/extcon/extcon-gpio.c
->>>> +++ b/drivers/extcon/extcon-gpio.c
->>>> @@ -159,12 +159,29 @@ static int gpio_extcon_remove(struct platform_device *pdev)
->>>>       return 0;
->>>>  }
->>>>
->>>> +#ifdef CONFIG_PM_SLEEP
->>>> +static int gpio_extcon_resume(struct device *dev)
->>>> +{
->>>> +     struct gpio_extcon_data *extcon_data;
->>>> +
->>>> +     extcon_data = dev_get_drvdata(dev);
->>>> +     queue_delayed_work(system_power_efficient_wq, &extcon_data->work,
->>>> +                           extcon_data->debounce_jiffies);
->>>> +     return 0;
->>>> +}
->>>> +#endif
->>>> +
->>>> +static const struct dev_pm_ops gpio_extcon_pm_ops = {
->>>> +     SET_SYSTEM_SLEEP_PM_OPS(NULL, gpio_extcon_resume)
->>>> +};
->>>> +
->>>>  static struct platform_driver gpio_extcon_driver = {
->>>>       .probe          = gpio_extcon_probe,
->>>>       .remove         = gpio_extcon_remove,
->>>>       .driver         = {
->>>>               .name   = "extcon-gpio",
->>>>               .owner  = THIS_MODULE,
->>>> +             .pm = &gpio_extcon_pm_ops,
->>>>       },
->>>>  };
->>>>
->>>>
->>>
->>
->> -barry
-
--barry
+-- 
+Matt Fleming, Intel Open Source Technology Center
