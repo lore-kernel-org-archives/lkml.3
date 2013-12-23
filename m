@@ -1,133 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757302Ab3LWMll (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 07:41:41 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38015 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751509Ab3LWMlj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 07:41:39 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-CC: <linux-kernel@vger.kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [RFC] drivercore: deferral race condition fix
-Date: Mon, 23 Dec 2013 14:41:31 +0200
-Message-ID: <1387802491-14513-1-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.8.5.2
+	id S1757288Ab3LWNEp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 08:04:45 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:51614 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756990Ab3LWNEn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 08:04:43 -0500
+Date: Mon, 23 Dec 2013 14:04:38 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-arch@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH -tip v6 00/22] kprobes: introduce NOKPROBE_SYMBOL(),
+ cleanup and fixes crash bugs
+Message-ID: <20131223130438.GA5076@gmail.com>
+References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
+ <y0m38loefhx.fsf@fche.csb>
+ <52B3C5E6.2040802@hitachi.com>
+ <20131220082056.GA15934@gmail.com>
+ <52B40E79.8040701@hitachi.com>
+ <20131220104615.GA22609@gmail.com>
+ <52B75542.7040600@hitachi.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52B75542.7040600@hitachi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the kernel is built with CONFIG_PREEMPT it is possible to reach a state
-when all modules are loaded but some driver still stuck in the deferred list
-and there is a need for external event needed to kick the deferred queue
-to probe these drivers.
 
-The issue has been observed on embedded systems with CONFIG_PREEMPT enabled
-audio support built as modules and using nfsroot for root filesystem.
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-The following fragment of a log shows such sequence when all audio modules
-were loaded but the sound card is not present since the machine driver has
-failed to probe due to missing dependency during it's probe.
-The board is am335x-evmsk (McASP<->tlv320aic3106 codec) with davinci-evm
-machine driver:
+> > I can reproduce one weirdness, with just 13 probes added, 'perf probe 
+> > -l' [which should really be 'perf probe list'!] executes very slowly:
+> > 
+> >  # perf stat --null --repeat 3 perf probe -l
+> > 
+> >  Performance counter stats for 'perf probe -l' (3 runs):
+> > 
+> >        0.763640098 seconds time elapsed                                          ( +-  1.61% )
+> > 
+> > 0.7 seconds is ridiculously long.
+> 
+> This comes from the perf-probe's internal issue. It tries to get 
+> actual lines and files by using debuginfo. I guess most of the time 
+> consumed when processing huge kernel debuginfo.
 
-...
-[   12.615118] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: ENTER
-[   12.719969] davinci_evm sound.3: davinci_evm_probe: ENTER
-[   12.725753] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card
-[   12.753846] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component
-[   12.922051] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component DONE
-[   12.950839] davinci_evm sound.3: ASoC: platform (null) not registered
-[   12.957898] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card DONE (-517)
-[   13.099026] davinci-mcasp 4803c000.mcasp: Kicking the deferred list
-[   13.177838] davinci-mcasp 4803c000.mcasp: really_probe: probe_count = 2
-[   13.194130] davinci_evm sound.3: snd_soc_register_card failed (-517)
-[   13.346755] davinci_mcasp_driver_init: LEAVE
-[   13.377446] platform sound.3: Driver davinci_evm requests probe deferral
-[   13.592527] platform sound.3: really_probe: probe_count = 0
+No, I don't have any debuginfo, I never use it.
 
-In the log the machine driver enters it's probe at 12.719969 (this point it
-has been removed from the deferred lists). McASP driver already executing
-it's probing (12.615118) and finishes first as well.
-The machine driver tries to construct the sound card (12.950839) but did
-not found one of the components so it fails. After this McASP driver
-registers all the ASoC components and the deferred work is prepared at
-13.099026 (not that this time the machine driver is not in the lists so it
-is not going to be handled when the work is executing).
-Lastly the machine driver exit from it's probe and the core places it to the
-deferred list but there will be no other driver going to load and the
-deferred queue is not going to be kicked again - till we have external event
-like connecting USB stick, etc.
+Thanks,
 
-The proposed solution is to try the deferred queue once more when the last
-driver is asking for deferring and we had drivers probed while this last
-driver was probing.
-
-This way we can avoid drivers stuck in the deferred queue.
-
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/base/dd.c | 22 +++++++++++++++++++---
- 1 file changed, 19 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-index 06051767393f..80703de6e6ad 100644
---- a/drivers/base/dd.c
-+++ b/drivers/base/dd.c
-@@ -53,6 +53,10 @@ static LIST_HEAD(deferred_probe_pending_list);
- static LIST_HEAD(deferred_probe_active_list);
- static struct workqueue_struct *deferred_wq;
- 
-+static atomic_t probe_count = ATOMIC_INIT(0);
-+static DECLARE_WAIT_QUEUE_HEAD(probe_waitqueue);
-+static bool deferral_retry;
-+
- /**
-  * deferred_probe_work_func() - Retry probing devices in the active list.
-  */
-@@ -141,6 +145,11 @@ static void driver_deferred_probe_trigger(void)
- 	if (!driver_deferred_probe_enable)
- 		return;
- 
-+	if (atomic_read(&probe_count) > 1)
-+		deferral_retry = true;
-+	else
-+		deferral_retry = false;
-+
- 	/*
- 	 * A successful probe means that all the devices in the pending list
- 	 * should be triggered to be reprobed.  Move all the deferred devices
-@@ -259,9 +268,6 @@ int device_bind_driver(struct device *dev)
- }
- EXPORT_SYMBOL_GPL(device_bind_driver);
- 
--static atomic_t probe_count = ATOMIC_INIT(0);
--static DECLARE_WAIT_QUEUE_HEAD(probe_waitqueue);
--
- static int really_probe(struct device *dev, struct device_driver *drv)
- {
- 	int ret = 0;
-@@ -310,6 +316,16 @@ probe_failed:
- 		/* Driver requested deferred probing */
- 		dev_info(dev, "Driver %s requests probe deferral\n", drv->name);
- 		driver_deferred_probe_add(dev);
-+		/*
-+		 * This is the last driver to load and asking to be deferred.
-+		 * If other driver(s) loaded while this driver was loading, we
-+		 * should try the deferred modules again to avoid missing
-+		 * dependency for this driver.
-+		 */
-+		if (atomic_read(&probe_count) == 1 && deferral_retry) {
-+			deferral_retry = false;
-+			driver_deferred_probe_trigger();
-+		}
- 	} else if (ret != -ENODEV && ret != -ENXIO) {
- 		/* driver matched but the probe failed */
- 		printk(KERN_WARNING
--- 
-1.8.5.2
-
+	Ingo
