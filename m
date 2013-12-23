@@ -1,63 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757220Ab3LWJQp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 04:16:45 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:34418 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757033Ab3LWJQn (ORCPT
+	id S1757161Ab3LWJZn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 04:25:43 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:50790 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753124Ab3LWJZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 04:16:43 -0500
-Message-ID: <52B7FF61.2090908@fb.com>
-Date: Mon, 23 Dec 2013 14:46:17 +0530
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 23 Dec 2013 04:25:41 -0500
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: Re: [RFC/PATCHSET 00/18] perf report: Add support to accumulate hist
- periods (v3)
-References: <1387344086-12744-1-git-send-email-namhyung@kernel.org>  <20131218094622.GA19240@gmail.com>  <52B17B14.5030101@fb.com> <1387377549.1717.14.camel@leonhard>
-In-Reply-To: <1387377549.1717.14.camel@leonhard>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Spam-Reason: safe
-X-FB-Internal: Safe
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2013-12-22_03:2013-12-20,2013-12-22,1970-01-01 signatures=0
+In-Reply-To: <2741731.123321387789370147.JavaMail.weblogic@epml01>
+References: <2741731.123321387789370147.JavaMail.weblogic@epml01>
+From: Barry Song <21cnbao@gmail.com>
+Date: Mon, 23 Dec 2013 17:25:21 +0800
+Message-ID: <CAGsJ_4yfu+5bHM9bmuS69ALzxvBg2M=1W9edTcByr-AY-tEpMQ@mail.gmail.com>
+Subject: Re: Re: [PATCH 1/1] extcon: gpio: Add power resume support
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: =?UTF-8?B?7LWc7LCs7Jqw?= <cw00.choi@samsung.com>,
+        rjying <rjying@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        RongJun Ying <Rongjun.Ying@csr.com>,
+        Binghua Duan <Binghua.Duan@csr.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/13 8:09 PM, Namhyung Kim wrote:
-> Hi Arun,
+2013/12/23 MyungJoo Ham <myungjoo.ham@samsung.com>:
+>> On 12/23/2013 05:13 PM, Barry Song wrote:
+>> > 2013/12/23 Chanwoo Choi <cw00.choi@samsung.com>:
+>> >> On 12/23/2013 04:36 PM, Barry Song wrote:
+>> >>> 2013/12/23 Chanwoo Choi <cw00.choi@samsung.com>:
+>> >>>> On 12/23/2013 03:10 PM, Barry Song wrote:
+>> >>>>> 2013/12/23 Chanwoo Choi <cw00.choi@samsung.com>:
+>> >>>>>> On 12/20/2013 05:09 PM, rjying wrote:
+>> >>>>>>> From: Rongjun Ying <rongjun.ying@csr.com>
+>> >>>>>>>
+>> >>>>>>> After system resume, need send extcon uevent to userspace
+>> >>>>>>
+>> >>>>>> Why did extcon send uevent after wakeup from suspend?
+>> >>>>>>
+>> >>>>>> If extcon cable is attatched or detached on suspend state,
+>> >>>>>> Kernel can detect the interrupt about changed state of extcon.
+>> >>>>>
+>> >>>>> irq controller has lost power in suspend, so there is no pending interrupt.
+>> >>>>> and HW will not pend any interrupt when we hotplug cable during sleep.
+>> >>>>
+>> >>>> No, SoC in suspend state must maintain the minimum power under 1mA
+>> >>>> if completed the power-optimization on suspend state.
+>> >>>>
+>> >>>> If user insert USB cable to target, the external interrupt connected to
+>> >>>> USB port is happened. And kernel would be waked up from suspend state
+>> >>>> to operate proper interrupt handler of external interrupt.
+>> >>>
+>> >>> no. not every USB supports that. that depends on the power domain design of SoC.
+>> >>
+>> >> USB is only example for gpio control in suspend state.
+>> >>
+>> >>>
+>> >>>>
+>> >>>> Also,
+>> >>>> Input subsystem used gpio-keys driver for power button..
+>> >>>> If user press power button in suspend state, target would be waked up from suspend state.
+>> >>>> It is same case both extcon gpio and gpio-keys of input subsystem.
+>> >>>
+>> >>> no. it depends on the SoC design. many SoC only support 1 special key
+>> >>> which can work as ON-KEY as wakeup source. and this kind of keys might
+>> >>> not be GPIO at all.
+>> >>> there is a special power domain which is still open for it.
+>> >>
+>> >> many SoC?
+>> >>
+>> >> As I knew, most SoC has supported various wakeup source.
+>> >> As you comment, if specific SoC support only one special key
+>> >> for wakeup from suspend state, I think it isn't common.
+>> >>
+>> >> Also,
+>> >> This patch isn't necessary on SoCs which support various wakeup source (e.g., external interrupt).
+>> >> As you comment, this issue has dependecy on specific SoC. Why did you think this common code?
+>> >
+>> > i am not thinking this patch must be common codes but i think the
+>> > extcon should provide common codes to support all chips. that is what
+>> > a framework should consider.
+>> >
+>> > if there is no this or things similar with this, how could extcon
+>> > support the chips which don't support receiving sleep gpio interrupts?
+>>
+>> Sure, subsystem should support all cases related to this issue.
+>>
+>> I'd like to send common patch to support all cases as we discussed.
+>> If some patch support all case, I would review and apply it.
+>>
+>> Chanwoo Choi
 >
-> 2013-12-18 (수), 16:08 +0530, Arun Sharma:
->> On 12/18/13 3:16 PM, Ingo Molnar wrote:
->>
->>> My main complaint that any variation of 'cumulative' or 'cumulate' is
->>> a tongue-twister to users. I certainly won't be able to remember it
->>> and will have to call up the manpage every time I use it - which will
->>> be very annoying. I'd probably not use the feature much.
->>
->> I can remember it, mainly because it's such an unusual word :)
->> Agree that we could use something simpler/easier to remember.
->>
->> My other user space projects have been keeping me busy. But still very
->> interested in this feature. Will test this patch series over the holidays.
+> Dear Barry and Chanwoo,
 >
-> Thanks in advance for your test and feedback! :)
+>
+> What about having a flag in extcon platform data that describes
+> whether this extcon-gpio requires status double checking at resume
+> or not?
 
-Looks great! One of the features I'm missing compared to my earlier 
---sort inclusive series of patches is that, in the --children mode, I'd 
-still like to see callchains (at least in --tui). Looks like --children 
-and -G -s pid can't be used together in this implementation.
+MyungJoo,
 
-  -Arun
+Thanks!
+i am ok. what about naming it as "bool lost_sleep_irq"? default, it is
+0, for chips that will lose sleeping IRQ, set it to 1?
 
+Chanwoo, how do you think?
+
+>
+>
+> Cheers,
+> MyungJoo
+>
+
+-barry
