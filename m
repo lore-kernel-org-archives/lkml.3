@@ -1,107 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757843Ab3LWTiG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 14:38:06 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:64313 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757216Ab3LWTiE (ORCPT
+	id S1757882Ab3LWTt0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 14:49:26 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:57804 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757216Ab3LWTtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 14:38:04 -0500
-Date: Mon, 23 Dec 2013 16:37:57 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH] perf stat: Do not show stats if workload fails
-Message-ID: <20131223193757.GA1396@ghostprotocols.net>
-References: <1387518748-25340-1-git-send-email-dsahern@gmail.com>
- <20131220075759.GA12937@gmail.com>
+	Mon, 23 Dec 2013 14:49:23 -0500
+Message-ID: <52B89394.5060902@ti.com>
+Date: Mon, 23 Dec 2013 13:48:36 -0600
+From: "Anna, Suman" <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131220075759.GA12937@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Florian Vaussard <florian.vaussard@epfl.ch>,
+        Joerg Roedel <joro@8bytes.org>, Tony Lindgren <tony@atomide.com>,
+        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
+        Mark Rutland <mark.rutland@arm.com>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 3/7] iommu/omap: Convert to devicetree
+References: <1387284818-28739-1-git-send-email-florian.vaussard@epfl.ch> <1387284818-28739-4-git-send-email-florian.vaussard@epfl.ch>
+In-Reply-To: <1387284818-28739-4-git-send-email-florian.vaussard@epfl.ch>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Dec 20, 2013 at 08:57:59AM +0100, Ingo Molnar escreveu:
-> * David Ahern <dsahern@gmail.com> wrote:
-> 
-> > Currently perf-stat attempts to show counter stats even if the workload
-> > is bogus:
-> > 
-> > $ perf stat -- foo
-> > foo: No such file or directory
-> > 
-> >  Performance counter stats for 'foo':
-> > 
-> >      <not counted>      task-clock
-> >      <not counted>      context-switches
-> >      <not counted>      cpu-migrations
-> >      <not counted>      page-faults
-> >      <not counted>      cycles
-> >      <not counted>      stalled-cycles-frontend
-> >      <not counted>      stalled-cycles-backend
-> >      <not counted>      instructions
-> >      <not counted>      branches
-> >      <not counted>      branch-misses
-> > 
-> >        0.009769943 seconds time elapsed
-> > 
-> > It is impossible to differentiate all the failure modes, but it seems
-> > reasonable that if the workload handling fails, perf-stat should not try
-> > to print stats.
-> > 
-> > With this change:
-> > 
-> > $ perf stat  -v -- foo
-> > Failed to start workload
-> > 
-> > Signed-off-by: David Ahern <dsahern@gmail.com>
-> > Cc: Ingo Molnar <mingo@kernel.org>
-> > Cc: Stephane Eranian <eranian@google.com>
-> 
-> Nice!
-> 
-> Acked-by: Ingo Molnar <mingo@kernel.org>
+Hi Florian,
 
-Good intent, but...
+On 12/17/2013 06:53 AM, Florian Vaussard wrote:
+> As OMAP2+ is moving to a full DT boot for 3.14, commit 7ce93f3
+> "ARM: OMAP2+: Fix more missing data for omap3.dtsi file" adds
+> basic DT bits. But the driver is not yet converted, so this will
+> not work and driver will not be probed. Convert it!
+>
+> Apart from standard bindings, this patch uses 'dma-window' (already
+> used by Tegra SMMU) and adds a custom 'ti,#tlb-entries' binding.
+>
+> Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
+> ---
+>   .../devicetree/bindings/iommu/ti,omap-iommu.txt    | 19 ++++++++++++
+>   arch/arm/mach-omap2/omap-iommu.c                   |  5 +++
+>   drivers/iommu/omap-iommu.c                         | 36 +++++++++++++++++++---
+>   3 files changed, 55 insertions(+), 5 deletions(-)
+>   create mode 100644 Documentation/devicetree/bindings/iommu/ti,omap-iommu.txt
+>
+> diff --git a/Documentation/devicetree/bindings/iommu/ti,omap-iommu.txt b/Documentation/devicetree/bindings/iommu/ti,omap-iommu.txt
+> new file mode 100644
+> index 0000000..4e5027c
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/iommu/ti,omap-iommu.txt
+> @@ -0,0 +1,19 @@
+> +OMAP3 IOMMU used by camera subsystem
 
-[acme@ssdandy linux]$ perf stat usleep 1
-Failed to start workload
-[acme@ssdandy linux]$
+As I mentioned in comments on your cover-letter, the current binding is 
+only limited to OMAP3 ISP, but the driver is common for all OMAP2+ SoCs. 
+This binding an update to handle all SoCs.
 
-Your patch does:
+To summarize the differences, OMAP2/3 has the same MMU register set for 
+all remote processor MMUs (IVA/DSP/ISP) with the only difference being 
+the number of TLBs supported (8 for ISP on OMAP2/3 and 32 for all other 
+instances on all OMAP2+ SoCs). Depending on whether the compatibility 
+property is defined for an SoC or for the processor, "ti,#tlb-entries" 
+can be retrieved directly from the match data or made as an optional 
+property, with the default value being 32.
 
-if (perf_evlist__start_workload(evsel_list) != 0)
+OMAP4 and OMAP5 have some additional registers (MMU_FAULT_PC, 
+MMU_FAULT_STATUS, MMU_GP_REG/DSPSS_MMU_GPR) on top of the OMAP2/OMAP3 
+ones, and DRA7 a further superset of OMAP4/OMAP5. The only difference is 
+the definition of the MMU_GPR register, which is different between the 
+IPU and DSP processors, but present at the same offset, and dictates the 
+validity of the MMU_FAULT_PC and MMU_FAULT_STATUS registers. The MMU_GPR 
+register is also not defined on OMAP4430 ES1.0, but is present on all 
+other newer SoCs.
 
-But:
+> +
+> +Required properties:
+> +- compatible : "ti,omap3-mmu-isp"
+My suggestion would be to use
+	"ti,omap2-iommu" for OMAP2/OMAP3 MMUs with the optional 
+"ti,#tlb-entries" to distinguish ISP MMU.
+	"ti,omap4-iommu" for OMAP4/OMAP5 MMUs with an additional boolean 
+property to distinguish the presence/functionality of the MMU_GPR register
+	"ti,dra7-iommu" for DRA7 MMUs
 
-int perf_evlist__start_workload(struct perf_evlist *evlist)
-{
-        if (evlist->workload.cork_fd > 0) {
-                char bf = 0;
-                int ret;
-                /*
-                 * Remove the cork, let it rip!
-                 */
-                ret = write(evlist->workload.cork_fd, &bf, 1);
-                if (ret < 0)
-                        perror("enable to write to pipe");
+Mark, Tony,
+Do you have any other recommendations given the above summary?
 
-                close(evlist->workload.cork_fd);
-                return ret;
-        }
+> +- ti,hwmods : "mmu_isp"
+Replace with general description
 
-        return 0;
-}
+> +- reg : address space for the configuration registers
+> +- interrupts : interrupt line
+> +- dma-window : IOVA start address and length.
+> +- ti,#tlb-entries : number of entries in the translation look-aside buffer
+> +
+> +Example:
+> +	mmu_isp: mmu_isp@480bd400 {
+> +		compatible = "ti,omap3-mmu-isp";
+> +		ti,hwmods = "mmu_isp";
+> +		reg = <0x480bd400 0x80>;
+> +		interrupts = <8>;
+> +		dma-window = <0 0xfffff000>;
+> +		ti,#tlb-entries = <8>;
+> +	};
+> diff --git a/arch/arm/mach-omap2/omap-iommu.c b/arch/arm/mach-omap2/omap-iommu.c
+> index f6daae8..f1fab56 100644
+> --- a/arch/arm/mach-omap2/omap-iommu.c
+> +++ b/arch/arm/mach-omap2/omap-iommu.c
+> @@ -10,6 +10,7 @@
+>    * published by the Free Software Foundation.
+>    */
+>
+> +#include <linux/of.h>
+>   #include <linux/module.h>
+>   #include <linux/platform_device.h>
+>   #include <linux/err.h>
+> @@ -58,6 +59,10 @@ static int __init omap_iommu_dev_init(struct omap_hwmod *oh, void *unused)
+>
+>   static int __init omap_iommu_init(void)
+>   {
+> +	/* If dtb is there, the devices will be created dynamically */
+> +	if (of_have_populated_dt())
+> +		return -ENODEV;
+> +
+>   	return omap_hwmod_for_each_by_class("mmu", omap_iommu_dev_init, NULL);
+>   }
+>   /* must be ready before omap3isp is probed */
+> diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
+> index 385bf5e..51efcc4 100644
+> --- a/drivers/iommu/omap-iommu.c
+> +++ b/drivers/iommu/omap-iommu.c
+> @@ -23,6 +23,9 @@
+>   #include <linux/spinlock.h>
+>   #include <linux/io.h>
+>   #include <linux/pm_runtime.h>
+> +#include <linux/of.h>
+> +#include <linux/of_iommu.h>
+> +#include <linux/of_irq.h>
+>
+>   #include <asm/cacheflush.h>
+>
+> @@ -1171,20 +1174,30 @@ static int omap_iommu_probe(struct platform_device *pdev)
+>   {
+>   	int err = -ENODEV;
+>   	int irq;
+> +	size_t len;
+>   	struct omap_iommu *obj;
+>   	struct resource *res;
+>   	struct iommu_platform_data *pdata = pdev->dev.platform_data;
+> +	struct device_node *of = pdev->dev.of_node;
+>
+>   	obj = kzalloc(sizeof(*obj) + MMU_REG_SIZE, GFP_KERNEL);
+>   	if (!obj)
+>   		return -ENOMEM;
+>
+> -	obj->nr_tlb_entries = pdata->nr_tlb_entries;
+> -	obj->name = pdata->name;
+> +	if (of) {
+> +		obj->name = of->name;
+> +		of_property_read_u32(of, "ti,#tlb-entries",
+> +				     &obj->nr_tlb_entries);
+> +		of_get_dma_window(of, NULL, 0, NULL, &obj->da_start, &len);
 
-Ret there is 1, so we need to change it to:
+There is no error checking performed on both the of functions.
 
-		return ret != 1 ? -1 : 0;
+> +		obj->da_end = obj->da_start + len;
+> +	} else {
+> +		obj->nr_tlb_entries = pdata->nr_tlb_entries;
+> +		obj->name = pdata->name;
+> +		obj->da_start = pdata->da_start;
+> +		obj->da_end = pdata->da_end;
+> +	}
+>   	obj->dev = &pdev->dev;
+>   	obj->ctx = (void *)obj + sizeof(*obj);
+> -	obj->da_start = pdata->da_start;
+> -	obj->da_end = pdata->da_end;
+>
+>   	spin_lock_init(&obj->iommu_lock);
+>   	mutex_init(&obj->mmap_lock);
+> @@ -1210,7 +1223,11 @@ static int omap_iommu_probe(struct platform_device *pdev)
+>   		goto err_ioremap;
+>   	}
+>
+> -	irq = platform_get_irq(pdev, 0);
+> +	if (of)
+> +		irq = irq_of_parse_and_map(of, 0);
+> +	else
+> +		irq = platform_get_irq(pdev, 0);
 
-Right?
+The platform_get_irq should still work just fine, so this change can 
+probably be left out. We can switch once the driver supports DT-only 
+devices completely.
 
-- Arnaldo
+regards
+Suman
+
+
+> +
+>   	if (irq < 0) {
+>   		err = -ENODEV;
+>   		goto err_irq;
+> @@ -1260,11 +1277,20 @@ static int omap_iommu_remove(struct platform_device *pdev)
+>   	return 0;
+>   }
+>
+> +#if defined(CONFIG_OF)
+> +static struct of_device_id omap_iommu_of_match[] = {
+> +	{ .compatible = "ti,omap3-mmu-isp" },
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, omap_iommu_of_match);
+> +#endif
+> +
+>   static struct platform_driver omap_iommu_driver = {
+>   	.probe	= omap_iommu_probe,
+>   	.remove	= omap_iommu_remove,
+>   	.driver	= {
+>   		.name	= "omap-iommu",
+> +		.of_match_table = omap_iommu_of_match,
+>   	},
+>   };
+>
+>
+
