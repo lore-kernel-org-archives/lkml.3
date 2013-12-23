@@ -1,75 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932176Ab3LWRq1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 12:46:27 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:49379 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757224Ab3LWRqF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 12:46:05 -0500
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Jonathan Cameron <^Cc23@kernel.org>
-Cc: lars@metafoo.de, Marek Vasut <marex@denx.de>, harald@ccbib.org,
-        hector.palacios@digi.com, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv5 4/4] iio: mxs-lradc: convert is_divided to a bitmap
-Date: Mon, 23 Dec 2013 18:45:35 +0100
-Message-Id: <1387820735-28031-5-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387820735-28031-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1387820735-28031-1-git-send-email-alexandre.belloni@free-electrons.com>
+	id S932279Ab3LWRqs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 12:46:48 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:34574 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932209Ab3LWRqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 12:46:45 -0500
+Date: Mon, 23 Dec 2013 10:46:34 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Tanmay Inamdar <tinamdar@apm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Landley <rob@landley.net>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-pci@vger.kernel.org, patches@apm.com,
+        linux-kernel@vger.kernel.org, jcm@redhat.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 2/3] arm64: dts: APM X-Gene PCIe device tree nodes
+Message-ID: <20131223174634.GD25089@obsidianresearch.com>
+References: <1387785725-24262-1-git-send-email-tinamdar@apm.com>
+ <1387785725-24262-3-git-send-email-tinamdar@apm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387785725-24262-3-git-send-email-tinamdar@apm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mxs_lradc.is_divided was an unsigned long array. Convert it to a bitmap to save
-some memory.
+On Mon, Dec 23, 2013 at 01:32:03PM +0530, Tanmay Inamdar wrote:
+> This patch adds the device tree nodes for APM X-Gene PCIe controller and
+> PCIe clock interface. Since X-Gene SOC supports maximum 5 ports, 5 dts nodes
+> are added.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- drivers/staging/iio/adc/mxs-lradc.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Can you include an lspci dump for PCI DT bindings please? It is
+impossible to review otherwise..
 
-diff --git a/drivers/staging/iio/adc/mxs-lradc.c b/drivers/staging/iio/adc/mxs-lradc.c
-index a58c6aaa94d3..df71669bb60e 100644
---- a/drivers/staging/iio/adc/mxs-lradc.c
-+++ b/drivers/staging/iio/adc/mxs-lradc.c
-@@ -211,7 +211,7 @@ struct mxs_lradc {
- 
- 	const uint32_t		*vref_mv;
- 	struct mxs_lradc_scale	scale_avail[LRADC_MAX_TOTAL_CHANS][2];
--	unsigned int		is_divided[LRADC_MAX_TOTAL_CHANS];
-+	unsigned long		is_divided;
- 
- 	/*
- 	 * Touchscreen LRADC channels receives a private slot in the CTRL4
-@@ -920,7 +920,7 @@ static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
- 
- 		*val = lradc->vref_mv[chan->channel];
- 		*val2 = chan->scan_type.realbits -
--			lradc->is_divided[chan->channel];
-+			test_bit(chan->channel, &lradc->is_divided);
- 		return IIO_VAL_FRACTIONAL_LOG2;
- 
- 	case IIO_CHAN_INFO_OFFSET:
-@@ -965,14 +965,14 @@ static int mxs_lradc_write_raw(struct iio_dev *iio_dev,
- 			/* divider by two disabled */
- 			writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
- 			       lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_CLR);
--			lradc->is_divided[chan->channel] = 0;
-+			clear_bit(chan->channel, &lradc->is_divided);
- 			ret = 0;
- 		} else if (val == scale_avail[MXS_LRADC_DIV_ENABLED].integer &&
- 			   val2 == scale_avail[MXS_LRADC_DIV_ENABLED].nano) {
- 			/* divider by two enabled */
- 			writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
- 			       lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_SET);
--			lradc->is_divided[chan->channel] = 1;
-+			set_bit(chan->channel, &lradc->is_divided);
- 			ret = 0;
- 		}
- 
--- 
-1.8.3.2
-
+Regards,
+Jason
