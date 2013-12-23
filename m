@@ -1,149 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932301Ab3LWRrc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 12:47:32 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:49374 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757362Ab3LWRqB (ORCPT
+	id S932333Ab3LWRsA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 12:48:00 -0500
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:39278 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932310Ab3LWRr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 12:46:01 -0500
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Jonathan Cameron <^Cc23@kernel.org>
-Cc: lars@metafoo.de, Marek Vasut <marex@denx.de>, harald@ccbib.org,
-        hector.palacios@digi.com, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv5 3/4] iio: mxs-lradc: add write_raw function to modify scale
-Date: Mon, 23 Dec 2013 18:45:34 +0100
-Message-Id: <1387820735-28031-4-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387820735-28031-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1387820735-28031-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Mon, 23 Dec 2013 12:47:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <1387819238.22671.71.camel@joe-AO722>
+References: <1387818706-6129-1-git-send-email-taras.kondratiuk@linaro.org>
+	<1387819238.22671.71.camel@joe-AO722>
+Date: Mon, 23 Dec 2013 19:47:57 +0200
+Message-ID: <CAArO44s4vsLzK9z-ODyKz45TBYt=EGHTvT81Ycnfo=ag0BagTQ@mail.gmail.com>
+Subject: Re: [RESEND PATCH v2] mfd: twl6030: Fix endianness problem in IRQ handler
+From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+To: Joe Perches <joe@perches.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        Linaro Kernel <linaro-kernel@lists.linaro.org>,
+        Danke Xie <d.xie@sta.samsung.com>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hector Palacios <hector.palacios@digi.com>
+On 23 December 2013 19:20, Joe Perches <joe@perches.com> wrote:
+> On Mon, 2013-12-23 at 19:11 +0200, Taras Kondratiuk wrote:
+>> From: Danke Xie <d.xie@sta.samsung.com>
+>>
+>> The current TWL 6030 IRQ handler assumes little endianness.
+>> This change makes it endian-neutral.
+> []
+>> diff --git a/drivers/mfd/twl6030-irq.c b/drivers/mfd/twl6030-irq.c
+> []
+>> @@ -196,8 +197,9 @@ static irqreturn_t twl6030_irq_thread(int irq, void *data)
+>>       if (sts.bytes[2] & 0x10)
+>>               sts.bytes[2] |= 0x08;
+>>
+>> -     for (i = 0; sts.int_sts; sts.int_sts >>= 1, i++)
+>> -             if (sts.int_sts & 0x1) {
+>> +     int_sts = le32_to_cpu(sts.int_sts);
+>> +     for (i = 0; int_sts; int_sts >>= 1, i++)
+>> +             if (int_sts & 0x1) {
+>>                       int module_irq =
+>>                               irq_find_mapping(pdata->irq_domain,
+>>                                                pdata->irq_mapping_tbl[i]);
+>
+> instead of the
+>
+>         for (...) {
+>                 if (foo & 1) {
+>
+>
+> maybe using ffs would be better/faster
+>
+>         while ((bit = ffs(int_sts))) {
+>
+> etc...
 
-Added write_raw function to manipulate the optional divider_by_two
-through the scaling attribute out of the available scales.
+Makes sense, but the aim of this patch is to fix endianness issue.
+This micro-optimisation can be done as a separate patch.
 
-Signed-off-by: Hector Palacios <hector.palacios@digi.com>
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Marek Vasut <marex@denx.de>
-
----
- drivers/staging/iio/adc/mxs-lradc.c | 62 ++++++++++++++++++++++++++++++++++++-
- 1 file changed, 61 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/staging/iio/adc/mxs-lradc.c b/drivers/staging/iio/adc/mxs-lradc.c
-index c63b312e54fd..a58c6aaa94d3 100644
---- a/drivers/staging/iio/adc/mxs-lradc.c
-+++ b/drivers/staging/iio/adc/mxs-lradc.c
-@@ -185,6 +185,11 @@ enum lradc_ts_plate {
- 	LRADC_SAMPLE_VALID,
- };
- 
-+enum mxs_lradc_divbytwo {
-+	MXS_LRADC_DIV_DISABLED = 0,
-+	MXS_LRADC_DIV_ENABLED,
-+};
-+
- struct mxs_lradc_scale {
- 	unsigned int		integer;
- 	unsigned int		nano;
-@@ -206,6 +211,7 @@ struct mxs_lradc {
- 
- 	const uint32_t		*vref_mv;
- 	struct mxs_lradc_scale	scale_avail[LRADC_MAX_TOTAL_CHANS][2];
-+	unsigned int		is_divided[LRADC_MAX_TOTAL_CHANS];
- 
- 	/*
- 	 * Touchscreen LRADC channels receives a private slot in the CTRL4
-@@ -295,6 +301,7 @@ struct mxs_lradc {
- #define	LRADC_CTRL1_LRADC_IRQ_OFFSET		0
- 
- #define	LRADC_CTRL2				0x20
-+#define	LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET	24
- #define	LRADC_CTRL2_TEMPSENSE_PWD		(1 << 15)
- 
- #define	LRADC_STATUS				0x40
-@@ -912,7 +919,8 @@ static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
- 		}
- 
- 		*val = lradc->vref_mv[chan->channel];
--		*val2 = chan->scan_type.realbits;
-+		*val2 = chan->scan_type.realbits -
-+			lradc->is_divided[chan->channel];
- 		return IIO_VAL_FRACTIONAL_LOG2;
- 
- 	case IIO_CHAN_INFO_OFFSET:
-@@ -936,6 +944,56 @@ static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
- 	return -EINVAL;
- }
- 
-+static int mxs_lradc_write_raw(struct iio_dev *iio_dev,
-+			       const struct iio_chan_spec *chan,
-+			       int val, int val2, long m)
-+{
-+	struct mxs_lradc *lradc = iio_priv(iio_dev);
-+	struct mxs_lradc_scale *scale_avail =
-+			lradc->scale_avail[chan->channel];
-+	int ret;
-+
-+	ret = mutex_trylock(&lradc->lock);
-+	if (!ret)
-+		return -EBUSY;
-+
-+	switch (m) {
-+	case IIO_CHAN_INFO_SCALE:
-+		ret = -EINVAL;
-+		if (val == scale_avail[MXS_LRADC_DIV_DISABLED].integer &&
-+		    val2 == scale_avail[MXS_LRADC_DIV_DISABLED].nano) {
-+			/* divider by two disabled */
-+			writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
-+			       lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_CLR);
-+			lradc->is_divided[chan->channel] = 0;
-+			ret = 0;
-+		} else if (val == scale_avail[MXS_LRADC_DIV_ENABLED].integer &&
-+			   val2 == scale_avail[MXS_LRADC_DIV_ENABLED].nano) {
-+			/* divider by two enabled */
-+			writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
-+			       lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_SET);
-+			lradc->is_divided[chan->channel] = 1;
-+			ret = 0;
-+		}
-+
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
-+	}
-+
-+	mutex_unlock(&lradc->lock);
-+
-+	return ret;
-+}
-+
-+static int mxs_lradc_write_raw_get_fmt(struct iio_dev *iio_dev,
-+				       const struct iio_chan_spec *chan,
-+				       long m)
-+{
-+	return IIO_VAL_INT_PLUS_NANO;
-+}
-+
- static ssize_t mxs_lradc_show_scale_available_ch(struct device *dev,
- 		struct device_attribute *attr,
- 		char *buf,
-@@ -1013,6 +1071,8 @@ static const struct attribute_group mxs_lradc_attribute_group = {
- static const struct iio_info mxs_lradc_iio_info = {
- 	.driver_module		= THIS_MODULE,
- 	.read_raw		= mxs_lradc_read_raw,
-+	.write_raw		= mxs_lradc_write_raw,
-+	.write_raw_get_fmt	= mxs_lradc_write_raw_get_fmt,
- 	.attrs			= &mxs_lradc_attribute_group,
- };
- 
 -- 
-1.8.3.2
-
+Regards,
+Taras Kondratiuk
