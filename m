@@ -1,130 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932721Ab3LWXmz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 18:42:55 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:37511 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932618Ab3LWXmx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 18:42:53 -0500
-Message-ID: <52B8CA4D.8000501@ti.com>
-Date: Mon, 23 Dec 2013 17:42:05 -0600
-From: "Anna, Suman" <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S932728Ab3LWXrf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 18:47:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62868 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758293Ab3LWXre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 18:47:34 -0500
+Date: Mon, 23 Dec 2013 18:47:23 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Gao feng <gaofeng@cn.fujitsu.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        containers@lists.linux-foundation.org, serge.hallyn@ubuntu.com,
+        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+        ebiederm@xmission.com
+Subject: Re: [RFC Part1 PATCH 00/20 v2] Add namespace support for audit
+Message-ID: <20131223234723.GA23101@madcap2.tricolour.ca>
+References: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
+ <20131206213135.GA22445@mail.hallyn.com>
+ <52A52AFB.2020703@cn.fujitsu.com>
 MIME-Version: 1.0
-To: <florian.vaussard@epfl.ch>, Joerg Roedel <joro@8bytes.org>,
-        Tony Lindgren <tony@atomide.com>,
-        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
-        Mark Rutland <mark.rutland@arm.com>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 3/7] iommu/omap: Convert to devicetree
-References: <1387284818-28739-1-git-send-email-florian.vaussard@epfl.ch> <1387284818-28739-4-git-send-email-florian.vaussard@epfl.ch> <52B89394.5060902@ti.com> <52B8A87F.7080100@epfl.ch>
-In-Reply-To: <52B8A87F.7080100@epfl.ch>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52A52AFB.2020703@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Florian,
+On 13/12/09, Gao feng wrote:
+> On 12/07/2013 05:31 AM, Serge E. Hallyn wrote:
+> > Quoting Gao feng (gaofeng@cn.fujitsu.com):
 
- >>
->> On 12/17/2013 06:53 AM, Florian Vaussard wrote:
->>> As OMAP2+ is moving to a full DT boot for 3.14, commit 7ce93f3
->>> "ARM: OMAP2+: Fix more missing data for omap3.dtsi file" adds
->>> basic DT bits. But the driver is not yet converted, so this will
->>> not work and driver will not be probed. Convert it!
->>>
->>> Apart from standard bindings, this patch uses 'dma-window' (already
->>> used by Tegra SMMU) and adds a custom 'ti,#tlb-entries' binding.
->>>
->>> Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
->>> ---
->>>    .../devicetree/bindings/iommu/ti,omap-iommu.txt    | 19 ++++++++++++
->>>    arch/arm/mach-omap2/omap-iommu.c                   |  5 +++
->>>    drivers/iommu/omap-iommu.c                         | 36
->>> +++++++++++++++++++---
->>>    3 files changed, 55 insertions(+), 5 deletions(-)
->>>    create mode 100644
->>> Documentation/devicetree/bindings/iommu/ti,omap-iommu.txt
->>>
->>> diff --git a/Documentation/devicetree/bindings/iommu/ti,omap-iommu.txt
->>> b/Documentation/devicetree/bindings/iommu/ti,omap-iommu.txt
->>> new file mode 100644
->>> index 0000000..4e5027c
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/iommu/ti,omap-iommu.txt
->>> @@ -0,0 +1,19 @@
->>> +OMAP3 IOMMU used by camera subsystem
->>
->> As I mentioned in comments on your cover-letter, the current binding is
->> only limited to OMAP3 ISP, but the driver is common for all OMAP2+ SoCs.
->> This binding an update to handle all SoCs.
->>
->> To summarize the differences, OMAP2/3 has the same MMU register set for
->> all remote processor MMUs (IVA/DSP/ISP) with the only difference being
->> the number of TLBs supported (8 for ISP on OMAP2/3 and 32 for all other
->> instances on all OMAP2+ SoCs). Depending on whether the compatibility
->> property is defined for an SoC or for the processor, "ti,#tlb-entries"
->> can be retrieved directly from the match data or made as an optional
->> property, with the default value being 32.
->>
->
-> It makes sense.
->
->> OMAP4 and OMAP5 have some additional registers (MMU_FAULT_PC,
->> MMU_FAULT_STATUS, MMU_GP_REG/DSPSS_MMU_GPR) on top of the OMAP2/OMAP3
->> ones, and DRA7 a further superset of OMAP4/OMAP5. The only difference is
->> the definition of the MMU_GPR register, which is different between the
->> IPU and DSP processors, but present at the same offset, and dictates the
->> validity of the MMU_FAULT_PC and MMU_FAULT_STATUS registers. The MMU_GPR
->> register is also not defined on OMAP4430 ES1.0, but is present on all
->> other newer SoCs.
->>
->
-> Thank you for this detailed comparison ! I do not know much about
-> OMAP4 and OMAP5. In the current implementation, I was unable to find
-> references to these specificities. Is this currently supported?
+> >> The main target of this patchset is allowing user in audit
+> >> namespace to generate the USER_MSG type of audit message,
+> >> some userspace tools need to generate audit message, or
+> >> these tools will broken.
+> >>
+> >> And the login process in container may want to setup
+> >> /proc/<pid>/loginuid, right now this value is unalterable
+> >> once it being set. this will also broke the login problem
+> >> in container. After this patchset, we can reset this loginuid
+> >> to zero if task is running in a new audit namespace.
+> >>
+> >> Same with v1 patchset, in this patchset, only the privileged
+> >> user in init_audit_ns and init_user_ns has rights to
+> >> add/del audit rules. and these rules are gloabl. all
+> >> audit namespace will comply with the rules.
+> >>
+> >> Compared with v1, v2 patch has some big changes.
+> >> 1, the audit namespace is not assigned to user namespace.
+> >>    since there is no available bit of flags for clone, we
+> >>    create audit namespace through netlink, patch[18/20]
+> >>    introduces a new audit netlink type AUDIT_CREATE_NS.
+> >>    the privileged user in userns has rights to create a
+> >>    audit namespace, it means the unprivileged user can
+> >>    create auditns through create userns first. In order
+> >>    to prevent them from doing harm to host, the default
+> >>    audit_backlog_limit of un-init-audit-ns is zero(means
+> >>    audit is unavailable in audit namespace). and it can't
+> >>    be changed in auditns through netlink.
+> > 
+> > So the unprivileged user can create an audit-ns, but can't
+> > then actually send any messages there?  I guess setting it
+> > to something small would just be hacky?
+> 
+> Yes, if unprivileged user wants to send audit message, he should
+> ask privileged user to setup the audit_backlog_limit for him.
+> 
+> I know it's a little of hack, but I don't have good idea :(
 
-OMAP4 iommu devices are instantiated today in legacy form, using the 
-hwmod data. These are used by the remoteproc driver. OMAP5 data has not 
-yet been added, as there is no point in adding it in legacy form at the 
-moment.
+There's a recent patch that actually clarifies the way
+audit_backlog_limit works, since different parts of the code seemed to
+think different things.  It now means unlimited, since there are other
+places to shut off logging.
+	audit: allow unlimited backlog queue
 
->
->>> +
->>> +Required properties:
->>> +- compatible : "ti,omap3-mmu-isp"
->> My suggestion would be to use
->>      "ti,omap2-iommu" for OMAP2/OMAP3 MMUs with the optional
->> "ti,#tlb-entries" to distinguish ISP MMU.
->>      "ti,omap4-iommu" for OMAP4/OMAP5 MMUs with an additional boolean
->> property to distinguish the presence/functionality of the MMU_GPR register
->>      "ti,dra7-iommu" for DRA7 MMUs
->>
->> Mark, Tony,
->> Do you have any other recommendations given the above summary?
->>
->>> +- ti,hwmods : "mmu_isp"
->> Replace with general description
->>
->
-> You mean something like "Name of the hwmod associated to the IOMMU"?
+At first, I'd say each audit_ns should be able to set its own
+audit_backlog_limit.  The most obvious argument against this would be
+the vulnerability of a DoS.  Could there be some automatic metrics to
+set sub audit_ns backlog limits, such as default to the same as
+init_audit_ns and have the init_audit_ns override those defaults?
+Could this be done per user like ulimiit?
 
-Yes.
+- RGB
 
-regards
-Suman
-
-[snip]
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
