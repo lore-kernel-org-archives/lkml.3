@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757775Ab3LWTWQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 14:22:16 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:49785 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757634Ab3LWTWL (ORCPT
+	id S1757673Ab3LWT2a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 14:28:30 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:34772 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755395Ab3LWT23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 14:22:11 -0500
-Message-ID: <52B88D5C.4080402@free-electrons.com>
-Date: Mon, 23 Dec 2013 20:22:04 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 23 Dec 2013 14:28:29 -0500
 MIME-Version: 1.0
-To: Marek Vasut <marex@denx.de>
-CC: Jonathan Cameron <jic23@kernel.org>, lars@metafoo.de, harald@ccbib.org,
-        hector.palacios@digi.com, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv5 RESEND 0/4] iio: mxs-lradc: add support to optional
- divider_by_two
-References: <1387820884-28140-1-git-send-email-alexandre.belloni@free-electrons.com> <201312231954.36124.marex@denx.de>
-In-Reply-To: <201312231954.36124.marex@denx.de>
-X-Enigmail-Version: 1.5.2
+In-Reply-To: <1387815830-8794-3-git-send-email-pawel.moll@arm.com>
+References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com>
+	<1387815830-8794-3-git-send-email-pawel.moll@arm.com>
+Date: Mon, 23 Dec 2013 11:28:28 -0800
+X-Google-Sender-Auth: LQLXFJMwp4WBzxJnsOnex4b8TQg
+Message-ID: <CANcMJZALQ0khcqkdQA5Tnr6_9kfWK=UUmrUB4mCv2MEkmLv0sg@mail.gmail.com>
+Subject: Re: [RFC 02/18] power/reset: vexpress: Use sched_clock as the time source
+From: John Stultz <john.stultz@linaro.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jon Medhurst <tixy@linaro.org>, arm@kernel.org,
+        Olof Johansson <olof@lixom.net>, Anton Vorontsov <anton@enomsg.org>,
+        David Woodhouse <dwmw2@infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/12/2013 19:54, Marek Vasut wrote:
-> On Monday, December 23, 2013 at 06:48:00 PM, Alexandre Belloni wrote:
->> Hello,
->>
->> This is v5 of the patchset that adds support to the optional divider_by_two
->> of LRADC channels.
->>
->> Changes since v4:
->>  - moved enum mxs_lradc_divbytwo to the third patch
->>  - added a fourth patch to convert is_divided to a bitmap. I did that in a
->>    separated patch for review and copyright attribution purposes.
->>
->> This was tested on a custom i.MX28 platform.
->>
->> Alexandre Belloni (1):
->>   iio: mxs-lradc: convert is_divided to a bitmap
->>
->> Hector Palacios (3):
->>   iio: mxs-lradc: add scale attribute to channels
->>   iio: mxs-lradc: add scale_available file to channels
->>   iio: mxs-lradc: add write_raw function to modify scale
->>
->>  drivers/staging/iio/adc/mxs-lradc.c | 222
->> +++++++++++++++++++++++++++++++++++- 1 file changed, 219 insertions(+), 3
->> deletions(-)
-> Why is there a resend please ?
-
-I don't know how but I screwed Jonathan's mail address. As he is the
-main maintainer, I though it would be a good idea to get his attention.
-
-
+On Mon, Dec 23, 2013 at 8:23 AM, Pawel Moll <pawel.moll@arm.com> wrote:
+> At this stage of system shutdown procedure the jiffies may
+> not be updated anymore, so have to base on raw sched_clock
+> values.
 >
-> Best regards,
-> Marek Vasut
+> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+> Cc: Anton Vorontsov <anton@enomsg.org>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> ---
+>  drivers/power/reset/vexpress-poweroff.c | 7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/power/reset/vexpress-poweroff.c b/drivers/power/reset/vexpress-poweroff.c
+> index 476aa49..d752233 100644
+> --- a/drivers/power/reset/vexpress-poweroff.c
+> +++ b/drivers/power/reset/vexpress-poweroff.c
+> @@ -15,6 +15,7 @@
+>  #include <linux/of.h>
+>  #include <linux/of_device.h>
+>  #include <linux/platform_device.h>
+> +#include <linux/sched.h>
+>  #include <linux/stat.h>
+>  #include <linux/vexpress.h>
+>
+> @@ -27,12 +28,12 @@ static void vexpress_reset_do(struct device *dev, const char *what)
+>                         vexpress_config_func_get_by_dev(dev);
+>
+>         if (func) {
+> -               unsigned long timeout;
+> +               unsigned long long timeout_ns;
+>
+>                 err = vexpress_config_write(func, 0, 0);
+>
+> -               timeout = jiffies + HZ;
+> -               while (time_before(jiffies, timeout))
+> +               timeout_ns = sched_clock() + 50000000;
+> +               while (!err && time_before64(sched_clock(), timeout_ns))
+>                         cpu_relax();
+>         }
 
+So this may not be a problem in this particular case, but sched_clock
+could be backed by jiffies on some hardware, causing the same problem
+to appear.
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Might udelay/mdelay be a better fit for this sort of case (since
+udelay may be counter backed, but may also be loop backed on hardware
+without continuous counters)?
 
+thanks
+-john
