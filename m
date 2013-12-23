@@ -1,102 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756494Ab3LWSJP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 13:09:15 -0500
-Received: from mga01.intel.com ([192.55.52.88]:27128 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750874Ab3LWSJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 13:09:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,538,1384329600"; 
-   d="scan'208";a="454674516"
-Date: Mon, 23 Dec 2013 10:08:40 -0800
-From: Greg Rose <gregory.v.rose@intel.com>
-To: Alexander Duyck <alexander.h.duyck@intel.com>
-CC: Ding Tianhong <dingtianhong@huawei.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <e1000-devel@lists.sourceforge.net>
-Subject: Re: [E1000-devel] [PATCH 01/21] net: slight optimization of addr
- compare for some modules
-Message-ID: <20131223100840.000014a5@unknown>
-In-Reply-To: <52B870E5.3020708@intel.com>
-References: <52B7C590.7070708@huawei.com>
-	<52B870E5.3020708@intel.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.8cvs47 (GTK+ 2.16.6; i586-pc-mingw32msvc)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.22.254.138]
+	id S1757602Ab3LWSK4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 13:10:56 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:38680 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756346Ab3LWSKv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 13:10:51 -0500
+From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+To: Tony Lindgren <tony@atomide.com>
+Cc: patches@linaro.org, linaro-networking@linaro.org,
+        linaro-kernel@lists.linaro.org,
+        Victor Kamensky <victor.kamensky@linaro.org>,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/4] ARM: OMAP: dmtimer: raw read and write endian fix
+Date: Mon, 23 Dec 2013 20:10:32 +0200
+Message-Id: <1387822234-11167-3-git-send-email-taras.kondratiuk@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1387822234-11167-1-git-send-email-taras.kondratiuk@linaro.org>
+References: <1387822234-11167-1-git-send-email-taras.kondratiuk@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Dec 2013 09:20:37 -0800
-Alexander Duyck <alexander.h.duyck@intel.com> wrote:
+From: Victor Kamensky <victor.kamensky@linaro.org>
 
-> On 12/22/2013 09:09 PM, Ding Tianhong wrote:
-> > Use the recently added and possibly more efficient
-> > ether_addr_equal_unaligned to instead of memcmp.
-> >
-> > Cc: "David S. Miller" <davem@davemloft.net>
-> > Cc: netdev@vger.kernel.org
-> > Cc: linux-kernel@vger.kernel.org
-> > Cc: e1000-devel@lists.sourceforge.net
-> > Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
-> > ---
-> >  drivers/net/bonding/bond_3ad.c                        |  2 +-
-> >  drivers/net/ethernet/3com/3c509.c                     |  3 +--
-> >  drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c        | 10
-> > ++++------ drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c     |
-> > 2 +- drivers/net/ethernet/broadcom/bnx2x/bnx2x_vfpf.c      |  2 +-
-> >  drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c    |  2 +-
-> >  drivers/net/ethernet/chelsio/cxgb3/l2t.c              |  2 +-
-> >  drivers/net/ethernet/cisco/enic/enic_pp.c             |  2 +-
-> >  drivers/net/ethernet/emulex/benet/be_main.c           |  2 +-
-> >  drivers/net/ethernet/intel/igbvf/netdev.c             |  2 +-
-> >  drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c        |  3 +--
-> >  drivers/net/ethernet/mellanox/mlx4/en_netdev.c        |  4 ++--
-> >  drivers/net/ethernet/mellanox/mlx4/resource_tracker.c |  2 +-
-> >  drivers/net/ethernet/micrel/ksz884x.c                 |  9
-> > ++++----- drivers/net/ethernet/neterion/vxge/vxge-main.c        |
-> > 2 +- drivers/net/ethernet/packetengines/yellowfin.c        |  8
-> > ++------ drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c    |  2
-> > +- drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c        |  4 ++--
-> >  drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c        |  4 ++--
-> >  drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c      |  4 ++--
-> >  drivers/net/ethernet/renesas/sh_eth.c                 |  2 +-
-> >  drivers/net/ethernet/seeq/sgiseeq.c                   |  2 +-
-> >  drivers/net/ethernet/sun/sunvnet.c                    |  2 +-
-> >  drivers/net/ethernet/ti/cpsw_ale.c                    |  2 +-
-> >  drivers/net/fddi/skfp/fplustm.c                       |  3 ++-
-> >  drivers/net/plip/plip.c                               |  2 +-
-> >  net/caif/cfrfml.c                                     |  2 +-
-> >  27 files changed, 39 insertions(+), 47 deletions(-)
-> 
-> What is it you are trying to optimize for, size or speed?  Most of
-> these calls are in slow path.  Replacing the memcmp with an inline
-> operation may provide little to no gain in terms of speed and in many
-> cases as you might actually be increasing the resultant driver size.
-> 
-> Also I would recommend reviewing the addresses you are comparing.  It
-> is likely that you could use ether_addr_equal or compare_ether_addr
-> in many cases as I suspect a number of spots are using 16b aligned
-> MAC addresses for both operands.
+All OMAP IP blocks expect LE data, but CPU may operate in BE mode.
+Need to use endian neutral functions to read/write h/w registers.
+I.e instead of __raw_read[lw] and __raw_write[lw] functions code
+need to use read[lw]_relaxed and write[lw]_relaxed functions.
+If the first simply reads/writes register, the second will byteswap
+it if host operates in BE mode.
 
-User ether_addr_equal.  compare_ether_addr was recently removed from
-the upstream kernel - as I discovered to my chagrin late one
-recent Friday evening while trying to get a build done.
+Changes are trivial sed like replacement of __raw_xxx functions
+with xxx_relaxed variant.
 
-- Greg
+Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
+Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+---
+ arch/arm/plat-omap/dmtimer.c              |    8 ++++----
+ arch/arm/plat-omap/include/plat/dmtimer.h |   16 ++++++++--------
+ 2 files changed, 12 insertions(+), 12 deletions(-)
 
-> 
-> Thanks,
-> 
-> Alex
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
+index 869254c..db10169 100644
+--- a/arch/arm/plat-omap/dmtimer.c
++++ b/arch/arm/plat-omap/dmtimer.c
+@@ -103,7 +103,7 @@ static void omap_timer_restore_context(struct omap_dm_timer *timer)
+ 				timer->context.tmar);
+ 	omap_dm_timer_write_reg(timer, OMAP_TIMER_IF_CTRL_REG,
+ 				timer->context.tsicr);
+-	__raw_writel(timer->context.tier, timer->irq_ena);
++	writel_relaxed(timer->context.tier, timer->irq_ena);
+ 	omap_dm_timer_write_reg(timer, OMAP_TIMER_CTRL_REG,
+ 				timer->context.tclr);
+ }
+@@ -699,9 +699,9 @@ int omap_dm_timer_set_int_disable(struct omap_dm_timer *timer, u32 mask)
+ 	omap_dm_timer_enable(timer);
+ 
+ 	if (timer->revision == 1)
+-		l = __raw_readl(timer->irq_ena) & ~mask;
++		l = readl_relaxed(timer->irq_ena) & ~mask;
+ 
+-	__raw_writel(l, timer->irq_dis);
++	writel_relaxed(l, timer->irq_dis);
+ 	l = omap_dm_timer_read_reg(timer, OMAP_TIMER_WAKEUP_EN_REG) & ~mask;
+ 	omap_dm_timer_write_reg(timer, OMAP_TIMER_WAKEUP_EN_REG, l);
+ 
+@@ -722,7 +722,7 @@ unsigned int omap_dm_timer_read_status(struct omap_dm_timer *timer)
+ 		return 0;
+ 	}
+ 
+-	l = __raw_readl(timer->irq_stat);
++	l = readl_relaxed(timer->irq_stat);
+ 
+ 	return l;
+ }
+diff --git a/arch/arm/plat-omap/include/plat/dmtimer.h b/arch/arm/plat-omap/include/plat/dmtimer.h
+index 2861b15..dd79f30 100644
+--- a/arch/arm/plat-omap/include/plat/dmtimer.h
++++ b/arch/arm/plat-omap/include/plat/dmtimer.h
+@@ -280,20 +280,20 @@ static inline u32 __omap_dm_timer_read(struct omap_dm_timer *timer, u32 reg,
+ 						int posted)
+ {
+ 	if (posted)
+-		while (__raw_readl(timer->pend) & (reg >> WPSHIFT))
++		while (readl_relaxed(timer->pend) & (reg >> WPSHIFT))
+ 			cpu_relax();
+ 
+-	return __raw_readl(timer->func_base + (reg & 0xff));
++	return readl_relaxed(timer->func_base + (reg & 0xff));
+ }
+ 
+ static inline void __omap_dm_timer_write(struct omap_dm_timer *timer,
+ 					u32 reg, u32 val, int posted)
+ {
+ 	if (posted)
+-		while (__raw_readl(timer->pend) & (reg >> WPSHIFT))
++		while (readl_relaxed(timer->pend) & (reg >> WPSHIFT))
+ 			cpu_relax();
+ 
+-	__raw_writel(val, timer->func_base + (reg & 0xff));
++	writel_relaxed(val, timer->func_base + (reg & 0xff));
+ }
+ 
+ static inline void __omap_dm_timer_init_regs(struct omap_dm_timer *timer)
+@@ -301,7 +301,7 @@ static inline void __omap_dm_timer_init_regs(struct omap_dm_timer *timer)
+ 	u32 tidr;
+ 
+ 	/* Assume v1 ip if bits [31:16] are zero */
+-	tidr = __raw_readl(timer->io_base);
++	tidr = readl_relaxed(timer->io_base);
+ 	if (!(tidr >> 16)) {
+ 		timer->revision = 1;
+ 		timer->irq_stat = timer->io_base + OMAP_TIMER_V1_STAT_OFFSET;
+@@ -385,7 +385,7 @@ static inline void __omap_dm_timer_stop(struct omap_dm_timer *timer,
+ 	}
+ 
+ 	/* Ack possibly pending interrupt */
+-	__raw_writel(OMAP_TIMER_INT_OVERFLOW, timer->irq_stat);
++	writel_relaxed(OMAP_TIMER_INT_OVERFLOW, timer->irq_stat);
+ }
+ 
+ static inline void __omap_dm_timer_load_start(struct omap_dm_timer *timer,
+@@ -399,7 +399,7 @@ static inline void __omap_dm_timer_load_start(struct omap_dm_timer *timer,
+ static inline void __omap_dm_timer_int_enable(struct omap_dm_timer *timer,
+ 						unsigned int value)
+ {
+-	__raw_writel(value, timer->irq_ena);
++	writel_relaxed(value, timer->irq_ena);
+ 	__omap_dm_timer_write(timer, OMAP_TIMER_WAKEUP_EN_REG, value, 0);
+ }
+ 
+@@ -412,7 +412,7 @@ __omap_dm_timer_read_counter(struct omap_dm_timer *timer, int posted)
+ static inline void __omap_dm_timer_write_status(struct omap_dm_timer *timer,
+ 						unsigned int value)
+ {
+-	__raw_writel(value, timer->irq_stat);
++	writel_relaxed(value, timer->irq_stat);
+ }
+ 
+ #endif /* __ASM_ARCH_DMTIMER_H */
+-- 
+1.7.9.5
 
