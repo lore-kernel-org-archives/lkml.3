@@ -1,177 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462Ab3LWWcO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 17:32:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35275 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758127Ab3LWWbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 17:31:14 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
-Cc: Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH 3/5] audit: store audit_pid as a struct pid pointer
-Date: Mon, 23 Dec 2013 17:27:37 -0500
-Message-Id: <12b8a0d4d2817557eab7a84da3558388a5e5afcf.1387834776.git.rgb@redhat.com>
-In-Reply-To: <cover.1377032086.git.rgb@redhat.com>
-References: <cover.1377032086.git.rgb@redhat.com>
-In-Reply-To: <cover.1387834776.git.rgb@redhat.com>
-References: <cover.1387834776.git.rgb@redhat.com>
+	id S932517Ab3LWWda (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 17:33:30 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:35628 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932468Ab3LWWd2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 17:33:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131221185045.GA22728@google.com>
+References: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
+ <1385429290-25397-11-git-send-email-yinghai@kernel.org> <CAErSpo7THxjUQ=EWxicPYCwQCHReJ=sxPyPPRFv4QQ=ex6wmOA@mail.gmail.com>
+ <CAE9FiQUDkuBnuYo4OfZncFw6k22PcapgjqzapVFt5UneiqoVDQ@mail.gmail.com> <20131221185045.GA22728@google.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 23 Dec 2013 15:33:07 -0700
+Message-ID: <CAErSpo4a57f8HSLzTXhieukb4UiwUL-gcUbaLDQWmRdu88fRTA@mail.gmail.com>
+Subject: Re: [PATCH v2 10/10] intel-gtt: Read 64bit for gmar_bus_addr
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- PID will be reported in the relevant querying PID namespace.
+On Sat, Dec 21, 2013 at 11:50 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> [+cc Daniel]
+>
+> On Fri, Dec 20, 2013 at 05:19:38PM -0800, Yinghai Lu wrote:
+>> On Fri, Dec 20, 2013 at 4:27 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>
+>> > Why are we reading these BARs directly anyway?  These look like
+>> > standard PCI BARs (I810_GMADDR == 0x10 and I915_GMADDR == 0x18), so
+>> > the PCI core should already be reading them correctly, shouldn't it?
+>> > Can't we just use pcibios_resource_to_bus(pci_resource_start())?
+>> >
+>> > It looks like i810_setup(), i830_setup(), and i9xx_setup() have the
+>> > same problem and should also be using pci_resource_start() or
+>> > something similar.
+>>
+>> Agreed.
+>>
+>> should be sth like:
+>>
+>>
+>> Index: linux-2.6/drivers/char/agp/intel-gtt.c
+>> ===================================================================
+>> --- linux-2.6.orig/drivers/char/agp/intel-gtt.c
+>> +++ linux-2.6/drivers/char/agp/intel-gtt.c
+>> @@ -608,9 +608,9 @@ static bool intel_gtt_can_wc(void)
+>>
+>>  static int intel_gtt_init(void)
+>>  {
+>> -       u32 gma_addr;
+>> +       struct pci_bus_region r;
+>>         u32 gtt_map_size;
+>> -       int ret;
+>> +       int ret, idx;
+>>
+>>         ret = intel_private.driver->setup();
+>>         if (ret != 0)
+>> @@ -660,13 +660,14 @@ static int intel_gtt_init(void)
+>>         }
+>>
+>>         if (INTEL_GTT_GEN <= 2)
+>> -               pci_read_config_dword(intel_private.pcidev, I810_GMADDR,
+>> -                                     &gma_addr);
+>> +               idx = 0; /* I810_GMADDR */
+>>         else
+>> -               pci_read_config_dword(intel_private.pcidev, I915_GMADDR,
+>> -                                     &gma_addr);
+>> +               idx = 2; /* I915_GMADDR */
+>>
+>> -       intel_private.gma_bus_addr = (gma_addr & PCI_BASE_ADDRESS_MEM_MASK);
+>> +       pcibios_resource_to_bus(intel_private.pcidev->bus, &r,
+>> +                               &intel_private.pcidev->resource[idx]);
+>> +
+>> +       intel_private.gma_bus_addr = r.start;
+>>
+>>         return 0;
+>>  }
+>
+> I think it's even worse than we first thought.  Not only does the current
+> code fail on 64-bit BARs, but it also ignores the CPU/bus address
+> difference, and I think we want the CPU address.  So I think we need
+> something like these:
 
-- Refuse to change the current audit_pid if the new value does not
-  point to an existing process.
+Please ignore the following patches.  After looking again, I think
+"gma_bus_addr" really is a bus addresses after all, and something like
+Yinghai's patch is more appropriate.  But I think there are other
+places with similar issues, so I'm working on a more extensive set of
+patches.
 
-- Refuse to set the current audit_pid if the new value is not its own PID
-  (unless it is being unset).
+Bjorn
 
-- Convert audit_pid into the initial pid namespace for reports
-
-(informed by ebiederman's 5bf431da)
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
----
- kernel/audit.c   |   35 ++++++++++++++++++++++++++---------
- kernel/audit.h   |    4 ++--
- kernel/auditsc.c |    6 +++---
- 3 files changed, 31 insertions(+), 14 deletions(-)
-
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 900f5d6..48312bf 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -93,7 +93,7 @@ static int	audit_failure = AUDIT_FAIL_PRINTK;
-  * contains the pid of the auditd process and audit_nlk_portid contains
-  * the portid to use to send netlink messages to that process.
-  */
--int		audit_pid;
-+struct pid	*audit_pid;
- static __u32	audit_nlk_portid;
- 
- /* If audit_rate_limit is non-zero, limit the rate of sending audit records
-@@ -412,9 +412,11 @@ static void kauditd_send_skb(struct sk_buff *skb)
- 		BUG_ON(err != -ECONNREFUSED); /* Shouldn't happen */
- 		if (audit_pid) {
- 			pr_err("audit: *NO* daemon at audit_pid=%d\n",
--				audit_pid);
-+				pid_nr(audit_pid));
- 			audit_log_lost("auditd disappeared\n");
--			audit_pid = 0;
-+			put_pid(audit_pid);
-+			audit_pid = NULL;
-+
- 			audit_sock = NULL;
- 		}
- 		/* we might get lucky and get this in the next auditd */
-@@ -787,7 +789,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 		memset(&s, 0, sizeof(s));
- 		s.enabled		= audit_enabled;
- 		s.failure		= audit_failure;
--		s.pid			= audit_pid;
-+		s.pid			= pid_vnr(audit_pid);
- 		s.rate_limit		= audit_rate_limit;
- 		s.backlog_limit		= audit_backlog_limit;
- 		s.lost			= atomic_read(&audit_lost);
-@@ -814,12 +816,26 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 				return err;
- 		}
- 		if (s.mask & AUDIT_STATUS_PID) {
--			int new_pid = s.pid;
--
--			if ((!new_pid) && (task_tgid_vnr(current) != audit_pid))
-+			struct pid *new_pid = find_get_pid(s.pid);
-+			if (s.pid && !new_pid)
-+				return -ESRCH;
-+
-+			/* check that non-zero pid it is trying to set is its
-+			 * own*/          
-+			if (s.pid && (s.pid != task_pid_vnr(current)))
-+				return -EPERM;
-+ 
-+			/* check that it isn't orphaning another process */
-+			if ((!new_pid) &&
-+			    (task_tgid_vnr(current) != pid_vnr(audit_pid)))
- 				return -EACCES;
-+
- 			if (audit_enabled != AUDIT_OFF)
--				audit_log_config_change("audit_pid", new_pid, audit_pid, 1);
-+				audit_log_config_change("audit_pid",
-+							pid_nr(new_pid),
-+							pid_nr(audit_pid),
-+							1);
-+
- 			audit_pid = new_pid;
- 			audit_nlk_portid = NETLINK_CB(skb).portid;
- 			audit_sock = NETLINK_CB(skb).sk;
-@@ -1331,7 +1347,8 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
- 		return NULL;
- 
- 	if (gfp_mask & __GFP_WAIT) {
--		if (audit_pid && audit_pid == current->pid)
-+		if (pid_nr(audit_pid) == task_pid_nr(current))
-+		//if (pid_task(audit_pid, PIDTYPE_PID) == current)
- 			gfp_mask &= ~__GFP_WAIT;
- 		else
- 			reserve = 0;
-diff --git a/kernel/audit.h b/kernel/audit.h
-index 0719b45..e6d48f4 100644
---- a/kernel/audit.h
-+++ b/kernel/audit.h
-@@ -221,7 +221,7 @@ extern void audit_log_name(struct audit_context *context,
- 			   struct audit_names *n, struct path *path,
- 			   int record_num, int *call_panic);
- 
--extern int audit_pid;
-+extern struct pid *audit_pid;
- 
- #define AUDIT_INODE_BUCKETS	32
- extern struct list_head audit_inode_hash[AUDIT_INODE_BUCKETS];
-@@ -318,7 +318,7 @@ extern u32 audit_sig_sid;
- extern int __audit_signal_info(int sig, struct task_struct *t);
- static inline int audit_signal_info(int sig, struct task_struct *t)
- {
--	if (unlikely((audit_pid && t->tgid == audit_pid) ||
-+	if (unlikely((audit_pid && task_tgid(t) == audit_pid) ||
- 		     (audit_signals && !audit_dummy_context())))
- 		return __audit_signal_info(sig, t);
- 	return 0;
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index d396c8b..db3cb4f 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -732,7 +732,7 @@ static enum audit_state audit_filter_syscall(struct task_struct *tsk,
- 	struct audit_entry *e;
- 	enum audit_state state;
- 
--	if (audit_pid && tsk->tgid == audit_pid)
-+	if (audit_pid && task_tgid(tsk) == audit_pid)
- 		return AUDIT_DISABLED;
- 
- 	rcu_read_lock();
-@@ -793,7 +793,7 @@ void audit_filter_inodes(struct task_struct *tsk, struct audit_context *ctx)
- {
- 	struct audit_names *n;
- 
--	if (audit_pid && tsk->tgid == audit_pid)
-+	if (audit_pid && task_tgid(tsk) == audit_pid)
- 		return;
- 
- 	rcu_read_lock();
-@@ -2231,7 +2231,7 @@ int __audit_signal_info(int sig, struct task_struct *t)
- 	struct audit_context *ctx = tsk->audit_context;
- 	kuid_t uid = current_uid(), t_uid = task_uid(t);
- 
--	if (audit_pid && t->tgid == audit_pid) {
-+	if (audit_pid && task_tgid(t) == audit_pid) {
- 		if (sig == SIGTERM || sig == SIGHUP || sig == SIGUSR1 || sig == SIGUSR2) {
- 			audit_sig_pid = tsk->pid;
- 			if (uid_valid(tsk->loginuid))
--- 
-1.7.1
-
+> commit 8ba262d78f9d218672486c62ba6a1c7a073bd272
+> Author: Bjorn Helgaas <bhelgaas@google.com>
+> Date:   Sat Dec 21 10:49:58 2013 -0700
+>
+>     agp/intel: Rename "*_bus_addr" to "*_phys_addr"
+>
+>     We're dealing with CPU physical addresses here, which may be different from
+>     bus addresses, so rename "gtt_bus_addr" to "gtt_phys_addr" and
+>     "gma_bus_addr" to "gma_phys_addr" to avoid confusion.
+>
+>     No functional change.
+>
+>     Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+>
+> diff --git a/drivers/char/agp/intel-gtt.c b/drivers/char/agp/intel-gtt.c
+> index b8e2014cb9cb..dca04a6aa7f8 100644
+> --- a/drivers/char/agp/intel-gtt.c
+> +++ b/drivers/char/agp/intel-gtt.c
+> @@ -64,7 +64,7 @@ static struct _intel_private {
+>         struct pci_dev *pcidev; /* device one */
+>         struct pci_dev *bridge_dev;
+>         u8 __iomem *registers;
+> -       phys_addr_t gtt_bus_addr;
+> +       phys_addr_t gtt_phys_addr;
+>         u32 PGETBL_save;
+>         u32 __iomem *gtt;               /* I915G */
+>         bool clear_fake_agp; /* on first access via agp, fill with scratch */
+> @@ -78,7 +78,7 @@ static struct _intel_private {
+>         int refcount;
+>         /* Whether i915 needs to use the dmar apis or not. */
+>         unsigned int needs_dmar : 1;
+> -       phys_addr_t gma_bus_addr;
+> +       phys_addr_t gma_phys_addr;
+>         /*  Size of memory reserved for graphics by the BIOS */
+>         unsigned int stolen_size;
+>         /* Total number of gtt entries. */
+> @@ -191,7 +191,7 @@ static int i810_setup(void)
+>         writel(virt_to_phys(gtt_table) | I810_PGETBL_ENABLED,
+>                intel_private.registers+I810_PGETBL_CTL);
+>
+> -       intel_private.gtt_bus_addr = reg_addr + I810_PTE_BASE;
+> +       intel_private.gtt_phys_addr = reg_addr + I810_PTE_BASE;
+>
+>         if ((readl(intel_private.registers+I810_DRAM_CTL)
+>                 & I810_DRAM_ROW_0) == I810_DRAM_ROW_0_SDRAM) {
+> @@ -636,10 +636,10 @@ static int intel_gtt_init(void)
+>
+>         intel_private.gtt = NULL;
+>         if (intel_gtt_can_wc())
+> -               intel_private.gtt = ioremap_wc(intel_private.gtt_bus_addr,
+> +               intel_private.gtt = ioremap_wc(intel_private.gtt_phys_addr,
+>                                                gtt_map_size);
+>         if (intel_private.gtt == NULL)
+> -               intel_private.gtt = ioremap(intel_private.gtt_bus_addr,
+> +               intel_private.gtt = ioremap(intel_private.gtt_phys_addr,
+>                                             gtt_map_size);
+>         if (intel_private.gtt == NULL) {
+>                 intel_private.driver->cleanup();
+> @@ -666,7 +666,7 @@ static int intel_gtt_init(void)
+>                 pci_read_config_dword(intel_private.pcidev, I915_GMADDR,
+>                                       &gma_addr);
+>
+> -       intel_private.gma_bus_addr = (gma_addr & PCI_BASE_ADDRESS_MEM_MASK);
+> +       intel_private.gma_phys_addr = (gma_addr & PCI_BASE_ADDRESS_MEM_MASK);
+>
+>         return 0;
+>  }
+> @@ -796,7 +796,7 @@ static int i830_setup(void)
+>         if (!intel_private.registers)
+>                 return -ENOMEM;
+>
+> -       intel_private.gtt_bus_addr = reg_addr + I810_PTE_BASE;
+> +       intel_private.gtt_phys_addr = reg_addr + I810_PTE_BASE;
+>
+>         return 0;
+>  }
+> @@ -821,7 +821,7 @@ static int intel_fake_agp_configure(void)
+>             return -EIO;
+>
+>         intel_private.clear_fake_agp = true;
+> -       agp_bridge->gart_bus_addr = intel_private.gma_bus_addr;
+> +       agp_bridge->gart_bus_addr = intel_private.gma_phys_addr;
+>
+>         return 0;
+>  }
+> @@ -1123,13 +1123,13 @@ static int i9xx_setup(void)
+>         case 3:
+>                 pci_read_config_dword(intel_private.pcidev,
+>                                       I915_PTEADDR, &gtt_addr);
+> -               intel_private.gtt_bus_addr = gtt_addr;
+> +               intel_private.gtt_phys_addr = gtt_addr;
+>                 break;
+>         case 5:
+> -               intel_private.gtt_bus_addr = reg_addr + MB(2);
+> +               intel_private.gtt_phys_addr = reg_addr + MB(2);
+>                 break;
+>         default:
+> -               intel_private.gtt_bus_addr = reg_addr + KB(512);
+> +               intel_private.gtt_phys_addr = reg_addr + KB(512);
+>                 break;
+>         }
+>
+> @@ -1409,7 +1409,7 @@ void intel_gtt_get(size_t *gtt_total, size_t *stolen_size,
+>  {
+>         *gtt_total = intel_private.gtt_total_entries << PAGE_SHIFT;
+>         *stolen_size = intel_private.stolen_size;
+> -       *mappable_base = intel_private.gma_bus_addr;
+> +       *mappable_base = intel_private.gma_phys_addr;
+>         *mappable_end = intel_private.gtt_mappable_entries << PAGE_SHIFT;
+>  }
+>  EXPORT_SYMBOL(intel_gtt_get);
+>
+> commit 31349de4ce32a0c2c2d14df35717544e94d56066
+> Author: Bjorn Helgaas <bhelgaas@google.com>
+> Date:   Sat Dec 21 10:09:19 2013 -0700
+>
+>     intel-gtt: Use CPU address (not BAR value) for GART
+>
+>     There were two problems here:
+>
+>       1) The GMADR can be either a 32-bit or a 64-bit BAR, but we only read the
+>          low 32 bits, so this failed if GMADR was above 4GB.
+>
+>       2) The value read from the BAR is a bus address, not a CPU physical
+>          address, and these may be different.
+>
+>     Use pci_resource_start() instead of reading the BAR directly to remove the
+>     BAR size and bus/CPU address issue, as gen8_gmch_probe() already does.
+>
+>     Reference: http://lkml.kernel.org/r/1385429290-25397-11-git-send-email-yinghai@kernel.org
+>     Based-on-patch-by: Yinghai Lu <yinghai@kernel.org>
+>     Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+>
+> diff --git a/drivers/char/agp/intel-gtt.c b/drivers/char/agp/intel-gtt.c
+> index dca04a6aa7f8..35169ff0ffe1 100644
+> --- a/drivers/char/agp/intel-gtt.c
+> +++ b/drivers/char/agp/intel-gtt.c
+> @@ -610,7 +610,7 @@ static int intel_gtt_init(void)
+>  {
+>         u32 gma_addr;
+>         u32 gtt_map_size;
+> -       int ret;
+> +       int ret, bar;
+>
+>         ret = intel_private.driver->setup();
+>         if (ret != 0)
+> @@ -660,14 +660,12 @@ static int intel_gtt_init(void)
+>         }
+>
+>         if (INTEL_GTT_GEN <= 2)
+> -               pci_read_config_dword(intel_private.pcidev, I810_GMADDR,
+> -                                     &gma_addr);
+> +               bar = 0;        /* I810_GMADDR */
+>         else
+> -               pci_read_config_dword(intel_private.pcidev, I915_GMADDR,
+> -                                     &gma_addr);
+> -
+> -       intel_private.gma_phys_addr = (gma_addr & PCI_BASE_ADDRESS_MEM_MASK);
+> +               bar = 2;        /* I915_GMADDR */
+>
+> +       intel_private.gma_phys_addr = pci_resource_start(intel_private.pcidev,
+> +                                                        bar);
+>         return 0;
+>  }
+>
