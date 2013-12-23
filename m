@@ -1,339 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932072Ab3LWABT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Dec 2013 19:01:19 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:52364 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756497Ab3LWABR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Dec 2013 19:01:17 -0500
+	id S1756586Ab3LWAKJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Dec 2013 19:10:09 -0500
+Received: from ozlabs.org ([203.10.76.45]:41451 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755557Ab3LWAKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Dec 2013 19:10:07 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>
+Cc: "LKML" <linux-kernel@vger.kernel.org>
+Cc: Luiz Capitulino <lcapitulino@redhat.com>
+Cc: Ming Lei <tom.leiming@gmail.com>
+Subject: [PULL] fixes for virtio balloon and non-MMU kallsyms
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Mon, 23 Dec 2013 10:37:54 +1030
+Message-ID: <87r494l99h.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <1387485843-17403-3-git-send-email-yinghai@kernel.org>
-References: <1387485843-17403-1-git-send-email-yinghai@kernel.org> <1387485843-17403-3-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Sun, 22 Dec 2013 17:00:56 -0700
-Message-ID: <CAErSpo5VWREGptW0MU0wLJUa3h23DXMZPGkdJFMTx5WAGL8J6Q@mail.gmail.com>
-Subject: Re: [PATCH v6 2/2] PCI: Try best to allocate pref mmio 64bit above 4g
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Guo Chao <yan@linux.vnet.ibm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 1:44 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+The following changes since commit af91706d5ddecb4a9858cca9e90d463037cfd498:
 
-Let me see if I can figure out what you're trying to do here.  Please
-correct me if I'm wrong:
+  ima: store address of template_fmt_copy in a pointer before calling strsep (2013-11-30 13:09:53 +1100)
 
-> When one of children resources does not support MEM_64, MEM_64 for
-> bridge get reset, so pull down whole pref resource on the bridge under 4G.
+are available in the git repository at:
 
-When we allocate space for a bridge's prefetchable window, we
-currently look at the devices behind the bridge and put the window
-below 4GB if any of those children has a 32-bit prefetchable BAR.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git tags/fixes-for-linus
 
-This maximizes the use of prefetch, at the cost of using more 32-bit
-address space.
+for you to fetch changes up to 7122c3e9154b5d9a7422f68f02d8acf050fad2b0:
 
-> If the bridge support pref mem 64, will only allocate that with pref mem64 to
-> children that support it.
-> For children resources if they only support pref mem 32, will allocate them
-> from non pref mem instead.
+  scripts/link-vmlinux.sh: only filter kernel symbols for arm (2013-12-10 16:49:19 +1030)
 
-You are changing this so that we will always try to put a bridge's
-64-bit prefetchable window above 4GB, regardless of what devices are
-behind the bridge.  If a device behind the bridge has a 32-bit
-prefetchable BAR, we will place that BAR in the bridge's 32-bit
-non-prefetchable window.
+----------------------------------------------------------------
+Refactoring broke the balloon driver, and fixing kallsyms on ARM broke
+some (non-ARM) MMUless setups, so we're making that fix ARM-only for now.
 
-This minimizes the use of the 32-bit address space, at the cost of not
-being able to use prefetch as much.
+Unfortunately, the ARM refactoring which broke kallsyms/perf was CC:stable,
+so the fix (which broken non-ARM) was also CC:stable, so now the partial
+reversion is also CC:stable...
 
-> If the bridge only support 32bit pref mmio, will still have all children pref
-> mmio under that.
+Cheers,
+Rusty.
 
-Obviously, if a bridge has a prefetchable window that's only 32 bits,
-64-bit prefetchable BARs behind the bridge will have to be in that
-32-bit prefetchable window or the 32-bit non-prefetchable window.  And
-if the bridge has no prefetchable window at all, every memory BAR
-behind the bridge will have to be in the 32-bit non-prefetchable
-window.
+----------------------------------------------------------------
+Luiz Capitulino (1):
+      virtio_balloon: update_balloon_size(): update correct field
 
-I'll look at the actual patch later; I just want to make sure I
-understand your intent first.
+Ming Lei (1):
+      scripts/link-vmlinux.sh: only filter kernel symbols for arm
 
-Bjorn
-
-> -v2: Add release bridge res support with bridge mem res for pref_mem children res.
-> -v3: refresh and make it can be applied early before for_each_dev_res patchset.
-> -v4: fix non-pref mmio 64bit support found by Guo Chao.
->
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Tested-by: Guo Chao <yan@linux.vnet.ibm.com>
-> ---
->  drivers/pci/setup-bus.c | 138 ++++++++++++++++++++++++++++++++----------------
->  drivers/pci/setup-res.c |  20 ++++++-
->  2 files changed, 111 insertions(+), 47 deletions(-)
->
-> diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-> index 138bdd6..b29504f 100644
-> --- a/drivers/pci/setup-bus.c
-> +++ b/drivers/pci/setup-bus.c
-> @@ -713,12 +713,11 @@ static void pci_bridge_check_ranges(struct pci_bus *bus)
->     bus resource of a given type. Note: we intentionally skip
->     the bus resources which have already been assigned (that is,
->     have non-NULL parent resource). */
-> -static struct resource *find_free_bus_resource(struct pci_bus *bus, unsigned long type)
-> +static struct resource *find_free_bus_resource(struct pci_bus *bus,
-> +                        unsigned long type_mask, unsigned long type)
->  {
->         int i;
->         struct resource *r;
-> -       unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
-> -                                 IORESOURCE_PREFETCH;
->
->         pci_bus_for_each_resource(bus, r, i) {
->                 if (r == &ioport_resource || r == &iomem_resource)
-> @@ -815,7 +814,8 @@ static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size,
->                 resource_size_t add_size, struct list_head *realloc_head)
->  {
->         struct pci_dev *dev;
-> -       struct resource *b_res = find_free_bus_resource(bus, IORESOURCE_IO);
-> +       struct resource *b_res = find_free_bus_resource(bus, IORESOURCE_IO,
-> +                                                       IORESOURCE_IO);
->         resource_size_t size = 0, size0 = 0, size1 = 0;
->         resource_size_t children_add_size = 0;
->         resource_size_t min_align, align;
-> @@ -915,15 +915,17 @@ static inline resource_size_t calculate_mem_align(resource_size_t *aligns,
->   * guarantees that all child resources fit in this size.
->   */
->  static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
-> -                        unsigned long type, resource_size_t min_size,
-> -                       resource_size_t add_size,
-> -                       struct list_head *realloc_head)
-> +                        unsigned long type, unsigned long type2,
-> +                        unsigned long type3,
-> +                        resource_size_t min_size, resource_size_t add_size,
-> +                        struct list_head *realloc_head)
->  {
->         struct pci_dev *dev;
->         resource_size_t min_align, align, size, size0, size1;
->         resource_size_t aligns[12];     /* Alignments from 1Mb to 2Gb */
->         int order, max_order;
-> -       struct resource *b_res = find_free_bus_resource(bus, type);
-> +       struct resource *b_res = find_free_bus_resource(bus,
-> +                                        mask | IORESOURCE_PREFETCH, type);
->         unsigned int mem64_mask = 0;
->         resource_size_t children_add_size = 0;
->
-> @@ -944,7 +946,9 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
->                         struct resource *r = &dev->resource[i];
->                         resource_size_t r_size;
->
-> -                       if (r->parent || (r->flags & mask) != type)
-> +                       if (r->parent || ((r->flags & mask) != type &&
-> +                                         (r->flags & mask) != type2 &&
-> +                                         (r->flags & mask) != type3))
->                                 continue;
->                         r_size = resource_size(r);
->  #ifdef CONFIG_PCI_IOV
-> @@ -1117,8 +1121,9 @@ void __ref __pci_bus_size_bridges(struct pci_bus *bus,
->                         struct list_head *realloc_head)
->  {
->         struct pci_dev *dev;
-> -       unsigned long mask, prefmask;
-> +       unsigned long mask, prefmask, type2 = 0, type3 = 0;
->         resource_size_t additional_mem_size = 0, additional_io_size = 0;
-> +       struct resource *b_res;
->
->         list_for_each_entry(dev, &bus->devices, bus_list) {
->                 struct pci_bus *b = dev->subordinate;
-> @@ -1163,15 +1168,34 @@ void __ref __pci_bus_size_bridges(struct pci_bus *bus,
->                    has already been allocated by arch code, try
->                    non-prefetchable range for both types of PCI memory
->                    resources. */
-> +               b_res = &bus->self->resource[PCI_BRIDGE_RESOURCES];
->                 mask = IORESOURCE_MEM;
->                 prefmask = IORESOURCE_MEM | IORESOURCE_PREFETCH;
-> -               if (pbus_size_mem(bus, prefmask, prefmask,
-> +               if (b_res[2].flags & IORESOURCE_MEM_64) {
-> +                       prefmask |= IORESOURCE_MEM_64;
-> +                       if (pbus_size_mem(bus, prefmask, prefmask,
-> +                                 prefmask, prefmask,
->                                   realloc_head ? 0 : additional_mem_size,
-> -                                 additional_mem_size, realloc_head))
-> -                       mask = prefmask; /* Success, size non-prefetch only. */
-> -               else
-> -                       additional_mem_size += additional_mem_size;
-> -               pbus_size_mem(bus, mask, IORESOURCE_MEM,
-> +                                 additional_mem_size, realloc_head)) {
-> +                                       /* Success, size non-pref64 only. */
-> +                                       mask = prefmask;
-> +                                       type2 = prefmask & ~IORESOURCE_MEM_64;
-> +                                       type3 = prefmask & ~IORESOURCE_PREFETCH;
-> +                       }
-> +               }
-> +               if (!type2) {
-> +                       prefmask &= ~IORESOURCE_MEM_64;
-> +                       if (pbus_size_mem(bus, prefmask, prefmask,
-> +                                        prefmask, prefmask,
-> +                                        realloc_head ? 0 : additional_mem_size,
-> +                                        additional_mem_size, realloc_head)) {
-> +                               /* Success, size non-prefetch only. */
-> +                               mask = prefmask;
-> +                       } else
-> +                               additional_mem_size += additional_mem_size;
-> +                       type2 = type3 = IORESOURCE_MEM;
-> +               }
-> +               pbus_size_mem(bus, mask, IORESOURCE_MEM, type2, type3,
->                                 realloc_head ? 0 : additional_mem_size,
->                                 additional_mem_size, realloc_head);
->                 break;
-> @@ -1257,42 +1281,66 @@ static void __ref __pci_bridge_assign_resources(const struct pci_dev *bridge,
->  static void pci_bridge_release_resources(struct pci_bus *bus,
->                                           unsigned long type)
->  {
-> -       int idx;
-> -       bool changed = false;
-> -       struct pci_dev *dev;
-> +       struct pci_dev *dev = bus->self;
->         struct resource *r;
->         unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
-> -                                 IORESOURCE_PREFETCH;
-> +                                 IORESOURCE_PREFETCH | IORESOURCE_MEM_64;
-> +       unsigned old_flags = 0;
-> +       struct resource *b_res;
-> +       int idx = 1;
->
-> -       dev = bus->self;
-> -       for (idx = PCI_BRIDGE_RESOURCES; idx <= PCI_BRIDGE_RESOURCE_END;
-> -            idx++) {
-> -               r = &dev->resource[idx];
-> -               if ((r->flags & type_mask) != type)
-> -                       continue;
-> -               if (!r->parent)
-> -                       continue;
-> -               /*
-> -                * if there are children under that, we should release them
-> -                *  all
-> -                */
-> -               release_child_resources(r);
-> -               if (!release_resource(r)) {
-> -                       dev_printk(KERN_DEBUG, &dev->dev,
-> -                                "resource %d %pR released\n", idx, r);
-> -                       /* keep the old size */
-> -                       r->end = resource_size(r) - 1;
-> -                       r->start = 0;
-> -                       r->flags = 0;
-> -                       changed = true;
-> -               }
-> -       }
-> +       b_res = &dev->resource[PCI_BRIDGE_RESOURCES];
-> +
-> +       /*
-> +        *     1. if there is io port assign fail, will release bridge
-> +        *        io port.
-> +        *     2. if there is non pref mmio assign fail, release bridge
-> +        *        nonpref mmio.
-> +        *     3. if there is 64bit pref mmio assign fail, and bridge pref
-> +        *        is 64bit, release bridge pref mmio.
-> +        *     4. if there is pref mmio assign fail, and bridge pref is
-> +        *        32bit mmio, release bridge pref mmio
-> +        *     5. if there is pref mmio assign fail, and bridge pref is not
-> +        *        assigned, release bridge nonpref mmio.
-> +        */
-> +       if (type & IORESOURCE_IO)
-> +               idx = 0;
-> +       else if (!(type & IORESOURCE_PREFETCH))
-> +               idx = 1;
-> +       else if ((type & IORESOURCE_MEM_64) &&
-> +                (b_res[2].flags & IORESOURCE_MEM_64))
-> +               idx = 2;
-> +       else if (!(b_res[2].flags & IORESOURCE_MEM_64) &&
-> +                (b_res[2].flags & IORESOURCE_PREFETCH))
-> +               idx = 2;
-> +       else
-> +               idx = 1;
-> +
-> +       r = &b_res[idx];
-> +
-> +       if (!r->parent)
-> +               return;
-> +
-> +       /*
-> +        * if there are children under that, we should release them
-> +        *  all
-> +        */
-> +       release_child_resources(r);
-> +       if (!release_resource(r)) {
-> +               type = old_flags = r->flags & type_mask;
-> +               dev_printk(KERN_DEBUG, &dev->dev, "resource %d %pR released\n",
-> +                                       PCI_BRIDGE_RESOURCES + idx, r);
-> +               /* keep the old size */
-> +               r->end = resource_size(r) - 1;
-> +               r->start = 0;
-> +               r->flags = 0;
->
-> -       if (changed) {
->                 /* avoiding touch the one without PREF */
->                 if (type & IORESOURCE_PREFETCH)
->                         type = IORESOURCE_PREFETCH;
->                 __pci_setup_bridge(bus, type);
-> +               /* for next child res under same bridge */
-> +               r->flags = old_flags;
->         }
->  }
->
-> @@ -1471,7 +1519,7 @@ void pci_assign_unassigned_root_bus_resources(struct pci_bus *bus)
->         LIST_HEAD(fail_head);
->         struct pci_dev_resource *fail_res;
->         unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
-> -                                 IORESOURCE_PREFETCH;
-> +                                 IORESOURCE_PREFETCH | IORESOURCE_MEM_64;
->         int pci_try_num = 1;
->         enum enable_type enable_local;
->
-> diff --git a/drivers/pci/setup-res.c b/drivers/pci/setup-res.c
-> index 5c060b1..2c659e4 100644
-> --- a/drivers/pci/setup-res.c
-> +++ b/drivers/pci/setup-res.c
-> @@ -208,15 +208,31 @@ static int __pci_assign_resource(struct pci_bus *bus, struct pci_dev *dev,
->
->         /* First, try exact prefetching match.. */
->         ret = pci_bus_alloc_resource(bus, res, size, align, min,
-> -                                    IORESOURCE_PREFETCH,
-> +                                    IORESOURCE_PREFETCH | IORESOURCE_MEM_64,
->                                      pcibios_align_resource, dev);
->
-> -       if (ret < 0 && (res->flags & IORESOURCE_PREFETCH)) {
-> +       if (ret < 0 &&
-> +           (res->flags & (IORESOURCE_PREFETCH | IORESOURCE_MEM_64)) ==
-> +            (IORESOURCE_PREFETCH | IORESOURCE_MEM_64)) {
-> +               /*
-> +                * That failed.
-> +                *
-> +                * Try below 4g pref
-> +                */
-> +               ret = pci_bus_alloc_resource(bus, res, size, align, min,
-> +                                            IORESOURCE_PREFETCH,
-> +                                            pcibios_align_resource, dev);
-> +       }
-> +
-> +       if (ret < 0 &&
-> +           (res->flags & (IORESOURCE_PREFETCH | IORESOURCE_MEM_64))) {
->                 /*
->                  * That failed.
->                  *
->                  * But a prefetching area can handle a non-prefetching
->                  * window (it will just not perform as well).
-> +                *
-> +                * Also can put 64bit under 32bit range. (below 4g).
->                  */
->                 ret = pci_bus_alloc_resource(bus, res, size, align, min, 0,
->                                              pcibios_align_resource, dev);
-> --
-> 1.8.4
->
+ drivers/virtio/virtio_balloon.c | 2 +-
+ scripts/link-vmlinux.sh         | 4 +++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
