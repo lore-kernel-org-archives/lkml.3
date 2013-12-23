@@ -1,257 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758171Ab3LWVjY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 16:39:24 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:60833 "EHLO
+	id S1758157Ab3LWVjW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 16:39:22 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:60910 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758139Ab3LWVjT (ORCPT
+	by vger.kernel.org with ESMTP id S1758119Ab3LWVjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 16:39:19 -0500
-Message-Id: <20131223213915.094498887@goodmis.org>
+	Mon, 23 Dec 2013 16:39:20 -0500
+Message-Id: <20131223213915.389237477@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Dec 2013 16:38:18 -0500
+Date: Mon, 23 Dec 2013 16:38:20 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
         Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next][PATCH 08/10] tracing: Add documentation for trace event triggers
+        Andrew Morton <akpm@linux-foundation.org>,
+        kbuild test robot <fengguang.wu@intel.com>
+Subject: [for-next][PATCH 10/10] tracing: Fix rcu handling of event_trigger_data filter field
 References: <20131223213810.967436536@goodmis.org>
-Content-Disposition: inline; filename=0008-tracing-Add-documentation-for-trace-event-triggers.patch
-X-RR-Connecting-IP: 107.14.168.142:25
+Content-Disposition: inline; filename=0010-tracing-Fix-rcu-handling-of-event_trigger_data-filte.patch
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Provide a basic overview of trace event triggers and document the
-available trigger commands, along with a few simple examples.
+The filter field of the event_trigger_data structure is protected under
+RCU sched locks. It was not annotated as such, and after doing so,
+sparse pointed out several locations that required fix ups.
 
-Link: http://lkml.kernel.org/r/2595dd9196d7b553049611f2a3f849ca75d650a2.1382622043.git.tom.zanussi@linux.intel.com
-
-Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- Documentation/trace/events.txt | 207 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 207 insertions(+)
+ kernel/trace/trace.h                | 2 +-
+ kernel/trace/trace_events_trigger.c | 8 +++++---
+ 2 files changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/trace/events.txt b/Documentation/trace/events.txt
-index 37732a2..c94435d 100644
---- a/Documentation/trace/events.txt
-+++ b/Documentation/trace/events.txt
-@@ -287,3 +287,210 @@ their old filters):
- prev_pid == 0
- # cat sched_wakeup/filter
- common_pid == 0
-+
-+6. Event triggers
-+=================
-+
-+Trace events can be made to conditionally invoke trigger 'commands'
-+which can take various forms and are described in detail below;
-+examples would be enabling or disabling other trace events or invoking
-+a stack trace whenever the trace event is hit.  Whenever a trace event
-+with attached triggers is invoked, the set of trigger commands
-+associated with that event is invoked.  Any given trigger can
-+additionally have an event filter of the same form as described in
-+section 5 (Event filtering) associated with it - the command will only
-+be invoked if the event being invoked passes the associated filter.
-+If no filter is associated with the trigger, it always passes.
-+
-+Triggers are added to and removed from a particular event by writing
-+trigger expressions to the 'trigger' file for the given event.
-+
-+A given event can have any number of triggers associated with it,
-+subject to any restrictions that individual commands may have in that
-+regard.
-+
-+Event triggers are implemented on top of "soft" mode, which means that
-+whenever a trace event has one or more triggers associated with it,
-+the event is activated even if it isn't actually enabled, but is
-+disabled in a "soft" mode.  That is, the tracepoint will be called,
-+but just will not be traced, unless of course it's actually enabled.
-+This scheme allows triggers to be invoked even for events that aren't
-+enabled, and also allows the current event filter implementation to be
-+used for conditionally invoking triggers.
-+
-+The syntax for event triggers is roughly based on the syntax for
-+set_ftrace_filter 'ftrace filter commands' (see the 'Filter commands'
-+section of Documentation/trace/ftrace.txt), but there are major
-+differences and the implementation isn't currently tied to it in any
-+way, so beware about making generalizations between the two.
-+
-+6.1 Expression syntax
-+---------------------
-+
-+Triggers are added by echoing the command to the 'trigger' file:
-+
-+  # echo 'command[:count] [if filter]' > trigger
-+
-+Triggers are removed by echoing the same command but starting with '!'
-+to the 'trigger' file:
-+
-+  # echo '!command[:count] [if filter]' > trigger
-+
-+The [if filter] part isn't used in matching commands when removing, so
-+leaving that off in a '!' command will accomplish the same thing as
-+having it in.
-+
-+The filter syntax is the same as that described in the 'Event
-+filtering' section above.
-+
-+For ease of use, writing to the trigger file using '>' currently just
-+adds or removes a single trigger and there's no explicit '>>' support
-+('>' actually behaves like '>>') or truncation support to remove all
-+triggers (you have to use '!' for each one added.)
-+
-+6.2 Supported trigger commands
-+------------------------------
-+
-+The following commands are supported:
-+
-+- enable_event/disable_event
-+
-+  These commands can enable or disable another trace event whenever
-+  the triggering event is hit.  When these commands are registered,
-+  the other trace event is activated, but disabled in a "soft" mode.
-+  That is, the tracepoint will be called, but just will not be traced.
-+  The event tracepoint stays in this mode as long as there's a trigger
-+  in effect that can trigger it.
-+
-+  For example, the following trigger causes kmalloc events to be
-+  traced when a read system call is entered, and the :1 at the end
-+  specifies that this enablement happens only once:
-+
-+  # echo 'enable_event:kmem:kmalloc:1' > \
-+      /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/trigger
-+
-+  The following trigger causes kmalloc events to stop being traced
-+  when a read system call exits.  This disablement happens on every
-+  read system call exit:
-+
-+  # echo 'disable_event:kmem:kmalloc' > \
-+      /sys/kernel/debug/tracing/events/syscalls/sys_exit_read/trigger
-+
-+  The format is:
-+
-+      enable_event:<system>:<event>[:count]
-+      disable_event:<system>:<event>[:count]
-+
-+  To remove the above commands:
-+
-+  # echo '!enable_event:kmem:kmalloc:1' > \
-+      /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/trigger
-+
-+  # echo '!disable_event:kmem:kmalloc' > \
-+      /sys/kernel/debug/tracing/events/syscalls/sys_exit_read/trigger
-+
-+  Note that there can be any number of enable/disable_event triggers
-+  per triggering event, but there can only be one trigger per
-+  triggered event. e.g. sys_enter_read can have triggers enabling both
-+  kmem:kmalloc and sched:sched_switch, but can't have two kmem:kmalloc
-+  versions such as kmem:kmalloc and kmem:kmalloc:1 or 'kmem:kmalloc if
-+  bytes_req == 256' and 'kmem:kmalloc if bytes_alloc == 256' (they
-+  could be combined into a single filter on kmem:kmalloc though).
-+
-+- stacktrace
-+
-+  This command dumps a stacktrace in the trace buffer whenever the
-+  triggering event occurs.
-+
-+  For example, the following trigger dumps a stacktrace every time the
-+  kmalloc tracepoint is hit:
-+
-+  # echo 'stacktrace' > \
-+        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-+
-+  The following trigger dumps a stacktrace the first 5 times a kmalloc
-+  request happens with a size >= 64K
-+
-+  # echo 'stacktrace:5 if bytes_req >= 65536' > \
-+        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-+
-+  The format is:
-+
-+      stacktrace[:count]
-+
-+  To remove the above commands:
-+
-+  # echo '!stacktrace' > \
-+        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-+
-+  # echo '!stacktrace:5 if bytes_req >= 65536' > \
-+        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-+
-+  The latter can also be removed more simply by the following (without
-+  the filter):
-+
-+  # echo '!stacktrace:5' > \
-+        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-+
-+  Note that there can be only one stacktrace trigger per triggering
-+  event.
-+
-+- snapshot
-+
-+  This command causes a snapshot to be triggered whenever the
-+  triggering event occurs.
-+
-+  The following command creates a snapshot every time a block request
-+  queue is unplugged with a depth > 1.  If you were tracing a set of
-+  events or functions at the time, the snapshot trace buffer would
-+  capture those events when the trigger event occured:
-+
-+  # echo 'snapshot if nr_rq > 1' > \
-+        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-+
-+  To only snapshot once:
-+
-+  # echo 'snapshot:1 if nr_rq > 1' > \
-+        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-+
-+  To remove the above commands:
-+
-+  # echo '!snapshot if nr_rq > 1' > \
-+        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-+
-+  # echo '!snapshot:1 if nr_rq > 1' > \
-+        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-+
-+  Note that there can be only one snapshot trigger per triggering
-+  event.
-+
-+- traceon/traceoff
-+
-+  These commands turn tracing on and off when the specified events are
-+  hit. The parameter determines how many times the tracing system is
-+  turned on and off. If unspecified, there is no limit.
-+
-+  The following command turns tracing off the first time a block
-+  request queue is unplugged with a depth > 1.  If you were tracing a
-+  set of events or functions at the time, you could then examine the
-+  trace buffer to see the sequence of events that led up to the
-+  trigger event:
-+
-+  # echo 'traceoff:1 if nr_rq > 1' > \
-+        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-+
-+  To always disable tracing when nr_rq  > 1 :
-+
-+  # echo 'traceoff if nr_rq > 1' > \
-+        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-+
-+  To remove the above commands:
-+
-+  # echo '!traceoff:1 if nr_rq > 1' > \
-+        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-+
-+  # echo '!traceoff if nr_rq > 1' > \
-+        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-+
-+  Note that there can be only one traceon or traceoff trigger per
-+  triggering event.
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 0380cab..02b592f 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -1057,7 +1057,7 @@ struct event_trigger_data {
+ 	int				ref;
+ 	struct event_trigger_ops	*ops;
+ 	struct event_command		*cmd_ops;
+-	struct event_filter		*filter;
++	struct event_filter __rcu	*filter;
+ 	char				*filter_str;
+ 	void				*private_data;
+ 	struct list_head		list;
+diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
+index 12ac8a5..f6dd115 100644
+--- a/kernel/trace/trace_events_trigger.c
++++ b/kernel/trace/trace_events_trigger.c
+@@ -67,6 +67,7 @@ event_triggers_call(struct ftrace_event_file *file, void *rec)
+ {
+ 	struct event_trigger_data *data;
+ 	enum event_trigger_type tt = ETT_NONE;
++	struct event_filter *filter;
+ 
+ 	if (list_empty(&file->triggers))
+ 		return tt;
+@@ -76,7 +77,8 @@ event_triggers_call(struct ftrace_event_file *file, void *rec)
+ 			data->ops->func(data);
+ 			continue;
+ 		}
+-		if (data->filter && !filter_match_preds(data->filter, rec))
++		filter = rcu_dereference(data->filter);
++		if (filter && !filter_match_preds(filter, rec))
+ 			continue;
+ 		if (data->cmd_ops->post_trigger) {
+ 			tt |= data->cmd_ops->trigger_type;
+@@ -703,7 +705,7 @@ static int set_trigger_filter(char *filter_str,
+ 	if (ret)
+ 		goto out;
+  assign:
+-	tmp = data->filter;
++	tmp = rcu_access_pointer(data->filter);
+ 
+ 	rcu_assign_pointer(data->filter, filter);
+ 
+@@ -719,7 +721,7 @@ static int set_trigger_filter(char *filter_str,
+ 	if (filter_str) {
+ 		data->filter_str = kstrdup(filter_str, GFP_KERNEL);
+ 		if (!data->filter_str) {
+-			free_event_filter(data->filter);
++			free_event_filter(rcu_access_pointer(data->filter));
+ 			data->filter = NULL;
+ 			ret = -ENOMEM;
+ 		}
 -- 
 1.8.4.3
 
