@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932688Ab3LWWGS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 17:06:18 -0500
-Received: from zimbra13.linbit.com ([212.69.166.240]:60636 "EHLO
+	id S932671Ab3LWWGQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 17:06:16 -0500
+Received: from zimbra13.linbit.com ([212.69.166.240]:60637 "EHLO
 	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757890Ab3LWV6x (ORCPT
+	with ESMTP id S1758018Ab3LWV6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Dec 2013 16:58:53 -0500
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 07/27] drbd: Move cpu_mask from connection to resource
-Date: Mon, 23 Dec 2013 22:50:36 +0100
-Message-Id: <1387835456-29695-8-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 02/27] drbd: Iterate over all connections
+Date: Mon, 23 Dec 2013 22:50:31 +0100
+Message-Id: <1387835456-29695-3-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1387835456-29695-1-git-send-email-philipp.reisner@linbit.com>
 References: <1387835456-29695-1-git-send-email-philipp.reisner@linbit.com>
@@ -22,199 +22,242 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@linbit.com>
 
-Also fix drbd_calc_cpu_mask() to spread resources equally over all online cpus
-independent of device minor numbers.
+in drbd_adm_down(), drbd_create_device() and drbd_set_role()
 
 Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 ---
- drivers/block/drbd/drbd_int.h  |    5 ++-
- drivers/block/drbd/drbd_main.c |   74 ++++++++++++++++++++++++----------------
- 2 files changed, 47 insertions(+), 32 deletions(-)
+ drivers/block/drbd/drbd_main.c |   55 +++++++++++++++++++-------------
+ drivers/block/drbd/drbd_nl.c   |   68 ++++++++++++++++++++++------------------
+ 2 files changed, 70 insertions(+), 53 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index d0defe8..d7eade8 100644
---- a/drivers/block/drbd/drbd_int.h
-+++ b/drivers/block/drbd/drbd_int.h
-@@ -579,6 +579,8 @@ struct drbd_resource {
- 	unsigned susp:1;		/* IO suspended by user */
- 	unsigned susp_nod:1;		/* IO suspended because no data */
- 	unsigned susp_fen:1;		/* IO suspended because fence peer handler runs */
-+
-+	cpumask_var_t cpu_mask;
- };
- 
- struct drbd_connection {
-@@ -627,7 +629,6 @@ struct drbd_connection {
- 	struct drbd_thread receiver;
- 	struct drbd_thread worker;
- 	struct drbd_thread asender;
--	cpumask_var_t cpu_mask;
- 
- 	/* sender side */
- 	struct drbd_work_queue sender_work;
-@@ -875,10 +876,8 @@ extern void _drbd_thread_stop(struct drbd_thread *thi, int restart, int wait);
- extern char *drbd_task_to_thread_name(struct drbd_connection *connection, struct task_struct *task);
- #ifdef CONFIG_SMP
- extern void drbd_thread_current_set_cpu(struct drbd_thread *thi);
--extern void drbd_calc_cpu_mask(struct drbd_connection *connection);
- #else
- #define drbd_thread_current_set_cpu(A) ({})
--#define drbd_calc_cpu_mask(A) ({})
- #endif
- extern void tl_release(struct drbd_connection *, unsigned int barrier_nr,
- 		       unsigned int set_size);
 diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index cab0641..718c3bd 100644
+index 6ed09d5..c4aec68 100644
 --- a/drivers/block/drbd/drbd_main.c
 +++ b/drivers/block/drbd/drbd_main.c
-@@ -513,28 +513,38 @@ int conn_lowest_minor(struct drbd_connection *connection)
- #ifdef CONFIG_SMP
- /**
-  * drbd_calc_cpu_mask() - Generate CPU masks, spread over all CPUs
-- * @device:	DRBD device.
-  *
-- * Forces all threads of a device onto the same CPU. This is beneficial for
-+ * Forces all threads of a resource onto the same CPU. This is beneficial for
-  * DRBD's performance. May be overwritten by user's configuration.
-  */
--void drbd_calc_cpu_mask(struct drbd_connection *connection)
-+static void drbd_calc_cpu_mask(cpumask_var_t *cpu_mask)
+@@ -2663,9 +2663,9 @@ int init_submitter(struct drbd_device *device)
+ 
+ enum drbd_ret_code drbd_create_device(struct drbd_resource *resource, unsigned int minor, int vnr)
  {
--	int ord, cpu;
-+	unsigned int *resources_per_cpu, min_index = ~0;
+-	struct drbd_connection *connection = first_connection(resource);
++	struct drbd_connection *connection;
+ 	struct drbd_device *device;
+-	struct drbd_peer_device *peer_device;
++	struct drbd_peer_device *peer_device, *tmp_peer_device;
+ 	struct gendisk *disk;
+ 	struct request_queue *q;
+ 	int id;
+@@ -2681,18 +2681,8 @@ enum drbd_ret_code drbd_create_device(struct drbd_resource *resource, unsigned i
+ 		return ERR_NOMEM;
+ 	kref_init(&device->kref);
  
--	/* user override. */
--	if (cpumask_weight(connection->cpu_mask))
--		return;
-+	resources_per_cpu = kzalloc(nr_cpu_ids * sizeof(*resources_per_cpu), GFP_KERNEL);
-+	if (resources_per_cpu) {
-+		struct drbd_resource *resource;
-+		unsigned int cpu, min = ~0;
+-	peer_device = kzalloc(sizeof(struct drbd_peer_device), GFP_KERNEL);
+-	if (!peer_device)
+-		goto out_no_peer_device;
+-
+-	INIT_LIST_HEAD(&device->peer_devices);
+-	list_add(&peer_device->peer_devices, &device->peer_devices);
+ 	kref_get(&resource->kref);
+ 	device->resource = resource;
+-	kref_get(&connection->kref);
+-	peer_device->connection = connection;
+-	peer_device->device = device;
+-
+ 	device->minor = minor;
+ 	device->vnr = vnr;
  
--	ord = conn_lowest_minor(connection) % cpumask_weight(cpu_online_mask);
--	for_each_online_cpu(cpu) {
--		if (ord-- == 0) {
--			cpumask_set_cpu(cpu, connection->cpu_mask);
--			return;
-+		rcu_read_lock();
-+		for_each_resource_rcu(resource, &drbd_resources) {
-+			for_each_cpu(cpu, resource->cpu_mask)
-+				resources_per_cpu[cpu]++;
+@@ -2763,15 +2753,27 @@ enum drbd_ret_code drbd_create_device(struct drbd_resource *resource, unsigned i
+ 	}
+ 	kref_get(&device->kref);
+ 
+-	id = idr_alloc(&connection->peer_devices, peer_device, vnr, vnr + 1, GFP_KERNEL);
+-	if (id < 0) {
+-		if (id == -ENOSPC) {
+-			err = ERR_INVALID_REQUEST;
+-			drbd_msg_put_info("requested volume exists already");
++	INIT_LIST_HEAD(&device->peer_devices);
++	for_each_connection(connection, resource) {
++		peer_device = kzalloc(sizeof(struct drbd_peer_device), GFP_KERNEL);
++		if (!peer_device)
++			goto out_idr_remove_from_resource;
++		peer_device->connection = connection;
++		peer_device->device = device;
++
++		list_add(&peer_device->peer_devices, &device->peer_devices);
++		kref_get(&device->kref);
++
++		id = idr_alloc(&connection->peer_devices, peer_device, vnr, vnr + 1, GFP_KERNEL);
++		if (id < 0) {
++			if (id == -ENOSPC) {
++				err = ERR_INVALID_REQUEST;
++				drbd_msg_put_info("requested volume exists already");
++			}
++			goto out_idr_remove_from_resource;
  		}
+-		goto out_idr_remove_from_resource;
++		kref_get(&connection->kref);
+ 	}
+-	kref_get(&device->kref);
+ 
+ 	if (init_submitter(device)) {
+ 		err = ERR_NOMEM;
+@@ -2782,7 +2784,7 @@ enum drbd_ret_code drbd_create_device(struct drbd_resource *resource, unsigned i
+ 	add_disk(disk);
+ 
+ 	/* inherit the connection state */
+-	device->state.conn = connection->cstate;
++	device->state.conn = first_connection(resource)->cstate;
+ 	if (device->state.conn == C_WF_REPORT_PARAMS)
+ 		drbd_connected(device);
+ 
+@@ -2791,6 +2793,17 @@ enum drbd_ret_code drbd_create_device(struct drbd_resource *resource, unsigned i
+ out_idr_remove_vol:
+ 	idr_remove(&connection->peer_devices, vnr);
+ out_idr_remove_from_resource:
++	for_each_connection(connection, resource) {
++		peer_device = idr_find(&connection->peer_devices, vnr);
++		if (peer_device) {
++			idr_remove(&connection->peer_devices, vnr);
++			kref_put(&connection->kref, drbd_destroy_connection);
++		}
++	}
++	for_each_peer_device_safe(peer_device, tmp_peer_device, device) {
++		list_del(&peer_device->peer_devices);
++		kfree(peer_device);
++	}
+ 	idr_remove(&resource->devices, vnr);
+ out_idr_remove_minor:
+ 	idr_remove(&drbd_devices, minor);
+@@ -2804,9 +2817,7 @@ out_no_io_page:
+ out_no_disk:
+ 	blk_cleanup_queue(q);
+ out_no_q:
+-	kref_put(&connection->kref, drbd_destroy_connection);
+ 	kref_put(&resource->kref, drbd_destroy_resource);
+-out_no_peer_device:
+ 	kfree(device);
+ 	return err;
+ }
+diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+index a07b65a..26051c6 100644
+--- a/drivers/block/drbd/drbd_nl.c
++++ b/drivers/block/drbd/drbd_nl.c
+@@ -560,8 +560,16 @@ drbd_set_role(struct drbd_device *device, enum drbd_role new_role, int force)
+ 	int forced = 0;
+ 	union drbd_state mask, val;
+ 
+-	if (new_role == R_PRIMARY)
+-		request_ping(first_peer_device(device)->connection); /* Detect a dead peer ASAP */
++	if (new_role == R_PRIMARY) {
++		struct drbd_connection *connection;
++
++		/* Detect dead peers as soon as possible.  */
++
++		rcu_read_lock();
++		for_each_connection(connection, device->resource)
++			request_ping(connection);
 +		rcu_read_unlock();
-+		for_each_online_cpu(cpu) {
-+			if (resources_per_cpu[cpu] < min) {
-+				min = resources_per_cpu[cpu];
-+				min_index = cpu;
++	}
+ 
+ 	mutex_lock(device->state_mutex);
+ 
+@@ -3387,8 +3395,10 @@ out:
+ 
+ int drbd_adm_down(struct sk_buff *skb, struct genl_info *info)
+ {
++	struct drbd_resource *resource;
++	struct drbd_connection *connection;
++	struct drbd_device *device;
+ 	int retcode; /* enum drbd_ret_code rsp. enum drbd_state_rv */
+-	struct drbd_peer_device *peer_device;
+ 	unsigned i;
+ 
+ 	retcode = drbd_adm_prepare(skb, info, DRBD_ADM_NEED_RESOURCE);
+@@ -3397,24 +3407,29 @@ int drbd_adm_down(struct sk_buff *skb, struct genl_info *info)
+ 	if (retcode != NO_ERROR)
+ 		goto out;
+ 
++	resource = adm_ctx.resource;
+ 	/* demote */
+-	idr_for_each_entry(&adm_ctx.connection->peer_devices, peer_device, i) {
+-		retcode = drbd_set_role(peer_device->device, R_SECONDARY, 0);
++	for_each_connection(connection, resource) {
++		struct drbd_peer_device *peer_device;
++
++		idr_for_each_entry(&connection->peer_devices, peer_device, i) {
++			retcode = drbd_set_role(peer_device->device, R_SECONDARY, 0);
++			if (retcode < SS_SUCCESS) {
++				drbd_msg_put_info("failed to demote");
++				goto out;
 +			}
 +		}
-+		kfree(resources_per_cpu);
-+	}
-+	if (min_index == ~0) {
-+		cpumask_setall(*cpu_mask);
-+		return;
- 	}
--	/* should not be reached */
--	cpumask_setall(connection->cpu_mask);
-+	cpumask_set_cpu(min_index, *cpu_mask);
- }
- 
- /**
-@@ -552,8 +562,10 @@ void drbd_thread_current_set_cpu(struct drbd_thread *thi)
- 	if (!thi->reset_cpu_mask)
- 		return;
- 	thi->reset_cpu_mask = 0;
--	set_cpus_allowed_ptr(p, thi->connection->cpu_mask);
-+	set_cpus_allowed_ptr(p, thi->connection->resource->cpu_mask);
- }
-+#else
-+#define drbd_calc_cpu_mask(A) ({})
- #endif
- 
- /**
-@@ -2289,6 +2301,7 @@ void drbd_destroy_resource(struct kref *kref)
- 		container_of(kref, struct drbd_resource, kref);
- 
- 	idr_destroy(&resource->devices);
-+	free_cpumask_var(resource->cpu_mask);
- 	kfree(resource->name);
- 	kfree(resource);
- }
-@@ -2514,10 +2527,11 @@ int set_resource_options(struct drbd_resource *resource, struct res_opts *res_op
++
++		retcode = conn_try_disconnect(connection, 0);
+ 		if (retcode < SS_SUCCESS) {
+-			drbd_msg_put_info("failed to demote");
++			drbd_msg_put_info("failed to disconnect");
+ 			goto out;
  		}
  	}
- 	resource->res_opts = *res_opts;
--	for_each_connection_rcu(connection, resource) {
--		if (!cpumask_equal(connection->cpu_mask, new_cpu_mask)) {
--			cpumask_copy(connection->cpu_mask, new_cpu_mask);
--			drbd_calc_cpu_mask(connection);
-+	if (cpumask_empty(new_cpu_mask))
-+		drbd_calc_cpu_mask(&new_cpu_mask);
-+	if (!cpumask_equal(resource->cpu_mask, new_cpu_mask)) {
-+		cpumask_copy(resource->cpu_mask, new_cpu_mask);
-+		for_each_connection_rcu(connection, resource) {
- 			connection->receiver.reset_cpu_mask = 1;
- 			connection->asender.reset_cpu_mask = 1;
- 			connection->worker.reset_cpu_mask = 1;
-@@ -2537,12 +2551,12 @@ struct drbd_resource *drbd_create_resource(const char *name)
  
- 	resource = kzalloc(sizeof(struct drbd_resource), GFP_KERNEL);
- 	if (!resource)
--		return NULL;
-+		goto fail;
- 	resource->name = kstrdup(name, GFP_KERNEL);
--	if (!resource->name) {
--		kfree(resource);
--		return NULL;
+-	retcode = conn_try_disconnect(adm_ctx.connection, 0);
+-	if (retcode < SS_SUCCESS) {
+-		drbd_msg_put_info("failed to disconnect");
+-		goto out;
 -	}
-+	if (!resource->name)
-+		goto fail_free_resource;
-+	if (!zalloc_cpumask_var(&resource->cpu_mask, GFP_KERNEL))
-+		goto fail_free_name;
- 	kref_init(&resource->kref);
- 	idr_init(&resource->devices);
- 	INIT_LIST_HEAD(&resource->connections);
-@@ -2550,6 +2564,13 @@ struct drbd_resource *drbd_create_resource(const char *name)
- 	mutex_init(&resource->conf_update);
- 	spin_lock_init(&resource->req_lock);
- 	return resource;
-+
-+fail_free_name:
-+	kfree(resource->name);
-+fail_free_resource:
-+	kfree(resource);
-+fail:
-+	return NULL;
- }
- 
- /* caller must be under genl_lock() */
-@@ -2567,9 +2588,6 @@ struct drbd_connection *conn_create(const char *name, struct res_opts *res_opts)
- 	if (drbd_alloc_socket(&connection->meta))
- 		goto fail;
- 
--	if (!zalloc_cpumask_var(&connection->cpu_mask, GFP_KERNEL))
--		goto fail;
 -
- 	connection->current_epoch = kzalloc(sizeof(struct drbd_epoch), GFP_KERNEL);
- 	if (!connection->current_epoch)
- 		goto fail;
-@@ -2618,7 +2636,6 @@ fail_resource:
- 	drbd_free_resource(resource);
- fail:
- 	kfree(connection->current_epoch);
--	free_cpumask_var(connection->cpu_mask);
- 	drbd_free_socket(&connection->meta);
- 	drbd_free_socket(&connection->data);
- 	kfree(connection);
-@@ -2636,7 +2653,6 @@ void drbd_destroy_connection(struct kref *kref)
+ 	/* detach */
+-	idr_for_each_entry(&adm_ctx.connection->peer_devices, peer_device, i) {
+-		retcode = adm_detach(peer_device->device, 0);
++	idr_for_each_entry(&resource->devices, device, i) {
++		retcode = adm_detach(device, 0);
+ 		if (retcode < SS_SUCCESS || retcode > NO_ERROR) {
+ 			drbd_msg_put_info("failed to detach");
+ 			goto out;
+@@ -3424,13 +3439,14 @@ int drbd_adm_down(struct sk_buff *skb, struct genl_info *info)
+ 	/* If we reach this, all volumes (of this connection) are Secondary,
+ 	 * Disconnected, Diskless, aka Unconfigured. Make sure all threads have
+ 	 * actually stopped, state handling only does drbd_thread_stop_nowait(). */
+-	drbd_thread_stop(&adm_ctx.connection->worker);
++	for_each_connection(connection, resource)
++		drbd_thread_stop(&connection->worker);
  
- 	idr_destroy(&connection->peer_devices);
+ 	/* Now, nothing can fail anymore */
  
--	free_cpumask_var(connection->cpu_mask);
- 	drbd_free_socket(&connection->meta);
- 	drbd_free_socket(&connection->data);
- 	kfree(connection->int_dig_in);
+ 	/* delete volumes */
+-	idr_for_each_entry(&adm_ctx.connection->peer_devices, peer_device, i) {
+-		retcode = adm_del_minor(peer_device->device);
++	idr_for_each_entry(&resource->devices, device, i) {
++		retcode = adm_del_minor(device);
+ 		if (retcode != NO_ERROR) {
+ 			/* "can not happen" */
+ 			drbd_msg_put_info("failed to delete volume");
+@@ -3438,21 +3454,11 @@ int drbd_adm_down(struct sk_buff *skb, struct genl_info *info)
+ 		}
+ 	}
+ 
+-	/* delete connection */
+-	if (conn_lowest_minor(adm_ctx.connection) < 0) {
+-		struct drbd_resource *resource = adm_ctx.connection->resource;
+-
+-		list_del_rcu(&resource->resources);
+-		synchronize_rcu();
+-		drbd_free_resource(resource);
++	list_del_rcu(&resource->resources);
++	synchronize_rcu();
++	drbd_free_resource(resource);
++	retcode = NO_ERROR;
+ 
+-		retcode = NO_ERROR;
+-	} else {
+-		/* "can not happen" */
+-		retcode = ERR_RES_IN_USE;
+-		drbd_msg_put_info("failed to delete connection");
+-	}
+-	goto out;
+ out:
+ 	drbd_adm_finish(info, retcode);
+ 	return 0;
 -- 
 1.7.9.5
 
