@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932224Ab3LWUlB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 15:41:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33542 "EHLO mx2.suse.de"
+	id S1758057Ab3LWUlA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 15:41:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33548 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757916Ab3LWUjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757918Ab3LWUjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Dec 2013 15:39:54 -0500
 From: Jan Kara <jack@suse.cz>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: pmladek@suse.cz, Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 5/9] smp: Provide __smp_call_function_any()
-Date: Mon, 23 Dec 2013 21:39:26 +0100
-Message-Id: <1387831171-5264-6-git-send-email-jack@suse.cz>
+Subject: [PATCH 6/9] printk: Release lockbuf_lock before calling console_trylock_for_printk()
+Date: Mon, 23 Dec 2013 21:39:27 +0100
+Message-Id: <1387831171-5264-7-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1387831171-5264-1-git-send-email-jack@suse.cz>
 References: <1387831171-5264-1-git-send-email-jack@suse.cz>
@@ -21,137 +21,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide function to call given function on any cpu from a given cpu mask
-while providing own csd structure.
+There's no reason to hold lockbuf_lock when entering
+console_trylock_for_printk(). The first thing this function does is
+calling down_trylock(console_sem) and if that fails it immediately
+unlocks lockbuf_lock. So lockbuf_lock isn't needed for that branch.
+When down_trylock() succeeds, the rest of console_trylock() is OK
+without lockbuf_lock (it is called without it from other places), and
+the only remaining thing in console_trylock_for_printk() is
+can_use_console() call. For that call console_sem is enough (it
+iterates all consoles and checks CON_ANYTIME flag).
+
+So we drop logbuf_lock before entering console_trylock_for_printk()
+which simplifies the code.
 
 Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- include/linux/smp.h |  9 +++++++
- kernel/smp.c        | 67 +++++++++++++++++++++++++++++++++++++++--------------
- 2 files changed, 58 insertions(+), 18 deletions(-)
+ kernel/printk/printk.c | 49 +++++++++++++++++--------------------------------
+ 1 file changed, 17 insertions(+), 32 deletions(-)
 
-diff --git a/include/linux/smp.h b/include/linux/smp.h
-index 1e8c72100eda..37aa794a93ce 100644
---- a/include/linux/smp.h
-+++ b/include/linux/smp.h
-@@ -100,6 +100,8 @@ void smp_call_function_many(const struct cpumask *mask,
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index be7c86bae576..72ec3637115f 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -250,9 +250,6 @@ static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
+ static char *log_buf = __log_buf;
+ static u32 log_buf_len = __LOG_BUF_LEN;
  
- int smp_call_function_any(const struct cpumask *mask,
- 			  smp_call_func_t func, void *info, int wait);
-+int __smp_call_function_any(const struct cpumask *mask,
-+			    struct call_single_data *csd, int wait);
- 
- void kick_all_cpus_sync(void);
- 
-@@ -149,6 +151,13 @@ smp_call_function_any(const struct cpumask *mask, smp_call_func_t func,
- 	return smp_call_function_single(0, func, info, wait);
- }
- 
-+static inline int
-+__smp_call_function_any(const struct cpumask *mask,
-+			struct call_single_data *csd, int wait)
-+{
-+	return __smp_call_function_single(0, csd, wait);
-+}
-+
- static inline void kick_all_cpus_sync(void) {  }
- 
- #endif /* !SMP */
-diff --git a/kernel/smp.c b/kernel/smp.c
-index 2efcfa1d11ee..4c44554ff5b6 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -238,6 +238,27 @@ int smp_call_function_single(int cpu, smp_call_func_t func, void *info,
- }
- EXPORT_SYMBOL(smp_call_function_single);
- 
-+static unsigned int pick_any_cpu(const struct cpumask *mask)
-+{
-+	unsigned int cpu = smp_processor_id();
-+	const struct cpumask *nodemask;
-+
-+	/* Try for same CPU (cheapest) */
-+	if (cpumask_test_cpu(cpu, mask))
-+		return cpu;
-+
-+	/* Try for same node. */
-+	nodemask = cpumask_of_node(cpu_to_node(cpu));
-+	for (cpu = cpumask_first_and(nodemask, mask); cpu < nr_cpu_ids;
-+	     cpu = cpumask_next_and(cpu, nodemask, mask)) {
-+		if (cpu_online(cpu))
-+			return cpu;
-+	}
-+
-+	/* Any online will do */
-+	return cpumask_any_and(mask, cpu_online_mask);
-+}
-+
- /*
-  * smp_call_function_any - Run a function on any of the given cpus
-  * @mask: The mask of cpus it can run on.
-@@ -256,27 +277,13 @@ int smp_call_function_any(const struct cpumask *mask,
- 			  smp_call_func_t func, void *info, int wait)
+-/* cpu currently holding logbuf_lock */
+-static volatile unsigned int logbuf_cpu = UINT_MAX;
+-
+ /* human readable text of the record */
+ static char *log_text(const struct printk_log *msg)
  {
- 	unsigned int cpu;
--	const struct cpumask *nodemask;
- 	int ret;
- 
--	/* Try for same CPU (cheapest) */
--	cpu = get_cpu();
--	if (cpumask_test_cpu(cpu, mask))
--		goto call;
+@@ -1338,36 +1335,22 @@ static inline int can_use_console(unsigned int cpu)
+  * messages from a 'printk'. Return true (and with the
+  * console_lock held, and 'console_locked' set) if it
+  * is successful, false otherwise.
+- *
+- * This gets called with the 'logbuf_lock' spinlock held and
+- * interrupts disabled. It should return with 'lockbuf_lock'
+- * released but interrupts still disabled.
+  */
+ static int console_trylock_for_printk(unsigned int cpu)
+-	__releases(&logbuf_lock)
+ {
+-	int retval = 0, wake = 0;
 -
--	/* Try for same node. */
--	nodemask = cpumask_of_node(cpu_to_node(cpu));
--	for (cpu = cpumask_first_and(nodemask, mask); cpu < nr_cpu_ids;
--	     cpu = cpumask_next_and(cpu, nodemask, mask)) {
--		if (cpu_online(cpu))
--			goto call;
+-	if (console_trylock()) {
+-		retval = 1;
+-
+-		/*
+-		 * If we can't use the console, we need to release
+-		 * the console semaphore by hand to avoid flushing
+-		 * the buffer. We need to hold the console semaphore
+-		 * in order to do this test safely.
+-		 */
+-		if (!can_use_console(cpu)) {
+-			console_locked = 0;
+-			wake = 1;
+-			retval = 0;
+-		}
 -	}
--
--	/* Any online will do: smp_call_function_single handles nr_cpu_ids. */
--	cpu = cpumask_any_and(mask, cpu_online_mask);
--call:
-+	preempt_disable();
-+	cpu = pick_any_cpu(mask);
-+	/* smp_call_function_single handles nr_cpu_ids. */
- 	ret = smp_call_function_single(cpu, func, info, wait);
--	put_cpu();
-+	preempt_enable();
- 	return ret;
+-	logbuf_cpu = UINT_MAX;
+-	raw_spin_unlock(&logbuf_lock);
+-	if (wake)
++	if (!console_trylock())
++		return 0;
++	/*
++	 * If we can't use the console, we need to release the console
++	 * semaphore by hand to avoid flushing the buffer. We need to hold the
++	 * console semaphore in order to do this test safely.
++	 */
++	if (!can_use_console(cpu)) {
++		console_locked = 0;
+ 		up(&console_sem);
+-	return retval;
++		return 0;
++	}
++	return 1;
  }
- EXPORT_SYMBOL_GPL(smp_call_function_any);
-@@ -322,6 +329,30 @@ int __smp_call_function_single(int cpu, struct call_single_data *csd, int wait)
- }
- EXPORT_SYMBOL_GPL(__smp_call_function_single);
  
-+/*
-+ * __smp_call_function_any - Run a function on any of the given cpus
-+ * @mask: The mask of cpus it can run on.
-+ * @csd: Pre-allocated and setup data structure
-+ * @wait: If true, wait until function has completed.
-+ *
-+ * Like smp_call_function_any() but allow caller to pass in a pre-allocated
-+ * data structure.
-+ */
-+int __smp_call_function_any(const struct cpumask *mask,
-+			    struct call_single_data *csd, int wait)
-+{
-+	unsigned int cpu;
-+	int ret;
+ int printk_delay_msec __read_mostly;
+@@ -1500,6 +1483,9 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 	unsigned long flags;
+ 	int this_cpu;
+ 	int printed_len = 0;
++	/* cpu currently holding logbuf_lock in this function */
++	static volatile unsigned int logbuf_cpu = UINT_MAX;
 +
-+	preempt_disable();
-+	cpu = pick_any_cpu(mask);
-+	/* smp_call_function_single handles nr_cpu_ids. */
-+	ret = __smp_call_function_single(cpu, csd, wait);
-+	preempt_enable();
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(__smp_call_function_any);
-+
- /**
-  * smp_call_function_many(): Run a function on a set of other CPUs.
-  * @mask: The set of cpus to run on (only runs on online subset).
+ 
+ 	boot_delay_msec(level);
+ 	printk_delay();
+@@ -1612,13 +1598,12 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 	}
+ 	printed_len += text_len;
+ 
++	logbuf_cpu = UINT_MAX;
++	raw_spin_unlock(&logbuf_lock);
+ 	/*
+ 	 * Try to acquire and then immediately release the console semaphore.
+ 	 * The release will print out buffers and wake up /dev/kmsg and syslog()
+ 	 * users.
+-	 *
+-	 * The console_trylock_for_printk() function will release 'logbuf_lock'
+-	 * regardless of whether it actually gets the console semaphore or not.
+ 	 */
+ 	if (console_trylock_for_printk(this_cpu))
+ 		console_unlock();
 -- 
 1.8.1.4
 
