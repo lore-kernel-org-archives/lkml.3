@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758089Ab3LWVzw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 16:55:52 -0500
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:47415 "EHLO
+	id S1758063Ab3LWVzv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 16:55:51 -0500
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:40613 "EHLO
 	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753197Ab3LWVzk (ORCPT
+	with ESMTP id S1757957Ab3LWVz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 16:55:40 -0500
+	Mon, 23 Dec 2013 16:55:26 -0500
 X-Originating-IP: 50.43.14.201
-Date: Mon, 23 Dec 2013 13:55:33 -0800
+Date: Mon, 23 Dec 2013 13:55:19 -0800
 From: Josh Triplett <josh@joshtriplett.org>
-To: Henk de Groot <pe1dnn@amsat.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Lisa Nguyen <lisa@xenapiadmin.com>,
+        Archana kumari <archanakumari959@gmail.com>,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/7] staging: wlags49_h2: Drop debug macro recording build
- date/time
-Message-ID: <11720c5ede7441bc26c732b24e47189841dfd36d.1387833347.git.josh@joshtriplett.org>
+Subject: [PATCH 4/7] staging: rts5139: Drop print of build time
+Message-ID: <d7f697099a92070d98a43bfe9939c9a321555a82.1387833347.git.josh@joshtriplett.org>
 References: <cover.1387833347.git.josh@joshtriplett.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -27,30 +27,27 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 The kernel already has this information, and individual drivers
-shouldn't duplicate that.  This also eliminates the use of __DATE__ and
-__TIME__, which make the build non-deterministic.
+shouldn't duplicate that.  This also eliminates the use of __TIME__,
+which makes the build non-deterministic.  (And, without __DATE__,
+__TIME__ provided little useful information to begin with.)
 
 Signed-off-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/staging/wlags49_h2/wl_version.h | 4 ----
- 1 file changed, 4 deletions(-)
+ drivers/staging/rts5139/rts51x_scsi.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/staging/wlags49_h2/wl_version.h b/drivers/staging/wlags49_h2/wl_version.h
-index 037b526..019ebb2 100644
---- a/drivers/staging/wlags49_h2/wl_version.h
-+++ b/drivers/staging/wlags49_h2/wl_version.h
-@@ -129,11 +129,7 @@ err: define bus type;
- #endif  /* HERMES25 */
- #endif  /* BUS_XXX */
+diff --git a/drivers/staging/rts5139/rts51x_scsi.c b/drivers/staging/rts5139/rts51x_scsi.c
+index a474eed..3a99025 100644
+--- a/drivers/staging/rts5139/rts51x_scsi.c
++++ b/drivers/staging/rts5139/rts51x_scsi.c
+@@ -1985,7 +1985,6 @@ static int show_info(struct seq_file *m, struct Scsi_Host *host)
+ 	SPRINTF("       Vendor: Realtek Corp.\n");
+ 	SPRINTF("      Product: RTS51xx USB Card Reader\n");
+ 	SPRINTF("      Version: %s\n", DRIVER_VERSION);
+-	SPRINTF("        Build: %s\n", __TIME__);
+ 	return 0;
+ }
  
--#ifdef DBG
--#define MODULE_DATE         __DATE__ " " __TIME__
--#else
- #define MODULE_DATE         "07/18/2004 13:30:00"
--#endif // DBG
- 
- //#define STR2(m) #m
- //#define STR1(m) STR2(m)
 -- 
 1.8.5.2
 
