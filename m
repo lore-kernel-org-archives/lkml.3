@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757563Ab3LWQNc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 11:13:32 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:48786 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752373Ab3LWQM6 (ORCPT
+	id S1757578Ab3LWQNe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 11:13:34 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:49592 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757527Ab3LWQNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 11:12:58 -0500
+	Mon, 23 Dec 2013 11:13:02 -0500
 From: Laszlo Papp <lpapp@kde.org>
 To: Guenter Roeck <linux@roeck-us.net>,
         Linus Walleij <linus.walleij@linaro.org>,
         Lee Jones <lee.jones@linaro.org>
 Cc: linux-kernel@vger.kernel.org, Laszlo Papp <lpapp@kde.org>
-Subject: [PATCH 1/3] mfd: MAX6650/6651 support
-Date: Mon, 23 Dec 2013 16:08:07 +0000
-Message-Id: <1387814889-16670-2-git-send-email-lpapp@kde.org>
+Subject: [PATCH 2/3] hwmon: (max6650) Convert to be a platform driver
+Date: Mon, 23 Dec 2013 16:08:08 +0000
+Message-Id: <1387814889-16670-3-git-send-email-lpapp@kde.org>
 X-Mailer: git-send-email 1.8.5.1
 In-Reply-To: <1387814889-16670-1-git-send-email-lpapp@kde.org>
 References: <1387814889-16670-1-git-send-email-lpapp@kde.org>
@@ -22,254 +22,427 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MAX6650/MAX6651 chip is a multi-function device with I2C busses. The
-chip includes fan-speed regulators and monitors, GPIO, and alarm.
-
-This patch is an initial release of a MAX6650/6651 MFD driver that
-supports to enable the chip with its primary I2C bus that will connect
-the hwmon, and then the gpio devices for now.
+The MFD driver has now been added, so this driver is now being adopted to be a
+subdevice driver on top of it. This means, the i2c driver usage is being
+converted to platform driver usage all around.
 
 Signed-off-by: Laszlo Papp <lpapp@kde.org>
 ---
- drivers/mfd/Kconfig                 |  11 +++
- drivers/mfd/Makefile                |   1 +
- drivers/mfd/max6651.c               | 132 ++++++++++++++++++++++++++++++++++++
- include/linux/mfd/max6651-private.h |  53 +++++++++++++++
- 4 files changed, 197 insertions(+)
- create mode 100644 drivers/mfd/max6651.c
- create mode 100644 include/linux/mfd/max6651-private.h
+ drivers/hwmon/Kconfig   |   2 +-
+ drivers/hwmon/max6650.c | 150 +++++++++++++++++++++++++-----------------------
+ drivers/mfd/max6651.c   |   2 +-
+ 3 files changed, 80 insertions(+), 74 deletions(-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index dd67158..706c4e5 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -321,6 +321,17 @@ config MFD_88PM860X
- 	  select individual components like voltage regulators, RTC and
- 	  battery-charger under the corresponding menus.
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index 52d548f..ee4fb07 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -925,7 +925,7 @@ config SENSORS_MAX6642
  
-+config MFD_MAX6651
-+	bool "Maxim Semiconductor MAX6651 Support"
-+	depends on I2C=y
-+	select MFD_CORE
-+	select IRQ_DOMAIN
-+	help
-+	  Say yes here to support for Maxim Semiconductor MAX6651. This is
-+	  a fan speed regulator and monitor IC. This driver provies common support
-+	  for accessing the device, additional drivers must be enabled in order to
-+	  use the functionality of the device.
-+
- config MFD_MAX77686
- 	bool "Maxim Semiconductor MAX77686 PMIC Support"
- 	depends on I2C=y
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 8a28dc9..254a8a7 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -110,6 +110,7 @@ obj-$(CONFIG_MFD_DA9055)	+= da9055.o
- da9063-objs			:= da9063-core.o da9063-irq.o da9063-i2c.o
- obj-$(CONFIG_MFD_DA9063)	+= da9063.o
- 
-+obj-$(CONFIG_MFD_MAX6651)	+= max6651.o
- obj-$(CONFIG_MFD_MAX77686)	+= max77686.o max77686-irq.o
- obj-$(CONFIG_MFD_MAX77693)	+= max77693.o max77693-irq.o
- obj-$(CONFIG_MFD_MAX8907)	+= max8907.o
-diff --git a/drivers/mfd/max6651.c b/drivers/mfd/max6651.c
-new file mode 100644
-index 0000000..c6b1716
---- /dev/null
-+++ b/drivers/mfd/max6651.c
-@@ -0,0 +1,132 @@
-+/*
-+ * Device access for MAX6651
-+ *
-+ * Copyright(c) 2013 Polatis Ltd.
-+ *
-+ * Author: Laszlo Papp <laszlo.papp@polatis.com>
-+ *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/delay.h>
-+#include <linux/input.h>
-+#include <linux/interrupt.h>
-+#include <linux/mfd/core.h>
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/i2c.h>
+ config SENSORS_MAX6650
+ 	tristate "Maxim MAX6650 sensor chip"
+-	depends on I2C
++	depends on MFD_MAX6651
+ 	help
+ 	  If you say yes here you get support for the MAX6650 / MAX6651
+ 	  sensor chips.
+diff --git a/drivers/hwmon/max6650.c b/drivers/hwmon/max6650.c
+index 0cafc39..ec7dac2 100644
+--- a/drivers/hwmon/max6650.c
++++ b/drivers/hwmon/max6650.c
+@@ -39,6 +39,9 @@
+ #include <linux/hwmon.h>
+ #include <linux/hwmon-sysfs.h>
+ #include <linux/err.h>
++#include <linux/platform_device.h>
 +
 +#include <linux/mfd/max6651-private.h>
+ 
+ /*
+  * Insmod parameters
+@@ -105,24 +108,24 @@ module_param(clock, int, S_IRUGO);
+ 
+ #define DIV_FROM_REG(reg) (1 << (reg & 7))
+ 
+-static int max6650_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id);
+-static int max6650_init_client(struct i2c_client *client);
+-static int max6650_remove(struct i2c_client *client);
++static int max6650_probe(struct platform_device *pdev);
++static int max6650_init_client(struct platform_device *pdev);
++static int max6650_remove(struct platform_device *pdev);
+ static struct max6650_data *max6650_update_device(struct device *dev);
+ 
+ /*
+  * Driver data (common to all clients)
+  */
+ 
+-static const struct i2c_device_id max6650_id[] = {
++static const struct platform_device_id max6650_id[] = {
+ 	{ "max6650", 1 },
+ 	{ "max6651", 4 },
+ 	{ }
+ };
+-MODULE_DEVICE_TABLE(i2c, max6650_id);
+ 
+-static struct i2c_driver max6650_driver = {
++MODULE_DEVICE_TABLE(platform, max6650_id);
 +
-+static struct mfd_cell max6651_devs[] = {
-+    { .name = "max6651-gpio", },
-+    { .name = "max6650", },
-+};
++static struct platform_driver max6650_driver = {
+ 	.driver = {
+ 		.name	= "max6650",
+ 	},
+@@ -136,7 +139,9 @@ static struct i2c_driver max6650_driver = {
+  */
+ 
+ struct max6650_data {
++	struct max6651 *max6651;
+ 	struct device *hwmon_dev;
++	struct max6651_dev *iodev;
+ 	struct mutex update_lock;
+ 	int nr_fans;
+ 	char valid; /* zero until following fields are valid */
+@@ -235,8 +240,7 @@ static ssize_t get_target(struct device *dev, struct device_attribute *devattr,
+ static ssize_t set_target(struct device *dev, struct device_attribute *devattr,
+ 			 const char *buf, size_t count)
+ {
+-	struct i2c_client *client = to_i2c_client(dev);
+-	struct max6650_data *data = i2c_get_clientdata(client);
++	struct max6650_data *data = dev_get_drvdata(dev);
+ 	int kscale, ktach;
+ 	unsigned long rpm;
+ 	int err;
+@@ -264,7 +268,7 @@ static ssize_t set_target(struct device *dev, struct device_attribute *devattr,
+ 		ktach = 255;
+ 	data->speed = ktach;
+ 
+-	i2c_smbus_write_byte_data(client, MAX6650_REG_SPEED, data->speed);
++	max6651_write_reg(data->iodev->i2c, MAX6650_REG_SPEED, data->speed);
+ 
+ 	mutex_unlock(&data->update_lock);
+ 
+@@ -304,8 +308,7 @@ static ssize_t get_pwm(struct device *dev, struct device_attribute *devattr,
+ static ssize_t set_pwm(struct device *dev, struct device_attribute *devattr,
+ 			const char *buf, size_t count)
+ {
+-	struct i2c_client *client = to_i2c_client(dev);
+-	struct max6650_data *data = i2c_get_clientdata(client);
++	struct max6650_data *data = dev_get_drvdata(dev);
+ 	unsigned long pwm;
+ 	int err;
+ 
+@@ -322,7 +325,7 @@ static ssize_t set_pwm(struct device *dev, struct device_attribute *devattr,
+ 	else
+ 		data->dac = 76 - (76 * pwm)/255;
+ 
+-	i2c_smbus_write_byte_data(client, MAX6650_REG_DAC, data->dac);
++	max6651_write_reg(data->iodev->i2c, MAX6650_REG_DAC, data->dac);
+ 
+ 	mutex_unlock(&data->update_lock);
+ 
+@@ -350,8 +353,8 @@ static ssize_t get_enable(struct device *dev, struct device_attribute *devattr,
+ static ssize_t set_enable(struct device *dev, struct device_attribute *devattr,
+ 			  const char *buf, size_t count)
+ {
+-	struct i2c_client *client = to_i2c_client(dev);
+-	struct max6650_data *data = i2c_get_clientdata(client);
++	struct platform_device *pdev = to_platform_device(dev);
++	struct max6650_data *data = platform_get_drvdata(pdev);
+ 	int max6650_modes[3] = {0, 3, 2};
+ 	unsigned long mode;
+ 	int err;
+@@ -365,11 +368,11 @@ static ssize_t set_enable(struct device *dev, struct device_attribute *devattr,
+ 
+ 	mutex_lock(&data->update_lock);
+ 
+-	data->config = i2c_smbus_read_byte_data(client, MAX6650_REG_CONFIG);
++	max6651_read_reg(data->iodev->i2c, MAX6650_REG_CONFIG, &data->config);
+ 	data->config = (data->config & ~MAX6650_CFG_MODE_MASK)
+ 		       | (max6650_modes[mode] << 4);
+ 
+-	i2c_smbus_write_byte_data(client, MAX6650_REG_CONFIG, data->config);
++	max6651_write_reg(data->iodev->i2c, MAX6650_REG_CONFIG, data->config);
+ 
+ 	mutex_unlock(&data->update_lock);
+ 
+@@ -400,8 +403,7 @@ static ssize_t get_div(struct device *dev, struct device_attribute *devattr,
+ static ssize_t set_div(struct device *dev, struct device_attribute *devattr,
+ 		       const char *buf, size_t count)
+ {
+-	struct i2c_client *client = to_i2c_client(dev);
+-	struct max6650_data *data = i2c_get_clientdata(client);
++	struct max6650_data *data = dev_get_drvdata(dev);
+ 	unsigned long div;
+ 	int err;
+ 
+@@ -428,7 +430,7 @@ static ssize_t set_div(struct device *dev, struct device_attribute *devattr,
+ 		return -EINVAL;
+ 	}
+ 
+-	i2c_smbus_write_byte_data(client, MAX6650_REG_COUNT, data->count);
++	max6651_write_reg(data->iodev->i2c, MAX6650_REG_COUNT, data->count);
+ 	mutex_unlock(&data->update_lock);
+ 
+ 	return count;
+@@ -446,15 +448,14 @@ static ssize_t get_alarm(struct device *dev, struct device_attribute *devattr,
+ {
+ 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+ 	struct max6650_data *data = max6650_update_device(dev);
+-	struct i2c_client *client = to_i2c_client(dev);
+ 	int alarm = 0;
+ 
+ 	if (data->alarm & attr->index) {
+ 		mutex_lock(&data->update_lock);
+ 		alarm = 1;
+ 		data->alarm &= ~attr->index;
+-		data->alarm |= i2c_smbus_read_byte_data(client,
+-							MAX6650_REG_ALARM);
++		max6651_read_reg(data->iodev->i2c, MAX6650_REG_ALARM,
++				 &data->alarm);
+ 		mutex_unlock(&data->update_lock);
+ 	}
+ 
+@@ -484,10 +485,13 @@ static umode_t max6650_attrs_visible(struct kobject *kobj, struct attribute *a,
+ 				    int n)
+ {
+ 	struct device *dev = container_of(kobj, struct device, kobj);
+-	struct i2c_client *client = to_i2c_client(dev);
+-	u8 alarm_en = i2c_smbus_read_byte_data(client, MAX6650_REG_ALARM_EN);
++	struct max6650_data *data = dev_get_drvdata(dev);
++	u8 alarm_en;
 +
-+int max6651_read_reg(struct i2c_client *i2c, u8 reg, u8 *dest)
-+{
-+    struct max6651_dev *max6651 = i2c_get_clientdata(i2c);
-+    int ret;
+ 	struct device_attribute *devattr;
+ 
++	max6651_read_reg(data->iodev->i2c, MAX6650_REG_ALARM_EN, &alarm_en);
 +
-+    mutex_lock(&max6651->iolock);
-+    ret = i2c_smbus_read_byte_data(i2c, reg);
-+    mutex_unlock(&max6651->iolock);
-+    if (ret < 0)
-+        return ret;
-+
-+    ret &= 0xff;
-+    *dest = ret;
-+    return 0;
-+}
-+EXPORT_SYMBOL_GPL(max6651_read_reg);
-+
-+int max6651_write_reg(struct i2c_client *i2c, u8 reg, u8 value)
-+{
-+    struct max6651_dev *max6651 = i2c_get_clientdata(i2c);
-+    int ret;
-+
-+    mutex_lock(&max6651->iolock);
-+    ret = i2c_smbus_write_byte_data(i2c, reg, value);
-+    mutex_unlock(&max6651->iolock);
-+    return ret;
-+}
-+EXPORT_SYMBOL_GPL(max6651_write_reg);
-+
-+static int max6651_i2c_probe(struct i2c_client *i2c,
-+			    const struct i2c_device_id *id)
-+{
-+	struct max6651_dev *max6651;
-+	int ret = 0;
-+
-+	max6651 = kzalloc(sizeof(struct max6651_dev), GFP_KERNEL);
-+	if (max6651 == NULL)
-+		return -ENOMEM;
-+
-+	i2c_set_clientdata(i2c, max6651);
-+	max6651->dev = &i2c->dev;
-+
-+	mutex_init(&max6651->iolock);
-+
-+	ret = mfd_add_devices(max6651->dev, -1, max6651_devs,
-+			ARRAY_SIZE(max6651_devs),
-+			NULL, 0, NULL);
-+
-+	if (ret < 0) {
-+        dev_err(max6651->dev, "cannot add mfd cells\n");
-+		goto err_mfd;
-+    }
-+
-+	return ret;
-+
-+err_mfd:
-+	mfd_remove_devices(max6651->dev);
-+	kfree(max6651);
-+	return ret;
-+}
-+
-+static int max6651_i2c_remove(struct i2c_client *i2c)
-+{
-+    struct max6651_dev *max6651 = i2c_get_clientdata(i2c);
-+
-+    mfd_remove_devices(max6651->dev);
-+
-+    return 0;
-+}
-+
-+static const struct i2c_device_id max6651_i2c_id[] = {
-+    { "max6650", TYPE_MAX6650 },
-+    { "max6651", TYPE_MAX6651 },
-+    { }
-+};
-+MODULE_DEVICE_TABLE(i2c, max6651_i2c_id);
-+
-+static struct i2c_driver max6651_i2c_driver = {
-+    .driver = {
-+           .name = "max6651",
-+           .owner = THIS_MODULE,
-+    },
-+    .probe = max6651_i2c_probe,
-+    .remove = max6651_i2c_remove,
-+    .id_table = max6651_i2c_id,
-+};
-+
-+static int __init max6651_i2c_init(void)
-+{
-+    return i2c_add_driver(&max6651_i2c_driver);
-+}
-+/* init early so consumer devices can complete system boot */
-+subsys_initcall(max6651_i2c_init);
-+
-+static void __exit max6651_i2c_exit(void)
-+{
-+    i2c_del_driver(&max6651_i2c_driver);
-+}
-+module_exit(max6651_i2c_exit);
-+
-+MODULE_AUTHOR("Laszlo Papp <laszlo.papp@polatis.com>");
-+MODULE_DESCRIPTION("MAX6651 MFD");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/mfd/max6651-private.h b/include/linux/mfd/max6651-private.h
-new file mode 100644
-index 0000000..ae90261
---- /dev/null
-+++ b/include/linux/mfd/max6651-private.h
-@@ -0,0 +1,53 @@
-+/*
-+ * max6650.h - Driver for the Maxim 6650/6651
-+ *
-+ *  Copyright (C) 2013 Laszlo Papp <laszlo.papp@polatis.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ *
-+ * This driver is based on max8998.h
-+ *
-+ * MAX8997 has PMIC, MUIC, HAPTIC, RTC, FLASH, and Fuel Gauge devices.
-+ * Except Fuel Gauge, every device shares the same I2C bus and included in
-+ * this mfd driver. Although the fuel gauge is included in the chip, it is
-+ * excluded from the driver because a) it has a different I2C bus from
-+ * others and b) it can be enabled simply by using MAX17042 driver.
-+ */
-+
-+#ifndef __LINUX_MFD_MAX6651_PRIVATE_H
-+#define __LINUX_MFD_MAX6651_PRIVATE_H
-+
-+#include <linux/i2c.h>
-+#include <linux/export.h>
-+#include <linux/irqdomain.h>
-+
-+struct max6651_dev {
-+    struct device *dev;
-+    struct mutex iolock;
-+
-+    struct i2c_client *i2c;
-+
-+	int type;
-+};
-+
-+enum max6651_types {
-+	TYPE_MAX6650,
-+	TYPE_MAX6651,
-+};
-+
-+extern int max6651_read_reg(struct i2c_client *i2c, u8 reg, u8 *dest);
-+extern int max6651_write_reg(struct i2c_client *i2c, u8 reg, u8 value);
-+
-+#endif
+ 	/*
+ 	 * Hide the alarms that have not been enabled by the firmware
+ 	 */
+@@ -539,74 +543,72 @@ static const struct attribute_group max6651_attr_grp = {
+  * Real code
+  */
+ 
+-static int max6650_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id)
++static int max6650_probe(struct platform_device *pdev)
+ {
+ 	struct max6650_data *data;
+ 	int err;
+ 
+-	data = devm_kzalloc(&client->dev, sizeof(struct max6650_data),
++	data = devm_kzalloc(&pdev->dev, sizeof(struct max6650_data),
+ 			    GFP_KERNEL);
+ 	if (!data) {
+-		dev_err(&client->dev, "out of memory.\n");
++		dev_err(&pdev->dev, "out of memory.\n");
+ 		return -ENOMEM;
+ 	}
+ 
+-	i2c_set_clientdata(client, data);
++	platform_set_drvdata(pdev, data);
+ 	mutex_init(&data->update_lock);
+-	data->nr_fans = id->driver_data;
+ 
+ 	/*
+ 	 * Initialize the max6650 chip
+ 	 */
+-	err = max6650_init_client(client);
++	err = max6650_init_client(pdev);
+ 	if (err)
+ 		return err;
+ 
+-	err = sysfs_create_group(&client->dev.kobj, &max6650_attr_grp);
++	err = sysfs_create_group(&pdev->dev.kobj, &max6650_attr_grp);
+ 	if (err)
+ 		return err;
+ 	/* 3 additional fan inputs for the MAX6651 */
+ 	if (data->nr_fans == 4) {
+-		err = sysfs_create_group(&client->dev.kobj, &max6651_attr_grp);
++		err = sysfs_create_group(&pdev->dev.kobj, &max6651_attr_grp);
+ 		if (err)
+ 			goto err_remove;
+ 	}
+ 
+-	data->hwmon_dev = hwmon_device_register(&client->dev);
++	data->hwmon_dev = hwmon_device_register(&pdev->dev);
+ 	if (!IS_ERR(data->hwmon_dev))
+ 		return 0;
+ 
+ 	err = PTR_ERR(data->hwmon_dev);
+-	dev_err(&client->dev, "error registering hwmon device.\n");
++	dev_err(&pdev->dev, "error registering hwmon device.\n");
+ 	if (data->nr_fans == 4)
+-		sysfs_remove_group(&client->dev.kobj, &max6651_attr_grp);
++		sysfs_remove_group(&pdev->dev.kobj, &max6651_attr_grp);
+ err_remove:
+-	sysfs_remove_group(&client->dev.kobj, &max6650_attr_grp);
++	sysfs_remove_group(&pdev->dev.kobj, &max6650_attr_grp);
+ 	return err;
+ }
+ 
+-static int max6650_remove(struct i2c_client *client)
++static int max6650_remove(struct platform_device *pdev)
+ {
+-	struct max6650_data *data = i2c_get_clientdata(client);
++	struct max6650_data *data = platform_get_drvdata(pdev);
+ 
+ 	hwmon_device_unregister(data->hwmon_dev);
+ 	if (data->nr_fans == 4)
+-		sysfs_remove_group(&client->dev.kobj, &max6651_attr_grp);
+-	sysfs_remove_group(&client->dev.kobj, &max6650_attr_grp);
++		sysfs_remove_group(&pdev->dev.kobj, &max6651_attr_grp);
++	sysfs_remove_group(&pdev->dev.kobj, &max6650_attr_grp);
+ 	return 0;
+ }
+ 
+-static int max6650_init_client(struct i2c_client *client)
++static int max6650_inpdevent(struct platform_device *pdev)
+ {
+-	struct max6650_data *data = i2c_get_clientdata(client);
+-	int config;
++	struct max6650_data *data = dev_get_drvdata(pdev->dev.parent);
++	u8 config;
+ 	int err = -EIO;
+ 
+-	config = i2c_smbus_read_byte_data(client, MAX6650_REG_CONFIG);
++	err = max6651_read_reg(data->iodev->i2c, MAX6650_REG_CONFIG, &config);
+ 
+-	if (config < 0) {
+-		dev_err(&client->dev, "Error reading config, aborting.\n");
++	if (err < 0) {
++		dev_err(&pdev->dev, "Error reading config, aborting.\n");
+ 		return err;
+ 	}
+ 
+@@ -620,11 +622,11 @@ static int max6650_init_client(struct i2c_client *client)
+ 		config |= MAX6650_CFG_V12;
+ 		break;
+ 	default:
+-		dev_err(&client->dev, "illegal value for fan_voltage (%d)\n",
++		dev_err(&pdev->dev, "illegal value for fan_voltage (%d)\n",
+ 			fan_voltage);
+ 	}
+ 
+-	dev_info(&client->dev, "Fan voltage is set to %dV.\n",
++	dev_info(&pdev->dev, "Fan voltage is set to %dV.\n",
+ 		 (config & MAX6650_CFG_V12) ? 12 : 5);
+ 
+ 	switch (prescaler) {
+@@ -650,11 +652,11 @@ static int max6650_init_client(struct i2c_client *client)
+ 			 | MAX6650_CFG_PRESCALER_16;
+ 		break;
+ 	default:
+-		dev_err(&client->dev, "illegal value for prescaler (%d)\n",
++		dev_err(&pdev->dev, "illegal value for prescaler (%d)\n",
+ 			prescaler);
+ 	}
+ 
+-	dev_info(&client->dev, "Prescaler is set to %d.\n",
++	dev_info(&pdev->dev, "Prescaler is set to %d.\n",
+ 		 1 << (config & MAX6650_CFG_PRESCALER_MASK));
+ 
+ 	/*
+@@ -664,22 +666,24 @@ static int max6650_init_client(struct i2c_client *client)
+ 	 */
+ 
+ 	if ((config & MAX6650_CFG_MODE_MASK) == MAX6650_CFG_MODE_OFF) {
+-		dev_dbg(&client->dev, "Change mode to open loop, full off.\n");
++		dev_dbg(&pdev->dev, "Change mode to open loop, full off.\n");
+ 		config = (config & ~MAX6650_CFG_MODE_MASK)
+ 			 | MAX6650_CFG_MODE_OPEN_LOOP;
+-		if (i2c_smbus_write_byte_data(client, MAX6650_REG_DAC, 255)) {
+-			dev_err(&client->dev, "DAC write error, aborting.\n");
++		if (max6651_write_reg(data->iodev->i2c, MAX6650_REG_DAC, 255) <
++		    0) {
++			dev_err(&pdev->dev, "DAC write error, aborting.\n");
+ 			return err;
+ 		}
+ 	}
+ 
+-	if (i2c_smbus_write_byte_data(client, MAX6650_REG_CONFIG, config)) {
+-		dev_err(&client->dev, "Config write error, aborting.\n");
++	if (max6651_write_reg(data->iodev->i2c,
++		MAX6650_REG_CONFIG, config) < 0) {
++		dev_err(&pdev->dev, "Config write error, aborting.\n");
+ 		return err;
+ 	}
+ 
+ 	data->config = config;
+-	data->count = i2c_smbus_read_byte_data(client, MAX6650_REG_COUNT);
++	max6651_read_reg(data->iodev->i2c, MAX6650_REG_COUNT, &data->count);
+ 
+ 	return 0;
+ }
+@@ -694,31 +698,32 @@ static const u8 tach_reg[] = {
+ static struct max6650_data *max6650_update_device(struct device *dev)
+ {
+ 	int i;
+-	struct i2c_client *client = to_i2c_client(dev);
+-	struct max6650_data *data = i2c_get_clientdata(client);
++	struct platform_device *pdev = to_platform_device(dev);
++	struct max6650_data *data = platform_get_drvdata(pdev);
++	u8 alarm;
+ 
+ 	mutex_lock(&data->update_lock);
+ 
+ 	if (time_after(jiffies, data->last_updated + HZ) || !data->valid) {
+-		data->speed = i2c_smbus_read_byte_data(client,
+-						       MAX6650_REG_SPEED);
+-		data->config = i2c_smbus_read_byte_data(client,
+-							MAX6650_REG_CONFIG);
++		max6651_read_reg(data->iodev->i2c, MAX6650_REG_SPEED,
++				 &data->speed);
++		max6651_read_reg(data->iodev->i2c, MAX6650_REG_CONFIG,
++				 &data->config);
+ 		for (i = 0; i < data->nr_fans; i++) {
+-			data->tach[i] = i2c_smbus_read_byte_data(client,
+-								 tach_reg[i]);
++			max6651_read_reg(data->iodev->i2c, tach_reg[i],
++					 &data->tach[i]);
+ 		}
+-		data->count = i2c_smbus_read_byte_data(client,
+-							MAX6650_REG_COUNT);
+-		data->dac = i2c_smbus_read_byte_data(client, MAX6650_REG_DAC);
++		max6651_read_reg(data->iodev->i2c, MAX6650_REG_COUNT,
++				 &data->count);
++		max6651_read_reg(data->iodev->i2c, MAX6650_REG_DAC, &data->dac);
+ 
+ 		/*
+ 		 * Alarms are cleared on read in case the condition that
+ 		 * caused the alarm is removed. Keep the value latched here
+ 		 * for providing the register through different alarm files.
+ 		 */
+-		data->alarm |= i2c_smbus_read_byte_data(client,
+-							MAX6650_REG_ALARM);
++		max6651_read_reg(data->iodev->i2c, MAX6650_REG_ALARM, &alarm);
++		data->alarm |= alarm;
+ 
+ 		data->last_updated = jiffies;
+ 		data->valid = 1;
+@@ -729,8 +734,9 @@ static struct max6650_data *max6650_update_device(struct device *dev)
+ 	return data;
+ }
+ 
+-module_i2c_driver(max6650_driver);
++module_platform_driver(max6650_driver);
+ 
+ MODULE_AUTHOR("Hans J. Koch");
+ MODULE_DESCRIPTION("MAX6650 sensor driver");
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:max6650-hwmon");
+diff --git a/drivers/mfd/max6651.c b/drivers/mfd/max6651.c
+index c6b1716..d423b7a 100644
+--- a/drivers/mfd/max6651.c
++++ b/drivers/mfd/max6651.c
+@@ -24,7 +24,7 @@
+ 
+ static struct mfd_cell max6651_devs[] = {
+     { .name = "max6651-gpio", },
+-    { .name = "max6650", },
++    { .name = "max6650-hwmon", },
+ };
+ 
+ int max6651_read_reg(struct i2c_client *i2c, u8 reg, u8 *dest)
 -- 
 1.8.5.1
 
