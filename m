@@ -1,158 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757305Ab3LWMRT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 07:17:19 -0500
-Received: from mga09.intel.com ([134.134.136.24]:59746 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753416Ab3LWMRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 07:17:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,536,1384329600"; 
-   d="scan'208";a="456583597"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Joseph Nuzman <joseph.nuzman@intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH] x86/tlb_info: detect more tlb configuration
-Date: Mon, 23 Dec 2013 14:16:58 +0200
-Message-Id: <1387801018-14499-1-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.8.5.2
+	id S1757243Ab3LWM3d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 07:29:33 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:63126 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab3LWM3c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 07:29:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131222143427.GA12544@redhat.com>
+References: <CAJ8eaTzkKtwM2Xvw_GYRrefUVJg0uzaqFNPJcNc_ffSayQiDUA@mail.gmail.com>
+	<CA+55aFyVrrvDzUt0OU4d9YZM8C-N+ycSKEa3+-5nowUoZ=rb8w@mail.gmail.com>
+	<20131222143427.GA12544@redhat.com>
+Date: Mon, 23 Dec 2013 17:59:30 +0530
+Message-ID: <CAJ8eaTxq5tL1WT_2rsDg5nKwW4xxW_Md6ZTgk9f5DX75cN=pRg@mail.gmail.com>
+Subject: Re: [PATCH] secure unlock_task_sighand() call
+From: naveen yadav <yad.naveen@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Vaibhav Shinde <v.bhav.shinde@gmail.com>,
+        Ajeet Yadav <ajeet.yadav.77@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Software Developer’s Manual covers few more TLB configurations:
+Happy Christmas !!!
 
-61H Instruction TLB: 4 KByte pages, fully associative, 48 entries
-63H Data TLB: 1 GByte pages, 4-way set associative, 4 entries
-76H Instruction TLB: 2M/4M pages, fully associative, 8 entries
-B5H Instruction TLB: 4KByte pages, 8-way set associative, 64 entries
-B6H Instruction TLB: 4KByte pages, 8-way set associative, 128 entries
-C1H Shared 2nd-Level TLB: 4 KByte/2MByte pages, 8-way associative, 1024 entries
-C2H DTLB DTLB: 2 MByte/$MByte pages, 4-way associative, 16 entries
 
-Let's detect them as well.
+Thanks Oleg and Linus for your reply.
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- arch/x86/include/asm/processor.h |  1 +
- arch/x86/kernel/cpu/common.c     |  7 ++++---
- arch/x86/kernel/cpu/intel.c      | 26 ++++++++++++++++++++++++++
- 3 files changed, 31 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 7b034a4057f9..1dd6260ed940 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -72,6 +72,7 @@ extern u16 __read_mostly tlb_lli_4m[NR_INFO];
- extern u16 __read_mostly tlb_lld_4k[NR_INFO];
- extern u16 __read_mostly tlb_lld_2m[NR_INFO];
- extern u16 __read_mostly tlb_lld_4m[NR_INFO];
-+extern u16 __read_mostly tlb_lld_1g[NR_INFO];
- extern s8  __read_mostly tlb_flushall_shift;
- 
- /*
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 6abc172b8258..24b6fd10625a 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -472,6 +472,7 @@ u16 __read_mostly tlb_lli_4m[NR_INFO];
- u16 __read_mostly tlb_lld_4k[NR_INFO];
- u16 __read_mostly tlb_lld_2m[NR_INFO];
- u16 __read_mostly tlb_lld_4m[NR_INFO];
-+u16 __read_mostly tlb_lld_1g[NR_INFO];
- 
- /*
-  * tlb_flushall_shift shows the balance point in replacing cr3 write
-@@ -486,13 +487,13 @@ void cpu_detect_tlb(struct cpuinfo_x86 *c)
- 	if (this_cpu->c_detect_tlb)
- 		this_cpu->c_detect_tlb(c);
- 
--	printk(KERN_INFO "Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n" \
--		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d\n"	     \
-+	printk(KERN_INFO "Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n"
-+		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d, 1GB %d\n"
- 		"tlb_flushall_shift: %d\n",
- 		tlb_lli_4k[ENTRIES], tlb_lli_2m[ENTRIES],
- 		tlb_lli_4m[ENTRIES], tlb_lld_4k[ENTRIES],
- 		tlb_lld_2m[ENTRIES], tlb_lld_4m[ENTRIES],
--		tlb_flushall_shift);
-+		tlb_lld_1g[ENTRIES], tlb_flushall_shift);
- }
- 
- void detect_ht(struct cpuinfo_x86 *c)
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index dc1ec0dff939..5c68eeb11435 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -505,6 +505,7 @@ static unsigned int intel_size_cache(struct cpuinfo_x86 *c, unsigned int size)
- #define TLB_DATA0_2M_4M	0x23
- 
- #define STLB_4K		0x41
-+#define STLB_4K_2M	0x42
- 
- static const struct _tlb_table intel_tlb_table[] = {
- 	{ 0x01, TLB_INST_4K,		32,	" TLB_INST 4 KByte pages, 4-way set associative" },
-@@ -525,13 +526,20 @@ static const struct _tlb_table intel_tlb_table[] = {
- 	{ 0x5b, TLB_DATA_4K_4M,		64,	" TLB_DATA 4 KByte and 4 MByte pages" },
- 	{ 0x5c, TLB_DATA_4K_4M,		128,	" TLB_DATA 4 KByte and 4 MByte pages" },
- 	{ 0x5d, TLB_DATA_4K_4M,		256,	" TLB_DATA 4 KByte and 4 MByte pages" },
-+	{ 0x61, TLB_INST_4K,		48,	" TLB_INST 4 KByte pages, full associative" },
-+	{ 0x63, TLB_DATA_1G,		4,	" TLB_DATA 1 GByte pages, 4-way set associative" },
-+	{ 0x76, TLB_INST_2M_4M,		8,	" TLB_INST 2-MByte or 4-MByte pages, fully associative" },
- 	{ 0xb0, TLB_INST_4K,		128,	" TLB_INST 4 KByte pages, 4-way set associative" },
- 	{ 0xb1, TLB_INST_2M_4M,		4,	" TLB_INST 2M pages, 4-way, 8 entries or 4M pages, 4-way entries" },
- 	{ 0xb2, TLB_INST_4K,		64,	" TLB_INST 4KByte pages, 4-way set associative" },
- 	{ 0xb3, TLB_DATA_4K,		128,	" TLB_DATA 4 KByte pages, 4-way set associative" },
- 	{ 0xb4, TLB_DATA_4K,		256,	" TLB_DATA 4 KByte pages, 4-way associative" },
-+	{ 0xb5, TLB_INST_4K,		64,	" TLB_INST 4 KByte pages, 8-way set ssociative" },
-+	{ 0xb6, TLB_INST_4K,		128,	" TLB_INST 4 KByte pages, 8-way set ssociative" },
- 	{ 0xba, TLB_DATA_4K,		64,	" TLB_DATA 4 KByte pages, 4-way associative" },
- 	{ 0xc0, TLB_DATA_4K_4M,		8,	" TLB_DATA 4 KByte and 4 MByte pages, 4-way associative" },
-+	{ 0xc1, STLB_4K_2M,		1024,	" STLB 4 KByte and 2 MByte pages, 8-way associative" },
-+	{ 0xc2, TLB_DATA_2M_4M,		16,	" DTLB 2 MByte/4MByte pages, 4-way associative" },
- 	{ 0xca, STLB_4K,		512,	" STLB 4 KByte pages, 4-way associative" },
- 	{ 0x00, 0, 0 }
- };
-@@ -557,6 +565,20 @@ static void intel_tlb_lookup(const unsigned char desc)
- 		if (tlb_lld_4k[ENTRIES] < intel_tlb_table[k].entries)
- 			tlb_lld_4k[ENTRIES] = intel_tlb_table[k].entries;
- 		break;
-+	case STLB_4K_2M:
-+		if (tlb_lli_4k[ENTRIES] < intel_tlb_table[k].entries)
-+			tlb_lli_4k[ENTRIES] = intel_tlb_table[k].entries;
-+		if (tlb_lld_4k[ENTRIES] < intel_tlb_table[k].entries)
-+			tlb_lld_4k[ENTRIES] = intel_tlb_table[k].entries;
-+		if (tlb_lli_2m[ENTRIES] < intel_tlb_table[k].entries)
-+			tlb_lli_2m[ENTRIES] = intel_tlb_table[k].entries;
-+		if (tlb_lld_2m[ENTRIES] < intel_tlb_table[k].entries)
-+			tlb_lld_2m[ENTRIES] = intel_tlb_table[k].entries;
-+		if (tlb_lli_4m[ENTRIES] < intel_tlb_table[k].entries)
-+			tlb_lli_4m[ENTRIES] = intel_tlb_table[k].entries;
-+		if (tlb_lld_4m[ENTRIES] < intel_tlb_table[k].entries)
-+			tlb_lld_4m[ENTRIES] = intel_tlb_table[k].entries;
-+		break;
- 	case TLB_INST_ALL:
- 		if (tlb_lli_4k[ENTRIES] < intel_tlb_table[k].entries)
- 			tlb_lli_4k[ENTRIES] = intel_tlb_table[k].entries;
-@@ -602,6 +624,10 @@ static void intel_tlb_lookup(const unsigned char desc)
- 		if (tlb_lld_4m[ENTRIES] < intel_tlb_table[k].entries)
- 			tlb_lld_4m[ENTRIES] = intel_tlb_table[k].entries;
- 		break;
-+	case TLB_DATA_1G:
-+		if (tlb_lld_1g[ENTRIES] < intel_tlb_table[k].entries)
-+			tlb_lld_1g[ENTRIES] = intel_tlb_table[k].entries;
-+		break;
- 	}
- }
- 
--- 
-1.8.5.2
+We are facing OOPS during core dump on kernel 3.8.x on ARM target.
 
+So we were doing core review and found this. We do not know whether
+its big issue but thought to share this considering the problem
+
+
+ Also I think in zap_process() there is no need to send SIGKILL to
+ZOMBIE or DEAD process.
+
+--- a/fs/coredump.c
++++ b/fs/coredump.c
+@@ -271,17 +271,19 @@ static int zap_process(struct task_struct
+*start, int exit_code)
+
+-               if (t != current && t->mm) {
++               if (t->exit_state) {
++                       nr++;
++               } else if (t != current && t->mm) {
+                        sigaddset(&t->pending.signal, SIGKILL);
+                        signal_wake_up(t, 1);
+
+Regards
+Naveen
+
+
+
+On Sun, Dec 22, 2013 at 8:04 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> Naveen,
+>
+> sorry for the terse and neglectful reply yesterday.
+>
+> Actually, when I re-read the Linus's email, I think he already explained
+> everything, so let me repeat:
+>
+> On 12/21, Linus Torvalds wrote:
+>>
+>> Did you actually *see* the problem, or was this just from looking at the code?
+>
+> Yes. Because this code assumes that lock_task_sighand() must not fail.
+> If it fails, we have a problem which should be fixed.
+>
+>> We have coredump serialization in exit_mm() that I think *should* make
+>> this all ok - if we still see p->mm matching our mm, I don't think it
+>> should be able to get to __exit_signal() and make the sighand go away,
+>> so the lock_task_sighand() shouldn't ever fail.
+>
+> Yes, exactly.
+>
+> Note that if we ignore exec, we do not need lock_task_sighand() at all,
+> we could simply do spin_lock_irq(p->sighand->siglock).
+>
+> The caller holds mm->mmap_sem for writing, if we see p->mm == mm it
+> simply can not pass exit_mm() which does down_read(&mm->mmap_sem), so
+> this task can not exit.
+>
+> The problem is, this task can change its ->sighand in de_thread(), that
+> is why we need lock_task_sighand(). But if it does exec, it can't pass
+> exec_mmap() by the same reason, we hold mmap_sem.
+>
+>> >                         if (p->mm) {
+>> >                                 if (unlikely(p->mm == mm)) {
+>> > -                                       lock_task_sighand(p, &flags);
+>> > -                                       nr += zap_process(p, exit_code);
+>> > -                                       unlock_task_sighand(p, &flags);
+>> > +                                       if (lock_task_sighand(p, &flags) {
+>> > +                                               nr += zap_process(p, exit_code);
+>
+> But we can't silently skip a process with the same ->mm. We can't even
+> skip the execing thread task if it is going to change its ->mm, even if
+> it is single-threaded. Note that exec_mmap() will notice mm->core_state
+> and fail. So every task with the same mm should be accounted because it
+> will play with core_state->nr_threads in exit_mm(). And it should be
+> killed because otherwise coredump_wait() can sleep "forever".
+>
+> So this is not the right change in any case. If lock_task_sighand() can
+> fail we should fix something else.
+>
+> Oleg.
+>
