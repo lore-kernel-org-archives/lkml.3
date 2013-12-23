@@ -1,116 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756922Ab3LWEvK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Dec 2013 23:51:10 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:56200 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756850Ab3LWEvI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Dec 2013 23:51:08 -0500
-MIME-Version: 1.0
-In-Reply-To: <52B40C00.2060401@hitachi.com>
-References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
-	<20131219090409.14309.25677.stgit@kbuild-fedora.novalocal>
-	<CAGdX0WFKYHqXrVQ6LBw0YgH_H6cP=LZVCBe1iOvEXsHQPD8Zmg@mail.gmail.com>
-	<52B3AD7D.2020104@hitachi.com>
-	<CAGdX0WENxTPhFDtcEW6LFhk1SNZc6mEK+JsCDOJmfK8_PS1rxg@mail.gmail.com>
-	<52B3CABE.1080903@hitachi.com>
-	<CAGdX0WEev84sOyu-uzkDOmQFi_=mza7cPzyC0VkRZe0fD_1+jQ@mail.gmail.com>
-	<52B40C00.2060401@hitachi.com>
-Date: Mon, 23 Dec 2013 12:51:07 +0800
-Message-ID: <CAGdX0WECaJBSX29-+fC=0XLJfAh0JvFyLTW2V8yM616L45iCQQ@mail.gmail.com>
-Subject: Re: Re: [PATCH -tip v6 06/22] [BUGFIX] x86: Prohibit probing on memcpy/memset
-From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-arch@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756960Ab3LWEyY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Dec 2013 23:54:24 -0500
+Received: from ozlabs.org ([203.10.76.45]:51806 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756649Ab3LWEyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Dec 2013 23:54:23 -0500
+Date: Mon, 23 Dec 2013 15:54:17 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bruno Randolf <br1@einfach.org>
+Subject: linux-next: build failure after merge of the final tree (gpio tree
+ related)
+Message-Id: <20131223155417.99a66c575143e25d36232a77@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__23_Dec_2013_15_54_17_+1100_.OMQ90Lhb40WQ59d"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 20, 2013 at 5:21 PM, Masami Hiramatsu
-<masami.hiramatsu.pt@hitachi.com> wrote:
-> (2013/12/20 17:31), Jovi Zhangwei wrote:
->> On Fri, Dec 20, 2013 at 12:42 PM, Masami Hiramatsu
->> <masami.hiramatsu.pt@hitachi.com> wrote:
->>> (2013/12/20 12:07), Jovi Zhangwei wrote:
->>>> On Fri, Dec 20, 2013 at 10:37 AM, Masami Hiramatsu
->>>> <masami.hiramatsu.pt@hitachi.com> wrote:
->>>>> Hi Jovi,
->>>>>
->>>>> (2013/12/19 18:37), Jovi Zhangwei wrote:
->>>>>> Hi Masami,
->>>>>>
->>>>>> On Thu, Dec 19, 2013 at 5:04 PM, Masami Hiramatsu
->>>>>> <masami.hiramatsu.pt@hitachi.com> wrote:
->>>>>>> memcpy/memset functions are fundamental functions and
->>>>>>> those are involved in kprobe's exception handling.
->>>>>>> Prohibit probing on them to avoid kernel crash.
->>>>>>>
->>>>>> Would you please let me know the LKML link of that bugfix, I cannot
->>>>>> find it in my LKML fold.
->>>>>
->>>>> Yeah, that was found in my testing environment.
->>>>>
->>>>>> No objection on this patch. :) just want to know more, It seems there
->>>>>> have no problem to probe memcpy in my box, maybe I didn't hit the
->>>>>> crash code path.
->>>>>
->>>>> Ah, I see. Originally the problem happened when I put a probe on
->>>>> __memcpy. And it looks the instances of memcpy and __memcpy are
->>>>> same on x86-64. Thus I decided to blacklist both. (memset/__memset too)
->>>>> Have you ever tried to probe __memcpy on your box?
->>>>>
->>>> Hmm, still no crash, __memcpy and __memset are both tested.
->>>>
->>>> I use below kprobe related config:
->>>>
->>>> CONFIG_KPROBES=y
->>>> CONFIG_JUMP_LABEL=y
->>>> CONFIG_OPTPROBES=y
->>>> CONFIG_KPROBES_ON_FTRACE=y
->>>
->>> Hmm, I've added some debugging options.
->>>
->>> CONFIG_SLUB_DEBUG=y
->>> CONFIG_X86_DEBUGCTLMSR=y
->>> CONFIG_PNP_DEBUG_MESSAGES=y
->>> CONFIG_DEBUG_INFO=y
->>> CONFIG_DEBUG_FS=y
->>> CONFIG_DEBUG_KERNEL=y
->>> CONFIG_DEBUG_STACK_USAGE=y
->>> CONFIG_DEBUG_MEMORY_INIT=y
->>> CONFIG_DEBUG_STACKOVERFLOW=y
->>> CONFIG_DEBUG_SPINLOCK=y
->>> CONFIG_DEBUG_MUTEXES=y
->>> CONFIG_DEBUG_LOCK_ALLOC=y
->>> CONFIG_DEBUG_LOCKDEP=y
->>> CONFIG_DEBUG_BUGVERBOSE=y
->>> CONFIG_DEBUG_RODATA=y
->>> CONFIG_DEBUG_BOOT_PARAMS=y
->>>
->>> I guess some of them might cause it.
->>>
->> I recompiled the kernel with those config enabled, unfortunately still no crash,
->> I tested on 3.13.0-rc4, a fedora kvm box.
->
-> Hmm, it's very odd. I'm running 3.13.0-rc4 x86-64 on the fedora
-> kvm box too. here is the full of my kconfig.
->
-That configuration is still working for me, no crash for memcpy kprobe test.
+--Signature=_Mon__23_Dec_2013_15_54_17_+1100_.OMQ90Lhb40WQ59d
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I also posted my kernel configration at:
-    https://gist.github.com/ktap/8091293
+Hi all,
 
-I compared two configs, no clue found yet.
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-Thanks,
+drivers/gpio/gpio-sch311x.c: In function 'sch311x_sio_enter':
+drivers/gpio/gpio-sch311x.c:115:2: error: implicit declaration of function =
+'outb' [-Werror=3Dimplicit-function-declaration]
+  outb(SIO_CONFIG_KEY_ENTER, sio_config_port);
+  ^
+drivers/gpio/gpio-sch311x.c: In function 'sch311x_sio_inb':
+drivers/gpio/gpio-sch311x.c:128:2: error: implicit declaration of function =
+'inb' [-Werror=3Dimplicit-function-declaration]
+  return inb(sio_config_port + 1);
+  ^
 
-Jovi
+Caused by commit 12262bef8f46 ("gpio: add GPIO support for SMSC SCH311x")
+from the gpio tree.
+
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__23_Dec_2013_15_54_17_+1100_.OMQ90Lhb40WQ59d
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSt8H+AAoJEMDTa8Ir7ZwVBb0QAIwUX2ZCqn+fM6VXLVoaaOZS
+6Cyd28eZO62c2e8ATWkjY7g9IVIa6K/8wGks7CSnSGZB+Lhb2SWkFAQhWFh/PlLp
+ROwMEj5tV4IQs4hKUYvVv9PpkrmxLvRJ8wJfraa7WcYQlCnwLONF7VlvBztSgfUl
+H5/apvaiVDoqnPiSV7i8z5iaI/moPwdO/Fp/9OWy6Wee32Eou8MiLRy7Is4efdJe
+V2Sp8d1NbLgL58yk9jd+JYu3OlKAmMHbeK9JLDny9UnnzmiHy0XoLJBq1T/SqVWW
+72/wgNA1264HWBBHI++RbKH1bUuhv7SN7hKqzjhPljSxxttESADRwPG7n8Baj7Ur
+OpVT6Qe38KbaVbmJqOlNI4Q5lqCZ+i6ny22lJM37IHdzEYINLl3l9tfnyiuQWWQY
+hwObyd2y6MkRIwfZ2TTjT0WpYK9Y2dnx4iNrxa6yuKHG5vuYiqm/WjF6mvCvi3Bz
+8aEbZiI+WfoGh7s6UMIyig6E/RmdSS4dHADWPKREjvmoV54IzrH3bAjFQkSbh7Xq
+fXP2EVJyBEnZJUFnXSJ1q+l89Epk3BCGbV1RdkbzTjSoauoK03evvc5uib+qOlgk
+KakP/p9qOsO03r4OFqj8Op8rkiU3vKoDXJ/eqBXxzMDmWPyB5JHnqJCLS6Nga17j
+ryaJtTfxdQ50BXEqNO0D
+=A5Mv
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__23_Dec_2013_15_54_17_+1100_.OMQ90Lhb40WQ59d--
