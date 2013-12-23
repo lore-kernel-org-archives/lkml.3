@@ -1,120 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756904Ab3LWC3p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Dec 2013 21:29:45 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:32800 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756738Ab3LWC3n convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Dec 2013 21:29:43 -0500
-X-AuditID: cbfee61a-b7fb26d00000724f-1e-52b7a0168d2f
-From: Chao Yu <chao2.yu@samsung.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-References: <000001cefe33$b62a0f40$227e2dc0$@samsung.com>
- <1387761931.2101.289.camel@kjgkr>
-In-reply-to: <1387761931.2101.289.camel@kjgkr>
-Subject: RE: [f2fs-dev] [PATCH 1/3] f2fs: check filename length in
- recover_dentry
-Date: Mon, 23 Dec 2013 10:28:52 +0800
-Message-id: <002101ceff86$d50072c0$7f015840$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQKr2GgGd4VXAJjpeSh/aqvung1/zAJV5AFhmJSgtWA=
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t9jAV2xBduDDBYfFLG4vusvk8WlRe4W
-	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK+PhEs6CZ8IVS+7f
-	ZW1gPMjfxcjJISFgIrF/33EmCFtM4sK99WxdjFwcQgKLGCW2LrrJDuH8YJRo37MRrIpNQEVi
-	ecd/MFtEQFpi1qd5LCA2s0CmxJzXk1lBbCGBWIkb77vA4pwCehLT/88BqxcWCJb42dPJBmKz
-	CKhKnL5zkhnE5hWwlDi95y8bhC0o8WPyPaBeDqCZ6hJTpuRCjNeWePLuAivEoQoSO86+ZoQ4
-	wUri8+I9rBA14hIbj9ximcAoNAvJpFkIk2YhmTQLSccCRpZVjKKpBckFxUnpuYZ6xYm5xaV5
-	6XrJ+bmbGMFB/0xqB+PKBotDjAIcjEo8vBwt24OEWBPLiitzDzFKcDArifBG/9gWJMSbklhZ
-	lVqUH19UmpNafIhRmoNFSZz3QKt1oJBAemJJanZqakFqEUyWiYNTqoGR78ARxUVLnrGoR70t
-	6bef/8BPMbAiUW1X7eJE39S/Pi5Nag9NTOsum5lcKs1/dfW5YFHNhlh7b1mZNGW7aY2L/jT9
-	d584W9cklHHWnEy3/8bfVP+6T/0jnLG5ZvHtXJ+M3bPVBJ9c7j79es2FHZGfgtu874ef1rrC
-	PSO1R0xAtf2r+TLR4+JKLMUZiYZazEXFiQBqOuLadgIAAA==
+	id S1756889Ab3LWCdr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Dec 2013 21:33:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17683 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756665Ab3LWCdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Dec 2013 21:33:45 -0500
+Date: Mon, 23 Dec 2013 10:32:59 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        bp@alien8.de, greg@kroah.com, toshi.kani@hp.com,
+        akpm@linux-foundation.org, mingo@kernel.org, msalter@redhat.com,
+        leif.lindholm@linaro.org
+Subject: Re: [PATCH v7 00/12] kexec kernel efi runtime support
+Message-ID: <20131223023259.GC3760@dhcp-16-126.nay.redhat.com>
+References: <1387533742-18018-1-git-send-email-dyoung@redhat.com>
+ <20131221173515.GE29501@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131221173515.GE29501@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kim,
-
-> -----Original Message-----
-> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
-> Sent: Monday, December 23, 2013 9:26 AM
-> To: Chao Yu
-> Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net
-> Subject: Re: [f2fs-dev] [PATCH 1/3] f2fs: check filename length in recover_dentry
+On 12/21/13 at 05:35pm, Matt Fleming wrote:
+> On Fri, 20 Dec, at 06:02:10PM, Dave Young wrote:
+> > Here is the V7 patchset for supporting kexec kernel efi runtime.
+> > Per pervious discussion I pass the 1st kernel efi runtime mapping
+> > via setup_data to 2nd kernel. Besides of the runtime mapping
+> > info I also pass the fw_vendor, runtime, config table, smbios
+> > physical address in setup_data. EFI spec mentioned fw_vendor,
+> > runtime, config table addresses will be converted to virt address
+> > after entering virtual mode, but we will use it as physical address
+> > in efi_init. For smbios EFI spec did not mention about the address
+> > updating, but during my test on a HP workstation, the bios will
+> > convert it to Virt addr, thus pass it in setup_data as well.
 > 
-> 2013-12-21 (토), 18:01 +0800, Chao Yu:
-> > In current flow, we will get Null return value of f2fs_find_entry in
-> > recover_dentry when name.len is bigger than F2FS_NAME_LEN, and then we
-> > still add this inode into its dir entry.
-> > To avoid this situation, we must check filename length before we use it.
-> >
-> > Another point is that we could remove the code of checking filename length
-> > In f2fs_find_entry, because f2fs_lookup will be called previously to ensure of
-> > validity of filename length.
-> >
-> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > ---
-> >  fs/f2fs/dir.c      |    3 ---
-> >  fs/f2fs/recovery.c |    5 +++++
-> >  2 files changed, 5 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
-> > index 0cc26ba..3f3b661 100644
-> > --- a/fs/f2fs/dir.c
-> > +++ b/fs/f2fs/dir.c
-> > @@ -190,9 +190,6 @@ struct f2fs_dir_entry *f2fs_find_entry(struct inode *dir,
-> >  	unsigned int max_depth;
-> >  	unsigned int level;
-> >
-> > -	if (unlikely(namelen > F2FS_NAME_LEN))
-> > -		return NULL;
-> > -
-> >  	if (npages == 0)
-> >  		return NULL;
-> >
-> > diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-> > index a3f4542..fdd175b 100644
-> > --- a/fs/f2fs/recovery.c
-> > +++ b/fs/f2fs/recovery.c
-> > @@ -62,6 +62,11 @@ static int recover_dentry(struct page *ipage, struct inode *inode)
-> >
-> >  	name.len = le32_to_cpu(raw_inode->i_namelen);
-> >  	name.name = raw_inode->i_name;
-> > +
-> > +	if (unlikely(name.len > F2FS_NAME_LEN)) {
-> > +		err = -ENAMETOOLONG;
-> > +		goto out;
-> > +	}
+> OK Dave, I've pulled patches 3-12 into the 'kexec' branch at,
 > 
-> Have you seen this before?
-
-Not yet.
-
-> This is a trivial bug case, so, if you have got this bug, we should fix
-> the bug first instead of adding any workaround patch.
-
-What I worry about is that not only f2fs bug lead to this trivial problem,
-but also other program with operation in raw disk could do this.
-
-> Let's add WARN_ON() at least.
-
-Alright.
-Thanks.
-
-> Thanks,
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git
 > 
-> >  retry:
-> >  	de = f2fs_find_entry(dir, &name, &page);
-> >  	if (de && inode->i_ino == le32_to_cpu(de->ino))
+> I plan on sending this branch to the tip folks this week for further
+> testing.
 > 
-> --
-> Jaegeuk Kim
-> Samsung
+> Please have a look and make sure I haven't messed anything up when
+> dropping the first two patches (though they were very small and trival).
 
+Matt, I have reviewed them, it looks good to me.
+Thanks for removing the global variable in your last one.
+
+Thanks
+Dave
