@@ -1,65 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756802Ab3LWDDm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Dec 2013 22:03:42 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:53012 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756497Ab3LWDDl (ORCPT
+	id S1756821Ab3LWDNZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Dec 2013 22:13:25 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:64424 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756497Ab3LWDNX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Dec 2013 22:03:41 -0500
-X-AuditID: 9c930197-b7c4aae000003d84-75-52b7a80b7004
-Subject: Re : Re: Re: Re : Re: [PATCH] Squashfs: add asynchronous read support
-References: <1387171826-20110-1-git-send-email-chanho.min@lge.com>
- <OF0A0B2022.F34682B9-ON49257C45.0018AF5F-49257C45.0018AF60@lge.com>
- <OFA5BC9264.067973F3-ON49257C48.000B85B4-49257C48.000B85B4@lge.com>
-In-Reply-To: <OFA5BC9264.067973F3-ON49257C48.000B85B4-49257C48.000B85B4@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
-MIME-Version: 1.0
-Reply-To: "Chanho Min" <chanho.min@lge.com>
-X-Priority: 3 (Normal)
-Auto-Submitted: auto-generated
-From: "Chanho Min" <chanho.min@lge.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Phillip Lougher <phillip@squashfs.org.uk>, linux-kernel@vger.kernel.org,
-        =?EUC-KR?B?wNPIv8HY?= <hyojun.im@lge.com>,
-        =?EUC-KR?B?wMywx8ij?= <gunho.lee@lge.com>
-Message-ID: <OF207E4497.72720BDC-ON49257C4A.0010D055-49257C4A.0010D055@lge.com>
-Date: Mon, 23 Dec 2013 12:03:39 +0900
-X-MIMETrack: Serialize by Router on LGEKRHQMS17A/LGE/LG Group(Release 8.5.3FP3HF583 | August
- 9, 2013) at 2013/12/23 12:03:39
-Content-type: text/plain; charset=US-ASCII
+	Sun, 22 Dec 2013 22:13:23 -0500
+X-AuditID: cbfee61b-b7f456d000006dfd-f3-52b7aa52b66e
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'???'" <jaegeuk.kim@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Subject: [f2fs-dev] [PATCH 1/3 V2] f2fs: check filename length in recover_dentry
+Date: Mon, 23 Dec 2013 11:12:21 +0800
+Message-id: <002201ceff8c$efbd2da0$cf3788e0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac7/ixxdhhgR9BhkScWIWCa+1Y0yoQ==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHLMWRmVeSWpSXmKPExsVy+t9jAd2gVduDDH6857W4vusvk8WlRe4W
+	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK2PW7uOsBTN4Kjae
+	mcHSwPiKs4uRk0NCwERi8t3DTBC2mMSFe+vZuhi5OIQEFjFKPNp+EMr5wSjRMWUOK0gVm4CK
+	xPKO/2AdIgLKEqs62tlAbGaBTIk5ryeD1QgLBEj8X/8QLM4ioCpxb91SFhCbV8BSYu2ez6wQ
+	tqDEj8n3WCB6tSTW7zzOBGHLS2xe85YZ4iIFiR1nXzNC7NKTmNw2iRWiRlxi45FbLBMYBWYh
+	GTULyahZSEbNQtKygJFlFaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZwKD+T3sG4qsHiEKMA
+	B6MSDy9Hy/YgIdbEsuLK3EOMEhzMSiK80T+2BQnxpiRWVqUW5ccXleakFh9ilOZgURLnPdhq
+	HSgkkJ5YkpqdmlqQWgSTZeLglGpgZC6xOlV+Rub2gVqWoNaem17Pgsrdsvb/eTjV/Fu8FXPO
+	mo7WXc3isgxBFc8+TfAtP3fJtvfYnOyIOn4n671nAhxE7i5WfFn9POB6mGPKJg6z4+fmmJqF
+	zHXo2VSmcaE6Zs60Iyd3bvo4o1TltCZD2abCUmtR1scl/A/7P+7OdDvsOedTuJG/EktxRqKh
+	FnNRcSIAeZ+7tmECAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In current flow, we will get Null return value of f2fs_find_entry in
+recover_dentry when name.len is bigger than F2FS_NAME_LEN, and then we
+still add this inode into its dir entry.
+To avoid this situation, we must check filename length before we use it.
 
+Another point is that we could remove the code of checking filename length
+In f2fs_find_entry, because f2fs_lookup will be called previously to ensure of
+validity of filename length.
 
-> read_pages
->   for(page_idx ...) {
->     if (!add_to_page_cache_lru)) { <-- 1)
->       mapping->a_ops->readpage(filp, page)
->         squashfs_readpage
->           for (i ...) {   2)  Here, 31 pages are inserted into page cache
->             grab_cahe_page_nowait <------/
->               add_to_page_cache_lru
->           }
->     }
->     /*
->      * 1) will be failed with EEXIST by 2) so every pages other than first page
->      * in list would be freed
->      */
->     page_cache_release(page)
->   }
->
-> If you see ReadAhead works, it is just by luck as I told you.
-> Please simulate it with 64K dd.
-You right, This luck happened frequently with 128k dd or my test.
+V2:
+ o add WARN_ON() as Jaegeuk Kim suggested.
 
-> I understand it but your patch doesn't make it.
->
-I think my patch can make it if readahead works normally or luckily.
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/dir.c      |    3 ---
+ fs/f2fs/recovery.c |    6 ++++++
+ 2 files changed, 6 insertions(+), 3 deletions(-)
 
-Thanks a lot!
-Chanho,
+diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
+index 07ad850..f0b4630 100644
+--- a/fs/f2fs/dir.c
++++ b/fs/f2fs/dir.c
+@@ -190,9 +190,6 @@ struct f2fs_dir_entry *f2fs_find_entry(struct inode *dir,
+ 	unsigned int max_depth;
+ 	unsigned int level;
+ 
+-	if (unlikely(namelen > F2FS_NAME_LEN))
+-		return NULL;
+-
+ 	if (npages == 0)
+ 		return NULL;
+ 
+diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
+index a3f4542..4d411a2 100644
+--- a/fs/f2fs/recovery.c
++++ b/fs/f2fs/recovery.c
+@@ -62,6 +62,12 @@ static int recover_dentry(struct page *ipage, struct inode *inode)
+ 
+ 	name.len = le32_to_cpu(raw_inode->i_namelen);
+ 	name.name = raw_inode->i_name;
++
++	if (unlikely(name.len > F2FS_NAME_LEN)) {
++		WARN_ON(1);
++		err = -ENAMETOOLONG;
++		goto out;
++	}
+ retry:
+ 	de = f2fs_find_entry(dir, &name, &page);
+ 	if (de && inode->i_ino == le32_to_cpu(de->ino))
+-- 
+1.7.9.5
 
