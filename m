@@ -1,134 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757643Ab3LWTCi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 14:02:38 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:49903 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067Ab3LWTCe (ORCPT
+	id S1757738Ab3LWTDP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 14:03:15 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:56413 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752804Ab3LWTDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 14:02:34 -0500
-Message-ID: <1387825421.5567.169.camel@haakon3.risingtidesystems.com>
-Subject: scsi-mq WIP updated to v3.13-rc3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        target-devel <target-devel@vger.kernel.org>
-Cc: Christoph Hellwig <hch@lst.de>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Hannes Reinecke <hare@suse.de>
-Date: Mon, 23 Dec 2013 11:03:41 -0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Mon, 23 Dec 2013 14:03:13 -0500
+Message-ID: <52B888C2.8040303@ti.com>
+Date: Mon, 23 Dec 2013 13:02:26 -0600
+From: "Anna, Suman" <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Florian Vaussard <florian.vaussard@epfl.ch>,
+        Joerg Roedel <joro@8bytes.org>, Tony Lindgren <tony@atomide.com>,
+        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/7] iommu/omap: Do bus_set_iommu() only if probe() succeeds
+References: <1387284818-28739-1-git-send-email-florian.vaussard@epfl.ch> <1387284818-28739-2-git-send-email-florian.vaussard@epfl.ch>
+In-Reply-To: <1387284818-28739-2-git-send-email-florian.vaussard@epfl.ch>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Folks,
+Hi Florian,
 
-Just a heads up that scsi-mq alpha code has been updated to v3.13-rc3
-using the freshly upstreamed blk-mq logic.  The working branch is
-available here:
+On 12/17/2013 06:53 AM, Florian Vaussard wrote:
+> Currently, bus_set_iommu() is done in omap_iommu_init(). However,
+> omap_iommu_probe() can fail in a number of ways, leaving the platform
+> bus with a dangling reference to a non-initialized iommu. Perform
+> bus_set_iommu() only if omap_iommu_probe() succeed.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git scsi-mq
+Can you clarify a bit more on what kind of issues you were seeing 
+specifically? In general, there can be multiple instances of the iommu, 
+so setting it in probe may not be fixing whatever issue you were seeing. 
+The current OMAP3 code has only the ISP MMU enabled, but there is also 
+another one for the IVA MMU (currently not configured by default). 
+Moving the bus_set_iommu to probe makes sense if only one iommu is 
+present, so this patch may not be needed at all.
 
-The changelog since the last v3.12-rc3 rev includes:
+Also, the main change in this patch is moving the bus_set_iommu from
+omap_iommu_init to omap_iommu_probe, so you should probably leave out 
+moving the function. The omap_iommu_probe function would anyway need 
+conversion to using devm_ functions.
 
-   - Use Scsi_Host to check for can_queue + cmd_per_lun
-   - Add explicit struct scsi_cmnd memset in scsi_mq_alloc_queue()
-   - Add support for cmd->prot_sdb pre-allocation
-   - Add support for cmd->mq_prot_sgl pre-allocation
-   - Honor request_queue->dma_drain_size in scsi_mq_queue_rq (Jianpeng Ma)
-   - Drop unnecessary QUEUE_FLAG_NONROT in scsi_mq_alloc_queue (Jianpeng Ma)
-   - Add bio_integrity setup to blk_mq_make_request
-   - Pre-allocation of sg tables based on host sg_tablesize (Jianpeng Ma)
-   - Pre-allocation of protection sg tables based on host sg_tablesize
-   - Updates for DIF prot_sdb->table.sgl pre-allocation in scsi_init_io
-   - Acquire q->sysfs_lock for elevator_init (Fengguang)
-   - Only reference scsi_cmd_to_driver with valid req->rq_disk in
-     scsi_finish_command()
+regards
+Suman
 
-Also, basic DIF functionality is now working!  Here's a quick snippet of
-DIF TYPE1 in action using scsi_debug dif=1 dix=1:
-
-[   34.331249] scsi_debug_init: dif_storep 16777216 bytes @ ffffc90001459000
-[   34.338588] scsi_debug: host protection DIF1 DIX1
-[   34.339490] scsi6 : scsi_debug, version 1.82 [20100324], dev_size_mb=1024, opts=0x0
-[   34.341026] Calling blk_mq_init_queue: scsi_mq_ops: ffffffff8163e760, queue_depth: 64, cmd_size: 304 SCSI cmd_size: 0
-[   34.343031] blk-mq: CPU -> queue map
-[   34.343689]   CPU 0 -> Queue 0
-[   34.344322]   CPU 1 -> Queue 0
-[   34.344869]   CPU 2 -> Queue 0
-[   34.345422]   CPU 3 -> Queue 0
-[   34.346005] Performing sc map setup on q: ffff880030180000 hctx: ffff880034e3de00 i: 0
-[   34.348146] scsi_mq_alloc_queue() complete >>>>>>>>>>>>>>>>>>>>>>>>>>>
-[   34.349393] scsi 6:0:0:0: Direct-Access     Linux    scsi_debug       0004 PQ: 0 ANSI: 5
-[   34.351013] sd 6:0:0:0: Attached scsi generic sg1 type 0
-[   34.352067] sd 6:0:0:0: [sda] Enabling DIF Type 1 protection
-[   34.352075] sd 6:0:0:0: [sda] 2097152 512-byte logical blocks: (1.07 GB/1.00 GiB)
-[   34.360115] sd 6:0:0:0: [sda] Write Protect is off
-[   34.363006] sd 6:0:0:0: [sda] Mode Sense: 73 00 10 08
-[   34.372176] sd 6:0:0:0: [sda] Write cache: enabled, read cache: enabled, supports DPO and FUA
-[   34.416255]  sda: unknown partition table
-[   34.419315] sd 6:0:0:0: [sda] Enabling DIX T10-DIF-TYPE1-CRC protection
-[   34.423194] sd 6:0:0:0: [sda] DIF application tag size 2
-[   34.444172] sd 6:0:0:0: [sda] Attached SCSI disk
-[   68.554153] scsi_mq: sc: ffff880030198568 SCSI CDB: : 0x00
-[   68.554164] scsi_mq: scsi_bufflen: 0 rq->cmd_len: 6
-[   68.554178] scsi_mq_end_request: sc: ffff880030198568 sc->tag: 48 error: 0
-[   68.554243] Entering sd_dif_type1_generate >>>>>>>>>>>>>>>
-[   68.554264] TYPE1 Generate: sector: 0 sdt->guard_tag: 0xdfcc sdt->app_tag: 0x0000 sdt->ref_tag: 0
-[   68.554281] TYPE1 Generate: sector: 1 sdt->guard_tag: 0xd693 sdt->app_tag: 0x0000 sdt->ref_tag: 1
-[   68.554297] TYPE1 Generate: sector: 2 sdt->guard_tag: 0xd8ea sdt->app_tag: 0x0000 sdt->ref_tag: 2
-[   68.554309] TYPE1 Generate: sector: 3 sdt->guard_tag: 0x64a3 sdt->app_tag: 0x0000 sdt->ref_tag: 3
-[   68.554322] TYPE1 Generate: sector: 4 sdt->guard_tag: 0xd194 sdt->app_tag: 0x0000 sdt->ref_tag: 4
-[   68.554334] TYPE1 Generate: sector: 5 sdt->guard_tag: 0x0c30 sdt->app_tag: 0x0000 sdt->ref_tag: 5
-[   68.554346] TYPE1 Generate: sector: 6 sdt->guard_tag: 0xcbff sdt->app_tag: 0x0000 sdt->ref_tag: 6
-[   68.554359] TYPE1 Generate: sector: 7 sdt->guard_tag: 0x5c4e sdt->app_tag: 0x0000 sdt->ref_tag: 7
-[   68.554384] scsi_mq: sc: ffff880030198568 SCSI CDB: : 0x2a
-[   68.554389] scsi_mq: scsi_bufflen: 4096 rq->cmd_len: 16
-[   68.554396] Enering prot_verify_write sector: 8 ei_lba: 0
-[   68.554402] WRITE sector: 0 sdt->guard_tag: 0xdfcc sdt->app_tag: 0x0000 sdt->ref_tag: 0
-[   68.554414] WRITE sector: 1 sdt->guard_tag: 0xd693 sdt->app_tag: 0x0000 sdt->ref_tag: 1
-[   68.554427] WRITE sector: 2 sdt->guard_tag: 0xd8ea sdt->app_tag: 0x0000 sdt->ref_tag: 2
-[   68.554439] WRITE sector: 3 sdt->guard_tag: 0x64a3 sdt->app_tag: 0x0000 sdt->ref_tag: 3
-[   68.554451] WRITE sector: 4 sdt->guard_tag: 0xd194 sdt->app_tag: 0x0000 sdt->ref_tag: 4
-[   68.554463] WRITE sector: 5 sdt->guard_tag: 0x0c30 sdt->app_tag: 0x0000 sdt->ref_tag: 5
-[   68.554475] WRITE sector: 6 sdt->guard_tag: 0xcbff sdt->app_tag: 0x0000 sdt->ref_tag: 6
-[   68.554488] WRITE sector: 7 sdt->guard_tag: 0x5c4e sdt->app_tag: 0x0000 sdt->ref_tag: 7
-
-<SNIP>
-
-[   68.572734] scsi_mq: sc: ffff880030198568 SCSI CDB: : 0x28
-[   68.572741] scsi_mq: scsi_bufflen: 4096 rq->cmd_len: 16
-[   68.572750] Entering prot_verify_read: sector: 8 ei_lba: 0
-[   68.572758] READ sector: 0 sdt->guard_tag: 0xdfcc sdt->app_tag: 0x0000 sdt->ref_tag: 0
-[   68.572774] READ sector: 1 sdt->guard_tag: 0xd693 sdt->app_tag: 0x0000 sdt->ref_tag: 1
-[   68.572786] READ sector: 2 sdt->guard_tag: 0xd8ea sdt->app_tag: 0x0000 sdt->ref_tag: 2
-[   68.572799] READ sector: 3 sdt->guard_tag: 0x64a3 sdt->app_tag: 0x0000 sdt->ref_tag: 3
-[   68.572811] READ sector: 4 sdt->guard_tag: 0xd194 sdt->app_tag: 0x0000 sdt->ref_tag: 4
-[   68.572823] READ sector: 5 sdt->guard_tag: 0x0c30 sdt->app_tag: 0x0000 sdt->ref_tag: 5
-[   68.572835] READ sector: 6 sdt->guard_tag: 0xcbff sdt->app_tag: 0x0000 sdt->ref_tag: 6
-[   68.572847] READ sector: 7 sdt->guard_tag: 0x5c4e sdt->app_tag: 0x0000 sdt->ref_tag: 7
-[   68.576195] scsi_mq_end_request: sc: ffff880030198568 sc->tag: 48 error: 0
-[   68.576383] TYPE1 Verify sector: 0 sdt->guard_tag: 0xdfcc sdt->app_tag: 0x0000 sdt->ref_tag: 0
-[   68.576397] TYPE1 Verify sector: 1 sdt->guard_tag: 0xd693 sdt->app_tag: 0x0000 sdt->ref_tag: 1
-[   68.576409] TYPE1 Verify sector: 2 sdt->guard_tag: 0xd8ea sdt->app_tag: 0x0000 sdt->ref_tag: 2
-[   68.576422] TYPE1 Verify sector: 3 sdt->guard_tag: 0x64a3 sdt->app_tag: 0x0000 sdt->ref_tag: 3
-[   68.576434] TYPE1 Verify sector: 4 sdt->guard_tag: 0xd194 sdt->app_tag: 0x0000 sdt->ref_tag: 4
-[   68.576446] TYPE1 Verify sector: 5 sdt->guard_tag: 0x0c30 sdt->app_tag: 0x0000 sdt->ref_tag: 5
-[   68.576458] TYPE1 Verify sector: 6 sdt->guard_tag: 0xcbff sdt->app_tag: 0x0000 sdt->ref_tag: 6
-[   68.576490] TYPE1 Verify sector: 7 sdt->guard_tag: 0x5c4e sdt->app_tag: 0x0000 sdt->ref_tag: 7
-
-
-So now with some of the lower-hanging bugs out of the way, I'll next be
-focusing identifying outstanding TODO items over the holidays for those
-who are interested in contributing in 2014.
-
-Enjoy.
-
---nab
+>
+> Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
+> ---
+>   drivers/iommu/omap-iommu.c | 207 +++++++++++++++++++++++----------------------
+>   1 file changed, 104 insertions(+), 103 deletions(-)
+>
+> diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
+> index bcd78a7..ee83bcc 100644
+> --- a/drivers/iommu/omap-iommu.c
+> +++ b/drivers/iommu/omap-iommu.c
+> @@ -930,107 +930,6 @@ static void omap_iommu_detach(struct omap_iommu *obj)
+>   	dev_dbg(obj->dev, "%s: %s\n", __func__, obj->name);
+>   }
+>
+> -/*
+> - *	OMAP Device MMU(IOMMU) detection
+> - */
+> -static int omap_iommu_probe(struct platform_device *pdev)
+> -{
+> -	int err = -ENODEV;
+> -	int irq;
+> -	struct omap_iommu *obj;
+> -	struct resource *res;
+> -	struct iommu_platform_data *pdata = pdev->dev.platform_data;
+> -
+> -	obj = kzalloc(sizeof(*obj) + MMU_REG_SIZE, GFP_KERNEL);
+> -	if (!obj)
+> -		return -ENOMEM;
+> -
+> -	obj->nr_tlb_entries = pdata->nr_tlb_entries;
+> -	obj->name = pdata->name;
+> -	obj->dev = &pdev->dev;
+> -	obj->ctx = (void *)obj + sizeof(*obj);
+> -	obj->da_start = pdata->da_start;
+> -	obj->da_end = pdata->da_end;
+> -
+> -	spin_lock_init(&obj->iommu_lock);
+> -	mutex_init(&obj->mmap_lock);
+> -	spin_lock_init(&obj->page_table_lock);
+> -	INIT_LIST_HEAD(&obj->mmap);
+> -
+> -	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	if (!res) {
+> -		err = -ENODEV;
+> -		goto err_mem;
+> -	}
+> -
+> -	res = request_mem_region(res->start, resource_size(res),
+> -				 dev_name(&pdev->dev));
+> -	if (!res) {
+> -		err = -EIO;
+> -		goto err_mem;
+> -	}
+> -
+> -	obj->regbase = ioremap(res->start, resource_size(res));
+> -	if (!obj->regbase) {
+> -		err = -ENOMEM;
+> -		goto err_ioremap;
+> -	}
+> -
+> -	irq = platform_get_irq(pdev, 0);
+> -	if (irq < 0) {
+> -		err = -ENODEV;
+> -		goto err_irq;
+> -	}
+> -	err = request_irq(irq, iommu_fault_handler, IRQF_SHARED,
+> -			  dev_name(&pdev->dev), obj);
+> -	if (err < 0)
+> -		goto err_irq;
+> -	platform_set_drvdata(pdev, obj);
+> -
+> -	pm_runtime_irq_safe(obj->dev);
+> -	pm_runtime_enable(obj->dev);
+> -
+> -	dev_info(&pdev->dev, "%s registered\n", obj->name);
+> -	return 0;
+> -
+> -err_irq:
+> -	iounmap(obj->regbase);
+> -err_ioremap:
+> -	release_mem_region(res->start, resource_size(res));
+> -err_mem:
+> -	kfree(obj);
+> -	return err;
+> -}
+> -
+> -static int omap_iommu_remove(struct platform_device *pdev)
+> -{
+> -	int irq;
+> -	struct resource *res;
+> -	struct omap_iommu *obj = platform_get_drvdata(pdev);
+> -
+> -	iopgtable_clear_entry_all(obj);
+> -
+> -	irq = platform_get_irq(pdev, 0);
+> -	free_irq(irq, obj);
+> -	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	release_mem_region(res->start, resource_size(res));
+> -	iounmap(obj->regbase);
+> -
+> -	pm_runtime_disable(obj->dev);
+> -
+> -	dev_info(&pdev->dev, "%s removed\n", obj->name);
+> -	kfree(obj);
+> -	return 0;
+> -}
+> -
+> -static struct platform_driver omap_iommu_driver = {
+> -	.probe	= omap_iommu_probe,
+> -	.remove	= omap_iommu_remove,
+> -	.driver	= {
+> -		.name	= "omap-iommu",
+> -	},
+> -};
+> -
+>   static void iopte_cachep_ctor(void *iopte)
+>   {
+>   	clean_dcache_area(iopte, IOPTE_TABLE_SIZE);
+> @@ -1265,6 +1164,110 @@ static struct iommu_ops omap_iommu_ops = {
+>   	.pgsize_bitmap	= OMAP_IOMMU_PGSIZES,
+>   };
+>
+> +/*
+> + *	OMAP Device MMU(IOMMU) detection
+> + */
+> +static int omap_iommu_probe(struct platform_device *pdev)
+> +{
+> +	int err = -ENODEV;
+> +	int irq;
+> +	struct omap_iommu *obj;
+> +	struct resource *res;
+> +	struct iommu_platform_data *pdata = pdev->dev.platform_data;
+> +
+> +	obj = kzalloc(sizeof(*obj) + MMU_REG_SIZE, GFP_KERNEL);
+> +	if (!obj)
+> +		return -ENOMEM;
+> +
+> +	obj->nr_tlb_entries = pdata->nr_tlb_entries;
+> +	obj->name = pdata->name;
+> +	obj->dev = &pdev->dev;
+> +	obj->ctx = (void *)obj + sizeof(*obj);
+> +	obj->da_start = pdata->da_start;
+> +	obj->da_end = pdata->da_end;
+> +
+> +	spin_lock_init(&obj->iommu_lock);
+> +	mutex_init(&obj->mmap_lock);
+> +	spin_lock_init(&obj->page_table_lock);
+> +	INIT_LIST_HEAD(&obj->mmap);
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!res) {
+> +		err = -ENODEV;
+> +		goto err_mem;
+> +	}
+> +
+> +	res = request_mem_region(res->start, resource_size(res),
+> +				 dev_name(&pdev->dev));
+> +	if (!res) {
+> +		err = -EIO;
+> +		goto err_mem;
+> +	}
+> +
+> +	obj->regbase = ioremap(res->start, resource_size(res));
+> +	if (!obj->regbase) {
+> +		err = -ENOMEM;
+> +		goto err_ioremap;
+> +	}
+> +
+> +	irq = platform_get_irq(pdev, 0);
+> +	if (irq < 0) {
+> +		err = -ENODEV;
+> +		goto err_irq;
+> +	}
+> +
+> +	err = request_irq(irq, iommu_fault_handler, IRQF_SHARED,
+> +			  dev_name(&pdev->dev), obj);
+> +	if (err < 0)
+> +		goto err_irq;
+> +	platform_set_drvdata(pdev, obj);
+> +
+> +	bus_set_iommu(&platform_bus_type, &omap_iommu_ops);
+> +
+> +	pm_runtime_irq_safe(obj->dev);
+> +	pm_runtime_enable(obj->dev);
+> +
+> +	dev_info(&pdev->dev, "%s registered\n", obj->name);
+> +	return 0;
+> +
+> +err_irq:
+> +	iounmap(obj->regbase);
+> +err_ioremap:
+> +	release_mem_region(res->start, resource_size(res));
+> +err_mem:
+> +	kfree(obj);
+> +	return err;
+> +}
+> +
+> +static int omap_iommu_remove(struct platform_device *pdev)
+> +{
+> +	int irq;
+> +	struct resource *res;
+> +	struct omap_iommu *obj = platform_get_drvdata(pdev);
+> +
+> +	iopgtable_clear_entry_all(obj);
+> +
+> +	irq = platform_get_irq(pdev, 0);
+> +	free_irq(irq, obj);
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	release_mem_region(res->start, resource_size(res));
+> +	iounmap(obj->regbase);
+> +
+> +	pm_runtime_disable(obj->dev);
+> +
+> +	dev_info(&pdev->dev, "%s removed\n", obj->name);
+> +	kfree(obj);
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver omap_iommu_driver = {
+> +	.probe	= omap_iommu_probe,
+> +	.remove	= omap_iommu_remove,
+> +	.driver	= {
+> +		.name	= "omap-iommu",
+> +	},
+> +};
+> +
+>   static int __init omap_iommu_init(void)
+>   {
+>   	struct kmem_cache *p;
+> @@ -1277,8 +1280,6 @@ static int __init omap_iommu_init(void)
+>   		return -ENOMEM;
+>   	iopte_cachep = p;
+>
+> -	bus_set_iommu(&platform_bus_type, &omap_iommu_ops);
+> -
+>   	return platform_driver_register(&omap_iommu_driver);
+>   }
+>   /* must be ready before omap3isp is probed */
+>
 
