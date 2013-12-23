@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757589Ab3LWSY4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 13:24:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22717 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753085Ab3LWSYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 13:24:54 -0500
-Date: Mon, 23 Dec 2013 19:24:55 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jason Seba <jason.seba42@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>, Tomas Henzl <thenzl@redhat.com>,
-        Jack Wang <xjtuwjp@gmail.com>,
-        Suresh Thiagarajan <Suresh.Thiagarajan@pmcs.com>,
-        Viswas G <Viswas.G@pmcs.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "JBottomley@parallels.com" <JBottomley@parallels.com>,
-        Vasanthalakshmi Tharmarajan 
-	<Vasanthalakshmi.Tharmarajan@pmcs.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: spinlock_irqsave() && flags (Was: pm80xx: Spinlock fix)
-Message-ID: <20131223182455.GA5656@redhat.com>
-References: <52B8357D.60202@redhat.com> <52B83B89.9040700@gmail.com> <CE2C58F938F4C44EA74FFF880BAA7E5E1C68AA8A@BBYEXM01.pmc-sierra.internal> <CAD0Z9T+69VoSnDY-Sj7a1QfJ-KLJYVyL9=WQ123XMfRvQmGdsg@mail.gmail.com> <52B8518B.4060204@gmail.com> <52B8569D.4050101@redhat.com> <CAD0Z9TK-cn=X3ywSzPnEQN-FB+ue+0dHQ3EHuwonC+KfgrmPMA@mail.gmail.com> <20131223163410.GA28220@redhat.com> <20131223172744.GA2069@redhat.com> <CA+55aFy_y45feJNJgFa=Taks0GpxiXEMJexhjVVYH-vVFkPmkA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFy_y45feJNJgFa=Taks0GpxiXEMJexhjVVYH-vVFkPmkA@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932187Ab3LWS1t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 13:27:49 -0500
+Received: from mail.sigma-star.at ([95.130.255.111]:62408 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab3LWS1s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 13:27:48 -0500
+From: Richard Weinberger <richard@nod.at>
+To: x86@kernel.org
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, seiji.aguchi@hds.com,
+        rientjes@google.com, konrad.wilk@oracle.com,
+        linux-kernel@vger.kernel.org, bp@alien8.de,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH] APIC: Read Error Status Register correctly
+Date: Mon, 23 Dec 2013 19:27:30 +0100
+Message-Id: <1387823250-27218-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23, Linus Torvalds wrote:
->
-> On Mon, Dec 23, 2013 at 9:27 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> > In short, is this code
-> >
-> >         spinlock_t LOCK;
-> >         unsigned long FLAGS;
-> >
-> >         void my_lock(void)
-> >         {
-> >                 spin_lock_irqsave(&LOCK, FLAGS);
-> >         }
-> >
-> >         void my_unlock(void)
-> >         {
-> >                 spin_unlock_irqrestore(&LOCK, FLAGS);
-> >         }
-> >
-> > correct or not?
->
-> Hell no. "flags" needs to be a thread-private variable, or at least
-> protected some way (ie the above could work if everything is inside a
-> bigger lock, to serialize access to FLAGS).
+Currently we do a read, a dummy write and a final read to fetch the error code.
+The value from the final read is taken.
+This is not the recommended way and leads to corrupted/lost ESR values.
 
-This was my understanding (although, once again, it seems to me this can
-suprisingly work with the current implementation).
+Intel(c) 64 and IA-32 Architectures Software Developer's Manual,
+Combined Volumes 1, 2ABC, 3ABC, Section 10.5.3 states:
+>>Before attempt to read from the ESR, software should first write to it.
+(The value written does not affect the values read subsequently;
+only zero may be written in x2APIC mode.) This write clears
+any previously logged errors and updates the ESR with any errors
+detected since the last write to the ESR.
+This write also rearms the APIC error interrupt triggering mechanism.<<
 
-However, the code above already has the users. Do you think it makes
-sense to add something like
+This patch removes the first read such that we are conform with the manual.
 
-	void spinlock_irqsave_careful(spinlock_t *lock, unsigned long *flags)
-	{
-		unsigned long _flags;
-		spinlock_irqsave(lock, _flags);
-		*flags = flags;
-	}
+On my (very old) Pentium MMX SMP system this patch fixes the issue that
+APIC errors a) are not always reported and b) are reported with false
+error numbers.
 
-	void spinlock_irqrestore_careful(spinlock_t *lock, unsigned long *flags)
-	{
-		unsigned long _flags = *flags;
-		spinlock_irqrestore(lock, _flags);
-	}
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ arch/x86/kernel/apic/apic.c | 17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
-into include/linux/spinlock.h ?
-
-Oleg.
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index d278736..4ec1dd6 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1968,7 +1968,7 @@ __visible void smp_trace_spurious_interrupt(struct pt_regs *regs)
+  */
+ static inline void __smp_error_interrupt(struct pt_regs *regs)
+ {
+-	u32 v0, v1;
++	u32 v;
+ 	u32 i = 0;
+ 	static const char * const error_interrupt_reason[] = {
+ 		"Send CS error",		/* APIC Error Bit 0 */
+@@ -1982,21 +1982,20 @@ static inline void __smp_error_interrupt(struct pt_regs *regs)
+ 	};
+ 
+ 	/* First tickle the hardware, only then report what went on. -- REW */
+-	v0 = apic_read(APIC_ESR);
+ 	apic_write(APIC_ESR, 0);
+-	v1 = apic_read(APIC_ESR);
++	v = apic_read(APIC_ESR);
+ 	ack_APIC_irq();
+ 	atomic_inc(&irq_err_count);
+ 
+-	apic_printk(APIC_DEBUG, KERN_DEBUG "APIC error on CPU%d: %02x(%02x)",
+-		    smp_processor_id(), v0 , v1);
++	apic_printk(APIC_DEBUG, KERN_DEBUG "APIC error on CPU%d: %02x",
++		    smp_processor_id(), v);
+ 
+-	v1 = v1 & 0xff;
+-	while (v1) {
+-		if (v1 & 0x1)
++	v &= 0xff;
++	while (v) {
++		if (v & 0x1)
+ 			apic_printk(APIC_DEBUG, KERN_CONT " : %s", error_interrupt_reason[i]);
+ 		i++;
+-		v1 >>= 1;
++		v >>= 1;
+ 	}
+ 
+ 	apic_printk(APIC_DEBUG, KERN_CONT "\n");
+-- 
+1.8.4.2
 
