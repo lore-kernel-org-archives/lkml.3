@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757790Ab3LWTPZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 14:15:25 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47361 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757372Ab3LWTPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 14:15:24 -0500
-Message-ID: <52B88BB9.3070808@zytor.com>
-Date: Mon, 23 Dec 2013 11:15:05 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
+	id S1757775Ab3LWTWQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 14:22:16 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:49785 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757634Ab3LWTWL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 14:22:11 -0500
+Message-ID: <52B88D5C.4080402@free-electrons.com>
+Date: Mon, 23 Dec 2013 20:22:04 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Organization: Free Electrons
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Alexey Gladkov <gladkov.alexey@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, David Herrmann <dh.herrmann@gmail.com>
-CC: linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>
-Subject: Re: VT Improvements
-References: <52B83457.8080907@gmail.com>
-In-Reply-To: <52B83457.8080907@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+To: Marek Vasut <marex@denx.de>
+CC: Jonathan Cameron <jic23@kernel.org>, lars@metafoo.de, harald@ccbib.org,
+        hector.palacios@digi.com, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv5 RESEND 0/4] iio: mxs-lradc: add support to optional
+ divider_by_two
+References: <1387820884-28140-1-git-send-email-alexandre.belloni@free-electrons.com> <201312231954.36124.marex@denx.de>
+In-Reply-To: <201312231954.36124.marex@denx.de>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/2013 05:02 AM, Alexey Gladkov wrote:
-> Greetings!
-> 
-> I would like to know about the VT plans. Historically, keymap
-> implementations are similar in the kernel and kbd project. I rewrote
-> it in kbd. So, it can handle keycodes bigger than 255. In a kernel
-> everything remained as before. I want to fix this part in a kernel. As
-> pluses will be:
-> 
-> * opportunity to define keycode > 255.
-> * opportunity to reduce this table a kernel in most cases.
-> 
-> I would like to ask your opinion about my plans because I heard about
-> the thought of moving this functionality to user space.
-> 
-> Whether it is worth starting so large-scale changes?
-> 
+On 23/12/2013 19:54, Marek Vasut wrote:
+> On Monday, December 23, 2013 at 06:48:00 PM, Alexandre Belloni wrote:
+>> Hello,
+>>
+>> This is v5 of the patchset that adds support to the optional divider_by_two
+>> of LRADC channels.
+>>
+>> Changes since v4:
+>>  - moved enum mxs_lradc_divbytwo to the third patch
+>>  - added a fourth patch to convert is_divided to a bitmap. I did that in a
+>>    separated patch for review and copyright attribution purposes.
+>>
+>> This was tested on a custom i.MX28 platform.
+>>
+>> Alexandre Belloni (1):
+>>   iio: mxs-lradc: convert is_divided to a bitmap
+>>
+>> Hector Palacios (3):
+>>   iio: mxs-lradc: add scale attribute to channels
+>>   iio: mxs-lradc: add scale_available file to channels
+>>   iio: mxs-lradc: add write_raw function to modify scale
+>>
+>>  drivers/staging/iio/adc/mxs-lradc.c | 222
+>> +++++++++++++++++++++++++++++++++++- 1 file changed, 219 insertions(+), 3
+>> deletions(-)
+> Why is there a resend please ?
 
-What I don't think we want to do is to make the current VT
-implementation in the kernel significantly bigger.  That is why
-proposals to introduce bidirectionality or character shaping generally
-have not been accepted.  If you can improve functionality with a
-*smaller* footprint, which you seem to imply above, then please, go ahead.
+I don't know how but I screwed Jonathan's mail address. As he is the
+main maintainer, I though it would be a good idea to get his attention.
 
-	-hpa
+
+>
+> Best regards,
+> Marek Vasut
+
+
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
