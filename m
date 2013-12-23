@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186Ab3LWRUE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 12:20:04 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:48760 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553Ab3LWRUB (ORCPT
+	id S932255Ab3LWRUm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 12:20:42 -0500
+Received: from smtprelay0170.hostedemail.com ([216.40.44.170]:40924 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932210Ab3LWRUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 12:20:01 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131223144418.GA11342@dhcp-26-207.brq.redhat.com>
-References: <cover.1387140921.git.agordeev@redhat.com> <bbf6f73ef3e16e5dfd7d41fc1e4412f641acb0f3.1387140921.git.agordeev@redhat.com>
- <20131218003002.GA15119@google.com> <20131223144418.GA11342@dhcp-26-207.brq.redhat.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 23 Dec 2013 10:19:41 -0700
-Message-ID: <CAErSpo6urD4Gd4STW3=SzeNfvZrstqTpfzouCvEwqDLoMpBpng@mail.gmail.com>
-Subject: Re: [PATCH v4 9/9] PCI/MSI: Introduce pci_auto_enable_msi*() family helpers
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
-        David Laight <David.Laight@aculab.com>, Mark Lord <kernel@start.ca>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 23 Dec 2013 12:20:40 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3872:4321:5007:6119:7576:7652:7903:10004:10400:10848:11026:11232:11658:11914:12043:12296:12517:12519:12740:13019:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: color23_22b535aa9ed4a
+X-Filterd-Recvd-Size: 1899
+Message-ID: <1387819238.22671.71.camel@joe-AO722>
+Subject: Re: [RESEND PATCH v2] mfd: twl6030: Fix endianness problem in IRQ
+ handler
+From: Joe Perches <joe@perches.com>
+To: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        patches@linaro.org, linaro-networking@linaro.org,
+        linaro-kernel@lists.linaro.org, Danke Xie <d.xie@sta.samsung.com>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 23 Dec 2013 09:20:38 -0800
+In-Reply-To: <1387818706-6129-1-git-send-email-taras.kondratiuk@linaro.org>
+References: <1387818706-6129-1-git-send-email-taras.kondratiuk@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 23, 2013 at 7:44 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
-> On Tue, Dec 17, 2013 at 05:30:02PM -0700, Bjorn Helgaas wrote:
->> > +int pci_auto_enable_msi_range(struct pci_dev *dev, struct msix_entry *entries,
->> > +                         int minvec, int maxvec)
->
-> [...]
->
->> > +If this function returns a positive number it indicates at least the
->> > +returned number of MSI interrupts have been successfully allocated (it may
->> > +have allocated more in order to satisfy the power-of-two requirement).
->>
->> I assume this means the return value may be larger than the "maxvec"
->> requested, right?  And the driver is free to use all the vectors up to the
->> return value, even those above maxvec, right?
->
-> No, the returned value may not be larger than the "maxvec" ever. This is just
-> paraphrasing the semantics of exisitng pci_enable_msi_block() interface - a
-> value written to MMC register might be larger than the returned value, but the
-> driver may not use the extra vectors it did not request.
+On Mon, 2013-12-23 at 19:11 +0200, Taras Kondratiuk wrote:
+> From: Danke Xie <d.xie@sta.samsung.com>
+> 
+> The current TWL 6030 IRQ handler assumes little endianness.
+> This change makes it endian-neutral.
+[]
+> diff --git a/drivers/mfd/twl6030-irq.c b/drivers/mfd/twl6030-irq.c
+[]
+> @@ -196,8 +197,9 @@ static irqreturn_t twl6030_irq_thread(int irq, void *data)
+>  	if (sts.bytes[2] & 0x10)
+>  		sts.bytes[2] |= 0x08;
+>  
+> -	for (i = 0; sts.int_sts; sts.int_sts >>= 1, i++)
+> -		if (sts.int_sts & 0x1) {
+> +	int_sts = le32_to_cpu(sts.int_sts);
+> +	for (i = 0; int_sts; int_sts >>= 1, i++)
+> +		if (int_sts & 0x1) {
+>  			int module_irq =
+>  				irq_find_mapping(pdata->irq_domain,
+>  						 pdata->irq_mapping_tbl[i]);
 
-Then I think we should remove the "(it may have allocated more...)"
-text.  If the driver can't use those extra vectors, they are an
-internal implementation detail, and mentioning them here will only
-cause confusion.  The "at least" text should also be removed.  From
-the driver's point of view, it can use exactly the number of
-interrupts returned.
+instead of the
 
-Bjorn
+	for (...) {
+		if (foo & 1) {
+		
+
+maybe using ffs would be better/faster
+
+	while ((bit = ffs(int_sts))) {
+
+etc...
+
+
+
