@@ -1,78 +1,395 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757092Ab3LWIID (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 03:08:03 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:40472 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757003Ab3LWIIB (ORCPT
+	id S1757168Ab3LWIK6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 03:10:58 -0500
+Received: from 6.mo2.mail-out.ovh.net ([87.98.165.38]:43780 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756971Ab3LWIK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 03:08:01 -0500
-Date: Mon, 23 Dec 2013 08:07:41 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Dave Young <dyoung@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        bp@alien8.de, greg@kroah.com, toshi.kani@hp.com,
-        akpm@linux-foundation.org, mingo@kernel.org, msalter@redhat.com,
-        leif.lindholm@linaro.org
-Subject: Re: [PATCH v7 09/12] efi: passing kexec necessary efi data via
- setup_data
-Message-ID: <20131223080741.GB28919@console-pimps.org>
-References: <1387533742-18018-1-git-send-email-dyoung@redhat.com>
- <1387533742-18018-10-git-send-email-dyoung@redhat.com>
- <20131221160416.GD29501@console-pimps.org>
- <20131223020958.GB3760@dhcp-16-126.nay.redhat.com>
+	Mon, 23 Dec 2013 03:10:57 -0500
+Message-ID: <52B7EE29.5030207@overkiz.com>
+Date: Mon, 23 Dec 2013 09:02:49 +0100
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131223020958.GB3760@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mike Turquette <mturquette@linaro.org>, Rob Landley <rob@landley.net>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaQ==?= =?UTF-8?B?Zw==?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 1/2] clk: add clk accuracy retrieval support
+References: <1387618488-3075-1-git-send-email-b.brezillon@overkiz.com> <1387618488-3075-2-git-send-email-b.brezillon@overkiz.com> <20131223075159.22761.63922@quantum>
+In-Reply-To: <20131223075159.22761.63922@quantum>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 17161529331004241948
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtdejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtdejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Dec, at 10:09:58AM, Dave Young wrote:
-> On 12/21/13 at 04:06pm, Matt Fleming wrote:
-> > On Fri, 20 Dec, at 06:02:19PM, Dave Young wrote:
-> > > @@ -133,6 +133,19 @@ extern void efi_sync_low_kernel_mappings(void);
-> > >  extern void efi_setup_page_tables(void);
-> > >  extern void __init old_map_region(efi_memory_desc_t *md);
-> > >  
-> > > +struct efi_setup_data {
-> > > +	u64 fw_vendor;
-> > > +	u64 runtime;
-> > > +	u64 tables;
-> > > +	u64 smbios;
-> > > +	u64 reserved[8];
-> > > +	efi_memory_desc_t map[0];
-> > > +};
-> > 
-> > [...]
-> > 
-> > > +static void get_nr_runtime_map(void)
-> > > +{
-> > > +	if (!efi_setup)
-> > > +		return;
-> > > +
-> > > +	nr_efi_runtime_map = (efi_data_len - sizeof(struct efi_setup_data)) /
-> > > +			     sizeof(efi_memory_desc_t);
-> > > +}
-> > 
-> > Do we actually need the 'map' entry in efi_setup_data now that you're
-> > passing it via efi_info (which is much better approach!)? Also, we don't
-> > need the global nr_efi_runtime_map or efi_runtime_map variables now,
-> > right?
-> 
-> The map is still necessary because we need store the map somewhere and pass
-> the physicall address to kexec kernel. Passing them in setup_data is the
-> only better way currently...
-> 
-> In efi_info there's only an entry for the map physical address, the original
-> map area is not valid any more.
+Le 23/12/2013 08:51, Mike Turquette a écrit :
+> Quoting Boris BREZILLON (2013-12-21 01:34:47)
+>> The clock accuracy is expressed in ppb (parts per billion) and represents
+>> the possible clock drift.
+>> Say you have a clock (e.g. an oscillator) which provides a fixed clock of
+>> 20MHz with an accuracy of +- 20Hz. This accuracy expressed in ppb is
+>> 20Hz/20MHz = 1000 ppb (or 1 ppm).
+>>
+>> Clock users may need the clock accuracy information in order to choose
+>> the best clock (the one with the best accuracy) across several available
+>> clocks.
+>>
+>> This patch adds clk accuracy retrieval support for common clk framework by
+>> means of a new function called clk_get_accuracy.
+>> This function returns the given clock accuracy expressed in ppb.
+>>
+>> In order to get the clock accuracy, this implementation adds one callback
+>> called recalc_accuracy to the clk_ops structure.
+>> This callback is given the parent clock accuracy (if the clock is not a
+>> root clock) and should recalculate the given clock accuracy.
+>>
+>> This callback is optional and may be implemented if the clock is not
+>> a perfect clock (accuracy != 0 ppb).
+>>
+>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> There was an unused 'unsigned long ret' in __clk_get_accuracy which I
+> removed.
 
-Where do you dereference efi_setup_data.map* in the kexec kernel?
+Indeed. Thanks!
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+> Updated patch as applied to clk-next is below:
+>
+> Regards,
+> Mike
+>
+>
+>
+>  From 5279fc402ae59361a224d641d5823b21b4206232 Mon Sep 17 00:00:00 2001
+> From: Boris BREZILLON <b.brezillon@overkiz.com>
+> Date: Sat, 21 Dec 2013 10:34:47 +0100
+> Subject: [PATCH] clk: add clk accuracy retrieval support
+>
+> The clock accuracy is expressed in ppb (parts per billion) and represents
+> the possible clock drift.
+> Say you have a clock (e.g. an oscillator) which provides a fixed clock of
+> 20MHz with an accuracy of +- 20Hz. This accuracy expressed in ppb is
+> 20Hz/20MHz = 1000 ppb (or 1 ppm).
+>
+> Clock users may need the clock accuracy information in order to choose
+> the best clock (the one with the best accuracy) across several available
+> clocks.
+>
+> This patch adds clk accuracy retrieval support for common clk framework by
+> means of a new function called clk_get_accuracy.
+> This function returns the given clock accuracy expressed in ppb.
+>
+> In order to get the clock accuracy, this implementation adds one callback
+> called recalc_accuracy to the clk_ops structure.
+> This callback is given the parent clock accuracy (if the clock is not a
+> root clock) and should recalculate the given clock accuracy.
+>
+> This callback is optional and may be implemented if the clock is not
+> a perfect clock (accuracy != 0 ppb).
+>
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> Signed-off-by: Mike Turquette <mturquette@linaro.org>
+> ---
+>   Documentation/clk.txt        |   4 ++
+>   drivers/clk/clk.c            | 100 ++++++++++++++++++++++++++++++++++++++++---
+>   include/linux/clk-private.h  |   1 +
+>   include/linux/clk-provider.h |  11 +++++
+>   include/linux/clk.h          |  17 ++++++++
+>   5 files changed, 126 insertions(+), 7 deletions(-)
+>
+> diff --git a/Documentation/clk.txt b/Documentation/clk.txt
+> index 3aeb5c4..eb20198 100644
+> --- a/Documentation/clk.txt
+> +++ b/Documentation/clk.txt
+> @@ -77,6 +77,8 @@ the operations defined in clk.h:
+>   		int		(*set_parent)(struct clk_hw *hw, u8 index);
+>   		u8		(*get_parent)(struct clk_hw *hw);
+>   		int		(*set_rate)(struct clk_hw *hw, unsigned long);
+> +		unsigned long	(*recalc_accuracy)(struct clk_hw *hw,
+> +						   unsigned long parent_accuracy);
+>   		void		(*init)(struct clk_hw *hw);
+>   	};
+>   
+> @@ -202,6 +204,8 @@ optional or must be evaluated on a case-by-case basis.
+>   .set_parent     |      |             | n             | y           | n    |
+>   .get_parent     |      |             | n             | y           | n    |
+>                   |      |             |               |             |      |
+> +.recalc_accuracy|      |             |               |             |      |
+> +                |      |             |               |             |      |
+>   .init           |      |             |               |             |      |
+>                   -----------------------------------------------------------
+>   [1] either one of round_rate or determine_rate is required.
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index 8312736..fbe08f6 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -104,10 +104,11 @@ static void clk_summary_show_one(struct seq_file *s, struct clk *c, int level)
+>   	if (!c)
+>   		return;
+>   
+> -	seq_printf(s, "%*s%-*s %-11d %-12d %-10lu",
+> +	seq_printf(s, "%*s%-*s %-11d %-12d %-10lu %-11lu",
+>   		   level * 3 + 1, "",
+>   		   30 - level * 3, c->name,
+> -		   c->enable_count, c->prepare_count, clk_get_rate(c));
+> +		   c->enable_count, c->prepare_count, clk_get_rate(c),
+> +		   clk_get_accuracy(c));
+>   	seq_printf(s, "\n");
+>   }
+>   
+> @@ -129,8 +130,8 @@ static int clk_summary_show(struct seq_file *s, void *data)
+>   {
+>   	struct clk *c;
+>   
+> -	seq_printf(s, "   clock                        enable_cnt  prepare_cnt  rate\n");
+> -	seq_printf(s, "---------------------------------------------------------------------\n");
+> +	seq_printf(s, "   clock                        enable_cnt  prepare_cnt  rate        accuracy\n");
+> +	seq_printf(s, "---------------------------------------------------------------------------------\n");
+>   
+>   	clk_prepare_lock();
+>   
+> @@ -167,6 +168,7 @@ static void clk_dump_one(struct seq_file *s, struct clk *c, int level)
+>   	seq_printf(s, "\"enable_count\": %d,", c->enable_count);
+>   	seq_printf(s, "\"prepare_count\": %d,", c->prepare_count);
+>   	seq_printf(s, "\"rate\": %lu", clk_get_rate(c));
+> +	seq_printf(s, "\"accuracy\": %lu", clk_get_accuracy(c));
+>   }
+>   
+>   static void clk_dump_subtree(struct seq_file *s, struct clk *c, int level)
+> @@ -248,6 +250,11 @@ static int clk_debug_create_one(struct clk *clk, struct dentry *pdentry)
+>   	if (!d)
+>   		goto err_out;
+>   
+> +	d = debugfs_create_u32("clk_accuracy", S_IRUGO, clk->dentry,
+> +			(u32 *)&clk->accuracy);
+> +	if (!d)
+> +		goto err_out;
+> +
+>   	d = debugfs_create_x32("clk_flags", S_IRUGO, clk->dentry,
+>   			(u32 *)&clk->flags);
+>   	if (!d)
+> @@ -603,6 +610,14 @@ out:
+>   	return ret;
+>   }
+>   
+> +unsigned long __clk_get_accuracy(struct clk *clk)
+> +{
+> +	if (!clk)
+> +		return 0;
+> +
+> +	return clk->accuracy;
+> +}
+> +
+>   unsigned long __clk_get_flags(struct clk *clk)
+>   {
+>   	return !clk ? 0 : clk->flags;
+> @@ -1017,6 +1032,59 @@ static int __clk_notify(struct clk *clk, unsigned long msg,
+>   }
+>   
+>   /**
+> + * __clk_recalc_accuracies
+> + * @clk: first clk in the subtree
+> + *
+> + * Walks the subtree of clks starting with clk and recalculates accuracies as
+> + * it goes.  Note that if a clk does not implement the .recalc_accuracy
+> + * callback then it is assumed that the clock will take on the accuracy of it's
+> + * parent.
+> + *
+> + * Caller must hold prepare_lock.
+> + */
+> +static void __clk_recalc_accuracies(struct clk *clk)
+> +{
+> +	unsigned long parent_accuracy = 0;
+> +	struct clk *child;
+> +
+> +	if (clk->parent)
+> +		parent_accuracy = clk->parent->accuracy;
+> +
+> +	if (clk->ops->recalc_accuracy)
+> +		clk->accuracy = clk->ops->recalc_accuracy(clk->hw,
+> +							  parent_accuracy);
+> +	else
+> +		clk->accuracy = parent_accuracy;
+> +
+> +	hlist_for_each_entry(child, &clk->children, child_node)
+> +		__clk_recalc_accuracies(child);
+> +}
+> +
+> +/**
+> + * clk_get_accuracy - return the accuracy of clk
+> + * @clk: the clk whose accuracy is being returned
+> + *
+> + * Simply returns the cached accuracy of the clk, unless
+> + * CLK_GET_ACCURACY_NOCACHE flag is set, which means a recalc_rate will be
+> + * issued.
+> + * If clk is NULL then returns 0.
+> + */
+> +long clk_get_accuracy(struct clk *clk)
+> +{
+> +	unsigned long accuracy;
+> +
+> +	clk_prepare_lock();
+> +	if (clk && (clk->flags & CLK_GET_ACCURACY_NOCACHE))
+> +		__clk_recalc_accuracies(clk);
+> +
+> +	accuracy = __clk_get_accuracy(clk);
+> +	clk_prepare_unlock();
+> +
+> +	return accuracy;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_get_accuracy);
+> +
+> +/**
+>    * __clk_recalc_rates
+>    * @clk: first clk in the subtree
+>    * @msg: notification type (see include/linux/clk.h)
+> @@ -1552,6 +1620,7 @@ void __clk_reparent(struct clk *clk, struct clk *new_parent)
+>   {
+>   	clk_reparent(clk, new_parent);
+>   	clk_debug_reparent(clk, new_parent);
+> +	__clk_recalc_accuracies(clk);
+>   	__clk_recalc_rates(clk, POST_RATE_CHANGE);
+>   }
+>   
+> @@ -1622,11 +1691,13 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
+>   	/* do the re-parent */
+>   	ret = __clk_set_parent(clk, parent, p_index);
+>   
+> -	/* propagate rate recalculation accordingly */
+> -	if (ret)
+> +	/* propagate rate an accuracy recalculation accordingly */
+> +	if (ret) {
+>   		__clk_recalc_rates(clk, ABORT_RATE_CHANGE);
+> -	else
+> +	} else {
+>   		__clk_recalc_rates(clk, POST_RATE_CHANGE);
+> +		__clk_recalc_accuracies(clk);
+> +	}
+>   
+>   out:
+>   	clk_prepare_unlock();
+> @@ -1731,6 +1802,21 @@ int __clk_init(struct device *dev, struct clk *clk)
+>   		hlist_add_head(&clk->child_node, &clk_orphan_list);
+>   
+>   	/*
+> +	 * Set clk's accuracy.  The preferred method is to use
+> +	 * .recalc_accuracy. For simple clocks and lazy developers the default
+> +	 * fallback is to use the parent's accuracy.  If a clock doesn't have a
+> +	 * parent (or is orphaned) then accuracy is set to zero (perfect
+> +	 * clock).
+> +	 */
+> +	if (clk->ops->recalc_accuracy)
+> +		clk->accuracy = clk->ops->recalc_accuracy(clk->hw,
+> +					__clk_get_accuracy(clk->parent));
+> +	else if (clk->parent)
+> +		clk->accuracy = clk->parent->accuracy;
+> +	else
+> +		clk->accuracy = 0;
+> +
+> +	/*
+>   	 * Set clk's rate.  The preferred method is to use .recalc_rate.  For
+>   	 * simple clocks and lazy developers the default fallback is to use the
+>   	 * parent's rate.  If a clock doesn't have a parent (or is orphaned)
+> diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
+> index 8138c94..accb517 100644
+> --- a/include/linux/clk-private.h
+> +++ b/include/linux/clk-private.h
+> @@ -41,6 +41,7 @@ struct clk {
+>   	unsigned long		flags;
+>   	unsigned int		enable_count;
+>   	unsigned int		prepare_count;
+> +	unsigned long		accuracy;
+>   	struct hlist_head	children;
+>   	struct hlist_node	child_node;
+>   	unsigned int		notifier_count;
+> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+> index 7e59253..16d182c 100644
+> --- a/include/linux/clk-provider.h
+> +++ b/include/linux/clk-provider.h
+> @@ -29,6 +29,7 @@
+>   #define CLK_IS_BASIC		BIT(5) /* Basic clk, can't do a to_clk_foo() */
+>   #define CLK_GET_RATE_NOCACHE	BIT(6) /* do not use the cached clk rate */
+>   #define CLK_SET_RATE_NO_REPARENT BIT(7) /* don't re-parent on rate change */
+> +#define CLK_GET_ACCURACY_NOCACHE BIT(8) /* do not use the cached clk accuracy */
+>   
+>   struct clk_hw;
+>   
+> @@ -108,6 +109,13 @@ struct clk_hw;
+>    *		which is likely helpful for most .set_rate implementation.
+>    *		Returns 0 on success, -EERROR otherwise.
+>    *
+> + * @recalc_accuracy: Recalculate the accuracy of this clock. The clock accuracy
+> + *		is expressed in ppb (parts per billion). The parent accuracy is
+> + *		an input parameter.
+> + *		Returns the calculated accuracy.  Optional - if	this op is not
+> + *		set then clock accuracy will be initialized to parent accuracy
+> + *		or 0 (perfect clock) if clock has no parent.
+> + *
+>    * The clk_enable/clk_disable and clk_prepare/clk_unprepare pairs allow
+>    * implementations to split any work between atomic (enable) and sleepable
+>    * (prepare) contexts.  If enabling a clock requires code that might sleep,
+> @@ -139,6 +147,8 @@ struct clk_ops {
+>   	u8		(*get_parent)(struct clk_hw *hw);
+>   	int		(*set_rate)(struct clk_hw *hw, unsigned long,
+>   				    unsigned long);
+> +	unsigned long	(*recalc_accuracy)(struct clk_hw *hw,
+> +					   unsigned long parent_accuracy);
+>   	void		(*init)(struct clk_hw *hw);
+>   };
+>   
+> @@ -433,6 +443,7 @@ struct clk *clk_get_parent_by_index(struct clk *clk, u8 index);
+>   unsigned int __clk_get_enable_count(struct clk *clk);
+>   unsigned int __clk_get_prepare_count(struct clk *clk);
+>   unsigned long __clk_get_rate(struct clk *clk);
+> +unsigned long __clk_get_accuracy(struct clk *clk);
+>   unsigned long __clk_get_flags(struct clk *clk);
+>   bool __clk_is_prepared(struct clk *clk);
+>   bool __clk_is_enabled(struct clk *clk);
+> diff --git a/include/linux/clk.h b/include/linux/clk.h
+> index 9a6d045..0dd9114 100644
+> --- a/include/linux/clk.h
+> +++ b/include/linux/clk.h
+> @@ -82,6 +82,23 @@ int clk_notifier_register(struct clk *clk, struct notifier_block *nb);
+>   
+>   int clk_notifier_unregister(struct clk *clk, struct notifier_block *nb);
+>   
+> +/**
+> + * clk_get_accuracy - obtain the clock accuracy in ppb (parts per billion)
+> + *		      for a clock source.
+> + * @clk: clock source
+> + *
+> + * This gets the clock source accuracy expressed in ppb.
+> + * A perfect clock returns 0.
+> + */
+> +long clk_get_accuracy(struct clk *clk);
+> +
+> +#else
+> +
+> +static inline long clk_get_accuracy(struct clk *clk)
+> +{
+> +	return -ENOTSUPP;
+> +}
+> +
+>   #endif
+>   
+>   /**
+
