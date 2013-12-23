@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757706Ab3LWSLr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 13:11:47 -0500
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:43281 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757426Ab3LWSKx (ORCPT
+	id S1757753Ab3LWSNA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 13:13:00 -0500
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:58431 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751447Ab3LWSM7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 13:10:53 -0500
-From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: patches@linaro.org, linaro-networking@linaro.org,
-        linaro-kernel@lists.linaro.org,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] ARM: OMAP: counter-32k: raw read and write endian fix
-Date: Mon, 23 Dec 2013 20:10:33 +0200
-Message-Id: <1387822234-11167-4-git-send-email-taras.kondratiuk@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1387822234-11167-1-git-send-email-taras.kondratiuk@linaro.org>
-References: <1387822234-11167-1-git-send-email-taras.kondratiuk@linaro.org>
+	Mon, 23 Dec 2013 13:12:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131223172744.GA2069@redhat.com>
+References: <1387366123-3950-1-git-send-email-Viswas.G@pmcs.com>
+	<52B8357D.60202@redhat.com>
+	<52B83B89.9040700@gmail.com>
+	<CE2C58F938F4C44EA74FFF880BAA7E5E1C68AA8A@BBYEXM01.pmc-sierra.internal>
+	<CAD0Z9T+69VoSnDY-Sj7a1QfJ-KLJYVyL9=WQ123XMfRvQmGdsg@mail.gmail.com>
+	<52B8518B.4060204@gmail.com>
+	<52B8569D.4050101@redhat.com>
+	<CAD0Z9TK-cn=X3ywSzPnEQN-FB+ue+0dHQ3EHuwonC+KfgrmPMA@mail.gmail.com>
+	<20131223163410.GA28220@redhat.com>
+	<20131223172744.GA2069@redhat.com>
+Date: Mon, 23 Dec 2013 10:12:57 -0800
+X-Google-Sender-Auth: kuMfd97fuKpANTW404KY0XdIbj8
+Message-ID: <CA+55aFy_y45feJNJgFa=Taks0GpxiXEMJexhjVVYH-vVFkPmkA@mail.gmail.com>
+Subject: Re: spinlock_irqsave() && flags (Was: pm80xx: Spinlock fix)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Jason Seba <jason.seba42@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>, Tomas Henzl <thenzl@redhat.com>,
+        Jack Wang <xjtuwjp@gmail.com>,
+        Suresh Thiagarajan <Suresh.Thiagarajan@pmcs.com>,
+        Viswas G <Viswas.G@pmcs.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "JBottomley@parallels.com" <JBottomley@parallels.com>,
+        Vasanthalakshmi Tharmarajan 
+	<Vasanthalakshmi.Tharmarajan@pmcs.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Victor Kamensky <victor.kamensky@linaro.org>
+On Mon, Dec 23, 2013 at 9:27 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> In short, is this code
+>
+>         spinlock_t LOCK;
+>         unsigned long FLAGS;
+>
+>         void my_lock(void)
+>         {
+>                 spin_lock_irqsave(&LOCK, FLAGS);
+>         }
+>
+>         void my_unlock(void)
+>         {
+>                 spin_unlock_irqrestore(&LOCK, FLAGS);
+>         }
+>
+> correct or not?
 
-All OMAP IP blocks expect LE data, but CPU may operate in BE mode.
-Need to use endian neutral functions to read/write h/w registers.
-I.e instead of __raw_read[lw] and __raw_write[lw] functions code
-need to use read[lw]_relaxed and write[lw]_relaxed functions.
-If the first simply reads/writes register, the second will byteswap
-it if host operates in BE mode.
+Hell no. "flags" needs to be a thread-private variable, or at least
+protected some way (ie the above could work if everything is inside a
+bigger lock, to serialize access to FLAGS).
 
-Changes are trivial sed like replacement of __raw_xxx functions
-with xxx_relaxed variant.
-
-Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
-Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
----
- arch/arm/plat-omap/counter_32k.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/plat-omap/counter_32k.c b/arch/arm/plat-omap/counter_32k.c
-index d9bc98e..21ca329 100644
---- a/arch/arm/plat-omap/counter_32k.c
-+++ b/arch/arm/plat-omap/counter_32k.c
-@@ -40,7 +40,7 @@ static void __iomem *sync32k_cnt_reg;
- 
- static u32 notrace omap_32k_read_sched_clock(void)
- {
--	return sync32k_cnt_reg ? __raw_readl(sync32k_cnt_reg) : 0;
-+	return sync32k_cnt_reg ? readl_relaxed(sync32k_cnt_reg) : 0;
- }
- 
- /**
-@@ -64,7 +64,7 @@ static void omap_read_persistent_clock(struct timespec *ts)
- 	spin_lock_irqsave(&read_persistent_clock_lock, flags);
- 
- 	last_cycles = cycles;
--	cycles = sync32k_cnt_reg ? __raw_readl(sync32k_cnt_reg) : 0;
-+	cycles = sync32k_cnt_reg ? readl_relaxed(sync32k_cnt_reg) : 0;
- 
- 	nsecs = clocksource_cyc2ns(cycles - last_cycles,
- 					persistent_mult, persistent_shift);
-@@ -95,7 +95,7 @@ int __init omap_init_clocksource_32k(void __iomem *vbase)
- 	 * The 'SCHEME' bits(30-31) of the revision register is used
- 	 * to identify the version.
- 	 */
--	if (__raw_readl(vbase + OMAP2_32KSYNCNT_REV_OFF) &
-+	if (readl_relaxed(vbase + OMAP2_32KSYNCNT_REV_OFF) &
- 						OMAP2_32KSYNCNT_REV_SCHEME)
- 		sync32k_cnt_reg = vbase + OMAP2_32KSYNCNT_CR_OFF_HIGH;
- 	else
--- 
-1.7.9.5
-
+                    Linus
