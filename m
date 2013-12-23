@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932592Ab3LWX0X (ORCPT <rfc822;w@1wt.eu>);
+	id S932694Ab3LWX0Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 18:26:25 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:10874 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932596Ab3LWX0X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Dec 2013 18:26:23 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49044 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932564Ab3LWX0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 18:26:21 -0500
-Message-ID: <52B8C675.30204@zytor.com>
-Date: Mon, 23 Dec 2013 15:25:41 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+From: Bing Zhao <bzhao@marvell.com>
+To: Ding Tianhong <dingtianhong@huawei.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 23 Dec 2013 15:26:01 -0800
+Subject: RE: [PATCH 15/21] mwifiex: slight optimization of addr compare
+Thread-Topic: [PATCH 15/21] mwifiex: slight optimization of addr compare
+Thread-Index: Ac7/nX07SjnGZ4KcTA2aLnQl/3N66wAmCEYw
+Message-ID: <477F20668A386D41ADCC57781B1F70430F5334745F@SC-VEXCH1.marvell.com>
+References: <52B7C5E6.7030807@huawei.com>
+In-Reply-To: <52B7C5E6.7030807@huawei.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>, joeyli <jlee@suse.com>
-CC: Matt Fleming <matt@console-pimps.org>, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        x86@kernel.org,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH 02/14] x86-64/efi: Use EFI to deal with platform wall
- clock (again)
-References: <1387439515-8926-1-git-send-email-jlee@suse.com>	<1387448416-11672-1-git-send-email-jlee@suse.com>	<20131219104908.GE3145@console-pimps.org>	<1387459939.3539.4092.camel@linux-s257.site> <20131220112955.75e82a86@alan.etchedpixels.co.uk>
-In-Reply-To: <20131220112955.75e82a86@alan.etchedpixels.co.uk>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2013-12-23_05:2013-12-23,2013-12-23,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1312230185
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBNNQaqQ028487
 
-On 12/20/2013 03:29 AM, One Thousand Gnomes wrote:
-> On Thu, 19 Dec 2013 21:32:19 +0800
-> joeyli <jlee@suse.com> wrote:
-> 
->> æ–¼ å››ï¼Œ2013-12-19 æ–¼ 10:49 +0000ï¼ŒMatt Fleming æåˆ°ï¼š
->>> On Thu, 19 Dec, at 06:20:16PM, Lee, Chun-Yi wrote:
->>>> From: Jan Beulich <JBeulich@suse.com>
->>>>
->>>> Other than ix86, x86-64 on EFI so far didn't set the
->>>> {g,s}et_wallclock accessors to the EFI routines, thus
->>>> incorrectly using raw RTC accesses instead.
-> 
-> Probably wise.
-> 
-> Before anyone reverts that please make sure it also works on EFI32,
-> because right now we crash and burn on multiple EFI32 tablets querying
-> the time.
-> 
+Hi Ding,
 
-Quite -- we in fact did just the opposite (checkin 04bf9ba720fc).
+> diff --git a/drivers/net/wireless/mwifiex/11n_rxreorder.c
+> b/drivers/net/wireless/mwifiex/11n_rxreorder.c
+> index ada809f..a180298 100644
+> --- a/drivers/net/wireless/mwifiex/11n_rxreorder.c
+> +++ b/drivers/net/wireless/mwifiex/11n_rxreorder.c
+> @@ -164,7 +164,7 @@ mwifiex_11n_get_rx_reorder_tbl(struct mwifiex_private *priv, int tid, u8 *ta)
+> 
+>  	spin_lock_irqsave(&priv->rx_reorder_tbl_lock, flags);
+>  	list_for_each_entry(tbl, &priv->rx_reorder_tbl_ptr, list) {
+> -		if (!memcmp(tbl->ta, ta, ETH_ALEN) && tbl->tid == tid) {
+> +		if (ether_addr_equal_unaligned(tbl->ta, ta) && tbl->tid == tid) {
 
-	-hpa
+checkpatch.pl found several warnings in this patch.
+WARNING: line over 80 characters
 
+Could you please fix these warnings by splitting the function arguments into multiple lines?
+
+Thanks,
+Bing
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
