@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757809Ab3LWShC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 13:37:02 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:37255 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757752Ab3LWSg6 (ORCPT
+	id S1757885Ab3LWShL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 13:37:11 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:40034 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757814Ab3LWShF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 13:36:58 -0500
+	Mon, 23 Dec 2013 13:37:05 -0500
 From: Matt Porter <mporter@linaro.org>
 To: Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -25,9 +25,9 @@ Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Devicetree List <devicetree@vger.kernel.org>,
         Linaro Patches <patches@linaro.org>
-Subject: [PATCH v9 5/9] usb: gadget: s3c-hsotg: enable generic phy support
-Date: Mon, 23 Dec 2013 13:36:34 -0500
-Message-Id: <1387823798-10211-6-git-send-email-mporter@linaro.org>
+Subject: [PATCH v9 8/9] phy: add Broadcom Kona USB2 PHY driver
+Date: Mon, 23 Dec 2013 13:36:37 -0500
+Message-Id: <1387823798-10211-9-git-send-email-mporter@linaro.org>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1387823798-10211-1-git-send-email-mporter@linaro.org>
 References: <1387823798-10211-1-git-send-email-mporter@linaro.org>
@@ -35,140 +35,208 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds support for the generic PHY subsystem. Generic PHY
-support is probed and then the driver falls back to checking
-for an old style USB PHY and pdata if not found.
+Add a driver for the internal Broadcom Kona USB 2.0 PHY found
+on the BCM281xx family of SoCs.
 
 Signed-off-by: Matt Porter <mporter@linaro.org>
 ---
- drivers/usb/gadget/s3c-hsotg.c | 55 ++++++++++++++++++++++++++++++------------
- 1 file changed, 39 insertions(+), 16 deletions(-)
+ drivers/phy/Kconfig             |   6 ++
+ drivers/phy/Makefile            |   1 +
+ drivers/phy/phy-bcm-kona-usb2.c | 158 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 165 insertions(+)
+ create mode 100644 drivers/phy/phy-bcm-kona-usb2.c
 
-diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-index cbfbf41..8f9bcdb 100644
---- a/drivers/usb/gadget/s3c-hsotg.c
-+++ b/drivers/usb/gadget/s3c-hsotg.c
-@@ -30,6 +30,8 @@
- #include <linux/clk.h>
- #include <linux/regulator/consumer.h>
- #include <linux/of_platform.h>
-+#include <linux/phy/phy.h>
-+#include <linux/usb/phy.h>
+diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+index a344f3d..2e87fa8 100644
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -51,4 +51,10 @@ config PHY_EXYNOS_DP_VIDEO
+ 	help
+ 	  Support for Display Port PHY found on Samsung EXYNOS SoCs.
  
- #include <linux/usb/ch9.h>
- #include <linux/usb/gadget.h>
-@@ -138,6 +140,7 @@ struct s3c_hsotg_ep {
-  * @dev: The parent device supplied to the probe function
-  * @driver: USB gadget driver
-  * @phy: The otg phy transceiver structure for phy control.
-+ * @uphy: The otg phy transceiver structure for old USB phy control.
-  * @plat: The platform specific configuration data. This can be removed once
-  * all SoCs support usb transceiver.
-  * @regs: The memory area mapped for accessing registers.
-@@ -159,7 +162,8 @@ struct s3c_hsotg_ep {
- struct s3c_hsotg {
- 	struct device		 *dev;
- 	struct usb_gadget_driver *driver;
--	struct usb_phy		*phy;
-+	struct phy		 *phy;
-+	struct usb_phy		 *uphy;
- 	struct s3c_hsotg_plat	 *plat;
- 
- 	spinlock_t              lock;
-@@ -2901,8 +2905,11 @@ static void s3c_hsotg_phy_enable(struct s3c_hsotg *hsotg)
- 
- 	dev_dbg(hsotg->dev, "pdev 0x%p\n", pdev);
- 
--	if (hsotg->phy)
--		usb_phy_init(hsotg->phy);
-+	if (hsotg->phy) {
-+		phy_init(hsotg->phy);
-+		phy_power_on(hsotg->phy);
-+	} else if (hsotg->uphy)
-+		usb_phy_init(hsotg->uphy);
- 	else if (hsotg->plat->phy_init)
- 		hsotg->plat->phy_init(pdev, hsotg->plat->phy_type);
- }
-@@ -2918,8 +2925,11 @@ static void s3c_hsotg_phy_disable(struct s3c_hsotg *hsotg)
- {
- 	struct platform_device *pdev = to_platform_device(hsotg->dev);
- 
--	if (hsotg->phy)
--		usb_phy_shutdown(hsotg->phy);
-+	if (hsotg->phy) {
-+		phy_power_off(hsotg->phy);
-+		phy_exit(hsotg->phy);
-+	} else if (hsotg->uphy)
-+		usb_phy_shutdown(hsotg->uphy);
- 	else if (hsotg->plat->phy_exit)
- 		hsotg->plat->phy_exit(pdev, hsotg->plat->phy_type);
- }
-@@ -3526,7 +3536,8 @@ static void s3c_hsotg_delete_debug(struct s3c_hsotg *hsotg)
- static int s3c_hsotg_probe(struct platform_device *pdev)
- {
- 	struct s3c_hsotg_plat *plat = dev_get_platdata(&pdev->dev);
--	struct usb_phy *phy;
-+	struct phy *phy;
-+	struct usb_phy *uphy;
- 	struct device *dev = &pdev->dev;
- 	struct s3c_hsotg_ep *eps;
- 	struct s3c_hsotg *hsotg;
-@@ -3541,19 +3552,26 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
--	phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-+	/*
-+	 * Attempt to find a generic PHY, then look for an old style
-+	 * USB PHY, finally fall back to pdata
-+	 */
-+	phy = devm_phy_get(&pdev->dev, "usb2-phy");
- 	if (IS_ERR(phy)) {
--		/* Fallback for pdata */
--		plat = dev_get_platdata(&pdev->dev);
--		if (!plat) {
--			dev_err(&pdev->dev, "no platform data or transceiver defined\n");
--			return -EPROBE_DEFER;
--		} else {
-+		uphy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-+		if (IS_ERR(uphy)) {
-+			/* Fallback for pdata */
-+			plat = dev_get_platdata(&pdev->dev);
-+			if (!plat) {
-+				dev_err(&pdev->dev,
-+				"no platform data or transceiver defined\n");
-+				return -EPROBE_DEFER;
-+			}
- 			hsotg->plat = plat;
--		}
--	} else {
-+		} else
-+			hsotg->uphy = uphy;
-+	} else
- 		hsotg->phy = phy;
--	}
- 
- 	hsotg->dev = dev;
- 
-@@ -3620,6 +3638,9 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
- 		goto err_supplies;
- 	}
- 
-+	if (hsotg->phy)
-+		phy_init(hsotg->phy);
++config BCM_KONA_USB2_PHY
++	tristate "Broadcom Kona USB2 PHY Driver"
++	depends on GENERIC_PHY
++	help
++	  Enable this to support the Broadcom Kona USB 2.0 PHY.
 +
- 	/* usb phy enable */
- 	s3c_hsotg_phy_enable(hsotg);
+ endmenu
+diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+index d0caae9..c447f1a 100644
+--- a/drivers/phy/Makefile
++++ b/drivers/phy/Makefile
+@@ -3,6 +3,7 @@
+ #
  
-@@ -3713,6 +3734,8 @@ static int s3c_hsotg_remove(struct platform_device *pdev)
- 	}
- 
- 	s3c_hsotg_phy_disable(hsotg);
-+	if (hsotg->phy)
-+		phy_exit(hsotg->phy);
- 	clk_disable_unprepare(hsotg->clk);
- 
- 	return 0;
+ obj-$(CONFIG_GENERIC_PHY)		+= phy-core.o
++obj-$(CONFIG_BCM_KONA_USB2_PHY)		+= phy-bcm-kona-usb2.o
+ obj-$(CONFIG_PHY_EXYNOS_DP_VIDEO)	+= phy-exynos-dp-video.o
+ obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)	+= phy-exynos-mipi-video.o
+ obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
+diff --git a/drivers/phy/phy-bcm-kona-usb2.c b/drivers/phy/phy-bcm-kona-usb2.c
+new file mode 100644
+index 0000000..efc5c1a
+--- /dev/null
++++ b/drivers/phy/phy-bcm-kona-usb2.c
+@@ -0,0 +1,158 @@
++/*
++ * phy-bcm-kona-usb2.c - Broadcom Kona USB2 Phy Driver
++ *
++ * Copyright (C) 2013 Linaro Limited
++ * Matt Porter <mporter@linaro.org>
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/clk.h>
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/phy/phy.h>
++#include <linux/platform_device.h>
++
++#define OTGCTL			(0)
++#define OTGCTL_OTGSTAT2		BIT(31)
++#define OTGCTL_OTGSTAT1		BIT(30)
++#define OTGCTL_PRST_N_SW	BIT(11)
++#define OTGCTL_HRESET_N		BIT(10)
++#define OTGCTL_UTMI_LINE_STATE1	BIT(9)
++#define OTGCTL_UTMI_LINE_STATE0	BIT(8)
++
++#define P1CTL			(8)
++#define P1CTL_SOFT_RESET	BIT(1)
++#define P1CTL_NON_DRIVING	BIT(0)
++
++struct bcm_kona_usb {
++	void __iomem *regs;
++};
++
++static void bcm_kona_usb_phy_power(struct bcm_kona_usb *phy, int on)
++{
++	u32 val;
++
++	val = readl(phy->regs + OTGCTL);
++	if (on) {
++		/* Configure and power PHY */
++		val &= ~(OTGCTL_OTGSTAT2 | OTGCTL_OTGSTAT1 |
++			 OTGCTL_UTMI_LINE_STATE1 | OTGCTL_UTMI_LINE_STATE0);
++		val |= OTGCTL_PRST_N_SW | OTGCTL_HRESET_N;
++	} else {
++		val &= ~(OTGCTL_PRST_N_SW | OTGCTL_HRESET_N);
++	}
++	writel(val, phy->regs + OTGCTL);
++}
++
++static int bcm_kona_usb_phy_init(struct phy *gphy)
++{
++	struct bcm_kona_usb *phy = phy_get_drvdata(gphy);
++	u32 val;
++
++	/* Soft reset PHY */
++	val = readl(phy->regs + P1CTL);
++	val &= ~P1CTL_NON_DRIVING;
++	val |= P1CTL_SOFT_RESET;
++	writel(val, phy->regs + P1CTL);
++	writel(val & ~P1CTL_SOFT_RESET, phy->regs + P1CTL);
++	/* Reset needs to be asserted for 2ms */
++	mdelay(2);
++	writel(val | P1CTL_SOFT_RESET, phy->regs + P1CTL);
++
++	return 0;
++}
++
++static int bcm_kona_usb_phy_power_on(struct phy *gphy)
++{
++	struct bcm_kona_usb *phy = phy_get_drvdata(gphy);
++
++	bcm_kona_usb_phy_power(phy, 1);
++
++	return 0;
++}
++
++static int bcm_kona_usb_phy_power_off(struct phy *gphy)
++{
++	struct bcm_kona_usb *phy = phy_get_drvdata(gphy);
++
++	bcm_kona_usb_phy_power(phy, 0);
++
++	return 0;
++}
++
++static struct phy_ops ops = {
++	.init		= bcm_kona_usb_phy_init,
++	.power_on	= bcm_kona_usb_phy_power_on,
++	.power_off	= bcm_kona_usb_phy_power_off,
++	.owner		= THIS_MODULE,
++};
++
++static int bcm_kona_usb2_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct bcm_kona_usb *phy;
++	struct resource *res;
++	struct phy *gphy;
++	struct phy_provider *phy_provider;
++
++	phy = devm_kzalloc(dev, sizeof(*phy), GFP_KERNEL);
++	if (!phy)
++		return -ENOMEM;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	phy->regs = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(phy->regs))
++		return PTR_ERR(phy->regs);
++
++	platform_set_drvdata(pdev, phy);
++
++	gphy = devm_phy_create(dev, &ops, NULL);
++	if (IS_ERR(gphy))
++		return PTR_ERR(gphy);
++
++	/* The Kona PHY supports an 8-bit wide UTMI interface */
++	phy_set_bus_width(gphy, 8);
++
++	phy_set_drvdata(gphy, phy);
++
++	phy_provider = devm_of_phy_provider_register(dev,
++			of_phy_simple_xlate);
++	if (IS_ERR(phy_provider))
++		return PTR_ERR(phy_provider);
++
++	return 0;
++}
++
++static const struct of_device_id bcm_kona_usb2_dt_ids[] = {
++	{ .compatible = "brcm,kona-usb2-phy" },
++	{ /* sentinel */ }
++};
++
++MODULE_DEVICE_TABLE(of, bcm_kona_usb2_dt_ids);
++
++static struct platform_driver bcm_kona_usb2_driver = {
++	.probe		= bcm_kona_usb2_probe,
++	.driver		= {
++		.name	= "bcm-kona-usb2",
++		.owner	= THIS_MODULE,
++		.of_match_table = bcm_kona_usb2_dt_ids,
++	},
++};
++
++module_platform_driver(bcm_kona_usb2_driver);
++
++MODULE_ALIAS("platform:bcm-kona-usb2");
++MODULE_AUTHOR("Matt Porter <mporter@linaro.org>");
++MODULE_DESCRIPTION("BCM Kona USB 2.0 PHY driver");
++MODULE_LICENSE("GPL v2");
 -- 
 1.8.4
 
