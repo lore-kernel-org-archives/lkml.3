@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932539Ab3LWWBT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 17:01:19 -0500
-Received: from zimbra13.linbit.com ([212.69.166.240]:60679 "EHLO
+	id S932520Ab3LWWBS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 17:01:18 -0500
+Received: from zimbra13.linbit.com ([212.69.166.240]:60687 "EHLO
 	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932458Ab3LWV7A (ORCPT
+	with ESMTP id S932461Ab3LWV7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Dec 2013 16:59:00 -0500
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 06/27] drbd: Define the size of res_opts->cpu_mask in a single place
-Date: Mon, 23 Dec 2013 22:50:35 +0100
-Message-Id: <1387835456-29695-7-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 24/27] drbd: Get rid of first_peer_device() in handle_write_conflicts()
+Date: Mon, 23 Dec 2013 22:50:53 +0100
+Message-Id: <1387835456-29695-25-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1387835456-29695-1-git-send-email-philipp.reisner@linbit.com>
 References: <1387835456-29695-1-git-send-email-philipp.reisner@linbit.com>
@@ -25,49 +25,42 @@ From: Andreas Gruenbacher <agruen@linbit.com>
 Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 ---
- drivers/block/drbd/drbd_main.c |    3 +--
- include/linux/drbd.h           |    2 ++
- include/linux/drbd_genl.h      |    2 +-
- 3 files changed, 4 insertions(+), 3 deletions(-)
+ drivers/block/drbd/drbd_receiver.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index 824bc7a..cab0641 100644
---- a/drivers/block/drbd/drbd_main.c
-+++ b/drivers/block/drbd/drbd_main.c
-@@ -2505,8 +2505,7 @@ int set_resource_options(struct drbd_resource *resource, struct res_opts *res_op
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index e2e01b4..5c0239e 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -2065,7 +2065,7 @@ static void fail_postponed_requests(struct drbd_device *device, sector_t sector,
+ static int handle_write_conflicts(struct drbd_device *device,
+ 				  struct drbd_peer_request *peer_req)
+ {
+-	struct drbd_connection *connection = first_peer_device(device)->connection;
++	struct drbd_connection *connection = peer_req->peer_device->connection;
+ 	bool resolve_conflicts = test_bit(RESOLVE_CONFLICTS, &connection->flags);
+ 	sector_t sector = peer_req->i.sector;
+ 	const unsigned int size = peer_req->i.size;
+@@ -2119,7 +2119,7 @@ static int handle_write_conflicts(struct drbd_device *device,
+ 			peer_req->w.cb = superseded ? e_send_superseded :
+ 						   e_send_retry_write;
+ 			list_add_tail(&peer_req->w.list, &device->done_ee);
+-			wake_asender(first_peer_device(device)->connection);
++			wake_asender(connection);
  
- 	/* silently ignore cpu mask on UP kernel */
- 	if (nr_cpu_ids > 1 && res_opts->cpu_mask[0] != 0) {
--		/* FIXME: Get rid of constant 32 here */
--		err = bitmap_parse(res_opts->cpu_mask, 32,
-+		err = bitmap_parse(res_opts->cpu_mask, DRBD_CPU_MASK_SIZE,
- 				   cpumask_bits(new_cpu_mask), nr_cpu_ids);
- 		if (err) {
- 			drbd_warn(resource, "bitmap_parse() failed with %d\n", err);
-diff --git a/include/linux/drbd.h b/include/linux/drbd.h
-index de7d74a..6f60136 100644
---- a/include/linux/drbd.h
-+++ b/include/linux/drbd.h
-@@ -382,4 +382,6 @@ enum drbd_timeout_flag {
- #define DRBD_MD_INDEX_FLEX_EXT -2
- #define DRBD_MD_INDEX_FLEX_INT -3
- 
-+#define DRBD_CPU_MASK_SIZE 32
-+
- #endif
-diff --git a/include/linux/drbd_genl.h b/include/linux/drbd_genl.h
-index b14a2e8..4193f5f 100644
---- a/include/linux/drbd_genl.h
-+++ b/include/linux/drbd_genl.h
-@@ -135,7 +135,7 @@ GENL_struct(DRBD_NLA_DISK_CONF, 3, disk_conf,
- )
- 
- GENL_struct(DRBD_NLA_RESOURCE_OPTS, 4, res_opts,
--	__str_field_def(1,	DRBD_GENLA_F_MANDATORY,	cpu_mask,       32)
-+	__str_field_def(1,	DRBD_GENLA_F_MANDATORY,	cpu_mask,       DRBD_CPU_MASK_SIZE)
- 	__u32_field_def(2,	DRBD_GENLA_F_MANDATORY,	on_no_data, DRBD_ON_NO_DATA_DEF)
- )
- 
+ 			err = -ENOENT;
+ 			goto out;
+@@ -2148,9 +2148,7 @@ static int handle_write_conflicts(struct drbd_device *device,
+ 				 */
+ 				err = drbd_wait_misc(device, &req->i);
+ 				if (err) {
+-					_conn_request_state(first_peer_device(device)->connection,
+-							    NS(conn, C_TIMEOUT),
+-							    CS_HARD);
++					_conn_request_state(connection, NS(conn, C_TIMEOUT), CS_HARD);
+ 					fail_postponed_requests(device, sector, size);
+ 					goto out;
+ 				}
 -- 
 1.7.9.5
 
