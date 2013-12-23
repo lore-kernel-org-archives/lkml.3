@@ -1,140 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757628Ab3LWSgs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 13:36:48 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:44740 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757515Ab3LWSgq (ORCPT
+	id S1757686Ab3LWSnL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 13:43:11 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:55091 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640Ab3LWSnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 13:36:46 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Paul Zimmerman <paulz@synopsys.com>
-Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>
-Subject: [PATCH v9 0/9] USB Device Controller support for BCM281xx
-Date: Mon, 23 Dec 2013 13:36:29 -0500
-Message-Id: <1387823798-10211-1-git-send-email-mporter@linaro.org>
-X-Mailer: git-send-email 1.8.4
+	Mon, 23 Dec 2013 13:43:09 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131223182455.GA5656@redhat.com>
+References: <52B8357D.60202@redhat.com>
+	<52B83B89.9040700@gmail.com>
+	<CE2C58F938F4C44EA74FFF880BAA7E5E1C68AA8A@BBYEXM01.pmc-sierra.internal>
+	<CAD0Z9T+69VoSnDY-Sj7a1QfJ-KLJYVyL9=WQ123XMfRvQmGdsg@mail.gmail.com>
+	<52B8518B.4060204@gmail.com>
+	<52B8569D.4050101@redhat.com>
+	<CAD0Z9TK-cn=X3ywSzPnEQN-FB+ue+0dHQ3EHuwonC+KfgrmPMA@mail.gmail.com>
+	<20131223163410.GA28220@redhat.com>
+	<20131223172744.GA2069@redhat.com>
+	<CA+55aFy_y45feJNJgFa=Taks0GpxiXEMJexhjVVYH-vVFkPmkA@mail.gmail.com>
+	<20131223182455.GA5656@redhat.com>
+Date: Mon, 23 Dec 2013 10:43:07 -0800
+X-Google-Sender-Auth: wNPzGFmEjylgb_d5QBX2oPZYSEU
+Message-ID: <CA+55aFwPUVeZTn5-_RhvGTQA2v3TOPafGPH-JAEwdVA5qE4FSA@mail.gmail.com>
+Subject: Re: spinlock_irqsave() && flags (Was: pm80xx: Spinlock fix)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Jason Seba <jason.seba42@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>, Tomas Henzl <thenzl@redhat.com>,
+        Jack Wang <xjtuwjp@gmail.com>,
+        Suresh Thiagarajan <Suresh.Thiagarajan@pmcs.com>,
+        Viswas G <Viswas.G@pmcs.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "JBottomley@parallels.com" <JBottomley@parallels.com>,
+        Vasanthalakshmi Tharmarajan 
+	<Vasanthalakshmi.Tharmarajan@pmcs.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes since v8:
-	- Fix build issue in s3c-hsotg on !ARM by guarding with a
-	  "depends on ARM". Will fix by replacing use of readsl/writesl
-	  for 3.15 and dropping the Kconfig workaround..
+On Mon, Dec 23, 2013 at 10:24 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> However, the code above already has the users. Do you think it makes
+> sense to add something like
 
-Changes since v7:
-	- Register phy provider with generic phy subsystem only after
-	  the generic phy has been allocated and configured.
+No. I think it makes sense to put a big warning on any users you find,
+and fart in the general direction of any developer who did that broken
+pattern.
 
-Changes since v6:
-	- Drop dependency on the Exynos generic phy conversion series
-	- Bring back original patch that converts s3c-hsotg to use the
-	  generic phy layer with a fall back to the old usb style phy
-	  support.
+Because code like that is obviously crap.
 
-Changes since v5:
-	- tweak s3c-hsotg Kconfig help message to be more generic
-
-Changes since v4:
-	- phy_set/get_bus_width now use an int for bus_width
-
-Changes since v3:
-	- Rebased on 3.13-rc3
-	- Move struct phy bus_width attribute back into struct phy_attrs
-	- Fix build issue on !GENERIC_PHY
-	- Update dwc2 binding to reflect optional phy properties
-	- Rename bcm-kona-phy.txt binding to bcm-phy.txt
-	- Reorder bcm kona phy includes and use bitops
-	- phy-names changed to "usb2-phy" to match updated s3c-hsotg
-	  generic phy-ification series
-
-Changes since v2:
-	- Rebased on 3.13-rc1
-	- Fix braces in phy_get_bus_width()/phy_set_bus_width()
-	- Drop generic phy conversion to use the same support from
-	  the Exynos generic phy conversion series
-	- Modify dts support to match the "device" phy name required
-	  in the v3 Exynos generic phy conversion
-	- Add s3c-hsotg phy_init/phy_exit support
-	- Fix typo on reg property in kona phy binding
-	- Replace phy driver reg struct with offset defines
-	- Move phy soft reset to phy driver init
-	- Fix dts node names to match ePAPR conventions
-
-Changes since v1:
-	- Convert USB phy driver to generic phy subsystem
-	- Add phy bus width apis
-	- Drop dwc2 phy bus width DT property in favor of querying the
-	  phy provider for bus width
-	- Add generic phy/clock properties to dwc2 DT binding
-	- Add generic phy subsystem support to s3c-hsotg with the
-	  existing usb phy and pdata phy methods as a fallback
-	- Split bindings out to separate patches to match the latest
-	  DT binding review guidelines
-
-This series adds USB Device Controller support for the Broadcom
-BCM281xx family of parts. BCM281xx contains a DWC2 OTG block and
-s3c-hsotg is used to support UDC operation.
-
-Part 1 adds phy bus width support to the generic phy subsystem
-
-Parts 2-6 allows s3c-hsotg to build on non-Samsung platforms, supports
-the dwc2 binding, adds generic phy layer support, and supports fetching
-phy bus width using the generic phy layer.
-
-Parts 7-8 add a generic phy binding and driver for the BCM Kona USB PHY.
-
-Part 9 adds the DT nodes to enable UDC support on both BCM281xx boards
-in the kernel.
-
-This series depends on:
-	- "Update Kona drivers to use clocks" v4 series
-	  https://lkml.org/lkml/2013/12/5/508
-	  (relevant portion now queued for 3.14)
-
-Matt Porter (9):
-  phy: add phy_get_bus_width()/phy_set_bus_width() calls
-  staging: dwc2: update DT binding to add generic clock/phy properties
-  usb: gadget: s3c-hsotg: enable build for other platforms
-  usb: gadget: s3c-hsotg: add snps,dwc2 compatible string
-  usb: gadget: s3c-hsotg: enable generic phy support
-  usb: gadget: s3c-hsotg: get phy bus width from phy subsystem
-  phy: add Broadcom Kona USB2 PHY DT binding
-  phy: add Broadcom Kona USB2 PHY driver
-  ARM: dts: add usb udc support to bcm281xx
-
- Documentation/devicetree/bindings/phy/bcm-phy.txt  |  15 ++
- Documentation/devicetree/bindings/staging/dwc2.txt |  12 ++
- arch/arm/boot/dts/bcm11351-brt.dts                 |   6 +
- arch/arm/boot/dts/bcm11351.dtsi                    |  18 +++
- arch/arm/boot/dts/bcm28155-ap.dts                  |   8 ++
- drivers/phy/Kconfig                                |   6 +
- drivers/phy/Makefile                               |   1 +
- drivers/phy/phy-bcm-kona-usb2.c                    | 158 +++++++++++++++++++++
- drivers/usb/gadget/Kconfig                         |   8 +-
- drivers/usb/gadget/s3c-hsotg.c                     |  72 +++++++---
- drivers/usb/gadget/s3c-hsotg.h                     |   1 +
- include/linux/phy/phy.h                            |  28 ++++
- 12 files changed, 310 insertions(+), 23 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/phy/bcm-phy.txt
- create mode 100644 drivers/phy/phy-bcm-kona-usb2.c
-
--- 
-1.8.4
-
+                Linus
