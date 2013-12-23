@@ -1,97 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757871Ab3LWUAJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 15:00:09 -0500
-Received: from ihemail2.lucent.com ([135.245.0.35]:63505 "EHLO
-	ihemail2.lucent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035Ab3LWUAH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 15:00:07 -0500
-X-Greylist: delayed 717 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Dec 2013 15:00:07 EST
-Date: Mon, 23 Dec 2013 13:43:52 -0600 (CST)
-From: Ilija Hadzic <ihadzic@research.bell-labs.com>
-X-X-Sender: ihadzic@umail
-To: Valentina Manea <valentina.manea.m@gmail.com>
-cc: gregkh@linuxfoundation.org, ly80toro@cip.cs.fau.de, standby24x7@gmail.com,
-        alan@linux.intel.com, anthony.foiani@gmail.com,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        devel@driverdev.osuosl.org, andy.grover@gmail.com
-Subject: Re: [PATCH] staging: usbip: add support for viewing imported devices
-In-Reply-To: <1387821655-24720-1-git-send-email-valentina.manea.m@gmail.com>
-Message-ID: <Pine.GSO.4.64.1312231312580.15803@umail>
-References: <1387821655-24720-1-git-send-email-valentina.manea.m@gmail.com>
+	id S932153Ab3LWUDI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 15:03:08 -0500
+Received: from mta-out.inet.fi ([195.156.147.13]:58957 "EHLO jenni1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750933Ab3LWUDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 15:03:06 -0500
+Date: Mon, 23 Dec 2013 22:02:55 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: mm: kernel BUG at mm/huge_memory.c:1440!
+Message-ID: <20131223200255.GA18521@node.dhcp.inet.fi>
+References: <52B88F6E.8070909@oracle.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52B88F6E.8070909@oracle.com>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 23, 2013 at 02:30:54PM -0500, Sasha Levin wrote:
+> Hi all,
+> 
+> While fuzzing with trinity inside a KVM tools guest running latest -next
+> kernel, I've stumbled on the following spew.
+> 
+> 	page = pmd_page(orig_pmd);
+> 	page_remove_rmap(page);
+> 	VM_BUG_ON(page_mapcount(page) < 0);
+> 	add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
+> 	VM_BUG_ON(!PageHead(page));		<=== HERE
+> 	atomic_long_dec(&tlb->mm->nr_ptes);
+> 	spin_unlock(ptl);
+> 	tlb_remove_page(tlb, page);
+> 
+> [  265.474585] kernel BUG at mm/huge_memory.c:1440!
 
+Could you dump_page() on the bug?
 
-On Mon, 23 Dec 2013, Valentina Manea wrote:
+> [  265.475129] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [  265.476684] Dumping ftrace buffer:
+> [  265.477144]    (ftrace buffer empty)
+> [  265.478398] Modules linked in:
+> [  265.478807] CPU: 8 PID: 11344 Comm: trinity-c206 Tainted: G        W    3.13.0-rc5-ne
+> xt-20131223-sasha-00015-gec22156-dirty #8
+> [  265.480172] task: ffff8801cb573000 ti: ffff8801cbd3a000 task.ti: ffff8801cbd3a000
+> [  265.480172] RIP: 0010:[<ffffffff812c7f70>]  [<ffffffff812c7f70>] zap_huge_pmd+0x170/0
+> x1f0
+> [  265.480172] RSP: 0000:ffff8801cbd3bc78  EFLAGS: 00010246
+> [  265.480172] RAX: 015fffff80090018 RBX: ffff8801cbd3bde8 RCX: ffffffffffffff9c
+> [  265.480172] RDX: ffffffffffffffff RSI: 0000000000000008 RDI: ffff8800bffd2000
+> [  265.480172] RBP: ffff8801cbd3bcb8 R08: 0000000000000000 R09: 0000000000000000
+> [  265.480172] R10: 0000000000000001 R11: 0000000000000000 R12: ffffea0002856740
+> [  265.480172] R13: ffffea0002d50000 R14: 00007ff915000000 R15: 00007ff930e48fff
+> [  265.480172] FS:  00007ff934899700(0000) GS:ffff88014d400000(0000) knlGS:0000000000000
+> 000
+> [  265.480172] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [  265.480172] CR2: 00007ff93428a000 CR3: 000000010babe000 CR4: 00000000000006e0
+> [  265.480172] Stack:
+> [  265.480172]  00000000000004dd ffff8801ccbfbb60 ffff8801cbd3bcb8 ffff8801cbb15540
+> [  265.480172]  00007ff915000000 00007ff930e49000 ffff8801cbd3bde8 00007ff930e48fff
+> [  265.480172]  ffff8801cbd3bd48 ffffffff812885b6 ffff88005f5d20c0 00007ff915200000
+> [  265.480172] Call Trace:
+> [  265.480172]  [<ffffffff812885b6>] unmap_page_range+0x2c6/0x410
+> [  265.480172]  [<ffffffff81288801>] unmap_single_vma+0x101/0x120
+> [  265.480172]  [<ffffffff81288881>] unmap_vmas+0x61/0xa0
+> [  265.480172]  [<ffffffff8128f730>] exit_mmap+0xd0/0x170
+> [  265.480172]  [<ffffffff81138860>] mmput+0x70/0xe0
+> [  265.480172]  [<ffffffff8113c89d>] exit_mm+0x18d/0x1a0
+> [  265.480172]  [<ffffffff811ea355>] ? acct_collect+0x175/0x1b0
+> [  265.480172]  [<ffffffff8113ed0f>] do_exit+0x26f/0x520
+> [  265.480172]  [<ffffffff8113f069>] do_group_exit+0xa9/0xe0
+> [  265.480172]  [<ffffffff8113f0b7>] SyS_exit_group+0x17/0x20
+> [  265.480172]  [<ffffffff845f10d0>] tracesys+0xdd/0xe2
+> [  265.480172] Code: 0f 0b 66 0f 1f 84 00 00 00 00 00 eb fe 66 0f 1f 44 00
+> 00 48 8b 03 f0 48 81 80 50 03 00 00 00 fe ff ff 49 8b 45 00 f6 c4 40 75 10
+> <0f> 0b 66 0f 1f 44 00 00 eb fe 66 0f 1f 44 00 00 48 8b 03 f0 48
+> [  265.480172] RIP  [<ffffffff812c7f70>] zap_huge_pmd+0x170/0x1f0
+> [  265.480172]  RSP <ffff8801cbd3bc78>
+> 
+> 
+> Thanks,
+> Sasha
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-> As of Matt Mooney's major refactoring in 2011, usbip port
-> option was left out. Add support for this option in
-> a manner similar to the old implementation.
->
-
-Yeah, I guess most people (incluing myself) have been just happy with
-just cat-ing the files in /var/run/vhci_hcd. Anyway, I guess it doesn't 
-hurt to have it in the tool.
-
-> Sample output:
->
-> Imported USB devices
-> ====================
-> Port 00: <Port in Use> at Full Speed(12Mbps)
->       unknown vendor : unknown product (1687:6211)
->       2-1 -> usbip://192.168.122.152:3240/1-1 (remote devid 00010002 (bus/dev 001/002))
->
-
-I don't find devid very useful when you are already printing bus and 
-device number; devid is just a different format for the same thing. Just 
-bus number and device number should suffice.
-
->
-> [SNIP]
->
->
-> +int usbip_vhci_imported_device_dump(struct usbip_imported_device *idev)
-> +{
->
-> [SNIP]
->
-> +
-> +	ret = read_record(idev->port, host, serv, remote_busid);
-> +	if (ret) {
-> +		err("read_record");
-> +		return -1;
-> +	}
-> +
-
-If the caller is looping over the ports and dumping one port fails because 
-some bozo has rm-ed the record file, is it the right thing to bail out of 
-completely? You may want to consider continuing with the loop and still 
-show what can be shown (and mark unshowable ports as such).
-
-In that sense, you probably don't want to return an error here.
-
->
-> +	printf("Port %02d: <%s> at %s\n", idev->port,
-> +	       usbip_status_string(idev->status),
-> +	       usbip_speed_string(idev->udev.speed));
->
-> [SNIP]
->
-> +int usbip_port_show(int argc, char *argv[])
-> +{
-> +	(void) argc;
-> +	(void) argv;
-> +
-
-This is an ugly way to suppress the warning. Consider using 
-__attribute__((unused)) instead.
-
-
--- Ilija
-
+-- 
+ Kirill A. Shutemov
