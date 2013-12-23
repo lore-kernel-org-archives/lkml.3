@@ -1,698 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758200Ab3LWVj1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 16:39:27 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:60910 "EHLO
+	id S1758185Ab3LWVj0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 16:39:26 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:7447 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758135Ab3LWVjT (ORCPT
+	by vger.kernel.org with ESMTP id S1758137Ab3LWVjT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Dec 2013 16:39:19 -0500
-Message-Id: <20131223213914.890310439@goodmis.org>
+Message-Id: <20131223213915.242030153@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Dec 2013 16:38:17 -0500
+Date: Mon, 23 Dec 2013 16:38:19 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
         Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next][PATCH 07/10] tracing: Add and use generic set_trigger_filter() implementation
+        Andrew Morton <akpm@linux-foundation.org>,
+        kbuild test robot <fengguang.wu@intel.com>
+Subject: [for-next][PATCH 09/10] tracing: Add generic tracing_lseek() function
 References: <20131223213810.967436536@goodmis.org>
-Content-Disposition: inline; filename=0007-tracing-Add-and-use-generic-set_trigger_filter-imple.patch
+Content-Disposition: inline; filename=0009-tracing-Add-generic-tracing_lseek-function.patch
 X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Add a generic event_command.set_trigger_filter() op implementation and
-have the current set of trigger commands use it - this essentially
-gives them all support for filters.
+Trace event triggers added a lseek that uses the ftrace_filter_lseek()
+function. Unfortunately, when function tracing is not configured in
+that function is not defined and the kernel fails to build.
 
-Syntactically, filters are supported by adding 'if <filter>' just
-after the command, in which case only events matching the filter will
-invoke the trigger.  For example, to add a filter to an
-enable/disable_event command:
+This is the second time that function was added to a file ops and
+it broke the build due to requiring special config dependencies.
 
-    echo 'enable_event:system:event if common_pid == 999' > \
-              .../othersys/otherevent/trigger
+Make a generic tracing_lseek() that all the tracing utilities may
+use.
 
-The above command will only enable the system:event event if the
-common_pid field in the othersys:otherevent event is 999.
+Also, modify the old ftrace_filter_lseek() to return 0 instead of
+1 on WRONLY. Not sure why it was a 1 as that does not make sense.
 
-As another example, to add a filter to a stacktrace command:
+This also changes the old tracing_seek() to modify the file pos
+pointer on WRONLY as well.
 
-    echo 'stacktrace if common_pid == 999' > \
-                   .../somesys/someevent/trigger
-
-The above command will only trigger a stacktrace if the common_pid
-field in the event is 999.
-
-The filter syntax is the same as that described in the 'Event
-filtering' section of Documentation/trace/events.txt.
-
-Because triggers can now use filters, the trigger-invoking logic needs
-to be moved in those cases - e.g. for ftrace_raw_event_calls, if a
-trigger has a filter associated with it, the trigger invocation now
-needs to happen after the { assign; } part of the call, in order for
-the trigger condition to be tested.
-
-There's still a SOFT_DISABLED-only check at the top of e.g. the
-ftrace_raw_events function, so when an event is soft disabled but not
-because of the presence of a trigger, the original SOFT_DISABLED
-behavior remains unchanged.
-
-There's also a bit of trickiness in that some triggers need to avoid
-being invoked while an event is currently in the process of being
-logged, since the trigger may itself log data into the trace buffer.
-Thus we make sure the current event is committed before invoking those
-triggers.  To do that, we split the trigger invocation in two - the
-first part (event_triggers_call()) checks the filter using the current
-trace record; if a command has the post_trigger flag set, it sets a
-bit for itself in the return value, otherwise it directly invoks the
-trigger.  Once all commands have been either invoked or set their
-return flag, event_triggers_call() returns.  The current record is
-then either committed or discarded; if any commands have deferred
-their triggers, those commands are finally invoked following the close
-of the current event by event_triggers_post_call().
-
-To simplify the above and make it more efficient, the TRIGGER_COND bit
-is introduced, which is set only if a soft-disabled trigger needs to
-use the log record for filter testing or needs to wait until the
-current log record is closed.
-
-The syscall event invocation code is also changed in analogous ways.
-
-Because event triggers need to be able to create and free filters,
-this also adds a couple external wrappers for the existing
-create_filter and free_filter functions, which are too generic to be
-made extern functions themselves.
-
-Link: http://lkml.kernel.org/r/7164930759d8719ef460357f143d995406e4eead.1382622043.git.tom.zanussi@linux.intel.com
-
-Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ftrace_event.h        |   9 +-
- include/trace/ftrace.h              |  48 +++++++---
- kernel/trace/trace.h                |   5 ++
- kernel/trace/trace_events_filter.c  |  12 +++
- kernel/trace/trace_events_trigger.c | 170 +++++++++++++++++++++++++++++++++++-
- kernel/trace/trace_syscalls.c       |  46 +++++++---
- 6 files changed, 263 insertions(+), 27 deletions(-)
+ include/linux/ftrace.h              |  2 --
+ kernel/trace/ftrace.c               | 25 ++++++-------------------
+ kernel/trace/trace.c                | 14 +++++++++-----
+ kernel/trace/trace.h                |  2 ++
+ kernel/trace/trace_events_trigger.c |  2 +-
+ kernel/trace/trace_stack.c          |  2 +-
+ 6 files changed, 19 insertions(+), 28 deletions(-)
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 2f73c398..03d2db2 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -1,3 +1,4 @@
-+
- #ifndef _LINUX_FTRACE_EVENT_H
- #define _LINUX_FTRACE_EVENT_H
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 31ea4b4..f4233b1 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -570,8 +570,6 @@ static inline int
+ ftrace_regex_release(struct inode *inode, struct file *file) { return -ENODEV; }
+ #endif /* CONFIG_DYNAMIC_FTRACE */
  
-@@ -265,6 +266,7 @@ enum {
- 	FTRACE_EVENT_FL_SOFT_MODE_BIT,
- 	FTRACE_EVENT_FL_SOFT_DISABLED_BIT,
- 	FTRACE_EVENT_FL_TRIGGER_MODE_BIT,
-+	FTRACE_EVENT_FL_TRIGGER_COND_BIT,
- };
+-loff_t ftrace_filter_lseek(struct file *file, loff_t offset, int whence);
+-
+ /* totally disable ftrace - can not re-enable after this */
+ void ftrace_kill(void);
  
- /*
-@@ -277,6 +279,7 @@ enum {
-  *  SOFT_DISABLED - When set, do not trace the event (even though its
-  *                   tracepoint may be enabled)
-  *  TRIGGER_MODE  - When set, invoke the triggers associated with the event
-+ *  TRIGGER_COND  - When set, one or more triggers has an associated filter
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 0e9f9ea..531ffa6 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1082,19 +1082,6 @@ static __init void ftrace_profile_debugfs(struct dentry *d_tracer)
+ 
+ static struct pid * const ftrace_swapper_pid = &init_struct_pid;
+ 
+-loff_t
+-ftrace_filter_lseek(struct file *file, loff_t offset, int whence)
+-{
+-	loff_t ret;
+-
+-	if (file->f_mode & FMODE_READ)
+-		ret = seq_lseek(file, offset, whence);
+-	else
+-		file->f_pos = ret = 1;
+-
+-	return ret;
+-}
+-
+ #ifdef CONFIG_DYNAMIC_FTRACE
+ 
+ #ifndef CONFIG_FTRACE_MCOUNT_RECORD
+@@ -2739,7 +2726,7 @@ static void ftrace_filter_reset(struct ftrace_hash *hash)
+  * routine, you can use ftrace_filter_write() for the write
+  * routine if @flag has FTRACE_ITER_FILTER set, or
+  * ftrace_notrace_write() if @flag has FTRACE_ITER_NOTRACE set.
+- * ftrace_filter_lseek() should be used as the lseek routine, and
++ * tracing_lseek() should be used as the lseek routine, and
+  * release must call ftrace_regex_release().
   */
- enum {
- 	FTRACE_EVENT_FL_ENABLED		= (1 << FTRACE_EVENT_FL_ENABLED_BIT),
-@@ -286,6 +289,7 @@ enum {
- 	FTRACE_EVENT_FL_SOFT_MODE	= (1 << FTRACE_EVENT_FL_SOFT_MODE_BIT),
- 	FTRACE_EVENT_FL_SOFT_DISABLED	= (1 << FTRACE_EVENT_FL_SOFT_DISABLED_BIT),
- 	FTRACE_EVENT_FL_TRIGGER_MODE	= (1 << FTRACE_EVENT_FL_TRIGGER_MODE_BIT),
-+	FTRACE_EVENT_FL_TRIGGER_COND	= (1 << FTRACE_EVENT_FL_TRIGGER_COND_BIT),
+ int
+@@ -3767,7 +3754,7 @@ static const struct file_operations ftrace_filter_fops = {
+ 	.open = ftrace_filter_open,
+ 	.read = seq_read,
+ 	.write = ftrace_filter_write,
+-	.llseek = ftrace_filter_lseek,
++	.llseek = tracing_lseek,
+ 	.release = ftrace_regex_release,
  };
  
- struct ftrace_event_file {
-@@ -361,7 +365,10 @@ extern int filter_check_discard(struct ftrace_event_file *file, void *rec,
- extern int call_filter_check_discard(struct ftrace_event_call *call, void *rec,
- 				     struct ring_buffer *buffer,
- 				     struct ring_buffer_event *event);
--extern void event_triggers_call(struct ftrace_event_file *file);
-+extern enum event_trigger_type event_triggers_call(struct ftrace_event_file *file,
-+						   void *rec);
-+extern void event_triggers_post_call(struct ftrace_event_file *file,
-+				     enum event_trigger_type tt);
+@@ -3775,7 +3762,7 @@ static const struct file_operations ftrace_notrace_fops = {
+ 	.open = ftrace_notrace_open,
+ 	.read = seq_read,
+ 	.write = ftrace_notrace_write,
+-	.llseek = ftrace_filter_lseek,
++	.llseek = tracing_lseek,
+ 	.release = ftrace_regex_release,
+ };
  
- enum {
- 	FILTER_OTHER = 0,
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 0a48bff..0962968 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -418,6 +418,8 @@ static inline notrace int ftrace_get_offsets_##call(			\
-  *	struct ftrace_event_file *ftrace_file = __data;
-  *	struct ftrace_event_call *event_call = ftrace_file->event_call;
-  *	struct ftrace_data_offsets_<call> __maybe_unused __data_offsets;
-+ *	unsigned long eflags = ftrace_file->flags;
-+ *	enum event_trigger_type __tt = ETT_NONE;
-  *	struct ring_buffer_event *event;
-  *	struct ftrace_raw_<call> *entry; <-- defined in stage 1
-  *	struct ring_buffer *buffer;
-@@ -425,9 +427,12 @@ static inline notrace int ftrace_get_offsets_##call(			\
-  *	int __data_size;
-  *	int pc;
-  *
-- *	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,
-- *		     &ftrace_file->flags))
-- *		return;
-+ *	if (!(eflags & FTRACE_EVENT_FL_TRIGGER_COND)) {
-+ *		if (eflags & FTRACE_EVENT_FL_TRIGGER_MODE)
-+ *			event_triggers_call(ftrace_file, NULL);
-+ *		if (eflags & FTRACE_EVENT_FL_SOFT_DISABLED)
-+ *			return;
-+ *	}
-  *
-  *	local_save_flags(irq_flags);
-  *	pc = preempt_count();
-@@ -445,8 +450,17 @@ static inline notrace int ftrace_get_offsets_##call(			\
-  *	{ <assign>; }  <-- Here we assign the entries by the __field and
-  *			   __array macros.
-  *
-- *	if (!filter_check_discard(ftrace_file, entry, buffer, event))
-+ *	if (eflags & FTRACE_EVENT_FL_TRIGGER_COND)
-+ *		__tt = event_triggers_call(ftrace_file, entry);
-+ *
-+ *	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,
-+ *		     &ftrace_file->flags))
-+ *		ring_buffer_discard_commit(buffer, event);
-+ *	else if (!filter_check_discard(ftrace_file, entry, buffer, event))
-  *		trace_buffer_unlock_commit(buffer, event, irq_flags, pc);
-+ *
-+ *	if (__tt)
-+ *		event_triggers_post_call(ftrace_file, __tt);
-  * }
-  *
-  * static struct trace_event ftrace_event_type_<call> = {
-@@ -532,6 +546,8 @@ ftrace_raw_event_##call(void *__data, proto)				\
- 	struct ftrace_event_file *ftrace_file = __data;			\
- 	struct ftrace_event_call *event_call = ftrace_file->event_call;	\
- 	struct ftrace_data_offsets_##call __maybe_unused __data_offsets;\
-+	unsigned long eflags = ftrace_file->flags;			\
-+	enum event_trigger_type __tt = ETT_NONE;			\
- 	struct ring_buffer_event *event;				\
- 	struct ftrace_raw_##call *entry;				\
- 	struct ring_buffer *buffer;					\
-@@ -539,13 +555,12 @@ ftrace_raw_event_##call(void *__data, proto)				\
- 	int __data_size;						\
- 	int pc;								\
- 									\
--	if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT,			\
--		     &ftrace_file->flags))				\
--		event_triggers_call(ftrace_file);			\
--									\
--	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,			\
--		     &ftrace_file->flags))				\
--		return;							\
-+	if (!(eflags & FTRACE_EVENT_FL_TRIGGER_COND)) {			\
-+		if (eflags & FTRACE_EVENT_FL_TRIGGER_MODE)		\
-+			event_triggers_call(ftrace_file, NULL);		\
-+		if (eflags & FTRACE_EVENT_FL_SOFT_DISABLED)		\
-+			return;						\
-+	}								\
- 									\
- 	local_save_flags(irq_flags);					\
- 	pc = preempt_count();						\
-@@ -564,8 +579,17 @@ ftrace_raw_event_##call(void *__data, proto)				\
- 									\
- 	{ assign; }							\
- 									\
--	if (!filter_check_discard(ftrace_file, entry, buffer, event))	\
-+	if (eflags & FTRACE_EVENT_FL_TRIGGER_COND)			\
-+		__tt = event_triggers_call(ftrace_file, entry);		\
-+									\
-+	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,                 \
-+		     &ftrace_file->flags))                              \
-+		ring_buffer_discard_commit(buffer, event);              \
-+	else if (!filter_check_discard(ftrace_file, entry, buffer, event)) \
- 		trace_buffer_unlock_commit(buffer, event, irq_flags, pc); \
-+									\
-+	if (__tt)							\
-+		event_triggers_post_call(ftrace_file, __tt);		\
+@@ -4038,7 +4025,7 @@ static const struct file_operations ftrace_graph_fops = {
+ 	.open		= ftrace_graph_open,
+ 	.read		= seq_read,
+ 	.write		= ftrace_graph_write,
+-	.llseek		= ftrace_filter_lseek,
++	.llseek		= tracing_lseek,
+ 	.release	= ftrace_graph_release,
+ };
+ 
+@@ -4046,7 +4033,7 @@ static const struct file_operations ftrace_graph_notrace_fops = {
+ 	.open		= ftrace_graph_notrace_open,
+ 	.read		= seq_read,
+ 	.write		= ftrace_graph_write,
+-	.llseek		= ftrace_filter_lseek,
++	.llseek		= tracing_lseek,
+ 	.release	= ftrace_graph_release,
+ };
+ #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+@@ -4719,7 +4706,7 @@ static const struct file_operations ftrace_pid_fops = {
+ 	.open		= ftrace_pid_open,
+ 	.write		= ftrace_pid_write,
+ 	.read		= seq_read,
+-	.llseek		= ftrace_filter_lseek,
++	.llseek		= tracing_lseek,
+ 	.release	= ftrace_pid_release,
+ };
+ 
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 59bf5b5..e32a2f4 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -3183,19 +3183,23 @@ tracing_write_stub(struct file *filp, const char __user *ubuf,
+ 	return count;
  }
- /*
-  * The ftrace_test_probe is compiled out, it is only here as a build time check
+ 
+-static loff_t tracing_seek(struct file *file, loff_t offset, int origin)
++loff_t tracing_lseek(struct file *file, loff_t offset, int whence)
+ {
++	int ret;
++
+ 	if (file->f_mode & FMODE_READ)
+-		return seq_lseek(file, offset, origin);
++		ret = seq_lseek(file, offset, whence);
+ 	else
+-		return 0;
++		file->f_pos = ret = 0;
++
++	return ret;
+ }
+ 
+ static const struct file_operations tracing_fops = {
+ 	.open		= tracing_open,
+ 	.read		= seq_read,
+ 	.write		= tracing_write_stub,
+-	.llseek		= tracing_seek,
++	.llseek		= tracing_lseek,
+ 	.release	= tracing_release,
+ };
+ 
+@@ -4940,7 +4944,7 @@ static const struct file_operations snapshot_fops = {
+ 	.open		= tracing_snapshot_open,
+ 	.read		= seq_read,
+ 	.write		= tracing_snapshot_write,
+-	.llseek		= tracing_seek,
++	.llseek		= tracing_lseek,
+ 	.release	= tracing_snapshot_release,
+ };
+ 
 diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index ccbd810..433bfc5 100644
+index 433bfc5..0380cab 100644
 --- a/kernel/trace/trace.h
 +++ b/kernel/trace/trace.h
-@@ -1,3 +1,4 @@
+@@ -588,6 +588,8 @@ void tracing_start_sched_switch_record(void);
+ int register_tracer(struct tracer *type);
+ int is_tracing_stopped(void);
+ 
++loff_t tracing_lseek(struct file *file, loff_t offset, int whence);
 +
- #ifndef _LINUX_KERNEL_TRACE_H
- #define _LINUX_KERNEL_TRACE_H
+ extern cpumask_var_t __read_mostly tracing_buffer_mask;
  
-@@ -1020,6 +1021,10 @@ extern int apply_subsystem_event_filter(struct ftrace_subsystem_dir *dir,
- extern void print_subsystem_event_filter(struct event_subsystem *system,
- 					 struct trace_seq *s);
- extern int filter_assign_type(const char *type);
-+extern int create_event_filter(struct ftrace_event_call *call,
-+			       char *filter_str, bool set_str,
-+			       struct event_filter **filterp);
-+extern void free_event_filter(struct event_filter *filter);
- 
- struct ftrace_event_field *
- trace_find_event_field(struct ftrace_event_call *call, char *name);
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index 2468f56..8a86319 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -799,6 +799,11 @@ static void __free_filter(struct event_filter *filter)
- 	kfree(filter);
- }
- 
-+void free_event_filter(struct event_filter *filter)
-+{
-+	__free_filter(filter);
-+}
-+
- void destroy_call_preds(struct ftrace_event_call *call)
- {
- 	__free_filter(call->filter);
-@@ -1938,6 +1943,13 @@ static int create_filter(struct ftrace_event_call *call,
- 	return err;
- }
- 
-+int create_event_filter(struct ftrace_event_call *call,
-+			char *filter_str, bool set_str,
-+			struct event_filter **filterp)
-+{
-+	return create_filter(call, filter_str, set_str, filterp);
-+}
-+
- /**
-  * create_system_filter - create a filter for an event_subsystem
-  * @system: event_subsystem to create a filter for
+ #define for_each_tracing_cpu(cpu)	\
 diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
-index 45e48b1..f5b3f78 100644
+index f5b3f78..12ac8a5 100644
 --- a/kernel/trace/trace_events_trigger.c
 +++ b/kernel/trace/trace_events_trigger.c
-@@ -31,6 +31,9 @@ static DEFINE_MUTEX(trigger_cmd_mutex);
- static void
- trigger_data_free(struct event_trigger_data *data)
- {
-+	if (data->cmd_ops->set_filter)
-+		data->cmd_ops->set_filter(NULL, data, NULL);
-+
- 	synchronize_sched(); /* make sure current triggers exit before free */
- 	kfree(data);
- }
-@@ -38,27 +41,78 @@ trigger_data_free(struct event_trigger_data *data)
- /**
-  * event_triggers_call - Call triggers associated with a trace event
-  * @file: The ftrace_event_file associated with the event
-+ * @rec: The trace entry for the event, NULL for unconditional invocation
-  *
-  * For each trigger associated with an event, invoke the trigger
-- * function registered with the associated trigger command.
-+ * function registered with the associated trigger command.  If rec is
-+ * non-NULL, it means that the trigger requires further processing and
-+ * shouldn't be unconditionally invoked.  If rec is non-NULL and the
-+ * trigger has a filter associated with it, rec will checked against
-+ * the filter and if the record matches the trigger will be invoked.
-+ * If the trigger is a 'post_trigger', meaning it shouldn't be invoked
-+ * in any case until the current event is written, the trigger
-+ * function isn't invoked but the bit associated with the deferred
-+ * trigger is set in the return value.
-+ *
-+ * Returns an enum event_trigger_type value containing a set bit for
-+ * any trigger that should be deferred, ETT_NONE if nothing to defer.
-  *
-  * Called from tracepoint handlers (with rcu_read_lock_sched() held).
-  *
-  * Return: an enum event_trigger_type value containing a set bit for
-  * any trigger that should be deferred, ETT_NONE if nothing to defer.
-  */
--void event_triggers_call(struct ftrace_event_file *file)
-+enum event_trigger_type
-+event_triggers_call(struct ftrace_event_file *file, void *rec)
- {
- 	struct event_trigger_data *data;
-+	enum event_trigger_type tt = ETT_NONE;
- 
- 	if (list_empty(&file->triggers))
--		return;
-+		return tt;
- 
--	list_for_each_entry_rcu(data, &file->triggers, list)
-+	list_for_each_entry_rcu(data, &file->triggers, list) {
-+		if (!rec) {
-+			data->ops->func(data);
-+			continue;
-+		}
-+		if (data->filter && !filter_match_preds(data->filter, rec))
-+			continue;
-+		if (data->cmd_ops->post_trigger) {
-+			tt |= data->cmd_ops->trigger_type;
-+			continue;
-+		}
- 		data->ops->func(data);
-+	}
-+	return tt;
- }
- EXPORT_SYMBOL_GPL(event_triggers_call);
- 
-+/**
-+ * event_triggers_post_call - Call 'post_triggers' for a trace event
-+ * @file: The ftrace_event_file associated with the event
-+ * @tt: enum event_trigger_type containing a set bit for each trigger to invoke
-+ *
-+ * For each trigger associated with an event, invoke the trigger
-+ * function registered with the associated trigger command, if the
-+ * corresponding bit is set in the tt enum passed into this function.
-+ * See @event_triggers_call for details on how those bits are set.
-+ *
-+ * Called from tracepoint handlers (with rcu_read_lock_sched() held).
-+ */
-+void
-+event_triggers_post_call(struct ftrace_event_file *file,
-+			 enum event_trigger_type tt)
-+{
-+	struct event_trigger_data *data;
-+
-+	list_for_each_entry_rcu(data, &file->triggers, list) {
-+		if (data->cmd_ops->trigger_type & tt)
-+			data->ops->func(data);
-+	}
-+}
-+EXPORT_SYMBOL_GPL(event_triggers_post_call);
-+
- static void *trigger_next(struct seq_file *m, void *t, loff_t *pos)
- {
- 	struct ftrace_event_file *event_file = event_file_data(m->private);
-@@ -403,6 +457,34 @@ clear_event_triggers(struct trace_array *tr)
- }
- 
- /**
-+ * update_cond_flag - Set or reset the TRIGGER_COND bit
-+ * @file: The ftrace_event_file associated with the event
-+ *
-+ * If an event has triggers and any of those triggers has a filter or
-+ * a post_trigger, trigger invocation needs to be deferred until after
-+ * the current event has logged its data, and the event should have
-+ * its TRIGGER_COND bit set, otherwise the TRIGGER_COND bit should be
-+ * cleared.
-+ */
-+static void update_cond_flag(struct ftrace_event_file *file)
-+{
-+	struct event_trigger_data *data;
-+	bool set_cond = false;
-+
-+	list_for_each_entry_rcu(data, &file->triggers, list) {
-+		if (data->filter || data->cmd_ops->post_trigger) {
-+			set_cond = true;
-+			break;
-+		}
-+	}
-+
-+	if (set_cond)
-+		set_bit(FTRACE_EVENT_FL_TRIGGER_COND_BIT, &file->flags);
-+	else
-+		clear_bit(FTRACE_EVENT_FL_TRIGGER_COND_BIT, &file->flags);
-+}
-+
-+/**
-  * register_trigger - Generic event_command @reg implementation
-  * @glob: The raw string used to register the trigger
-  * @ops: The trigger ops associated with the trigger
-@@ -443,6 +525,7 @@ static int register_trigger(char *glob, struct event_trigger_ops *ops,
- 		list_del_rcu(&data->list);
- 		ret--;
- 	}
-+	update_cond_flag(file);
- out:
- 	return ret;
- }
-@@ -470,6 +553,7 @@ static void unregister_trigger(char *glob, struct event_trigger_ops *ops,
- 		if (data->cmd_ops->trigger_type == test->cmd_ops->trigger_type) {
- 			unregistered = true;
- 			list_del_rcu(&data->list);
-+			update_cond_flag(file);
- 			trace_event_trigger_enable_disable(file, 0);
- 			break;
- 		}
-@@ -572,10 +656,78 @@ event_trigger_callback(struct event_command *cmd_ops,
- 	return ret;
- 
-  out_free:
-+	if (cmd_ops->set_filter)
-+		cmd_ops->set_filter(NULL, trigger_data, NULL);
- 	kfree(trigger_data);
- 	goto out;
- }
- 
-+/**
-+ * set_trigger_filter - Generic event_command @set_filter implementation
-+ * @filter_str: The filter string for the trigger, NULL to remove filter
-+ * @trigger_data: Trigger-specific data
-+ * @file: The ftrace_event_file associated with the event
-+ *
-+ * Common implementation for event command filter parsing and filter
-+ * instantiation.
-+ *
-+ * Usually used directly as the @set_filter method in event command
-+ * implementations.
-+ *
-+ * Also used to remove a filter (if filter_str = NULL).
-+ *
-+ * Return: 0 on success, errno otherwise
-+ */
-+static int set_trigger_filter(char *filter_str,
-+			      struct event_trigger_data *trigger_data,
-+			      struct ftrace_event_file *file)
-+{
-+	struct event_trigger_data *data = trigger_data;
-+	struct event_filter *filter = NULL, *tmp;
-+	int ret = -EINVAL;
-+	char *s;
-+
-+	if (!filter_str) /* clear the current filter */
-+		goto assign;
-+
-+	s = strsep(&filter_str, " \t");
-+
-+	if (!strlen(s) || strcmp(s, "if") != 0)
-+		goto out;
-+
-+	if (!filter_str)
-+		goto out;
-+
-+	/* The filter is for the 'trigger' event, not the triggered event */
-+	ret = create_event_filter(file->event_call, filter_str, false, &filter);
-+	if (ret)
-+		goto out;
-+ assign:
-+	tmp = data->filter;
-+
-+	rcu_assign_pointer(data->filter, filter);
-+
-+	if (tmp) {
-+		/* Make sure the call is done with the filter */
-+		synchronize_sched();
-+		free_event_filter(tmp);
-+	}
-+
-+	kfree(data->filter_str);
-+	data->filter_str = NULL;
-+
-+	if (filter_str) {
-+		data->filter_str = kstrdup(filter_str, GFP_KERNEL);
-+		if (!data->filter_str) {
-+			free_event_filter(data->filter);
-+			data->filter = NULL;
-+			ret = -ENOMEM;
-+		}
-+	}
-+ out:
-+	return ret;
-+}
-+
- static void
- traceon_trigger(struct event_trigger_data *data)
- {
-@@ -685,6 +837,7 @@ static struct event_command trigger_traceon_cmd = {
- 	.reg			= register_trigger,
- 	.unreg			= unregister_trigger,
- 	.get_trigger_ops	= onoff_get_trigger_ops,
-+	.set_filter		= set_trigger_filter,
+@@ -281,7 +281,7 @@ const struct file_operations event_trigger_fops = {
+ 	.open = event_trigger_open,
+ 	.read = seq_read,
+ 	.write = event_trigger_write,
+-	.llseek = ftrace_filter_lseek,
++	.llseek = tracing_lseek,
+ 	.release = event_trigger_release,
  };
  
- static struct event_command trigger_traceoff_cmd = {
-@@ -694,6 +847,7 @@ static struct event_command trigger_traceoff_cmd = {
- 	.reg			= register_trigger,
- 	.unreg			= unregister_trigger,
- 	.get_trigger_ops	= onoff_get_trigger_ops,
-+	.set_filter		= set_trigger_filter,
+diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
+index b20428c..e6be585 100644
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -382,7 +382,7 @@ static const struct file_operations stack_trace_filter_fops = {
+ 	.open = stack_trace_filter_open,
+ 	.read = seq_read,
+ 	.write = ftrace_filter_write,
+-	.llseek = ftrace_filter_lseek,
++	.llseek = tracing_lseek,
+ 	.release = ftrace_regex_release,
  };
  
- #ifdef CONFIG_TRACER_SNAPSHOT
-@@ -765,6 +919,7 @@ static struct event_command trigger_snapshot_cmd = {
- 	.reg			= register_snapshot_trigger,
- 	.unreg			= unregister_trigger,
- 	.get_trigger_ops	= snapshot_get_trigger_ops,
-+	.set_filter		= set_trigger_filter,
- };
- 
- static __init int register_trigger_snapshot_cmd(void)
-@@ -843,6 +998,7 @@ static struct event_command trigger_stacktrace_cmd = {
- 	.reg			= register_trigger,
- 	.unreg			= unregister_trigger,
- 	.get_trigger_ops	= stacktrace_get_trigger_ops,
-+	.set_filter		= set_trigger_filter,
- };
- 
- static __init int register_trigger_stacktrace_cmd(void)
-@@ -1100,6 +1256,8 @@ event_enable_trigger_func(struct event_command *cmd_ops,
-  out_put:
- 	module_put(event_enable_file->event_call->mod);
-  out_free:
-+	if (cmd_ops->set_filter)
-+		cmd_ops->set_filter(NULL, trigger_data, NULL);
- 	kfree(trigger_data);
- 	kfree(enable_data);
- 	goto out;
-@@ -1137,6 +1295,7 @@ static int event_enable_register_trigger(char *glob,
- 		list_del_rcu(&data->list);
- 		ret--;
- 	}
-+	update_cond_flag(file);
- out:
- 	return ret;
- }
-@@ -1157,6 +1316,7 @@ static void event_enable_unregister_trigger(char *glob,
- 		    (enable_data->file == test_enable_data->file)) {
- 			unregistered = true;
- 			list_del_rcu(&data->list);
-+			update_cond_flag(file);
- 			trace_event_trigger_enable_disable(file, 0);
- 			break;
- 		}
-@@ -1191,6 +1351,7 @@ static struct event_command trigger_enable_cmd = {
- 	.reg			= event_enable_register_trigger,
- 	.unreg			= event_enable_unregister_trigger,
- 	.get_trigger_ops	= event_enable_get_trigger_ops,
-+	.set_filter		= set_trigger_filter,
- };
- 
- static struct event_command trigger_disable_cmd = {
-@@ -1200,6 +1361,7 @@ static struct event_command trigger_disable_cmd = {
- 	.reg			= event_enable_register_trigger,
- 	.unreg			= event_enable_unregister_trigger,
- 	.get_trigger_ops	= event_enable_get_trigger_ops,
-+	.set_filter		= set_trigger_filter,
- };
- 
- static __init void unregister_trigger_enable_disable_cmds(void)
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 936ec39..fdd955f 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -306,8 +306,10 @@ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
- 	struct syscall_trace_enter *entry;
- 	struct syscall_metadata *sys_data;
- 	struct ring_buffer_event *event;
-+	enum event_trigger_type __tt = ETT_NONE;
- 	struct ring_buffer *buffer;
- 	unsigned long irq_flags;
-+	unsigned long eflags;
- 	int pc;
- 	int syscall_nr;
- 	int size;
-@@ -321,10 +323,14 @@ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
- 	if (!ftrace_file)
- 		return;
- 
--	if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT, &ftrace_file->flags))
--		event_triggers_call(ftrace_file);
--	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
--		return;
-+	eflags = ftrace_file->flags;
-+
-+	if (!(eflags & FTRACE_EVENT_FL_TRIGGER_COND)) {
-+		if (eflags & FTRACE_EVENT_FL_TRIGGER_MODE)
-+			event_triggers_call(ftrace_file, NULL);
-+		if (eflags & FTRACE_EVENT_FL_SOFT_DISABLED)
-+			return;
-+	}
- 
- 	sys_data = syscall_nr_to_meta(syscall_nr);
- 	if (!sys_data)
-@@ -345,9 +351,16 @@ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
- 	entry->nr = syscall_nr;
- 	syscall_get_arguments(current, regs, 0, sys_data->nb_args, entry->args);
- 
--	if (!filter_check_discard(ftrace_file, entry, buffer, event))
-+	if (eflags & FTRACE_EVENT_FL_TRIGGER_COND)
-+		__tt = event_triggers_call(ftrace_file, entry);
-+
-+	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
-+		ring_buffer_discard_commit(buffer, event);
-+	else if (!filter_check_discard(ftrace_file, entry, buffer, event))
- 		trace_current_buffer_unlock_commit(buffer, event,
- 						   irq_flags, pc);
-+	if (__tt)
-+		event_triggers_post_call(ftrace_file, __tt);
- }
- 
- static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
-@@ -357,8 +370,10 @@ static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
- 	struct syscall_trace_exit *entry;
- 	struct syscall_metadata *sys_data;
- 	struct ring_buffer_event *event;
-+	enum event_trigger_type __tt = ETT_NONE;
- 	struct ring_buffer *buffer;
- 	unsigned long irq_flags;
-+	unsigned long eflags;
- 	int pc;
- 	int syscall_nr;
- 
-@@ -371,10 +386,14 @@ static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
- 	if (!ftrace_file)
- 		return;
- 
--	if (test_bit(FTRACE_EVENT_FL_TRIGGER_MODE_BIT, &ftrace_file->flags))
--		event_triggers_call(ftrace_file);
--	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
--		return;
-+	eflags = ftrace_file->flags;
-+
-+	if (!(eflags & FTRACE_EVENT_FL_TRIGGER_COND)) {
-+		if (eflags & FTRACE_EVENT_FL_TRIGGER_MODE)
-+			event_triggers_call(ftrace_file, NULL);
-+		if (eflags & FTRACE_EVENT_FL_SOFT_DISABLED)
-+			return;
-+	}
- 
- 	sys_data = syscall_nr_to_meta(syscall_nr);
- 	if (!sys_data)
-@@ -394,9 +413,16 @@ static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
- 	entry->nr = syscall_nr;
- 	entry->ret = syscall_get_return_value(current, regs);
- 
--	if (!filter_check_discard(ftrace_file, entry, buffer, event))
-+	if (eflags & FTRACE_EVENT_FL_TRIGGER_COND)
-+		__tt = event_triggers_call(ftrace_file, entry);
-+
-+	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
-+		ring_buffer_discard_commit(buffer, event);
-+	else if (!filter_check_discard(ftrace_file, entry, buffer, event))
- 		trace_current_buffer_unlock_commit(buffer, event,
- 						   irq_flags, pc);
-+	if (__tt)
-+		event_triggers_post_call(ftrace_file, __tt);
- }
- 
- static int reg_event_syscall_enter(struct ftrace_event_file *file,
 -- 
 1.8.4.3
 
