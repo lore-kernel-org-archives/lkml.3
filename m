@@ -1,91 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932728Ab3LWXrf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 18:47:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62868 "EHLO mx1.redhat.com"
+	id S932745Ab3LWXyj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 18:54:39 -0500
+Received: from tundra.namei.org ([65.99.196.166]:57351 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758293Ab3LWXre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 18:47:34 -0500
-Date: Mon, 23 Dec 2013 18:47:23 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        containers@lists.linux-foundation.org, serge.hallyn@ubuntu.com,
-        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-        ebiederm@xmission.com
-Subject: Re: [RFC Part1 PATCH 00/20 v2] Add namespace support for audit
-Message-ID: <20131223234723.GA23101@madcap2.tricolour.ca>
-References: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
- <20131206213135.GA22445@mail.hallyn.com>
- <52A52AFB.2020703@cn.fujitsu.com>
+	id S932234Ab3LWXyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 18:54:37 -0500
+Date: Tue, 24 Dec 2013 10:55:18 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] SELinux fixes
+Message-ID: <alpine.LRH.2.02.1312241054230.22564@tundra.namei.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52A52AFB.2020703@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/12/09, Gao feng wrote:
-> On 12/07/2013 05:31 AM, Serge E. Hallyn wrote:
-> > Quoting Gao feng (gaofeng@cn.fujitsu.com):
+Hi Linus,
 
-> >> The main target of this patchset is allowing user in audit
-> >> namespace to generate the USER_MSG type of audit message,
-> >> some userspace tools need to generate audit message, or
-> >> these tools will broken.
-> >>
-> >> And the login process in container may want to setup
-> >> /proc/<pid>/loginuid, right now this value is unalterable
-> >> once it being set. this will also broke the login problem
-> >> in container. After this patchset, we can reset this loginuid
-> >> to zero if task is running in a new audit namespace.
-> >>
-> >> Same with v1 patchset, in this patchset, only the privileged
-> >> user in init_audit_ns and init_user_ns has rights to
-> >> add/del audit rules. and these rules are gloabl. all
-> >> audit namespace will comply with the rules.
-> >>
-> >> Compared with v1, v2 patch has some big changes.
-> >> 1, the audit namespace is not assigned to user namespace.
-> >>    since there is no available bit of flags for clone, we
-> >>    create audit namespace through netlink, patch[18/20]
-> >>    introduces a new audit netlink type AUDIT_CREATE_NS.
-> >>    the privileged user in userns has rights to create a
-> >>    audit namespace, it means the unprivileged user can
-> >>    create auditns through create userns first. In order
-> >>    to prevent them from doing harm to host, the default
-> >>    audit_backlog_limit of un-init-audit-ns is zero(means
-> >>    audit is unavailable in audit namespace). and it can't
-> >>    be changed in auditns through netlink.
-> > 
-> > So the unprivileged user can create an audit-ns, but can't
-> > then actually send any messages there?  I guess setting it
-> > to something small would just be hacky?
-> 
-> Yes, if unprivileged user wants to send audit message, he should
-> ask privileged user to setup the audit_backlog_limit for him.
-> 
-> I know it's a little of hack, but I don't have good idea :(
+Please pull these SELinux fixes to your current tree.
 
-There's a recent patch that actually clarifies the way
-audit_backlog_limit works, since different parts of the code seemed to
-think different things.  It now means unlimited, since there are other
-places to shut off logging.
-	audit: allow unlimited backlog queue
+The following changes since commit f5835372ebedf26847c2b9e193284075cc9c1f7f:
 
-At first, I'd say each audit_ns should be able to set its own
-audit_backlog_limit.  The most obvious argument against this would be
-the vulnerability of a DoS.  Could there be some automatic metrics to
-set sub audit_ns backlog limits, such as default to the same as
-init_audit_ns and have the init_audit_ns override those defaults?
-Could this be done per user like ulimiit?
+  Merge branch 'drm-fixes' of git://people.freedesktop.org/~airlied/linux (2013-12-23 11:49:16 -0800)
 
-- RGB
+are available in the git repository at:
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
+
+Chad Hanson (1):
+      selinux: fix broken peer recv check
+
+Oleg Nesterov (1):
+      selinux: selinux_setprocattr()->ptrace_parent() needs rcu_read_lock()
+
+ security/selinux/hooks.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
+
+---
+
+commit c0c1439541f5305b57a83d599af32b74182933fe
+Author: Oleg Nesterov <oleg@redhat.com>
+Date:   Mon Dec 23 17:45:01 2013 -0500
+
+    selinux: selinux_setprocattr()->ptrace_parent() needs rcu_read_lock()
+    
+    selinux_setprocattr() does ptrace_parent(p) under task_lock(p),
+    but task_struct->alloc_lock doesn't pin ->parent or ->ptrace,
+    this looks confusing and triggers the "suspicious RCU usage"
+    warning because ptrace_parent() does rcu_dereference_check().
+    
+    And in theory this is wrong, spin_lock()->preempt_disable()
+    doesn't necessarily imply rcu_read_lock() we need to access
+    the ->parent.
+    
+    Reported-by: Evan McNabb <emcnabb@redhat.com>
+    Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+    Cc: stable@vger.kernel.org
+    Signed-off-by: Paul Moore <pmoore@redhat.com>
+
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 5db2646..6625699 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -5588,11 +5588,11 @@ static int selinux_setprocattr(struct task_struct *p,
+ 		/* Check for ptracing, and update the task SID if ok.
+ 		   Otherwise, leave SID unchanged and fail. */
+ 		ptsid = 0;
+-		task_lock(p);
++		rcu_read_lock();
+ 		tracer = ptrace_parent(p);
+ 		if (tracer)
+ 			ptsid = task_sid(tracer);
+-		task_unlock(p);
++		rcu_read_unlock();
+ 
+ 		if (tracer) {
+ 			error = avc_has_perm(ptsid, sid, SECCLASS_PROCESS,
+
+commit 46d01d63221c3508421dd72ff9c879f61053cffc
+Author: Chad Hanson <chanson@trustedcs.com>
+Date:   Mon Dec 23 17:45:01 2013 -0500
+
+    selinux: fix broken peer recv check
+    
+    Fix a broken networking check. Return an error if peer recv fails.  If
+    secmark is active and the packet recv succeeds the peer recv error is
+    ignored.
+    
+    Signed-off-by: Chad Hanson <chanson@trustedcs.com>
+    Cc: stable@vger.kernel.org
+    Signed-off-by: Paul Moore <pmoore@redhat.com>
+
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 419491d..5db2646 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -4334,8 +4334,10 @@ static int selinux_socket_sock_rcv_skb(struct sock *sk, struct sk_buff *skb)
+ 		}
+ 		err = avc_has_perm(sk_sid, peer_sid, SECCLASS_PEER,
+ 				   PEER__RECV, &ad);
+-		if (err)
++		if (err) {
+ 			selinux_netlbl_err(skb, err, 0);
++			return err;
++		}
+ 	}
+ 
+ 	if (secmark_active) {
