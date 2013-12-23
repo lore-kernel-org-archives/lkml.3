@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757109Ab3LWF1R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 00:27:17 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:11718 "EHLO
+	id S1756917Ab3LWF2q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 00:28:46 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:11873 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751403Ab3LWF1P (ORCPT
+	with ESMTP id S1751392Ab3LWF2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 00:27:15 -0500
+	Mon, 23 Dec 2013 00:28:44 -0500
 From: Wenyou Yang <wenyou.yang@atmel.com>
 To: <broonie@kernel.org>
 CC: <lgirdwood@gmail.com>, <linux-kernel@vger.kernel.org>,
@@ -15,9 +15,9 @@ CC: <lgirdwood@gmail.com>, <linux-kernel@vger.kernel.org>,
         <nicolas.ferre@atmel.com>, <plagnioj@jcrosoft.com>,
         <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
         <wenyou.yang@atmel.com>
-Subject: [PATCH v4 2/3] regulator: act8865: add device tree binding doc
-Date: Mon, 23 Dec 2013 13:26:15 +0800
-Message-ID: <1387776375-23118-1-git-send-email-wenyou.yang@atmel.com>
+Subject: [PATCH v4 3/3] ARM: dts: sama5d3xcm: add the regulator device node
+Date: Mon, 23 Dec 2013 13:27:04 +0800
+Message-ID: <1387776425-23154-1-git-send-email-wenyou.yang@atmel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1387776268-23036-1-git-send-email-wenyou.yang@atmel.com>
 References: <1387776268-23036-1-git-send-email-wenyou.yang@atmel.com>
@@ -27,91 +27,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Reviwed-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 ---
- .../bindings/regulator/act8865-regulator.txt       |   60 ++++++++++++++++++++
- .../devicetree/bindings/vendor-prefixes.txt        |    1 +
- 2 files changed, 61 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/regulator/act8865-regulator.txt
+ arch/arm/boot/dts/sama5d3xcm.dtsi |   46 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 46 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/regulator/act8865-regulator.txt b/Documentation/devicetree/bindings/regulator/act8865-regulator.txt
-new file mode 100644
-index 0000000..76964fe
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/act8865-regulator.txt
-@@ -0,0 +1,60 @@
-+ACT8865 regulator
-+-------------------
+diff --git a/arch/arm/boot/dts/sama5d3xcm.dtsi b/arch/arm/boot/dts/sama5d3xcm.dtsi
+index 726a0f3..4571751 100644
+--- a/arch/arm/boot/dts/sama5d3xcm.dtsi
++++ b/arch/arm/boot/dts/sama5d3xcm.dtsi
+@@ -38,6 +38,52 @@
+ 			macb0: ethernet@f0028000 {
+ 				phy-mode = "rgmii";
+ 			};
 +
-+Required properties:
-+- compatible: "active-semi,act8865"
-+- reg: I2C slave address
++			i2c1: i2c@f0018000 {
++				pmic: act8865@5b {
++					compatible = "active-semi,act8865";
++					reg = <0x5b>;
++					status = "disabled";
 +
-+Any standard regulator properties can be used to configure the single regulator.
++					regulators {
++						vcc_1v8_reg: DCDC_REG1 {
++							regulator-name = "VCC_1V8";
++							regulator-min-microvolt = <1800000>;
++							regulator-max-microvolt = <1800000>;
++							regulator-always-on;
++						};
 +
-+The valid names for regulators are:
-+	DCDC_REG1, DCDC_REG2, DCDC_REG3, LDO_REG1, LDO_REG2, LDO_REG3, LDO_REG4.
++						vcc_1v2_reg: DCDC_REG2 {
++							regulator-name = "VCC_1V2";
++							regulator-min-microvolt = <1100000>;
++							regulator-max-microvolt = <1300000>;
++							regulator-suspend-mem-microvolt = <1150000>;
++							regulator-suspend-standby-microvolt = <1150000>;
++							regulator-always-on;
++						};
 +
-+Example:
-+--------
++						vcc_3v3_reg: DCDC_REG3 {
++							regulator-name = "VCC_3V3";
++							regulator-min-microvolt = <3300000>;
++							regulator-max-microvolt = <3300000>;
++							regulator-always-on;
++						};
 +
-+		i2c1: i2c@f0018000 {
-+			pmic: act8865@5b {
-+				compatible = "active-semi,act8865";
-+				reg = <0x5b>;
-+				status = "disabled";
++						vddfuse_reg: LDO_REG1 {
++							regulator-name = "VDDANA";
++							regulator-min-microvolt = <3300000>;
++							regulator-max-microvolt = <3300000>;
++							regulator-always-on;
++						};
 +
-+				regulators {
-+					vcc_1v8_reg: DCDC_REG1 {
-+						regulator-name = "VCC_1V8";
-+						regulator-min-microvolt = <1800000>;
-+						regulator-max-microvolt = <1800000>;
-+						regulator-always-on;
-+					};
-+
-+					vcc_1v2_reg: DCDC_REG2 {
-+						regulator-name = "VCC_1V2";
-+						regulator-min-microvolt = <1100000>;
-+						regulator-max-microvolt = <1300000>;
-+						regulator-suspend-mem-microvolt = <1150000>;
-+						regulator-suspend-standby-microvolt = <1150000>;
-+						regulator-always-on;
-+					};
-+
-+					vcc_3v3_reg: DCDC_REG3 {
-+						regulator-name = "VCC_3V3";
-+						regulator-min-microvolt = <3300000>;
-+						regulator-max-microvolt = <3300000>;
-+						regulator-always-on;
-+					};
-+
-+					vddfuse_reg: LDO_REG1 {
-+						regulator-name = "VDDANA";
-+						regulator-min-microvolt = <3300000>;
-+						regulator-max-microvolt = <3300000>;
-+						regulator-always-on;
-+					};
-+
-+					vddana_reg: LDO_REG2 {
-+						regulator-name = "FUSE_2V5";
-+						regulator-min-microvolt = <2500000>;
-+						regulator-max-microvolt = <2500000>;
++						vddana_reg: LDO_REG2 {
++							regulator-name = "FUSE_2V5";
++							regulator-min-microvolt = <2500000>;
++							regulator-max-microvolt = <2500000>;
++						};
 +					};
 +				};
 +			};
-+		};
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index edbb8d8..519421f 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -3,6 +3,7 @@ Device tree binding vendor prefix registry.  Keep list in alphabetical order.
- This isn't an exhaustive list, but you should add new prefixes to it before
- using them to avoid name-space collisions.
+ 		};
  
-+active-semi	Active-Semi International Inc
- ad	Avionic Design GmbH
- adi	Analog Devices, Inc.
- aeroflexgaisler	Aeroflex Gaisler AB
+ 		nand0: nand@60000000 {
 -- 
 1.7.9.5
 
