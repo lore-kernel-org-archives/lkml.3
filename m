@@ -1,63 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751560Ab3LWFrb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 00:47:31 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:40897 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711Ab3LWFra (ORCPT
+	id S1756164Ab3LWFtw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 00:49:52 -0500
+Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:40135
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751517Ab3LWFtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 00:47:30 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.38 with qID rBN5hmZ2003221, This message is accepted by code: ctloc85258
-Message-ID: <52B7CE20.5000507@realsil.com.cn>
-Date: Mon, 23 Dec 2013 13:46:08 +0800
-From: micky <micky_ching@realsil.com.cn>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 23 Dec 2013 00:49:50 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <lgirdwood@gmail.com>
+CC: <rob@landley.net>, <kuninori.morimoto.gx@renesas.com>,
+        <fabio.estevam@freescale.com>, <alsa-devel@alsa-project.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ASoC: simple-card: Add DAPM routes parse from device tree
+Date: Mon, 23 Dec 2013 12:57:01 +0800
+Message-ID: <1387774621-23968-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-To: <cjb@laptop.org>, <sameo@linux.intel.com>
-CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <wei_wang@realsil.com.cn>, Micky Ching <micky_ching@realsil.com.cn>
-Subject: Re: [PATCH v3 0/2] fix sd power bug and modify phase-searching method
-References: <cover.1385947736.git.micky_ching@realsil.com.cn>
-In-Reply-To: <cover.1385947736.git.micky_ching@realsil.com.cn>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.29.41.103]
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Parses a simple DAPM route table from device tree.
 
-Is there anything wrong with this patch? It seems a long time, but I 
-didn't got any reply.
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ Documentation/devicetree/bindings/sound/simple-card.txt | 13 +++++++++++--
+ sound/soc/generic/simple-card.c                         | 11 +++++++++--
+ 2 files changed, 20 insertions(+), 4 deletions(-)
 
-On 12/03/2013 10:34 AM, micky_ching@realsil.com.cn wrote:
-> From: Micky Ching <micky_ching@realsil.com.cn>
->
-> If the driver removed while sd card still in the slot, the card power
-> will not power down correctly, if we insert the driver module again,
-> UHS card will not switch to UHS mode. This bug is fix in this patch.
->
-> We use another phase search method for tuning, which looks more
-> simple, and reduce some source code.
->
-> Micky Ching (2):
->    mmc: rtsx: fix card poweroff bug
->    mmc: rtsx: modify phase searching method for tuning
->
->   drivers/mmc/host/rtsx_pci_sdmmc.c |  115 +++++++++++--------------------------
->   include/linux/mfd/rtsx_pci.h      |    2 +-
->   2 files changed, 35 insertions(+), 82 deletions(-)
->
-> --
-> 1.7.9.5
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->
->
+diff --git a/Documentation/devicetree/bindings/sound/simple-card.txt b/Documentation/devicetree/bindings/sound/simple-card.txt
+index 769a346..2ee80c76 100644
+--- a/Documentation/devicetree/bindings/sound/simple-card.txt
++++ b/Documentation/devicetree/bindings/sound/simple-card.txt
+@@ -9,8 +9,13 @@ Required properties:
+ Optional properties:
+ 
+ - simple-audio-card,format		: CPU/CODEC common audio format.
+-					"i2s", "right_j", "left_j" , "dsp_a"
+-					"dsp_b", "ac97", "pdm", "msb", "lsb"
++					  "i2s", "right_j", "left_j" , "dsp_a"
++					  "dsp_b", "ac97", "pdm", "msb", "lsb"
++- simple-audio-routing			: A list of the connections between audio components.
++					  Each entry is a pair of strings, the first being the
++					  connection's sink, the second being the connection's
++					  source.
++
+ Required subnodes:
+ 
+ - simple-audio-card,cpu			: CPU   sub-node
+@@ -38,6 +43,10 @@ Example:
+ sound {
+ 	compatible = "simple-audio-card";
+ 	simple-audio-card,format = "left_j";
++	simple-audio-routing =
++		"MIC_IN", "Mic Jack",
++		"Headphone Jack", "HP_OUT",
++		"Ext Spk", "LINE_OUT";
+ 
+ 	simple-audio-card,cpu {
+ 		sound-dai = <&sh_fsi2 0>;
+diff --git a/sound/soc/generic/simple-card.c b/sound/soc/generic/simple-card.c
+index 1d87db8..643c9ed 100644
+--- a/sound/soc/generic/simple-card.c
++++ b/sound/soc/generic/simple-card.c
+@@ -116,12 +116,18 @@ static int asoc_simple_card_parse_of(struct device_node *node,
+ {
+ 	struct device_node *np;
+ 	char *name;
+-	int ret = 0;
++	int ret;
+ 
+ 	/* get CPU/CODEC common format via simple-audio-card,format */
+ 	info->daifmt = snd_soc_of_parse_daifmt(node, "simple-audio-card,") &
+ 		(SND_SOC_DAIFMT_FORMAT_MASK | SND_SOC_DAIFMT_INV_MASK);
+ 
++	/* DAPM routes */
++	ret = snd_soc_of_parse_audio_routing(&info->snd_card,
++					"simple-audio-routing");
++	if (ret)
++		return ret;
++
+ 	/* CPU sub-node */
+ 	ret = -EINVAL;
+ 	np = of_get_child_by_name(node, "simple-audio-card,cpu");
+@@ -185,6 +191,7 @@ static int asoc_simple_card_probe(struct platform_device *pdev)
+ 		cinfo = devm_kzalloc(dev, sizeof(*cinfo), GFP_KERNEL);
+ 		if (cinfo) {
+ 			int ret;
++			cinfo->snd_card.dev = &pdev->dev;
+ 			ret = asoc_simple_card_parse_of(np, cinfo, dev,
+ 							&of_cpu,
+ 							&of_codec,
+@@ -196,6 +203,7 @@ static int asoc_simple_card_probe(struct platform_device *pdev)
+ 			}
+ 		}
+ 	} else {
++		cinfo->snd_card.dev = &pdev->dev;
+ 		cinfo = pdev->dev.platform_data;
+ 	}
+ 
+@@ -235,7 +243,6 @@ static int asoc_simple_card_probe(struct platform_device *pdev)
+ 	cinfo->snd_card.owner		= THIS_MODULE;
+ 	cinfo->snd_card.dai_link	= &cinfo->snd_link;
+ 	cinfo->snd_card.num_links	= 1;
+-	cinfo->snd_card.dev		= &pdev->dev;
+ 
+ 	return devm_snd_soc_register_card(&pdev->dev, &cinfo->snd_card);
+ }
+-- 
+1.8.4
+
 
