@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932382Ab3LWV4P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 16:56:15 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:55382 "EHLO
+	id S1758031Ab3LWVzt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 16:55:49 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:58393 "EHLO
 	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932331Ab3LWV4M (ORCPT
+	with ESMTP id S1757941Ab3LWVzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 16:56:12 -0500
+	Mon, 23 Dec 2013 16:55:22 -0500
 X-Originating-IP: 50.43.14.201
-Date: Mon, 23 Dec 2013 13:56:06 -0800
+Date: Mon, 23 Dec 2013 13:55:13 -0800
 From: Josh Triplett <josh@joshtriplett.org>
-To: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 7/7] Makefile: Build with -Werror=date-time if the compiler
- supports it
-Message-ID: <106ff2bbebe0c2c75bedf1c52a666d638b4dc20e.1387833347.git.josh@joshtriplett.org>
+Subject: [PATCH 3/7] staging: rtl8188eu: Drop print of build date/time
+Message-ID: <d50d2e14a689b41986fbfc27dc9312553ed60ebf.1387833347.git.josh@joshtriplett.org>
 References: <cover.1387833347.git.josh@joshtriplett.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,32 +25,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GCC 4.9 and newer have a new warning -Wdate-time, which warns on any use
-of __DATE__, __TIME__, or __TIMESTAMP__, which would make the build
-non-deterministic.  Now that the kernel does not use any of those
-macros, turn on -Werror=date-time if available, to keep it that way.
-
-The kernel already (optionally) records this information at build time
-in a single place; other kernel code should not duplicate that.
+The kernel already has this information, and individual drivers
+shouldn't duplicate that.  This also eliminates the use of __DATE__ and
+__TIME__, which make the build non-deterministic.
 
 Signed-off-by: Josh Triplett <josh@joshtriplett.org>
 ---
- Makefile | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/staging/rtl8188eu/os_dep/usb_intf.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/Makefile b/Makefile
-index 14d592c..188eea7 100644
---- a/Makefile
-+++ b/Makefile
-@@ -668,6 +668,9 @@ KBUILD_CFLAGS   += $(call cc-option,-Werror=implicit-int)
- # require functions to have arguments in prototypes, not empty 'int foo()'
- KBUILD_CFLAGS   += $(call cc-option,-Werror=strict-prototypes)
+diff --git a/drivers/staging/rtl8188eu/os_dep/usb_intf.c b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
+index 7d14779..d44f606 100644
+--- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
++++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
+@@ -865,7 +865,6 @@ static int __init rtw_drv_entry(void)
+ 	RT_TRACE(_module_hci_intfs_c_, _drv_err_, ("+rtw_drv_entry\n"));
  
-+# Prohibit date/time macros, which would make the build non-deterministic
-+KBUILD_CFLAGS   += $(call cc-option,-Werror=date-time)
-+
- # use the deterministic mode of AR if available
- KBUILD_ARFLAGS := $(call ar-option,D)
+ 	DBG_88E(DRV_NAME " driver version=%s\n", DRIVERVERSION);
+-	DBG_88E("build time: %s %s\n", __DATE__, __TIME__);
+ 
+ 	rtw_suspend_lock_init();
  
 -- 
 1.8.5.2
