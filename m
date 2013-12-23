@@ -1,182 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757084Ab3LWH4z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 02:56:55 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:11425 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877Ab3LWH4y (ORCPT
+	id S1757141Ab3LWIAm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 03:00:42 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:53062 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750730Ab3LWIAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 02:56:54 -0500
-X-AuditID: cbfee68f-b7f156d00000276c-0a-52b7ecc4ee6f
-Message-id: <52B7ECC7.8020508@samsung.com>
-Date: Mon, 23 Dec 2013 16:56:55 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Barry Song <21cnbao@gmail.com>
-Cc: rjying <rjying@gmail.com>, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RongJun Ying <Rongjun.Ying@csr.com>,
-        Binghua Duan <Binghua.Duan@csr.com>
-Subject: Re: [PATCH 1/1] extcon: gpio: Add power resume support
-References: <1387526987-12455-1-git-send-email-rongjun.ying@csr.com>
- <52B7B9F0.1020801@samsung.com>
- <CAGsJ_4xwc63kEBgmMk+E3JpYLhX0Vt1qQPcBXNtOGC2Gmo=MOw@mail.gmail.com>
- <52B7D990.2020206@samsung.com>
- <CAGsJ_4wbYkadoM5HHwbGUcwuimxiq-u9FMaWMs7wD-SXU4ybcQ@mail.gmail.com>
-In-reply-to: <CAGsJ_4wbYkadoM5HHwbGUcwuimxiq-u9FMaWMs7wD-SXU4ybcQ@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsWyRsSkRPfIm+1BBtc/Kll8vitk0dCwg9Hi
-	8q45bBa3G1ewWdzqPcBsse/CH1YHNo9dO+eweuycdZfdo2/LKkaPz5vkAliiuGxSUnMyy1KL
-	9O0SuDKOzZ/CWnBMsWLW5xVsDYzHpLoYOTkkBEwk7p/6wA5hi0lcuLeerYuRi0NIYCmjxIGX
-	vxhhim60PIJKLGKU6Hy1iRnCecUoceznW1aQKl4BLYmjdx+wgdgsAqoSPz6fZgGx2YDi+1/c
-	AIuLCoRJrJx+hQWiXlDix+R7YLaIgJLE5KnfWECGMgvsZJTYf3cr2FBhAXuJlR8XMUJsm8Ik
-	Mf3Qb7BJnALBEteuTAO7j1lAXWLSvEXMELa8xOY1b8HOkxDYxy4xo6GbGeIkAYlvkw8BreAA
-	SshKbDrADPGbpMTBFTdYJjCKzUJy1CwkY2chGbuAkXkVo2hqQXJBcVJ6kbFecWJucWleul5y
-	fu4mRmCcnf73rH8H490D1ocYk4FWTmSWEk3OB8ZpXkm8obGZkYWpiamxkbmlGWnCSuK89x8m
-	BQkJpCeWpGanphakFsUXleakFh9iZOLglGpgnPHAoXvpAv/ePZpKy05//V/8b/GyIzLZxzcd
-	dFSrfvpR9E3ONq9q8UNyD17GPnWbe22nxdeJGuc/dLNp9peZnbeINHk4V34Dhx7/50eSSz1D
-	61tO1E/pelKaYsXpJLnh0+EAwxftyaoBZc13S6SdBZlUvnJGPWJka7Sa8LthG9Na00RV81eP
-	lFiKMxINtZiLihMBGg8q5ckCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMKsWRmVeSWpSXmKPExsVy+t9jAd0jb7YHGZzdLm3x+a6QRUPDDkaL
-	y7vmsFncblzBZnGr9wCzxb4Lf1gd2Dx27ZzD6rFz1l12j74tqxg9Pm+SC2CJamC0yUhNTEkt
-	UkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAFarqRQlphTChQKSCwu
-	VtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHMODZ/CmvBMcWKWZ9XsDUwHpPqYuTkkBAwkbjR
-	8ogNwhaTuHBvPZDNxSEksIhRovPVJmYI5xWjxLGfb1lBqngFtCSO3n0A1sEioCrx4/NpFhCb
-	DSi+/8UNsLioQJjEyulXWCDqBSV+TL4HZosIKElMnvqNBWQos8BORon9d7eCDRUWsJdY+XER
-	I8S2KUwS0w/9BpvEKRAsce3KNEYQm1lAXWLSvEXMELa8xOY1b5knMArMQrJkFpKyWUjKFjAy
-	r2IUTS1ILihOSs810itOzC0uzUvXS87P3cQIjuJn0jsYVzVYHGIU4GBU4uHlaNkeJMSaWFZc
-	mXuIUYKDWUmEN/rHtiAh3pTEyqrUovz4otKc1OJDjMnAMJjILCWanA9MMHkl8YbGJmZGlkbm
-	hhZGxuakCSuJ8x5stQ4UEkhPLEnNTk0tSC2C2cLEwSnVwOg6l31GKesEoweLPpTYrWoLbrj6
-	/5aw5eKHSnyHDlw31y/Vu5t7cfvrNdlKVqmLjQ5qTvEO3exgY/Cp0ljU46Or2TlxRn9fuyfx
-	mhwpgmmssRF1mzzvHl10Vev9/Xy+jfP4dewLdtiW90cLmglV3Os1OFPa6VHNaOhyINR1VZGV
-	/WZt0Z2/lFiKMxINtZiLihMBXmOzxiYDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 23 Dec 2013 03:00:40 -0500
+Date: Mon, 23 Dec 2013 17:00:36 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Magnus Damm <magnus.damm@gmail.com>, takasi-y@ops.dti.ne.jp,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        devicetree@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 3/3] ARM: shmobile: kzm9d: Use common clock framework
+Message-ID: <20131223080034.GA26412@verge.net.au>
+References: <20131008143040.52f36df8edb7ab63224d8433@ops.dti.ne.jp>
+ <20131008143403.c11f294c8a1701a2ab3bc5fd@ops.dti.ne.jp>
+ <20131009034057.GO15065@verge.net.au>
+ <CANqRtoQs+31mv0ZULOd3SGshkBkvp-kGoaVOSb10+Ncdp+WNXw@mail.gmail.com>
+ <20131009065438.GA7220@verge.net.au>
+ <CANqRtoSGFEjcBPDAtq3YCDbkiFCftyr8b=qniYqyMafng=zurw@mail.gmail.com>
+ <20131009103915.GB17869@verge.net.au>
+ <20131029044239.GC20432@verge.net.au>
+ <20131202022549.GA12357@verge.net.au>
+ <20131223064103.22761.77246@quantum>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131223064103.22761.77246@quantum>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/2013 04:36 PM, Barry Song wrote:
-> 2013/12/23 Chanwoo Choi <cw00.choi@samsung.com>:
->> On 12/23/2013 03:10 PM, Barry Song wrote:
->>> 2013/12/23 Chanwoo Choi <cw00.choi@samsung.com>:
->>>> On 12/20/2013 05:09 PM, rjying wrote:
->>>>> From: Rongjun Ying <rongjun.ying@csr.com>
->>>>>
->>>>> After system resume, need send extcon uevent to userspace
->>>>
->>>> Why did extcon send uevent after wakeup from suspend?
->>>>
->>>> If extcon cable is attatched or detached on suspend state,
->>>> Kernel can detect the interrupt about changed state of extcon.
->>>
->>> irq controller has lost power in suspend, so there is no pending interrupt.
->>> and HW will not pend any interrupt when we hotplug cable during sleep.
->>
->> No, SoC in suspend state must maintain the minimum power under 1mA
->> if completed the power-optimization on suspend state.
->>
->> If user insert USB cable to target, the external interrupt connected to
->> USB port is happened. And kernel would be waked up from suspend state
->> to operate proper interrupt handler of external interrupt.
+On Sun, Dec 22, 2013 at 10:41:03PM -0800, Mike Turquette wrote:
+> Quoting Simon Horman (2013-12-01 18:25:51)
+> > On Tue, Oct 29, 2013 at 01:42:41PM +0900, Simon Horman wrote:
+> > > On Wed, Oct 09, 2013 at 07:39:18PM +0900, Simon Horman wrote:
+> > > > On Wed, Oct 09, 2013 at 04:29:56PM +0900, Magnus Damm wrote:
+> > > > > Hi Simon,
+> > > > > 
+> > > > > On Wed, Oct 9, 2013 at 3:54 PM, Simon Horman <horms@verge.net.au> wrote:
+> > > > > > On Wed, Oct 09, 2013 at 01:59:46PM +0900, Magnus Damm wrote:
+> > > > > >> Hi Simon,
+> > > > > >>
+> > > > > >> On Wed, Oct 9, 2013 at 12:40 PM, Simon Horman <horms@verge.net.au> wrote:
+> > > > > >> > On Tue, Oct 08, 2013 at 02:34:03PM +0900, takasi-y@ops.dti.ne.jp wrote:
+> > > > > >> >> Use common clock framework version of clock
+> > > > > >> >>  drivers/clk/shmobile/clk-emev2.c
+> > > > > >> >> instead of sh-clkfwk version
+> > > > > >> >>  arch/arm/mach-shmobile/clock-emev2.c
+> > > > > >> >> when it is configured as a part of multi-platform.
+> > > > > >> >>
+> > > > > >> >> Signed-off-by: Takashi Yoshii <takasi-y@ops.dti.ne.jp>
+> > > > > >> >
+> > > > > >> > Thanks.
+> > > > > >> >
+> > > > > >> > I plan to add this patch to a new topic branch,
+> > > > > >> > topic/emev2-common-clock, in the renesas tree and
+> > > > > >> > queue it up from there for inclusion in mainline
+> > > > > >> > if/when the first patch of this series is accepted
+> > > > > >> > by Mike Turquette.
+> > > > > >>
+> > > > > >> Thanks for picking up patches, Simon.
+> > > > > >>
+> > > > > >> I think you can simply merge this patch after the following series:
+> > > > > >>
+> > > > > >> [PATCH 00/05] ARM: shmobile: KZM9D Multiplatform update
+> > > > > >
+> > > > > > This is already queued up.
+> > > > > 
+> > > > > Yes, I know, thanks for that. I tried to explain the dependency in the
+> > > > > 00/00 cover letter but I will try to be more clear next time!
+> > > > > 
+> > > > > >> There are no build time dependencies on patch 1 and 2 so this patch
+> > > > > >> can be merged independently. Regarding run-time operation, the
+> > > > > >> multiplatform series above makes KZM9D DT reference only build for
+> > > > > >> multiplatform, and in such case CCF is required.
+> > > > > >>
+> > > > > >> So if you want to keep KZM9D DT reference working until Mike Turquette
+> > > > > >> accepts the CCF bits, then I recommend you to wait with "[PATCH 00/05]
+> > > > > >> ARM: shmobile: KZM9D Multiplatform update" until all EMEV2 CCF bits
+> > > > > >> have been merged.
+> > > > > >>
+> > > > > >> Another way is to merge "[PATCH 00/05] ARM: shmobile: KZM9D
+> > > > > >> Multiplatform update" before the EMEV2 CCF bits, but if so you may as
+> > > > > >> well merge this patch as well IMO. This
+> > > > > >> multiplatform-update-series-merge-before-CCF plan will result in
+> > > > > >> untestable KZM9D DT reference until EMEV2 CCF is merged. Either way is
+> > > > > >> fine with me.
+> > > > > >
+> > > > > > I am mainly concerned that the bindings may change before
+> > > > > > they are finally merged. And I thought it would be nice to avoid
+> > > > > > having to fix up the usage of the bindings if they change.
+> > > > > 
+> > > > > Sure, but the code in this patch looks like it simply starts DT CCF
+> > > > > probing regardless of what the bindings look like. So I don't think
+> > > > > you will have to worry about actual bindings detail.
+> > > > > 
+> > > > > > But I'm happy to just queue-up patches 2 and 3 of this series
+> > > > > > now if you prefer.
+> > > > > 
+> > > > > Well, I meant patch 3 only. Patch 1 and 2 are tied together by dependencies. =)
+> > > > 
+> > > > Thanks, I understand now.
+> > > > 
+> > > > I'll queue-up 3/3.
+> > > 
+> > > Which I did.
+> > > 
+> > > Then some time passed...
+> > > 
+> > > Mike has accepted my pull-request for patch 1 of this series
+> > > and accordingly I have queued-up this patch for v3.14.
+> > > It should appear in the devel branch the next time that I push it.
+> > 
+> > I was mistaken. It was not queued up  for v3.14.
+> > And still has not been queued up.
+> > 
+> > I have un-queued this patch accordingly.
 > 
-> no. not every USB supports that. that depends on the power domain design of SoC.
+> I have pulled in the emev2 SMU clock support patch now.
 
-USB is only example for gpio control in suspend state.
-
-> 
->>
->> Also,
->> Input subsystem used gpio-keys driver for power button..
->> If user press power button in suspend state, target would be waked up from suspend state.
->> It is same case both extcon gpio and gpio-keys of input subsystem.
-> 
-> no. it depends on the SoC design. many SoC only support 1 special key
-> which can work as ON-KEY as wakeup source. and this kind of keys might
-> not be GPIO at all.
-> there is a special power domain which is still open for it.
-
-many SoC? 
-
-As I knew, most SoC has supported various wakeup source.
-As you comment, if specific SoC support only one special key
-for wakeup from suspend state, I think it isn't common.
-
-Also,
-This patch isn't necessary on SoCs which support various wakeup source (e.g., external interrupt).
-As you comment, this issue has dependecy on specific SoC. Why did you think this common code?
-
-> 
->>
->>>
->>>> So, kernel would execute proper operation about interrupt
->>>> after wakeup from suspend state.
->>>
->>> kernel only save/restore the register status of gpio, how could it
->>> know whether there is a pending interrupt if the HW doesn't do it?
->>>
->>>>
->>>> I think it isn't necessary.
->>>>
->>>> Thanks,
->>>> Chanwoo Choi
->>>>
->>>>>
->>>>> Change-Id: I32a9e1c6646035f95765bba79a7acaccb8ce45a7
->>>>>
->>>>> Signed-off-by: Rongjun Ying <rongjun.ying@csr.com>
->>>>> ---
->>>>>  drivers/extcon/extcon-gpio.c |   17 +++++++++++++++++
->>>>>  1 files changed, 17 insertions(+), 0 deletions(-)
->>>>>
->>>>> diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
->>>>> index 7e0dff5..d916522 100644
->>>>> --- a/drivers/extcon/extcon-gpio.c
->>>>> +++ b/drivers/extcon/extcon-gpio.c
->>>>> @@ -159,12 +159,29 @@ static int gpio_extcon_remove(struct platform_device *pdev)
->>>>>       return 0;
->>>>>  }
->>>>>
->>>>> +#ifdef CONFIG_PM_SLEEP
->>>>> +static int gpio_extcon_resume(struct device *dev)
->>>>> +{
->>>>> +     struct gpio_extcon_data *extcon_data;
->>>>> +
->>>>> +     extcon_data = dev_get_drvdata(dev);
->>>>> +     queue_delayed_work(system_power_efficient_wq, &extcon_data->work,
->>>>> +                           extcon_data->debounce_jiffies);
->>>>> +     return 0;
->>>>> +}
->>>>> +#endif
->>>>> +
->>>>> +static const struct dev_pm_ops gpio_extcon_pm_ops = {
->>>>> +     SET_SYSTEM_SLEEP_PM_OPS(NULL, gpio_extcon_resume)
->>>>> +};
->>>>> +
->>>>>  static struct platform_driver gpio_extcon_driver = {
->>>>>       .probe          = gpio_extcon_probe,
->>>>>       .remove         = gpio_extcon_remove,
->>>>>       .driver         = {
->>>>>               .name   = "extcon-gpio",
->>>>>               .owner  = THIS_MODULE,
->>>>> +             .pm = &gpio_extcon_pm_ops,
->>>>>       },
->>>>>  };
->>>>>
->>>>>
->>>>
->>>
->>> -barry
-> 
-> -barry
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+Thanks
