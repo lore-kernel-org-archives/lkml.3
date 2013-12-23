@@ -1,121 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756164Ab3LWFtw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 00:49:52 -0500
-Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:40135
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751517Ab3LWFtu (ORCPT
+	id S1756712Ab3LWFxY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 00:53:24 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:53160 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750711Ab3LWFxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 00:49:50 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <broonie@kernel.org>, <lgirdwood@gmail.com>
-CC: <rob@landley.net>, <kuninori.morimoto.gx@renesas.com>,
-        <fabio.estevam@freescale.com>, <alsa-devel@alsa-project.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ASoC: simple-card: Add DAPM routes parse from device tree
-Date: Mon, 23 Dec 2013 12:57:01 +0800
-Message-ID: <1387774621-23968-1-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+	Mon, 23 Dec 2013 00:53:22 -0500
+Message-ID: <1387778068.5567.104.camel@haakon3.risingtidesystems.com>
+Subject: Re: [scsi-mq] WARNING: CPU: 0 PID: 99 at block/elevator.c:193
+ elevator_init()
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: LKP <fnstml-lkp@cn.fujitsu.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Christoph Hellwig <hch@lst.de>
+Date: Sun, 22 Dec 2013 21:54:28 -0800
+In-Reply-To: <20131223031624.GB23200@localhost>
+References: <20131223031624.GB23200@localhost>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parses a simple DAPM route table from device tree.
+On Mon, 2013-12-23 at 11:16 +0800, Fengguang Wu wrote:
+> Greetings,
+> 
+> I got the below dmesg and the first bad commit is
+> 
+> commit 29ff818720ce09b044652b83e9c70ef474800d54
+> Author:     Nicholas Bellinger <nab@linux-iscsi.org>
+> AuthorDate: Thu May 23 22:11:38 2013 -0700
+> Commit:     Nicholas Bellinger <nab@linux-iscsi.org>
+> CommitDate: Sun Dec 22 13:00:48 2013 +0000
+> 
+>     scsi-debug: Enable scsi-mq operation
+>     
+>     v4 changes:
+>       - Bump can_queue to 64 for performance testing
+>       - Enable scsi-mq DIF support
+>       - Add nop_fs_io module parameter for performance testing
+>     
+>     Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+> 
+> +-----------------------------------------------------+----+
+> |                                                     |    |
+> +-----------------------------------------------------+----+
+> | boot_successes                                      | 0  |
+> | boot_failures                                       | 19 |
+> | WARNING:CPU:PID:at_block/elevator.c:elevator_init() | 19 |
+> +-----------------------------------------------------+----+
+> 
+> [    4.763205]   CPU 1 -> Queue 0
+> [    4.764566] ------------[ cut here ]------------
+> [    4.764566] ------------[ cut here ]------------
+> [    4.765951] WARNING: CPU: 0 PID: 99 at block/elevator.c:193 elevator_init+0xf0/0xfb()
+> 
+> Attached are the full dmesg and kconfig.
+> 
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- Documentation/devicetree/bindings/sound/simple-card.txt | 13 +++++++++++--
- sound/soc/generic/simple-card.c                         | 11 +++++++++--
- 2 files changed, 20 insertions(+), 4 deletions(-)
+Mmm, so elevator_init() is now expecting q->sysfs_lock to be held after:
 
-diff --git a/Documentation/devicetree/bindings/sound/simple-card.txt b/Documentation/devicetree/bindings/sound/simple-card.txt
-index 769a346..2ee80c76 100644
---- a/Documentation/devicetree/bindings/sound/simple-card.txt
-+++ b/Documentation/devicetree/bindings/sound/simple-card.txt
-@@ -9,8 +9,13 @@ Required properties:
- Optional properties:
+commit eb1c160b22655fd4ec44be732d6594fd1b1e44f4
+Author: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+Date:   Tue Oct 15 16:42:16 2013 -0600
+
+    elevator: Fix a race in elevator switching and md device initialization
+
+Adding the following scsi_mq_alloc_queue() patch to quiet this warning.
+
+Thanks Fengguang!
+
+--nab
+
+diff --git a/drivers/scsi/scsi-mq.c b/drivers/scsi/scsi-mq.c
+index dad720a..188509d 100644
+--- a/drivers/scsi/scsi-mq.c
++++ b/drivers/scsi/scsi-mq.c
+@@ -151,7 +151,7 @@ int scsi_mq_alloc_queue(struct Scsi_Host *sh, struct scsi_device *sdev)
+        struct request_queue *q;
+        struct request *rq;
+        struct scsi_cmnd *sc;
+-       int i, j, sgl_size;
++       int i, j, rc, sgl_size;
+        bool prot = true;
  
- - simple-audio-card,format		: CPU/CODEC common audio format.
--					"i2s", "right_j", "left_j" , "dsp_a"
--					"dsp_b", "ac97", "pdm", "msb", "lsb"
-+					  "i2s", "right_j", "left_j" , "dsp_a"
-+					  "dsp_b", "ac97", "pdm", "msb", "lsb"
-+- simple-audio-routing			: A list of the connections between audio components.
-+					  Each entry is a pair of strings, the first being the
-+					  connection's sink, the second being the connection's
-+					  source.
-+
- Required subnodes:
+        sdev->sdev_mq_reg.ops = &scsi_mq_ops;
+@@ -181,8 +181,11 @@ int scsi_mq_alloc_queue(struct Scsi_Host *sh, struct scsi_device *sdev)
  
- - simple-audio-card,cpu			: CPU   sub-node
-@@ -38,6 +43,10 @@ Example:
- sound {
- 	compatible = "simple-audio-card";
- 	simple-audio-card,format = "left_j";
-+	simple-audio-routing =
-+		"MIC_IN", "Mic Jack",
-+		"Headphone Jack", "HP_OUT",
-+		"Ext Spk", "LINE_OUT";
+        q->sg_reserved_size = INT_MAX;
  
- 	simple-audio-card,cpu {
- 		sound-dai = <&sh_fsi2 0>;
-diff --git a/sound/soc/generic/simple-card.c b/sound/soc/generic/simple-card.c
-index 1d87db8..643c9ed 100644
---- a/sound/soc/generic/simple-card.c
-+++ b/sound/soc/generic/simple-card.c
-@@ -116,12 +116,18 @@ static int asoc_simple_card_parse_of(struct device_node *node,
- {
- 	struct device_node *np;
- 	char *name;
--	int ret = 0;
-+	int ret;
- 
- 	/* get CPU/CODEC common format via simple-audio-card,format */
- 	info->daifmt = snd_soc_of_parse_daifmt(node, "simple-audio-card,") &
- 		(SND_SOC_DAIFMT_FORMAT_MASK | SND_SOC_DAIFMT_INV_MASK);
- 
-+	/* DAPM routes */
-+	ret = snd_soc_of_parse_audio_routing(&info->snd_card,
-+					"simple-audio-routing");
-+	if (ret)
-+		return ret;
-+
- 	/* CPU sub-node */
- 	ret = -EINVAL;
- 	np = of_get_child_by_name(node, "simple-audio-card,cpu");
-@@ -185,6 +191,7 @@ static int asoc_simple_card_probe(struct platform_device *pdev)
- 		cinfo = devm_kzalloc(dev, sizeof(*cinfo), GFP_KERNEL);
- 		if (cinfo) {
- 			int ret;
-+			cinfo->snd_card.dev = &pdev->dev;
- 			ret = asoc_simple_card_parse_of(np, cinfo, dev,
- 							&of_cpu,
- 							&of_codec,
-@@ -196,6 +203,7 @@ static int asoc_simple_card_probe(struct platform_device *pdev)
- 			}
- 		}
- 	} else {
-+		cinfo->snd_card.dev = &pdev->dev;
- 		cinfo = pdev->dev.platform_data;
- 	}
- 
-@@ -235,7 +243,6 @@ static int asoc_simple_card_probe(struct platform_device *pdev)
- 	cinfo->snd_card.owner		= THIS_MODULE;
- 	cinfo->snd_card.dai_link	= &cinfo->snd_link;
- 	cinfo->snd_card.num_links	= 1;
--	cinfo->snd_card.dev		= &pdev->dev;
- 
- 	return devm_snd_soc_register_card(&pdev->dev, &cinfo->snd_card);
- }
--- 
-1.8.4
+-       if (elevator_init(q, NULL)) {
+-               dump_stack();
++       mutex_lock(&q->sysfs_lock);
++       rc = elevator_init(q, NULL);
++       mutex_unlock(&q->sysfs_lock);
++       if (rc) {
++               pr_err("elevator_init failed for scsi-mq: %d\n", rc);
+                return -ENOMEM;
+        }
+        /*
 
 
