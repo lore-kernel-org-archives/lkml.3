@@ -1,129 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757148Ab3LWGlK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 01:41:10 -0500
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:48604 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713Ab3LWGlH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 01:41:07 -0500
-Content-Type: text/plain; charset="utf-8"
+	id S1756977Ab3LWGnm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 01:43:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53588 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751025Ab3LWGnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 01:43:41 -0500
+Date: Mon, 23 Dec 2013 14:43:49 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Rob Landley <rob@landley.net>
+Cc: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
+        grant.likely@secretlab.ca, sebastian.capella@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] use initmpfs even if there's root= cmdline
+Message-ID: <20131223064349.GB9279@dhcp-16-126.nay.redhat.com>
+References: <20131212092542.GA14218@dhcp-16-126.nay.redhat.com>
+ <20131213023814.GA5519@dhcp-16-126.nay.redhat.com>
+ <52B1E0A2.2030202@landley.net>
+ <20131219023524.GB2070@darkstar.nay.redhat.com>
+ <52B7C0CF.4030209@landley.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Simon Horman <horms@verge.net.au>, "Magnus Damm" <magnus.damm@gmail.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <20131202022549.GA12357@verge.net.au>
-Cc: takasi-y@ops.dti.ne.jp, "SH-Linux" <linux-sh@vger.kernel.org>,
-        "Ben Dooks" <ben.dooks@codethink.co.uk>,
-        "Shinya Kuribayashi" <shinya.kuribayashi.px@renesas.com>,
-        "Laurent Pinchart" <laurent.pinchart@ideasonboard.com>,
-        devicetree@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <20131008143040.52f36df8edb7ab63224d8433@ops.dti.ne.jp>
- <20131008143403.c11f294c8a1701a2ab3bc5fd@ops.dti.ne.jp>
- <20131009034057.GO15065@verge.net.au>
- <CANqRtoQs+31mv0ZULOd3SGshkBkvp-kGoaVOSb10+Ncdp+WNXw@mail.gmail.com>
- <20131009065438.GA7220@verge.net.au>
- <CANqRtoSGFEjcBPDAtq3YCDbkiFCftyr8b=qniYqyMafng=zurw@mail.gmail.com>
- <20131009103915.GB17869@verge.net.au> <20131029044239.GC20432@verge.net.au>
- <20131202022549.GA12357@verge.net.au>
-Message-ID: <20131223064103.22761.77246@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v2 3/3] ARM: shmobile: kzm9d: Use common clock framework
-Date: Sun, 22 Dec 2013 22:41:03 -0800
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52B7C0CF.4030209@landley.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Simon Horman (2013-12-01 18:25:51)
-> On Tue, Oct 29, 2013 at 01:42:41PM +0900, Simon Horman wrote:
-> > On Wed, Oct 09, 2013 at 07:39:18PM +0900, Simon Horman wrote:
-> > > On Wed, Oct 09, 2013 at 04:29:56PM +0900, Magnus Damm wrote:
-> > > > Hi Simon,
-> > > > 
-> > > > On Wed, Oct 9, 2013 at 3:54 PM, Simon Horman <horms@verge.net.au> wrote:
-> > > > > On Wed, Oct 09, 2013 at 01:59:46PM +0900, Magnus Damm wrote:
-> > > > >> Hi Simon,
-> > > > >>
-> > > > >> On Wed, Oct 9, 2013 at 12:40 PM, Simon Horman <horms@verge.net.au> wrote:
-> > > > >> > On Tue, Oct 08, 2013 at 02:34:03PM +0900, takasi-y@ops.dti.ne.jp wrote:
-> > > > >> >> Use common clock framework version of clock
-> > > > >> >>  drivers/clk/shmobile/clk-emev2.c
-> > > > >> >> instead of sh-clkfwk version
-> > > > >> >>  arch/arm/mach-shmobile/clock-emev2.c
-> > > > >> >> when it is configured as a part of multi-platform.
-> > > > >> >>
-> > > > >> >> Signed-off-by: Takashi Yoshii <takasi-y@ops.dti.ne.jp>
-> > > > >> >
-> > > > >> > Thanks.
-> > > > >> >
-> > > > >> > I plan to add this patch to a new topic branch,
-> > > > >> > topic/emev2-common-clock, in the renesas tree and
-> > > > >> > queue it up from there for inclusion in mainline
-> > > > >> > if/when the first patch of this series is accepted
-> > > > >> > by Mike Turquette.
-> > > > >>
-> > > > >> Thanks for picking up patches, Simon.
-> > > > >>
-> > > > >> I think you can simply merge this patch after the following series:
-> > > > >>
-> > > > >> [PATCH 00/05] ARM: shmobile: KZM9D Multiplatform update
-> > > > >
-> > > > > This is already queued up.
-> > > > 
-> > > > Yes, I know, thanks for that. I tried to explain the dependency in the
-> > > > 00/00 cover letter but I will try to be more clear next time!
-> > > > 
-> > > > >> There are no build time dependencies on patch 1 and 2 so this patch
-> > > > >> can be merged independently. Regarding run-time operation, the
-> > > > >> multiplatform series above makes KZM9D DT reference only build for
-> > > > >> multiplatform, and in such case CCF is required.
-> > > > >>
-> > > > >> So if you want to keep KZM9D DT reference working until Mike Turquette
-> > > > >> accepts the CCF bits, then I recommend you to wait with "[PATCH 00/05]
-> > > > >> ARM: shmobile: KZM9D Multiplatform update" until all EMEV2 CCF bits
-> > > > >> have been merged.
-> > > > >>
-> > > > >> Another way is to merge "[PATCH 00/05] ARM: shmobile: KZM9D
-> > > > >> Multiplatform update" before the EMEV2 CCF bits, but if so you may as
-> > > > >> well merge this patch as well IMO. This
-> > > > >> multiplatform-update-series-merge-before-CCF plan will result in
-> > > > >> untestable KZM9D DT reference until EMEV2 CCF is merged. Either way is
-> > > > >> fine with me.
-> > > > >
-> > > > > I am mainly concerned that the bindings may change before
-> > > > > they are finally merged. And I thought it would be nice to avoid
-> > > > > having to fix up the usage of the bindings if they change.
-> > > > 
-> > > > Sure, but the code in this patch looks like it simply starts DT CCF
-> > > > probing regardless of what the bindings look like. So I don't think
-> > > > you will have to worry about actual bindings detail.
-> > > > 
-> > > > > But I'm happy to just queue-up patches 2 and 3 of this series
-> > > > > now if you prefer.
-> > > > 
-> > > > Well, I meant patch 3 only. Patch 1 and 2 are tied together by dependencies. =)
-> > > 
-> > > Thanks, I understand now.
-> > > 
-> > > I'll queue-up 3/3.
-> > 
-> > Which I did.
-> > 
-> > Then some time passed...
-> > 
-> > Mike has accepted my pull-request for patch 1 of this series
-> > and accordingly I have queued-up this patch for v3.14.
-> > It should appear in the devel branch the next time that I push it.
-> 
-> I was mistaken. It was not queued up  for v3.14.
-> And still has not been queued up.
-> 
-> I have un-queued this patch accordingly.
+> I can't do anything about dracut. (Otherwise userspace could look at
+> ROOT= which is not parsed by existing kernel code to have a special
+> meaning...)
 
-I have pulled in the emev2 SMU clock support patch now.
+The root= requirement for dracut is not necessary just there's no one
+is working on removing the limitation. I think that is not the key
+problem here.
 
-Regards,
-Mike
+> 
+> >>>Discussed with Vivek Goyal about the kdump use case, I missed one thing that
+> >>>tmpfs has default size limit though we can tune it.
+> >>>
+> >>>So I will think more about it, will address this later, please ignore this
+> >>>patch.
+> >>
+> >>I have a vague todo item of feeding rootflags= through to initmpfs,
+> >>but that's really intended to specify flags for root=. There isn't
+> >>really an existing command line option to specify initramfs flags
+> >>because ramfs doesn't care.
+> >>
+> >>It was one of those "only parse rootflags= for initmpfs when there's
+> >>no root=" vs "create a new rdrootflags= ala rdinit= even though
+> >>that's a subtly wrong name these days..." and it went on the todo
+> >>list because neither approach was obviously superior.
+> >>
+> >>Happy to take suggestions and whip up a patch if this is
+> >>inconveniencing somebody. :)
+> >
+> >It would be great that initmpfs can use the whole memory on demand by default at
+> >the same time we can avoid the deadlock mentioned about OOM handler.
+> 
+> Except that if initmpfs size=100% uses all the memory, we're back to
+> "fill up the filesystem and the kernel deadlocks" same as initramfs.
+> 
+> Possibly I could tell it to go to 100% during extract and then
+> remount to 50% afterwards? (The cpio archive filling up memory is
+> pilot error. I wonder what happens if tmpfs is told to remount using
+> less space than the filesystem currently has, does it fail or does
+> it adjust the amount to what's currently used, or...?)
+
+Tested that remounting to less space will success if there's enough free
+space in the original mount. But I think it's hard to guess how much the
+initrd will use while booting, it might need create other files dynamically. 
+
+> 
+> If necessary I could query the filesystem size after extract and
+> remount to that amount or 50% (whichever is greater), but this is
+> getting more complicated than seems strictly necessary? (If
+> rootflags= got passed through we'd then want to only do this if they
+> _didn't_ specify a size, or else have the "actual size or size= the
+> user passed"...)
+> 
+> Implementing behavior is easy. Determing what the correct behavior
+> should be is hard.
+> 
+> >For this purpose no need for extra flags? For other flags maybe "initmpfsflags="?
+> 
+> You can already say rootfstype=ramfs if you want to drop back to a
+> filesystem that doesn't care about size checks. I could trivially
+> make it so rootfstype=tmpfs overrides the root= check, but then
+> there's that 50% memory limitation on the filesystem size. (Beyond
+> which the disk cache reaping logic gets VERY UNHAPPY, by the way.
+> The automatic load balancing stuff is... touchy. Better now than it
+> used to be, but I still trust it about as far as I could comfortably
+> spit out a rat. Then again I'm generally not using systems with half
+> a terabyte of ram, which is what they all seem to be optimizing for
+> these days...)
+
+Yes, use rootfstype=ramfs is ok for dropping back to initramfs. But
+rethinking about using tmpfs as default type, it might break current
+users which using initramfs which does not have size limitation.
+So I think for now keep the current logic is fine until we have a
+better way to improve tmpfs.
+
+> 
+> Adding initrdflags= to specify a size= other than 50% makes sense,
+> but you might have to modify your dracut thing to do a du on the
+> filesystem before packaging it and feed in the correct number of
+> kilobytes.
+
+initrdflags looks more like for the original block device based initrd?
+maybe tmpfs.default_size=?
+
+> 
+> If you want a different behavior than that, please explain what it
+> should do in a little more detail?
+
+I think I have given up the idea based on problems we have talked about..
+
+Thanks
+Dave
