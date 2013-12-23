@@ -1,89 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757149Ab3LWFON (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 00:14:13 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:42379 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754023Ab3LWFOJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 00:14:09 -0500
-Message-ID: <52B7C5BF.6080809@huawei.com>
-Date: Mon, 23 Dec 2013 13:10:23 +0800
-From: Ding Tianhong <dingtianhong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1757170Ab3LWFOV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 00:14:21 -0500
+Received: from sam.nabble.com ([216.139.236.26]:43281 "EHLO sam.nabble.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757153Ab3LWFOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 00:14:18 -0500
+Date: Sun, 22 Dec 2013 21:14:17 -0800 (PST)
+From: goresh <goreshmusalay@gmail.com>
+To: linux-kernel@vger.kernel.org
+Message-ID: <1387775657726-776833.post@n7.nabble.com>
+In-Reply-To: <1369815177019-657210.post@n7.nabble.com>
+References: <1369815177019-657210.post@n7.nabble.com>
+Subject: Re: definition of sys_access function
 MIME-Version: 1.0
-To: Rupesh Gujare <rupesh.gujare@atmel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 08/21] ozwpan: slight optimization of addr compare
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.199]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the recently added and possibly more efficient
-ether_addr_equal_unaligned to instead of memcmp.
+Hey Hi..
+If you are in search of sys_access related to kernel calls then u can find
+its defenation in 
+main.c  stored in /init/main.c
 
-Cc: Rupesh Gujare <rupesh.gujare@atmel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Tan Xiaojun <tanxiaojun@huawei.com>
-Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
----
- drivers/staging/ozwpan/ozcdev.c  | 3 ++-
- drivers/staging/ozwpan/ozproto.c | 6 ++++--
- 2 files changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/ozwpan/ozcdev.c b/drivers/staging/ozwpan/ozcdev.c
-index 6ce0af9..4a64262 100644
---- a/drivers/staging/ozwpan/ozcdev.c
-+++ b/drivers/staging/ozwpan/ozcdev.c
-@@ -448,7 +448,8 @@ int oz_cdev_start(struct oz_pd *pd, int resume)
- 	}
- 	spin_lock(&g_cdev.lock);
- 	if ((g_cdev.active_pd == NULL) &&
--		(memcmp(pd->mac_addr, g_cdev.active_addr, ETH_ALEN) == 0)) {
-+		(ether_addr_equal_unaligned(pd->mac_addr,
-+					    g_cdev.active_addr))) {
- 		oz_pd_get(pd);
- 		g_cdev.active_pd = pd;
- 		oz_dbg(ON, "Active PD arrived\n");
-diff --git a/drivers/staging/ozwpan/ozproto.c b/drivers/staging/ozwpan/ozproto.c
-index 88714ec..9a70591 100644
---- a/drivers/staging/ozwpan/ozproto.c
-+++ b/drivers/staging/ozwpan/ozproto.c
-@@ -9,6 +9,7 @@
- #include <linux/timer.h>
- #include <linux/sched.h>
- #include <linux/netdevice.h>
-+#include <linux/etherdevice.h>
- #include <linux/errno.h>
- #include <linux/ieee80211.h>
- #include "ozdbg.h"
-@@ -180,7 +181,8 @@ static struct oz_pd *oz_connect_req(struct oz_pd *cur_pd, struct oz_elt *elt,
- 		spin_lock_bh(&g_polling_lock);
- 		list_for_each(e, &g_pd_list) {
- 			pd2 = container_of(e, struct oz_pd, link);
--			if (memcmp(pd2->mac_addr, pd_addr, ETH_ALEN) == 0) {
-+			if (ether_addr_equal_unaligned(pd2->mac_addr,
-+						       pd_addr)) {
- 				free_pd = pd;
- 				pd = pd2;
- 				break;
-@@ -597,7 +599,7 @@ struct oz_pd *oz_pd_find(const u8 *mac_addr)
- 	spin_lock_bh(&g_polling_lock);
- 	list_for_each(e, &g_pd_list) {
- 		pd = container_of(e, struct oz_pd, link);
--		if (memcmp(pd->mac_addr, mac_addr, ETH_ALEN) == 0) {
-+		if (ether_addr_equal_unaligned(pd->mac_addr, mac_addr)) {
- 			atomic_inc(&pd->ref_count);
- 			spin_unlock_bh(&g_polling_lock);
- 			return pd;
--- 
-1.8.0
 
+--
+View this message in context: http://linux-kernel.2935.n7.nabble.com/definition-of-sys-access-function-tp657210p776833.html
+Sent from the Linux Kernel mailing list archive at Nabble.com.
