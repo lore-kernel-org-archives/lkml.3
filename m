@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757337Ab3LWNGP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 08:06:15 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:45789 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757294Ab3LWNGO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 08:06:14 -0500
-Date: Mon, 23 Dec 2013 14:06:11 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCHSET 0/7] perf tools: A couple of TUI improvements (v2)
-Message-ID: <20131223130611.GB5076@gmail.com>
-References: <1387516278-17024-1-git-send-email-namhyung@kernel.org>
- <20131220081357.GB12937@gmail.com>
- <87a9fsduan.fsf@sejong.aot.lge.com>
+	id S1757352Ab3LWNKb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 08:10:31 -0500
+Received: from monster.unsafe.ru ([195.18.34.9]:47449 "EHLO mail.unsafe.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757211Ab3LWNKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 08:10:30 -0500
+X-Greylist: delayed 480 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Dec 2013 08:10:30 EST
+Message-ID: <52B83457.8080907@gmail.com>
+Date: Mon, 23 Dec 2013 17:02:15 +0400
+From: Alexey Gladkov <gladkov.alexey@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87a9fsduan.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, David Herrmann <dh.herrmann@gmail.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>
+Subject: VT Improvements
+X-Enigmail-Version: 1.6
+OpenPGP: id=4CFFD434;
+	url=http://pgp.mit.edu:11371/pks/lookup?op=vindex&fingerprint=on&search=0xA45ABA544CFFD434
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Greetings!
 
-* Namhyung Kim <namhyung@kernel.org> wrote:
+I would like to know about the VT plans. Historically, keymap
+implementations are similar in the kernel and kbd project. I rewrote
+it in kbd. So, it can handle keycodes bigger than 255. In a kernel
+everything remained as before. I want to fix this part in a kernel. As
+pluses will be:
 
-> >  - it would be nice to have a hotkey to start/stop data collection on
-> >    demand, and another hotkey to reset the data. SysProf has this 
-> >    feature, and it's a convenient workflow to have a separate 'data 
-> >    collection' period (possibly done without any screen refresh, so 
-> >    that data collection does not disturb the measured workload), and 
-> >    a quiet 'look at all the data that is not being changed' period. 
-> >    Especially with fast changing workloads the latter can be useful.
-> 
-> I'm not sure I understood correctly.  So do you want start/stop the 
-> 'record' part or 'report' part with hotkeys?
+* opportunity to define keycode > 255.
+* opportunity to reduce this table a kernel in most cases.
 
-The 'record' part - a bit like SysProf.
+I would like to ask your opinion about my plans because I heard about
+the thought of moving this functionality to user space.
 
-> >  - it would be nice if 'perf report' had a 'view raw trace' window as 
-> >    well, with filtering. That would be roughly equivalent to the 'perf
-> >    report -D' output [but one line per trace entry, i.e. no hex dump
-> >    shown by default], all available within the TUI. With filtering
-> >    that would be a pretty good way to look at various details.
-> 
-> Do you want something like 'perf script'? :)
+Whether it is worth starting so large-scale changes?
 
-Or perf trace, just in a TUI ;-)
+-- 
+Rgrds, legion
 
-Thanks,
 
-	Ingo
