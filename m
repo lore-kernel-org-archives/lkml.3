@@ -1,249 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757462Ab3LWSBh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 13:01:37 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:51280 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752807Ab3LWSBg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 13:01:36 -0500
-From: Valentina Manea <valentina.manea.m@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: ly80toro@cip.cs.fau.de, standby24x7@gmail.com, alan@linux.intel.com,
-        ihadzic@research.bell-labs.com, anthony.foiani@gmail.com,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        devel@driverdev.osuosl.org, andy.grover@gmail.com,
-        Valentina Manea <valentina.manea.m@gmail.com>
-Subject: [PATCH] staging: usbip: add support for viewing imported devices
-Date: Mon, 23 Dec 2013 20:00:55 +0200
-Message-Id: <1387821655-24720-1-git-send-email-valentina.manea.m@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
+	id S1756494Ab3LWSJP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 13:09:15 -0500
+Received: from mga01.intel.com ([192.55.52.88]:27128 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750874Ab3LWSJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 13:09:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,538,1384329600"; 
+   d="scan'208";a="454674516"
+Date: Mon, 23 Dec 2013 10:08:40 -0800
+From: Greg Rose <gregory.v.rose@intel.com>
+To: Alexander Duyck <alexander.h.duyck@intel.com>
+CC: Ding Tianhong <dingtianhong@huawei.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <e1000-devel@lists.sourceforge.net>
+Subject: Re: [E1000-devel] [PATCH 01/21] net: slight optimization of addr
+ compare for some modules
+Message-ID: <20131223100840.000014a5@unknown>
+In-Reply-To: <52B870E5.3020708@intel.com>
+References: <52B7C590.7070708@huawei.com>
+	<52B870E5.3020708@intel.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.8cvs47 (GTK+ 2.16.6; i586-pc-mingw32msvc)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.22.254.138]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As of Matt Mooney's major refactoring in 2011, usbip port
-option was left out. Add support for this option in
-a manner similar to the old implementation.
+On Mon, 23 Dec 2013 09:20:37 -0800
+Alexander Duyck <alexander.h.duyck@intel.com> wrote:
 
-Sample output:
+> On 12/22/2013 09:09 PM, Ding Tianhong wrote:
+> > Use the recently added and possibly more efficient
+> > ether_addr_equal_unaligned to instead of memcmp.
+> >
+> > Cc: "David S. Miller" <davem@davemloft.net>
+> > Cc: netdev@vger.kernel.org
+> > Cc: linux-kernel@vger.kernel.org
+> > Cc: e1000-devel@lists.sourceforge.net
+> > Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+> > ---
+> >  drivers/net/bonding/bond_3ad.c                        |  2 +-
+> >  drivers/net/ethernet/3com/3c509.c                     |  3 +--
+> >  drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c        | 10
+> > ++++------ drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c     |
+> > 2 +- drivers/net/ethernet/broadcom/bnx2x/bnx2x_vfpf.c      |  2 +-
+> >  drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c    |  2 +-
+> >  drivers/net/ethernet/chelsio/cxgb3/l2t.c              |  2 +-
+> >  drivers/net/ethernet/cisco/enic/enic_pp.c             |  2 +-
+> >  drivers/net/ethernet/emulex/benet/be_main.c           |  2 +-
+> >  drivers/net/ethernet/intel/igbvf/netdev.c             |  2 +-
+> >  drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c        |  3 +--
+> >  drivers/net/ethernet/mellanox/mlx4/en_netdev.c        |  4 ++--
+> >  drivers/net/ethernet/mellanox/mlx4/resource_tracker.c |  2 +-
+> >  drivers/net/ethernet/micrel/ksz884x.c                 |  9
+> > ++++----- drivers/net/ethernet/neterion/vxge/vxge-main.c        |
+> > 2 +- drivers/net/ethernet/packetengines/yellowfin.c        |  8
+> > ++------ drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c    |  2
+> > +- drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c        |  4 ++--
+> >  drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c        |  4 ++--
+> >  drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c      |  4 ++--
+> >  drivers/net/ethernet/renesas/sh_eth.c                 |  2 +-
+> >  drivers/net/ethernet/seeq/sgiseeq.c                   |  2 +-
+> >  drivers/net/ethernet/sun/sunvnet.c                    |  2 +-
+> >  drivers/net/ethernet/ti/cpsw_ale.c                    |  2 +-
+> >  drivers/net/fddi/skfp/fplustm.c                       |  3 ++-
+> >  drivers/net/plip/plip.c                               |  2 +-
+> >  net/caif/cfrfml.c                                     |  2 +-
+> >  27 files changed, 39 insertions(+), 47 deletions(-)
+> 
+> What is it you are trying to optimize for, size or speed?  Most of
+> these calls are in slow path.  Replacing the memcmp with an inline
+> operation may provide little to no gain in terms of speed and in many
+> cases as you might actually be increasing the resultant driver size.
+> 
+> Also I would recommend reviewing the addresses you are comparing.  It
+> is likely that you could use ether_addr_equal or compare_ether_addr
+> in many cases as I suspect a number of spots are using 16b aligned
+> MAC addresses for both operands.
 
-Imported USB devices
-====================
-Port 00: <Port in Use> at Full Speed(12Mbps)
-       unknown vendor : unknown product (1687:6211)
-       2-1 -> usbip://192.168.122.152:3240/1-1 (remote devid 00010002 (bus/dev 001/002))
+User ether_addr_equal.  compare_ether_addr was recently removed from
+the upstream kernel - as I discovered to my chagrin late one
+recent Friday evening while trying to get a build done.
 
-Signed-off-by: Valentina Manea <valentina.manea.m@gmail.com>
----
- .../staging/usbip/userspace/libsrc/vhci_driver.c   | 59 ++++++++++++++++++++++
- .../staging/usbip/userspace/libsrc/vhci_driver.h   |  2 +
- drivers/staging/usbip/userspace/src/Makefile.am    |  2 +-
- drivers/staging/usbip/userspace/src/usbip.c        |  6 +++
- drivers/staging/usbip/userspace/src/usbip.h        |  1 +
- drivers/staging/usbip/userspace/src/usbip_port.c   | 59 ++++++++++++++++++++++
- 6 files changed, 128 insertions(+), 1 deletion(-)
- create mode 100644 drivers/staging/usbip/userspace/src/usbip_port.c
+- Greg
 
-diff --git a/drivers/staging/usbip/userspace/libsrc/vhci_driver.c b/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
-index 241006a..5abc567 100644
---- a/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
-+++ b/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
-@@ -4,6 +4,8 @@
- 
- #include "usbip_common.h"
- #include "vhci_driver.h"
-+#include <limits.h>
-+#include <netdb.h>
- 
- #undef  PROGNAME
- #define PROGNAME "libusbip"
-@@ -337,6 +339,29 @@ err:
- 	return -1;
- }
- 
-+static int read_record(int rhport, char *host, char *port, char *busid)
-+{
-+	FILE *file;
-+	char path[PATH_MAX+1];
-+
-+	snprintf(path, PATH_MAX, VHCI_STATE_PATH"/port%d", rhport);
-+
-+	file = fopen(path, "r");
-+	if (!file) {
-+		err("fopen");
-+		return -1;
-+	}
-+
-+	if (fscanf(file, "%s %s %s\n", host, port, busid) != 3) {
-+		err("fscanf");
-+		fclose(file);
-+		return -1;
-+	}
-+
-+	fclose(file);
-+
-+	return 0;
-+}
- 
- /* ---------------------------------------------------------------------- */
- 
-@@ -535,3 +560,37 @@ int usbip_vhci_detach_device(uint8_t port)
- 
- 	return 0;
- }
-+
-+int usbip_vhci_imported_device_dump(struct usbip_imported_device *idev)
-+{
-+	char product_name[100];
-+	char host[NI_MAXHOST] = "unknown host";
-+	char serv[NI_MAXSERV] = "unknown port";
-+	char remote_busid[SYSFS_BUS_ID_SIZE];
-+	int ret;
-+
-+	if (idev->status == VDEV_ST_NULL || idev->status == VDEV_ST_NOTASSIGNED)
-+		return 0;
-+
-+	ret = read_record(idev->port, host, serv, remote_busid);
-+	if (ret) {
-+		err("read_record");
-+		return -1;
-+	}
-+
-+	printf("Port %02d: <%s> at %s\n", idev->port,
-+	       usbip_status_string(idev->status),
-+	       usbip_speed_string(idev->udev.speed));
-+
-+	usbip_names_get_product(product_name, sizeof(product_name),
-+				idev->udev.idVendor, idev->udev.idProduct);
-+
-+	printf("       %s\n",  product_name);
-+
-+	printf("%10s -> usbip://%s:%s/%s (remote devid %08x (bus/dev %03d/%03d))\n",
-+	       idev->udev.busid, host, serv, remote_busid,
-+	       idev->devid,
-+	       idev->busnum, idev->devnum);
-+
-+	return 0;
-+}
-diff --git a/drivers/staging/usbip/userspace/libsrc/vhci_driver.h b/drivers/staging/usbip/userspace/libsrc/vhci_driver.h
-index 89949aa..e071f80 100644
---- a/drivers/staging/usbip/userspace/libsrc/vhci_driver.h
-+++ b/drivers/staging/usbip/userspace/libsrc/vhci_driver.h
-@@ -64,4 +64,6 @@ int usbip_vhci_attach_device(uint8_t port, int sockfd, uint8_t busnum,
- 
- int usbip_vhci_detach_device(uint8_t port);
- 
-+int usbip_vhci_imported_device_dump(struct usbip_imported_device *idev);
-+
- #endif /* __VHCI_DRIVER_H */
-diff --git a/drivers/staging/usbip/userspace/src/Makefile.am b/drivers/staging/usbip/userspace/src/Makefile.am
-index a113003..b4f8c4b 100644
---- a/drivers/staging/usbip/userspace/src/Makefile.am
-+++ b/drivers/staging/usbip/userspace/src/Makefile.am
-@@ -6,7 +6,7 @@ sbin_PROGRAMS := usbip usbipd
- 
- usbip_SOURCES := usbip.h utils.h usbip.c utils.c usbip_network.c \
- 		 usbip_attach.c usbip_detach.c usbip_list.c \
--		 usbip_bind.c usbip_unbind.c
-+		 usbip_bind.c usbip_unbind.c usbip_port.c
- 
- 
- usbipd_SOURCES := usbip_network.h usbipd.c usbip_network.c
-diff --git a/drivers/staging/usbip/userspace/src/usbip.c b/drivers/staging/usbip/userspace/src/usbip.c
-index 04a5f20..d7599d9 100644
---- a/drivers/staging/usbip/userspace/src/usbip.c
-+++ b/drivers/staging/usbip/userspace/src/usbip.c
-@@ -93,6 +93,12 @@ static const struct command cmds[] = {
- 		.help  = "Unbind device from " USBIP_HOST_DRV_NAME ".ko",
- 		.usage = usbip_unbind_usage
- 	},
-+	{
-+		.name  = "port",
-+		.fn    = usbip_port_show,
-+		.help  = "Show imported USB devices",
-+		.usage = NULL
-+	},
- 	{ NULL, NULL, NULL, NULL }
- };
- 
-diff --git a/drivers/staging/usbip/userspace/src/usbip.h b/drivers/staging/usbip/userspace/src/usbip.h
-index 14d4a47..84fe66a 100644
---- a/drivers/staging/usbip/userspace/src/usbip.h
-+++ b/drivers/staging/usbip/userspace/src/usbip.h
-@@ -29,6 +29,7 @@ int usbip_detach(int argc, char *argv[]);
- int usbip_list(int argc, char *argv[]);
- int usbip_bind(int argc, char *argv[]);
- int usbip_unbind(int argc, char *argv[]);
-+int usbip_port_show(int argc, char *argv[]);
- 
- void usbip_attach_usage(void);
- void usbip_detach_usage(void);
-diff --git a/drivers/staging/usbip/userspace/src/usbip_port.c b/drivers/staging/usbip/userspace/src/usbip_port.c
-new file mode 100644
-index 0000000..e07dfe5
---- /dev/null
-+++ b/drivers/staging/usbip/userspace/src/usbip_port.c
-@@ -0,0 +1,59 @@
-+/*
-+ * Copyright (C) 2011 matt mooney <mfm@muteddisk.com>
-+ *               2005-2007 Takahiro Hirofuchi
-+ *
-+ * This program is free software: you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include "vhci_driver.h"
-+#include "usbip_common.h"
-+
-+static int list_imported_devices()
-+{
-+	int i;
-+	struct usbip_imported_device *idev;
-+	int ret;
-+
-+	ret = usbip_vhci_driver_open();
-+	if (ret < 0) {
-+		err("open vhci_driver");
-+		return -1;
-+	}
-+
-+	printf("Imported USB devices\n");
-+	printf("====================\n");
-+
-+	for (i = 0; i < vhci_driver->nports; i++) {
-+		idev = &vhci_driver->idev[i];
-+
-+		if (usbip_vhci_imported_device_dump(idev) < 0)
-+			ret = -1;
-+	}
-+
-+	usbip_vhci_driver_close();
-+
-+	return ret;
-+
-+}
-+
-+int usbip_port_show(int argc, char *argv[])
-+{
-+	(void) argc;
-+	(void) argv;
-+
-+	int ret;
-+
-+	ret = list_imported_devices();
-+	if (ret < 0)
-+		err("list imported devices");
-+
-+	return ret;
-+}
--- 
-1.8.1.2
+> 
+> Thanks,
+> 
+> Alex
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
