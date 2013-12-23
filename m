@@ -1,73 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757128Ab3LWG4H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 01:56:07 -0500
-Received: from canardo.mork.no ([148.122.252.1]:52370 "EHLO canardo.mork.no"
+	id S1757004Ab3LWHA5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 02:00:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53970 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751500Ab3LWG4F convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 01:56:05 -0500
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq\@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH Resend] cpufreq: remove sysfs files for CPU which failed to come back after resume
-Organization: m
-References: <610b63b7594e5cd364c498f60e69b9e174db9257.1387554926.git.viresh.kumar@linaro.org>
-	<1651441.C2UQleWVoy@vostro.rjw.lan> <871u14i00j.fsf@nemi.mork.no>
-	<CAKohpok1dGMPSAehwsVeiyHzxaHupenA4sP5cxCrjVYQMyrVWA@mail.gmail.com>
-Date: Mon, 23 Dec 2013 07:55:50 +0100
-In-Reply-To: <CAKohpok1dGMPSAehwsVeiyHzxaHupenA4sP5cxCrjVYQMyrVWA@mail.gmail.com>
-	(Viresh Kumar's message of "Mon, 23 Dec 2013 11:32:28 +0530")
-Message-ID: <87d2kokqdl.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+	id S1751244Ab3LWHAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 02:00:55 -0500
+Message-ID: <52B7DF98.1020108@redhat.com>
+Date: Mon, 23 Dec 2013 15:00:40 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Zhi Yong Wu <zwu.kernel@gmail.com>
+CC: netdev@vger.kernel.org, linux-kernel mlist <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH] net, tun: remove the flow cache
+References: <1387265182-27312-1-git-send-email-zwu.kernel@gmail.com>	<52B0100A.3030002@redhat.com>	<CAEH94LhM5WWLEETv-n0cYs4wv+Hw4pC7-c+b5cKqRxdx2XywNw@mail.gmail.com>	<52B02206.6030709@redhat.com> <CAEH94LjyVOopKUJ+yJV97UF6J8akohSbqqZN6g+m_1EyfWNTUw@mail.gmail.com>
+In-Reply-To: <CAEH94LjyVOopKUJ+yJV97UF6J8akohSbqqZN6g+m_1EyfWNTUw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Viresh Kumar <viresh.kumar@linaro.org> writes:
-> On 23 December 2013 11:25, Bjørn Mork <bjorn@mork.no> wrote:
->> I can confirm that it fixes the major regression.  With this branch, the
->> cpufreq directory is completely removed after a cancelled userspace
->> hibernate (with the acpi-cpufreq problem causing failure).  So it is
->> possible to restore cpufreq by manually offlining and onlining non-boot
->> cores.  No more leftover sysfs attributes.
->
-> Thanks for giving it a try once again :)
->
->> But there is still a minor regression compared to the old (v3.11)
->> behaviour: Previously the cpufreq functionality would be automatically
->> restored by any completed hibernate or suspend cycle, since it would
->> effectively do the CPU offline/online. This automatix fixup won't happen
->> with the current pm-cpufreq branch.
->
-> I didn't understood it completely, sorry :)
->
-> As far as I can see from 3.11 code we simply used to fail with any failure
-> resulting with a call to ->init() or some other call..
->
-> And so cpufreq wouldn't have added any directories at all in that case.
-> And so I think we still required an offline/online sequence to guarantee
-> things..
+On 12/18/2013 10:08 AM, Zhi Yong Wu wrote:
+> On Tue, Dec 17, 2013 at 6:05 PM, Jason Wang <jasowang@redhat.com> wrote:
+>> On 12/17/2013 05:13 PM, Zhi Yong Wu wrote:
+>>> On Tue, Dec 17, 2013 at 4:49 PM, Jason Wang <jasowang@redhat.com> wrote:
+>>>>> On 12/17/2013 03:26 PM, Zhi Yong Wu wrote:
+>>>>>>> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>>>>>>>
+>>>>>>> The flow cache is an extremely broken concept, and it usually brings up
+>>>>>>> growth issues and DoS attacks, so this patch is trying to remove it from
+>>>>>>> the tuntap driver, and insteadly use a simpler way for its flow control.
+>>>>> NACK.
+>>>>>
+>>>>> This single function revert does not make sense to me. Since:
+>>> IIRC, the tuntap flow cache is only used to save the mapping of skb
+>>> packet <-> queue index. My idea only save the queue index in skb_buff
+>>> early when skb buffer is filled, not in flow cache as the current
+>>> code. This method is actually more simpler and completely doesn't need
+>>> any flow cache.
+>> Nope. Flow caches record the flow to queues mapping like what most
+>> multiqueue nic does. The only difference is tun record it silently while
+>> most nic needs driver to tell the mapping.
+> Just check virtio specs, i seem to miss the fact that flow cache
+> enable packet steering in mq mode, thanks for your comments. But i
+> have some concerns about some of your comments.
+>> What your patch does is:
+>> - set the queue mapping of skb during tun_get_user(). But most drivers
+>> using XPS or processor id to select the real tx queue. So the real txq
+>> depends on the cpu that vhost or qemu is running. This setting does not
+> Doesn't those drivers invoke netdev_pick_tx() or its counterpart to
+> select real tx queue? e.g. tun_select_queue(). or can you say it with
+> an example?
 
-That's correct.  The immediate result of the failure is exactly the
-same.
+See __netdev_pick_tx() which will call get_xps_queues() to let XPS to
+choose txq if there's no ndo_select_queue() method. Even if some driver
+who has its own implementation, it will also call __netdev_pick_tx() for
+ordinary traffic. Few drivers just using processor id to select txq. See
+tile_net_select_queue(). Some drivers does this implicitly through XPS,
+see ixgbe and virtio-net.
 
-The difference is that a subsequent resume would restore the cpufreq
-device whether it existed or not.  That made a complete suspend/resume
-fix up any missing cpufreq device, e.g. one that was removed by a
-previous error.
+So the value you intend to "teach" the hardware nic may not work for
+most of the cases.
+> Moreover, how do those drivers know which cpu vhost or qemu is running on?
 
-One effect of saving state on suspend is that a missing device isn't
-added on resume.  You can of course see that as a feature.  But to me
-it's a regression, because:
- - it didn't use to work that way, and
- - the addition of missing devices on resume is always wanted AFAICS.
+It does not know, but it can use processor id which is normally where
+qemu/vhost is running.
+>> have any effect in fact.
+>> - the queue mapping of skb were fetched during tun_select_queue(). This
+>> value is usually set by a multiqueue nic to record which hardware rxq
+>> was this packet came.
+> ah? Can you let me know where a mq nic controller set it?
 
+Almost all multiqueue nic set this when it receives a packet. One
+example is ixgbe_process_skb_fields().
+>> Can you explain how your patch works exactly?
+> You have understood it.
+>>>>> - You in fact removes the flow steering function in tun. We definitely
+>>>>> need something like this to unbreak the TCP performance in a multiqueue
+>>> I don't think it will downgrade the TCP perf even in mq guest, but my
+>>> idea maybe has better TCP perf, because it doesn't have any cache
+>>> table lookup, etc.
+>> Did you test and compare the performance numbers? Did you run profiler
+>> to see how much does the lookup cost?
+> No, As i jus said above, i miss that flow cache can enable packet
+> steering. But Did you do related perf testing? To be honest, i am
+> wondering how much perf the packet steering can improve. Actually it
+> also injects a lot of cache lookup cost.
 
-Bjørn
+Not a lot unless there's a unbalance distribution of the hash bucket
+which is very rare in the common case.
+
+Without it, you may get a very huge regression even on a single stream
+tcp netperf test. Flow caches guarantees packets of a single stream was
+not processed by more than one vhost threads/vcpus which is very
+important for TCP performance.
+>>>>> guest. Please have a look at the virtio-net driver / virtio sepc for
+>>>>> more information.
+>>>>> - The total number of flow caches were limited to 4096, so there's no
+>>>>> DoS or growth issue.
+>>> Can you check why the ipv4 routing cache is removed? maybe i miss
+>>> something, if yes, pls correct me. :)
+>> The main differences is that the flow caches were best effort. Tun can
+>> not store all flows to queue mapping, and even a hardware nic can not do
+>> this. If a packet misses the flow cache, it's safe to distribute it
+>> randomly or through another method. So the limitation just work.
+> Exactly, we can know this from tun_select_queue().
+>> Could you please explain the DoS or growth issue you meet here?
+>>>>> - The only issue is scalability, but fixing this is not easy. We can
+>>>>> just use arrays/indirection table like RSS instead of hash buckets, it
+>>>>> saves some time in linear search but has other issues like collision
+>>>>> - I've also had a RFC of using aRFS in the past, it also has several
+>>>>> drawbacks such as busy looping in the networking hotspot.
+>>>>>
+>>>>> So in conclusion, we need flow steering in tun, just removing current
+>>>>> method does not help. The proper way is to expose several different
+>>>>> methods to user and let user to choose the preferable mechanism like
+>>>>> packet.
+>>> By the way, let us look at what other networking guys think of this,
+>>> such as MST, dave, etc. :)
+>>>
+>> Of course.
+>
+>
+
