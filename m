@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932630Ab3LWWDf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 17:03:35 -0500
-Received: from zimbra13.linbit.com ([212.69.166.240]:60678 "EHLO
+	id S1758108Ab3LWWER (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 17:04:17 -0500
+Received: from zimbra13.linbit.com ([212.69.166.240]:60675 "EHLO
 	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932410Ab3LWV64 (ORCPT
+	with ESMTP id S932343Ab3LWV6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 16:58:56 -0500
+	Mon, 23 Dec 2013 16:58:55 -0500
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 15/27] drbd: Move string function prototypes from linux/drbd.h to drbd_string.h
-Date: Mon, 23 Dec 2013 22:50:44 +0100
-Message-Id: <1387835456-29695-16-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 22/27] drbd: Turn w_make_ov_request and make_resync_request into "normal" functions
+Date: Mon, 23 Dec 2013 22:50:51 +0100
+Message-Id: <1387835456-29695-23-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1387835456-29695-1-git-send-email-philipp.reisner@linbit.com>
 References: <1387835456-29695-1-git-send-email-philipp.reisner@linbit.com>
@@ -22,72 +22,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@linbit.com>
 
+These functions are not used as drbd_work callbacks.
+
 Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 ---
- drivers/block/drbd/drbd_int.h     |    1 +
- drivers/block/drbd/drbd_strings.c |    1 +
- drivers/block/drbd/drbd_strings.h |    9 +++++++++
- include/linux/drbd.h              |    6 ------
- 4 files changed, 11 insertions(+), 6 deletions(-)
- create mode 100644 drivers/block/drbd/drbd_strings.h
+ drivers/block/drbd/drbd_worker.c |   15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index ef4c621..2b0fdfd 100644
---- a/drivers/block/drbd/drbd_int.h
-+++ b/drivers/block/drbd/drbd_int.h
-@@ -45,6 +45,7 @@
- #include <linux/prefetch.h>
- #include <linux/drbd_genl_api.h>
- #include <linux/drbd.h>
-+#include "drbd_strings.h"
- #include "drbd_state.h"
+diff --git a/drivers/block/drbd/drbd_worker.c b/drivers/block/drbd/drbd_worker.c
+index b0f6ae0..7961af9 100644
+--- a/drivers/block/drbd/drbd_worker.c
++++ b/drivers/block/drbd/drbd_worker.c
+@@ -39,8 +39,8 @@
  #include "drbd_protocol.h"
+ #include "drbd_req.h"
  
-diff --git a/drivers/block/drbd/drbd_strings.c b/drivers/block/drbd/drbd_strings.c
-index 58e08ff..80b0f63 100644
---- a/drivers/block/drbd/drbd_strings.c
-+++ b/drivers/block/drbd/drbd_strings.c
-@@ -24,6 +24,7 @@
- */
+-static int w_make_ov_request(struct drbd_work *, int);
+-static int w_make_resync_request(struct drbd_work *, int);
++static int make_ov_request(struct drbd_device *, int);
++static int make_resync_request(struct drbd_device *, int);
  
- #include <linux/drbd.h>
-+#include "drbd_strings.h"
+ /* endio handlers:
+  *   drbd_md_io_complete (defined here)
+@@ -427,10 +427,10 @@ int w_resync_timer(struct drbd_work *w, int cancel)
  
- static const char *drbd_conn_s_names[] = {
- 	[C_STANDALONE]       = "StandAlone",
-diff --git a/drivers/block/drbd/drbd_strings.h b/drivers/block/drbd/drbd_strings.h
-new file mode 100644
-index 0000000..f9923cc
---- /dev/null
-+++ b/drivers/block/drbd/drbd_strings.h
-@@ -0,0 +1,9 @@
-+#ifndef __DRBD_STRINGS_H
-+#define __DRBD_STRINGS_H
-+
-+extern const char *drbd_conn_str(enum drbd_conns);
-+extern const char *drbd_role_str(enum drbd_role);
-+extern const char *drbd_disk_str(enum drbd_disk_state);
-+extern const char *drbd_set_st_err_str(enum drbd_state_rv);
-+
-+#endif  /* __DRBD_STRINGS_H */
-diff --git a/include/linux/drbd.h b/include/linux/drbd.h
-index 6f60136..3dbe9bd 100644
---- a/include/linux/drbd.h
-+++ b/include/linux/drbd.h
-@@ -327,12 +327,6 @@ enum drbd_state_rv {
- 	SS_AFTER_LAST_ERROR = -22,    /* Keep this at bottom */
- };
+ 	switch (device->state.conn) {
+ 	case C_VERIFY_S:
+-		w_make_ov_request(w, cancel);
++		make_ov_request(device, cancel);
+ 		break;
+ 	case C_SYNC_TARGET:
+-		w_make_resync_request(w, cancel);
++		make_resync_request(device, cancel);
+ 		break;
+ 	}
  
--/* from drbd_strings.c */
--extern const char *drbd_conn_str(enum drbd_conns);
--extern const char *drbd_role_str(enum drbd_role);
--extern const char *drbd_disk_str(enum drbd_disk_state);
--extern const char *drbd_set_st_err_str(enum drbd_state_rv);
--
- #define SHARED_SECRET_MAX 64
+@@ -565,10 +565,8 @@ static int drbd_rs_number_requests(struct drbd_device *device)
+ 	return number;
+ }
  
- #define MDF_CONSISTENT		(1 << 0)
+-static int w_make_resync_request(struct drbd_work *w, int cancel)
++static int make_resync_request(struct drbd_device *device, int cancel)
+ {
+-	struct drbd_device_work *dw = device_work(w);
+-	struct drbd_device *device = dw->device;
+ 	unsigned long bit;
+ 	sector_t sector;
+ 	const sector_t capacity = drbd_get_capacity(device->this_bdev);
+@@ -730,9 +728,8 @@ next_sector:
+ 	return 0;
+ }
+ 
+-static int w_make_ov_request(struct drbd_work *w, int cancel)
++static int make_ov_request(struct drbd_device *device, int cancel)
+ {
+-	struct drbd_device *device = device_work(w)->device;
+ 	int number, i, size;
+ 	sector_t sector;
+ 	const sector_t capacity = drbd_get_capacity(device->this_bdev);
 -- 
 1.7.9.5
 
