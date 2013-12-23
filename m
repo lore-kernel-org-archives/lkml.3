@@ -1,113 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932745Ab3LWXyj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 18:54:39 -0500
-Received: from tundra.namei.org ([65.99.196.166]:57351 "EHLO tundra.namei.org"
+	id S932766Ab3LWXzc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 18:55:32 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:58598 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932234Ab3LWXyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 18:54:37 -0500
-Date: Tue, 24 Dec 2013 10:55:18 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] SELinux fixes
-Message-ID: <alpine.LRH.2.02.1312241054230.22564@tundra.namei.org>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S932500Ab3LWXz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 18:55:29 -0500
+Message-ID: <52B8CD43.6060101@ti.com>
+Date: Mon, 23 Dec 2013 17:54:43 -0600
+From: "Anna, Suman" <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: <florian.vaussard@epfl.ch>, Joerg Roedel <joro@8bytes.org>,
+        Tony Lindgren <tony@atomide.com>,
+        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 0/7] Fix omap-iommu probe and convert to DT for 3.14
+References: <1387284818-28739-1-git-send-email-florian.vaussard@epfl.ch> <52B8866D.9060100@ti.com> <52B8A26A.3000905@epfl.ch>
+In-Reply-To: <52B8A26A.3000905@epfl.ch>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Florian,
 
-Please pull these SELinux fixes to your current tree.
+ >>
+>> On 12/17/2013 06:53 AM, Florian Vaussard wrote:
+>>> OMAP2+ is heading towards a full device tree boot for 3.14. Currently,
+>>> the iommu used by the OMAP3 camera subsystem is not yet converted. It
+>>> cannot be probed as necessary data are only passed through device tree.
+>>>
+>>> Patches 1 and 2 are small fixes for problems encountered while developing
+>>> this series.
+>>>
+>>> Patches 3 to 5 add the device tree logic to omap-iommu, and complete
+>>> iommu
+>>> data in omap3.dtsi. Patches 6 and 7 remove unused iommu hwmod data and
+>>> platform code from OMAP2+.
+>>
+>> This is a good starting patch series for the OMAP iommu DT conversion,
+>> but it only handles OMAP3 ISP MMU. The OMAP3 ISP MMU is not the only MMU
+>> handled by the OMAP iommu driver. There is also an OMAP3 IVA MMU and
+>> MMUs associated with DSP and IPU in OMAP4/OMAP5. The conversion is
+>> simpler just with the OMAP3 ISP MMU, as it doesn't have any reset lines
+>> associated with it. But all the other MMUs would require
+>> asserting/deasserting the resets (performed currently through the pdata
+>> function pointers). Your patch series removes that functionality
+>> completely, and if this were to go into 3.14, this has to be handled
+>> through some pdata quirks until all the resets in hwmod data are
+>> converted to a reset driver.
+>>
+>
+> Indeed, this patchset currently addresses only the OMAP ISP IOMMU.
+> For the OMAP3 IVA, the current implementation looks completely
+> different (inside drivers/staging/tidspbridge/). And to the best of
+> my knowledge, the current omap-iommu driver can handle only one
+> instance. By calling
+>
+> bus_set_iommu(&platform_bus_type, &omap_iommu_ops);
 
-The following changes since commit f5835372ebedf26847c2b9e193284075cc9c1f7f:
+Not really, the omap_iommu_ops are identical for all instances. The 
+usage would be by different drivers, with each of them doing a attach 
+for the respective device.
 
-  Merge branch 'drm-fixes' of git://people.freedesktop.org/~airlied/linux (2013-12-23 11:49:16 -0800)
+> the driver register the iommu on the platform bus (which is maybe
+> not the best choice). This call will fill the struct iommu_ops of
+> the bus_type, but if an iommu is already present, it will fail
+> and return EBUSY. Thus only one iommu can be set on the same bus.
+>
+> But for the OMAP4 and OMAP5, I understand your concern. If a reset
+> is needed for these IPs, then a solution must be found. pdata-quirks
+> can be a temporary solution for 3.14. Otherwise a proper reset
+> controller should be devised from the current PRM module. Even if
+> I already looked at the reset core, I do not know the amount of work
+> necessary for this solution. And I do not have the hardware to
+> test the solution. But I can have a look after the XMAS break.
 
-are available in the git repository at:
+Yeah, the DT conversion has been on my list, and wanted to do this after 
+the TI reset framework changes. That would probably take some time as it 
+also involves the hwmod framework, so the only short term solution to 
+enable this would be to use the pdata-quirks.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
+Tony, do you have any objections to this approach?
 
-Chad Hanson (1):
-      selinux: fix broken peer recv check
-
-Oleg Nesterov (1):
-      selinux: selinux_setprocattr()->ptrace_parent() needs rcu_read_lock()
-
- security/selinux/hooks.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
-
----
-
-commit c0c1439541f5305b57a83d599af32b74182933fe
-Author: Oleg Nesterov <oleg@redhat.com>
-Date:   Mon Dec 23 17:45:01 2013 -0500
-
-    selinux: selinux_setprocattr()->ptrace_parent() needs rcu_read_lock()
-    
-    selinux_setprocattr() does ptrace_parent(p) under task_lock(p),
-    but task_struct->alloc_lock doesn't pin ->parent or ->ptrace,
-    this looks confusing and triggers the "suspicious RCU usage"
-    warning because ptrace_parent() does rcu_dereference_check().
-    
-    And in theory this is wrong, spin_lock()->preempt_disable()
-    doesn't necessarily imply rcu_read_lock() we need to access
-    the ->parent.
-    
-    Reported-by: Evan McNabb <emcnabb@redhat.com>
-    Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-    Cc: stable@vger.kernel.org
-    Signed-off-by: Paul Moore <pmoore@redhat.com>
-
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 5db2646..6625699 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -5588,11 +5588,11 @@ static int selinux_setprocattr(struct task_struct *p,
- 		/* Check for ptracing, and update the task SID if ok.
- 		   Otherwise, leave SID unchanged and fail. */
- 		ptsid = 0;
--		task_lock(p);
-+		rcu_read_lock();
- 		tracer = ptrace_parent(p);
- 		if (tracer)
- 			ptsid = task_sid(tracer);
--		task_unlock(p);
-+		rcu_read_unlock();
- 
- 		if (tracer) {
- 			error = avc_has_perm(ptsid, sid, SECCLASS_PROCESS,
-
-commit 46d01d63221c3508421dd72ff9c879f61053cffc
-Author: Chad Hanson <chanson@trustedcs.com>
-Date:   Mon Dec 23 17:45:01 2013 -0500
-
-    selinux: fix broken peer recv check
-    
-    Fix a broken networking check. Return an error if peer recv fails.  If
-    secmark is active and the packet recv succeeds the peer recv error is
-    ignored.
-    
-    Signed-off-by: Chad Hanson <chanson@trustedcs.com>
-    Cc: stable@vger.kernel.org
-    Signed-off-by: Paul Moore <pmoore@redhat.com>
-
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 419491d..5db2646 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -4334,8 +4334,10 @@ static int selinux_socket_sock_rcv_skb(struct sock *sk, struct sk_buff *skb)
- 		}
- 		err = avc_has_perm(sk_sid, peer_sid, SECCLASS_PEER,
- 				   PEER__RECV, &ad);
--		if (err)
-+		if (err) {
- 			selinux_netlbl_err(skb, err, 0);
-+			return err;
-+		}
- 	}
- 
- 	if (secmark_active) {
+regards
+Suman
