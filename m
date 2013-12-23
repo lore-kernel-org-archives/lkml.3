@@ -1,126 +1,466 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757431Ab3LWOdu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 09:33:50 -0500
-Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:13910
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757326Ab3LWOds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 09:33:48 -0500
-From: "Anson.Huang@freescale.com" <Anson.Huang@freescale.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] thermal: imx: correct suspend/resume flow
-Thread-Topic: [PATCH] thermal: imx: correct suspend/resume flow
-Thread-Index: AQHO/+s5if49m/8p3UadCBvO1u/L+pph2B83
-Date: Mon, 23 Dec 2013 14:33:43 +0000
-Message-ID: <C95204EE-D28A-4AB4-B60B-E7CAB8AC3B8E@freescale.com>
-References: <1387831918-17028-1-git-send-email-b20788@freescale.com>,<20131223142931.GM26070@S2101-09.ap.freescale.net>
-In-Reply-To: <20131223142931.GM26070@S2101-09.ap.freescale.net>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [180.156.204.133]
-x-forefront-prvs: 0069246B74
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(199002)(189002)(24454002)(51704005)(33656001)(87936001)(83716003)(85306002)(51856001)(63696002)(49866001)(46102001)(36756003)(76796001)(76786001)(87266001)(82746002)(90146001)(56816005)(81686001)(81816001)(19580405001)(19580395003)(83322001)(85852003)(83072002)(2656002)(80976001)(81342001)(69226001)(81542001)(74662001)(47446002)(79102001)(54316002)(56776001)(59766001)(77982001)(76482001)(74502001)(31966008)(53806001)(54356001)(4396001)(66066001)(74366001)(80022001)(50986001)(47976001)(47736001)(65816001)(74876001)(74706001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB313;H:BY2PR03MB315.namprd03.prod.outlook.com;CLIP:180.156.204.133;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="gb2312"
+	id S1757464Ab3LWOea (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 09:34:30 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:51722 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757326Ab3LWOe2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 09:34:28 -0500
+Date: Mon, 23 Dec 2013 11:34:28 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "David A. Long" <dave.long@linaro.org>, systemtap@sourceware.org,
+        yrl.pp-manager.tt@hitachi.com, Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH -tip  2/3] perf-probe: Support dwarf on uprobe events
+Message-ID: <20131223143428.GG28878@ghostprotocols.net>
+References: <20131220100255.7169.19384.stgit@kbuild-fedora.novalocal>
+ <20131220100259.7169.57512.stgit@kbuild-fedora.novalocal>
+ <20131220180154.GB28878@ghostprotocols.net>
+ <52B75C04.6000404@hitachi.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52B75C04.6000404@hitachi.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBNEXtED026127
 
-
-
-Sent from Anson's iPhone
-
-> ÔÚ 2013Äê12ÔÂ23ÈÕ£¬22:28£¬"Shawn Guo" <shawn.guo@linaro.org> Ð´µÀ£º
+Em Mon, Dec 23, 2013 at 06:39:16AM +0900, Masami Hiramatsu escreveu:
+> (2013/12/21 3:01), Arnaldo Carvalho de Melo wrote:
+> > Em Fri, Dec 20, 2013 at 10:02:59AM +0000, Masami Hiramatsu escreveu:
+> >> Support dwarf(debuginfo) based operations for uprobe events.
+> >> With this change, perf probe can analyze debuginfo of user
+> >> application binary to set up new uprobe event.
+> >> This allows perf-probe --add/--line works with -x option.
+> >> (Actually, --vars has already accepted -x option)
+> > 
+> > Can you provide an example?
+> > 
 > 
->> On Mon, Dec 23, 2013 at 03:51:58PM -0500, Anson Huang wrote:
->> Current imx thermal sensor's suspend function will return fail if
->> thermal sensor is always enabled, but because alarm function is enabled,
->> thermal sensor will be always enabled as well, hence break system's suspend,
->> this patch will disable thermal sensor before suspend and re-enable it
->> after resume, it fixes the failure of suspend/resume caused by thermal driver.
-> 
-> We should probably make it clear in the commit log that it's a
-> regression caused by commit 37713a1 (thermal: imx: implement thermal
-> alarm interrupt handling).
+> OK, here is the examples from 0/3. :)
 
-agreed, will improve the commit log in V2.
+Pleasn readnthis message:
 
-> 
->> 
->> Signed-off-by: Anson Huang <b20788@freescale.com>
->> ---
->> drivers/thermal/imx_thermal.c |   31 +++++++++++++++++--------------
->> 1 file changed, 17 insertions(+), 14 deletions(-)
->> 
->> diff --git a/drivers/thermal/imx_thermal.c b/drivers/thermal/imx_thermal.c
->> index cbb16f3..9a9a6c2 100644
->> --- a/drivers/thermal/imx_thermal.c
->> +++ b/drivers/thermal/imx_thermal.c
->> @@ -510,27 +510,30 @@ static int imx_thermal_suspend(struct device *dev)
->> {
->>    struct imx_thermal_data *data = dev_get_drvdata(dev);
->>    struct regmap *map = data->tempmon;
->> -    u32 val;
->> 
->> -    regmap_read(map, TEMPSENSE0, &val);
->> -    if ((val & TEMPSENSE0_POWER_DOWN) == 0) {
->> -        /*
->> -         * If a measurement is taking place, wait for a long enough
->> -         * time for it to finish, and then check again.  If it still
->> -         * does not finish, something must go wrong.
->> -         */
->> -        udelay(50);
->> -        regmap_read(map, TEMPSENSE0, &val);
->> -        if ((val & TEMPSENSE0_POWER_DOWN) == 0)
->> -            return -ETIMEDOUT;
->> -    }
->> +    /*
->> +     * Need to disable thermal sensor, otherwise, when thermal core
->> +     * try to get temperature before thermal sensor resume, a wrong
->> +     * temperature will be read as the thermal sensor is powered
->> +     * down.
->> +     */
->> +    regmap_write(map, TEMPSENSE0 + REG_CLR, TEMPSENSE0_MEASURE_TEMP);
->> +    regmap_write(map, TEMPSENSE0 + REG_SET, TEMPSENSE0_POWER_DOWN);
->> +    data->mode = THERMAL_DEVICE_DISABLED;
-> 
-> Is it really necessary to update data->mode through suspend/resume
-> cycle?
+http://lkml.kernel.org/r/20131218141125.GT21999@twins.programming.kicks-ass.net
 
-Yes, as the thermal core may try to get temperature before imx thermal sensor resume, if not setting its mode to disabled, thermal core will get a wrong temp and caused system power off by mistake, as the get_temp function will decide whether to power up thermal core according to its mode.
+It is unrelated to this code being discussed in this thread, but
+provides another request for having better patch descriptions and to
+have relevant discussion in the corresponding patch, not just on "0/N".
 
+> Or, should I better put this into the patch description too?
+
+Sure thing, please!
+
+> For example)
+> - Shows the probe-able lines of the given function
+
+The above line would be more clear as:
+
+"The following command shows the probe-able lines of a given user space
+ function, something that so far was only available in the 'perf probe'
+ tool for kernel space functions:"
+
+- Arnaldo
+
+> ----
+> # ./perf probe -x perf --line map__load
+> <map__load@/home/fedora/ksrc/linux-2.6/tools/perf/util/map.c:0>
+>       0  int map__load(struct map *map, symbol_filter_t filter)
+>       1  {
+>       2         const char *name = map->dso->long_name;
+>                 int nr;
 > 
-> Shawn
+>       5         if (dso__loaded(map->dso, map->type))
+>       6                 return 0;
 > 
->> 
->>    return 0;
->> }
->> 
->> static int imx_thermal_resume(struct device *dev)
->> {
->> -    /* Nothing to do for now */
->> +    struct imx_thermal_data *data = dev_get_drvdata(dev);
->> +    struct regmap *map = data->tempmon;
->> +
->> +    /* Enabled thermal sensor after resume */
->> +    regmap_write(map, TEMPSENSE0 + REG_CLR, TEMPSENSE0_POWER_DOWN);
->> +    regmap_write(map, TEMPSENSE0 + REG_SET, TEMPSENSE0_MEASURE_TEMP);
->> +    data->mode = THERMAL_DEVICE_ENABLED;
->> +
->>    return 0;
->> }
->> #endif
->> -- 
->> 1.7.9.5
+>       8         nr = dso__load(map->dso, map, filter);
+>       9         if (nr < 0) {
+>      10                 if (map->dso->has_build_id) {
+> ----
 > 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> - Shows the available variables of the given line
+> ----
+> # ./perf probe -x perf --vars map__load:8
+> Available variables at map__load:8
+>         @<map__load+96>
+>                 char*   name
+>                 struct map*     map
+>                 symbol_filter_t filter
+>         @<map__find_symbol+112>
+>                 char*   name
+>                 symbol_filter_t filter
+>         @<map__find_symbol_by_name+136>
+>                 char*   name
+>                 symbol_filter_t filter
+>         @<map_groups__find_symbol_by_name+176>
+>                 char*   name
+>                 struct map*     map
+>                 symbol_filter_t filter
+> ----
+> 
+> - Set a probe with available vars on the given line
+> ----
+> # ./perf probe -x perf --add 'map__load:8 $vars'
+> 
+> Added new events:
+>   probe_perf:map__load (on map__load:8 with $vars)
+>   probe_perf:map__load_1 (on map__load:8 with $vars)
+>   probe_perf:map__load_2 (on map__load:8 with $vars)
+>   probe_perf:map__load_3 (on map__load:8 with $vars)
+> 
+> You can now use it in all perf tools, such as:
+> 
+>         perf record -e probe_perf:map__load_3 -aR sleep 1
+> ----
+> 
+> > Showing output from commands when new features are implemented can speed
+> > up the process of having it used :-)
+> > 
+> > - Arnaldo
+> >  
+> >> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> >> ---
+> >>  tools/perf/builtin-probe.c    |    2 
+> >>  tools/perf/util/probe-event.c |  230 +++++++++++++++++++++++++++--------------
+> >>  2 files changed, 155 insertions(+), 77 deletions(-)
+> >>
+> >> diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+> >> index b40d064..7fc566a 100644
+> >> --- a/tools/perf/builtin-probe.c
+> >> +++ b/tools/perf/builtin-probe.c
+> >> @@ -420,7 +420,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+> >>  	}
+> >>  
+> >>  #ifdef HAVE_DWARF_SUPPORT
+> >> -	if (params.show_lines && !params.uprobes) {
+> >> +	if (params.show_lines) {
+> >>  		if (params.mod_events) {
+> >>  			pr_err("  Error: Don't use --line with"
+> >>  			       " --add/--del.\n");
+> >> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+> >> index 05be5de..e27cecb 100644
+> >> --- a/tools/perf/util/probe-event.c
+> >> +++ b/tools/perf/util/probe-event.c
+> >> @@ -186,6 +186,90 @@ static int init_user_exec(void)
+> >>  	return ret;
+> >>  }
+> >>  
+> >> +static const char *__target_symbol;
+> >> +static struct symbol *__result_sym;
+> >> +
+> >> +static int filter_target_symbol(struct map *map __maybe_unused,
+> >> +				struct symbol *sym)
+> >> +{
+> >> +	if (strcmp(__target_symbol, sym->name) == 0) {
+> >> +		__result_sym = sym;
+> >> +		return 0;
+> >> +	}
+> >> +	return 1;
+> >> +}
+> >> +
+> >> +/* Find the offset of the symbol in the executable binary */
+> >> +static int find_symbol_offset(const char *exec, const char *function,
+> >> +			      unsigned long *offs)
+> >> +{
+> >> +	struct symbol *sym;
+> >> +	struct map *map = NULL;
+> >> +	int ret = -EINVAL;
+> >> +
+> >> +	if (!offs)
+> >> +		return -EINVAL;
+> >> +
+> >> +	map = dso__new_map(exec);
+> >> +	if (!map) {
+> >> +		pr_warning("Cannot find appropriate DSO for %s.\n", exec);
+> >> +		goto out;
+> >> +	}
+> >> +	pr_debug("Search %s in %s\n", function, exec);
+> >> +	__target_symbol = function;
+> >> +	__result_sym = NULL;
+> >> +	if (map__load(map, filter_target_symbol)) {
+> >> +		pr_err("Failed to find %s in %s.\n", function, exec);
+> >> +		goto out;
+> >> +	}
+> >> +	sym = __result_sym;
+> >> +	if (!sym) {
+> >> +		pr_warning("Cannot find %s in DSO %s\n", function, exec);
+> >> +		goto out;
+> >> +	}
+> >> +
+> >> +	*offs = (map->start > sym->start) ?  map->start : 0;
+> >> +	*offs += sym->start + map->pgoff;
+> >> +	ret = 0;
+> >> +out:
+> >> +	if (map) {
+> >> +		dso__delete(map->dso);
+> >> +		map__delete(map);
+> >> +	}
+> >> +	return ret;
+> >> +}
+> >> +
+> >> +static int convert_exec_to_group(const char *exec, char **result)
+> >> +{
+> >> +	char *ptr1, *ptr2, *exec_copy;
+> >> +	char buf[64];
+> >> +	int ret;
+> >> +
+> >> +	exec_copy = strdup(exec);
+> >> +	if (!exec_copy)
+> >> +		return -ENOMEM;
+> >> +
+> >> +	ptr1 = basename(exec_copy);
+> >> +	if (!ptr1) {
+> >> +		ret = -EINVAL;
+> >> +		goto out;
+> >> +	}
+> >> +
+> >> +	ptr2 = strpbrk(ptr1, "-._");
+> >> +	if (ptr2)
+> >> +		*ptr2 = '\0';
+> >> +	ret = e_snprintf(buf, 64, "%s_%s", PERFPROBE_GROUP, ptr1);
+> >> +	if (ret < 0)
+> >> +		goto out;
+> >> +
+> >> +	*result = strdup(buf);
+> >> +	ret = *result ? 0 : -ENOMEM;
+> >> +
+> >> +out:
+> >> +	free(exec_copy);
+> >> +	return ret;
+> >> +}
+> >> +
+> >>  static int convert_to_perf_probe_point(struct probe_trace_point *tp,
+> >>  					struct perf_probe_point *pp)
+> >>  {
+> >> @@ -261,6 +345,45 @@ static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
+> >>  	return 0;
+> >>  }
+> >>  
+> >> +static int add_exec_to_probe_trace_events(struct probe_trace_event *tevs,
+> >> +					  int ntevs, const char *exec,
+> >> +					  const char *group)
+> >> +{
+> >> +	int i, ret = 0;
+> >> +	unsigned long offset;
+> >> +	char buf[32];
+> >> +
+> >> +	if (!exec)
+> >> +		return 0;
+> >> +
+> >> +	for (i = 0; i < ntevs && ret >= 0; i++) {
+> >> +		/* Get proper offset */
+> >> +		ret = find_symbol_offset(exec, tevs[i].point.symbol, &offset);
+> >> +		if (ret < 0)
+> >> +			break;
+> >> +		offset += tevs[i].point.offset;
+> >> +		tevs[i].point.offset = 0;
+> >> +		free(tevs[i].point.symbol);
+> >> +		ret = e_snprintf(buf, 32, "0x%lx", offset);
+> >> +		if (ret < 0)
+> >> +			break;
+> >> +		tevs[i].point.module = strdup(exec);
+> >> +		tevs[i].point.symbol = strdup(buf);
+> >> +		if (!tevs[i].point.symbol || !tevs[i].point.module) {
+> >> +			ret = -ENOMEM;
+> >> +			break;
+> >> +		}
+> >> +		/* Replace group name if not given */
+> >> +		if (!group) {
+> >> +			free(tevs[i].group);
+> >> +			ret = convert_exec_to_group(exec, &tevs[i].group);
+> >> +		}
+> >> +		tevs[i].uprobes = true;
+> >> +	}
+> >> +
+> >> +	return ret;
+> >> +}
+> >> +
+> >>  static int add_module_to_probe_trace_events(struct probe_trace_event *tevs,
+> >>  					    int ntevs, const char *module)
+> >>  {
+> >> @@ -305,15 +428,6 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
+> >>  	struct debuginfo *dinfo;
+> >>  	int ntevs, ret = 0;
+> >>  
+> >> -	if (pev->uprobes) {
+> >> -		if (need_dwarf) {
+> >> -			pr_warning("Debuginfo-analysis is not yet supported"
+> >> -					" with -x/--exec option.\n");
+> >> -			return -ENOSYS;
+> >> -		}
+> >> -		return convert_name_to_addr(pev, target);
+> >> -	}
+> >> -
+> >>  	dinfo = open_debuginfo(target);
+> >>  
+> >>  	if (!dinfo) {
+> >> @@ -332,9 +446,14 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
+> >>  
+> >>  	if (ntevs > 0) {	/* Succeeded to find trace events */
+> >>  		pr_debug("find %d probe_trace_events.\n", ntevs);
+> >> -		if (target)
+> >> -			ret = add_module_to_probe_trace_events(*tevs, ntevs,
+> >> -							       target);
+> >> +		if (target) {
+> >> +			if (pev->uprobes)
+> >> +				ret = add_exec_to_probe_trace_events(*tevs,
+> >> +						 ntevs, target, pev->group);
+> >> +			else
+> >> +				ret = add_module_to_probe_trace_events(*tevs,
+> >> +						 ntevs, target);
+> >> +		}
+> >>  		return ret < 0 ? ret : ntevs;
+> >>  	}
+> >>  
+> >> @@ -654,9 +773,6 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
+> >>  		return -ENOSYS;
+> >>  	}
+> >>  
+> >> -	if (pev->uprobes)
+> >> -		return convert_name_to_addr(pev, target);
+> >> -
+> >>  	return 0;
+> >>  }
+> >>  
+> >> @@ -1916,11 +2032,26 @@ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
+> >>  	int ret = 0, i;
+> >>  	struct probe_trace_event *tev;
+> >>  
+> >> +	if (pev->uprobes)
+> >> +		if (!pev->group) {
+> >> +			ret = convert_exec_to_group(target, &pev->group);
+> >> +			if (ret != 0) {
+> >> +				pr_warning("Failed to make group name.\n");
+> >> +				return ret;
+> >> +			}
+> >> +		}
+> >> +
+> >>  	/* Convert perf_probe_event with debuginfo */
+> >>  	ret = try_to_find_probe_trace_events(pev, tevs, max_tevs, target);
+> >>  	if (ret != 0)
+> >>  		return ret;	/* Found in debuginfo or got an error */
+> >>  
+> >> +	if (pev->uprobes) {
+> >> +		ret = convert_name_to_addr(pev, target);
+> >> +		if (ret < 0)
+> >> +			return ret;
+> >> +	}
+> >> +
+> >>  	/* Allocate trace event buffer */
+> >>  	tev = *tevs = zalloc(sizeof(struct probe_trace_event));
+> >>  	if (tev == NULL)
+> >> @@ -2279,88 +2410,35 @@ int show_available_funcs(const char *target, struct strfilter *_filter,
+> >>  static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
+> >>  {
+> >>  	struct perf_probe_point *pp = &pev->point;
+> >> -	struct symbol *sym;
+> >> -	struct map *map = NULL;
+> >> -	char *function = NULL;
+> >>  	int ret = -EINVAL;
+> >> -	unsigned long long vaddr = 0;
+> >> +	unsigned long vaddr = 0;
+> >>  
+> >>  	if (!pp->function) {
+> >>  		pr_warning("No function specified for uprobes");
+> >>  		goto out;
+> >>  	}
+> >>  
+> >> -	function = strdup(pp->function);
+> >> -	if (!function) {
+> >> -		pr_warning("Failed to allocate memory by strdup.\n");
+> >> -		ret = -ENOMEM;
+> >> -		goto out;
+> >> -	}
+> >> -
+> >> -	map = dso__new_map(exec);
+> >> -	if (!map) {
+> >> -		pr_warning("Cannot find appropriate DSO for %s.\n", exec);
+> >> -		goto out;
+> >> -	}
+> >> -	available_func_filter = strfilter__new(function, NULL);
+> >> -	if (map__load(map, filter_available_functions)) {
+> >> -		pr_err("Failed to load map.\n");
+> >> -		goto out;
+> >> -	}
+> >> -
+> >> -	sym = map__find_symbol_by_name(map, function, NULL);
+> >> -	if (!sym) {
+> >> -		pr_warning("Cannot find %s in DSO %s\n", function, exec);
+> >> +	ret = find_symbol_offset(exec, pp->function, &vaddr);
+> >> +	if (ret < 0)
+> >>  		goto out;
+> >> -	}
+> >>  
+> >> -	if (map->start > sym->start)
+> >> -		vaddr = map->start;
+> >> -	vaddr += sym->start + pp->offset + map->pgoff;
+> >> +	vaddr += pp->offset;
+> >>  	pp->offset = 0;
+> >>  
+> >>  	if (!pev->event) {
+> >> -		pev->event = function;
+> >> -		function = NULL;
+> >> -	}
+> >> -	if (!pev->group) {
+> >> -		char *ptr1, *ptr2, *exec_copy;
+> >> -
+> >> -		pev->group = zalloc(sizeof(char *) * 64);
+> >> -		exec_copy = strdup(exec);
+> >> -		if (!exec_copy) {
+> >> -			ret = -ENOMEM;
+> >> -			pr_warning("Failed to copy exec string.\n");
+> >> -			goto out;
+> >> -		}
+> >> +		pev->event = pp->function;
+> >> +	} else
+> >> +		free(pp->function);
+> >>  
+> >> -		ptr1 = strdup(basename(exec_copy));
+> >> -		if (ptr1) {
+> >> -			ptr2 = strpbrk(ptr1, "-._");
+> >> -			if (ptr2)
+> >> -				*ptr2 = '\0';
+> >> -			e_snprintf(pev->group, 64, "%s_%s", PERFPROBE_GROUP,
+> >> -					ptr1);
+> >> -			free(ptr1);
+> >> -		}
+> >> -		free(exec_copy);
+> >> -	}
+> >> -	free(pp->function);
+> >>  	pp->function = zalloc(sizeof(char *) * MAX_PROBE_ARGS);
+> >>  	if (!pp->function) {
+> >>  		ret = -ENOMEM;
+> >>  		pr_warning("Failed to allocate memory by zalloc.\n");
+> >>  		goto out;
+> >>  	}
+> >> -	e_snprintf(pp->function, MAX_PROBE_ARGS, "0x%llx", vaddr);
+> >> +	e_snprintf(pp->function, MAX_PROBE_ARGS, "0x%lx", vaddr);
+> >>  	ret = 0;
+> >>  
+> >>  out:
+> >> -	if (map) {
+> >> -		dso__delete(map->dso);
+> >> -		map__delete(map);
+> >> -	}
+> >> -	if (function)
+> >> -		free(function);
+> >>  	return ret;
+> >>  }
+> >>
+> > 
+> 
+> 
+> -- 
+> Masami HIRAMATSU
+> IT Management Research Dept. Linux Technology Center
+> Hitachi, Ltd., Yokohama Research Laboratory
+> E-mail: masami.hiramatsu.pt@hitachi.com
+> 
