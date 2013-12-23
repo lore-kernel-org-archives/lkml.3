@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932235Ab3LWFLp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 00:11:45 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:59926 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932169Ab3LWFLm (ORCPT
+	id S932325Ab3LWFMF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 00:12:05 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:42048 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932286Ab3LWFL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 00:11:42 -0500
-Message-ID: <52B7C5E0.7010708@huawei.com>
-Date: Mon, 23 Dec 2013 13:10:56 +0800
+	Mon, 23 Dec 2013 00:11:59 -0500
+Message-ID: <52B7C5F9.4080300@huawei.com>
+Date: Mon, 23 Dec 2013 13:11:21 +0800
 From: Ding Tianhong <dingtianhong@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
+To: Solomon Peachy <pizza@shaftnet.org>,
         "John W. Linville" <linville@tuxdriver.com>,
         <linux-wireless@vger.kernel.org>, Netdev <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 14/21] rtlwifi: slight optimization of addr compare
+Subject: [PATCH 18/21] cw1200: slight optimization of addr compare
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.72.199]
@@ -29,40 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Use the recently added and possibly more efficient
 ether_addr_equal_unaligned to instead of memcmp.
 
-Cc: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Chaoming Li <chaoming_li@realsil.com.cn>
-Cc: John W. Linville <linville@tuxdriver.com>
+Cc: Solomon Peachy <pizza@shaftnet.org>
+Cc: "John W. Linville" <linville@tuxdriver.com>
 Cc: linux-wireless@vger.kernel.org
 Cc: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Weilong Chen <chenweilong@huawei.com>
 Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 ---
- drivers/net/wireless/rtlwifi/cam.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/cw1200/sta.c  | 4 ++--
+ drivers/net/wireless/cw1200/txrx.c | 7 +++----
+ 2 files changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/wireless/rtlwifi/cam.c b/drivers/net/wireless/rtlwifi/cam.c
-index 0e510f7..0276153 100644
---- a/drivers/net/wireless/rtlwifi/cam.c
-+++ b/drivers/net/wireless/rtlwifi/cam.c
-@@ -295,7 +295,7 @@ u8 rtl_cam_get_free_entry(struct ieee80211_hw *hw, u8 *sta_addr)
- 	/* Does STA already exist? */
- 	for (i = 4; i < TOTAL_CAM_ENTRY; i++) {
- 		addr = rtlpriv->sec.hwsec_cam_sta_addr[i];
--		if (memcmp(addr, sta_addr, ETH_ALEN) == 0)
-+		if (ether_addr_equal_unaligned(addr, sta_addr))
- 			return i;
+diff --git a/drivers/net/wireless/cw1200/sta.c b/drivers/net/wireless/cw1200/sta.c
+index 010b252..f5d1c83 100644
+--- a/drivers/net/wireless/cw1200/sta.c
++++ b/drivers/net/wireless/cw1200/sta.c
+@@ -555,8 +555,8 @@ u64 cw1200_prepare_multicast(struct ieee80211_hw *hw,
+ 		pr_debug("[STA] multicast: %pM\n", ha->addr);
+ 		memcpy(&priv->multicast_filter.macaddrs[count],
+ 		       ha->addr, ETH_ALEN);
+-		if (memcmp(ha->addr, broadcast_ipv4, ETH_ALEN) &&
+-		    memcmp(ha->addr, broadcast_ipv6, ETH_ALEN))
++		if (!ether_addr_equal_unaligned(ha->addr, broadcast_ipv4) &&
++		    !ether_addr_equal_unaligned(ha->addr, broadcast_ipv6))
+ 			priv->has_multicast_subscription = true;
+ 		count++;
  	}
- 	/* Get a free CAM entry. */
-@@ -335,7 +335,7 @@ void rtl_cam_del_entry(struct ieee80211_hw *hw, u8 *sta_addr)
- 		addr = rtlpriv->sec.hwsec_cam_sta_addr[i];
- 		bitmap = (rtlpriv->sec.hwsec_cam_bitmap) >> i;
- 		if (((bitmap & BIT(0)) == BIT(0)) &&
--		    (memcmp(addr, sta_addr, ETH_ALEN) == 0)) {
-+		    (ether_addr_equal_unaligned(addr, sta_addr))) {
- 			/* Remove from HW Security CAM */
- 			eth_zero_addr(rtlpriv->sec.hwsec_cam_sta_addr[i]);
- 			rtlpriv->sec.hwsec_cam_bitmap &= ~(BIT(0) << i);
+diff --git a/drivers/net/wireless/cw1200/txrx.c b/drivers/net/wireless/cw1200/txrx.c
+index e824d4d..bb9eb7b 100644
+--- a/drivers/net/wireless/cw1200/txrx.c
++++ b/drivers/net/wireless/cw1200/txrx.c
+@@ -816,7 +816,7 @@ static int cw1200_handle_pspoll(struct cw1200_common *priv,
+ 
+ 	if (priv->join_status != CW1200_JOIN_STATUS_AP)
+ 		goto done;
+-	if (memcmp(priv->vif->addr, pspoll->bssid, ETH_ALEN))
++	if (!ether_addr_equal_unaligned(priv->vif->addr, pspoll->bssid))
+ 		goto done;
+ 
+ 	rcu_read_lock();
+@@ -1166,8 +1166,7 @@ void cw1200_rx_cb(struct cw1200_common *priv,
+ 			return;
+ 	} else if (ieee80211_is_beacon(frame->frame_control) &&
+ 		   !arg->status && priv->vif &&
+-		   !memcmp(ieee80211_get_SA(frame), priv->vif->bss_conf.bssid,
+-			   ETH_ALEN)) {
++		   ether_addr_equal_unaligned(ieee80211_get_SA(frame), priv->vif->bss_conf.bssid)) {
+ 		const u8 *tim_ie;
+ 		u8 *ies = ((struct ieee80211_mgmt *)
+ 			  (skb->data))->u.beacon.variable;
+@@ -1314,7 +1313,7 @@ int cw1200_find_link_id(struct cw1200_common *priv, const u8 *mac)
+ 	int i, ret = 0;
+ 	spin_lock_bh(&priv->ps_state_lock);
+ 	for (i = 0; i < CW1200_MAX_STA_IN_AP_MODE; ++i) {
+-		if (!memcmp(mac, priv->link_id_db[i].mac, ETH_ALEN) &&
++		if (ether_addr_equal_unaligned(mac, priv->link_id_db[i].mac) &&
+ 		    priv->link_id_db[i].status) {
+ 			priv->link_id_db[i].timestamp = jiffies;
+ 			ret = i + 1;
 -- 
 1.8.0
 
