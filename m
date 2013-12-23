@@ -1,85 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757655Ab3LWQTy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 11:19:54 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:50785 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757638Ab3LWQTw (ORCPT
+	id S1757675Ab3LWQT5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 11:19:57 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:61302 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757645Ab3LWQTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 11:19:52 -0500
-From: Ming Lei <tom.leiming@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Cc: Ming Lei <tom.leiming@gmail.com>
-Subject: [PATCH 4/4] block: blk-mq: don't export blk_mq_free_queue()
-Date: Tue, 24 Dec 2013 00:18:59 +0800
-Message-Id: <1387815539-12257-5-git-send-email-tom.leiming@gmail.com>
+	Mon, 23 Dec 2013 11:19:54 -0500
+From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+To: Jon Medhurst <tixy@linaro.org>, Russell King <linux@arm.linux.org.uk>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        linux-arm-kernel@lists.infradead.org
+Cc: patches@linaro.org, linaro-networking@linaro.org,
+        linaro-kernel@lists.linaro.org,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/5] ARM: kprobes: fix instruction fetch order with <asm/opcodes.h>
+Date: Mon, 23 Dec 2013 18:19:35 +0200
+Message-Id: <1387815579-15677-2-git-send-email-taras.kondratiuk@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1387815539-12257-1-git-send-email-tom.leiming@gmail.com>
-References: <1387815539-12257-1-git-send-email-tom.leiming@gmail.com>
+In-Reply-To: <1387815579-15677-1-git-send-email-taras.kondratiuk@linaro.org>
+References: <1387815579-15677-1-git-send-email-taras.kondratiuk@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-blk_mq_free_queue() is called from release handler of
-queue kobject, so it needn't be called from drivers.
+From: Ben Dooks <ben.dooks@codethink.co.uk>
 
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+If we are running BE8, the data and instruction endian-ness do not
+match, so use <asm/opcodes.h> to correctly translate memory accesses
+into ARM instructions.
+
+Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
+[taras.kondratiuk@linaro.org: fixed Thumb instruction fetch order]
+Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 ---
- block/blk-mq.c         |    1 -
- block/blk-mq.h         |    1 +
- block/blk-sysfs.c      |    1 +
- include/linux/blk-mq.h |    1 -
- 4 files changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/kernel/kprobes-common.c |   19 +++++++++++--------
+ arch/arm/kernel/kprobes-thumb.c  |   20 ++++++++++++--------
+ arch/arm/kernel/kprobes.c        |    9 +++++----
+ 3 files changed, 28 insertions(+), 20 deletions(-)
 
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 16c046f..a58f103 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -1427,7 +1427,6 @@ void blk_mq_free_queue(struct request_queue *q)
- 	list_del_init(&q->all_q_node);
- 	mutex_unlock(&all_q_mutex);
- }
--EXPORT_SYMBOL(blk_mq_free_queue);
+diff --git a/arch/arm/kernel/kprobes-common.c b/arch/arm/kernel/kprobes-common.c
+index 18a7628..380c20f 100644
+--- a/arch/arm/kernel/kprobes-common.c
++++ b/arch/arm/kernel/kprobes-common.c
+@@ -14,6 +14,7 @@
+ #include <linux/kernel.h>
+ #include <linux/kprobes.h>
+ #include <asm/system_info.h>
++#include <asm/opcodes.h>
  
- /* Basically redo blk_mq_init_queue with queue frozen */
- static void blk_mq_queue_reinit(struct request_queue *q)
-diff --git a/block/blk-mq.h b/block/blk-mq.h
-index 35ff4f7..5c39179 100644
---- a/block/blk-mq.h
-+++ b/block/blk-mq.h
-@@ -28,6 +28,7 @@ void blk_mq_run_request(struct request *rq, bool run_queue, bool async);
- void blk_mq_run_hw_queue(struct blk_mq_hw_ctx *hctx, bool async);
- void blk_mq_init_flush(struct request_queue *q);
- void blk_mq_drain_queue(struct request_queue *q);
-+void blk_mq_free_queue(struct request_queue *q);
+ #include "kprobes.h"
+ 
+@@ -305,7 +306,8 @@ kprobe_decode_ldmstm(kprobe_opcode_t insn, struct arch_specific_insn *asi)
+ 
+ 	if (handler) {
+ 		/* We can emulate the instruction in (possibly) modified form */
+-		asi->insn[0] = (insn & 0xfff00000) | (rn << 16) | reglist;
++		asi->insn[0] = __opcode_to_mem_arm((insn & 0xfff00000) |
++						   (rn << 16) | reglist);
+ 		asi->insn_handler = handler;
+ 		return INSN_GOOD;
+ 	}
+@@ -334,13 +336,14 @@ prepare_emulated_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+ #ifdef CONFIG_THUMB2_KERNEL
+ 	if (thumb) {
+ 		u16 *thumb_insn = (u16 *)asi->insn;
+-		thumb_insn[1] = 0x4770; /* Thumb bx lr */
+-		thumb_insn[2] = 0x4770; /* Thumb bx lr */
++		/* Thumb bx lr */
++		thumb_insn[1] = __opcode_to_mem_thumb16(0x4770);
++		thumb_insn[2] = __opcode_to_mem_thumb16(0x4770);
+ 		return insn;
+ 	}
+-	asi->insn[1] = 0xe12fff1e; /* ARM bx lr */
++	asi->insn[1] = __opcode_to_mem_arm(0xe12fff1e); /* ARM bx lr */
+ #else
+-	asi->insn[1] = 0xe1a0f00e; /* mov pc, lr */
++	asi->insn[1] = __opcode_to_mem_arm(0xe1a0f00e); /* mov pc, lr */
+ #endif
+ 	/* Make an ARM instruction unconditional */
+ 	if (insn < 0xe0000000)
+@@ -360,12 +363,12 @@ set_emulated_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+ 	if (thumb) {
+ 		u16 *ip = (u16 *)asi->insn;
+ 		if (is_wide_instruction(insn))
+-			*ip++ = insn >> 16;
+-		*ip++ = insn;
++			*ip++ = __opcode_to_mem_thumb16(insn >> 16);
++		*ip++ = __opcode_to_mem_thumb16(insn);
+ 		return;
+ 	}
+ #endif
+-	asi->insn[0] = insn;
++	asi->insn[0] = __opcode_to_mem_arm(insn);
+ }
  
  /*
-  * CPU hotplug helpers
-diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
-index 9777952..8095c4a 100644
---- a/block/blk-sysfs.c
-+++ b/block/blk-sysfs.c
-@@ -11,6 +11,7 @@
+diff --git a/arch/arm/kernel/kprobes-thumb.c b/arch/arm/kernel/kprobes-thumb.c
+index 6123daf..b82e798 100644
+--- a/arch/arm/kernel/kprobes-thumb.c
++++ b/arch/arm/kernel/kprobes-thumb.c
+@@ -163,9 +163,9 @@ t32_decode_ldmstm(kprobe_opcode_t insn, struct arch_specific_insn *asi)
+ 	enum kprobe_insn ret = kprobe_decode_ldmstm(insn, asi);
  
- #include "blk.h"
- #include "blk-cgroup.h"
-+#include "blk-mq.h"
+ 	/* Fixup modified instruction to have halfwords in correct order...*/
+-	insn = asi->insn[0];
+-	((u16 *)asi->insn)[0] = insn >> 16;
+-	((u16 *)asi->insn)[1] = insn & 0xffff;
++	insn = __mem_to_opcode_arm(asi->insn[0]);
++	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(insn >> 16);
++	((u16 *)asi->insn)[1] = __opcode_to_mem_thumb16(insn & 0xffff);
  
- struct queue_sysfs_entry {
- 	struct attribute attr;
-diff --git a/include/linux/blk-mq.h b/include/linux/blk-mq.h
-index ab0e9b2..851d34b 100644
---- a/include/linux/blk-mq.h
-+++ b/include/linux/blk-mq.h
-@@ -113,7 +113,6 @@ enum {
- };
+ 	return ret;
+ }
+@@ -1153,7 +1153,7 @@ t16_decode_hiregs(kprobe_opcode_t insn, struct arch_specific_insn *asi)
+ {
+ 	insn &= ~0x00ff;
+ 	insn |= 0x001; /* Set Rdn = R1 and Rm = R0 */
+-	((u16 *)asi->insn)[0] = insn;
++	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(insn);
+ 	asi->insn_handler = t16_emulate_hiregs;
+ 	return INSN_GOOD;
+ }
+@@ -1182,8 +1182,10 @@ t16_decode_push(kprobe_opcode_t insn, struct arch_specific_insn *asi)
+ 	 * and call it with R9=SP and LR in the register list represented
+ 	 * by R8.
+ 	 */
+-	((u16 *)asi->insn)[0] = 0xe929;		/* 1st half STMDB R9!,{} */
+-	((u16 *)asi->insn)[1] = insn & 0x1ff;	/* 2nd half (register list) */
++	/* 1st half STMDB R9!,{} */
++	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(0xe929);
++	/* 2nd half (register list) */
++	((u16 *)asi->insn)[1] = __opcode_to_mem_thumb16(insn & 0x1ff);
+ 	asi->insn_handler = t16_emulate_push;
+ 	return INSN_GOOD;
+ }
+@@ -1232,8 +1234,10 @@ t16_decode_pop(kprobe_opcode_t insn, struct arch_specific_insn *asi)
+ 	 * and call it with R9=SP and PC in the register list represented
+ 	 * by R8.
+ 	 */
+-	((u16 *)asi->insn)[0] = 0xe8b9;		/* 1st half LDMIA R9!,{} */
+-	((u16 *)asi->insn)[1] = insn & 0x1ff;	/* 2nd half (register list) */
++	/* 1st half LDMIA R9!,{} */
++	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(0xe8b9);
++	/* 2nd half (register list) */
++	((u16 *)asi->insn)[1] = __opcode_to_mem_thumb16(insn & 0x1ff);
+ 	asi->insn_handler = insn & 0x100 ? t16_emulate_pop_pc
+ 					 : t16_emulate_pop_nopc;
+ 	return INSN_GOOD;
+diff --git a/arch/arm/kernel/kprobes.c b/arch/arm/kernel/kprobes.c
+index a7b621e..49a87b6 100644
+--- a/arch/arm/kernel/kprobes.c
++++ b/arch/arm/kernel/kprobes.c
+@@ -26,6 +26,7 @@
+ #include <linux/stop_machine.h>
+ #include <linux/stringify.h>
+ #include <asm/traps.h>
++#include <asm/opcodes.h>
+ #include <asm/cacheflush.h>
  
- struct request_queue *blk_mq_init_queue(struct blk_mq_reg *, void *);
--void blk_mq_free_queue(struct request_queue *);
- int blk_mq_register_disk(struct gendisk *);
- void blk_mq_unregister_disk(struct gendisk *);
- void blk_mq_init_commands(struct request_queue *, void (*init)(void *data, struct blk_mq_hw_ctx *, struct request *, unsigned int), void *data);
+ #include "kprobes.h"
+@@ -62,10 +63,10 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
+ #ifdef CONFIG_THUMB2_KERNEL
+ 	thumb = true;
+ 	addr &= ~1; /* Bit 0 would normally be set to indicate Thumb code */
+-	insn = ((u16 *)addr)[0];
++	insn = __mem_to_opcode_thumb16(((u16 *)addr)[0]);
+ 	if (is_wide_instruction(insn)) {
+-		insn <<= 16;
+-		insn |= ((u16 *)addr)[1];
++		u16 inst2 = __mem_to_opcode_thumb16(((u16 *)addr)[1]);
++		insn = __opcode_thumb32_compose(insn, inst2);
+ 		decode_insn = thumb32_kprobe_decode_insn;
+ 	} else
+ 		decode_insn = thumb16_kprobe_decode_insn;
+@@ -73,7 +74,7 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
+ 	thumb = false;
+ 	if (addr & 0x3)
+ 		return -EINVAL;
+-	insn = *p->addr;
++	insn = __mem_to_opcode_arm(*p->addr);
+ 	decode_insn = arm_kprobe_decode_insn;
+ #endif
+ 
 -- 
 1.7.9.5
 
