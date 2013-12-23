@@ -1,101 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932766Ab3LWXzc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 18:55:32 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:58598 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932500Ab3LWXz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 18:55:29 -0500
-Message-ID: <52B8CD43.6060101@ti.com>
-Date: Mon, 23 Dec 2013 17:54:43 -0600
-From: "Anna, Suman" <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S932780Ab3LWX4P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 18:56:15 -0500
+Received: from mail.ufpr.br ([200.17.203.37]:38588 "EHLO ufpr.br"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932500Ab3LWX4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 18:56:14 -0500
+X-Greylist: delayed 515 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Dec 2013 18:56:14 EST
+Message-ID: <30c9d45f4dd90e0d08a8156637338b6f.squirrel@webmail.ufpr.br>
+Date: Mon, 23 Dec 2013 21:47:13 -0200 (BRST)
+Subject: please read
+From: Programa de
+	 =?iso-8859-1?Q?P=F3s-gradua=E7=E3o_e_Seguran=E7a_Alimentar__Nutricional_-?=
+	 UFPR <pgnutricao@ufpr.br>
+User-Agent: SquirrelMail/1.4.15
 MIME-Version: 1.0
-To: <florian.vaussard@epfl.ch>, Joerg Roedel <joro@8bytes.org>,
-        Tony Lindgren <tony@atomide.com>,
-        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 0/7] Fix omap-iommu probe and convert to DT for 3.14
-References: <1387284818-28739-1-git-send-email-florian.vaussard@epfl.ch> <52B8866D.9060100@ti.com> <52B8A26A.3000905@epfl.ch>
-In-Reply-To: <52B8A26A.3000905@epfl.ch>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Florian,
+i am william leung, i have a business proposal worth 24.5 million usd for
+you to handle for me, reply me via (williamleung350@wss-id.org) for more
+details.
 
- >>
->> On 12/17/2013 06:53 AM, Florian Vaussard wrote:
->>> OMAP2+ is heading towards a full device tree boot for 3.14. Currently,
->>> the iommu used by the OMAP3 camera subsystem is not yet converted. It
->>> cannot be probed as necessary data are only passed through device tree.
->>>
->>> Patches 1 and 2 are small fixes for problems encountered while developing
->>> this series.
->>>
->>> Patches 3 to 5 add the device tree logic to omap-iommu, and complete
->>> iommu
->>> data in omap3.dtsi. Patches 6 and 7 remove unused iommu hwmod data and
->>> platform code from OMAP2+.
->>
->> This is a good starting patch series for the OMAP iommu DT conversion,
->> but it only handles OMAP3 ISP MMU. The OMAP3 ISP MMU is not the only MMU
->> handled by the OMAP iommu driver. There is also an OMAP3 IVA MMU and
->> MMUs associated with DSP and IPU in OMAP4/OMAP5. The conversion is
->> simpler just with the OMAP3 ISP MMU, as it doesn't have any reset lines
->> associated with it. But all the other MMUs would require
->> asserting/deasserting the resets (performed currently through the pdata
->> function pointers). Your patch series removes that functionality
->> completely, and if this were to go into 3.14, this has to be handled
->> through some pdata quirks until all the resets in hwmod data are
->> converted to a reset driver.
->>
->
-> Indeed, this patchset currently addresses only the OMAP ISP IOMMU.
-> For the OMAP3 IVA, the current implementation looks completely
-> different (inside drivers/staging/tidspbridge/). And to the best of
-> my knowledge, the current omap-iommu driver can handle only one
-> instance. By calling
->
-> bus_set_iommu(&platform_bus_type, &omap_iommu_ops);
 
-Not really, the omap_iommu_ops are identical for all instances. The 
-usage would be by different drivers, with each of them doing a attach 
-for the respective device.
 
-> the driver register the iommu on the platform bus (which is maybe
-> not the best choice). This call will fill the struct iommu_ops of
-> the bus_type, but if an iommu is already present, it will fail
-> and return EBUSY. Thus only one iommu can be set on the same bus.
->
-> But for the OMAP4 and OMAP5, I understand your concern. If a reset
-> is needed for these IPs, then a solution must be found. pdata-quirks
-> can be a temporary solution for 3.14. Otherwise a proper reset
-> controller should be devised from the current PRM module. Even if
-> I already looked at the reset core, I do not know the amount of work
-> necessary for this solution. And I do not have the hardware to
-> test the solution. But I can have a look after the XMAS break.
-
-Yeah, the DT conversion has been on my list, and wanted to do this after 
-the TI reset framework changes. That would probably take some time as it 
-also involves the hwmod framework, so the only short term solution to 
-enable this would be to use the pdata-quirks.
-
-Tony, do you have any objections to this approach?
-
-regards
-Suman
