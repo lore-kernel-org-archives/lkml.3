@@ -1,93 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932475Ab3LWUr5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 15:47:57 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:39400 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757664Ab3LWUqI (ORCPT
+	id S1757993Ab3LWUvS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 15:51:18 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:33484 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757654Ab3LWUvQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 15:46:08 -0500
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 2/7] mfd: pm8921: Update for genirq changes
-Date: Mon, 23 Dec 2013 12:45:58 -0800
-Message-Id: <1387831563-13535-3-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <1387831563-13535-1-git-send-email-sboyd@codeaurora.org>
-References: <1387831563-13535-1-git-send-email-sboyd@codeaurora.org>
+	Mon, 23 Dec 2013 15:51:16 -0500
+From: Hayato Suzuki <hytszk@gmail.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org, Hayato Suzuki <hytszk@gmail.com>
+Subject: [PATCH] [trivial] powernv: Fix typo in opal-flash.c
+Date: Tue, 24 Dec 2013 05:51:02 +0900
+Message-Id: <1387831862-4371-1-git-send-email-hytszk@gmail.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since this code has been marked broken for some time a few genirq
-tree wide changes weren't made. set_irq_wake() was renamed to
-irq_set_irq_wake() in commit a0cd9ca2b (genirq: Namespace
-cleanup, 2011-02-10) and commit 10a8c383 (irq: introduce entry
-and exit functions for chained handlers) introduced the chained
-irq functions but this driver wasn't updated to use them. Fix
-these problems and remove the BROKEN marking on this driver.
+Correct spelling typo in opal-flash.c
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Hayato Suzuki <hytszk@gmail.com>
 ---
- drivers/mfd/Kconfig       | 1 -
- drivers/mfd/pm8921-core.c | 7 +++++--
- 2 files changed, 5 insertions(+), 3 deletions(-)
+ arch/powerpc/platforms/powernv/opal-flash.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 9ee4ce6..35007ed 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -453,7 +453,6 @@ config MFD_PM8XXX
- config MFD_PM8921_CORE
- 	tristate "Qualcomm PM8921 PMIC chip"
- 	depends on (ARCH_MSM || HEXAGON)
--	depends on BROKEN
- 	select MFD_CORE
- 	select MFD_PM8XXX
- 	help
-diff --git a/drivers/mfd/pm8921-core.c b/drivers/mfd/pm8921-core.c
-index 669f8f2..7964932 100644
---- a/drivers/mfd/pm8921-core.c
-+++ b/drivers/mfd/pm8921-core.c
-@@ -15,6 +15,7 @@
+diff --git a/arch/powerpc/platforms/powernv/opal-flash.c b/arch/powerpc/platforms/powernv/opal-flash.c
+index 4aeae4f..d8f67ba 100644
+--- a/arch/powerpc/platforms/powernv/opal-flash.c
++++ b/arch/powerpc/platforms/powernv/opal-flash.c
+@@ -105,7 +105,7 @@ struct image_header_t {
  
- #include <linux/kernel.h>
- #include <linux/interrupt.h>
-+#include <linux/irqchip/chained_irq.h>
- #include <linux/irq.h>
- #include <linux/module.h>
- #include <linux/platform_device.h>
-@@ -174,6 +175,8 @@ static void pm8xxx_irq_handler(unsigned int irq, struct irq_desc *desc)
- 	u8	root;
- 	int	i, ret, masters = 0;
+ struct validate_flash_t {
+ 	int		status;		/* Return status */
+-	void		*buf;		/* Candiate image buffer */
++	void		*buf;		/* Candidate image buffer */
+ 	uint32_t	buf_size;	/* Image size */
+ 	uint32_t	result;		/* Update results token */
+ };
+@@ -481,7 +481,7 @@ static int alloc_image_buf(char *buffer, size_t count)
  
-+	chained_irq_enter(irq_chip, desc);
-+
- 	ret = pm8xxx_read_root_irq(chip, &root);
- 	if (ret) {
- 		pr_err("Can't read root status ret=%d\n", ret);
-@@ -188,7 +191,7 @@ static void pm8xxx_irq_handler(unsigned int irq, struct irq_desc *desc)
- 		if (masters & (1 << i))
- 			pm8xxx_irq_master_handler(chip, i);
+ 	memcpy(&image_header, (void *)buffer, sizeof(struct image_header_t));
+ 	image_data.size = be32_to_cpu(image_header.size);
+-	pr_debug("FLASH: Candiate image size = %u\n", image_data.size);
++	pr_debug("FLASH: Candidate image size = %u\n", image_data.size);
  
--	irq_chip->irq_ack(&desc->irq_data);
-+	chained_irq_exit(irq_chip, desc);
- }
- 
- static void pm8xxx_irq_mask_ack(struct irq_data *d)
-@@ -367,7 +370,7 @@ static struct pm_irq_chip *pm8xxx_irq_init(struct device *dev,
- 	irq_set_irq_type(devirq, pdata->irq_trigger_flag);
- 	irq_set_handler_data(devirq, chip);
- 	irq_set_chained_handler(devirq, pm8xxx_irq_handler);
--	set_irq_wake(devirq, 1);
-+	irq_set_irq_wake(devirq, 1);
- 
- 	return chip;
- }
+ 	if (image_data.size > MAX_IMAGE_SIZE) {
+ 		pr_warn("FLASH: Too large image\n");
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.4.2
 
