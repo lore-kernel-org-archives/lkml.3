@@ -1,63 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478Ab3LWFGw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 00:06:52 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:61620 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752355Ab3LWFGu (ORCPT
+	id S1752624Ab3LWFKC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 00:10:02 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:59518 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713Ab3LWFJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 00:06:50 -0500
+	Mon, 23 Dec 2013 00:09:59 -0500
+Message-ID: <52B7C58B.9000602@huawei.com>
+Date: Mon, 23 Dec 2013 13:09:31 +0800
+From: Ding Tianhong <dingtianhong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-In-Reply-To: <52B4707F.4040303@wwwdotorg.org>
-References: <1387451926-21373-1-git-send-email-bilhuang@nvidia.com>
-	<CAKohpomCPJYd+d_NnM9gxwQ7bH6C6=iLxbiWZbfNcjZ8Bi+2wA@mail.gmail.com>
-	<52B41B18.30302@nvidia.com>
-	<CAKohpontQwTc4KP7XMvtkvS2sQTyF+ngXnXfbJ1ev+MLEp-H0g@mail.gmail.com>
-	<52B41F1B.3030005@nvidia.com>
-	<52B4707F.4040303@wwwdotorg.org>
-Date: Mon, 23 Dec 2013 10:36:49 +0530
-Message-ID: <CAKohpokwO3BgXr9Le02bNo=771saWuDe2H=fgQzcboRWxwVzOg@mail.gmail.com>
-Subject: Re: [PATCH v5 1/1] cpufreq: tegra: Re-model Tegra20 cpufreq driver
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Rob Herring <robherring2@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: bilhuang <bilhuang@nvidia.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>
+Subject: [PATCH 00/21] slight optimization of addr compare for some modules
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.199]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ccc'ing Grant and Rob as well.
+Joe Perches add ether_addr_equal_unaligned to test if
+possibly unaligned to u16 Ethernet addresses are equal.
 
-On 20 December 2013 21:59, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> No, I definitely don't agree here. The rules for arch/arm64 are: no
-> platform-specific code. We should immediately start planning for that.
-> If this means renaming the file that creates the virtual device from
-> tegra-cpufreq.c to something else, so be it, but we shouldn't go
-> backwards and push stuff into the arch directories.
+If CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS is set, this uses
+the slightly faster generic routine ether_addr_equal,
+otherwise this uses memcmp.
 
-I don't mind doing this now as well if it is generic enough. I wasn't sure
-if you guys wanted to take it on now..
+So I use the recently added and possibly more efficient
+ether_addr_equal_unaligned to instead of memcmp for slight
+optimization.
 
-@Bill: So, please create a separate commit for creating such file which
-would create a virtual device for probing cpufreq drivers with name picked
-from root-node. Compilation of such a file should be configurable but if
-it is compiled, then it shouldn't cause any problems if that device isn't
-used, for multiplatform kernels specially..
+Ding Tianhong (6):
+  net: slight optimization of addr compare for some modules
+  net: freescale: slight optimization of addr compare
+  net: pcnet: slight optimization of addr compare
+  net: atl1: slight optimization of addr compare
+  hamradio: slight optimization of addr compare
+  ppp: slight optimization of addr compare
 
-Probably then you can widen the scope of your patchset by modifying
-some of the existing drivers which require a device to get cpufreq
-driver probed. Currently they are all making such a device from
-their arch/ stuff.
+Tan Xiaojun (3):
+  zd1211rw: slight optimization of addr compare
+  ozwpan: slight optimization of addr compare
+  batman-adv: slight optimization of addr compare
 
-I am not sure about the location of such file. Should this be placed in DT
-code somewhere or kept in cpufreq? Rob/Grant ??
+Wang Weidong (3):
+  infiniband: slight optimization of addr compare
+  bridge: slight optimization of addr compare
+  mac8011: slight optimization of addr compare
 
---
-viresh
+Weilong Chen (6):
+  rtlwifi: slight optimization of addr compare
+  mwifiex: slight optimization of addr compare
+  ipw2x00: slight optimization of addr compare
+  hostap: slight optimization of addr compare
+  cw1200: slight optimization of addr compare
+  wireless: slight optimization of addr compare
+
+Yang Yingliang (3):
+  atm: slight optimization of addr compare
+  isdn: slight optimization of addr compare
+  media: dvb_core: slight optimization of addr compare
+
+ drivers/atm/nicstar.c                              |  3 +-
+ drivers/infiniband/hw/nes/nes_cm.c                 |  3 +-
+ drivers/isdn/i4l/isdn_net.c                        |  4 +--
+ drivers/media/dvb-core/dvb_net.c                   | 10 +++---
+ drivers/net/bonding/bond_3ad.c                     |  2 +-
+ drivers/net/ethernet/3com/3c509.c                  |  3 +-
+ drivers/net/ethernet/amd/pcnet32.c                 |  2 +-
+ drivers/net/ethernet/atheros/atlx/atl1.c           |  2 +-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c     | 10 +++---
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c  |  2 +-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_vfpf.c   |  2 +-
+ drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c |  2 +-
+ drivers/net/ethernet/chelsio/cxgb3/l2t.c           |  2 +-
+ drivers/net/ethernet/cisco/enic/enic_pp.c          |  2 +-
+ drivers/net/ethernet/emulex/benet/be_main.c        |  2 +-
+ drivers/net/ethernet/freescale/ucc_geth.c          |  2 +-
+ drivers/net/ethernet/intel/igbvf/netdev.c          |  2 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c     |  3 +-
+ drivers/net/ethernet/mellanox/mlx4/en_netdev.c     |  4 +--
+ .../net/ethernet/mellanox/mlx4/resource_tracker.c  |  2 +-
+ drivers/net/ethernet/micrel/ksz884x.c              |  9 +++---
+ drivers/net/ethernet/neterion/vxge/vxge-main.c     |  2 +-
+ drivers/net/ethernet/packetengines/yellowfin.c     |  8 ++---
+ drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c |  2 +-
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c     |  4 +--
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c     |  4 +--
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c   |  4 +--
+ drivers/net/ethernet/renesas/sh_eth.c              |  2 +-
+ drivers/net/ethernet/seeq/sgiseeq.c                |  2 +-
+ drivers/net/ethernet/sun/sunvnet.c                 |  2 +-
+ drivers/net/ethernet/ti/cpsw_ale.c                 |  2 +-
+ drivers/net/fddi/skfp/fplustm.c                    |  3 +-
+ drivers/net/hamradio/bpqether.c                    |  2 +-
+ drivers/net/plip/plip.c                            |  2 +-
+ drivers/net/ppp/pppoe.c                            |  5 +--
+ drivers/net/wireless/adm8211.c                     |  2 +-
+ drivers/net/wireless/ath/ath10k/mac.c              |  2 +-
+ drivers/net/wireless/ath/ath10k/txrx.c             |  2 +-
+ drivers/net/wireless/ath/ath6kl/cfg80211.c         |  2 +-
+ drivers/net/wireless/ath/ath6kl/main.c             |  6 ++--
+ drivers/net/wireless/ath/ath6kl/txrx.c             |  3 +-
+ drivers/net/wireless/ath/ath6kl/wmi.c              |  4 +--
+ drivers/net/wireless/ath/wcn36xx/txrx.c            |  2 +-
+ drivers/net/wireless/ath/wil6210/cfg80211.c        |  2 +-
+ drivers/net/wireless/atmel.c                       | 16 +++++-----
+ drivers/net/wireless/brcm80211/brcmfmac/fwsignal.c |  2 +-
+ drivers/net/wireless/brcm80211/brcmfmac/p2p.c      |  9 +++---
+ .../net/wireless/brcm80211/brcmfmac/wl_cfg80211.c  | 10 +++---
+ drivers/net/wireless/cw1200/sta.c                  |  4 +--
+ drivers/net/wireless/cw1200/txrx.c                 |  7 ++---
+ drivers/net/wireless/hostap/hostap_80211_rx.c      | 24 +++++++--------
+ drivers/net/wireless/hostap/hostap_80211_tx.c      |  4 +--
+ drivers/net/wireless/hostap/hostap_ap.c            | 28 ++++++++---------
+ drivers/net/wireless/hostap/hostap_hw.c            |  2 +-
+ drivers/net/wireless/hostap/hostap_info.c          |  2 +-
+ drivers/net/wireless/hostap/hostap_ioctl.c         |  4 +--
+ drivers/net/wireless/hostap/hostap_main.c          |  8 ++---
+ drivers/net/wireless/ipw2x00/ipw2200.c             | 36 ++++++++++++----------
+ drivers/net/wireless/ipw2x00/libipw_rx.c           | 10 +++---
+ drivers/net/wireless/libertas/main.c               |  2 +-
+ drivers/net/wireless/mac80211_hwsim.c              |  7 ++---
+ drivers/net/wireless/mwifiex/11n.c                 |  4 +--
+ drivers/net/wireless/mwifiex/11n_rxreorder.c       |  4 +--
+ drivers/net/wireless/mwifiex/cfg80211.c            |  2 +-
+ drivers/net/wireless/mwifiex/scan.c                |  4 +--
+ drivers/net/wireless/mwifiex/sta_cmdresp.c         |  3 +-
+ drivers/net/wireless/mwifiex/sta_rx.c              |  2 +-
+ drivers/net/wireless/mwifiex/uap_event.c           |  2 +-
+ drivers/net/wireless/mwifiex/wmm.c                 |  2 +-
+ drivers/net/wireless/mwl8k.c                       |  7 ++---
+ drivers/net/wireless/orinoco/main.c                |  2 +-
+ drivers/net/wireless/prism54/isl_ioctl.c           |  9 +++---
+ drivers/net/wireless/ray_cs.c                      |  2 +-
+ drivers/net/wireless/rtlwifi/cam.c                 |  4 +--
+ drivers/net/wireless/ti/wl1251/main.c              |  2 +-
+ drivers/net/wireless/wl3501_cs.c                   |  3 +-
+ drivers/net/wireless/zd1211rw/zd_mac.c             |  7 +++--
+ drivers/staging/ozwpan/ozcdev.c                    |  3 +-
+ drivers/staging/ozwpan/ozproto.c                   |  6 ++--
+ net/batman-adv/originator.c                        |  2 +-
+ net/batman-adv/translation-table.c                 |  2 +-
+ net/bridge/br_stp_if.c                             |  2 +-
+ net/caif/cfrfml.c                                  |  2 +-
+ net/mac80211/iface.c                               |  6 ++--
+ 84 files changed, 192 insertions(+), 207 deletions(-)
+
+-- 
+1.8.0
+
+
