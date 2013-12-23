@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274Ab3LWKrs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 05:47:48 -0500
-Received: from mga09.intel.com ([134.134.136.24]:18735 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753213Ab3LWKrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 05:47:46 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,536,1384329600"; 
-   d="scan'208";a="456552248"
-Date: Mon, 23 Dec 2013 12:54:20 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: linux-netdev@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Chris Ball <cjb@laptop.org>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Rob Landley <rob@landley.net>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2/6] net: rfkill: gpio: convert to descriptor-based
- GPIO interface
-Message-ID: <20131223105420.GP8621@intel.com>
-References: <1385460350-17543-1-git-send-email-mika.westerberg@linux.intel.com>
- <1385460350-17543-3-git-send-email-mika.westerberg@linux.intel.com>
- <CACRpkdb03X_Z7amX-vAVX8KboeCo3ia6oqv8KW79WY=nZXV7wQ@mail.gmail.com>
+	id S1757249Ab3LWKuS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 05:50:18 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:58640 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755151Ab3LWKuR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 05:50:17 -0500
+Message-ID: <52B81562.5000607@hitachi.com>
+Date: Mon, 23 Dec 2013 19:50:10 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdb03X_Z7amX-vAVX8KboeCo3ia6oqv8KW79WY=nZXV7wQ@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "David A. Long" <dave.long@linaro.org>, systemtap@sourceware.org,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH -tip 3/3] perf-probe: Use the actual address as a hint
+ for uprobes
+References: <20131220100255.7169.19384.stgit@kbuild-fedora.novalocal> <20131220100302.7169.96318.stgit@kbuild-fedora.novalocal> <20131220180351.GC28878@ghostprotocols.net> <52B75F9E.7000802@hitachi.com> <87wqiwc8ly.fsf@sejong.aot.lge.com>
+In-Reply-To: <87wqiwc8ly.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 01:00:18PM +0100, Linus Walleij wrote:
-> On Tue, Nov 26, 2013 at 11:05 AM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
+(2013/12/23 16:46), Namhyung Kim wrote:
+> On Mon, 23 Dec 2013 06:54:38 +0900, Masami Hiramatsu wrote:
+>> (2013/12/21 3:03), Arnaldo Carvalho de Melo wrote:
+>>> Em Fri, Dec 20, 2013 at 10:03:02AM +0000, Masami Hiramatsu escreveu:
+>> BTW, I'm not sure why debuginfo and nm shows symbol address + 0x400000,
+>> and why the perf's map/symbol can remove this offset. Could you tell me
+>> how it works?
+>> If I can get the offset (0x400000) from binary, I don't need this kind
+>> of ugly hacks...
 > 
-> > From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> >
-> > Convert to the safer gpiod_* family of API functions.
-> >
-> > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > Tested-by: Stephen Warren <swarren@nvidia.com>
+> AFAIK the actual symbol address is what nm (and debuginfo) shows.  But
+> perf adjusts symbol address to have a relative address from the start of
+> mapping (i.e. file offset) like below:
+> 
+> 	sym.st_value -= shdr.sh_addr - shdr.sh_offset;
 
-Johannes B, David M,
+Thanks! this is what I really need!
 
-Are you fine with this patch? If yes, could you ack it so that we could get
-it merged for 3.14.
+> This way, we can handle mmap and symbol address almost uniformly
+> (i.e. ip = map->start + symbol->address).  But this requires the mmap
+> event during perf record.  For perf probe, we might need to synthesize
+> mapping info from the section/segment header since it doesn't have the
+> mmap event.  Currently, the dso__new_map() just creates a map starts
+> from 0.
 
-Thanks!
+I think the uprobe requires only the relative address, doesn't that?
 
-Here's a link to this series:
+Thank you,
 
-https://lkml.org/lkml/2013/11/26/104
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
