@@ -1,67 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757931Ab3LWVPS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 16:15:18 -0500
-Received: from s3.sipsolutions.net ([144.76.43.152]:43248 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757654Ab3LWVPN (ORCPT
+	id S1757814Ab3LWV2m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 16:28:42 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:36413 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752573Ab3LWV2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 16:15:13 -0500
-Message-ID: <1387833287.4412.6.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH v3 2/6] net: rfkill: gpio: convert to descriptor-based
- GPIO interface
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-netdev@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Chris Ball <cjb@laptop.org>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Rob Landley <rob@landley.net>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 23 Dec 2013 22:14:47 +0100
-In-Reply-To: <20131223105420.GP8621@intel.com>
-References: <1385460350-17543-1-git-send-email-mika.westerberg@linux.intel.com>
-	 <1385460350-17543-3-git-send-email-mika.westerberg@linux.intel.com>
-	 <CACRpkdb03X_Z7amX-vAVX8KboeCo3ia6oqv8KW79WY=nZXV7wQ@mail.gmail.com>
-	 <20131223105420.GP8621@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
+	Mon, 23 Dec 2013 16:28:41 -0500
+Message-ID: <52B8AAFD.5090401@oracle.com>
+Date: Mon, 23 Dec 2013 16:28:29 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: mm: kernel BUG at mm/huge_memory.c:1440!
+References: <52B88F6E.8070909@oracle.com> <20131223200255.GA18521@node.dhcp.inet.fi>
+In-Reply-To: <20131223200255.GA18521@node.dhcp.inet.fi>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-12-23 at 12:54 +0200, Mika Westerberg wrote:
-> On Wed, Dec 11, 2013 at 01:00:18PM +0100, Linus Walleij wrote:
-> > On Tue, Nov 26, 2013 at 11:05 AM, Mika Westerberg
-> > <mika.westerberg@linux.intel.com> wrote:
-> > 
-> > > From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> > >
-> > > Convert to the safer gpiod_* family of API functions.
-> > >
-> > > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > > Tested-by: Stephen Warren <swarren@nvidia.com>
-> 
-> Johannes B, David M,
-> 
-> Are you fine with this patch? If yes, could you ack it so that we could get
-> it merged for 3.14.
+On 12/23/2013 03:02 PM, Kirill A. Shutemov wrote:
+>> [  265.474585] kernel BUG at mm/huge_memory.c:1440!
+> Could you dump_page() on the bug?
 
-I have no objection to this particular patch. I can't really comment on
-it, but I never really delved too deeply into the rfkill-gpio thing - I
-guess it works for whoever needed it :)
+[  469.007946] page:ffffea0005bd8000 count:3 mapcount:0 mapping:ffff8800bcd3d171 index: 0x7fca81000
+[  469.009362] page flags: 0x2afffff80090018(uptodate|dirty|swapcache|swapbacked)
 
-johannes
 
+Thanks,
+Sasha
