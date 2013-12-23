@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757744Ab3LWSg5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 13:36:57 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:45515 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757634Ab3LWSgx (ORCPT
+	id S1757809Ab3LWShC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 13:37:02 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:37255 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757752Ab3LWSg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 13:36:53 -0500
+	Mon, 23 Dec 2013 13:36:58 -0500
 From: Matt Porter <mporter@linaro.org>
 To: Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -25,9 +25,9 @@ Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Devicetree List <devicetree@vger.kernel.org>,
         Linaro Patches <patches@linaro.org>
-Subject: [PATCH v9 3/9] usb: gadget: s3c-hsotg: enable build for other platforms
-Date: Mon, 23 Dec 2013 13:36:32 -0500
-Message-Id: <1387823798-10211-4-git-send-email-mporter@linaro.org>
+Subject: [PATCH v9 5/9] usb: gadget: s3c-hsotg: enable generic phy support
+Date: Mon, 23 Dec 2013 13:36:34 -0500
+Message-Id: <1387823798-10211-6-git-send-email-mporter@linaro.org>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1387823798-10211-1-git-send-email-mporter@linaro.org>
 References: <1387823798-10211-1-git-send-email-mporter@linaro.org>
@@ -35,50 +35,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove unused Samsung-specific machine include and Kconfig
-dependency on S3C.
+Adds support for the generic PHY subsystem. Generic PHY
+support is probed and then the driver falls back to checking
+for an old style USB PHY and pdata if not found.
 
 Signed-off-by: Matt Porter <mporter@linaro.org>
-Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
 ---
- drivers/usb/gadget/Kconfig     | 8 ++++----
- drivers/usb/gadget/s3c-hsotg.c | 2 --
- 2 files changed, 4 insertions(+), 6 deletions(-)
+ drivers/usb/gadget/s3c-hsotg.c | 55 ++++++++++++++++++++++++++++++------------
+ 1 file changed, 39 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index a91e642..cf955f5 100644
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -294,11 +294,11 @@ config USB_PXA27X
- 	   gadget drivers to also be dynamically linked.
- 
- config USB_S3C_HSOTG
--	tristate "S3C HS/OtG USB Device controller"
--	depends on S3C_DEV_USB_HSOTG
-+	tristate "Designware/S3C HS/OtG USB Device controller"
-+	depends on ARM
- 	help
--	  The Samsung S3C64XX USB2.0 high-speed gadget controller
--	  integrated into the S3C64XX series SoC.
-+	  The Designware USB2.0 high-speed gadget controller
-+	  integrated into many SoCs.
- 
- config USB_S3C2410
- 	tristate "S3C2410 USB Device Controller"
 diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-index 9875d9c..db797f2 100644
+index cbfbf41..8f9bcdb 100644
 --- a/drivers/usb/gadget/s3c-hsotg.c
 +++ b/drivers/usb/gadget/s3c-hsotg.c
-@@ -36,8 +36,6 @@
- #include <linux/usb/phy.h>
- #include <linux/platform_data/s3c-hsotg.h>
+@@ -30,6 +30,8 @@
+ #include <linux/clk.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/of_platform.h>
++#include <linux/phy/phy.h>
++#include <linux/usb/phy.h>
  
--#include <mach/map.h>
--
- #include "s3c-hsotg.h"
+ #include <linux/usb/ch9.h>
+ #include <linux/usb/gadget.h>
+@@ -138,6 +140,7 @@ struct s3c_hsotg_ep {
+  * @dev: The parent device supplied to the probe function
+  * @driver: USB gadget driver
+  * @phy: The otg phy transceiver structure for phy control.
++ * @uphy: The otg phy transceiver structure for old USB phy control.
+  * @plat: The platform specific configuration data. This can be removed once
+  * all SoCs support usb transceiver.
+  * @regs: The memory area mapped for accessing registers.
+@@ -159,7 +162,8 @@ struct s3c_hsotg_ep {
+ struct s3c_hsotg {
+ 	struct device		 *dev;
+ 	struct usb_gadget_driver *driver;
+-	struct usb_phy		*phy;
++	struct phy		 *phy;
++	struct usb_phy		 *uphy;
+ 	struct s3c_hsotg_plat	 *plat;
  
- static const char * const s3c_hsotg_supply_names[] = {
+ 	spinlock_t              lock;
+@@ -2901,8 +2905,11 @@ static void s3c_hsotg_phy_enable(struct s3c_hsotg *hsotg)
+ 
+ 	dev_dbg(hsotg->dev, "pdev 0x%p\n", pdev);
+ 
+-	if (hsotg->phy)
+-		usb_phy_init(hsotg->phy);
++	if (hsotg->phy) {
++		phy_init(hsotg->phy);
++		phy_power_on(hsotg->phy);
++	} else if (hsotg->uphy)
++		usb_phy_init(hsotg->uphy);
+ 	else if (hsotg->plat->phy_init)
+ 		hsotg->plat->phy_init(pdev, hsotg->plat->phy_type);
+ }
+@@ -2918,8 +2925,11 @@ static void s3c_hsotg_phy_disable(struct s3c_hsotg *hsotg)
+ {
+ 	struct platform_device *pdev = to_platform_device(hsotg->dev);
+ 
+-	if (hsotg->phy)
+-		usb_phy_shutdown(hsotg->phy);
++	if (hsotg->phy) {
++		phy_power_off(hsotg->phy);
++		phy_exit(hsotg->phy);
++	} else if (hsotg->uphy)
++		usb_phy_shutdown(hsotg->uphy);
+ 	else if (hsotg->plat->phy_exit)
+ 		hsotg->plat->phy_exit(pdev, hsotg->plat->phy_type);
+ }
+@@ -3526,7 +3536,8 @@ static void s3c_hsotg_delete_debug(struct s3c_hsotg *hsotg)
+ static int s3c_hsotg_probe(struct platform_device *pdev)
+ {
+ 	struct s3c_hsotg_plat *plat = dev_get_platdata(&pdev->dev);
+-	struct usb_phy *phy;
++	struct phy *phy;
++	struct usb_phy *uphy;
+ 	struct device *dev = &pdev->dev;
+ 	struct s3c_hsotg_ep *eps;
+ 	struct s3c_hsotg *hsotg;
+@@ -3541,19 +3552,26 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
+-	phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
++	/*
++	 * Attempt to find a generic PHY, then look for an old style
++	 * USB PHY, finally fall back to pdata
++	 */
++	phy = devm_phy_get(&pdev->dev, "usb2-phy");
+ 	if (IS_ERR(phy)) {
+-		/* Fallback for pdata */
+-		plat = dev_get_platdata(&pdev->dev);
+-		if (!plat) {
+-			dev_err(&pdev->dev, "no platform data or transceiver defined\n");
+-			return -EPROBE_DEFER;
+-		} else {
++		uphy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
++		if (IS_ERR(uphy)) {
++			/* Fallback for pdata */
++			plat = dev_get_platdata(&pdev->dev);
++			if (!plat) {
++				dev_err(&pdev->dev,
++				"no platform data or transceiver defined\n");
++				return -EPROBE_DEFER;
++			}
+ 			hsotg->plat = plat;
+-		}
+-	} else {
++		} else
++			hsotg->uphy = uphy;
++	} else
+ 		hsotg->phy = phy;
+-	}
+ 
+ 	hsotg->dev = dev;
+ 
+@@ -3620,6 +3638,9 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
+ 		goto err_supplies;
+ 	}
+ 
++	if (hsotg->phy)
++		phy_init(hsotg->phy);
++
+ 	/* usb phy enable */
+ 	s3c_hsotg_phy_enable(hsotg);
+ 
+@@ -3713,6 +3734,8 @@ static int s3c_hsotg_remove(struct platform_device *pdev)
+ 	}
+ 
+ 	s3c_hsotg_phy_disable(hsotg);
++	if (hsotg->phy)
++		phy_exit(hsotg->phy);
+ 	clk_disable_unprepare(hsotg->clk);
+ 
+ 	return 0;
 -- 
 1.8.4
 
