@@ -1,230 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758185Ab3LWVj0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 16:39:26 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:7447 "EHLO
+	id S1758171Ab3LWVjY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 16:39:24 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:60833 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758137Ab3LWVjT (ORCPT
+	by vger.kernel.org with ESMTP id S1758139Ab3LWVjT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Dec 2013 16:39:19 -0500
-Message-Id: <20131223213915.242030153@goodmis.org>
+Message-Id: <20131223213915.094498887@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 23 Dec 2013 16:38:19 -0500
+Date: Mon, 23 Dec 2013 16:38:18 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
         Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kbuild test robot <fengguang.wu@intel.com>
-Subject: [for-next][PATCH 09/10] tracing: Add generic tracing_lseek() function
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [for-next][PATCH 08/10] tracing: Add documentation for trace event triggers
 References: <20131223213810.967436536@goodmis.org>
-Content-Disposition: inline; filename=0009-tracing-Add-generic-tracing_lseek-function.patch
-X-RR-Connecting-IP: 107.14.168.118:25
+Content-Disposition: inline; filename=0008-tracing-Add-documentation-for-trace-event-triggers.patch
+X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Tom Zanussi <tom.zanussi@linux.intel.com>
 
-Trace event triggers added a lseek that uses the ftrace_filter_lseek()
-function. Unfortunately, when function tracing is not configured in
-that function is not defined and the kernel fails to build.
+Provide a basic overview of trace event triggers and document the
+available trigger commands, along with a few simple examples.
 
-This is the second time that function was added to a file ops and
-it broke the build due to requiring special config dependencies.
+Link: http://lkml.kernel.org/r/2595dd9196d7b553049611f2a3f849ca75d650a2.1382622043.git.tom.zanussi@linux.intel.com
 
-Make a generic tracing_lseek() that all the tracing utilities may
-use.
-
-Also, modify the old ftrace_filter_lseek() to return 0 instead of
-1 on WRONLY. Not sure why it was a 1 as that does not make sense.
-
-This also changes the old tracing_seek() to modify the file pos
-pointer on WRONLY as well.
-
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ftrace.h              |  2 --
- kernel/trace/ftrace.c               | 25 ++++++-------------------
- kernel/trace/trace.c                | 14 +++++++++-----
- kernel/trace/trace.h                |  2 ++
- kernel/trace/trace_events_trigger.c |  2 +-
- kernel/trace/trace_stack.c          |  2 +-
- 6 files changed, 19 insertions(+), 28 deletions(-)
+ Documentation/trace/events.txt | 207 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 207 insertions(+)
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 31ea4b4..f4233b1 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -570,8 +570,6 @@ static inline int
- ftrace_regex_release(struct inode *inode, struct file *file) { return -ENODEV; }
- #endif /* CONFIG_DYNAMIC_FTRACE */
- 
--loff_t ftrace_filter_lseek(struct file *file, loff_t offset, int whence);
--
- /* totally disable ftrace - can not re-enable after this */
- void ftrace_kill(void);
- 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 0e9f9ea..531ffa6 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -1082,19 +1082,6 @@ static __init void ftrace_profile_debugfs(struct dentry *d_tracer)
- 
- static struct pid * const ftrace_swapper_pid = &init_struct_pid;
- 
--loff_t
--ftrace_filter_lseek(struct file *file, loff_t offset, int whence)
--{
--	loff_t ret;
--
--	if (file->f_mode & FMODE_READ)
--		ret = seq_lseek(file, offset, whence);
--	else
--		file->f_pos = ret = 1;
--
--	return ret;
--}
--
- #ifdef CONFIG_DYNAMIC_FTRACE
- 
- #ifndef CONFIG_FTRACE_MCOUNT_RECORD
-@@ -2739,7 +2726,7 @@ static void ftrace_filter_reset(struct ftrace_hash *hash)
-  * routine, you can use ftrace_filter_write() for the write
-  * routine if @flag has FTRACE_ITER_FILTER set, or
-  * ftrace_notrace_write() if @flag has FTRACE_ITER_NOTRACE set.
-- * ftrace_filter_lseek() should be used as the lseek routine, and
-+ * tracing_lseek() should be used as the lseek routine, and
-  * release must call ftrace_regex_release().
-  */
- int
-@@ -3767,7 +3754,7 @@ static const struct file_operations ftrace_filter_fops = {
- 	.open = ftrace_filter_open,
- 	.read = seq_read,
- 	.write = ftrace_filter_write,
--	.llseek = ftrace_filter_lseek,
-+	.llseek = tracing_lseek,
- 	.release = ftrace_regex_release,
- };
- 
-@@ -3775,7 +3762,7 @@ static const struct file_operations ftrace_notrace_fops = {
- 	.open = ftrace_notrace_open,
- 	.read = seq_read,
- 	.write = ftrace_notrace_write,
--	.llseek = ftrace_filter_lseek,
-+	.llseek = tracing_lseek,
- 	.release = ftrace_regex_release,
- };
- 
-@@ -4038,7 +4025,7 @@ static const struct file_operations ftrace_graph_fops = {
- 	.open		= ftrace_graph_open,
- 	.read		= seq_read,
- 	.write		= ftrace_graph_write,
--	.llseek		= ftrace_filter_lseek,
-+	.llseek		= tracing_lseek,
- 	.release	= ftrace_graph_release,
- };
- 
-@@ -4046,7 +4033,7 @@ static const struct file_operations ftrace_graph_notrace_fops = {
- 	.open		= ftrace_graph_notrace_open,
- 	.read		= seq_read,
- 	.write		= ftrace_graph_write,
--	.llseek		= ftrace_filter_lseek,
-+	.llseek		= tracing_lseek,
- 	.release	= ftrace_graph_release,
- };
- #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
-@@ -4719,7 +4706,7 @@ static const struct file_operations ftrace_pid_fops = {
- 	.open		= ftrace_pid_open,
- 	.write		= ftrace_pid_write,
- 	.read		= seq_read,
--	.llseek		= ftrace_filter_lseek,
-+	.llseek		= tracing_lseek,
- 	.release	= ftrace_pid_release,
- };
- 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 59bf5b5..e32a2f4 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -3183,19 +3183,23 @@ tracing_write_stub(struct file *filp, const char __user *ubuf,
- 	return count;
- }
- 
--static loff_t tracing_seek(struct file *file, loff_t offset, int origin)
-+loff_t tracing_lseek(struct file *file, loff_t offset, int whence)
- {
-+	int ret;
+diff --git a/Documentation/trace/events.txt b/Documentation/trace/events.txt
+index 37732a2..c94435d 100644
+--- a/Documentation/trace/events.txt
++++ b/Documentation/trace/events.txt
+@@ -287,3 +287,210 @@ their old filters):
+ prev_pid == 0
+ # cat sched_wakeup/filter
+ common_pid == 0
 +
- 	if (file->f_mode & FMODE_READ)
--		return seq_lseek(file, offset, origin);
-+		ret = seq_lseek(file, offset, whence);
- 	else
--		return 0;
-+		file->f_pos = ret = 0;
++6. Event triggers
++=================
 +
-+	return ret;
- }
- 
- static const struct file_operations tracing_fops = {
- 	.open		= tracing_open,
- 	.read		= seq_read,
- 	.write		= tracing_write_stub,
--	.llseek		= tracing_seek,
-+	.llseek		= tracing_lseek,
- 	.release	= tracing_release,
- };
- 
-@@ -4940,7 +4944,7 @@ static const struct file_operations snapshot_fops = {
- 	.open		= tracing_snapshot_open,
- 	.read		= seq_read,
- 	.write		= tracing_snapshot_write,
--	.llseek		= tracing_seek,
-+	.llseek		= tracing_lseek,
- 	.release	= tracing_snapshot_release,
- };
- 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 433bfc5..0380cab 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -588,6 +588,8 @@ void tracing_start_sched_switch_record(void);
- int register_tracer(struct tracer *type);
- int is_tracing_stopped(void);
- 
-+loff_t tracing_lseek(struct file *file, loff_t offset, int whence);
++Trace events can be made to conditionally invoke trigger 'commands'
++which can take various forms and are described in detail below;
++examples would be enabling or disabling other trace events or invoking
++a stack trace whenever the trace event is hit.  Whenever a trace event
++with attached triggers is invoked, the set of trigger commands
++associated with that event is invoked.  Any given trigger can
++additionally have an event filter of the same form as described in
++section 5 (Event filtering) associated with it - the command will only
++be invoked if the event being invoked passes the associated filter.
++If no filter is associated with the trigger, it always passes.
 +
- extern cpumask_var_t __read_mostly tracing_buffer_mask;
- 
- #define for_each_tracing_cpu(cpu)	\
-diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
-index f5b3f78..12ac8a5 100644
---- a/kernel/trace/trace_events_trigger.c
-+++ b/kernel/trace/trace_events_trigger.c
-@@ -281,7 +281,7 @@ const struct file_operations event_trigger_fops = {
- 	.open = event_trigger_open,
- 	.read = seq_read,
- 	.write = event_trigger_write,
--	.llseek = ftrace_filter_lseek,
-+	.llseek = tracing_lseek,
- 	.release = event_trigger_release,
- };
- 
-diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
-index b20428c..e6be585 100644
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -382,7 +382,7 @@ static const struct file_operations stack_trace_filter_fops = {
- 	.open = stack_trace_filter_open,
- 	.read = seq_read,
- 	.write = ftrace_filter_write,
--	.llseek = ftrace_filter_lseek,
-+	.llseek = tracing_lseek,
- 	.release = ftrace_regex_release,
- };
- 
++Triggers are added to and removed from a particular event by writing
++trigger expressions to the 'trigger' file for the given event.
++
++A given event can have any number of triggers associated with it,
++subject to any restrictions that individual commands may have in that
++regard.
++
++Event triggers are implemented on top of "soft" mode, which means that
++whenever a trace event has one or more triggers associated with it,
++the event is activated even if it isn't actually enabled, but is
++disabled in a "soft" mode.  That is, the tracepoint will be called,
++but just will not be traced, unless of course it's actually enabled.
++This scheme allows triggers to be invoked even for events that aren't
++enabled, and also allows the current event filter implementation to be
++used for conditionally invoking triggers.
++
++The syntax for event triggers is roughly based on the syntax for
++set_ftrace_filter 'ftrace filter commands' (see the 'Filter commands'
++section of Documentation/trace/ftrace.txt), but there are major
++differences and the implementation isn't currently tied to it in any
++way, so beware about making generalizations between the two.
++
++6.1 Expression syntax
++---------------------
++
++Triggers are added by echoing the command to the 'trigger' file:
++
++  # echo 'command[:count] [if filter]' > trigger
++
++Triggers are removed by echoing the same command but starting with '!'
++to the 'trigger' file:
++
++  # echo '!command[:count] [if filter]' > trigger
++
++The [if filter] part isn't used in matching commands when removing, so
++leaving that off in a '!' command will accomplish the same thing as
++having it in.
++
++The filter syntax is the same as that described in the 'Event
++filtering' section above.
++
++For ease of use, writing to the trigger file using '>' currently just
++adds or removes a single trigger and there's no explicit '>>' support
++('>' actually behaves like '>>') or truncation support to remove all
++triggers (you have to use '!' for each one added.)
++
++6.2 Supported trigger commands
++------------------------------
++
++The following commands are supported:
++
++- enable_event/disable_event
++
++  These commands can enable or disable another trace event whenever
++  the triggering event is hit.  When these commands are registered,
++  the other trace event is activated, but disabled in a "soft" mode.
++  That is, the tracepoint will be called, but just will not be traced.
++  The event tracepoint stays in this mode as long as there's a trigger
++  in effect that can trigger it.
++
++  For example, the following trigger causes kmalloc events to be
++  traced when a read system call is entered, and the :1 at the end
++  specifies that this enablement happens only once:
++
++  # echo 'enable_event:kmem:kmalloc:1' > \
++      /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/trigger
++
++  The following trigger causes kmalloc events to stop being traced
++  when a read system call exits.  This disablement happens on every
++  read system call exit:
++
++  # echo 'disable_event:kmem:kmalloc' > \
++      /sys/kernel/debug/tracing/events/syscalls/sys_exit_read/trigger
++
++  The format is:
++
++      enable_event:<system>:<event>[:count]
++      disable_event:<system>:<event>[:count]
++
++  To remove the above commands:
++
++  # echo '!enable_event:kmem:kmalloc:1' > \
++      /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/trigger
++
++  # echo '!disable_event:kmem:kmalloc' > \
++      /sys/kernel/debug/tracing/events/syscalls/sys_exit_read/trigger
++
++  Note that there can be any number of enable/disable_event triggers
++  per triggering event, but there can only be one trigger per
++  triggered event. e.g. sys_enter_read can have triggers enabling both
++  kmem:kmalloc and sched:sched_switch, but can't have two kmem:kmalloc
++  versions such as kmem:kmalloc and kmem:kmalloc:1 or 'kmem:kmalloc if
++  bytes_req == 256' and 'kmem:kmalloc if bytes_alloc == 256' (they
++  could be combined into a single filter on kmem:kmalloc though).
++
++- stacktrace
++
++  This command dumps a stacktrace in the trace buffer whenever the
++  triggering event occurs.
++
++  For example, the following trigger dumps a stacktrace every time the
++  kmalloc tracepoint is hit:
++
++  # echo 'stacktrace' > \
++        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
++
++  The following trigger dumps a stacktrace the first 5 times a kmalloc
++  request happens with a size >= 64K
++
++  # echo 'stacktrace:5 if bytes_req >= 65536' > \
++        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
++
++  The format is:
++
++      stacktrace[:count]
++
++  To remove the above commands:
++
++  # echo '!stacktrace' > \
++        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
++
++  # echo '!stacktrace:5 if bytes_req >= 65536' > \
++        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
++
++  The latter can also be removed more simply by the following (without
++  the filter):
++
++  # echo '!stacktrace:5' > \
++        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
++
++  Note that there can be only one stacktrace trigger per triggering
++  event.
++
++- snapshot
++
++  This command causes a snapshot to be triggered whenever the
++  triggering event occurs.
++
++  The following command creates a snapshot every time a block request
++  queue is unplugged with a depth > 1.  If you were tracing a set of
++  events or functions at the time, the snapshot trace buffer would
++  capture those events when the trigger event occured:
++
++  # echo 'snapshot if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
++
++  To only snapshot once:
++
++  # echo 'snapshot:1 if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
++
++  To remove the above commands:
++
++  # echo '!snapshot if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
++
++  # echo '!snapshot:1 if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
++
++  Note that there can be only one snapshot trigger per triggering
++  event.
++
++- traceon/traceoff
++
++  These commands turn tracing on and off when the specified events are
++  hit. The parameter determines how many times the tracing system is
++  turned on and off. If unspecified, there is no limit.
++
++  The following command turns tracing off the first time a block
++  request queue is unplugged with a depth > 1.  If you were tracing a
++  set of events or functions at the time, you could then examine the
++  trace buffer to see the sequence of events that led up to the
++  trigger event:
++
++  # echo 'traceoff:1 if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
++
++  To always disable tracing when nr_rq  > 1 :
++
++  # echo 'traceoff if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
++
++  To remove the above commands:
++
++  # echo '!traceoff:1 if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
++
++  # echo '!traceoff if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
++
++  Note that there can be only one traceon or traceoff trigger per
++  triggering event.
 -- 
 1.8.4.3
 
