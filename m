@@ -1,436 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757397Ab3LWNsT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 08:48:19 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:36382 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757326Ab3LWNsR (ORCPT
+	id S1757443Ab3LWNuF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 08:50:05 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:50591 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757380Ab3LWNt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 08:48:17 -0500
-Date: Mon, 23 Dec 2013 05:48:13 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: "Martin K. Petersen" <mkp@mkp.net>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: status of block-integrity
-Message-ID: <20131223134813.GA4737@infradead.org>
-References: <20131222192128.GA28532@infradead.org>
- <yq11u134rmt.fsf@sermon.lab.mkp.net>
+	Mon, 23 Dec 2013 08:49:58 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Toshi Kani <toshi.kani@hp.com>,
+        Yinghai Lu <yinghai@kernel.org>, Zhang Rui <rui.zhang@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>
+Subject: Re: [PATCH 7/10] ACPI / hotplug: Move container-specific code out of the core
+Date: Mon, 23 Dec 2013 14:58:38 +0100
+Message-ID: <2519855.bi7YQLIAPv@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <3111545.W6MaeKuZVj@vostro.rjw.lan>
+References: <1421028.Rsfpmhnym3@vostro.rjw.lan> <52AA986C.7050305@jp.fujitsu.com> <3111545.W6MaeKuZVj@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <yq11u134rmt.fsf@sermon.lab.mkp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 23, 2013 at 08:35:22AM -0500, Martin K. Petersen wrote:
-> >>>>> "Christoph" == Christoph Hellwig <hch@infradead.org> writes:
+On Saturday, December 14, 2013 06:07:06 AM Rafael J. Wysocki wrote:
+> On Friday, December 13, 2013 02:17:32 PM Yasuaki Ishimatsu wrote:
+> > (2013/12/13 13:56), Rafael J. Wysocki wrote:
+> > > On Friday, December 13, 2013 11:56:32 AM Yasuaki Ishimatsu wrote:
+> > >> Hi Rafael,
+> > >
+> > > Hi,
+> > >
+> > >> Please share your more detailed idea. I started to implement the following
+> > >> idea. But the idea has one problem.
+> > >>
+> > >>>>> The eject work flow can be:
+> > >>>>>      (1) an eject event occurs,
+> > >>>>>      (2) the container "physical" device fails offline in acpi_scan_hot_remove()
+> > >>>>>          emmitting, say, KOBJ_CHANGE for the "physical" device,
+> > >>>>>      (3) user space notices the KOBJ_CHANGE and does the cleanup as needed,
+> > >>>>>      (4) user space changes the "physical" container device flag controlling
+> > >>>>>          offline to 0,
+> > >>>>>      (5) user space uses the sysfs "eject" attribute of the ACPI container object
+> > >>>>>          to finally eject the container,
+> > >>>>>      (6) the offline in acpi_scan_hot_remove() is now successful, because the
+> > >>>>>          flag controlling it has been set to 0 in step (4),
+> > >>>>>      (7) the "physical" container device goes away before executing _EJ0,
+> > >>>>>      (8) the container is ejected.
+> > >>
+> > >> I want to emit KOBJ_CHANGE before offlining devices on container device at (2).
+> > >> But acpi_scan_hot_remove() offlines devices on container device at first.
+> > >> So when offline container device, devices on container has been offlined.
+> > >>
+> > >> Thus the idea cannot fulfill my necessary feature.
+> > >
+> > > Well, in that case we need to treat containers in a special way at the ACPI
+> > > level.  Which is a bit unfortunate so to speak.
+> > >
+> > > To that end I'd try to add a new flag to struct acpi_hotplug_profile, say
+> > > .verify_offline, such that if set, it would cause acpi_scan_hot_remove() to
+> > > check if all of the "physical" companions of the top-level device are offline
+> > > to start with, and if not, it would just emit KOBJ_CHANGE for the companions
+> > > that are not offline and bail out.
+> > >
+> > > So the above algorithm would become:
+> > >
+> > > (1) an eject event occurs,
+> > > (2) acpi_scan_hot_remove() checks the verify_offline flag in the target device's
+> > >      scan_handler structure,
+> > > (3) if set (it would always be set for containers), acpi_scan_hot_remove()
+> > >      checks the status of the target device's "physical" companions; if at least
+> > >      one of them is offline, KOBJ_CHANGE is emitted for that "physical" device,
+> > >      and acpi_scan_hot_remove() returns, [I guess we can just emit KOBJ_CHANGE
+> > >      for the first companion that is not offline at this point.]
+> > > (4) user space notices the KOBJ_CHANGE and does the cleanup as needed; in the
+> > >      process it carries out the offline operation for the container's "physical"
+> > >      companion (there's only one such companion for each container), [That
+> > >      operation for the container itself is trivial, but to succeed it requires
+> > >      all devices below the container to be taken offline in advance.]
+> > > (5) user space uses the sysfs "eject" attribute of the ACPI container object
+> > >      to finally eject the container,
+> > > (6) acpi_scan_hot_remove() is now successful, because the container's "physical"
+> > >      companion is now offline,
+> > > (7) the "physical" container device goes away before executing _EJ0,
+> > > (8) the container is ejected.
+> > >
+> > > I think that should work for you.
+> > 
+> > This idea seems to same as your previous work.
+> > http://lkml.org/lkml/2013/2/23/97
 > 
-> Christoph> We have the block integrity code to support DIF/DIX in the
-> Christoph> the tree for about 5 and a half years, and we still don't
-> Christoph> have a single consumer of it.  
+> No, it is not.  That one didn't involve physical device representations.
 > 
-> What do you mean? If you have a DIX-capable HBA (lpfc, qla2xxx, zfcp)
-> then integrity protection is active from the block layer down. The only
-> code that's not currently being exercised are the tag interleaving
-> functions.  I was hoping the FS people would use them for back pointers
-> but nobody seemed to bite.
+> > How about add autoremove flag into acpi_hotplug_profile and check it as follow:
+> 
+> This is very similar to "enable" except that it generates the uevent and
+> "enable" doesn't.  You might as well modify "enable" to trigger a uevent if
+> eject is not enabled (note that with the latest patches in linux-next "enable"
+> only applies to eject).
+> 
+> That said I don't think we should generate any uevents for struct acpi_device
+> objects, because they are not devices.
+> 
+> > ---
+> >   drivers/acpi/scan.c | 5 +++++
+> >   1 file changed, 5 insertions(+)
+> > 
+> > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> > index 5383c81..c43d110 100644
+> > --- a/drivers/acpi/scan.c
+> > +++ b/drivers/acpi/scan.c
+> > @@ -409,6 +409,11 @@ static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *data)
+> >   			ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
+> >   			goto err_out;
+> >   		}
+> > +		if (!handler->hotplug.autoremove) {
+> > +			kobject_uevent(&device->dev.kobj, KOBJ_CHANGE);
+> > +			ost_code = ACPI_OST_SC_EJECT_NON_SPECIFIC_FAILURE;
+> > +			goto err_out;
+> > +		}
+> >   		acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST,
+> >   					  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
+> >   		break;
+> > 
+> > Adding the check into "acpi_hotplug_notify_cb()", user need not change the
+> > flag for removing container device by "sysfs eject".
+> 
+> Which is utterly confusing.  There is no reason whatsoever why the sysfs eject
+> attribute should work differently from the event-triggered eject.  Quite the
+> opposite is the case: it should work in the same way in my opinion so that it
+> is possible to test the eject code path using that attribute.
+> 
+> I'm traveling now, but when I get back home (next week), I'll try to implement
+> the thing I was talking about above.
 
-With single consumer of it I obviously meant the various symbols for the
-consumer side as well as the application tag support.
+It took some more time than I had expected, but I finally was able to get to that.
 
-Patch to remove the dead code below:
+The following two patches implement the idea.  This is the minimum (in my opinion)
+implementation and it may be extended in some ways.
 
----
-From: Christoph Hellwig <hch@lst.de>
-Subject: [PATCH] block: remove dead on arrival integrity code
+Patch [1/2] introduces a new demand_offline flag for struct acpi_hotplug_profile
+that makes acpi_scan_hot_remove() check the offline status of the device object's
+companion physical devices to start with and return -EBUSY if at least one of them
+is not offline.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Patch [2/2] uses that flag to implement the container handling.  The details are
+in the changelog, but that's how it is supposed to work.
 
-diff --git a/block/blk-integrity.c b/block/blk-integrity.c
-index 03cf717..0b14db7 100644
---- a/block/blk-integrity.c
-+++ b/block/blk-integrity.c
-@@ -194,7 +194,6 @@ int blk_integrity_merge_rq(struct request_queue *q, struct request *req,
- 
- 	return 0;
- }
--EXPORT_SYMBOL(blk_integrity_merge_rq);
- 
- int blk_integrity_merge_bio(struct request_queue *q, struct request *req,
- 			    struct bio *bio)
-@@ -214,7 +213,6 @@ int blk_integrity_merge_bio(struct request_queue *q, struct request *req,
- 
- 	return 0;
- }
--EXPORT_SYMBOL(blk_integrity_merge_bio);
- 
- struct integrity_sysfs_entry {
- 	struct attribute attr;
-@@ -414,8 +412,6 @@ int blk_integrity_register(struct gendisk *disk, struct blk_integrity *template)
- 		bi->generate_fn = template->generate_fn;
- 		bi->verify_fn = template->verify_fn;
- 		bi->tuple_size = template->tuple_size;
--		bi->set_tag_fn = template->set_tag_fn;
--		bi->get_tag_fn = template->get_tag_fn;
- 		bi->tag_size = template->tag_size;
- 	} else
- 		bi->name = bi_unsupported_name;
-diff --git a/drivers/scsi/sd_dif.c b/drivers/scsi/sd_dif.c
-index 6174ca4..e32035a 100644
---- a/drivers/scsi/sd_dif.c
-+++ b/drivers/scsi/sd_dif.c
-@@ -128,39 +128,10 @@ static int sd_dif_type1_verify_ip(struct blk_integrity_exchg *bix)
- 	return sd_dif_type1_verify(bix, sd_dif_ip_fn);
- }
- 
--/*
-- * Functions for interleaving and deinterleaving application tags
-- */
--static void sd_dif_type1_set_tag(void *prot, void *tag_buf, unsigned int sectors)
--{
--	struct sd_dif_tuple *sdt = prot;
--	u8 *tag = tag_buf;
--	unsigned int i, j;
--
--	for (i = 0, j = 0 ; i < sectors ; i++, j += 2, sdt++) {
--		sdt->app_tag = tag[j] << 8 | tag[j+1];
--		BUG_ON(sdt->app_tag == 0xffff);
--	}
--}
--
--static void sd_dif_type1_get_tag(void *prot, void *tag_buf, unsigned int sectors)
--{
--	struct sd_dif_tuple *sdt = prot;
--	u8 *tag = tag_buf;
--	unsigned int i, j;
--
--	for (i = 0, j = 0 ; i < sectors ; i++, j += 2, sdt++) {
--		tag[j] = (sdt->app_tag & 0xff00) >> 8;
--		tag[j+1] = sdt->app_tag & 0xff;
--	}
--}
--
- static struct blk_integrity dif_type1_integrity_crc = {
- 	.name			= "T10-DIF-TYPE1-CRC",
- 	.generate_fn		= sd_dif_type1_generate_crc,
- 	.verify_fn		= sd_dif_type1_verify_crc,
--	.get_tag_fn		= sd_dif_type1_get_tag,
--	.set_tag_fn		= sd_dif_type1_set_tag,
- 	.tuple_size		= sizeof(struct sd_dif_tuple),
- 	.tag_size		= 0,
- };
-@@ -169,8 +140,6 @@ static struct blk_integrity dif_type1_integrity_ip = {
- 	.name			= "T10-DIF-TYPE1-IP",
- 	.generate_fn		= sd_dif_type1_generate_ip,
- 	.verify_fn		= sd_dif_type1_verify_ip,
--	.get_tag_fn		= sd_dif_type1_get_tag,
--	.set_tag_fn		= sd_dif_type1_set_tag,
- 	.tuple_size		= sizeof(struct sd_dif_tuple),
- 	.tag_size		= 0,
- };
-@@ -245,42 +214,10 @@ static int sd_dif_type3_verify_ip(struct blk_integrity_exchg *bix)
- 	return sd_dif_type3_verify(bix, sd_dif_ip_fn);
- }
- 
--static void sd_dif_type3_set_tag(void *prot, void *tag_buf, unsigned int sectors)
--{
--	struct sd_dif_tuple *sdt = prot;
--	u8 *tag = tag_buf;
--	unsigned int i, j;
--
--	for (i = 0, j = 0 ; i < sectors ; i++, j += 6, sdt++) {
--		sdt->app_tag = tag[j] << 8 | tag[j+1];
--		sdt->ref_tag = tag[j+2] << 24 | tag[j+3] << 16 |
--			tag[j+4] << 8 | tag[j+5];
--	}
--}
--
--static void sd_dif_type3_get_tag(void *prot, void *tag_buf, unsigned int sectors)
--{
--	struct sd_dif_tuple *sdt = prot;
--	u8 *tag = tag_buf;
--	unsigned int i, j;
--
--	for (i = 0, j = 0 ; i < sectors ; i++, j += 2, sdt++) {
--		tag[j] = (sdt->app_tag & 0xff00) >> 8;
--		tag[j+1] = sdt->app_tag & 0xff;
--		tag[j+2] = (sdt->ref_tag & 0xff000000) >> 24;
--		tag[j+3] = (sdt->ref_tag & 0xff0000) >> 16;
--		tag[j+4] = (sdt->ref_tag & 0xff00) >> 8;
--		tag[j+5] = sdt->ref_tag & 0xff;
--		BUG_ON(sdt->app_tag == 0xffff || sdt->ref_tag == 0xffffffff);
--	}
--}
--
- static struct blk_integrity dif_type3_integrity_crc = {
- 	.name			= "T10-DIF-TYPE3-CRC",
- 	.generate_fn		= sd_dif_type3_generate_crc,
- 	.verify_fn		= sd_dif_type3_verify_crc,
--	.get_tag_fn		= sd_dif_type3_get_tag,
--	.set_tag_fn		= sd_dif_type3_set_tag,
- 	.tuple_size		= sizeof(struct sd_dif_tuple),
- 	.tag_size		= 0,
- };
-@@ -289,8 +226,6 @@ static struct blk_integrity dif_type3_integrity_ip = {
- 	.name			= "T10-DIF-TYPE3-IP",
- 	.generate_fn		= sd_dif_type3_generate_ip,
- 	.verify_fn		= sd_dif_type3_verify_ip,
--	.get_tag_fn		= sd_dif_type3_get_tag,
--	.set_tag_fn		= sd_dif_type3_set_tag,
- 	.tuple_size		= sizeof(struct sd_dif_tuple),
- 	.tag_size		= 0,
- };
-diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
-index fc60b31..793eaa4 100644
---- a/fs/bio-integrity.c
-+++ b/fs/bio-integrity.c
-@@ -32,6 +32,8 @@
- static struct kmem_cache *bip_slab;
- static struct workqueue_struct *kintegrityd_wq;
- 
-+static void bio_integrity_endio(struct bio *bio, int error);
-+
- /**
-  * bio_integrity_alloc - Allocate integrity payload and attach it to bio
-  * @bio:	bio to attach integrity metadata to
-@@ -42,7 +44,7 @@ static struct workqueue_struct *kintegrityd_wq;
-  * metadata.  nr_vecs specifies the maximum number of pages containing
-  * integrity metadata that can be attached.
-  */
--struct bio_integrity_payload *bio_integrity_alloc(struct bio *bio,
-+static struct bio_integrity_payload *bio_integrity_alloc(struct bio *bio,
- 						  gfp_t gfp_mask,
- 						  unsigned int nr_vecs)
- {
-@@ -83,7 +85,6 @@ err:
- 	mempool_free(bip, bs->bio_integrity_pool);
- 	return NULL;
- }
--EXPORT_SYMBOL(bio_integrity_alloc);
- 
- /**
-  * bio_integrity_free - Free bio integrity payload
-@@ -112,7 +113,6 @@ void bio_integrity_free(struct bio *bio)
- 
- 	bio->bi_integrity = NULL;
- }
--EXPORT_SYMBOL(bio_integrity_free);
- 
- /**
-  * bio_integrity_add_page - Attach integrity metadata
-@@ -123,7 +123,7 @@ EXPORT_SYMBOL(bio_integrity_free);
-  *
-  * Description: Attach a page containing integrity metadata to bio.
-  */
--int bio_integrity_add_page(struct bio *bio, struct page *page,
-+static int bio_integrity_add_page(struct bio *bio, struct page *page,
- 			   unsigned int len, unsigned int offset)
- {
- 	struct bio_integrity_payload *bip = bio->bi_integrity;
-@@ -144,7 +144,6 @@ int bio_integrity_add_page(struct bio *bio, struct page *page,
- 
- 	return len;
- }
--EXPORT_SYMBOL(bio_integrity_add_page);
- 
- static int bdev_integrity_enabled(struct block_device *bdev, int rw)
- {
-@@ -181,7 +180,6 @@ int bio_integrity_enabled(struct bio *bio)
- 
- 	return bdev_integrity_enabled(bio->bi_bdev, bio_data_dir(bio));
- }
--EXPORT_SYMBOL(bio_integrity_enabled);
- 
- /**
-  * bio_integrity_hw_sectors - Convert 512b sectors to hardware ditto
-@@ -204,89 +202,6 @@ static inline unsigned int bio_integrity_hw_sectors(struct blk_integrity *bi,
- }
- 
- /**
-- * bio_integrity_tag_size - Retrieve integrity tag space
-- * @bio:	bio to inspect
-- *
-- * Description: Returns the maximum number of tag bytes that can be
-- * attached to this bio. Filesystems can use this to determine how
-- * much metadata to attach to an I/O.
-- */
--unsigned int bio_integrity_tag_size(struct bio *bio)
--{
--	struct blk_integrity *bi = bdev_get_integrity(bio->bi_bdev);
--
--	BUG_ON(bio->bi_size == 0);
--
--	return bi->tag_size * (bio->bi_size / bi->sector_size);
--}
--EXPORT_SYMBOL(bio_integrity_tag_size);
--
--int bio_integrity_tag(struct bio *bio, void *tag_buf, unsigned int len, int set)
--{
--	struct bio_integrity_payload *bip = bio->bi_integrity;
--	struct blk_integrity *bi = bdev_get_integrity(bio->bi_bdev);
--	unsigned int nr_sectors;
--
--	BUG_ON(bip->bip_buf == NULL);
--
--	if (bi->tag_size == 0)
--		return -1;
--
--	nr_sectors = bio_integrity_hw_sectors(bi,
--					DIV_ROUND_UP(len, bi->tag_size));
--
--	if (nr_sectors * bi->tuple_size > bip->bip_size) {
--		printk(KERN_ERR "%s: tag too big for bio: %u > %u\n",
--		       __func__, nr_sectors * bi->tuple_size, bip->bip_size);
--		return -1;
--	}
--
--	if (set)
--		bi->set_tag_fn(bip->bip_buf, tag_buf, nr_sectors);
--	else
--		bi->get_tag_fn(bip->bip_buf, tag_buf, nr_sectors);
--
--	return 0;
--}
--
--/**
-- * bio_integrity_set_tag - Attach a tag buffer to a bio
-- * @bio:	bio to attach buffer to
-- * @tag_buf:	Pointer to a buffer containing tag data
-- * @len:	Length of the included buffer
-- *
-- * Description: Use this function to tag a bio by leveraging the extra
-- * space provided by devices formatted with integrity protection.  The
-- * size of the integrity buffer must be <= to the size reported by
-- * bio_integrity_tag_size().
-- */
--int bio_integrity_set_tag(struct bio *bio, void *tag_buf, unsigned int len)
--{
--	BUG_ON(bio_data_dir(bio) != WRITE);
--
--	return bio_integrity_tag(bio, tag_buf, len, 1);
--}
--EXPORT_SYMBOL(bio_integrity_set_tag);
--
--/**
-- * bio_integrity_get_tag - Retrieve a tag buffer from a bio
-- * @bio:	bio to retrieve buffer from
-- * @tag_buf:	Pointer to a buffer for the tag data
-- * @len:	Length of the target buffer
-- *
-- * Description: Use this function to retrieve the tag buffer from a
-- * completed I/O. The size of the integrity buffer must be <= to the
-- * size reported by bio_integrity_tag_size().
-- */
--int bio_integrity_get_tag(struct bio *bio, void *tag_buf, unsigned int len)
--{
--	BUG_ON(bio_data_dir(bio) != READ);
--
--	return bio_integrity_tag(bio, tag_buf, len, 0);
--}
--EXPORT_SYMBOL(bio_integrity_get_tag);
--
--/**
-  * bio_integrity_generate - Generate integrity metadata for a bio
-  * @bio:	bio to generate integrity metadata for
-  *
-@@ -427,7 +342,6 @@ int bio_integrity_prep(struct bio *bio)
- 
- 	return 0;
- }
--EXPORT_SYMBOL(bio_integrity_prep);
- 
- /**
-  * bio_integrity_verify - Verify integrity metadata for a bio
-@@ -510,7 +424,7 @@ static void bio_integrity_verify_fn(struct work_struct *work)
-  * in process context.	This function postpones completion
-  * accordingly.
-  */
--void bio_integrity_endio(struct bio *bio, int error)
-+static void bio_integrity_endio(struct bio *bio, int error)
- {
- 	struct bio_integrity_payload *bip = bio->bi_integrity;
- 
-@@ -530,14 +444,13 @@ void bio_integrity_endio(struct bio *bio, int error)
- 	INIT_WORK(&bip->bip_work, bio_integrity_verify_fn);
- 	queue_work(kintegrityd_wq, &bip->bip_work);
- }
--EXPORT_SYMBOL(bio_integrity_endio);
- 
- /**
-  * bio_integrity_mark_head - Advance bip_vec skip bytes
-  * @bip:	Integrity vector to advance
-  * @skip:	Number of bytes to advance it
-  */
--void bio_integrity_mark_head(struct bio_integrity_payload *bip,
-+static void bio_integrity_mark_head(struct bio_integrity_payload *bip,
- 			     unsigned int skip)
- {
- 	struct bio_vec *iv;
-@@ -563,7 +476,7 @@ void bio_integrity_mark_head(struct bio_integrity_payload *bip,
-  * @bip:	Integrity vector to truncate
-  * @len:	New length of integrity vector
-  */
--void bio_integrity_mark_tail(struct bio_integrity_payload *bip,
-+static void bio_integrity_mark_tail(struct bio_integrity_payload *bip,
- 			     unsigned int len)
- {
- 	struct bio_vec *iv;
-@@ -603,7 +516,6 @@ void bio_integrity_advance(struct bio *bio, unsigned int bytes_done)
- 	nr_sectors = bio_integrity_hw_sectors(bi, bytes_done >> 9);
- 	bio_integrity_mark_head(bip, nr_sectors * bi->tuple_size);
- }
--EXPORT_SYMBOL(bio_integrity_advance);
- 
- /**
-  * bio_integrity_trim - Trim integrity vector
-@@ -676,7 +588,6 @@ void bio_integrity_split(struct bio *bio, struct bio_pair *bp, int sectors)
- 	bp->bip1.bip_vcnt = bp->bip2.bip_vcnt = 1;
- 	bp->bip1.bip_idx = bp->bip2.bip_idx = 0;
- }
--EXPORT_SYMBOL(bio_integrity_split);
- 
- /**
-  * bio_integrity_clone - Callback for cloning bios with integrity metadata
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 060ff69..4ff2d82 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -576,14 +576,9 @@ struct biovec_slab {
- 
- #define bio_integrity(bio) (bio->bi_integrity != NULL)
- 
--extern struct bio_integrity_payload *bio_integrity_alloc(struct bio *, gfp_t, unsigned int);
- extern void bio_integrity_free(struct bio *);
--extern int bio_integrity_add_page(struct bio *, struct page *, unsigned int, unsigned int);
- extern int bio_integrity_enabled(struct bio *bio);
--extern int bio_integrity_set_tag(struct bio *, void *, unsigned int);
--extern int bio_integrity_get_tag(struct bio *, void *, unsigned int);
- extern int bio_integrity_prep(struct bio *);
--extern void bio_integrity_endio(struct bio *, int);
- extern void bio_integrity_advance(struct bio *, unsigned int);
- extern void bio_integrity_trim(struct bio *, unsigned int, unsigned int);
- extern void bio_integrity_split(struct bio *, struct bio_pair *, int);
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 1b135d4..d6db54e 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -1430,14 +1430,10 @@ struct blk_integrity_exchg {
- 
- typedef void (integrity_gen_fn) (struct blk_integrity_exchg *);
- typedef int (integrity_vrfy_fn) (struct blk_integrity_exchg *);
--typedef void (integrity_set_tag_fn) (void *, void *, unsigned int);
--typedef void (integrity_get_tag_fn) (void *, void *, unsigned int);
- 
- struct blk_integrity {
- 	integrity_gen_fn	*generate_fn;
- 	integrity_vrfy_fn	*verify_fn;
--	integrity_set_tag_fn	*set_tag_fn;
--	integrity_get_tag_fn	*get_tag_fn;
- 
- 	unsigned short		flags;
- 	unsigned short		tuple_size;
+During the initial namespace scan the container ACPI scan handler should create
+"physical" system container device under /sys/devices/system/container/ for
+each ACPI container object (the sysfs name of that device should be the same as
+the sysfs name of the corresponding container object and they should be linked
+to each other via the firmware_node and physical_node symbolic links, respectively).
+Those system container devices are initially online.
+
+When a container eject event happens, acpi_scan_hot_remove() will notice that
+hotplug.demand_offline is set in the device object's scan handler and will
+check the online status of its "physical" companion device, which is online
+(that is the system container device the above paragraph is about).  That will
+cause KOBJ_CHANGE to be emitted for the system container device and -EBUSY to
+be returned by acpi_scan_hot_remove().
+
+Now, user space needs to offline the system container device through its online
+sysfs attribute (that should be present, because the bus type for containers
+provides the online and offline callbacks).  However, the offline for system
+container devices will only succeed if the physical devices right below the
+container are all offline, so user space will have to offline those devices
+before attempting to offline the system container device itself.  When
+finished, user space can trigger the container removal with the help of the
+eject sysfs attribute of the ACPI container object pointed to by the system
+container device's firmware_node link (this time the check in
+acpi_scan_hot_remove() will succeed, because the system container device in
+question is now offline).
+
+The way it is implemented is a bit hackish (the driver_data pointer is slightly
+abused), but that's a special case and I wanted to avoid adding new fields to
+struct device just for handling it.
+
+The patches haven't been tested yet.  I'm going to do that later today, but
+first I need to take care of some other things, so that has to wait.
+
+Thanks,
+Rafael
+
