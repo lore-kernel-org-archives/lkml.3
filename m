@@ -1,101 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758035Ab3LWQ12 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 11:27:28 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:33753 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757580Ab3LWQ1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 11:27:24 -0500
-Date: Mon, 23 Dec 2013 10:25:57 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Matt Porter <mporter@linaro.org>
-CC: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Paul Zimmerman <paulz@synopsys.com>, Tomasz Figa <t.figa@samsung.com>,
-        Kamil Debski <k.debski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>
-Subject: Re: [PATCH v8 3/9] usb: gadget: s3c-hsotg: enable build for other
- platforms
-Message-ID: <20131223162557.GC28679@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1387462990-12039-1-git-send-email-mporter@linaro.org>
- <1387462990-12039-4-git-send-email-mporter@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lCAWRPmW1mITcIfM"
-Content-Disposition: inline
-In-Reply-To: <1387462990-12039-4-git-send-email-mporter@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758011Ab3LWQ1N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 11:27:13 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:39601 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757711Ab3LWQYJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 11:24:09 -0500
+From: Pawel Moll <pawel.moll@arm.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jon Medhurst <tixy@linaro.org>, arm@kernel.org,
+        Olof Johansson <olof@lixom.net>, Pawel Moll <pawel.moll@arm.com>,
+        Anton Vorontsov <anton@enomsg.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: [RFC 09/18] power/reset: vexpress: Use regmap instead of custom interface
+Date: Mon, 23 Dec 2013 16:23:41 +0000
+Message-Id: <1387815830-8794-10-git-send-email-pawel.moll@arm.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387815830-8794-1-git-send-email-pawel.moll@arm.com>
+References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com>
+X-OriginalArrivalTime: 23 Dec 2013 16:24:04.0947 (UTC) FILETIME=[65C2EA30:01CEFFFB]
+X-MC-Unique: 113122316240707901
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id rBNGS2rH026650
 
---lCAWRPmW1mITcIfM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch makes the Versatile Express reboot/reset driver
+use regmap interface, instead of custom vexpress config
+one. It will request the regmap resource associated
+with the device, which makes it pretty much hardware
+agnostic.
 
-On Thu, Dec 19, 2013 at 09:23:04AM -0500, Matt Porter wrote:
-> Remove unused Samsung-specific machine include and Kconfig
-> dependency on S3C.
->=20
-> Signed-off-by: Matt Porter <mporter@linaro.org>
-> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-> Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
-> ---
->  drivers/usb/gadget/Kconfig     | 7 +++----
->  drivers/usb/gadget/s3c-hsotg.c | 2 --
->  2 files changed, 3 insertions(+), 6 deletions(-)
->=20
-> diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-> index a91e642..181e760 100644
-> --- a/drivers/usb/gadget/Kconfig
-> +++ b/drivers/usb/gadget/Kconfig
-> @@ -294,11 +294,10 @@ config USB_PXA27X
->  	   gadget drivers to also be dynamically linked.
-> =20
->  config USB_S3C_HSOTG
-> -	tristate "S3C HS/OtG USB Device controller"
-> -	depends on S3C_DEV_USB_HSOTG
-> +	tristate "Designware/S3C HS/OtG USB Device controller"
+Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+Cc: Anton Vorontsov <anton@enomsg.org>
+Cc: David Woodhouse <dwmw2@infradead.org>
+---
+ drivers/power/reset/Kconfig             | 2 +-
+ drivers/power/reset/vexpress-poweroff.c | 8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-causes build failure in x86. Sorry dropping from my queue.
+diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
+index 9b3ea53..98f64dc 100644
+--- a/drivers/power/reset/Kconfig
++++ b/drivers/power/reset/Kconfig
+@@ -40,7 +40,7 @@ config POWER_RESET_RESTART
+ config POWER_RESET_VEXPRESS
+ 	bool "ARM Versatile Express power-off and reset driver"
+ 	depends on ARM || ARM64
+-	depends on POWER_RESET && VEXPRESS_CONFIG
++	depends on POWER_RESET && REGMAP
+ 	help
+ 	  Power off and reset support for the ARM Ltd. Versatile
+ 	  Express boards.
+diff --git a/drivers/power/reset/vexpress-poweroff.c b/drivers/power/reset/vexpress-poweroff.c
+index d752233..a7fc882 100644
+--- a/drivers/power/reset/vexpress-poweroff.c
++++ b/drivers/power/reset/vexpress-poweroff.c
+@@ -15,6 +15,7 @@
+ #include <linux/of.h>
+ #include <linux/of_device.h>
+ #include <linux/platform_device.h>
++#include <linux/regmap.h>
+ #include <linux/sched.h>
+ #include <linux/stat.h>
+ #include <linux/vexpress.h>
+@@ -24,13 +25,12 @@
+ static void vexpress_reset_do(struct device *dev, const char *what)
+ {
+ 	int err = -ENOENT;
+-	struct vexpress_config_func *func =
+-			vexpress_config_func_get_by_dev(dev);
++	struct regmap *reg = dev_get_regmap(dev, NULL);
+ 
+-	if (func) {
++	if (reg) {
+ 		unsigned long long timeout_ns;
+ 
+-		err = vexpress_config_write(func, 0, 0);
++		err = regmap_write(reg, 0, 0);
+ 
+ 		timeout_ns = sched_clock() + 50000000;
+ 		while (!err && time_before64(sched_clock(), timeout_ns))
+-- 
+1.8.3.2
 
---=20
-balbi
 
---lCAWRPmW1mITcIfM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSuGQVAAoJEIaOsuA1yqRE5iIQALW9ji3h8BP6h0nsJyJUa0lt
-QSVxyjoajTSC/0G08vCbpfIH6d4LAenA0RTe2W38ufTH6GRJWfQlHBdpZsutJpH9
-lZPoaUy70r6l7ZUVK4zp9sESmmSMpA9s3lYw7i/dT7WT5hTMZ6NKMusNpj5FCUkJ
-DdYAbwVW7bSL7CY+axyyO47CyDlel8h+7Mv31bspMQTO+xkTPI26M5PJx//hJHmw
-+WmD0eeMCmPxUO9xHKH7oNHxrUPYqqZk458JEJZCiQCJAk+a0kOyWHcQN6oN9KrF
-J4mmJc22K97jah6WwQDHZpZfrB0h45CKfARiB3HD6PgACSiaGXE6+2zYT8jw8xmk
-R+LTWv16squEOxBiWwUd5FN9shK2ld+7PFT7VrolIZ5KHfgUW2h3s1/Zb2q3huCy
-LmwU6V1ZllcBKGeuUDvMouPpLd7oRuK1ggdFud9zd0XwFLlX4/zC2LK1Xqs0QzMn
-sQt0mubWovGTGV3XEWQG57OpA+V6WY+VZqoGi7tsvmVVSKtNeO1RnDaoKagCXy68
-jNbZCBsSq1gJMxpHWB8j7AxDSuViQ7J2KxEqdJkLPjgd1OB02F7QhWSpxkuVDbyo
-sVcMiD/wV3jHPDqR61NEfqADFKc2PWoE24KMEb0ClMpxyArODLop1DkYblOLEFsh
-HwCMbloDHgzm0Vj4d5AP
-=3NTp
------END PGP SIGNATURE-----
-
---lCAWRPmW1mITcIfM--
