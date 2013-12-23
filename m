@@ -1,40 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757094Ab3LWGxE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 01:53:04 -0500
-Received: from [157.56.120.104] ([157.56.120.104]:4190 "EHLO
-	emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751403Ab3LWGxC convert rfc822-to-8bit (ORCPT
+	id S1757128Ab3LWG4H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 01:56:07 -0500
+Received: from canardo.mork.no ([148.122.252.1]:52370 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751500Ab3LWG4F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 01:53:02 -0500
-Content-Type: text/plain; charset="iso-8859-1"
+	Mon, 23 Dec 2013 01:56:05 -0500
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq\@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH Resend] cpufreq: remove sysfs files for CPU which failed to come back after resume
+Organization: m
+References: <610b63b7594e5cd364c498f60e69b9e174db9257.1387554926.git.viresh.kumar@linaro.org>
+	<1651441.C2UQleWVoy@vostro.rjw.lan> <871u14i00j.fsf@nemi.mork.no>
+	<CAKohpok1dGMPSAehwsVeiyHzxaHupenA4sP5cxCrjVYQMyrVWA@mail.gmail.com>
+Date: Mon, 23 Dec 2013 07:55:50 +0100
+In-Reply-To: <CAKohpok1dGMPSAehwsVeiyHzxaHupenA4sP5cxCrjVYQMyrVWA@mail.gmail.com>
+	(Viresh Kumar's message of "Mon, 23 Dec 2013 11:32:28 +0530")
+Message-ID: <87d2kokqdl.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Vorschlag
-To: Recipients <petwong34@wongpet.onmicrosoft.com>
-From: Peter Wong <petwong34@wongpet.onmicrosoft.com>
-Date: Mon, 23 Dec 2013 07:50:25 +0100
-Reply-To: <ppwong12@aol.jp>
-Message-ID: <aea9cee2-300d-4d13-97a1-97a1ef88660c@AMXPR07MB152.eurprd07.prod.outlook.com>
-X-Originating-IP: [46.165.212.109]
-X-ClientProxiedBy: CO1PR01CA006.prod.exchangelabs.com (10.242.160.36) To
- AMXPR07MB152.eurprd07.prod.outlook.com (10.242.68.24)
-X-Forefront-PRVS: 0069246B74
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(10019001)(199002)(189002)(77096001)(47976001)(65816001)(76576001)(74706001)(69226001)(47776003)(79102001)(53256004)(81816001)(54316002)(56776001)(59766001)(77982001)(81686001)(76176001)(63696002)(81542001)(74502001)(50466002)(83322001)(87266001)(19580405001)(74876001)(74662001)(76796001)(76786001)(19580395003)(66066001)(47736001)(80022001)(49866001)(64872005)(4396001)(47446002)(81342001)(50986001)(83072002)(325944007)(23756003)(51856001)(43066001)(42186004)(90146001)(56816005)(46102001)(74366001)(85306002)(85852003)(33646001)(80976001)(87976001)(221733001)(31686002)(54356001)(74316001)(76482001)(89136003)(1496004)(62346011);DIR:OUT;SFP:1501;SCL:5;SRVR:AMXPR07MB152;H:[172.16.1.194];CLIP:46.165.212.109;FPR:;RD:InfoNoRecords;A:0;MX:1;LANG:de;
-X-OriginatorOrg: wongpet.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hallo
+Viresh Kumar <viresh.kumar@linaro.org> writes:
+> On 23 December 2013 11:25, BjÃ¸rn Mork <bjorn@mork.no> wrote:
+>> I can confirm that it fixes the major regression.  With this branch, the
+>> cpufreq directory is completely removed after a cancelled userspace
+>> hibernate (with the acpi-cpufreq problem causing failure).  So it is
+>> possible to restore cpufreq by manually offlining and onlining non-boot
+>> cores.  No more leftover sysfs attributes.
+>
+> Thanks for giving it a try once again :)
+>
+>> But there is still a minor regression compared to the old (v3.11)
+>> behaviour: Previously the cpufreq functionality would be automatically
+>> restored by any completed hibernate or suspend cycle, since it would
+>> effectively do the CPU offline/online. This automatix fixup won't happen
+>> with the current pm-cpufreq branch.
+>
+> I didn't understood it completely, sorry :)
+>
+> As far as I can see from 3.11 code we simply used to fail with any failure
+> resulting with a call to ->init() or some other call..
+>
+> And so cpufreq wouldn't have added any directories at all in that case.
+> And so I think we still required an offline/online sequence to guarantee
+> things..
 
-Ich habe ein Investment-Portfolio, das Geld in meiner Bank in China, die ich einfach für Sie als Empfänger übertragen können hinterlegt beinhaltet. Die Transaktion ist ohne Risiko, weil es strategisch geplant worden zu vervollständigen erfolgreich.
+That's correct.  The immediate result of the failure is exactly the
+same.
 
-Kontaktieren Sie mich auf meiner E-Mail-Adresse unten für weitere Details.
+The difference is that a subsequent resume would restore the cpufreq
+device whether it existed or not.  That made a complete suspend/resume
+fix up any missing cpufreq device, e.g. one that was removed by a
+previous error.
 
-Mit freundlichen Grüßen,
+One effect of saving state on suspend is that a missing device isn't
+added on resume.  You can of course see that as a feature.  But to me
+it's a regression, because:
+ - it didn't use to work that way, and
+ - the addition of missing devices on resume is always wanted AFAICS.
 
-Peter Wong
-Email: ppwong12@aol.jp
+
+BjÃ¸rn
