@@ -1,148 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757461Ab3LWPSj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 10:18:39 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:50587 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757360Ab3LWPSi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 10:18:38 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Mon, 23 Dec 2013 16:18:19 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Rob Landley <rob@landley.net>
-Cc: Lubomir Rintel <lkundrak@v3.sk>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>,
-        Bernhard Kaindl <bk@suse.de>, linux1394-devel@lists.sourceforge.net
-Subject: Re: [PATCH] docs: Update FireWire debugging documentation
-Message-ID: <20131223161819.20613590@stein>
-In-Reply-To: <1387708301-12048-1-git-send-email-lkundrak@v3.sk>
-References: <1387708301-12048-1-git-send-email-lkundrak@v3.sk>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757478Ab3LWP3h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 10:29:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35818 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751553Ab3LWP3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 10:29:36 -0500
+Message-ID: <52B856D3.4030802@redhat.com>
+Date: Mon, 23 Dec 2013 10:29:23 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: rui wang <ruiv.wang@gmail.com>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Michel Lespinasse <walken@google.com>,
+        Andi Kleen <ak@linux.intel.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Yang Zhang <yang.z.zhang@intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>, janet.morgan@intel.com,
+        tony.luck@intel.com
+Subject: Re: [PATCH] x86, Fix do_IRQ interrupt warning for cpu hotplug retriggered
+ irqs
+References: <1385990638-19548-1-git-send-email-prarit@redhat.com> <CANVTcTZ-ZkTvR0+=eFyNQ7E8R2UYo1qdA-RQ+9nzK2w=qCPkPQ@mail.gmail.com>
+In-Reply-To: <CANVTcTZ-ZkTvR0+=eFyNQ7E8R2UYo1qdA-RQ+9nzK2w=qCPkPQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC'ing linux1394-devel, quoting in full.
 
-On Dec 22 Lubomir Rintel wrote:
-> The old firewire stack is long dead now and a new version firescope has been
-> released with support for current kernels.
+
+On 12/23/2013 04:41 AM, rui wang wrote:
+> On 12/2/13, Prarit Bhargava <prarit@redhat.com> wrote:
+>> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64831
+>>
+>> When downing a cpu it is possible that there are unhandled irqs left in
+>> the APIC IRR register.  fixup_irqs() goes through the IRR and retriggers
+>> the IRQs left in the APIC IRR.  After this, the vector for the irq is set
+>> to -1.  There is a possibility here, however, that the CPU does handle an
+>> irq in the IRR and then calls the vector.
+>>
 > 
-> Cc: Rob Landley <rob@landley.net>
-> Cc: Justin P. Mattock <justinmattock@gmail.com>
-> Cc: Bernhard Kaindl <bk@suse.de>
-> Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+> The patch does not seem to root-cause the problem. It seems to hide
+> the real problem.
+> 
+> It is not possible that a device-triggered irq can arrive to this cpu
+> again after fixup_irqs() fills its vector_irq[vector] to -1, because
+> we've done the following:
+> 
+> 1. We disabled interrupt on this cpu in stop_machine().
+> 2. We called irq_set_affinity() to exclude this cpu as a target for the irq.
+> 3. We checked APIC_IRR and re-triggered any pending irqs to other cpus.
 
-Reviewed-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+... and we set the IRQ handler to -1 for the down'd cpu.
 
-> ---
->  Documentation/debugging-via-ohci1394.txt   | 24 +++++++++---------------
->  Documentation/power/basic-pm-debugging.txt |  2 +-
->  2 files changed, 10 insertions(+), 16 deletions(-)
+Rui, I think you're right up to here but I think this has nothing to do with IPI
+or locking.
 
-Rob, will you be taking this or should it go into linux1394.git?
+I assumed that the issue I was trying to fix was long standing and well-known
+within the kernel given some of the comments I had read here-and-there about
+people seeing the do_IRQ errors on LKML.  There have long been reports of the
+do_IRQ warning output during cpu down.
 
-Lubomir sent another patch for linux1394.git which among else also touches
-Documentation/debugging-via-ohci1394.txt, but git's default merge strategy
-handles this overlap automatically and correctly.  I.e. this can go
-separate ways to upstream.
-(http://marc.info/?l=linux1394-devel&m=138770970409985,
-"[PATCH] ohci: Turn remote DMA support into a module parameter")
+Here's what the issue is after step 3 above...
 
-> diff --git a/Documentation/debugging-via-ohci1394.txt b/Documentation/debugging-via-ohci1394.txt
-> index 611f5a5..14d1944 100644
-> --- a/Documentation/debugging-via-ohci1394.txt
-> +++ b/Documentation/debugging-via-ohci1394.txt
-> @@ -36,17 +36,13 @@ available (notebooks) or too slow for extensive debug information (like ACPI).
->  Drivers
->  -------
->  
-> -The ohci1394 driver in drivers/ieee1394 initializes the OHCI-1394 controllers
-> -to a working state and enables physical DMA by default for all remote nodes.
-> -This can be turned off by ohci1394's module parameter phys_dma=0.
-> -
-> -The alternative firewire-ohci driver in drivers/firewire uses filtered physical
-> +The firewire-ohci driver in drivers/firewire uses filtered physical
->  DMA by default, which is more secure but not suitable for remote debugging.
->  Compile the driver with CONFIG_FIREWIRE_OHCI_REMOTE_DMA (Kernel hacking menu:
->  Remote debugging over FireWire with firewire-ohci) to get unfiltered physical
->  DMA.
->  
-> -Because ohci1394 and firewire-ohci depend on the PCI enumeration to be
-> +Because the firewire-ohci driver depends on the PCI enumeration to be
->  completed, an initialization routine which runs pretty early has been
->  implemented for x86.  This routine runs long before console_init() can be
->  called, i.e. before the printk buffer appears on the console.
-> @@ -64,7 +60,7 @@ be used to view the printk buffer of a remote machine, even with live update.
->  
->  Bernhard Kaindl enhanced firescope to support accessing 64-bit machines
->  from 32-bit firescope and vice versa:
-> -- http://halobates.de/firewire/firescope-0.2.2.tar.bz2
-> +- http://v3.sk/~lkundrak/firescope/
->  
->  and he implemented fast system dump (alpha version - read README.txt):
->  - http://halobates.de/firewire/firedump-0.1.tar.bz2
-> @@ -92,11 +88,11 @@ Step-by-step instructions for using firescope with early OHCI initialization:
->  
->  1) Verify that your hardware is supported:
->  
-> -   Load the ohci1394 or the fw-ohci module and check your kernel logs.
-> +   Load the firewire-ohci module and check your kernel logs.
->     You should see a line similar to
->  
-> -   ohci1394: fw-host0: OHCI-1394 1.1 (PCI): IRQ=[18]  MMIO=[fe9ff800-fe9fffff]
-> -   ... Max Packet=[2048]  IR/IT contexts=[4/8]
-> +   firewire_ohci 0000:15:00.1: added OHCI v1.0 device as card 2, 4 IR + 4 IT
-> +   ... contexts, quirks 0x11
->  
->     when loading the driver. If you have no supported controller, many PCI,
->     CardBus and even some Express cards which are fully compliant to OHCI-1394
-> @@ -113,20 +109,18 @@ Step-by-step instructions for using firescope with early OHCI initialization:
->  
->     If an driver is running on both machines you should see a line like
->  
-> -   ieee1394: Node added: ID:BUS[0-01:1023]  GUID[0090270001b84bba]
-> +   firewire_core 0000:15:00.1: created device fw1: GUID 00061b0020105917, S400
->  
->     on both machines in the kernel log when the cable is plugged in
->     and connects the two machines.
->  
->  3) Test physical DMA using firescope:
->  
-> -   On the debug host,
-> -	- load the raw1394 module,
-> -	- make sure that /dev/raw1394 is accessible,
-> +   On the debug host, make sure that /dev/fw* is accessible,
->     then start firescope:
->  
->  	$ firescope
-> -	Port 0 (ohci1394) opened, 2 nodes detected
-> +	Port 0 (/dev/fw1) opened, 2 nodes detected
->  
->  	FireScope
->  	---------
-> diff --git a/Documentation/power/basic-pm-debugging.txt b/Documentation/power/basic-pm-debugging.txt
-> index e9b54de8..edeecd4 100644
-> --- a/Documentation/power/basic-pm-debugging.txt
-> +++ b/Documentation/power/basic-pm-debugging.txt
-> @@ -172,7 +172,7 @@ you can boot the kernel with the 'no_console_suspend' parameter and try to log
->  kernel messages using the serial console.  This may provide you with some
->  information about the reasons of the suspend (resume) failure.  Alternatively,
->  it may be possible to use a FireWire port for debugging with firescope
-> -(ftp://ftp.firstfloor.org/pub/ak/firescope/).  On x86 it is also possible to
-> +(http://v3.sk/~lkundrak/firescope/).  On x86 it is also possible to
->  use the PM_TRACE mechanism documented in Documentation/power/s2ram.txt .
->  
->  2. Testing suspend to RAM (STR)
+4.  The APIC_IRR is still *set* in the down'd cpu with IRQs disabled.
+5.  We continue executing the stop_machine "down" portion of the code, then
+continue executing in normal context the "die" code (ie, __cpu_die()).
 
+IRQ disable only pertains stop_machine down.  So after we leave that context,
+IRR will still execute.  While the kernel is spinning in cpu_die(), the down'd
+cpu attempts to execute handler for IRQ in IRR ... and can't find one because
+we've set it to -1.  So we see the warning.
 
+A few additional debug points:
 
--- 
-Stefan Richter
--=====-===-= ==-- =-===
-http://arcgraph.de/sr/
+1.  I put a printk in fixup_irq when we call the irq_retrigger on another cpu
+that dumps the the down'd CPU and IRQ # in fixup_irqs().  I see that printk
+*EVERYTIME* I see the do_IRQ warning.
+
+2.  The do_IRQ warning *always* appears before I see the offline message ...
+
+[  148.656016] Broke affinity for irq 634
+[  148.660493] Broke affinity for irq 698
+[  148.665739] kvm: disabling virtualization on CPU58
+[  148.666732] PRARIT: 58.208 IRR entry ... irq_retrigger call.
+
+at this point we've left the stop_machine() code and we're now continuing to
+execute ... then we hit the cpu_die() ... which spins.
+
+[  148.671106] do_IRQ: 58.208 No irq handler for vector (irq -1)
+[  148.677544] smpboot: CPU 58 is now offline
+
+I think I have root caused this to the IRR being set in the down'd cpu.  It is
+admittedly a rare occurrence in the kernel.  I usually have to run about 1000 up
+and down's before hitting it, however, on my current test system it seems to hit
+much more frequently, almost 1 in 64 times.
+
+P.
