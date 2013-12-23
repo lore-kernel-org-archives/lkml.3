@@ -1,156 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757138Ab3LWINy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 03:13:54 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:44317 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756862Ab3LWINx (ORCPT
+	id S1757078Ab3LWIQt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 03:16:49 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:37814 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750730Ab3LWIQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 03:13:53 -0500
+	Mon, 23 Dec 2013 03:16:47 -0500
 MIME-Version: 1.0
-In-Reply-To: <52B7ECC7.8020508@samsung.com>
-References: <1387526987-12455-1-git-send-email-rongjun.ying@csr.com>
- <52B7B9F0.1020801@samsung.com> <CAGsJ_4xwc63kEBgmMk+E3JpYLhX0Vt1qQPcBXNtOGC2Gmo=MOw@mail.gmail.com>
- <52B7D990.2020206@samsung.com> <CAGsJ_4wbYkadoM5HHwbGUcwuimxiq-u9FMaWMs7wD-SXU4ybcQ@mail.gmail.com>
- <52B7ECC7.8020508@samsung.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Mon, 23 Dec 2013 16:13:32 +0800
-Message-ID: <CAGsJ_4wUszpPNxkpDZfbgC7DSAPtxYDmmRsFAih9Lmd-wxL1Fw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] extcon: gpio: Add power resume support
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: rjying <rjying@gmail.com>, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RongJun Ying <Rongjun.Ying@csr.com>,
-        Binghua Duan <Binghua.Duan@csr.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1387462990-12039-10-git-send-email-mporter@linaro.org>
+References: <1387462990-12039-1-git-send-email-mporter@linaro.org>
+	<1387462990-12039-10-git-send-email-mporter@linaro.org>
+Date: Mon, 23 Dec 2013 00:16:46 -0800
+Message-ID: <CAEPRUYoaV0B8kUiLGD6cdzXkSvftY7ZB1uqh3jfRsBAvK3+JVg@mail.gmail.com>
+Subject: Re: [PATCH v8 9/9] ARM: dts: add usb udc support to bcm281xx
+From: Christian Daudt <bcm@fixthebug.org>
+To: Matt Porter <mporter@linaro.org>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Paul Zimmerman <paulz@synopsys.com>, Tomasz Figa <t.figa@samsung.com>,
+        Kamil Debski <k.debski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/12/23 Chanwoo Choi <cw00.choi@samsung.com>:
-> On 12/23/2013 04:36 PM, Barry Song wrote:
->> 2013/12/23 Chanwoo Choi <cw00.choi@samsung.com>:
->>> On 12/23/2013 03:10 PM, Barry Song wrote:
->>>> 2013/12/23 Chanwoo Choi <cw00.choi@samsung.com>:
->>>>> On 12/20/2013 05:09 PM, rjying wrote:
->>>>>> From: Rongjun Ying <rongjun.ying@csr.com>
->>>>>>
->>>>>> After system resume, need send extcon uevent to userspace
->>>>>
->>>>> Why did extcon send uevent after wakeup from suspend?
->>>>>
->>>>> If extcon cable is attatched or detached on suspend state,
->>>>> Kernel can detect the interrupt about changed state of extcon.
->>>>
->>>> irq controller has lost power in suspend, so there is no pending interrupt.
->>>> and HW will not pend any interrupt when we hotplug cable during sleep.
->>>
->>> No, SoC in suspend state must maintain the minimum power under 1mA
->>> if completed the power-optimization on suspend state.
->>>
->>> If user insert USB cable to target, the external interrupt connected to
->>> USB port is happened. And kernel would be waked up from suspend state
->>> to operate proper interrupt handler of external interrupt.
->>
->> no. not every USB supports that. that depends on the power domain design of SoC.
+On Thu, Dec 19, 2013 at 6:23 AM, Matt Porter <mporter@linaro.org> wrote:
+> Adds USB OTG/PHY and clock support to BCM281xx and enables
+> UDC support on the bcm11351-brt and bcm28155-ap boards.
 >
-> USB is only example for gpio control in suspend state.
->
->>
->>>
->>> Also,
->>> Input subsystem used gpio-keys driver for power button..
->>> If user press power button in suspend state, target would be waked up from suspend state.
->>> It is same case both extcon gpio and gpio-keys of input subsystem.
->>
->> no. it depends on the SoC design. many SoC only support 1 special key
->> which can work as ON-KEY as wakeup source. and this kind of keys might
->> not be GPIO at all.
->> there is a special power domain which is still open for it.
->
-> many SoC?
->
-> As I knew, most SoC has supported various wakeup source.
-> As you comment, if specific SoC support only one special key
-> for wakeup from suspend state, I think it isn't common.
->
-> Also,
-> This patch isn't necessary on SoCs which support various wakeup source (e.g., external interrupt).
-> As you comment, this issue has dependecy on specific SoC. Why did you think this common code?
+> Signed-off-by: Matt Porter <mporter@linaro.org>
+> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+> Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
 
-i am not thinking this patch must be common codes but i think the
-extcon should provide common codes to support all chips. that is what
-a framework should consider.
+Applied to armsoc/for-3.14/dt
 
-if there is no this or things similar with this, how could extcon
-support the chips which don't support receiving sleep gpio interrupts?
-
->
->>
->>>
->>>>
->>>>> So, kernel would execute proper operation about interrupt
->>>>> after wakeup from suspend state.
->>>>
->>>> kernel only save/restore the register status of gpio, how could it
->>>> know whether there is a pending interrupt if the HW doesn't do it?
->>>>
->>>>>
->>>>> I think it isn't necessary.
->>>>>
->>>>> Thanks,
->>>>> Chanwoo Choi
->>>>>
->>>>>>
->>>>>> Change-Id: I32a9e1c6646035f95765bba79a7acaccb8ce45a7
->>>>>>
->>>>>> Signed-off-by: Rongjun Ying <rongjun.ying@csr.com>
->>>>>> ---
->>>>>>  drivers/extcon/extcon-gpio.c |   17 +++++++++++++++++
->>>>>>  1 files changed, 17 insertions(+), 0 deletions(-)
->>>>>>
->>>>>> diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
->>>>>> index 7e0dff5..d916522 100644
->>>>>> --- a/drivers/extcon/extcon-gpio.c
->>>>>> +++ b/drivers/extcon/extcon-gpio.c
->>>>>> @@ -159,12 +159,29 @@ static int gpio_extcon_remove(struct platform_device *pdev)
->>>>>>       return 0;
->>>>>>  }
->>>>>>
->>>>>> +#ifdef CONFIG_PM_SLEEP
->>>>>> +static int gpio_extcon_resume(struct device *dev)
->>>>>> +{
->>>>>> +     struct gpio_extcon_data *extcon_data;
->>>>>> +
->>>>>> +     extcon_data = dev_get_drvdata(dev);
->>>>>> +     queue_delayed_work(system_power_efficient_wq, &extcon_data->work,
->>>>>> +                           extcon_data->debounce_jiffies);
->>>>>> +     return 0;
->>>>>> +}
->>>>>> +#endif
->>>>>> +
->>>>>> +static const struct dev_pm_ops gpio_extcon_pm_ops = {
->>>>>> +     SET_SYSTEM_SLEEP_PM_OPS(NULL, gpio_extcon_resume)
->>>>>> +};
->>>>>> +
->>>>>>  static struct platform_driver gpio_extcon_driver = {
->>>>>>       .probe          = gpio_extcon_probe,
->>>>>>       .remove         = gpio_extcon_remove,
->>>>>>       .driver         = {
->>>>>>               .name   = "extcon-gpio",
->>>>>>               .owner  = THIS_MODULE,
->>>>>> +             .pm = &gpio_extcon_pm_ops,
->>>>>>       },
->>>>>>  };
->>>>>>
->>>>>>
->>>>>
->>>>
->>>> -barry
->>
->> -barry
-
-
-
-
--barry
+ thanks,
+   csd
