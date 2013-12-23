@@ -1,119 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab3LWAhZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Dec 2013 19:37:25 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59636 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756501Ab3LWAhX (ORCPT
+	id S1756772Ab3LWAoY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Dec 2013 19:44:24 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:61885 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756565Ab3LWAoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Dec 2013 19:37:23 -0500
-X-AuditID: 9c930197-b7c4aae000003d84-71-52b785c0b7e6
-Date: Mon, 23 Dec 2013 09:38:10 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Chanho Min <chanho.min@lge.com>
-Cc: Phillip Lougher <phillip@squashfs.org.uk>, linux-kernel@vger.kernel.org,
-        =?utf-8?B?7J6E7Zqo7KSA?= <hyojun.im@lge.com>,
-        =?utf-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>
-Subject: Re: Re: Re : Re: [PATCH] Squashfs: add asynchronous read support
-Message-ID: <20131223003810.GF19968@bbox>
-References: <1387171826-20110-1-git-send-email-chanho.min@lge.com>
- <OF0A0B2022.F34682B9-ON49257C45.0018AF5F-49257C45.0018AF60@lge.com>
- <OFA5BC9264.067973F3-ON49257C48.000B85B4-49257C48.000B85B4@lge.com>
+	Sun, 22 Dec 2013 19:44:23 -0500
+X-AuditID: 9c930179-b7c89ae000006438-f8-52b7876522f3
+Date: Mon, 23 Dec 2013 09:44:38 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>, aswin@hp.com
+Subject: Re: [PATCH v3 13/14] mm, hugetlb: retry if failed to allocate and
+ there is concurrent user
+Message-ID: <20131223004438.GA19388@lge.com>
+References: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1387349640-8071-14-git-send-email-iamjoonsoo.kim@lge.com>
+ <20131219170202.0df2d82a2adefa3ab616bdaa@linux-foundation.org>
+ <20131220140153.GC11295@suse.de>
+ <1387608497.3119.17.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <OFA5BC9264.067973F3-ON49257C48.000B85B4-49257C48.000B85B4@lge.com>
+In-Reply-To: <1387608497.3119.17.camel@buesod1.americas.hpqcorp.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 21, 2013 at 11:05:51AM +0900, Chanho Min wrote:
+On Fri, Dec 20, 2013 at 10:48:17PM -0800, Davidlohr Bueso wrote:
+> On Fri, 2013-12-20 at 14:01 +0000, Mel Gorman wrote:
+> > On Thu, Dec 19, 2013 at 05:02:02PM -0800, Andrew Morton wrote:
+> > > On Wed, 18 Dec 2013 15:53:59 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> > > 
+> > > > If parallel fault occur, we can fail to allocate a hugepage,
+> > > > because many threads dequeue a hugepage to handle a fault of same address.
+> > > > This makes reserved pool shortage just for a little while and this cause
+> > > > faulting thread who can get hugepages to get a SIGBUS signal.
+> > > > 
+> > > > To solve this problem, we already have a nice solution, that is,
+> > > > a hugetlb_instantiation_mutex. This blocks other threads to dive into
+> > > > a fault handler. This solve the problem clearly, but it introduce
+> > > > performance degradation, because it serialize all fault handling.
+> > > > 
+> > > > Now, I try to remove a hugetlb_instantiation_mutex to get rid of
+> > > > performance degradation.
+> > > 
+> > > So the whole point of the patch is to improve performance, but the
+> > > changelog doesn't include any performance measurements!
+> > > 
+> > 
+> > I don't really deal with hugetlbfs any more and I have not examined this
+> > series but I remember why I never really cared about this mutex. It wrecks
+> > fault scalability but AFAIK fault scalability almost never mattered for
+> > workloads using hugetlbfs.  The most common user of hugetlbfs by far is
+> > sysv shared memory. The memory is faulted early in the lifetime of the
+> > workload and after that it does not matter. At worst, it hurts application
+> > startup time but that is still poor motivation for putting a lot of work
+> > into removing the mutex.
 > 
-> > Please don't break thread.
-> > You should reply to my mail instead of your original post.
-> Sorry, It seems to be my mailer issue. I'm trying to fix it.
+> Yep, important hugepage workloads initially pound heavily on this lock,
+> then it naturally decreases.
 > 
-> > It's a result which isn't what I want to know.
-> > What I wnat to know is why upper layer issues more I/O per second.
-> > For example, you read 32K so MM layer will prepare 8 pages to read in but
-> > at issuing at a first page, squashfs make 32 pages and fill the page cache
-> > if we assume you use 128K compression so MM layer's already prepared 7
-> > page
-> > would be freed without further I/O and do_generic_file_read will wait for
-> > completion by lock_page without further I/O queueing. It's not suprising.
-> > One of page freed is a READA marked page so readahead couldn't work.
-> > If readahead works, it would be just by luck. Actually, by simulation
-> > 64K dd, I found readahead logic would be triggered but it's just by luck
-> > and it's not intended, I think.
-> MM layer's readahead pages would not be freed immediately.
-> Squashfs can use them by grab_cache_page_nowait and READA marked page is available.
-> Intentional or not, readahead works pretty well. I checked in experiment.
-
-
-read_pages
-  for(page_idx ...) {
-    if (!add_to_page_cache_lru)) { <-- 1)
-      mapping->a_ops->readpage(filp, page)
-        squashfs_readpage
-          for (i ...) {   2)  Here, 31 pages are inserted into page cache
-            grab_cahe_page_nowait <------/
-              add_to_page_cache_lru 
-          }
-    }
-    /*
-     * 1) will be failed with EEXIST by 2) so every pages other than first page
-     * in list would be freed
-     */
-    page_cache_release(page) 
-  }
-   
-If you see ReadAhead works, it is just by luck as I told you.
-Please simulate it with 64K dd.
-
+> > Microbenchmarks will be able to trigger problems in this area but it'd
+> > be important to check if any workload that matters is actually hitting
+> > that problem.
 > 
-> > If first issued I/O complete, squashfs decompress the I/O with 128K pages
-> > so all 4 iteration(128K/32K) would be hit in page cache.
-> > If all 128K hit in page cache, mm layer start to issue next I/O and
-> > repeat above logic until you ends up reading all file size.
-> > So my opition is that upper layer wouldn't issue more I/O logically.
-> > If it worked, it's not what we expect but side-effect.
-> >
-> > That's why I'd like to know what's your thought for increasing IOPS.
-> > Please, could you say your thought why IOPS increased, not a result
-> > on low level driver?
-> It is because readahead can works asynchronously in background.
-> Suppose that you read a large file by 128k partially and contiguously
-> like "dd bs=128k". Two IOs can be issued per 128k reading,
-> First IO is for intended pages, second IO is for readahead.
-> If first IO hit in cache thank to previous readahead, no wait for IO completion
-> is needed, because intended page is up-to-date already.
-> But, current squashfs waits for second IO's completion unnecessarily.
-> That is one of reason that we should move page's up-to-date
-> to the asynchronous area like my patch.
-
-I understand it but your patch doesn't make it.
-
+> I was thinking of writing one to actually get some numbers for this
+> patchset -- I don't know of any benchmark that might stress this lock. 
 > 
-> > Anyway, in my opinion, we should take care of MM layer's readahead for
-> > enhance sequential I/O. For it, we should use buffer pages passed by MM
-> > instead of freeing them and allocating new pages in squashfs.
-> > IMHO, it would be better to implement squashfs_readpages but my insight
-> > is very weak so I guess Phillip will give more good idea/insight about
-> > the issue.
-> That's a good point. Also, I think my patch is another way which can be implemented
-> without significant impact on current implementation and I wait for Phillip's comment.
-> 
-> Thanks
-> Chanho
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> However I first measured the amount of cycles it costs to start an
+> Oracle DB and things went south with these changes. A simple 'startup
+> immediate' calls hugetlb_fault() ~5000 times. For a vanilla kernel, this
+> costs ~7.5 billion cycles and with this patchset it goes up to ~27.1
+> billion. While there is naturally a fair amount of variation, these
+> changes do seem to do more harm than good, at least in real world
+> scenarios.
 
--- 
-Kind regards,
-Minchan Kim
+Hello,
+
+I think that number of cycles is not proper to measure this patchset,
+because cycles would be wasted by fault handling failure. Instead, it
+targeted improved elapsed time. Could you tell me how long it
+takes to fault all of it's hugepages?
+
+Anyway, this order of magnitude still seems a problem. :/
+
+I guess that cycles are wasted by zeroing hugepage in fault-path like as
+Andrew pointed out.
+
+I will send another patches to fix this problem.
+
+Thanks.
