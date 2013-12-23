@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932694Ab3LWX0Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 18:26:25 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:10874 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932596Ab3LWX0X (ORCPT
+	id S1758284Ab3LWX3E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 18:29:04 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:37051 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752817Ab3LWX3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 18:26:23 -0500
-From: Bing Zhao <bzhao@marvell.com>
-To: Ding Tianhong <dingtianhong@huawei.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 23 Dec 2013 15:26:01 -0800
-Subject: RE: [PATCH 15/21] mwifiex: slight optimization of addr compare
-Thread-Topic: [PATCH 15/21] mwifiex: slight optimization of addr compare
-Thread-Index: Ac7/nX07SjnGZ4KcTA2aLnQl/3N66wAmCEYw
-Message-ID: <477F20668A386D41ADCC57781B1F70430F5334745F@SC-VEXCH1.marvell.com>
-References: <52B7C5E6.7030807@huawei.com>
-In-Reply-To: <52B7C5E6.7030807@huawei.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Mon, 23 Dec 2013 18:29:01 -0500
+Message-ID: <52B8C70D.3040103@ti.com>
+Date: Mon, 23 Dec 2013 17:28:13 -0600
+From: "Anna, Suman" <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2013-12-23_05:2013-12-23,2013-12-23,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1312230185
+To: <florian.vaussard@epfl.ch>, Joerg Roedel <joro@8bytes.org>,
+        Tony Lindgren <tony@atomide.com>,
+        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 6/7] ARM: OMAP2+: Remove legacy data from hwmod for omap3
+ isp iommu
+References: <1387284818-28739-1-git-send-email-florian.vaussard@epfl.ch> <1387284818-28739-7-git-send-email-florian.vaussard@epfl.ch> <52B88A49.9020402@ti.com> <52B8ACED.1030209@epfl.ch>
+In-Reply-To: <52B8ACED.1030209@epfl.ch>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBNNQaqQ028487
 
-Hi Ding,
+Hi Florian,
 
-> diff --git a/drivers/net/wireless/mwifiex/11n_rxreorder.c
-> b/drivers/net/wireless/mwifiex/11n_rxreorder.c
-> index ada809f..a180298 100644
-> --- a/drivers/net/wireless/mwifiex/11n_rxreorder.c
-> +++ b/drivers/net/wireless/mwifiex/11n_rxreorder.c
-> @@ -164,7 +164,7 @@ mwifiex_11n_get_rx_reorder_tbl(struct mwifiex_private *priv, int tid, u8 *ta)
-> 
->  	spin_lock_irqsave(&priv->rx_reorder_tbl_lock, flags);
->  	list_for_each_entry(tbl, &priv->rx_reorder_tbl_ptr, list) {
-> -		if (!memcmp(tbl->ta, ta, ETH_ALEN) && tbl->tid == tid) {
-> +		if (ether_addr_equal_unaligned(tbl->ta, ta) && tbl->tid == tid) {
+ >>
+>> On 12/17/2013 06:53 AM, Florian Vaussard wrote:
+>>> The data are now passed using the devicetree.
+>>
+>> Patch is good by itself. A similar change is needed for the IVA
+>> MMU as well.
+>>
+>
+> As I understood, the IVA MMU is still not integrated into the iommu
+> core, as its implementation lives under staging/tidspbridge/. But
+> correct me if I am wrong.
+>
 
-checkpatch.pl found several warnings in this patch.
-WARNING: line over 80 characters
+Yes, that is correct. That shouldn't stop us though from adding the IVA 
+MMU node to the DT file and the associated cleanup. To begin with, we 
+can have the DT node added with status=disabled.
 
-Could you please fix these warnings by splitting the function arguments into multiple lines?
+regards
+Suman
 
-Thanks,
-Bing
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
