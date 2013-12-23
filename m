@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757753Ab3LWSNA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 13:13:00 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:58431 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751447Ab3LWSM7 (ORCPT
+	id S1757435Ab3LWSRF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 13:17:05 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:55628 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694Ab3LWSRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 13:12:59 -0500
+	Mon, 23 Dec 2013 13:17:03 -0500
 MIME-Version: 1.0
-In-Reply-To: <20131223172744.GA2069@redhat.com>
-References: <1387366123-3950-1-git-send-email-Viswas.G@pmcs.com>
-	<52B8357D.60202@redhat.com>
-	<52B83B89.9040700@gmail.com>
-	<CE2C58F938F4C44EA74FFF880BAA7E5E1C68AA8A@BBYEXM01.pmc-sierra.internal>
-	<CAD0Z9T+69VoSnDY-Sj7a1QfJ-KLJYVyL9=WQ123XMfRvQmGdsg@mail.gmail.com>
-	<52B8518B.4060204@gmail.com>
-	<52B8569D.4050101@redhat.com>
-	<CAD0Z9TK-cn=X3ywSzPnEQN-FB+ue+0dHQ3EHuwonC+KfgrmPMA@mail.gmail.com>
-	<20131223163410.GA28220@redhat.com>
-	<20131223172744.GA2069@redhat.com>
-Date: Mon, 23 Dec 2013 10:12:57 -0800
-X-Google-Sender-Auth: kuMfd97fuKpANTW404KY0XdIbj8
-Message-ID: <CA+55aFy_y45feJNJgFa=Taks0GpxiXEMJexhjVVYH-vVFkPmkA@mail.gmail.com>
-Subject: Re: spinlock_irqsave() && flags (Was: pm80xx: Spinlock fix)
+In-Reply-To: <CAJ8eaTxq5tL1WT_2rsDg5nKwW4xxW_Md6ZTgk9f5DX75cN=pRg@mail.gmail.com>
+References: <CAJ8eaTzkKtwM2Xvw_GYRrefUVJg0uzaqFNPJcNc_ffSayQiDUA@mail.gmail.com>
+	<CA+55aFyVrrvDzUt0OU4d9YZM8C-N+ycSKEa3+-5nowUoZ=rb8w@mail.gmail.com>
+	<20131222143427.GA12544@redhat.com>
+	<CAJ8eaTxq5tL1WT_2rsDg5nKwW4xxW_Md6ZTgk9f5DX75cN=pRg@mail.gmail.com>
+Date: Mon, 23 Dec 2013 10:17:01 -0800
+X-Google-Sender-Auth: ZLpHMScQRSWFHlinK5eoYZaV504
+Message-ID: <CA+55aFx__ioTKoT3-t3SQOsr6HLB-dNKGWNwJ=AmBPn3FiYQmA@mail.gmail.com>
+Subject: Re: [PATCH] secure unlock_task_sighand() call
 From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Jason Seba <jason.seba42@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>, Tomas Henzl <thenzl@redhat.com>,
-        Jack Wang <xjtuwjp@gmail.com>,
-        Suresh Thiagarajan <Suresh.Thiagarajan@pmcs.com>,
-        Viswas G <Viswas.G@pmcs.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "JBottomley@parallels.com" <JBottomley@parallels.com>,
-        Vasanthalakshmi Tharmarajan 
-	<Vasanthalakshmi.Tharmarajan@pmcs.com>,
+To: naveen yadav <yad.naveen@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Vaibhav Shinde <v.bhav.shinde@gmail.com>,
+        Ajeet Yadav <ajeet.yadav.77@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 23, 2013 at 9:27 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+On Mon, Dec 23, 2013 at 4:29 AM, naveen yadav <yad.naveen@gmail.com> wrote:
 >
-> In short, is this code
+> We are facing OOPS during core dump on kernel 3.8.x on ARM target.
 >
->         spinlock_t LOCK;
->         unsigned long FLAGS;
->
->         void my_lock(void)
->         {
->                 spin_lock_irqsave(&LOCK, FLAGS);
->         }
->
->         void my_unlock(void)
->         {
->                 spin_unlock_irqrestore(&LOCK, FLAGS);
->         }
->
-> correct or not?
+> So we were doing core review and found this. We do not know whether
+> its big issue but thought to share this considering the problem
 
-Hell no. "flags" needs to be a thread-private variable, or at least
-protected some way (ie the above could work if everything is inside a
-bigger lock, to serialize access to FLAGS).
+Can you please post the oops, just in case that has any more hints.
+Maybe the serialization is broken somehow on ARM, or there is some
+ARM-specific bug. This code _is_ fairly subtle, but I don't think any
+of the patches I've seen so far should really fix anything.
 
-                    Linus
+              Linus
