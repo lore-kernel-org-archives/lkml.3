@@ -1,88 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756814Ab3LWBkS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Dec 2013 20:40:18 -0500
-Received: from ozlabs.org ([203.10.76.45]:56727 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756665Ab3LWBkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Dec 2013 20:40:16 -0500
-Date: Mon, 23 Dec 2013 12:40:05 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dong Aisheng <b29396@freescale.com>, Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: linux-next: build failure after merge of the mmc tree
-Message-Id: <20131223124005.d65bea8edf00419a371be64b@canb.auug.org.au>
-In-Reply-To: <20131217132838.cc16a4dbac2f4d3218bbed1d@canb.auug.org.au>
-References: <20131213125716.f432c59bf8782a489400a5a7@canb.auug.org.au>
-	<20131217132838.cc16a4dbac2f4d3218bbed1d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__23_Dec_2013_12_40_05_+1100_cpHkv1umPhiYefx/"
+	id S1756849Ab3LWByY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Dec 2013 20:54:24 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:23569 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756515Ab3LWByW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Dec 2013 20:54:22 -0500
+X-IronPort-AV: E=Sophos;i="4.95,533,1384272000"; 
+   d="scan'208";a="9307287"
+Message-ID: <52B7961D.2050505@cn.fujitsu.com>
+Date: Mon, 23 Dec 2013 09:47:09 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: linux-i2c@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2c: fix a potential kmemleak of adapter device
+References: <52B0F7D0.2020506@cn.fujitsu.com> <20131220173144.GA9997@katana>
+In-Reply-To: <20131220173144.GA9997@katana>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/23 09:53:42,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/23 09:53:43,
+	Serialize complete at 2013/12/23 09:53:43
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__23_Dec_2013_12_40_05_+1100_cpHkv1umPhiYefx/
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Wolfram,
+On 12/21/2013 01:31 AM, Wolfram Sang wrote:
 
-On Tue, 17 Dec 2013 13:28:38 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> Hi Chris,
->=20
-> ping?
+> On Wed, Dec 18, 2013 at 09:18:08AM +0800, Gu Zheng wrote:
+>> When running with the latest kernel, we get the following kmemleak message:
+>> unreferenced object 0xffff8800c2a36100 (size 256):
+>>   comm "modprobe", pid 629, jiffies 4294676002 (age 1531.115s)
+>>   hex dump (first 32 bytes):
+>>     00 00 00 00 ad 4e ad de ff ff ff ff 00 00 00 00  .....N..........
+>>     ff ff ff ff ff ff ff ff 78 21 85 82 ff ff ff ff  ........x!......
+>>   backtrace:
+>>     [<ffffffff815449ce>] kmemleak_alloc+0x73/0x98
+>>     [<ffffffff8113fa2b>] slab_post_alloc_hook+0x28/0x2a
+>>     [<ffffffff81142004>] __kmalloc+0x12c/0x158
+>>     [<ffffffff8134c60b>] kzalloc.constprop.6+0xe/0x10
+>>     [<ffffffff8134cb71>] device_private_init+0x18/0x66
+>>     [<ffffffff8134f1e8>] dev_set_drvdata+0x1e/0x34
+>>     [<ffffffffa01e643e>] i801_probe+0x5d/0x447 [i2c_i801]
+>>     [<ffffffff812a78be>] local_pci_probe+0x41/0x84
+>>     [<ffffffff812a7feb>] pci_device_probe+0xdf/0x10c
+>>     [<ffffffff8134f90d>] driver_probe_device+0x12f/0x2ee
+>>     [<ffffffff8134fb2b>] __driver_attach+0x5f/0x83
+>>     [<ffffffff8134de28>] bus_for_each_dev+0x64/0x90
+>>     [<ffffffff8134f36b>] driver_attach+0x1e/0x20
+>>     [<ffffffff8134ef34>] bus_add_driver+0xf2/0x1f0
+>>     [<ffffffff8135013e>] driver_register+0x8c/0xc3
+>>     [<ffffffff812a7bb4>] __pci_register_driver+0x62/0x67
+>> According to the backtrace, it seems that we do not release the
+>> device_private field of adapter device in the fail path of i801_probe
+>> or the flow of i2c_del_adapter, so add the cleanup step to fix it.
+>>
+>> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> 
+> ? Why should we free something we don't have allocated? The fix must be
+> somewhere else probably...
 
-ping again - I am still getting this error.
+We do allocate the device_private in device_private_init() when calling
+dev_set_drvdata() to set adapter data in probe flow, and the calltrace
+also shows this. Am I missing something?
 
-> On Fri, 13 Dec 2013 12:57:16 +1100 Stephen Rothwell <sfr@canb.auug.org.au=
-> wrote:
-> >
-> > After merging the mmc tree, today's linux-next build (arm
-> > multi_v7_defconfig) failed like this:
-> >=20
-> > ERROR (phandle_references): Reference to non-existent node or label "pi=
-nctrl_usdhc4_1"
-> >=20
-> > ERROR: Input tree has errors, aborting (use -f to force output)
-> > make[2]: *** [arch/arm/boot/dts/imx6dl-sabresd.dtb] Error 2
-> > ERROR (phandle_references): Reference to non-existent node or label "pi=
-nctrl_usdhc4_1"
-> >=20
-> > ERROR: Input tree has errors, aborting (use -f to force output)
-> > make[2]: *** [arch/arm/boot/dts/imx6q-sabresd.dtb] Error 2
-> >=20
-> > Caused by commit fc4fafac9656 ("ARM: dts: sabresd: add usdhc4 support").
-> >=20
-> > I have used the mmc tree from next-20131212 for today.
+Regards,
+Gu
+ 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+>> ---
+>>  drivers/i2c/busses/i2c-i801.c |    1 +
+>>  drivers/i2c/i2c-core.c        |    1 +
+>>  2 files changed, 2 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
+>> index 737e298..4bd4fba 100644
+>> --- a/drivers/i2c/busses/i2c-i801.c
+>> +++ b/drivers/i2c/busses/i2c-i801.c
+>> @@ -1246,6 +1246,7 @@ exit_free_irq:
+>>  exit_release:
+>>  	pci_release_region(dev, SMBBAR);
+>>  exit:
+>> +	kfree(priv->adapter.dev.p);
+>>  	kfree(priv);
+>>  	return err;
+>>  }
+>> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+>> index d74c0b3..a7bab9a 100644
+>> --- a/drivers/i2c/i2c-core.c
+>> +++ b/drivers/i2c/i2c-core.c
+>> @@ -1491,6 +1491,7 @@ void i2c_del_adapter(struct i2c_adapter *adap)
+>>  	idr_remove(&i2c_adapter_idr, adap->nr);
+>>  	mutex_unlock(&core_lock);
+>>  
+>> +	kfree(adap->dev.p);
+>>  	/* Clear the device structure in case this adapter is ever going to be
+>>  	   added again */
+>>  	memset(&adap->dev, 0, sizeof(adap->dev));
+>> -- 
+>> 1.7.7
+>>
 
---Signature=_Mon__23_Dec_2013_12_40_05_+1100_cpHkv1umPhiYefx/
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSt5R5AAoJEMDTa8Ir7ZwV2GAP/RV0uYcbmJiTTz5q1qw5HKpC
-JGlbcCKibaUDijNc5P0lyWAaWeiTzP8i3V5dzQLuChr42RjFQ8muWYXtv/RAhkj2
-U281TuElymWF5zbJ+/Aqc8LFr1RdzWa1vFt00aAKfjVWViHC+XySn/c/6bBrUSh/
-9Uy1al7wXldvPMxDpDpNNkI0pT/vRZDqtW8UuWqMA7GcC36pu14QzHS/1+F/qh93
-1RrGFrO/inelRKLWpZxpD9cXFvomp4UD+Ohy4wqJaK/Spf/cHN+GqqlhkMgvTB2L
-BOyeQDbbbkzvTt8vRb4dta+Nflz8xVIq9tZte8PHve6ROKKI87GNcOf+zHcgvOqO
-t2zW8W4RoTAGPtQLKlUKgh4wwpNejEywww/SdERhtQ1uXrOosMvQ7IhiV3AJ6WYU
-oyiyf670iAcXX94ThuGAWDGXLNgJrvuUyf8aDOXxYjfFZ+eADqVV2q/6RlMa8eox
-DSCH87V86rlP2RXtGzPMoznA3wIlNLokurJHOLtvL3ZyjZKZDg6yfv3JrSLmZI8n
-2qYlKIaVZ/z0NUDdEgKsyBpSzz18ay6ZlrJPUL1FtG7+/ZBQYlY1UzlFCdsBN9mi
-sy6TJveVTRsU3FGIYtefCeWxDtn6IOaTIbJHDRUIGMewp/fhi4acQ4W2zLPQp4NI
-uvJppDUnu5lvSOmgfq2G
-=sJgc
------END PGP SIGNATURE-----
-
---Signature=_Mon__23_Dec_2013_12_40_05_+1100_cpHkv1umPhiYefx/--
