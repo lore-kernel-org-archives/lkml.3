@@ -1,138 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757493Ab3LWO2f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 09:28:35 -0500
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:47567 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120Ab3LWO2d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 09:28:33 -0500
-Date: Mon, 23 Dec 2013 11:28:32 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "David A. Long" <dave.long@linaro.org>, systemtap@sourceware.org,
-        yrl.pp-manager.tt@hitachi.com, Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH -tip 1/3] [CLEANUP] perf-probe: Expand given path to
- absolute path
-Message-ID: <20131223142832.GF28878@ghostprotocols.net>
-References: <20131220100255.7169.19384.stgit@kbuild-fedora.novalocal>
- <20131220100257.7169.60537.stgit@kbuild-fedora.novalocal>
- <20131220180031.GA28878@ghostprotocols.net>
- <52B75B0D.6010401@hitachi.com>
+	id S1757431Ab3LWOdu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 09:33:50 -0500
+Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:13910
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757326Ab3LWOds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 09:33:48 -0500
+From: "Anson.Huang@freescale.com" <Anson.Huang@freescale.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: "rui.zhang@intel.com" <rui.zhang@intel.com>,
+        "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] thermal: imx: correct suspend/resume flow
+Thread-Topic: [PATCH] thermal: imx: correct suspend/resume flow
+Thread-Index: AQHO/+s5if49m/8p3UadCBvO1u/L+pph2B83
+Date: Mon, 23 Dec 2013 14:33:43 +0000
+Message-ID: <C95204EE-D28A-4AB4-B60B-E7CAB8AC3B8E@freescale.com>
+References: <1387831918-17028-1-git-send-email-b20788@freescale.com>,<20131223142931.GM26070@S2101-09.ap.freescale.net>
+In-Reply-To: <20131223142931.GM26070@S2101-09.ap.freescale.net>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [180.156.204.133]
+x-forefront-prvs: 0069246B74
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(199002)(189002)(24454002)(51704005)(33656001)(87936001)(83716003)(85306002)(51856001)(63696002)(49866001)(46102001)(36756003)(76796001)(76786001)(87266001)(82746002)(90146001)(56816005)(81686001)(81816001)(19580405001)(19580395003)(83322001)(85852003)(83072002)(2656002)(80976001)(81342001)(69226001)(81542001)(74662001)(47446002)(79102001)(54316002)(56776001)(59766001)(77982001)(76482001)(74502001)(31966008)(53806001)(54356001)(4396001)(66066001)(74366001)(80022001)(50986001)(47976001)(47736001)(65816001)(74876001)(74706001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB313;H:BY2PR03MB315.namprd03.prod.outlook.com;CLIP:180.156.204.133;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52B75B0D.6010401@hitachi.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBNEXtED026127
 
-Em Mon, Dec 23, 2013 at 06:35:09AM +0900, Masami Hiramatsu escreveu:
-> (2013/12/21 3:00), Arnaldo Carvalho de Melo wrote:
-> > Em Fri, Dec 20, 2013 at 10:02:57AM +0000, Masami Hiramatsu escreveu:
-> >> Expand given path to absolute path in option parser,
-> >> except for a module name. Instead of expanding it later,
-> >> this get the absolute path in early stage.
-> > 
-> > What is the problem this solves?
-> > 
-> > Can you provide some output showing the problem, i.e. before you apply
-> > this patch?
-> 
-> No, this is just a code cleanup, for the later enhancements.
 
-Ok, this is just a cleanup, but what does this cleanup achieves? Why is
-it better to "getting the absolute path in early stage"?
 
-I.e. you're describing what the patch does, and I can see it from
-reading code, but why is it good to do it in an early stage?
+Sent from Anson's iPhone
 
-> Should I put it into the next patch?
+> ÔÚ 2013Äê12ÔÂ23ÈÕ£¬22:28£¬"Shawn Guo" <shawn.guo@linaro.org> Ğ´µÀ£º
+> 
+>> On Mon, Dec 23, 2013 at 03:51:58PM -0500, Anson Huang wrote:
+>> Current imx thermal sensor's suspend function will return fail if
+>> thermal sensor is always enabled, but because alarm function is enabled,
+>> thermal sensor will be always enabled as well, hence break system's suspend,
+>> this patch will disable thermal sensor before suspend and re-enable it
+>> after resume, it fixes the failure of suspend/resume caused by thermal driver.
+> 
+> We should probably make it clear in the commit log that it's a
+> regression caused by commit 37713a1 (thermal: imx: implement thermal
+> alarm interrupt handling).
 
-No need for that, just, please, clarify why it is needed.
- 
-> Thank you,
+agreed, will improve the commit log in V2.
+
 > 
-> > 
-> > Then can you provide the output after the patch is applied?
-> > 
-> > - Arnaldo
-> >  
-> >> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> >> ---
-> >>  tools/perf/builtin-probe.c    |    9 +++++++++
-> >>  tools/perf/util/probe-event.c |   11 ++---------
-> >>  2 files changed, 11 insertions(+), 9 deletions(-)
-> >>
-> >> diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-> >> index 6ea9e85..b40d064 100644
-> >> --- a/tools/perf/builtin-probe.c
-> >> +++ b/tools/perf/builtin-probe.c
-> >> @@ -180,6 +180,15 @@ static int opt_set_target(const struct option *opt, const char *str,
-> >>  		else
-> >>  			return ret;
-> >>  
-> >> +		/* Expand given path to absolute path, except for modulename */
-> >> +		if (params.uprobes || strchr(str, '/')) {
-> >> +			str = realpath(str, NULL);
-> >> +			if (!str) {
-> >> +				pr_warning("Failed to find the path of %s.\n",
-> >> +					   str);
-> >> +				return ret;
-> >> +			}
-> >> +		}
-> >>  		params.target = str;
-> >>  		ret = 0;
-> >>  	}
-> >> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> >> index d7cff57..05be5de 100644
-> >> --- a/tools/perf/util/probe-event.c
-> >> +++ b/tools/perf/util/probe-event.c
-> >> @@ -2281,7 +2281,7 @@ static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
-> >>  	struct perf_probe_point *pp = &pev->point;
-> >>  	struct symbol *sym;
-> >>  	struct map *map = NULL;
-> >> -	char *function = NULL, *name = NULL;
-> >> +	char *function = NULL;
-> >>  	int ret = -EINVAL;
-> >>  	unsigned long long vaddr = 0;
-> >>  
-> >> @@ -2297,12 +2297,7 @@ static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
-> >>  		goto out;
-> >>  	}
-> >>  
-> >> -	name = realpath(exec, NULL);
-> >> -	if (!name) {
-> >> -		pr_warning("Cannot find realpath for %s.\n", exec);
-> >> -		goto out;
-> >> -	}
-> >> -	map = dso__new_map(name);
-> >> +	map = dso__new_map(exec);
-> >>  	if (!map) {
-> >>  		pr_warning("Cannot find appropriate DSO for %s.\n", exec);
-> >>  		goto out;
-> >> @@ -2367,7 +2362,5 @@ out:
-> >>  	}
-> >>  	if (function)
-> >>  		free(function);
-> >> -	if (name)
-> >> -		free(name);
-> >>  	return ret;
-> >>  }
-> >>
-> > 
+>> 
+>> Signed-off-by: Anson Huang <b20788@freescale.com>
+>> ---
+>> drivers/thermal/imx_thermal.c |   31 +++++++++++++++++--------------
+>> 1 file changed, 17 insertions(+), 14 deletions(-)
+>> 
+>> diff --git a/drivers/thermal/imx_thermal.c b/drivers/thermal/imx_thermal.c
+>> index cbb16f3..9a9a6c2 100644
+>> --- a/drivers/thermal/imx_thermal.c
+>> +++ b/drivers/thermal/imx_thermal.c
+>> @@ -510,27 +510,30 @@ static int imx_thermal_suspend(struct device *dev)
+>> {
+>>    struct imx_thermal_data *data = dev_get_drvdata(dev);
+>>    struct regmap *map = data->tempmon;
+>> -    u32 val;
+>> 
+>> -    regmap_read(map, TEMPSENSE0, &val);
+>> -    if ((val & TEMPSENSE0_POWER_DOWN) == 0) {
+>> -        /*
+>> -         * If a measurement is taking place, wait for a long enough
+>> -         * time for it to finish, and then check again.  If it still
+>> -         * does not finish, something must go wrong.
+>> -         */
+>> -        udelay(50);
+>> -        regmap_read(map, TEMPSENSE0, &val);
+>> -        if ((val & TEMPSENSE0_POWER_DOWN) == 0)
+>> -            return -ETIMEDOUT;
+>> -    }
+>> +    /*
+>> +     * Need to disable thermal sensor, otherwise, when thermal core
+>> +     * try to get temperature before thermal sensor resume, a wrong
+>> +     * temperature will be read as the thermal sensor is powered
+>> +     * down.
+>> +     */
+>> +    regmap_write(map, TEMPSENSE0 + REG_CLR, TEMPSENSE0_MEASURE_TEMP);
+>> +    regmap_write(map, TEMPSENSE0 + REG_SET, TEMPSENSE0_POWER_DOWN);
+>> +    data->mode = THERMAL_DEVICE_DISABLED;
 > 
+> Is it really necessary to update data->mode through suspend/resume
+> cycle?
+
+Yes, as the thermal core may try to get temperature before imx thermal sensor resume, if not setting its mode to disabled, thermal core will get a wrong temp and caused system power off by mistake, as the get_temp function will decide whether to power up thermal core according to its mode.
+
 > 
-> -- 
-> Masami HIRAMATSU
-> IT Management Research Dept. Linux Technology Center
-> Hitachi, Ltd., Yokohama Research Laboratory
-> E-mail: masami.hiramatsu.pt@hitachi.com
+> Shawn
 > 
+>> 
+>>    return 0;
+>> }
+>> 
+>> static int imx_thermal_resume(struct device *dev)
+>> {
+>> -    /* Nothing to do for now */
+>> +    struct imx_thermal_data *data = dev_get_drvdata(dev);
+>> +    struct regmap *map = data->tempmon;
+>> +
+>> +    /* Enabled thermal sensor after resume */
+>> +    regmap_write(map, TEMPSENSE0 + REG_CLR, TEMPSENSE0_POWER_DOWN);
+>> +    regmap_write(map, TEMPSENSE0 + REG_SET, TEMPSENSE0_MEASURE_TEMP);
+>> +    data->mode = THERMAL_DEVICE_ENABLED;
+>> +
+>>    return 0;
+>> }
+>> #endif
+>> -- 
+>> 1.7.9.5
+> 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
