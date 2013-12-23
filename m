@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932572Ab3LWWBW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 17:01:22 -0500
-Received: from zimbra13.linbit.com ([212.69.166.240]:60676 "EHLO
+	id S932555Ab3LWWBV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 17:01:21 -0500
+Received: from zimbra13.linbit.com ([212.69.166.240]:60685 "EHLO
 	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932453Ab3LWV7A (ORCPT
+	with ESMTP id S932454Ab3LWV7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Dec 2013 16:59:00 -0500
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 05/27] drbd: Move susp, susp_nod, susp_fen from connection to resource
-Date: Mon, 23 Dec 2013 22:50:34 +0100
-Message-Id: <1387835456-29695-6-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 10/27] drbd: drbd_csum_bio(), drbd_csum_ee(): Remove unused device argument
+Date: Mon, 23 Dec 2013 22:50:39 +0100
+Message-Id: <1387835456-29695-11-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1387835456-29695-1-git-send-email-philipp.reisner@linbit.com>
 References: <1387835456-29695-1-git-send-email-philipp.reisner@linbit.com>
@@ -25,149 +25,140 @@ From: Andreas Gruenbacher <agruen@linbit.com>
 Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 ---
- drivers/block/drbd/drbd_int.h   |   18 ++++++++++--------
- drivers/block/drbd/drbd_main.c  |    2 +-
- drivers/block/drbd/drbd_nl.c    |    3 +--
- drivers/block/drbd/drbd_state.c |   17 +++++++++--------
- 4 files changed, 21 insertions(+), 19 deletions(-)
+ drivers/block/drbd/drbd_int.h      |    5 ++---
+ drivers/block/drbd/drbd_main.c     |    6 +++---
+ drivers/block/drbd/drbd_receiver.c |    4 ++--
+ drivers/block/drbd/drbd_worker.c   |   13 ++++++-------
+ 4 files changed, 13 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index bdfa1de..d0defe8 100644
+index c9eea4d..7ba1db8 100644
 --- a/drivers/block/drbd/drbd_int.h
 +++ b/drivers/block/drbd/drbd_int.h
-@@ -575,6 +575,10 @@ struct drbd_resource {
- 	struct res_opts res_opts;
- 	struct mutex conf_update;	/* mutex for ready-copy-update of net_conf and disk_conf */
- 	spinlock_t req_lock;
-+
-+	unsigned susp:1;		/* IO suspended by user */
-+	unsigned susp_nod:1;		/* IO suspended because no data */
-+	unsigned susp_fen:1;		/* IO suspended because fence peer handler runs */
- };
- 
- struct drbd_connection {
-@@ -583,9 +587,6 @@ struct drbd_connection {
- 	struct kref kref;
- 	struct idr peer_devices;	/* volume number to peer device mapping */
- 	enum drbd_conns cstate;		/* Only C_STANDALONE to C_WF_REPORT_PARAMS */
--	unsigned susp:1;		/* IO suspended by user */
--	unsigned susp_nod:1;		/* IO suspended because no data */
--	unsigned susp_fen:1;		/* IO suspended because fence peer handler runs */
- 	struct mutex cstate_mutex;	/* Protects graceful disconnects */
- 	unsigned int connect_cnt;	/* Inc each time a connection is established */
- 
-@@ -1502,12 +1503,13 @@ _drbd_set_state(struct drbd_device *device, union drbd_state ns,
- 
- static inline union drbd_state drbd_read_state(struct drbd_device *device)
- {
-+	struct drbd_resource *resource = device->resource;
- 	union drbd_state rv;
- 
- 	rv.i = device->state.i;
--	rv.susp = first_peer_device(device)->connection->susp;
--	rv.susp_nod = first_peer_device(device)->connection->susp_nod;
--	rv.susp_fen = first_peer_device(device)->connection->susp_fen;
-+	rv.susp = resource->susp;
-+	rv.susp_nod = resource->susp_nod;
-+	rv.susp_fen = resource->susp_fen;
- 
- 	return rv;
- }
-@@ -2028,9 +2030,9 @@ static inline int drbd_state_is_stable(struct drbd_device *device)
- 
- static inline int drbd_suspended(struct drbd_device *device)
- {
--	struct drbd_connection *connection = first_peer_device(device)->connection;
-+	struct drbd_resource *resource = device->resource;
- 
--	return connection->susp || connection->susp_fen || connection->susp_nod;
-+	return resource->susp || resource->susp_fen || resource->susp_nod;
+@@ -1315,9 +1315,8 @@ static inline void ov_out_of_sync_print(struct drbd_device *device)
  }
  
- static inline bool may_inc_ap_bio(struct drbd_device *device)
+ 
+-extern void drbd_csum_bio(struct drbd_device *, struct crypto_hash *, struct bio *, void *);
+-extern void drbd_csum_ee(struct drbd_device *, struct crypto_hash *,
+-			 struct drbd_peer_request *, void *);
++extern void drbd_csum_bio(struct crypto_hash *, struct bio *, void *);
++extern void drbd_csum_ee(struct crypto_hash *, struct drbd_peer_request *, void *);
+ /* worker callbacks */
+ extern int w_e_end_data_req(struct drbd_work *, int);
+ extern int w_e_end_rsdata_req(struct drbd_work *, int);
 diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index 43b9141..824bc7a 100644
+index a7f992f..7df2de8 100644
 --- a/drivers/block/drbd/drbd_main.c
 +++ b/drivers/block/drbd/drbd_main.c
-@@ -2536,7 +2536,7 @@ struct drbd_resource *drbd_create_resource(const char *name)
- {
- 	struct drbd_resource *resource;
- 
--	resource = kmalloc(sizeof(struct drbd_resource), GFP_KERNEL);
-+	resource = kzalloc(sizeof(struct drbd_resource), GFP_KERNEL);
- 	if (!resource)
- 		return NULL;
- 	resource->name = kstrdup(name, GFP_KERNEL);
-diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index 5ccfebb..a84f1e2 100644
---- a/drivers/block/drbd/drbd_nl.c
-+++ b/drivers/block/drbd/drbd_nl.c
-@@ -1665,8 +1665,7 @@ int drbd_adm_attach(struct sk_buff *skb, struct genl_info *info)
- 		clear_bit(CRASHED_PRIMARY, &device->flags);
- 
- 	if (drbd_md_test_flag(device->ldev, MDF_PRIMARY_IND) &&
--	    !(device->state.role == R_PRIMARY &&
--	      first_peer_device(device)->connection->susp_nod))
-+	    !(device->state.role == R_PRIMARY && device->resource->susp_nod))
- 		set_bit(CRASHED_PRIMARY, &device->flags);
- 
- 	device->send_cnt = 0;
-diff --git a/drivers/block/drbd/drbd_state.c b/drivers/block/drbd/drbd_state.c
-index 0e69bb1..56b4aee 100644
---- a/drivers/block/drbd/drbd_state.c
-+++ b/drivers/block/drbd/drbd_state.c
-@@ -1011,9 +1011,9 @@ __drbd_set_state(struct drbd_device *device, union drbd_state ns,
- 	did_remote = drbd_should_do_remote(device->state);
- 	device->state.i = ns.i;
- 	should_do_remote = drbd_should_do_remote(device->state);
--	first_peer_device(device)->connection->susp = ns.susp;
--	first_peer_device(device)->connection->susp_nod = ns.susp_nod;
--	first_peer_device(device)->connection->susp_fen = ns.susp_fen;
-+	device->resource->susp = ns.susp;
-+	device->resource->susp_nod = ns.susp_nod;
-+	device->resource->susp_fen = ns.susp_fen;
- 
- 	/* put replicated vs not-replicated requests in seperate epochs */
- 	if (did_remote != should_do_remote)
-@@ -1222,6 +1222,7 @@ int drbd_bitmap_io_from_worker(struct drbd_device *device,
- static void after_state_ch(struct drbd_device *device, union drbd_state os,
- 			   union drbd_state ns, enum chg_state_flags flags)
- {
-+	struct drbd_resource *resource = device->resource;
- 	struct sib_info sib;
- 
- 	sib.sib_reason = SIB_STATE_CHANGE;
-@@ -1256,7 +1257,7 @@ static void after_state_ch(struct drbd_device *device, union drbd_state os,
- 		    conn_lowest_disk(connection) > D_NEGOTIATING)
- 			what = RESTART_FROZEN_DISK_IO;
- 
--		if (connection->susp_nod && what != NOTHING) {
-+		if (resource->susp_nod && what != NOTHING) {
- 			_tl_restart(connection, what);
- 			_conn_request_state(connection,
- 					    (union drbd_state) { { .susp_nod = 1 } },
-@@ -1270,7 +1271,7 @@ static void after_state_ch(struct drbd_device *device, union drbd_state os,
- 		struct drbd_connection *connection = first_peer_device(device)->connection;
- 
- 		spin_lock_irq(&device->resource->req_lock);
--		if (connection->susp_fen && conn_lowest_conn(connection) >= C_CONNECTED) {
-+		if (resource->susp_fen && conn_lowest_conn(connection) >= C_CONNECTED) {
- 			/* case2: The connection was established again: */
- 			struct drbd_peer_device *peer_device;
- 			int vnr;
-@@ -1753,9 +1754,9 @@ conn_set_state(struct drbd_connection *connection, union drbd_state mask, union
- 			} };
+@@ -1646,7 +1646,7 @@ int drbd_send_dblock(struct drbd_device *device, struct drbd_request *req)
+ 	}
+ 	p->dp_flags = cpu_to_be32(dp_flags);
+ 	if (dgs)
+-		drbd_csum_bio(device, first_peer_device(device)->connection->integrity_tfm, req->master_bio, p + 1);
++		drbd_csum_bio(first_peer_device(device)->connection->integrity_tfm, req->master_bio, p + 1);
+ 	err = __send_command(first_peer_device(device)->connection, device->vnr, sock, P_DATA, sizeof(*p) + dgs, NULL, req->i.size);
+ 	if (!err) {
+ 		/* For protocol A, we have to memcpy the payload into
+@@ -1670,7 +1670,7 @@ int drbd_send_dblock(struct drbd_device *device, struct drbd_request *req)
+ 			/* 64 byte, 512 bit, is the largest digest size
+ 			 * currently supported in kernel crypto. */
+ 			unsigned char digest[64];
+-			drbd_csum_bio(device, first_peer_device(device)->connection->integrity_tfm, req->master_bio, digest);
++			drbd_csum_bio(first_peer_device(device)->connection->integrity_tfm, req->master_bio, digest);
+ 			if (memcmp(p + 1, digest, dgs)) {
+ 				drbd_warn(device,
+ 					"Digest mismatch, buffer modified by upper layers during write: %llus +%u\n",
+@@ -1710,7 +1710,7 @@ int drbd_send_block(struct drbd_device *device, enum drbd_packet cmd,
+ 	p->seq_num = 0;  /* unused */
+ 	p->dp_flags = 0;
+ 	if (dgs)
+-		drbd_csum_ee(device, first_peer_device(device)->connection->integrity_tfm, peer_req, p + 1);
++		drbd_csum_ee(first_peer_device(device)->connection->integrity_tfm, peer_req, p + 1);
+ 	err = __send_command(first_peer_device(device)->connection, device->vnr, sock, cmd, sizeof(*p) + dgs, NULL, peer_req->i.size);
+ 	if (!err)
+ 		err = _drbd_send_zc_ee(device, peer_req);
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index 9349113..cb37e23 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -1560,7 +1560,7 @@ read_in_block(struct drbd_device *device, u64 id, sector_t sector,
  	}
  
--	ns_min.susp = ns_max.susp = connection->susp;
--	ns_min.susp_nod = ns_max.susp_nod = connection->susp_nod;
--	ns_min.susp_fen = ns_max.susp_fen = connection->susp_fen;
-+	ns_min.susp = ns_max.susp = connection->resource->susp;
-+	ns_min.susp_nod = ns_max.susp_nod = connection->resource->susp_nod;
-+	ns_min.susp_fen = ns_max.susp_fen = connection->resource->susp_fen;
+ 	if (dgs) {
+-		drbd_csum_ee(device, first_peer_device(device)->connection->peer_integrity_tfm, peer_req, dig_vv);
++		drbd_csum_ee(first_peer_device(device)->connection->peer_integrity_tfm, peer_req, dig_vv);
+ 		if (memcmp(dig_in, dig_vv, dgs)) {
+ 			drbd_err(device, "Digest integrity check FAILED: %llus +%u\n",
+ 				(unsigned long long)sector, data_size);
+@@ -1637,7 +1637,7 @@ static int recv_dless_read(struct drbd_device *device, struct drbd_request *req,
+ 	}
  
- 	*pns_min = ns_min;
- 	*pns_max = ns_max;
+ 	if (dgs) {
+-		drbd_csum_bio(device, first_peer_device(device)->connection->peer_integrity_tfm, bio, dig_vv);
++		drbd_csum_bio(first_peer_device(device)->connection->peer_integrity_tfm, bio, dig_vv);
+ 		if (memcmp(dig_in, dig_vv, dgs)) {
+ 			drbd_err(device, "Digest integrity check FAILED. Broken NICs?\n");
+ 			return -EINVAL;
+diff --git a/drivers/block/drbd/drbd_worker.c b/drivers/block/drbd/drbd_worker.c
+index 167c198..cf40a8a 100644
+--- a/drivers/block/drbd/drbd_worker.c
++++ b/drivers/block/drbd/drbd_worker.c
+@@ -282,8 +282,7 @@ void drbd_request_endio(struct bio *bio, int error)
+ 		complete_master_bio(device, &m);
+ }
+ 
+-void drbd_csum_ee(struct drbd_device *device, struct crypto_hash *tfm,
+-		  struct drbd_peer_request *peer_req, void *digest)
++void drbd_csum_ee(struct crypto_hash *tfm, struct drbd_peer_request *peer_req, void *digest)
+ {
+ 	struct hash_desc desc;
+ 	struct scatterlist sg;
+@@ -310,7 +309,7 @@ void drbd_csum_ee(struct drbd_device *device, struct crypto_hash *tfm,
+ 	crypto_hash_final(&desc, digest);
+ }
+ 
+-void drbd_csum_bio(struct drbd_device *device, struct crypto_hash *tfm, struct bio *bio, void *digest)
++void drbd_csum_bio(struct crypto_hash *tfm, struct bio *bio, void *digest)
+ {
+ 	struct hash_desc desc;
+ 	struct scatterlist sg;
+@@ -350,7 +349,7 @@ static int w_e_send_csum(struct drbd_work *w, int cancel)
+ 	if (digest) {
+ 		sector_t sector = peer_req->i.sector;
+ 		unsigned int size = peer_req->i.size;
+-		drbd_csum_ee(device, first_peer_device(device)->connection->csums_tfm, peer_req, digest);
++		drbd_csum_ee(first_peer_device(device)->connection->csums_tfm, peer_req, digest);
+ 		/* Free peer_req and pages before send.
+ 		 * In case we block on congestion, we could otherwise run into
+ 		 * some distributed deadlock, if the other side blocks on
+@@ -1103,7 +1102,7 @@ int w_e_end_csum_rs_req(struct drbd_work *w, int cancel)
+ 			digest = kmalloc(digest_size, GFP_NOIO);
+ 		}
+ 		if (digest) {
+-			drbd_csum_ee(device, first_peer_device(device)->connection->csums_tfm, peer_req, digest);
++			drbd_csum_ee(first_peer_device(device)->connection->csums_tfm, peer_req, digest);
+ 			eq = !memcmp(digest, di->digest, digest_size);
+ 			kfree(digest);
+ 		}
+@@ -1155,7 +1154,7 @@ int w_e_end_ov_req(struct drbd_work *w, int cancel)
+ 	}
+ 
+ 	if (likely(!(peer_req->flags & EE_WAS_ERROR)))
+-		drbd_csum_ee(device, first_peer_device(device)->connection->verify_tfm, peer_req, digest);
++		drbd_csum_ee(first_peer_device(device)->connection->verify_tfm, peer_req, digest);
+ 	else
+ 		memset(digest, 0, digest_size);
+ 
+@@ -1221,7 +1220,7 @@ int w_e_end_ov_reply(struct drbd_work *w, int cancel)
+ 		digest_size = crypto_hash_digestsize(first_peer_device(device)->connection->verify_tfm);
+ 		digest = kmalloc(digest_size, GFP_NOIO);
+ 		if (digest) {
+-			drbd_csum_ee(device, first_peer_device(device)->connection->verify_tfm, peer_req, digest);
++			drbd_csum_ee(first_peer_device(device)->connection->verify_tfm, peer_req, digest);
+ 
+ 			D_ASSERT(device, digest_size == di->digest_size);
+ 			eq = !memcmp(digest, di->digest, digest_size);
 -- 
 1.7.9.5
 
