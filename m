@@ -1,52 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757993Ab3LWUvS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 15:51:18 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:33484 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757654Ab3LWUvQ (ORCPT
+	id S1757824Ab3LWVBl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 16:01:41 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:44529 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752888Ab3LWVBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 15:51:16 -0500
-From: Hayato Suzuki <hytszk@gmail.com>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org, Hayato Suzuki <hytszk@gmail.com>
-Subject: [PATCH] [trivial] powernv: Fix typo in opal-flash.c
-Date: Tue, 24 Dec 2013 05:51:02 +0900
-Message-Id: <1387831862-4371-1-git-send-email-hytszk@gmail.com>
-X-Mailer: git-send-email 1.8.4.2
+	Mon, 23 Dec 2013 16:01:39 -0500
+From: William Roberts <bill.c.roberts@gmail.com>
+To: linux-audit@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        rgb@redhat.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        sds@tycho.nsa.gov
+Cc: William Roberts <wroberts@tresys.com>
+Subject: [RFC][PATCH 1/3] mm: Create utility function for accessing a tasks commandline value
+Date: Mon, 23 Dec 2013 13:01:29 -0800
+Message-Id: <1387832491-16477-1-git-send-email-wroberts@tresys.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typo in opal-flash.c
+introduce get_cmdline() for retreiving the value of a processes
+proc/self/cmdline value.
 
-Signed-off-by: Hayato Suzuki <hytszk@gmail.com>
+Signed-off-by: William Roberts <wroberts@tresys.com>
 ---
- arch/powerpc/platforms/powernv/opal-flash.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/mm.h |    1 +
+ mm/util.c          |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 49 insertions(+)
 
-diff --git a/arch/powerpc/platforms/powernv/opal-flash.c b/arch/powerpc/platforms/powernv/opal-flash.c
-index 4aeae4f..d8f67ba 100644
---- a/arch/powerpc/platforms/powernv/opal-flash.c
-+++ b/arch/powerpc/platforms/powernv/opal-flash.c
-@@ -105,7 +105,7 @@ struct image_header_t {
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 3552717..01e7970 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1134,6 +1134,7 @@ void account_page_writeback(struct page *page);
+ int set_page_dirty(struct page *page);
+ int set_page_dirty_lock(struct page *page);
+ int clear_page_dirty_for_io(struct page *page);
++int get_cmdline(struct task_struct *task, char *buffer, int buflen);
  
- struct validate_flash_t {
- 	int		status;		/* Return status */
--	void		*buf;		/* Candiate image buffer */
-+	void		*buf;		/* Candidate image buffer */
- 	uint32_t	buf_size;	/* Image size */
- 	uint32_t	result;		/* Update results token */
- };
-@@ -481,7 +481,7 @@ static int alloc_image_buf(char *buffer, size_t count)
+ /* Is the vma a continuation of the stack vma above it? */
+ static inline int vma_growsdown(struct vm_area_struct *vma, unsigned long addr)
+diff --git a/mm/util.c b/mm/util.c
+index f7bc209..5285ff0 100644
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -410,6 +410,54 @@ unsigned long vm_commit_limit(void)
+ 		* sysctl_overcommit_ratio / 100) + total_swap_pages;
+ }
  
- 	memcpy(&image_header, (void *)buffer, sizeof(struct image_header_t));
- 	image_data.size = be32_to_cpu(image_header.size);
--	pr_debug("FLASH: Candiate image size = %u\n", image_data.size);
-+	pr_debug("FLASH: Candidate image size = %u\n", image_data.size);
++/**
++ * get_cmdline() - copy the cmdline value to a buffer.
++ * @task:     the task whose cmdline value to copy.
++ * @buffer:   the buffer to copy to.
++ * @buflen:   the length of the buffer. Larger cmdline values are truncated
++ *            to this length.
++ * Returns the size of the cmdline field copied. Note that the copy does
++ * not guarantee an ending NULL byte.
++ */
++int get_cmdline(struct task_struct *task, char *buffer, int buflen)
++{
++	int res = 0;
++	unsigned int len;
++	struct mm_struct *mm = get_task_mm(task);
++	if (!mm)
++		goto out;
++	if (!mm->arg_end)
++		goto out_mm;	/* Shh! No looking before we're done */
++
++	len = mm->arg_end - mm->arg_start;
++
++	if (len > buflen)
++		len = buflen;
++
++	res = access_process_vm(task, mm->arg_start, buffer, len, 0);
++
++	/*
++	 * If the nul at the end of args has been overwritten, then
++	 * assume application is using setproctitle(3).
++	 */
++	if (res > 0 && buffer[res-1] != '\0' && len < buflen) {
++		len = strnlen(buffer, res);
++		if (len < res) {
++			res = len;
++		} else {
++			len = mm->env_end - mm->env_start;
++			if (len > buflen - res)
++				len = buflen - res;
++			res += access_process_vm(task, mm->env_start,
++						 buffer+res, len, 0);
++			res = strnlen(buffer, res);
++		}
++	}
++out_mm:
++	mmput(mm);
++out:
++	return res;
++}
  
- 	if (image_data.size > MAX_IMAGE_SIZE) {
- 		pr_warn("FLASH: Too large image\n");
+ /* Tracepoints definitions. */
+ EXPORT_TRACEPOINT_SYMBOL(kmalloc);
 -- 
-1.8.4.2
+1.7.9.5
 
