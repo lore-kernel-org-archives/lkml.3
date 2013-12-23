@@ -1,79 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932416Ab3LWFM5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 00:12:57 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:53000 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932310Ab3LWFMy (ORCPT
+	id S932432Ab3LWFNJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 00:13:09 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:51663 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750730Ab3LWFNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 00:12:54 -0500
-Message-ID: <1387775559.5369.20.camel@marge.simpson.net>
-Subject: Re: [PATCH] rcu: Eliminate softirq processing from rcutree
-From: Mike Galbraith <bitbucket@online.de>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-rt-users@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Mon, 23 Dec 2013 06:12:39 +0100
-In-Reply-To: <1387773533.5369.16.camel@marge.simpson.net>
-References: <20131221193900.GA8427@linutronix.de>
-	 <1387681647.5412.25.camel@marge.simpson.net>
-	 <1387702631.5412.101.camel@marge.simpson.net>
-	 <1387773533.5369.16.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:7MKF4lvGECtkp58u+kTAmPUyLj6JYiFY5+17yunSmCp
- DIMKSrM7i6rSz68r63ZWf380/hwqVSQwoWpHOFrWAQ6lJX+1UB
- niOO41yMl6NbSlDguivm7B89Q4C7Jyr+zrjW45oWshQIxAM4za
- mnH/Xyo97DXEJDHCoqGaA7s8pYhAwUAakXp6nn8zgiKVcgfLQl
- vj+FJWKFzlBPVRoCF5mswOL4qwuE2k9K9yFVKLQNxpRx1uNzNa
- SK/cLY/OICfyZFFoed5S1BYIxE9zxibQmmntIg5R9Rcp/i5R2g
- Pn7EIR760pMn+rnIdpOBASzK95O4L3bqUhByVbCeZNEt7gOl/3
- 5iteijTUtwMhglINScRwACWtkXSS+Qow+0t/rVRWnNhbWRnEPi
- OgrGKtuiFOaQg==
+	Mon, 23 Dec 2013 00:13:06 -0500
+X-AuditID: 9c93017e-b7be0ae000007d1a-77-52b7c660b2d6
+From: Namhyung Kim <namhyung@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCHSET 0/7] perf tools: A couple of TUI improvements (v2)
+References: <1387516278-17024-1-git-send-email-namhyung@kernel.org>
+	<20131220081357.GB12937@gmail.com>
+Date: Mon, 23 Dec 2013 14:13:04 +0900
+In-Reply-To: <20131220081357.GB12937@gmail.com> (Ingo Molnar's message of
+	"Fri, 20 Dec 2013 09:13:57 +0100")
+Message-ID: <87a9fsduan.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-12-23 at 05:38 +0100, Mike Galbraith wrote: 
-> On Sun, 2013-12-22 at 09:57 +0100, Mike Galbraith wrote: 
-> > I'll let the box give
-> > RCU something to do for a couple days.  No news is good news.
-> 
-> Ho ho hum, merry christmas, gift attached.
-> 
-> I'll beat on virgin -rt7, see if it survives, then re-apply RCU patch
-> and retest.  This kernel had nohz_full enabled, along with Sebastian's
-> pending -rt fix for same, so RCU patch was not only not running solo,
-> box was running a known somewhat buggy config as well.  Box was doing
-> endless tbench 64 when it started stalling fwiw.
-> 
-> -Mike
+Hi Ingo,
 
-P.S.
+On Fri, 20 Dec 2013 09:13:57 +0100, Ingo Molnar wrote:
+> * Namhyung Kim <namhyung@kernel.org> wrote:
+> Looks pretty good now!
+>
+> I found four small inconsistencies:
+>
+>  - in 'perf top' the '?' help text states that there's an 'i' key, but
+>    that key does nothing.
 
-virgin -rt7 doing tbench 64 + make -j64
+Yes, I can split the help text for perf top and perf report as some keys
+only work for perf report already.
 
-[   97.907960] perf samples too long (3138 > 2500), lowering kernel.perf_event_max_sample_rate to 50000
-[  103.047921] perf samples too long (5544 > 5000), lowering kernel.perf_event_max_sample_rate to 25000
-[  181.561271] perf samples too long (10318 > 10000), lowering kernel.perf_event_max_sample_rate to 13000
-[  184.243750] INFO: NMI handler (perf_event_nmi_handler) took too long to run: 1.084 msecs
-[  248.914422] perf samples too long (19719 > 19230), lowering kernel.perf_event_max_sample_rate to 7000
-[  382.116674] NOHZ: local_softirq_pending 10
-[  405.201593] perf samples too long (36824 > 35714), lowering kernel.perf_event_max_sample_rate to 4000
-[  444.704185] NOHZ: local_softirq_pending 08
-[  444.704208] NOHZ: local_softirq_pending 08
-[  444.704579] NOHZ: local_softirq_pending 08
-[  444.704678] NOHZ: local_softirq_pending 08
-[  444.705100] NOHZ: local_softirq_pending 08
-[  444.705980] NOHZ: local_softirq_pending 08
-[  444.705994] NOHZ: local_softirq_pending 08
-[  444.708315] NOHZ: local_softirq_pending 08
-[  444.710348] NOHZ: local_softirq_pending 08
-[  474.435582] INFO: NMI handler (perf_event_nmi_handler) took too long to run: 1.096 msecs
-[  475.994055] perf samples too long (63124 > 62500), lowering kernel.perf_event_max_sample_rate to 2000
+>
+>  - filtering support would be useful in the 'log' window as well :-)
 
-Those annoying perf gripes are generic, not -rt.
+It's for the 'log' window.  Did you mean the 'header' window? :)
 
+>
+>  - in both 'perf top' and 'perf report' neither the 'i' nor the 'l'
+>    window shows any help window, so one has to guess that '/' does the
+>    filtering.
+
+Okay, I'll add the help.
+
+>
+>  - the hotkeys in the help window used to be ordered alphabetically - 
+>    they aren't anymore.
+
+Will be fixed with the split.
+
+>
+> While testing 'perf top' I also found three new features which would 
+> be very nice to have, in case you are interested in implementing them:
+
+Hmm.. looks like features for the long-term plan.  Not sure I can work
+on it soon.
+
+>
+>  - it would be nice to have a hotkey to start/stop data collection on
+>    demand, and another hotkey to reset the data. SysProf has this 
+>    feature, and it's a convenient workflow to have a separate 'data 
+>    collection' period (possibly done without any screen refresh, so 
+>    that data collection does not disturb the measured workload), and 
+>    a quiet 'look at all the data that is not being changed' period. 
+>    Especially with fast changing workloads the latter can be useful.
+
+I'm not sure I understood correctly.  So do you want start/stop the
+'record' part or 'report' part with hotkeys?
+
+>
+>  - it would be nice if 'perf report' had a 'view raw trace' window as 
+>    well, with filtering. That would be roughly equivalent to the 'perf
+>    report -D' output [but one line per trace entry, i.e. no hex dump
+>    shown by default], all available within the TUI. With filtering
+>    that would be a pretty good way to look at various details.
+
+Do you want something like 'perf script'? :)
+
+>
+>  - it might also be useful if it was possible to save a perf.data from 
+>    a 'perf top' session - and to start a 'perf top' session from a 
+>    specific perf.data [and with data collection disabled]. I.e. allow 
+>    intermediate modes between 'perf top', 'perf report' and 'perf 
+>    record' profiling workflows, all in a single TUI.
+
+Someday.. :)
+
+
+Thanks,
+Namhyung
