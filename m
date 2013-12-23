@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932646Ab3LWWDg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 17:03:36 -0500
-Received: from zimbra13.linbit.com ([212.69.166.240]:60679 "EHLO
+	id S932630Ab3LWWDf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 17:03:35 -0500
+Received: from zimbra13.linbit.com ([212.69.166.240]:60678 "EHLO
 	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932409Ab3LWV64 (ORCPT
+	with ESMTP id S932410Ab3LWV64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 23 Dec 2013 16:58:56 -0500
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 08/27] drbd: Rename drbdd_init() -> drbd_receiver()
-Date: Mon, 23 Dec 2013 22:50:37 +0100
-Message-Id: <1387835456-29695-9-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 15/27] drbd: Move string function prototypes from linux/drbd.h to drbd_string.h
+Date: Mon, 23 Dec 2013 22:50:44 +0100
+Message-Id: <1387835456-29695-16-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1387835456-29695-1-git-send-email-philipp.reisner@linbit.com>
 References: <1387835456-29695-1-git-send-email-philipp.reisner@linbit.com>
@@ -25,59 +25,69 @@ From: Andreas Gruenbacher <agruen@linbit.com>
 Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 ---
- drivers/block/drbd/drbd_main.c     |    4 ++--
- drivers/block/drbd/drbd_nl.c       |    2 +-
- drivers/block/drbd/drbd_receiver.c |    2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/block/drbd/drbd_int.h     |    1 +
+ drivers/block/drbd/drbd_strings.c |    1 +
+ drivers/block/drbd/drbd_strings.h |    9 +++++++++
+ include/linux/drbd.h              |    6 ------
+ 4 files changed, 11 insertions(+), 6 deletions(-)
+ create mode 100644 drivers/block/drbd/drbd_strings.h
 
-diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index 718c3bd..a2003cd 100644
---- a/drivers/block/drbd/drbd_main.c
-+++ b/drivers/block/drbd/drbd_main.c
-@@ -58,7 +58,7 @@
- #include "drbd_vli.h"
+diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
+index ef4c621..2b0fdfd 100644
+--- a/drivers/block/drbd/drbd_int.h
++++ b/drivers/block/drbd/drbd_int.h
+@@ -45,6 +45,7 @@
+ #include <linux/prefetch.h>
+ #include <linux/drbd_genl_api.h>
+ #include <linux/drbd.h>
++#include "drbd_strings.h"
+ #include "drbd_state.h"
+ #include "drbd_protocol.h"
  
- static DEFINE_MUTEX(drbd_main_mutex);
--int drbdd_init(struct drbd_thread *);
-+int drbd_receiver(struct drbd_thread *);
- int drbd_worker(struct drbd_thread *);
- int drbd_asender(struct drbd_thread *);
+diff --git a/drivers/block/drbd/drbd_strings.c b/drivers/block/drbd/drbd_strings.c
+index 58e08ff..80b0f63 100644
+--- a/drivers/block/drbd/drbd_strings.c
++++ b/drivers/block/drbd/drbd_strings.c
+@@ -24,6 +24,7 @@
+ */
  
-@@ -2616,7 +2616,7 @@ struct drbd_connection *conn_create(const char *name, struct res_opts *res_opts)
- 	mutex_init(&connection->data.mutex);
- 	mutex_init(&connection->meta.mutex);
+ #include <linux/drbd.h>
++#include "drbd_strings.h"
  
--	drbd_thread_init(connection, &connection->receiver, drbdd_init, "receiver");
-+	drbd_thread_init(connection, &connection->receiver, drbd_receiver, "receiver");
- 	drbd_thread_init(connection, &connection->worker, drbd_worker, "worker");
- 	drbd_thread_init(connection, &connection->asender, drbd_asender, "asender");
+ static const char *drbd_conn_s_names[] = {
+ 	[C_STANDALONE]       = "StandAlone",
+diff --git a/drivers/block/drbd/drbd_strings.h b/drivers/block/drbd/drbd_strings.h
+new file mode 100644
+index 0000000..f9923cc
+--- /dev/null
++++ b/drivers/block/drbd/drbd_strings.h
+@@ -0,0 +1,9 @@
++#ifndef __DRBD_STRINGS_H
++#define __DRBD_STRINGS_H
++
++extern const char *drbd_conn_str(enum drbd_conns);
++extern const char *drbd_role_str(enum drbd_role);
++extern const char *drbd_disk_str(enum drbd_disk_state);
++extern const char *drbd_set_st_err_str(enum drbd_state_rv);
++
++#endif  /* __DRBD_STRINGS_H */
+diff --git a/include/linux/drbd.h b/include/linux/drbd.h
+index 6f60136..3dbe9bd 100644
+--- a/include/linux/drbd.h
++++ b/include/linux/drbd.h
+@@ -327,12 +327,6 @@ enum drbd_state_rv {
+ 	SS_AFTER_LAST_ERROR = -22,    /* Keep this at bottom */
+ };
  
-diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index a84f1e2..f7d62ff 100644
---- a/drivers/block/drbd/drbd_nl.c
-+++ b/drivers/block/drbd/drbd_nl.c
-@@ -2332,7 +2332,7 @@ static enum drbd_state_rv conn_try_disconnect(struct drbd_connection *connection
- 		/* Race breaker.  This additional state change request may be
- 		 * necessary, if this was a forced disconnect during a receiver
- 		 * restart.  We may have "killed" the receiver thread just
--		 * after drbdd_init() returned.  Typically, we should be
-+		 * after drbd_receiver() returned.  Typically, we should be
- 		 * C_STANDALONE already, now, and this becomes a no-op.
- 		 */
- 		rv2 = conn_request_state(connection, NS(conn, C_STANDALONE),
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 217ed11..9349113 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -4843,7 +4843,7 @@ static int drbd_do_auth(struct drbd_connection *connection)
- }
- #endif
+-/* from drbd_strings.c */
+-extern const char *drbd_conn_str(enum drbd_conns);
+-extern const char *drbd_role_str(enum drbd_role);
+-extern const char *drbd_disk_str(enum drbd_disk_state);
+-extern const char *drbd_set_st_err_str(enum drbd_state_rv);
+-
+ #define SHARED_SECRET_MAX 64
  
--int drbdd_init(struct drbd_thread *thi)
-+int drbd_receiver(struct drbd_thread *thi)
- {
- 	struct drbd_connection *connection = thi->connection;
- 	int h;
+ #define MDF_CONSISTENT		(1 << 0)
 -- 
 1.7.9.5
 
