@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757363Ab3LWNK5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 08:10:57 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:36029 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757211Ab3LWNKz (ORCPT
+	id S1757339Ab3LWNTp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 08:19:45 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:39132 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756990Ab3LWNTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 08:10:55 -0500
-Date: Mon, 23 Dec 2013 14:10:52 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Joseph Schuchart <joseph.schuchart@tu-dresden.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        thomas.ilsche@tu-dresden.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Perf: Correct Assumptions about Sample Timestamps in
- Passes
-Message-ID: <20131223131051.GB585@localhost.localdomain>
-References: <528484CB.7@tu-dresden.de>
- <20131114083930.GC16543@gmail.com>
- <528490DE.4080204@tu-dresden.de>
- <20131114100552.GA5064@gmail.com>
- <528E1EE6.9040407@tu-dresden.de>
- <20131127135137.GA24403@gmail.com>
- <52B437AA.4090102@tu-dresden.de>
- <52B479E1.7020204@gmail.com>
+	Mon, 23 Dec 2013 08:19:43 -0500
+Date: Mon, 23 Dec 2013 08:19:32 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: David Miller <davem@davemloft.net>
+Cc: linux-sctp@vger.kernel.org, vyasevich@gmail.com,
+        gregkh@linuxfoundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/2] sctp: Consolidate and ratelimit deprecation
+ warnings
+Message-ID: <20131223131931.GA20864@hmsreliant.think-freely.org>
+References: <1387205049-22752-1-git-send-email-nhorman@tuxdriver.com>
+ <1387297199-14363-1-git-send-email-nhorman@tuxdriver.com>
+ <20131222.175659.1156282573702420627.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52B479E1.7020204@gmail.com>
+In-Reply-To: <20131222.175659.1156282573702420627.davem@davemloft.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 20, 2013 at 10:09:53AM -0700, David Ahern wrote:
-> On 12/20/13, 5:27 AM, Joseph Schuchart wrote:
-> >I know this comes late, but: As far as I can see, your change does not
-> >preserve the logic of the code I suggested. The idea was to first gather
-> >all the maximum timestamps of all cpus (that is, the last timestamp seen
-> >on each cpu) and then determine the minimum of these maxima. These are
-> >two distinct steps that I think cannot be combined in one update. Your
+On Sun, Dec 22, 2013 at 05:56:59PM -0500, David Miller wrote:
+> From: Neil Horman <nhorman@tuxdriver.com>
+> Date: Tue, 17 Dec 2013 11:19:57 -0500
 > 
->  A number of people have reported similar problems -- timestamps
-> below last flush time. This approach would solve that problem for
-> data processed from files, so it would be a good improvement.
+> > The SCTP protocol has several deprecation warnings in its setsockopt path that
+> > can be triggered by unprivlidged users.  Since these are not ratelimited, we can
+> > spam the logs quite easily here.  Since these are all deprecation warnings, and
+> > that type of warning isn't uncommon in the rest of the kernel, lets make a
+> > common pr_warn_deprecated macro to produce somewhat generalized ratelimited
+> > deprecation warnings easily
+> > 
+> > Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+> 
+> Neil, I really wish you would CC: netdev on all of the patches in the
+> series.  Otherwise only some of them end up in patchwork, and this makes
+> a lot more work for me if I want to actually apply this, which I do.
+> 
+> Please resubmit this properly, thanks.
+> 
 
-Could it be near what you're looking for?
+Will do, thanks.
+Neil
 
-https://lkml.org/lkml/2012/2/18/53
