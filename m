@@ -1,80 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757673Ab3LWT2a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 14:28:30 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:34772 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755395Ab3LWT23 (ORCPT
+	id S1757831Ab3LWTbG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 14:31:06 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:22877 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757269Ab3LWTbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 14:28:29 -0500
+	Mon, 23 Dec 2013 14:31:04 -0500
+Message-ID: <52B88F6E.8070909@oracle.com>
+Date: Mon, 23 Dec 2013 14:30:54 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <1387815830-8794-3-git-send-email-pawel.moll@arm.com>
-References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com>
-	<1387815830-8794-3-git-send-email-pawel.moll@arm.com>
-Date: Mon, 23 Dec 2013 11:28:28 -0800
-X-Google-Sender-Auth: LQLXFJMwp4WBzxJnsOnex4b8TQg
-Message-ID: <CANcMJZALQ0khcqkdQA5Tnr6_9kfWK=UUmrUB4mCv2MEkmLv0sg@mail.gmail.com>
-Subject: Re: [RFC 02/18] power/reset: vexpress: Use sched_clock as the time source
-From: John Stultz <john.stultz@linaro.org>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jon Medhurst <tixy@linaro.org>, arm@kernel.org,
-        Olof Johansson <olof@lixom.net>, Anton Vorontsov <anton@enomsg.org>,
-        David Woodhouse <dwmw2@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: mm: kernel BUG at mm/huge_memory.c:1440!
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 23, 2013 at 8:23 AM, Pawel Moll <pawel.moll@arm.com> wrote:
-> At this stage of system shutdown procedure the jiffies may
-> not be updated anymore, so have to base on raw sched_clock
-> values.
->
-> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
-> Cc: Anton Vorontsov <anton@enomsg.org>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> ---
->  drivers/power/reset/vexpress-poweroff.c | 7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/power/reset/vexpress-poweroff.c b/drivers/power/reset/vexpress-poweroff.c
-> index 476aa49..d752233 100644
-> --- a/drivers/power/reset/vexpress-poweroff.c
-> +++ b/drivers/power/reset/vexpress-poweroff.c
-> @@ -15,6 +15,7 @@
->  #include <linux/of.h>
->  #include <linux/of_device.h>
->  #include <linux/platform_device.h>
-> +#include <linux/sched.h>
->  #include <linux/stat.h>
->  #include <linux/vexpress.h>
->
-> @@ -27,12 +28,12 @@ static void vexpress_reset_do(struct device *dev, const char *what)
->                         vexpress_config_func_get_by_dev(dev);
->
->         if (func) {
-> -               unsigned long timeout;
-> +               unsigned long long timeout_ns;
->
->                 err = vexpress_config_write(func, 0, 0);
->
-> -               timeout = jiffies + HZ;
-> -               while (time_before(jiffies, timeout))
-> +               timeout_ns = sched_clock() + 50000000;
-> +               while (!err && time_before64(sched_clock(), timeout_ns))
->                         cpu_relax();
->         }
+Hi all,
 
-So this may not be a problem in this particular case, but sched_clock
-could be backed by jiffies on some hardware, causing the same problem
-to appear.
+While fuzzing with trinity inside a KVM tools guest running latest -next kernel, I've stumbled on 
+the following spew.
 
-Might udelay/mdelay be a better fit for this sort of case (since
-udelay may be counter backed, but may also be loop backed on hardware
-without continuous counters)?
+	page = pmd_page(orig_pmd);
+	page_remove_rmap(page);
+	VM_BUG_ON(page_mapcount(page) < 0);
+	add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
+	VM_BUG_ON(!PageHead(page));		<=== HERE
+	atomic_long_dec(&tlb->mm->nr_ptes);
+	spin_unlock(ptl);
+	tlb_remove_page(tlb, page);
 
-thanks
--john
+[  265.474585] kernel BUG at mm/huge_memory.c:1440!
+[  265.475129] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[  265.476684] Dumping ftrace buffer:
+[  265.477144]    (ftrace buffer empty)
+[  265.478398] Modules linked in:
+[  265.478807] CPU: 8 PID: 11344 Comm: trinity-c206 Tainted: G        W    3.13.0-rc5-ne
+xt-20131223-sasha-00015-gec22156-dirty #8
+[  265.480172] task: ffff8801cb573000 ti: ffff8801cbd3a000 task.ti: ffff8801cbd3a000
+[  265.480172] RIP: 0010:[<ffffffff812c7f70>]  [<ffffffff812c7f70>] zap_huge_pmd+0x170/0
+x1f0
+[  265.480172] RSP: 0000:ffff8801cbd3bc78  EFLAGS: 00010246
+[  265.480172] RAX: 015fffff80090018 RBX: ffff8801cbd3bde8 RCX: ffffffffffffff9c
+[  265.480172] RDX: ffffffffffffffff RSI: 0000000000000008 RDI: ffff8800bffd2000
+[  265.480172] RBP: ffff8801cbd3bcb8 R08: 0000000000000000 R09: 0000000000000000
+[  265.480172] R10: 0000000000000001 R11: 0000000000000000 R12: ffffea0002856740
+[  265.480172] R13: ffffea0002d50000 R14: 00007ff915000000 R15: 00007ff930e48fff
+[  265.480172] FS:  00007ff934899700(0000) GS:ffff88014d400000(0000) knlGS:0000000000000
+000
+[  265.480172] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  265.480172] CR2: 00007ff93428a000 CR3: 000000010babe000 CR4: 00000000000006e0
+[  265.480172] Stack:
+[  265.480172]  00000000000004dd ffff8801ccbfbb60 ffff8801cbd3bcb8 ffff8801cbb15540
+[  265.480172]  00007ff915000000 00007ff930e49000 ffff8801cbd3bde8 00007ff930e48fff
+[  265.480172]  ffff8801cbd3bd48 ffffffff812885b6 ffff88005f5d20c0 00007ff915200000
+[  265.480172] Call Trace:
+[  265.480172]  [<ffffffff812885b6>] unmap_page_range+0x2c6/0x410
+[  265.480172]  [<ffffffff81288801>] unmap_single_vma+0x101/0x120
+[  265.480172]  [<ffffffff81288881>] unmap_vmas+0x61/0xa0
+[  265.480172]  [<ffffffff8128f730>] exit_mmap+0xd0/0x170
+[  265.480172]  [<ffffffff81138860>] mmput+0x70/0xe0
+[  265.480172]  [<ffffffff8113c89d>] exit_mm+0x18d/0x1a0
+[  265.480172]  [<ffffffff811ea355>] ? acct_collect+0x175/0x1b0
+[  265.480172]  [<ffffffff8113ed0f>] do_exit+0x26f/0x520
+[  265.480172]  [<ffffffff8113f069>] do_group_exit+0xa9/0xe0
+[  265.480172]  [<ffffffff8113f0b7>] SyS_exit_group+0x17/0x20
+[  265.480172]  [<ffffffff845f10d0>] tracesys+0xdd/0xe2
+[  265.480172] Code: 0f 0b 66 0f 1f 84 00 00 00 00 00 eb fe 66 0f 1f 44 00 00 48 8b 03 f0 48 81 80 
+50 03 00 00 00 fe ff ff 49 8b 45 00 f6 c4 40 75 10 <0f> 0b 66 0f 1f 44 00 00 eb fe 66 0f 1f 44 00 00 
+48 8b 03 f0 48
+[  265.480172] RIP  [<ffffffff812c7f70>] zap_huge_pmd+0x170/0x1f0
+[  265.480172]  RSP <ffff8801cbd3bc78>
+
+
+Thanks,
+Sasha
