@@ -1,119 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711Ab3LXPVS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 10:21:18 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:43101 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622Ab3LXPVR (ORCPT
+	id S1752608Ab3LXP1z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 10:27:55 -0500
+Received: from smtprelay0216.hostedemail.com ([216.40.44.216]:60412 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752308Ab3LXP1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 10:21:17 -0500
-Message-ID: <52B9A65D.8060300@oracle.com>
-Date: Tue, 24 Dec 2013 10:21:01 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: "Kirill A. Shutemov" <kirill@shutemov.name>, Dave Jones <davej@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/thp: fix vmas tear down race with thp splitting
-References: <1387850059-18525-1-git-send-email-liwanp@linux.vnet.ibm.com>
-In-Reply-To: <1387850059-18525-1-git-send-email-liwanp@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 24 Dec 2013 10:27:54 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:141:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2110:2194:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3872:3873:4321:4605:5007:6119:7652:7903:8527:8603:8957:10004:10400:10848:11026:11232:11658:11914:12517:12519:12555:12740:13069:13161:13229:13255:13311:13357:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: crack23_7edd6c8640c09
+X-Filterd-Recvd-Size: 1863
+Message-ID: <1387898870.2259.48.camel@joe-AO722>
+Subject: Re: [PATCH 3/3] softirq: Use const char * const for
+ softirq_to_name, whitespace neatening
+From: Joe Perches <joe@perches.com>
+To: Wang YanQing <udknight@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 24 Dec 2013 07:27:50 -0800
+In-Reply-To: <20131224151904.GA3398@udknight>
+References: <cover.1384656563.git.joe@perches.com>
+	 <ec5c256bd326246f4b12dde34455c1df9b71004d.1384656563.git.joe@perches.com>
+	 <20131224151904.GA3398@udknight>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/2013 08:54 PM, Wanpeng Li wrote:
-> Sasha reports unmap_page_range tears down pmd range which is race with thp
-> splitting during page reclaim. Transparent huge page will be splitting
-> during page reclaim. However, split pmd lock which held by __split_trans_huge_lock
-> can't prevent __split_huge_page_refcount running in parallel. This patch fix
-> it by hold compound lock to check if __split_huge_page_refcount is running
-> underneath, in that case zap huge pmd range should be fallback.
->
-> [  265.474585] kernel BUG at mm/huge_memory.c:1440!
-> [  265.475129] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [  265.476684] Dumping ftrace buffer:
-> [  265.477144]    (ftrace buffer empty)
-> [  265.478398] Modules linked in:
-> [  265.478807] CPU: 8 PID: 11344 Comm: trinity-c206 Tainted: G        W    3.13.0-rc5-next-20131223-sasha-00015-gec22156-dirty #8
-> [  265.480172] task: ffff8801cb573000 ti: ffff8801cbd3a000 task.ti: ffff8801cbd3a000
-> [  265.480172] RIP: 0010:[<ffffffff812c7f70>]  [<ffffffff812c7f70>] zap_huge_pmd+0x170/0x1f0
-> [  265.480172] RSP: 0000:ffff8801cbd3bc78  EFLAGS: 00010246
-> [  265.480172] RAX: 015fffff80090018 RBX: ffff8801cbd3bde8 RCX: ffffffffffffff9c
-> [  265.480172] RDX: ffffffffffffffff RSI: 0000000000000008 RDI: ffff8800bffd2000
-> [  265.480172] RBP: ffff8801cbd3bcb8 R08: 0000000000000000 R09: 0000000000000000
-> [  265.480172] R10: 0000000000000001 R11: 0000000000000000 R12: ffffea0002856740
-> [  265.480172] R13: ffffea0002d50000 R14: 00007ff915000000 R15: 00007ff930e48fff
-> [  265.480172] FS:  00007ff934899700(0000) GS:ffff88014d400000(0000) knlGS:0000000000000000
-> [  265.480172] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  265.480172] CR2: 00007ff93428a000 CR3: 000000010babe000 CR4: 00000000000006e0
-> [  265.480172] Stack:
-> [  265.480172]  00000000000004dd ffff8801ccbfbb60 ffff8801cbd3bcb8 ffff8801cbb15540
-> [  265.480172]  00007ff915000000 00007ff930e49000 ffff8801cbd3bde8 00007ff930e48fff
-> [  265.480172]  ffff8801cbd3bd48 ffffffff812885b6 ffff88005f5d20c0 00007ff915200000
-> [  265.480172] Call Trace:
-> [  265.480172]  [<ffffffff812885b6>] unmap_page_range+0x2c6/0x410
-> [  265.480172]  [<ffffffff81288801>] unmap_single_vma+0x101/0x120
-> [  265.480172]  [<ffffffff81288881>] unmap_vmas+0x61/0xa0
-> [  265.480172]  [<ffffffff8128f730>] exit_mmap+0xd0/0x170
-> [  265.480172]  [<ffffffff81138860>] mmput+0x70/0xe0
-> [  265.480172]  [<ffffffff8113c89d>] exit_mm+0x18d/0x1a0
-> [  265.480172]  [<ffffffff811ea355>] ? acct_collect+0x175/0x1b0
-> [  265.480172]  [<ffffffff8113ed0f>] do_exit+0x26f/0x520
-> [  265.480172]  [<ffffffff8113f069>] do_group_exit+0xa9/0xe0
-> [  265.480172]  [<ffffffff8113f0b7>] SyS_exit_group+0x17/0x20
-> [  265.480172]  [<ffffffff845f10d0>] tracesys+0xdd/0xe2
-> [  265.480172] Code: 0f 0b 66 0f 1f 84 00 00 00 00 00 eb fe 66 0f 1f
-> 44 00 00 48 8b 03 f0 48 81 80 50 03 00 00 00 fe ff ff 49 8b 45 00 f6
-> c4 40 75 10 <0f> 0b 66 0f 1f 44 00 00 eb fe 66 0f 1f 44 00 00 48 8b 03
-> f0 48
-> [  265.480172] RIP  [<ffffffff812c7f70>] zap_huge_pmd+0x170/0x1f0
-> [  265.480172]  RSP <ffff8801cbd3bc78>
->
-> Reported-by: Sasha Levin <sasha.levin@oracle.com>
-> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> ---
+On Tue, 2013-12-24 at 23:19 +0800, Wang YanQing wrote:
+> On Sun, Nov 17, 2013 at 01:55:12AM -0800, Joe Perches wrote:
+> > Reduce data size a little.
+> > Reduce checkpatch noise.
+> > 
+> > $ size kernel/softirq.o*
+> >    text	   data	    bss	    dec	    hex	filename
+> >   11554	   6013	   4008	  21575	   5447	kernel/softirq.o.new
+> >   11474	   6093	   4008	  21575	   5447	kernel/softirq.o.old
+> 
+> Hi, could you tell me why this patch could reduce data size?
 
-Ran a round of testing overnight. While the BUG seems to be gone I'm now getting:
+It moves the softirq_to_name array of 10 char *
+from data (non-const) to text (const).
 
-[  879.815434] BUG: Bad page state in process trinity-c115  pfn:29a00
-[  879.816430] page:ffffea0000a68000 count:0 mapcount:0 mapping:          (null) index:
-0x7f2f20000
-[  879.817654] page flags: 0x5fffff81084008(uptodate|head|swapbacked|compound_lock)
-[  879.818848] Modules linked in:
-[  879.819340] CPU: 1 PID: 18824 Comm: trinity-c115 Tainted: G        W    3.13.0-rc5-n
-ext-20131223-sasha-00016-g3010ae9-dirty #13
-[  879.821142]  ffffea0000a68000 ffff880188345a58 ffffffff845e014c 0000000000000009
-[  879.822492]  ffffea0000a68000 ffff880188345a78 ffffffff8125c301 ffff880188345a78
-[  879.823858]  0000000000000200 ffff880188345ac8 ffffffff8125cd83 ffff880100000000
-[  879.825128] Call Trace:
-[  879.825568]  [<ffffffff845e014c>] dump_stack+0x52/0x7f
-[  879.826425]  [<ffffffff8125c301>] bad_page+0xf1/0x120
-[  879.827296]  [<ffffffff8125cd83>] free_pages_prepare+0x133/0x1f0
-[  879.828276]  [<ffffffff8125f254>] __free_pages_ok+0x24/0x150
-[  879.829267]  [<ffffffff8125f39b>] free_compound_page+0x1b/0x20
-[  879.830547]  [<ffffffff81267ebc>] __put_compound_page+0x1c/0x30
-[  879.831360]  [<ffffffff81267f60>] put_compound_page+0x60/0x2e0
-[  879.832284]  [<ffffffff8126824b>] release_pages+0x6b/0x230
-[  879.833230]  [<ffffffff8129ef46>] free_pages_and_swap_cache+0xa6/0xd0
-[  879.834297]  [<ffffffff81285dff>] tlb_flush_mmu+0x6f/0x90
-[  879.835146]  [<ffffffff812c8078>] zap_huge_pmd+0x308/0x410
-[  879.836097]  [<ffffffff81288526>] unmap_page_range+0x2c6/0x410
-[  879.837034]  [<ffffffff81288771>] unmap_single_vma+0x101/0x120
-[  879.838027]  [<ffffffff812887f1>] unmap_vmas+0x61/0xa0
-[  879.838892]  [<ffffffff8128f6a0>] exit_mmap+0xd0/0x170
-[  879.839794]  [<ffffffff81138860>] mmput+0x70/0xe0
-[  879.841079]  [<ffffffff8113c89d>] exit_mm+0x18d/0x1a0
-[  879.841565]  [<ffffffff811ea355>] ? acct_collect+0x175/0x1b0
-[  879.842411]  [<ffffffff8113ed0f>] do_exit+0x26f/0x520
-[  879.843169]  [<ffffffff8113f069>] do_group_exit+0xa9/0xe0
-[  879.844033]  [<ffffffff8113f0b7>] SyS_exit_group+0x17/0x20
-[  879.844967]  [<ffffffff845f1290>] tracesys+0xdd/0xe2
+-char *softirq_to_name[NR_SOFTIRQS] = {
++const char * const softirq_to_name[NR_SOFTIRQS] = {
+        "HI", "TIMER", "NET_TX", "NET_RX", "BLOCK", "BLOCK_IOPOLL",
+        "TASKLET", "SCHED", "HRTIMER", "RCU"
+ };
 
+Use objdump or "make kernel/softirq.lst" and inspect
+the object code produced to see for yourself.
 
-Thanks,
-Sasha
+cheers, Joe
+
