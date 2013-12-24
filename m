@@ -1,45 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757909Ab3LXAVx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 19:21:53 -0500
-Received: from smtprelay0109.hostedemail.com ([216.40.44.109]:43615 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754099Ab3LXAVw (ORCPT
+	id S1758270Ab3LXAV5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 19:21:57 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:55513 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757569Ab3LXAVy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 19:21:52 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1566:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3866:3871:4321:5007:6119:6120:7652:10004:10400:10848:11026:11232:11658:11914:12043:12438:12517:12519:12740:13069:13311:13357:13894,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: dolls92_4a1a17ae2a240
-X-Filterd-Recvd-Size: 1240
-Message-ID: <1387844508.22671.73.camel@joe-AO722>
-Subject: Re: [RFC  v3] Add ff-memless-next
-From: Joe Perches <joe@perches.com>
-To: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@prifuk.cz>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        elias.vds@gmail.com
-Date: Mon, 23 Dec 2013 16:21:48 -0800
-In-Reply-To: <1494187.y8mYFDm1lA@geidi-prime>
-References: <1494187.y8mYFDm1lA@geidi-prime>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Mon, 23 Dec 2013 19:21:54 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: viresh kumar <viresh.kumar@linaro.org>
+Cc: =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH Resend] cpufreq: remove sysfs files for CPU which failed to come back after resume
+Date: Tue, 24 Dec 2013 01:35:20 +0100
+Message-ID: <1614824.4yERnS53EQ@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <52B85AA4.6070609@linaro.org>
+References: <610b63b7594e5cd364c498f60e69b9e174db9257.1387554926.git.viresh.kumar@linaro.org> <87pponx07s.fsf@nemi.mork.no> <52B85AA4.6070609@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-12-23 at 23:46 +0100, Michal Malý wrote:
-> One case where uncombinable effects were mishandled was corrected. Rest of
-> the changes are just coding style fixes.
+On Monday, December 23, 2013 09:15:40 PM viresh kumar wrote:
+> On Monday 23 December 2013 05:12 PM, BjÃ¸rn Mork wrote:
+> > That would be great.  This could be just me.  I am quite good at
+> > breaking stuff.
+> 
+> No its not you. While we tried to make sure everything is preserved,
+> few special things still stayed out :)
+> 
+> And they are solved with this patch, log should be good enough to give
+> proper reasoning:
+> 
+> From: Viresh Kumar <viresh.kumar@linaro.org>
+> Date: Mon, 23 Dec 2013 20:51:54 +0530
+> Subject: [PATCH] cpufreq: preserve user_policy across suspend/resume
+> 
+> In __cpufreq_add_dev() we are reinitializing user_policy with default values and
+> hence would loose values of user_policy.{min|max|policy|governor} fields.
+> 
+> Preserve them by not overriding these for suspend/resume.
 
-trivia:
+OK
 
-> diff --git a/drivers/input/ff-memless-next.c b/drivers/input/ff-memless-next.c
-[]
-> +static __always_inline s32 mlnx_calculate_x_force(const s32 level,
-> +						  const u16 direction)
+Can you please combine this with the patch you sent previously (if that one
+is still necessary) and resubmit with a new subject?
 
-__always_inline is almost never warranted.
-gcc generally does the right thing.
+Rafael
 
 
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/cpufreq/cpufreq.c | 14 +++++++++-----
+>  1 file changed, 9 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 16d7b4a..c5c3dac 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -839,9 +839,6 @@ static void cpufreq_init_policy(struct cpufreq_policy *policy)
+> 
+>  	/* set default policy */
+>  	ret = cpufreq_set_policy(policy, &new_policy);
+> -	policy->user_policy.policy = policy->policy;
+> -	policy->user_policy.governor = policy->governor;
+> -
+>  	if (ret) {
+>  		pr_debug("setting policy failed\n");
+>  		if (cpufreq_driver->exit)
+> @@ -1069,8 +1066,10 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
+>  	 */
+>  	cpumask_and(policy->cpus, policy->cpus, cpu_online_mask);
+> 
+> -	policy->user_policy.min = policy->min;
+> -	policy->user_policy.max = policy->max;
+> +	if (!frozen) {
+> +		policy->user_policy.min = policy->min;
+> +		policy->user_policy.max = policy->max;
+> +	}
+> 
+>  	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
+>  				     CPUFREQ_START, policy);
+> @@ -1101,6 +1100,11 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
+> 
+>  	cpufreq_init_policy(policy);
+> 
+> +	if (!frozen) {
+> +		policy->user_policy.policy = policy->policy;
+> +		policy->user_policy.governor = policy->governor;
+> +	}
+> +
+>  	kobject_uevent(&policy->kobj, KOBJ_ADD);
+>  	up_read(&cpufreq_rwsem);
+> 
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
