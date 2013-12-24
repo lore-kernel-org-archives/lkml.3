@@ -1,137 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758386Ab3LXElH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 23:41:07 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:38021 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752976Ab3LXElF (ORCPT
+	id S1758231Ab3LXEyX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 23:54:23 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:50024 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752976Ab3LXEyV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 23:41:05 -0500
+	Mon, 23 Dec 2013 23:54:21 -0500
+X-AuditID: 85900ec0-d3b2cb9000001514-cd-52b9137958f3
+Message-ID: <52B91374.9000307@hitachi.com>
+Date: Tue, 24 Dec 2013 13:54:12 +0900
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120604 Thunderbird/13.0
 MIME-Version: 1.0
-In-Reply-To: <52B856D3.4030802@redhat.com>
-References: <1385990638-19548-1-git-send-email-prarit@redhat.com>
-	<CANVTcTZ-ZkTvR0+=eFyNQ7E8R2UYo1qdA-RQ+9nzK2w=qCPkPQ@mail.gmail.com>
-	<52B856D3.4030802@redhat.com>
-Date: Tue, 24 Dec 2013 12:41:02 +0800
-Message-ID: <CANVTcTb8SJKriUeRb9pxNiqAkwxO4p0N1-M3krHGeLduHsqrEQ@mail.gmail.com>
-Subject: Re: [PATCH] x86, Fix do_IRQ interrupt warning for cpu hotplug
- retriggered irqs
-From: rui wang <ruiv.wang@gmail.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Michel Lespinasse <walken@google.com>,
-        Andi Kleen <ak@linux.intel.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        Yang Zhang <yang.z.zhang@intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>, janet.morgan@intel.com,
-        tony.luck@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kay Sievers <kay@vrfy.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Tejun Heo <tj@kernel.org>,
+        yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Joe Perches <joe@perches.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
+Subject: Re: Re: Re: [PATCH 0/2] [BUGFIX] printk: Fix message continuation
+ breakage involved with structured printk
+References: <20131220094134.24233.2969.stgit@yunodevel> <CAPXgP11H7EB5Sfezf_7NkKzXT4n4EnPPyE2wWV9YQmR=3LsbAw@mail.gmail.com> <52B8F678.2090604@hitachi.com> <CAPXgP11FbLbWs3GoHpYngAGJ+whe8PZ=5dXqR8ufdMkLT5AX0Q@mail.gmail.com>
+In-Reply-To: <CAPXgP11FbLbWs3GoHpYngAGJ+whe8PZ=5dXqR8ufdMkLT5AX0Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/13, Prarit Bhargava <prarit@redhat.com> wrote:
->
->
-> On 12/23/2013 04:41 AM, rui wang wrote:
->> On 12/2/13, Prarit Bhargava <prarit@redhat.com> wrote:
->>> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64831
+(2013/12/24 12:00), Kay Sievers wrote:
+> On Tue, Dec 24, 2013 at 3:50 AM, Yoshihiro YUNOMAE
+> <yoshihiro.yunomae.ez@hitachi.com> wrote:
+>> (2013/12/20 20:29), Kay Sievers wrote:
 >>>
->>> When downing a cpu it is possible that there are unhandled irqs left in
->>> the APIC IRR register.  fixup_irqs() goes through the IRR and retriggers
->>> the IRQs left in the APIC IRR.  After this, the vector for the irq is
->>> set
->>> to -1.  There is a possibility here, however, that the CPU does handle
->>> an
->>> irq in the IRR and then calls the vector.
+>>> On Fri, Dec 20, 2013 at 10:41 AM, Yoshihiro YUNOMAE
+>>> <yoshihiro.yunomae.ez@hitachi.com> wrote:
 >>>
+>>>> This patch set fixes message continuation breakage involved with
+>>>> structured
+>>>> printk. A SCSI driver may output two continuation error messages like
+>>>>       scmd_printk("foo");
+>>>>       printf("bar\n");
+>>>
+>>>
+>>> Which is the absolutely wrong thing to do. Structured logging and racy
+>>> printk continuation must never be mixed. Userspace needs to be sure
+>>> that dictionary entries are not subject to racy continuation hackery,
+>>> and that these mwssages atomic, whole and intact.
 >>
->> The patch does not seem to root-cause the problem. It seems to hide
->> the real problem.
 >>
->> It is not possible that a device-triggered irq can arrive to this cpu
->> again after fixup_irqs() fills its vector_irq[vector] to -1, because
->> we've done the following:
+>> I see.
+>> As you say, user tools need to support messages output in multiple lines
+>> for SMP environments even if this patch set is introduced.
+>
+> They cannot really, they can try to re-construct, but Information and
+> context is sometimes lost with  the use of continuation lines.
+> Structured logging need to be reliable and trustable, and it it is not
+> "best effort", hence it cannot use continuation lines.
+>
+> Continuation lines are a nice debugging tool for humans only.
+> Structured logging carries the human readable string but also
+> machine-readable context and that alwasy needs to be safely
+> machine-readable and recognizable.
+
+I understand. I think if we make machine(user tools) handle important
+messages, those messages need to be output in single line even if those
+are not structured printk.
+
+>>> Please do not mix the both and do not apply these patches.
 >>
->> 1. We disabled interrupt on this cpu in stop_machine().
->> 2. We called irq_set_affinity() to exclude this cpu as a target for the
->> irq.
->> 3. We checked APIC_IRR and re-triggered any pending irqs to other cpus.
+>> OK, I'll make important messages with KERN_CONT or no-prefix printk()
+>> output those in single line.
 >
-> ... and we set the IRQ handler to -1 for the down'd cpu.
+> Yes, it should use the plain printk versions and not the one which add
+> structured data.
 >
-> Rui, I think you're right up to here but I think this has nothing to do with
-> IPI
-> or locking.
->
-> I assumed that the issue I was trying to fix was long standing and
-> well-known
-> within the kernel given some of the comments I had read here-and-there
-> about
-> people seeing the do_IRQ errors on LKML.  There have long been reports of
-> the
-> do_IRQ warning output during cpu down.
->
-> Here's what the issue is after step 3 above...
->
-> 4.  The APIC_IRR is still *set* in the down'd cpu with IRQs disabled.
-> 5.  We continue executing the stop_machine "down" portion of the code, then
-> continue executing in normal context the "die" code (ie, __cpu_die()).
->
-> IRQ disable only pertains stop_machine down.  So after we leave that
-> context,
-> IRR will still execute.  While the kernel is spinning in cpu_die(), the
-> down'd
-> cpu attempts to execute handler for IRQ in IRR ... and can't find one
-> because
-> we've set it to -1.  So we see the warning.
->
-> A few additional debug points:
->
-> 1.  I put a printk in fixup_irq when we call the irq_retrigger on another
-> cpu
-> that dumps the the down'd CPU and IRQ # in fixup_irqs().  I see that printk
-> *EVERYTIME* I see the do_IRQ warning.
->
-> 2.  The do_IRQ warning *always* appears before I see the offline message
-> ...
->
-> [  148.656016] Broke affinity for irq 634
-> [  148.660493] Broke affinity for irq 698
-> [  148.665739] kvm: disabling virtualization on CPU58
-> [  148.666732] PRARIT: 58.208 IRR entry ... irq_retrigger call.
->
-> at this point we've left the stop_machine() code and we're now continuing
-> to
-> execute ... then we hit the cpu_die() ... which spins.
->
-> [  148.671106] do_IRQ: 58.208 No irq handler for vector (irq -1)
-> [  148.677544] smpboot: CPU 58 is now offline
->
-> I think I have root caused this to the IRR being set in the down'd cpu.  It
-> is
-> admittedly a rare occurrence in the kernel.  I usually have to run about
-> 1000 up
-> and down's before hitting it, however, on my current test system it seems to
-> hit
-> much more frequently, almost 1 in 64 times.
->
+> If structured logging is really wanted for more complex continuation
+> lines, it might be the simplest to buffer the line locally, instead of
+> the single printk-owned buffer, before the line is emitted to printk.
 
-If that's the case, then it means stop_machine() doesn't manage to
-clear the IRR and ISR bits. But why not? Since this cpu is down it's
-not supposed to handle any further interrupts. IMHO we're supposed to
-send EOIs repeatedly until all the APIC_IRR and APIC_ISR bits are
-cleared. If an IRR bit is set, it means that there's (maybe another
-vector) an APIC_ISR bit set with the highest interrupt priority.
-Sending an EOI clears the highest priority APIC_ISR bit, so the LAPIC
-will then clear the next highest priority IRR bit and set the
-corresponding ISR bit... We can repeat the process. It's like handling
-interrups in polled mode. That's the right thing to do IMHO.
+Yes, I'll do that.
 
-The other unanswered question is why isn't cpu_online_mask() protected
-by a spin lock ? Being atomic isn't enough.
+Thanks,
+Yoshihiro YUNOMAE
 
-Are these all well-known issues? Are there well-known answers already?
+-- 
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
 
-Thanks
-Rui
+
