@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932752Ab3LXAiB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 19:38:01 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:58493 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757890Ab3LXAiA (ORCPT
+	id S932919Ab3LXAkI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 19:40:08 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:47591 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932844Ab3LXAj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 19:38:00 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: gregkh@linuxfoundation.org, shuahkhan@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] driver: Add Legacy PM OPS usage check and warning to driver_register()
-Date: Tue, 24 Dec 2013 01:51:27 +0100
-Message-ID: <1868309.7dxduFC77U@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <b33c1967bdaed9a36fa5a6d7855310c84cb9b910.1383868060.git.shuah.kh@samsung.com>
-References: <cover.1383868060.git.shuah.kh@samsung.com> <b33c1967bdaed9a36fa5a6d7855310c84cb9b910.1383868060.git.shuah.kh@samsung.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 23 Dec 2013 19:39:59 -0500
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: David Brown <davidb@codeaurora.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        devicetree@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH v2 3/9] devicetree: bindings: Document qcom,saw2 node
+Date: Mon, 23 Dec 2013 16:39:47 -0800
+Message-Id: <1387845593-10050-4-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <1387845593-10050-1-git-send-email-sboyd@codeaurora.org>
+References: <1387845593-10050-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 07, 2013 05:03:50 PM Shuah Khan wrote:
-> Add Legacy PM OPS usage checks to driver_register() function. If Legacy PM OPS
-> usage is found, print warning message to indicate the driver code needs
-> updating to use Dev PM OPS interfaces. This will help serve as a way to track
-> drivers that still use Legacy PM OPS and fix them.
-> 
-> The Legacy PM OPS check looks for suspend(struct device *, pm_message_t) or
-> resume(struct device *) struct device_driver interfaces.
-> 
-> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
-> ---
->  drivers/base/driver.c | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/drivers/base/driver.c b/drivers/base/driver.c
-> index 9e29943..10ff280 100644
-> --- a/drivers/base/driver.c
-> +++ b/drivers/base/driver.c
-> @@ -157,6 +157,10 @@ int driver_register(struct device_driver *drv)
->  		printk(KERN_WARNING "Driver '%s' needs updating - please use "
->  			"bus_type methods\n", drv->name);
->  
-> +	if (drv->suspend || drv->resume)
-> +		pr_warn("Please update driver '%s' to use dev pm ops.\n",
-> +			drv->name);
+The saw2 binding describes the SPM/AVS wrapper hardware used to
+control the regulator supplying voltage to the Krait CPUs.
 
-What about the following message instead:
+Cc: <devicetree@vger.kernel.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ .../devicetree/bindings/arm/msm/qcom,saw2.txt      | 35 ++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/msm/qcom,saw2.txt
 
-		pr_warn("Driver '%s' needs updating - please use the pm pointer.\n",
-			drv->name);
-
-And analogously for bus types and classes?
-
-> +
->  	other = driver_find(drv->name, drv->bus);
->  	if (other) {
->  		printk(KERN_ERR "Error: Driver '%s' is already registered, "
-> 
-
-Thanks!
-
+diff --git a/Documentation/devicetree/bindings/arm/msm/qcom,saw2.txt b/Documentation/devicetree/bindings/arm/msm/qcom,saw2.txt
+new file mode 100644
+index 0000000..1505fb8
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/msm/qcom,saw2.txt
+@@ -0,0 +1,35 @@
++SPM AVS Wrapper 2 (SAW2)
++
++The SAW2 is a wrapper around the Subsystem Power Manager (SPM) and the
++Adaptive Voltage Scaling (AVS) hardware. The SPM is a programmable
++micro-controller that transitions a piece of hardware (like a processor or
++subsystem) into and out of low power modes via a direct connection to
++the PMIC. It can also be wired up to interact with other processors in the
++system, notifying them when a low power state is entered or exited.
++
++PROPERTIES
++
++- compatible:
++	Usage: required
++	Value type: <string>
++	Definition: shall contain "qcom,saw2". A more specific value should be
++		    one of:
++			 "qcom,saw2-v1"
++			 "qcom,saw2-v1.1"
++			 "qcom,saw2-v2"
++			 "qcom,saw2-v2.1"
++
++- reg:
++	Usage: required
++	Value type: <prop-encoded-array>
++	Definition: the first element specifies the base address and size of
++		    the register region. An optional second element specifies
++		    the base address and size of the alias register region.
++
++
++Example:
++
++	regulator@2099000 {
++		compatible = "qcom,saw2";
++		reg = <0x02099000 0x1000>, <0x02009000 0x1000>;
++	};
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
