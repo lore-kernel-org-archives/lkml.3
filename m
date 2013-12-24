@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010Ab3LXIWl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 03:22:41 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:47871 "EHLO
+	id S1751976Ab3LXIWk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 03:22:40 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50238 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706Ab3LXIWe (ORCPT
+	with ESMTP id S1751696Ab3LXIWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Dec 2013 03:22:34 -0500
-X-AuditID: 9c930179-b7c89ae000006438-f1-52b944470183
+X-AuditID: 9c930179-b7c89ae000006438-fb-52b944470cd8
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 07/21] perf report: Cache cumulative callchains
-Date: Tue, 24 Dec 2013 17:22:13 +0900
-Message-Id: <1387873347-28838-8-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 09/21] perf ui/hist: Add support to accumulated hist stat
+Date: Tue, 24 Dec 2013 17:22:15 +0900
+Message-Id: <1387873347-28838-10-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
 References: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
@@ -28,114 +28,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-It is possble that a callchain has cycles or recursive calls.  In that
-case it'll end up having entries more than 100% overhead in the
-output.  In order to prevent such entries, cache each callchain node
-and skip if same entry already cumulated.
+Print accumulated stat of a hist entry if requested.
 
 Cc: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-report.c | 48 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 48 insertions(+)
+ tools/perf/ui/hist.c   | 45 +++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/hist.h |  1 +
+ 2 files changed, 46 insertions(+)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 17c41c686042..1314841ffad1 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -368,8 +368,27 @@ iter_prepare_cumulative_entry(struct add_entry_iter *iter,
- 			      struct addr_location *al __maybe_unused,
- 			      struct perf_sample *sample)
- {
-+	struct callchain_cursor_node *node;
-+	struct hist_entry **he_cache;
-+
- 	callchain_cursor_commit(&callchain_cursor);
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 78f4c92e9b73..eb9c07bcdb01 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -129,6 +129,28 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
+ 			  scnprintf, true);					\
+ }
  
-+	/*
-+	 * This is for detecting cycles or recursions so that they're
-+	 * cumulated only one time to prevent entries more than 100%
-+	 * overhead.
-+	 */
-+	he_cache = malloc(sizeof(*he_cache) * (PERF_MAX_STACK_DEPTH + 1));
-+	if (he_cache == NULL)
-+		return -ENOMEM;
++#define __HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
++static u64 he_get_acc_##_field(struct hist_entry *he)				\
++{										\
++	return he->stat_acc->_field;						\
++}										\
++										\
++static int hpp__color_acc_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
++			      struct perf_hpp *hpp, struct hist_entry *he) 	\
++{										\
++	return __hpp__fmt(hpp, he, he_get_acc_##_field, " %6.2f%%",		\
++			  (hpp_snprint_fn)percent_color_snprintf, true);	\
++}
 +
-+	iter->priv = he_cache;
-+	iter->curr = 0;
++#define __HPP_ENTRY_ACC_PERCENT_FN(_type, _field)				\
++static int hpp__entry_acc_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,	\
++			      struct perf_hpp *hpp, struct hist_entry *he) 	\
++{										\
++	const char *fmt = symbol_conf.field_sep ? " %.2f" : " %6.2f%%";		\
++	return __hpp__fmt(hpp, he, he_get_acc_##_field, fmt,			\
++			  scnprintf, true);					\
++}
 +
-+	node = callchain_cursor_current(&callchain_cursor);
-+	if (node == NULL)
-+		return 0;
-+
- 	iter->evsel = evsel;
- 	iter->sample = sample;
- 	iter->machine = machine;
-@@ -382,6 +401,7 @@ iter_add_single_cumulative_entry(struct add_entry_iter *iter,
- {
- 	struct perf_evsel *evsel = iter->evsel;
- 	struct perf_sample *sample = iter->sample;
-+	struct hist_entry **he_cache = iter->priv;
- 	struct hist_entry *he;
+ #define __HPP_ENTRY_RAW_FN(_type, _field)					\
+ static u64 he_get_raw_##_field(struct hist_entry *he)				\
+ {										\
+@@ -148,17 +170,25 @@ __HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
+ __HPP_COLOR_PERCENT_FN(_type, _field)					\
+ __HPP_ENTRY_PERCENT_FN(_type, _field)
  
- 	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
-@@ -390,6 +410,8 @@ iter_add_single_cumulative_entry(struct add_entry_iter *iter,
- 	if (he == NULL)
- 		return -ENOMEM;
++#define HPP_PERCENT_ACC_FNS(_type, _str, _field, _min_width, _unit_width)\
++__HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
++__HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
++__HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
++__HPP_ENTRY_ACC_PERCENT_FN(_type, _field)
++
+ #define HPP_RAW_FNS(_type, _str, _field, _min_width, _unit_width)	\
+ __HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
+ __HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
+ __HPP_ENTRY_RAW_FN(_type, _field)
  
-+	he_cache[iter->curr++] = he;
-+
- 	/*
- 	 * This is for putting parents upward during output resort iff
- 	 * only a child gets sampled.  See hist_entry__sort_on_period().
-@@ -455,7 +477,29 @@ iter_add_next_cumulative_entry(struct add_entry_iter *iter,
- {
- 	struct perf_evsel *evsel = iter->evsel;
- 	struct perf_sample *sample = iter->sample;
-+	struct hist_entry **he_cache = iter->priv;
- 	struct hist_entry *he;
-+	struct hist_entry he_tmp = {
-+		.cpu = al->cpu,
-+		.thread = al->thread,
-+		.comm = thread__comm(al->thread),
-+		.ip = al->addr,
-+		.ms = {
-+			.map = al->map,
-+			.sym = al->sym,
-+		},
-+		.parent = iter->parent,
-+	};
-+	int i;
-+
-+	/*
-+	 * Check if there's duplicate entries in the callchain.
-+	 * It's possible that it has cycles or recursive calls.
-+	 */
-+	for (i = 0; i < iter->curr; i++) {
-+		if (hist_entry__cmp(he_cache[i], &he_tmp) == 0)
-+			return 0;
++__HPP_HEADER_FN(overhead_self, "Self", 8, 8)
+ 
+ HPP_PERCENT_FNS(overhead, "Overhead", period, 8, 8)
+ HPP_PERCENT_FNS(overhead_sys, "sys", period_sys, 8, 8)
+ HPP_PERCENT_FNS(overhead_us, "usr", period_us, 8, 8)
+ HPP_PERCENT_FNS(overhead_guest_sys, "guest sys", period_guest_sys, 9, 8)
+ HPP_PERCENT_FNS(overhead_guest_us, "guest usr", period_guest_us, 9, 8)
++HPP_PERCENT_ACC_FNS(overhead_acc, "Children", period, 8, 8)
+ 
+ HPP_RAW_FNS(samples, "Samples", nr_events, 12, 12)
+ HPP_RAW_FNS(period, "Period", period, 12, 12)
+@@ -171,6 +201,14 @@ HPP_RAW_FNS(period, "Period", period, 12, 12)
+ 		.entry	= hpp__entry_ ## _name		\
+ 	}
+ 
++#define HPP__COLOR_ACC_PRINT_FNS(_name)			\
++	{						\
++		.header	= hpp__header_ ## _name,	\
++		.width	= hpp__width_ ## _name,		\
++		.color	= hpp__color_acc_ ## _name,	\
++		.entry	= hpp__entry_acc_ ## _name	\
 +	}
- 
- 	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
- 				sample->period, sample->weight,
-@@ -463,6 +507,8 @@ iter_add_next_cumulative_entry(struct add_entry_iter *iter,
- 	if (he == NULL)
- 		return -ENOMEM;
- 
-+	he_cache[iter->curr++] = he;
 +
- 	return hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
- }
+ #define HPP__PRINT_FNS(_name)				\
+ 	{						\
+ 		.header	= hpp__header_ ## _name,	\
+@@ -184,6 +222,7 @@ struct perf_hpp_fmt perf_hpp__format[] = {
+ 	HPP__COLOR_PRINT_FNS(overhead_us),
+ 	HPP__COLOR_PRINT_FNS(overhead_guest_sys),
+ 	HPP__COLOR_PRINT_FNS(overhead_guest_us),
++	HPP__COLOR_ACC_PRINT_FNS(overhead_acc),
+ 	HPP__PRINT_FNS(samples),
+ 	HPP__PRINT_FNS(period)
+ };
+@@ -208,6 +247,12 @@ void perf_hpp__init(void)
+ {
+ 	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
  
-@@ -476,6 +522,8 @@ iter_finish_cumulative_entry(struct add_entry_iter *iter,
- 	evsel->hists.stats.total_period += sample->period;
- 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
- 
-+	free(iter->priv);
-+	iter->priv = NULL;
- 	return 0;
- }
++	if (symbol_conf.cumulate_callchain) {
++		perf_hpp__format[PERF_HPP__OVERHEAD].header =
++						hpp__header_overhead_self;
++		perf_hpp__column_enable(PERF_HPP__OVERHEAD_ACC);
++	}
++
+ 	if (symbol_conf.show_cpu_utilization) {
+ 		perf_hpp__column_enable(PERF_HPP__OVERHEAD_SYS);
+ 		perf_hpp__column_enable(PERF_HPP__OVERHEAD_US);
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index eccde6c42f5c..8cf8dca37e13 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -157,6 +157,7 @@ enum {
+ 	PERF_HPP__OVERHEAD_US,
+ 	PERF_HPP__OVERHEAD_GUEST_SYS,
+ 	PERF_HPP__OVERHEAD_GUEST_US,
++	PERF_HPP__OVERHEAD_ACC,
+ 	PERF_HPP__SAMPLES,
+ 	PERF_HPP__PERIOD,
  
 -- 
 1.7.11.7
