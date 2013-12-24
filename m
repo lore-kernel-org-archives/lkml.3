@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758281Ab3LXDZy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 22:25:54 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:38053 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753897Ab3LXDZw (ORCPT
+	id S1758318Ab3LXD0G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 22:26:06 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:61871 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758150Ab3LXD0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 22:25:52 -0500
-Message-ID: <52B8FEBC.2070202@gmail.com>
-Date: Tue, 24 Dec 2013 11:25:48 +0800
+	Mon, 23 Dec 2013 22:26:04 -0500
+Message-ID: <52B8FEC9.7050709@gmail.com>
+Date: Tue, 24 Dec 2013 11:26:01 +0800
 From: Chen Gang <gang.chen.5i5j@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
@@ -26,7 +26,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 After by pass these issues and VGA_CONSOLE issue, the metag can pass
-allmodconfig for current kernel next tree.
+allmodconfig for current kernel next tree.  :-)
 
 Thanks.
 
