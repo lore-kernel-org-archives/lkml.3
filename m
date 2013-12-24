@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833Ab3LXIWg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 03:22:36 -0500
+	id S1752368Ab3LXIZv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 03:25:51 -0500
 Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:47075 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751694Ab3LXIWe (ORCPT
+	with ESMTP id S1751787Ab3LXIWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 03:22:34 -0500
-X-AuditID: 9c930179-b7c89ae000006438-eb-52b94446f0c5
+	Tue, 24 Dec 2013 03:22:36 -0500
+X-AuditID: 9c930179-b7c89ae000006438-0f-52b944482b26
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 06/21] perf tools: Update cpumode for each cumulative entry
-Date: Tue, 24 Dec 2013 17:22:12 +0900
-Message-Id: <1387873347-28838-7-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 14/21] perf report: Add --children option
+Date: Tue, 24 Dec 2013 17:22:20 +0900
+Message-Id: <1387873347-28838-15-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
 References: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
@@ -28,88 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-The cpumode and level in struct addr_localtion was set for a sample
-and but updated as cumulative callchains were added.  This led to have
-non-matching symbol and cpumode in the output.
-
-Update it accordingly based on the fact whether the map is a part of
-the kernel or not.  This is a reverse of what thread__find_addr_map()
-does.
+The --children option is for showing accumulated overhead (period)
+value as well as self overhead.
 
 Cc: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-report.c | 34 +++++++++++++++++++++++++++++++---
- 1 file changed, 31 insertions(+), 3 deletions(-)
+ tools/perf/Documentation/perf-report.txt |  5 +++++
+ tools/perf/builtin-report.c              | 10 ++++++++++
+ 2 files changed, 15 insertions(+)
 
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 8eab8a4bdeb8..710fc8b18f6b 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -141,6 +141,11 @@ OPTIONS
+ 
+ 	Default: fractal,0.5,callee,function.
+ 
++--children::
++	Accumulate callchain of children to parent entry so that then can
++	show up in the output.  The output will have a new "Children" column
++	and will be sorted on the data.  It requires callchains are recorded.
++
+ --max-stack::
+ 	Set the stack depth limit when parsing the callchain, anything
+ 	beyond the specified depth will be ignored. This is a trade-off
 diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 4fde0ab82498..17c41c686042 100644
+index ae298ae91a47..2e95ece29121 100644
 --- a/tools/perf/builtin-report.c
 +++ b/tools/perf/builtin-report.c
-@@ -100,6 +100,7 @@ struct add_entry_iter {
- 	struct report *rep;
- 	struct perf_evsel *evsel;
- 	struct perf_sample *sample;
-+	struct machine *machine;
- 	struct hist_entry *he;
- 	struct symbol *parent;
- 	void *priv;
-@@ -362,7 +363,7 @@ iter_finish_normal_entry(struct add_entry_iter *iter, struct addr_location *al)
+@@ -696,6 +696,14 @@ static int report__setup_sample_type(struct report *rep)
+ 			}
+ 	}
  
- static int
- iter_prepare_cumulative_entry(struct add_entry_iter *iter,
--			      struct machine *machine __maybe_unused,
-+			      struct machine *machine,
- 			      struct perf_evsel *evsel,
- 			      struct addr_location *al __maybe_unused,
- 			      struct perf_sample *sample)
-@@ -371,6 +372,7 @@ iter_prepare_cumulative_entry(struct add_entry_iter *iter,
- 
- 	iter->evsel = evsel;
- 	iter->sample = sample;
-+	iter->machine = machine;
- 	return 0;
- }
- 
-@@ -414,9 +416,35 @@ iter_next_cumulative_entry(struct add_entry_iter *iter,
- 	else
- 		al->addr = node->ip;
- 
--	if (iter->rep->hide_unresolved && al->sym == NULL)
--		return 0;
-+	if (al->sym == NULL) {
-+		if (iter->rep->hide_unresolved)
-+			return 0;
-+		if (al->map == NULL)
-+			goto out;
++	if (symbol_conf.cumulate_callchain) {
++		/* Silently ignore if callchain is not used */
++		if (!symbol_conf.use_callchain) {
++			symbol_conf.cumulate_callchain = false;
++			perf_hpp__cancel_cumulate();
++		}
 +	}
 +
-+	if (al->map->groups == &iter->machine->kmaps) {
-+		if (machine__is_host(iter->machine)) {
-+			al->cpumode = PERF_RECORD_MISC_KERNEL;
-+			al->level = 'k';
-+		} else {
-+			al->cpumode = PERF_RECORD_MISC_GUEST_KERNEL;
-+			al->level = 'g';
-+		}
-+	} else {
-+		if (machine__is_host(iter->machine)) {
-+			al->cpumode = PERF_RECORD_MISC_USER;
-+			al->level = '.';
-+		} else if (perf_guest) {
-+			al->cpumode = PERF_RECORD_MISC_GUEST_USER;
-+			al->level = 'u';
-+		} else {
-+			al->cpumode = PERF_RECORD_MISC_HYPERVISOR;
-+			al->level = 'H';
-+		}
-+	}
- 
-+out:
- 	callchain_cursor_advance(&callchain_cursor);
- 	return 1;
- }
+ 	if (sort__mode == SORT_MODE__BRANCH) {
+ 		if (!is_pipe &&
+ 		    !(sample_type & PERF_SAMPLE_BRANCH_STACK)) {
+@@ -1126,6 +1134,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order",
+ 		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). "
+ 		     "Default: fractal,0.5,callee,function", &parse_callchain_opt, callchain_default_opt),
++	OPT_BOOLEAN(0, "children", &symbol_conf.cumulate_callchain,
++		    "Accumulate callchains of children and show total overhead as well"),
+ 	OPT_INTEGER(0, "max-stack", &report.max_stack,
+ 		    "Set the maximum stack depth when parsing the callchain, "
+ 		    "anything beyond the specified depth will be ignored. "
 -- 
 1.7.11.7
 
