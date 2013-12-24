@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368Ab3LXIZv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 03:25:51 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:47075 "EHLO
+	id S1752462Ab3LXI0O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 03:26:14 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50238 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787Ab3LXIWg (ORCPT
+	with ESMTP id S1751739Ab3LXIWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 03:22:36 -0500
-X-AuditID: 9c930179-b7c89ae000006438-0f-52b944482b26
+	Tue, 24 Dec 2013 03:22:35 -0500
+X-AuditID: 9c930179-b7c89ae000006438-07-52b94448a804
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 14/21] perf report: Add --children option
-Date: Tue, 24 Dec 2013 17:22:20 +0900
-Message-Id: <1387873347-28838-15-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 12/21] perf tools: Apply percent-limit to cumulative percentage
+Date: Tue, 24 Dec 2013 17:22:18 +0900
+Message-Id: <1387873347-28838-13-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
 References: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
@@ -28,61 +28,137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-The --children option is for showing accumulated overhead (period)
-value as well as self overhead.
+If -g cumulative option is given, it needs to show entries which don't
+have self overhead.  So apply percent-limit to accumulated overhead
+percentage in this case.
 
 Cc: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/Documentation/perf-report.txt |  5 +++++
- tools/perf/builtin-report.c              | 10 ++++++++++
- 2 files changed, 15 insertions(+)
+ tools/perf/ui/browsers/hists.c | 34 ++++++++++++++++++++++++++--------
+ tools/perf/ui/gtk/hists.c      | 11 +++++++++--
+ tools/perf/ui/stdio/hist.c     | 11 +++++++++--
+ 3 files changed, 44 insertions(+), 12 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 8eab8a4bdeb8..710fc8b18f6b 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -141,6 +141,11 @@ OPTIONS
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index efa78894f70d..b02e71ecc5fe 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -828,12 +828,19 @@ static unsigned int hist_browser__refresh(struct ui_browser *browser)
  
- 	Default: fractal,0.5,callee,function.
+ 	for (nd = browser->top; nd; nd = rb_next(nd)) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+-		float percent = h->stat.period * 100.0 /
+-					hb->hists->stats.total_period;
++		float percent;
  
-+--children::
-+	Accumulate callchain of children to parent entry so that then can
-+	show up in the output.  The output will have a new "Children" column
-+	and will be sorted on the data.  It requires callchains are recorded.
-+
- --max-stack::
- 	Set the stack depth limit when parsing the callchain, anything
- 	beyond the specified depth will be ignored. This is a trade-off
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index ae298ae91a47..2e95ece29121 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -696,6 +696,14 @@ static int report__setup_sample_type(struct report *rep)
- 			}
- 	}
+ 		if (h->filtered)
+ 			continue;
  
-+	if (symbol_conf.cumulate_callchain) {
-+		/* Silently ignore if callchain is not used */
-+		if (!symbol_conf.use_callchain) {
-+			symbol_conf.cumulate_callchain = false;
-+			perf_hpp__cancel_cumulate();
++		if (symbol_conf.cumulate_callchain) {
++			percent = h->stat_acc->period * 100.0 /
++					hb->hists->stats.total_period;
++		} else {
++			percent = h->stat.period * 100.0 /
++					hb->hists->stats.total_period;
 +		}
-+	}
 +
- 	if (sort__mode == SORT_MODE__BRANCH) {
- 		if (!is_pipe &&
- 		    !(sample_type & PERF_SAMPLE_BRANCH_STACK)) {
-@@ -1126,6 +1134,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order",
- 		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). "
- 		     "Default: fractal,0.5,callee,function", &parse_callchain_opt, callchain_default_opt),
-+	OPT_BOOLEAN(0, "children", &symbol_conf.cumulate_callchain,
-+		    "Accumulate callchains of children and show total overhead as well"),
- 	OPT_INTEGER(0, "max-stack", &report.max_stack,
- 		    "Set the maximum stack depth when parsing the callchain, "
- 		    "anything beyond the specified depth will be ignored. "
+ 		if (percent < hb->min_pcnt)
+ 			continue;
+ 
+@@ -851,13 +858,17 @@ static struct rb_node *hists__filter_entries(struct rb_node *nd,
+ {
+ 	while (nd != NULL) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+-		float percent = h->stat.period * 100.0 /
+-					hists->stats.total_period;
++		float percent;
+ 
+-		if (percent < min_pcnt)
+-			return NULL;
++		if (symbol_conf.cumulate_callchain) {
++			percent = h->stat_acc->period * 100.0 /
++					hists->stats.total_period;
++		} else {
++			percent = h->stat.period * 100.0 /
++					hists->stats.total_period;
++		}
+ 
+-		if (!h->filtered)
++		if (!h->filtered && percent >= min_pcnt)
+ 			return nd;
+ 
+ 		nd = rb_next(nd);
+@@ -872,8 +883,15 @@ static struct rb_node *hists__filter_prev_entries(struct rb_node *nd,
+ {
+ 	while (nd != NULL) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+-		float percent = h->stat.period * 100.0 /
++		float percent;
++
++		if (symbol_conf.cumulate_callchain) {
++			percent = h->stat_acc->period * 100.0 /
++					hists->stats.total_period;
++		} else {
++			percent = h->stat.period * 100.0 /
+ 					hists->stats.total_period;
++		}
+ 
+ 		if (!h->filtered && percent >= min_pcnt)
+ 			return nd;
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index 70ed0d5e1b94..06ae3342e14f 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -296,12 +296,19 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+ 		GtkTreeIter iter;
+-		float percent = h->stat.period * 100.0 /
+-					hists->stats.total_period;
++		float percent;
+ 
+ 		if (h->filtered)
+ 			continue;
+ 
++		if (symbol_conf.cumulate_callchain) {
++			percent = h->stat_acc->period * 100.0 /
++					hists->stats.total_period;
++		} else {
++			percent = h->stat.period * 100.0 /
++					hists->stats.total_period;
++		}
++
+ 		if (percent < min_pcnt)
+ 			continue;
+ 
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index 4c4986e809d8..7ea8502192b0 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -487,12 +487,19 @@ print_entries:
+ 
+ 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+-		float percent = h->stat.period * 100.0 /
+-					hists->stats.total_period;
++		float percent;
+ 
+ 		if (h->filtered)
+ 			continue;
+ 
++		if (symbol_conf.cumulate_callchain) {
++			percent = h->stat_acc->period * 100.0 /
++					hists->stats.total_period;
++		} else {
++			percent = h->stat.period * 100.0 /
++					hists->stats.total_period;
++		}
++
+ 		if (percent < min_pcnt)
+ 			continue;
+ 
 -- 
 1.7.11.7
 
