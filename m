@@ -1,101 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758236Ab3LXETV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 23:19:21 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:42506 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752176Ab3LXETT (ORCPT
+	id S932418Ab3LXEfM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 23:35:12 -0500
+Received: from smtphost-2000.fit.edu ([163.118.131.50]:54501 "EHLO
+	smtphost-2000.fit.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932310Ab3LXEfJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 23:19:19 -0500
-Message-ID: <1387858826.5567.236.camel@haakon3.risingtidesystems.com>
-Subject: bio_integrity_verify() bug causing READ verify to be silently
- skipped
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Mon, 23 Dec 2013 20:20:26 -0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 23 Dec 2013 23:35:09 -0500
+X-Greylist: delayed 915 seconds by postgrey-1.27 at vger.kernel.org; Mon, 23 Dec 2013 23:35:08 EST
+From: "Marius  Silaghi" <msilaghi@fit.edu>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Xenia Ragiadakou" <burzalodowa@gmail.com>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        Jiri Kosina <trivial@kernel.org>
+Subject: [PATCH] usbcore: fix BABBLE failed enumeration of legacy USB2
+ devices on USB3 bus
+Thread-Topic: [PATCH] usbcore: fix BABBLE failed enumeration of legacy USB2
+ devices on USB3 bus
+Thread-Index: AQHPAFzcYZtWgZLIz0KQ9y3GFuGqZA==
+Date: Tue, 24 Dec 2013 04:19:18 +0000
+Message-ID: <02270BA454DB7548ABE8E2EBF31D46D96FC7B4C5@EX10-BE1.fit.edu>
+Accept-Language: en-US, ro-RO
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.88.117.201]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Martin & Co,
+From: Marius C Silaghi <msilaghi@fit.edu>
 
-So after playing with the mainline DIF client against an initial WIP
-target DIF support patch, I've started hitting a bug in
-bio_integrity_verify() that causes READ verify logic to be silently
-skipped for both WIP target and existing scsi_debug DIF code.
+This patch is generated against the last kernel version in the github kernel repository.
+Some older families of USB2 cameras (STC-XXXXXUSB) do not support querying only the first 8 bytes of their 
+device descriptor and therefore fail at enumeration on USB3 HCDs, with babble error -75 as they send more than
+the expected 8 bytes. The proposed patch extends the mechanism used for non USB3 HCDs in the first part of 
+the same function, and  successively tries to query both the 8 byte prefix of the device descriptor, as well as 
+the whole device descriptor (in case the old style query of the 8 byte prefix fails).
+In fact, for the cameras I try to fix, the preferred condition is the negation of the one in the proposed patch,  
+"if (!USE_NEW_SCHEME(retry_counter))", to try first the version successful on this case, but I keep the 
+current order of the "if" branches to ensure clean continuation of support for other supported devices.
 
-The issue is with the scsi_end_request() -> blk_end_request() completion
-path, where eventually blk_update_request() -> req_bio_endio() ->
-bio_advance() is called to increment bio->bi_idx to a non-zero value.
-
-Given that bio_integrity_verify() is using bio_for_each_segment(), the
-loop starts from the updated bio->bi_idx, and not a zero value, which
-ends up skipping individual bio segment calls to bi->verify_fn().
-
-The following patch changes bio_integrity_verify() to use
-bio_for_each_segment_all() instead of bio_for_each_segment() to ensure
-that the segment walk always starts from zero, regardless of the current
-bio->bi_idx value after bio_advance().
-
-Note this bug has been observed with v3.13-rc3 code, and I haven't yet
-looked back to figure out when this bug was first introduced..  Any
-ideas..?
-
-Interestingly enough, the scsi-mq alpha code does not suffer from this
-bug, as blk_end_request() is never called from scsi_mq_end_request() ->
-blk_mq_end_io() completion path code.
-
-Thank you,
-
---nab
-
->From 32242942edca095e8dd126cb1408f2842340773e Mon Sep 17 00:00:00 2001
-From: Nicholas Bellinger <nab@linux-iscsi.org>
-Date: Tue, 24 Dec 2013 04:00:24 +0000
-Subject: [PATCH] bio-integrity: Fix bio_integrity_verify segment start bug
-
-This patch addresses a bug in bio_integrity_verify() code that has
-been causing DIF READ verify operations to be silently skipped.
-
-The issue is that bio->bi_idx will have been incremented within
-bio_advance() code in the normal blk_update_request() ->
-req_bio_endio() completion path, and bio_integrity_verify() is
-using bio_for_each_segment() which starts the bio segment walk
-at the current bio->bi_idx.
-
-So instead use bio_for_each_segment_all() to always start the bio
-segment walk from zero, regardless of the current bio->bi_idx
-value after bio_advance() has been called.
-
-Cc: Martin K. Petersen <martin.petersen@oracle.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Marius C Silaghi <msilaghi@fit.edu>
 ---
- fs/bio-integrity.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
-index fc60b31..f1d5cde 100644
---- a/fs/bio-integrity.c
-+++ b/fs/bio-integrity.c
-@@ -450,7 +450,7 @@ static int bio_integrity_verify(struct bio *bio)
- 	bix.disk_name = bio->bi_bdev->bd_disk->disk_name;
- 	bix.sector_size = bi->sector_size;
+--- linux/drivers/usb/core/hub.c.orig	2013-12-23 22:09:50.545093470 -0500
++++ linux/drivers/usb/core/hub.c	2013-12-23 22:29:40.521043702 -0500
+@@ -4197,7 +4197,19 @@ hub_port_init (struct usb_hub *hub, stru
+ 				break;
+ 		}
  
--	bio_for_each_segment(bv, bio, i) {
-+	bio_for_each_segment_all(bv, bio, i) {
- 		void *kaddr = kmap_atomic(bv->bv_page);
- 		bix.data_buf = kaddr + bv->bv_offset;
- 		bix.data_size = bv->bv_len;
--- 
-1.7.10.4
+-		retval = usb_get_device_descriptor(udev, 8);
++		/*  Try first the old 8-byte query (since it may be expected
++		 *  by some devices), but then give at least a chance to the
++		 *  new form (retrieving the whole descriptor)!
++		 *  Querying the content of the whole structure is required
++		 *  for older USB2 video cameras which do not support partial
++		 *  descriptor queries, like the STC-XXXUSB family.
++		 *  Windows also supports them.
++		 */
++		if (USE_NEW_SCHEME(retry_counter))
++			retval = usb_get_device_descriptor(udev, 8);
++		else
++			retval = usb_get_device_descriptor(udev,
++				       sizeof(struct usb_device_descriptor));
+ 		if (retval < 8) {
+ 			if (retval != -ENODEV)
+ 				dev_err(&udev->dev,
 
