@@ -1,193 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995Ab3LXLVE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 06:21:04 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:36266 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751651Ab3LXLVB (ORCPT
+	id S1752020Ab3LXL1q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 06:27:46 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:10670 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751576Ab3LXL1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 06:21:01 -0500
+	Tue, 24 Dec 2013 06:27:44 -0500
+Message-ID: <52B96F8F.4090503@huawei.com>
+Date: Tue, 24 Dec 2013 19:27:11 +0800
+From: Ding Tianhong <dingtianhong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-In-Reply-To: <1387885284-8119-3-git-send-email-grygorii.strashko@ti.com>
-References: <1387885284-8119-1-git-send-email-grygorii.strashko@ti.com> <1387885284-8119-3-git-send-email-grygorii.strashko@ti.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Tue, 24 Dec 2013 16:50:38 +0530
-Message-ID: <CA+V-a8tJRZ5Esn3F4J6_z7VCmGPpptgxMEyyaANbrytAF3pUMA@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] gpio: davinci: reuse for Keystone SoC
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, Sekhar Nori <nsekhar@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>,
+        "Alexander Duyck" <alexander.h.duyck@intel.com>,
+        Antonio Quartulli <antonio@meshcoding.com>
+Subject: [PATCH v2 00/20] slight optimization of addr compare for some modules
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.199]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grygorii,
+Joe Perches add ether_addr_equal_unaligned to test if
+possibly unaligned to u16 Ethernet addresses are equal.
 
-Thanks for the patch.
+If CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS is set, this uses
+the slightly faster generic routine ether_addr_equal,
+otherwise this uses memcmp.
 
-On Tue, Dec 24, 2013 at 5:11 PM, Grygorii Strashko
-<grygorii.strashko@ti.com> wrote:
-> The similar GPIO HW block is used by keystone SoCs as
-> in Davinci SoCs.
-> Hence, reuse Davinci GPIO driver for Keystone taking into
-> account that Keystone contains ARM GIC IRQ controller which
-> is implemented using IRQ Chip.
->
-> Documentation:
->         http://www.ti.com/lit/ug/sprugv1/sprugv1.pdf
->
-> Cc: Alexandre Courbot <gnurou@gmail.com>
-> Cc: Sekhar Nori <nsekhar@ti.com>
-> Cc: devicetree@vger.kernel.org
->
-> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> ---
->  .../devicetree/bindings/gpio/gpio-davinci.txt      |    4 +-
->  drivers/gpio/gpio-davinci.c                        |   48 ++++++++++++++++----
->  2 files changed, 42 insertions(+), 10 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/gpio/gpio-davinci.txt b/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
-> index a2e839d..4ce9862 100644
-> --- a/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
-> +++ b/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
-> @@ -1,7 +1,7 @@
-> -Davinci GPIO controller bindings
-> +Davinci/Keystone GPIO controller bindings
->
->  Required Properties:
-> -- compatible: should be "ti,dm6441-gpio"
-> +- compatible: should be "ti,dm6441-gpio", "ti,keystone-gpio"
+So I use the recently added and possibly more efficient
+ether_addr_equal_unaligned to instead of memcmp for slight
+optimization.
 
-Can you make it something like this ? It isn't readable.
+v2: Because a lot of places are already using 16b aligned MAC
+    address for both operands, so use the ether_addr_equal to
+    instead of ether_addr_equal_unaligned.Thanks for Joe, Alex
+    and Antonio's opinions.
+    Also remove the patch for bridge.
 
-- compatible : value should be either one among the following
-    (a)  "ti,dm6441-gpio" for davinci.
-    (b)  "ti,keystone-gpio" for keystone.
+Regards
+Ding 
+     
+Ding Tianhong (6):
+  net: slight optimization of addr compare for some modules
+  net: freescale: remove unused compare_addr()
+  net: pcnet: slight optimization of addr compare
+  net: atl1: slight optimization of addr compare
+  hamradio: slight optimization of addr compare
+  ppp: slight optimization of addr compare
 
->
->  - reg: Physical base address of the controller and the size of memory mapped
->         registers.
-> diff --git a/drivers/gpio/gpio-davinci.c b/drivers/gpio/gpio-davinci.c
-> index 7629b4f..d0f135d 100644
-> --- a/drivers/gpio/gpio-davinci.c
-> +++ b/drivers/gpio/gpio-davinci.c
-> @@ -37,6 +37,8 @@ struct davinci_gpio_regs {
->         u32     intstat;
->  };
->
-> +typedef struct irq_chip *(*gpio_get_irq_chip_cb_t)(unsigned int irq);
-> +
->  #define BINTEN 0x8 /* GPIO Interrupt Per-Bank Enable Register */
->
->  #define chip2controller(chip)  \
-> @@ -413,6 +415,26 @@ static const struct irq_domain_ops davinci_gpio_irq_ops = {
->         .xlate = irq_domain_xlate_onetwocell,
->  };
->
-> +static struct irq_chip *davinci_gpio_get_irq_chip(unsigned int irq)
-> +{
-> +       static struct irq_chip_type gpio_unbanked;
-> +
-> +       gpio_unbanked = *container_of(irq_get_chip(irq),
-> +                                     struct irq_chip_type, chip);
-> +
-> +       return &gpio_unbanked.chip;
-> +};
-> +
-> +static struct irq_chip *keystone_gpio_get_irq_chip(unsigned int irq)
-> +{
-> +       static struct irq_chip gpio_unbanked;
-> +
-> +       gpio_unbanked = *irq_get_chip(irq);
-> +       return &gpio_unbanked;
-> +};
-> +
-> +static const struct of_device_id davinci_gpio_ids[];
-> +
->  /*
->   * NOTE:  for suspend/resume, probably best to make a platform_device with
->   * suspend_late/resume_resume calls hooking into results of the set_wake()
-> @@ -433,6 +455,18 @@ static int davinci_gpio_irq_setup(struct platform_device *pdev)
->         struct davinci_gpio_platform_data *pdata = dev->platform_data;
->         struct davinci_gpio_regs __iomem *g;
->         struct irq_domain       *irq_domain = NULL;
-> +       const struct of_device_id *match;
-> +       struct irq_chip *irq_chip;
-> +       gpio_get_irq_chip_cb_t gpio_get_irq_chip;
-> +
-> +       /*
-> +        * Use davinci_gpio_get_irq_chip by default to handle non DT cases
-> +        */
-> +       gpio_get_irq_chip = davinci_gpio_get_irq_chip;
-> +       match = of_match_device(of_match_ptr(davinci_gpio_ids),
-> +                               dev);
+Tan Xiaojun (3):
+  batman-adv: use batadv_compare_eth for concise
+  zd1211rw: slight optimization of addr compare
+  ozwpan: slight optimization of addr compare
 
-Sorry didn't notice that earlier the data structure of_match_ptr()
-protects is always compiled in.
-so of_match_ptr() is not needed.
-While you are at it you can also fix it in davinci_gpio_driver
-structure as a sperate
-patch.
+Wang Weidong (2):
+  infiniband: slight optimization of addr compare
+  mac8011: slight optimization of addr compare
 
-Regards,
---Prabhakar Lad
+Weilong Chen (6):
+  hostap: slight optimization of addr compare
+  cw1200: atm: slight optimization of addr compare
+  ipw2x00: slight optimization of addr compare
+  mwifiex: slight optimization of addr compare
+  rtlwifi: slight optimization of addr compare
+  wireless: slight optimization of addr compare
 
-> +       if (match)
-> +               gpio_get_irq_chip = (gpio_get_irq_chip_cb_t)match->data;
->
->         ngpio = pdata->ngpio;
->         res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-> @@ -489,8 +523,6 @@ static int davinci_gpio_irq_setup(struct platform_device *pdev)
->          * IRQ mux conflicts; gpio_irq_type_unbanked() is only for GPIOs.
->          */
->         if (pdata->gpio_unbanked) {
-> -               static struct irq_chip_type gpio_unbanked;
-> -
->                 /* pass "bank 0" GPIO IRQs to AINTC */
->                 chips[0].chip.to_irq = gpio_to_irq_unbanked;
->                 chips[0].gpio_irq = bank_irq;
-> @@ -499,10 +531,9 @@ static int davinci_gpio_irq_setup(struct platform_device *pdev)
->
->                 /* AINTC handles mask/unmask; GPIO handles triggering */
->                 irq = bank_irq;
-> -               gpio_unbanked = *container_of(irq_get_chip(irq),
-> -                                             struct irq_chip_type, chip);
-> -               gpio_unbanked.chip.name = "GPIO-AINTC";
-> -               gpio_unbanked.chip.irq_set_type = gpio_irq_type_unbanked;
-> +               irq_chip = gpio_get_irq_chip(irq);
-> +               irq_chip->name = "GPIO-AINTC";
-> +               irq_chip->irq_set_type = gpio_irq_type_unbanked;
->
->                 /* default trigger: both edges */
->                 g = gpio2regs(0);
-> @@ -511,7 +542,7 @@ static int davinci_gpio_irq_setup(struct platform_device *pdev)
->
->                 /* set the direct IRQs up to use that irqchip */
->                 for (gpio = 0; gpio < pdata->gpio_unbanked; gpio++, irq++) {
-> -                       irq_set_chip(irq, &gpio_unbanked.chip);
-> +                       irq_set_chip(irq, irq_chip);
->                         irq_set_handler_data(irq, &chips[gpio / 32]);
->                         irq_set_status_flags(irq, IRQ_TYPE_EDGE_BOTH);
->                 }
-> @@ -554,7 +585,8 @@ done:
->
->  #if IS_ENABLED(CONFIG_OF)
->  static const struct of_device_id davinci_gpio_ids[] = {
-> -       { .compatible = "ti,dm6441-gpio", },
-> +       { .compatible = "ti,keystone-gpio", keystone_gpio_get_irq_chip},
-> +       { .compatible = "ti,dm6441-gpio", davinci_gpio_get_irq_chip},
->         { /* sentinel */ },
->  };
->  MODULE_DEVICE_TABLE(of, davinci_gpio_ids);
-> --
-> 1.7.9.5
->
+Yang Yingliang (3):
+  atm: slight optimization of addr compare
+  isdn: slight optimization of addr compare
+  media: dvb_core: slight optimization of addr compare
+
+ drivers/atm/nicstar.c                              |  4 +--
+ drivers/infiniband/hw/nes/nes_cm.c                 |  3 +-
+ drivers/isdn/i4l/isdn_net.c                        |  4 +--
+ drivers/media/dvb-core/dvb_net.c                   |  8 ++---
+ drivers/net/bonding/bond_3ad.c                     |  2 +-
+ drivers/net/ethernet/3com/3c509.c                  |  3 +-
+ drivers/net/ethernet/amd/pcnet32.c                 |  2 +-
+ drivers/net/ethernet/atheros/atlx/atl1.c           |  2 +-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c     | 10 +++----
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c  |  2 +-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_vfpf.c   |  2 +-
+ drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c |  2 +-
+ drivers/net/ethernet/chelsio/cxgb3/l2t.c           |  2 +-
+ drivers/net/ethernet/cisco/enic/enic_pp.c          |  2 +-
+ drivers/net/ethernet/emulex/benet/be_main.c        |  2 +-
+ drivers/net/ethernet/freescale/ucc_geth.c          |  5 ----
+ drivers/net/ethernet/intel/igbvf/netdev.c          |  2 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c     |  3 +-
+ drivers/net/ethernet/mellanox/mlx4/en_netdev.c     |  4 +--
+ .../net/ethernet/mellanox/mlx4/resource_tracker.c  |  2 +-
+ drivers/net/ethernet/micrel/ksz884x.c              |  9 +++---
+ drivers/net/ethernet/neterion/vxge/vxge-main.c     |  2 +-
+ drivers/net/ethernet/packetengines/yellowfin.c     |  8 ++---
+ drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c |  2 +-
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c     |  4 +--
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c     |  4 +--
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c   |  4 +--
+ drivers/net/ethernet/renesas/sh_eth.c              |  2 +-
+ drivers/net/ethernet/seeq/sgiseeq.c                |  2 +-
+ drivers/net/ethernet/sun/sunvnet.c                 |  2 +-
+ drivers/net/ethernet/ti/cpsw_ale.c                 |  2 +-
+ drivers/net/fddi/skfp/fplustm.c                    |  3 +-
+ drivers/net/hamradio/bpqether.c                    |  2 +-
+ drivers/net/plip/plip.c                            |  2 +-
+ drivers/net/ppp/pppoe.c                            |  5 ++--
+ drivers/net/wireless/adm8211.c                     |  2 +-
+ drivers/net/wireless/brcm80211/brcmfmac/p2p.c      |  7 ++---
+ drivers/net/wireless/cw1200/sta.c                  |  5 ++--
+ drivers/net/wireless/cw1200/txrx.c                 |  3 +-
+ drivers/net/wireless/hostap/hostap_80211_rx.c      |  8 ++---
+ drivers/net/wireless/hostap/hostap_80211_tx.c      |  4 +--
+ drivers/net/wireless/hostap/hostap_ap.c            | 28 +++++++++---------
+ drivers/net/wireless/hostap/hostap_hw.c            |  2 +-
+ drivers/net/wireless/hostap/hostap_ioctl.c         |  4 +--
+ drivers/net/wireless/hostap/hostap_main.c          |  8 ++---
+ drivers/net/wireless/ipw2x00/ipw2200.c             | 34 +++++++++++-----------
+ drivers/net/wireless/ipw2x00/libipw_rx.c           | 10 +++----
+ drivers/net/wireless/mwifiex/11n.c                 |  2 +-
+ drivers/net/wireless/mwifiex/sta_cmdresp.c         |  3 +-
+ drivers/net/wireless/mwifiex/sta_rx.c              |  2 +-
+ drivers/net/wireless/prism54/isl_ioctl.c           |  3 +-
+ drivers/net/wireless/rtlwifi/cam.c                 |  4 +--
+ drivers/net/wireless/ti/wl1251/main.c              |  2 +-
+ drivers/net/wireless/wl3501_cs.c                   |  4 +--
+ drivers/net/wireless/zd1211rw/zd_mac.c             |  5 ++--
+ drivers/staging/ozwpan/ozcdev.c                    |  2 +-
+ drivers/staging/ozwpan/ozproto.c                   |  5 ++--
+ net/batman-adv/originator.c                        |  2 +-
+ net/batman-adv/translation-table.c                 |  2 +-
+ net/caif/cfrfml.c                                  |  2 +-
+ net/mac80211/iface.c                               |  7 ++---
+ 61 files changed, 131 insertions(+), 148 deletions(-)
+
+-- 
+1.8.0
+
+
+
