@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751027Ab3LXGA6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 01:00:58 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51576 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750797Ab3LXGA5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 01:00:57 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CA+55aFyoUwL2Rkt1qof41HciGCNk9LHdP3ezUFeVYM=gam44rg@mail.gmail.com>
-References: <CA+55aFxZ2u+M72u3HSD7TVY2+WRRi27pYC=_4Wawr5y1m8DfnQ@mail.gmail.com> <52B8CE99.2050608@zytor.com> <CA+55aFyoUwL2Rkt1qof41HciGCNk9LHdP3ezUFeVYM=gam44rg@mail.gmail.com>
+	id S1751210Ab3LXGCw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 01:02:52 -0500
+Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:26263
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750870Ab3LXGCv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Dec 2013 01:02:51 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+From: Anson Huang <b20788@freescale.com>
+To: <shawn.guo@linaro.org>, <kernel@pengutronix.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ARM: imx: improve the comment of CCM lpm SW workaround
+Date: Tue, 24 Dec 2013 13:00:47 -0500
+Message-ID: <1387908047-1848-1-git-send-email-b20788@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [RFC] speeding up the stat() family of system calls...
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 23 Dec 2013 22:00:32 -0800
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-ID: <0f21a61b-c1e8-439c-85d6-c18903f1e36b@email.android.com>
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Right, the __label__ declaration should take care of it.
+Improve the comment of SW workaround for CCM lpm issue using
+hardware errata description to avoid confusion.
 
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
->On Mon, Dec 23, 2013 at 4:00 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>
->> I guess I'm a bit puzzled... the current code should be just fine if
->> everything is present, and do we really care about the performance if
->we
->> actually have an error condition?
->
->I think we should. You could make it to do something like eighteen
->expensive page faults in a row for EFAULT, and that's just disgusting,
->when there is no reason to do it.
->
->But to be honest, the resulting assembly is also easier to read,
->because it doesn't have those annoying bogus branch targets all over
->in the middle of the code. That was actually my main issue - looking
->at the generated fs/stat.s file and not puking ;)
->
->(it's still hard to read with all the fixup section stuff, but it's
->better. And it really does generate better code, so..)
->
->> I'm a bit concerned about the put_user_fail: label having uniqueness
->> problem, which I know some versions of gcc at least get very noisy
->over.
->
->Oh, you're right, I forgot to actually declare the label so that gcc
->sees that it's a local one.
->
->So it needs a
->
->   __label__ put_user_fail;
->
->in the put_user_try() (and yes, maybe the label name should have
->underscores prepended or something, just to make sure it's internal).
->
->But gcc is perfectly fine with multiple labels in different scopes if
->you do that. We already use that in a few places, so this isn't even a
->new pattern for us.
->
->             Linus
+TKT194736:
+Chip will enter low power mode before ARM A9 CPU executes
+WFI when improper low power sequence is used.
 
+SW workaround:
+1) SW will trigger irq #32(IOMUX) to be always pending manually by setting IOMUX_GPR1_GINT bit,
+2) SW should then Unmask it in GPC before setting CCM LPM
+3) SW should Mask it right after CCM LPM is set (set bit0-1 of CCM_CLPCR)
+
+Signed-off-by: Anson Huang <b20788@freescale.com>
+---
+ arch/arm/mach-imx/pm-imx6q.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/mach-imx/pm-imx6q.c b/arch/arm/mach-imx/pm-imx6q.c
+index aecd9f8..8da4732 100644
+--- a/arch/arm/mach-imx/pm-imx6q.c
++++ b/arch/arm/mach-imx/pm-imx6q.c
+@@ -156,10 +156,13 @@ int imx6q_set_lpm(enum mxc_cpu_pwr_mode mode)
+ 	}
+ 
+ 	/*
+-	 * Unmask the always pending IOMUXC interrupt #32 as wakeup source to
+-	 * deassert dsm_request signal, so that we can ensure dsm_request
+-	 * is not asserted when we're going to write CLPCR register to set LPM.
+-	 * After setting up LPM bits, we need to mask this wakeup source.
++	 * TKT194736:
++	 * Chip will enter low power mode before ARM A9 CPU executes WFI when improper low power sequence is used.
++	 *
++	 * SW workaround:
++	 * 1) SW will trigger irq #32(IOMUXC) to be always pending manually by setting IOMUX_GPR1_GINT bit,
++	 * 2) SW should then Unmask it in GPC before setting CCM LPM
++	 * 3) SW should Mask it right after CCM LPM is set (set bit0-1 of CCM_CLPCR)
+ 	 */
+ 	iomuxc_irq_desc = irq_to_desc(32);
+ 	imx_gpc_irq_unmask(&iomuxc_irq_desc->irq_data);
+@@ -219,6 +222,8 @@ void __init imx6q_pm_init(void)
+ 	WARN_ON(!ccm_base);
+ 
+ 	/*
++	 * This is for SW workaround step #1 of TKT194736, see comments
++	 * in imx6q_set_lpm for details of this errata.
+ 	 * Force IOMUXC irq pending, so that the interrupt to GPC can be
+ 	 * used to deassert dsm_request signal when the signal gets
+ 	 * asserted unexpectedly.
 -- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+1.7.9.5
+
+
