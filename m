@@ -1,96 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752009Ab3LXI3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 03:29:37 -0500
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:51860 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751284Ab3LXI3f (ORCPT
+	id S1751793Ab3LXIca (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 03:32:30 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:52773 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299Ab3LXIc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 03:29:35 -0500
-Date: Tue, 24 Dec 2013 09:29:31 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Jason Seba <jason.seba42@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tomas Henzl <thenzl@redhat.com>, Jack Wang <xjtuwjp@gmail.com>,
-        Suresh Thiagarajan <Suresh.Thiagarajan@pmcs.com>,
-        Viswas G <Viswas.G@pmcs.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "JBottomley@parallels.com" <JBottomley@parallels.com>,
-        Vasanthalakshmi Tharmarajan 
-	<Vasanthalakshmi.Tharmarajan@pmcs.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: spinlock_irqsave() && flags (Was: pm80xx: Spinlock fix)
-Message-ID: <20131224082931.GA20471@gmail.com>
-References: <52B83B89.9040700@gmail.com>
- <CE2C58F938F4C44EA74FFF880BAA7E5E1C68AA8A@BBYEXM01.pmc-sierra.internal>
- <CAD0Z9T+69VoSnDY-Sj7a1QfJ-KLJYVyL9=WQ123XMfRvQmGdsg@mail.gmail.com>
- <52B8518B.4060204@gmail.com>
- <52B8569D.4050101@redhat.com>
- <CAD0Z9TK-cn=X3ywSzPnEQN-FB+ue+0dHQ3EHuwonC+KfgrmPMA@mail.gmail.com>
- <20131223163410.GA28220@redhat.com>
- <20131223172744.GA2069@redhat.com>
- <20131223182323.GA8656@gmail.com>
- <20131223183341.GA6082@redhat.com>
+	Tue, 24 Dec 2013 03:32:28 -0500
+Message-ID: <52B9468D.4060201@hitachi.com>
+Date: Tue, 24 Dec 2013 17:32:13 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131223183341.GA6082@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-arch@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: Re: Re: Re: [PATCH -tip v6 06/22] [BUGFIX] x86: Prohibit probing
+ on memcpy/memset
+References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal> <20131219090409.14309.25677.stgit@kbuild-fedora.novalocal> <CAGdX0WFKYHqXrVQ6LBw0YgH_H6cP=LZVCBe1iOvEXsHQPD8Zmg@mail.gmail.com> <52B3AD7D.2020104@hitachi.com> <CAGdX0WENxTPhFDtcEW6LFhk1SNZc6mEK+JsCDOJmfK8_PS1rxg@mail.gmail.com> <52B3CABE.1080903@hitachi.com> <CAGdX0WEev84sOyu-uzkDOmQFi_=mza7cPzyC0VkRZe0fD_1+jQ@mail.gmail.com> <52B40C00.2060401@hitachi.com> <CAGdX0WECaJBSX29-+fC=0XLJfAh0JvFyLTW2V8yM616L45iCQQ@mail.gmail.com> <52B8178F.5020607@hitachi.com> <CAGdX0WEZue1fBtHw058HAmuCktkM+jyKdPfn0ZM2=fNAPfcJwA@mail.gmail.com>
+In-Reply-To: <CAGdX0WEZue1fBtHw058HAmuCktkM+jyKdPfn0ZM2=fNAPfcJwA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Oleg Nesterov <oleg@redhat.com> wrote:
-
-> On 12/23, Ingo Molnar wrote:
-> >
-> > * Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> > > Initially I thought that this is obviously wrong, irqsave/irqrestore
-> > > assume that "flags" is owned by the caller, not by the lock. And
-> > > iirc this was certainly wrong in the past.
-> > >
-> > > But when I look at spinlock.c it seems that this code can actually
-> > > work. _irqsave() writes to FLAGS after it takes the lock, and
-> > > _irqrestore() has a copy of FLAGS before it drops this lock.
-> >
-> > I don't think that's true: if it was then the lock would not be
-> > irqsave, a hardware-irq could come in after the lock has been taken
-> > and before flags are saved+disabled.
+(2013/12/24 15:39), Jovi Zhangwei wrote:
+> On Mon, Dec 23, 2013 at 6:59 PM, Masami Hiramatsu
+> <masami.hiramatsu.pt@hitachi.com> wrote:
+>> (2013/12/23 13:51), Jovi Zhangwei wrote:
+>>> On Fri, Dec 20, 2013 at 5:21 PM, Masami Hiramatsu
+>>> <masami.hiramatsu.pt@hitachi.com> wrote:
+>>>> (2013/12/20 17:31), Jovi Zhangwei wrote:
+>>>>> On Fri, Dec 20, 2013 at 12:42 PM, Masami Hiramatsu
+>>>>> <masami.hiramatsu.pt@hitachi.com> wrote:
+>>>>>> (2013/12/20 12:07), Jovi Zhangwei wrote:
+>>>>>>> On Fri, Dec 20, 2013 at 10:37 AM, Masami Hiramatsu
+>>>>>>> <masami.hiramatsu.pt@hitachi.com> wrote:
+>>>>>>>> Hi Jovi,
+>>>>>>>>
+>>>>>>>> (2013/12/19 18:37), Jovi Zhangwei wrote:
+>>>>>>>>> Hi Masami,
+>>>>>>>>>
+>>>>>>>>> On Thu, Dec 19, 2013 at 5:04 PM, Masami Hiramatsu
+>>>>>>>>> <masami.hiramatsu.pt@hitachi.com> wrote:
+>>>>>>>>>> memcpy/memset functions are fundamental functions and
+>>>>>>>>>> those are involved in kprobe's exception handling.
+>>>>>>>>>> Prohibit probing on them to avoid kernel crash.
+>>>>>>>>>>
+>>>>>>>>> Would you please let me know the LKML link of that bugfix, I cannot
+>>>>>>>>> find it in my LKML fold.
+>>>>>>>>
+>>>>>>>> Yeah, that was found in my testing environment.
+>>>>>>>>
+>>>>>>>>> No objection on this patch. :) just want to know more, It seems there
+>>>>>>>>> have no problem to probe memcpy in my box, maybe I didn't hit the
+>>>>>>>>> crash code path.
+>>>>>>>>
+>>>>>>>> Ah, I see. Originally the problem happened when I put a probe on
+>>>>>>>> __memcpy. And it looks the instances of memcpy and __memcpy are
+>>>>>>>> same on x86-64. Thus I decided to blacklist both. (memset/__memset too)
+>>>>>>>> Have you ever tried to probe __memcpy on your box?
+>>>>>>>>
+>>>>>>> Hmm, still no crash, __memcpy and __memset are both tested.
+>>>>>>>
+>>>>>>> I use below kprobe related config:
+>>>>>>>
+>>>>>>> CONFIG_KPROBES=y
+>>>>>>> CONFIG_JUMP_LABEL=y
+>>>>>>> CONFIG_OPTPROBES=y
+>>>>>>> CONFIG_KPROBES_ON_FTRACE=y
+>>>>>>
+>>>>>> Hmm, I've added some debugging options.
+>>>>>>
+>>>>>> CONFIG_SLUB_DEBUG=y
+>>>>>> CONFIG_X86_DEBUGCTLMSR=y
+>>>>>> CONFIG_PNP_DEBUG_MESSAGES=y
+>>>>>> CONFIG_DEBUG_INFO=y
+>>>>>> CONFIG_DEBUG_FS=y
+>>>>>> CONFIG_DEBUG_KERNEL=y
+>>>>>> CONFIG_DEBUG_STACK_USAGE=y
+>>>>>> CONFIG_DEBUG_MEMORY_INIT=y
+>>>>>> CONFIG_DEBUG_STACKOVERFLOW=y
+>>>>>> CONFIG_DEBUG_SPINLOCK=y
+>>>>>> CONFIG_DEBUG_MUTEXES=y
+>>>>>> CONFIG_DEBUG_LOCK_ALLOC=y
+>>>>>> CONFIG_DEBUG_LOCKDEP=y
+>>>>>> CONFIG_DEBUG_BUGVERBOSE=y
+>>>>>> CONFIG_DEBUG_RODATA=y
+>>>>>> CONFIG_DEBUG_BOOT_PARAMS=y
+>>>>>>
+>>>>>> I guess some of them might cause it.
+>>>>>>
+>>>>> I recompiled the kernel with those config enabled, unfortunately still no crash,
+>>>>> I tested on 3.13.0-rc4, a fedora kvm box.
+>>>>
+>>>> Hmm, it's very odd. I'm running 3.13.0-rc4 x86-64 on the fedora
+>>>> kvm box too. here is the full of my kconfig.
+>>>>
+>>> That configuration is still working for me, no crash for memcpy kprobe test.
+>>
+>> Would you do __memcpy test? or memcpy test? I only had a crash on the
+>> __memcpy(__memset).
+>>
+> Still no crash, use your kernel config.
+> memcpy and __memcpy have same address in /proc/kallsyms.
 > 
-> I do agree that this pattern is not safe, that is why I decided to ask.
-> 
-> But, unless I missed something, with the current implementation
-> spin_lock_irqsave(lock, global_flags) does:
-> 
-> 	unsigned long local_flags;
-> 
-> 	local_irq_save(local_flags);
-> 	spin_lock(lock);
-> 
-> 	global_flags = local_flags;
-> 
-> so the access to global_flags is actually serialized by lock.
+> Looks like a interesting problem.
 
-You are right, today that's true technically because IIRC due to Sparc 
-quirks we happen to return 'flags' as a return value - still it's very 
-ugly and it could break anytime if we decide to do more aggressive 
-optimizations and actually directly save into 'flags'.
+Agreed. In my case, those have same address, but only probing
+__memcpy caused a kernel crash. I'm not sure why, but it is
+safe to disable probing on it.
 
-Note that even today there's a narrow exception: on UP we happen to 
-build it the other way around, so that we do:
+Thank you,
 
-	local_irq_save(global_flags);
-	__acquire(lock);
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-This does not matter for any real code because on UP there is no 
-physical lock and __acquire() is empty code-wise, but any compiler 
-driven locking analysis tool using __attribute__ __context__(), if 
-built on UP, would see the unsafe locking pattern.
 
-Thanks,
-
-	Ingo
