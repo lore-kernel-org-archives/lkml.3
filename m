@@ -1,97 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab3LXSap (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 13:30:45 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:46097 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752241Ab3LXSan (ORCPT
+	id S1752510Ab3LXSxb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 13:53:31 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:46444 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752223Ab3LXSx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 13:30:43 -0500
+	Tue, 24 Dec 2013 13:53:29 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20131222174713.GA3931@gmail.com>
+References: <20131222174713.GA3931@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20131224103558.GA5520@pd.tnic>
-References: <52B7F53C.5020001@huawei.com>
-	<20131223133402.GA4487@pd.tnic>
-	<52B8DEAE.2040100@huawei.com>
-	<20131224103558.GA5520@pd.tnic>
-Date: Tue, 24 Dec 2013 10:30:43 -0800
-X-Google-Sender-Auth: 1vg-2dGg5VhVu1ymTbbRQgYn7e0
-Message-ID: <CAE9FiQXwtZEFx-6V_X20CGymtmtbRKqP7ECR9=DDKYyMSeZyBQ@mail.gmail.com>
-Subject: Re: [PATCH v2][TRIVIAL] x86/smpboot: fix cpu bootup message
-From: Yinghai Lu <yinghai@kernel.org>
-To: Borislav Petkov <bp@suse.de>
-Cc: Xie XiuQi <xiexiuqi@huawei.com>, Ingo Molnar <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Bin <huawei.libin@huawei.com>, x86-ml <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: iio_utils.h bug?
+From: Jonathan Cameron <jic23@kernel.org>
+Date: Tue, 24 Dec 2013 18:53:26 +0000
+To: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <244177bb-694e-4176-9a42-afae241fc27c@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 24, 2013 at 2:35 AM, Borislav Petkov <bp@suse.de> wrote:
-> On Tue, Dec 24, 2013 at 09:09:02AM +0800, Xie XiuQi wrote:
->> On 2013/12/23 21:34, Borislav Petkov wrote:
->> > On Mon, Dec 23, 2013 at 04:33:00PM +0800, Xie XiuQi wrote:
->> >> When CPU0 and CPU1 aren't in same package, we got message
->> >> like this:
->> >>
->>
->> [...]
->>
->> >>
->> >> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
->> >> index 85dc05a..9e82c1e 100644
->> >> --- a/arch/x86/kernel/smpboot.c
->> >> +++ b/arch/x86/kernel/smpboot.c
->> >> @@ -639,7 +639,7 @@ static void announce_cpu(int cpu, int apicid)
->> >>  {
->> >>    static int current_node = -1;
->> >>    int node = early_cpu_to_node(cpu);
->> >> -  static int width, node_width;
->> >> +  static int width, node_width, padding;
->> >>
->> >>    if (!width)
->> >>            width = num_digits(num_possible_cpus()) + 1; /* + '#' sign */
->> >> @@ -658,11 +658,13 @@ static void announce_cpu(int cpu, int apicid)
->> >>
->> >>                    printk(KERN_INFO ".... node %*s#%d, CPUs:  ",
->> >>                           node_width - num_digits(node), " ", node);
->> >> -          }
->> >>
->> >> -          /* Add padding for the BSP */
->> >> -          if (cpu == 1)
->> >> -                  pr_cont("%*s", width + 1, " ");
->> >> +                  /* Add padding for the BSP */
->> >> +                  if (!padding && (early_cpu_to_node(0) == current_node)) {
->> >
->> > You don't need "padding".
->> >
->>
->> On another machine, the configuration is:
->>
->> xiexiuqi@localhost:~> lscpu
->> [...]
->> NUMA node0 CPU(s):     4-7,12-15
->> NUMA node1 CPU(s):     0-3,8-11
->>
->> Without "padding", we'll get message like this:
->>
->> [    0.349339] x86: Booting SMP configuration:
->> [    0.353504] .... node  #1, CPUs:        #1  #2  #3
->> [    0.398812] .... node  #0, CPUs:    #4  #5  #6  #7
->> [    0.535186] .... node  #1, CPUs:        #8  #9 #10 #11
->> [    0.594312] .... node  #0, CPUs:   #12 #13 #14 #15
->> [    0.652398] x86: Booted up 2 nodes, 16 CPUs
->
-> Geez, is that box generating the cores to nodes groups at random during
-> each boot?!
->
-> Gotta admire bios dudes' "inventiveness".
->
-> Ok, so Ingo, I guess we can take this -v2 version for now - I need to
-> think of a way on how to address all that nonsense properly.
->
-> Acked-by: Borislav "luvz BIOS people" Petkov <bp@suse.de>
 
-No, should just take out lines of padding for BSP.
 
-Yinghai
+"Zubair Lutfullah :" <zubair.lutfullah@gmail.com> wrote:
+>Hi,
+>
+>A guy posted this fix on my blog. I couldn't make sense of it.
+>
+>Thought I'd post it here. I'll send a proper patch file if 
+>I knew what commit log I needed to write.
+>And I can't exactly sign-off :s.
+Yes you can. Patch routed through you, hence your sign is entirely correct. If you have an email address for the author then the from field can be different from the sign-off and you can add a reported-by as well to credit it as fully as possible.
+
+Will be the weekend at least before I actually look at the code!
+>
+>I asked him to post but he couldn't/wouldn't.
+>
+>Regards
+>ZubairLK
+>
+>
+>"Defend against buffer overflow of ci_array:
+>
+> code always overwrites one entry beyond end of array, now fixed
+>--Craig Markwardt"
+>
+>iio_utils.h
+>
+>@@ -335,6 +335,7 @@ inline int build_channel_array(const char
+>*device_dir,
+>   while (ent = readdir(dp), ent != NULL) {
+>     if (strcmp(ent->d_name + strlen(ent->d_name) - strlen("_en"),
+>          "_en") == 0) {
+>+      int current_enabled = 0;
+>       current = &(*ci_array)[count++];
+>       ret = asprintf(&filename,
+>                "%s/%s", scan_el_dir, ent->d_name);
+>       if (ret < 0) {
+>         ret = -ENOMEM;
+>         /* decrement count to avoid freeing name */
+>         count--;
+>         goto error_cleanup_array;
+>       }
+>
+>       sysfsfp = fopen(filename, "r");
+>
+>       if (sysfsfp == NULL) {
+>         free(filename);
+>         ret = -errno;
+>         goto error_cleanup_array;
+>       }
+>
+>-      fscanf(sysfsfp, "%u", &current->enabled);
+>+      fscanf(sysfsfp, "%u", &current_enabled);
+>       fclose(sysfsfp);
+>
+>-      if (!current->enabled) {
+>+      if (!current_enabled) {
+>         free(filename);
+>         count--;
+>         continue;
+>       }
+>+      current->enabled = current_enabled;
+>       current->scale = 1.0;
+>       current->offset = 0;
+>       current->name = strndup(ent->d_name,
+
+-- 
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
