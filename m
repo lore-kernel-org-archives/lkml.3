@@ -1,95 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab3LXTiI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 14:38:08 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36536 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752410Ab3LXTiH (ORCPT
+	id S1751069Ab3LXUg5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 15:36:57 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:33015 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916Ab3LXUgz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 14:38:07 -0500
-Message-ID: <52B9E29B.1040005@infradead.org>
-Date: Tue, 24 Dec 2013 11:38:03 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Michal_Mal=FD?= <madcatxster@prifuk.cz>,
-        linux-input@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, elias.vds@gmail.com, joe@perches.com
-Subject: Re: [RFC  v3] Add ff-memless-next
-References: <1494187.y8mYFDm1lA@geidi-prime>
-In-Reply-To: <1494187.y8mYFDm1lA@geidi-prime>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	Tue, 24 Dec 2013 15:36:55 -0500
+Message-ID: <1387917073.1848.7.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v7 00/12] kexec kernel efi runtime support
+From: Toshi Kani <toshi.kani@hp.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Dave Young <dyoung@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "James.Bottomley@HansenPartnership.com" 
+	<James.Bottomley@HansenPartnership.com>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "horms@verge.net.au" <horms@verge.net.au>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "bp@alien8.de" <bp@alien8.de>, "greg@kroah.com" <greg@kroah.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        "leif.lindholm@linaro.org" <leif.lindholm@linaro.org>
+Date: Tue, 24 Dec 2013 13:31:13 -0700
+In-Reply-To: <20131223073641.GA28919@console-pimps.org>
+References: <1387533742-18018-1-git-send-email-dyoung@redhat.com>
+	 <20131221173515.GE29501@console-pimps.org>
+	 <1387747621.1848.2.camel@misato.fc.hp.com>
+	 <20131223073641.GA28919@console-pimps.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/13 14:46, Michal Malý wrote:
-> ---
->  Documentation/input/ff-memless-next.txt | 145 ++++++
->  drivers/input/Kconfig                   |  12 +
->  drivers/input/Makefile                  |   2 +
->  drivers/input/ff-memless-next.c         | 786 ++++++++++++++++++++++++++++++++
->  include/linux/input/ff-memless-next.h   |  31 ++
->  5 files changed, 976 insertions(+)
->  create mode 100644 Documentation/input/ff-memless-next.txt
->  create mode 100644 drivers/input/ff-memless-next.c
->  create mode 100644 include/linux/input/ff-memless-next.h
-> 
-> diff --git a/Documentation/input/ff-memless-next.txt b/Documentation/input/ff-memless-next.txt
-> new file mode 100644
-> index 0000000..00f893d
-> --- /dev/null
-> +++ b/Documentation/input/ff-memless-next.txt
-> @@ -0,0 +1,145 @@
-> +"ff-memless-next" force feedback module for memoryless devices.
-> +By Michal Malý <madcatxster@prifuk.cz> on 2013/12/21
-> +----------------------------------------------------------------------------
-> +
-> +1. Introduction
-> +~~~~~~~~~~~~~~~
-> +This document describes basic working principles of the "ff-memless-next"
-
-                                                                             driver
-(or module)
-
-> +and its purpose. This document also contains summary of "ff-memless-next" API
-
-                                                a summary of the
-
-> +and brief instructions on how to use it to write a hardware-specific backend
-> +with "ff-memless-next". Some specifics of ff-memless-next that might be of
-> +interest for userspace developers are also discussed.
-
-
-
-> diff --git a/drivers/input/Kconfig b/drivers/input/Kconfig
-> index a11ff74..893ab00 100644
-> --- a/drivers/input/Kconfig
-> +++ b/drivers/input/Kconfig
-> @@ -77,6 +77,18 @@ config INPUT_MATRIXKMAP
->  	  To compile this driver as a module, choose M here: the
->  	  module will be called matrix-keymap.
+On Mon, 2013-12-23 at 07:36 +0000, Matt Fleming wrote:
+> On Sun, 22 Dec, at 02:27:01PM, Toshi Kani wrote:
+> > 
+> > The kexec branch is missing the following change, which is required for
+> > fast reboot with multi-cpus.
+> > 
+> >    commit 279f1df915c3a6ed3075d98a849705bf53851f99
+> >    Author: Vivek Goyal <vgoyal@redhat.com>
+> >    Date:   Tue Nov 26 10:25:28 2013 +0800
+> > 
+> >        kexec: migrate to reboot cpu
+> > 
+> > With this change added, I confirmed that the branch kernel works fine.
 >  
-> +config INPUT_FF_MEMLESS_NEXT
-> +	tristate "New version of support for memoryless force feedback devices"
-> +	help
-> +	  Say Y here if you want to enable support for various memoryless
-> +	  force feedback devices (as of now there is no hardware-specific
-> +	  driver that supports this)
+> I can't find that commit in Linus' tree. Where is it from?
 
-	                       this).
+Dave's git tree for the patchset has this change.  This change was
+accepted by Vivek, so I think it is in his tree.
 
-> +
-> +	  If unsure, say N.
-> +
-> +	  To compile this driver as a module, choose M here: the
-> +	  module will be called ff-memless-next.
-> +
->  comment "Userland interfaces"
->  
->  config INPUT_MOUSEDEV
+Thanks,
+-Toshi
 
 
--- 
-~Randy
