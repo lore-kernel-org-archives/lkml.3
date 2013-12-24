@@ -1,77 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751195Ab3LXGHK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 01:07:10 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57555 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985Ab3LXGHH (ORCPT
+	id S1751258Ab3LXGJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 01:09:26 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:64155 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072Ab3LXGJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 01:07:07 -0500
-X-AuditID: 9c930197-b7c4aae000003d84-a6-52b924884b6f
-Date: Tue, 24 Dec 2013 15:07:05 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, khlebnikov@openvz.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Bob Liu <bob.liu@oracle.com>
-Subject: Re: mm: kernel BUG at include/linux/swapops.h:131!
-Message-ID: <20131224060705.GA16140@lge.com>
-References: <52B1C143.8080301@oracle.com>
- <52B871B2.7040409@oracle.com>
- <20131224025127.GA2835@lge.com>
- <52B8F8F6.1080500@oracle.com>
+	Tue, 24 Dec 2013 01:09:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52B8F8F6.1080500@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <52B9051A.3090701@huawei.com>
+References: <52B7F53C.5020001@huawei.com>
+	<20131223133402.GA4487@pd.tnic>
+	<52B8DEAE.2040100@huawei.com>
+	<CAE9FiQWUfu6kNvpeN+e_Gp7L2NxddYnvG2oy9YB7CpqbeMgp-Q@mail.gmail.com>
+	<52B9051A.3090701@huawei.com>
+Date: Mon, 23 Dec 2013 22:09:24 -0800
+X-Google-Sender-Auth: HxJpOcmiIGJ6s9wWqdVPNgpTqhU
+Message-ID: <CAE9FiQV401-fC=aTAfvkz3e3nUmJtXTTLGjnwR9innXwU13TmA@mail.gmail.com>
+Subject: Re: [PATCH v2][TRIVIAL] x86/smpboot: fix cpu bootup message
+From: Yinghai Lu <yinghai@kernel.org>
+To: Xie XiuQi <xiexiuqi@huawei.com>
+Cc: Borislav Petkov <bp@suse.de>, Ingo Molnar <mingo@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Li Bin <huawei.libin@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 23, 2013 at 10:01:10PM -0500, Sasha Levin wrote:
-> On 12/23/2013 09:51 PM, Joonsoo Kim wrote:
-> >On Mon, Dec 23, 2013 at 12:24:02PM -0500, Sasha Levin wrote:
-> >>>Ping?
-> >>>
-> >>>I've also Cc'ed the "this page shouldn't be locked at all" team.
-> >Hello,
-> >
-> >I can't find the reason of this problem.
-> >If it is reproducible, how about bisecting?
-> 
-> While it reproduces under fuzzing it's pretty hard to bisect it with
-> the amount of issues uncovered by trinity recently.
-> 
-> I can add any debug code to the site of the BUG if that helps.
+On Mon, Dec 23, 2013 at 7:52 PM, Xie XiuQi <xiexiuqi@huawei.com> wrote:
+> [    0.000000] ACPI: Local APIC address 0xfee00000
+> [    0.000000] SRAT: PXM 0 -> APIC 0x00 -> Node 0
+> [    0.000000] SRAT: PXM 0 -> APIC 0x02 -> Node 0
+> [    0.000000] SRAT: PXM 0 -> APIC 0x12 -> Node 0
+> [    0.000000] SRAT: PXM 0 -> APIC 0x14 -> Node 0
+> [    0.000000] SRAT: PXM 0 -> APIC 0x01 -> Node 0
+> [    0.000000] SRAT: PXM 0 -> APIC 0x03 -> Node 0
+> [    0.000000] SRAT: PXM 0 -> APIC 0x13 -> Node 0
+> [    0.000000] SRAT: PXM 0 -> APIC 0x15 -> Node 0
+> [    0.000000] SRAT: PXM 1 -> APIC 0x20 -> Node 1
+> [    0.000000] SRAT: PXM 1 -> APIC 0x22 -> Node 1
+> [    0.000000] SRAT: PXM 1 -> APIC 0x32 -> Node 1
+> [    0.000000] SRAT: PXM 1 -> APIC 0x34 -> Node 1
+> [    0.000000] SRAT: PXM 1 -> APIC 0x21 -> Node 1
+> [    0.000000] SRAT: PXM 1 -> APIC 0x23 -> Node 1
+> [    0.000000] SRAT: PXM 1 -> APIC 0x33 -> Node 1
+> [    0.000000] SRAT: PXM 1 -> APIC 0x35 -> Node 1
+> [    0.000000] SRAT: Node 0 PXM 0 [mem 0x00000000-0x0009ffff]
+> [    0.000000] SRAT: Node 0 PXM 0 [mem 0x00100000-0xbfffffff]
+> [    0.000000] SRAT: Node 0 PXM 0 [mem 0x100000000-0x63fffffff]
+> [    0.000000] SRAT: Node 1 PXM 1 [mem 0x640000000-0xc3fffffff]
+...
+> [    0.000000] ACPI: LAPIC (acpi_id[0x01] lapic_id[0x20] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x02] lapic_id[0x22] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x03] lapic_id[0x32] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x04] lapic_id[0x34] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x05] lapic_id[0x00] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x06] lapic_id[0x02] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x07] lapic_id[0x12] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x08] lapic_id[0x14] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x09] lapic_id[0x21] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x0a] lapic_id[0x23] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x0b] lapic_id[0x33] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x0c] lapic_id[0x35] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x0d] lapic_id[0x01] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x0e] lapic_id[0x03] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x0f] lapic_id[0x13] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x10] lapic_id[0x15] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x11] lapic_id[0x90] disabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x12] lapic_id[0x91] disabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x13] lapic_id[0x92] disabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x14] lapic_id[0x93] disabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x15] lapic_id[0x94] disabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x16] lapic_id[0x95] disabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x17] lapic_id[0x96] disabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x18] lapic_id[0x97] disabled)
 
-Good!
-It will be helpful to add dump_page() in migration_entry_to_page().
+Amazing!
 
-Thanks.
+Your BIOS engineers really have different idea about building MADT.
 
---------8<------
-diff --git a/include/linux/swapops.h b/include/linux/swapops.h
-index c0f7526..f695abc 100644
---- a/include/linux/swapops.h
-+++ b/include/linux/swapops.h
-@@ -3,6 +3,7 @@
- 
- #include <linux/radix-tree.h>
- #include <linux/bug.h>
-+#include <linux/mm.h>
- 
- /*
-  * swapcache pages are stored in the swapper_space radix tree.  We want to
-@@ -128,6 +129,8 @@ static inline struct page *migration_entry_to_page(swp_entry_t entry)
-         * Any use of migration entries may only occur while the
-         * corresponding page is locked
-         */
-+       if (!PageLocked(p))
-+               dump_page(p);
-        BUG_ON(!PageLocked(p));
-        return p;
- }
-
+Yinghai
