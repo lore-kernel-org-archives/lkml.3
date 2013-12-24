@@ -1,78 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644Ab3LXI2q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 03:28:46 -0500
-Received: from ozlabs.org ([203.10.76.45]:49899 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751871Ab3LXI2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 03:28:44 -0500
-From: Michael Neuling <michael.neuling@au1.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Michael Neuling <michael@neuling.org>,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] auxvec.h: account for AT_HWCAP2 in AT_VECTOR_SIZE_BASE
-In-reply-to: <CA+55aFwbrdgO_=LQ5=p2J=QmX_BmCvNbGGcxS0C0dKqocAkfYA@mail.gmail.com>
-References: <1387820970-6949-1-git-send-email-ard.biesheuvel@linaro.org> <CA+55aFwbrdgO_=LQ5=p2J=QmX_BmCvNbGGcxS0C0dKqocAkfYA@mail.gmail.com>
-Comments: In-reply-to Linus Torvalds <torvalds@linux-foundation.org>
-   message dated "Mon, 23 Dec 2013 17:37:00 -0800."
-X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
-Date: Tue, 24 Dec 2013 19:28:42 +1100
-Message-ID: <1529.1387873722@ale.ozlabs.ibm.com>
+	id S1752009Ab3LXI3h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 03:29:37 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:51860 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751284Ab3LXI3f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Dec 2013 03:29:35 -0500
+Date: Tue, 24 Dec 2013 09:29:31 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Jason Seba <jason.seba42@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tomas Henzl <thenzl@redhat.com>, Jack Wang <xjtuwjp@gmail.com>,
+        Suresh Thiagarajan <Suresh.Thiagarajan@pmcs.com>,
+        Viswas G <Viswas.G@pmcs.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "JBottomley@parallels.com" <JBottomley@parallels.com>,
+        Vasanthalakshmi Tharmarajan 
+	<Vasanthalakshmi.Tharmarajan@pmcs.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: spinlock_irqsave() && flags (Was: pm80xx: Spinlock fix)
+Message-ID: <20131224082931.GA20471@gmail.com>
+References: <52B83B89.9040700@gmail.com>
+ <CE2C58F938F4C44EA74FFF880BAA7E5E1C68AA8A@BBYEXM01.pmc-sierra.internal>
+ <CAD0Z9T+69VoSnDY-Sj7a1QfJ-KLJYVyL9=WQ123XMfRvQmGdsg@mail.gmail.com>
+ <52B8518B.4060204@gmail.com>
+ <52B8569D.4050101@redhat.com>
+ <CAD0Z9TK-cn=X3ywSzPnEQN-FB+ue+0dHQ3EHuwonC+KfgrmPMA@mail.gmail.com>
+ <20131223163410.GA28220@redhat.com>
+ <20131223172744.GA2069@redhat.com>
+ <20131223182323.GA8656@gmail.com>
+ <20131223183341.GA6082@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131223183341.GA6082@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Please cc the guilty parties when sending patches like this.
 
-Crud, sorry about that.
+* Oleg Nesterov <oleg@redhat.com> wrote:
 
-Can we add a comment at the end of include/linux/auxvec.h that says you
-need to update this?  Then plebs like me are less likely to miss it in
-future.
+> On 12/23, Ingo Molnar wrote:
+> >
+> > * Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > > Initially I thought that this is obviously wrong, irqsave/irqrestore
+> > > assume that "flags" is owned by the caller, not by the lock. And
+> > > iirc this was certainly wrong in the past.
+> > >
+> > > But when I look at spinlock.c it seems that this code can actually
+> > > work. _irqsave() writes to FLAGS after it takes the lock, and
+> > > _irqrestore() has a copy of FLAGS before it drops this lock.
+> >
+> > I don't think that's true: if it was then the lock would not be
+> > irqsave, a hardware-irq could come in after the lock has been taken
+> > and before flags are saved+disabled.
+> 
+> I do agree that this pattern is not safe, that is why I decided to ask.
+> 
+> But, unless I missed something, with the current implementation
+> spin_lock_irqsave(lock, global_flags) does:
+> 
+> 	unsigned long local_flags;
+> 
+> 	local_irq_save(local_flags);
+> 	spin_lock(lock);
+> 
+> 	global_flags = local_flags;
+> 
+> so the access to global_flags is actually serialized by lock.
 
-Mikey
+You are right, today that's true technically because IIRC due to Sparc 
+quirks we happen to return 'flags' as a return value - still it's very 
+ugly and it could break anytime if we decide to do more aggressive 
+optimizations and actually directly save into 'flags'.
 
-> Also, just out of interest, please describe how this bug affected
-> things. Did we overflow the saved_auxv[] array, or what? Also, how
-> does this change affect architectures that _don't_ have that
-> ELF_HWCAP2 thing, ie everything but powerpc?
-> 
-> Acks, people?
-> 
->            Linus
-> 
-> On Mon, Dec 23, 2013 at 9:49 AM, Ard Biesheuvel
-> <ard.biesheuvel@linaro.org> wrote:
-> > Commit 2171364d1a92 (powerpc: Add HWCAP2 aux entry) introduced a new
-> > AT_ auxv entry type AT_HWCAP2 but failed to update AT_VECTOR_SIZE_BASE
-> > accordingly.
-> >
-> > Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-> > Fixes: 2171364d1a92 (powerpc: Add HWCAP2 aux entry)
-> > Cc: stable@vger.kernel.org
-> > ---
-> >
-> >  include/linux/auxvec.h | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> > diff --git a/include/linux/auxvec.h b/include/linux/auxvec.h
-> > index 669fef5..3e0fbe4 100644
-> > --- a/include/linux/auxvec.h
-> > +++ b/include/linux/auxvec.h
-> > @@ -3,6 +3,6 @@
-> >
-> >  #include <uapi/linux/auxvec.h>
-> >
-> > -#define AT_VECTOR_SIZE_BASE 19 /* NEW_AUX_ENT entries in auxiliary table */
-> > +#define AT_VECTOR_SIZE_BASE 20 /* NEW_AUX_ENT entries in auxiliary table */
-> >    /* number of "#define AT_.*" above, minus {AT_NULL, AT_IGNORE, AT_NOTELF} */
-> >  #endif /* _LINUX_AUXVEC_H */
-> > --
-> > 1.8.3.2
-> >
-> 
+Note that even today there's a narrow exception: on UP we happen to 
+build it the other way around, so that we do:
+
+	local_irq_save(global_flags);
+	__acquire(lock);
+
+This does not matter for any real code because on UP there is no 
+physical lock and __acquire() is empty code-wise, but any compiler 
+driven locking analysis tool using __attribute__ __context__(), if 
+built on UP, would see the unsafe locking pattern.
+
+Thanks,
+
+	Ingo
