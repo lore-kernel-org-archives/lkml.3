@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577Ab3LXL3R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 06:29:17 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:11016 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752351Ab3LXL3M (ORCPT
+	id S1752677Ab3LXL32 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 06:29:28 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:28051 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752600Ab3LXL30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 06:29:12 -0500
-Message-ID: <52B96FDE.4000103@huawei.com>
-Date: Tue, 24 Dec 2013 19:28:30 +0800
+	Tue, 24 Dec 2013 06:29:26 -0500
+Message-ID: <52B96FFF.3010708@huawei.com>
+Date: Tue, 24 Dec 2013 19:29:03 +0800
 From: Ding Tianhong <dingtianhong@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Rupesh Gujare <rupesh.gujare@atmel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <devel@driverdev.osuosl.org>, Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 09/20] ozwpan: slight optimization of addr compare
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Netdev <netdev@vger.kernel.org>
+Subject: [PATCH v2 14/20] media: dvb_core: slight optimization of addr compare
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.72.199]
@@ -28,60 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Use possibly more efficient ether_addr_equal
 instead of memcmp.
 
-Cc: Rupesh Gujare <rupesh.gujare@atmel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: linux-media@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Tan Xiaojun <tanxiaojun@huawei.com>
+Signed-off-by: Yang Yingliang <yangyingliang@huawei.com>
 Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 ---
- drivers/staging/ozwpan/ozcdev.c  | 2 +-
- drivers/staging/ozwpan/ozproto.c | 5 +++--
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ drivers/media/dvb-core/dvb_net.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/ozwpan/ozcdev.c b/drivers/staging/ozwpan/ozcdev.c
-index 6ce0af9..c363f66 100644
---- a/drivers/staging/ozwpan/ozcdev.c
-+++ b/drivers/staging/ozwpan/ozcdev.c
-@@ -448,7 +448,7 @@ int oz_cdev_start(struct oz_pd *pd, int resume)
- 	}
- 	spin_lock(&g_cdev.lock);
- 	if ((g_cdev.active_pd == NULL) &&
--		(memcmp(pd->mac_addr, g_cdev.active_addr, ETH_ALEN) == 0)) {
-+		(ether_addr_equal(pd->mac_addr, g_cdev.active_addr))) {
- 		oz_pd_get(pd);
- 		g_cdev.active_pd = pd;
- 		oz_dbg(ON, "Active PD arrived\n");
-diff --git a/drivers/staging/ozwpan/ozproto.c b/drivers/staging/ozwpan/ozproto.c
-index 88714ec..19a2521 100644
---- a/drivers/staging/ozwpan/ozproto.c
-+++ b/drivers/staging/ozwpan/ozproto.c
-@@ -9,6 +9,7 @@
- #include <linux/timer.h>
- #include <linux/sched.h>
- #include <linux/netdevice.h>
-+#include <linux/etherdevice.h>
- #include <linux/errno.h>
- #include <linux/ieee80211.h>
- #include "ozdbg.h"
-@@ -180,7 +181,7 @@ static struct oz_pd *oz_connect_req(struct oz_pd *cur_pd, struct oz_elt *elt,
- 		spin_lock_bh(&g_polling_lock);
- 		list_for_each(e, &g_pd_list) {
- 			pd2 = container_of(e, struct oz_pd, link);
--			if (memcmp(pd2->mac_addr, pd_addr, ETH_ALEN) == 0) {
-+			if (ether_addr_equal(pd2->mac_addr, pd_addr)) {
- 				free_pd = pd;
- 				pd = pd2;
- 				break;
-@@ -597,7 +598,7 @@ struct oz_pd *oz_pd_find(const u8 *mac_addr)
- 	spin_lock_bh(&g_polling_lock);
- 	list_for_each(e, &g_pd_list) {
- 		pd = container_of(e, struct oz_pd, link);
--		if (memcmp(pd->mac_addr, mac_addr, ETH_ALEN) == 0) {
-+		if (ether_addr_equal(pd->mac_addr, mac_addr)) {
- 			atomic_inc(&pd->ref_count);
- 			spin_unlock_bh(&g_polling_lock);
- 			return pd;
+diff --git a/drivers/media/dvb-core/dvb_net.c b/drivers/media/dvb-core/dvb_net.c
+index f91c80c..3dfc33b 100644
+--- a/drivers/media/dvb-core/dvb_net.c
++++ b/drivers/media/dvb-core/dvb_net.c
+@@ -179,7 +179,7 @@ static __be16 dvb_net_eth_type_trans(struct sk_buff *skb,
+ 	eth = eth_hdr(skb);
+ 
+ 	if (*eth->h_dest & 1) {
+-		if(memcmp(eth->h_dest,dev->broadcast, ETH_ALEN)==0)
++		if(ether_addr_equal(eth->h_dest,dev->broadcast))
+ 			skb->pkt_type=PACKET_BROADCAST;
+ 		else
+ 			skb->pkt_type=PACKET_MULTICAST;
+@@ -674,11 +674,11 @@ static void dvb_net_ule( struct net_device *dev, const u8 *buf, size_t buf_len )
+ 					if (priv->rx_mode != RX_MODE_PROMISC) {
+ 						if (priv->ule_skb->data[0] & 0x01) {
+ 							/* multicast or broadcast */
+-							if (memcmp(priv->ule_skb->data, bc_addr, ETH_ALEN)) {
++							if (!ether_addr_equal(priv->ule_skb->data, bc_addr)) {
+ 								/* multicast */
+ 								if (priv->rx_mode == RX_MODE_MULTI) {
+ 									int i;
+-									for(i = 0; i < priv->multi_num && memcmp(priv->ule_skb->data, priv->multi_macs[i], ETH_ALEN); i++)
++									for(i = 0; i < priv->multi_num && !ether_addr_equal(priv->ule_skb->data, priv->multi_macs[i]); i++)
+ 										;
+ 									if (i == priv->multi_num)
+ 										drop = 1;
+@@ -688,7 +688,7 @@ static void dvb_net_ule( struct net_device *dev, const u8 *buf, size_t buf_len )
+ 							}
+ 							/* else: broadcast */
+ 						}
+-						else if (memcmp(priv->ule_skb->data, dev->dev_addr, ETH_ALEN))
++						else if (!ether_addr_equal(priv->ule_skb->data, dev->dev_addr))
+ 							drop = 1;
+ 						/* else: destination address matches the MAC address of our receiver device */
+ 					}
 -- 
 1.8.0
 
