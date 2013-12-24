@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533Ab3LXBDi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 20:03:38 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:46857 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751705Ab3LXBDg (ORCPT
+	id S1757796Ab3LXBJU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 20:09:20 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:45756 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab3LXBJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 20:03:36 -0500
-Message-ID: <52B8DD5F.2060809@hitachi.com>
-Date: Tue, 24 Dec 2013 10:03:27 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 23 Dec 2013 20:09:19 -0500
+Message-ID: <52B8DEAE.2040100@huawei.com>
+Date: Tue, 24 Dec 2013 09:09:02 +0800
+From: Xie XiuQi <xiexiuqi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "David A. Long" <dave.long@linaro.org>, systemtap@sourceware.org,
-        yrl.pp-manager.tt@hitachi.com, Namhyung Kim <namhyung@kernel.org>
-Subject: Re: Re: [PATCH -tip  2/3] perf-probe: Support dwarf on uprobe
- events
-References: <20131220100255.7169.19384.stgit@kbuild-fedora.novalocal> <20131220100259.7169.57512.stgit@kbuild-fedora.novalocal> <20131220180154.GB28878@ghostprotocols.net> <52B75C04.6000404@hitachi.com> <20131223143428.GG28878@ghostprotocols.net>
-In-Reply-To: <20131223143428.GG28878@ghostprotocols.net>
-Content-Type: text/plain; charset=UTF-8
+To: Borislav Petkov <bp@suse.de>
+CC: Ingo Molnar <mingo@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Li Bin <huawei.libin@huawei.com>
+Subject: Re: [PATCH v2][TRIVIAL] x86/smpboot: fix cpu bootup message
+References: <52B7F53C.5020001@huawei.com> <20131223133402.GA4487@pd.tnic>
+In-Reply-To: <20131223133402.GA4487@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.69.18]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/23 23:34), Arnaldo Carvalho de Melo wrote:
-> Em Mon, Dec 23, 2013 at 06:39:16AM +0900, Masami Hiramatsu escreveu:
->> (2013/12/21 3:01), Arnaldo Carvalho de Melo wrote:
->>> Em Fri, Dec 20, 2013 at 10:02:59AM +0000, Masami Hiramatsu escreveu:
->>>> Support dwarf(debuginfo) based operations for uprobe events.
->>>> With this change, perf probe can analyze debuginfo of user
->>>> application binary to set up new uprobe event.
->>>> This allows perf-probe --add/--line works with -x option.
->>>> (Actually, --vars has already accepted -x option)
->>>
->>> Can you provide an example?
->>>
+On 2013/12/23 21:34, Borislav Petkov wrote:
+> On Mon, Dec 23, 2013 at 04:33:00PM +0800, Xie XiuQi wrote:
+>> When CPU0 and CPU1 aren't in same package, we got message
+>> like this:
 >>
->> OK, here is the examples from 0/3. :)
-> 
-> Pleasn readnthis message:
-> 
-> http://lkml.kernel.org/r/20131218141125.GT21999@twins.programming.kicks-ass.net
-> 
-> It is unrelated to this code being discussed in this thread, but
-> provides another request for having better patch descriptions and to
-> have relevant discussion in the corresponding patch, not just on "0/N".
 
-OK, I'll take care of it.
+[...]
 
+>>
+>> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+>> index 85dc05a..9e82c1e 100644
+>> --- a/arch/x86/kernel/smpboot.c
+>> +++ b/arch/x86/kernel/smpboot.c
+>> @@ -639,7 +639,7 @@ static void announce_cpu(int cpu, int apicid)
+>>  {
+>>  	static int current_node = -1;
+>>  	int node = early_cpu_to_node(cpu);
+>> -	static int width, node_width;
+>> +	static int width, node_width, padding;
+>>
+>>  	if (!width)
+>>  		width = num_digits(num_possible_cpus()) + 1; /* + '#' sign */
+>> @@ -658,11 +658,13 @@ static void announce_cpu(int cpu, int apicid)
+>>
+>>  			printk(KERN_INFO ".... node %*s#%d, CPUs:  ",
+>>  			       node_width - num_digits(node), " ", node);
+>> -		}
+>>
+>> -		/* Add padding for the BSP */
+>> -		if (cpu == 1)
+>> -			pr_cont("%*s", width + 1, " ");
+>> +			/* Add padding for the BSP */
+>> +			if (!padding && (early_cpu_to_node(0) == current_node)) {
 > 
->> Or, should I better put this into the patch description too?
+> You don't need "padding".
 > 
-> Sure thing, please!
 
-I see, I'll update it with the examples in the next version.
+On another machine, the configuration is:
 
-> 
->> For example)
->> - Shows the probe-able lines of the given function
-> 
-> The above line would be more clear as:
-> 
-> "The following command shows the probe-able lines of a given user space
->  function, something that so far was only available in the 'perf probe'
->  tool for kernel space functions:"
+xiexiuqi@localhost:~> lscpu
+[...]
+NUMA node0 CPU(s):     4-7,12-15
+NUMA node1 CPU(s):     0-3,8-11
 
-Thanks! :)
+Without "padding", we'll get message like this:
 
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+[    0.349339] x86: Booting SMP configuration:
+[    0.353504] .... node  #1, CPUs:        #1  #2  #3
+[    0.398812] .... node  #0, CPUs:    #4  #5  #6  #7
+[    0.535186] .... node  #1, CPUs:        #8  #9 #10 #11
+[    0.594312] .... node  #0, CPUs:   #12 #13 #14 #15
+[    0.652398] x86: Booted up 2 nodes, 16 CPUs
 
