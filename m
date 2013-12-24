@@ -1,105 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531Ab3LXIqV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 03:46:21 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:45588 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987Ab3LXIqT (ORCPT
+	id S1751884Ab3LXIu5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 03:50:57 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:59326 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299Ab3LXIu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 03:46:19 -0500
-X-AuditID: 9c93016f-b7b37ae000002852-e7-52b949d8ed79
-From: Namhyung Kim <namhyung@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt \(Red Hat\)" <rostedt@goodmis.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "David A. Long" <dave.long@linaro.org>, systemtap@sourceware.org,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH -tip 3/3] perf-probe: Use the actual address as a hint for uprobes
-References: <20131220100255.7169.19384.stgit@kbuild-fedora.novalocal>
-	<20131220100302.7169.96318.stgit@kbuild-fedora.novalocal>
-	<20131220180351.GC28878@ghostprotocols.net>
-	<52B75F9E.7000802@hitachi.com> <87wqiwc8ly.fsf@sejong.aot.lge.com>
-	<52B81562.5000607@hitachi.com> <87y53afzv3.fsf@sejong.aot.lge.com>
-	<52B94581.40704@hitachi.com>
-Date: Tue, 24 Dec 2013 17:46:16 +0900
-In-Reply-To: <52B94581.40704@hitachi.com> (Masami Hiramatsu's message of "Tue,
-	24 Dec 2013 17:27:45 +0900")
-Message-ID: <87lhzafxgn.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 24 Dec 2013 03:50:56 -0500
+Message-ID: <1387875122.5567.241.camel@haakon3.risingtidesystems.com>
+Subject: Re: bio_integrity_verify() bug causing READ verify to be silently
+ skipped
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        kmo@daterainc.com
+Date: Tue, 24 Dec 2013 00:52:02 -0800
+In-Reply-To: <1387858826.5567.236.camel@haakon3.risingtidesystems.com>
+References: <1387858826.5567.236.camel@haakon3.risingtidesystems.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Dec 2013 17:27:45 +0900, Masami Hiramatsu wrote:
-> (2013/12/24 16:54), Namhyung Kim wrote:
->> Hi Masami,
->> 
->> On Mon, 23 Dec 2013 19:50:10 +0900, Masami Hiramatsu wrote:
->>> (2013/12/23 16:46), Namhyung Kim wrote:
->>>> On Mon, 23 Dec 2013 06:54:38 +0900, Masami Hiramatsu wrote:
->>>>> (2013/12/21 3:03), Arnaldo Carvalho de Melo wrote:
->>>>>> Em Fri, Dec 20, 2013 at 10:03:02AM +0000, Masami Hiramatsu escreveu:
->>>>> BTW, I'm not sure why debuginfo and nm shows symbol address + 0x400000,
->>>>> and why the perf's map/symbol can remove this offset. Could you tell me
->>>>> how it works?
->>>>> If I can get the offset (0x400000) from binary, I don't need this kind
->>>>> of ugly hacks...
->>>>
->>>> AFAIK the actual symbol address is what nm (and debuginfo) shows.  But
->>>> perf adjusts symbol address to have a relative address from the start of
->>>> mapping (i.e. file offset) like below:
->>>>
->>>> 	sym.st_value -= shdr.sh_addr - shdr.sh_offset;
->>>
->>> Thanks! this is what I really need!
->
-> BTW, what I've found is that the perf's map has start, end and pgoffs
-> but those are not initialized when we load user-binary (see dso__load_sym).
-> I'm not sure why.
+On Mon, 2013-12-23 at 20:20 -0800, Nicholas A. Bellinger wrote:
+> Hi Martin & Co,
+> 
+> So after playing with the mainline DIF client against an initial WIP
+> target DIF support patch, I've started hitting a bug in
+> bio_integrity_verify() that causes READ verify logic to be silently
+> skipped for both WIP target and existing scsi_debug DIF code.
+> 
+> The issue is with the scsi_end_request() -> blk_end_request() completion
+> path, where eventually blk_update_request() -> req_bio_endio() ->
+> bio_advance() is called to increment bio->bi_idx to a non-zero value.
+> 
+> Given that bio_integrity_verify() is using bio_for_each_segment(), the
+> loop starts from the updated bio->bi_idx, and not a zero value, which
+> ends up skipping individual bio segment calls to bi->verify_fn().
+> 
+> The following patch changes bio_integrity_verify() to use
+> bio_for_each_segment_all() instead of bio_for_each_segment() to ensure
+> that the segment walk always starts from zero, regardless of the current
+> bio->bi_idx value after bio_advance().
+> 
+> Note this bug has been observed with v3.13-rc3 code, and I haven't yet
+> looked back to figure out when this bug was first introduced..  Any
+> ideas..?
 
-It's only set from a mmap event either sent from kernel or synthesized
-using /proc/<pid>/maps.  We cannot know the load address of a library
-until it gets loaded but for an executable, we could use the address of
-ELF segments/sections.
+So the commit that introduced bio_advance() into req_bio_endio() code
+was:
 
->
->>>> This way, we can handle mmap and symbol address almost uniformly
->>>> (i.e. ip = map->start + symbol->address).  But this requires the mmap
->>>> event during perf record.  For perf probe, we might need to synthesize
->>>> mapping info from the section/segment header since it doesn't have the
->>>> mmap event.  Currently, the dso__new_map() just creates a map starts
->>>> from 0.
->>>
->>> I think the uprobe requires only the relative address, doesn't that?
->> 
->> Yes, but fetching arguments is little different than a normal relative
->> address, I think.
->
-> Is this for uprobe probing address? or fetching symbol(global variables)?
-> I'd like to support uprobes probing address first.
+commit f79ea4161434b31e351658283b24e92c3e570142
+Author: Kent Overstreet <koverstreet@google.com>
+Date:   Thu Sep 20 16:38:30 2012 -0700
 
-It's for argument fetching.  For probing, you can simply use a relative
-address.
+    block: Refactor blk_update_request()
 
->
->> An offset of an argument bases on the mapping address of text segment.
->> This fits naturally for a shared library case - base address is 0.  So
->> we can use the symbol address (st_value) directly.  But for executables,
->> the base address of text segment is 0x400000 on x86-64 and data symbol
->> is on 0x6XXXXX typically.  So in this case the offset given to uprobe
->> should be "@+0x2XXXXX" (st_value - text_base).
->
-> Oh, I see. I'd better make a testcase for checking what the best
-> way to get such offsets.
+So AFAICT this has been broken since v3.10..
 
-Okay, please share the result then. :)
+(CC'ing kmo)
 
-Thanks,
-Namhyung
+--nab
+
+> 
+> Interestingly enough, the scsi-mq alpha code does not suffer from this
+> bug, as blk_end_request() is never called from scsi_mq_end_request() ->
+> blk_mq_end_io() completion path code.
+> 
+> Thank you,
+> 
+> --nab
+> 
+> From 32242942edca095e8dd126cb1408f2842340773e Mon Sep 17 00:00:00 2001
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
+> Date: Tue, 24 Dec 2013 04:00:24 +0000
+> Subject: [PATCH] bio-integrity: Fix bio_integrity_verify segment start bug
+> 
+> This patch addresses a bug in bio_integrity_verify() code that has
+> been causing DIF READ verify operations to be silently skipped.
+> 
+> The issue is that bio->bi_idx will have been incremented within
+> bio_advance() code in the normal blk_update_request() ->
+> req_bio_endio() completion path, and bio_integrity_verify() is
+> using bio_for_each_segment() which starts the bio segment walk
+> at the current bio->bi_idx.
+> 
+> So instead use bio_for_each_segment_all() to always start the bio
+> segment walk from zero, regardless of the current bio->bi_idx
+> value after bio_advance() has been called.
+> 
+> Cc: Martin K. Petersen <martin.petersen@oracle.com>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Christoph Hellwig <hch@lst.de>
+> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+> ---
+>  fs/bio-integrity.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
+> index fc60b31..f1d5cde 100644
+> --- a/fs/bio-integrity.c
+> +++ b/fs/bio-integrity.c
+> @@ -450,7 +450,7 @@ static int bio_integrity_verify(struct bio *bio)
+>  	bix.disk_name = bio->bi_bdev->bd_disk->disk_name;
+>  	bix.sector_size = bi->sector_size;
+>  
+> -	bio_for_each_segment(bv, bio, i) {
+> +	bio_for_each_segment_all(bv, bio, i) {
+>  		void *kaddr = kmap_atomic(bv->bv_page);
+>  		bix.data_buf = kaddr + bv->bv_offset;
+>  		bix.data_size = bv->bv_len;
+
+
