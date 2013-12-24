@@ -1,73 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751770Ab3LXM2N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 07:28:13 -0500
-Received: from mga09.intel.com ([134.134.136.24]:11110 "EHLO mga09.intel.com"
+	id S1751987Ab3LXMag (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 07:30:36 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:46659 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750987Ab3LXM2L convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 07:28:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,543,1384329600"; 
-   d="scan'208";a="457094730"
-From: "Du, ChangbinX" <changbinx.du@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "sarah.a.sharp@linux.intel.com" <sarah.a.sharp@linux.intel.com>,
-        "Lan, Tianyu" <tianyu.lan@intel.com>,
-        "burzalodowa@gmail.com" <burzalodowa@gmail.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] usb/core: fix NULL pointer dereference in
- recursively_mark_NOTATTACHED
-Thread-Topic: [PATCH] usb/core: fix NULL pointer dereference in
- recursively_mark_NOTATTACHED
-Thread-Index: Ac7/zXecO35CkBpaT+GTORmHLtV6Vf//wciA//4eTGA=
-Date: Tue, 24 Dec 2013 12:28:05 +0000
-Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A01A2FCD9@SHSMSX103.ccr.corp.intel.com>
-References: <0C18FE92A7765D4EB9EE5D38D86A563A01A2EDE9@SHSMSX103.ccr.corp.intel.com>
- <Pine.LNX.4.44L0.1312231003550.5503-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1312231003550.5503-100000@netrider.rowland.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750974Ab3LXMae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Dec 2013 07:30:34 -0500
+Message-ID: <52B98BBC.9060909@ti.com>
+Date: Tue, 24 Dec 2013 15:27:24 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>, Sekhar Nori <nsekhar@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v3 2/2] gpio: davinci: reuse for Keystone SoC
+References: <1387885284-8119-1-git-send-email-grygorii.strashko@ti.com> <1387885284-8119-3-git-send-email-grygorii.strashko@ti.com> <CA+V-a8tJRZ5Esn3F4J6_z7VCmGPpptgxMEyyaANbrytAF3pUMA@mail.gmail.com>
+In-Reply-To: <CA+V-a8tJRZ5Esn3F4J6_z7VCmGPpptgxMEyyaANbrytAF3pUMA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.75]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Alan Stern [mailto:stern@rowland.harvard.edu]
-> Sent: Monday, December 23, 2013 11:13 PM
-> To: Du, ChangbinX
-> Cc: gregkh@linuxfoundation.org; sarah.a.sharp@linux.intel.com; Lan, Tianyu;
-> burzalodowa@gmail.com; linux-usb@vger.kernel.org;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] usb/core: fix NULL pointer dereference in
-> recursively_mark_NOTATTACHED
-> 
-> On Mon, 23 Dec 2013, Du, ChangbinX wrote:
-> 
-> > usb_hub_to_struct_hub() can return NULL if the hub without active
-> > configuration. So the result must be checked.
-> >
-> > BUG: unable to handle kernel NULL pointer dereference at 0000015c
-
-> How did you manage to trigger this BUG?  If hub is NULL then
-> udev->maxchild should be 0.  See the code in hub_disconnect().
+On 12/24/2013 01:20 PM, Prabhakar Lad wrote:
+> Hi Grygorii,
 >
-> Alan Stern
+> Thanks for the patch.
+>
+> On Tue, Dec 24, 2013 at 5:11 PM, Grygorii Strashko
+> <grygorii.strashko@ti.com> wrote:
+>> The similar GPIO HW block is used by keystone SoCs as
+>> in Davinci SoCs.
+>> Hence, reuse Davinci GPIO driver for Keystone taking into
+>> account that Keystone contains ARM GIC IRQ controller which
+>> is implemented using IRQ Chip.
+>>
+>> Documentation:
+>>          http://www.ti.com/lit/ug/sprugv1/sprugv1.pdf
+>>
+>> Cc: Alexandre Courbot <gnurou@gmail.com>
+>> Cc: Sekhar Nori <nsekhar@ti.com>
+>> Cc: devicetree@vger.kernel.org
+>>
+>> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>> ---
+>>   .../devicetree/bindings/gpio/gpio-davinci.txt      |    4 +-
+>>   drivers/gpio/gpio-davinci.c                        |   48 ++++++++++++++++----
+>>   2 files changed, 42 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/gpio/gpio-davinci.txt b/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
+>> index a2e839d..4ce9862 100644
+>> --- a/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
+>> +++ b/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
+>> @@ -1,7 +1,7 @@
+>> -Davinci GPIO controller bindings
+>> +Davinci/Keystone GPIO controller bindings
+>>
+>>   Required Properties:
+>> -- compatible: should be "ti,dm6441-gpio"
+>> +- compatible: should be "ti,dm6441-gpio", "ti,keystone-gpio"
+>
+> Can you make it something like this ? It isn't readable.
+>
+> - compatible : value should be either one among the following
+>      (a)  "ti,dm6441-gpio" for davinci.
+>      (b)  "ti,keystone-gpio" for keystone.
+>
+>>
+>>   - reg: Physical base address of the controller and the size of memory mapped
+>>          registers.
+>> diff --git a/drivers/gpio/gpio-davinci.c b/drivers/gpio/gpio-davinci.c
+>> index 7629b4f..d0f135d 100644
+>> --- a/drivers/gpio/gpio-davinci.c
+>> +++ b/drivers/gpio/gpio-davinci.c
+>> @@ -37,6 +37,8 @@ struct davinci_gpio_regs {
+>>          u32     intstat;
+>>   };
+>>
+>> +typedef struct irq_chip *(*gpio_get_irq_chip_cb_t)(unsigned int irq);
+>> +
+>>   #define BINTEN 0x8 /* GPIO Interrupt Per-Bank Enable Register */
+>>
+>>   #define chip2controller(chip)  \
+>> @@ -413,6 +415,26 @@ static const struct irq_domain_ops davinci_gpio_irq_ops = {
+>>          .xlate = irq_domain_xlate_onetwocell,
+>>   };
+>>
+>> +static struct irq_chip *davinci_gpio_get_irq_chip(unsigned int irq)
+>> +{
+>> +       static struct irq_chip_type gpio_unbanked;
+>> +
+>> +       gpio_unbanked = *container_of(irq_get_chip(irq),
+>> +                                     struct irq_chip_type, chip);
+>> +
+>> +       return &gpio_unbanked.chip;
+>> +};
+>> +
+>> +static struct irq_chip *keystone_gpio_get_irq_chip(unsigned int irq)
+>> +{
+>> +       static struct irq_chip gpio_unbanked;
+>> +
+>> +       gpio_unbanked = *irq_get_chip(irq);
+>> +       return &gpio_unbanked;
+>> +};
+>> +
+>> +static const struct of_device_id davinci_gpio_ids[];
+>> +
+>>   /*
+>>    * NOTE:  for suspend/resume, probably best to make a platform_device with
+>>    * suspend_late/resume_resume calls hooking into results of the set_wake()
+>> @@ -433,6 +455,18 @@ static int davinci_gpio_irq_setup(struct platform_device *pdev)
+>>          struct davinci_gpio_platform_data *pdata = dev->platform_data;
+>>          struct davinci_gpio_regs __iomem *g;
+>>          struct irq_domain       *irq_domain = NULL;
+>> +       const struct of_device_id *match;
+>> +       struct irq_chip *irq_chip;
+>> +       gpio_get_irq_chip_cb_t gpio_get_irq_chip;
+>> +
+>> +       /*
+>> +        * Use davinci_gpio_get_irq_chip by default to handle non DT cases
+>> +        */
+>> +       gpio_get_irq_chip = davinci_gpio_get_irq_chip;
+>> +       match = of_match_device(of_match_ptr(davinci_gpio_ids),
+>> +                               dev);
+>
+> Sorry didn't notice that earlier the data structure of_match_ptr()
+> protects is always compiled in.
+> so of_match_ptr() is not needed.
+> While you are at it you can also fix it in davinci_gpio_driver
+> structure as a sperate
+> patch.
+>
 
-Hello, Alan. The hub also should be null if actconfig is null. You can see it in function
-usb_hub_to_struct_hub().
-udev->maxchild will be set to 0 in hub_disconnect(). But before that,
-recursively_mark_NOTATTACHED may be called when calling usb_disconnect(). So this issue
-will happen when usb_disconnect a hub that not have a configuration yet.
-It happened once here when unplugging otg cable from DUT(will cause hcd removed) with
-tiers of hub and devices. But it's not easy to reproduce it.
-This is my analysis, how do you think?
+Not sure. davinci_gpio_ids defined as:
 
-Du, Changbin
+#if IS_ENABLED(CONFIG_OF)
+static const struct of_device_id davinci_gpio_ids[] = {
+
+And seems, Davinci may still be compiled without OF enabled.
+
+Regards,
+- grygorii
