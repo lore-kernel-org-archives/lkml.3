@@ -1,58 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751181Ab3LXGn4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 01:43:56 -0500
-Received: from smtprelay0121.hostedemail.com ([216.40.44.121]:56321 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750870Ab3LXGnz (ORCPT
+	id S1751305Ab3LXGvl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 01:51:41 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:46681 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751087Ab3LXGvk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 01:43:55 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2551:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3868:3871:3873:4321:5007:7652:10004:10400:10848:11232:11658:11914:12050:12296:12517:12519:12663:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bear72_3f20bb12ab222
-X-Filterd-Recvd-Size: 1690
-Message-ID: <1387867432.2259.2.camel@joe-AO722>
-Subject: Re: [PATCH] drivers: firmware: edd: fixed coding style errors
-From: Joe Perches <joe@perches.com>
-To: Derek Perrin <d.roc16@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 23 Dec 2013 22:43:52 -0800
-In-Reply-To: <2057495.KkFWMBqotF@slave1>
-References: <1387747039-14098-1-git-send-email-d.roc16@gmail.com>
-	 <1387750419.22671.25.camel@joe-AO722> <2057495.KkFWMBqotF@slave1>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	Tue, 24 Dec 2013 01:51:40 -0500
+Message-ID: <52B92EEE.2020803@hitachi.com>
+Date: Tue, 24 Dec 2013 15:51:26 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "David A. Long" <dave.long@linaro.org>, systemtap@sourceware.org,
+        yrl.pp-manager.tt@hitachi.com, Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH -tip 1/3] [CLEANUP] perf-probe: Expand given path to absolute
+ path
+References: <20131220100255.7169.19384.stgit@kbuild-fedora.novalocal> <20131220100257.7169.60537.stgit@kbuild-fedora.novalocal> <20131220180031.GA28878@ghostprotocols.net> <52B75B0D.6010401@hitachi.com> <20131223142832.GF28878@ghostprotocols.net>
+In-Reply-To: <20131223142832.GF28878@ghostprotocols.net>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-12-23 at 18:53 -0600, Derek Perrin wrote:
-> On Sunday, December 22, 2013 02:13:39 PM Joe Perches wrote:
-> > On Sun, 2013-12-22 at 15:17 -0600, Derek Perrin wrote:
-[]
-> > One trivial bit too,
-> > > diff --git a/drivers/firmware/edd.c b/drivers/firmware/edd.c
-[]
-> > > -	ssize_t(*show) (struct edd_device * edev, char *buf);
-> > > -	int (*test) (struct edd_device * edev);
-> > > +	ssize_t(*show) (struct edd_device *edev, char *buf);
-> > > +	int (*test) (struct edd_device *edev);
-> > 
-> > I think most prefer function pointer prototypes like:
-> > 
-> > 	size_t (*show)(struct edd_device *edev, char *buf);
-> > 	int (*test)(struct edd_device *edev);
+(2013/12/23 23:28), Arnaldo Carvalho de Melo wrote:
+> Em Mon, Dec 23, 2013 at 06:35:09AM +0900, Masami Hiramatsu escreveu:
+>> (2013/12/21 3:00), Arnaldo Carvalho de Melo wrote:
+>>> Em Fri, Dec 20, 2013 at 10:02:57AM +0000, Masami Hiramatsu escreveu:
+>>>> Expand given path to absolute path in option parser,
+>>>> except for a module name. Instead of expanding it later,
+>>>> this get the absolute path in early stage.
+>>>
+>>> What is the problem this solves?
+>>>
+>>> Can you provide some output showing the problem, i.e. before you apply
+>>> this patch?
+>>
+>> No, this is just a code cleanup, for the later enhancements.
+> 
+> Ok, this is just a cleanup, but what does this cleanup achieves? Why is
+> it better to "getting the absolute path in early stage"?
+> 
+> I.e. you're describing what the patch does, and I can see it from
+> reading code, but why is it good to do it in an early stage?
 
-> I'm not seeing any 
-> difference between what I did and what you said about the function pointer 
-> prototypes. 
+---
+Since realpath at the later stage in processing several probe point
+can be called several times(even if currently doesn't, it can happen
+when we expands the feature), it is waste of the performance.
+Processing it once at the early stage can avoid that.
+---
 
-	type (*funcptr) (args...)
-vs
-	type (*funcptr)(args...)
+Is that good enough for you? :)
 
-2nd is preferred
+> 
+>> Should I put it into the next patch?
+> 
+> No need for that, just, please, clarify why it is needed.
+>  
+
+OK, I'll do that:)
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
