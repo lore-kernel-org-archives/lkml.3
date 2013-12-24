@@ -1,98 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751007Ab3LXFnz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 00:43:55 -0500
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:45630 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797Ab3LXFnw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 00:43:52 -0500
+	id S1751027Ab3LXGA6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 01:00:58 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51576 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750797Ab3LXGA5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Dec 2013 01:00:57 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CA+55aFyoUwL2Rkt1qof41HciGCNk9LHdP3ezUFeVYM=gam44rg@mail.gmail.com>
+References: <CA+55aFxZ2u+M72u3HSD7TVY2+WRRi27pYC=_4Wawr5y1m8DfnQ@mail.gmail.com> <52B8CE99.2050608@zytor.com> <CA+55aFyoUwL2Rkt1qof41HciGCNk9LHdP3ezUFeVYM=gam44rg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20131223164828.GF28679@saruman.home>
-References: <1386151747-3209-1-git-send-email-gautam.vivek@samsung.com>
-	<1386151747-3209-2-git-send-email-gautam.vivek@samsung.com>
-	<CAFp+6iF+15barZ=H_0h2VfNWSyxEr=MJy7Mtfn90PqWwXFFMSA@mail.gmail.com>
-	<20131223164828.GF28679@saruman.home>
-Date: Tue, 24 Dec 2013 11:13:51 +0530
-Message-ID: <CAFp+6iEL=+t+O51k48ADgQKigGFOmLyicg4Y2XPrasqM43SYeA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] phy: Add new Exynos5 USB 3.0 PHY driver
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Vivek Gautam <gautam.vivek@samsung.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, kishon <kishon@ti.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, Julius Werner <jwerner@chromium.org>,
-        Kamil Debski <k.debski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [RFC] speeding up the stat() family of system calls...
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 23 Dec 2013 22:00:32 -0800
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <0f21a61b-c1e8-439c-85d6-c18903f1e36b@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
+Right, the __label__ declaration should take care of it.
 
-
-On Mon, Dec 23, 2013 at 10:18 PM, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
->
-> On Mon, Dec 23, 2013 at 02:41:15PM +0530, Vivek Gautam wrote:
->> On Wed, Dec 4, 2013 at 3:39 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
->> > Add a new driver for the USB 3.0 PHY on Exynos5 series of SoCs.
->> > The new driver uses the generic PHY framework and will interact
->> > with DWC3 controller present on Exynos5 series of SoCs.
->> > Thereby, removing old phy-samsung-usb3 driver and related code
->> > used untill now which was based on usb/phy framework.
->> >
->> > Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> > ---
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>On Mon, Dec 23, 2013 at 4:00 PM, H. Peter Anvin <hpa@zytor.com> wrote:
 >>
->> a humble ping !! :-)
->> Any comments on this patch ?
+>> I guess I'm a bit puzzled... the current code should be just fine if
+>> everything is present, and do we really care about the performance if
+>we
+>> actually have an error condition?
 >
-> This is Kishon's domain. I think he's on vacations by now...
-
-Right, :-)
-
+>I think we should. You could make it to do something like eighteen
+>expensive page faults in a row for EFAULT, and that's just disgusting,
+>when there is no reason to do it.
 >
->> > diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
->> > index a344f3d..67e9045 100644
->> > --- a/drivers/phy/Kconfig
->> > +++ b/drivers/phy/Kconfig
->> > @@ -51,4 +51,12 @@ config PHY_EXYNOS_DP_VIDEO
->> >         help
->> >           Support for Display Port PHY found on Samsung EXYNOS SoCs.
->> >
->> > +config PHY_EXYNOS5_USB3
->> > +       tristate "Exynos5 SoC series USB 3.0 PHY driver"
->> > +       depends on ARCH_EXYNOS5
+>But to be honest, the resulting assembly is also easier to read,
+>because it doesn't have those annoying bogus branch targets all over
+>in the middle of the code. That was actually my main issue - looking
+>at the generated fs/stat.s file and not puking ;)
 >
-> I would add || COMPILE_TEST here and make sure this builds on other
-> arches too.
-
-Sure i will add this.
-
+>(it's still hard to read with all the fixup section stuff, but it's
+>better. And it really does generate better code, so..)
 >
-> The rest of the driver looks all right to my eyes.
-
-Thanks Felipe for the review. :-)
-
+>> I'm a bit concerned about the put_user_fail: label having uniqueness
+>> problem, which I know some versions of gcc at least get very noisy
+>over.
 >
-> Reviewed-by: Felipe Balbi <balbi@ti.com>
+>Oh, you're right, I forgot to actually declare the label so that gcc
+>sees that it's a local one.
 >
-> --
-> balbi
-
-
+>So it needs a
+>
+>   __label__ put_user_fail;
+>
+>in the put_user_try() (and yes, maybe the label name should have
+>underscores prepended or something, just to make sure it's internal).
+>
+>But gcc is perfectly fine with multiple labels in different scopes if
+>you do that. We already use that in a few places, so this isn't even a
+>new pattern for us.
+>
+>             Linus
 
 -- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
