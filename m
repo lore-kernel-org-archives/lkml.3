@@ -1,164 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932491Ab3LXBRz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 20:17:55 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:49669 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757961Ab3LXBMn (ORCPT
+	id S1758197Ab3LXBTP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 20:19:15 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45124 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753643Ab3LXBTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 20:12:43 -0500
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH v4 03/15] clk: Add regmap core helpers for enable/disable/is_enabled
-Date: Mon, 23 Dec 2013 17:12:27 -0800
-Message-Id: <1387847559-18330-4-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <1387847559-18330-1-git-send-email-sboyd@codeaurora.org>
-References: <1387847559-18330-1-git-send-email-sboyd@codeaurora.org>
+	Mon, 23 Dec 2013 20:19:12 -0500
+X-AuditID: 9c930197-b7c4aae000003d84-88-52b8e10d9289
+From: "Gioh Kim" <gioh.kim@lge.com>
+To: "'Russell King'" <linux@arm.linux.org.uk>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mm@kvack.org>, "HyoJun Im" <hyojun.im@lge.com>
+Subject: [PATCH] [RFC] ARM: mm: add configuration for the size of module space
+Date: Tue, 24 Dec 2013 10:19:09 +0900
+Message-ID: <000c01cf0046$25eb1db0$71c15910$@lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: Ac8ARCKFasVy/dJwSae3K4WrLM5AUQ==
+Content-Language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The clock framework already has support for simple gate clocks
-but if drivers want to use the gate clock functionality they need
-to wrap the gate clock in another struct and chain the ops by
-calling the gate ops from their own custom ops. Plus the gate
-clock implementation only supports MMIO accessors so other bus
-type clocks don't benefit from the potential code reuse. Add some
-simple regmap helpers for enable/disable/is_enabled that drivers
-can use as drop in replacements for their clock ops or as simple
-functions they call from their own custom ops. This is based on 
-similar helps in the regulator framework.
 
-Cc: Mark Brown <broonie@kernel.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Hi,
+
+I run out of module space because I have several big driver modules.
+I know I can strip the modules to decrease size but I need debug info now.
+
+The default size of module is 16MB and the size is statically 
+defined in the header file. But a description for the module space 
+size tell that it can be configurable at most 32MB.
+
+I have changed the module space size to 18MB and tested my platform.
+It have been looking good.
+
+I am not sure my patch is proper solution.
+Anyway, could I configure the module space size?
+
+
+
+Signed-off-by: Gioh Kim <gioh.kim@lge.com>
 ---
- drivers/clk/clk.c            | 70 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/clk-provider.h | 13 ++++++++
- 2 files changed, 83 insertions(+)
+ arch/arm/Kconfig              |    4 ++++
+ arch/arm/include/asm/memory.h |   10 +++++++---
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 5e71f5c..8b40170 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -742,6 +742,76 @@ out:
- 	return best;
- }
- 
-+/**
-+ * clk_is_enabled_regmap - standard is_enabled() for regmap users
-+ *
-+ * @hw: clk to operate on
-+ *
-+ * Clocks that use regmap for their register I/O can set the
-+ * enable_reg and enable_mask fields in their struct clk_hw and then use
-+ * this as their is_enabled operation, saving some code.
-+ */
-+int clk_is_enabled_regmap(struct clk_hw *hw)
-+{
-+	unsigned int val;
-+	int ret;
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index c1f1a7e..cf1fb55 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -2257,6 +2257,10 @@ config ARM_CPU_SUSPEND
+
+ endmenu
+
++config MODULES_AREA_SIZE
++       int
++       default 0x1000000
 +
-+	ret = regmap_read(hw->regmap, hw->enable_reg, &val);
-+	if (ret != 0)
-+		return ret;
+ source "net/Kconfig"
+
+ source "drivers/Kconfig"
+diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
+index 6976b03..3396758 100644
+--- a/arch/arm/include/asm/memory.h
++++ b/arch/arm/include/asm/memory.h
+@@ -32,13 +32,17 @@
+
+ #ifdef CONFIG_MMU
+
++#if CONFIG_MODULES_AREA_SIZE > SZ_32M
++#error Too much space for modules
++#endif
 +
-+	if (hw->enable_is_inverted)
-+		return (val & hw->enable_mask) == 0;
-+	else
-+		return (val & hw->enable_mask) != 0;
-+}
-+EXPORT_SYMBOL_GPL(clk_is_enabled_regmap);
-+
-+/**
-+ * clk_enable_regmap - standard enable() for regmap users
-+ *
-+ * @hw: clk to operate on
-+ *
-+ * Clocks that use regmap for their register I/O can set the
-+ * enable_reg and enable_mask fields in their struct clk_hw and then use
-+ * this as their enable() operation, saving some code.
-+ */
-+int clk_enable_regmap(struct clk_hw *hw)
-+{
-+	unsigned int val;
-+
-+	if (hw->enable_is_inverted)
-+		val = 0;
-+	else
-+		val = hw->enable_mask;
-+
-+	return regmap_update_bits(hw->regmap, hw->enable_reg,
-+				  hw->enable_mask, val);
-+}
-+EXPORT_SYMBOL_GPL(clk_enable_regmap);
-+
-+/**
-+ * clk_disable_regmap - standard disable() for regmap users
-+ *
-+ * @hw: clk to operate on
-+ *
-+ * Clocks that use regmap for their register I/O can set the
-+ * enable_reg and enable_mask fields in their struct clk_hw and then use
-+ * this as their disable() operation, saving some code.
-+ */
-+void clk_disable_regmap(struct clk_hw *hw)
-+{
-+	unsigned int val;
-+
-+	if (hw->enable_is_inverted)
-+		val = hw->enable_mask;
-+	else
-+		val = 0;
-+
-+	regmap_update_bits(hw->regmap, hw->enable_reg, hw->enable_mask, val);
-+}
-+EXPORT_SYMBOL_GPL(clk_disable_regmap);
-+
- /***        clk api        ***/
- 
- void __clk_unprepare(struct clk *clk)
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 31f2890..61507fb 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -177,11 +177,21 @@ struct clk_init_data {
-  * with the common clock framework.
-  *
-  * @regmap: regmap to use for regmap helpers and/or by providers
-+ *
-+ * @enable_reg: register when using regmap enable/disable ops
-+ *
-+ * @enable_mask: mask when using regmap enable/disable ops
-+ *
-+ * @enable_is_inverted: flag to indicate set enable_mask bits to disable
-+ *                      when using clock_enable_regmap and friends APIs.
+ /*
+  * PAGE_OFFSET - the virtual address of the start of the kernel image
+  * TASK_SIZE - the maximum size of a user space task.
+  * TASK_UNMAPPED_BASE - the lower boundary of the mmap VM area
   */
- struct clk_hw {
- 	struct clk *clk;
- 	const struct clk_init_data *init;
- 	struct regmap *regmap;
-+	unsigned int enable_reg;
-+	unsigned int enable_mask;
-+	bool enable_is_inverted;
- };
- 
+-#define PAGE_OFFSET            UL(CONFIG_PAGE_OFFSET)
+-#define TASK_SIZE              (UL(CONFIG_PAGE_OFFSET) - UL(SZ_16M))
++#define PAGE_OFFSET    UL(CONFIG_PAGE_OFFSET)
++#define TASK_SIZE      (UL(CONFIG_PAGE_OFFSET) -
+UL(CONFIG_MODULES_AREA_SIZE))
+ #define TASK_UNMAPPED_BASE     ALIGN(TASK_SIZE / 3, SZ_16M)
+
  /*
-@@ -447,6 +457,9 @@ struct clk *__clk_lookup(const char *name);
- long __clk_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
- 			      unsigned long *best_parent_rate,
- 			      struct clk **best_parent_p);
-+int clk_is_enabled_regmap(struct clk_hw *hw);
-+int clk_enable_regmap(struct clk_hw *hw);
-+void clk_disable_regmap(struct clk_hw *hw);
- 
- /*
-  * FIXME clock api without lock protection
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+@@ -51,7 +55,7 @@
+  * and PAGE_OFFSET - it must be within 32MB of the kernel text.
+  */
+ #ifndef CONFIG_THUMB2_KERNEL
+-#define MODULES_VADDR          (PAGE_OFFSET - SZ_16M)
++#define MODULES_VADDR          (PAGE_OFFSET - CONFIG_MODULES_AREA_SIZE)
+ #else
+ /* smaller range for Thumb-2 symbols relocation (2^24)*/
+ #define MODULES_VADDR          (PAGE_OFFSET - SZ_8M)
+--
+1.7.9.5
+
+
 
