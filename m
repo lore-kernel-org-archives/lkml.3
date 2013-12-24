@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752528Ab3LXI1h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 03:27:37 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50238 "EHLO
+	id S1752561Ab3LXI16 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 03:27:58 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:47075 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641Ab3LXIWc (ORCPT
+	with ESMTP id S1751635Ab3LXIWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 03:22:32 -0500
-X-AuditID: 9c930179-b7c89ae000006438-df-52b94445bd37
+	Tue, 24 Dec 2013 03:22:31 -0500
+X-AuditID: 9c930179-b7c89ae000006438-dd-52b944457843
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
         LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 02/21] perf hists: Convert hist entry functions to use struct he_stat
-Date: Tue, 24 Dec 2013 17:22:08 +0900
-Message-Id: <1387873347-28838-3-git-send-email-namhyung@kernel.org>
+        Rodrigo Campos <rodrigo@sdfg.com.ar>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 01/21] perf tools: Introduce struct add_entry_iter
+Date: Tue, 24 Dec 2013 17:22:07 +0900
+Message-Id: <1387873347-28838-2-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
 References: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
@@ -28,79 +29,481 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-hist_entry__add_cpumode_period() and hist_entry__decay() are dealing
-with hist_entry's stat fields only.  So make them use the struct
-directly.
+There're some duplicate code when adding hist entries.  They are
+different in that some have branch info or mem info but generally do
+same thing.  So introduce new struct add_entry_iter and add callbacks
+to customize each case in general way.
 
-Cc: Arun Sharma <asharma@fb.com>
+The new perf_evsel__add_entry() function will look like:
+
+  iter->prepare_entry();
+  iter->add_single_entry();
+
+  while (iter->next_entry())
+    iter->add_next_entry();
+
+  iter->finish_entry();
+
+This will help further work like the cumulative callchain patchset.
+
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/hist.c | 22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+ tools/perf/builtin-report.c | 368 +++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 278 insertions(+), 90 deletions(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 6cd4823a7a8b..283aa1972b4f 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -181,21 +181,21 @@ void hists__output_recalc_col_len(struct hists *hists, int max_rows)
- 	}
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index bf8dd2e893e4..ff3f0d0a800f 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -93,29 +93,74 @@ static int hist_entry__append_callchain(struct hist_entry *he, struct perf_sampl
+ 	return callchain_append(he->callchain, &callchain_cursor, sample->period);
  }
  
--static void hist_entry__add_cpumode_period(struct hist_entry *he,
--					   unsigned int cpumode, u64 period)
-+static void he_stat__add_cpumode_period(struct he_stat *he_stat,
-+					unsigned int cpumode, u64 period)
- {
- 	switch (cpumode) {
- 	case PERF_RECORD_MISC_KERNEL:
--		he->stat.period_sys += period;
-+		he_stat->period_sys += period;
- 		break;
- 	case PERF_RECORD_MISC_USER:
--		he->stat.period_us += period;
-+		he_stat->period_us += period;
- 		break;
- 	case PERF_RECORD_MISC_GUEST_KERNEL:
--		he->stat.period_guest_sys += period;
-+		he_stat->period_guest_sys += period;
- 		break;
- 	case PERF_RECORD_MISC_GUEST_USER:
--		he->stat.period_guest_us += period;
-+		he_stat->period_guest_us += period;
- 		break;
- 	default:
- 		break;
-@@ -222,10 +222,10 @@ static void he_stat__add_stat(struct he_stat *dest, struct he_stat *src)
- 	dest->weight		+= src->weight;
- }
+-static int report__add_mem_hist_entry(struct perf_tool *tool, struct addr_location *al,
+-				      struct perf_sample *sample, struct perf_evsel *evsel,
+-				      union perf_event *event)
+-{
+-	struct report *rep = container_of(tool, struct report, tool);
+-	struct symbol *parent = NULL;
+-	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
++struct add_entry_iter {
++	int total;
++	int curr;
++
++	struct report *rep;
++	struct perf_evsel *evsel;
++	struct perf_sample *sample;
+ 	struct hist_entry *he;
+-	struct mem_info *mi, *mx;
+-	uint64_t cost;
+-	int err = report__resolve_callchain(rep, &parent, evsel, al, sample);
++	struct symbol *parent;
++	void *priv;
++
++	int (*prepare_entry)(struct add_entry_iter *, struct machine *,
++			     struct perf_evsel *, struct addr_location *,
++			     struct perf_sample *);
++	int (*add_single_entry)(struct add_entry_iter *, struct addr_location *);
++	int (*next_entry)(struct add_entry_iter *, struct addr_location *);
++	int (*add_next_entry)(struct add_entry_iter *, struct addr_location *);
++	int (*finish_entry)(struct add_entry_iter *, struct addr_location *);
++};
  
--static void hist_entry__decay(struct hist_entry *he)
-+static void he_stat__decay(struct he_stat *he_stat)
- {
--	he->stat.period = (he->stat.period * 7) / 8;
--	he->stat.nr_events = (he->stat.nr_events * 7) / 8;
-+	he_stat->period = (he_stat->period * 7) / 8;
-+	he_stat->nr_events = (he_stat->nr_events * 7) / 8;
- 	/* XXX need decay for weight too? */
- }
+-	if (err)
+-		return err;
++static int
++iter_next_nop_entry(struct add_entry_iter *iter __maybe_unused,
++		    struct addr_location *al __maybe_unused)
++{
++	return 0;
++}
++
++static int
++iter_add_next_nop_entry(struct add_entry_iter *iter __maybe_unused,
++			struct addr_location *al __maybe_unused)
++{
++	return 0;
++}
++
++static int
++iter_prepare_mem_entry(struct add_entry_iter *iter, struct machine *machine,
++		       struct perf_evsel *evsel, struct addr_location *al,
++		       struct perf_sample *sample)
++{
++	union perf_event *event = iter->priv;
++	struct mem_info *mi;
++	u8 cpumode;
++
++	BUG_ON(event == NULL);
  
-@@ -236,7 +236,7 @@ static bool hists__decay_entry(struct hists *hists, struct hist_entry *he)
- 	if (prev_period == 0)
- 		return true;
+-	mi = machine__resolve_mem(al->machine, al->thread, sample, cpumode);
+-	if (!mi)
++	cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
++
++	mi = machine__resolve_mem(machine, al->thread, sample, cpumode);
++	if (mi == NULL)
+ 		return -ENOMEM;
  
--	hist_entry__decay(he);
-+	he_stat__decay(&he->stat);
+-	if (rep->hide_unresolved && !al->sym)
++	iter->evsel = evsel;
++	iter->sample = sample;
++	iter->priv = mi;
++	return 0;
++}
++
++static int
++iter_add_single_mem_entry(struct add_entry_iter *iter, struct addr_location *al)
++{
++	u64 cost;
++	struct mem_info *mi = iter->priv;
++	struct hist_entry *he;
++
++	if (iter->rep->hide_unresolved && !al->sym)
+ 		return 0;
  
- 	if (!he->filtered)
- 		hists->stats.total_period -= prev_period - he->stat.period;
-@@ -402,7 +402,7 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 	rb_link_node(&he->rb_node_in, parent, p);
- 	rb_insert_color(&he->rb_node_in, hists->entries_in);
+-	cost = sample->weight;
++	cost = iter->sample->weight;
+ 	if (!cost)
+ 		cost = 1;
+ 
+@@ -126,11 +171,27 @@ static int report__add_mem_hist_entry(struct perf_tool *tool, struct addr_locati
+ 	 * and this is indirectly achieved by passing period=weight here
+ 	 * and the he_stat__add_period() function.
+ 	 */
+-	he = __hists__add_entry(&evsel->hists, al, parent, NULL, mi,
++	he = __hists__add_entry(&iter->evsel->hists, al, iter->parent, NULL, mi,
+ 				cost, cost, 0);
+ 	if (!he)
+ 		return -ENOMEM;
+ 
++	iter->he = he;
++	return 0;
++}
++
++static int
++iter_finish_mem_entry(struct add_entry_iter *iter, struct addr_location *al)
++{
++	struct perf_evsel *evsel = iter->evsel;
++	struct hist_entry *he = iter->he;
++	struct mem_info *mx;
++	int err = -ENOMEM;
++	u64 cost;
++
++	if (he == NULL)
++		return 0;
++
+ 	err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
+ 	if (err)
+ 		goto out;
+@@ -140,97 +201,223 @@ static int report__add_mem_hist_entry(struct perf_tool *tool, struct addr_locati
+ 	if (err)
+ 		goto out;
+ 
++	cost = iter->sample->weight;
++	if (!cost)
++		cost = 1;
++
+ 	evsel->hists.stats.total_period += cost;
+ 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+-	err = hist_entry__append_callchain(he, sample);
++
++	err = hist_entry__append_callchain(he, iter->sample);
++
  out:
--	hist_entry__add_cpumode_period(he, al->cpumode, period);
-+	he_stat__add_cpumode_period(&he->stat, al->cpumode, period);
- 	return he;
++	iter->he = NULL;
+ 	return err;
+ }
+ 
+-static int report__add_branch_hist_entry(struct perf_tool *tool, struct addr_location *al,
+-					 struct perf_sample *sample, struct perf_evsel *evsel)
++static int
++iter_prepare_branch_entry(struct add_entry_iter *iter, struct machine *machine,
++			  struct perf_evsel *evsel, struct addr_location *al,
++			  struct perf_sample *sample)
+ {
+-	struct report *rep = container_of(tool, struct report, tool);
+-	struct symbol *parent = NULL;
+-	unsigned i;
+-	struct hist_entry *he;
+-	struct branch_info *bi, *bx;
+-	int err = report__resolve_callchain(rep, &parent, evsel, al, sample);
++	struct branch_info *bi;
+ 
+-	if (err)
+-		return err;
+-
+-	bi = machine__resolve_bstack(al->machine, al->thread,
++	bi = machine__resolve_bstack(machine, al->thread,
+ 				     sample->branch_stack);
+ 	if (!bi)
+ 		return -ENOMEM;
+ 
+-	for (i = 0; i < sample->branch_stack->nr; i++) {
+-		if (rep->hide_unresolved && !(bi[i].from.sym && bi[i].to.sym))
+-			continue;
++	iter->curr = 0;
++	iter->total = sample->branch_stack->nr;
+ 
+-		err = -ENOMEM;
++	iter->evsel = evsel;
++	iter->sample = sample;
++	iter->priv = bi;
++	return 0;
++}
+ 
+-		/* overwrite the 'al' to branch-to info */
+-		al->map = bi[i].to.map;
+-		al->sym = bi[i].to.sym;
+-		al->addr = bi[i].to.addr;
+-		/*
+-		 * The report shows the percentage of total branches captured
+-		 * and not events sampled. Thus we use a pseudo period of 1.
+-		 */
+-		he = __hists__add_entry(&evsel->hists, al, parent, &bi[i], NULL,
+-					1, 1, 0);
+-		if (he) {
+-			bx = he->branch_info;
+-			err = addr_map_symbol__inc_samples(&bx->from, evsel->idx);
+-			if (err)
+-				goto out;
+-
+-			err = addr_map_symbol__inc_samples(&bx->to, evsel->idx);
+-			if (err)
+-				goto out;
+-
+-			evsel->hists.stats.total_period += 1;
+-			hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+-		} else
+-			goto out;
+-	}
+-	err = 0;
+-out:
+-	free(bi);
+-	return err;
++static int
++iter_add_single_branch_entry(struct add_entry_iter *iter __maybe_unused,
++			     struct addr_location *al __maybe_unused)
++{
++	return 0;
+ }
+ 
+-static int report__add_hist_entry(struct perf_tool *tool, struct perf_evsel *evsel,
+-				  struct addr_location *al, struct perf_sample *sample)
++static int
++iter_next_branch_entry(struct add_entry_iter *iter, struct addr_location *al)
+ {
+-	struct report *rep = container_of(tool, struct report, tool);
+-	struct symbol *parent = NULL;
++	struct branch_info *bi = iter->priv;
++	int i = iter->curr;
++
++	if (iter->curr >= iter->total)
++		return 0;
++
++	al->map = bi[i].to.map;
++	al->sym = bi[i].to.sym;
++	al->addr = bi[i].to.addr;
++	return 1;
++}
++
++static int
++iter_add_next_branch_entry(struct add_entry_iter *iter, struct addr_location *al)
++{
++	struct branch_info *bi, *bx;
++	struct perf_evsel *evsel = iter->evsel;
+ 	struct hist_entry *he;
+-	int err = report__resolve_callchain(rep, &parent, evsel, al, sample);
++	int i = iter->curr;
++	int err = 0;
++
++	bi = iter->priv;
+ 
++	if (iter->rep->hide_unresolved && !(bi[i].from.sym && bi[i].to.sym))
++		goto out;
++
++	/*
++	 * The report shows the percentage of total branches captured
++	 * and not events sampled. Thus we use a pseudo period of 1.
++	 */
++	he = __hists__add_entry(&evsel->hists, al, iter->parent, &bi[i], NULL,
++				1, 1, 0);
++	if (he == NULL)
++		return -ENOMEM;
++
++	bx = he->branch_info;
++	err = addr_map_symbol__inc_samples(&bx->from, evsel->idx);
+ 	if (err)
+-		return err;
++		goto out;
++
++	err = addr_map_symbol__inc_samples(&bx->to, evsel->idx);
++	if (err)
++		goto out;
++
++	evsel->hists.stats.total_period += 1;
++	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
++
++out:
++	iter->curr++;
++	return err;
++}
++
++static int
++iter_finish_branch_entry(struct add_entry_iter *iter,
++			 struct addr_location *al __maybe_unused)
++{
++	free(iter->priv);
++	iter->priv = NULL;
++
++	return iter->curr >= iter->total ? 0 : -1;
++}
+ 
+-	he = __hists__add_entry(&evsel->hists, al, parent, NULL, NULL,
++static int
++iter_prepare_normal_entry(struct add_entry_iter *iter,
++			  struct machine *machine __maybe_unused,
++			  struct perf_evsel *evsel,
++			  struct addr_location *al __maybe_unused,
++			  struct perf_sample *sample)
++{
++	iter->evsel = evsel;
++	iter->sample = sample;
++	return 0;
++}
++
++static int
++iter_add_single_normal_entry(struct add_entry_iter *iter, struct addr_location *al)
++{
++	struct perf_evsel *evsel = iter->evsel;
++	struct perf_sample *sample = iter->sample;
++	struct hist_entry *he;
++
++	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
+ 				sample->period, sample->weight,
+ 				sample->transaction);
+ 	if (he == NULL)
+ 		return -ENOMEM;
+ 
+-	err = hist_entry__append_callchain(he, sample);
+-	if (err)
+-		goto out;
++	iter->he = he;
++	return 0;
++}
++
++static int
++iter_finish_normal_entry(struct add_entry_iter *iter, struct addr_location *al)
++{
++	int err;
++	struct hist_entry *he = iter->he;
++	struct perf_evsel *evsel = iter->evsel;
++	struct perf_sample *sample = iter->sample;
++
++	if (he == NULL)
++		return 0;
++
++	iter->he = NULL;
+ 
+ 	err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
++	if (err)
++		return err;
++
+ 	evsel->hists.stats.total_period += sample->period;
+ 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
++
++	return hist_entry__append_callchain(he, sample);
++}
++
++static struct add_entry_iter mem_iter = {
++	.prepare_entry 		= iter_prepare_mem_entry,
++	.add_single_entry 	= iter_add_single_mem_entry,
++	.next_entry 		= iter_next_nop_entry,
++	.add_next_entry 	= iter_add_next_nop_entry,
++	.finish_entry 		= iter_finish_mem_entry,
++};
++
++static struct add_entry_iter branch_iter = {
++	.prepare_entry 		= iter_prepare_branch_entry,
++	.add_single_entry 	= iter_add_single_branch_entry,
++	.next_entry 		= iter_next_branch_entry,
++	.add_next_entry 	= iter_add_next_branch_entry,
++	.finish_entry 		= iter_finish_branch_entry,
++};
++
++static struct add_entry_iter normal_iter = {
++	.prepare_entry 		= iter_prepare_normal_entry,
++	.add_single_entry 	= iter_add_single_normal_entry,
++	.next_entry 		= iter_next_nop_entry,
++	.add_next_entry 	= iter_add_next_nop_entry,
++	.finish_entry 		= iter_finish_normal_entry,
++};
++
++static int
++perf_evsel__add_entry(struct perf_evsel *evsel, struct addr_location *al,
++		      struct perf_sample *sample, struct machine *machine,
++		      struct add_entry_iter *iter)
++{
++	int err, err2;
++
++	err = report__resolve_callchain(iter->rep, &iter->parent, evsel, al,
++					sample);
++	if (err)
++		return err;
++
++	err = iter->prepare_entry(iter, machine, evsel, al, sample);
++	if (err)
++		goto out;
++
++	err = iter->add_single_entry(iter, al);
++	if (err)
++		goto out;
++
++	while (iter->next_entry(iter, al)) {
++		err = iter->add_next_entry(iter, al);
++		if (err)
++			break;
++	}
++
+ out:
++	err2 = iter->finish_entry(iter, al);
++	if (!err)
++		err = err2;
++
+ 	return err;
+ }
+ 
+-
+ static int process_sample_event(struct perf_tool *tool,
+ 				union perf_event *event,
+ 				struct perf_sample *sample,
+@@ -239,6 +426,7 @@ static int process_sample_event(struct perf_tool *tool,
+ {
+ 	struct report *rep = container_of(tool, struct report, tool);
+ 	struct addr_location al;
++	struct add_entry_iter *iter;
+ 	int ret;
+ 
+ 	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
+@@ -253,22 +441,22 @@ static int process_sample_event(struct perf_tool *tool,
+ 	if (rep->cpu_list && !test_bit(sample->cpu, rep->cpu_bitmap))
+ 		return 0;
+ 
+-	if (sort__mode == SORT_MODE__BRANCH) {
+-		ret = report__add_branch_hist_entry(tool, &al, sample, evsel);
+-		if (ret < 0)
+-			pr_debug("problem adding lbr entry, skipping event\n");
+-	} else if (rep->mem_mode == 1) {
+-		ret = report__add_mem_hist_entry(tool, &al, sample, evsel, event);
+-		if (ret < 0)
+-			pr_debug("problem adding mem entry, skipping event\n");
+-	} else {
+-		if (al.map != NULL)
+-			al.map->dso->hit = 1;
+-
+-		ret = report__add_hist_entry(tool, evsel, &al, sample);
+-		if (ret < 0)
+-			pr_debug("problem incrementing symbol period, skipping event\n");
+-	}
++	if (sort__mode == SORT_MODE__BRANCH)
++		iter = &branch_iter;
++	else if (rep->mem_mode == 1) {
++		iter = &mem_iter;
++		iter->priv = event;
++	} else
++		iter = &normal_iter;
++
++	if (al.map != NULL)
++		al.map->dso->hit = 1;
++
++	iter->rep = rep;
++	ret = perf_evsel__add_entry(evsel, &al, sample, machine, iter);
++	if (ret < 0)
++		pr_debug("problem adding hist entry, skipping event\n");
++
+ 	return ret;
  }
  
 -- 
