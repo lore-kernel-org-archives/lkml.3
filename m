@@ -1,112 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932836Ab3LXASK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 19:18:10 -0500
-Received: from mail-we0-f178.google.com ([74.125.82.178]:42139 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932821Ab3LXASI (ORCPT
+	id S1757909Ab3LXAVx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 19:21:53 -0500
+Received: from smtprelay0109.hostedemail.com ([216.40.44.109]:43615 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754099Ab3LXAVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 19:18:08 -0500
-From: Peter Wu <lekensteyn@gmail.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
-        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: How should dev_[gs]et_drvdata be used?
-Date: Tue, 24 Dec 2013 01:18:03 +0100
-Message-ID: <1716344.EUMSGCAAKK@al>
-User-Agent: KMail/4.12 (Linux/3.13.0-rc4-custom-00257-gae3253e; KDE/4.12.0; x86_64; ; )
-In-Reply-To: <1387820241.30327.105.camel@bling.home>
-References: <20130123174204.00463f98@endymion.delvare> <2690400.fFjCFlrrIR@al> <1387820241.30327.105.camel@bling.home>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Mon, 23 Dec 2013 19:21:52 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1566:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3866:3871:4321:5007:6119:6120:7652:10004:10400:10848:11026:11232:11658:11914:12043:12438:12517:12519:12740:13069:13311:13357:13894,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: dolls92_4a1a17ae2a240
+X-Filterd-Recvd-Size: 1240
+Message-ID: <1387844508.22671.73.camel@joe-AO722>
+Subject: Re: [RFC  v3] Add ff-memless-next
+From: Joe Perches <joe@perches.com>
+To: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@prifuk.cz>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        elias.vds@gmail.com
+Date: Mon, 23 Dec 2013 16:21:48 -0800
+In-Reply-To: <1494187.y8mYFDm1lA@geidi-prime>
+References: <1494187.y8mYFDm1lA@geidi-prime>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 23 December 2013 10:37:21 Alex Williamson wrote:
-> On Mon, 2013-12-23 at 16:49 +0100, Peter Wu wrote:
-[..]
-> > 
-> > There is still one thing I do not fully understand, how should
-> > dev_set_drvdata and dev_get_drvdata be used? For the devices passed
-> > to probe functions, the core takes care of setting to NULL on error.
-> > Then device_unregister frees the memory, right?
-> > 
-> > Now, what if the dev_set_drvdata (or aliases such as pci_set_drvdata,
-> > i2c_set_adapinfo, etc.) are manually called outside probe functions?
-> > Or inside the probe function, but not for the device that is being
-> > probed (such as is the case with the i801 i2c driver)?
-> > 
-> > The VFIO driver also does something odd, it clears the driver data,
-> > but the device holding it is freed using kfree():
-> > 
-> >     static void vfio_device_release(struct kref *kref) {
-> >         struct vfio_device *device = container_of(kref,
-> >                                                   struct vfio_device, kref);
-> >         struct vfio_group *group = device->group;
-> > 
-> >         list_del(&device->group_next);
-> >         mutex_unlock(&group->device_lock);
-> > 
-> >         dev_set_drvdata(device->dev, NULL);
-> > 
-> >         kfree(device);
-> > 
-> > Is a memory leak also present here since dev_set_drvdata() always tries to
-> > allocate memory?
-> 
-> But it doesn't:
-> 
-> int dev_set_drvdata(struct device *dev, void *data)
-> {
->         int error;
-> 
->         if (!dev->p) {
->                 error = device_private_init(dev);
->                 if (error)
->                         return error;
->         }
->         dev->p->driver_data = data;
->         return 0;
-> }
+On Mon, 2013-12-23 at 23:46 +0100, Michal Malý wrote:
+> One case where uncombinable effects were mishandled was corrected. Rest of
+> the changes are just coding style fixes.
 
-It does:
+trivia:
 
-int device_private_init(struct device *dev)
-{
-        dev->p = kzalloc(sizeof(*dev->p), GFP_KERNEL);
-        if (!dev->p)
-                return -ENOMEM;
-        dev->p->device = dev; 
-        klist_init(&dev->p->klist_children, klist_children_get,
-                   klist_children_put);
-        INIT_LIST_HEAD(&dev->p->deferred_probe);
-        return 0;
-}
+> diff --git a/drivers/input/ff-memless-next.c b/drivers/input/ff-memless-next.c
+[]
+> +static __always_inline s32 mlnx_calculate_x_force(const s32 level,
+> +						  const u16 direction)
 
-and if it doesn't, then I must be missing something in this non-obvious
-code. I scanned the interwebs and Documentation/, but could not really
-find a great example on how this is supposed to work. The dev_set_drvdata
-function existed since Linus moved to git.
+__always_inline is almost never warranted.
+gcc generally does the right thing.
 
-> Also, the code referenced is kfree'ing a struct vfio_device, not the
-> struct device.  VFIO uses the drvdata to provide a back pointer to the
-> vfio specific structure, which also includes a pointer to the struct
-> device.  We obviously want to clear drvdata when the vfio specific
-> structure is being released.
-
-Ah, I see. "device->dev" is not freed, but "device". And the data is
-cleared for "device->dev". Thanks for correcting.
-
-Clear examples of how to use dev_{s,g}et_drvdata correctly in i2c is
-still wanted. I stepped in it yesterday, i2c seems to have its own
-way to register new devices. More specifically, how can the memory
-associated with dev_set_drvdata be free'd on error paths if the
-device is not registered with device_register (as is done in the
-probe function of the i801 i2c driver)?
-
-Regards,
-Peter
 
