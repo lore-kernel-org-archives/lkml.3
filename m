@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677Ab3LXL32 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 06:29:28 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:28051 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752600Ab3LXL30 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752629Ab3LXL30 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 24 Dec 2013 06:29:26 -0500
-Message-ID: <52B96FFF.3010708@huawei.com>
-Date: Tue, 24 Dec 2013 19:29:03 +0800
+Received: from szxga03-in.huawei.com ([119.145.14.66]:27981 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752351Ab3LXL3W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Dec 2013 06:29:22 -0500
+Message-ID: <52B96FDA.2020009@huawei.com>
+Date: Tue, 24 Dec 2013 19:28:26 +0800
 From: Ding Tianhong <dingtianhong@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        <linux-media@vger.kernel.org>,
+To: Daniel Drake <dsd@gentoo.org>, Ulrich Kunitz <kune@deine-taler.de>,
+        "John W. Linville" <linville@tuxdriver.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Netdev <netdev@vger.kernel.org>
-Subject: [PATCH v2 14/20] media: dvb_core: slight optimization of addr compare
+        Netdev <netdev@vger.kernel.org>, <linux-wireless@vger.kernel.org>
+Subject: [PATCH v2 08/20] zd1211rw: slight optimization of addr compare
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.72.199]
@@ -28,53 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Use possibly more efficient ether_addr_equal
 instead of memcmp.
 
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: linux-media@vger.kernel.org
+Cc: Daniel Drake <dsd@gentoo.org>
+Cc: Ulrich Kunitz <kune@deine-taler.de>
+Cc: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org
+Cc: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Yang Yingliang <yangyingliang@huawei.com>
+Signed-off-by: Tan Xiaojun <tanxiaojun@huawei.com>
 Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 ---
- drivers/media/dvb-core/dvb_net.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/wireless/zd1211rw/zd_mac.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/media/dvb-core/dvb_net.c b/drivers/media/dvb-core/dvb_net.c
-index f91c80c..3dfc33b 100644
---- a/drivers/media/dvb-core/dvb_net.c
-+++ b/drivers/media/dvb-core/dvb_net.c
-@@ -179,7 +179,7 @@ static __be16 dvb_net_eth_type_trans(struct sk_buff *skb,
- 	eth = eth_hdr(skb);
+diff --git a/drivers/net/wireless/zd1211rw/zd_mac.c b/drivers/net/wireless/zd1211rw/zd_mac.c
+index eff79a3..e7af261 100644
+--- a/drivers/net/wireless/zd1211rw/zd_mac.c
++++ b/drivers/net/wireless/zd1211rw/zd_mac.c
+@@ -532,9 +532,8 @@ void zd_mac_tx_failed(struct urb *urb)
+ 		tx_hdr = (struct ieee80211_hdr *)skb->data;
  
- 	if (*eth->h_dest & 1) {
--		if(memcmp(eth->h_dest,dev->broadcast, ETH_ALEN)==0)
-+		if(ether_addr_equal(eth->h_dest,dev->broadcast))
- 			skb->pkt_type=PACKET_BROADCAST;
- 		else
- 			skb->pkt_type=PACKET_MULTICAST;
-@@ -674,11 +674,11 @@ static void dvb_net_ule( struct net_device *dev, const u8 *buf, size_t buf_len )
- 					if (priv->rx_mode != RX_MODE_PROMISC) {
- 						if (priv->ule_skb->data[0] & 0x01) {
- 							/* multicast or broadcast */
--							if (memcmp(priv->ule_skb->data, bc_addr, ETH_ALEN)) {
-+							if (!ether_addr_equal(priv->ule_skb->data, bc_addr)) {
- 								/* multicast */
- 								if (priv->rx_mode == RX_MODE_MULTI) {
- 									int i;
--									for(i = 0; i < priv->multi_num && memcmp(priv->ule_skb->data, priv->multi_macs[i], ETH_ALEN); i++)
-+									for(i = 0; i < priv->multi_num && !ether_addr_equal(priv->ule_skb->data, priv->multi_macs[i]); i++)
- 										;
- 									if (i == priv->multi_num)
- 										drop = 1;
-@@ -688,7 +688,7 @@ static void dvb_net_ule( struct net_device *dev, const u8 *buf, size_t buf_len )
- 							}
- 							/* else: broadcast */
- 						}
--						else if (memcmp(priv->ule_skb->data, dev->dev_addr, ETH_ALEN))
-+						else if (!ether_addr_equal(priv->ule_skb->data, dev->dev_addr))
- 							drop = 1;
- 						/* else: destination address matches the MAC address of our receiver device */
- 					}
+ 		/* we skip all frames not matching the reported destination */
+-		if (unlikely(memcmp(tx_hdr->addr1, tx_status->mac, ETH_ALEN))) {
++		if (unlikely(!ether_addr_equal(tx_hdr->addr1, tx_status->mac)))
+ 			continue;
+-		}
+ 
+ 		/* we skip all frames not matching the reported final rate */
+ 
+@@ -997,7 +996,7 @@ static int filter_ack(struct ieee80211_hw *hw, struct ieee80211_hdr *rx_hdr,
+ 		    continue;
+ 
+ 		tx_hdr = (struct ieee80211_hdr *)skb->data;
+-		if (likely(!memcmp(tx_hdr->addr2, rx_hdr->addr1, ETH_ALEN)))
++		if (likely(ether_addr_equal(tx_hdr->addr2, rx_hdr->addr1)))
+ 		{
+ 			found = 1;
+ 			break;
 -- 
 1.8.0
-
 
 
