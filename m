@@ -1,72 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758211Ab3LXDWi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 22:22:38 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:61808 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753872Ab3LXDWh (ORCPT
+	id S1758264Ab3LXDYR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 22:24:17 -0500
+Received: from ihemail1.lucent.com ([135.245.0.33]:51371 "EHLO
+	ihemail1.lucent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757926Ab3LXDYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 22:22:37 -0500
+	Mon, 23 Dec 2013 22:24:15 -0500
+Date: Mon, 23 Dec 2013 21:23:02 -0600 (CST)
+From: Ilija Hadzic <ihadzic@research.bell-labs.com>
+X-X-Sender: ihadzic@umail
+To: Valentina Manea <valentina.manea.m@gmail.com>
+cc: gregkh@linuxfoundation.org, ly80toro@cip.cs.fau.de, standby24x7@gmail.com,
+        alan@linux.intel.com, anthony.foiani@gmail.com,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        devel@driverdev.osuosl.org, andy.grover@gmail.com
+Subject: Re: [PATCH v2] staging: usbip: add support for viewing imported
+ devices
+In-Reply-To: <1387841057-6147-1-git-send-email-valentina.manea.m@gmail.com>
+Message-ID: <Pine.GSO.4.64.1312232113560.11203@umail>
+References: <1387821655-24720-1-git-send-email-valentina.manea.m@gmail.com>
+ <1387841057-6147-1-git-send-email-valentina.manea.m@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1387791224-29320-1-git-send-email-huawei.libin@huawei.com>
-References: <1387791224-29320-1-git-send-email-huawei.libin@huawei.com>
-Date: Tue, 24 Dec 2013 11:22:36 +0800
-Message-ID: <CA+qZnSSebv-tM+nHEcUAqz4iE9ur7yZ6srQMpzi1pgAvYfFubw@mail.gmail.com>
-Subject: Re: [PATCH] drivers/net: Fix potential incorrect call for udelay()
-From: tingwei liu <tingw.liu@gmail.com>
-To: Libin <huawei.libin@huawei.com>
-Cc: davem@davemloft.net, hsweeten@visionengravers.com,
-        gregkh@linuxfoundation.org, tedheadster@gmail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dingtianhong@huawei.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 23, 2013 at 5:33 PM, Libin <huawei.libin@huawei.com> wrote:
+
+This looks better, but there are still two minor issues:
+
+You have one trailing whtespace error. Please the scripts/checkpatch.pl 
+script on the patch and correct the error.
+
+The title of the commit message should indicate that this is an userspace 
+patch (this seems to be the convention that other patches have adhered 
+to). So:
+
+'staging: usbip: userspace: <blah blah>'
+
+not
+
+'staging: usbip: <blah blah>;
+
+-- Ilija
+
+
+On Tue, 24 Dec 2013, Valentina Manea wrote:
+
+> As of Matt Mooney's major refactoring in 2011, usbip port
+> option was left out. Add support for this option in
+> a manner similar to the old implementation.
 >
-> From: Li Bin <huawei.libin@huawei.com>
+> Sample output:
 >
-> The variable delay_time as a module parameter can be set a value
-> exceeding the limit of the udelay function. This patch checks the
-> delay_time value to select mdelay() or udelay().
+> Imported USB devices
+> ====================
+> Port 00: <Port in Use> at Full Speed(12Mbps)
+>       unknown vendor : unknown product (1687:6211)
+>       2-1 -> usbip://192.168.122.152:3240/1-1
+>           -> remote bus/dev 001/002
 >
-> Signed-off-by: Li Bin <huawei.libin@huawei.com>
+> Signed-off-by: Valentina Manea <valentina.manea.m@gmail.com>
 > ---
->  drivers/net/ethernet/8390/pcnet_cs.c | 8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
+> Changes since v1:
+> 	* remove devid from the printed info
+> 	* arrange formatting a bit
+> 	* don't bail out when port file doesn't exist, just print whatever info is available
+> 	* replace void cast with __attribute__((unused))
 >
-> diff --git a/drivers/net/ethernet/8390/pcnet_cs.c b/drivers/net/ethernet/8390/pcnet_cs.c
-> index 46c5aad..29fe157 100644
-> --- a/drivers/net/ethernet/8390/pcnet_cs.c
-> +++ b/drivers/net/ethernet/8390/pcnet_cs.c
-> @@ -1284,8 +1284,12 @@ static void dma_block_output(struct net_device *dev, int count,
->         }
+> .../staging/usbip/userspace/libsrc/vhci_driver.c   | 67 ++++++++++++++++++++++
+> .../staging/usbip/userspace/libsrc/vhci_driver.h   |  2 +
+> drivers/staging/usbip/userspace/src/Makefile.am    |  2 +-
+> drivers/staging/usbip/userspace/src/usbip.c        |  6 ++
+> drivers/staging/usbip/userspace/src/usbip.h        |  1 +
+> drivers/staging/usbip/userspace/src/usbip_port.c   | 57 ++++++++++++++++++
+> 6 files changed, 134 insertions(+), 1 deletion(-)
+> create mode 100644 drivers/staging/usbip/userspace/src/usbip_port.c
 >
->      outb_p(ENISR_RDC, nic_base + EN0_ISR);     /* Ack intr. */
-> -    if (info->flags & DELAY_OUTPUT)
-> -       udelay((long)delay_time);
-> +    if (info->flags & DELAY_OUTPUT) {
-> +               if (delay_time >= 1000)
-> +                       mdelay((long)delay_time/1000);
-
-Indeed use of mdelay is discouraged.
-I prefer to limit delay_time less than 1000.
-
-Tingwei
+> diff --git a/drivers/staging/usbip/userspace/libsrc/vhci_driver.c b/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
+> index 241006a..65ea5cf 100644
+> --- a/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
+> +++ b/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
+> @@ -4,6 +4,8 @@
 >
-> +               else
-> +                       udelay(delay_time);
-> +       }
->      ei_status.dmaing &= ~0x01;
->  }
+> #include "usbip_common.h"
+> #include "vhci_driver.h"
+> +#include <limits.h>
+> +#include <netdb.h>
 >
-> --
-> 1.8.2.2
+> #undef  PROGNAME
+> #define PROGNAME "libusbip"
+> @@ -337,6 +339,29 @@ err:
+> 	return -1;
+> }
+>
+> +static int read_record(int rhport, char *host, char *port, char *busid)
+> +{
+> +	FILE *file;
+> +	char path[PATH_MAX+1];
+> +
+> +	snprintf(path, PATH_MAX, VHCI_STATE_PATH"/port%d", rhport);
+> +
+> +	file = fopen(path, "r");
+> +	if (!file) {
+> +		err("fopen");
+> +		return -1;
+> +	}
+> +
+> +	if (fscanf(file, "%s %s %s\n", host, port, busid) != 3) {
+> +		err("fscanf");
+> +		fclose(file);
+> +		return -1;
+> +	}
+> +
+> +	fclose(file);
+> +
+> +	return 0;
+> +}
+>
+> /* ---------------------------------------------------------------------- */
+>
+> @@ -535,3 +560,45 @@ int usbip_vhci_detach_device(uint8_t port)
+>
+> 	return 0;
+> }
+> +
+> +int usbip_vhci_imported_device_dump(struct usbip_imported_device *idev)
+> +{
+> +	char product_name[100];
+> +	char host[NI_MAXHOST] = "unknown host";
+> +	char serv[NI_MAXSERV] = "unknown port";
+> +	char remote_busid[SYSFS_BUS_ID_SIZE];
+> +	int ret;
+> +	int read_record_error = 0;
+> +
+> +	if (idev->status == VDEV_ST_NULL || idev->status == VDEV_ST_NOTASSIGNED)
+> +		return 0;
+> +
+> +	ret = read_record(idev->port, host, serv, remote_busid);
+> +	if (ret) {
+> +		err("read_record");
+> +		read_record_error = 1;
+> +	}
+> +
+> +	printf("Port %02d: <%s> at %s\n", idev->port,
+> +	       usbip_status_string(idev->status),
+> +	       usbip_speed_string(idev->udev.speed));
+> +
+> +	usbip_names_get_product(product_name, sizeof(product_name),
+> +				idev->udev.idVendor, idev->udev.idProduct);
+> +
+> +	printf("       %s\n",  product_name);
+> +
+> +	if (!read_record_error) {
+> +		printf("%10s -> usbip://%s:%s/%s\n", idev->udev.busid,
+> +		       host, serv, remote_busid);
+> +		printf("%10s -> remote bus/dev %03d/%03d\n", " ",
+> +		       idev->busnum, idev->devnum);
+> +	} else {
+> +		printf("%10s -> unknown host, remote port and remote busid\n",
+> +		       idev->udev.busid);
+> +		printf("%10s -> remote bus/dev %03d/%03d\n", " ",
+> +		       idev->busnum, idev->devnum);
+> +	}
+> +
+> +	return 0;
+> +}
+> diff --git a/drivers/staging/usbip/userspace/libsrc/vhci_driver.h b/drivers/staging/usbip/userspace/libsrc/vhci_driver.h
+> index 89949aa..e071f80 100644
+> --- a/drivers/staging/usbip/userspace/libsrc/vhci_driver.h
+> +++ b/drivers/staging/usbip/userspace/libsrc/vhci_driver.h
+> @@ -64,4 +64,6 @@ int usbip_vhci_attach_device(uint8_t port, int sockfd, uint8_t busnum,
+>
+> int usbip_vhci_detach_device(uint8_t port);
+>
+> +int usbip_vhci_imported_device_dump(struct usbip_imported_device *idev);
+> +
+> #endif /* __VHCI_DRIVER_H */
+> diff --git a/drivers/staging/usbip/userspace/src/Makefile.am b/drivers/staging/usbip/userspace/src/Makefile.am
+> index a113003..b4f8c4b 100644
+> --- a/drivers/staging/usbip/userspace/src/Makefile.am
+> +++ b/drivers/staging/usbip/userspace/src/Makefile.am
+> @@ -6,7 +6,7 @@ sbin_PROGRAMS := usbip usbipd
+>
+> usbip_SOURCES := usbip.h utils.h usbip.c utils.c usbip_network.c \
+> 		 usbip_attach.c usbip_detach.c usbip_list.c \
+> -		 usbip_bind.c usbip_unbind.c
+> +		 usbip_bind.c usbip_unbind.c usbip_port.c
 >
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> usbipd_SOURCES := usbip_network.h usbipd.c usbip_network.c
+> diff --git a/drivers/staging/usbip/userspace/src/usbip.c b/drivers/staging/usbip/userspace/src/usbip.c
+> index 04a5f20..d7599d9 100644
+> --- a/drivers/staging/usbip/userspace/src/usbip.c
+> +++ b/drivers/staging/usbip/userspace/src/usbip.c
+> @@ -93,6 +93,12 @@ static const struct command cmds[] = {
+> 		.help  = "Unbind device from " USBIP_HOST_DRV_NAME ".ko",
+> 		.usage = usbip_unbind_usage
+> 	},
+> +	{
+> +		.name  = "port",
+> +		.fn    = usbip_port_show,
+> +		.help  = "Show imported USB devices",
+> +		.usage = NULL
+> +	},
+> 	{ NULL, NULL, NULL, NULL }
+> };
+>
+> diff --git a/drivers/staging/usbip/userspace/src/usbip.h b/drivers/staging/usbip/userspace/src/usbip.h
+> index 14d4a47..84fe66a 100644
+> --- a/drivers/staging/usbip/userspace/src/usbip.h
+> +++ b/drivers/staging/usbip/userspace/src/usbip.h
+> @@ -29,6 +29,7 @@ int usbip_detach(int argc, char *argv[]);
+> int usbip_list(int argc, char *argv[]);
+> int usbip_bind(int argc, char *argv[]);
+> int usbip_unbind(int argc, char *argv[]);
+> +int usbip_port_show(int argc, char *argv[]);
+>
+> void usbip_attach_usage(void);
+> void usbip_detach_usage(void);
+> diff --git a/drivers/staging/usbip/userspace/src/usbip_port.c b/drivers/staging/usbip/userspace/src/usbip_port.c
+> new file mode 100644
+> index 0000000..52aa168
+> --- /dev/null
+> +++ b/drivers/staging/usbip/userspace/src/usbip_port.c
+> @@ -0,0 +1,57 @@
+> +/*
+> + * Copyright (C) 2011 matt mooney <mfm@muteddisk.com>
+> + *               2005-2007 Takahiro Hirofuchi
+> + *
+> + * This program is free software: you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation, either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include "vhci_driver.h"
+> +#include "usbip_common.h"
+> +
+> +static int list_imported_devices()
+> +{
+> +	int i;
+> +	struct usbip_imported_device *idev;
+> +	int ret;
+> +
+> +	ret = usbip_vhci_driver_open();
+> +	if (ret < 0) {
+> +		err("open vhci_driver");
+> +		return -1;
+> +	}
+> +
+> +	printf("Imported USB devices\n");
+> +	printf("====================\n");
+> +
+> +	for (i = 0; i < vhci_driver->nports; i++) {
+> +		idev = &vhci_driver->idev[i];
+> +
+> +		if (usbip_vhci_imported_device_dump(idev) < 0)
+> +			ret = -1;
+> +	}
+> +
+> +	usbip_vhci_driver_close();
+> +
+> +	return ret;
+> +
+> +}
+> +
+> +int usbip_port_show(__attribute__((unused)) int argc,
+> +		    __attribute__((unused)) char *argv[])
+> +{
+> +	int ret;
+> +
+> +	ret = list_imported_devices();
+> +	if (ret < 0)
+> +		err("list imported devices");
+> +
+> +	return ret;
+> +}
+> -- 
+> 1.8.1.2
+>
+>
