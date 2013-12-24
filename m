@@ -1,70 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758030Ab3LXBub (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 20:50:31 -0500
-Received: from mail-out.m-online.net ([212.18.0.9]:40516 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817Ab3LXBua (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 20:50:30 -0500
-X-Auth-Info: FnFggAhHmXXICmXGeM5yJs/OZP0V+Npw6o3za5TPIpE=
-From: Marek Vasut <marex@denx.de>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: Re: [PATCHv5 RESEND 0/4] iio: mxs-lradc: add support to optional divider_by_two
-Date: Tue, 24 Dec 2013 02:50:00 +0100
-User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.10.5; x86_64; ; )
-Cc: Jonathan Cameron <jic23@kernel.org>, lars@metafoo.de, harald@ccbib.org,
-        hector.palacios@digi.com, linux-iio@vger.kernel.org,
+	id S1758056Ab3LXBwH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 20:52:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3316 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753419Ab3LXBwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 20:52:05 -0500
+Message-ID: <1387849869.30327.201.camel@bling.home>
+Subject: Re: How should dev_[gs]et_drvdata be used?
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Peter Wu <lekensteyn@gmail.com>
+Cc: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
+        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org,
         linux-kernel@vger.kernel.org
-References: <1387820884-28140-1-git-send-email-alexandre.belloni@free-electrons.com> <201312231954.36124.marex@denx.de> <52B88D5C.4080402@free-electrons.com>
-In-Reply-To: <52B88D5C.4080402@free-electrons.com>
-MIME-Version: 1.0
-Message-Id: <201312240250.00629.marex@denx.de>
-Content-Type: Text/Plain;
-  charset="us-ascii"
+Date: Mon, 23 Dec 2013 18:51:09 -0700
+In-Reply-To: <1716344.EUMSGCAAKK@al>
+References: <20130123174204.00463f98@endymion.delvare>
+	 <2690400.fFjCFlrrIR@al> <1387820241.30327.105.camel@bling.home>
+	 <1716344.EUMSGCAAKK@al>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, December 23, 2013 at 08:22:04 PM, Alexandre Belloni wrote:
-> On 23/12/2013 19:54, Marek Vasut wrote:
-> > On Monday, December 23, 2013 at 06:48:00 PM, Alexandre Belloni wrote:
-> >> Hello,
-> >> 
-> >> This is v5 of the patchset that adds support to the optional
-> >> divider_by_two of LRADC channels.
-> >> 
-> >> Changes since v4:
-> >>  - moved enum mxs_lradc_divbytwo to the third patch
-> >>  - added a fourth patch to convert is_divided to a bitmap. I did that in
-> >>  a
-> >>  
-> >>    separated patch for review and copyright attribution purposes.
-> >> 
-> >> This was tested on a custom i.MX28 platform.
-> >> 
-> >> Alexandre Belloni (1):
-> >>   iio: mxs-lradc: convert is_divided to a bitmap
-> >> 
-> >> Hector Palacios (3):
-> >>   iio: mxs-lradc: add scale attribute to channels
-> >>   iio: mxs-lradc: add scale_available file to channels
-> >>   iio: mxs-lradc: add write_raw function to modify scale
-> >>  
-> >>  drivers/staging/iio/adc/mxs-lradc.c | 222
-> >> 
-> >> +++++++++++++++++++++++++++++++++++- 1 file changed, 219 insertions(+),
-> >> 3 deletions(-)
+On Tue, 2013-12-24 at 01:18 +0100, Peter Wu wrote:
+> On Monday 23 December 2013 10:37:21 Alex Williamson wrote:
+> > On Mon, 2013-12-23 at 16:49 +0100, Peter Wu wrote:
+> [..]
+> > > 
+> > > There is still one thing I do not fully understand, how should
+> > > dev_set_drvdata and dev_get_drvdata be used? For the devices passed
+> > > to probe functions, the core takes care of setting to NULL on error.
+> > > Then device_unregister frees the memory, right?
+> > > 
+> > > Now, what if the dev_set_drvdata (or aliases such as pci_set_drvdata,
+> > > i2c_set_adapinfo, etc.) are manually called outside probe functions?
+> > > Or inside the probe function, but not for the device that is being
+> > > probed (such as is the case with the i801 i2c driver)?
+> > > 
+> > > The VFIO driver also does something odd, it clears the driver data,
+> > > but the device holding it is freed using kfree():
+> > > 
+> > >     static void vfio_device_release(struct kref *kref) {
+> > >         struct vfio_device *device = container_of(kref,
+> > >                                                   struct vfio_device, kref);
+> > >         struct vfio_group *group = device->group;
+> > > 
+> > >         list_del(&device->group_next);
+> > >         mutex_unlock(&group->device_lock);
+> > > 
+> > >         dev_set_drvdata(device->dev, NULL);
+> > > 
+> > >         kfree(device);
+> > > 
+> > > Is a memory leak also present here since dev_set_drvdata() always tries to
+> > > allocate memory?
 > > 
-> > Why is there a resend please ?
+> > But it doesn't:
+> > 
+> > int dev_set_drvdata(struct device *dev, void *data)
+> > {
+> >         int error;
+> > 
+> >         if (!dev->p) {
+> >                 error = device_private_init(dev);
+> >                 if (error)
+> >                         return error;
+> >         }
+> >         dev->p->driver_data = data;
+> >         return 0;
+> > }
 > 
-> I don't know how but I screwed Jonathan's mail address. As he is the
-> main maintainer, I though it would be a good idea to get his attention.
+> It does:
+> 
+> int device_private_init(struct device *dev)
+> {
+>         dev->p = kzalloc(sizeof(*dev->p), GFP_KERNEL);
+>         if (!dev->p)
+>                 return -ENOMEM;
+>         dev->p->device = dev; 
+>         klist_init(&dev->p->klist_children, klist_children_get,
+>                    klist_children_put);
+>         INIT_LIST_HEAD(&dev->p->deferred_probe);
+>         return 0;
+> }
+> 
+> and if it doesn't, then I must be missing something in this non-obvious
+> code. I scanned the interwebs and Documentation/, but could not really
+> find a great example on how this is supposed to work. The dev_set_drvdata
+> function existed since Linus moved to git.
 
-Ah, now I see that ^C there :)
+You're missing that device_private_init() is only called if (!dev->p).
+It's a one time initializer and after that we only set the driver_data.
 
-btw. I wish you a Merry Christmas and a happy New Year, guys!
+> > Also, the code referenced is kfree'ing a struct vfio_device, not the
+> > struct device.  VFIO uses the drvdata to provide a back pointer to the
+> > vfio specific structure, which also includes a pointer to the struct
+> > device.  We obviously want to clear drvdata when the vfio specific
+> > structure is being released.
+> 
+> Ah, I see. "device->dev" is not freed, but "device". And the data is
+> cleared for "device->dev". Thanks for correcting.
+> 
+> Clear examples of how to use dev_{s,g}et_drvdata correctly in i2c is
+> still wanted. I stepped in it yesterday, i2c seems to have its own
+> way to register new devices. More specifically, how can the memory
+> associated with dev_set_drvdata be free'd on error paths if the
+> device is not registered with device_register (as is done in the
+> probe function of the i801 i2c driver)?
+> 
+> Regards,
+> Peter
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Best regards,
-Marek Vasut
+
