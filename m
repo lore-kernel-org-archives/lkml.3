@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751302Ab3LXUqb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 15:46:31 -0500
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:46656 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049Ab3LXUqa (ORCPT
+	id S1751122Ab3LXVNM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 16:13:12 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:41152 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956Ab3LXVNK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 15:46:30 -0500
-Date: Tue, 24 Dec 2013 21:46:25 +0100
-From: Ingo Molnar <mingo@kernel.org>
+	Tue, 24 Dec 2013 16:13:10 -0500
+Date: Tue, 24 Dec 2013 13:13:01 -0800
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] speeding up the stat() family of system calls...
-Message-ID: <20131224204625.GB20471@gmail.com>
-References: <CA+55aFxZ2u+M72u3HSD7TVY2+WRRi27pYC=_4Wawr5y1m8DfnQ@mail.gmail.com>
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Michael Neuling <michael@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH] auxvec.h: account for AT_HWCAP2 in AT_VECTOR_SIZE_BASE
+Message-ID: <20131224211301.GA20469@linux.vnet.ibm.com>
+References: <1387820970-6949-1-git-send-email-ard.biesheuvel@linaro.org>
+ <CA+55aFwbrdgO_=LQ5=p2J=QmX_BmCvNbGGcxS0C0dKqocAkfYA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFxZ2u+M72u3HSD7TVY2+WRRi27pYC=_4Wawr5y1m8DfnQ@mail.gmail.com>
+In-Reply-To: <CA+55aFwbrdgO_=LQ5=p2J=QmX_BmCvNbGGcxS0C0dKqocAkfYA@mail.gmail.com>
+X-Operating-System: Linux 3.11.0-14-generic (x86_64)
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13122421-7164-0000-0000-0000048F80C3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 23.12.2013 [17:37:00 -0800], Linus Torvalds wrote:
+> Please cc the guilty parties when sending patches like this.
+> 
+> Also, just out of interest, please describe how this bug affected
+> things. Did we overflow the saved_auxv[] array, or what? Also, how
+> does this change affect architectures that _don't_ have that
+> ELF_HWCAP2 thing, ie everything but powerpc?
+> 
+> Acks, people?
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Acked-by: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
 
-> Here's both x86 people and filesystem people involved, because this
-> hacky RFC patch touches both.
-> 
-> NOTE NOTE NOTE! I've modified "cp_new_stat()" in place, in a way that
-> is x86-64 specific. So the attached patch *only* works on x86-64, and
-> will very actively break on anything else. That's intentional, because
-> that way it's more obvious how the code changes, but a real patch
-> would create a *new* cp_new_stat() for x86-64, and conditionalize the
-> existing generic "cp_new_stat()" on not already having an
-> architecture-optimized one.
-> 
-> Basically, under some filesystem loads, "stat()" and friends are the
-> most common ops (think tree traversal, but also things like git
-> verifying the index). And our "cp_new_stat()" function (which is the
-> common interface, ignoring 32-bit legacy stuff) is generic, but
-> actually pretty disgusting. It copies things to a temporary 'struct
-> stat' buffer on the kernel stack, and then uses copy_to_user() to copy
-> it to user space. The double copy is quite noticeable in profiles, and
-> it generates a big stack frame too.
-> 
-> By doing an architecture-specific cp_new_stat() function, we can
-> improve on that.
-> 
-> HOWEVER. On x86, doing an efficient field-at-a-time copy also requires
-> us to use put_user_try() and put_user_catch() in order to not have
-> tons of clac/stac instructions for the extended permission testing.
-> And the implementation of that was actually fairly non-optimal, so to
-> actually get the code I wanted, I had to change how that all worked
-> too, using "asm_volatile_goto()".
-> 
-> Thus both x86 and FS people on the list.
-> 
-> Comments? This would obviously be a 3.14 issue, I'm not suggesting 
-> we'd do this now. I just want to lay the ground-work..
-> 
-> It's tested in the sense that "it works for me", and profiles look 
-> nice, but..
+I agree with Mikey that a comment might be useful. Thanks for the fix
+and sorry for the mistake!
 
-Looks cool - it looks rather similar to the try/catch model Richard 
-Henderson came up with many eons ago when we implemented the original 
-exception mechanism for Linux, which IIRC we decided wasn't safe due 
-to lack of compiler support.
+-Nish
 
-Now we have compiler support ... written by Richard Henderson ;-)
-
-Thanks,
-
-	Ingo
