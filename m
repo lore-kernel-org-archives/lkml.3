@@ -1,93 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758401Ab3LXDjm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 22:39:42 -0500
-Received: from ring0.de ([91.143.88.219]:54128 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758001Ab3LXDjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 22:39:40 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Tue, 24 Dec 2013 04:39:37 +0100
-From: Sebastian Reichel <sre@debian.org>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        freemangordon@abv.bg, aaro.koskinen@iki.fi, pavel@ucw.cz
-Subject: Re: [PATCH 0/3] DT support for bq2415x
-Message-ID: <20131224033937.GB6542@earth.universe>
-Mail-Followup-To: Anton Vorontsov <anton@enomsg.org>,
-	David Woodhouse <dwmw2@infradead.org>,
-	Rob Herring <rob.herring@calxeda.com>,
-	Pawel Moll <pawel.moll@arm.com>,
-	Mark Rutland <mark.rutland@arm.com>,
-	Stephen Warren <swarren@wwwdotorg.org>,
-	Ian Campbell <ijc+devicetree@hellion.org.uk>,
-	Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
-	linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-	Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-	freemangordon@abv.bg, aaro.koskinen@iki.fi, pavel@ucw.cz
-References: <1385311771-447-1-git-send-email-sre@debian.org>
- <20131224022048.GC10223@lizard>
+	id S1758242Ab3LXDwQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 22:52:16 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:50883 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753142Ab3LXDwP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 22:52:15 -0500
+Message-ID: <52B9049D.4020403@linux.vnet.ibm.com>
+Date: Tue, 24 Dec 2013 09:20:53 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="U+BazGySraz5kW0T"
-Content-Disposition: inline
-In-Reply-To: <20131224022048.GC10223@lizard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michael Ellerman <mpe@ellerman.id.au>
+CC: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org, mikey@neuling.org,
+        ak@linux.intel.com, eranian@google.com, acme@ghostprotocols.net,
+        sukadev@linux.vnet.ibm.com, mingo@kernel.org
+Subject: Re: [PATCH V4 08/10] powerpc, perf: Enable SW filtering in branch
+ stack sampling framework
+References: <20131209062146.EABBE2C00C1@ozlabs.org> <52B42394.4060705@linux.vnet.ibm.com> <1387855790.15093.1.camel@concordia>
+In-Reply-To: <1387855790.15093.1.camel@concordia>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13122403-5564-0000-0000-00000B3F662F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/24/2013 08:59 AM, Michael Ellerman wrote:
+> On Fri, 2013-12-20 at 16:31 +0530, Anshuman Khandual wrote:
+>> On 12/09/2013 11:51 AM, Michael Ellerman wrote:
+>>> On Wed, 2013-04-12 at 10:32:40 UTC, Anshuman Khandual wrote:
+>>>> +
+>>>> +	if (bhrb_sw_filter & PERF_SAMPLE_BRANCH_IND_CALL) {
+>>>> +		/* XL-form instruction */
+>>>> +		if (instr_is_branch_xlform(*addr)) {
+>>>> +
+>>>> +			/* LR should be set */
+>>>> +			if (is_branch_link_set(*addr)) {
+>>>> +				/*
+>>>> +			 	 * Conditional and unconditional
+>>>> +			 	 * branch to CTR.
+>>>> +			 	 */
+>>>> +				if (is_xlform_ctr(*addr))
+>>>> +					result = true;
+>>>> +
+>>>> +				/*
+>>>> +			 	 * Conditional and unconditional
+>>>> +			 	 * branch to LR.
+>>>> +			 	 */
+>>>> +				if (is_xlform_lr(*addr))
+>>>> +					result = true;
+>>>> +
+>>>> +				/*
+>>>> +			 	 * Conditional and unconditional
+>>>> +			 	 * branch to TAR.
+>>>> +			 	 */
+>>>> +				if (is_xlform_tar(*addr))
+>>>> +					result = true;
+>>>
+>>> What other kind of XL-Form branch is there?
+>>
+>> I am not sure. Do you know of any ?
+> 
+> That was my point. There are no other types, so you can just do:
+> 
+> 	if (bhrb_sw_filter & PERF_SAMPLE_BRANCH_IND_CALL)
+> 		if (instr_is_branch_xlform(*addr) && is_branch_link_set(*addr))
+> 			return true;
+> 
 
---U+BazGySraz5kW0T
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Done
 
-On Mon, Dec 23, 2013 at 06:20:48PM -0800, Anton Vorontsov wrote:
-> On Sun, Nov 24, 2013 at 05:49:28PM +0100, Sebastian Reichel wrote:
-> > This patchset adds DT support for the bq2415x charger, which is used in=
- the
-> > Nokia N900. The changes depend on Pali Roh=E1r's "[PATCH v2 0/3] Add su=
-pport for
-> > charging battery in Nokia RX-51" patchset [0].
->=20
-> Patches 1/3 and 2/3 applied, thanks a lot!
+>>>> +	if (bhrb_sw_filter & PERF_SAMPLE_BRANCH_COND) {
+>>>> +
+>>>> +		/* I-form instruction - excluded */
+>>>> +		if (instr_is_branch_iform(*addr))
+>>>> +			goto out;
+>>>> +
+>>>> +		/* B-form or XL-form instruction */
+>>>> +		if (instr_is_branch_bform(*addr) || instr_is_branch_xlform(*addr))  {
+>>>> +
+>>>> +			/* Not branch always  */
+>>>> +			if (!is_bo_always(*addr)) {
+>>>> +
+>>>> +				/* Conditional branch to CTR register */
+>>>> +				if (is_bo_ctr(*addr))
+>>>> +					goto out;
+>>>
+>>> We might have discussed this but why not?
+>>
+>> Did not get that, discuss what ?
+> 
+> Why are we saying a conditional branch to the CTR is not a conditional branch?
+> 
+> It is conditional, so I think it should be included.
+> 
 
-Thanks. I will try to update Patch 3 at the weekend. It should be
-added to the mainline kernel together with Patch 2 :)
+I believe conditional branch to CTR register and the below conditional branch
+with static hint are excluded when processed with BHRB PMU based filter IFM3,
+Here the SW implemented filter try to match those exclusions, so that a user
+should not see any difference in results whether the filter is processed
+either in PMU or in SW.
 
--- Sebastian
+>>>> +
+>>>> +				/* CR[BI] conditional branch with static hint */
+>>>
+>>> A conditional branch with a static hint is still a conditional branch?
+>>
+>> No its not. 
+> 
+> Yes it is?
+> 
+> In fact they could be very interesting branches. Because the compiler or
+> programmer has statically hinted them, if the hint is wrong they may be a major
+> source of branch midpredicts.
+> 
+> 
+>>>> +				if (is_bo_crbi_off(*addr) || is_bo_crbi_on(*addr)) {
+>>>> +					if (is_bo_crbi_hint(*addr))
+>>>> +						goto out;
+>>>> +				}
+>>>> +
+>>>> +				result = true;
+>>>> +			}
+>>>> +		}
+>>>> +	}
+>>>> +out:
+>>>> +	return result;
+>>>> +}
+> 
+>>>> +	} else {
+>>>> +		/*
+>>>> +		 * Userspace address needs to be
+>>>> +		 * copied first before analysis.
+>>>> +		 */
+>>>> +		pagefault_disable();
+>>>> +		ret =  __get_user_inatomic(instr, (unsigned int __user *)addr);
+>>>
+>>> I suspect you borrowed this incantation from the callchain code. Unlike that
+>>> code you don't fallback to reading the page tables directly.
+>>>
+>>> I'd rather see the accessor in the callchain code made generic and have you
+>>> call it here.
+>>
+>> You have mentioned to take care of this issue yourself.
+> 
+> Yes I will.
 
---U+BazGySraz5kW0T
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thanks !!
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSuQH4AAoJENju1/PIO/qankcP/1uT3ZusKUFVA5gHkY4WXIi1
-SQuuIbkjcnB+VE4VOA/OK330aqrcr9fIDNqUnFEW6/xHGbfmvoWmA8+M31n2j92/
-ruqVzGkaAp/kjip+2dioQIwfsR7w78CioTUFbbD+akYzpNxiHUbWxAAy32ET9aFg
-l3NFGtoiwfeULuJK5noVv0u257CCdVpjv7Z4rKkzenpbedHhYLEKDcfWglSlhoCS
-9hh9sn05mA/+BkaTgqCNeYsn8HHlR4kiXQZCNi51lbVUaGm1lVC1+yUbDWOV4P+k
-ECBsd5057/41D2kUu1olDYYHCvqQeobiliC5ztdaD8SfZ1HSR0guwYwKqK4pRzkZ
-MDHsgWI952zYi2aVjkpXiza+y/VQotDt0UR8jvw18/Hz12n9yhep8QYttbSMmzci
-9ye7ejFFfV9CcVAG9zAK58vlXFIaMugZ2Cqczol14/wnAd/X6AQ7iwrjwZpjtFui
-VoBh8wSJrfy45vEpDr1Q1+4t88uxl1npGzZ0Iehi8aHGx+xEZTYT4wVpahod2t5R
-Powh+6Ni/VoCTz1S6WfLzEAViQP9nxluB4Sjrjg+iAijgCiJ4lJK8oK1AtWXHKcw
-WVpACIPQT2amykJuekzdZXyWmWyZ/FyxHUaQbT37mMQab+rCkD989Z6418MX2oUJ
-uYt6CscW1zEJq/Bdb3w5
-=D632
------END PGP SIGNATURE-----
-
---U+BazGySraz5kW0T--
