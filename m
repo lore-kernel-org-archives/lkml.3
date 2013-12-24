@@ -1,48 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758260Ab3LXCkf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 21:40:35 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:37866 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757917Ab3LXCkd (ORCPT
+	id S1758227Ab3LXCpc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 21:45:32 -0500
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:29162
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757912Ab3LXCpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 21:40:33 -0500
-Date: Mon, 23 Dec 2013 18:35:16 -0800
-From: Anton Vorontsov <anton@enomsg.org>
-To: Sebastian Reichel <sre@debian.org>
-Cc: Tony Lindgren <tony@atomide.com>, David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
-Subject: Re: [PATCHv2 0/2] DT support for isp1704-charger
-Message-ID: <20131224023515.GD10223@lizard>
-References: <20131114175227.GH10317@atomide.com>
- <1385859611-26532-1-git-send-email-sre@debian.org>
+	Mon, 23 Dec 2013 21:45:30 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+From: Anson Huang <b20788@freescale.com>
+To: <rui.zhang@intel.com>, <shawn.guo@linaro.org>, <eduardo.valentin@ti.com>
+CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH V2] thermal: imx: correct suspend/resume flow
+Date: Tue, 24 Dec 2013 09:43:24 -0500
+Message-ID: <1387896204-31754-1-git-send-email-b20788@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1385859611-26532-1-git-send-email-sre@debian.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 01, 2013 at 02:00:09AM +0100, Sebastian Reichel wrote:
-> This is the second iteration of the isp1704 DT patches.
-> 
-> Changes since v1:
->  * reword the binding documentation slightly according
->    to the suggestions of Mark Rutland
->  * keep supporting the set_power callback and leave the
->    board code in its current state. This solves potential
->    merge problems. The additional code can be removed in
->    the next merge window.
+Fixes regression introduced by:
 
-Applied, thanks a lot!
+commit 37713a1e8e4c1a1067ad4c99296f78d3c82ed9c4
+Author: Philipp Zabel <p.zabel@pengutronix.de>
+Date:   Thu Aug 1 18:33:12 2013 +0200
 
-Anton
+    thermal: imx: implement thermal alarm interrupt handling
+
+The commit 37713a1e8e4 makes imx thermal sensor always powered up as alarm
+function is enabled, but the suspend callback of imx thermal returns
+success only if thermal sensor is powered down, so it will always returns
+fail hence break system's suspend, this patch disables imx thermal sensor
+before suspend and re-enable it after resume.
+
+Signed-off-by: Anson Huang <b20788@freescale.com>
+---
+ drivers/thermal/imx_thermal.c |   31 +++++++++++++++++--------------
+ 1 file changed, 17 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/thermal/imx_thermal.c b/drivers/thermal/imx_thermal.c
+index cbb16f3..9a9a6c2 100644
+--- a/drivers/thermal/imx_thermal.c
++++ b/drivers/thermal/imx_thermal.c
+@@ -510,27 +510,30 @@ static int imx_thermal_suspend(struct device *dev)
+ {
+ 	struct imx_thermal_data *data = dev_get_drvdata(dev);
+ 	struct regmap *map = data->tempmon;
+-	u32 val;
+ 
+-	regmap_read(map, TEMPSENSE0, &val);
+-	if ((val & TEMPSENSE0_POWER_DOWN) == 0) {
+-		/*
+-		 * If a measurement is taking place, wait for a long enough
+-		 * time for it to finish, and then check again.  If it still
+-		 * does not finish, something must go wrong.
+-		 */
+-		udelay(50);
+-		regmap_read(map, TEMPSENSE0, &val);
+-		if ((val & TEMPSENSE0_POWER_DOWN) == 0)
+-			return -ETIMEDOUT;
+-	}
++	/*
++	 * Need to disable thermal sensor, otherwise, when thermal core
++	 * try to get temperature before thermal sensor resume, a wrong
++	 * temperature will be read as the thermal sensor is powered
++	 * down.
++	 */
++	regmap_write(map, TEMPSENSE0 + REG_CLR, TEMPSENSE0_MEASURE_TEMP);
++	regmap_write(map, TEMPSENSE0 + REG_SET, TEMPSENSE0_POWER_DOWN);
++	data->mode = THERMAL_DEVICE_DISABLED;
+ 
+ 	return 0;
+ }
+ 
+ static int imx_thermal_resume(struct device *dev)
+ {
+-	/* Nothing to do for now */
++	struct imx_thermal_data *data = dev_get_drvdata(dev);
++	struct regmap *map = data->tempmon;
++
++	/* Enabled thermal sensor after resume */
++	regmap_write(map, TEMPSENSE0 + REG_CLR, TEMPSENSE0_POWER_DOWN);
++	regmap_write(map, TEMPSENSE0 + REG_SET, TEMPSENSE0_MEASURE_TEMP);
++	data->mode = THERMAL_DEVICE_ENABLED;
++
+ 	return 0;
+ }
+ #endif
+-- 
+1.7.9.5
+
+
