@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751258Ab3LXGJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 01:09:26 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:64155 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072Ab3LXGJY (ORCPT
+	id S1751244Ab3LXGin (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 01:38:43 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:51558 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816Ab3LXGij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 01:09:24 -0500
+	Tue, 24 Dec 2013 01:38:39 -0500
+X-AuditID: 9c93017d-b7c2eae000004ec2-1e-52b92bed1fd3
+Date: Tue, 24 Dec 2013 15:38:37 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: possible regression on 3.13 when calling flush_dcache_page
+Message-ID: <20131224063837.GA27156@lge.com>
+References: <20131212143149.GI12099@ldesroches-Latitude-E6320>
+ <20131212143618.GJ12099@ldesroches-Latitude-E6320>
+ <20131213015909.GA8845@lge.com>
+ <20131216144343.GD9627@ldesroches-Latitude-E6320>
+ <20131218072117.GA2383@lge.com>
+ <20131220080851.GC16592@ldesroches-Latitude-E6320>
+ <20131223224435.GD16592@ldesroches-Latitude-E6320>
 MIME-Version: 1.0
-In-Reply-To: <52B9051A.3090701@huawei.com>
-References: <52B7F53C.5020001@huawei.com>
-	<20131223133402.GA4487@pd.tnic>
-	<52B8DEAE.2040100@huawei.com>
-	<CAE9FiQWUfu6kNvpeN+e_Gp7L2NxddYnvG2oy9YB7CpqbeMgp-Q@mail.gmail.com>
-	<52B9051A.3090701@huawei.com>
-Date: Mon, 23 Dec 2013 22:09:24 -0800
-X-Google-Sender-Auth: HxJpOcmiIGJ6s9wWqdVPNgpTqhU
-Message-ID: <CAE9FiQV401-fC=aTAfvkz3e3nUmJtXTTLGjnwR9innXwU13TmA@mail.gmail.com>
-Subject: Re: [PATCH v2][TRIVIAL] x86/smpboot: fix cpu bootup message
-From: Yinghai Lu <yinghai@kernel.org>
-To: Xie XiuQi <xiexiuqi@huawei.com>
-Cc: Borislav Petkov <bp@suse.de>, Ingo Molnar <mingo@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Bin <huawei.libin@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131223224435.GD16592@ldesroches-Latitude-E6320>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 23, 2013 at 7:52 PM, Xie XiuQi <xiexiuqi@huawei.com> wrote:
-> [    0.000000] ACPI: Local APIC address 0xfee00000
-> [    0.000000] SRAT: PXM 0 -> APIC 0x00 -> Node 0
-> [    0.000000] SRAT: PXM 0 -> APIC 0x02 -> Node 0
-> [    0.000000] SRAT: PXM 0 -> APIC 0x12 -> Node 0
-> [    0.000000] SRAT: PXM 0 -> APIC 0x14 -> Node 0
-> [    0.000000] SRAT: PXM 0 -> APIC 0x01 -> Node 0
-> [    0.000000] SRAT: PXM 0 -> APIC 0x03 -> Node 0
-> [    0.000000] SRAT: PXM 0 -> APIC 0x13 -> Node 0
-> [    0.000000] SRAT: PXM 0 -> APIC 0x15 -> Node 0
-> [    0.000000] SRAT: PXM 1 -> APIC 0x20 -> Node 1
-> [    0.000000] SRAT: PXM 1 -> APIC 0x22 -> Node 1
-> [    0.000000] SRAT: PXM 1 -> APIC 0x32 -> Node 1
-> [    0.000000] SRAT: PXM 1 -> APIC 0x34 -> Node 1
-> [    0.000000] SRAT: PXM 1 -> APIC 0x21 -> Node 1
-> [    0.000000] SRAT: PXM 1 -> APIC 0x23 -> Node 1
-> [    0.000000] SRAT: PXM 1 -> APIC 0x33 -> Node 1
-> [    0.000000] SRAT: PXM 1 -> APIC 0x35 -> Node 1
-> [    0.000000] SRAT: Node 0 PXM 0 [mem 0x00000000-0x0009ffff]
-> [    0.000000] SRAT: Node 0 PXM 0 [mem 0x00100000-0xbfffffff]
-> [    0.000000] SRAT: Node 0 PXM 0 [mem 0x100000000-0x63fffffff]
-> [    0.000000] SRAT: Node 1 PXM 1 [mem 0x640000000-0xc3fffffff]
-...
-> [    0.000000] ACPI: LAPIC (acpi_id[0x01] lapic_id[0x20] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x02] lapic_id[0x22] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x03] lapic_id[0x32] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x04] lapic_id[0x34] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x05] lapic_id[0x00] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x06] lapic_id[0x02] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x07] lapic_id[0x12] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x08] lapic_id[0x14] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x09] lapic_id[0x21] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x0a] lapic_id[0x23] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x0b] lapic_id[0x33] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x0c] lapic_id[0x35] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x0d] lapic_id[0x01] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x0e] lapic_id[0x03] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x0f] lapic_id[0x13] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x10] lapic_id[0x15] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x11] lapic_id[0x90] disabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x12] lapic_id[0x91] disabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x13] lapic_id[0x92] disabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x14] lapic_id[0x93] disabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x15] lapic_id[0x94] disabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x16] lapic_id[0x95] disabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x17] lapic_id[0x96] disabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x18] lapic_id[0x97] disabled)
+On Mon, Dec 23, 2013 at 11:44:35PM +0100, Ludovic Desroches wrote:
+> On Fri, Dec 20, 2013 at 09:08:51AM +0100, Ludovic Desroches wrote:
+> > Hello,
+> > 
+> > On Wed, Dec 18, 2013 at 04:21:17PM +0900, Joonsoo Kim wrote:
+> > > On Mon, Dec 16, 2013 at 03:43:43PM +0100, Ludovic Desroches wrote:
+> > > > Hello,
+> > > > 
+> > > > On Fri, Dec 13, 2013 at 10:59:09AM +0900, Joonsoo Kim wrote:
+> > > > > On Thu, Dec 12, 2013 at 03:36:19PM +0100, Ludovic Desroches wrote:
+> > > > > > fix mmc mailing list address error
+> > > > > > 
+> > > > > > On Thu, Dec 12, 2013 at 03:31:50PM +0100, Ludovic Desroches wrote:
+> > > > > > > Hi,
+> > > > > > > 
+> > > > > > > With v3.13-rc3 I have an error when the atmel-mci driver calls
+> > > > > > > flush_dcache_page (log at the end of the message).
+> > > > > > > 
+> > > > > > > Since I didn't have it before, I did a git bisect and the commit introducing
+> > > > > > > the error is the following one:
+> > > > > > > 
+> > > > > > > 106a74e slab: replace free and inuse in struct slab with newly introduced active
+> > > > > > > 
+> > > > > > > I don't know if this commit has introduced a bug or if it has revealed a bug
+> > > > > > > in the atmel-mci driver.
+> > > > > 
+> > > > > Hello,
+> > > > > 
+> > > > > I think that this commit may not introduce a bug. This patch remove one
+> > > > > variable on slab management structure and replace variable name. So there
+> > > > > is no functional change.
+> > > > > 
+> > > > 
+> > > > If I have reverted this patch and other ones you did on top of it and
+> > > > the issue disappear.
+> > > 
+> > > Hello,
+> > > 
+> > > Could you give me your '/proc/slabinfo' before/after this commit (106a74e)?
+> > > 
+> > > And how about testing with artificially increasing size of struct slab on
+> > > top of this commit (106a74e)?
+> > > 
+> > > I really wonder why the problem happens, because this doesn't cause any
+> > > functional change as far as I know. Only side-effect from this patch is
+> > > decreasing size of struct slab.
+> > 
+> > Sorry I am not at the office, I have tried to reproduce it with a
+> > different device and a different sdcard but without success. I'll test
+> > it on Monday.
+> 
+> I am still not at the office but I get the same device and the same
+> sdcard and I don't reproduce it. I am not totally in the same
+> conditions. It seems there is an extra parameter causing this bug but I
+> don't figure out which one at the moment.
 
-Amazing!
+Okay. I will wait for you!
 
-Your BIOS engineers really have different idea about building MADT.
-
-Yinghai
+Thanks for informing progress.
