@@ -1,97 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948Ab3LXKgJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 05:36:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39024 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751729Ab3LXKgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 05:36:07 -0500
-Date: Tue, 24 Dec 2013 11:35:58 +0100
-From: Borislav Petkov <bp@suse.de>
-To: Xie XiuQi <xiexiuqi@huawei.com>, Ingo Molnar <mingo@kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Bin <huawei.libin@huawei.com>, x86-ml <x86@kernel.org>
-Subject: Re: [PATCH v2][TRIVIAL] x86/smpboot: fix cpu bootup message
-Message-ID: <20131224103558.GA5520@pd.tnic>
-References: <52B7F53C.5020001@huawei.com>
- <20131223133402.GA4487@pd.tnic>
- <52B8DEAE.2040100@huawei.com>
+	id S1751921Ab3LXKpL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 05:45:11 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:59487 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486Ab3LXKpI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Dec 2013 05:45:08 -0500
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>, Sekhar Nori <nsekhar@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>
+CC: <prabhakar.csengg@gmail.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-gpio@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Alexandre Courbot <gnurou@gmail.com>
+Subject: [PATCH v3 1/2] gpio: davinci: don't create irq_domain in case of unbanked irqs
+Date: Tue, 24 Dec 2013 13:41:23 +0200
+Message-ID: <1387885284-8119-2-git-send-email-grygorii.strashko@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1387885284-8119-1-git-send-email-grygorii.strashko@ti.com>
+References: <1387885284-8119-1-git-send-email-grygorii.strashko@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <52B8DEAE.2040100@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 24, 2013 at 09:09:02AM +0800, Xie XiuQi wrote:
-> On 2013/12/23 21:34, Borislav Petkov wrote:
-> > On Mon, Dec 23, 2013 at 04:33:00PM +0800, Xie XiuQi wrote:
-> >> When CPU0 and CPU1 aren't in same package, we got message
-> >> like this:
-> >>
-> 
-> [...]
-> 
-> >>
-> >> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> >> index 85dc05a..9e82c1e 100644
-> >> --- a/arch/x86/kernel/smpboot.c
-> >> +++ b/arch/x86/kernel/smpboot.c
-> >> @@ -639,7 +639,7 @@ static void announce_cpu(int cpu, int apicid)
-> >>  {
-> >>  	static int current_node = -1;
-> >>  	int node = early_cpu_to_node(cpu);
-> >> -	static int width, node_width;
-> >> +	static int width, node_width, padding;
-> >>
-> >>  	if (!width)
-> >>  		width = num_digits(num_possible_cpus()) + 1; /* + '#' sign */
-> >> @@ -658,11 +658,13 @@ static void announce_cpu(int cpu, int apicid)
-> >>
-> >>  			printk(KERN_INFO ".... node %*s#%d, CPUs:  ",
-> >>  			       node_width - num_digits(node), " ", node);
-> >> -		}
-> >>
-> >> -		/* Add padding for the BSP */
-> >> -		if (cpu == 1)
-> >> -			pr_cont("%*s", width + 1, " ");
-> >> +			/* Add padding for the BSP */
-> >> +			if (!padding && (early_cpu_to_node(0) == current_node)) {
-> > 
-> > You don't need "padding".
-> > 
-> 
-> On another machine, the configuration is:
-> 
-> xiexiuqi@localhost:~> lscpu
-> [...]
-> NUMA node0 CPU(s):     4-7,12-15
-> NUMA node1 CPU(s):     0-3,8-11
-> 
-> Without "padding", we'll get message like this:
-> 
-> [    0.349339] x86: Booting SMP configuration:
-> [    0.353504] .... node  #1, CPUs:        #1  #2  #3
-> [    0.398812] .... node  #0, CPUs:    #4  #5  #6  #7
-> [    0.535186] .... node  #1, CPUs:        #8  #9 #10 #11
-> [    0.594312] .... node  #0, CPUs:   #12 #13 #14 #15
-> [    0.652398] x86: Booted up 2 nodes, 16 CPUs
+The system may crash if:
+- there are more than 1 bank
+- unbanked irqs are enabled
+- someone will call gpio_to_irq() for GPIO from bank2 or above
 
-Geez, is that box generating the cores to nodes groups at random during
-each boot?!
+Hence, fix it by not creating irq_domain if unbanked irqs are enabled
+and correct gpio_to_irq_banked() to handle this properly.
 
-Gotta admire bios dudes' "inventiveness".
+Cc: Alexandre Courbot <gnurou@gmail.com>
+Cc: Sekhar Nori <nsekhar@ti.com>
 
-Ok, so Ingo, I guess we can take this -v2 version for now - I need to
-think of a way on how to address all that nonsense properly.
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+---
+ drivers/gpio/gpio-davinci.c |   34 +++++++++++++++++++---------------
+ 1 file changed, 19 insertions(+), 15 deletions(-)
 
-Acked-by: Borislav "luvz BIOS people" Petkov <bp@suse.de>
-
+diff --git a/drivers/gpio/gpio-davinci.c b/drivers/gpio/gpio-davinci.c
+index 5d163c0..7629b4f 100644
+--- a/drivers/gpio/gpio-davinci.c
++++ b/drivers/gpio/gpio-davinci.c
+@@ -351,7 +351,10 @@ static int gpio_to_irq_banked(struct gpio_chip *chip, unsigned offset)
+ {
+ 	struct davinci_gpio_controller *d = chip2controller(chip);
+ 
+-	return irq_create_mapping(d->irq_domain, d->chip.base + offset);
++	if (d->irq_domain)
++		return irq_create_mapping(d->irq_domain, d->chip.base + offset);
++	else
++		return -ENXIO;
+ }
+ 
+ static int gpio_to_irq_unbanked(struct gpio_chip *chip, unsigned offset)
+@@ -429,7 +432,7 @@ static int davinci_gpio_irq_setup(struct platform_device *pdev)
+ 	struct davinci_gpio_controller *chips = platform_get_drvdata(pdev);
+ 	struct davinci_gpio_platform_data *pdata = dev->platform_data;
+ 	struct davinci_gpio_regs __iomem *g;
+-	struct irq_domain	*irq_domain;
++	struct irq_domain	*irq_domain = NULL;
+ 
+ 	ngpio = pdata->ngpio;
+ 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+@@ -453,18 +456,20 @@ static int davinci_gpio_irq_setup(struct platform_device *pdev)
+ 	}
+ 	clk_prepare_enable(clk);
+ 
+-	irq = irq_alloc_descs(-1, 0, ngpio, 0);
+-	if (irq < 0) {
+-		dev_err(dev, "Couldn't allocate IRQ numbers\n");
+-		return irq;
+-	}
++	if (!pdata->gpio_unbanked) {
++		irq = irq_alloc_descs(-1, 0, ngpio, 0);
++		if (irq < 0) {
++			dev_err(dev, "Couldn't allocate IRQ numbers\n");
++			return irq;
++		}
+ 
+-	irq_domain = irq_domain_add_legacy(NULL, ngpio, irq, 0,
+-						&davinci_gpio_irq_ops,
+-						chips);
+-	if (!irq_domain) {
+-		dev_err(dev, "Couldn't register an IRQ domain\n");
+-		return -ENODEV;
++		irq_domain = irq_domain_add_legacy(NULL, ngpio, irq, 0,
++							&davinci_gpio_irq_ops,
++							chips);
++		if (!irq_domain) {
++			dev_err(dev, "Couldn't register an IRQ domain\n");
++			return -ENODEV;
++		}
+ 	}
+ 
+ 	/*
+@@ -475,8 +480,7 @@ static int davinci_gpio_irq_setup(struct platform_device *pdev)
+ 	 */
+ 	for (gpio = 0, bank = 0; gpio < ngpio; bank++, gpio += 32) {
+ 		chips[bank].chip.to_irq = gpio_to_irq_banked;
+-		if (!pdata->gpio_unbanked)
+-			chips[bank].irq_domain = irq_domain;
++		chips[bank].irq_domain = irq_domain;
+ 	}
+ 
+ 	/*
 -- 
-Regards/Gruss,
-    Boris.
+1.7.9.5
 
-Sent from a fat crate under my desk. Formatting is fine.
---
