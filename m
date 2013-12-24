@@ -1,78 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586Ab3LXQju (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 11:39:50 -0500
-Received: from imp02.mtu.ru ([62.5.255.19]:43338 "EHLO imp02.mtu.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752212Ab3LXQjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 11:39:48 -0500
-X-Spam-Flag: NO
-Message-ID: <52B9B8C9.3090406@pavlinux.ru>
-Date: Tue, 24 Dec 2013 20:39:37 +0400
-From: Pavel Vasilyev <pavel@pavlinux.ru>
-Reply-To: pavel@pavlinux.ru
-Organization: Pavlinux. Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131118 Thunderbird/17.0.11
+	id S1752650Ab3LXQko (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 11:40:44 -0500
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:52166 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752316Ab3LXQkm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Dec 2013 11:40:42 -0500
+Message-ID: <52B9B90E.6040106@cogentembedded.com>
+Date: Tue, 24 Dec 2013 20:40:46 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Mike Galbraith <bitbucket@online.de>
-CC: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
-        John Kacur <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.12.6-rt9
-References: <20131223225017.GA8623@linutronix.de> <1387900067.5490.33.camel@marge.simpson.net>
-In-Reply-To: <1387900067.5490.33.camel@marge.simpson.net>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="SS26MdTXqJ5C3lLxiHsIh3g6EacMso67w"
-X-DCC-STREAM-Metrics: ss27-so03.mtu.ru 10003; Body=7 Fuz1=7 Fuz2=7
+To: Joe Perches <joe@perches.com>
+CC: Ding Tianhong <dingtianhong@huawei.com>,
+        Michal Ostrowski <mostrows@earthlink.net>,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 06/20] ppp: slight optimization of addr compare
+References: <52B96FCD.50901@huawei.com>	 <52B9B559.2060400@cogentembedded.com> <1387902949.2259.51.camel@joe-AO722>
+In-Reply-To: <1387902949.2259.51.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---SS26MdTXqJ5C3lLxiHsIh3g6EacMso67w
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hello.
 
-24.12.2013 19:47, Mike Galbraith =D0=BF=D0=B8=D1=88=D0=B5=D1=82:
-> On Mon, 2013-12-23 at 23:50 +0100, Sebastian Andrzej Siewior wrote:=20
+On 24-12-2013 20:35, Joe Perches wrote:
 
-> crash> bt
-> PID: 508    TASK: ffff8802739ba340  CPU: 16  COMMAND: "ksoftirqd/16"
+> []
+>>> diff --git a/drivers/net/ppp/pppoe.c b/drivers/net/ppp/pppoe.c
+> []
+>>> @@ -131,12 +131,13 @@ static inline struct pppoe_net *pppoe_pernet(struct net *net)
+>>>
+>>>    static inline int cmp_2_addr(struct pppoe_addr *a, struct pppoe_addr *b)
+>>>    {
+>>> -	return a->sid == b->sid && !memcmp(a->remote, b->remote, ETH_ALEN);
+>>> +	return a->sid == b->sid && ether_addr_equal(a->remote,
+>>> +							      b->remote);
 
-YES!!! And ARM code broke :)
+>>      If it really doesn't fit insto single line, the continuation line should
+>> start right under 'a->remote'.
+
+> Better still might be
+>
+> 	return a->sid == b->sid &&
+> 	       ether_addr_equal(a->remote, b->remote);
+
+    Actually, after the second look, I don't know why the line was broken at all.
+
+WBR, Sergei
 
 
-
---=20
-
-                                                         Pavel.
-
-
---SS26MdTXqJ5C3lLxiHsIh3g6EacMso67w
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBCgAGBQJSubjJAAoJEPtok08Dny2h9r0QAK+oKfyG4UMguJLu1gwDRXdX
-mJjmVcvHL1blxjrFbEyb7wKOhHdpZEziq+FIT+M7YGPOKcLSrfOecKkXA+/Q3sKx
-e678CdkgYzxyZE3njP9NGU5ss++srftbCWjtetGiIcSVD9Hx+gyIbbpH9OeeQTBR
-EHwyPm4Mdod5q3F/nrh4+O0Ujzn3wJ/es8Yu6+d8bwSx4ifpEQXYTBc68W8TOJ7R
-+ZqGRvyyWFqVpvckMKfU3UYy79DmS1To2AfaUV34BGAJikyNRNkl8kA512tHpJCD
-7Bn45JnWY+Yk/QDkV8dRO24dpzsS+HpIxo1FKOxh4J/rjKAI2iAoQGxiU0lTYu5u
-BHxYBHQsiQEX/3gWZ4gWHn+2OPz3T1NE4JIGk6qEE+vyHHFETbJ8zjyY0d6OEr36
-7/n71Iu07yBxsjGiGOhvQPEMjE2JmRWYaAm+1iRXd1IE+mnhjuyVa/hsU29EDNxS
-sRgCJ606V1czpvS/1qKK/9cK4kOsdkB0DxNj125exoHy+xNzkY3ISP/lA547i4iQ
-T6C9GP9oo+KJLY0INeMoGpidN2yvTt01CNuBZqyQt0/+Xi0mFg2GAGnvQEaGAwPG
-c8V8AyDQCButDt6VWZKhGzX/Q9ghIgX0d1IrKwUysvgNB8t2oB7IFdkEMCrwWmzq
-UqJINm5aSiNjYZeLZZgW
-=3Xn4
------END PGP SIGNATURE-----
-
---SS26MdTXqJ5C3lLxiHsIh3g6EacMso67w--
