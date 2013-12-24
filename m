@@ -1,71 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200Ab3LXLvu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 06:51:50 -0500
-Received: from www262.sakura.ne.jp ([202.181.97.72]:56183 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751770Ab3LXLvt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 06:51:49 -0500
-X-Nat-Received: from [202.181.97.72]:61149 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1387885905.32014
-To: swhiteho@redhat.com, rpeterso@redhat.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] GFS2: Fix unsafe dereference in dump_holder()
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Message-Id: <201312242051.ECA46103.MFFVFOtHSJOLQO@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Tue, 24 Dec 2013 20:51:43 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 24122013 #7223428, status: clean
+	id S1752239Ab3LXL6b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 06:58:31 -0500
+Received: from ozlabs.org ([203.10.76.45]:46604 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752034Ab3LXL63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Dec 2013 06:58:29 -0500
+Date: Tue, 24 Dec 2013 23:00:12 +1100
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH v3 03/14] mm, hugetlb: protect region tracking via newly
+ introduced resv_map lock
+Message-ID: <20131224120012.GH12407@voom.fritz.box>
+References: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1387349640-8071-4-git-send-email-iamjoonsoo.kim@lge.com>
+ <20131221135819.GB12407@voom.fritz.box>
+ <20131223010517.GB19388@lge.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FUaywKC54iCcLzqT"
+Content-Disposition: inline
+In-Reply-To: <20131223010517.GB19388@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From efee681e4ca6152d9549a50e93ca932b00f03014 Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Tue, 24 Dec 2013 18:04:43 +0900
-Subject: [PATCH] GFS2: Fix unsafe dereference in dump_holder()
 
-Since we are not in RCU nor tasklist_lock held, we need to grab a reference on
-the returned task_struct. Use get_pid_task()/get_task_comm() to safely read the
-target task's comm name.
+--FUaywKC54iCcLzqT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
----
- fs/gfs2/glock.c |   11 +++++++++--
- 1 files changed, 9 insertions(+), 2 deletions(-)
+On Mon, Dec 23, 2013 at 10:05:17AM +0900, Joonsoo Kim wrote:
+> On Sun, Dec 22, 2013 at 12:58:19AM +1100, David Gibson wrote:
+> > On Wed, Dec 18, 2013 at 03:53:49PM +0900, Joonsoo Kim wrote:
+> > > There is a race condition if we map a same file on different processe=
+s.
+> > > Region tracking is protected by mmap_sem and hugetlb_instantiation_mu=
+tex.
+> > > When we do mmap, we don't grab a hugetlb_instantiation_mutex, but,
+> > > grab a mmap_sem. This doesn't prevent other process to modify region
+> > > structure, so it can be modified by two processes concurrently.
+> > >=20
+> > > To solve this, I introduce a lock to resv_map and make region manipul=
+ation
+> > > function grab a lock before they do actual work. This makes region
+> > > tracking safe.
+> >=20
+> > It's not clear to me if you're saying there is a list corruption race
+> > bug in the existing code, or only that there will be if the
+> > instantiation mutex goes away.
+>=20
+> Hello,
+>=20
+> The race exists in current code.
+> Currently, region tracking is protected by either down_write(&mm->mmap_se=
+m) or
+> down_read(&mm->mmap_sem) + instantiation mutex. But if we map this hugetl=
+bfs
+> file to two different processes, holding a mmap_sem doesn't have any impa=
+ct on
+> the other process and concurrent access to data structure is possible.
 
-diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
-index c8420f7..7bda965 100644
---- a/fs/gfs2/glock.c
-+++ b/fs/gfs2/glock.c
-@@ -1654,15 +1654,22 @@ static int dump_holder(struct seq_file *seq, const struct gfs2_holder *gh)
- {
- 	struct task_struct *gh_owner = NULL;
- 	char flags_buf[32];
-+	char name[TASK_COMM_LEN];
- 
- 	if (gh->gh_owner_pid)
--		gh_owner = pid_task(gh->gh_owner_pid, PIDTYPE_PID);
-+		gh_owner = get_pid_task(gh->gh_owner_pid, PIDTYPE_PID);
-+	if (gh_owner) {
-+		get_task_comm(name, gh_owner);
-+		put_task_struct(gh_owner);
-+	} else {
-+		strlcpy(name, "(ended)", sizeof(name));
-+	}
- 	gfs2_print_dbg(seq, " H: s:%s f:%s e:%d p:%ld [%s] %pS\n",
- 		       state2str(gh->gh_state),
- 		       hflags2str(flags_buf, gh->gh_flags, gh->gh_iflags),
- 		       gh->gh_error,
- 		       gh->gh_owner_pid ? (long)pid_nr(gh->gh_owner_pid) : -1,
--		       gh_owner ? gh_owner->comm : "(ended)",
-+		       name,
- 		       (void *)gh->gh_ip);
- 	return 0;
- }
--- 
-1.7.1
+Ouch.  In that case:
+
+Acked-by: David Gibson <david@gibson.dropbear.id.au>
+
+It would be really nice to add a testcase for this race to the
+libhugetlbfs testsuite.
+
+--=20
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
+
+--FUaywKC54iCcLzqT
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJSuXdLAAoJEGw4ysog2bOS+jEQAIehZUe2TUacMZP+VdVrUnD/
+cHIUzV9DvGBsyciQU1nHbzS2PV/LsglP8yMwNDgSHpygcCKvTj9yzLpbM6uKRsnl
+wCXO6vfy+2bi3dd3znGiH+wRBPIMxuS9TlbUCLHcyCVNLb4jZ0vr3REzoe45OX7x
+Piccug0+AD7D6gLolPr2RlYpt2xfYamwIAGwT1tgkzJeHSNo0Zm2rB8/apnyAbPr
+WOJ7Hkk0yyM+1q02LP8tYrjVX9WxOane5e98i6y+PHImpiWW3T+icFX0knyedqE7
+CDYwMlakgX3L8StpoXppu2nrcoXderrT1ruiQ2Dy8bKvZsMsbsgZ3PwWRRFKZMBF
+Z1SLTe9D9PoJxT39rl02hxHfQuGLFbDC9g795jc/ug0Rww2YJzK75lvvGUyzZsNe
+Ju5990bZywDhfOXdHSQElIuyosQPfEDOUENmx0pzfvOlyeJ/fXwOwQ9RaHxCPCAN
+FsLUjMK8bogBq2C13O3qoqgeD19RVGK0tMEl7utPKGsTdZ6m19dCr11LjptFkcCf
+qOgMOMYUZq3TD9DBFjzMRKoxgUx/hYsU7PCaHBUqsBGQCMlsepRCzNWqf9NtshRy
+lbnKbhllSvIv+TbbDUw8lD0aka0GuJsLzKFEmtJa0GFA2Oqy17JNUlU0PJWMz3uB
+IidLyCPdlxo4SswAxUJR
+=A0Ha
+-----END PGP SIGNATURE-----
+
+--FUaywKC54iCcLzqT--
