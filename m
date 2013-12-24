@@ -1,105 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab3LXMco (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 07:32:44 -0500
-Received: from www.tweek.dk ([54.217.231.169]:50346 "EHLO
-	ip-10-228-89-152.eu-west-1.compute.internal" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751538Ab3LXMcm convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 07:32:42 -0500
-X-Greylist: delayed 2221 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Dec 2013 07:32:42 EST
-From: Martin Nybo Andersen <tweek@tweek.dk>
-To: Liam Lindholm <liam.oskar.lindholm@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Richard Stallman: Why =?UTF-8?B?4oCcR05V4oCZUyBOb3QgTGludXjigJ0gYW5kIFdoeSBXZSBTaG91bGQg4oCcU2F5IExpR05VeOKAnQ==?=
-Date: Tue, 24 Dec 2013 12:55:39 +0100
-Message-ID: <2282154.0F4WkYtV6b@odin>
-User-Agent: KMail/4.11.3 (Linux/3.12.6+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <CANq1nODU8QOLor0j8rTRdu+bRid9t5==pNdS0rZ-vZkg2hCrSQ@mail.gmail.com>
-References: <CANq1nODU8QOLor0j8rTRdu+bRid9t5==pNdS0rZ-vZkg2hCrSQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="UTF-8"
+	id S1751665Ab3LXMjF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 07:39:05 -0500
+Received: from smtprelay0195.hostedemail.com ([216.40.44.195]:49522 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751017Ab3LXMjD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Dec 2013 07:39:03 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3866:3867:3873:4321:4362:5007:7652:10004:10400:10481:10848:11026:11232:11657:11658:11914:12043:12296:12438:12517:12519:12740:13069:13071:13095:13311:13357:19900:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: drop32_6bd0449792527
+X-Filterd-Recvd-Size: 1455
+Message-ID: <1387888739.2259.7.camel@joe-AO722>
+Subject: Re: [PATCH v2 03/20] net: pcnet: slight optimization of addr compare
+From: Joe Perches <joe@perches.com>
+To: Ding Tianhong <dingtianhong@huawei.com>
+Cc: Don Fry <pcnet32@frontier.com>, Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 24 Dec 2013 04:38:59 -0800
+In-Reply-To: <52B96FA7.10201@huawei.com>
+References: <52B96FA7.10201@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 23 December 2013 12:01:06 Liam Lindholm wrote:
-> Dear fellow Linux kernel hackers:
-> 
-> It has come to my attention that Richard M. Stallman, founder of the
-> Free Software Foundation and creator of the GNU project, has once
-> again set out to fragment our grassroots community.
-> 
-> Recently, Mr. Stallman has started a new push for acknowledgement of
-> GNU in Linux. No, not the familiar “GNU/Linux” that we're all sick and
-> tired of hearing about but, instead, a failed anagram of these same
-> terms. The campaign is called “Say LiGNUx” and demands that users of
-> any Linux-kernel operating system employing GNU software (which
-> comprises less than 15% of most modern Linux distributions nowadays)
-> call the operating system “LiGNUx.”
-> 
-> His presentation on the “Say LiGNUx” campaign is served in PNG format
-> at http://imgur.com/a/beY7E so you can see the insanity for yourself.
-> 
-> Yes, that's right. LiGNUx, pronounced like “pig cooks,” would be the
-> name of choice for our work in the last two decades. Stallman suggests
-> that we trash our existing name recognition and all common sense to
-> adopt his academic linguistic exercise in masturbatory politics that
-> represents the kernel's license and some poorly-built utilities that
-> no one uses anymore.
-> 
-> Mr. Stallman even suggests that users who refuse to say LiGNUx should
-> instead install GNU/HURD so as to remove any ambiguity about licenses
-> and nomenclature. What the hell?!
-> 
-> When is the last time someone named their operating system after the
-> license the kernel is released under? Such an esoteric naming method
-> is madness. Should Apple call OS X “Apple/XNU?” Or how about the
-> Berkeley operating systems? Should they call their products “FreeBSD”
-> or “OpenBSD?” Should Microsoft call their operating system “Microsoft
-> Windows?” The suggestion is patently absurd.
-> 
-> We should not give in to the wailing demands of this zealotry. Mr.
-> Stallman clearly needs a break from promoting an increasingly
-> irrelevant software platform. Perhaps that means banning him from
-> LKML, or asking Linus to suggest some vacation therapy for poor Mr.
-> Stallman and his zealotry, or having the Linux Foundation issue a
-> press release distancing themselves from RMS, GNU, and the Free
-> Software Foundation.
-> 
-> Whatever the next course of action is, we should all ignore Mr.
-> Stallman and continue to call Linux as Linux.
-> 
-> I am interested to hear your thoughts on the topic, fellow Linux kernel 
-hackers.
-> 
-> Merry Christmas.
-> 
-> Liam Oskar Lindholm,
-> Linux Kernel Hacker
+On Tue, 2013-12-24 at 19:27 +0800, Ding Tianhong wrote:
+> Use possibly more efficient ether_addr_equal_unaligned
+> to instead of memcmp.
 
-As much a I respect and acknowledge RMS for starting up GNU (even more after 
-the Snowden leaks), I don't see any reason to put a g in Linux.
+Hi again Ding.
 
-First of all: Don't change your name unless you're exceptionally good at PR.
+> diff --git a/drivers/net/ethernet/amd/pcnet32.c b/drivers/net/ethernet/amd/pcnet32.c
+[]
+> @@ -1668,7 +1668,7 @@ pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev)
+[]
+> -	if (memcmp(promaddr, dev->dev_addr, ETH_ALEN) ||
+> +	if (!ether_addr_equal(promaddr, dev->dev_addr) ||
 
-Secondly: Linux -- the kernel -- is not part of GNU (a lot of the standard 
-userspace utilities are though).
+Can you please make sure the commit message matches the
+code changes?
 
-Surely GNU's not Linux. I remember it being a recursive acronym for "GNU's Not 
-Unix!" (and there is a lot of things GNU isn't).
+This uses ether_addr_equal not ether_addr_equal_unaligned.
 
-How about renaming GNU to LNG as in "Linux' Not GNU!"?. Or even *NG, since 
-really not that much GPL'ed software is GNU.
-
-(Not to start a flame war, but apropos I'd hate saying "My computer 
-Hurds...".)
-
-Oh, well... Merry Christmas.  *<:-)
-
--Martin
-
--- 
-I bet Earth makes fun of other planets for having no life
+Thanks for the work.
 
