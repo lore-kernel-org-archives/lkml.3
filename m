@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758154Ab3LXDTA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 22:19:00 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:60411 "EHLO
+	id S1758211Ab3LXDWi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 22:22:38 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:61808 "EHLO
 	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754231Ab3LXDS7 (ORCPT
+	with ESMTP id S1753872Ab3LXDWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 22:18:59 -0500
-Message-ID: <52B8FD1C.1080802@gmail.com>
-Date: Tue, 24 Dec 2013 11:18:52 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Mon, 23 Dec 2013 22:22:37 -0500
 MIME-Version: 1.0
-To: rkuo <rkuo@codeaurora.org>
-CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "sachin.kamat@linaro.org" <sachin.kamat@linaro.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        James Hogan <james.hogan@imgtec.com>
-Subject: Re: [PATCH] arc: kernel: add default extern variable 'screen_info'
- in "setup.c"
-References: <529707B9.1090809@gmail.com> <20131206005829.GA7615@codeaurora.org>
-In-Reply-To: <20131206005829.GA7615@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1387791224-29320-1-git-send-email-huawei.libin@huawei.com>
+References: <1387791224-29320-1-git-send-email-huawei.libin@huawei.com>
+Date: Tue, 24 Dec 2013 11:22:36 +0800
+Message-ID: <CA+qZnSSebv-tM+nHEcUAqz4iE9ur7yZ6srQMpzi1pgAvYfFubw@mail.gmail.com>
+Subject: Re: [PATCH] drivers/net: Fix potential incorrect call for udelay()
+From: tingwei liu <tingw.liu@gmail.com>
+To: Libin <huawei.libin@huawei.com>
+Cc: davem@davemloft.net, hsweeten@visionengravers.com,
+        gregkh@linuxfoundation.org, tedheadster@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dingtianhong@huawei.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello James:
+On Mon, Dec 23, 2013 at 5:33 PM, Libin <huawei.libin@huawei.com> wrote:
+>
+> From: Li Bin <huawei.libin@huawei.com>
+>
+> The variable delay_time as a module parameter can be set a value
+> exceeding the limit of the udelay function. This patch checks the
+> delay_time value to select mdelay() or udelay().
+>
+> Signed-off-by: Li Bin <huawei.libin@huawei.com>
+> ---
+>  drivers/net/ethernet/8390/pcnet_cs.c | 8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/net/ethernet/8390/pcnet_cs.c b/drivers/net/ethernet/8390/pcnet_cs.c
+> index 46c5aad..29fe157 100644
+> --- a/drivers/net/ethernet/8390/pcnet_cs.c
+> +++ b/drivers/net/ethernet/8390/pcnet_cs.c
+> @@ -1284,8 +1284,12 @@ static void dma_block_output(struct net_device *dev, int count,
+>         }
+>
+>      outb_p(ENISR_RDC, nic_base + EN0_ISR);     /* Ack intr. */
+> -    if (info->flags & DELAY_OUTPUT)
+> -       udelay((long)delay_time);
+> +    if (info->flags & DELAY_OUTPUT) {
+> +               if (delay_time >= 1000)
+> +                       mdelay((long)delay_time/1000);
 
-For metag, also meet the same issue, could you help to fix it in metag tree?
+Indeed use of mdelay is discouraged.
+I prefer to limit delay_time less than 1000.
 
-
-Thanks.
-
-On 12/06/2013 08:58 AM, rkuo wrote:
-> On Thu, Nov 28, 2013 at 05:07:05PM +0800, Chen Gang wrote:
->> Hello Vineet:
->>
->> hexagon meets the same issue, could you help send related patch for it?
->>
->> If you have no time, please let me know, I should send it within next
->> month.
->>
->> BTW: I assume hexagon need not support VGA_CONSOLE, either, if it is
->> incorrect, please let me know thanks.
->>
->>
-> 
-> Just to chime in on this one, Hexagon probably won't have the hardware,
-> but we would still like to be able to compile the code, so I will fix this
-> in Hexagon's arch tree.
-> 
-> Thanks for the help,
-> Richard Kuo
-> 
-> 
-
-
--- 
-Chen Gang
-
-Open, share and attitude like air, water and life which God blessed
+Tingwei
+>
+> +               else
+> +                       udelay(delay_time);
+> +       }
+>      ei_status.dmaing &= ~0x01;
+>  }
+>
+> --
+> 1.8.2.2
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
