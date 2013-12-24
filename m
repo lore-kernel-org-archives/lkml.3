@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758008Ab3LXCDw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 21:03:52 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:54871 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817Ab3LXCDu (ORCPT
+	id S1758111Ab3LXCMG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 21:12:06 -0500
+Received: from prifuk.spider.cz ([31.31.77.241]:56949 "EHLO prifuk.cz"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753836Ab3LXCMD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 21:03:50 -0500
-Date: Mon, 23 Dec 2013 17:58:28 -0800
-From: Anton Vorontsov <anton@enomsg.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, freemangordon@abv.bg, aaro.koskinen@iki.fi
-Subject: Re: [PATCH v2 2/3] bq2415x_charger: Use power_supply notifier for
- automode
-Message-ID: <20131224015828.GB10223@lizard>
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
- <1384856285-19593-1-git-send-email-pali.rohar@gmail.com>
- <1384856285-19593-3-git-send-email-pali.rohar@gmail.com>
- <20131119132416.GE14587@amd.pavel.ucw.cz>
+	Mon, 23 Dec 2013 21:12:03 -0500
+From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@prifuk.cz>
+To: linux-input@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, elias.vds@gmail.com
+Subject: Re: [RFC  v3] Add ff-memless-next
+Date: Tue, 24 Dec 2013 03:11:57 +0100
+Message-ID: <16141479.Xuvegy6qFd@geidi-prime>
+User-Agent: KMail/4.12 (Linux/3.13.0-1-ARCHMOD; KDE/4.12.0; x86_64; ; )
+In-Reply-To: <1387844508.22671.73.camel@joe-AO722>
+References: <1494187.y8mYFDm1lA@geidi-prime> <1387844508.22671.73.camel@joe-AO722>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131119132416.GE14587@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 02:24:16PM +0100, Pavel Machek wrote:
-> On Tue 2013-11-19 11:18:04, Pali Rohár wrote:
-> > This patch removing set_mode_hook function from board data and replacing it with
-> > new string variable of notifier power supply device. After this change it is
-> > possible to add DT support because driver does not need specific board function
-> > anymore. Only static data and name of power supply device is required.
-> > 
-> > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+On Monday 23 of December 2013 16:21:48 you wrote:
+> On Mon, 2013-12-23 at 23:46 +0100, Michal Mal� wrote:
+> > One case where uncombinable effects were mishandled was corrected. Rest of
+> > the changes are just coding style fixes.
 > 
-> Reviewed-by: Pavel Machek <pavel@ucw.cz>
+> trivia:
+> > diff --git a/drivers/input/ff-memless-next.c
+> > b/drivers/input/ff-memless-next.c
+> []
+> 
+> > +static __always_inline s32 mlnx_calculate_x_force(const s32 level,
+> > +						  const u16 direction)
+> 
+> __always_inline is almost never warranted.
+> gcc generally does the right thing.
+I did some reading about __always_inline vs. plain inline and I ran into
+some contradictory information about what is considered broken. Thanks
+for letting me know...
 
-Applied, thanks!
-
-Anton
+Is there anything else that needs some reviewing?
