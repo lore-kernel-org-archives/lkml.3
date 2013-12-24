@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048Ab3LXIWm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 03:22:42 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44569 "EHLO
+	id S1752010Ab3LXIWl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 03:22:41 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:47871 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689Ab3LXIWd (ORCPT
+	with ESMTP id S1751706Ab3LXIWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 03:22:33 -0500
-X-AuditID: 9c930179-b7c89ae000006438-e1-52b94445f713
+	Tue, 24 Dec 2013 03:22:34 -0500
+X-AuditID: 9c930179-b7c89ae000006438-f1-52b944470183
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 03/21] perf hists: Add support for accumulated stat of hist entry
-Date: Tue, 24 Dec 2013 17:22:09 +0900
-Message-Id: <1387873347-28838-4-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 07/21] perf report: Cache cumulative callchains
+Date: Tue, 24 Dec 2013 17:22:13 +0900
+Message-Id: <1387873347-28838-8-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
 References: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
@@ -28,107 +28,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Maintain accumulated stat information in hist_entry->stat_acc if
-symbol_conf.cumulate_callchain is set.  Fields in ->stat_acc have same
-vaules initially, and will be updated as callchain is processed later.
+It is possble that a callchain has cycles or recursive calls.  In that
+case it'll end up having entries more than 100% overhead in the
+output.  In order to prevent such entries, cache each callchain node
+and skip if same entry already cumulated.
 
 Cc: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/hist.c   | 18 ++++++++++++++++++
- tools/perf/util/sort.h   |  1 +
- tools/perf/util/symbol.h |  1 +
- 3 files changed, 20 insertions(+)
+ tools/perf/builtin-report.c | 48 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 48 insertions(+)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 283aa1972b4f..b61e2fa42412 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -237,6 +237,8 @@ static bool hists__decay_entry(struct hists *hists, struct hist_entry *he)
- 		return true;
- 
- 	he_stat__decay(&he->stat);
-+	if (symbol_conf.cumulate_callchain)
-+		he_stat__decay(he->stat_acc);
- 
- 	if (!he->filtered)
- 		hists->stats.total_period -= prev_period - he->stat.period;
-@@ -284,6 +286,15 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
- 	if (he != NULL) {
- 		*he = *template;
- 
-+		if (symbol_conf.cumulate_callchain) {
-+			he->stat_acc = malloc(sizeof(he->stat));
-+			if (he->stat_acc == NULL) {
-+				free(he);
-+				return NULL;
-+			}
-+			memcpy(he->stat_acc, &he->stat, sizeof(he->stat));
-+		}
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 17c41c686042..1314841ffad1 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -368,8 +368,27 @@ iter_prepare_cumulative_entry(struct add_entry_iter *iter,
+ 			      struct addr_location *al __maybe_unused,
+ 			      struct perf_sample *sample)
+ {
++	struct callchain_cursor_node *node;
++	struct hist_entry **he_cache;
 +
- 		if (he->ms.map)
- 			he->ms.map->referenced = true;
+ 	callchain_cursor_commit(&callchain_cursor);
  
-@@ -295,6 +306,7 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
- 			 */
- 			he->branch_info = malloc(sizeof(*he->branch_info));
- 			if (he->branch_info == NULL) {
-+				free(he->stat_acc);
- 				free(he);
- 				return NULL;
- 			}
-@@ -367,6 +379,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
++	/*
++	 * This is for detecting cycles or recursions so that they're
++	 * cumulated only one time to prevent entries more than 100%
++	 * overhead.
++	 */
++	he_cache = malloc(sizeof(*he_cache) * (PERF_MAX_STACK_DEPTH + 1));
++	if (he_cache == NULL)
++		return -ENOMEM;
++
++	iter->priv = he_cache;
++	iter->curr = 0;
++
++	node = callchain_cursor_current(&callchain_cursor);
++	if (node == NULL)
++		return 0;
++
+ 	iter->evsel = evsel;
+ 	iter->sample = sample;
+ 	iter->machine = machine;
+@@ -382,6 +401,7 @@ iter_add_single_cumulative_entry(struct add_entry_iter *iter,
+ {
+ 	struct perf_evsel *evsel = iter->evsel;
+ 	struct perf_sample *sample = iter->sample;
++	struct hist_entry **he_cache = iter->priv;
+ 	struct hist_entry *he;
  
- 		if (!cmp) {
- 			he_stat__add_period(&he->stat, period, weight);
-+			if (symbol_conf.cumulate_callchain)
-+				he_stat__add_period(he->stat_acc, period, weight);
+ 	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
+@@ -390,6 +410,8 @@ iter_add_single_cumulative_entry(struct add_entry_iter *iter,
+ 	if (he == NULL)
+ 		return -ENOMEM;
  
- 			/*
- 			 * This mem info was allocated from machine__resolve_mem
-@@ -403,6 +417,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 	rb_insert_color(&he->rb_node_in, hists->entries_in);
- out:
- 	he_stat__add_cpumode_period(&he->stat, al->cpumode, period);
-+	if (symbol_conf.cumulate_callchain)
-+		he_stat__add_cpumode_period(he->stat_acc, al->cpumode, period);
- 	return he;
++	he_cache[iter->curr++] = he;
++
+ 	/*
+ 	 * This is for putting parents upward during output resort iff
+ 	 * only a child gets sampled.  See hist_entry__sort_on_period().
+@@ -455,7 +477,29 @@ iter_add_next_cumulative_entry(struct add_entry_iter *iter,
+ {
+ 	struct perf_evsel *evsel = iter->evsel;
+ 	struct perf_sample *sample = iter->sample;
++	struct hist_entry **he_cache = iter->priv;
+ 	struct hist_entry *he;
++	struct hist_entry he_tmp = {
++		.cpu = al->cpu,
++		.thread = al->thread,
++		.comm = thread__comm(al->thread),
++		.ip = al->addr,
++		.ms = {
++			.map = al->map,
++			.sym = al->sym,
++		},
++		.parent = iter->parent,
++	};
++	int i;
++
++	/*
++	 * Check if there's duplicate entries in the callchain.
++	 * It's possible that it has cycles or recursive calls.
++	 */
++	for (i = 0; i < iter->curr; i++) {
++		if (hist_entry__cmp(he_cache[i], &he_tmp) == 0)
++			return 0;
++	}
+ 
+ 	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
+ 				sample->period, sample->weight,
+@@ -463,6 +507,8 @@ iter_add_next_cumulative_entry(struct add_entry_iter *iter,
+ 	if (he == NULL)
+ 		return -ENOMEM;
+ 
++	he_cache[iter->curr++] = he;
++
+ 	return hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
  }
  
-@@ -502,6 +518,8 @@ static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
+@@ -476,6 +522,8 @@ iter_finish_cumulative_entry(struct add_entry_iter *iter,
+ 	evsel->hists.stats.total_period += sample->period;
+ 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
  
- 		if (!cmp) {
- 			he_stat__add_stat(&iter->stat, &he->stat);
-+			if (symbol_conf.cumulate_callchain)
-+				he_stat__add_stat(iter->stat_acc, he->stat_acc);
++	free(iter->priv);
++	iter->priv = NULL;
+ 	return 0;
+ }
  
- 			if (symbol_conf.use_callchain) {
- 				callchain_cursor_reset(&callchain_cursor);
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 43e5ff42a609..309f2838a1b4 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -81,6 +81,7 @@ struct hist_entry {
- 		struct list_head head;
- 	} pairs;
- 	struct he_stat		stat;
-+	struct he_stat		*stat_acc;
- 	struct map_symbol	ms;
- 	struct thread		*thread;
- 	struct comm		*comm;
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index cbd680361806..ceee088988a0 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -92,6 +92,7 @@ struct symbol_conf {
- 			show_nr_samples,
- 			show_total_period,
- 			use_callchain,
-+			cumulate_callchain,
- 			exclude_other,
- 			show_cpu_utilization,
- 			initialized,
 -- 
 1.7.11.7
 
