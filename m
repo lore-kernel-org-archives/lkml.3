@@ -1,39 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752459Ab3LXR7f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 12:59:35 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:37707 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752074Ab3LXR7e (ORCPT
+	id S1752533Ab3LXSap (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 13:30:45 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:46097 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752241Ab3LXSan (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 12:59:34 -0500
-Date: Tue, 24 Dec 2013 12:59:32 -0500 (EST)
-Message-Id: <20131224.125932.1553654835250145689.davem@davemloft.net>
-To: dthxman@gmail.com
-Cc: joe@perches.com, dingtianhong@huawei.com, pcnet32@frontier.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 03/20] net: pcnet: slight optimization of addr
- compare
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <52B99072.5070809@gmail.com>
-References: <52B96FA7.10201@huawei.com>
-	<1387888739.2259.7.camel@joe-AO722>
-	<52B99072.5070809@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 24 Dec 2013 09:59:33 -0800 (PST)
+	Tue, 24 Dec 2013 13:30:43 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131224103558.GA5520@pd.tnic>
+References: <52B7F53C.5020001@huawei.com>
+	<20131223133402.GA4487@pd.tnic>
+	<52B8DEAE.2040100@huawei.com>
+	<20131224103558.GA5520@pd.tnic>
+Date: Tue, 24 Dec 2013 10:30:43 -0800
+X-Google-Sender-Auth: 1vg-2dGg5VhVu1ymTbbRQgYn7e0
+Message-ID: <CAE9FiQXwtZEFx-6V_X20CGymtmtbRKqP7ECR9=DDKYyMSeZyBQ@mail.gmail.com>
+Subject: Re: [PATCH v2][TRIVIAL] x86/smpboot: fix cpu bootup message
+From: Yinghai Lu <yinghai@kernel.org>
+To: Borislav Petkov <bp@suse.de>
+Cc: Xie XiuQi <xiexiuqi@huawei.com>, Ingo Molnar <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Li Bin <huawei.libin@huawei.com>, x86-ml <x86@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ding Tianhong <dthxman@gmail.com>
-Date: Tue, 24 Dec 2013 21:47:30 +0800
+On Tue, Dec 24, 2013 at 2:35 AM, Borislav Petkov <bp@suse.de> wrote:
+> On Tue, Dec 24, 2013 at 09:09:02AM +0800, Xie XiuQi wrote:
+>> On 2013/12/23 21:34, Borislav Petkov wrote:
+>> > On Mon, Dec 23, 2013 at 04:33:00PM +0800, Xie XiuQi wrote:
+>> >> When CPU0 and CPU1 aren't in same package, we got message
+>> >> like this:
+>> >>
+>>
+>> [...]
+>>
+>> >>
+>> >> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+>> >> index 85dc05a..9e82c1e 100644
+>> >> --- a/arch/x86/kernel/smpboot.c
+>> >> +++ b/arch/x86/kernel/smpboot.c
+>> >> @@ -639,7 +639,7 @@ static void announce_cpu(int cpu, int apicid)
+>> >>  {
+>> >>    static int current_node = -1;
+>> >>    int node = early_cpu_to_node(cpu);
+>> >> -  static int width, node_width;
+>> >> +  static int width, node_width, padding;
+>> >>
+>> >>    if (!width)
+>> >>            width = num_digits(num_possible_cpus()) + 1; /* + '#' sign */
+>> >> @@ -658,11 +658,13 @@ static void announce_cpu(int cpu, int apicid)
+>> >>
+>> >>                    printk(KERN_INFO ".... node %*s#%d, CPUs:  ",
+>> >>                           node_width - num_digits(node), " ", node);
+>> >> -          }
+>> >>
+>> >> -          /* Add padding for the BSP */
+>> >> -          if (cpu == 1)
+>> >> -                  pr_cont("%*s", width + 1, " ");
+>> >> +                  /* Add padding for the BSP */
+>> >> +                  if (!padding && (early_cpu_to_node(0) == current_node)) {
+>> >
+>> > You don't need "padding".
+>> >
+>>
+>> On another machine, the configuration is:
+>>
+>> xiexiuqi@localhost:~> lscpu
+>> [...]
+>> NUMA node0 CPU(s):     4-7,12-15
+>> NUMA node1 CPU(s):     0-3,8-11
+>>
+>> Without "padding", we'll get message like this:
+>>
+>> [    0.349339] x86: Booting SMP configuration:
+>> [    0.353504] .... node  #1, CPUs:        #1  #2  #3
+>> [    0.398812] .... node  #0, CPUs:    #4  #5  #6  #7
+>> [    0.535186] .... node  #1, CPUs:        #8  #9 #10 #11
+>> [    0.594312] .... node  #0, CPUs:   #12 #13 #14 #15
+>> [    0.652398] x86: Booted up 2 nodes, 16 CPUs
+>
+> Geez, is that box generating the cores to nodes groups at random during
+> each boot?!
+>
+> Gotta admire bios dudes' "inventiveness".
+>
+> Ok, so Ingo, I guess we can take this -v2 version for now - I need to
+> think of a way on how to address all that nonsense properly.
+>
+> Acked-by: Borislav "luvz BIOS people" Petkov <bp@suse.de>
 
-> Oh， no,  maybe I was dizzy by these patches,  I should be more careful,
-> sorry about that, I will resend this one.
+No, should just take out lines of padding for BSP.
 
-You must resend the entire patch series when you make any changes.
-
-Thank you.
+Yinghai
