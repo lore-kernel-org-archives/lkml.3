@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462Ab3LXI0O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 03:26:14 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50238 "EHLO
+	id S1752438Ab3LXI0N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 03:26:13 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:47871 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751739Ab3LXIWf (ORCPT
+	with ESMTP id S1751775Ab3LXIWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 24 Dec 2013 03:22:35 -0500
-X-AuditID: 9c930179-b7c89ae000006438-07-52b94448a804
+X-AuditID: 9c930179-b7c89ae000006438-0c-52b944486e41
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 12/21] perf tools: Apply percent-limit to cumulative percentage
-Date: Tue, 24 Dec 2013 17:22:18 +0900
-Message-Id: <1387873347-28838-13-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 13/21] perf tools: Add more hpp helper functions
+Date: Tue, 24 Dec 2013 17:22:19 +0900
+Message-Id: <1387873347-28838-14-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
 References: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
@@ -28,137 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-If -g cumulative option is given, it needs to show entries which don't
-have self overhead.  So apply percent-limit to accumulated overhead
-percentage in this case.
+Sometimes it needs to disable some columns at runtime.  Add help
+functions to support that.
 
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/browsers/hists.c | 34 ++++++++++++++++++++++++++--------
- tools/perf/ui/gtk/hists.c      | 11 +++++++++--
- tools/perf/ui/stdio/hist.c     | 11 +++++++++--
- 3 files changed, 44 insertions(+), 12 deletions(-)
+ tools/perf/ui/hist.c   | 17 +++++++++++++++++
+ tools/perf/util/hist.h |  3 +++
+ 2 files changed, 20 insertions(+)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index efa78894f70d..b02e71ecc5fe 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -828,12 +828,19 @@ static unsigned int hist_browser__refresh(struct ui_browser *browser)
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index eb9c07bcdb01..1f9e25211da2 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -275,12 +275,29 @@ void perf_hpp__column_register(struct perf_hpp_fmt *format)
+ 	list_add_tail(&format->list, &perf_hpp__list);
+ }
  
- 	for (nd = browser->top; nd; nd = rb_next(nd)) {
- 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
--		float percent = h->stat.period * 100.0 /
--					hb->hists->stats.total_period;
-+		float percent;
- 
- 		if (h->filtered)
- 			continue;
- 
-+		if (symbol_conf.cumulate_callchain) {
-+			percent = h->stat_acc->period * 100.0 /
-+					hb->hists->stats.total_period;
-+		} else {
-+			percent = h->stat.period * 100.0 /
-+					hb->hists->stats.total_period;
-+		}
++void perf_hpp__column_unregister(struct perf_hpp_fmt *format)
++{
++	list_del(&format->list);
++}
 +
- 		if (percent < hb->min_pcnt)
- 			continue;
- 
-@@ -851,13 +858,17 @@ static struct rb_node *hists__filter_entries(struct rb_node *nd,
+ void perf_hpp__column_enable(unsigned col)
  {
- 	while (nd != NULL) {
- 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
--		float percent = h->stat.period * 100.0 /
--					hists->stats.total_period;
-+		float percent;
+ 	BUG_ON(col >= PERF_HPP__MAX_INDEX);
+ 	perf_hpp__column_register(&perf_hpp__format[col]);
+ }
  
--		if (percent < min_pcnt)
--			return NULL;
-+		if (symbol_conf.cumulate_callchain) {
-+			percent = h->stat_acc->period * 100.0 /
-+					hists->stats.total_period;
-+		} else {
-+			percent = h->stat.period * 100.0 /
-+					hists->stats.total_period;
-+		}
- 
--		if (!h->filtered)
-+		if (!h->filtered && percent >= min_pcnt)
- 			return nd;
- 
- 		nd = rb_next(nd);
-@@ -872,8 +883,15 @@ static struct rb_node *hists__filter_prev_entries(struct rb_node *nd,
++void perf_hpp__column_disable(unsigned col)
++{
++	BUG_ON(col >= PERF_HPP__MAX_INDEX);
++	perf_hpp__column_unregister(&perf_hpp__format[col]);
++}
++
++void perf_hpp__cancel_cumulate(void)
++{
++	perf_hpp__column_disable(PERF_HPP__OVERHEAD_ACC);
++	perf_hpp__format[PERF_HPP__OVERHEAD].header = hpp__header_overhead;
++}
++
+ int hist_entry__sort_snprintf(struct hist_entry *he, char *s, size_t size,
+ 			      struct hists *hists)
  {
- 	while (nd != NULL) {
- 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
--		float percent = h->stat.period * 100.0 /
-+		float percent;
-+
-+		if (symbol_conf.cumulate_callchain) {
-+			percent = h->stat_acc->period * 100.0 /
-+					hists->stats.total_period;
-+		} else {
-+			percent = h->stat.period * 100.0 /
- 					hists->stats.total_period;
-+		}
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 8cf8dca37e13..945e2735ed69 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -166,7 +166,10 @@ enum {
  
- 		if (!h->filtered && percent >= min_pcnt)
- 			return nd;
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 70ed0d5e1b94..06ae3342e14f 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -296,12 +296,19 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
- 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
- 		GtkTreeIter iter;
--		float percent = h->stat.period * 100.0 /
--					hists->stats.total_period;
-+		float percent;
+ void perf_hpp__init(void);
+ void perf_hpp__column_register(struct perf_hpp_fmt *format);
++void perf_hpp__column_unregister(struct perf_hpp_fmt *format);
+ void perf_hpp__column_enable(unsigned col);
++void perf_hpp__column_disable(unsigned col);
++void perf_hpp__cancel_cumulate(void);
  
- 		if (h->filtered)
- 			continue;
- 
-+		if (symbol_conf.cumulate_callchain) {
-+			percent = h->stat_acc->period * 100.0 /
-+					hists->stats.total_period;
-+		} else {
-+			percent = h->stat.period * 100.0 /
-+					hists->stats.total_period;
-+		}
-+
- 		if (percent < min_pcnt)
- 			continue;
- 
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 4c4986e809d8..7ea8502192b0 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -487,12 +487,19 @@ print_entries:
- 
- 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
- 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
--		float percent = h->stat.period * 100.0 /
--					hists->stats.total_period;
-+		float percent;
- 
- 		if (h->filtered)
- 			continue;
- 
-+		if (symbol_conf.cumulate_callchain) {
-+			percent = h->stat_acc->period * 100.0 /
-+					hists->stats.total_period;
-+		} else {
-+			percent = h->stat.period * 100.0 /
-+					hists->stats.total_period;
-+		}
-+
- 		if (percent < min_pcnt)
- 			continue;
- 
+ static inline size_t perf_hpp__use_color(void)
+ {
 -- 
 1.7.11.7
 
