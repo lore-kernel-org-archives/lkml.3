@@ -1,83 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758133Ab3LXBlW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 20:41:22 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:64049 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753419Ab3LXBlT (ORCPT
+	id S1758167Ab3LXBpF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 20:45:05 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:42281 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753527Ab3LXBpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 20:41:19 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@rjwysocki.net
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bjorn@mork.no,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: =?UTF-8?q?=5BPATCH=202/2=5D=20cpufreq=3A=20preserve=20user=5Fpolicy=20across=20suspend/resume?=
-Date: Tue, 24 Dec 2013 07:11:01 +0530
-Message-Id: <03303e46795a89272ba66d5fa230cbfdb9a177a9.1387848958.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <f9d7b0d5424e4443597d2ed39bec3fedd2b10d1e.1387848958.git.viresh.kumar@linaro.org>
-References: <f9d7b0d5424e4443597d2ed39bec3fedd2b10d1e.1387848958.git.viresh.kumar@linaro.org>
-In-Reply-To: <f9d7b0d5424e4443597d2ed39bec3fedd2b10d1e.1387848958.git.viresh.kumar@linaro.org>
-References: <f9d7b0d5424e4443597d2ed39bec3fedd2b10d1e.1387848958.git.viresh.kumar@linaro.org>
+	Mon, 23 Dec 2013 20:45:03 -0500
+Message-ID: <52B8E6E3.5010003@huawei.com>
+Date: Tue, 24 Dec 2013 09:44:03 +0800
+From: Ding Tianhong <dingtianhong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Alexander Duyck <alexander.h.duyck@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <e1000-devel@lists.sourceforge.net>
+Subject: Re: [E1000-devel] [PATCH 01/21] net: slight optimization of addr
+ compare for some modules
+References: <52B7C590.7070708@huawei.com> <52B870E5.3020708@intel.com>
+In-Reply-To: <52B870E5.3020708@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.199]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In __cpufreq_add_dev() we are reinitializing user_policy with default values and
-hence would loose values of user_policy.{min|max|policy|governor} fields.
+On 2013/12/24 1:20, Alexander Duyck wrote:
+> On 12/22/2013 09:09 PM, Ding Tianhong wrote:
+>> Use the recently added and possibly more efficient
+>> ether_addr_equal_unaligned to instead of memcmp.
+>>
+>> Cc: "David S. Miller" <davem@davemloft.net>
+>> Cc: netdev@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org
+>> Cc: e1000-devel@lists.sourceforge.net
+>> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+>> ---
+>>  drivers/net/bonding/bond_3ad.c                        |  2 +-
+>>  drivers/net/ethernet/3com/3c509.c                     |  3 +--
+>>  drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c        | 10 ++++------
+>>  drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c     |  2 +-
+>>  drivers/net/ethernet/broadcom/bnx2x/bnx2x_vfpf.c      |  2 +-
+>>  drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c    |  2 +-
+>>  drivers/net/ethernet/chelsio/cxgb3/l2t.c              |  2 +-
+>>  drivers/net/ethernet/cisco/enic/enic_pp.c             |  2 +-
+>>  drivers/net/ethernet/emulex/benet/be_main.c           |  2 +-
+>>  drivers/net/ethernet/intel/igbvf/netdev.c             |  2 +-
+>>  drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c        |  3 +--
+>>  drivers/net/ethernet/mellanox/mlx4/en_netdev.c        |  4 ++--
+>>  drivers/net/ethernet/mellanox/mlx4/resource_tracker.c |  2 +-
+>>  drivers/net/ethernet/micrel/ksz884x.c                 |  9 ++++-----
+>>  drivers/net/ethernet/neterion/vxge/vxge-main.c        |  2 +-
+>>  drivers/net/ethernet/packetengines/yellowfin.c        |  8 ++------
+>>  drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c    |  2 +-
+>>  drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c        |  4 ++--
+>>  drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c        |  4 ++--
+>>  drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c      |  4 ++--
+>>  drivers/net/ethernet/renesas/sh_eth.c                 |  2 +-
+>>  drivers/net/ethernet/seeq/sgiseeq.c                   |  2 +-
+>>  drivers/net/ethernet/sun/sunvnet.c                    |  2 +-
+>>  drivers/net/ethernet/ti/cpsw_ale.c                    |  2 +-
+>>  drivers/net/fddi/skfp/fplustm.c                       |  3 ++-
+>>  drivers/net/plip/plip.c                               |  2 +-
+>>  net/caif/cfrfml.c                                     |  2 +-
+>>  27 files changed, 39 insertions(+), 47 deletions(-)
+> 
+> What is it you are trying to optimize for, size or speed?  Most of these
+> calls are in slow path.  Replacing the memcmp with an inline operation
+> may provide little to no gain in terms of speed and in many cases as you
+> might actually be increasing the resultant driver size.
+> 
+> Also I would recommend reviewing the addresses you are comparing.  It is
+> likely that you could use ether_addr_equal or compare_ether_addr in many
+> cases as I suspect a number of spots are using 16b aligned MAC addresses
+> for both operands.
+> 
+> Thanks,
+> 
+> Alex
+> 
+> .
 
-Preserve them by not overriding these for suspend/resume.
+Yes, as the title said, slight optimization, and I think there will be no
+negative effect for these places. The patchset still have many problem, 
+many places should use the ether_addr_equal as you said, I will fix it later.
+Thank you for reviewing the patch.
 
-Reported-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq.c | 14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 0a48e71..59e918e 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -839,9 +839,6 @@ static void cpufreq_init_policy(struct cpufreq_policy *policy)
- 
- 	/* set default policy */
- 	ret = cpufreq_set_policy(policy, &new_policy);
--	policy->user_policy.policy = policy->policy;
--	policy->user_policy.governor = policy->governor;
--
- 	if (ret) {
- 		pr_debug("setting policy failed\n");
- 		if (cpufreq_driver->exit)
-@@ -1077,8 +1074,10 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
- 	 */
- 	cpumask_and(policy->cpus, policy->cpus, cpu_online_mask);
- 
--	policy->user_policy.min = policy->min;
--	policy->user_policy.max = policy->max;
-+	if (!frozen) {
-+		policy->user_policy.min = policy->min;
-+		policy->user_policy.max = policy->max;
-+	}
- 
- 	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
- 				     CPUFREQ_START, policy);
-@@ -1109,6 +1108,11 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
- 
- 	cpufreq_init_policy(policy);
- 
-+	if (!frozen) {
-+		policy->user_policy.policy = policy->policy;
-+		policy->user_policy.governor = policy->governor;
-+	}
-+
- 	kobject_uevent(&policy->kobj, KOBJ_ADD);
- 	up_read(&cpufreq_rwsem);
- 
--- 
-1.7.12.rc2.18.g61b472e
+Regards
+Ding
+
+
+> 
+
 
