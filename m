@@ -1,142 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758062Ab3LXBMq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 20:12:46 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:49648 "EHLO
+	id S1758409Ab3LXBQi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 20:16:38 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:49691 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757421Ab3LXBMm (ORCPT
+	with ESMTP id S1758045Ab3LXBMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 20:12:42 -0500
+	Mon, 23 Dec 2013 20:12:45 -0500
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Mike Turquette <mturquette@linaro.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>, devicetree@vger.kernel.org
-Subject: [PATCH v4 00/15] Add support for MSM's mmio clock/reset controller
-Date: Mon, 23 Dec 2013 17:12:24 -0800
-Message-Id: <1387847559-18330-1-git-send-email-sboyd@codeaurora.org>
+        Saravana Kannan <skannan@codeaurora.org>
+Subject: [PATCH v4 08/15] clk: qcom: Add reset controller support
+Date: Mon, 23 Dec 2013 17:12:32 -0800
+Message-Id: <1387847559-18330-9-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <1387847559-18330-1-git-send-email-sboyd@codeaurora.org>
+References: <1387847559-18330-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first breaks a reset-controller include ordering requirement. I hope it can
-go through the clock tree.
+Reset controllers and clock controllers are combined into one IP
+block on Qualcomm chipsets. Usually a reset signal is associated
+with each clock branch but sometimes a reset signal is associated
+with a handful of clocks. Either way the register interface is
+the same; set a bit to assert a reset and clear a bit to deassert
+a reset. Add support for these types of resets signals.
 
-The next 3 patches are generic clock framework patches. They add support for
-regmap and for setting the rate and the parent at the same time based on
-patches from James Hogan's remuxing set_rate series.
-
-After that we add MSM clock hardware support and SoC specific drivers. The DT
-node additions will be sent through the MSM maintainers once these patches are
-accepted.
-
-Changes since v3:
- * Moved binding include to clock/
- * New patch for 8660 GCC driver
- * Renamed directory to qcom to match vendor prefix
- * Added some missing clocks in 8974 GCC driver
- * New patch for 8974 MMCC driver
-
-Changes since v2:
-
- * Completed 8960 and 8974 GCC data & dt-bindings
- * Added support for reset controllers
- * Squashed some bugs in 8974 gcc clocks
- * New patch to fix clk NULL pointer deref
- * New patch to fix #include requirement for reset-controller.h
-
-Changes since v1:
-
- * Rewrote binding to use #clock-cells=1
- * Reworked library components (pll, rcg, branch) to use regmap
- * Dropped common clock framework patches that did DT parsing
- * New patches for regmap support in common clock framework
-
-Stephen Boyd (15):
-  reset: Silence warning in reset-controller.h
-  clk: Allow drivers to pass in a regmap
-  clk: Add regmap core helpers for enable/disable/is_enabled
-  clk: Add set_rate_and_parent() op
-  clk: qcom: Add support for phase locked loops (PLLs)
-  clk: qcom: Add support for root clock generators (RCGs)
-  clk: qcom: Add support for branches/gate clocks
-  clk: qcom: Add reset controller support
-  clk: qcom: Add support for MSM8960's global clock controller (GCC)
-  clk: qcom: Add support for MSM8960's multimedia clock controller
-    (MMCC)
-  clk: qcom: Add support for MSM8974's global clock controller (GCC)
-  clk: qcom: Add support for MSM8974's multimedia clock controller
-    (MMCC)
-  clk: qcom: Add support for MSM8660's global clock controller (GCC)
-  devicetree: bindings: Document qcom,gcc
-  devicetree: bindings: Document qcom,mmcc
-
- Documentation/clk.txt                              |    3 +
- .../devicetree/bindings/clock/qcom,gcc.txt         |   21 +
- .../devicetree/bindings/clock/qcom,mmcc.txt        |   21 +
- drivers/clk/Kconfig                                |    2 +
- drivers/clk/Makefile                               |    1 +
- drivers/clk/clk.c                                  |  156 +-
- drivers/clk/qcom/Kconfig                           |   47 +
- drivers/clk/qcom/Makefile                          |   13 +
- drivers/clk/qcom/clk-branch.c                      |  159 ++
- drivers/clk/qcom/clk-branch.h                      |   53 +
- drivers/clk/qcom/clk-pll.c                         |  222 ++
- drivers/clk/qcom/clk-pll.h                         |   65 +
- drivers/clk/qcom/clk-rcg.c                         |  517 ++++
- drivers/clk/qcom/clk-rcg.h                         |  157 +
- drivers/clk/qcom/clk-rcg2.c                        |  291 ++
- drivers/clk/qcom/gcc-msm8660.c                     | 2818 ++++++++++++++++++
- drivers/clk/qcom/gcc-msm8960.c                     | 2992 ++++++++++++++++++++
- drivers/clk/qcom/gcc-msm8974.c                     | 2693 ++++++++++++++++++
- drivers/clk/qcom/mmcc-msm8960.c                    | 2320 +++++++++++++++
- drivers/clk/qcom/mmcc-msm8974.c                    | 2624 +++++++++++++++++
- drivers/clk/qcom/reset.c                           |   63 +
- drivers/clk/qcom/reset.h                           |   37 +
- include/dt-bindings/clock/qcom,gcc-msm8660.h       |  276 ++
- include/dt-bindings/clock/qcom,gcc-msm8960.h       |  313 ++
- include/dt-bindings/clock/qcom,gcc-msm8974.h       |  320 +++
- include/dt-bindings/clock/qcom,mmcc-msm8960.h      |  137 +
- include/dt-bindings/clock/qcom,mmcc-msm8974.h      |  161 ++
- include/dt-bindings/reset/qcom,gcc-msm8660.h       |  134 +
- include/dt-bindings/reset/qcom,gcc-msm8960.h       |  118 +
- include/dt-bindings/reset/qcom,gcc-msm8974.h       |   96 +
- include/dt-bindings/reset/qcom,mmcc-msm8960.h      |   93 +
- include/dt-bindings/reset/qcom,mmcc-msm8974.h      |   62 +
- include/linux/clk-provider.h                       |   35 +
- include/linux/reset-controller.h                   |    1 +
- 34 files changed, 17002 insertions(+), 19 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/clock/qcom,gcc.txt
- create mode 100644 Documentation/devicetree/bindings/clock/qcom,mmcc.txt
- create mode 100644 drivers/clk/qcom/Kconfig
- create mode 100644 drivers/clk/qcom/Makefile
- create mode 100644 drivers/clk/qcom/clk-branch.c
- create mode 100644 drivers/clk/qcom/clk-branch.h
- create mode 100644 drivers/clk/qcom/clk-pll.c
- create mode 100644 drivers/clk/qcom/clk-pll.h
- create mode 100644 drivers/clk/qcom/clk-rcg.c
- create mode 100644 drivers/clk/qcom/clk-rcg.h
- create mode 100644 drivers/clk/qcom/clk-rcg2.c
- create mode 100644 drivers/clk/qcom/gcc-msm8660.c
- create mode 100644 drivers/clk/qcom/gcc-msm8960.c
- create mode 100644 drivers/clk/qcom/gcc-msm8974.c
- create mode 100644 drivers/clk/qcom/mmcc-msm8960.c
- create mode 100644 drivers/clk/qcom/mmcc-msm8974.c
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/clk/qcom/Kconfig  |  2 +-
+ drivers/clk/qcom/Makefile |  1 +
+ drivers/clk/qcom/reset.c  | 63 +++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/qcom/reset.h  | 37 ++++++++++++++++++++++++++++
+ 4 files changed, 102 insertions(+), 1 deletion(-)
  create mode 100644 drivers/clk/qcom/reset.c
  create mode 100644 drivers/clk/qcom/reset.h
- create mode 100644 include/dt-bindings/clock/qcom,gcc-msm8660.h
- create mode 100644 include/dt-bindings/clock/qcom,gcc-msm8960.h
- create mode 100644 include/dt-bindings/clock/qcom,gcc-msm8974.h
- create mode 100644 include/dt-bindings/clock/qcom,mmcc-msm8960.h
- create mode 100644 include/dt-bindings/clock/qcom,mmcc-msm8974.h
- create mode 100644 include/dt-bindings/reset/qcom,gcc-msm8660.h
- create mode 100644 include/dt-bindings/reset/qcom,gcc-msm8960.h
- create mode 100644 include/dt-bindings/reset/qcom,gcc-msm8974.h
- create mode 100644 include/dt-bindings/reset/qcom,mmcc-msm8960.h
- create mode 100644 include/dt-bindings/reset/qcom,mmcc-msm8974.h
 
+diff --git a/drivers/clk/qcom/Kconfig b/drivers/clk/qcom/Kconfig
+index 73a8c8f..06ccce6 100644
+--- a/drivers/clk/qcom/Kconfig
++++ b/drivers/clk/qcom/Kconfig
+@@ -2,4 +2,4 @@ config COMMON_CLK_QCOM
+ 	tristate "Support for Qualcomm's clock controllers"
+ 	depends on OF
+ 	select REGMAP_MMIO
+-
++	select RESET_CONTROLLER
+diff --git a/drivers/clk/qcom/Makefile b/drivers/clk/qcom/Makefile
+index 58a5ab3..b2568be 100644
+--- a/drivers/clk/qcom/Makefile
++++ b/drivers/clk/qcom/Makefile
+@@ -4,3 +4,4 @@ clk-qcom-$(CONFIG_COMMON_CLK_QCOM) += clk-pll.o
+ clk-qcom-$(CONFIG_COMMON_CLK_QCOM) += clk-rcg.o
+ clk-qcom-$(CONFIG_COMMON_CLK_QCOM) += clk-rcg2.o
+ clk-qcom-$(CONFIG_COMMON_CLK_QCOM) += clk-branch.o
++clk-qcom-$(CONFIG_COMMON_CLK_QCOM) += reset.o
+diff --git a/drivers/clk/qcom/reset.c b/drivers/clk/qcom/reset.c
+new file mode 100644
+index 0000000..6c977d3
+--- /dev/null
++++ b/drivers/clk/qcom/reset.c
+@@ -0,0 +1,63 @@
++/*
++ * Copyright (c) 2013, The Linux Foundation. All rights reserved.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/bitops.h>
++#include <linux/export.h>
++#include <linux/regmap.h>
++#include <linux/reset-controller.h>
++#include <linux/delay.h>
++
++#include "reset.h"
++
++static int qcom_reset(struct reset_controller_dev *rcdev, unsigned long id)
++{
++	rcdev->ops->assert(rcdev, id);
++	udelay(1);
++	rcdev->ops->deassert(rcdev, id);
++	return 0;
++}
++
++static int
++qcom_reset_assert(struct reset_controller_dev *rcdev, unsigned long id)
++{
++	struct qcom_reset_controller *rst;
++	const struct qcom_reset_map *map;
++	u32 mask;
++
++	rst = to_qcom_reset_controller(rcdev);
++	map = &rst->reset_map[id];
++	mask = BIT(map->bit);
++
++	return regmap_update_bits(rst->regmap, map->reg, mask, mask);
++}
++
++static int
++qcom_reset_deassert(struct reset_controller_dev *rcdev, unsigned long id)
++{
++	struct qcom_reset_controller *rst;
++	const struct qcom_reset_map *map;
++	u32 mask;
++
++	rst = to_qcom_reset_controller(rcdev);
++	map = &rst->reset_map[id];
++	mask = BIT(map->bit);
++
++	return regmap_update_bits(rst->regmap, map->reg, mask, 0);
++}
++
++struct reset_control_ops qcom_reset_ops = {
++	.reset = qcom_reset,
++	.assert = qcom_reset_assert,
++	.deassert = qcom_reset_deassert,
++};
++EXPORT_SYMBOL_GPL(qcom_reset_ops);
+diff --git a/drivers/clk/qcom/reset.h b/drivers/clk/qcom/reset.h
+new file mode 100644
+index 0000000..e22b167
+--- /dev/null
++++ b/drivers/clk/qcom/reset.h
+@@ -0,0 +1,37 @@
++/*
++ * Copyright (c) 2013, The Linux Foundation. All rights reserved.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef __MSM_CLK_RESET_H__
++#define __MSM_CLK_RESET_H__
++
++#include <linux/reset-controller.h>
++
++struct qcom_reset_map {
++	unsigned int reg;
++	u8 bit;
++};
++
++struct regmap;
++
++struct qcom_reset_controller {
++	const struct qcom_reset_map *reset_map;
++	struct regmap *regmap;
++	struct reset_controller_dev rcdev;
++};
++
++#define to_qcom_reset_controller(r) \
++	container_of(r, struct qcom_reset_controller, rcdev);
++
++extern struct reset_control_ops qcom_reset_ops;
++
++#endif
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
