@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716Ab3LXOX5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 09:23:57 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:50639 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752358Ab3LXOX4 (ORCPT
+	id S1752569Ab3LXO3g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 09:29:36 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:34848 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085Ab3LXO31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 09:23:56 -0500
-Date: Tue, 24 Dec 2013 09:23:52 -0500
+	Tue, 24 Dec 2013 09:29:27 -0500
+Date: Tue, 24 Dec 2013 09:29:23 -0500
 From: Tejun Heo <tj@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] percpu fixes for v3.13-rc5
-Message-ID: <20131224142352.GB3512@htj.dyndns.org>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: [GIT PULL] cgroup fixes for v3.13-rc5
+Message-ID: <20131224142923.GC3512@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -21,32 +22,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+Hey, Linus.
 
-A single commit to fix a spurious sparse warning coming from
-DEFINE_PER_CPU()'s hack to support the use of weak symbols.  Shouldn't
-cause observable behavior change.
+Two fixes.  One fixes a bug in the error path of cgroup_create().  The
+other changes cgrp->id lifetime rule so that the id doesn't get
+recycled before all controller states are destroyed.  This premature
+id recycling made memcg malfunction.
 
-The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
+The following changes since commit e605b36575e896edd8161534550c9ea021b03bc0:
 
-  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
+  cgroup: fix cgroup_subsys_state leak for seq_files (2013-11-27 18:16:21 -0500)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.13-fixes
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.13-fixes
 
-for you to fetch changes up to b1a0fbfdde65dffd83c84c006f84fa12041907c5:
+for you to fetch changes up to c1a71504e9715812a2d15e7c03b5aa147ae70ded:
 
-  percpu: fix spurious sparse warnings from DEFINE_PER_CPU() (2013-12-05 12:59:23 -0500)
+  cgroup: don't recycle cgroup id until all csses' have been destroyed (2013-12-17 08:11:52 -0500)
 
 Thanks.
-
 ----------------------------------------------------------------
-Tejun Heo (1):
-      percpu: fix spurious sparse warnings from DEFINE_PER_CPU()
+Li Zefan (1):
+      cgroup: don't recycle cgroup id until all csses' have been destroyed
 
- include/linux/percpu-defs.h | 1 +
- 1 file changed, 1 insertion(+)
+Tejun Heo (1):
+      cgroup: fix cgroup_create() error handling path
+
+ kernel/cgroup.c | 50 ++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 32 insertions(+), 18 deletions(-)
 
 -- 
 tejun
