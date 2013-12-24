@@ -1,141 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758398Ab3LXD35 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Dec 2013 22:29:57 -0500
-Received: from ozlabs.org ([203.10.76.45]:43491 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757714Ab3LXD34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Dec 2013 22:29:56 -0500
-Message-ID: <1387855790.15093.1.camel@concordia>
-Subject: Re: [PATCH V4 08/10] powerpc, perf: Enable SW filtering in branch
- stack sampling framework
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org, mikey@neuling.org,
-        ak@linux.intel.com, eranian@google.com, acme@ghostprotocols.net,
-        sukadev@linux.vnet.ibm.com, mingo@kernel.org
-Date: Tue, 24 Dec 2013 14:29:50 +1100
-In-Reply-To: <52B42394.4060705@linux.vnet.ibm.com>
-References: <20131209062146.EABBE2C00C1@ozlabs.org>
-	 <52B42394.4060705@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758417Ab3LXDbA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Dec 2013 22:31:00 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:55277 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758151Ab3LXDa7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Dec 2013 22:30:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131223162442.GA9383@infradead.org>
+References: <1387815539-12257-1-git-send-email-tom.leiming@gmail.com>
+	<1387815539-12257-2-git-send-email-tom.leiming@gmail.com>
+	<20131223162442.GA9383@infradead.org>
+Date: Tue, 24 Dec 2013 11:30:58 +0800
+Message-ID: <CACVXFVN=sxHxUY_0c9xWKw3nXhj60UeSjvFTHs52zHNEAg__4w@mail.gmail.com>
+Subject: Re: [PATCH 1/4] block: blk-mq: support draining mq queue
+From: Ming Lei <tom.leiming@gmail.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-12-20 at 16:31 +0530, Anshuman Khandual wrote:
-> On 12/09/2013 11:51 AM, Michael Ellerman wrote:
-> > On Wed, 2013-04-12 at 10:32:40 UTC, Anshuman Khandual wrote:
-> >> +
-> >> +	if (bhrb_sw_filter & PERF_SAMPLE_BRANCH_IND_CALL) {
-> >> +		/* XL-form instruction */
-> >> +		if (instr_is_branch_xlform(*addr)) {
-> >> +
-> >> +			/* LR should be set */
-> >> +			if (is_branch_link_set(*addr)) {
-> >> +				/*
-> >> +			 	 * Conditional and unconditional
-> >> +			 	 * branch to CTR.
-> >> +			 	 */
-> >> +				if (is_xlform_ctr(*addr))
-> >> +					result = true;
-> >> +
-> >> +				/*
-> >> +			 	 * Conditional and unconditional
-> >> +			 	 * branch to LR.
-> >> +			 	 */
-> >> +				if (is_xlform_lr(*addr))
-> >> +					result = true;
-> >> +
-> >> +				/*
-> >> +			 	 * Conditional and unconditional
-> >> +			 	 * branch to TAR.
-> >> +			 	 */
-> >> +				if (is_xlform_tar(*addr))
-> >> +					result = true;
-> > 
-> > What other kind of XL-Form branch is there?
-> 
-> I am not sure. Do you know of any ?
+Hi Christoph,
 
-That was my point. There are no other types, so you can just do:
+Thanks for your review.
 
-	if (bhrb_sw_filter & PERF_SAMPLE_BRANCH_IND_CALL)
-		if (instr_is_branch_xlform(*addr) && is_branch_link_set(*addr))
-			return true;
+On Tue, Dec 24, 2013 at 12:24 AM, Christoph Hellwig <hch@infradead.org> wrote:
+> On Tue, Dec 24, 2013 at 12:18:56AM +0800, Ming Lei wrote:
+>> blk_mq_drain_queue() is introduced so that we can drain
+>> mq queue during cleanup queue.
+>>
+>> Also don't accept new requests any more if queue is marked
+>> as dying.
+>
+> blk_cleanup_queue is a call from the LLDD, there is no need to make
 
-> >> +	if (bhrb_sw_filter & PERF_SAMPLE_BRANCH_COND) {
-> >> +
-> >> +		/* I-form instruction - excluded */
-> >> +		if (instr_is_branch_iform(*addr))
-> >> +			goto out;
-> >> +
-> >> +		/* B-form or XL-form instruction */
-> >> +		if (instr_is_branch_bform(*addr) || instr_is_branch_xlform(*addr))  {
-> >> +
-> >> +			/* Not branch always  */
-> >> +			if (!is_bo_always(*addr)) {
-> >> +
-> >> +				/* Conditional branch to CTR register */
-> >> +				if (is_bo_ctr(*addr))
-> >> +					goto out;
-> > 
-> > We might have discussed this but why not?
-> 
-> Did not get that, discuss what ?
+Some drivers don't have LLDD, like null_blk, virtio-blk, ...
 
-Why are we saying a conditional branch to the CTR is not a conditional branch?
+> it handle the MQ case.  However given that there might be a lot of
+> code shared between blk_cleanup_queue and blk_mq_cleanup_queue an
+> internal helper might be useful.
 
-It is conditional, so I think it should be included.
+So there are two ways to implement block API for MQ: one is to try to
+adapt current block APIs for blk mq driver, another one is to always
+reinvent new blk_mq_* APIs for blk mq driver.
 
-> >> +
-> >> +				/* CR[BI] conditional branch with static hint */
-> > 
-> > A conditional branch with a static hint is still a conditional branch?
-> 
-> No its not. 
+Looks you prefer to the 2nd one, and this patch takes the 1st way.
 
-Yes it is?
+Actually the below block APIs
+               blk_get_request()
+               blk_put_request()
+               blk_execute_rq_nowait()
+               blk_register_queue()
+               blk_unregister_queue()
+               blk_insert_flush()
+               ....
 
-In fact they could be very interesting branches. Because the compiler or
-programmer has statically hinted them, if the hint is wrong they may be a major
-source of branch midpredicts.
+have been there to support MQ.
 
+One problem about the 2nd way is that MQ drivers may become a bit
+ugly if the driver still need to support traditional request/bio mechanism.
 
-> >> +				if (is_bo_crbi_off(*addr) || is_bo_crbi_on(*addr)) {
-> >> +					if (is_bo_crbi_hint(*addr))
-> >> +						goto out;
-> >> +				}
-> >> +
-> >> +				result = true;
-> >> +			}
-> >> +		}
-> >> +	}
-> >> +out:
-> >> +	return result;
-> >> +}
- 
-> >> +	} else {
-> >> +		/*
-> >> +		 * Userspace address needs to be
-> >> +		 * copied first before analysis.
-> >> +		 */
-> >> +		pagefault_disable();
-> >> +		ret =  __get_user_inatomic(instr, (unsigned int __user *)addr);
-> > 
-> > I suspect you borrowed this incantation from the callchain code. Unlike that
-> > code you don't fallback to reading the page tables directly.
-> > 
-> > I'd rather see the accessor in the callchain code made generic and have you
-> > call it here.
-> 
-> You have mentioned to take care of this issue yourself.
+So I think blk_mq_drain_queue can be called for MQ too.
 
-Yes I will.
+>
+>> +     if (q->mq_ops) {
+>> +             blk_mq_drain_queue(q);
+>> +     } else {
+>> +             spin_lock_irq(lock);
+>> +             __blk_drain_queue(q, true);
+>> +             queue_flag_set(QUEUE_FLAG_DEAD, q);
+>> +             spin_unlock_irq(lock);
+>> +     }
+>
+> Why doesn't the mq case set QUEUE_FLAG_DEAD here?
 
-cheers
+Looks DEAD flag is set to prevent request_fn from being called,
+and there is no request_fn for MQ, so I don't set it and QUEUE_FLAG_DYING
+has been checked in blk_mq_queue_enter() already.
+
+But we can do it easily.
+
+>
+>> -static void blk_mq_freeze_queue(struct request_queue *q)
+>> +static void __blk_mq_freeze_queue(struct request_queue *q,
+>> +             bool force_drain)
+>>  {
+>>       bool drain;
+>>
+>> +     if (force_drain)
+>> +             goto do_drain;
+>> +
+>>       spin_lock_irq(q->queue_lock);
+>>       drain = !q->bypass_depth++;
+>>       queue_flag_set(QUEUE_FLAG_BYPASS, q);
+>> @@ -134,6 +141,7 @@ static void blk_mq_freeze_queue(struct request_queue *q)
+>>       if (!drain)
+>>               return;
+>>
+>> + do_drain:
+>>       while (true) {
+>>               s64 count;
+>
+> This begs to be split into two functions, one that forces the drain, and
+> once that wraps it.
+
+Sounds a good idea, and I will do it in v1.
+
+>
+> Also blk_execute_rq_nowait now needs to check the dying case for MQ as
+> well.
+
+In this patch the dying flag is only checked in blk_mq_queue_enter()
+which is called in allocating request path, so once the request is
+allocated, we just simply wait for its completion in blk_mq_drain_queue().
+
+Even for non-MQ case, looks blk_queue_dying(q) is checked to avoid
+being freed early before running queue, I am not sure if it is good
+because the I/O might or can have been completed.  And it isn't a problem
+for MQ because this request can't be reused when dying is set.
 
 
+Thanks,
+-- 
+Ming Lei
