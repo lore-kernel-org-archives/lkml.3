@@ -1,101 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752327Ab3LXR11 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 12:27:27 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:34603 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752074Ab3LXR1Z (ORCPT
+	id S1752524Ab3LXR3g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 12:29:36 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:46229 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752404Ab3LXR3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 12:27:25 -0500
-Date: Tue, 24 Dec 2013 10:27:23 -0700
-From: Jens Axboe <axboe@kernel.dk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Final block fixes for 3.13
-Message-ID: <20131224172706.GE1321@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Tue, 24 Dec 2013 12:29:34 -0500
+Message-ID: <1387906171.2343.7.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: spinlock_irqsave() && flags (Was: pm80xx: Spinlock fix)
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Suresh Thiagarajan <Suresh.Thiagarajan@pmcs.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Jason Seba <jason.seba42@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tomas Henzl <thenzl@redhat.com>, Jack Wang <xjtuwjp@gmail.com>,
+        Viswas G <Viswas.G@pmcs.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Vasanthalakshmi Tharmarajan 
+	<Vasanthalakshmi.Tharmarajan@pmcs.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 24 Dec 2013 09:29:31 -0800
+In-Reply-To: <CE2C58F938F4C44EA74FFF880BAA7E5E1C68AD12@BBYEXM01.pmc-sierra.internal>
+References: <52B83B89.9040700@gmail.com>
+	 <CE2C58F938F4C44EA74FFF880BAA7E5E1C68AA8A@BBYEXM01.pmc-sierra.internal>
+	 <CAD0Z9T+69VoSnDY-Sj7a1QfJ-KLJYVyL9=WQ123XMfRvQmGdsg@mail.gmail.com>
+	 <52B8518B.4060204@gmail.com> <52B8569D.4050101@redhat.com>
+	 <CAD0Z9TK-cn=X3ywSzPnEQN-FB+ue+0dHQ3EHuwonC+KfgrmPMA@mail.gmail.com>
+	 <20131223163410.GA28220@redhat.com> <20131223172744.GA2069@redhat.com>
+	 <20131223182323.GA8656@gmail.com> <20131223183341.GA6082@redhat.com>
+	 <20131224082931.GA20471@gmail.com>
+	 <CE2C58F938F4C44EA74FFF880BAA7E5E1C68AD12@BBYEXM01.pmc-sierra.internal>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, 2013-12-24 at 09:13 +0000, Suresh Thiagarajan wrote:
+> 
+> On Tue, Dec 24, 2013 at 1:59 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > * Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> >> On 12/23, Ingo Molnar wrote:
+> >> >
+> >> > * Oleg Nesterov <oleg@redhat.com> wrote:
+> >> >
+> >> > > Initially I thought that this is obviously wrong, irqsave/irqrestore
+> >> > > assume that "flags" is owned by the caller, not by the lock. And
+> >> > > iirc this was certainly wrong in the past.
+> >> > >
+> >> > > But when I look at spinlock.c it seems that this code can actually
+> >> > > work. _irqsave() writes to FLAGS after it takes the lock, and
+> >> > > _irqrestore() has a copy of FLAGS before it drops this lock.
+> >> >
+> >> > I don't think that's true: if it was then the lock would not be
+> >> > irqsave, a hardware-irq could come in after the lock has been taken
+> >> > and before flags are saved+disabled.
+> >>
+> >> I do agree that this pattern is not safe, that is why I decided to ask.
+> >>
+> >> But, unless I missed something, with the current implementation
+> >> spin_lock_irqsave(lock, global_flags) does:
+> >>
+> >>       unsigned long local_flags;
+> >>
+> >>       local_irq_save(local_flags);
+> >>       spin_lock(lock);
+> >>
+> >>       global_flags = local_flags;
+> >>
+> >> so the access to global_flags is actually serialized by lock.
+> 
+> Below is a small pseudo code on protecting/serializing the flag for global access.
+> struct temp
+> {
+> 	...
+> 	spinlock_t lock;
+> 	unsigned long lock_flags;
+> };
+> void my_lock(struct temp *t)
+> {
+>                unsigned long flag; // thread-private variable as suggested
+>                spin_lock_irqsave(&t->lock, flag);
+>                t->lock_flags = flag; //updating inside critical section now to serialize the access to flag
+> }
+> 
+> void my_unlock(struct temp *t)
+> {
+>                unsigned long flag = t->lock_flags;
+>                t->lock_flags = 0;  //clearing it before getting out of critical section
+>                spin_unlock_irqrestore(&t->lock, flag);
+> }
+> 
+> Here for unlocking, I could even use spin_unlock_irqrestore(&t->lock,
+> t->lock_flags) directly instead of my_unlock() since t->lock_flags is
+> updated only in my_lock and so there is no need to explicitly clear
+> t->lock_flags. Please let me know if I miss anything here in
+> serializing the global lock flag.
 
-A smallish collection of fixes destined for the 3.13 kernel. The pull
-request contains:
+I don't think anyone's arguing that you can't do this.  The argument is
+more you shouldn't: Lock contention is one of the biggest killers of
+performance and getting locking right (avoiding inversions, or even
+nested locks at all) is hard.  Therefore you need to keep the shortest
+and clearest critical sections in Linux that you can, so the pattern for
+locking is to lock and unlock in the same routine with a local flags
+variable.
 
-- Fix for a memory leak on certain unplug events.
+So, rather than develop a primitive that supports and encourages uses of
+locking that violate the pattern and is far more likely to cause
+performance and other problems, could you just audit the code to see if
+the need to carry a lock across a routine could be eliminated (either by
+shortening the critical section or by better nesting the calls).
 
-- A collection of bcache fixes from Kent and Nicolas.
+Thanks,
 
-- A few null_blk fixes and updates form Matias.
+James
 
-- A marking of static of functions in the stec pci-e driver.
-
-
-Please pull!
-
-
-  git://git.kernel.dk/linux-block.git for-linus
-
-
-Andrey Vagin (1):
-      block: fix memory leaks on unplugging block device
-
-Jens Axboe (1):
-      Merge branch 'bcache-for-3.13' of git://evilpiepirate.org/~kent/linux-bcache into for-linus
-
-Kent Overstreet (4):
-      bcache: Use uninterruptible sleep in writeback
-      bcache: Fix dirty_data accounting
-      bcache: bugfix for race between moving_gc and bucket_invalidate
-      bcache: New writeback PD controller
-
-Matias Bjorling (4):
-      null_blk: mem garbage on NUMA systems during init
-      null_blk: documentation
-      null_blk: refactor init and init errors code paths
-      null_blk: warning on ignored submit_queues param
-
-Matias Bjørling (3):
-      null_blk: corrections to documentation
-      null_blk: set use_per_node_hctx param to false
-      null_blk: support submit_queues on use_per_node_hctx
-
-Nicholas Swenson (5):
-      bcache: Fix for can_attach_cache()
-      bcache: Fix heap_peek() macro
-      bcache: fix for gc crashing when no sectors are used
-      bcache: bugfix - moving_gc now moves only correct buckets
-      bcache: fix for gc and writeback race
-
-Rashika Kheria (1):
-      drivers: block: Mark the functions as static in skd_main.c
-
-Stefan Priebe (1):
-      bcache: kthread don't set writeback task to INTERUPTIBLE
-
-Wei Yongjun (1):
-      bcache: fix sparse non static symbol warning
-
- Documentation/block/null_blk.txt |  72 ++++++++++++++++++++++++++
- block/blk-mq-sysfs.c             |  13 +++++
- drivers/block/null_blk.c         | 107 ++++++++++++++++++++++++++++-----------
- drivers/block/skd_main.c         |   4 +-
- drivers/md/bcache/alloc.c        |   2 +
- drivers/md/bcache/bcache.h       |  12 ++---
- drivers/md/bcache/btree.c        |  27 +++++++++-
- drivers/md/bcache/movinggc.c     |  21 +++++---
- drivers/md/bcache/super.c        |   2 +-
- drivers/md/bcache/sysfs.c        |  50 ++++++++++--------
- drivers/md/bcache/util.c         |   8 ++-
- drivers/md/bcache/util.h         |   2 +-
- drivers/md/bcache/writeback.c    |  53 +++++++++----------
- 13 files changed, 275 insertions(+), 98 deletions(-)
- create mode 100644 Documentation/block/null_blk.txt
-
--- 
-Jens Axboe
 
