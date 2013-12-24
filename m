@@ -1,94 +1,392 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740Ab3LXOgJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 09:36:09 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:65178 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752308Ab3LXOgG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 09:36:06 -0500
-MIME-Version: 1.0
-Date: Tue, 24 Dec 2013 09:36:02 -0500
-X-Google-Sender-Auth: OmHF4L1V2DXSsmfCcs5oTEC5EYA
-Message-ID: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com>
-Subject: intel_pstate divide error with v3.13-rc4-256-gb7000ad
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Cc: cpufreq@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752654Ab3LXOj0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 09:39:26 -0500
+Received: from 173-195-60.141.tel-ott.com ([173.195.60.141]:1031 "EHLO kokopo"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752340Ab3LXOjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Dec 2013 09:39:24 -0500
+X-Greylist: delayed 493 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Dec 2013 09:39:24 EST
+From: lgxue@hotmail.com
+To: cooloney@gmail.com, rpurdie@rpsys.net, rob@landley.net, milo.kim@ti.com
+Cc: Joe Xue <lgxue@hotmail.com>, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: [PATCH] Add the LED burst trigger
+Date: Tue, 24 Dec 2013 09:30:07 -0500
+Message-Id: <1387895407-28031-1-git-send-email-lgxue@hotmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+From: Joe Xue <lgxue@hotmail.com>
 
-We've had a report [1] that the pstate driver causes KVM guests to
-fail to boot because of a divide error.  See the backtrace below.
+Allow LEDs blink in burst mode. Three parameters are exported to
+sysfs: freq, delay_off and times.
 
-    4.839784] Intel P-state driver initializing.
-[    4.859972] Intel pstate controlling: cpu 0
-[    4.867653] cpufreq: __cpufreq_add_dev: ->get() failed
-[    4.877269] divide error: 0000 [#1] SMP
-[    4.878127] Modules linked in:
-[    4.878127] CPU: 0 PID: 1 Comm: swapper/0 Not tainted
-3.13.0-0.rc4.git5.1.fc21.x86_64 #1
-[    4.878127] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[    4.878127] task: ffff88001ea20000 ti: ffff88001e9bc000 task.ti:
-ffff88001e9bc000
-[    4.878127] RIP: 0010:[<ffffffff815c551d>]  [<ffffffff815c551d>]
-intel_pstate_timer_func+0x11d/0x2b0
-[    4.878127] RSP: 0000:ffff88001ee03e18  EFLAGS: 00010246
-[    4.878127] RAX: 0000000000000000 RBX: ffff88001a454348 RCX: 0000000000006100
-[    4.878127] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
-[    4.878127] RBP: ffff88001ee03e38 R08: 0000000000000000 R09: 0000000000000000
-[    4.878127] R10: ffff88001ea20000 R11: 0000000000000000 R12: 00000c0a1ea20000
-[    4.878127] R13: 1ea200001ea20000 R14: ffffffff815c5400 R15: ffff88001a454348
-[    4.878127] FS:  0000000000000000(0000) GS:ffff88001ee00000(0000)
-knlGS:0000000000000000
-[    4.878127] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[    4.878127] CR2: 0000000000000000 CR3: 0000000001c0c000 CR4: 00000000000006f0
-[    4.878127] Stack:
-[    4.878127]  fffffffb1a454390 ffffffff821a4500 ffff88001a454390
-0000000000000100
-[    4.878127]  ffff88001ee03ea8 ffffffff81083e9a ffffffff81083e15
-ffffffff82d5ed40
-[    4.878127]  ffffffff8258cc60 0000000000000000 ffffffff81ac39de
-0000000000000000
-[    4.878127] Call Trace:
-[    4.878127]  <IRQ>
-[    4.878127]  [<ffffffff81083e9a>] call_timer_fn+0x8a/0x310
-[    4.878127]  [<ffffffff81083e15>] ? call_timer_fn+0x5/0x310
-[    4.878127]  [<ffffffff815c5400>] ? pid_param_set+0x130/0x130
-[    4.878127]  [<ffffffff81084354>] run_timer_softirq+0x234/0x380
-[    4.878127]  [<ffffffff8107aee4>] __do_softirq+0x104/0x430
-[    4.878127]  [<ffffffff8107b5fd>] irq_exit+0xcd/0xe0
-[    4.878127]  [<ffffffff81770645>] smp_apic_timer_interrupt+0x45/0x60
-[    4.878127]  [<ffffffff8176efb2>] apic_timer_interrupt+0x72/0x80
-[    4.878127]  <EOI>
-[    4.878127]  [<ffffffff810e15cd>] ? vprintk_emit+0x1dd/0x5e0
-[    4.878127]  [<ffffffff81757719>] printk+0x67/0x69
-[    4.878127]  [<ffffffff815c1493>] __cpufreq_add_dev.isra.13+0x883/0x8d0
-[    4.878127]  [<ffffffff815c14f0>] cpufreq_add_dev+0x10/0x20
-[    4.878127]  [<ffffffff814a14d1>] subsys_interface_register+0xb1/0xf0
-[    4.878127]  [<ffffffff815bf5cf>] cpufreq_register_driver+0x9f/0x210
-[    4.878127]  [<ffffffff81fb19af>] intel_pstate_init+0x27d/0x3be
-[    4.878127]  [<ffffffff81761e3e>] ? mutex_unlock+0xe/0x10
-[    4.878127]  [<ffffffff81fb1732>] ? cpufreq_gov_dbs_init+0x12/0x12
-[    4.878127]  [<ffffffff8100214a>] do_one_initcall+0xfa/0x1b0
-[    4.878127]  [<ffffffff8109dbf5>] ? parse_args+0x225/0x3f0
-[    4.878127]  [<ffffffff81f64193>] kernel_init_freeable+0x1fc/0x287
-[    4.878127]  [<ffffffff81f638d0>] ? do_early_param+0x88/0x88
-[    4.878127]  [<ffffffff8174b530>] ? rest_init+0x150/0x150
-[    4.878127]  [<ffffffff8174b53e>] kernel_init+0xe/0x130
-[    4.878127]  [<ffffffff8176e27c>] ret_from_fork+0x7c/0xb0
-[    4.878127]  [<ffffffff8174b530>] ? rest_init+0x150/0x150
-[    4.878127] Code: c1 e0 05 48 63 bc 03 10 01 00 00 48 63 83 d0 00
-00 00 48 63 d6 48 c1 e2 08 c1 e1 08 4c 63 c2 48 c1 e0 08 48 98 48 c1
-e0 08 48 99 <49> f7 f8 48 98 48 0f af f8 48 c1 ff 08 29 f9 89 ca c1 fa
-1f 89
-[    4.878127] RIP  [<ffffffff815c551d>] intel_pstate_timer_func+0x11d/0x2b0
-[    4.878127]  RSP <ffff88001ee03e18>
-[    5.438189] ---[ end trace f166110ed22cc37a ]---
-[    5.446428] Kernel panic - not syncing: Fatal exception in interrupt
+	new file:   Documentation/leds/ledtrig-burst.txt
+	modified:   drivers/leds/trigger/Kconfig
+	modified:   drivers/leds/trigger/Makefile
+	new file:   drivers/leds/trigger/ledtrig-burst.c
+
+Signed-off-by: Joe Xue <lgxue@hotmail.com>
+---
+ Documentation/leds/ledtrig-burst.txt |  58 ++++++++
+ drivers/leds/trigger/Kconfig         |  10 ++
+ drivers/leds/trigger/Makefile        |   1 +
+ drivers/leds/trigger/ledtrig-burst.c | 250 +++++++++++++++++++++++++++++++++++
+ 4 files changed, 319 insertions(+)
+ create mode 100644 Documentation/leds/ledtrig-burst.txt
+ create mode 100644 drivers/leds/trigger/ledtrig-burst.c
+
+diff --git a/Documentation/leds/ledtrig-burst.txt b/Documentation/leds/ledtrig-burst.txt
+new file mode 100644
+index 0000000..50a7955
+--- /dev/null
++++ b/Documentation/leds/ledtrig-burst.txt
+@@ -0,0 +1,58 @@
++LED Burst Trigger
++=================
++
++0. Introduction
++
++Sometimes, the system has only one no-color led to indicate different stats.
++The LED timer trigger can let LEDs to blink in different frequency, but most
++people maybe just can discriminate two states, slow and fast.
++
++In this case, Morse code maybe is a good choice :-), but who can bear it.
++
++Besides the Morse code, another way is using burst mode. People can easily tell
++how many times the LED blinks in one cycle.
++
++Burst trigger is designed for this purpose.
++
++1. How to use
++
++Burst trigger can be enabled and disabled from user space on led class
++devices that support this trigger as shown below:
++
++     echo burst > trigger
++
++Three properties are exported. They are freq, times and delay_off.
++
++     freq      - the blink frequency, default value is 3 means 3HZ
++     times     - burst blink times in one cycle, no default value
++     delay_off - off time between two burst blinks, default value is 500 ms
++
++2. Case studies
++
++     Example 1
++
++     echo burst > trigger
++     echo 2 > times
++
++     The behaviour is like below:
++
++     on(1/6s)off(1/6s)on(1/6s)off(1/6m)
++     ...off 500ms...
++     on(1/6s)off(1/6s)on(1/3s)off(1/6m)
++     ...off 500ms
++     ...
++
++     Example 2
++
++     echo burst > trigger
++     echo 4 > freq
++     echo 3 > times
++     echo 1000 > delay_off
++
++     The behaviour is like below:
++
++     on(1/8s)off(1/8s)on(1/8s)off(1/8m)on(1/8s)off(1/8m)
++     ...off 1s...
++     on(1/8s)off(1/8s)on(1/8s)off(1/8m)on(1/8s)off(1/8m)
++     ...off 1s
++     ...
+diff --git a/drivers/leds/trigger/Kconfig b/drivers/leds/trigger/Kconfig
+index 49794b4..8f4ebbf 100644
+--- a/drivers/leds/trigger/Kconfig
++++ b/drivers/leds/trigger/Kconfig
+@@ -108,4 +108,14 @@ config LEDS_TRIGGER_CAMERA
+ 	  This enables direct flash/torch on/off by the driver, kernel space.
+ 	  If unsure, say Y.
+ 
++config LEDS_TRIGGER_BURST
++	tristate "LED Burst Trigger"
++	depends on LEDS_TRIGGERS
++	help
++	  This allows LEDs to blink in burst mode with parameters
++	  controlled via sysfs.  It's useful to notify different states
++	  by using one led.
++	  For more details read Documentation/leds/leds-burst.txt.
++	  If unsure, say Y.
++
+ endif # LEDS_TRIGGERS
+diff --git a/drivers/leds/trigger/Makefile b/drivers/leds/trigger/Makefile
+index 1abf48d..6c48517 100644
+--- a/drivers/leds/trigger/Makefile
++++ b/drivers/leds/trigger/Makefile
+@@ -8,3 +8,4 @@ obj-$(CONFIG_LEDS_TRIGGER_CPU)		+= ledtrig-cpu.o
+ obj-$(CONFIG_LEDS_TRIGGER_DEFAULT_ON)	+= ledtrig-default-on.o
+ obj-$(CONFIG_LEDS_TRIGGER_TRANSIENT)	+= ledtrig-transient.o
+ obj-$(CONFIG_LEDS_TRIGGER_CAMERA)	+= ledtrig-camera.o
++obj-$(CONFIG_LEDS_TRIGGER_BURST)	+= ledtrig-burst.o
+diff --git a/drivers/leds/trigger/ledtrig-burst.c b/drivers/leds/trigger/ledtrig-burst.c
+new file mode 100644
+index 0000000..95eda2a
+--- /dev/null
++++ b/drivers/leds/trigger/ledtrig-burst.c
+@@ -0,0 +1,250 @@
++/*
++ * LED Kernel Burst Trigger
++ *
++ * Copyright (C) 2013 Joe Xue <lgxue@hotmail.com>
++ *
++ * Based on Richard Purdie's ledtrig-timer.c and Atsushi Nemoto's
++ * ledtrig-heartbeat.c and Shuah Khan's ledtrig-burst.c
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++/*
++ * Burst trigger allows LEDs to blink in burst mode. The difference
++ * between burst trigger and timer trigger is timer trigger makes the
++ * LEDs blink continually in a frequency while burst trigger makes the
++ * LEDs blink some times in a special frequency then have a stop.
++ * Burst trigger allows LEDs to indicate different stats. Users can easy
++ * to describe it to support engineers by saying 3/4/5/X times burst
++ * blink.
++*/
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/device.h>
++#include <linux/slab.h>
++#include <linux/timer.h>
++#include <linux/leds.h>
++#include "../leds.h"
++
++struct burst_trig_data {
++	int state;
++	unsigned long freq;
++	unsigned long times;
++	unsigned long count;
++	unsigned long delay_off;
++	int brightness_on;
++	struct timer_list timer;
++};
++
++static void burst_timer_function(unsigned long data)
++{
++	struct led_classdev *led_cdev = (struct led_classdev *) data;
++	struct burst_trig_data *burst_data = led_cdev->trigger_data;
++
++	if (burst_data->count > 0) {
++		/* revert the light state */
++		burst_data->state = 1 - burst_data->state;
++		__led_set_brightness(led_cdev,
++				burst_data->state*burst_data->brightness_on);
++		burst_data->count--;
++		/* the delay time for on and off are 1000/(freq*2) = 500/freq */
++		mod_timer(&burst_data->timer,
++			jiffies + msecs_to_jiffies(500/burst_data->freq));
++	} else {
++		burst_data->count = burst_data->times * 2;
++		mod_timer(&burst_data->timer,
++			jiffies + msecs_to_jiffies(burst_data->delay_off));
++	}
++}
++
++static ssize_t burst_delay_off_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct led_classdev *led_cdev = dev_get_drvdata(dev);
++	struct burst_trig_data *burst_data = led_cdev->trigger_data;
++
++	return sprintf(buf, "%lu\n", burst_data->delay_off);
++}
++
++static ssize_t burst_delay_off_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t size)
++{
++	struct led_classdev *led_cdev = dev_get_drvdata(dev);
++	struct burst_trig_data *burst_data = led_cdev->trigger_data;
++	unsigned long state;
++	ssize_t ret = -EINVAL;
++
++	ret = kstrtoul(buf, 10, &state);
++	if (ret)
++		return ret;
++
++	burst_data->delay_off = state;
++
++	return size;
++}
++
++static ssize_t burst_times_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct led_classdev *led_cdev = dev_get_drvdata(dev);
++	struct burst_trig_data *burst_data = led_cdev->trigger_data;
++
++	return sprintf(buf, "%lu\n", burst_data->times);
++}
++
++static ssize_t burst_times_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t size)
++{
++	struct led_classdev *led_cdev = dev_get_drvdata(dev);
++	struct burst_trig_data *burst_data = led_cdev->trigger_data;
++	unsigned long state;
++	ssize_t ret = -EINVAL;
++
++	ret = kstrtoul(buf, 10, &state);
++	if (ret)
++		return ret;
++
++	/* if the times is larger then 0 then use it else stop burst */
++	if (state > 0) {
++		burst_data->times = state;
++		burst_data->count = state*2;
++		del_timer_sync(&burst_data->timer);
++		mod_timer(&burst_data->timer, jiffies + 1);
++	} else {
++		del_timer_sync(&burst_data->timer);
++	}
++
++	return size;
++}
++
++static ssize_t burst_freq_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct led_classdev *led_cdev = dev_get_drvdata(dev);
++	struct burst_trig_data *burst_data = led_cdev->trigger_data;
++
++	return sprintf(buf, "%lu\n", burst_data->freq);
++}
++
++static ssize_t burst_freq_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t size)
++{
++	struct led_classdev *led_cdev = dev_get_drvdata(dev);
++	struct burst_trig_data *burst_data = led_cdev->trigger_data;
++	unsigned long state;
++	ssize_t ret = -EINVAL;
++
++	ret = kstrtoul(buf, 10, &state);
++	if (ret)
++		return ret;
++
++	/* the frequency can not be 0 */
++	if (state == 0)
++		return -EINVAL;
++
++	burst_data->freq = state;
++
++	return size;
++}
++
++static DEVICE_ATTR(freq, 0644, burst_freq_show, burst_freq_store);
++static DEVICE_ATTR(times, 0644, burst_times_show, burst_times_store);
++static DEVICE_ATTR(delay_off, 0644,
++		burst_delay_off_show, burst_delay_off_store);
++
++static void burst_trig_activate(struct led_classdev *led_cdev)
++{
++	int rc;
++	struct burst_trig_data *tdata;
++
++	tdata = kzalloc(sizeof(struct burst_trig_data), GFP_KERNEL);
++	if (!tdata) {
++		dev_err(led_cdev->dev,
++			"unable to allocate burst trigger\n");
++		return;
++	}
++	/* default frequency 3HZ */
++	tdata->freq = 3;
++	/* default delay_off 500ms */
++	tdata->delay_off = 500;
++
++	tdata->state = 0;
++
++	led_cdev->trigger_data = tdata;
++
++	rc = device_create_file(led_cdev->dev, &dev_attr_freq);
++	if (rc)
++		goto err_out;
++
++	rc = device_create_file(led_cdev->dev, &dev_attr_times);
++	if (rc)
++		goto err_out_times;
++
++	rc = device_create_file(led_cdev->dev, &dev_attr_delay_off);
++	if (rc)
++		goto err_out_delay_off;
++
++	setup_timer(&tdata->timer, burst_timer_function,
++		    (unsigned long) led_cdev);
++
++	tdata->brightness_on = led_get_brightness(led_cdev);
++	if (tdata->brightness_on == LED_OFF)
++		tdata->brightness_on = led_cdev->max_brightness;
++
++	__led_set_brightness(led_cdev, LED_OFF);
++	led_cdev->activated = true;
++
++	return;
++
++err_out_delay_off:
++	device_remove_file(led_cdev->dev, &dev_attr_times);
++err_out_times:
++	device_remove_file(led_cdev->dev, &dev_attr_freq);
++err_out:
++	dev_err(led_cdev->dev, "unable to register burst trigger\n");
++	led_cdev->trigger_data = NULL;
++	kfree(tdata);
++}
++
++static void burst_trig_deactivate(struct led_classdev *led_cdev)
++{
++	struct burst_trig_data *burst_data = led_cdev->trigger_data;
++
++	if (led_cdev->activated) {
++		del_timer_sync(&burst_data->timer);
++		device_remove_file(led_cdev->dev, &dev_attr_freq);
++		device_remove_file(led_cdev->dev, &dev_attr_times);
++		device_remove_file(led_cdev->dev, &dev_attr_delay_off);
++		led_cdev->trigger_data = NULL;
++		led_cdev->activated = false;
++		kfree(burst_data);
++	}
++	__led_set_brightness(led_cdev, LED_OFF);
++}
++
++static struct led_trigger burst_trigger = {
++	.name     = "burst",
++	.activate = burst_trig_activate,
++	.deactivate = burst_trig_deactivate,
++};
++
++static int __init burst_trig_init(void)
++{
++	return led_trigger_register(&burst_trigger);
++}
++
++static void __exit burst_trig_exit(void)
++{
++	led_trigger_unregister(&burst_trigger);
++}
++
++module_init(burst_trig_init);
++module_exit(burst_trig_exit);
++
++MODULE_AUTHOR("Joe Xue <lgxue@hotmail.com");
++MODULE_DESCRIPTION("Burst LED trigger");
++MODULE_LICENSE("GPL");
+-- 
+1.8.1.2
+
