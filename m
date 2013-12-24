@@ -1,57 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752335Ab3LXRw0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 12:52:26 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:53015 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752182Ab3LXRwY (ORCPT
+	id S1752459Ab3LXR7f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 12:59:35 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:37707 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752074Ab3LXR7e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 12:52:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <CACaajQv1OWxxcGORBq=LN-4JQzATf4YmWBQymoeyovfY-rUpmw@mail.gmail.com>
-References: <CACaajQv1OWxxcGORBq=LN-4JQzATf4YmWBQymoeyovfY-rUpmw@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 24 Dec 2013 10:52:02 -0700
-Message-ID: <CAErSpo4uZ1N7uKyKMGHERtq-gvcpQ7oHTE7U9fGiAzfziMJ+Ew@mail.gmail.com>
-Subject: Re: tg3 and sd card reader at acer aspire
-To: Vasiliy Tolstov <v.tolstov@selfip.ru>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 24 Dec 2013 12:59:34 -0500
+Date: Tue, 24 Dec 2013 12:59:32 -0500 (EST)
+Message-Id: <20131224.125932.1553654835250145689.davem@davemloft.net>
+To: dthxman@gmail.com
+Cc: joe@perches.com, dingtianhong@huawei.com, pcnet32@frontier.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 03/20] net: pcnet: slight optimization of addr
+ compare
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <52B99072.5070809@gmail.com>
+References: <52B96FA7.10201@huawei.com>
+	<1387888739.2259.7.camel@joe-AO722>
+	<52B99072.5070809@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 24 Dec 2013 09:59:33 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc linux-pci because I think this is related to PCI ASPM]
+From: Ding Tianhong <dthxman@gmail.com>
+Date: Tue, 24 Dec 2013 21:47:30 +0800
 
-I'm afraid nobody wants to touch ASPM because it's such a mess, but I
-hope somebody will step up and investigate this.
+> Oh， no,  maybe I was dizzy by these patches,  I should be more careful,
+> sorry about that, I will resend this one.
 
-On Tue, Dec 24, 2013 at 1:27 AM, Vasiliy Tolstov <v.tolstov@selfip.ru> wrote:
-> Hi all and sorry for may be spamming mailing list.
->
-> I have acer aspire v5-17 with broadcom card reader and ethernet card.
-> I'm affecting on this ubuntu bugs. But bug is present in vanilla linux
-> current git and stable lts.
->
-> Can somebody helps me and say - where i can post message and discuss
-> this problem. As i see ubuntu team can't solve this problem (bug
-> present is about 1 year and nothing changed).
-> One ubuntu user wia bisecting find broken commit -
-> https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=6cac12dfab9c57a4f76821412224b226a9b08dff
->
-> Relevant ubuntu bugs:
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1178131
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1067222
->
->
-> Thanks!
-> --
-> Vasiliy Tolstov,
-> e-mail: v.tolstov@selfip.ru
-> jabber: vase@selfip.ru
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+You must resend the entire patch series when you make any changes.
+
+Thank you.
