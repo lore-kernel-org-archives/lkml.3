@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095Ab3LXLuo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 06:50:44 -0500
-Received: from www262.sakura.ne.jp ([202.181.97.72]:52242 "EHLO
+	id S1752200Ab3LXLvu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 06:51:50 -0500
+Received: from www262.sakura.ne.jp ([202.181.97.72]:56183 "EHLO
 	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751770Ab3LXLun (ORCPT
+	with ESMTP id S1751770Ab3LXLvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 06:50:43 -0500
-X-Nat-Received: from [202.181.97.72]:59749 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1387885825.17897
-To: chris@chris-wilson.co.uk, ben@bwidawsk.net, daniel.vetter@ffwll.ch
+	Tue, 24 Dec 2013 06:51:49 -0500
+X-Nat-Received: from [202.181.97.72]:61149 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1387885905.32014
+To: swhiteho@redhat.com, rpeterso@redhat.com
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] drm/i915: Fix refcount leak and possible NULL pointer dereference.
+Subject: [PATCH] GFS2: Fix unsafe dereference in dump_holder()
 From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Message-Id: <201312242050.CGH78112.JQFOSVMLOFtHOF@I-love.SAKURA.ne.jp>
+Message-Id: <201312242051.ECA46103.MFFVFOtHSJOLQO@I-love.SAKURA.ne.jp>
 X-Mailer: Winbiff [Version 2.51 PL2]
 X-Accept-Language: ja,en,zh
-Date: Tue, 24 Dec 2013 20:50:23 +0900
+Date: Tue, 24 Dec 2013 20:51:43 +0900
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 24122013 #7223428, status: clean
@@ -24,47 +24,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 482be6384379072eb4c0d45d0ab8a25df4f59ed7 Mon Sep 17 00:00:00 2001
+>From efee681e4ca6152d9549a50e93ca932b00f03014 Mon Sep 17 00:00:00 2001
 From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Tue, 24 Dec 2013 18:04:14 +0900
-Subject: [PATCH] drm/i915: Fix refcount leak and possible NULL pointer dereference.
+Date: Tue, 24 Dec 2013 18:04:43 +0900
+Subject: [PATCH] GFS2: Fix unsafe dereference in dump_holder()
 
-Since get_pid_task() grabs a reference on the task_struct, we have to drop the
-refcount after reading that task's comm name. Also, directly reading like
-get_pid_task()->comm can trigger an oops when get_pid_task() returned NULL.
-
-This patch fixes both problems.
+Since we are not in RCU nor tasklist_lock held, we need to grab a reference on
+the returned task_struct. Use get_pid_task()/get_task_comm() to safely read the
+target task's comm name.
 
 Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 ---
- drivers/gpu/drm/i915/i915_debugfs.c |   11 ++++++++++-
- 1 files changed, 10 insertions(+), 1 deletions(-)
+ fs/gfs2/glock.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_debugfs.c b/drivers/gpu/drm/i915/i915_debugfs.c
-index 6ed45a9..d0a8e0a 100644
---- a/drivers/gpu/drm/i915/i915_debugfs.c
-+++ b/drivers/gpu/drm/i915/i915_debugfs.c
-@@ -406,11 +406,20 @@ static int i915_gem_object_info(struct seq_file *m, void* data)
- 	seq_putc(m, '\n');
- 	list_for_each_entry_reverse(file, &dev->filelist, lhead) {
- 		struct file_stats stats;
-+		struct task_struct *task;
-+		char name[TASK_COMM_LEN];
+diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
+index c8420f7..7bda965 100644
+--- a/fs/gfs2/glock.c
++++ b/fs/gfs2/glock.c
+@@ -1654,15 +1654,22 @@ static int dump_holder(struct seq_file *seq, const struct gfs2_holder *gh)
+ {
+ 	struct task_struct *gh_owner = NULL;
+ 	char flags_buf[32];
++	char name[TASK_COMM_LEN];
  
- 		memset(&stats, 0, sizeof(stats));
- 		idr_for_each(&file->object_idr, per_file_stats, &stats);
-+		task = get_pid_task(file->pid, PIDTYPE_PID);
-+		if (task) {
-+			get_task_comm(name, task);
-+			put_task_struct(task);
-+		} else {
-+			strlcpy(name, "<unknown>", sizeof(name));
-+		}
- 		seq_printf(m, "%s: %u objects, %zu bytes (%zu active, %zu inactive, %zu unbound)\n",
--			   get_pid_task(file->pid, PIDTYPE_PID)->comm,
-+			   name,
- 			   stats.count,
- 			   stats.total,
- 			   stats.active,
+ 	if (gh->gh_owner_pid)
+-		gh_owner = pid_task(gh->gh_owner_pid, PIDTYPE_PID);
++		gh_owner = get_pid_task(gh->gh_owner_pid, PIDTYPE_PID);
++	if (gh_owner) {
++		get_task_comm(name, gh_owner);
++		put_task_struct(gh_owner);
++	} else {
++		strlcpy(name, "(ended)", sizeof(name));
++	}
+ 	gfs2_print_dbg(seq, " H: s:%s f:%s e:%d p:%ld [%s] %pS\n",
+ 		       state2str(gh->gh_state),
+ 		       hflags2str(flags_buf, gh->gh_flags, gh->gh_iflags),
+ 		       gh->gh_error,
+ 		       gh->gh_owner_pid ? (long)pid_nr(gh->gh_owner_pid) : -1,
+-		       gh_owner ? gh_owner->comm : "(ended)",
++		       name,
+ 		       (void *)gh->gh_ip);
+ 	return 0;
+ }
 -- 
 1.7.1
