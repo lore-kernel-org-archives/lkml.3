@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751682Ab3LXIWc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 03:22:32 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50238 "EHLO
+	id S1752048Ab3LXIWm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 03:22:42 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44569 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751627Ab3LXIWb (ORCPT
+	with ESMTP id S1751689Ab3LXIWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 03:22:31 -0500
-X-AuditID: 9c930179-b7c89ae000006438-d9-52b94444a4fc
+	Tue, 24 Dec 2013 03:22:33 -0500
+X-AuditID: 9c930179-b7c89ae000006438-e1-52b94445f713
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,200 +15,120 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCHSET 00/21] perf tools: Add support to accumulate hist periods (v4)
-Date: Tue, 24 Dec 2013 17:22:06 +0900
-Message-Id: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 03/21] perf hists: Add support for accumulated stat of hist entry
+Date: Tue, 24 Dec 2013 17:22:09 +0900
+Message-Id: <1387873347-28838-4-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
+References: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-This is my third attempt to implement cumulative hist period report.
-This work begins from Arun's SORT_INCLUSIVE patch [1] but I completely
-rewrote it from scratch.
-
-Please see the patch 01/21.  I refactored functions that add hist
-entries with struct add_entry_iter.  While I converted all functions
-carefully, it'd be better anyone can test and confirm that I didn't
-mess up something - especially for branch stack and mem stuff.
-
-This patchset basically adds period in a sample to every node in the
-callchain.  A hist_entry now has an additional fields to keep the
-cumulative period if --children option is given on perf report.
-
-I changed the option as a separate --children and added a new
-"Children" column (and renamed the default "Overhead" column into
-"Self").  The output will be sorted by children (cumulative) overhead
-for now.  The reason I changed to the --children is that I still think
-it's much different from other --callchain options and I plan to add
-support for showing (remaining) callchains to cumulative entries too
-as Arun requested.  The --callchain option will take care of it even
-with --children option.
-
-I know that the UI should be changed also to be more flexible as Ingo
-requested, but I'd like to do this first and then move to work on the
-next.  I also added a new config option to enable it by default.
-
- * changes in v4:
-  - change to --children option (Ingo)
-  - rebased on new annotation change (Arnaldo)
-  - support perf top also
-  - enable --children option by default (Ingo)
-
- * changes in v3:
-  - change to --cumulate option
-  - fix a couple of bugs (Jiri, Rodrigo)
-  - rename some help functions (Arnaldo)
-  - cache previous hist entries rathen than just symbol and dso
-  - add some preparatory cleanups
-  - add report.cumulate config option
-
-
-Let me show you an example:
-
-  $ cat abc.c
-  #define barrier() asm volatile("" ::: "memory")
-
-  void a(void)
-  {
-  	int i;
-  	for (i = 0; i < 1000000; i++)
-  		barrier();
-  }
-  void b(void)
-  {
-  	a();
-  }
-  void c(void)
-  {
-  	b();
-  }
-  int main(void)
-  {
-  	c();
-  	return 0;
-  }
-
-With this simple program I ran perf record and report:
-
-  $ perf record -g -e cycles:u ./abc
-
-  $ perf report --stdio
-      88.29%      abc  abc                [.] a                  
-                  |
-                  --- a
-                      b
-                      c
-                      main
-                      __libc_start_main
-
-       9.43%      abc  ld-2.17.so         [.] _dl_relocate_object
-                  |
-                  --- _dl_relocate_object
-                      dl_main
-                      _dl_sysdep_start
-
-       2.27%      abc  [kernel.kallsyms]  [k] page_fault         
-                  |
-                  --- page_fault
-                     |          
-                     |--95.94%-- _dl_sysdep_start
-                     |          _dl_start_user
-                     |          
-                      --4.06%-- _start
-
-       0.00%      abc  ld-2.17.so         [.] _start             
-                  |
-                  --- _start
-
-
-When the -g cumulative option is given, it'll be shown like this:
-
-  $ perf report --children --stdio
-
-  #     Self  Children  Command      Shared Object                   Symbol
-  # ........  ........  .......  .................  .......................
-  #
-       0.00%    88.29%      abc  libc-2.17.so       [.] __libc_start_main  
-       0.00%    88.29%      abc  abc                [.] main               
-       0.00%    88.29%      abc  abc                [.] c                  
-       0.00%    88.29%      abc  abc                [.] b                  
-      88.29%    88.29%      abc  abc                [.] a                  
-       0.00%    11.61%      abc  ld-2.17.so         [.] _dl_sysdep_start   
-       0.00%     9.43%      abc  ld-2.17.so         [.] dl_main            
-       9.43%     9.43%      abc  ld-2.17.so         [.] _dl_relocate_object
-       2.27%     2.27%      abc  [kernel.kallsyms]  [k] page_fault         
-       0.00%     2.18%      abc  ld-2.17.so         [.] _dl_start_user     
-       0.00%     0.10%      abc  ld-2.17.so         [.] _start             
-
-As you can see __libc_start_main -> main -> c -> b -> a callchain show
-up in the output.
-
-I know it have some rough edges or even bugs, but I really want to
-release it and get reviews.  It does not handle event groups and
-annotations yet.
-
-You can also get this series on 'perf/cumulate-v4' branch in my tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
-
-
-Any comments are welcome, thanks.
-Namhyung
-
+Maintain accumulated stat information in hist_entry->stat_acc if
+symbol_conf.cumulate_callchain is set.  Fields in ->stat_acc have same
+vaules initially, and will be updated as callchain is processed later.
 
 Cc: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/hist.c   | 18 ++++++++++++++++++
+ tools/perf/util/sort.h   |  1 +
+ tools/perf/util/symbol.h |  1 +
+ 3 files changed, 20 insertions(+)
 
-[1] https://lkml.org/lkml/2012/3/31/6
-
-
-Namhyung Kim (21):
-  perf tools: Introduce struct add_entry_iter
-  perf hists: Convert hist entry functions to use struct he_stat
-  perf hists: Add support for accumulated stat of hist entry
-  perf hists: Check if accumulated when adding a hist entry
-  perf hists: Accumulate hist entry stat based on the callchain
-  perf tools: Update cpumode for each cumulative entry
-  perf report: Cache cumulative callchains
-  perf hists: Sort hist entries by accumulated period
-  perf ui/hist: Add support to accumulated hist stat
-  perf ui/browser: Add support to accumulated hist stat
-  perf ui/gtk: Add support to accumulated hist stat
-  perf tools: Apply percent-limit to cumulative percentage
-  perf tools: Add more hpp helper functions
-  perf report: Add --children option
-  perf report: Add report.children config option
-  perf tools: Factor out sample__resolve_callchain()
-  perf tools: Factor out fill_callchain_info()
-  perf top: Support callchain accumulation
-  perf top: Add --children option
-  perf top: Add top.children config option
-  perf tools: Enable --children option by default
-
- tools/perf/Documentation/perf-report.txt |   5 +
- tools/perf/Documentation/perf-top.txt    |   6 +
- tools/perf/builtin-annotate.c            |   3 +-
- tools/perf/builtin-diff.c                |   2 +-
- tools/perf/builtin-report.c              | 534 +++++++++++++++++++++++++------
- tools/perf/builtin-top.c                 | 137 +++++++-
- tools/perf/tests/hists_link.c            |   4 +-
- tools/perf/ui/browsers/hists.c           |  51 ++-
- tools/perf/ui/gtk/hists.c                |  27 +-
- tools/perf/ui/hist.c                     |  62 ++++
- tools/perf/ui/stdio/hist.c               |  13 +-
- tools/perf/util/callchain.c              |  65 ++++
- tools/perf/util/callchain.h              |   8 +
- tools/perf/util/hist.c                   |  73 +++--
- tools/perf/util/hist.h                   |   7 +-
- tools/perf/util/sort.h                   |   1 +
- tools/perf/util/symbol.c                 |  11 +-
- tools/perf/util/symbol.h                 |   1 +
- 18 files changed, 855 insertions(+), 155 deletions(-)
-
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 283aa1972b4f..b61e2fa42412 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -237,6 +237,8 @@ static bool hists__decay_entry(struct hists *hists, struct hist_entry *he)
+ 		return true;
+ 
+ 	he_stat__decay(&he->stat);
++	if (symbol_conf.cumulate_callchain)
++		he_stat__decay(he->stat_acc);
+ 
+ 	if (!he->filtered)
+ 		hists->stats.total_period -= prev_period - he->stat.period;
+@@ -284,6 +286,15 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
+ 	if (he != NULL) {
+ 		*he = *template;
+ 
++		if (symbol_conf.cumulate_callchain) {
++			he->stat_acc = malloc(sizeof(he->stat));
++			if (he->stat_acc == NULL) {
++				free(he);
++				return NULL;
++			}
++			memcpy(he->stat_acc, &he->stat, sizeof(he->stat));
++		}
++
+ 		if (he->ms.map)
+ 			he->ms.map->referenced = true;
+ 
+@@ -295,6 +306,7 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
+ 			 */
+ 			he->branch_info = malloc(sizeof(*he->branch_info));
+ 			if (he->branch_info == NULL) {
++				free(he->stat_acc);
+ 				free(he);
+ 				return NULL;
+ 			}
+@@ -367,6 +379,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 
+ 		if (!cmp) {
+ 			he_stat__add_period(&he->stat, period, weight);
++			if (symbol_conf.cumulate_callchain)
++				he_stat__add_period(he->stat_acc, period, weight);
+ 
+ 			/*
+ 			 * This mem info was allocated from machine__resolve_mem
+@@ -403,6 +417,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 	rb_insert_color(&he->rb_node_in, hists->entries_in);
+ out:
+ 	he_stat__add_cpumode_period(&he->stat, al->cpumode, period);
++	if (symbol_conf.cumulate_callchain)
++		he_stat__add_cpumode_period(he->stat_acc, al->cpumode, period);
+ 	return he;
+ }
+ 
+@@ -502,6 +518,8 @@ static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
+ 
+ 		if (!cmp) {
+ 			he_stat__add_stat(&iter->stat, &he->stat);
++			if (symbol_conf.cumulate_callchain)
++				he_stat__add_stat(iter->stat_acc, he->stat_acc);
+ 
+ 			if (symbol_conf.use_callchain) {
+ 				callchain_cursor_reset(&callchain_cursor);
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 43e5ff42a609..309f2838a1b4 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -81,6 +81,7 @@ struct hist_entry {
+ 		struct list_head head;
+ 	} pairs;
+ 	struct he_stat		stat;
++	struct he_stat		*stat_acc;
+ 	struct map_symbol	ms;
+ 	struct thread		*thread;
+ 	struct comm		*comm;
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index cbd680361806..ceee088988a0 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -92,6 +92,7 @@ struct symbol_conf {
+ 			show_nr_samples,
+ 			show_total_period,
+ 			use_callchain,
++			cumulate_callchain,
+ 			exclude_other,
+ 			show_cpu_utilization,
+ 			initialized,
 -- 
 1.7.11.7
 
