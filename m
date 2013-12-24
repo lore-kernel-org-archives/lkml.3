@@ -1,64 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228Ab3LXP6M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 10:58:12 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:48953 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751397Ab3LXP6K (ORCPT
+	id S1752168Ab3LXQGE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 11:06:04 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:50654 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751901Ab3LXQGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 10:58:10 -0500
-Message-ID: <52B9AF0A.3030806@hitachi.com>
-Date: Wed, 25 Dec 2013 00:58:02 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 24 Dec 2013 11:06:01 -0500
 MIME-Version: 1.0
-To: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-arch@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip v6 06/22] [BUGFIX] x86: Prohibit probing on memcpy/memset
-References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal> <20131219090409.14309.25677.stgit@kbuild-fedora.novalocal> <CAGdX0WFKYHqXrVQ6LBw0YgH_H6cP=LZVCBe1iOvEXsHQPD8Zmg@mail.gmail.com> <52B3AD7D.2020104@hitachi.com> <CAGdX0WENxTPhFDtcEW6LFhk1SNZc6mEK+JsCDOJmfK8_PS1rxg@mail.gmail.com> <52B3CABE.1080903@hitachi.com> <CAGdX0WEev84sOyu-uzkDOmQFi_=mza7cPzyC0VkRZe0fD_1+jQ@mail.gmail.com> <52B40C00.2060401@hitachi.com> <CAGdX0WECaJBSX29-+fC=0XLJfAh0JvFyLTW2V8yM616L45iCQQ@mail.gmail.com> <52B8178F.5020607@hitachi.com> <CAGdX0WEZue1fBtHw058HAmuCktkM+jyKdPfn0ZM2=fNAPfcJwA@mail.gmail.com> <52B9468D.4060201@hitachi.com> <CAGdX0WH=QvXMUfSL7-eXHWLM7VLPDus2=jFGCyJcK6Px-t0bng@mail.gmail.com>
-In-Reply-To: <CAGdX0WH=QvXMUfSL7-eXHWLM7VLPDus2=jFGCyJcK6Px-t0bng@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com>
+References: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com>
+Date: Tue, 24 Dec 2013 21:36:01 +0530
+Message-ID: <CAKohpomqHApogDEXA5LyWk-+B-Y1mwNQ63-wL3PPGz64s_3Dmw@mail.gmail.com>
+Subject: Re: intel_pstate divide error with v3.13-rc4-256-gb7000ad
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Josh Boyer <jwboyer@fedoraproject.org>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/24 18:53), Jovi Zhangwei wrote:
->>> Still no crash, use your kernel config.
->>> memcpy and __memcpy have same address in /proc/kallsyms.
->>>
->>> Looks like a interesting problem.
->>
->> Agreed. In my case, those have same address, but only probing
->> __memcpy caused a kernel crash. I'm not sure why, but it is
->> safe to disable probing on it.
->>
-> Shall we need dig further to address the root cause? IMO, the kprobe
-> should act same behavior when given same probe address, but it's look
-> so weird in your box. :)
+Adding Dirk..
 
-Hmm, right now, I tried it again and found the bug disappeared...
+On 24 December 2013 20:06, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+> Hi All,
+>
+> We've had a report [1] that the pstate driver causes KVM guests to
+> fail to boot because of a divide error.  See the backtrace below.
+>
+>     4.839784] Intel P-state driver initializing.
+> [    4.859972] Intel pstate controlling: cpu 0
+> [    4.867653] cpufreq: __cpufreq_add_dev: ->get() failed
 
-I'm using the latest tip kernel for the test;
-3ab838d7723e9fbfd49b2d395752bd68e1ef4b71
+After a call to ->init(), ->get() is supposed to work.
+@Dirk: Any idea why it failed?
 
-Should I remove this patch until it happens again?
+And then I don't know what made this divide by zero to happen :)
 
-Thank you,
-
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+> [    4.877269] divide error: 0000 [#1] SMP
+> [    4.878127] Modules linked in:
+> [    4.878127] CPU: 0 PID: 1 Comm: swapper/0 Not tainted
+> 3.13.0-0.rc4.git5.1.fc21.x86_64 #1
+> [    4.878127] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [    4.878127] task: ffff88001ea20000 ti: ffff88001e9bc000 task.ti:
+> ffff88001e9bc000
+> [    4.878127] RIP: 0010:[<ffffffff815c551d>]  [<ffffffff815c551d>]
+> intel_pstate_timer_func+0x11d/0x2b0
+> [    4.878127] RSP: 0000:ffff88001ee03e18  EFLAGS: 00010246
+> [    4.878127] RAX: 0000000000000000 RBX: ffff88001a454348 RCX: 0000000000006100
+> [    4.878127] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
+> [    4.878127] RBP: ffff88001ee03e38 R08: 0000000000000000 R09: 0000000000000000
+> [    4.878127] R10: ffff88001ea20000 R11: 0000000000000000 R12: 00000c0a1ea20000
+> [    4.878127] R13: 1ea200001ea20000 R14: ffffffff815c5400 R15: ffff88001a454348
+> [    4.878127] FS:  0000000000000000(0000) GS:ffff88001ee00000(0000)
+> knlGS:0000000000000000
+> [    4.878127] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [    4.878127] CR2: 0000000000000000 CR3: 0000000001c0c000 CR4: 00000000000006f0
+> [    4.878127] Stack:
+> [    4.878127]  fffffffb1a454390 ffffffff821a4500 ffff88001a454390
+> 0000000000000100
+> [    4.878127]  ffff88001ee03ea8 ffffffff81083e9a ffffffff81083e15
+> ffffffff82d5ed40
+> [    4.878127]  ffffffff8258cc60 0000000000000000 ffffffff81ac39de
+> 0000000000000000
+> [    4.878127] Call Trace:
+> [    4.878127]  <IRQ>
+> [    4.878127]  [<ffffffff81083e9a>] call_timer_fn+0x8a/0x310
+> [    4.878127]  [<ffffffff81083e15>] ? call_timer_fn+0x5/0x310
+> [    4.878127]  [<ffffffff815c5400>] ? pid_param_set+0x130/0x130
+> [    4.878127]  [<ffffffff81084354>] run_timer_softirq+0x234/0x380
+> [    4.878127]  [<ffffffff8107aee4>] __do_softirq+0x104/0x430
+> [    4.878127]  [<ffffffff8107b5fd>] irq_exit+0xcd/0xe0
+> [    4.878127]  [<ffffffff81770645>] smp_apic_timer_interrupt+0x45/0x60
+> [    4.878127]  [<ffffffff8176efb2>] apic_timer_interrupt+0x72/0x80
+> [    4.878127]  <EOI>
+> [    4.878127]  [<ffffffff810e15cd>] ? vprintk_emit+0x1dd/0x5e0
+> [    4.878127]  [<ffffffff81757719>] printk+0x67/0x69
+> [    4.878127]  [<ffffffff815c1493>] __cpufreq_add_dev.isra.13+0x883/0x8d0
+> [    4.878127]  [<ffffffff815c14f0>] cpufreq_add_dev+0x10/0x20
+> [    4.878127]  [<ffffffff814a14d1>] subsys_interface_register+0xb1/0xf0
+> [    4.878127]  [<ffffffff815bf5cf>] cpufreq_register_driver+0x9f/0x210
+> [    4.878127]  [<ffffffff81fb19af>] intel_pstate_init+0x27d/0x3be
+> [    4.878127]  [<ffffffff81761e3e>] ? mutex_unlock+0xe/0x10
+> [    4.878127]  [<ffffffff81fb1732>] ? cpufreq_gov_dbs_init+0x12/0x12
+> [    4.878127]  [<ffffffff8100214a>] do_one_initcall+0xfa/0x1b0
+> [    4.878127]  [<ffffffff8109dbf5>] ? parse_args+0x225/0x3f0
+> [    4.878127]  [<ffffffff81f64193>] kernel_init_freeable+0x1fc/0x287
+> [    4.878127]  [<ffffffff81f638d0>] ? do_early_param+0x88/0x88
+> [    4.878127]  [<ffffffff8174b530>] ? rest_init+0x150/0x150
+> [    4.878127]  [<ffffffff8174b53e>] kernel_init+0xe/0x130
+> [    4.878127]  [<ffffffff8176e27c>] ret_from_fork+0x7c/0xb0
+> [    4.878127]  [<ffffffff8174b530>] ? rest_init+0x150/0x150
+> [    4.878127] Code: c1 e0 05 48 63 bc 03 10 01 00 00 48 63 83 d0 00
+> 00 00 48 63 d6 48 c1 e2 08 c1 e1 08 4c 63 c2 48 c1 e0 08 48 98 48 c1
+> e0 08 48 99 <49> f7 f8 48 98 48 0f af f8 48 c1 ff 08 29 f9 89 ca c1 fa
+> 1f 89
+> [    4.878127] RIP  [<ffffffff815c551d>] intel_pstate_timer_func+0x11d/0x2b0
+> [    4.878127]  RSP <ffff88001ee03e18>
+> [    5.438189] ---[ end trace f166110ed22cc37a ]---
+> [    5.446428] Kernel panic - not syncing: Fatal exception in interrupt
