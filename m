@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072Ab3LXPl3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 10:41:29 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:47487 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277Ab3LXPl2 (ORCPT
+	id S1752143Ab3LXPoc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 10:44:32 -0500
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:59002 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277Ab3LXPob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 10:41:28 -0500
-Message-ID: <1387899682.11622.1.camel@phoenix>
-Subject: [PATCH] regulator: act8865: Rmove unneeded regulator_unregister()
- calls
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Wenyou Yang <wenyou.yang@atmel.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 24 Dec 2013 23:41:22 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Dec 2013 10:44:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131224084801.57439ca2@gandalf.local.home>
+References: <CAKohpom5JmFamPpOsyPRqXNAqXu6VF_t0zXXhT90MCMutp5FgQ@mail.gmail.com>
+	<20131224084801.57439ca2@gandalf.local.home>
+Date: Tue, 24 Dec 2013 21:14:31 +0530
+Message-ID: <CAKohpokVwMcbBLHdcZiHsce2FPHp5NRQwoUCL2OB6j6Vgm8JFw@mail.gmail.com>
+Subject: Re: [Query]: trace-cmd crashing with '-e syscalls' on 3.13-rc1
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is not required because current code use devm_regulator_register() to
-register regulators.
+On 24 December 2013 19:18, Steven Rostedt <rostedt@goodmis.org> wrote:
+> Can you also produce this with just
+> "echo 1 > /sys/kernel/debug/tracing/events/syscalls/enable"?
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/act8865-regulator.c | 12 ------------
- 1 file changed, 12 deletions(-)
+Will do that on 26th..
 
-diff --git a/drivers/regulator/act8865-regulator.c b/drivers/regulator/act8865-regulator.c
-index db048f2..dfae294 100644
---- a/drivers/regulator/act8865-regulator.c
-+++ b/drivers/regulator/act8865-regulator.c
-@@ -334,17 +334,6 @@ static int act8865_pmic_probe(struct i2c_client *client,
- 	return 0;
- }
- 
--static int act8865_pmic_remove(struct i2c_client *client)
--{
--	struct act8865 *act8865 = i2c_get_clientdata(client);
--	int i;
--
--	for (i = 0; i < ACT8865_REG_NUM; i++)
--		regulator_unregister(act8865->rdev[i]);
--
--	return 0;
--}
--
- static const struct i2c_device_id act8865_ids[] = {
- 	{ "act8865", 0 },
- 	{ },
-@@ -357,7 +346,6 @@ static struct i2c_driver act8865_pmic_driver = {
- 		.owner	= THIS_MODULE,
- 	},
- 	.probe		= act8865_pmic_probe,
--	.remove		= act8865_pmic_remove,
- 	.id_table	= act8865_ids,
- };
- 
--- 
-1.8.1.2
+>> [  299.998874] Unable to handle kernel NULL pointer dereference at
+>> virtual address 0000001b
+>> [  300.005554] pgd = ed9fc000
+>> [  300.008201] [0000001b] *pgd=6eb1e831, *pte=00000000, *ppte=00000000
+>> [  300.014428] Internal error: Oops: 17 [#1] PREEMPT SMP ARM
+>> [  300.019812] Modules linked in:
+>> [  300.022847] CPU: 0 PID: 2172 Comm: is-cpu-isolated Not tainted
+>> 3.13.0-rc1-00090-gd6eaf98-dirty #141
+>
+> Are you running some isolated CPU test? Do you have NO_HZ_FULL enabled
+> too?
 
+Yeah, I am using NO_HZ_FULL with CPUSets. Only one task (stress) is running
+on CPU1 and CPU0 is running everything else..
 
+> I Cc'd Frederic too.
+>
+> Note, I'm on PTO for two weeks (coming back Jan 6th), so I wont be
+> debugging this any time soon. My wife has me debugging house issues
+> (putting in a new floor for laundry room, painting, re-arranging
+> furniture, etc). (I have to sneak to the computer in order to goof off
+> and respond to this email ;-)
 
+:)
