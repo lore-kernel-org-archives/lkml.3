@@ -1,79 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751210Ab3LXGCw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 01:02:52 -0500
-Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:26263
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750870Ab3LXGCv (ORCPT
+	id S1751195Ab3LXGHK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 01:07:10 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57555 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985Ab3LXGHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 01:02:51 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
-From: Anson Huang <b20788@freescale.com>
-To: <shawn.guo@linaro.org>, <kernel@pengutronix.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ARM: imx: improve the comment of CCM lpm SW workaround
-Date: Tue, 24 Dec 2013 13:00:47 -0500
-Message-ID: <1387908047-1848-1-git-send-email-b20788@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 24 Dec 2013 01:07:07 -0500
+X-AuditID: 9c930197-b7c4aae000003d84-a6-52b924884b6f
+Date: Tue, 24 Dec 2013 15:07:05 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, khlebnikov@openvz.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Bob Liu <bob.liu@oracle.com>
+Subject: Re: mm: kernel BUG at include/linux/swapops.h:131!
+Message-ID: <20131224060705.GA16140@lge.com>
+References: <52B1C143.8080301@oracle.com>
+ <52B871B2.7040409@oracle.com>
+ <20131224025127.GA2835@lge.com>
+ <52B8F8F6.1080500@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52B8F8F6.1080500@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Improve the comment of SW workaround for CCM lpm issue using
-hardware errata description to avoid confusion.
+On Mon, Dec 23, 2013 at 10:01:10PM -0500, Sasha Levin wrote:
+> On 12/23/2013 09:51 PM, Joonsoo Kim wrote:
+> >On Mon, Dec 23, 2013 at 12:24:02PM -0500, Sasha Levin wrote:
+> >>>Ping?
+> >>>
+> >>>I've also Cc'ed the "this page shouldn't be locked at all" team.
+> >Hello,
+> >
+> >I can't find the reason of this problem.
+> >If it is reproducible, how about bisecting?
+> 
+> While it reproduces under fuzzing it's pretty hard to bisect it with
+> the amount of issues uncovered by trinity recently.
+> 
+> I can add any debug code to the site of the BUG if that helps.
 
-TKT194736:
-Chip will enter low power mode before ARM A9 CPU executes
-WFI when improper low power sequence is used.
+Good!
+It will be helpful to add dump_page() in migration_entry_to_page().
 
-SW workaround:
-1) SW will trigger irq #32(IOMUX) to be always pending manually by setting IOMUX_GPR1_GINT bit,
-2) SW should then Unmask it in GPC before setting CCM LPM
-3) SW should Mask it right after CCM LPM is set (set bit0-1 of CCM_CLPCR)
+Thanks.
 
-Signed-off-by: Anson Huang <b20788@freescale.com>
----
- arch/arm/mach-imx/pm-imx6q.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm/mach-imx/pm-imx6q.c b/arch/arm/mach-imx/pm-imx6q.c
-index aecd9f8..8da4732 100644
---- a/arch/arm/mach-imx/pm-imx6q.c
-+++ b/arch/arm/mach-imx/pm-imx6q.c
-@@ -156,10 +156,13 @@ int imx6q_set_lpm(enum mxc_cpu_pwr_mode mode)
- 	}
+--------8<------
+diff --git a/include/linux/swapops.h b/include/linux/swapops.h
+index c0f7526..f695abc 100644
+--- a/include/linux/swapops.h
++++ b/include/linux/swapops.h
+@@ -3,6 +3,7 @@
  
- 	/*
--	 * Unmask the always pending IOMUXC interrupt #32 as wakeup source to
--	 * deassert dsm_request signal, so that we can ensure dsm_request
--	 * is not asserted when we're going to write CLPCR register to set LPM.
--	 * After setting up LPM bits, we need to mask this wakeup source.
-+	 * TKT194736:
-+	 * Chip will enter low power mode before ARM A9 CPU executes WFI when improper low power sequence is used.
-+	 *
-+	 * SW workaround:
-+	 * 1) SW will trigger irq #32(IOMUXC) to be always pending manually by setting IOMUX_GPR1_GINT bit,
-+	 * 2) SW should then Unmask it in GPC before setting CCM LPM
-+	 * 3) SW should Mask it right after CCM LPM is set (set bit0-1 of CCM_CLPCR)
- 	 */
- 	iomuxc_irq_desc = irq_to_desc(32);
- 	imx_gpc_irq_unmask(&iomuxc_irq_desc->irq_data);
-@@ -219,6 +222,8 @@ void __init imx6q_pm_init(void)
- 	WARN_ON(!ccm_base);
+ #include <linux/radix-tree.h>
+ #include <linux/bug.h>
++#include <linux/mm.h>
  
- 	/*
-+	 * This is for SW workaround step #1 of TKT194736, see comments
-+	 * in imx6q_set_lpm for details of this errata.
- 	 * Force IOMUXC irq pending, so that the interrupt to GPC can be
- 	 * used to deassert dsm_request signal when the signal gets
- 	 * asserted unexpectedly.
--- 
-1.7.9.5
-
+ /*
+  * swapcache pages are stored in the swapper_space radix tree.  We want to
+@@ -128,6 +129,8 @@ static inline struct page *migration_entry_to_page(swp_entry_t entry)
+         * Any use of migration entries may only occur while the
+         * corresponding page is locked
+         */
++       if (!PageLocked(p))
++               dump_page(p);
+        BUG_ON(!PageLocked(p));
+        return p;
+ }
 
