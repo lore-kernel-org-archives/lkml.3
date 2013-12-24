@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752876Ab3LXLaP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 06:30:15 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:35379 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752846Ab3LXLaL (ORCPT
+	id S1752909Ab3LXLaW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 06:30:22 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:11321 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846Ab3LXLaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 06:30:11 -0500
-Message-ID: <52B97016.8080705@huawei.com>
-Date: Tue, 24 Dec 2013 19:29:26 +0800
+	Tue, 24 Dec 2013 06:30:18 -0500
+Message-ID: <52B96FFA.209@huawei.com>
+Date: Tue, 24 Dec 2013 19:28:58 +0800
 From: Ding Tianhong <dingtianhong@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        <linux-wireless@vger.kernel.org>, Netdev <netdev@vger.kernel.org>,
+To: Karsten Keil <isdn@linux-pingi.de>, Netdev <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 19/20] rtlwifi: slight optimization of addr compare
+Subject: [PATCH v2 13/20] isdn: slight optimization of addr compare
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.72.199]
@@ -26,44 +23,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use possibly more efficient ether_addr_equal_unaligned
+Use possibly more efficient ether_addr_equal
 instead of memcmp.
 
-Cc: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Chaoming Li <chaoming_li@realsil.com.cn>
-Cc: John W. Linville <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org
+Cc: Karsten Keil <isdn@linux-pingi.de>
 Cc: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Weilong Chen <chenweilong@huawei.com>
+Signed-off-by: Yang Yingliang <yangyingliang@huawei.com>
 Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 ---
- drivers/net/wireless/rtlwifi/cam.c | 4 ++--
+ drivers/isdn/i4l/isdn_net.c | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/rtlwifi/cam.c b/drivers/net/wireless/rtlwifi/cam.c
-index 0e510f7..0276153 100644
---- a/drivers/net/wireless/rtlwifi/cam.c
-+++ b/drivers/net/wireless/rtlwifi/cam.c
-@@ -295,7 +295,7 @@ u8 rtl_cam_get_free_entry(struct ieee80211_hw *hw, u8 *sta_addr)
- 	/* Does STA already exist? */
- 	for (i = 4; i < TOTAL_CAM_ENTRY; i++) {
- 		addr = rtlpriv->sec.hwsec_cam_sta_addr[i];
--		if (memcmp(addr, sta_addr, ETH_ALEN) == 0)
-+		if (ether_addr_equal_unaligned(addr, sta_addr))
- 			return i;
+diff --git a/drivers/isdn/i4l/isdn_net.c b/drivers/isdn/i4l/isdn_net.c
+index 8b98d53..d9aebbc 100644
+--- a/drivers/isdn/i4l/isdn_net.c
++++ b/drivers/isdn/i4l/isdn_net.c
+@@ -1371,7 +1371,7 @@ isdn_net_type_trans(struct sk_buff *skb, struct net_device *dev)
+ 	eth = eth_hdr(skb);
+ 
+ 	if (*eth->h_dest & 1) {
+-		if (memcmp(eth->h_dest, dev->broadcast, ETH_ALEN) == 0)
++		if (ether_addr_equal(eth->h_dest, dev->broadcast))
+ 			skb->pkt_type = PACKET_BROADCAST;
+ 		else
+ 			skb->pkt_type = PACKET_MULTICAST;
+@@ -1382,7 +1382,7 @@ isdn_net_type_trans(struct sk_buff *skb, struct net_device *dev)
+ 	 */
+ 
+ 	else if (dev->flags & (IFF_PROMISC /*| IFF_ALLMULTI*/)) {
+-		if (memcmp(eth->h_dest, dev->dev_addr, ETH_ALEN))
++		if (!ether_addr_equal(eth->h_dest, dev->dev_addr))
+ 			skb->pkt_type = PACKET_OTHERHOST;
  	}
- 	/* Get a free CAM entry. */
-@@ -335,7 +335,7 @@ void rtl_cam_del_entry(struct ieee80211_hw *hw, u8 *sta_addr)
- 		addr = rtlpriv->sec.hwsec_cam_sta_addr[i];
- 		bitmap = (rtlpriv->sec.hwsec_cam_bitmap) >> i;
- 		if (((bitmap & BIT(0)) == BIT(0)) &&
--		    (memcmp(addr, sta_addr, ETH_ALEN) == 0)) {
-+		    (ether_addr_equal_unaligned(addr, sta_addr))) {
- 			/* Remove from HW Security CAM */
- 			eth_zero_addr(rtlpriv->sec.hwsec_cam_sta_addr[i]);
- 			rtlpriv->sec.hwsec_cam_bitmap &= ~(BIT(0) << i);
+ 	if (ntohs(eth->h_proto) >= ETH_P_802_3_MIN)
 -- 
 1.8.0
+
 
 
