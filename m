@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751588Ab3LXMn7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 07:43:59 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:35195 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750964Ab3LXMn6 (ORCPT
+	id S1752016Ab3LXMqJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 07:46:09 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:55575 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751870Ab3LXMqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 07:43:58 -0500
-Message-ID: <52B9818A.2060402@hurleysoftware.com>
-Date: Tue, 24 Dec 2013 07:43:54 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 24 Dec 2013 07:46:08 -0500
+Date: Tue, 24 Dec 2013 12:45:38 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jon Medhurst <tixy@linaro.org>, arm@kernel.org,
+        Olof Johansson <olof@lixom.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Message-ID: <20131224124538.GZ30815@sirena.org.uk>
+References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com>
+ <1387815830-8794-7-git-send-email-pawel.moll@arm.com>
 MIME-Version: 1.0
-To: shawn@churchofgit.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tty: only print sysrq help for handlers that are enabled
-References: <1386086125-1865-1-git-send-email-shawn@churchofgit.com>    <20131213023239.GA15130@kroah.com> <4051ac2a919c34e44113669e84ca7e8b.squirrel@localhost>
-In-Reply-To: <4051ac2a919c34e44113669e84ca7e8b.squirrel@localhost>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387815830-8794-7-git-send-email-pawel.moll@arm.com>
+X-Cookie: You will outgrow your usefulness.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 81.132.50.212
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC 06/18] regmap: Formalise use of non-bus context
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/24/2013 12:04 AM, shawn@churchofgit.com wrote:
->> On Tue, Dec 03, 2013 at 07:55:25AM -0800, Shawn Landden wrote:
->>> Also print out a notice when sysrq is in selective mode.
->>>
->>> Signed-off-by: Shawn Landden <shawn@churchofgit.com>
->>> ---
->>>   drivers/tty/sysrq.c | 7 ++++++-
->>>   1 file changed, 6 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
->>> index ce396ec..4eee0e4 100644
->>> --- a/drivers/tty/sysrq.c
->>> +++ b/drivers/tty/sysrq.c
->>> @@ -548,9 +548,14 @@ void __handle_sysrq(int key, bool check_mask)
->>>   					;
->>>   				if (j != i)
->>>   					continue;
->>> -				printk("%s ", sysrq_key_table[i]->help_msg);
->>> +				/* only print if handler is enabled */
->>> +				if (sysrq_enabled & 1 ||
->>> +				    sysrq_enabled & sysrq_key_table[i]->enable_mask)
->>> +					printk("%s ", sysrq_key_table[i]->help_msg);
->>>   			}
->>>   		}
->>> +		if (!(sysrq_enabled & 1))
->>> +			printk("(some options are disabled)");
->>>   		printk("\n");
->>>   		console_loglevel = orig_log_level;
->>>   	}
->>
->> What exactly is this fixing?  What is broken here that this change
->> resolves?  Where is it applicable?  I need a lot more context here
->> please.
->
-> Without this patch you get something like
-> re[b]oot [r]aw [s]ync [h]elp ....
-> even if none of these sysrq triggers are available because of the setting
-> mask of
-> kernel.sysrq
-> With this patch then if (e.g.)
-> kernel.sysrq = 16
-> then you will only see
-> [s]ync
-> i.e. those commands you have privilege to issue via sysrq keypresses.
-> Contact me if you need more,
-> Shawn
+On Mon, Dec 23, 2013 at 04:23:38PM +0000, Pawel Moll wrote:
 
-But all operations are enabled when triggered via /proc/sysrq-trigger.
-How about indicating key-disabled operations with a symbol instead?
+I'd note that I wasn't CCed on most of this series so I'm not entirely
+sure what it's trying to do.
 
-Regards,
-Peter Hurley
+> Bus-less maps (ones with reg_read and reg_write functions
+> defined in regmap_config) were given the context passed
+> in regmap_init(), but it was still called "bus_context".
+> 
+> This patch formalises this aspect by renaming it to simple
+> "context" and adds the missing link, free_context function
+> in regmap_config, which allows bus-less maps to use the
+> context in classic way.
 
+This should be two patches, one patch to do the rename and one to add
+the operation.  The obvious question here is why is this callback useful
+- what is being allocated in a regmap specific context that needs to be
+lifetime managed separately to the thing doing the creation?  I can't
+see any obvious reason why this would ever get used.
