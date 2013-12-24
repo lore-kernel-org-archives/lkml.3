@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996Ab3LXNTT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 08:19:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4582 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751134Ab3LXNTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 08:19:18 -0500
-Message-ID: <52B989CD.6060403@redhat.com>
-Date: Tue, 24 Dec 2013 08:19:09 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1752260Ab3LXNVh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 08:21:37 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:42144 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751433Ab3LXNVg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Dec 2013 08:21:36 -0500
+Message-ID: <52B98A4E.70509@ahsoftware.de>
+Date: Tue, 24 Dec 2013 14:21:18 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Yang Zhang <yang.z.zhang@Intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Janet Morgan <janet.morgan@Intel.com>, Tony Luck <tony.luck@Intel.com>,
-        Ruiv Wang <ruiv.wang@gmail.com>, Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, x86@kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] x86, irq, fix logical AND/OR error in check_irq_vectors_for_cpu_disable()
-References: <1387809552-20529-1-git-send-email-prarit@redhat.com> <20131224025059.GA24419@gchen.bj.intel.com>
-In-Reply-To: <20131224025059.GA24419@gchen.bj.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Gianluca Anzolin <gianluca@sottospazio.it>,
+        Peter Hurley <peter@hurleysoftware.com>
+CC: marcel@holtmann.org, Gustavo Padovan <gustavo@padovan.org>,
+        linux-bluetooth@vger.kernel.org, gregkh@linuxfoundation.org,
+        jslaby@suse.cz, linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] rfcomm (userland) broken by commit 29cd718b
+References: <52AA1854.500@ahsoftware.de> <52AA1E62.1030109@hurleysoftware.com> <52AA483E.4080706@ahsoftware.de> <20131215112413.GA8980@sottospazio.it> <52ADB6B7.5010503@hurleysoftware.com> <20131215150847.GA10288@sottospazio.it> <52AF55B4.6000303@hurleysoftware.com> <20131216202044.GA19746@sottospazio.it> <20131216202720.GB19746@sottospazio.it> <20131216205858.GA20119@sottospazio.it> <20131216211542.GA20419@sottospazio.it>
+In-Reply-To: <20131216211542.GA20419@sottospazio.it>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
+Am 16.12.2013 22:15, schrieb Gianluca Anzolin:
 
-On 12/23/2013 09:51 PM, Chen, Gong wrote:
-> On Mon, Dec 23, 2013 at 09:39:12AM -0500, Prarit Bhargava wrote:
->> diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
->> index 7d40698..aed7acc 100644
->> --- a/arch/x86/kernel/irq.c
->> +++ b/arch/x86/kernel/irq.c
->> @@ -281,7 +281,7 @@ int check_irq_vectors_for_cpu_disable(void)
->>  			desc = irq_to_desc(irq);
->>  			data = irq_desc_get_irq_data(desc);
->>  			affinity = data->affinity;
->> -			if (irq_has_action(irq) || !irqd_is_per_cpu(data) ||
->> +			if (irq_has_action(irq) && !irqd_is_per_cpu(data) &&
->>  			    !cpumask_subset(affinity, cpu_online_mask))
->>  				this_count++;
-> Hi, Prarit
-> 
-> I noticed that you don't mention another question I asked in last mail.
-> 
-> "It looks like cpu_online_mask will be updated until cpu_disable_common
-> is called, but your check_vectors is called before that."
+> This last patch does release the port in that situation.
+>
+> Tested with:
+> # rfcomm bind 1 <addr>
+> # rfcomm release 1
+>
+> and with
+> # rfcomm connect 1 <addr>
 
-Oh, I'm sorry ... Yes, check_irq_vectors_for_cpu_disable() is called before we
-remove the CPU from the maps.  If there is an error then we have to do much less
-clean up of the code.  I explicitly take into account the cpu that is being
-downed into the check vectors code.
+I've just tested the patch rfc3.patch as attached to the mail I'm 
+replying to on top of 3.12.6, it works here too.
 
+I've tested 3 use cases:
 
-> 
-> native_cpu_disable		
->         cpu_disable_common
->                 remove_cpu_from_maps
->                         /*
->                          * until here, cpu_online_mask/cpu_online_bits
->                          * is cleared
->                          */
->                         set_cpu_online(cpu, false);
-> 
-> Something I missed?
+1. rfcomm connect then ctrl-c,
+2. rfcomm connect, screen /dev/rfcommN, ctrl-c for rfcomm then quit screen
+3. rfcomm connect, disappearing remote device (hard power down of the 
+remote device)
 
-No -- are you pointing out a bug?
+Everything worked as expected.
 
-P.
+Thanks again, I wish everyone a merry christmas,
+
+Alexander Holler
