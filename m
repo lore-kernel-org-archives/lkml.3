@@ -1,138 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751828Ab3LXJx4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 04:53:56 -0500
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:52741 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486Ab3LXJxy (ORCPT
+	id S1752007Ab3LXJ4w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 04:56:52 -0500
+Received: from fep34.mx.upcmail.net ([62.179.121.52]:50651 "EHLO
+	fep34.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751576Ab3LXJ4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 04:53:54 -0500
+	Tue, 24 Dec 2013 04:56:51 -0500
+X-Greylist: delayed 943 seconds by postgrey-1.27 at vger.kernel.org; Tue, 24 Dec 2013 04:56:51 EST
+X-SourceIP: 213.47.25.108
+Date: Tue, 24 Dec 2013 10:41:03 +0100
+From: Martin Koegler <martin.koegler@chello.at>
+To: airlied@redhat.com, linux-kernel@vger.kernel.org
+Subject: Fix cirrus drm driver for qemu use
+Message-ID: <20131224094103.GA9365@mail.zuhause>
 MIME-Version: 1.0
-In-Reply-To: <52B9468D.4060201@hitachi.com>
-References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
-	<20131219090409.14309.25677.stgit@kbuild-fedora.novalocal>
-	<CAGdX0WFKYHqXrVQ6LBw0YgH_H6cP=LZVCBe1iOvEXsHQPD8Zmg@mail.gmail.com>
-	<52B3AD7D.2020104@hitachi.com>
-	<CAGdX0WENxTPhFDtcEW6LFhk1SNZc6mEK+JsCDOJmfK8_PS1rxg@mail.gmail.com>
-	<52B3CABE.1080903@hitachi.com>
-	<CAGdX0WEev84sOyu-uzkDOmQFi_=mza7cPzyC0VkRZe0fD_1+jQ@mail.gmail.com>
-	<52B40C00.2060401@hitachi.com>
-	<CAGdX0WECaJBSX29-+fC=0XLJfAh0JvFyLTW2V8yM616L45iCQQ@mail.gmail.com>
-	<52B8178F.5020607@hitachi.com>
-	<CAGdX0WEZue1fBtHw058HAmuCktkM+jyKdPfn0ZM2=fNAPfcJwA@mail.gmail.com>
-	<52B9468D.4060201@hitachi.com>
-Date: Tue, 24 Dec 2013 17:53:53 +0800
-Message-ID: <CAGdX0WH=QvXMUfSL7-eXHWLM7VLPDus2=jFGCyJcK6Px-t0bng@mail.gmail.com>
-Subject: Re: Re: Re: Re: [PATCH -tip v6 06/22] [BUGFIX] x86: Prohibit probing
- on memcpy/memset
-From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-arch@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/mixed; boundary="G4iJoqBmSsgzjUCe"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 24, 2013 at 4:32 PM, Masami Hiramatsu
-<masami.hiramatsu.pt@hitachi.com> wrote:
-> (2013/12/24 15:39), Jovi Zhangwei wrote:
->> On Mon, Dec 23, 2013 at 6:59 PM, Masami Hiramatsu
->> <masami.hiramatsu.pt@hitachi.com> wrote:
->>> (2013/12/23 13:51), Jovi Zhangwei wrote:
->>>> On Fri, Dec 20, 2013 at 5:21 PM, Masami Hiramatsu
->>>> <masami.hiramatsu.pt@hitachi.com> wrote:
->>>>> (2013/12/20 17:31), Jovi Zhangwei wrote:
->>>>>> On Fri, Dec 20, 2013 at 12:42 PM, Masami Hiramatsu
->>>>>> <masami.hiramatsu.pt@hitachi.com> wrote:
->>>>>>> (2013/12/20 12:07), Jovi Zhangwei wrote:
->>>>>>>> On Fri, Dec 20, 2013 at 10:37 AM, Masami Hiramatsu
->>>>>>>> <masami.hiramatsu.pt@hitachi.com> wrote:
->>>>>>>>> Hi Jovi,
->>>>>>>>>
->>>>>>>>> (2013/12/19 18:37), Jovi Zhangwei wrote:
->>>>>>>>>> Hi Masami,
->>>>>>>>>>
->>>>>>>>>> On Thu, Dec 19, 2013 at 5:04 PM, Masami Hiramatsu
->>>>>>>>>> <masami.hiramatsu.pt@hitachi.com> wrote:
->>>>>>>>>>> memcpy/memset functions are fundamental functions and
->>>>>>>>>>> those are involved in kprobe's exception handling.
->>>>>>>>>>> Prohibit probing on them to avoid kernel crash.
->>>>>>>>>>>
->>>>>>>>>> Would you please let me know the LKML link of that bugfix, I cannot
->>>>>>>>>> find it in my LKML fold.
->>>>>>>>>
->>>>>>>>> Yeah, that was found in my testing environment.
->>>>>>>>>
->>>>>>>>>> No objection on this patch. :) just want to know more, It seems there
->>>>>>>>>> have no problem to probe memcpy in my box, maybe I didn't hit the
->>>>>>>>>> crash code path.
->>>>>>>>>
->>>>>>>>> Ah, I see. Originally the problem happened when I put a probe on
->>>>>>>>> __memcpy. And it looks the instances of memcpy and __memcpy are
->>>>>>>>> same on x86-64. Thus I decided to blacklist both. (memset/__memset too)
->>>>>>>>> Have you ever tried to probe __memcpy on your box?
->>>>>>>>>
->>>>>>>> Hmm, still no crash, __memcpy and __memset are both tested.
->>>>>>>>
->>>>>>>> I use below kprobe related config:
->>>>>>>>
->>>>>>>> CONFIG_KPROBES=y
->>>>>>>> CONFIG_JUMP_LABEL=y
->>>>>>>> CONFIG_OPTPROBES=y
->>>>>>>> CONFIG_KPROBES_ON_FTRACE=y
->>>>>>>
->>>>>>> Hmm, I've added some debugging options.
->>>>>>>
->>>>>>> CONFIG_SLUB_DEBUG=y
->>>>>>> CONFIG_X86_DEBUGCTLMSR=y
->>>>>>> CONFIG_PNP_DEBUG_MESSAGES=y
->>>>>>> CONFIG_DEBUG_INFO=y
->>>>>>> CONFIG_DEBUG_FS=y
->>>>>>> CONFIG_DEBUG_KERNEL=y
->>>>>>> CONFIG_DEBUG_STACK_USAGE=y
->>>>>>> CONFIG_DEBUG_MEMORY_INIT=y
->>>>>>> CONFIG_DEBUG_STACKOVERFLOW=y
->>>>>>> CONFIG_DEBUG_SPINLOCK=y
->>>>>>> CONFIG_DEBUG_MUTEXES=y
->>>>>>> CONFIG_DEBUG_LOCK_ALLOC=y
->>>>>>> CONFIG_DEBUG_LOCKDEP=y
->>>>>>> CONFIG_DEBUG_BUGVERBOSE=y
->>>>>>> CONFIG_DEBUG_RODATA=y
->>>>>>> CONFIG_DEBUG_BOOT_PARAMS=y
->>>>>>>
->>>>>>> I guess some of them might cause it.
->>>>>>>
->>>>>> I recompiled the kernel with those config enabled, unfortunately still no crash,
->>>>>> I tested on 3.13.0-rc4, a fedora kvm box.
->>>>>
->>>>> Hmm, it's very odd. I'm running 3.13.0-rc4 x86-64 on the fedora
->>>>> kvm box too. here is the full of my kconfig.
->>>>>
->>>> That configuration is still working for me, no crash for memcpy kprobe test.
->>>
->>> Would you do __memcpy test? or memcpy test? I only had a crash on the
->>> __memcpy(__memset).
->>>
->> Still no crash, use your kernel config.
->> memcpy and __memcpy have same address in /proc/kallsyms.
->>
->> Looks like a interesting problem.
->
-> Agreed. In my case, those have same address, but only probing
-> __memcpy caused a kernel crash. I'm not sure why, but it is
-> safe to disable probing on it.
->
-Shall we need dig further to address the root cause? IMO, the kprobe
-should act same behavior when given same probe address, but it's look
-so weird in your box. :)
 
-Thanks,
+--G4iJoqBmSsgzjUCe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Jovi
+On openSuSE, Xorg start fails, if modeset is enabled (https://bugzilla.novell.com/show_bug.cgi?id=856760).
+
+This is caused by the fact, that the fbhwdev part in Xorg uses smem_start/len of the "fix" part, which is
+not initialized by the the cirrus drm driver.
+
+The attached patch fixes this problem. I can't spot such a initialisation in HEAD,
+so I forward this patch.
+
+Regards,
+Martin
+
+--G4iJoqBmSsgzjUCe
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="0001-Fix-cirrus-drm-driver-for-fbdev-qemu.patch"
+
+>From 15952972eff90b19c4063b54d5f1e820987b4605 Mon Sep 17 00:00:00 2001
+From: Martin Koegler <martin.koegler@chello.at>
+Date: Sun, 22 Dec 2013 16:00:52 +0100
+Subject: [PATCH] Fix cirrus drm driver for fbdev + qemu
+
+---
+ drivers/gpu/drm/cirrus/cirrus_fbdev.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/gpu/drm/cirrus/cirrus_fbdev.c b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
+index b27e956..e63a753 100644
+--- a/drivers/gpu/drm/cirrus/cirrus_fbdev.c
++++ b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
+@@ -233,6 +233,9 @@ static int cirrusfb_create(struct drm_fb_helper *helper,
+ 	info->apertures->ranges[0].base = cdev->dev->mode_config.fb_base;
+ 	info->apertures->ranges[0].size = cdev->mc.vram_size;
+ 
++	info->fix.smem_start = cdev->dev->mode_config.fb_base;
++	info->fix.smem_len = cdev->mc.vram_size;
++
+ 	info->screen_base = sysram;
+ 	info->screen_size = size;
+ 
+-- 
+1.7.10.4
+
+
+--G4iJoqBmSsgzjUCe--
