@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751361Ab3LXHy1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 02:54:27 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43200 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072Ab3LXHy0 (ORCPT
+	id S1751419Ab3LXH7J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 02:59:09 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44779 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072Ab3LXH7H convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 02:54:26 -0500
-X-AuditID: 9c930197-b7c4aae000003d84-79-52b93db095a7
+	Tue, 24 Dec 2013 02:59:07 -0500
+X-AuditID: 9c930179-b7c89ae000006438-2e-52b93ec97d27
 From: Namhyung Kim <namhyung@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt \(Red Hat\)" <rostedt@goodmis.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "David A. Long" <dave.long@linaro.org>, systemtap@sourceware.org,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH -tip 3/3] perf-probe: Use the actual address as a hint for uprobes
-References: <20131220100255.7169.19384.stgit@kbuild-fedora.novalocal>
-	<20131220100302.7169.96318.stgit@kbuild-fedora.novalocal>
-	<20131220180351.GC28878@ghostprotocols.net>
-	<52B75F9E.7000802@hitachi.com> <87wqiwc8ly.fsf@sejong.aot.lge.com>
-	<52B81562.5000607@hitachi.com>
-Date: Tue, 24 Dec 2013 16:54:24 +0900
-In-Reply-To: <52B81562.5000607@hitachi.com> (Masami Hiramatsu's message of
-	"Mon, 23 Dec 2013 19:50:10 +0900")
-Message-ID: <87y53afzv3.fsf@sejong.aot.lge.com>
+To: Arun Sharma <asharma@fb.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>
+Subject: Re: [RFC/PATCHSET 00/18] perf report: Add support to accumulate hist periods (v3)
+References: <1387344086-12744-1-git-send-email-namhyung@kernel.org>
+	<20131218094622.GA19240@gmail.com> <52B17B14.5030101@fb.com>
+	<1387377549.1717.14.camel@leonhard> <52B7FF61.2090908@fb.com>
+Date: Tue, 24 Dec 2013 16:59:04 +0900
+In-Reply-To: <52B7FF61.2090908@fb.com> (Arun Sharma's message of "Mon, 23 Dec
+	2013 14:46:17 +0530")
+Message-ID: <87txdyfznb.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masami,
+Hi Arun,
 
-On Mon, 23 Dec 2013 19:50:10 +0900, Masami Hiramatsu wrote:
-> (2013/12/23 16:46), Namhyung Kim wrote:
->> On Mon, 23 Dec 2013 06:54:38 +0900, Masami Hiramatsu wrote:
->>> (2013/12/21 3:03), Arnaldo Carvalho de Melo wrote:
->>>> Em Fri, Dec 20, 2013 at 10:03:02AM +0000, Masami Hiramatsu escreveu:
->>> BTW, I'm not sure why debuginfo and nm shows symbol address + 0x400000,
->>> and why the perf's map/symbol can remove this offset. Could you tell me
->>> how it works?
->>> If I can get the offset (0x400000) from binary, I don't need this kind
->>> of ugly hacks...
->> 
->> AFAIK the actual symbol address is what nm (and debuginfo) shows.  But
->> perf adjusts symbol address to have a relative address from the start of
->> mapping (i.e. file offset) like below:
->> 
->> 	sym.st_value -= shdr.sh_addr - shdr.sh_offset;
+On Mon, 23 Dec 2013 14:46:17 +0530, Arun Sharma wrote:
+> On 12/18/13 8:09 PM, Namhyung Kim wrote:
+>> Hi Arun,
+>>
+>> 2013-12-18 (수), 16:08 +0530, Arun Sharma:
+>>> On 12/18/13 3:16 PM, Ingo Molnar wrote:
+>>>
+>>>> My main complaint that any variation of 'cumulative' or 'cumulate' is
+>>>> a tongue-twister to users. I certainly won't be able to remember it
+>>>> and will have to call up the manpage every time I use it - which will
+>>>> be very annoying. I'd probably not use the feature much.
+>>>
+>>> I can remember it, mainly because it's such an unusual word :)
+>>> Agree that we could use something simpler/easier to remember.
+>>>
+>>> My other user space projects have been keeping me busy. But still very
+>>> interested in this feature. Will test this patch series over the holidays.
+>>
+>> Thanks in advance for your test and feedback! :)
 >
-> Thanks! this is what I really need!
->
->> This way, we can handle mmap and symbol address almost uniformly
->> (i.e. ip = map->start + symbol->address).  But this requires the mmap
->> event during perf record.  For perf probe, we might need to synthesize
->> mapping info from the section/segment header since it doesn't have the
->> mmap event.  Currently, the dso__new_map() just creates a map starts
->> from 0.
->
-> I think the uprobe requires only the relative address, doesn't that?
+> Looks great! One of the features I'm missing compared to my earlier
+> --sort inclusive series of patches is that, in the --children mode,
+> I'd still like to see callchains (at least in --tui). Looks like
+> --children and -G -s pid can't be used together in this
+> implementation.
 
-Yes, but fetching arguments is little different than a normal relative
-address, I think.
-
-An offset of an argument bases on the mapping address of text segment.
-This fits naturally for a shared library case - base address is 0.  So
-we can use the symbol address (st_value) directly.  But for executables,
-the base address of text segment is 0x400000 on x86-64 and data symbol
-is on 0x6XXXXX typically.  So in this case the offset given to uprobe
-should be "@+0x2XXXXX" (st_value - text_base).
+Right, it wasn't supported in this version.  But I have a plan to add it
+in the near future. :)
 
 Thanks,
 Namhyung
