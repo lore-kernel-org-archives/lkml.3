@@ -1,120 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751884Ab3LXIu5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 03:50:57 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:59326 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299Ab3LXIu4 (ORCPT
+	id S1751663Ab3LXI5G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 03:57:06 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:40225 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751340Ab3LXI5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 03:50:56 -0500
-Message-ID: <1387875122.5567.241.camel@haakon3.risingtidesystems.com>
-Subject: Re: bio_integrity_verify() bug causing READ verify to be silently
- skipped
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        kmo@daterainc.com
-Date: Tue, 24 Dec 2013 00:52:02 -0800
-In-Reply-To: <1387858826.5567.236.camel@haakon3.risingtidesystems.com>
-References: <1387858826.5567.236.camel@haakon3.risingtidesystems.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Dec 2013 03:57:03 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAHbNUh2-WTc2myFbzYDmV=aSYUvO03pj3ZwNAen3j_GiGsRJkg@mail.gmail.com>
+References: <1383202124-1775-1-git-send-email-tushar.behera@linaro.org>
+	<18704605.0nz1OWeNy9@flatron>
+	<CAHbNUh2-WTc2myFbzYDmV=aSYUvO03pj3ZwNAen3j_GiGsRJkg@mail.gmail.com>
+Date: Tue, 24 Dec 2013 14:27:02 +0530
+Message-ID: <CAHbNUh1HchzsM_4Jq2NkgwyWf9t6sYJNdbKY1quEb75GapHitA@mail.gmail.com>
+Subject: Re: [PATCH 0/4] Add support for clocks in S5M8767
+From: Tushar Behera <tushar.behera@linaro.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>,
+        Mike Turquette <mturquette@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Patch Tracking <patches@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-12-23 at 20:20 -0800, Nicholas A. Bellinger wrote:
-> Hi Martin & Co,
-> 
-> So after playing with the mainline DIF client against an initial WIP
-> target DIF support patch, I've started hitting a bug in
-> bio_integrity_verify() that causes READ verify logic to be silently
-> skipped for both WIP target and existing scsi_debug DIF code.
-> 
-> The issue is with the scsi_end_request() -> blk_end_request() completion
-> path, where eventually blk_update_request() -> req_bio_endio() ->
-> bio_advance() is called to increment bio->bi_idx to a non-zero value.
-> 
-> Given that bio_integrity_verify() is using bio_for_each_segment(), the
-> loop starts from the updated bio->bi_idx, and not a zero value, which
-> ends up skipping individual bio segment calls to bi->verify_fn().
-> 
-> The following patch changes bio_integrity_verify() to use
-> bio_for_each_segment_all() instead of bio_for_each_segment() to ensure
-> that the segment walk always starts from zero, regardless of the current
-> bio->bi_idx value after bio_advance().
-> 
-> Note this bug has been observed with v3.13-rc3 code, and I haven't yet
-> looked back to figure out when this bug was first introduced..  Any
-> ideas..?
+On 11 November 2013 08:28, Tushar Behera <tushar.behera@linaro.org> wrote:
+> On 10 November 2013 18:04, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+>> Hi Tushar,
+>>
+>> On Thursday 31 of October 2013 12:18:40 Tushar Behera wrote:
+>>> S5M8767 chip has 3 crystal oscillators which are operated in the same
+>>> as the crystal oscillators in S2MPS11. Extend s2mps11-clk driver to
+>>> support clocks in S5M8767.
+>>>
+>>> The patches are based on next-20131030.
+>>>
+>>> Tushar Behera (4):
+>>>   clk: clk-s2mps11: Refactor for including support for other MFD clocks
+>>>   clk: clk-s2mps11: Add support for clocks in S5M8767 MFD
+>>>   mfd: sec-core: Add cells for S5M8767-clocks
+>>>   ARM: dts: Add S5M8767 clock nodes on Arndale board
+>>>
+>>>  arch/arm/boot/dts/exynos5250-arndale.dts |    7 +++++++
+>>>  drivers/clk/Kconfig                      |    6 ++++--
+>>>  drivers/clk/clk-s2mps11.c                |   25
+>>> +++++++++++++++++++++---- drivers/mfd/sec-core.c                   |
+>>> 4 +++-
+>>>  4 files changed, 35 insertions(+), 7 deletions(-)
+>>
+>> For the whole series:
+>>
+>> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+>>
+>> Best regards,
+>> Tomasz
+>>
+>
+> Thanks Tomasz.
+>
+> Mike,
+>
+> Would you please pick up patches 1 and 2? Lee would pick up patch 3
+> after these patches are merged.
+>
+> --
+> Tushar Behera
 
-So the commit that introduced bio_advance() into req_bio_endio() code
-was:
+Mike,
 
-commit f79ea4161434b31e351658283b24e92c3e570142
-Author: Kent Overstreet <koverstreet@google.com>
-Date:   Thu Sep 20 16:38:30 2012 -0700
+Would you please take patches 1 and 2 during this merge window?
 
-    block: Refactor blk_update_request()
-
-So AFAICT this has been broken since v3.10..
-
-(CC'ing kmo)
-
---nab
-
-> 
-> Interestingly enough, the scsi-mq alpha code does not suffer from this
-> bug, as blk_end_request() is never called from scsi_mq_end_request() ->
-> blk_mq_end_io() completion path code.
-> 
-> Thank you,
-> 
-> --nab
-> 
-> From 32242942edca095e8dd126cb1408f2842340773e Mon Sep 17 00:00:00 2001
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
-> Date: Tue, 24 Dec 2013 04:00:24 +0000
-> Subject: [PATCH] bio-integrity: Fix bio_integrity_verify segment start bug
-> 
-> This patch addresses a bug in bio_integrity_verify() code that has
-> been causing DIF READ verify operations to be silently skipped.
-> 
-> The issue is that bio->bi_idx will have been incremented within
-> bio_advance() code in the normal blk_update_request() ->
-> req_bio_endio() completion path, and bio_integrity_verify() is
-> using bio_for_each_segment() which starts the bio segment walk
-> at the current bio->bi_idx.
-> 
-> So instead use bio_for_each_segment_all() to always start the bio
-> segment walk from zero, regardless of the current bio->bi_idx
-> value after bio_advance() has been called.
-> 
-> Cc: Martin K. Petersen <martin.petersen@oracle.com>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Christoph Hellwig <hch@lst.de>
-> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-> ---
->  fs/bio-integrity.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
-> index fc60b31..f1d5cde 100644
-> --- a/fs/bio-integrity.c
-> +++ b/fs/bio-integrity.c
-> @@ -450,7 +450,7 @@ static int bio_integrity_verify(struct bio *bio)
->  	bix.disk_name = bio->bi_bdev->bd_disk->disk_name;
->  	bix.sector_size = bi->sector_size;
->  
-> -	bio_for_each_segment(bv, bio, i) {
-> +	bio_for_each_segment_all(bv, bio, i) {
->  		void *kaddr = kmap_atomic(bv->bv_page);
->  		bix.data_buf = kaddr + bv->bv_offset;
->  		bix.data_size = bv->bv_len;
-
-
+-- 
+Tushar Behera
