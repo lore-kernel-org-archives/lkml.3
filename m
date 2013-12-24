@@ -1,106 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168Ab3LXQGE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 11:06:04 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:50654 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751901Ab3LXQGB (ORCPT
+	id S1752264Ab3LXQGm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 11:06:42 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:55875 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752002Ab3LXQGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 11:06:01 -0500
+	Tue, 24 Dec 2013 11:06:41 -0500
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: jeffrey.t.kirsher@intel.com, jesse.brandeburg@intel.com,
+        bruce.w.allan@intel.com, carolyn.wyborny@intel.com,
+        davem@davemloft.net
+Cc: e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ethan Zhao <ethan.kernel@gmail.com>
+Subject: [PATCH 1/2] ixgbe: define IXGBE_MAX_VFS_DRV_LIMIT macro and cleanup const 63
+Date: Wed, 25 Dec 2013 00:04:53 +0800
+Message-Id: <1387901093-1630-1-git-send-email-ethan.kernel@gmail.com>
+X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
 MIME-Version: 1.0
-In-Reply-To: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com>
-References: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com>
-Date: Tue, 24 Dec 2013 21:36:01 +0530
-Message-ID: <CAKohpomqHApogDEXA5LyWk-+B-Y1mwNQ63-wL3PPGz64s_3Dmw@mail.gmail.com>
-Subject: Re: intel_pstate divide error with v3.13-rc4-256-gb7000ad
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Josh Boyer <jwboyer@fedoraproject.org>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding Dirk..
+Because ixgbe driver limit the max number of VF functions could be enalbed
+to 63, so define one macro IXGBE_MAX_VFS_DRV_LIMIT and cleanup the const 63
+in code.
 
-On 24 December 2013 20:06, Josh Boyer <jwboyer@fedoraproject.org> wrote:
-> Hi All,
->
-> We've had a report [1] that the pstate driver causes KVM guests to
-> fail to boot because of a divide error.  See the backtrace below.
->
->     4.839784] Intel P-state driver initializing.
-> [    4.859972] Intel pstate controlling: cpu 0
-> [    4.867653] cpufreq: __cpufreq_add_dev: ->get() failed
+Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
+---
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c  | 4 ++--
+ drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c | 5 +++--
+ drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.h | 5 +++++
+ 3 files changed, 10 insertions(+), 4 deletions(-)
 
-After a call to ->init(), ->get() is supposed to work.
-@Dirk: Any idea why it failed?
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index 0ade0cd..47e9b44 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -4818,7 +4818,7 @@ static int ixgbe_sw_init(struct ixgbe_adapter *adapter)
+ #ifdef CONFIG_PCI_IOV
+ 	/* assign number of SR-IOV VFs */
+ 	if (hw->mac.type != ixgbe_mac_82598EB)
+-		adapter->num_vfs = (max_vfs > 63) ? 0 : max_vfs;
++		adapter->num_vfs = (max_vfs > IXGBE_MAX_VFS_DRV_LIMIT) ? 0 : max_vfs;
+ 
+ #endif
+ 	/* enable itr by default in dynamic mode */
+@@ -7640,7 +7640,7 @@ static int ixgbe_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	ixgbe_init_mbx_params_pf(hw);
+ 	memcpy(&hw->mbx.ops, ii->mbx_ops, sizeof(hw->mbx.ops));
+ 	ixgbe_enable_sriov(adapter);
+-	pci_sriov_set_totalvfs(pdev, 63);
++	pci_sriov_set_totalvfs(pdev, IXGBE_MAX_VFS_DRV_LIMIT);
+ skip_sriov:
+ 
+ #endif
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c
+index 276d7b1..6925979 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c
+@@ -152,7 +152,8 @@ void ixgbe_enable_sriov(struct ixgbe_adapter *adapter)
+ 		 * physical function.  If the user requests greater thn
+ 		 * 63 VFs then it is an error - reset to default of zero.
+ 		 */
+-		adapter->num_vfs = min_t(unsigned int, adapter->num_vfs, 63);
++		adapter->num_vfs = min_t(unsigned int,
++					adapter->num_vfs, IXGBE_MAX_VFS_DRV_LIMIT);
+ 
+ 		err = pci_enable_sriov(adapter->pdev, adapter->num_vfs);
+ 		if (err) {
+@@ -259,7 +260,7 @@ static int ixgbe_pci_sriov_enable(struct pci_dev *dev, int num_vfs)
+ 	 * PF.  The PCI bus driver already checks for other values out of
+ 	 * range.
+ 	 */
+-	if (num_vfs > 63) {
++	if (num_vfs > IXGBE_MAX_VFS_DRV_LIMIT) {
+ 		err = -EPERM;
+ 		goto err_out;
+ 	}
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.h b/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.h
+index 4713f9f..2593666 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.h
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.h
+@@ -28,6 +28,11 @@
+ #ifndef _IXGBE_SRIOV_H_
+ #define _IXGBE_SRIOV_H_
+ 
++/*  ixgbe driver limit the max number of VFs could be enabled to
++ *  63 (IXGBE_MAX_VF_FUNCTIONS－1)
++ */
++#define IXGBE_MAX_VFS_DRV_LIMIT  (IXGBE_MAX_VF_FUNCTIONS－1)
++
+ void ixgbe_restore_vf_multicasts(struct ixgbe_adapter *adapter);
+ void ixgbe_msg_task(struct ixgbe_adapter *adapter);
+ int ixgbe_vf_configuration(struct pci_dev *pdev, unsigned int event_mask);
+-- 
+1.8.3.4 (Apple Git-47)
 
-And then I don't know what made this divide by zero to happen :)
-
-> [    4.877269] divide error: 0000 [#1] SMP
-> [    4.878127] Modules linked in:
-> [    4.878127] CPU: 0 PID: 1 Comm: swapper/0 Not tainted
-> 3.13.0-0.rc4.git5.1.fc21.x86_64 #1
-> [    4.878127] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> [    4.878127] task: ffff88001ea20000 ti: ffff88001e9bc000 task.ti:
-> ffff88001e9bc000
-> [    4.878127] RIP: 0010:[<ffffffff815c551d>]  [<ffffffff815c551d>]
-> intel_pstate_timer_func+0x11d/0x2b0
-> [    4.878127] RSP: 0000:ffff88001ee03e18  EFLAGS: 00010246
-> [    4.878127] RAX: 0000000000000000 RBX: ffff88001a454348 RCX: 0000000000006100
-> [    4.878127] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
-> [    4.878127] RBP: ffff88001ee03e38 R08: 0000000000000000 R09: 0000000000000000
-> [    4.878127] R10: ffff88001ea20000 R11: 0000000000000000 R12: 00000c0a1ea20000
-> [    4.878127] R13: 1ea200001ea20000 R14: ffffffff815c5400 R15: ffff88001a454348
-> [    4.878127] FS:  0000000000000000(0000) GS:ffff88001ee00000(0000)
-> knlGS:0000000000000000
-> [    4.878127] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [    4.878127] CR2: 0000000000000000 CR3: 0000000001c0c000 CR4: 00000000000006f0
-> [    4.878127] Stack:
-> [    4.878127]  fffffffb1a454390 ffffffff821a4500 ffff88001a454390
-> 0000000000000100
-> [    4.878127]  ffff88001ee03ea8 ffffffff81083e9a ffffffff81083e15
-> ffffffff82d5ed40
-> [    4.878127]  ffffffff8258cc60 0000000000000000 ffffffff81ac39de
-> 0000000000000000
-> [    4.878127] Call Trace:
-> [    4.878127]  <IRQ>
-> [    4.878127]  [<ffffffff81083e9a>] call_timer_fn+0x8a/0x310
-> [    4.878127]  [<ffffffff81083e15>] ? call_timer_fn+0x5/0x310
-> [    4.878127]  [<ffffffff815c5400>] ? pid_param_set+0x130/0x130
-> [    4.878127]  [<ffffffff81084354>] run_timer_softirq+0x234/0x380
-> [    4.878127]  [<ffffffff8107aee4>] __do_softirq+0x104/0x430
-> [    4.878127]  [<ffffffff8107b5fd>] irq_exit+0xcd/0xe0
-> [    4.878127]  [<ffffffff81770645>] smp_apic_timer_interrupt+0x45/0x60
-> [    4.878127]  [<ffffffff8176efb2>] apic_timer_interrupt+0x72/0x80
-> [    4.878127]  <EOI>
-> [    4.878127]  [<ffffffff810e15cd>] ? vprintk_emit+0x1dd/0x5e0
-> [    4.878127]  [<ffffffff81757719>] printk+0x67/0x69
-> [    4.878127]  [<ffffffff815c1493>] __cpufreq_add_dev.isra.13+0x883/0x8d0
-> [    4.878127]  [<ffffffff815c14f0>] cpufreq_add_dev+0x10/0x20
-> [    4.878127]  [<ffffffff814a14d1>] subsys_interface_register+0xb1/0xf0
-> [    4.878127]  [<ffffffff815bf5cf>] cpufreq_register_driver+0x9f/0x210
-> [    4.878127]  [<ffffffff81fb19af>] intel_pstate_init+0x27d/0x3be
-> [    4.878127]  [<ffffffff81761e3e>] ? mutex_unlock+0xe/0x10
-> [    4.878127]  [<ffffffff81fb1732>] ? cpufreq_gov_dbs_init+0x12/0x12
-> [    4.878127]  [<ffffffff8100214a>] do_one_initcall+0xfa/0x1b0
-> [    4.878127]  [<ffffffff8109dbf5>] ? parse_args+0x225/0x3f0
-> [    4.878127]  [<ffffffff81f64193>] kernel_init_freeable+0x1fc/0x287
-> [    4.878127]  [<ffffffff81f638d0>] ? do_early_param+0x88/0x88
-> [    4.878127]  [<ffffffff8174b530>] ? rest_init+0x150/0x150
-> [    4.878127]  [<ffffffff8174b53e>] kernel_init+0xe/0x130
-> [    4.878127]  [<ffffffff8176e27c>] ret_from_fork+0x7c/0xb0
-> [    4.878127]  [<ffffffff8174b530>] ? rest_init+0x150/0x150
-> [    4.878127] Code: c1 e0 05 48 63 bc 03 10 01 00 00 48 63 83 d0 00
-> 00 00 48 63 d6 48 c1 e2 08 c1 e1 08 4c 63 c2 48 c1 e0 08 48 98 48 c1
-> e0 08 48 99 <49> f7 f8 48 98 48 0f af f8 48 c1 ff 08 29 f9 89 ca c1 fa
-> 1f 89
-> [    4.878127] RIP  [<ffffffff815c551d>] intel_pstate_timer_func+0x11d/0x2b0
-> [    4.878127]  RSP <ffff88001ee03e18>
-> [    5.438189] ---[ end trace f166110ed22cc37a ]---
-> [    5.446428] Kernel panic - not syncing: Fatal exception in interrupt
