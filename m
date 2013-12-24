@@ -1,96 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248Ab3LXNxI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 08:53:08 -0500
-Received: from mail-db8lp0188.outbound.messaging.microsoft.com ([213.199.154.188]:32268
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751538Ab3LXNxH (ORCPT
+	id S1752359Ab3LXN7K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 08:59:10 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:56221 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970Ab3LXN7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 08:53:07 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Tue, 24 Dec 2013 21:54:44 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Anson Huang <b20788@freescale.com>
-CC: <kernel@pengutronix.de>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] ARM: imx: improve the comment of CCM lpm SW workaround
-Message-ID: <20131224135442.GI3872@S2101-09.ap.freescale.net>
-References: <1387923561-8724-1-git-send-email-b20788@freescale.com>
+	Tue, 24 Dec 2013 08:59:08 -0500
+Message-ID: <52B99072.5070809@gmail.com>
+Date: Tue, 24 Dec 2013 21:47:30 +0800
+From: Ding Tianhong <dthxman@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1387923561-8724-1-git-send-email-b20788@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+To: Joe Perches <joe@perches.com>, Ding Tianhong <dingtianhong@huawei.com>
+CC: Don Fry <pcnet32@frontier.com>, Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 03/20] net: pcnet: slight optimization of addr compare
+References: <52B96FA7.10201@huawei.com> <1387888739.2259.7.camel@joe-AO722>
+In-Reply-To: <1387888739.2259.7.camel@joe-AO722>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 24, 2013 at 05:19:21PM -0500, Anson Huang wrote:
-> Improve the comment of SW workaround for CCM lpm issue using
-> hardware errata description to avoid confusion.
+于 2013/12/24 20:38, Joe Perches 写道:
+> On Tue, 2013-12-24 at 19:27 +0800, Ding Tianhong wrote:
+>> Use possibly more efficient ether_addr_equal_unaligned
+>> to instead of memcmp.
 > 
-> ERR007265:
-> CCM: When improper low-power sequence is used, the SoC enters
->      low power mode before the ARM core executes WFI.
+> Hi again Ding.
 > 
-> Software workaround:
-> 1) Software should trigger IRQ #32 (IOMUX) to be always pending
->    by setting IOMUX_GPR1_GINT.
-> 2) Software should then unmask IRQ #32 in GPC before setting CCM
->    Low-Power mode.
-> 3) Software should mask IRQ #32 right after CCM Low-Power mode is
->    set (set bits 0-1 of CCM_CLPCR).
+>> diff --git a/drivers/net/ethernet/amd/pcnet32.c b/drivers/net/ethernet/amd/pcnet32.c
+> []
+>> @@ -1668,7 +1668,7 @@ pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev)
+> []
+>> -	if (memcmp(promaddr, dev->dev_addr, ETH_ALEN) ||
+>> +	if (!ether_addr_equal(promaddr, dev->dev_addr) ||
 > 
-> Signed-off-by: Anson Huang <b20788@freescale.com>
-> ---
->  arch/arm/mach-imx/pm-imx6q.c |   13 +++++++++----
->  1 file changed, 9 insertions(+), 4 deletions(-)
+> Can you please make sure the commit message matches the
+> code changes?
 > 
-> diff --git a/arch/arm/mach-imx/pm-imx6q.c b/arch/arm/mach-imx/pm-imx6q.c
-> index aecd9f8..31cb9d6 100644
-> --- a/arch/arm/mach-imx/pm-imx6q.c
-> +++ b/arch/arm/mach-imx/pm-imx6q.c
-> @@ -156,10 +156,13 @@ int imx6q_set_lpm(enum mxc_cpu_pwr_mode mode)
->  	}
->  
->  	/*
-> -	 * Unmask the always pending IOMUXC interrupt #32 as wakeup source to
-> -	 * deassert dsm_request signal, so that we can ensure dsm_request
-> -	 * is not asserted when we're going to write CLPCR register to set LPM.
-> -	 * After setting up LPM bits, we need to mask this wakeup source.
-> +	 * ERR007265:
-> +	 * CCM: When improper low-power sequence is used, the SoC enters low power mode before the ARM core executes WFI.
-> +	 *
-> +	 * Software workaround:
-> +	 * 1) Software should trigger IRQ #32 (IOMUX) to be always pending by setting IOMUX_GPR1_GINT.
-> +	 * 2) Software should then unmask IRQ #32 in GPC before setting CCM Low-Power mode.
-> +	 * 3) Software should mask IRQ #32 right after CCM Low-Power mode is set (set bits 0-1 of CCM_CLPCR).
+> This uses ether_addr_equal not ether_addr_equal_unaligned.
+> 
+> Thanks for the work.
+> 
 
-The lines are too long.  I wrapped them a little bit, and applied the
-patch.
+Oh， no,  maybe I was dizzy by these patches,  I should be more careful,
+sorry about that, I will resend this one.
 
-Shawn
+Regards
+Ding
 
->  	 */
->  	iomuxc_irq_desc = irq_to_desc(32);
->  	imx_gpc_irq_unmask(&iomuxc_irq_desc->irq_data);
-> @@ -219,6 +222,8 @@ void __init imx6q_pm_init(void)
->  	WARN_ON(!ccm_base);
->  
->  	/*
-> +	 * This is for SW workaround step #1 of ERR007265, see comments
-> +	 * in imx6q_set_lpm for details of this errata.
->  	 * Force IOMUXC irq pending, so that the interrupt to GPC can be
->  	 * used to deassert dsm_request signal when the signal gets
->  	 * asserted unexpectedly.
-> -- 
-> 1.7.9.5
-> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
 
