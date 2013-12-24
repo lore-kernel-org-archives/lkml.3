@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751069Ab3LXUg5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 15:36:57 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:33015 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916Ab3LXUgz (ORCPT
+	id S1751302Ab3LXUqb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 15:46:31 -0500
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:46656 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049Ab3LXUqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 15:36:55 -0500
-Message-ID: <1387917073.1848.7.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v7 00/12] kexec kernel efi runtime support
-From: Toshi Kani <toshi.kani@hp.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Dave Young <dyoung@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "James.Bottomley@HansenPartnership.com" 
-	<James.Bottomley@HansenPartnership.com>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "horms@verge.net.au" <horms@verge.net.au>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "bp@alien8.de" <bp@alien8.de>, "greg@kroah.com" <greg@kroah.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        "leif.lindholm@linaro.org" <leif.lindholm@linaro.org>
-Date: Tue, 24 Dec 2013 13:31:13 -0700
-In-Reply-To: <20131223073641.GA28919@console-pimps.org>
-References: <1387533742-18018-1-git-send-email-dyoung@redhat.com>
-	 <20131221173515.GE29501@console-pimps.org>
-	 <1387747621.1848.2.camel@misato.fc.hp.com>
-	 <20131223073641.GA28919@console-pimps.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Dec 2013 15:46:30 -0500
+Date: Tue, 24 Dec 2013 21:46:25 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] speeding up the stat() family of system calls...
+Message-ID: <20131224204625.GB20471@gmail.com>
+References: <CA+55aFxZ2u+M72u3HSD7TVY2+WRRi27pYC=_4Wawr5y1m8DfnQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxZ2u+M72u3HSD7TVY2+WRRi27pYC=_4Wawr5y1m8DfnQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-12-23 at 07:36 +0000, Matt Fleming wrote:
-> On Sun, 22 Dec, at 02:27:01PM, Toshi Kani wrote:
-> > 
-> > The kexec branch is missing the following change, which is required for
-> > fast reboot with multi-cpus.
-> > 
-> >    commit 279f1df915c3a6ed3075d98a849705bf53851f99
-> >    Author: Vivek Goyal <vgoyal@redhat.com>
-> >    Date:   Tue Nov 26 10:25:28 2013 +0800
-> > 
-> >        kexec: migrate to reboot cpu
-> > 
-> > With this change added, I confirmed that the branch kernel works fine.
->  
-> I can't find that commit in Linus' tree. Where is it from?
 
-Dave's git tree for the patchset has this change.  This change was
-accepted by Vivek, so I think it is in his tree.
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> Here's both x86 people and filesystem people involved, because this
+> hacky RFC patch touches both.
+> 
+> NOTE NOTE NOTE! I've modified "cp_new_stat()" in place, in a way that
+> is x86-64 specific. So the attached patch *only* works on x86-64, and
+> will very actively break on anything else. That's intentional, because
+> that way it's more obvious how the code changes, but a real patch
+> would create a *new* cp_new_stat() for x86-64, and conditionalize the
+> existing generic "cp_new_stat()" on not already having an
+> architecture-optimized one.
+> 
+> Basically, under some filesystem loads, "stat()" and friends are the
+> most common ops (think tree traversal, but also things like git
+> verifying the index). And our "cp_new_stat()" function (which is the
+> common interface, ignoring 32-bit legacy stuff) is generic, but
+> actually pretty disgusting. It copies things to a temporary 'struct
+> stat' buffer on the kernel stack, and then uses copy_to_user() to copy
+> it to user space. The double copy is quite noticeable in profiles, and
+> it generates a big stack frame too.
+> 
+> By doing an architecture-specific cp_new_stat() function, we can
+> improve on that.
+> 
+> HOWEVER. On x86, doing an efficient field-at-a-time copy also requires
+> us to use put_user_try() and put_user_catch() in order to not have
+> tons of clac/stac instructions for the extended permission testing.
+> And the implementation of that was actually fairly non-optimal, so to
+> actually get the code I wanted, I had to change how that all worked
+> too, using "asm_volatile_goto()".
+> 
+> Thus both x86 and FS people on the list.
+> 
+> Comments? This would obviously be a 3.14 issue, I'm not suggesting 
+> we'd do this now. I just want to lay the ground-work..
+> 
+> It's tested in the sense that "it works for me", and profiles look 
+> nice, but..
+
+Looks cool - it looks rather similar to the try/catch model Richard 
+Henderson came up with many eons ago when we implemented the original 
+exception mechanism for Linux, which IIRC we decided wasn't safe due 
+to lack of compiler support.
+
+Now we have compiler support ... written by Richard Henderson ;-)
 
 Thanks,
--Toshi
 
-
+	Ingo
