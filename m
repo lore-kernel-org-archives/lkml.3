@@ -1,113 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751597Ab3LYFVf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Dec 2013 00:21:35 -0500
-Received: from smtprelay0214.hostedemail.com ([216.40.44.214]:35137 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750733Ab3LYFVe (ORCPT
+	id S1751731Ab3LYFdU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Dec 2013 00:33:20 -0500
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:2076
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750762Ab3LYFdS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Dec 2013 00:21:34 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3354:3653:3865:3866:3868:3870:3871:3872:4321:5007:7652:10004:10400:10848:11026:11658:11914:12043:12291:12517:12519:12555:12683,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bead04_81bbb2a979c59
-X-Filterd-Recvd-Size: 3551
-Message-ID: <1387948889.2259.62.camel@joe-AO722>
-Subject: [PATCH] checkpatch: Add tests for function pointer style misuses
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@shadowen.org>
-Cc: linux-kernel@vger.kernel.org, Derek Perrin <d.roc16@gmail.com>
-Date: Tue, 24 Dec 2013 21:21:29 -0800
-In-Reply-To: <1387966783-3404-1-git-send-email-d.roc16@gmail.com>
-References: <1387867432.2259.2.camel@joe-AO722>
-	 <1387966783-3404-1-git-send-email-d.roc16@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Dec 2013 00:33:18 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>
+CC: <shawn.guo@linaro.org>, <timur@tabi.org>, <lgirdwood@gmail.com>,
+        <perex@perex.cz>, <tiwai@suse.de>, <alsa-devel@alsa-project.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <b47053@freescale.com>
+Subject: [PATCH] ASoC: fsl_sai: Add disable operation for the corresponding data channel.
+Date: Wed, 25 Dec 2013 12:40:04 +0800
+Message-ID: <1387946404-24029-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kernel style uses function pointers in this form:
-	"type (*funcptr)(args...)"
+Enables/Disables the corresponding data channel for tx/rx operation.
+A channel must be enabled before its FIFO is accessed, and then disable
+it when tx/rx is stopped or idle.
 
-Emit warnings when this function pointer form isn't used.
-
-Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 ---
- scripts/checkpatch.pl | 59 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 59 insertions(+)
+ sound/soc/fsl/fsl_sai.c | 21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 0fcbc5f..f5d4560 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2810,6 +2810,65 @@ sub process {
- 			}
- 		}
+diff --git a/sound/soc/fsl/fsl_sai.c b/sound/soc/fsl/fsl_sai.c
+index 596aabb..af80246 100644
+--- a/sound/soc/fsl/fsl_sai.c
++++ b/sound/soc/fsl/fsl_sai.c
+@@ -124,20 +124,17 @@ static int fsl_sai_set_dai_fmt_tr(struct snd_soc_dai *cpu_dai,
+ 				unsigned int fmt, int fsl_dir)
+ {
+ 	struct fsl_sai *sai = snd_soc_dai_get_drvdata(cpu_dai);
+-	u32 val_cr2, val_cr3, val_cr4, reg_cr2, reg_cr3, reg_cr4;
++	u32 val_cr2, val_cr4, reg_cr2, reg_cr4;
  
-+# Function pointer declarations
-+# check spacing between type, funcptr, and args
-+# canonical declaration is "type (*funcptr)(args...)"
-+#
-+# the $Declare variable will capture all spaces after the type
-+# so check it for trailing missing spaces or multiple spaces
-+		if ($line =~ /^.\s*($Declare)\((\s*)\*(\s*)$Ident(\s*)\)(\s*)\(/) {
-+			my $declare = $1;
-+			my $pre_pointer_space = $2;
-+			my $post_pointer_space = $3;
-+			my $funcname = $4;
-+			my $post_funcname_space = $5;
-+			my $pre_args_space = $6;
+ 	if (fsl_dir == FSL_FMT_TRANSMITTER) {
+ 		reg_cr2 = FSL_SAI_TCR2;
+-		reg_cr3 = FSL_SAI_TCR3;
+ 		reg_cr4 = FSL_SAI_TCR4;
+ 	} else {
+ 		reg_cr2 = FSL_SAI_RCR2;
+-		reg_cr3 = FSL_SAI_RCR3;
+ 		reg_cr4 = FSL_SAI_RCR4;
+ 	}
+ 
+ 	val_cr2 = sai_readl(sai, sai->base + reg_cr2);
+-	val_cr3 = sai_readl(sai, sai->base + reg_cr3);
+ 	val_cr4 = sai_readl(sai, sai->base + reg_cr4);
+ 
+ 	if (sai->big_endian_data)
+@@ -188,13 +185,10 @@ static int fsl_sai_set_dai_fmt_tr(struct snd_soc_dai *cpu_dai,
+ 		return -EINVAL;
+ 	}
+ 
+-	val_cr3 |= FSL_SAI_CR3_TRCE;
+-
+ 	if (fsl_dir == FSL_FMT_RECEIVER)
+ 		val_cr2 |= FSL_SAI_CR2_SYNC;
+ 
+ 	sai_writel(sai, val_cr2, sai->base + reg_cr2);
+-	sai_writel(sai, val_cr3, sai->base + reg_cr3);
+ 	sai_writel(sai, val_cr4, sai->base + reg_cr4);
+ 
+ 	return 0;
+@@ -278,7 +272,7 @@ static int fsl_sai_trigger(struct snd_pcm_substream *substream, int cmd,
+ 		struct snd_soc_dai *cpu_dai)
+ {
+ 	struct fsl_sai *sai = snd_soc_dai_get_drvdata(cpu_dai);
+-	unsigned int tcsr, rcsr;
++	u32 tcsr, rcsr, val_cr3, reg_cr3;
+ 
+ 	tcsr = sai_readl(sai, sai->base + FSL_SAI_TCSR);
+ 	rcsr = sai_readl(sai, sai->base + FSL_SAI_RCSR);
+@@ -286,17 +280,24 @@ static int fsl_sai_trigger(struct snd_pcm_substream *substream, int cmd,
+ 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+ 		tcsr |= FSL_SAI_CSR_FRDE;
+ 		rcsr &= ~FSL_SAI_CSR_FRDE;
++		reg_cr3 = FSL_SAI_TCR3;
+ 	} else {
+ 		rcsr |= FSL_SAI_CSR_FRDE;
+ 		tcsr &= ~FSL_SAI_CSR_FRDE;
++		reg_cr3 = FSL_SAI_RCR3;
+ 	}
+ 
++	val_cr3 = sai_readl(sai, sai->base + reg_cr3);
 +
-+			if ($declare !~ /\s$/) {
-+				WARN("SPACING",
-+				     "missing space after return type\n" . $herecurr);
-+			}
+ 	switch (cmd) {
+ 	case SNDRV_PCM_TRIGGER_START:
+ 	case SNDRV_PCM_TRIGGER_RESUME:
+ 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+ 		tcsr |= FSL_SAI_CSR_TERE;
+ 		rcsr |= FSL_SAI_CSR_TERE;
++		val_cr3 |= FSL_SAI_CR3_TRCE;
 +
-+# unnecessary space "type  (*funcptr)(args...)"
-+			elsif ($declare =~ /\s{2,}$/) {
-+				WARN("SPACING",
-+				     "Multiple spaces after return type\n" . $herecurr);
-+			}
++		sai_writel(sai, val_cr3, sai->base + reg_cr3);
+ 		sai_writel(sai, rcsr, sai->base + FSL_SAI_RCSR);
+ 		sai_writel(sai, tcsr, sai->base + FSL_SAI_TCSR);
+ 		break;
+@@ -308,8 +309,12 @@ static int fsl_sai_trigger(struct snd_pcm_substream *substream, int cmd,
+ 			tcsr &= ~FSL_SAI_CSR_TERE;
+ 			rcsr &= ~FSL_SAI_CSR_TERE;
+ 		}
 +
-+# unnecessary space "type ( *funcptr)(args...)"
-+			if (defined $pre_pointer_space &&
-+			    $pre_pointer_space =~ /^\s/) {
-+				WARN("SPACING",
-+				     "Unnecessary space after function pointer open parenthesis\n" . $herecurr);
-+			}
++		val_cr3 &= ~FSL_SAI_CR3_TRCE;
 +
-+# unnecessary space "type (* funcptr)(args...)"
-+			if (defined $post_pointer_space &&
-+			    $post_pointer_space =~ /^\s/) {
-+				WARN("SPACING",
-+				     "Unnecessary space before function pointer name\n" . $herecurr);
-+			}
-+
-+# unnecessary space "type (*funcptr )(args...)"
-+			if (defined $post_funcname_space &&
-+			    $post_funcname_space =~ /^\s/) {
-+				WARN("SPACING",
-+				     "Unnecessary space after function pointer name\n" . $herecurr);
-+			}
-+
-+# unnecessary space "type (*funcptr) (args...)"
-+			if (defined $pre_args_space &&
-+			    $pre_args_space =~ /^\s/) {
-+				WARN("SPACING",
-+				     "Unnecessary space before function pointer arguments\n" . $herecurr);
-+			}
-+
-+			if (show_type("SPACING") && $fix) {
-+				$fixed[$linenr - 1] =~
-+				    s/^(.\s*$Declare)\(\s*\*\s*($Ident)\s*\)\s*\(/rtrim($1) . " " . "\(\*$2\)\("/ex;
-+			}
-+		}
-+
- # check for spacing round square brackets; allowed:
- #  1. with a type on the left -- int [] a;
- #  2. at the beginning of a line for slice initialisers -- [0...10] = 5,
+ 		sai_writel(sai, tcsr, sai->base + FSL_SAI_TCSR);
+ 		sai_writel(sai, rcsr, sai->base + FSL_SAI_RCSR);
++		sai_writel(sai, val_cr3, sai->base + reg_cr3);
+ 		break;
+ 	default:
+ 		return -EINVAL;
+-- 
+1.8.4
 
 
