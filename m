@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317Ab3LYSd7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Dec 2013 13:33:59 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:65198 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752251Ab3LYSd5 (ORCPT
+	id S1752330Ab3LYTAj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Dec 2013 14:00:39 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:16097
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752251Ab3LYTAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Dec 2013 13:33:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <1387983339-1172-2-git-send-email-mst@redhat.com>
-References: <1387983339-1172-1-git-send-email-mst@redhat.com> <1387983339-1172-2-git-send-email-mst@redhat.com>
-From: Michael Dalton <mwdalton@google.com>
-Date: Wed, 25 Dec 2013 10:33:37 -0800
-Message-ID: <CANJ5vPK-rs2d_TvZ3wuAXMK8ctoSvg2km8MpncMU+0cdk=TAsw@mail.gmail.com>
-Subject: Re: [PATCH stable 1/2] virtio_net: fix error handling for mergeable buffers
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: netdev@vger.kernel.org, David Miller <davem@davemloft.net>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Eric Dumazet <edumazet@google.com>, Jason Wang <jasowang@redhat.com>,
-        lf-virt <virtualization@lists.linux-foundation.org>,
+	Wed, 25 Dec 2013 14:00:38 -0500
+X-IronPort-AV: E=Sophos;i="4.95,549,1384297200"; 
+   d="scan'208";a="42283164"
+Date: Wed, 25 Dec 2013 20:00:34 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: hdegoede@redhat.com, m.chehab@samsung.com, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Subject: question about drivers/media/usb/gspca/kinect.c
+Message-ID: <alpine.DEB.2.02.1312251956490.2020@localhost6.localdomain6>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael, quick question below:
+The following code, in the function send_cmd, looks too concise:
 
-On Wed, Dec 25, 2013 at 6:56 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
->                 if (i >= MAX_SKB_FRAGS) {
->                         pr_debug("%s: packet too long\n", skb->dev->name);
->                         skb->dev->stats.rx_length_errors++;
-> -                       return -EINVAL;
-> +                       return NULL;
->                 }
+        do {
+                actual_len = kinect_read(udev, ibuf, 0x200);
+        } while (actual_len == 0);
+        PDEBUG(D_USBO, "Control reply: %d", res);
+        if (actual_len < sizeof(*rhdr)) {
+                pr_err("send_cmd: Input control transfer failed (%d)\n", res);
+                return res;
+        }
 
-Should this error handling path free the SKB before returning NULL?
-It seems like if we just return NULL we may leak memory.
+It seems that actual_len might be less than sizeof(*rhdr) either because 
+an error code is returned by the call to kinect_read or because a shorter 
+length is returned than the desired one.  In the error code case, I would 
+guess that one would want to return the error code, but I don't know what 
+on would want to return in the other case.  In any case, res is not 
+defined by this code, so what is returned is whatever the result of the 
+previous call to kinect_write happened to be.
 
-Best,
+How should the code be changed?
 
-Mike
+thanks,
+julia
