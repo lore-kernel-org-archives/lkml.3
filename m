@@ -1,135 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229Ab3LYQXO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Dec 2013 11:23:14 -0500
-Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:38233 "EHLO
-	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752138Ab3LYQXN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Dec 2013 11:23:13 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ag4MAC8Gu1JQyXDq/2dsb2JhbABYgws4pTGVC4EXF3SCZhwjGIECN4gIAckijkZXHYQgBJgWAYEwkGSDLjuBLQ
-Date: Wed, 25 Dec 2013 17:23:10 +0100
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org
-Subject: [PATCH 1/1] selftests : Adding symbolic link limits test script
-Message-Id: <20131225172310.6eb4aa79f79a9fa5a79b3f4e@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752164Ab3LYQiy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Dec 2013 11:38:54 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:33472 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751003Ab3LYQiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Dec 2013 11:38:52 -0500
+Date: Wed, 25 Dec 2013 10:38:45 -0600
+From: Alex Thorlton <athorlton@sgi.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Michel Lespinasse <walken@google.com>,
+        Benjamin LaHaise <bcrl@kvack.org>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [RFC PATCH 0/3] Change how we determine when to hand out THPs
+Message-ID: <20131225163845.GA195633@sgi.com>
+References: <20131212180037.GA134240@sgi.com> <20131213214437.6fdbf7f2.akpm@linux-foundation.org> <20131216171214.GA15663@sgi.com> <20131219152906.GQ11295@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131219152906.GQ11295@suse.de>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds fs directory in selftests and a script to explain recursive
-and consecutive symbolic linking limits who have been debated
-so many times.
+On Thu, Dec 19, 2013 at 03:29:06PM +0000, Mel Gorman wrote:
+> On Mon, Dec 16, 2013 at 11:12:15AM -0600, Alex Thorlton wrote:
+> > > Please cc Andrea on this.
+> > 
+> > I'm going to clean up a few small things for a v2 pretty soon, I'll be
+> > sure to cc Andrea there.
+> > 
+> > > > My proposed solution to the problem is to allow users to set a
+> > > > threshold at which THPs will be handed out.  The idea here is that, when
+> > > > a user faults in a page in an area where they would usually be handed a
+> > > > THP, we pull 512 pages off the free list, as we would with a regular
+> > > > THP, but we only fault in single pages from that chunk, until the user
+> > > > has faulted in enough pages to pass the threshold we've set.  Once they
+> > > > pass the threshold, we do the necessary work to turn our 512 page chunk
+> > > > into a proper THP.  As it stands now, if the user tries to fault in
+> > > > pages from different nodes, we completely give up on ever turning a
+> > > > particular chunk into a THP, and just fault in the 4K pages as they're
+> > > > requested.  We may want to make this tunable in the future (i.e. allow
+> > > > them to fault in from only 2 different nodes).
+> > > 
+> > > OK.  But all 512 pages reside on the same node, yes?  Whereas with thp
+> > > disabled those 512 pages would have resided closer to the CPUs which
+> > > instantiated them.  
+> > 
+> > As it stands right now, yes, since we're pulling a 512 page contiguous
+> > chunk off the free list, everything from that chunk will reside on the
+> > same node, but as I (stupidly) forgot to mention in my original e-mail,
+> > one piece I have yet to add is the functionality to put the remaining
+> > unfaulted pages from our chunk *back* on the free list after we give up
+> > on handing out a THP. 
+> 
+> You don't necessarily have to take it off in the
+> first place either. Heavy handed approach is to create
+> MIGRATE_MOVABLE_THP_RESERVATION_BECAUSE_WHO_NEEDS_SNAPPY_NAMES and put it
+> at the bottom of the fallback lists in the page allocator. Allocate one
+> base page, move the other 511 to that list. On the second fault, use the
+> correctly aligned page if it's still on the buddy lists and local to the
+> current NUMA node, otherwise fallback to a normal allocation. On promotion,
+> you're checking first if all the faulted page are on the same node and
+> second if the correctly aligned pages are on the free lists or not.
+> 
+> The addition of a migrate type would very heavy handed but you could
+> just create a special cased linked list of pages that are potentially
+> reserved that is drained before the page allocator wakes kswapd.
+> 
+> Order the pages such that the oldest one on the new free list is the
+> first allocated. That way you do not have to worry about scanning tasks
+> for pages to put back on the free list.
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- tools/testing/selftests/Makefile       |  1 +
- tools/testing/selftests/fs/Makefile    |  6 ++++
- tools/testing/selftests/fs/symlinks.sh | 64 ++++++++++++++++++++++++++++++++++
- 3 files changed, 71 insertions(+)
- create mode 100644 tools/testing/selftests/fs/Makefile
- create mode 100755 tools/testing/selftests/fs/symlinks.sh
+Thanks for the input, Mel.  While I agree that the addition of a migrate
+type might be a bit heavy handed, I think that would also get rid of the
+problem that Kirill pointed out with forking processes, i.e. the current
+behavior tracks temporary huge pages in a per-mm freelist, which falls
+apart for forked processes (only useful in the threaded case).  I'll
+take a look into this soon.
 
-diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
-index 9f3eae2..10e2d80 100644
---- a/tools/testing/selftests/Makefile
-+++ b/tools/testing/selftests/Makefile
-@@ -9,6 +9,7 @@ TARGETS += ptrace
- TARGETS += timers
- TARGETS += vm
- TARGETS += powerpc
-+TARGETS += fs
- 
- all:
- 	for TARGET in $(TARGETS); do \
-diff --git a/tools/testing/selftests/fs/Makefile b/tools/testing/selftests/fs/Makefile
-new file mode 100644
-index 0000000..cf0fc21
---- /dev/null
-+++ b/tools/testing/selftests/fs/Makefile
-@@ -0,0 +1,6 @@
-+all:
-+
-+run_tests:
-+	@/bin/sh ./symlinks.sh || echo "symlinks selftests: [FAIL]"
-+
-+clean:
-diff --git a/tools/testing/selftests/fs/symlinks.sh b/tools/testing/selftests/fs/symlinks.sh
-new file mode 100755
-index 0000000..5daeb05
---- /dev/null
-+++ b/tools/testing/selftests/fs/symlinks.sh
-@@ -0,0 +1,64 @@
-+#!/bin/bash
-+#
-+# This script hits symbolic link limits.
-+
-+boldtext=`tput bold`
-+normaltext=`tput sgr0`
-+run_path=`pwd`
-+appl_path="tmp_symlinks"
-+mkdir -p $appl_path
-+cd $appl_path
-+
-+function recursive_symbolic_links()
-+{
-+	path="origpath"`date +'%s'`
-+	symlink=`date +'%s'`
-+	echo $boldtext"Recursive symbolic link testing (vfs limit : 8)"\
-+	     $normaltext
-+	echo "original_path/1/2/3/4 ...  where 1=>original_path 2=>1 ..."
-+	echo "Trying 10 steps ..."
-+	mkdir $path
-+
-+	for i in {1..10}
-+	do
-+		cd $path 2>/dev/null|| break
-+		echo  "Creating : "$path" =>" " [OK]"
-+		if [ $i = 1 ] ;then
-+			path="../"$path
-+		fi
-+		ln -s $path $symlink"_"$i
-+		path=$symlink"_"$i
-+	done
-+	echo $boldtext"Maximum recursive symlink level:" `expr $i - 2 `\
-+	     $normaltext
-+}
-+
-+function consecutive_symbolic_links()
-+{
-+	origfile="orig"`date +'%s'`
-+	symlink=`date +'%s'`
-+	echo $boldtext"Consecutive symbolic link testing (vfs limit : 40)"\
-+	     $normaltext
-+	echo "original_file;1;2;3 ... where 1=>original_file 2=>1 ..."
-+	echo "Trying 50 steps ..."
-+
-+	touch $origfile
-+	for i in {1..50}
-+	do
-+		cat $origfile 2>/dev/null || break;
-+		echo -n "[OK] |"
-+		ln -s $origfile $symlink"_"$i
-+		origfile=$symlink"_"$i
-+		echo -n $i
-+	done
-+	echo -e $boldtext "\nMaximum consecutive symlink level:" `expr $i - 2`\
-+	        $normaltext
-+
-+}
-+
-+recursive_symbolic_links
-+echo "------------------------------------------------------"
-+sleep 1
-+consecutive_symbolic_links
-+cd $run_path
-+rm -rf $appl_path
--- 
-1.8.1.4
+- Alex
