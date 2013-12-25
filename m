@@ -1,203 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751665Ab3LYDNk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 22:13:40 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:16817 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305Ab3LYDNj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 22:13:39 -0500
-Message-ID: <52BA4D4C.6070709@hp.com>
-Date: Tue, 24 Dec 2013 22:13:16 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	id S1751944Ab3LYDNq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 22:13:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54325 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751305Ab3LYDNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Dec 2013 22:13:42 -0500
+Date: Wed, 25 Dec 2013 11:12:59 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        bp@alien8.de, greg@kroah.com, toshi.kani@hp.com,
+        akpm@linux-foundation.org, mingo@kernel.org, msalter@redhat.com,
+        leif.lindholm@linaro.org
+Subject: Re: [PATCH v7 09/12] efi: passing kexec necessary efi data via
+ setup_data
+Message-ID: <20131225031259.GB6333@dhcp-16-126.nay.redhat.com>
+References: <1387533742-18018-1-git-send-email-dyoung@redhat.com>
+ <1387533742-18018-10-git-send-email-dyoung@redhat.com>
+ <20131221160416.GD29501@console-pimps.org>
+ <20131223020958.GB3760@dhcp-16-126.nay.redhat.com>
+ <20131223080741.GB28919@console-pimps.org>
 MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr@hp.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, Jeff Mahoney <jeffm@suse.com>,
-        Jason Low <jason.low2@hp.com>, Tom Vaden <tom.vaden@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH v3 4/4] futex: Avoid taking hb lock if nothing to wakeup
-References: <1387478746-5436-1-git-send-email-davidlohr@hp.com>  <1387478746-5436-5-git-send-email-davidlohr@hp.com>  <CA+55aFxY_sMes2=0tz0qTKH5-fpAaLji_xd9CdU-u2JxxNN6pA@mail.gmail.com> <1387589770.3119.2.camel@buesod1.americas.hpqcorp.net>
-In-Reply-To: <1387589770.3119.2.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131223080741.GB28919@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2013 08:36 PM, Davidlohr Bueso wrote:
-> On Thu, 2013-12-19 at 15:14 -0800, Linus Torvalds wrote:
->> On Thu, Dec 19, 2013 at 10:45 AM, Davidlohr Bueso<davidlohr@hp.com>  wrote:
->>> - increment the counter at queue_lock() as we always end up calling
->>>    queue_me() which adds the element to the list. Upon any error,
->>>    queue_unlock() is called for housekeeping, for which we decrement
->>>    to mach the increment done in queue_lock().
->>>
->>> - decrement the counter at __unqueue_me() to reflect when an element is
->>>    removed from the queue for wakeup related purposes.
->> I still hate this whole separate counter thing. It seems really annoying.
->>
->> If re-ordering things didn't work out, then why can't just the counter
->> we *already* have in the spinlock itself work as the counter? Your
->> counter update logic seems to basically match when you take the
->> spinlock anyway.
-> So the following has passed all testing, just like the atomics variant.
-> Thoughts?
->
-> Thanks,
-> Davidlohr
->
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index fcc6850..c8c7ce5 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -73,19 +73,22 @@
->    * Basic futex operation and ordering guarantees:
->    *
->    * The waiter reads the futex value in user space and calls
-> - * futex_wait(). This function computes the hash bucket and acquires
-> - * the hash bucket lock. After that it reads the futex user space value
-> - * again and verifies that the data has not changed. If it has not
-> - * changed it enqueues itself into the hash bucket, releases the hash
-> + * futex_wait(). It computes the hash bucket and acquires the hash
-> + * bucket lock. After that it reads the futex user space value again
-> + * and verifies that the data has not changed. If it has not changed
-> + * it enqueues itself into the hash bucket, releases the hash
->    * bucket lock and schedules.
->    *
->    * The waker side modifies the user space value of the futex and calls
-> - * futex_wake(). This functions computes the hash bucket and acquires
-> - * the hash bucket lock. Then it looks for waiters on that futex in the
-> - * hash bucket and wakes them.
-> + * futex_wake(). It computes the hash bucket and acquires the hash
-> + * bucket lock. Then it looks for waiters on that futex in the hash
-> + * bucket and wakes them.
->    *
-> - * Note that the spin_lock serializes waiters and wakers, so that the
-> - * following scenario is avoided:
-> + * In scenarios where wakeups are called and no tasks are blocked on a futex,
-> + * taking the hb spinlock can be avoided and simply return. In order for this
-> + * optimization to work, ordering guarantees must exist so that the waiter
-> + * being added to the list is acknowledged when the list is concurrently being
-> + * checked by the waker, avoiding scenarios like the following:
->    *
->    * CPU 0                               CPU 1
->    * val = *futex;
-> @@ -106,24 +109,50 @@
->    * This would cause the waiter on CPU 0 to wait forever because it
->    * missed the transition of the user space value from val to newval
->    * and the waker did not find the waiter in the hash bucket queue.
-> - * The spinlock serializes that:
-> + *
-> + * The correct serialization ensures that a waiter either observes
-> + * the changed user space value before blocking or is woken by a
-> + * concurrent waker:
->    *
->    * CPU 0                               CPU 1
->    * val = *futex;
->    * sys_futex(WAIT, futex, val);
->    *   futex_wait(futex, val);
-> - *   lock(hash_bucket(futex));
-> - *   uval = *futex;
-> - *                                     *futex = newval;
-> - *                                     sys_futex(WAKE, futex);
-> - *                                       futex_wake(futex);
-> - *                                       lock(hash_bucket(futex));
-> + *
-> + *   waiters++;
-> + *   mb(); (A)<-- paired with -.
-> + *                              |
-> + *   lock(hash_bucket(futex));  |
-> + *                              |
-> + *   uval = *futex;             |
-> + *                              |        *futex = newval;
-> + *                              |        sys_futex(WAKE, futex);
-> + *                              |          futex_wake(futex);
-> + *                              |
-> + *                              `------->    mb(); (B)
+On 12/23/13 at 08:07am, Matt Fleming wrote:
+> On Mon, 23 Dec, at 10:09:58AM, Dave Young wrote:
+> > On 12/21/13 at 04:06pm, Matt Fleming wrote:
+> > > On Fri, 20 Dec, at 06:02:19PM, Dave Young wrote:
+> > > > @@ -133,6 +133,19 @@ extern void efi_sync_low_kernel_mappings(void);
+> > > >  extern void efi_setup_page_tables(void);
+> > > >  extern void __init old_map_region(efi_memory_desc_t *md);
+> > > >  
+> > > > +struct efi_setup_data {
+> > > > +	u64 fw_vendor;
+> > > > +	u64 runtime;
+> > > > +	u64 tables;
+> > > > +	u64 smbios;
+> > > > +	u64 reserved[8];
+> > > > +	efi_memory_desc_t map[0];
+> > > > +};
+> > > 
+> > > [...]
+> > > 
+> > > > +static void get_nr_runtime_map(void)
+> > > > +{
+> > > > +	if (!efi_setup)
+> > > > +		return;
+> > > > +
+> > > > +	nr_efi_runtime_map = (efi_data_len - sizeof(struct efi_setup_data)) /
+> > > > +			     sizeof(efi_memory_desc_t);
+> > > > +}
+> > > 
+> > > Do we actually need the 'map' entry in efi_setup_data now that you're
+> > > passing it via efi_info (which is much better approach!)? Also, we don't
+> > > need the global nr_efi_runtime_map or efi_runtime_map variables now,
+> > > right?
+> > 
+> > The map is still necessary because we need store the map somewhere and pass
+> > the physicall address to kexec kernel. Passing them in setup_data is the
+> > only better way currently...
+> > 
+> > In efi_info there's only an entry for the map physical address, the original
+> > map area is not valid any more.
+> 
+> Where do you dereference efi_setup_data.map* in the kexec kernel?
 
-Checking the state of the spinlock counter isn't the same as 
-incrementing a waiter count. So your pseudo code here is misleading. See 
-further explanation below.
+The field itself is not dereferenced in kernel but it's still used in userspace
+code for collecting and saving runtime maps. Since I still append the map at the
+end of efi_setup_data so I think keep the map[0] is ok. What's your opinion?
 
->    *   if (uval == val)
-> - *      queue();
-> + *     queue();
->    *     unlock(hash_bucket(futex));
-> - *     schedule();                       if (!queue_empty())
-> - *                                         wake_waiters(futex);
-> - *                                       unlock(hash_bucket(futex));
-> + *     schedule();                         if (waiters)
-> + *                                           lock(hash_bucket(futex));
-> + *                                           wake_waiters(futex);
-> + *                                           unlock(hash_bucket(futex));
-> + *
-> + * Where (A) orders the waiters increment and the futex value read -- this
-> + * is guaranteed by the head counter in the hb spinlock; and where (B)
-> + * orders the write to futex and the waiters read.
-> + *
-> + * This yields the following case (where X:=waiters, Y:=futex):
-> + *
-> + *	X = Y = 0
-> + *
-> + *	w[X]=1		w[Y]=1
-> + *	MB		MB
-> + *	r[Y]=y		r[X]=x
-> + *
-> + * Which guarantees that x==0&&  y==0 is impossible; which translates back into
-> + * the guarantee that we cannot both miss the futex variable change and the
-> + * enqueue.
->    */
->
->   int __read_mostly futex_cmpxchg_enabled;
-> @@ -211,6 +240,35 @@ static unsigned long __read_mostly futex_hashsize;
->
->   static struct futex_hash_bucket *futex_queues;
->
-> +static inline void futex_get_mm(union futex_key *key)
-> +{
-> +	atomic_inc(&key->private.mm->mm_count);
-> +#ifdef CONFIG_SMP
-> +	/*
-> +	 * Ensure futex_get_mm() implies a full barrier such that
-> +	 * get_futex_key() implies a full barrier. This is relied upon
-> +	 * as full barrier (B), see the ordering comment above.
-> +	 */
-> +	smp_mb__after_atomic_inc();
-> +#endif
-> +}
-> +
-> +static inline bool hb_waiters_pending(struct futex_hash_bucket *hb)
-> +{
-> +#ifdef CONFIG_SMP
-> +	/*
-> +	 * If the hash bucket is locked then we know the ticket counter
-> +	 * is non-zero and thus there is at least one waiter in the queue.
-> +	 */
-> +	if (spin_is_locked(&hb->lock))
-> +		return true;
-> +	smp_rmb(); /* Make sure we check the lock state first */
-> +	return !plist_head_empty(&hb->chain);
-> +#else
-> +	return true;
-> +#endif
-> +}
-
-The ticket spinlock counter is a cyclic counter that can cycle through 0 
-periodically. So the zero-ness of the counter has no relation to whether 
-it is locked or not.  Your comment above is not correct. What 
-spin_is_locked() can tell you is whether one or more tasks are trying to 
-get into the critical section which can be a waiter (most likely) or a 
-waker. Coupled with checking if the list is empty, that could be a 
-cheaper alternative to using a separate atomic counter, but it is also 
-slightly less reliable and has a higher chance of false positive.
-
--Longman
+Thanks
+Dave
