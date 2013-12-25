@@ -1,83 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751288Ab3LYAcu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 19:32:50 -0500
-Received: from mail-yh0-f44.google.com ([209.85.213.44]:59241 "EHLO
-	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100Ab3LYAcs (ORCPT
+	id S1751332Ab3LYBlj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 20:41:39 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:20783 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100Ab3LYBlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 19:32:48 -0500
-Date: Tue, 24 Dec 2013 16:24:58 -0800
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Use __kernel_long_t in struct timex
-Message-ID: <20131225002458.GA363@gmail.com>
+	Tue, 24 Dec 2013 20:41:37 -0500
+Message-ID: <52BA379C.1080302@huawei.com>
+Date: Wed, 25 Dec 2013 09:40:44 +0800
+From: Ding Tianhong <dingtianhong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Miller <davem@davemloft.net>, <dthxman@gmail.com>
+CC: <joe@perches.com>, <pcnet32@frontier.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 03/20] net: pcnet: slight optimization of addr compare
+References: <52B96FA7.10201@huawei.com>	<1387888739.2259.7.camel@joe-AO722>	<52B99072.5070809@gmail.com> <20131224.125932.1553654835250145689.davem@davemloft.net>
+In-Reply-To: <20131224.125932.1553654835250145689.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.135.72.199]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-X32 adjtimex system call is the same as x86-64 adjtimex system call,
-which uses 64-bit integer for long in struct timex. But x32 long is
-32 bit.  This patch replaces long in struct timex with __kernel_long_t.
+On 2013/12/25 1:59, David Miller wrote:
+> From: Ding Tianhong <dthxman@gmail.com>
+> Date: Tue, 24 Dec 2013 21:47:30 +0800
+> 
+>> Oh， no,  maybe I was dizzy by these patches,  I should be more careful,
+>> sorry about that, I will resend this one.
+> 
+> You must resend the entire patch series when you make any changes.
+> 
+> Thank you.
+> 
+> 
 
-Signed-off-by: H.J. Lu <hjl.tools@gmail.com>
----
- include/uapi/linux/timex.h | 34 +++++++++++++++++-----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
+ok
 
-diff --git a/include/uapi/linux/timex.h b/include/uapi/linux/timex.h
-index a7ea81f..92685d8 100644
---- a/include/uapi/linux/timex.h
-+++ b/include/uapi/linux/timex.h
-@@ -63,27 +63,27 @@
-  */
- struct timex {
- 	unsigned int modes;	/* mode selector */
--	long offset;		/* time offset (usec) */
--	long freq;		/* frequency offset (scaled ppm) */
--	long maxerror;		/* maximum error (usec) */
--	long esterror;		/* estimated error (usec) */
-+	__kernel_long_t offset;	/* time offset (usec) */
-+	__kernel_long_t freq;	/* frequency offset (scaled ppm) */
-+	__kernel_long_t maxerror;/* maximum error (usec) */
-+	__kernel_long_t esterror;/* estimated error (usec) */
- 	int status;		/* clock command/status */
--	long constant;		/* pll time constant */
--	long precision;		/* clock precision (usec) (read only) */
--	long tolerance;		/* clock frequency tolerance (ppm)
--				 * (read only)
--				 */
-+	__kernel_long_t constant;/* pll time constant */
-+	__kernel_long_t precision;/* clock precision (usec) (read only) */
-+	__kernel_long_t tolerance;/* clock frequency tolerance (ppm)
-+				   * (read only)
-+				   */
- 	struct timeval time;	/* (read only, except for ADJ_SETOFFSET) */
--	long tick;		/* (modified) usecs between clock ticks */
-+	__kernel_long_t tick;	/* (modified) usecs between clock ticks */
- 
--	long ppsfreq;           /* pps frequency (scaled ppm) (ro) */
--	long jitter;            /* pps jitter (us) (ro) */
-+	__kernel_long_t ppsfreq;/* pps frequency (scaled ppm) (ro) */
-+	__kernel_long_t jitter; /* pps jitter (us) (ro) */
- 	int shift;              /* interval duration (s) (shift) (ro) */
--	long stabil;            /* pps stability (scaled ppm) (ro) */
--	long jitcnt;            /* jitter limit exceeded (ro) */
--	long calcnt;            /* calibration intervals (ro) */
--	long errcnt;            /* calibration errors (ro) */
--	long stbcnt;            /* stability limit exceeded (ro) */
-+	__kernel_long_t stabil;            /* pps stability (scaled ppm) (ro) */
-+	__kernel_long_t jitcnt; /* jitter limit exceeded (ro) */
-+	__kernel_long_t calcnt; /* calibration intervals (ro) */
-+	__kernel_long_t errcnt; /* calibration errors (ro) */
-+	__kernel_long_t stbcnt; /* stability limit exceeded (ro) */
- 
- 	int tai;		/* TAI offset (ro) */
- 
--- 
-1.8.4.2
 
