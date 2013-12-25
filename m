@@ -1,281 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751699Ab3LYD4X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 22:56:23 -0500
-Received: from mga03.intel.com ([143.182.124.21]:3688 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751305Ab3LYD4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 22:56:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,546,1384329600"; 
-   d="scan'208";a="449417994"
-Date: Wed, 25 Dec 2013 11:56:15 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Alex Shi <alex.shi@linaro.org>
-Cc: Yuanhan Liu <yuanhan.liu@intel.com>, "Huang, Ying" <ying.huang@intel.com>,
-        lkp@01.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [sched] perf-stat.cpu-migrations changes in dd write test
-Message-ID: <20131225035615.GA23802@localhost>
-References: <20131222003038.GA8932@localhost>
- <52B7C7C8.20003@linaro.org>
- <20131223052426.GB31502@localhost>
- <52BA5153.9090008@linaro.org>
+	id S1751769Ab3LYEN2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 23:13:28 -0500
+Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:47813
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751394Ab3LYEN1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Dec 2013 23:13:27 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>
+CC: <shawn.guo@linaro.org>, <timur@tabi.org>, <lgirdwood@gmail.com>,
+        <perex@perex.cz>, <tiwai@suse.de>, <alsa-devel@alsa-project.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <b47053@freescale.com>
+Subject: [PATCH] ASoC: fsl_sai: Move the global registers setting to _dai_probe()
+Date: Wed, 25 Dec 2013 11:20:14 +0800
+Message-ID: <1387941614-7629-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52BA5153.9090008@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 25, 2013 at 11:30:27AM +0800, Alex Shi wrote:
-> On 12/23/2013 01:24 PM, Fengguang Wu wrote:
-> > On Mon, Dec 23, 2013 at 01:19:04PM +0800, Alex Shi wrote:
-> >> On 12/22/2013 08:30 AM, fengguang.wu@intel.com wrote:
-> >>> Alex,
-> >>>
-> >>> We noticed some perf-stat.cpu-migrations changes by your commit
-> >>
-> >> Thanks for your wonder testing, Fengguang!
-> >> How many CPU in your system and how many dd task running?
-> > 
-> > For the case
-> > 
-> >         kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd
-> > 
-> > It's a KVM with 4 CPUs, 16G memory. There are 4 virtual disks, on top
-> > of each disk there runs 10 dd tasks.
-> 
-> I don't know much of kvm. Where the data get from, VM guest or VM host?
+Because we cannot make sure which one of _dai_fmt() and _dai_sysclk()
+will be firstly called. So move the RCSR/TCSR and TCR1/RCR1's
+initialization to _dai_probe(), and this can make sure that before any
+of {T,R}CR{1~5} register to be set the RCSR/TCSR's RE/TE bit has been
+cleared for the hareware limitation.
 
-The data are collected in the VM guest.
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ sound/soc/fsl/fsl_sai.c | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
-Thanks,
-Fengguang
+diff --git a/sound/soc/fsl/fsl_sai.c b/sound/soc/fsl/fsl_sai.c
+index b72132f..596aabb 100644
+--- a/sound/soc/fsl/fsl_sai.c
++++ b/sound/soc/fsl/fsl_sai.c
+@@ -100,11 +100,6 @@ static int fsl_sai_set_dai_sysclk(struct snd_soc_dai *cpu_dai,
+ 	if (ret)
+ 		return ret;
+ 
+-	sai_writel(sai, 0x0, sai->base + FSL_SAI_RCSR);
+-	sai_writel(sai, 0x0, sai->base + FSL_SAI_TCSR);
+-	sai_writel(sai, FSL_SAI_MAXBURST_TX * 2, sai->base + FSL_SAI_TCR1);
+-	sai_writel(sai, FSL_SAI_MAXBURST_RX - 1, sai->base + FSL_SAI_RCR1);
+-
+ 	ret = fsl_sai_set_dai_sysclk_tr(cpu_dai, clk_id, freq,
+ 					FSL_FMT_TRANSMITTER);
+ 	if (ret) {
+@@ -351,6 +346,18 @@ static const struct snd_soc_dai_ops fsl_sai_pcm_dai_ops = {
+ static int fsl_sai_dai_probe(struct snd_soc_dai *cpu_dai)
+ {
+ 	struct fsl_sai *sai = dev_get_drvdata(cpu_dai->dev);
++	int ret;
++
++	ret = clk_prepare_enable(sai->clk);
++	if (ret)
++		return ret;
++
++	sai_writel(sai, 0x0, sai->base + FSL_SAI_RCSR);
++	sai_writel(sai, 0x0, sai->base + FSL_SAI_TCSR);
++	sai_writel(sai, FSL_SAI_MAXBURST_TX * 2, sai->base + FSL_SAI_TCR1);
++	sai_writel(sai, FSL_SAI_MAXBURST_RX - 1, sai->base + FSL_SAI_RCR1);
++
++	clk_disable_unprepare(sai->clk);
+ 
+ 	snd_soc_dai_init_dma_data(cpu_dai, &sai->dma_params_tx,
+ 				&sai->dma_params_rx);
+-- 
+1.8.4
 
-> Looks like any guest cpu usage will be counted as user usage in vmstat.
-> and Does the CS and cpu migration reducing cause dd performance increase?
-> > 
-> > Thanks,
-> > Fengguang
-> > 
-> >>>
-> >>> 6eb8b571283e64e96ca1a91aad085f9e08f857f0 is the first bad commit
-> >>> commit 6eb8b571283e64e96ca1a91aad085f9e08f857f0
-> >>> Author: Alex Shi <alex.shi@linaro.org>
-> >>> Date:   Tue Nov 19 20:29:51 2013 +0800
-> >>>
-> >>>     sched: remove rq->cpu_load[load_idx] array
-> >>>     
-> >>>     Since load_idx effect removed in load balance, we don't need the
-> >>>     load_idx decays in scheduler. that will save some process in sched_tick
-> >>>     and others places.
-> >>>     
-> >>>     Signed-off-by: Alex Shi <alex.shi@linaro.org>
-> >>>
-> >>>
-> >>> Here are the changed stats comparing to its parent commit:
-> >>>
-> >>> 1de157d718f6494       6eb8b571283e64e96ca1  
-> >>> ---------------  -------------------------  
-> >>>      37779 ~40%    +115.2%      81288 ~50%  kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd
-> >>>      37779         +115.2%      81288       TOTAL proc-vmstat.pgscan_direct_normal
-> >>>
-> >>> kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd: proc-vmstat.pgscan_direct_normal
-> >>>
-> >>>    160000 ++----------------------------------------------------------------+
-> >>>           |                                                                 |
-> >>>    140000 ++                                                                O
-> >>>           |                                                                 |
-> >>>    120000 ++                                                                |
-> >>>           |                O                                                |
-> >>>    100000 ++                                                                |
-> >>>           |                                                                 |
-> >>>     80000 ++                               O                                |
-> >>>           |                                                               ..*
-> >>>     60000 ++                                                          ....  |
-> >>>           |                                                       ....      |
-> >>>     40000 *+...............                                 O ....          |
-> >>>           O                *...............         ........*.              |
-> >>>     20000 ++-------------------------------*--------------------------------+
-> >>>
-> >>>
-> >>> 1de157d718f6494       6eb8b571283e64e96ca1  
-> >>> ---------------  -------------------------  
-> >>>     121579 ~ 6%     -50.8%      59852 ~13%  kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd
-> >>>     121579          -50.8%      59852       TOTAL softirqs.SCHED
-> >>>
-> >>>             kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd: softirqs.SCHED
-> >>>
-> >>>    140000 ++----------------------------------------------------------------+
-> >>>    130000 ++           ....*...........                 ....*.......        |
-> >>>           |    ........                ....     ........            ......  |
-> >>>    120000 *+...                            *....                          ..|
-> >>>    110000 ++                                                                *
-> >>>           |                                                                 |
-> >>>    100000 ++                                                                |
-> >>>     90000 ++                                                                |
-> >>>     80000 ++                                                                |
-> >>>           |                                                                 |
-> >>>     70000 ++                               O                O               |
-> >>>     60000 ++               O                                                |
-> >>>           |                                                                 O
-> >>>     50000 O+                                                                |
-> >>>     40000 ++----------------------------------------------------------------+
-> >>>
-> >>>
-> >>> 1de157d718f6494       6eb8b571283e64e96ca1  
-> >>> ---------------  -------------------------  
-> >>>       5636 ~ 4%     -22.1%       4392 ~17%  kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd
-> >>>       5636          -22.1%       4392       TOTAL proc-vmstat.nr_tlb_remote_flush
-> >>>
-> >>>  kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd: proc-vmstat.nr_tlb_remote_flush
-> >>>
-> >>>    6500 ++------------------------------------------------------------------+
-> >>>         |                                                                   |
-> >>>    6000 ++       ........*............                                      |
-> >>>         *........                     ....                                  |
-> >>>    5500 ++               O                *................*................|
-> >>>         |                                                                   *
-> >>>    5000 ++                                O                                 |
-> >>>         |                                                                   |
-> >>>    4500 ++                                                 O                |
-> >>>         |                                                                   |
-> >>>    4000 ++                                                                  |
-> >>>         |                                                                   O
-> >>>    3500 O+                                                                  |
-> >>>         |                                                                   |
-> >>>    3000 ++------------------------------------------------------------------+
-> >>>
-> >>>
-> >>> 1de157d718f6494       6eb8b571283e64e96ca1  
-> >>> ---------------  -------------------------  
-> >>>       5679 ~ 4%     -21.9%       4437 ~17%  kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd
-> >>>       5679          -21.9%       4437       TOTAL proc-vmstat.nr_tlb_remote_flush_received
-> >>>
-> >>>
-> >>>
-> >>>    6500 ++------------------------------------------------------------------+
-> >>>         |                                                                   |
-> >>>    6000 ++       ........*........                                          |
-> >>>         *........                 ......                                    |
-> >>>         |                               ..         ........*................|
-> >>>    5500 ++               O                *........                         *
-> >>>         |                                                                   |
-> >>>    5000 ++                                O                                 |
-> >>>         |                                                                   |
-> >>>    4500 ++                                                 O                |
-> >>>         |                                                                   |
-> >>>         |                                                                   |
-> >>>    4000 ++                                                                  |
-> >>>         |                                                                   O
-> >>>    3500 O+------------------------------------------------------------------+
-> >>>
-> >>>
-> >>> 1de157d718f6494       6eb8b571283e64e96ca1  
-> >>> ---------------  -------------------------  
-> >>>        167 ~11%     +19.4%        200 ~ 4%  kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd
-> >>>        167          +19.4%        200       TOTAL uptime.idle
-> >>>
-> >>>             kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd: uptime.idle
-> >>>
-> >>>    220 ++-------------------------------------------------------------------+
-> >>>        |                                                                    O
-> >>>    210 ++                                                                   |
-> >>>    200 O+                                 O                                 |
-> >>>        |              ..*.....                             O                |
-> >>>    190 ++         ....  O     ...                                           |
-> >>>    180 ++     ....               ....                                       |
-> >>>        |  ....                       ....                                   |
-> >>>    170 *+.                               .                                 .*
-> >>>    160 ++                                 *......                      .... |
-> >>>        |                                         ....               ...     |
-> >>>    150 ++                                            ....        ...        |
-> >>>    140 ++                                                ..  ....           |
-> >>>        |                                                   *.               |
-> >>>    130 ++-------------------------------------------------------------------+
-> >>>
-> >>>
-> >>> 1de157d718f6494       6eb8b571283e64e96ca1  
-> >>> ---------------  -------------------------  
-> >>>     154781 ~ 5%     -66.8%      51449 ~ 8%  kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd
-> >>>     154781          -66.8%      51449       TOTAL perf-stat.cpu-migrations
-> >>>
-> >>>        kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd: perf-stat.cpu-migrations
-> >>>
-> >>>    180000 ++----------------------------------------------------------------+
-> >>>           |            ....*...........                                     |
-> >>>    160000 ++   ........                ....         ........*...............|
-> >>>           *....                            *........                        *
-> >>>    140000 ++                                                                |
-> >>>           |                                                                 |
-> >>>    120000 ++                                                                |
-> >>>           |                                                                 |
-> >>>    100000 ++                                                                |
-> >>>           |                                                                 |
-> >>>     80000 ++                                                                |
-> >>>           |                                                                 |
-> >>>     60000 ++                                                O               |
-> >>>           |                O               O                                O
-> >>>     40000 O+----------------------------------------------------------------+
-> >>>
-> >>>
-> >>> 1de157d718f6494       6eb8b571283e64e96ca1  
-> >>> ---------------  -------------------------  
-> >>>       1943 ~ 3%      -7.8%       1792 ~ 4%  kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd
-> >>>       1943           -7.8%       1792       TOTAL vmstat.system.cs
-> >>>
-> >>>           kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd: vmstat.system.cs
-> >>>
-> >>>    2050 ++------------------------------------------------------------------+
-> >>>         |                         ........*................*.....           |
-> >>>    2000 ++              .*........                               ...        |
-> >>>    1950 ++          ....                                            ...     |
-> >>>         |        ...                                                   .... |
-> >>>    1900 ++    ...                                                          .|
-> >>>    1850 ++....                            O                O                *
-> >>>         *.                                                                  |
-> >>>    1800 ++               O                                                  O
-> >>>    1750 ++                                                                  |
-> >>>         |                                                                   |
-> >>>    1700 ++                                                                  |
-> >>>    1650 O+                                                                  |
-> >>>         |                                                                   |
-> >>>    1600 ++------------------------------------------------------------------+
-> >>>
-> >>>
-> >>> 1de157d718f6494       6eb8b571283e64e96ca1  
-> >>> ---------------  -------------------------  
-> >>>    1216177 ~ 3%      -9.4%    1101605 ~ 7%  kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd
-> >>>    1216177           -9.4%    1101605       TOTAL perf-stat.context-switches
-> >>>
-> >>>       kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd: perf-stat.context-switches
-> >>>
-> >>>     1.3e+06 ++--------------------------------------------------------------+
-> >>>             |             ..*...............                                |
-> >>>    1.25e+06 ++      ......                  *...............*.......        |
-> >>>             |  .....                                                ......  |
-> >>>     1.2e+06 *+.                             O                             ..|
-> >>>    1.15e+06 ++                                              O               *
-> >>>             |               O                                               |
-> >>>     1.1e+06 ++                                                              |
-> >>>             |                                                               O
-> >>>    1.05e+06 ++                                                              |
-> >>>       1e+06 ++                                                              |
-> >>>             |                                                               |
-> >>>      950000 O+                                                              |
-> >>>             |                                                               |
-> >>>      900000 ++--------------------------------------------------------------+
-> >>>
-> >>>
-> >>
-> >>
-> >> -- 
-> >> Thanks
-> >>     Alex
-> 
-> 
-> -- 
-> Thanks
->     Alex
+
