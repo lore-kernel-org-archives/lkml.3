@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751341Ab3LYBwz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 20:52:55 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:52523 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166Ab3LYBwx (ORCPT
+	id S1751487Ab3LYCgo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 21:36:44 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:38937 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751235Ab3LYCgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 20:52:53 -0500
-Message-ID: <52BA3A72.6080700@gmail.com>
-Date: Tue, 24 Dec 2013 19:52:50 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>, Vasiliy Tolstov <v.tolstov@selfip.ru>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: tg3 and sd card reader at acer aspire
-References: <CACaajQv1OWxxcGORBq=LN-4JQzATf4YmWBQymoeyovfY-rUpmw@mail.gmail.com> <CAErSpo4uZ1N7uKyKMGHERtq-gvcpQ7oHTE7U9fGiAzfziMJ+Ew@mail.gmail.com>
-In-Reply-To: <CAErSpo4uZ1N7uKyKMGHERtq-gvcpQ7oHTE7U9fGiAzfziMJ+Ew@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Dec 2013 21:36:43 -0500
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+To: viro@zeniv.linux.org.uk, eparis@redhat.com
+Cc: linux-kernel@vger.kernel.org, linux-audit@redhat.com, patches@linaro.org,
+        dsaxena@linaro.org, AKASHI Takahiro <takahiro.akashi@linaro.org>
+Subject: [PATCH] audit: correct a type mismatch in audit_syscall_exit()
+Date: Wed, 25 Dec 2013 11:35:53 +0900
+Message-Id: <1387938953-15667-1-git-send-email-takahiro.akashi@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/24/2013 11:52 AM, Bjorn Helgaas wrote:
-> [+cc linux-pci because I think this is related to PCI ASPM]
->
-> I'm afraid nobody wants to touch ASPM because it's such a mess, but I
-> hope somebody will step up and investigate this.
+audit_syscall_exit() saves a result of regs_return_value() in intermediate
+"int" variable and passes it to __audit_syscall_exit(), which expects its
+second argument as a "long" value.
+This will result in truncating the value returned by a system call and
+making a wrong audit record.
+I don't know why gcc compiler doesn't complain about this, but anyway it
+causes a problem at runtime on arm64 (and probably most 64-bit archs).
 
-So apparently this machine got broken when we changed the behavior for 
-the ACPI ASPM-not-supported bit from forcing ASPM off for everything to 
-leaving ASPM in whatever state the BIOS left it in. And apparently for 
-some reason the device (devices?) doesn't work with ASPM enabled in 
-Linux but does in Windows. It's possible that some other workaround is 
-being applied by the Windows driver that allows it to work there.
+Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+---
+ include/linux/audit.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I'm not too sure what the next step to debug that would be, unless maybe 
-someone has a contact at Broadcom. We could conceivably add a quirk to 
-force ASPM off for this device regardless of what the BIOS says, though.
-
->
-> On Tue, Dec 24, 2013 at 1:27 AM, Vasiliy Tolstov <v.tolstov@selfip.ru> wrote:
->> Hi all and sorry for may be spamming mailing list.
->>
->> I have acer aspire v5-17 with broadcom card reader and ethernet card.
->> I'm affecting on this ubuntu bugs. But bug is present in vanilla linux
->> current git and stable lts.
->>
->> Can somebody helps me and say - where i can post message and discuss
->> this problem. As i see ubuntu team can't solve this problem (bug
->> present is about 1 year and nothing changed).
->> One ubuntu user wia bisecting find broken commit -
->> https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=6cac12dfab9c57a4f76821412224b226a9b08dff
->>
->> Relevant ubuntu bugs:
->> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1178131
->> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1067222
->>
->>
->> Thanks!
->> --
->> Vasiliy Tolstov,
->> e-mail: v.tolstov@selfip.ru
->> jabber: vase@selfip.ru
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index c49a312..3dcb3f0 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -144,7 +144,7 @@ static inline void audit_syscall_exit(void *pt_regs)
+ {
+ 	if (unlikely(current->audit_context)) {
+ 		int success = is_syscall_success(pt_regs);
+-		int return_code = regs_return_value(pt_regs);
++		long return_code = regs_return_value(pt_regs);
+ 
+ 		__audit_syscall_exit(success, return_code);
+ 	}
+-- 
+1.7.9.5
 
