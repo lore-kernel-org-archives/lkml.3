@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751246Ab3LYAZW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 19:25:22 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:33740 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049Ab3LYAZV (ORCPT
+	id S1751288Ab3LYAcu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 19:32:50 -0500
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:59241 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100Ab3LYAcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 19:25:21 -0500
-Message-ID: <1387931114.6419.0.camel@phoenix>
-Subject: [PATCH v2] regulator: act8865: Remove unneeded
- regulator_unregister() calls
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Wenyou Yang <wenyou.yang@atmel.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 25 Dec 2013 08:25:14 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 24 Dec 2013 19:32:48 -0500
+Date: Tue, 24 Dec 2013 16:24:58 -0800
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Use __kernel_long_t in struct timex
+Message-ID: <20131225002458.GA363@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is not required because current code uses devm_regulator_register() to
-register regulators.
+X32 adjtimex system call is the same as x86-64 adjtimex system call,
+which uses 64-bit integer for long in struct timex. But x32 long is
+32 bit.  This patch replaces long in struct timex with __kernel_long_t.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: H.J. Lu <hjl.tools@gmail.com>
 ---
-v2: Fix typo in subject line s/Rmove/Remove/
- drivers/regulator/act8865-regulator.c | 12 ------------
- 1 file changed, 12 deletions(-)
+ include/uapi/linux/timex.h | 34 +++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/regulator/act8865-regulator.c b/drivers/regulator/act8865-regulator.c
-index db048f2..dfae294 100644
---- a/drivers/regulator/act8865-regulator.c
-+++ b/drivers/regulator/act8865-regulator.c
-@@ -334,17 +334,6 @@ static int act8865_pmic_probe(struct i2c_client *client,
- 	return 0;
- }
+diff --git a/include/uapi/linux/timex.h b/include/uapi/linux/timex.h
+index a7ea81f..92685d8 100644
+--- a/include/uapi/linux/timex.h
++++ b/include/uapi/linux/timex.h
+@@ -63,27 +63,27 @@
+  */
+ struct timex {
+ 	unsigned int modes;	/* mode selector */
+-	long offset;		/* time offset (usec) */
+-	long freq;		/* frequency offset (scaled ppm) */
+-	long maxerror;		/* maximum error (usec) */
+-	long esterror;		/* estimated error (usec) */
++	__kernel_long_t offset;	/* time offset (usec) */
++	__kernel_long_t freq;	/* frequency offset (scaled ppm) */
++	__kernel_long_t maxerror;/* maximum error (usec) */
++	__kernel_long_t esterror;/* estimated error (usec) */
+ 	int status;		/* clock command/status */
+-	long constant;		/* pll time constant */
+-	long precision;		/* clock precision (usec) (read only) */
+-	long tolerance;		/* clock frequency tolerance (ppm)
+-				 * (read only)
+-				 */
++	__kernel_long_t constant;/* pll time constant */
++	__kernel_long_t precision;/* clock precision (usec) (read only) */
++	__kernel_long_t tolerance;/* clock frequency tolerance (ppm)
++				   * (read only)
++				   */
+ 	struct timeval time;	/* (read only, except for ADJ_SETOFFSET) */
+-	long tick;		/* (modified) usecs between clock ticks */
++	__kernel_long_t tick;	/* (modified) usecs between clock ticks */
  
--static int act8865_pmic_remove(struct i2c_client *client)
--{
--	struct act8865 *act8865 = i2c_get_clientdata(client);
--	int i;
--
--	for (i = 0; i < ACT8865_REG_NUM; i++)
--		regulator_unregister(act8865->rdev[i]);
--
--	return 0;
--}
--
- static const struct i2c_device_id act8865_ids[] = {
- 	{ "act8865", 0 },
- 	{ },
-@@ -357,7 +346,6 @@ static struct i2c_driver act8865_pmic_driver = {
- 		.owner	= THIS_MODULE,
- 	},
- 	.probe		= act8865_pmic_probe,
--	.remove		= act8865_pmic_remove,
- 	.id_table	= act8865_ids,
- };
+-	long ppsfreq;           /* pps frequency (scaled ppm) (ro) */
+-	long jitter;            /* pps jitter (us) (ro) */
++	__kernel_long_t ppsfreq;/* pps frequency (scaled ppm) (ro) */
++	__kernel_long_t jitter; /* pps jitter (us) (ro) */
+ 	int shift;              /* interval duration (s) (shift) (ro) */
+-	long stabil;            /* pps stability (scaled ppm) (ro) */
+-	long jitcnt;            /* jitter limit exceeded (ro) */
+-	long calcnt;            /* calibration intervals (ro) */
+-	long errcnt;            /* calibration errors (ro) */
+-	long stbcnt;            /* stability limit exceeded (ro) */
++	__kernel_long_t stabil;            /* pps stability (scaled ppm) (ro) */
++	__kernel_long_t jitcnt; /* jitter limit exceeded (ro) */
++	__kernel_long_t calcnt; /* calibration intervals (ro) */
++	__kernel_long_t errcnt; /* calibration errors (ro) */
++	__kernel_long_t stbcnt; /* stability limit exceeded (ro) */
+ 
+ 	int tai;		/* TAI offset (ro) */
  
 -- 
-1.8.1.2
-
-
+1.8.4.2
 
