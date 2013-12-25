@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752467Ab3LYD33 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 22:29:29 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:54708 "EHLO
+	id S1752511Ab3LYD3j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 22:29:39 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:54795 "EHLO
 	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752367Ab3LYD3Y (ORCPT
+	with ESMTP id S1751448Ab3LYD3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 22:29:24 -0500
-Message-ID: <52BA50E0.1030306@huawei.com>
-Date: Wed, 25 Dec 2013 11:28:32 +0800
+	Tue, 24 Dec 2013 22:29:36 -0500
+Message-ID: <52BA50E4.4040808@huawei.com>
+Date: Wed, 25 Dec 2013 11:28:36 +0800
 From: Ding Tianhong <dingtianhong@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Marek Lindner <mareklindner@neomailbox.ch>,
-        Simon Wunderlich <sw@simonwunderlich.de>,
-        Antonio Quartulli <antonio@meshcoding.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        <b.a.t.m.a.n@lists.open-mesh.org>, Netdev <netdev@vger.kernel.org>,
+To: Daniel Drake <dsd@gentoo.org>, Ulrich Kunitz <kune@deine-taler.de>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        <linux-wireless@vger.kernel.org>, Netdev <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 06/19] batman-adv: use batadv_compare_eth for concise
+Subject: [PATCH v3 07/19] zd1211rw: slight optimization of addr compare
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.72.199]
@@ -27,50 +25,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is better to use batadv_compate_eth instead of memcpy for
-concise style.
+Use possibly more efficient ether_addr_equal
+instead of memcmp.
 
-Cc: Marek Lindner <mareklindner@neomailbox.ch>
-Cc: Simon Wunderlich <sw@simonwunderlich.de>
-Cc: Antonio Quartulli <antonio@meshcoding.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: b.a.t.m.a.n@lists.open-mesh.org
+Cc: Daniel Drake <dsd@gentoo.org>
+Cc: Ulrich Kunitz <kune@deine-taler.de>
+Cc: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org
 Cc: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Tan Xiaojun <tanxiaojun@huawei.com>
 Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
-Acked-by: Antonio Quartulli <antonio@meshcoding.com>
 ---
- net/batman-adv/originator.c        | 2 +-
- net/batman-adv/translation-table.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/zd1211rw/zd_mac.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/net/batman-adv/originator.c b/net/batman-adv/originator.c
-index 8ab1434..803ab4b 100644
---- a/net/batman-adv/originator.c
-+++ b/net/batman-adv/originator.c
-@@ -41,7 +41,7 @@ int batadv_compare_orig(const struct hlist_node *node, const void *data2)
- 	const void *data1 = container_of(node, struct batadv_orig_node,
- 					 hash_entry);
+diff --git a/drivers/net/wireless/zd1211rw/zd_mac.c b/drivers/net/wireless/zd1211rw/zd_mac.c
+index eff79a3..e7af261 100644
+--- a/drivers/net/wireless/zd1211rw/zd_mac.c
++++ b/drivers/net/wireless/zd1211rw/zd_mac.c
+@@ -532,9 +532,8 @@ void zd_mac_tx_failed(struct urb *urb)
+ 		tx_hdr = (struct ieee80211_hdr *)skb->data;
  
--	return (memcmp(data1, data2, ETH_ALEN) == 0 ? 1 : 0);
-+	return batadv_compare_eth(data1, data2);
- }
+ 		/* we skip all frames not matching the reported destination */
+-		if (unlikely(memcmp(tx_hdr->addr1, tx_status->mac, ETH_ALEN))) {
++		if (unlikely(!ether_addr_equal(tx_hdr->addr1, tx_status->mac)))
+ 			continue;
+-		}
  
- /**
-diff --git a/net/batman-adv/translation-table.c b/net/batman-adv/translation-table.c
-index 4add57d..06506e6 100644
---- a/net/batman-adv/translation-table.c
-+++ b/net/batman-adv/translation-table.c
-@@ -51,7 +51,7 @@ static int batadv_compare_tt(const struct hlist_node *node, const void *data2)
- 	const void *data1 = container_of(node, struct batadv_tt_common_entry,
- 					 hash_entry);
+ 		/* we skip all frames not matching the reported final rate */
  
--	return (memcmp(data1, data2, ETH_ALEN) == 0 ? 1 : 0);
-+	return batadv_compare_eth(data1, data2);
- }
+@@ -997,7 +996,7 @@ static int filter_ack(struct ieee80211_hw *hw, struct ieee80211_hdr *rx_hdr,
+ 		    continue;
  
- /**
+ 		tx_hdr = (struct ieee80211_hdr *)skb->data;
+-		if (likely(!memcmp(tx_hdr->addr2, rx_hdr->addr1, ETH_ALEN)))
++		if (likely(ether_addr_equal(tx_hdr->addr2, rx_hdr->addr1)))
+ 		{
+ 			found = 1;
+ 			break;
 -- 
 1.8.0
 
