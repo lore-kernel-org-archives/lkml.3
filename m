@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab3LYDcy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 22:32:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3471 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752222Ab3LYDcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 22:32:52 -0500
-Date: Wed, 25 Dec 2013 11:32:05 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        bp@alien8.de, greg@kroah.com, toshi.kani@hp.com,
-        akpm@linux-foundation.org, mingo@kernel.org, msalter@redhat.com,
-        leif.lindholm@linaro.org
-Subject: Re: [PATCH v7 09/12] efi: passing kexec necessary efi data via
- setup_data
-Message-ID: <20131225033205.GC6333@dhcp-16-126.nay.redhat.com>
-References: <1387533742-18018-1-git-send-email-dyoung@redhat.com>
- <1387533742-18018-10-git-send-email-dyoung@redhat.com>
- <20131221160416.GD29501@console-pimps.org>
- <20131223020958.GB3760@dhcp-16-126.nay.redhat.com>
- <20131223080741.GB28919@console-pimps.org>
- <20131225031259.GB6333@dhcp-16-126.nay.redhat.com>
+	id S1752990Ab3LYDdR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 22:33:17 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:7005 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752209Ab3LYDdO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Dec 2013 22:33:14 -0500
+Message-ID: <52BA5108.7050406@huawei.com>
+Date: Wed, 25 Dec 2013 11:29:12 +0800
+From: Ding Tianhong <dingtianhong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131225031259.GB6333@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chas Williams <chas@cmf.nrl.navy.mil>,
+        <linux-atm-general@lists.sourceforge.net>,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3 11/19] atm: slight optimization of addr compare
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.199]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/25/13 at 11:12am, Dave Young wrote:
-> On 12/23/13 at 08:07am, Matt Fleming wrote:
-> > On Mon, 23 Dec, at 10:09:58AM, Dave Young wrote:
-> > > On 12/21/13 at 04:06pm, Matt Fleming wrote:
-> > > > On Fri, 20 Dec, at 06:02:19PM, Dave Young wrote:
-> > > > > @@ -133,6 +133,19 @@ extern void efi_sync_low_kernel_mappings(void);
-> > > > >  extern void efi_setup_page_tables(void);
-> > > > >  extern void __init old_map_region(efi_memory_desc_t *md);
-> > > > >  
-> > > > > +struct efi_setup_data {
-> > > > > +	u64 fw_vendor;
-> > > > > +	u64 runtime;
-> > > > > +	u64 tables;
-> > > > > +	u64 smbios;
-> > > > > +	u64 reserved[8];
-> > > > > +	efi_memory_desc_t map[0];
-> > > > > +};
-> > > > 
-> > > > [...]
-> > > > 
-> > > > > +static void get_nr_runtime_map(void)
-> > > > > +{
-> > > > > +	if (!efi_setup)
-> > > > > +		return;
-> > > > > +
-> > > > > +	nr_efi_runtime_map = (efi_data_len - sizeof(struct efi_setup_data)) /
-> > > > > +			     sizeof(efi_memory_desc_t);
-> > > > > +}
-> > > > 
-> > > > Do we actually need the 'map' entry in efi_setup_data now that you're
-> > > > passing it via efi_info (which is much better approach!)? Also, we don't
-> > > > need the global nr_efi_runtime_map or efi_runtime_map variables now,
-> > > > right?
-> > > 
-> > > The map is still necessary because we need store the map somewhere and pass
-> > > the physicall address to kexec kernel. Passing them in setup_data is the
-> > > only better way currently...
-> > > 
-> > > In efi_info there's only an entry for the map physical address, the original
-> > > map area is not valid any more.
-> > 
-> > Where do you dereference efi_setup_data.map* in the kexec kernel?
-> 
-> The field itself is not dereferenced in kernel but it's still used in userspace
-> code for collecting and saving runtime maps. Since I still append the map at the
-> end of efi_setup_data so I think keep the map[0] is ok. What's your opinion?
+Use possibly more efficient ether_addr_equal
+instead of memcmp.
 
-Matt, if you want to remove the map[0] please fold below one line patch? I have no
-strong opinion.
+Cc: Chas Williams <chas@cmf.nrl.navy.mil>
+Cc: linux-atm-general@lists.sourceforge.net
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Yang Yingliang <yangyingliang@huawei.com>
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+---
+ drivers/atm/nicstar.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Index: linux/arch/x86/include/asm/efi.h
-===================================================================
---- linux.orig/arch/x86/include/asm/efi.h
-+++ linux/arch/x86/include/asm/efi.h
-@@ -139,7 +139,6 @@ struct efi_setup_data {
- 	u64 tables;
- 	u64 smbios;
- 	u64 reserved[8];
--	efi_memory_desc_t map[0];
- };
- 
- extern u64 efi_setup;
+diff --git a/drivers/atm/nicstar.c b/drivers/atm/nicstar.c
+index 5aca5f4..9587e95 100644
+--- a/drivers/atm/nicstar.c
++++ b/drivers/atm/nicstar.c
+@@ -52,6 +52,7 @@
+ #include <asm/io.h>
+ #include <asm/uaccess.h>
+ #include <linux/atomic.h>
++#include <linux/etherdevice.h>
+ #include "nicstar.h"
+ #ifdef CONFIG_ATM_NICSTAR_USE_SUNI
+ #include "suni.h"
+@@ -781,8 +782,7 @@ static int ns_init_card(int i, struct pci_dev *pcidev)
+ 	if (mac[i] == NULL || !mac_pton(mac[i], card->atmdev->esi)) {
+ 		nicstar_read_eprom(card->membase, NICSTAR_EPROM_MAC_ADDR_OFFSET,
+ 				   card->atmdev->esi, 6);
+-		if (memcmp(card->atmdev->esi, "\x00\x00\x00\x00\x00\x00", 6) ==
+-		    0) {
++		if (ether_addr_equal(card->atmdev->esi, "\x00\x00\x00\x00\x00\x00")) {
+ 			nicstar_read_eprom(card->membase,
+ 					   NICSTAR_EPROM_MAC_ADDR_OFFSET_ALT,
+ 					   card->atmdev->esi, 6);
+-- 
+1.8.0
+
+
