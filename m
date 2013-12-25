@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482Ab3LYV7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Dec 2013 16:59:14 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:54932 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752294Ab3LYV7N (ORCPT
+	id S1752467Ab3LYWjL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Dec 2013 17:39:11 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:48600 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752294Ab3LYWjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Dec 2013 16:59:13 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [GIT PULL] libata fixes for v3.13-rc5
-Date: Wed, 25 Dec 2013 23:12:42 +0100
-Message-ID: <1667032.A7Knz5cBng@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <Pine.LNX.4.44L0.1312250955470.9215-100000@netrider.rowland.org>
-References: <Pine.LNX.4.44L0.1312250955470.9215-100000@netrider.rowland.org>
+	Wed, 25 Dec 2013 17:39:09 -0500
+Date: Wed, 25 Dec 2013 23:39:07 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lan Tianyu <tianyu.lan@intel.com>, Nishanth Menon <nm@ti.com>,
+        jinchoi@broadcom.com, Sebastian Capella <sebastian.capella@linaro.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH] cpufreq: suspend/resume governors with PM notifiers
+Message-ID: <20131225223907.GA13593@amd.pavel.ucw.cz>
+References: <0e476d16e0ae4b001f5dd4f9ac191f899095928a.1384510171.git.viresh.kumar@linaro.org>
+ <2235672.LLJc6e6dny@vostro.rjw.lan>
+ <CAKohpok_zjdRVz5-ZGRmZtwysC7jORm2mgRbLWDUzo1ucYVKZg@mail.gmail.com>
+ <6050176.zVNbf5pomE@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6050176.zVNbf5pomE@vostro.rjw.lan>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, December 25, 2013 09:57:09 AM Alan Stern wrote:
-> On Wed, 25 Dec 2013, Rafael J. Wysocki wrote:
-> 
-> > On Tuesday, December 24, 2013 04:55:46 PM Alan Stern wrote:
-> > > On Tue, 24 Dec 2013, Tejun Heo wrote:
-> > > 
-> > > > Hello, Linus.
-> > > > 
-> > > > libata fixes for v3.13-rc5.  There's one interseting commit - "libata,
-> > > > freezer: avoid block device removal while system is frozen".  It's an
-> > > > ugly hack working around a deadlock condition between driver core
-> > > > resume and block layer device removal paths through freezer which was
-> > > > made more reproducible by writeback being converted to workqueue some
-> > > > releases ago.  The bug has nothing to do with libata but it's just an
-> > > > workaround which is easy to backport.  After discussion, Rafael and I
-> > > > seem to agree that we don't really need kernel freezables - both
-> > > > kthread and workqueue.  There are few specific workqueues which
-> > > > constitute PM operations and require freezing, which will be converted
-> > > > to use workqueue_set_max_active() instead.  All other kernel freezer
-> > > > uses are planned to be removed, followed by the removal of kthread and
-> > > > workqueue freezer support, hopefully.
-> > > 
-> > > Wait a minute.  I don't recall anybody mentioning this earlier.  What 
-> > > about khubd?  There isn't any plan to remove _it_.
+Hi!
+
+> > > Well, disabling it for the whole duration of suspend/resume and/or hibernation
+> > > may not be the right approach entirely, unless we force the pax perf of the
 > > 
-> > No, but we are going to replace the freezing of kernel stuff with something
-> > more direct, like "suspend" routines called from the system suspend code path
-> > and causing things to stop (and corresponding "resume" starting them again).
+> > s/pax/max ?
 > 
-> Is this discussed in more detail somewhere (an email thread, for
-> example)?
+> Yes.
 
-This one, more or less: https://lkml.org/lkml/2013/12/13/402
+I'm not sure max frequency is a good idea. In particular, early
+athlon64 notebooks could not run on max frequency on battery power.
 
-Thanks,
-Rafael
+IMO it would be good to keep governors running during hibernation.
 
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
