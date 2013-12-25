@@ -1,81 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752488Ab3LYXJj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Dec 2013 18:09:39 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:53699 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752416Ab3LYXJh (ORCPT
+	id S1752518Ab3LYXOE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Dec 2013 18:14:04 -0500
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:51963 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752428Ab3LYXOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Dec 2013 18:09:37 -0500
-Date: Thu, 26 Dec 2013 00:09:35 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: lgxue@hotmail.com
-Cc: cooloney@gmail.com, rpurdie@rpsys.net, rob@landley.net, milo.kim@ti.com,
-        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH] Add the LED burst trigger
-Message-ID: <20131225230935.GB13593@amd.pavel.ucw.cz>
-References: <1387895407-28031-1-git-send-email-lgxue@hotmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387895407-28031-1-git-send-email-lgxue@hotmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 25 Dec 2013 18:14:02 -0500
+From: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+To: tomi.valkeinen@ti.com
+Cc: tony@atomide.com, linux@arm.linux.org.uk, pali.rohar@gmail.com,
+        pavel@ucw.cz, linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ivaylo Dimitrov <freemangordon@abv.bg>
+Subject: [PATCH] ARM: omapfb: Add early framebuffer memory allocator
+Date: Thu, 26 Dec 2013 01:12:39 +0200
+Message-Id: <1388013159-3036-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+X-Mailer: git-send-email 1.8.4.msysgit.0
+In-Reply-To: <52A062A0.3070005@ti.com>
+References: <52A062A0.3070005@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+From: Ivaylo Dimitrov <freemangordon@abv.bg>
 
-> +Sometimes, the system has only one no-color led to indicate different stats.
-> +The LED timer trigger can let LEDs to blink in different frequency, but most
-> +people maybe just can discriminate two states, slow and fast.
-> +
-> +In this case, Morse code maybe is a good choice :-), but who can bear it.
-> +
-> +Besides the Morse code, another way is using burst mode. People can easily tell
-> +how many times the LED blinks in one cycle.
+On memory limited devices, CMA fails easily when asked to allocate big
+chunks of memory like framebuffer memory needed for video playback.
 
-Would it make sense to make this a bit more capable, including the
-morse code?
+Add boot parameter "omapfb_memsize" which allocates memory to be used
+as dma coherent memory, so dma_alloc_attrs won't hit CMA allocator when
+trying to allocate memory for the framebuffers
 
-Actually... N900 has rather complex LED blinking hardware. (Yes, it
-has dedicated chip that can run simple "programs" for LED blinking).
+Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
+---
+ arch/arm/mach-omap2/common.c |    1 +
+ arch/arm/mach-omap2/common.h |    2 +
+ arch/arm/mach-omap2/fb.c     |   46 +++++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 48 insertions(+), 1 deletions(-)
 
-It would be cool to have reasonable interface for N900 leds... and
-perhaps its subset would work for you, too...
-
-http://wiki.maemo.org/LED_patterns
-
-									Pavel
-
-> +     on(1/6s)off(1/6s)on(1/6s)off(1/6m)
-> +     ...off 500ms...
-> +     on(1/6s)off(1/6s)on(1/3s)off(1/6m)
-> +     ...off 500ms
-> +     ...
-> +
-> +     Example 2
-> +
-> +     echo burst > trigger
-> +     echo 4 > freq
-> +     echo 3 > times
-> +     echo 1000 > delay_off
-
-Hmm, would something like
-
-echo 40 > step_length_ms
-echo "- - -          " > pattern
-
-do the same trick?
-
-Plus, you could for example do
-
-echo "- ---        " > pattern
-
-to do morse code...
-
-									Pavel
+diff --git a/arch/arm/mach-omap2/common.c b/arch/arm/mach-omap2/common.c
+index 2dabb9e..9beecde 100644
+--- a/arch/arm/mach-omap2/common.c
++++ b/arch/arm/mach-omap2/common.c
+@@ -33,4 +33,5 @@ void __init omap_reserve(void)
+ 	omap_dsp_reserve_sdram_memblock();
+ 	omap_secure_ram_reserve_memblock();
+ 	omap_barrier_reserve_memblock();
++	omap_fb_reserve_memblock();
+ }
+diff --git a/arch/arm/mach-omap2/common.h b/arch/arm/mach-omap2/common.h
+index e30ef67..21afdc0 100644
+--- a/arch/arm/mach-omap2/common.h
++++ b/arch/arm/mach-omap2/common.h
+@@ -304,6 +304,8 @@ extern void omap_reserve(void);
+ struct omap_hwmod;
+ extern int omap_dss_reset(struct omap_hwmod *);
+ 
++extern void omap_fb_reserve_memblock(void);
++
+ /* SoC specific clock initializer */
+ extern int (*omap_clk_init)(void);
+ 
+diff --git a/arch/arm/mach-omap2/fb.c b/arch/arm/mach-omap2/fb.c
+index 26e28e9..0eacbe9 100644
+--- a/arch/arm/mach-omap2/fb.c
++++ b/arch/arm/mach-omap2/fb.c
+@@ -30,6 +30,7 @@
+ #include <linux/dma-mapping.h>
+ 
+ #include <asm/mach/map.h>
++#include <asm/memblock.h>
+ 
+ #include "soc.h"
+ #include "display.h"
+@@ -106,10 +107,53 @@ static struct platform_device omap_fb_device = {
+ 	.num_resources = 0,
+ };
+ 
++static phys_addr_t omapfb_mem_base __initdata;
++static phys_addr_t omapfb_mem_size __initdata;
++
++void __init omap_fb_reserve_memblock(void)
++{
++	if (omapfb_mem_size) {
++		omapfb_mem_base = arm_memblock_steal(omapfb_mem_size, SZ_1M);
++		if (omapfb_mem_base)
++			pr_info("omapfb: reserved %u bytes at %x\n",
++				omapfb_mem_size, omapfb_mem_base);
++		else
++			pr_err("omapfb: arm_memblock_steal failed\n");
++	}
++}
++
+ int __init omap_init_fb(void)
+ {
+-	return platform_device_register(&omap_fb_device);
++	int ret;
++
++	ret = platform_device_register(&omap_fb_device);
++
++	if (ret)
++		return ret;
++
++	if (!omapfb_mem_base)
++		return 0;
++
++	ret = dma_declare_coherent_memory(&omap_fb_device.dev,
++					  omapfb_mem_base, omapfb_mem_base,
++					  omapfb_mem_size, DMA_MEMORY_MAP |
++					  DMA_MEMORY_EXCLUSIVE);
++	if (!(ret & DMA_MEMORY_MAP))
++		pr_err("omapfb: dma_declare_coherent_memory failed\n");
++
++	return 0;
++}
++
++static int __init early_omapfb_memsize(char *p)
++{
++	omapfb_mem_size = ALIGN(memparse(p, &p), SZ_1M);
++
++	if(!omapfb_mem_size)
++		pr_err("omapfb: bad memsize parameter\n");
++
++	return 0;
+ }
++early_param("omapfb_memsize", early_omapfb_memsize);
+ #else
+ int __init omap_init_fb(void) { return 0; }
+ #endif
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.5.6.1
+
