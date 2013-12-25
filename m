@@ -1,48 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751433Ab3LXVzt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 16:55:49 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:40718 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751258Ab3LXVzr (ORCPT
+	id S1751244Ab3LXWUA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 17:20:00 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:53905 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751037Ab3LXWT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 16:55:47 -0500
-Date: Tue, 24 Dec 2013 16:55:46 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Tejun Heo <tj@kernel.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, <linux-pm@vger.kernel.org>
-Subject: Re: [GIT PULL] libata fixes for v3.13-rc5
-In-Reply-To: <20131224142104.GA3512@htj.dyndns.org>
-Message-ID: <Pine.LNX.4.44L0.1312241653360.337-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 24 Dec 2013 17:19:59 -0500
+From: Derek Perrin <d.roc16@gmail.com>
+To: joe@perches.com
+Cc: linux-kernel@vger.kernel.org, Derek Perrin <d.roc16@gmail.com>
+Subject: [PATCH v2] drivers: firmware: edd: fixed coding style errors.
+Date: Wed, 25 Dec 2013 04:19:43 -0600
+Message-Id: <1387966783-3404-1-git-send-email-d.roc16@gmail.com>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1387867432.2259.2.camel@joe-AO722>
+References: <1387867432.2259.2.camel@joe-AO722>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Dec 2013, Tejun Heo wrote:
+Fixed coding style errors. Fixed spacing, tab and parenthesis errors.
 
-> Hello, Linus.
-> 
-> libata fixes for v3.13-rc5.  There's one interseting commit - "libata,
-> freezer: avoid block device removal while system is frozen".  It's an
-> ugly hack working around a deadlock condition between driver core
-> resume and block layer device removal paths through freezer which was
-> made more reproducible by writeback being converted to workqueue some
-> releases ago.  The bug has nothing to do with libata but it's just an
-> workaround which is easy to backport.  After discussion, Rafael and I
-> seem to agree that we don't really need kernel freezables - both
-> kthread and workqueue.  There are few specific workqueues which
-> constitute PM operations and require freezing, which will be converted
-> to use workqueue_set_max_active() instead.  All other kernel freezer
-> uses are planned to be removed, followed by the removal of kthread and
-> workqueue freezer support, hopefully.
+Signed-off-by: Derek Perrin <d.roc16@gmail.com>
+---
+Changes since v1:
+*cleaned up all checkpatch.pl errors
+*changed function pointer prototype to preferred style from Joe Perches
+*fixed edd_device *edev assignment in if condition
+ drivers/firmware/edd.c | 63 +++++++++++++++++++++++++-------------------------
+ 1 file changed, 32 insertions(+), 31 deletions(-)
 
-Wait a minute.  I don't recall anybody mentioning this earlier.  What 
-about khubd?  There isn't any plan to remove _it_.
-
-Alan Stern
+diff --git a/drivers/firmware/edd.c b/drivers/firmware/edd.c
+index e229576..0e93659 100644
+--- a/drivers/firmware/edd.c
++++ b/drivers/firmware/edd.c
+@@ -62,8 +62,8 @@ struct edd_device {
+ 
+ struct edd_attribute {
+ 	struct attribute attr;
+-	ssize_t(*show) (struct edd_device * edev, char *buf);
+-	int (*test) (struct edd_device * edev);
++	ssize_t(*show)(struct edd_device *edev, char *buf);
++	int (*test)(struct edd_device *edev);
+ };
+ 
+ /* forward declarations */
+@@ -72,7 +72,7 @@ static struct pci_dev *edd_get_pci_dev(struct edd_device *edev);
+ 
+ static struct edd_device *edd_devices[EDD_MBR_SIG_MAX];
+ 
+-#define EDD_DEVICE_ATTR(_name,_mode,_show,_test) \
++#define EDD_DEVICE_ATTR(_name, _mode, _show, _test) \
+ struct edd_attribute edd_attr_##_name = { 	\
+ 	.attr = {.name = __stringify(_name), .mode = _mode },	\
+ 	.show	= _show,				\
+@@ -107,11 +107,11 @@ edd_dev_set_info(struct edd_device *edev, int i)
+ 		edev->info = &edd.edd_info[i];
+ }
+ 
+-#define to_edd_attr(_attr) container_of(_attr,struct edd_attribute,attr)
+-#define to_edd_device(obj) container_of(obj,struct edd_device,kobj)
++#define to_edd_attr(_attr) container_of(_attr, struct edd_attribute, attr)
++#define to_edd_device(obj) container_of(obj, struct edd_device, kobj)
+ 
+ static ssize_t
+-edd_attr_show(struct kobject * kobj, struct attribute *attr, char *buf)
++edd_attr_show(struct kobject *kobj, struct attribute *attr, char *buf)
+ {
+ 	struct edd_device *dev = to_edd_device(kobj);
+ 	struct edd_attribute *edd_attr = to_edd_attr(attr);
+@@ -169,7 +169,7 @@ edd_show_host_bus(struct edd_device *edev, char *buf)
+ 		p += scnprintf(p, left, "\tunknown: %llx\n",
+ 			     info->params.interface_path.unknown.reserved);
+ 	}
+-	return (p - buf);
++	return p - buf;
+ }
+ 
+ static ssize_t
+@@ -228,7 +228,7 @@ edd_show_interface(struct edd_device *edev, char *buf)
+ 			     info->params.device_path.unknown.reserved2);
+ 	}
+ 
+-	return (p - buf);
++	return p - buf;
+ }
+ 
+ /**
+@@ -272,7 +272,7 @@ edd_show_version(struct edd_device *edev, char *buf)
+ 		return -EINVAL;
+ 
+ 	p += scnprintf(p, left, "0x%02x\n", info->version);
+-	return (p - buf);
++	return p - buf;
+ }
+ 
+ static ssize_t
+@@ -280,7 +280,7 @@ edd_show_mbr_signature(struct edd_device *edev, char *buf)
+ {
+ 	char *p = buf;
+ 	p += scnprintf(p, left, "0x%08x\n", edev->mbr_signature);
+-	return (p - buf);
++	return p - buf;
+ }
+ 
+ static ssize_t
+@@ -306,7 +306,7 @@ edd_show_extensions(struct edd_device *edev, char *buf)
+ 	if (info->interface_support & EDD_EXT_64BIT_EXTENSIONS) {
+ 		p += scnprintf(p, left, "64-bit extensions\n");
+ 	}
+-	return (p - buf);
++	return p - buf;
+ }
+ 
+ static ssize_t
+@@ -336,7 +336,7 @@ edd_show_info_flags(struct edd_device *edev, char *buf)
+ 		p += scnprintf(p, left, "no media present\n");
+ 	if (info->params.info_flags & EDD_INFO_USE_INT13_FN50)
+ 		p += scnprintf(p, left, "use int13 fn50\n");
+-	return (p - buf);
++	return p - buf;
+ }
+ 
+ static ssize_t
+@@ -351,7 +351,7 @@ edd_show_legacy_max_cylinder(struct edd_device *edev, char *buf)
+ 		return -EINVAL;
+ 
+ 	p += snprintf(p, left, "%u\n", info->legacy_max_cylinder);
+-	return (p - buf);
++	return p - buf;
+ }
+ 
+ static ssize_t
+@@ -366,7 +366,7 @@ edd_show_legacy_max_head(struct edd_device *edev, char *buf)
+ 		return -EINVAL;
+ 
+ 	p += snprintf(p, left, "%u\n", info->legacy_max_head);
+-	return (p - buf);
++	return p - buf;
+ }
+ 
+ static ssize_t
+@@ -381,7 +381,7 @@ edd_show_legacy_sectors_per_track(struct edd_device *edev, char *buf)
+ 		return -EINVAL;
+ 
+ 	p += snprintf(p, left, "%u\n", info->legacy_sectors_per_track);
+-	return (p - buf);
++	return p - buf;
+ }
+ 
+ static ssize_t
+@@ -396,7 +396,7 @@ edd_show_default_cylinders(struct edd_device *edev, char *buf)
+ 		return -EINVAL;
+ 
+ 	p += scnprintf(p, left, "%u\n", info->params.num_default_cylinders);
+-	return (p - buf);
++	return p - buf;
+ }
+ 
+ static ssize_t
+@@ -411,7 +411,7 @@ edd_show_default_heads(struct edd_device *edev, char *buf)
+ 		return -EINVAL;
+ 
+ 	p += scnprintf(p, left, "%u\n", info->params.num_default_heads);
+-	return (p - buf);
++	return p - buf;
+ }
+ 
+ static ssize_t
+@@ -426,7 +426,7 @@ edd_show_default_sectors_per_track(struct edd_device *edev, char *buf)
+ 		return -EINVAL;
+ 
+ 	p += scnprintf(p, left, "%u\n", info->params.sectors_per_track);
+-	return (p - buf);
++	return p - buf;
+ }
+ 
+ static ssize_t
+@@ -441,7 +441,7 @@ edd_show_sectors(struct edd_device *edev, char *buf)
+ 		return -EINVAL;
+ 
+ 	p += scnprintf(p, left, "%llu\n", info->params.number_of_sectors);
+-	return (p - buf);
++	return p - buf;
+ }
+ 
+ 
+@@ -565,12 +565,12 @@ static EDD_DEVICE_ATTR(extensions, 0444, edd_show_extensions, edd_has_edd_info);
+ static EDD_DEVICE_ATTR(info_flags, 0444, edd_show_info_flags, edd_has_edd_info);
+ static EDD_DEVICE_ATTR(sectors, 0444, edd_show_sectors, edd_has_edd_info);
+ static EDD_DEVICE_ATTR(legacy_max_cylinder, 0444,
+-                       edd_show_legacy_max_cylinder,
++		       edd_show_legacy_max_cylinder,
+ 		       edd_has_legacy_max_cylinder);
+ static EDD_DEVICE_ATTR(legacy_max_head, 0444, edd_show_legacy_max_head,
+ 		       edd_has_legacy_max_head);
+ static EDD_DEVICE_ATTR(legacy_sectors_per_track, 0444,
+-                       edd_show_legacy_sectors_per_track,
++		       edd_show_legacy_sectors_per_track,
+ 		       edd_has_legacy_sectors_per_track);
+ static EDD_DEVICE_ATTR(default_cylinders, 0444, edd_show_default_cylinders,
+ 		       edd_has_default_cylinders);
+@@ -587,12 +587,12 @@ static EDD_DEVICE_ATTR(mbr_signature, 0444, edd_show_mbr_signature, edd_has_mbr_
+ /* These are default attributes that are added for every edd
+  * device discovered.  There are none.
+  */
+-static struct attribute * def_attrs[] = {
++static struct attribute *def_attrs[] = {
+ 	NULL,
+ };
+ 
+ /* These attributes are conditional and only added for some devices. */
+-static struct edd_attribute * edd_attrs[] = {
++static struct edd_attribute *edd_attrs[] = {
+ 	&edd_attr_raw_data,
+ 	&edd_attr_version,
+ 	&edd_attr_extensions,
+@@ -619,9 +619,9 @@ static struct edd_attribute * edd_attrs[] = {
+  *	but just in case, we use the release callback anyway.
+  */
+ 
+-static void edd_release(struct kobject * kobj)
++static void edd_release(struct kobject *kobj)
+ {
+-	struct edd_device * dev = to_edd_device(kobj);
++	struct edd_device *dev = to_edd_device(kobj);
+ 	kfree(dev);
+ }
+ 
+@@ -685,7 +685,7 @@ edd_create_symlink_to_pcidev(struct edd_device *edev)
+ 	int ret;
+ 	if (!pci_dev)
+ 		return 1;
+-	ret = sysfs_create_link(&edev->kobj,&pci_dev->dev.kobj,"pci_dev");
++	ret = sysfs_create_link(&edev->kobj, &pci_dev->dev.kobj, "pci_dev");
+ 	pci_dev_put(pci_dev);
+ 	return ret;
+ }
+@@ -696,16 +696,16 @@ edd_device_unregister(struct edd_device *edev)
+ 	kobject_put(&edev->kobj);
+ }
+ 
+-static void edd_populate_dir(struct edd_device * edev)
++static void edd_populate_dir(struct edd_device *edev)
+ {
+-	struct edd_attribute * attr;
++	struct edd_attribute *attr;
+ 	int error = 0;
+ 	int i;
+ 
+ 	for (i = 0; (attr = edd_attrs[i]) && !error; i++) {
+ 		if (!attr->test ||
+ 		    (attr->test && attr->test(edev)))
+-			error = sysfs_create_file(&edev->kobj,&attr->attr);
++			error = sysfs_create_file(&edev->kobj, &attr->attr);
+ 	}
+ 
+ 	if (!error) {
+@@ -745,7 +745,7 @@ static int __init
+ edd_init(void)
+ {
+ 	int i;
+-	int rc=0;
++	int rc = 0;
+ 	struct edd_device *edev;
+ 
+ 	printk(KERN_INFO "BIOS EDD facility v%s %s, %d devices found\n",
+@@ -791,7 +791,8 @@ edd_exit(void)
+ 	struct edd_device *edev;
+ 
+ 	for (i = 0; i < edd_num_devices(); i++) {
+-		if ((edev = edd_devices[i]))
++		edev = edd_devices[i];
++		if (edev)
+ 			edd_device_unregister(edev);
+ 	}
+ 	kset_unregister(edd_kset);
+-- 
+1.8.5.2
 
