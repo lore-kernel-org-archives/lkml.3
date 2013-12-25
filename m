@@ -1,284 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752422Ab3LYGcs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Dec 2013 01:32:48 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:36308 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751896Ab3LYGcq (ORCPT
+	id S1752528Ab3LYGdD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Dec 2013 01:33:03 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:42047 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752465Ab3LYGc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Dec 2013 01:32:46 -0500
-Message-ID: <52BA7BE7.6030003@linaro.org>
-Date: Wed, 25 Dec 2013 14:32:07 +0800
-From: Alex Shi <alex.shi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: Yuanhan Liu <yuanhan.liu@intel.com>, "Huang, Ying" <ying.huang@intel.com>,
-        lkp@01.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [sched] perf-stat.cpu-migrations changes in dd write test
-References: <20131222003038.GA8932@localhost> <52B7C7C8.20003@linaro.org> <20131223052426.GB31502@localhost> <52BA5153.9090008@linaro.org> <20131225035615.GA23802@localhost>
-In-Reply-To: <20131225035615.GA23802@localhost>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 25 Dec 2013 01:32:59 -0500
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: [PATCH v3 6/6] fat: update the limitation for fat fallocate
+Date: Wed, 25 Dec 2013 15:32:06 +0900
+Message-Id: <1387953126-2862-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/25/2013 11:56 AM, Fengguang Wu wrote:
-> On Wed, Dec 25, 2013 at 11:30:27AM +0800, Alex Shi wrote:
->> On 12/23/2013 01:24 PM, Fengguang Wu wrote:
->>> On Mon, Dec 23, 2013 at 01:19:04PM +0800, Alex Shi wrote:
->>>> On 12/22/2013 08:30 AM, fengguang.wu@intel.com wrote:
->>>>> Alex,
->>>>>
->>>>> We noticed some perf-stat.cpu-migrations changes by your commit
->>>>
->>>> Thanks for your wonder testing, Fengguang!
->>>> How many CPU in your system and how many dd task running?
->>>
->>> For the case
->>>
->>>         kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd
->>>
->>> It's a KVM with 4 CPUs, 16G memory. There are 4 virtual disks, on top
->>> of each disk there runs 10 dd tasks.
->>
->> I don't know much of kvm. Where the data get from, VM guest or VM host?
-> 
-> The data are collected in the VM guest.
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-do you have similar testing on native linux?
-> 
-> Thanks,
-> Fengguang
-> 
->> Looks like any guest cpu usage will be counted as user usage in vmstat.
->> and Does the CS and cpu migration reducing cause dd performance increase?
->>>
->>> Thanks,
->>> Fengguang
->>>
->>>>>
->>>>> 6eb8b571283e64e96ca1a91aad085f9e08f857f0 is the first bad commit
->>>>> commit 6eb8b571283e64e96ca1a91aad085f9e08f857f0
->>>>> Author: Alex Shi <alex.shi@linaro.org>
->>>>> Date:   Tue Nov 19 20:29:51 2013 +0800
->>>>>
->>>>>     sched: remove rq->cpu_load[load_idx] array
->>>>>     
->>>>>     Since load_idx effect removed in load balance, we don't need the
->>>>>     load_idx decays in scheduler. that will save some process in sched_tick
->>>>>     and others places.
->>>>>     
->>>>>     Signed-off-by: Alex Shi <alex.shi@linaro.org>
->>>>>
->>>>>
->>>>> Here are the changed stats comparing to its parent commit:
->>>>>
->>>>> 1de157d718f6494       6eb8b571283e64e96ca1  
->>>>> ---------------  -------------------------  
->>>>>      37779 ~40%    +115.2%      81288 ~50%  kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd
->>>>>      37779         +115.2%      81288       TOTAL proc-vmstat.pgscan_direct_normal
->>>>>
->>>>> kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd: proc-vmstat.pgscan_direct_normal
->>>>>
->>>>>    160000 ++----------------------------------------------------------------+
->>>>>           |                                                                 |
->>>>>    140000 ++                                                                O
->>>>>           |                                                                 |
->>>>>    120000 ++                                                                |
->>>>>           |                O                                                |
->>>>>    100000 ++                                                                |
->>>>>           |                                                                 |
->>>>>     80000 ++                               O                                |
->>>>>           |                                                               ..*
->>>>>     60000 ++                                                          ....  |
->>>>>           |                                                       ....      |
->>>>>     40000 *+...............                                 O ....          |
->>>>>           O                *...............         ........*.              |
->>>>>     20000 ++-------------------------------*--------------------------------+
->>>>>
->>>>>
->>>>> 1de157d718f6494       6eb8b571283e64e96ca1  
->>>>> ---------------  -------------------------  
->>>>>     121579 ~ 6%     -50.8%      59852 ~13%  kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd
->>>>>     121579          -50.8%      59852       TOTAL softirqs.SCHED
->>>>>
->>>>>             kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd: softirqs.SCHED
->>>>>
->>>>>    140000 ++----------------------------------------------------------------+
->>>>>    130000 ++           ....*...........                 ....*.......        |
->>>>>           |    ........                ....     ........            ......  |
->>>>>    120000 *+...                            *....                          ..|
->>>>>    110000 ++                                                                *
->>>>>           |                                                                 |
->>>>>    100000 ++                                                                |
->>>>>     90000 ++                                                                |
->>>>>     80000 ++                                                                |
->>>>>           |                                                                 |
->>>>>     70000 ++                               O                O               |
->>>>>     60000 ++               O                                                |
->>>>>           |                                                                 O
->>>>>     50000 O+                                                                |
->>>>>     40000 ++----------------------------------------------------------------+
->>>>>
->>>>>
->>>>> 1de157d718f6494       6eb8b571283e64e96ca1  
->>>>> ---------------  -------------------------  
->>>>>       5636 ~ 4%     -22.1%       4392 ~17%  kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd
->>>>>       5636          -22.1%       4392       TOTAL proc-vmstat.nr_tlb_remote_flush
->>>>>
->>>>>  kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd: proc-vmstat.nr_tlb_remote_flush
->>>>>
->>>>>    6500 ++------------------------------------------------------------------+
->>>>>         |                                                                   |
->>>>>    6000 ++       ........*............                                      |
->>>>>         *........                     ....                                  |
->>>>>    5500 ++               O                *................*................|
->>>>>         |                                                                   *
->>>>>    5000 ++                                O                                 |
->>>>>         |                                                                   |
->>>>>    4500 ++                                                 O                |
->>>>>         |                                                                   |
->>>>>    4000 ++                                                                  |
->>>>>         |                                                                   O
->>>>>    3500 O+                                                                  |
->>>>>         |                                                                   |
->>>>>    3000 ++------------------------------------------------------------------+
->>>>>
->>>>>
->>>>> 1de157d718f6494       6eb8b571283e64e96ca1  
->>>>> ---------------  -------------------------  
->>>>>       5679 ~ 4%     -21.9%       4437 ~17%  kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd
->>>>>       5679          -21.9%       4437       TOTAL proc-vmstat.nr_tlb_remote_flush_received
->>>>>
->>>>>
->>>>>
->>>>>    6500 ++------------------------------------------------------------------+
->>>>>         |                                                                   |
->>>>>    6000 ++       ........*........                                          |
->>>>>         *........                 ......                                    |
->>>>>         |                               ..         ........*................|
->>>>>    5500 ++               O                *........                         *
->>>>>         |                                                                   |
->>>>>    5000 ++                                O                                 |
->>>>>         |                                                                   |
->>>>>    4500 ++                                                 O                |
->>>>>         |                                                                   |
->>>>>         |                                                                   |
->>>>>    4000 ++                                                                  |
->>>>>         |                                                                   O
->>>>>    3500 O+------------------------------------------------------------------+
->>>>>
->>>>>
->>>>> 1de157d718f6494       6eb8b571283e64e96ca1  
->>>>> ---------------  -------------------------  
->>>>>        167 ~11%     +19.4%        200 ~ 4%  kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd
->>>>>        167          +19.4%        200       TOTAL uptime.idle
->>>>>
->>>>>             kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd: uptime.idle
->>>>>
->>>>>    220 ++-------------------------------------------------------------------+
->>>>>        |                                                                    O
->>>>>    210 ++                                                                   |
->>>>>    200 O+                                 O                                 |
->>>>>        |              ..*.....                             O                |
->>>>>    190 ++         ....  O     ...                                           |
->>>>>    180 ++     ....               ....                                       |
->>>>>        |  ....                       ....                                   |
->>>>>    170 *+.                               .                                 .*
->>>>>    160 ++                                 *......                      .... |
->>>>>        |                                         ....               ...     |
->>>>>    150 ++                                            ....        ...        |
->>>>>    140 ++                                                ..  ....           |
->>>>>        |                                                   *.               |
->>>>>    130 ++-------------------------------------------------------------------+
->>>>>
->>>>>
->>>>> 1de157d718f6494       6eb8b571283e64e96ca1  
->>>>> ---------------  -------------------------  
->>>>>     154781 ~ 5%     -66.8%      51449 ~ 8%  kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd
->>>>>     154781          -66.8%      51449       TOTAL perf-stat.cpu-migrations
->>>>>
->>>>>        kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd: perf-stat.cpu-migrations
->>>>>
->>>>>    180000 ++----------------------------------------------------------------+
->>>>>           |            ....*...........                                     |
->>>>>    160000 ++   ........                ....         ........*...............|
->>>>>           *....                            *........                        *
->>>>>    140000 ++                                                                |
->>>>>           |                                                                 |
->>>>>    120000 ++                                                                |
->>>>>           |                                                                 |
->>>>>    100000 ++                                                                |
->>>>>           |                                                                 |
->>>>>     80000 ++                                                                |
->>>>>           |                                                                 |
->>>>>     60000 ++                                                O               |
->>>>>           |                O               O                                O
->>>>>     40000 O+----------------------------------------------------------------+
->>>>>
->>>>>
->>>>> 1de157d718f6494       6eb8b571283e64e96ca1  
->>>>> ---------------  -------------------------  
->>>>>       1943 ~ 3%      -7.8%       1792 ~ 4%  kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd
->>>>>       1943           -7.8%       1792       TOTAL vmstat.system.cs
->>>>>
->>>>>           kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd: vmstat.system.cs
->>>>>
->>>>>    2050 ++------------------------------------------------------------------+
->>>>>         |                         ........*................*.....           |
->>>>>    2000 ++              .*........                               ...        |
->>>>>    1950 ++          ....                                            ...     |
->>>>>         |        ...                                                   .... |
->>>>>    1900 ++    ...                                                          .|
->>>>>    1850 ++....                            O                O                *
->>>>>         *.                                                                  |
->>>>>    1800 ++               O                                                  O
->>>>>    1750 ++                                                                  |
->>>>>         |                                                                   |
->>>>>    1700 ++                                                                  |
->>>>>    1650 O+                                                                  |
->>>>>         |                                                                   |
->>>>>    1600 ++------------------------------------------------------------------+
->>>>>
->>>>>
->>>>> 1de157d718f6494       6eb8b571283e64e96ca1  
->>>>> ---------------  -------------------------  
->>>>>    1216177 ~ 3%      -9.4%    1101605 ~ 7%  kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd
->>>>>    1216177           -9.4%    1101605       TOTAL perf-stat.context-switches
->>>>>
->>>>>       kbuildx/micro/dd-write/4HDD-JBOD-cfq-ext4-10dd: perf-stat.context-switches
->>>>>
->>>>>     1.3e+06 ++--------------------------------------------------------------+
->>>>>             |             ..*...............                                |
->>>>>    1.25e+06 ++      ......                  *...............*.......        |
->>>>>             |  .....                                                ......  |
->>>>>     1.2e+06 *+.                             O                             ..|
->>>>>    1.15e+06 ++                                              O               *
->>>>>             |               O                                               |
->>>>>     1.1e+06 ++                                                              |
->>>>>             |                                                               O
->>>>>    1.05e+06 ++                                                              |
->>>>>       1e+06 ++                                                              |
->>>>>             |                                                               |
->>>>>      950000 O+                                                              |
->>>>>             |                                                               |
->>>>>      900000 ++--------------------------------------------------------------+
->>>>>
->>>>>
->>>>
->>>>
->>>> -- 
->>>> Thanks
->>>>     Alex
->>
->>
->> -- 
->> Thanks
->>     Alex
+update the limitation for fat fallocate.
 
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+---
+ Documentation/filesystems/vfat.txt |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
+diff --git a/Documentation/filesystems/vfat.txt b/Documentation/filesystems/vfat.txt
+index 4a93e98..5cf57b3 100644
+--- a/Documentation/filesystems/vfat.txt
++++ b/Documentation/filesystems/vfat.txt
+@@ -175,6 +175,16 @@ nfs=stale_rw|nostale_ro
+ 
+ <bool>: 0,1,yes,no,true,false
+ 
++LIMITATION
++---------------------------------------------------------------------
++* The fallocated region of file is discarded at umount/evict time
++  when using fallocate with FALLOC_FL_KEEP_SIZE.
++  So, User should assume that fallocated region can be discarded at
++  last close if there is memory pressure resulting in eviction of
++  the inode from the memory. As a result, for any dependency on
++  the fallocated region, user should make sure to recheck fallocate
++  after reopening the file.
++
+ TODO
+ ----------------------------------------------------------------------
+ * Need to get rid of the raw scanning stuff.  Instead, always use
 -- 
-Thanks
-    Alex
+1.7.9.5
+
