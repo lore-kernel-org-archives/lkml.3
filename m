@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029Ab3LYD2o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 22:28:44 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:43793 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751858Ab3LYD2Y (ORCPT
+	id S1752123Ab3LYD2s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 22:28:48 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:5051 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557Ab3LYD2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 22:28:24 -0500
-Message-ID: <52BA50B6.4080007@huawei.com>
-Date: Wed, 25 Dec 2013 11:27:50 +0800
+	Tue, 24 Dec 2013 22:28:45 -0500
+Message-ID: <52BA50D4.1010001@huawei.com>
+Date: Wed, 25 Dec 2013 11:28:20 +0800
 From: Ding Tianhong <dingtianhong@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Li Yang <leoli@freescale.com>, Netdev <netdev@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>,
+To: Joerg Reuter <jreuter@yaina.de>, <linux-hams@vger.kernel.org>,
+        Netdev <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 01/19] net: freescale: remove unused compare_addr()
+Subject: [PATCH v3 04/19] hamradio: slight optimization of addr compare
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.72.199]
@@ -24,33 +24,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function did not be used any more, so remove it.
+Use possibly more efficient ether_addr_equal
+to instead of memcmp.
 
-Cc: Li Yang <leoli@freescale.com>
+Cc: Joerg Reuter <jreuter@yaina.de>
+Cc: linux-hams@vger.kernel.org
 Cc: netdev@vger.kernel.org
-Cc: linuxppc-dev@lists.ozlabs.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 ---
- drivers/net/ethernet/freescale/ucc_geth.c | 5 -----
- 1 file changed, 5 deletions(-)
+ drivers/net/hamradio/bpqether.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/freescale/ucc_geth.c b/drivers/net/ethernet/freescale/ucc_geth.c
-index 5548b6d..72291a8 100644
---- a/drivers/net/ethernet/freescale/ucc_geth.c
-+++ b/drivers/net/ethernet/freescale/ucc_geth.c
-@@ -435,11 +435,6 @@ static void hw_add_addr_in_hash(struct ucc_geth_private *ugeth,
- 		     QE_CR_PROTOCOL_ETHERNET, 0);
- }
+diff --git a/drivers/net/hamradio/bpqether.c b/drivers/net/hamradio/bpqether.c
+index f91bf0d..d50b23c 100644
+--- a/drivers/net/hamradio/bpqether.c
++++ b/drivers/net/hamradio/bpqether.c
+@@ -208,7 +208,7 @@ static int bpq_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_ty
+ 	eth = eth_hdr(skb);
  
--static inline int compare_addr(u8 **addr1, u8 **addr2)
--{
--	return memcmp(addr1, addr2, ETH_ALEN);
--}
--
- #ifdef DEBUG
- static void get_statistics(struct ucc_geth_private *ugeth,
- 			   struct ucc_geth_tx_firmware_statistics *
+ 	if (!(bpq->acpt_addr[0] & 0x01) &&
+-	    memcmp(eth->h_source, bpq->acpt_addr, ETH_ALEN))
++	    !ether_addr_equal(eth->h_source, bpq->acpt_addr))
+ 		goto drop_unlock;
+ 
+ 	if (skb_cow(skb, sizeof(struct ethhdr)))
 -- 
 1.8.0
 
