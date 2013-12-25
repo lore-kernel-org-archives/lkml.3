@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752819Ab3LYDar (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 22:30:47 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:5818 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752704Ab3LYDao (ORCPT
+	id S1752741Ab3LYDaf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 22:30:35 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:44753 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752637Ab3LYDac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 22:30:44 -0500
-Message-ID: <52BA5133.5040307@huawei.com>
-Date: Wed, 25 Dec 2013 11:29:55 +0800
+	Tue, 24 Dec 2013 22:30:32 -0500
+Message-ID: <52BA5124.8020804@huawei.com>
+Date: Wed, 25 Dec 2013 11:29:40 +0800
 From: Ding Tianhong <dingtianhong@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Bing Zhao <bzhao@marvell.com>, "John W. Linville" <linville@tuxdriver.com>,
+To: Solomon Peachy <pizza@shaftnet.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
         <linux-wireless@vger.kernel.org>, Netdev <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 17/19] mwifiex: slight optimization of addr compare
+Subject: [PATCH v3 15/19] cw1200: slight optimization of addr compare
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.72.199]
@@ -27,7 +28,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Use possibly more efficient ether_addr_equal
 instead of memcmp.
 
-Cc: Bing Zhao <bzhao@marvell.com>
+Cc: Solomon Peachy <pizza@shaftnet.org>
 Cc: John W. Linville <linville@tuxdriver.com>
 Cc: linux-wireless@vger.kernel.org
 Cc: netdev@vger.kernel.org
@@ -35,51 +36,47 @@ Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Weilong Chen <chenweilong@huawei.com>
 Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 ---
- drivers/net/wireless/mwifiex/11n.c         | 2 +-
- drivers/net/wireless/mwifiex/sta_cmdresp.c | 3 +--
- drivers/net/wireless/mwifiex/sta_rx.c      | 2 +-
- 3 files changed, 3 insertions(+), 4 deletions(-)
+ drivers/net/wireless/cw1200/sta.c  | 5 +++--
+ drivers/net/wireless/cw1200/txrx.c | 3 +--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/wireless/mwifiex/11n.c b/drivers/net/wireless/mwifiex/11n.c
-index 0b803c0..6261f8c 100644
---- a/drivers/net/wireless/mwifiex/11n.c
-+++ b/drivers/net/wireless/mwifiex/11n.c
-@@ -483,7 +483,7 @@ mwifiex_get_ba_tbl(struct mwifiex_private *priv, int tid, u8 *ra)
+diff --git a/drivers/net/wireless/cw1200/sta.c b/drivers/net/wireless/cw1200/sta.c
+index 010b252..103f7bc 100644
+--- a/drivers/net/wireless/cw1200/sta.c
++++ b/drivers/net/wireless/cw1200/sta.c
+@@ -13,6 +13,7 @@
+ #include <linux/sched.h>
+ #include <linux/firmware.h>
+ #include <linux/module.h>
++#include <linux/etherdevice.h>
  
- 	spin_lock_irqsave(&priv->tx_ba_stream_tbl_lock, flags);
- 	list_for_each_entry(tx_ba_tsr_tbl, &priv->tx_ba_stream_tbl_ptr, list) {
--		if (!memcmp(tx_ba_tsr_tbl->ra, ra, ETH_ALEN) &&
-+		if (ether_addr_equal_unaligned(tx_ba_tsr_tbl->ra, ra) &&
- 		    tx_ba_tsr_tbl->tid == tid) {
- 			spin_unlock_irqrestore(&priv->tx_ba_stream_tbl_lock,
- 					       flags);
-diff --git a/drivers/net/wireless/mwifiex/sta_cmdresp.c b/drivers/net/wireless/mwifiex/sta_cmdresp.c
-index 5511946..24523e4 100644
---- a/drivers/net/wireless/mwifiex/sta_cmdresp.c
-+++ b/drivers/net/wireless/mwifiex/sta_cmdresp.c
-@@ -782,8 +782,7 @@ static int mwifiex_ret_ibss_coalescing_status(struct mwifiex_private *priv,
+ #include "cw1200.h"
+ #include "sta.h"
+@@ -555,8 +556,8 @@ u64 cw1200_prepare_multicast(struct ieee80211_hw *hw,
+ 		pr_debug("[STA] multicast: %pM\n", ha->addr);
+ 		memcpy(&priv->multicast_filter.macaddrs[count],
+ 		       ha->addr, ETH_ALEN);
+-		if (memcmp(ha->addr, broadcast_ipv4, ETH_ALEN) &&
+-		    memcmp(ha->addr, broadcast_ipv6, ETH_ALEN))
++		if (!ether_addr_equal(ha->addr, broadcast_ipv4) &&
++		    !ether_addr_equal(ha->addr, broadcast_ipv6))
+ 			priv->has_multicast_subscription = true;
+ 		count++;
  	}
- 
- 	/* If BSSID is diff, modify current BSS parameters */
--	if (memcmp(priv->curr_bss_params.bss_descriptor.mac_address,
--		   ibss_coal_resp->bssid, ETH_ALEN)) {
-+	if (!ether_addr_equal(priv->curr_bss_params.bss_descriptor.mac_address, ibss_coal_resp->bssid)) {
- 		/* BSSID */
- 		memcpy(priv->curr_bss_params.bss_descriptor.mac_address,
- 		       ibss_coal_resp->bssid, ETH_ALEN);
-diff --git a/drivers/net/wireless/mwifiex/sta_rx.c b/drivers/net/wireless/mwifiex/sta_rx.c
-index 0bb510d..4651d67 100644
---- a/drivers/net/wireless/mwifiex/sta_rx.c
-+++ b/drivers/net/wireless/mwifiex/sta_rx.c
-@@ -224,7 +224,7 @@ int mwifiex_process_sta_rx_packet(struct mwifiex_private *priv,
- 	 * directly to os. Don't pass thru rx reordering
- 	 */
- 	if (!IS_11N_ENABLED(priv) ||
--	    memcmp(priv->curr_addr, rx_pkt_hdr->eth803_hdr.h_dest, ETH_ALEN)) {
-+	    !ether_addr_equal_unaligned(priv->curr_addr, rx_pkt_hdr->eth803_hdr.h_dest)) {
- 		mwifiex_process_rx_packet(priv, skb);
- 		return ret;
- 	}
+diff --git a/drivers/net/wireless/cw1200/txrx.c b/drivers/net/wireless/cw1200/txrx.c
+index e824d4d..0bd5411 100644
+--- a/drivers/net/wireless/cw1200/txrx.c
++++ b/drivers/net/wireless/cw1200/txrx.c
+@@ -1166,8 +1166,7 @@ void cw1200_rx_cb(struct cw1200_common *priv,
+ 			return;
+ 	} else if (ieee80211_is_beacon(frame->frame_control) &&
+ 		   !arg->status && priv->vif &&
+-		   !memcmp(ieee80211_get_SA(frame), priv->vif->bss_conf.bssid,
+-			   ETH_ALEN)) {
++		   ether_addr_equal(ieee80211_get_SA(frame), priv->vif->bss_conf.bssid)) {
+ 		const u8 *tim_ie;
+ 		u8 *ies = ((struct ieee80211_mgmt *)
+ 			  (skb->data))->u.beacon.variable;
 -- 
 1.8.0
 
