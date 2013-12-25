@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983Ab3LYD20 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 22:28:26 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:54290 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845Ab3LYD2X (ORCPT
+	id S1752029Ab3LYD2o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 22:28:44 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:43793 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751858Ab3LYD2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 22:28:23 -0500
-Message-ID: <52BA50BF.6010302@huawei.com>
-Date: Wed, 25 Dec 2013 11:27:59 +0800
+	Tue, 24 Dec 2013 22:28:24 -0500
+Message-ID: <52BA50B6.4080007@huawei.com>
+Date: Wed, 25 Dec 2013 11:27:50 +0800
 From: Ding Tianhong <dingtianhong@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Don Fry <pcnet32@frontier.com>, Netdev <netdev@vger.kernel.org>,
+To: Li Yang <leoli@freescale.com>, Netdev <netdev@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 02/19] net: pcnet: slight optimization of addr compare
+Subject: [PATCH v3 01/19] net: freescale: remove unused compare_addr()
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.72.199]
@@ -23,30 +24,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use possibly more efficient ether_addr_equal
-to instead of memcmp.
+The function did not be used any more, so remove it.
 
-Cc: Don Fry <pcnet32@frontier.com>
+Cc: Li Yang <leoli@freescale.com>
 Cc: netdev@vger.kernel.org
+Cc: linuxppc-dev@lists.ozlabs.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 ---
- drivers/net/ethernet/amd/pcnet32.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/freescale/ucc_geth.c | 5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/drivers/net/ethernet/amd/pcnet32.c b/drivers/net/ethernet/amd/pcnet32.c
-index 38492e0..9339ccc 100644
---- a/drivers/net/ethernet/amd/pcnet32.c
-+++ b/drivers/net/ethernet/amd/pcnet32.c
-@@ -1668,7 +1668,7 @@ pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev)
- 	for (i = 0; i < ETH_ALEN; i++)
- 		promaddr[i] = inb(ioaddr + i);
+diff --git a/drivers/net/ethernet/freescale/ucc_geth.c b/drivers/net/ethernet/freescale/ucc_geth.c
+index 5548b6d..72291a8 100644
+--- a/drivers/net/ethernet/freescale/ucc_geth.c
++++ b/drivers/net/ethernet/freescale/ucc_geth.c
+@@ -435,11 +435,6 @@ static void hw_add_addr_in_hash(struct ucc_geth_private *ugeth,
+ 		     QE_CR_PROTOCOL_ETHERNET, 0);
+ }
  
--	if (memcmp(promaddr, dev->dev_addr, ETH_ALEN) ||
-+	if (!ether_addr_equal(promaddr, dev->dev_addr) ||
- 	    !is_valid_ether_addr(dev->dev_addr)) {
- 		if (is_valid_ether_addr(promaddr)) {
- 			if (pcnet32_debug & NETIF_MSG_PROBE) {
+-static inline int compare_addr(u8 **addr1, u8 **addr2)
+-{
+-	return memcmp(addr1, addr2, ETH_ALEN);
+-}
+-
+ #ifdef DEBUG
+ static void get_statistics(struct ucc_geth_private *ugeth,
+ 			   struct ucc_geth_tx_firmware_statistics *
 -- 
 1.8.0
 
