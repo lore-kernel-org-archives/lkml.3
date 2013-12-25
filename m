@@ -1,90 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132Ab3LYMma (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Dec 2013 07:42:30 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:15932 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751942Ab3LYMm3 convert rfc822-to-8bit (ORCPT
+	id S1752094Ab3LYNXp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Dec 2013 08:23:45 -0500
+Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:52298 "EHLO
+	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751995Ab3LYNXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Dec 2013 07:42:29 -0500
-From: Caizhiyong <caizhiyong@hisilicon.com>
-To: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
-CC: Brian Norris <computersforpeace@gmail.com>,
-        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
-        Huang Shijie <b32955@freescale.com>,
-        "David Woodhouse" <David.Woodhouse@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [PATCH] mtd: nand: remove unused function input parameter
-Thread-Topic: [PATCH] mtd: nand: remove unused function input parameter
-Thread-Index: Ac8BbmbvHlDAbJJEQNqq2OCP1jOJfQ==
-Date: Wed, 25 Dec 2013 12:40:50 +0000
-Message-ID: <C3050A4DBA34F345975765E43127F10F25E47D50@SZXEMA512-MBX.china.huawei.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.67.223.53]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+	Wed, 25 Dec 2013 08:23:43 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AokGAFLbulJQyXDq/2dsb2JhbABYgwu7CYEXF3SCUxMcIxiBAjcbh20BySiPHR2EIASYFgGSFIMuOw
+Date: Wed, 25 Dec 2013 14:23:40 +0100
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, jeffm@suse.com, jack@suse.cz
+Subject: [PATCH 1/1] reiserfs:Adding tmpfile support
+Message-Id: <20131225142340.92120e3c3d9a98858db79748@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cai Zhiyong <caizhiyong@huawei.com>
-Date: Wed, 25 Dec 2013 20:11:15 +0800
-Subject: [PATCH] mtd: nand: remove unused function input parameter
+This patch is largely based on reiserfs_create function.
+-Removing dquot_initialize (cf ext2/tmpfile)
+-Removing add_entry code.
+-Adding d_tmpfile generic call.
 
-The nand_get_flash_type parameter "busw" input value is not used by any
-branch, and it is updated before use it in the function, so remove it, 
-define the "busw" as an internal variable.
+It was not extensively tested; other solutions would
+be to work with hidden entries or merge
+creation - tmpfile process.
 
-Signed-off-by: Cai Zhiyong <caizhiyong@huawei.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/mtd/nand/nand_base.c | 12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ fs/reiserfs/namei.c | 60 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 60 insertions(+)
 
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index 9b3bb3c..a123afa 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -3337,10 +3337,10 @@ static bool find_full_id_nand(struct mtd_info *mtd, struct nand_chip *chip,
-  */
- static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
- 						  struct nand_chip *chip,
--						  int busw,
- 						  int *maf_id, int *dev_id,
- 						  struct nand_flash_dev *type)
+diff --git a/fs/reiserfs/namei.c b/fs/reiserfs/namei.c
+index dc5236f..125060b 100644
+--- a/fs/reiserfs/namei.c
++++ b/fs/reiserfs/namei.c
+@@ -637,6 +637,65 @@ static int reiserfs_create(struct inode *dir, struct dentry *dentry, umode_t mod
+ 	return retval;
+ }
+ 
++
++/* tmpfile function based on reiserfs_create without filename entry
++*/
++
++static int reiserfs_tmpfile(struct inode *dir, struct dentry *dentry,
++	umode_t mode)
++{
++	int retval;
++	struct inode *inode;
++	int jbegin_count =
++	    JOURNAL_PER_BALANCE_CNT * 2 +
++	    2 * (REISERFS_QUOTA_INIT_BLOCKS(dir->i_sb) +
++		 REISERFS_QUOTA_TRANS_BLOCKS(dir->i_sb));
++	struct reiserfs_transaction_handle th;
++	struct reiserfs_security_handle security;
++
++	inode = new_inode(dir->i_sb);
++	if (!inode)
++		return -ENOMEM;
++
++	new_inode_init(inode, dir, mode);
++
++	jbegin_count += reiserfs_cache_default_acl(dir);
++	retval = reiserfs_security_init(dir, inode, &dentry->d_name, &security);
++	if (retval < 0) {
++		drop_new_inode(inode);
++		return retval;
++	}
++	jbegin_count += retval;
++	reiserfs_write_lock(dir->i_sb);
++
++	retval = journal_begin(&th, dir->i_sb, jbegin_count);
++	if (retval) {
++		drop_new_inode(inode);
++		goto out_failed;
++	}
++
++	retval =
++	    reiserfs_new_inode(&th, dir, mode, NULL, 0 /*i_size */ , dentry,
++			       inode, &security);
++	if (retval)
++		goto out_failed;
++
++	inode->i_op = &reiserfs_file_inode_operations;
++	inode->i_fop = &reiserfs_file_operations;
++	inode->i_mapping->a_ops = &reiserfs_address_space_operations;
++
++	reiserfs_update_inode_transaction(inode);
++	reiserfs_update_inode_transaction(dir);
++
++	unlock_new_inode(inode);
++	d_tmpfile(dentry, inode);
++	retval = journal_end(&th, dir->i_sb, jbegin_count);
++
++      out_failed:
++	reiserfs_write_unlock(dir->i_sb);
++	return retval;
++}
++
+ static int reiserfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode,
+ 			  dev_t rdev)
  {
-+	int busw;
- 	int i, maf_idx;
- 	u8 id_data[8];
+@@ -1522,6 +1581,7 @@ const struct inode_operations reiserfs_dir_inode_operations = {
+ 	.removexattr = reiserfs_removexattr,
+ 	.permission = reiserfs_permission,
+ 	.get_acl = reiserfs_get_acl,
++	.tmpfile = reiserfs_tmpfile,
+ };
  
-@@ -3497,18 +3497,16 @@ ident_done:
- int nand_scan_ident(struct mtd_info *mtd, int maxchips,
- 		    struct nand_flash_dev *table)
- {
--	int i, busw, nand_maf_id, nand_dev_id;
-+	int i, nand_maf_id, nand_dev_id;
- 	struct nand_chip *chip = mtd->priv;
- 	struct nand_flash_dev *type;
- 
--	/* Get buswidth to select the correct functions */
--	busw = chip->options & NAND_BUSWIDTH_16;
- 	/* Set the default functions */
--	nand_set_defaults(chip, busw);
-+	nand_set_defaults(chip, chip->options & NAND_BUSWIDTH_16);
- 
- 	/* Read the flash type */
--	type = nand_get_flash_type(mtd, chip, busw,
--				&nand_maf_id, &nand_dev_id, table);
-+	type = nand_get_flash_type(mtd, chip, &nand_maf_id,
-+				   &nand_dev_id, table);
- 
- 	if (IS_ERR(type)) {
- 		if (!(chip->options & NAND_SCAN_SILENT_NODEV))
+ /*
 -- 
-1.8.1.5
-
+1.8.1.4
