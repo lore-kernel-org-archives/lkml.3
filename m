@@ -1,128 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751588Ab3LYDHo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 24 Dec 2013 22:07:44 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:60919 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258Ab3LYDHn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 24 Dec 2013 22:07:43 -0500
-Message-ID: <1387940854.5373.8.camel@marge.simpson.net>
-Subject: Re: [PATCH] rcu: Eliminate softirq processing from rcutree
-From: Mike Galbraith <bitbucket@online.de>
-To: paulmck@linux.vnet.ibm.com
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-rt-users@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 25 Dec 2013 04:07:34 +0100
-In-Reply-To: <20131224193636.GD19211@linux.vnet.ibm.com>
-References: <20131221193900.GA8427@linutronix.de>
-	 <1387681647.5412.25.camel@marge.simpson.net>
-	 <1387702631.5412.101.camel@marge.simpson.net>
-	 <1387773533.5369.16.camel@marge.simpson.net>
-	 <20131224193636.GD19211@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:M1Nuk+vPh2fe3JJvJ6pHZRihN0eXXTACF88LO8TO7dj
- Da0JwaGbExtq8PhVBeZGERQxRZgrREgncFtH1SJYFDfM/7bON7
- zCDdE+GPbFWsep9rwlSaCTxzg7aDsamFSYea0lEiRJiBhfL33W
- seSr1ZK7AYhp6MP6wJ1pLZIXY6bHRl6KpfGeXNEEuCSk8RwkMN
- q7P1ywUp7kIeWV6crrkL7Y9up/C8St0Jw7Y0+6NIek0t58mvWl
- ijarOEX7uElc/Z1QopMOiJFmvJdhJybvQvzqF2UH6OsFSUE3MA
- Apxmm0t/XsK/ztZgbr36J3y0HYb+4+DiDt2ORULpj8Efg8t/Cl
- sodhz0yzyIpEXglraLfFSEwdNk1f0btrbgCBKk10CN3FJl+ZRv
- e3yO8bDsPx3Dw==
+	id S1751739Ab3LYDJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 24 Dec 2013 22:09:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38190 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751258Ab3LYDJy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 24 Dec 2013 22:09:54 -0500
+Date: Wed, 25 Dec 2013 11:09:01 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Toshi Kani <toshi.kani@hp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "James.Bottomley@HansenPartnership.com" 
+	<James.Bottomley@HansenPartnership.com>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "horms@verge.net.au" <horms@verge.net.au>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "bp@alien8.de" <bp@alien8.de>, "greg@kroah.com" <greg@kroah.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        "leif.lindholm@linaro.org" <leif.lindholm@linaro.org>
+Subject: Re: [PATCH v7 00/12] kexec kernel efi runtime support
+Message-ID: <20131225030901.GA6333@dhcp-16-126.nay.redhat.com>
+References: <1387533742-18018-1-git-send-email-dyoung@redhat.com>
+ <20131221173515.GE29501@console-pimps.org>
+ <1387747621.1848.2.camel@misato.fc.hp.com>
+ <20131223073641.GA28919@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131223073641.GA28919@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-24 at 11:36 -0800, Paul E. McKenney wrote: 
-> On Mon, Dec 23, 2013 at 05:38:53AM +0100, Mike Galbraith wrote:
-> > On Sun, 2013-12-22 at 09:57 +0100, Mike Galbraith wrote: 
-> > > I'll let the box give
-> > > RCU something to do for a couple days.  No news is good news.
+On 12/23/13 at 07:36am, Matt Fleming wrote:
+> On Sun, 22 Dec, at 02:27:01PM, Toshi Kani wrote:
 > > 
-> > Ho ho hum, merry christmas, gift attached.
-> 
-> Hmmm...  I guess I should take a moment to work out who has been
-> naughty and nice...
-> 
-> > I'll beat on virgin -rt7, see if it survives, then re-apply RCU patch
-> > and retest.  This kernel had nohz_full enabled, along with Sebastian's
-> > pending -rt fix for same, so RCU patch was not only not running solo,
-> > box was running a known somewhat buggy config as well.  Box was doing
-> > endless tbench 64 when it started stalling fwiw.
-> 
-> [72788.040872] NMI backtrace for cpu 31
-> [72788.040874] CPU: 31 PID: 13975 Comm: tbench Tainted: G        W    3.12.6-rt7-nohz #192
-> [72788.040874] Hardware name: Hewlett-Packard ProLiant DL980 G7, BIOS P66 07/07/2010
-> [72788.040875] task: ffff8802728e3db0 ti: ffff88026deb2000 task.ti: ffff88026deb2000
-> [72788.040877] RIP: 0010:[<ffffffff815e34e4>]  [<ffffffff815e34e4>] _raw_spin_trylock+0x14/0x80
-> [72788.040878] RSP: 0018:ffff8802769e3e58  EFLAGS: 00000002
-> [72788.040879] RAX: ffff88026deb3fd8 RBX: ffff880273544000 RCX: 000000007bc87bc6
-> [72788.040879] RDX: 0000000000000000 RSI: ffff8802728e3db0 RDI: ffff880273544000
-> [72788.040880] RBP: ffff88026deb39f8 R08: 0000063c14effd0f R09: 0000000000000119
-> [72788.040881] R10: 0000000000000005 R11: ffff8802769f2260 R12: ffff8802728e3db0
-> [72788.040881] R13: 000000000000001f R14: ffff8802769ebcc0 R15: ffffffff810c4730
-> [72788.040883] FS:  00007f7cd380a700(0000) GS:ffff8802769e0000(0000) knlGS:0000000000000000
-> [72788.040883] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [72788.040884] CR2: 000000000068a0e8 CR3: 0000000267ba4000 CR4: 00000000000007e0
-> [72788.040885] Stack:
-> [72788.040886]  ffff88026deb39f8 ffffffff815e2aa0 0000000000000000 ffffffff8106711a
-> [72788.040887]  ffff8802769ec4e0 ffff8802769ec4e0 ffff8802769e3f58 ffffffff810c44bd
-> [72788.040888]  ffff88026deb39f8 ffff88026deb39f8 000015ed4f5ff89b ffffffff810c476e
-> [72788.040889] Call Trace:
-> [72788.040889]  <IRQ> 
-> [72788.040891]  [<ffffffff815e2aa0>] ? rt_spin_lock_slowunlock_hirq+0x10/0x20
-> [72788.040893]  [<ffffffff8106711a>] ? update_process_times+0x3a/0x60
-> [72788.040895]  [<ffffffff810c44bd>] ? tick_sched_handle+0x2d/0x70
-> [72788.040896]  [<ffffffff810c476e>] ? tick_sched_timer+0x3e/0x70
-> [72788.040898]  [<ffffffff810839dd>] ? __run_hrtimer+0x13d/0x260
-> [72788.040900]  [<ffffffff81083c2c>] ? hrtimer_interrupt+0x12c/0x310
-> [72788.040901]  [<ffffffff8109593e>] ? vtime_account_system+0x4e/0xf0
-> [72788.040903]  [<ffffffff81035656>] ? smp_apic_timer_interrupt+0x36/0x50
-> [72788.040904]  [<ffffffff815ebc9d>] ? apic_timer_interrupt+0x6d/0x80
-> [72788.040905]  <EOI> 
-> [72788.040906]  [<ffffffff815e338a>] ? _raw_spin_lock+0x2a/0x40
-> [72788.040908]  [<ffffffff815e23b3>] ? rt_spin_lock_slowlock+0x33/0x2d0
-> [72788.040910]  [<ffffffff8108ee44>] ? migrate_enable+0xc4/0x220
-> [72788.040911]  [<ffffffff8152f888>] ? ip_finish_output+0x258/0x450
-> [72788.040913]  [<ffffffff81067011>] ? lock_timer_base+0x41/0x80
-> [72788.040914]  [<ffffffff81068db6>] ? mod_timer+0x66/0x290
-> [72788.040916]  [<ffffffff814df02f>] ? sk_reset_timer+0xf/0x20
-> [72788.040917]  [<ffffffff81547d7f>] ? tcp_write_xmit+0x1cf/0x5d0
-> [72788.040919]  [<ffffffff815481e5>] ? __tcp_push_pending_frames+0x25/0x60
-> [72788.040921]  [<ffffffff81539e34>] ? tcp_sendmsg+0x114/0xbb0
-> [72788.040923]  [<ffffffff814dbc1f>] ? sock_sendmsg+0xaf/0xf0
-> [72788.040925]  [<ffffffff811bf5e5>] ? touch_atime+0x65/0x150
-> [72788.040927]  [<ffffffff814dbd78>] ? SyS_sendto+0x118/0x190
-> [72788.040929]  [<ffffffff81095b66>] ? vtime_account_user+0x66/0x100
-> [72788.040930]  [<ffffffff8100f36a>] ? syscall_trace_enter+0x2a/0x260
-> [72788.040932]  [<ffffffff815eb249>] ? tracesys+0xdd/0xe2
-> 
-> The most likely suspect is the rt_spin_lock_slowlock() that is apparently
-> being acquired by migrate_enable().  This could be due to:
-> 
-> 1.	Massive contention on that lock.
-> 
-> 2.	Someone else holding that lock for excessive time periods.
-> 	Evidence in favor: CPU 0 appears to be running within
-> 	migrate_enable().  But isn't migrate_enable() really quite
-> 	lightweight?
-> 
-> 3.	Possible looping in the networking stack -- but this seems
-> 	unlikely given that we appear to have caught a lock acquisition
-> 	in the act.  (Not impossible, however, if there are lots of
-> 	migrate_enable() calls in the networking stack, which there
-> 	are due to all the per-CPU work.)
-> 
-> So which code do you think deserves the big lump of coal?  ;-)
+> > The kexec branch is missing the following change, which is required for
+> > fast reboot with multi-cpus.
+> > 
+> >    commit 279f1df915c3a6ed3075d98a849705bf53851f99
+> >    Author: Vivek Goyal <vgoyal@redhat.com>
+> >    Date:   Tue Nov 26 10:25:28 2013 +0800
+> > 
+> >        kexec: migrate to reboot cpu
+> > 
+> > With this change added, I confirmed that the branch kernel works fine.
+>  
+> I can't find that commit in Linus' tree. Where is it from?
 
-Sebastian's NO_HZ_FULL locking fixes.  Locking is hard, and rt sure
-doesn't make it any easier, so lets give him a cookie or three to nibble
-on while he ponders that trylock stuff again instead :)
+Previously it was in Andrew's mm tree, currently it's below commit in linus tree:
 
--Mike
+commit c97102ba96324da330078ad8619ba4dfe840dbe3
+Author: Vivek Goyal <vgoyal@redhat.com>
+Date:   Wed Dec 18 17:08:31 2013 -0800
 
+    kexec: migrate to reboot cpu
+    
+    Commit 1b3a5d02ee07 ("reboot: move arch/x86 reboot= handling to generic
+    kernel") moved reboot= handling to generic code.  In the process it also
+    removed the code in native_machine_shutdown() which are moving reboot
+    process to reboot_cpu/cpu0.
+    
+    I guess that thought must have been that all reboot paths are calling
+    migrate_to_reboot_cpu(), so we don't need this special handling.  But
+    kexec reboot path (kernel_kexec()) is not calling
+    migrate_to_reboot_cpu() so above change broke kexec.  Now reboot can
+    happen on non-boot cpu and when INIT is sent in second kerneo to bring
+    up BP, it brings down the machine.
+    
+    So start calling migrate_to_reboot_cpu() in kexec reboot path to avoid
+    this problem.
+    
+    Bisected by WANG Chao.
+    
+    Reported-by: Matthew Whitehead <mwhitehe@redhat.com>
+    Reported-by: Dave Young <dyoung@redhat.com>
+    Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+    Tested-by: Baoquan He <bhe@redhat.com>
+    Tested-by: WANG Chao <chaowang@redhat.com>
+    Acked-by: H. Peter Anvin <hpa@linux.intel.com>
+    Cc: <stable@vger.kernel.org>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
