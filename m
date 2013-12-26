@@ -1,94 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597Ab3LZDDU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Dec 2013 22:03:20 -0500
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:10071
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752477Ab3LZDDT (ORCPT
+	id S1752615Ab3LZDKs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Dec 2013 22:10:48 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35763 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752477Ab3LZDKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Dec 2013 22:03:19 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1155h)
-Date: Thu, 26 Dec 2013 10:32:07 +0800
-From: Huang Shijie <b32955@freescale.com>
-To: Caizhiyong <caizhiyong@hisilicon.com>
-CC: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: Re: [PATCH] mtd: nand: remove unused function input parameter
-Message-ID: <20131226023206.GB6752@shlinux2.ap.freescale.net>
-References: <C3050A4DBA34F345975765E43127F10F25E47D50@SZXEMA512-MBX.china.huawei.com>
+	Wed, 25 Dec 2013 22:10:46 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <52BB9E0C.8020102@jp.fujitsu.com>
+Date: Thu, 26 Dec 2013 12:10:04 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <C3050A4DBA34F345975765E43127F10F25E47D50@SZXEMA512-MBX.china.huawei.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Toshi Kani <toshi.kani@hp.com>,
+        Yinghai Lu <yinghai@kernel.org>, Zhang Rui <rui.zhang@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>
+Subject: Re: [PATCH 1/2][Untested] ACPI / hotplug: Add demand_offline hotplug
+ profile flag
+References: <1421028.Rsfpmhnym3@vostro.rjw.lan> <3111545.W6MaeKuZVj@vostro.rjw.lan> <2519855.bi7YQLIAPv@vostro.rjw.lan> <2003756.4bDvk8cJ93@vostro.rjw.lan>
+In-Reply-To: <2003756.4bDvk8cJ93@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 25, 2013 at 12:40:50PM +0000, Caizhiyong wrote:
-> From: Cai Zhiyong <caizhiyong@huawei.com>
-> Date: Wed, 25 Dec 2013 20:11:15 +0800
-> Subject: [PATCH] mtd: nand: remove unused function input parameter
-> 
-> The nand_get_flash_type parameter "busw" input value is not used by any
-> branch, and it is updated before use it in the function, so remove it, 
-> define the "busw" as an internal variable.
-> 
-> Signed-off-by: Cai Zhiyong <caizhiyong@huawei.com>
+(2013/12/23 23:00), Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>
+> Add a new ACPI hotplug profile flag, demand_offline, such that if
+> set for the given ACPI device object's scan handler, it will cause
+> acpi_scan_hot_remove() to check if that device object's physical
+> companions are offline upfront and fail the hot removal if that
+> is not the case.
+>
+> That flag will be useful to overcome a problem with containers on
+> some system where they can only be hot-removed after some cleanup
+> operations carried out by user space, which needs to be notified
+> of the container hot-removal before the kernel attempts to offline
+> devices in the container.  In those cases the current implementation
+> of acpi_scan_hot_remove() is not sufficient, because it first tries
+> to offline the devices in the container and only if that is
+> suffcessful it tries to offline the container itself.  As a result,
+> the container hot-removal notification is not delivered to user space
+> at the right time.
+>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > ---
->  drivers/mtd/nand/nand_base.c | 12 +++++-------
->  1 file changed, 5 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-> index 9b3bb3c..a123afa 100644
-> --- a/drivers/mtd/nand/nand_base.c
-> +++ b/drivers/mtd/nand/nand_base.c
-> @@ -3337,10 +3337,10 @@ static bool find_full_id_nand(struct mtd_info *mtd, struct nand_chip *chip,
->   */
->  static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
->  						  struct nand_chip *chip,
-> -						  int busw,
->  						  int *maf_id, int *dev_id,
->  						  struct nand_flash_dev *type)
->  {
-> +	int busw;
->  	int i, maf_idx;
->  	u8 id_data[8];
->  
-> @@ -3497,18 +3497,16 @@ ident_done:
->  int nand_scan_ident(struct mtd_info *mtd, int maxchips,
->  		    struct nand_flash_dev *table)
->  {
-> -	int i, busw, nand_maf_id, nand_dev_id;
-> +	int i, nand_maf_id, nand_dev_id;
->  	struct nand_chip *chip = mtd->priv;
->  	struct nand_flash_dev *type;
->  
-> -	/* Get buswidth to select the correct functions */
-> -	busw = chip->options & NAND_BUSWIDTH_16;
->  	/* Set the default functions */
-> -	nand_set_defaults(chip, busw);
-> +	nand_set_defaults(chip, chip->options & NAND_BUSWIDTH_16);
->  
->  	/* Read the flash type */
-> -	type = nand_get_flash_type(mtd, chip, busw,
-> -				&nand_maf_id, &nand_dev_id, table);
-> +	type = nand_get_flash_type(mtd, chip, &nand_maf_id,
-> +				   &nand_dev_id, table);
-I think the "busw" is to make the code more readable, since the nand_set_defaults
-also needs a busw.
+>   drivers/acpi/scan.c     |   41 +++++++++++++++++++++++++++++++++++++----
+>   include/acpi/acpi_bus.h |    3 ++-
+>   2 files changed, 39 insertions(+), 5 deletions(-)
+>
+> Index: linux-pm/drivers/acpi/scan.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/scan.c
+> +++ linux-pm/drivers/acpi/scan.c
+> @@ -126,6 +126,24 @@ acpi_device_modalias_show(struct device
+>   }
+>   static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
+>
+> +static bool acpi_scan_is_offline(struct acpi_device *adev)
+> +{
+> +	struct acpi_device_physical_node *pn;
+> +	bool offline = true;
+> +
+> +	mutex_lock(&adev->physical_node_lock);
+> +
+> +	list_for_each_entry(pn, &adev->physical_node_list, node)
 
-Let Brian judge it.
+> +		if (!pn->dev->offline) {
 
-thanks
-Huang Shijie
+Please check pn->dev->bus and pn->dev->bus->offline too as follow:
+
+		if (pn->dev->bus && pn->dev->bus->offline &&
+		    !pn->dev->offline) {
+
+My container has CPU and Memory and PCI root bridge. PCI root bridge
+does not has offline function (pn->dev->bus->offline). So I cannot offline
+the device and pn->dev->offline of the device is always 0. Therefore,
+following operation always returns -EBUSY even if I offline CPUs and
+all memory sections on a container device.
+
+echo 0 > /sys/bus/container/devices/ACPI0004:01/online
+
+Thanks,
+Yasuaki Ishimatsu
+
+> +			kobject_uevent(&pn->dev->kobj, KOBJ_CHANGE);
+> +			offline = false;
+> +			break;
+> +		}
+> +
+> +	mutex_unlock(&adev->physical_node_lock);
+> +	return offline;
+> +}
+> +
+>   static acpi_status acpi_bus_offline(acpi_handle handle, u32 lvl, void *data,
+>   				    void **ret_p)
+>   {
+> @@ -196,12 +214,11 @@ static acpi_status acpi_bus_online(acpi_
+>   	return AE_OK;
+>   }
+>
+> -static int acpi_scan_hot_remove(struct acpi_device *device)
+> +static int acpi_scan_try_to_offline(struct acpi_device *device)
+>   {
+>   	acpi_handle handle = device->handle;
+> -	struct device *errdev;
+> +	struct device *errdev = NULL;
+>   	acpi_status status;
+> -	unsigned long long sta;
+>
+>   	/*
+>   	 * Carry out two passes here and ignore errors in the first pass,
+> @@ -212,7 +229,6 @@ static int acpi_scan_hot_remove(struct a
+>   	 *
+>   	 * If the first pass is successful, the second one isn't needed, though.
+>   	 */
+> -	errdev = NULL;
+>   	status = acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
+>   				     NULL, acpi_bus_offline, (void *)false,
+>   				     (void **)&errdev);
+> @@ -241,6 +257,23 @@ static int acpi_scan_hot_remove(struct a
+>   			return -EBUSY;
+>   		}
+>   	}
+> +	return 0;
+> +}
+> +
+> +static int acpi_scan_hot_remove(struct acpi_device *device)
+> +{
+> +	acpi_handle handle = device->handle;
+> +	unsigned long long sta;
+> +	acpi_status status;
+> +
+> +	if (device->handler->hotplug.demand_offline && !acpi_force_hot_remove) {
+> +		if (!acpi_scan_is_offline(device))
+> +			return -EBUSY;
+> +	} else {
+> +		int error = acpi_scan_try_to_offline(device);
+> +		if (error)
+> +			return error;
+> +	}
+>
+>   	ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+>   		"Hot-removing device %s...\n", dev_name(&device->dev)));
+> Index: linux-pm/include/acpi/acpi_bus.h
+> ===================================================================
+> --- linux-pm.orig/include/acpi/acpi_bus.h
+> +++ linux-pm/include/acpi/acpi_bus.h
+> @@ -91,8 +91,9 @@ struct acpi_device;
+>
+>   struct acpi_hotplug_profile {
+>   	struct kobject kobj;
+> -	bool enabled:1;
+>   	int (*scan_dependent)(struct acpi_device *adev);
+> +	bool enabled:1;
+> +	bool demand_offline:1;
+>   };
+>
+>   static inline struct acpi_hotplug_profile *to_acpi_hotplug_profile(
+>
 
 
