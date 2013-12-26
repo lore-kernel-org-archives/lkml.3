@@ -1,143 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884Ab3LZVwJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 16:52:09 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:50193 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752578Ab3LZVwG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 16:52:06 -0500
-Date: Thu, 26 Dec 2013 13:52:04 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Srinivas Ramana <sramana@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2] regmap: Allow regmap_bulk_write() to work for "no-bus"
- regmaps
-Message-ID: <20131226215204.GL31766@codeaurora.org>
-References: <20131211132729.GT11468@sirena.org.uk>
- <52AA42FD.4040503@codeaurora.org>
- <20131213104128.GT11044@sirena.org.uk>
- <20131213213707.GO21983@codeaurora.org>
- <20131216210153.GA3185@sirena.org.uk>
- <20131217023047.GC31766@codeaurora.org>
- <20131218184541.GH31886@sirena.org.uk>
- <52B897A1.8030205@codeaurora.org>
- <20131224125358.GB30815@sirena.org.uk>
- <20131226193416.GI31766@codeaurora.org>
+	id S1753375Ab3LZWA2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 17:00:28 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:36588 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752733Ab3LZWA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Dec 2013 17:00:27 -0500
+From: Gene Heskett <gheskett@wdtv.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: section miss-matches in older 3.8.3 kernel, and one question
+Date: Thu, 26 Dec 2013 17:00:17 -0500
+Cc: lkml <linux-kernel@vger.kernel.org>
+References: <201312261358.59464.gheskett@wdtv.com> <52BC8C74.3060205@infradead.org> <201312261641.10746.gheskett@wdtv.com>
+In-Reply-To: <201312261641.10746.gheskett@wdtv.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131226193416.GI31766@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="windows-1256"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312261700.17621.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-regmap_bulk_write() should decay to performing individual writes
-if we're using a "no-bus" regmap. Unfortunately, it returns an
-error because there is no map->bus pointer. Fix it.
+On Thursday 26 December 2013, Gene Heskett wrote:
+>On Thursday 26 December 2013, Randy Dunlap wrote:
+>>On 12/26/13 10:58, Gene Heskett wrote:
+>>> Greetings;
+>>> 
+>>> In my attempts to find a 64 bit or PAE enabled kernel to run on my
+>>> older ASUS M2N-SLI Delux mobo, I saw a note go by during the build
+>>> that there were 9 section-miss-matches.
+>>> 
+>>> But when I applied the cli option recommended to the make lines in my
+>>> makeit script, I only got these 2 squawks.
+>>> 
+>>> WARNING: drivers/net/ethernet/amd/depca.o(.text+0xcce): Section
+>>> mismatch in reference from the function depca_isa_probe() to the
+>>> function
+>>> .init.text:DepcaSignature()
+>>> The function depca_isa_probe() references
+>>> the function __init DepcaSignature().
+>>> This is often because depca_isa_probe lacks a __init
+>>> annotation or the annotation of DepcaSignature is wrong.
+>>> 
+>>> WARNING: drivers/net/ethernet/amd/depca.o(.text+0xd22): Section
+>>> mismatch in reference from the function depca_isa_probe() to the
+>>> function
+>>> .init.text:depca_hw_init()
+>>> The function depca_isa_probe() references
+>>> the function __init depca_hw_init().
+>>> This is often because depca_isa_probe lacks a __init
+>>> annotation or the annotation of depca_hw_init is wrong.
+>>> 
+>>> I am not capable to fixing these, too many years & miles on the wet
+>>> ram, but I thought that maybe someone might be interested.
+>>
+>>This driver was removed from the kernel source tree on Jan. 16, 2013.
+>>
+>>Sure, it's still in 3.8.x so those section mismatches could be fixed,
+>>but most section mismatches have been recently fixed by eliminating
+>>CONFIG_HOTPLUG and removing the use of all __devinit* and __devexit*.
+>>
+>>Do you use this driver?  is it barfing?
+>>or you just happened to build it and saw these warnings?
+>
+>The latter Randy, and I can recall when they were moderately important in
+>the 2.6 days.  FWIW, I just built, but haven't reboot tested yet, a
+>3.12.0, with no reported errors... But now kmail is back to freezing its
+>composer for 2 or 3 minutes at a time while running 3.8.3. 3.8.2 didn't
+>do that nearly as often.
+>
+>Thanks, Randy
+>
+>Cheers, Gene
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
+A 3rd ps, 3.12.0 now running, but I see this in dmesg:
 
-This is based on v3.13-rc4
+microcode: CPU0: patch_level=0x01000065
+microcode: CPU1: patch_level=0x01000065
+microcode: CPU2: patch_level=0x01000065
+microcode: CPU3: patch_level=0x01000065
+microcode: Microcode Update Driver: v2.00 <tigran@aivazian.fsnet.co.uk>, 
+Peter Oruba
 
- drivers/base/regmap/regmap.c | 62 ++++++++++++++++++++++++++------------------
- 1 file changed, 37 insertions(+), 25 deletions(-)
+The correct patch level for this phenom cpu is 0x01000083
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index d043d80..13d32fd 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -1514,21 +1514,49 @@ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
- {
- 	int ret = 0, i;
- 	size_t val_bytes = map->format.val_bytes;
--	void *wval;
- 
--	if (!map->bus)
--		return -EINVAL;
--	if (!map->format.parse_inplace)
-+	if (map->bus && !map->format.parse_inplace)
- 		return -EINVAL;
- 	if (reg % map->reg_stride)
- 		return -EINVAL;
- 
- 	map->lock(map->lock_arg);
-+	/*
-+	 * Some devices don't support bulk write, for
-+	 * them we have a series of single write operations.
-+	 */
-+	if (!map->bus || map->use_single_rw) {
-+		for (i = 0; i < val_count; i++) {
-+			unsigned int ival;
-+
-+			switch (val_bytes) {
-+			case 1:
-+				ival = *(u8 *)(val + (i * val_bytes));
-+				break;
-+			case 2:
-+				ival = *(u16 *)(val + (i * val_bytes));
-+				break;
-+			case 4:
-+				ival = *(u32 *)(val + (i * val_bytes));
-+				break;
-+#ifdef CONFIG_64BIT
-+			case 8:
-+				ival = *(u64 *)(val + (i * val_bytes));
-+				break;
-+#endif
-+			default:
-+				ret = -EINVAL;
-+				goto out;
-+			}
- 
--	/* No formatting is require if val_byte is 1 */
--	if (val_bytes == 1) {
--		wval = (void *)val;
-+			ret = _regmap_write(map, reg + (i * map->reg_stride),
-+					ival);
-+			if (ret != 0)
-+				goto out;
-+		}
- 	} else {
-+		void *wval;
-+
- 		wval = kmemdup(val, val_count * val_bytes, GFP_KERNEL);
- 		if (!wval) {
- 			ret = -ENOMEM;
-@@ -1537,27 +1565,11 @@ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
- 		}
- 		for (i = 0; i < val_count * val_bytes; i += val_bytes)
- 			map->format.parse_inplace(wval + i);
--	}
--	/*
--	 * Some devices does not support bulk write, for
--	 * them we have a series of single write operations.
--	 */
--	if (map->use_single_rw) {
--		for (i = 0; i < val_count; i++) {
--			ret = _regmap_raw_write(map,
--						reg + (i * map->reg_stride),
--						val + (i * val_bytes),
--						val_bytes);
--			if (ret != 0)
--				goto out;
--		}
--	} else {
-+
- 		ret = _regmap_raw_write(map, reg, wval, val_bytes * val_count);
--	}
- 
--	if (val_bytes != 1)
- 		kfree(wval);
--
-+	}
- out:
- 	map->unlock(map->lock_arg);
- 	return ret;
+I had enabled an option for early microcode, perhaps I should disable it 
+and rebuild?
+
+Cheers, Gene
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Genes Web page <http://geneslinuxbox.net:6309/gene>
+
+job interview, n.:
+	The excruciating process during which personnel officers
+	separate the wheat from the chaff -- then hire the chaff.
+A pen in the hand of this president is far more
+dangerous than 200 million guns in the hands of
+         law-abiding citizens.
