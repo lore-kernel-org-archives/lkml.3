@@ -1,120 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689Ab3LZExg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Dec 2013 23:53:36 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:41930 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752532Ab3LZExd (ORCPT
+	id S1750993Ab3LZFSb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 00:18:31 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:50685 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708Ab3LZFSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Dec 2013 23:53:33 -0500
-Message-ID: <52BBB614.5010707@ti.com>
-Date: Thu, 26 Dec 2013 10:22:36 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Thu, 26 Dec 2013 00:18:30 -0500
 MIME-Version: 1.0
-To: Sricharan R <r.sricharan@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
-        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
-        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
-        <mark.rutland@arm.com>, <robherring2@gmail.com>, <tglx@linutronix.de>,
-        <galak@codeaurora.org>, <rob.herring@calxeda.com>,
-        <santosh.shilimkar@ti.com>, <nm@ti.com>, <bcousson@baylibre.com>
-Subject: Re: [PATCH V5 0/4] DRIVERS: IRQCHIP: Add support for crossbar IP
-References: <1386066445-28245-1-git-send-email-r.sricharan@ti.com> <52B168A5.4010202@ti.com>
-In-Reply-To: <52B168A5.4010202@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Date: Thu, 26 Dec 2013 13:18:29 +0800
+Message-ID: <CAGHPBZogJzOUTM=WooJmNd92=QCivWa9W+c9Co1NJd-sgRTB1A@mail.gmail.com>
+Subject: Confusion about Pinctrl and GPIO
+From: =?GB2312?B?stzI2cjZ?= <caorr1980@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
-On Wednesday 18 December 2013 02:49 PM, Sricharan R wrote:
-> Hi Thomas,
-> 
-> On Tuesday 03 December 2013 03:57 PM, Sricharan R wrote:
->> Some socs have a large number of interrupts requests to service
->> the needs of its many peripherals and subsystems. All of the interrupt
->> requests lines from the subsystems are not needed at the same
->> time, so they have to be muxed to the controllers appropriately.
->> In such places a interrupt controllers are preceded by an
->> IRQ CROSSBAR that provides flexibility in muxing the device interrupt
->> requests to the controller inputs.
->>
->> This series models the peripheral interrupts that can be routed through
->> the crossbar to the GIC as 'routable-irqs'. The routable irqs are added
->> in a separate linear domain inside the GIC. The registered routable domain's
->> callback are invoked as a part of the GIC's callback, which in turn should
->> allocate a free irq line and configure the IP accordingly. So every peripheral
->> in the dts files mentions the fixed crossbar number as its interrupt. A free
->> gic line for that gets allocated and configured when the peripheral interrupts
->> are mapped.
->>
->> The minimal crossbar driver to track and allocate free GIC lines and configure the
->> crossbar is added here, along with the DT bindings.
->>
->> V5:
->>    Addressed a comment from Mark Rutland <mark.rutland@arm.com>,
->>    updated tags and rebased on 3.13-rc2
->>
->> V4:
->>    Addressed a couple of comments and split the DTS file updates in to
->>    a separate series.
->>
->> V3:
->>    Addressed few more comments from Thomas Gleixner <tglx@linutronix.de>
->>
->>    Rebased patches 3,4,5,7 which updates the DTS file on top of below branch
->> 	   git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git
->> 	   for_3.13/dts
->>
->>    Rebased patches 1,2,6 on top of 3.12 mainline
->>    Updated Commit tags
->>
->> V2:
->>    Addressed Thomas Gleixner <tglx@linutronix.de> comments and
->>    Kumar Gala <galak@codeaurora.org>
->>
->>    Split updating the DRA7.dtsi file for adding the routable-irqs
->>
->> Previous discussions that led to this is at
->> 	https://lkml.org/lkml/2013/9/18/540
->>
->> The V1,V2,V3,V4 post of these patches is at
->>       [V1]  https://lkml.org/lkml/2013/9/30/283
->>       [V2]  http://www.spinics.net/lists/linux-omap/msg99540.html
->>       [V3]  http://www.kernelhub.org/?msg=356470&p=2
->>       [V4]  http://www.spinics.net/lists/linux-doc/msg16726.html
->>
->> Sricharan R (4):
->>   DRIVERS: IRQCHIP: IRQ-GIC: Add support for routable irqs
->>   DRIVERS: IRQCHIP: CROSSBAR: Add support for Crossbar IP
->>   ARM: OMAP4+: Correct Wakeup-gen code to use physical irq number
->>   ARM: DRA: Enable Crossbar IP support for DRA7XX
->>
->>  Documentation/devicetree/bindings/arm/gic.txt      |    6 +
->>  .../devicetree/bindings/arm/omap/crossbar.txt      |   27 +++
->>  arch/arm/mach-omap2/Kconfig                        |    1 +
->>  arch/arm/mach-omap2/omap-wakeupgen.c               |    4 +-
->>  arch/arm/mach-omap2/omap4-common.c                 |    2 +
->>  drivers/irqchip/Kconfig                            |    8 +
->>  drivers/irqchip/Makefile                           |    1 +
->>  drivers/irqchip/irq-crossbar.c                     |  208 ++++++++++++++++++++
->>  drivers/irqchip/irq-gic.c                          |   81 +++++++-
->>  include/linux/irqchip/arm-gic.h                    |    7 +-
->>  include/linux/irqchip/irq-crossbar.h               |   11 ++
->>  11 files changed, 343 insertions(+), 13 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/arm/omap/crossbar.txt
->>  create mode 100644 drivers/irqchip/irq-crossbar.c
->>  create mode 100644 include/linux/irqchip/irq-crossbar.h
->>
-> 
-> I have addressed all the comments on this series, can this be merged now ?
-> 
-  Ping..
+Hi Linus and Stephen,
 
-Regards,
- Sricharan
+I'm learning the pinctrl subsystem codes these days, and have a
+confusion about it, I'm very appreciated if you can help.
 
+I noticed that Stephen<swarren@nvidia.com> submitted a patch for pinctrl:
+http://www.gossamer-threads.com/lists/linux/kernel/1500890?do=post_view_threaded
+
+In this patch, Stephen said, "When an SoC muxes pins in a group, it's
+quite possible for the group to contain e.g. 6 pins, but only 4 of
+them actually be needed by the HW module that's mux'd to them. In this
+case, the other 2 pins could be used as GPIOs. However, pinctrl marks
+all the pins within the group as in-use by the selected mux function.
+To allow the expected gpiolib interaction, separate the concepts of
+pin ownership into two parts: One for the mux function and one for
+GPIO usage. Finally, allow those two ownerships to exist in parallel.
+"
+
+I agree that gpiolib should be able to use the two idle pins as GPIO,
+but after apply this patch, gpiolib can also request the 4 pins used
+by HW module succesfully, and this will override the settings of the 4
+pins for HW module.
+
+I have read the latest Documentation/pinctrl.txt, and there is two
+examples about muxing logic in "GPIO mode pitfalls" section, let me
+take example A for instance:
+
+                       pin config
+                       logic regs
+                       |               +- SPI
+     Physical pins --- pad --- pinmux -+- I2C
+                               |       +- mmc
+                               |       +- GPIO
+                               pin
+                               multiplex
+                               logic regs
+
+Assuming that the pin has been configured as SPI mode, undoubtedly we
+can't use it as GPIO any longer. However, if we call gpio_request()
+(gpiolib API) to requet this pin for GPIO purpose, gpio_request()
+still can return successfully. I think this is unreasonable,
+gpio_request() should return an "error code" if the pin is in-use by
+PINMUX.
+
+I read the codes of pin_request() in pinmux.c, and guess
+pinmux_ops->gpio_request_enable() may be responsible to handle this
+use case, that is, to return an "error code" if the pin has been owned
+by pinmux. However, no drivers in drivers/pinctrl/ implements such
+codes in pinmux_ops->gpio_request_enable().
+Or, pinctrl subsystem is just resposible to set the pin in GPIO mode,
+and gpio subsystem (gpiolib) is responsible for other things like set
+direction, get value if input, or set high/low if output. Is my
+understanding right?
+
+
+********************
+
+Let me talk again about the example described by Stephen. If actually
+only 4 pins of the group which contains 6 pins are needed by HW
+module, then why does the group be defined to contain 6 pins? I think
+the group should be defined only containing 4 pins rather than 6 pins,
+then the other 2 idle pins can be used for any other purpose.
+
+Thank you very much in advance!
