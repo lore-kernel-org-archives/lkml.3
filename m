@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805Ab3LZTlh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 14:41:37 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:45763 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741Ab3LZTlf (ORCPT
+	id S1753815Ab3LZTv0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 14:51:26 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:43623 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753761Ab3LZTvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 14:41:35 -0500
-Date: Thu, 26 Dec 2013 11:41:33 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 4/7] mfd: ssbi: Add regmap read/write helpers
-Message-ID: <20131226194133.GJ31766@codeaurora.org>
-References: <1387831563-13535-1-git-send-email-sboyd@codeaurora.org>
- <1387831563-13535-5-git-send-email-sboyd@codeaurora.org>
- <20131224125443.GC30815@sirena.org.uk>
+	Thu, 26 Dec 2013 14:51:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131224125443.GC30815@sirena.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Thu, 26 Dec 2013 11:51:22 -0800
+Message-ID: <CAGXu5j+mBiXj2+iPKGU+Ffb3oXqL+cH8JULH_hoORJNiQgQQFQ@mail.gmail.com>
+Subject: nouveau nvaa clock missing break?
+From: Kees Cook <keescook@google.com>
+To: Roy Spliet <rspliet@eclipso.eu>
+Cc: Ben Skeggs <bskeggs@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/24, Mark Brown wrote:
-> On Mon, Dec 23, 2013 at 12:46:00PM -0800, Stephen Boyd wrote:
-> 
-> > +int ssbi_reg_read(void *context, unsigned int reg, unsigned int *val)
-> > +{
-> > +	*val = 0;
-> > +	return ssbi_read(context, reg, (u8 *)val, 1);
-> > +}
-> > +EXPORT_SYMBOL_GPL(ssbi_reg_read);
-> > +
-> > +int ssbi_reg_write(void *context, unsigned int reg, unsigned int val)
-> > +{
-> > +	return ssbi_write(context, reg, (u8 *)&val, 1);
-> > +}
-> > +EXPORT_SYMBOL_GPL(ssbi_reg_write);
-> 
-> Not a big deal but could these just be inlined in the headers?
+Hi,
 
-Sure, I can do that if I need to resend? The only benefit I see
-is two less symbols exported.
+Just curious if this code is missing a "break" or not...
+
+/drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c: 373 in nvaa_clock_prog()
+
+        switch (priv->vsrc) {
+        case nv_clk_src_cclk:
+                mast |= 0x00400000;
+        default:
+                nv_wr32(clk, 0x4600, priv->vdiv);
+        }
+
+Coverity noticed it as CID 1135671. If it's intentional, it might be
+nice to add a "fall through" comment there.
+
+Coverity also complained about read_pll (CID 1135670) where post_div
+could (unlikely) be 0 and used for a divide-by-zero.
+
+Thanks!
+
+-Kees
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Kees Cook
+Chrome OS Security
