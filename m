@@ -1,114 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab3LZTUj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 14:20:39 -0500
-Received: from smtprelay0084.hostedemail.com ([216.40.44.84]:47795 "EHLO
+	id S1753925Ab3LZTUq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 14:20:46 -0500
+Received: from smtprelay0228.hostedemail.com ([216.40.44.228]:50893 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753611Ab3LZTUg (ORCPT
+	by vger.kernel.org with ESMTP id S1753900Ab3LZTUn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 14:20:36 -0500
+	Thu, 26 Dec 2013 14:20:43 -0500
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:152:355:379:541:800:960:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2693:3138:3139:3140:3141:3142:3354:3653:3865:3866:3868:3870:3871:3872:4321:5007:6261:10004:10026:10400:10848:11026:11658:11783:11914:12043:12291:12517:12519:12555:12683:13894,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: sofa71_5c64396f73543
-X-Filterd-Recvd-Size: 3607
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:800:960:966:973:982:988:989:1042:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2196:2199:2393:2553:2559:2562:3138:3139:3140:3141:3142:3353:3653:3865:3866:3867:3868:3870:3871:3872:3873:4250:4321:4385:5007:6119:6120:6261:7903:10004:10026:10848:11026:11473:11658:11914:12043:12517:12519:12555:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: bikes37_5d5c1be2f6b50
+X-Filterd-Recvd-Size: 2731
 From: Joe Perches <joe@perches.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Josh Triplett <josh@joshtriplett.org>,
         Manfred Spraul <manfred@colorfullife.com>,
         Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] checkpatch: Add tests for function pointer style misuses
-Date: Thu, 26 Dec 2013 11:20:28 -0800
-Message-Id: <4c5453ce99c368d91032e2a6614fe270fa94d122.1388085015.git.joe@perches.com>
+Subject: [PATCH 5/5] checkpatch: Update the FSF/GPL address check
+Date: Thu, 26 Dec 2013 11:20:32 -0800
+Message-Id: <cffb44ce7acd55b7bf0f59b07d934e0ae6be6fef.1388085015.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1388085015.git.joe@perches.com>
 References: <cover.1388085015.git.joe@perches.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kernel style uses function pointers in this form:
-        "type (*funcptr)(args...)"
+The FSF address check is a bit too verbose looking for the GPL text.
+Quiet it a bit by requiring --strict for the GPL bit.
 
-Emit warnings when this function pointer form isn't used.
+Also make the address tests match a few uses of abbreviations
+for street names and make it case insensitive.
 
 Signed-off-by: Joe Perches <joe@perches.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- scripts/checkpatch.pl | 59 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 59 insertions(+)
+ scripts/checkpatch.pl | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
 diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 0fcbc5f..f5d4560 100755
+index c12234e..abd1811 100755
 --- a/scripts/checkpatch.pl
 +++ b/scripts/checkpatch.pl
-@@ -2810,6 +2810,65 @@ sub process {
- 			}
+@@ -1970,15 +1970,16 @@ sub process {
  		}
  
-+# Function pointer declarations
-+# check spacing between type, funcptr, and args
-+# canonical declaration is "type (*funcptr)(args...)"
-+#
-+# the $Declare variable will capture all spaces after the type
-+# so check it for multiple spaces
-+		if ($line =~ /^.\s*($Declare)\((\s*)\*(\s*)$Ident(\s*)\)(\s*)\(/) {
-+			my $declare = $1;
-+			my $pre_pointer_space = $2;
-+			my $post_pointer_space = $3;
-+			my $funcname = $4;
-+			my $post_funcname_space = $5;
-+			my $pre_args_space = $6;
-+
-+			if ($declare !~ /\s$/) {
-+				WARN("SPACING",
-+				     "missing space after return type\n" . $herecurr);
-+			}
-+
-+# unnecessary space "type  (*funcptr)(args...)"
-+			elsif ($declare =~ /\s{2,}$/) {
-+				WARN("SPACING",
-+				     "Multiple spaces after return type\n" . $herecurr);
-+			}
-+
-+# unnecessary space "type ( *funcptr)(args...)"
-+			if (defined $pre_pointer_space &&
-+			    $pre_pointer_space =~ /^\s/) {
-+				WARN("SPACING",
-+				     "Unnecessary space after function pointer open parenthesis\n" . $herecurr);
-+			}
-+
-+# unnecessary space "type (* funcptr)(args...)"
-+			if (defined $post_pointer_space &&
-+			    $post_pointer_space =~ /^\s/) {
-+				WARN("SPACING",
-+				     "Unnecessary space before function pointer name\n" . $herecurr);
-+			}
-+
-+# unnecessary space "type (*funcptr )(args...)"
-+			if (defined $post_funcname_space &&
-+			    $post_funcname_space =~ /^\s/) {
-+				WARN("SPACING",
-+				     "Unnecessary space after function pointer name\n" . $herecurr);
-+			}
-+
-+# unnecessary space "type (*funcptr) (args...)"
-+			if (defined $pre_args_space &&
-+			    $pre_args_space =~ /^\s/) {
-+				WARN("SPACING",
-+				     "Unnecessary space before function pointer name\n" . $herecurr);
-+			}
-+
-+			if (show_type("SPACING") && $fix) {
-+				$fixed[$linenr - 1] =~
-+				    s/^(.\s*$Declare)\(\s*\*\s*($Ident)\s*\)\s*\(/rtrim($1) . " " . "\(\*$2\)\("/ex;
-+			}
-+		}
-+
- # check for spacing round square brackets; allowed:
- #  1. with a type on the left -- int [] a;
- #  2. at the beginning of a line for slice initialisers -- [0...10] = 5,
+ # Check for FSF mailing addresses.
+-		if ($rawline =~ /You should have received a copy/ ||
+-		    $rawline =~ /write to the Free Software/ ||
+-		    $rawline =~ /59 Temple Place/ ||
+-		    $rawline =~ /51 Franklin Street/) {
++		if ($rawline =~ /\bYou should have received a copy/i ||
++		    $rawline =~ /\bwrite to the Free/i ||
++		    $rawline =~ /\b59\s+Temple\s+Pl/i ||
++		    $rawline =~ /\b51\s+Franklin\s+St/i) {
+ 			my $herevet = "$here\n" . cat_vet($rawline) . "\n";
+ 			my $msg_type = \&ERROR;
+ 			$msg_type = \&CHK if ($file);
++			$msg_type = \&CHK if ($rawline =~ /\bYou should have received a copy/i);
+ 			&{$msg_type}("FSF_MAILING_ADDRESS",
+-				"Do not include the paragraph about writing to the Free Software Foundation's mailing address from the sample GPL notice. The FSF has changed addresses in the past, and may do so again. Linux already includes a copy of the GPL.\n" . $herevet)
++				     "Do not include the paragraph about writing to the Free Software Foundation's mailing address from the sample GPL notice. The FSF has changed addresses in the past, and may do so again. Linux already includes a copy of the GPL.\n" . $herevet)
+ 		}
+ 
+ # check for Kconfig help text having a real description
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
