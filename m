@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab3LZTBh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 14:01:37 -0500
-Received: from mail-qe0-f54.google.com ([209.85.128.54]:48010 "EHLO
-	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753747Ab3LZTBd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 14:01:33 -0500
-Date: Thu, 26 Dec 2013 14:01:20 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        linux-ide@vger.kernel.org,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>
-Subject: Re: No freezing of kernel threads (was: Re: [GIT PULL] libata fixes
- for v3.13-rc5)
-Message-ID: <20131226190120.GC16483@htj.dyndns.org>
-References: <20131226160517.GB16483@htj.dyndns.org>
- <Pine.LNX.4.44L0.1312261326540.24521-100000@netrider.rowland.org>
+	id S1753748Ab3LZTFo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 14:05:44 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:57821 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753611Ab3LZTFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Dec 2013 14:05:42 -0500
+From: Gene Heskett <gheskett@wdtv.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Subject: section miss-matches in older 3.8.3 kernel, and one question
+Date: Thu, 26 Dec 2013 13:58:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1312261326540.24521-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312261358.59464.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+Greetings;
 
-On Thu, Dec 26, 2013 at 01:42:29PM -0500, Alan Stern wrote:
-> In the case of hibernation, it's not so simple.  We do need to perform 
-> I/O, in order to save the memory image.  But we also need to avoid 
-> unnecessary I/O, in order to keep the on-disk data consistent with the 
-> data in the memory image.  You probably can't accomplish this at the 
-> device driver or subsystem level.
+In my attempts to find a 64 bit or PAE enabled kernel to run on my older 
+ASUS M2N-SLI Delux mobo, I saw a note go by during the build that there 
+were 9 section-miss-matches.
 
-That was what I assumed too but Rafael tells me it has nothing to do
-with hibernation.
+But when I applied the cli option recommended to the make lines in my 
+makeit script, I only got these 2 squawks.
 
-> > which bothers me about the freezer is that it's essentially a separate
-> > entry point for suspend/resume implementation, and not a particularly
-> > well designed one at that.  Things which depend on freezer for PM ops
-> > would need completely separate paths for runtime PM.  They probably
-> > need some deviations anyway but freezer would push it unnecessarily.
-> 
-> Maybe it's the other way around: The separate paths are necessary, and 
-> the freezer _simplifies_ the system sleep ops.
+WARNING: drivers/net/ethernet/amd/depca.o(.text+0xcce): Section mismatch in 
+reference from the function depca_isa_probe() to the function 
+.init.text:DepcaSignature()
+The function depca_isa_probe() references
+the function __init DepcaSignature().
+This is often because depca_isa_probe lacks a __init 
+annotation or the annotation of DepcaSignature is wrong.
 
-Again, the point is it's too big a tool given the problem with history
-of abuse.  It sure is "convenient" to have tools at that level for
-that particular user - not because the task at hand fits such solution
-but because a lot more is being paid elsewhere.  It just is out of
-proportion and isn't a good design in larger sense.
+WARNING: drivers/net/ethernet/amd/depca.o(.text+0xd22): Section mismatch in 
+reference from the function depca_isa_probe() to the function 
+.init.text:depca_hw_init()
+The function depca_isa_probe() references
+the function __init depca_hw_init().
+This is often because depca_isa_probe lacks a __init 
+annotation or the annotation of depca_hw_init is wrong.
 
-As for autopm vs. system pm, there sure are necessary differences
-between the two but they also can share a lot.  At least, it looks
-that way from libata side.  I really don't think having two separate
-paradigms in implementing PM is a good idea even if the two paths have
-to deviate in significant ways.
+I am not capable to fixing these, too many years & miles on the wet ram, 
+but I thought that maybe someone might be interested.
 
-> Taking khubd as an example, I have to agree that converting it to a
-> workqueue would be a big simplification overall.  And yet there are
-> some things khubd does which are (as far as I know) rather difficult to
-> accomplish with workqueues.  One example in drivers/usb/core/hub.c:  
-> kick_khubd() calls usb_autopm_get_interface_no_resume() if and only if
-> it added the hub to the event list (and it does so before releasing the
-> list's lock).  How can you do that with a workqueue?
+Also, these kernels seem to want to drop me to an initramfs$ prompt, where, 
+since both kayboard and mouse are wireless usb, there is no connection, so 
+I have to hit the reset button & try a known good kernel.
 
-Do the same thing and just replace wake_up() with queue_work()?
+Has the use of mkinitramfs been deprecated? and if so, replace by what?
 
 Thanks.
 
+Cheers, Gene
 -- 
-tejun
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Genes Web page <http://geneslinuxbox.net:6309/gene>
+
+Vini, vidi, Linux!
+A pen in the hand of this president is far more
+dangerous than 200 million guns in the hands of
+         law-abiding citizens.
