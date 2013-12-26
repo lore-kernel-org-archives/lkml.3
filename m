@@ -1,81 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab3LZGVz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 01:21:55 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:41870 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752127Ab3LZGVy (ORCPT
+	id S1752604Ab3LZGfp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 01:35:45 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:37019 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047Ab3LZGfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 01:21:54 -0500
+	Thu, 26 Dec 2013 01:35:43 -0500
 MIME-Version: 1.0
-In-Reply-To: <20131224084801.57439ca2@gandalf.local.home>
-References: <CAKohpom5JmFamPpOsyPRqXNAqXu6VF_t0zXXhT90MCMutp5FgQ@mail.gmail.com>
-	<20131224084801.57439ca2@gandalf.local.home>
-Date: Thu, 26 Dec 2013 11:51:53 +0530
-Message-ID: <CAKohpom3haZ+LSdOtAjCM7x2C4YOC_a31OMPeE05ung4MAR68g@mail.gmail.com>
-Subject: Re: [Query]: trace-cmd crashing with '-e syscalls' on 3.13-rc1
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20131225191932.GB22071@redhat.com>
+References: <1387983339-1172-1-git-send-email-mst@redhat.com>
+ <1387983339-1172-2-git-send-email-mst@redhat.com> <CANJ5vPK-rs2d_TvZ3wuAXMK8ctoSvg2km8MpncMU+0cdk=TAsw@mail.gmail.com>
+ <20131225191932.GB22071@redhat.com>
+From: Michael Dalton <mwdalton@google.com>
+Date: Wed, 25 Dec 2013 22:35:22 -0800
+Message-ID: <CANJ5vPKy8DVsAs+e6ZDak3iOGXnT-7Ur7DP4Vas7bqqzcQG3Ww@mail.gmail.com>
+Subject: Re: [PATCH stable 1/2] virtio_net: fix error handling for mergeable buffers
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: netdev@vger.kernel.org, David Miller <davem@davemloft.net>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Eric Dumazet <edumazet@google.com>, Jason Wang <jasowang@redhat.com>,
+        lf-virt <virtualization@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 December 2013 19:18, Steven Rostedt <rostedt@goodmis.org> wrote:
-> Can you also produce this with just
-> "echo 1 > /sys/kernel/debug/tracing/events/syscalls/enable"?
-
-Yeah, running any command after doing above results in crash.
-I tried this on latest mainline:
-
-c5fdd53 Merge branch 'for-linus' of git://git.kernel.dk/linux-block
-
-with CONFIG_NO_HZ_FULL disabled.
-
-root@linaro-developer:/home/linaro# echo 1 >
-/sys/kernel/debug/tracing/events/syscalls/enable
-root@linaro-developer:/home/linaro# ls
-[  158.697900] Unable to handle kernel NULL pointer dereference at
-virtual address 0000001b
-[  158.704783] pgd = ee644000
-[  158.707321] [0000001b] *pgd=6e4f9831, *pte=00000000, *ppte=00000000
-[  158.713525] Internal error: Oops: 17 [#1] PREEMPT SMP ARM
-[  158.718928] Modules linked in:
-[  158.721942] CPU: 1 PID: 2004 Comm: ls Not tainted
-3.13.0-rc5-00075-gd5b6a3e #142
-[  158.729372] task: ee9bf0c0 ti: ee642000 task.ti: ee642000
-[  158.734754] PC is at ftrace_syscall_enter+0x44/0x178
-[  158.739691] LR is at syscall_trace_enter+0xf8/0x144
-[  158.744539] pc : [<c00ad5dc>]    lr : [<c0010f08>]    psr: a0000013
-[  158.744539] sp : ee643f40  ip : ee643f80  fp : ee643f7c
-[  158.756043] r10: 00000400  r9 : ee642000  r8 : c000eee4
-[  158.761203] r7 : ee643fb0  r6 : ee642000  r5 : ffffffff  r4 : 000f0005
-[  158.767723] r3 : ee642000  r2 : 000f001d  r1 : ee643fb0  r0 : c06cd2f8
-[  158.774236] Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-[  158.781357] Control: 10c5387d  Table: 6e64406a  DAC: 00000015
-[  158.787074] Process ls (pid: 2004, stack limit = 0xee642240)
-[  158.792712] Stack: (0xee643f40 to 0xee644000)
-[  158.797062] 3f40: ef1c4910 00000000 ee643f8c 00000022 00000003
-ee961890 000f0005 ee642000
-[  158.805251] 3f60: ee643fb0 c000eee4 ee642000 00000400 ee643fa4
-ee643f80 c0010f08 c00ad5a4
-[  158.813432] 3f80: b6f2e4c0 b6f2fc60 00000002 00000000 000f0005
-c000eee4 00000000 ee643fa8
-[  158.821585] 3fa0: c000ee8c c0010e1c b6f2fc60 00000002 b6f2e4c0
-b6f35050 b6f2ebe8 b6f2e4c0
-[  158.829744] 3fc0: b6f2fc60 00000002 00000000 000f0005 00000001
-00000000 000188bc b6f35958
-[  158.837901] 3fe0: 000f0005 bed314a0 b6f168fb b6f26966 80000030
-b6f2e4c0 6f7fd821 6f7fdc21
-[  158.846103] [<c00ad5dc>] (ftrace_syscall_enter+0x44/0x178) from
-[<c0010f08>] (syscall_trace_enter+0xf8/0x144)
-[  158.856004] [<c0010f08>] (syscall_trace_enter+0xf8/0x144) from
-[<c000ee8c>] (__sys_trace+0xc/0x38)
-[  158.864915] Code: e2842018 e7905102 e3550000 0a000037 (e595201c)
-[  158.871136] ---[ end trace 70ef73d275f741de ]---
-[  158.875673] note: ls[2004] exited with preempt_count 1
-Segmentation fault
+Acked-by: Michael Dalton <mwdalton@google.com>
