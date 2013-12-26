@@ -1,118 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668Ab3LZETE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Dec 2013 23:19:04 -0500
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:43319 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752477Ab3LZETB (ORCPT
+	id S1752689Ab3LZExg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Dec 2013 23:53:36 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:41930 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752532Ab3LZExd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Dec 2013 23:19:01 -0500
-Date: Wed, 25 Dec 2013 23:18:56 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        linux-ide@vger.kernel.org,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>
-Subject: Re: No freezing of kernel threads (was: Re: [GIT PULL] libata fixes
- for v3.13-rc5)
-Message-ID: <20131226041856.GA16483@htj.dyndns.org>
-References: <1667032.A7Knz5cBng@vostro.rjw.lan>
- <Pine.LNX.4.44L0.1312252211550.15064-100000@netrider.rowland.org>
+	Wed, 25 Dec 2013 23:53:33 -0500
+Message-ID: <52BBB614.5010707@ti.com>
+Date: Thu, 26 Dec 2013 10:22:36 +0530
+From: Sricharan R <r.sricharan@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1312252211550.15064-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sricharan R <r.sricharan@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
+        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
+        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
+        <mark.rutland@arm.com>, <robherring2@gmail.com>, <tglx@linutronix.de>,
+        <galak@codeaurora.org>, <rob.herring@calxeda.com>,
+        <santosh.shilimkar@ti.com>, <nm@ti.com>, <bcousson@baylibre.com>
+Subject: Re: [PATCH V5 0/4] DRIVERS: IRQCHIP: Add support for crossbar IP
+References: <1386066445-28245-1-git-send-email-r.sricharan@ti.com> <52B168A5.4010202@ti.com>
+In-Reply-To: <52B168A5.4010202@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Alan.
+Hi Thomas,
+On Wednesday 18 December 2013 02:49 PM, Sricharan R wrote:
+> Hi Thomas,
+> 
+> On Tuesday 03 December 2013 03:57 PM, Sricharan R wrote:
+>> Some socs have a large number of interrupts requests to service
+>> the needs of its many peripherals and subsystems. All of the interrupt
+>> requests lines from the subsystems are not needed at the same
+>> time, so they have to be muxed to the controllers appropriately.
+>> In such places a interrupt controllers are preceded by an
+>> IRQ CROSSBAR that provides flexibility in muxing the device interrupt
+>> requests to the controller inputs.
+>>
+>> This series models the peripheral interrupts that can be routed through
+>> the crossbar to the GIC as 'routable-irqs'. The routable irqs are added
+>> in a separate linear domain inside the GIC. The registered routable domain's
+>> callback are invoked as a part of the GIC's callback, which in turn should
+>> allocate a free irq line and configure the IP accordingly. So every peripheral
+>> in the dts files mentions the fixed crossbar number as its interrupt. A free
+>> gic line for that gets allocated and configured when the peripheral interrupts
+>> are mapped.
+>>
+>> The minimal crossbar driver to track and allocate free GIC lines and configure the
+>> crossbar is added here, along with the DT bindings.
+>>
+>> V5:
+>>    Addressed a comment from Mark Rutland <mark.rutland@arm.com>,
+>>    updated tags and rebased on 3.13-rc2
+>>
+>> V4:
+>>    Addressed a couple of comments and split the DTS file updates in to
+>>    a separate series.
+>>
+>> V3:
+>>    Addressed few more comments from Thomas Gleixner <tglx@linutronix.de>
+>>
+>>    Rebased patches 3,4,5,7 which updates the DTS file on top of below branch
+>> 	   git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git
+>> 	   for_3.13/dts
+>>
+>>    Rebased patches 1,2,6 on top of 3.12 mainline
+>>    Updated Commit tags
+>>
+>> V2:
+>>    Addressed Thomas Gleixner <tglx@linutronix.de> comments and
+>>    Kumar Gala <galak@codeaurora.org>
+>>
+>>    Split updating the DRA7.dtsi file for adding the routable-irqs
+>>
+>> Previous discussions that led to this is at
+>> 	https://lkml.org/lkml/2013/9/18/540
+>>
+>> The V1,V2,V3,V4 post of these patches is at
+>>       [V1]  https://lkml.org/lkml/2013/9/30/283
+>>       [V2]  http://www.spinics.net/lists/linux-omap/msg99540.html
+>>       [V3]  http://www.kernelhub.org/?msg=356470&p=2
+>>       [V4]  http://www.spinics.net/lists/linux-doc/msg16726.html
+>>
+>> Sricharan R (4):
+>>   DRIVERS: IRQCHIP: IRQ-GIC: Add support for routable irqs
+>>   DRIVERS: IRQCHIP: CROSSBAR: Add support for Crossbar IP
+>>   ARM: OMAP4+: Correct Wakeup-gen code to use physical irq number
+>>   ARM: DRA: Enable Crossbar IP support for DRA7XX
+>>
+>>  Documentation/devicetree/bindings/arm/gic.txt      |    6 +
+>>  .../devicetree/bindings/arm/omap/crossbar.txt      |   27 +++
+>>  arch/arm/mach-omap2/Kconfig                        |    1 +
+>>  arch/arm/mach-omap2/omap-wakeupgen.c               |    4 +-
+>>  arch/arm/mach-omap2/omap4-common.c                 |    2 +
+>>  drivers/irqchip/Kconfig                            |    8 +
+>>  drivers/irqchip/Makefile                           |    1 +
+>>  drivers/irqchip/irq-crossbar.c                     |  208 ++++++++++++++++++++
+>>  drivers/irqchip/irq-gic.c                          |   81 +++++++-
+>>  include/linux/irqchip/arm-gic.h                    |    7 +-
+>>  include/linux/irqchip/irq-crossbar.h               |   11 ++
+>>  11 files changed, 343 insertions(+), 13 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/arm/omap/crossbar.txt
+>>  create mode 100644 drivers/irqchip/irq-crossbar.c
+>>  create mode 100644 include/linux/irqchip/irq-crossbar.h
+>>
+> 
+> I have addressed all the comments on this series, can this be merged now ?
+> 
+  Ping..
 
-On Wed, Dec 25, 2013 at 10:29:30PM -0500, Alan Stern wrote:
-> Thanks.  As I understand it (correct me if this is wrong), the problem
-> is that some subsystems wait for a freezable work queue or kthread to
-> carry out some job, and they do this as part of their resume pathway.  
-> Obviously this leads to deadlock.
+Regards,
+ Sricharan
 
-It's not even that.  Freezer is too big and ends up causing deadlock
-which doesn't have much to do with resuming in itself.  The observed
-deadlock is between driver core resume and block layer removal paths.
-While the removal operation is kicked off by bus rescan during resume,
-it isn't an inherent part of libata resume.  ie. any block device
-removal can race against driver core freezer path.
-
-> But I don't see how swinging to the other extreme (i.e., making no
-> kernel threads or work queues freezable) really solves anything.  
-> Those things are freezable for real reasons; they do stuff that must
-> not happen while the system is in the middle of a sleep transition.
-
-Kernel freezer has a lot of similarities with BKL.  I wouldn't call
-its eventual removal an extreme choice.
-
-> Thus...  If a subsystem's resume pathway depends on something happening 
-> which must not happen during a sleep transition, then something is 
-> fundamentally broken.
-
-Again, the deadlock doesn't have much to do with "a subsystem's resume
-pathway".  It's just freezer behaving as too big a lock used by too
-many subsystems which don't even need them eventually leading to messy
-deadlock.
-
-> Perhaps the problem could be solved by a finer-grained approach.  For
-
-Yeah, we seem to agree on the fact that it needs to be finer grained
-
-> example, maybe some of these work queues or kthreads need to be frozen
-> only while the system is suspending, so they can safely be thawed when
-> the resume begins.  Would that fix the problem that began this 
-> discussion?
-
-but not how to achieve it.  Kernel freezer's problem is that it's too
-big a mechanism for the given problem.  What we need is a mechanism to
-plug a handful (from what I've seen, there aren't too many legit
-users) of kthreads / workqueues, but what we have is a mechanism which
-is integral part of the whole task and workqueue machineries.
-
->From the beginning and still, it's used as a voodoo mechanism which
-somehow makes the machine "mostly stopped" before performing PM
-operations.  That "mostly stopped" has never been well defined and
-always been a source of confusions causing people to just believe it's
-somehow all quiet and good without actually pondering what should
-happen - freezing of kthreads isn't atomic and doesn't have any
-inherent ordering among different kthreads / wqs && freezing kthread /
-wq doesn't mean the layer is actually empty or inactive.  irq / bh
-paths aren't blocked at all.
-
-A common misconception seems to be that by marking the workers in the
-upper layers freezable, somehow things are blocked from all the
-sources and thus the actual device, which needs to be plugged across
-suspend, is safe.  It's damaging because it'd work in many, if not
-most, cases but can never be made fully reliable.
-
-> I know that in the case of khubd, we really do want it to remain frozen 
-> throughout the entire sleep transition.
-
-I could be wrong but the only legitimate use cases of kernel freezer
-that I've seen are drivers using it as a fast way to implement
-suspend/resume callbacks and khubd seems to fall in that category.  I
-think it'd be actually healthier to implement it as a part of the
-usual PM notification / callback mechanism - a natural benefit would
-be helping consolidate system and runtime PM paths.  The conversion
-should be fairly simple and we definitely can add helpers and whatnot
-if we end up having to convert more than a handful.
-
-The danger is that because we've been plugging so many sources, we're
-likely to have lower level queues which aren't properly plugged.
-Those are broken but could have been working most of the time.
-Removing freezing from the upper layers could expose those issues, so
-the conversion as a whole may have some challanges in that department.
-It has been quite a while since I went through PM paths of many
-different drivers so I'd defer the judgement to Rafael.
-
-Thanks.
-
--- 
-tejun
