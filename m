@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707Ab3LZFiO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 00:38:14 -0500
+	id S1752666Ab3LZFiL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 00:38:11 -0500
 Received: from lgeamrelo02.lge.com ([156.147.1.126]:56656 "EHLO
 	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752226Ab3LZFiM (ORCPT
+	with ESMTP id S1752226Ab3LZFiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 00:38:12 -0500
-X-AuditID: 9c93017e-b7cd8ae000002ce9-03-52bbc0c01754
+	Thu, 26 Dec 2013 00:38:09 -0500
+X-AuditID: 9c93017e-b7cd8ae000002ce9-f1-52bbc0be323d
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 7/8] perf ui/tui: Filter messages in log window
-Date: Thu, 26 Dec 2013 14:38:03 +0900
-Message-Id: <1388036284-32342-8-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 1/8] perf ui/tui: Protect windows by ui__lock
+Date: Thu, 26 Dec 2013 14:37:57 +0900
+Message-Id: <1388036284-32342-2-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1388036284-32342-1-git-send-email-namhyung@kernel.org>
 References: <1388036284-32342-1-git-send-email-namhyung@kernel.org>
@@ -27,206 +27,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Press '/' key to input filter string like main hist browser does.
+Sometimes perf top TUI breaks display with concurrent help/input
+window and pr_* messages since they're not protected by ui__lock.
+You can check it by pressing (and not releasing) 'h' key on a
+"perf top -vvv" TUI session.
 
-Requested-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/browsers/log.c | 117 +++++++++++++++++++++++++++++++++++++------
- 1 file changed, 103 insertions(+), 14 deletions(-)
+ tools/perf/ui/tui/util.c | 19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/log.c b/tools/perf/ui/browsers/log.c
-index c64aeb8f9aac..62343e0578bb 100644
---- a/tools/perf/ui/browsers/log.c
-+++ b/tools/perf/ui/browsers/log.c
-@@ -10,6 +10,14 @@
- #include "ui/libslang.h"
- #include "ui/keysyms.h"
- 
-+struct log_browser_data {
-+	unsigned long offset;
-+	u32 alloc;
-+	char filter[64];
-+};
-+
-+static void __log_menu__filter(struct ui_browser *menu, char *filter);
-+
- static void ui_browser__file_seek(struct ui_browser *browser __maybe_unused,
- 				  off_t offset __maybe_unused,
- 				  int whence __maybe_unused)
-@@ -23,10 +31,11 @@ static void ui_browser__file_write(struct ui_browser *browser,
- 	char buf[1024];
- 	char empty[] = " ";
- 	FILE *fp = perf_log.fp;
-+	struct log_browser_data *lbd = browser->priv;
- 	bool current_entry = ui_browser__is_current_entry(browser, row);
--	off_t *linemap = perf_log.linemap;
-+	off_t *linemap = browser->entries;
- 	unsigned int idx = *(unsigned int *)entry;
--	unsigned long offset = (unsigned long)browser->priv;
-+	unsigned long offset = lbd->offset;
- 
- 	fseek(fp, linemap[idx], SEEK_SET);
- 	if (fgets(buf, sizeof(buf), fp) == NULL)
-@@ -45,14 +54,14 @@ static unsigned int ui_browser__file_refresh(struct ui_browser *browser)
- {
- 	unsigned int row = 0;
- 	unsigned int idx = browser->top_idx;
-+	struct log_browser_data *lbd = browser->priv;
- 	fpos_t pos;
- 
- 	fgetpos(perf_log.fp, &pos);
- 
- 	if (perf_log.linemap_changed) {
- 		/* update log window with new linemap */
--		browser->entries = perf_log.linemap;
--		browser->nr_entries = perf_log.lines;
-+		__log_menu__filter(browser, lbd->filter);
- 		perf_log.linemap_changed = false;
+diff --git a/tools/perf/ui/tui/util.c b/tools/perf/ui/tui/util.c
+index 092902e30cee..bf890f72fe80 100644
+--- a/tools/perf/ui/tui/util.c
++++ b/tools/perf/ui/tui/util.c
+@@ -92,6 +92,8 @@ int ui_browser__input_window(const char *title, const char *text, char *input,
+ 		t = sep + 1;
  	}
  
-@@ -69,16 +78,81 @@ static unsigned int ui_browser__file_refresh(struct ui_browser *browser)
- 	return row;
- }
- 
-+static void __log_menu__filter(struct ui_browser *menu, char *filter)
-+{
-+	char buf[1024];
-+	struct log_browser_data *lbd = menu->priv;
-+	off_t *linemap = NULL;
-+	u32 lines = 0;
-+	u32 alloc = 0;
-+	u32 i;
-+
-+	if (*filter == '\0') {
-+		linemap = perf_log.linemap;
-+		lines = perf_log.lines;
-+		goto out;
-+	}
-+
-+	for (i = 0; i < perf_log.lines; i++) {
-+		fseek(perf_log.fp, perf_log.linemap[i], SEEK_SET);
-+		if (fgets(buf, sizeof(buf), perf_log.fp) == NULL)
-+			goto error;
-+
-+		if (strstr(buf, filter) == NULL)
-+			continue;
-+
-+		if (lines == alloc) {
-+			off_t *map;
-+
-+			map = realloc(linemap, (alloc + 128) * sizeof(*map));
-+			if (map == NULL)
-+				goto error;
-+
-+			linemap = map;
-+			alloc += 128;
-+		}
-+
-+		linemap[lines++] = perf_log.linemap[i];
-+	}
-+
-+out:
-+	if (lbd->alloc) {
-+		BUG_ON(menu->entries == perf_log.linemap);
-+		free(menu->entries);
-+	}
-+	lbd->alloc = alloc;
-+
-+	menu->entries = linemap;
-+	ui_browser__update_nr_entries(menu, lines);
-+	return;
-+
-+error:
-+	free(linemap);
-+}
-+
-+static void log_menu__filter(struct ui_browser *menu, char *filter)
-+{
-+	fpos_t pos;
-+
 +	pthread_mutex_lock(&ui__lock);
-+	fgetpos(perf_log.fp, &pos);
-+	__log_menu__filter(menu, filter);
-+	fsetpos(perf_log.fp, &pos);
-+	perf_log.linemap_changed = false;
++
+ 	max_len += 2;
+ 	nr_lines += 8;
+ 	y = SLtt_Screen_Rows / 2 - nr_lines / 2;
+@@ -120,13 +122,19 @@ int ui_browser__input_window(const char *title, const char *text, char *input,
+ 	SLsmg_write_nstring((char *)exit_msg, max_len);
+ 	SLsmg_refresh();
+ 
 +	pthread_mutex_unlock(&ui__lock);
-+}
 +
- static int log_menu__run(struct ui_browser *menu)
- {
- 	int key;
--	unsigned long offset;
-+	struct log_browser_data *lbd = menu->priv;
- 	const char help[] =
- 	"h/?/F1        Show this window\n"
- 	"UP/DOWN/PGUP\n"
- 	"PGDN/SPACE\n"
- 	"LEFT/RIGHT    Navigate\n"
--	"q/ESC/CTRL+C  Exit browser";
-+	"q/ESC/CTRL+C  Exit browser\n\n"
-+	"/             Filter log message";
- 
- 	if (ui_browser__show(menu, "Log messages", "Press 'q' to exit") < 0)
- 		return -1;
-@@ -88,21 +162,25 @@ static int log_menu__run(struct ui_browser *menu)
- 
- 		switch (key) {
- 		case K_RIGHT:
--			offset = (unsigned long)menu->priv;
--			offset += 10;
--			menu->priv = (void *)offset;
-+			lbd->offset += 10;
- 			continue;
- 		case K_LEFT:
--			offset = (unsigned long)menu->priv;
--			if (offset >= 10)
--				offset -= 10;
--			menu->priv = (void *)offset;
-+			if (lbd->offset >= 10)
-+				lbd->offset -= 10;
- 			continue;
- 		case K_F1:
- 		case 'h':
- 		case '?':
- 			ui_browser__help_window(menu, help);
- 			continue;
-+		case '/':
-+			if (ui_browser__input_window("Symbol to filter",
-+					"Please enter the name of symbol you want to see",
-+					lbd->filter, "ENTER: OK, ESC: Cancel",
-+					0) == K_ENTER) {
-+				log_menu__filter(menu, lbd->filter);
+ 	x += 2;
+ 	len = 0;
+ 	key = ui__getch(delay_secs);
+ 	while (key != K_TIMER && key != K_ENTER && key != K_ESC) {
++		pthread_mutex_lock(&ui__lock);
++
+ 		if (key == K_BKSPC) {
+-			if (len == 0)
++			if (len == 0) {
++				pthread_mutex_unlock(&ui__lock);
+ 				goto next_key;
 +			}
-+			continue;
- 		case K_ESC:
- 		case 'q':
- 		case CTRL('c'):
-@@ -121,12 +199,23 @@ static int log_menu__run(struct ui_browser *menu)
+ 			SLsmg_gotorc(y, x + --len);
+ 			SLsmg_write_char(' ');
+ 		} else {
+@@ -136,6 +144,8 @@ int ui_browser__input_window(const char *title, const char *text, char *input,
+ 		}
+ 		SLsmg_refresh();
  
- int tui__log_window(void)
- {
-+	struct log_browser_data lbd = {
-+		.filter	    = "",
-+	};
- 	struct ui_browser log_menu = {
- 		.refresh    = ui_browser__file_refresh,
- 		.seek	    = ui_browser__file_seek,
- 		.write	    = ui_browser__file_write,
-+		.entries    = perf_log.linemap,
- 		.nr_entries = perf_log.lines,
-+		.priv	    = &lbd,
- 	};
-+	int key;
++		pthread_mutex_unlock(&ui__lock);
 +
-+	key = log_menu__run(&log_menu);
+ 		/* XXX more graceful overflow handling needed */
+ 		if (len == sizeof(buf) - 1) {
+ 			ui_helpline__push("maximum size of symbol name reached!");
+@@ -174,6 +184,8 @@ int ui__question_window(const char *title, const char *text,
+ 		t = sep + 1;
+ 	}
  
--	return log_menu__run(&log_menu);
-+	if (lbd.alloc)
-+		free(log_menu.entries);
++	pthread_mutex_lock(&ui__lock);
 +
-+	return key;
+ 	max_len += 2;
+ 	nr_lines += 4;
+ 	y = SLtt_Screen_Rows / 2 - nr_lines / 2,
+@@ -195,6 +207,9 @@ int ui__question_window(const char *title, const char *text,
+ 	SLsmg_gotorc(y + nr_lines - 1, x);
+ 	SLsmg_write_nstring((char *)exit_msg, max_len);
+ 	SLsmg_refresh();
++
++	pthread_mutex_unlock(&ui__lock);
++
+ 	return ui__getch(delay_secs);
  }
+ 
+@@ -215,9 +230,7 @@ static int __ui__warning(const char *title, const char *format, va_list args)
+ 	if (vasprintf(&s, format, args) > 0) {
+ 		int key;
+ 
+-		pthread_mutex_lock(&ui__lock);
+ 		key = ui__question_window(title, s, "Press any key...", 0);
+-		pthread_mutex_unlock(&ui__lock);
+ 		free(s);
+ 		return key;
+ 	}
 -- 
 1.7.11.7
 
