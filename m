@@ -1,89 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801Ab3LZKXO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 05:23:14 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:54024 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752379Ab3LZKWj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 05:22:39 -0500
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: mturquette@linaro.org, lee.jones@linaro.org, kgene.kim@samsung.com,
-        patches@linaro.org
-Subject: [PATCH RESEND 2/4] clk: clk-s2mps11: Add support for clocks in S5M8767 MFD
-Date: Thu, 26 Dec 2013 15:48:59 +0530
-Message-Id: <1388053141-30085-3-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1388053141-30085-1-git-send-email-tushar.behera@linaro.org>
-References: <1383202124-1775-1-git-send-email-tushar.behera@linaro.org>
- <1388053141-30085-1-git-send-email-tushar.behera@linaro.org>
+	id S1752452Ab3LZK3u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 05:29:50 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:34221 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750897Ab3LZK3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Dec 2013 05:29:49 -0500
+X-IronPort-AV: E=Sophos;i="4.95,553,1384272000"; 
+   d="scan'208";a="9330876"
+Message-ID: <52BC0352.2040504@cn.fujitsu.com>
+Date: Thu, 26 Dec 2013 18:22:10 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Benjamin <bcrl@kvack.org>
+CC: linux-aio@kvack.org, fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] aio: optimize free kioctx slot search
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/26 18:28:44,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/26 18:28:44,
+	Serialize complete at 2013/12/26 18:28:44
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since clock operation within S2MPS11 and S5M8767 are similar, we can
-support both the devices within a single driver.
+Add a 'next_free' field into kioctx_table to store the next id that
+may be free, in order to reduce the search region when we insert
+kioctx into kioctx table.
+When we take a free slot from kioctx_table, update 'next_free' to
+the next slot. Also when  we free one slot to kioctx_table, update 'next_free'
+to the new free slot if it's smaller than 'next_free'. So that we can
+ensure that the slots before 'next_free' are all used, and the search can start
+from 'next_free' to reduce the search and improve the performance.
 
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-Reviewed-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
-CC: Mike Turquette <mturquette@linaro.org>
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
 ---
- drivers/clk/Kconfig       |    6 ++++--
- drivers/clk/clk-s2mps11.c |    5 +++++
- 2 files changed, 9 insertions(+), 2 deletions(-)
+ fs/aio.c |   10 ++++++++--
+ 1 files changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index 3089f05..87e6c56 100644
---- a/drivers/clk/Kconfig
-+++ b/drivers/clk/Kconfig
-@@ -75,10 +75,12 @@ config COMMON_CLK_SI570
- 	  clock generators.
- 
- config COMMON_CLK_S2MPS11
--	tristate "Clock driver for S2MPS11 MFD"
-+	tristate "Clock driver for S2MPS11/S5M8767 MFD"
- 	depends on MFD_SEC_CORE
- 	---help---
--	  This driver supports S2MPS11 crystal oscillator clock.
-+	  This driver supports S2MPS11/S5M8767 crystal oscillator clock. These
-+	  multi-function devices have 3 fixed-rate oscillators, clocked at
-+	  32KHz each.
- 
- config CLK_TWL6040
- 	tristate "External McPDM functional clock from twl6040"
-diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
-index 43e25bb..f4c1f08 100644
---- a/drivers/clk/clk-s2mps11.c
-+++ b/drivers/clk/clk-s2mps11.c
-@@ -27,6 +27,7 @@
- #include <linux/clk-provider.h>
- #include <linux/platform_device.h>
- #include <linux/mfd/samsung/s2mps11.h>
-+#include <linux/mfd/samsung/s5m8767.h>
- #include <linux/mfd/samsung/core.h>
- 
- #define s2mps11_name(a) (a->hw.init->name)
-@@ -175,6 +176,9 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
- 	case S2MPS11X:
- 		s2mps11_reg = S2MPS11_REG_RTC_CTRL;
- 		break;
-+	case S5M8767X:
-+		s2mps11_reg = S5M8767_REG_CTRL1;
-+		break;
- 	default:
- 		dev_err(&pdev->dev, "Invalid device type\n");
- 		return -EINVAL;
-@@ -254,6 +258,7 @@ static int s2mps11_clk_remove(struct platform_device *pdev)
- 
- static const struct platform_device_id s2mps11_clk_id[] = {
- 	{ "s2mps11-clk", S2MPS11X},
-+	{ "s5m8767-clk", S5M8767X},
- 	{ },
+diff --git a/fs/aio.c b/fs/aio.c
+index 062a5f6..489fda6 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -69,6 +69,7 @@ struct aio_ring {
+ struct kioctx_table {
+ 	struct rcu_head	rcu;
+ 	unsigned	nr;
++	unsigned	next_free;
+ 	struct kioctx	*table[];
  };
- MODULE_DEVICE_TABLE(platform, s2mps11_clk_id);
+ 
+@@ -548,11 +549,12 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
+ 	table = rcu_dereference(mm->ioctx_table);
+ 
+ 	while (1) {
+-		if (table)
+-			for (i = 0; i < table->nr; i++)
++		if (table && table->next_free < table->nr)
++			for (i = table->next_free; i < table->nr; i++)
+ 				if (!table->table[i]) {
+ 					ctx->id = i;
+ 					table->table[i] = ctx;
++					table->next_free = i + 1;
+ 					rcu_read_unlock();
+ 					spin_unlock(&mm->ioctx_lock);
+ 
+@@ -579,8 +581,10 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
+ 		old = rcu_dereference(mm->ioctx_table);
+ 
+ 		if (!old) {
++			table->next_free = 0;
+ 			rcu_assign_pointer(mm->ioctx_table, table);
+ 		} else if (table->nr > old->nr) {
++			table->next_free = old->nr;
+ 			memcpy(table->table, old->table,
+ 			       old->nr * sizeof(struct kioctx *));
+ 
+@@ -716,6 +720,8 @@ static void kill_ioctx(struct mm_struct *mm, struct kioctx *ctx)
+ 
+ 		WARN_ON(ctx != table->table[ctx->id]);
+ 		table->table[ctx->id] = NULL;
++		if (ctx->id < table->next_free)
++			table->next_free = ctx->id;
+ 		rcu_read_unlock();
+ 		spin_unlock(&mm->ioctx_lock);
+ 
 -- 
-1.7.9.5
+1.7.7
 
