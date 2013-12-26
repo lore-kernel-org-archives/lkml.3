@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab3LZLlv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 06:41:51 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:4145 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753101Ab3LZLlt (ORCPT
+	id S1753234Ab3LZLmH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 06:42:07 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:28788 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753182Ab3LZLmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 06:41:49 -0500
-Message-ID: <52BC15C8.2080400@huawei.com>
-Date: Thu, 26 Dec 2013 19:40:56 +0800
+	Thu, 26 Dec 2013 06:42:04 -0500
+Message-ID: <52BC15E0.5020808@huawei.com>
+Date: Thu, 26 Dec 2013 19:41:20 +0800
 From: Ding Tianhong <dingtianhong@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Johannes Berg <johannes@sipsolutions.net>,
+To: Solomon Peachy <pizza@shaftnet.org>,
         "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
         <linux-wireless@vger.kernel.org>, Netdev <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3.5 10/19] mac8011: slight optimization of addr compare
+Subject: [PATCH v3.5 15/19] cw1200: slight optimization of addr compare
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.72.199]
@@ -26,45 +25,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the possibly more efficient ether_addr_equal
-to instead of memcmp.
+Use possibly more efficient ether_addr_equal
+instead of memcmp.
 
-Cc: Johannes Berg <johannes@sipsolutions.net>
+Cc: Solomon Peachy <pizza@shaftnet.org>
 Cc: John W. Linville <linville@tuxdriver.com>
-Cc: David Miller <davem@davemloft.net>
 Cc: linux-wireless@vger.kernel.org
 Cc: netdev@vger.kernel.org
-Signed-off-by: Wang Weidong <wangweidong1@huawei.com>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Weilong Chen <chenweilong@huawei.com>
 Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 ---
- net/mac80211/iface.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/net/wireless/cw1200/sta.c  | 5 +++--
+ drivers/net/wireless/cw1200/txrx.c | 3 +--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/net/mac80211/iface.c b/net/mac80211/iface.c
-index 7aa9f9d..a4f9812 100644
---- a/net/mac80211/iface.c
-+++ b/net/mac80211/iface.c
-@@ -1497,8 +1497,8 @@ static void ieee80211_assign_perm_addr(struct ieee80211_local *local,
- 			bool used = false;
+diff --git a/drivers/net/wireless/cw1200/sta.c b/drivers/net/wireless/cw1200/sta.c
+index 010b252..103f7bc 100644
+--- a/drivers/net/wireless/cw1200/sta.c
++++ b/drivers/net/wireless/cw1200/sta.c
+@@ -13,6 +13,7 @@
+ #include <linux/sched.h>
+ #include <linux/firmware.h>
+ #include <linux/module.h>
++#include <linux/etherdevice.h>
  
- 			list_for_each_entry(sdata, &local->interfaces, list) {
--				if (memcmp(local->hw.wiphy->addresses[i].addr,
--					   sdata->vif.addr, ETH_ALEN) == 0) {
-+				if (ether_addr_equal(local->hw.wiphy->addresses[i].addr,
-+						     sdata->vif.addr)) {
- 					used = true;
- 					break;
- 				}
-@@ -1558,8 +1558,7 @@ static void ieee80211_assign_perm_addr(struct ieee80211_local *local,
- 			val += inc;
- 
- 			list_for_each_entry(sdata, &local->interfaces, list) {
--				if (memcmp(tmp_addr, sdata->vif.addr,
--							ETH_ALEN) == 0) {
-+				if (ether_addr_equal(tmp_addr, sdata->vif.addr)) {
- 					used = true;
- 					break;
- 				}
+ #include "cw1200.h"
+ #include "sta.h"
+@@ -555,8 +556,8 @@ u64 cw1200_prepare_multicast(struct ieee80211_hw *hw,
+ 		pr_debug("[STA] multicast: %pM\n", ha->addr);
+ 		memcpy(&priv->multicast_filter.macaddrs[count],
+ 		       ha->addr, ETH_ALEN);
+-		if (memcmp(ha->addr, broadcast_ipv4, ETH_ALEN) &&
+-		    memcmp(ha->addr, broadcast_ipv6, ETH_ALEN))
++		if (!ether_addr_equal(ha->addr, broadcast_ipv4) &&
++		    !ether_addr_equal(ha->addr, broadcast_ipv6))
+ 			priv->has_multicast_subscription = true;
+ 		count++;
+ 	}
+diff --git a/drivers/net/wireless/cw1200/txrx.c b/drivers/net/wireless/cw1200/txrx.c
+index e824d4d..0bd5411 100644
+--- a/drivers/net/wireless/cw1200/txrx.c
++++ b/drivers/net/wireless/cw1200/txrx.c
+@@ -1166,8 +1166,7 @@ void cw1200_rx_cb(struct cw1200_common *priv,
+ 			return;
+ 	} else if (ieee80211_is_beacon(frame->frame_control) &&
+ 		   !arg->status && priv->vif &&
+-		   !memcmp(ieee80211_get_SA(frame), priv->vif->bss_conf.bssid,
+-			   ETH_ALEN)) {
++		   ether_addr_equal(ieee80211_get_SA(frame), priv->vif->bss_conf.bssid)) {
+ 		const u8 *tim_ie;
+ 		u8 *ies = ((struct ieee80211_mgmt *)
+ 			  (skb->data))->u.beacon.variable;
 -- 
 1.8.0
 
