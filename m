@@ -1,125 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005Ab3LZOFk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 09:05:40 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:57159 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074Ab3LZOF1 (ORCPT
+	id S1753094Ab3LZOLZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 09:11:25 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:64528 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753007Ab3LZOLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 09:05:27 -0500
-Date: Thu, 26 Dec 2013 11:05:21 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 2/8] perf ui/tui: Split help message for perf top and
- report
-Message-ID: <20131226140521.GB30980@ghostprotocols.net>
-References: <1388036284-32342-1-git-send-email-namhyung@kernel.org>
- <1388036284-32342-3-git-send-email-namhyung@kernel.org>
+	Thu, 26 Dec 2013 09:11:23 -0500
+Message-ID: <52BC390A.2000504@gmail.com>
+Date: Thu, 26 Dec 2013 09:11:22 -0500
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1388036284-32342-3-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf stat: Do not show stats if workload fails
+References: <1387518748-25340-1-git-send-email-dsahern@gmail.com> <20131220075759.GA12937@gmail.com> <20131223193757.GA1396@ghostprotocols.net> <52B8D582.9090009@gmail.com> <20131224125342.GC17780@ghostprotocols.net> <20131224133003.GA23382@ghostprotocols.net>
+In-Reply-To: <20131224133003.GA23382@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Dec 26, 2013 at 02:37:58PM +0900, Namhyung Kim escreveu:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> Some hotkeys don't work for perf top so split help messages for them.
-> It'll be helpful to a future modification.  Also sort the message by
-> alphabetical order of the hotkey.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/ui/browsers/hists.c | 49 ++++++++++++++++++++++++++----------------
->  1 file changed, 30 insertions(+), 19 deletions(-)
-> 
-> diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-> index a440e03cd8c2..d43ec79ea4e3 100644
-> --- a/tools/perf/ui/browsers/hists.c
-> +++ b/tools/perf/ui/browsers/hists.c
-> @@ -1400,6 +1400,35 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
->  	char script_opt[64];
->  	int delay_secs = hbt ? hbt->refresh : 0;
->  
-> +#define HIST_BROWSER_HELP_COMMON					\
-> +	"h/?/F1        Show this window\n"				\
-> +	"UP/DOWN/PGUP\n"						\
-> +	"PGDN/SPACE    Navigate\n"					\
-> +	"q/ESC/CTRL+C  Exit browser\n\n"				\
-> +	"For multiple event sessions:\n\n"				\
-> +	"TAB/UNTAB     Switch events\n\n"				\
-> +	"For symbolic views (--sort has sym):\n\n"			\
-> +	"->            Zoom into DSO/Threads & Annotate current symbol\n" \
-> +	"<-            Zoom out\n"					\
-> +	"a             Annotate current symbol\n"			\
-> +	"C             Collapse all callchains\n"			\
-> +	"d             Zoom into current DSO\n"				\
-> +	"E             Expand all callchains\n"				\
-> +
-> +	/* help messages are sorted by lexical order of the hotkey */
-> +	const char report_help[] = HIST_BROWSER_HELP_COMMON
-> +	"P             Print histograms to perf.hist.N\n"
-> +	"r             Run available scripts\n"
-> +	"s             Switch to another data file in PWD\n"
-> +	"t             Zoom into current Thread\n"
-> +	"V             Verbose (DSO names in callchains, etc)\n"
-> +	"/             Filter symbol by name";
-> +	const char top_help[] = HIST_BROWSER_HELP_COMMON
-> +	"P             Print histograms to perf.hist.N\n"
-> +	"t             Zoom into current Thread\n"
-> +	"V             Verbose (DSO names in callchains, etc)\n"
-> +	"/             Filter symbol by name";
-> +
->  	if (browser == NULL)
-  		return -1;
+On 12/24/13, 8:30 AM, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Dec 24, 2013 at 09:53:42AM -0300, Arnaldo Carvalho de Melo escreveu:
+>> >The thing to check is perf_evlist__{prepare,start}_workload notification
+>> >errors using SIGUSR1, that we need to check for in the caller, and emit
+>> >the message, no?
+> Something like this:
+>
+> 1. We tell perf_evlist__prepare_workload that we want a signal if execvp
+> fails, it will be a SIGUSR1
+>
+> 2. We catch that signal in 'stat' and check that we got a signal, only
+> problem so far with this signal maze is that we're getting a SIGCHLD
+> while I was expecting a SIGUSR1... I.e. the "if (signr != -1) test
+> really should be if (signr == SIGUSR1), but I'm getting a SIGCHLD there
+> and the elves are tugging me away...
 
-This wastes space, why not have the HIST_BROWSER_HELP_COMMON as a
+Did the elves release you?
 
-	const char common_help[] = ...
+There are all kinds of failure paths with the workload functions. In the 
+end I was focusing on perf-stat actually checking the rc on the 
+start_workload function. If it fails, then write() failed and something 
+happened to the workload process. In that case don't show the counters.
 
-and then use:
-		ui_browser_helo(..., "%s%s", common_help,
-				is_report_browser(hbt) ? report_help : top_help);
+Handling the other error paths with appropriate messages will take 
+additional effort - as you are finding. ;-)
 
-?
-
-- Arnaldo
-
->  
-> @@ -1488,25 +1517,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
->  		case 'h':
->  		case '?':
->  			ui_browser__help_window(&browser->b,
-> -					"h/?/F1        Show this window\n"
-> -					"UP/DOWN/PGUP\n"
-> -					"PGDN/SPACE    Navigate\n"
-> -					"q/ESC/CTRL+C  Exit browser\n\n"
-> -					"For multiple event sessions:\n\n"
-> -					"TAB/UNTAB Switch events\n\n"
-> -					"For symbolic views (--sort has sym):\n\n"
-> -					"->            Zoom into DSO/Threads & Annotate current symbol\n"
-> -					"<-            Zoom out\n"
-> -					"a             Annotate current symbol\n"
-> -					"C             Collapse all callchains\n"
-> -					"E             Expand all callchains\n"
-> -					"d             Zoom into current DSO\n"
-> -					"t             Zoom into current Thread\n"
-> -					"r             Run available scripts('perf report' only)\n"
-> -					"s             Switch to another data file in PWD ('perf report' only)\n"
-> -					"P             Print histograms to perf.hist.N\n"
-> -					"V             Verbose (DSO names in callchains, etc)\n"
-> -					"/             Filter symbol by name");
-> +				is_report_browser(hbt) ? report_help : top_help);
->  			continue;
->  		case K_ENTER:
->  		case K_RIGHT:
-> -- 
-> 1.7.11.7
+David
