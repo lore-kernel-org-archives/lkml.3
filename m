@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188Ab3LZOWz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 09:22:55 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:39916 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753090Ab3LZOWy (ORCPT
+	id S1753247Ab3LZO0L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 09:26:11 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36525 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753025Ab3LZO0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 09:22:54 -0500
-Date: Thu, 26 Dec 2013 11:22:48 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "David A. Long" <dave.long@linaro.org>, systemtap@sourceware.org,
-        yrl.pp-manager.tt@hitachi.com, Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH -tip v2 1/2] [CLEANUP] perf-probe: Expand given path to
- absolute path
-Message-ID: <20131226142248.GE30980@ghostprotocols.net>
-References: <20131226054148.22364.25224.stgit@kbuild-fedora.novalocal>
- <20131226054150.22364.12187.stgit@kbuild-fedora.novalocal>
- <52BC39D6.3090908@gmail.com>
+	Thu, 26 Dec 2013 09:26:10 -0500
+Date: Thu, 26 Dec 2013 15:26:08 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Joe Xue <lgxue@hotmail.com>
+Cc: "cooloney@gmail.com" <cooloney@gmail.com>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "rob@landley.net" <rob@landley.net>,
+        "milo.kim@ti.com" <milo.kim@ti.com>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH] Add the LED burst trigger
+Message-ID: <20131226142607.GA15225@amd.pavel.ucw.cz>
+References: <1387895407-28031-1-git-send-email-lgxue@hotmail.com>
+ <20131225230935.GB13593@amd.pavel.ucw.cz>
+ <BLU172-W52032BFEF4512123D7516EACC20@phx.gbl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52BC39D6.3090908@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BLU172-W52032BFEF4512123D7516EACC20@phx.gbl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Dec 26, 2013 at 09:14:46AM -0500, David Ahern escreveu:
-> On 12/26/13, 12:41 AM, Masami Hiramatsu wrote:
-> >@@ -180,7 +181,20 @@ static int opt_set_target(const struct option *opt, const char *str,
-> >  		else
-> >  			return ret;
+Hi!
+
+> Yes, Morse code can indicate any means. But when we look at the LEDs, would we like to also have a Morse code book in hand?
+> 
+> The burst led blink idea is because it is easy to use and easy to describe. Mostly when users on site are describing the LEDs states to the support engineer.
+>
+
+Well.. above 7 or so blinks, people will be unable to count. "one
+short, one long" will help to extend that. 
+
+Plus, there may be patterns such as "keep it ON, count number of brief
+OFFs"... 
+
+That's why I suggested:
+
+> > echo 40> step_length_ms
+> > echo "- - - "> pattern
 > >
-> >-		params.target = str;
-> >+		/* Expand given path to absolute path, except for modulename */
-> >+		if (params.uprobes || strchr(str, '/')) {
-> >+			tmp = realpath(str, NULL);
-> >+			if (!tmp) {
-> >+				pr_warning("Failed to find the path of %s.\n",
-> >+					   str);
-> 
-> That error message will be misleading if it is generated. How about:
->     Failed to get the absolute path of %s: %d\n", str, errno.
+> > do the same trick?
+> >
+> > Plus, you could for example do
+> >
+> > echo "- --- "> pattern
+> >
+> > to do morse code...
 
-Changed it to:
+Interface
 
- pr_warning("Failed to get the absolute path of %s: %m\n", str);
+(Note that your client stripped some spaces out of it).
 
- 
-> >+				return ret;
-> >+			}
-> >+		} else {
-> >+			tmp = strdup(str);
-> >+			if (!tmp)
-> >+				return -ENOMEM;
-> >+		}
-> >+		params.target = tmp;
-> 
-> When is params.target freed?
-
-> David
+With that, it should be very easy to program all the reasonable
+blinking patterns for single LED without PWM.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
