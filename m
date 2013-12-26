@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612Ab3LZD0Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Dec 2013 22:26:16 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:34169 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752477Ab3LZD0O (ORCPT
+	id S1752656Ab3LZD3d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Dec 2013 22:29:33 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:54222 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752477Ab3LZD3b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Dec 2013 22:26:14 -0500
-Message-ID: <52BBA18F.4080102@huawei.com>
-Date: Thu, 26 Dec 2013 11:25:03 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Wed, 25 Dec 2013 22:29:31 -0500
+Date: Wed, 25 Dec 2013 22:29:30 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        <linux-ide@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>
+Subject: No freezing of kernel threads (was: Re: [GIT PULL] libata fixes for
+ v3.13-rc5)
+In-Reply-To: <1667032.A7Knz5cBng@vostro.rjw.lan>
+Message-ID: <Pine.LNX.4.44L0.1312252211550.15064-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>,
-        <vegardno@ifi.uio.no>, Pekka Enberg <penberg@kernel.org>
-CC: <linux-doc@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>, Xishi Qiu <qiuxishi@huawei.com>
-Subject: [PATCH] doc/kmemcheck: add kmemcheck to kernel-parameters.txt
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.196]
-X-CFilter-Loop: Reflected
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add kmemcheck to Documentation/kernel-parameters.txt.
+n Wed, 25 Dec 2013, Rafael J. Wysocki wrote:
 
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
----
- Documentation/kernel-parameters.txt |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+> > Is this discussed in more detail somewhere (an email thread, for
+> > example)?
+> 
+> This one, more or less: https://lkml.org/lkml/2013/12/13/402
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 50680a5..671de56 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1415,6 +1415,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			Valid arguments: on, off
- 			Default: on
- 
-+	kmemcheck=	[KNL] Boot-time kmemcheck enable/disable/one-shot mode
-+			Valid arguments: 0, 1, 2
-+			kmemcheck=0 (disabled)
-+			kmemcheck=1 (enabled)
-+			kmemcheck=2 (one-shot mode)
-+			Default: 2 (one-shot mode)
-+
- 	kstack=N	[X86] Print N words from the kernel stack
- 			in oops dumps.
- 
--- 
-1.7.1
+Thanks.  As I understand it (correct me if this is wrong), the problem
+is that some subsystems wait for a freezable work queue or kthread to
+carry out some job, and they do this as part of their resume pathway.  
+Obviously this leads to deadlock.
 
+One possible answer is to fix the subsystems -- make them not do that
+any more.  Easier said than done, I suppose.  In any case, this is a
+class of errors that is not easily detectable at the moment (could
+lockdep be taught to recognize it?).
 
+But I don't see how swinging to the other extreme (i.e., making no
+kernel threads or work queues freezable) really solves anything.  
+Those things are freezable for real reasons; they do stuff that must
+not happen while the system is in the middle of a sleep transition.
+
+Thus...  If a subsystem's resume pathway depends on something happening 
+which must not happen during a sleep transition, then something is 
+fundamentally broken.
+
+Perhaps the problem could be solved by a finer-grained approach.  For
+example, maybe some of these work queues or kthreads need to be frozen
+only while the system is suspending, so they can safely be thawed when
+the resume begins.  Would that fix the problem that began this 
+discussion?
+
+I know that in the case of khubd, we really do want it to remain frozen 
+throughout the entire sleep transition.
+
+Alan Stern
 
