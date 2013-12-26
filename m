@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752977Ab3LZNoB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 08:44:01 -0500
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:62059 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752736Ab3LZNn7 (ORCPT
+	id S1752955Ab3LZNwj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 08:52:39 -0500
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:45824 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752834Ab3LZNwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 08:43:59 -0500
-Message-ID: <52BC3295.3020007@gmail.com>
-Date: Thu, 26 Dec 2013 08:43:49 -0500
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 26 Dec 2013 08:52:37 -0500
 MIME-Version: 1.0
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-CC: David Ahern <dsahern@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [PATCH] perf probe: Improve error message when function not found
-References: <1387562649-25929-1-git-send-email-dsahern@gmail.com>
-In-Reply-To: <1387562649-25929-1-git-send-email-dsahern@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131226100348.GA7751@infradead.org>
+References: <20131225145447.GA18146@gmail.com>
+	<20131226100348.GA7751@infradead.org>
+Date: Thu, 26 Dec 2013 05:52:35 -0800
+Message-ID: <CAMe9rOqx1HDT_rtiz2R0Cz5iAp0AFXhjw6RpTkjgFT_DDDWfVA@mail.gmail.com>
+Subject: Re: [PATCH] Use __kernel_long_t/__kernel_ulong_t in <linux/resource.h>
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Masami:
+On Thu, Dec 26, 2013 at 2:03 AM, Christoph Hellwig <hch@infradead.org> wrote:
+> On Wed, Dec 25, 2013 at 06:54:47AM -0800, H.J. Lu wrote:
+>> Both x32 and x86-64 use the same struct rusage and struct rlimit for
+>> system calls.  But x32 log is 32-bit.  This patch change uapi
+>> <linux/resource.h> to use __kernel_long_t in struct rusage and
+>> __kernel_ulong_t in and struct rlimit.
+>
+>  a) please send all your related patches as a series
 
-If you do not have any problems with this version please Ack so Arnaldo 
-will pick it up.
+My patches are independent of each other.  They can
+be applied in order.
 
-Thanks,
+>  b) explain how these changes to shared ABI headers:
+>
+>      1) do not break any architecture, especially mips N32 which is
+>         the MIPS equivalent of x32
 
-David
+I am not familiar with N32 system call interface.  My patch
+may break N32 if N32 __kernel_long_t doesn't match
+what is used.  I will update my patches to limit my changes
+to __BITS_PER_LONG == 64.
 
-On 12/20/13, 1:04 PM, David Ahern wrote:
-> When requesting a function from a userspace library the error message to
-> the user is less than helpful. e.g.,
->
->      perf probe -x /lib64/libpthread-2.14.90.so -a 'lock_full=__pthread_mutex_lock_full'
->      no symbols found in /lib64/libpthread-2.14.90.so, maybe install a debug package?
->      Failed to load map.
->         Error: Failed to add events. (-22)
->
-> yet the symbol really does exist but is a local symbol which is filtered:
->
-> nm /lib64/libpthread-2.14.90.so | grep __pthread_mutex_lock_full
-> 0000000000005700 t __pthread_mutex_lock_full
->
-> With this patch:
->      perf probe -x /lib64/libpthread-2.14.90.so -a 'lock_full=__pthread_mutex_lock_full'
->
->      no symbols found in /lib64/libpthread-2.14.90.so, maybe install a debug package?
->      Failed to find function in /lib64/libpthread-2.14.90.so. Perhaps it is a local variable?
->        Error: Failed to add events. (-22)
->
-> Signed-off-by: David Ahern <dsahern@gmail.com>
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
->
-> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> index 9c6989ca2bea..2eac49096840 100644
-> --- a/tools/perf/util/probe-event.c
-> +++ b/tools/perf/util/probe-event.c
-> @@ -2309,7 +2309,8 @@ static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
->   	}
->   	available_func_filter = strfilter__new(function, NULL);
->   	if (map__load(map, filter_available_functions)) {
-> -		pr_err("Failed to load map.\n");
-> +		pr_err("Failed to find requested symbol in %s. Is it a global variable?\n",
-> +		       name);
->   		goto out;
->   	}
->
->
+>      2) do not break existing x32 binaries
+>      3) fix existing and future x32 binaries
 
+My patches just update kernel uabi header files to match
+x32 system calls.  They don't break any x32 binaries,
+current and future.
+
+>  c) why you suddenly need these changes now and not when the x32 ABI
+>     support was submitted and hopefully heavily tested
+
+Kernel headers had been wrong for -m32/-mx32 on x86-64
+for a long long time.  Linux/x86-64 normally use header
+files from glibc, which avoids broken kernel header files.
+Kernel uabi header files fix -m32, but not -mx32, which I am
+working on now.
+
+Thanks.
+
+-- 
+H.J.
