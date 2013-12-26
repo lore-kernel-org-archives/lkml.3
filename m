@@ -1,111 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab3LZAwV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Dec 2013 19:52:21 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:50364 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752446Ab3LZAwU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Dec 2013 19:52:20 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>, bjorn@mork.no
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] cpufreq: try to resume policies which failed on last resume
-Date: Thu, 26 Dec 2013 02:05:50 +0100
-Message-ID: <5562479.pVWRuDL0y6@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <f9d7b0d5424e4443597d2ed39bec3fedd2b10d1e.1387848958.git.viresh.kumar@linaro.org>
-References: <f9d7b0d5424e4443597d2ed39bec3fedd2b10d1e.1387848958.git.viresh.kumar@linaro.org>
+	id S1752509Ab3LZBHm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Dec 2013 20:07:42 -0500
+Received: from blu0-omc4-s32.blu0.hotmail.com ([65.55.111.171]:10907 "EHLO
+	blu0-omc4-s32.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752442Ab3LZBHk convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Dec 2013 20:07:40 -0500
+X-Greylist: delayed 306 seconds by postgrey-1.27 at vger.kernel.org; Wed, 25 Dec 2013 20:07:40 EST
+X-TMN: [UP7fCs6dhGGrR4eBw475or8sQWOuLHwR]
+X-Originating-Email: [lgxue@hotmail.com]
+Message-ID: <BLU172-W52032BFEF4512123D7516EACC20@phx.gbl>
+From: Joe Xue <lgxue@hotmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+CC: "cooloney@gmail.com" <cooloney@gmail.com>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "rob@landley.net" <rob@landley.net>,
+        "milo.kim@ti.com" <milo.kim@ti.com>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: RE: [PATCH] Add the LED burst trigger
+Date: Wed, 25 Dec 2013 20:02:33 -0500
+Importance: Normal
+In-Reply-To: <20131225230935.GB13593@amd.pavel.ucw.cz>
+References: <1387895407-28031-1-git-send-email-lgxue@hotmail.com>,<20131225230935.GB13593@amd.pavel.ucw.cz>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+X-OriginalArrivalTime: 26 Dec 2013 01:02:33.0570 (UTC) FILETIME=[28C59420:01CF01D6]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 24, 2013 07:11:00 AM Viresh Kumar wrote:
-> __cpufreq_add_dev() can fail sometimes while we are resuming our system.
-> Currently we are clearing all sysfs nodes for cpufreq's failed policy as that
-> could make userspace unstable. But if we suspend/resume again, we should atleast
-> try to bring back those policies.
-> 
-> This patch fixes this issue by clearing fallback data on failure and trying to
-> allocate a new struct cpufreq_policy on second resume.
-> 
-> Reported-and-tested-by: Bjørn Mork <bjorn@mork.no>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Hi,
 
-Well, while I appreciate the work done here, I don't like the changelog,
-I don't really like the way the code is written and I don't like the comments.
-Sorry about that.
+Yes, Morse code can indicate any means. But when we look at the LEDs, would we like to also have a Morse code book in hand?
 
-Bjorn, can you please test the patch below instead along with the [2/2]
-from this series (on top of linux-pm.git/pm-cpufreq)?
+The burst led blink idea is because it is easy to use and easy to describe. Mostly when users on site are describing the LEDs states to the support engineer.
 
-Rafael
+Joe
 
-
----
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Subject: cpufreq: Clean up after a failing light-weight initialization
-
-If cpufreq_policy_restore() returns NULL during system resume,
-__cpufreq_add_dev() should just fall back to the full initialization
-instead of returning an error, because that may actually make things
-work.  Moreover, it should not leave stale fallback data behind after
-it has failed to restore a previously existing policy.
-
-This change is based on Viresh Kumar's work.
-
-Reported-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/cpufreq/cpufreq.c |   23 ++++++++++++++---------
- 1 file changed, 14 insertions(+), 9 deletions(-)
-
-Index: linux-pm/drivers/cpufreq/cpufreq.c
-===================================================================
---- linux-pm.orig/drivers/cpufreq/cpufreq.c
-+++ linux-pm/drivers/cpufreq/cpufreq.c
-@@ -1016,15 +1016,17 @@ static int __cpufreq_add_dev(struct devi
- 	read_unlock_irqrestore(&cpufreq_driver_lock, flags);
- #endif
- 
--	if (frozen)
--		/* Restore the saved policy when doing light-weight init */
--		policy = cpufreq_policy_restore(cpu);
--	else
-+	/*
-+	 * Restore the saved policy when doing light-weight init and fall back
-+	 * to the full init if that fails.
-+	 */
-+	policy = frozen ? cpufreq_policy_restore(cpu) : NULL;
-+	if (!policy) {
-+		frozen = false;
- 		policy = cpufreq_policy_alloc();
--
--	if (!policy)
--		goto nomem_out;
--
-+		if (!policy)
-+			goto nomem_out;
-+	}
- 
- 	/*
- 	 * In the resume path, since we restore a saved policy, the assignment
-@@ -1118,8 +1120,11 @@ err_get_freq:
- 	if (cpufreq_driver->exit)
- 		cpufreq_driver->exit(policy);
- err_set_policy_cpu:
--	if (frozen)
-+	if (frozen) {
-+		/* Do not leave stale fallback data behind. */
-+		per_cpu(cpufreq_cpu_data_fallback, cpu) = NULL;
- 		cpufreq_policy_put_kobj(policy);
-+	}
- 	cpufreq_policy_free(policy);
- 
- nomem_out:
-
+----------------------------------------
+> Date: Thu, 26 Dec 2013 00:09:35 +0100
+> From: pavel@ucw.cz
+> To: lgxue@hotmail.com
+> CC: cooloney@gmail.com; rpurdie@rpsys.net; rob@landley.net; milo.kim@ti.com; linux-leds@vger.kernel.org; linux-kernel@vger.kernel.org; linux-doc@vger.kernel.org
+> Subject: Re: [PATCH] Add the LED burst trigger
+>
+> Hi!
+>
+>> +Sometimes, the system has only one no-color led to indicate different stats.
+>> +The LED timer trigger can let LEDs to blink in different frequency, but most
+>> +people maybe just can discriminate two states, slow and fast.
+>> +
+>> +In this case, Morse code maybe is a good choice :-), but who can bear it.
+>> +
+>> +Besides the Morse code, another way is using burst mode. People can easily tell
+>> +how many times the LED blinks in one cycle.
+>
+> Would it make sense to make this a bit more capable, including the
+> morse code?
+>
+> Actually... N900 has rather complex LED blinking hardware. (Yes, it
+> has dedicated chip that can run simple "programs" for LED blinking).
+>
+> It would be cool to have reasonable interface for N900 leds... and
+> perhaps its subset would work for you, too...
+>
+> http://wiki.maemo.org/LED_patterns
+>
+> Pavel
+>
+>> + on(1/6s)off(1/6s)on(1/6s)off(1/6m)
+>> + ...off 500ms...
+>> + on(1/6s)off(1/6s)on(1/3s)off(1/6m)
+>> + ...off 500ms
+>> + ...
+>> +
+>> + Example 2
+>> +
+>> + echo burst> trigger
+>> + echo 4> freq
+>> + echo 3> times
+>> + echo 1000> delay_off
+>
+> Hmm, would something like
+>
+> echo 40> step_length_ms
+> echo "- - - "> pattern
+>
+> do the same trick?
+>
+> Plus, you could for example do
+>
+> echo "- --- "> pattern
+>
+> to do morse code...
+>
+> Pavel
+> --
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at http://www.tux.org/lkml/ 		 	   		  
