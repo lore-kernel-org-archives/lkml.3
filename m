@@ -1,116 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752507Ab3LZGTO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 01:19:14 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:33789 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750778Ab3LZGTN (ORCPT
+	id S1752630Ab3LZGVz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 01:21:55 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:41870 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752127Ab3LZGVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 01:19:13 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <52BB847F.5080600@oracle.com>
-References: <52B1C143.8080301@oracle.com> <52B871B2.7040409@oracle.com> <20131224025127.GA2835@lge.com> <52B8F8F6.1080500@oracle.com> <20131224060705.GA16140@lge.com> <20131224074546.GB27156@lge.com> <52BB847F.5080600@oracle.com>
+	Thu, 26 Dec 2013 01:21:54 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: mm: kernel BUG at include/linux/swapops.h:131!
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-Date: Thu, 26 Dec 2013 15:18:58 +0900
-To: Bob Liu <bob.liu@oracle.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, khlebnikov@openvz.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Message-ID: <986cc0ea-1a2d-47c9-ac27-299de16a05fd@email.android.com>
+In-Reply-To: <20131224084801.57439ca2@gandalf.local.home>
+References: <CAKohpom5JmFamPpOsyPRqXNAqXu6VF_t0zXXhT90MCMutp5FgQ@mail.gmail.com>
+	<20131224084801.57439ca2@gandalf.local.home>
+Date: Thu, 26 Dec 2013 11:51:53 +0530
+Message-ID: <CAKohpom3haZ+LSdOtAjCM7x2C4YOC_a31OMPeE05ung4MAR68g@mail.gmail.com>
+Subject: Re: [Query]: trace-cmd crashing with '-e syscalls' on 3.13-rc1
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bob Liu <bob.liu@oracle.com> wrote:
->On 12/24/2013 03:45 PM, Joonsoo Kim wrote:
->> On Tue, Dec 24, 2013 at 03:07:05PM +0900, Joonsoo Kim wrote:
->>> On Mon, Dec 23, 2013 at 10:01:10PM -0500, Sasha Levin wrote:
->>>> On 12/23/2013 09:51 PM, Joonsoo Kim wrote:
->>>>> On Mon, Dec 23, 2013 at 12:24:02PM -0500, Sasha Levin wrote:
->>>>>>> Ping?
->>>>>>>
->>>>>>> I've also Cc'ed the "this page shouldn't be locked at all" team.
->>>>> Hello,
->>>>>
->>>>> I can't find the reason of this problem.
->>>>> If it is reproducible, how about bisecting?
->>>>
->>>> While it reproduces under fuzzing it's pretty hard to bisect it
->with
->>>> the amount of issues uncovered by trinity recently.
->>>>
->>>> I can add any debug code to the site of the BUG if that helps.
->>>
->>> Good!
->>> It will be helpful to add dump_page() in migration_entry_to_page().
->>>
->>> Thanks.
->>>
->> 
->> Minchan teaches me that there is possible race condition between
->> fork and migration.
->> 
->> Please consider following situation.
->> 
->> 
->> Process A (do migration)			Process B (parents) Process C (child)
->> 
->> try_to_unmap() for migration <begin>		fork
->> setup migration entry to B's vma
->> ...
->> try_to_unmap() for migration <end>
->> move_to_new_page()
->> 
->> 						link new vma
->> 						    into interval tree
->> remove_migration_ptes() <begin>
->> check and clear migration entry on C's vma
->> ...						copy_one_pte:
->> ...						    now, B and C have migration entry
->> ...
->> ...
->> check and clear migration entry on B's vma
->> ...
->> ...
->> remove_migration_ptes() <end>
->> 
->> 
->> Eventually, migration entry on C's vma is left.
->> And then, when C exits, above BUG_ON() can be triggered.
->> 
->
->Yes, Looks like this is a potential race condition.
->
->> I'm not sure the I am right, so please think of it together. :)
->> And I'm not sure again that above assumption is related to this
->trigger report,
->> since this may exist for a long time.
->> 
->> So my question to mm folks is is above assumption possible and do we
->have
->> any protection mechanism on this race?
->> 
->
->I think we can down_read(&mm->mmap_sem) before remove_migration_ptes()
->to fix this issue, but I don't have time to verify it currently.
+On 24 December 2013 19:18, Steven Rostedt <rostedt@goodmis.org> wrote:
+> Can you also produce this with just
+> "echo 1 > /sys/kernel/debug/tracing/events/syscalls/enable"?
 
-Hmm. This kind of race looks impossible: dup_mmap() always places child's
-vma in into rmap tree after parent's one. For file-vma it's done explicitly
-(vma_interval_tree_insert_after), for anon vma it's true because rb-tree
-insert function goes to right branch if elements are equal.
+Yeah, running any command after doing above results in crash.
+I tried this on latest mainline:
 
-Thus remove_migration_ptes() sees parent's pte first:
-If child has the copy this function will check it after that.
-And they are already synchronized with parent's and child's pte locks.﻿
+c5fdd53 Merge branch 'for-linus' of git://git.kernel.dk/linux-block
 
-Sorry for double posting, gmail cannot into plain text =)
+with CONFIG_NO_HZ_FULL disabled.
 
--- 
-Sent from my Android device with K-9 Mail. Please excuse my brevity.
+root@linaro-developer:/home/linaro# echo 1 >
+/sys/kernel/debug/tracing/events/syscalls/enable
+root@linaro-developer:/home/linaro# ls
+[  158.697900] Unable to handle kernel NULL pointer dereference at
+virtual address 0000001b
+[  158.704783] pgd = ee644000
+[  158.707321] [0000001b] *pgd=6e4f9831, *pte=00000000, *ppte=00000000
+[  158.713525] Internal error: Oops: 17 [#1] PREEMPT SMP ARM
+[  158.718928] Modules linked in:
+[  158.721942] CPU: 1 PID: 2004 Comm: ls Not tainted
+3.13.0-rc5-00075-gd5b6a3e #142
+[  158.729372] task: ee9bf0c0 ti: ee642000 task.ti: ee642000
+[  158.734754] PC is at ftrace_syscall_enter+0x44/0x178
+[  158.739691] LR is at syscall_trace_enter+0xf8/0x144
+[  158.744539] pc : [<c00ad5dc>]    lr : [<c0010f08>]    psr: a0000013
+[  158.744539] sp : ee643f40  ip : ee643f80  fp : ee643f7c
+[  158.756043] r10: 00000400  r9 : ee642000  r8 : c000eee4
+[  158.761203] r7 : ee643fb0  r6 : ee642000  r5 : ffffffff  r4 : 000f0005
+[  158.767723] r3 : ee642000  r2 : 000f001d  r1 : ee643fb0  r0 : c06cd2f8
+[  158.774236] Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+[  158.781357] Control: 10c5387d  Table: 6e64406a  DAC: 00000015
+[  158.787074] Process ls (pid: 2004, stack limit = 0xee642240)
+[  158.792712] Stack: (0xee643f40 to 0xee644000)
+[  158.797062] 3f40: ef1c4910 00000000 ee643f8c 00000022 00000003
+ee961890 000f0005 ee642000
+[  158.805251] 3f60: ee643fb0 c000eee4 ee642000 00000400 ee643fa4
+ee643f80 c0010f08 c00ad5a4
+[  158.813432] 3f80: b6f2e4c0 b6f2fc60 00000002 00000000 000f0005
+c000eee4 00000000 ee643fa8
+[  158.821585] 3fa0: c000ee8c c0010e1c b6f2fc60 00000002 b6f2e4c0
+b6f35050 b6f2ebe8 b6f2e4c0
+[  158.829744] 3fc0: b6f2fc60 00000002 00000000 000f0005 00000001
+00000000 000188bc b6f35958
+[  158.837901] 3fe0: 000f0005 bed314a0 b6f168fb b6f26966 80000030
+b6f2e4c0 6f7fd821 6f7fdc21
+[  158.846103] [<c00ad5dc>] (ftrace_syscall_enter+0x44/0x178) from
+[<c0010f08>] (syscall_trace_enter+0xf8/0x144)
+[  158.856004] [<c0010f08>] (syscall_trace_enter+0xf8/0x144) from
+[<c000ee8c>] (__sys_trace+0xc/0x38)
+[  158.864915] Code: e2842018 e7905102 e3550000 0a000037 (e595201c)
+[  158.871136] ---[ end trace 70ef73d275f741de ]---
+[  158.875673] note: ls[2004] exited with preempt_count 1
+Segmentation fault
