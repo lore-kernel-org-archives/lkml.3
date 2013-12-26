@@ -1,44 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753714Ab3LZScE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 13:32:04 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:51655 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753572Ab3LZScC (ORCPT
+	id S1753692Ab3LZSjT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 13:39:19 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:35226 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753614Ab3LZSjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 13:32:02 -0500
-Date: Thu, 26 Dec 2013 13:32:00 -0500 (EST)
-Message-Id: <20131226.133200.1159110493607479477.davem@davemloft.net>
-To: dingtianhong@huawei.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, joe@perches.com,
-        alexander.h.duyck@intel.com, antonio@meshcoding.com,
-        sergei.shtylyov@cogentembedded.com
-Subject: Re: [PATCH v3.5 00/19] slight optimization of addr compare for
- some modules
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <52BC159C.1000903@huawei.com>
-References: <52BC159C.1000903@huawei.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 26 Dec 2013 10:32:02 -0800 (PST)
+	Thu, 26 Dec 2013 13:39:05 -0500
+Date: Thu, 26 Dec 2013 15:38:57 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "David A. Long" <dave.long@linaro.org>, systemtap@sourceware.org,
+        yrl.pp-manager.tt@hitachi.com, Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH -tip v2 2/2] perf-probe: Support basic dwarf-based
+ operations on uprobe events
+Message-ID: <20131226183857.GJ30980@ghostprotocols.net>
+References: <20131226054148.22364.25224.stgit@kbuild-fedora.novalocal>
+ <20131226054152.22364.47021.stgit@kbuild-fedora.novalocal>
+ <52BC3F4A.1030203@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52BC3F4A.1030203@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ding Tianhong <dingtianhong@huawei.com>
-Date: Thu, 26 Dec 2013 19:40:12 +0800
-
-> Joe Perches add ether_addr_equal_unaligned to test if
-> possibly unaligned to u16 Ethernet addresses are equal.
+Em Thu, Dec 26, 2013 at 09:38:02AM -0500, David Ahern escreveu:
+> On 12/26/13, 12:41 AM, Masami Hiramatsu wrote:
+> >And this shows the available variables at the given line of
+> >the function.
+> >----
+> ># ./perf probe -x perf --vars map__load:8
+> >Available variables at map__load:8
+> >         @<map__load+96>
+> >                 char*   name
+> >                 struct map*     map
+> >                 symbol_filter_t filter
+> >         @<map__find_symbol+112>
+> >                 char*   name
+> >                 symbol_filter_t filter
+> >         @<map__find_symbol_by_name+136>
+> >                 char*   name
+> >                 symbol_filter_t filter
+> >         @<map_groups__find_symbol_by_name+176>
+> >                 char*   name
+> >                 struct map*     map
+> >                 symbol_filter_t filter
 > 
-> If CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS is set, this uses
-> the slightly faster generic routine ether_addr_equal,
-> otherwise this uses memcmp.
+> Still limitations. This is Fedora 18:
 > 
-> So I use the recently added and possibly more efficient
-> ether_addr_equal_unaligned to instead of memcmp for slight
-> optimization.
+> # rpm -qa | grep debug
+> glibc-debuginfo-common-2.16-34.fc18.x86_64
+> glibc-debuginfo-2.16-34.fc18.x86_64
+> 
+> # /tmp/perf/perf probe -V malloc -x /lib64/libc-2.16.so
+> Failed to find variables at malloc (0)
+> 
+> So probing on system libraries does not benefit from this patch.
 
-Series applied, thanks.
+Yeah, it needs to use symbol.c functions to find the right file to get
+the detached DWARF info, just like annotate, etc does.
+
+- Arnaldo
+ 
+> >diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+> >index 5681266..20b3e15 100644
+> >--- a/tools/perf/builtin-probe.c
+> >+++ b/tools/perf/builtin-probe.c
+> >@@ -425,7 +425,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+> >  	}
+> >
+> >  #ifdef HAVE_DWARF_SUPPORT
+> >-	if (params.show_lines && !params.uprobes) {
+> >+	if (params.show_lines) {
+> >  		if (params.mod_events) {
+> >  			pr_err("  Error: Don't use --line with"
+> >  			       " --add/--del.\n");
+> 
+> Unrelated change.
+> 
+> 
+> >diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+> >index 05be5de..2f82267 100644
+> >--- a/tools/perf/util/probe-event.c
+> >+++ b/tools/perf/util/probe-event.c
+> >@@ -172,6 +172,52 @@ const char *kernel_get_module_path(const char *module)
+> >  	return (dso) ? dso->long_name : NULL;
+> >  }
+> >
+> >+/* Copied from unwind.c */
+> >+static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
+> >+				    GElf_Shdr *shp, const char *name)
+> >+{
+> >+	Elf_Scn *sec = NULL;
+> >+
+> >+	while ((sec = elf_nextscn(elf, sec)) != NULL) {
+> >+		char *str;
+> >+
+> >+		gelf_getshdr(sec, shp);
+> >+		str = elf_strptr(elf, ep->e_shstrndx, shp->sh_name);
+> >+		if (!strcmp(name, str))
+> >+			break;
+> >+	}
+> >+
+> >+	return sec;
+> >+}
+> 
+> Why copy it? With unwind.c and util/symbol-elf.c we now have 2
+> copies. How about exporting one of those?
+> 
+> >+
+> >+static int get_text_start_address(const char *exec, unsigned long *address)
+> >+{
+> >+	Elf *elf;
+> >+	GElf_Ehdr ehdr;
+> >+	GElf_Shdr shdr;
+> >+	int fd, ret = -ENOENT;
+> >+
+> >+	fd = open(exec, O_RDONLY);
+> >+	if (fd < 0)
+> >+		return -errno;
+> >+
+> >+	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
+> >+	if (elf == NULL)
+> >+		return -EINVAL;
+> >+
+> >+	if (gelf_getehdr(elf, &ehdr) == NULL)
+> >+		goto out;
+> >+
+> >+	if (!elf_section_by_name(elf, &ehdr, &shdr, ".text"))
+> >+		goto out;
+> >+
+> >+	*address = shdr.sh_addr - shdr.sh_offset;
+> >+	ret = 0;
+> >+out:
+> >+	elf_end(elf);
+> >+	return ret;
+> >+}
+> >+
+> >  static int init_user_exec(void)
+> >  {
+> >  	int ret = 0;
+> >@@ -186,6 +232,37 @@ static int init_user_exec(void)
+> >  	return ret;
+> >  }
+> >
+> >+static int convert_exec_to_group(const char *exec, char **result)
+> >+{
+> >+	char *ptr1, *ptr2, *exec_copy;
+> >+	char buf[64];
+> >+	int ret;
+> >+
+> >+	exec_copy = strdup(exec);
+> >+	if (!exec_copy)
+> >+		return -ENOMEM;
+> >+
+> >+	ptr1 = basename(exec_copy);
+> >+	if (!ptr1) {
+> >+		ret = -EINVAL;
+> >+		goto out;
+> >+	}
+> >+
+> >+	ptr2 = strpbrk(ptr1, "-._");
+> >+	if (ptr2)
+> >+		*ptr2 = '\0';
+> >+	ret = e_snprintf(buf, 64, "%s_%s", PERFPROBE_GROUP, ptr1);
+> >+	if (ret < 0)
+> >+		goto out;
+> >+
+> >+	*result = strdup(buf);
+> >+	ret = *result ? 0 : -ENOMEM;
+> >+
+> >+out:
+> >+	free(exec_copy);
+> >+	return ret;
+> >+}
+> >+
+> >  static int convert_to_perf_probe_point(struct probe_trace_point *tp,
+> >  					struct perf_probe_point *pp)
+> >  {
+> >@@ -261,6 +338,40 @@ static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
+> >  	return 0;
+> >  }
+> >
+> >+static int add_exec_to_probe_trace_events(struct probe_trace_event *tevs,
+> >+					  int ntevs, const char *exec)
+> >+{
+> >+	int i, ret = 0;
+> >+	unsigned long offset, stext = 0;
+> >+	char buf[32];
+> >+
+> >+	if (!exec)
+> >+		return 0;
+> >+
+> >+	ret = get_text_start_address(exec, &stext);
+> >+	if (ret < 0)
+> >+		return ret;
+> >+
+> >+	for (i = 0; i < ntevs && ret >= 0; i++) {
+> >+		offset = tevs[i].point.address - stext;
+> >+		offset += tevs[i].point.offset;
+> >+		tevs[i].point.offset = 0;
+> >+		free(tevs[i].point.symbol);
+> >+		ret = e_snprintf(buf, 32, "0x%lx", offset);
+> >+		if (ret < 0)
+> >+			break;
+> >+		tevs[i].point.module = strdup(exec);
+> >+		tevs[i].point.symbol = strdup(buf);
+> >+		if (!tevs[i].point.symbol || !tevs[i].point.module) {
+> >+			ret = -ENOMEM;
+> >+			break;
+> >+		}
+> >+		tevs[i].uprobes = true;
+> >+	}
+> >+
+> >+	return ret;
+> >+}
+> >+
+> 
+> More strdup's. This is library code and we need methods to free that
+> memory as well.
+> 
+> David
