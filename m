@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab3LZO0L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 09:26:11 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36525 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753025Ab3LZO0K (ORCPT
+	id S1753270Ab3LZO0l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 09:26:41 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:35222 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753025Ab3LZO0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 09:26:10 -0500
-Date: Thu, 26 Dec 2013 15:26:08 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Joe Xue <lgxue@hotmail.com>
-Cc: "cooloney@gmail.com" <cooloney@gmail.com>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "rob@landley.net" <rob@landley.net>,
-        "milo.kim@ti.com" <milo.kim@ti.com>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH] Add the LED burst trigger
-Message-ID: <20131226142607.GA15225@amd.pavel.ucw.cz>
-References: <1387895407-28031-1-git-send-email-lgxue@hotmail.com>
- <20131225230935.GB13593@amd.pavel.ucw.cz>
- <BLU172-W52032BFEF4512123D7516EACC20@phx.gbl>
+	Thu, 26 Dec 2013 09:26:39 -0500
+Date: Thu, 26 Dec 2013 11:26:34 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf stat: Do not show stats if workload fails
+Message-ID: <20131226142634.GF30980@ghostprotocols.net>
+References: <1387518748-25340-1-git-send-email-dsahern@gmail.com>
+ <20131220075759.GA12937@gmail.com>
+ <20131223193757.GA1396@ghostprotocols.net>
+ <52B8D582.9090009@gmail.com>
+ <20131224125342.GC17780@ghostprotocols.net>
+ <20131224133003.GA23382@ghostprotocols.net>
+ <52BC390A.2000504@gmail.com>
+ <20131226141507.GD30980@ghostprotocols.net>
+ <52BC3AA9.1020404@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BLU172-W52032BFEF4512123D7516EACC20@phx.gbl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <52BC3AA9.1020404@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> Yes, Morse code can indicate any means. But when we look at the LEDs, would we like to also have a Morse code book in hand?
+Em Thu, Dec 26, 2013 at 09:18:17AM -0500, David Ahern escreveu:
+> On 12/26/13, 9:15 AM, Arnaldo Carvalho de Melo wrote:
+> >Right, but I can't apply that patch, as it makes 'perf stat
+> >whatever-workload' to fail, as I realized when doing a demo to someone
+> >interested in using perf ;-\
+> >
+> >So for now I'm not applying that one.
 > 
-> The burst led blink idea is because it is easy to use and easy to describe. Mostly when users on site are describing the LEDs states to the support engineer.
->
+> right, so you want one with < 0 check or wait for something else? I
+> was not expecting to find it in your perf/core branch, yet there it
+> is.
 
-Well.. above 7 or so blinks, people will be unable to count. "one
-short, one long" will help to extend that. 
+I'll remove it from there, but try it, IIRC there will be some other
+problem :-\
 
-Plus, there may be patterns such as "keep it ON, count number of brief
-OFFs"... 
+I'd have to reread the messages I sent, but from what I recall the
+return from perf_evlist__start_workload() will _always_ be valid, i.e.
+what you're testing there is just if the parent wrote a byte to a pipe
+to signal the waiting child to call exec, and that _will_ work, the
+exec()? perhaps not, you'd have to setup the signal error reporting
+mechanism, etc.
 
-That's why I suggested:
+Perhaps this should be somehow done by perf_evlist__start_workload, so
+that what it reports is the result of the exec in the child, and not
+merely if it managed to tell it to try to exec...
 
-> > echo 40> step_length_ms
-> > echo "- - - "> pattern
+- Arnaldo
+ 
 > >
-> > do the same trick?
-> >
-> > Plus, you could for example do
-> >
-> > echo "- --- "> pattern
-> >
-> > to do morse code...
+> >Ah, at this point elves are everywhere, dammit! ;-)
+> 
+> An elf put it there?
 
-Interface
-
-(Note that your client stripped some spaces out of it).
-
-With that, it should be very easy to program all the reasonable
-blinking patterns for single LED without PWM.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Right, dwarves may be involved, didn't had the time to figure that
+out...
+ 
+> David
