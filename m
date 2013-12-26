@@ -1,84 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750993Ab3LZFSb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 00:18:31 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:50685 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab3LZFSa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 00:18:30 -0500
+	id S1751331Ab3LZFel (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 00:34:41 -0500
+Received: from imap.thunk.org ([74.207.234.97]:43457 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750745Ab3LZFek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Dec 2013 00:34:40 -0500
+Date: Thu, 26 Dec 2013 00:34:38 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: [GIT PULL] ext4 fixes for 3.13
+Message-ID: <20131226053438.GA20084@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+	linux-ext4@vger.kernel.org
 MIME-Version: 1.0
-Date: Thu, 26 Dec 2013 13:18:29 +0800
-Message-ID: <CAGHPBZogJzOUTM=WooJmNd92=QCivWa9W+c9Co1NJd-sgRTB1A@mail.gmail.com>
-Subject: Confusion about Pinctrl and GPIO
-From: =?GB2312?B?stzI2cjZ?= <caorr1980@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus and Stephen,
+The following changes since commit dc1ccc48159d63eca5089e507c82c7d22ef60839:
 
-I'm learning the pinctrl subsystem codes these days, and have a
-confusion about it, I'm very appreciated if you can help.
+  Linux 3.13-rc2 (2013-11-29 12:57:14 -0800)
 
-I noticed that Stephen<swarren@nvidia.com> submitted a patch for pinctrl:
-http://www.gossamer-threads.com/lists/linux/kernel/1500890?do=post_view_threaded
+are available in the git repository at:
 
-In this patch, Stephen said, "When an SoC muxes pins in a group, it's
-quite possible for the group to contain e.g. 6 pins, but only 4 of
-them actually be needed by the HW module that's mux'd to them. In this
-case, the other 2 pins could be used as GPIOs. However, pinctrl marks
-all the pins within the group as in-use by the selected mux function.
-To allow the expected gpiolib interaction, separate the concepts of
-pin ownership into two parts: One for the mux function and one for
-GPIO usage. Finally, allow those two ownerships to exist in parallel.
-"
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus
 
-I agree that gpiolib should be able to use the two idle pins as GPIO,
-but after apply this patch, gpiolib can also request the 4 pins used
-by HW module succesfully, and this will override the settings of the 4
-pins for HW module.
+for you to fetch changes up to f5a44db5d2d677dfbf12deee461f85e9ec633961:
 
-I have read the latest Documentation/pinctrl.txt, and there is two
-examples about muxing logic in "GPIO mode pitfalls" section, let me
-take example A for instance:
+  ext4: add explicit casts when masking cluster sizes (2013-12-20 09:29:35 -0500)
 
-                       pin config
-                       logic regs
-                       |               +- SPI
-     Physical pins --- pad --- pinmux -+- I2C
-                               |       +- mmc
-                               |       +- GPIO
-                               pin
-                               multiplex
-                               logic regs
+----------------------------------------------------------------
+A collection of bug fixes destined for stable and some printk cleanups
+and a patch so that instead of BUG'ing we use the ext4_error()
+framework to mark the file system is corrupted.
 
-Assuming that the pin has been configured as SPI mode, undoubtedly we
-can't use it as GPIO any longer. However, if we call gpio_request()
-(gpiolib API) to requet this pin for GPIO purpose, gpio_request()
-still can return successfully. I think this is unreasonable,
-gpio_request() should return an "error code" if the pin is in-use by
-PINMUX.
+----------------------------------------------------------------
+Al Viro (1):
+      ext4: fix del_timer() misuse for ->s_err_report
 
-I read the codes of pin_request() in pinmux.c, and guess
-pinmux_ops->gpio_request_enable() may be responsible to handle this
-use case, that is, to return an "error code" if the pin has been owned
-by pinmux. However, no drivers in drivers/pinctrl/ implements such
-codes in pinmux_ops->gpio_request_enable().
-Or, pinctrl subsystem is just resposible to set the pin in GPIO mode,
-and gpio subsystem (gpiolib) is responsible for other things like set
-direction, get value if input, or set high/low if output. Is my
-understanding right?
+Dmitry Monakhov (1):
+      jbd2: rename obsoleted msg JBD->JBD2
 
+Eryu Guan (1):
+      ext4: check for overlapping extents in ext4_valid_extent_entries()
 
-********************
+Jan Kara (3):
+      ext4: Do not reserve clusters when fs doesn't support extents
+      jbd2: revise KERN_EMERG error messages
+      ext4: fix deadlock when writing in ENOSPC conditions
 
-Let me talk again about the example described by Stephen. If actually
-only 4 pins of the group which contains 6 pins are needed by HW
-module, then why does the group be defined to contain 6 pins? I think
-the group should be defined only containing 4 pins rather than 6 pins,
-then the other 2 idle pins can be used for any other purpose.
+Junho Ryu (1):
+      ext4: fix use-after-free in ext4_mb_new_blocks
 
-Thank you very much in advance!
+Theodore Ts'o (3):
+      ext4: call ext4_error_inode() if jbd2_journal_dirty_metadata() fails
+      jbd2: don't BUG but return ENOSPC if a handle runs out of space
+      ext4: add explicit casts when masking cluster sizes
+
+ fs/ext4/ext4.h        | 10 ++++++++++
+ fs/ext4/ext4_jbd2.c   |  9 +++++++++
+ fs/ext4/extents.c     | 45 ++++++++++++++++++++++++++++++---------------
+ fs/ext4/inode.c       | 12 ------------
+ fs/ext4/mballoc.c     | 17 +++++++++++------
+ fs/ext4/super.c       | 21 +++++++++++++++------
+ fs/jbd2/journal.c     | 18 ++++++++----------
+ fs/jbd2/recovery.c    |  2 +-
+ fs/jbd2/transaction.c | 16 +++++++++-------
+ 9 files changed, 93 insertions(+), 57 deletions(-)
