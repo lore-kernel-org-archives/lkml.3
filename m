@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935Ab3LZWk0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 17:40:26 -0500
-Received: from smtp208.alice.it ([82.57.200.104]:60542 "EHLO smtp208.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753909Ab3LZWkY convert rfc822-to-8bit (ORCPT
+	id S1753917Ab3LZWvG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 17:51:06 -0500
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:43814 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752872Ab3LZWvF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 17:40:24 -0500
-Date: Thu, 26 Dec 2013 23:40:03 +0100
-From: Antonio Ospite <ospite@studenti.unina.it>
-To: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@prifuk.cz>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry.torokhov@gmail.com, joe@perches.com, elias.vds@gmail.com
-Subject: Re: [PATCH v2] Add ff-memless-next module
-Message-Id: <20131226234003.22bd8e91c64784d9b66c25e3@studenti.unina.it>
-In-Reply-To: <5668718.jm7F3C2ifr@geidi-prime>
-References: <5668718.jm7F3C2ifr@geidi-prime>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 26 Dec 2013 17:51:05 -0500
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
+To: Alex Elder <alex.elder@linaro.org>, "Christian Daudt" <bcm@fixthebug.org>,
+        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        "Pawel Moll" <Pawel.Moll@arm.com>,
+        "Rob Herring" <rob.herring@calxeda.com>,
+        "Rob Landley" <rob@landley.net>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        "Stephen Warren" <swarren@wwwdotorg.org>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <52AF1BA5.6000902@linaro.org>
+Cc: "bcm-kernel-feedback-list@broadcom.com" 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "LKML" <linux-kernel@vger.kernel.org>
+References: <52AF1BA5.6000902@linaro.org>
+Message-ID: <20131226225059.28468.61907@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [GIT PULL] clk: initial support  for Broadcom Kona clocks
+Date: Thu, 26 Dec 2013 14:50:59 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Dec 2013 19:18:31 +0100
-Michal Malý <madcatxster@prifuk.cz> wrote:
+Quoting Alex Elder (2013-12-16 07:26:29)
+> Mike, please pull the following for 3.14.  It adds clock support
+> for Broadcom SoCs having "Kona" clock control units.  Thanks.
 
-> This patch adds "ff-memless-next" module.
+Pulled into clk-next.
+
+Thanks!
+Mike
+
 > 
-> Changelog:
-> v2 - Remove unnecessary "else" branches
->
-
-Michal, these annotations should go after the three dash line (---), and
-the commit message must go here, before the three dashes.
-
-> Tested-by: Elias Vanderstuyft <elias.vds@gmail.com>
-> Signed-off-by: Michal Malý <madcatxster@prifuk.cz>
-> ---
-  ^^^
-So put from here on the stuff you want to tell humans but you don't want
-to show up in the git history.
-
-git-am will ignore the text between the "---" and the actual "diff"
-blocks, so this is the best place to put annotations and patch
-commentary.
-
-See git-format-patch and git-am man pages for the details.
-
-Ciao,
-   Antonio
-
--- 
-Antonio Ospite
-http://ao2.it
-
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
+>                                         -Alex
+> 
+> The following changes since commit 1459c837036a44e2dcf14a9452ed330201fb23b5:
+> 
+>   clk: si570: Add a driver for SI570 oscillators (2013-12-14 21:01:35 -0800)
+> 
+> are available in the git repository at:
+> 
+>   git://git.linaro.org/landing-teams/working/broadcom/kernel.git
+> pull/mturquette-kona-clocks
+> 
+> for you to fetch changes up to 143522e704d105bd2b3cbbca6e8fb2d217866ec0:
+> 
+>   clk: bcm281xx: add initial clock framework support (2013-12-16
+> 07:34:52 -0600)
+> 
+> ----------------------------------------------------------------
+> Alex Elder (2):
+>       clk: bcm281xx: define kona clock binding
+>       clk: bcm281xx: add initial clock framework support
+> 
+>  .../devicetree/bindings/clock/bcm-kona-clock.txt   |   93 ++
+>  drivers/clk/Kconfig                                |    1 +
+>  drivers/clk/Makefile                               |    1 +
+>  drivers/clk/bcm/Kconfig                            |    8 +
+>  drivers/clk/bcm/Makefile                           |    3 +
+>  drivers/clk/bcm/clk-bcm281xx.c                     |  416 ++++++++
+>  drivers/clk/bcm/clk-kona-setup.c                   |  769 +++++++++++++++
+>  drivers/clk/bcm/clk-kona.c                         | 1033
+> ++++++++++++++++++++
+>  drivers/clk/bcm/clk-kona.h                         |  414 ++++++++
+>  include/dt-bindings/clock/bcm281xx.h               |   65 ++
+>  10 files changed, 2803 insertions(+)
+>  create mode 100644
+> Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
+>  create mode 100644 drivers/clk/bcm/Kconfig
+>  create mode 100644 drivers/clk/bcm/Makefile
+>  create mode 100644 drivers/clk/bcm/clk-bcm281xx.c
+>  create mode 100644 drivers/clk/bcm/clk-kona-setup.c
+>  create mode 100644 drivers/clk/bcm/clk-kona.c
+>  create mode 100644 drivers/clk/bcm/clk-kona.h
+>  create mode 100644 include/dt-bindings/clock/bcm281xx.h
