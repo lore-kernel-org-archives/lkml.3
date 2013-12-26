@@ -1,87 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108Ab3LZJpX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 04:45:23 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:44124 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814Ab3LZJpV (ORCPT
+	id S1752602Ab3LZKDn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 05:03:43 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:57219 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341Ab3LZKDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 04:45:21 -0500
-Date: Thu, 26 Dec 2013 01:45:18 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] block: blk-mq: support draining mq queue
-Message-ID: <20131226094518.GA22894@infradead.org>
-References: <1387815539-12257-1-git-send-email-tom.leiming@gmail.com>
- <1387815539-12257-2-git-send-email-tom.leiming@gmail.com>
- <20131223162442.GA9383@infradead.org>
- <CACVXFVN=sxHxUY_0c9xWKw3nXhj60UeSjvFTHs52zHNEAg__4w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACVXFVN=sxHxUY_0c9xWKw3nXhj60UeSjvFTHs52zHNEAg__4w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 26 Dec 2013 05:03:42 -0500
+Message-ID: <1388052212.5420.4.camel@marge.simpson.net>
+Subject: Re: [PATCH] rcu: Eliminate softirq processing from rcutree
+From: Mike Galbraith <bitbucket@online.de>
+To: paulmck@linux.vnet.ibm.com
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 26 Dec 2013 11:03:32 +0100
+In-Reply-To: <1387940854.5373.8.camel@marge.simpson.net>
+References: <20131221193900.GA8427@linutronix.de>
+	 <1387681647.5412.25.camel@marge.simpson.net>
+	 <1387702631.5412.101.camel@marge.simpson.net>
+	 <1387773533.5369.16.camel@marge.simpson.net>
+	 <20131224193636.GD19211@linux.vnet.ibm.com>
+	 <1387940854.5373.8.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:rZ0xzbSWWPKjgvPyzW0WZ1C9GSUUbJ0n3qdeLY15bG4
+ uGrd9h29PmiYDeMlqOZ1KSLKa3xibc27PbZLkSR20GsAV25wPc
+ g0i/C/8BupbXr5kB5LJzhxhK93040m2rouYLwGMl2Bvpxcio1W
+ 3GULcvuPDxb5Ch1km3YHWH/DlfD1+sGmqoQFomaCtirtxxAoJT
+ diVyh76qDEmpmAaKT8MrwdxSuy46/4wMVpjy5NMpErDDLVh7ed
+ gTBI1Jlt344oLOO2neyWDRTj2nG1CgDrRZJEeQfFi3Vrc1jGy7
+ 3ti6OvzBTAvo5Wb30mpFXljEq8+rugsUNblrSSIFKz6hpLFRCk
+ iCRTyBt+/+r/sb3vIeXHlsW2zeCGgAiz3T4yN+XcKsUsCEjj6Z
+ ZIaOIC73jaFNQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 24, 2013 at 11:30:58AM +0800, Ming Lei wrote:
-> Some drivers don't have LLDD, like null_blk, virtio-blk, ...
+On Wed, 2013-12-25 at 04:07 +0100, Mike Galbraith wrote:
+> On Tue, 2013-12-24 at 11:36 -0800, Paul E. McKenney wrote: 
 
-Well, they are the low-level driver in this case.
-
-> Actually the below block APIs
->                blk_get_request()
->                blk_put_request()
->                blk_execute_rq_nowait()
->                blk_register_queue()
->                blk_unregister_queue()
->                blk_insert_flush()
->                ....
+> > So which code do you think deserves the big lump of coal?  ;-)
 > 
-> have been there to support MQ.
+> Sebastian's NO_HZ_FULL locking fixes.
 
-All these are called by higher level code and not the driver, so we need
-a switch between MQ and non-MQ support somewhere.
+Whack-a-mole hasn't yet dug up any new moles.
 
-> One problem about the 2nd way is that MQ drivers may become a bit
-> ugly if the driver still need to support traditional request/bio mechanism.
+---
+ kernel/timer.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-On the other hand drivers have no legitimate case for long-term parallel
-MQ/non-MQ code paths.  The only exception is null_blk as a benchmarking
-vehicle, but we should not optimize for that.
+Index: linux-2.6/kernel/timer.c
+===================================================================
+--- linux-2.6.orig/kernel/timer.c
++++ linux-2.6/kernel/timer.c
+@@ -764,7 +764,9 @@ __mod_timer(struct timer_list *timer, un
+ 	timer_stats_timer_set_start_info(timer);
+ 	BUG_ON(!timer->function);
+ 
++	local_irq_disable_rt();
+ 	base = lock_timer_base(timer, &flags);
++	local_irq_enable_rt();
+ 
+ 	ret = detach_if_pending(timer, base, false);
+ 	if (!ret && pending_only)
+@@ -1198,7 +1200,9 @@ static inline void __run_timers(struct t
+ {
+ 	struct timer_list *timer;
+ 
++	local_irq_disable_rt();
+ 	spin_lock_irq(&base->lock);
++	local_irq_enable_rt();
+ 	while (time_after_eq(jiffies, base->timer_jiffies)) {
+ 		struct list_head work_list;
+ 		struct list_head *head = &work_list;
+---
+ kernel/time/tick-sched.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-> >> +             spin_unlock_irq(lock);
-> >> +     }
-> >
-> > Why doesn't the mq case set QUEUE_FLAG_DEAD here?
-> 
-> Looks DEAD flag is set to prevent request_fn from being called,
-> and there is no request_fn for MQ, so I don't set it and QUEUE_FLAG_DYING
-> has been checked in blk_mq_queue_enter() already.
-> 
-> But we can do it easily.
+Index: linux-2.6/kernel/time/tick-sched.c
+===================================================================
+--- linux-2.6.orig/kernel/time/tick-sched.c
++++ linux-2.6/kernel/time/tick-sched.c
+@@ -216,7 +216,9 @@ void __tick_nohz_full_check(void)
+ 
+ static void nohz_full_kick_work_func(struct irq_work *work)
+ {
++	local_irq_disable_rt();
+ 	__tick_nohz_full_check();
++	local_irq_enable_rt();
+ }
+ 
+ static DEFINE_PER_CPU(struct irq_work, nohz_full_kick_work) = {
 
-Do we have a per-context flag to prevent calling into the driver
-instead?  Sorry, it's been a while that I last looked at the code, but
-anyone just looking over the difference will have the same question, so
-the answer needs to go into a comment.
 
-> > Also blk_execute_rq_nowait now needs to check the dying case for MQ as
-> > well.
-> 
-> In this patch the dying flag is only checked in blk_mq_queue_enter()
-> which is called in allocating request path, so once the request is
-> allocated, we just simply wait for its completion in blk_mq_drain_queue().
-> 
-> Even for non-MQ case, looks blk_queue_dying(q) is checked to avoid
-> being freed early before running queue, I am not sure if it is good
-> because the I/O might or can have been completed.  And it isn't a problem
-> for MQ because this request can't be reused when dying is set.
 
-Good.  I think we'll want comments like that preferable in the code, but
-at very least in the commit log.
