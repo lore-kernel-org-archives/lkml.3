@@ -1,89 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753941Ab3LZTVe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 14:21:34 -0500
-Received: from smtprelay0193.hostedemail.com ([216.40.44.193]:43072 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753833Ab3LZTUi (ORCPT
+	id S1753955Ab3LZTX7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 14:23:59 -0500
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:50292 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753651Ab3LZTX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 14:20:38 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1345:1359:1437:1534:1542:1711:1730:1747:1777:1792:1801:2393:2553:2559:2562:2689:3138:3139:3140:3141:3142:3353:3653:3865:3866:3867:3868:3871:3872:4321:4605:5007:6261:7903:8957:9040:9121:10004:10026:10848:11026:11233:11658:11914:12043:12438:12517:12519:12555:13153:13228,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: lock53_5ca266169b747
-X-Filterd-Recvd-Size: 2919
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5] checkpatch: Add a --fix-inplace option
-Date: Thu, 26 Dec 2013 11:20:29 -0800
-Message-Id: <f15570aa85918df5942aac86ad80df19e1d743c5.1388085015.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1388085015.git.joe@perches.com>
-References: <cover.1388085015.git.joe@perches.com>
+	Thu, 26 Dec 2013 14:23:58 -0500
+From: Matthias Schoepe <matthias.schoepe@studium.uni-erlangen.de>
+To: devel@driverdev.osuosl.org
+Cc: andreas.frembs@studium.uni-erlangen.de, linux-kernel@i4.cs.fau.de,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        Matthias Schoepe <matthias.schoepe@studium.uni-erlangen.de>
+Subject: [PATCH] Staging rtl8192e: Fixing checkpatch errors
+Date: Thu, 26 Dec 2013 20:23:32 +0100
+Message-Id: <1388085812-3914-1-git-send-email-matthias.schoepe@studium.uni-erlangen.de>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the ability to fix and overwrite existing files/patches instead
-of creating a new file "<filename>.EXPERIMENTAL-checkpatch-fixes".
+We fixed checkpatch errors of the following type:
+	ERROR: "foo * bar" should be "foo *bar"
 
-Suggested-by: Manfred Spraul <manfred@colorfullife.com>
-Signed-off-by: Joe Perches <joe@perches.com>
+The error was fixed in the following files of the rtl8192e staging driver:
+	rtllib_softmac.c
+	rtllib_rx.c
+	rtllib_crypt.c
+	rtllib.h
+
+There are no functional changes in this patch.
+
+Signed-off-by: Matthias Schoepe <matthias.schoepe@studium.uni-erlangen.de>
+Signed-off-by: Andreas Frembs <andreas.frembs@studium.uni-erlangen.de>
+
 ---
- scripts/checkpatch.pl | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/staging/rtl8192e/rtllib.h         | 2 +-
+ drivers/staging/rtl8192e/rtllib_crypt.c   | 2 +-
+ drivers/staging/rtl8192e/rtllib_rx.c      | 2 +-
+ drivers/staging/rtl8192e/rtllib_softmac.c | 4 ++--
+ 4 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index f5d4560..19376b4 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -29,6 +29,7 @@ my $mailback = 0;
- my $summary_file = 0;
- my $show_types = 0;
- my $fix = 0;
-+my $fix_inplace = 0;
- my $root;
- my %debug;
- my %camelcase = ();
-@@ -76,6 +77,9 @@ Options:
-                              "<inputfile>.EXPERIMENTAL-checkpatch-fixes"
-                              with potential errors corrected to the preferred
-                              checkpatch style
-+  --fix-inplace              EXPERIMENTAL - may create horrible results
-+                             Is the same as --fix, but overwrites the input
-+                             file.  It's your fault if there's no backup or git
-   --ignore-perl-version      override checking of perl version.  expect
-                              runtime errors.
-   -h, --help, --version      display this help and exit
-@@ -131,6 +135,7 @@ GetOptions(
- 	'mailback!'	=> \$mailback,
- 	'summary-file!'	=> \$summary_file,
- 	'fix!'		=> \$fix,
-+	'fix-inplace!'	=> \$fix_inplace,
- 	'ignore-perl-version!' => \$ignore_perl_version,
- 	'debug=s'	=> \%debug,
- 	'test-only=s'	=> \$tst_only,
-@@ -140,6 +145,8 @@ GetOptions(
+diff --git a/drivers/staging/rtl8192e/rtllib.h b/drivers/staging/rtl8192e/rtllib.h
+index 05ef49f..83f5f57 100644
+--- a/drivers/staging/rtl8192e/rtllib.h
++++ b/drivers/staging/rtl8192e/rtllib.h
+@@ -2896,7 +2896,7 @@ extern void HTConstructCapabilityElement(struct rtllib_device *ieee,
+ extern void HTConstructInfoElement(struct rtllib_device *ieee,
+ 				   u8 *posHTInfo, u8 *len, u8 isEncrypt);
+ extern void HTConstructRT2RTAggElement(struct rtllib_device *ieee,
+-				       u8 *posRT2RTAgg, u8* len);
++				       u8 *posRT2RTAgg, u8 *len);
+ extern void HTOnAssocRsp(struct rtllib_device *ieee);
+ extern void HTInitializeHTInfo(struct rtllib_device *ieee);
+ extern void HTInitializeBssDesc(struct bss_ht *pBssHT);
+diff --git a/drivers/staging/rtl8192e/rtllib_crypt.c b/drivers/staging/rtl8192e/rtllib_crypt.c
+index 86152d0..60c0ced 100644
+--- a/drivers/staging/rtl8192e/rtllib_crypt.c
++++ b/drivers/staging/rtl8192e/rtllib_crypt.c
+@@ -183,7 +183,7 @@ struct lib80211_crypto_ops *rtllib_get_crypto_ops(const char *name)
+ EXPORT_SYMBOL(rtllib_get_crypto_ops);
  
- help(0) if ($help);
  
-+$fix = 1 if ($fix_inplace);
-+
- my $exit = 0;
+-static void * rtllib_crypt_null_init(int keyidx) { return (void *) 1; }
++static void *rtllib_crypt_null_init(int keyidx) { return (void *) 1; }
+ static void rtllib_crypt_null_deinit(void *priv) {}
  
- if ($^V && $^V lt $minimum_perl_version) {
-@@ -4456,7 +4463,8 @@ sub process {
- 	hash_show_words(\%ignore_type, "Ignored");
+ static struct lib80211_crypto_ops rtllib_crypt_null = {
+diff --git a/drivers/staging/rtl8192e/rtllib_rx.c b/drivers/staging/rtl8192e/rtllib_rx.c
+index 1a011b9..374160d 100644
+--- a/drivers/staging/rtl8192e/rtllib_rx.c
++++ b/drivers/staging/rtl8192e/rtllib_rx.c
+@@ -211,7 +211,7 @@ rtllib_rx_frame_mgmt(struct rtllib_device *ieee, struct sk_buff *skb,
+ 	 * this is not mandatory.... but seems that the probe
+ 	 * response parser uses it
+ 	 */
+-	struct rtllib_hdr_3addr * hdr = (struct rtllib_hdr_3addr *)skb->data;
++	struct rtllib_hdr_3addr *hdr = (struct rtllib_hdr_3addr *)skb->data;
  
- 	if ($clean == 0 && $fix && "@rawlines" ne "@fixed") {
--		my $newfile = $filename . ".EXPERIMENTAL-checkpatch-fixes";
-+		my $newfile = $filename;
-+		$newfile .= ".EXPERIMENTAL-checkpatch-fixes" if (!$fix_inplace);
- 		my $linecount = 0;
- 		my $f;
+ 	rx_stats->len = skb->len;
+ 	rtllib_rx_mgt(ieee, skb, rx_stats);
+diff --git a/drivers/staging/rtl8192e/rtllib_softmac.c b/drivers/staging/rtl8192e/rtllib_softmac.c
+index 933bd6d..304b23e 100644
+--- a/drivers/staging/rtl8192e/rtllib_softmac.c
++++ b/drivers/staging/rtl8192e/rtllib_softmac.c
+@@ -1451,7 +1451,7 @@ static void rtllib_associate_abort_cb(unsigned long dev)
+ 	rtllib_associate_abort((struct rtllib_device *) dev);
+ }
  
+-static void rtllib_associate_step1(struct rtllib_device *ieee, u8 * daddr)
++static void rtllib_associate_step1(struct rtllib_device *ieee, u8 *daddr)
+ {
+ 	struct rtllib_network *beacon = &ieee->current_network;
+ 	struct sk_buff *skb;
+@@ -1785,7 +1785,7 @@ void rtllib_softmac_check_all_nets(struct rtllib_device *ieee)
+ 	spin_unlock_irqrestore(&ieee->lock, flags);
+ }
+ 
+-static inline u16 auth_parse(struct sk_buff *skb, u8** challenge, int *chlen)
++static inline u16 auth_parse(struct sk_buff *skb, u8 **challenge, int *chlen)
+ {
+ 	struct rtllib_authentication *a;
+ 	u8 *t;
 -- 
-1.8.1.2.459.gbcd45b4.dirty
+1.8.5.2
 
