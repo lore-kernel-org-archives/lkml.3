@@ -1,233 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692Ab3LZSjT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 13:39:19 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:35226 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753614Ab3LZSjF (ORCPT
+	id S1753749Ab3LZSmc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 13:42:32 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:56980 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752947Ab3LZSma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 13:39:05 -0500
-Date: Thu, 26 Dec 2013 15:38:57 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "David A. Long" <dave.long@linaro.org>, systemtap@sourceware.org,
-        yrl.pp-manager.tt@hitachi.com, Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH -tip v2 2/2] perf-probe: Support basic dwarf-based
- operations on uprobe events
-Message-ID: <20131226183857.GJ30980@ghostprotocols.net>
-References: <20131226054148.22364.25224.stgit@kbuild-fedora.novalocal>
- <20131226054152.22364.47021.stgit@kbuild-fedora.novalocal>
- <52BC3F4A.1030203@gmail.com>
+	Thu, 26 Dec 2013 13:42:30 -0500
+Date: Thu, 26 Dec 2013 13:42:29 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Tejun Heo <tj@kernel.org>
+cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        <linux-ide@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>
+Subject: Re: No freezing of kernel threads (was: Re: [GIT PULL] libata fixes
+ for v3.13-rc5)
+In-Reply-To: <20131226160517.GB16483@htj.dyndns.org>
+Message-ID: <Pine.LNX.4.44L0.1312261326540.24521-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52BC3F4A.1030203@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Dec 26, 2013 at 09:38:02AM -0500, David Ahern escreveu:
-> On 12/26/13, 12:41 AM, Masami Hiramatsu wrote:
-> >And this shows the available variables at the given line of
-> >the function.
-> >----
-> ># ./perf probe -x perf --vars map__load:8
-> >Available variables at map__load:8
-> >         @<map__load+96>
-> >                 char*   name
-> >                 struct map*     map
-> >                 symbol_filter_t filter
-> >         @<map__find_symbol+112>
-> >                 char*   name
-> >                 symbol_filter_t filter
-> >         @<map__find_symbol_by_name+136>
-> >                 char*   name
-> >                 symbol_filter_t filter
-> >         @<map_groups__find_symbol_by_name+176>
-> >                 char*   name
-> >                 struct map*     map
-> >                 symbol_filter_t filter
-> 
-> Still limitations. This is Fedora 18:
-> 
-> # rpm -qa | grep debug
-> glibc-debuginfo-common-2.16-34.fc18.x86_64
-> glibc-debuginfo-2.16-34.fc18.x86_64
-> 
-> # /tmp/perf/perf probe -V malloc -x /lib64/libc-2.16.so
-> Failed to find variables at malloc (0)
-> 
-> So probing on system libraries does not benefit from this patch.
+On Thu, 26 Dec 2013, Tejun Heo wrote:
 
-Yeah, it needs to use symbol.c functions to find the right file to get
-the detached DWARF info, just like annotate, etc does.
+> Hello, Rafael.
+> 
+> On Thu, Dec 26, 2013 at 04:05:53PM +0100, Rafael J. Wysocki wrote:
+> > First, there is a removal-vs-resume deadlock which technically is related to
+> > the freezing, but it is not entirely clear to me that using a more fine grained
+> > mechanism instead of the freezing will actually help here.  It may turn out to
+> > be necessary to defer the removal until the resume is complete anyway.
 
-- Arnaldo
- 
-> >diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-> >index 5681266..20b3e15 100644
-> >--- a/tools/perf/builtin-probe.c
-> >+++ b/tools/perf/builtin-probe.c
-> >@@ -425,7 +425,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
-> >  	}
-> >
-> >  #ifdef HAVE_DWARF_SUPPORT
-> >-	if (params.show_lines && !params.uprobes) {
-> >+	if (params.show_lines) {
-> >  		if (params.mod_events) {
-> >  			pr_err("  Error: Don't use --line with"
-> >  			       " --add/--del.\n");
+In fact, some places may be using the freezer as a convenient way to 
+implement just such a deferral.
+
+> > Second, there is the problem with the freezer being a huge sledgehammer which
+> > sometimes is used too eagerly and without enough understanding.  I agree that
+> > that is a problem and probably the best way to address it would be to make
+> > people use more specific things instead of the freezer for workqueues/kthreads.
 > 
-> Unrelated change.
+> I don't think the two points are separate.  There's no reason for
+> anything above device drivers (themselves or whatever midlayer
+> implementing command queue) to be participating in the freezer and
+> this deadlock occurred only because writeback is freezable for no good
+> reason that I can see.
+
+I don't know why writeback was made freezable -- but that would be a
+reasonable way to avoid changing on-disk data during hibernation.
+
+>  If we make "freezing" specific to the places
+> where the actual PM operations are necessary, these lockups cannot
+> happen, or rather, if a deadlock happens, the blame would likely be
+> clearly on the device driver or its subsystem implementation.
+
+In the case of hibernation, it's not so simple.  We do need to perform 
+I/O, in order to save the memory image.  But we also need to avoid 
+unnecessary I/O, in order to keep the on-disk data consistent with the 
+data in the memory image.  You probably can't accomplish this at the 
+device driver or subsystem level.
+
+> > I actually think that khubd is somewhat analogous to the PM workqueue, so
+> > it needs to be stopped before we start calling suspend callbacks or we'd
+> > have to deal with a lot more complexity than really necessary.  There may
+> > be more things like that, but that's hard to tell without reviewing all
+> > users of freezable kthreads and workqueues and analysing them all.  So I
+> > guess that's the next step if we want to go into that direction.
 > 
-> 
-> >diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> >index 05be5de..2f82267 100644
-> >--- a/tools/perf/util/probe-event.c
-> >+++ b/tools/perf/util/probe-event.c
-> >@@ -172,6 +172,52 @@ const char *kernel_get_module_path(const char *module)
-> >  	return (dso) ? dso->long_name : NULL;
-> >  }
-> >
-> >+/* Copied from unwind.c */
-> >+static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
-> >+				    GElf_Shdr *shp, const char *name)
-> >+{
-> >+	Elf_Scn *sec = NULL;
-> >+
-> >+	while ((sec = elf_nextscn(elf, sec)) != NULL) {
-> >+		char *str;
-> >+
-> >+		gelf_getshdr(sec, shp);
-> >+		str = elf_strptr(elf, ep->e_shstrndx, shp->sh_name);
-> >+		if (!strcmp(name, str))
-> >+			break;
-> >+	}
-> >+
-> >+	return sec;
-> >+}
-> 
-> Why copy it? With unwind.c and util/symbol-elf.c we now have 2
-> copies. How about exporting one of those?
-> 
-> >+
-> >+static int get_text_start_address(const char *exec, unsigned long *address)
-> >+{
-> >+	Elf *elf;
-> >+	GElf_Ehdr ehdr;
-> >+	GElf_Shdr shdr;
-> >+	int fd, ret = -ENOENT;
-> >+
-> >+	fd = open(exec, O_RDONLY);
-> >+	if (fd < 0)
-> >+		return -errno;
-> >+
-> >+	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
-> >+	if (elf == NULL)
-> >+		return -EINVAL;
-> >+
-> >+	if (gelf_getehdr(elf, &ehdr) == NULL)
-> >+		goto out;
-> >+
-> >+	if (!elf_section_by_name(elf, &ehdr, &shdr, ".text"))
-> >+		goto out;
-> >+
-> >+	*address = shdr.sh_addr - shdr.sh_offset;
-> >+	ret = 0;
-> >+out:
-> >+	elf_end(elf);
-> >+	return ret;
-> >+}
-> >+
-> >  static int init_user_exec(void)
-> >  {
-> >  	int ret = 0;
-> >@@ -186,6 +232,37 @@ static int init_user_exec(void)
-> >  	return ret;
-> >  }
-> >
-> >+static int convert_exec_to_group(const char *exec, char **result)
-> >+{
-> >+	char *ptr1, *ptr2, *exec_copy;
-> >+	char buf[64];
-> >+	int ret;
-> >+
-> >+	exec_copy = strdup(exec);
-> >+	if (!exec_copy)
-> >+		return -ENOMEM;
-> >+
-> >+	ptr1 = basename(exec_copy);
-> >+	if (!ptr1) {
-> >+		ret = -EINVAL;
-> >+		goto out;
-> >+	}
-> >+
-> >+	ptr2 = strpbrk(ptr1, "-._");
-> >+	if (ptr2)
-> >+		*ptr2 = '\0';
-> >+	ret = e_snprintf(buf, 64, "%s_%s", PERFPROBE_GROUP, ptr1);
-> >+	if (ret < 0)
-> >+		goto out;
-> >+
-> >+	*result = strdup(buf);
-> >+	ret = *result ? 0 : -ENOMEM;
-> >+
-> >+out:
-> >+	free(exec_copy);
-> >+	return ret;
-> >+}
-> >+
-> >  static int convert_to_perf_probe_point(struct probe_trace_point *tp,
-> >  					struct perf_probe_point *pp)
-> >  {
-> >@@ -261,6 +338,40 @@ static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
-> >  	return 0;
-> >  }
-> >
-> >+static int add_exec_to_probe_trace_events(struct probe_trace_event *tevs,
-> >+					  int ntevs, const char *exec)
-> >+{
-> >+	int i, ret = 0;
-> >+	unsigned long offset, stext = 0;
-> >+	char buf[32];
-> >+
-> >+	if (!exec)
-> >+		return 0;
-> >+
-> >+	ret = get_text_start_address(exec, &stext);
-> >+	if (ret < 0)
-> >+		return ret;
-> >+
-> >+	for (i = 0; i < ntevs && ret >= 0; i++) {
-> >+		offset = tevs[i].point.address - stext;
-> >+		offset += tevs[i].point.offset;
-> >+		tevs[i].point.offset = 0;
-> >+		free(tevs[i].point.symbol);
-> >+		ret = e_snprintf(buf, 32, "0x%lx", offset);
-> >+		if (ret < 0)
-> >+			break;
-> >+		tevs[i].point.module = strdup(exec);
-> >+		tevs[i].point.symbol = strdup(buf);
-> >+		if (!tevs[i].point.symbol || !tevs[i].point.module) {
-> >+			ret = -ENOMEM;
-> >+			break;
-> >+		}
-> >+		tevs[i].uprobes = true;
-> >+	}
-> >+
-> >+	return ret;
-> >+}
-> >+
-> 
-> More strdup's. This is library code and we need methods to free that
-> memory as well.
-> 
-> David
+> I see.  I'm kinda curious how that jives with runtime PM.  One thing
+
+There are some very significant differences between system sleep and 
+runtime PM.  What is appropriate for one may not be appropriate for the 
+other.  In particular, the freezer is not appropriate for runtime PM.
+
+> which bothers me about the freezer is that it's essentially a separate
+> entry point for suspend/resume implementation, and not a particularly
+> well designed one at that.  Things which depend on freezer for PM ops
+> would need completely separate paths for runtime PM.  They probably
+> need some deviations anyway but freezer would push it unnecessarily.
+
+Maybe it's the other way around: The separate paths are necessary, and 
+the freezer _simplifies_ the system sleep ops.
+
+> Well, converting kthreads to workqueues are pretty easy and usually
+> beneficial anyway, especially given that people often get things not
+> completely right when mixing kthread_should_stop() and freezing
+> condition checks (it can be surprisingly tricky and likely to work
+> most of the time even when slightly broken) and workqueue is a lot
+> easier to get right on that respect.
+
+Taking khubd as an example, I have to agree that converting it to a
+workqueue would be a big simplification overall.  And yet there are
+some things khubd does which are (as far as I know) rather difficult to
+accomplish with workqueues.  One example in drivers/usb/core/hub.c:  
+kick_khubd() calls usb_autopm_get_interface_no_resume() if and only if
+it added the hub to the event list (and it does so before releasing the
+list's lock).  How can you do that with a workqueue?
+
+Alan Stern
+
