@@ -1,49 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab3LZGyG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 01:54:06 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:42596 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750778Ab3LZGyF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 01:54:05 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <broonie@kernel.org>
-CC: <lgirdwood@gmail.com>, <nicolas.ferre@atmel.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <wenyou.yang@atmel.com>
-Subject: [PATCH] regulator: act8865: fix incorrect devm_kzalloc for act8865
-Date: Thu, 26 Dec 2013 14:52:43 +0800
-Message-ID: <1388040763-15653-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752673Ab3LZH2v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 02:28:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751353Ab3LZH2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Dec 2013 02:28:50 -0500
+Message-ID: <52BBDA9A.3030706@redhat.com>
+Date: Thu, 26 Dec 2013 15:28:26 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org
+CC: David Miller <davem@davemloft.net>, Rusty Russell <rusty@rustcorp.com.au>,
+        Michael Dalton <mwdalton@google.com>,
+        Eric Dumazet <edumazet@google.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH stable 1/2] virtio_net: fix error handling for mergeable
+ buffers
+References: <1387983339-1172-1-git-send-email-mst@redhat.com> <1387983339-1172-2-git-send-email-mst@redhat.com>
+In-Reply-To: <1387983339-1172-2-git-send-email-mst@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Which cause to allocate more needless memory.
+On 12/25/2013 10:56 PM, Michael S. Tsirkin wrote:
+> Eric Dumazet noticed that if we encounter an error
+> when processing a mergeable buffer, we don't
+> dequeue all of the buffers from this packet,
+> the result is almost sure to be loss of networking.
+>
+> Jason Wang noticed that we also leak a page and that we don't decrement
+> the rq buf count, so we won't repost buffers (a resource leak).
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
----
- drivers/regulator/act8865-regulator.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
-
-diff --git a/drivers/regulator/act8865-regulator.c b/drivers/regulator/act8865-regulator.c
-index f853353..aecf01b 100644
---- a/drivers/regulator/act8865-regulator.c
-+++ b/drivers/regulator/act8865-regulator.c
-@@ -290,9 +290,7 @@ static int act8865_pmic_probe(struct i2c_client *client,
- 		return -EINVAL;
- 	}
- 
--	act8865 = devm_kzalloc(dev, sizeof(struct act8865) +
--			sizeof(struct regulator_dev *) * ACT8865_REG_NUM,
--			GFP_KERNEL);
-+	act8865 = devm_kzalloc(dev, sizeof(struct act8865), GFP_KERNEL);
- 	if (!act8865)
- 		return -ENOMEM;
- 
--- 
-1.7.9.5
+This issue does not existed in stable tree.
+> Fix both issues.
+>
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Michael Dalton <mwdalton@google.com>
+> Cc: Eric Dumazet <edumazet@google.com>
+> Cc: Jason Wang <jasowang@redhat.com>
+> Cc: Jason Wang <jasowang@redhat.com>
+> Cc: David S. Miller <davem@davemloft.net>
+>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+>
+> (cherry picked from commit 8fc3b9e9a229778e5af3aa453c44f1a3857ba769)
+> ---
+>  drivers/net/virtio_net.c | 66 +++++++++++++++++++++++++++++++++---------------
+>  1 file changed, 46 insertions(+), 20 deletions(-)
+>
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index 9fbdfcd..435076f 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -297,26 +297,33 @@ static struct sk_buff *page_to_skb(struct receive_queue *rq,
+>  	return skb;
+>  }
+>  
+> -static int receive_mergeable(struct receive_queue *rq, struct sk_buff *skb)
+> +static struct sk_buff *receive_mergeable(struct net_device *dev,
+> +					 struct receive_queue *rq,
+> +					 void *buf,
+> +					 unsigned int len)
+>  {
+> -	struct skb_vnet_hdr *hdr = skb_vnet_hdr(skb);
+> -	struct page *page;
+> -	int num_buf, i, len;
+> +	struct skb_vnet_hdr *hdr = page_address(buf);
+> +	int num_buf = hdr->mhdr.num_buffers;
+> +	struct page *page = buf;
+> +	struct sk_buff *skb = page_to_skb(rq, page, len);
+> +	int i;
+> +
+> +	if (unlikely(!skb))
+> +		goto err_skb;
+>  
+> -	num_buf = hdr->mhdr.num_buffers;
+>  	while (--num_buf) {
+>  		i = skb_shinfo(skb)->nr_frags;
+>  		if (i >= MAX_SKB_FRAGS) {
+>  			pr_debug("%s: packet too long\n", skb->dev->name);
+>  			skb->dev->stats.rx_length_errors++;
+> -			return -EINVAL;
+> +			return NULL;
+>  		}
+>  		page = virtqueue_get_buf(rq->vq, &len);
+>  		if (!page) {
+> -			pr_debug("%s: rx error: %d buffers missing\n",
+> -				 skb->dev->name, hdr->mhdr.num_buffers);
+> -			skb->dev->stats.rx_length_errors++;
+> -			return -EINVAL;
+> +			pr_debug("%s: rx error: %d buffers %d missing\n",
+> +				 dev->name, hdr->mhdr.num_buffers, num_buf);
+> +			dev->stats.rx_length_errors++;
+> +			goto err_buf;
+>  		}
+>  
+>  		if (len > PAGE_SIZE)
+> @@ -326,7 +333,25 @@ static int receive_mergeable(struct receive_queue *rq, struct sk_buff *skb)
+>  
+>  		--rq->num;
+>  	}
+> -	return 0;
+> +	return skb;
+> +err_skb:
+> +	give_pages(rq, page);
+> +	while (--num_buf) {
+> +		buf = virtqueue_get_buf(rq->vq, &len);
+> +		if (unlikely(!buf)) {
+> +			pr_debug("%s: rx error: %d buffers missing\n",
+> +				 dev->name, num_buf);
+> +			dev->stats.rx_length_errors++;
+> +			break;
+> +		}
+> +		page = buf;
+> +		give_pages(rq, page);
+> +		--rq->num;
+> +	}
+> +err_buf:
+> +	dev->stats.rx_dropped++;
+> +	dev_kfree_skb(skb);
+> +	return NULL;
+>  }
+>  
+>  static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
+> @@ -354,17 +379,18 @@ static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
+>  		skb_trim(skb, len);
+>  	} else {
+>  		page = buf;
+> -		skb = page_to_skb(rq, page, len);
+> -		if (unlikely(!skb)) {
+> -			dev->stats.rx_dropped++;
+> -			give_pages(rq, page);
+> -			return;
+> -		}
+> -		if (vi->mergeable_rx_bufs)
+> -			if (receive_mergeable(rq, skb)) {
+> -				dev_kfree_skb(skb);
+> +		if (vi->mergeable_rx_bufs) {
+> +			skb = receive_mergeable(dev, rq, page, len);
+> +			if (unlikely(!skb))
+> +				return;
+> +		} else {
+> +			skb = page_to_skb(rq, page, len);
+> +			if (unlikely(!skb)) {
+> +				dev->stats.rx_dropped++;
+> +				give_pages(rq, page);
+>  				return;
+>  			}
+> +		}
+>  	}
+>  
+>  	hdr = skb_vnet_hdr(skb);
 
