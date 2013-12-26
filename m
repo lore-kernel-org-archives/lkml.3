@@ -1,52 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927Ab3LZNFQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 08:05:16 -0500
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:50404 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752821Ab3LZNFO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 08:05:14 -0500
-Date: Thu, 26 Dec 2013 15:05:04 +0200
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: balbi@ti.com, linux@arm.linux.org.uk, gregkh@linuxfoundation.org,
-        santosh.shilimkar@ti.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] phy: kconfig: add depends on "USB_PHY" to OMAP_USB2
- and TWL4030_USB
-Message-ID: <20131226130504.GA19462@blackmetal.musicnaut.iki.fi>
-References: <1386079732-19657-1-git-send-email-kishon@ti.com>
+	id S1752896Ab3LZN26 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 08:28:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36273 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752812Ab3LZN25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Dec 2013 08:28:57 -0500
+Date: Thu, 26 Dec 2013 15:32:47 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: netdev@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, Rusty Russell <rusty@rustcorp.com.au>,
+        Michael Dalton <mwdalton@google.com>,
+        Eric Dumazet <edumazet@google.com>, Jason Wang <jasowang@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH stable v2 1/3] virtio_net: fix error handling for mergeable
+ buffers
+Message-ID: <1388064752-15734-2-git-send-email-mst@redhat.com>
+References: <1388064752-15734-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386079732-19657-1-git-send-email-kishon@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1388064752-15734-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Eric Dumazet noticed that if we encounter an error
+when processing a mergeable buffer, we don't
+dequeue all of the buffers from this packet,
+the result is almost sure to be loss of networking.
 
-On Tue, Dec 03, 2013 at 07:38:52PM +0530, Kishon Vijay Abraham I wrote:
-> Fixes
-> warning: (OMAP_USB2 && TWL4030_USB) selects USB_PHY which has unmet
-> direct dependencies (USB_SUPPORT)
-> that shows up while disabling USB_SUPPORT from menuconfig.
-[...]
->  config TWL4030_USB
->  	tristate "TWL4030 USB Transceiver Driver"
->  	depends on TWL4030_CORE && REGULATOR_TWL4030 && USB_MUSB_OMAP2PLUS
-> +	depends on USB_PHY
->  	select GENERIC_PHY
-> -	select USB_PHY
->  	help
->  	  Enable this to support the USB OTG transceiver on TWL4030
->  	  family chips (including the TWL5030 and TPS659x0 devices).
+Fix this issue.
 
-This introduced a minor problem in 3.13-rc5: User is no longer able to
-select TWL4030_USB with menuconfig, since there is no menu entry for
-enabling USB_PHY. The only way to enable TWL4030_USB is to enable some
-other option first that happens to select USB_PHY...
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Michael Dalton <mwdalton@google.com>
+Acked-by: Michael Dalton <mwdalton@google.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: Jason Wang <jasowang@redhat.com>
+Cc: David S. Miller <davem@davemloft.net>
 
-A.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+
+(cherry picked from commit 8fc3b9e9a229778e5af3aa453c44f1a3857ba769)
+---
+ drivers/net/virtio_net.c | 66 +++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 46 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 9fbdfcd..435076f 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -297,26 +297,33 @@ static struct sk_buff *page_to_skb(struct receive_queue *rq,
+ 	return skb;
+ }
+ 
+-static int receive_mergeable(struct receive_queue *rq, struct sk_buff *skb)
++static struct sk_buff *receive_mergeable(struct net_device *dev,
++					 struct receive_queue *rq,
++					 void *buf,
++					 unsigned int len)
+ {
+-	struct skb_vnet_hdr *hdr = skb_vnet_hdr(skb);
+-	struct page *page;
+-	int num_buf, i, len;
++	struct skb_vnet_hdr *hdr = page_address(buf);
++	int num_buf = hdr->mhdr.num_buffers;
++	struct page *page = buf;
++	struct sk_buff *skb = page_to_skb(rq, page, len);
++	int i;
++
++	if (unlikely(!skb))
++		goto err_skb;
+ 
+-	num_buf = hdr->mhdr.num_buffers;
+ 	while (--num_buf) {
+ 		i = skb_shinfo(skb)->nr_frags;
+ 		if (i >= MAX_SKB_FRAGS) {
+ 			pr_debug("%s: packet too long\n", skb->dev->name);
+ 			skb->dev->stats.rx_length_errors++;
+-			return -EINVAL;
++			return NULL;
+ 		}
+ 		page = virtqueue_get_buf(rq->vq, &len);
+ 		if (!page) {
+-			pr_debug("%s: rx error: %d buffers missing\n",
+-				 skb->dev->name, hdr->mhdr.num_buffers);
+-			skb->dev->stats.rx_length_errors++;
+-			return -EINVAL;
++			pr_debug("%s: rx error: %d buffers %d missing\n",
++				 dev->name, hdr->mhdr.num_buffers, num_buf);
++			dev->stats.rx_length_errors++;
++			goto err_buf;
+ 		}
+ 
+ 		if (len > PAGE_SIZE)
+@@ -326,7 +333,25 @@ static int receive_mergeable(struct receive_queue *rq, struct sk_buff *skb)
+ 
+ 		--rq->num;
+ 	}
+-	return 0;
++	return skb;
++err_skb:
++	give_pages(rq, page);
++	while (--num_buf) {
++		buf = virtqueue_get_buf(rq->vq, &len);
++		if (unlikely(!buf)) {
++			pr_debug("%s: rx error: %d buffers missing\n",
++				 dev->name, num_buf);
++			dev->stats.rx_length_errors++;
++			break;
++		}
++		page = buf;
++		give_pages(rq, page);
++		--rq->num;
++	}
++err_buf:
++	dev->stats.rx_dropped++;
++	dev_kfree_skb(skb);
++	return NULL;
+ }
+ 
+ static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
+@@ -354,17 +379,18 @@ static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
+ 		skb_trim(skb, len);
+ 	} else {
+ 		page = buf;
+-		skb = page_to_skb(rq, page, len);
+-		if (unlikely(!skb)) {
+-			dev->stats.rx_dropped++;
+-			give_pages(rq, page);
+-			return;
+-		}
+-		if (vi->mergeable_rx_bufs)
+-			if (receive_mergeable(rq, skb)) {
+-				dev_kfree_skb(skb);
++		if (vi->mergeable_rx_bufs) {
++			skb = receive_mergeable(dev, rq, page, len);
++			if (unlikely(!skb))
++				return;
++		} else {
++			skb = page_to_skb(rq, page, len);
++			if (unlikely(!skb)) {
++				dev->stats.rx_dropped++;
++				give_pages(rq, page);
+ 				return;
+ 			}
++		}
+ 	}
+ 
+ 	hdr = skb_vnet_hdr(skb);
+-- 
+MST
+
