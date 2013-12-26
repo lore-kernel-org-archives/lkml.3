@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236Ab3LZOOv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 09:14:51 -0500
-Received: from mail-qe0-f45.google.com ([209.85.128.45]:46091 "EHLO
-	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753058Ab3LZOOu (ORCPT
+	id S1753251Ab3LZOPR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 09:15:17 -0500
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:43166 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753009Ab3LZOPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 09:14:50 -0500
-Message-ID: <52BC39D6.3090908@gmail.com>
-Date: Thu, 26 Dec 2013 09:14:46 -0500
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 26 Dec 2013 09:15:15 -0500
+Date: Thu, 26 Dec 2013 11:15:07 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf stat: Do not show stats if workload fails
+Message-ID: <20131226141507.GD30980@ghostprotocols.net>
+References: <1387518748-25340-1-git-send-email-dsahern@gmail.com>
+ <20131220075759.GA12937@gmail.com>
+ <20131223193757.GA1396@ghostprotocols.net>
+ <52B8D582.9090009@gmail.com>
+ <20131224125342.GC17780@ghostprotocols.net>
+ <20131224133003.GA23382@ghostprotocols.net>
+ <52BC390A.2000504@gmail.com>
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "David A. Long" <dave.long@linaro.org>, systemtap@sourceware.org,
-        yrl.pp-manager.tt@hitachi.com, Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH -tip v2 1/2] [CLEANUP] perf-probe: Expand given path to
- absolute path
-References: <20131226054148.22364.25224.stgit@kbuild-fedora.novalocal> <20131226054150.22364.12187.stgit@kbuild-fedora.novalocal>
-In-Reply-To: <20131226054150.22364.12187.stgit@kbuild-fedora.novalocal>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52BC390A.2000504@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/26/13, 12:41 AM, Masami Hiramatsu wrote:
-> @@ -180,7 +181,20 @@ static int opt_set_target(const struct option *opt, const char *str,
->   		else
->   			return ret;
->
-> -		params.target = str;
-> +		/* Expand given path to absolute path, except for modulename */
-> +		if (params.uprobes || strchr(str, '/')) {
-> +			tmp = realpath(str, NULL);
-> +			if (!tmp) {
-> +				pr_warning("Failed to find the path of %s.\n",
-> +					   str);
+Em Thu, Dec 26, 2013 at 09:11:22AM -0500, David Ahern escreveu:
+> On 12/24/13, 8:30 AM, Arnaldo Carvalho de Melo wrote:
+> >Em Tue, Dec 24, 2013 at 09:53:42AM -0300, Arnaldo Carvalho de Melo escreveu:
+> >>>The thing to check is perf_evlist__{prepare,start}_workload notification
+> >>>errors using SIGUSR1, that we need to check for in the caller, and emit
+> >>>the message, no?
+> >Something like this:
+> >
+> >1. We tell perf_evlist__prepare_workload that we want a signal if execvp
+> >fails, it will be a SIGUSR1
+> >
+> >2. We catch that signal in 'stat' and check that we got a signal, only
+> >problem so far with this signal maze is that we're getting a SIGCHLD
+> >while I was expecting a SIGUSR1... I.e. the "if (signr != -1) test
+> >really should be if (signr == SIGUSR1), but I'm getting a SIGCHLD there
+> >and the elves are tugging me away...
+> 
+> Did the elves release you?
+> 
+> There are all kinds of failure paths with the workload functions. In
+> the end I was focusing on perf-stat actually checking the rc on the
+> start_workload function. If it fails, then write() failed and
+> something happened to the workload process. In that case don't show
+> the counters.
+> 
+> Handling the other error paths with appropriate messages will take
+> additional effort - as you are finding. ;-)
 
-That error message will be misleading if it is generated. How about:
-     Failed to get the absolute path of %s: %d\n", str, errno.
+Right, but I can't apply that patch, as it makes 'perf stat
+whatever-workload' to fail, as I realized when doing a demo to someone
+interested in using perf ;-\
 
-> +				return ret;
-> +			}
-> +		} else {
-> +			tmp = strdup(str);
-> +			if (!tmp)
-> +				return -ENOMEM;
-> +		}
-> +		params.target = tmp;
+So for now I'm not applying that one.
 
-When is params.target freed?
+Ah, at this point elves are everywhere, dammit! ;-)
 
-David
-
+- Arnaldo
