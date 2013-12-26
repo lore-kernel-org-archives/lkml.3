@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911Ab3LZNiy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 08:38:54 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:63239 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752736Ab3LZNiw (ORCPT
+	id S1752977Ab3LZNoB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 08:44:01 -0500
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:62059 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752736Ab3LZNn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 08:38:52 -0500
-Date: Thu, 26 Dec 2013 10:38:42 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 0/9] tools: Factor traceevent/perf Makefile
-Message-ID: <20131226133842.GA30980@ghostprotocols.net>
-References: <1387460527-15030-1-git-send-email-jolsa@redhat.com>
+	Thu, 26 Dec 2013 08:43:59 -0500
+Message-ID: <52BC3295.3020007@gmail.com>
+Date: Thu, 26 Dec 2013 08:43:49 -0500
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387460527-15030-1-git-send-email-jolsa@redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+CC: David Ahern <dsahern@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: [PATCH] perf probe: Improve error message when function not found
+References: <1387562649-25929-1-git-send-email-dsahern@gmail.com>
+In-Reply-To: <1387562649-25929-1-git-send-email-dsahern@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Dec 19, 2013 at 02:41:58PM +0100, Jiri Olsa escreveu:
-> hi,
-> sending out the change to introduce single:
->   INSTALL trace_plugins
-> build output line. Some more code factoring was needed.
-> 
-> Also updated the tests/make install tests to check for
-> installed plugins.
+Masami:
 
-Ok, better now, applied, but can you take a look at:
+If you do not have any problems with this version please Ack so Arnaldo 
+will pick it up.
 
-[acme@ssdandy linux]$ make O=/tmp/build/perf -C tools/perf/ install-bin
-make: Entering directory `/home/acme/git/linux/tools/perf'
-  BUILD:   Doing 'make -j8' parallel build
-  GEN      perf-archive
-  SUBDIR   /home/acme/git/linux/tools/lib/traceevent/
-make[3]: Nothing to be done for `plugins'.
-make[2]: Nothing to be done for `plugins'.
-  INSTALL  GTK UI
-  INSTALL  binaries
-  INSTALL  libexec
-  INSTALL  perf-archive
-  INSTALL  perl-scripts
-  INSTALL  python-scripts
-  INSTALL  perf_completion-script
-  INSTALL  tests
-make: Leaving directory `/home/acme/git/linux/tools/perf'
-[acme@ssdandy linux]$
+Thanks,
 
-Removing those two "Nothing to be done" lines, please?
+David
 
-- Arnaldo
+On 12/20/13, 1:04 PM, David Ahern wrote:
+> When requesting a function from a userspace library the error message to
+> the user is less than helpful. e.g.,
+>
+>      perf probe -x /lib64/libpthread-2.14.90.so -a 'lock_full=__pthread_mutex_lock_full'
+>      no symbols found in /lib64/libpthread-2.14.90.so, maybe install a debug package?
+>      Failed to load map.
+>         Error: Failed to add events. (-22)
+>
+> yet the symbol really does exist but is a local symbol which is filtered:
+>
+> nm /lib64/libpthread-2.14.90.so | grep __pthread_mutex_lock_full
+> 0000000000005700 t __pthread_mutex_lock_full
+>
+> With this patch:
+>      perf probe -x /lib64/libpthread-2.14.90.so -a 'lock_full=__pthread_mutex_lock_full'
+>
+>      no symbols found in /lib64/libpthread-2.14.90.so, maybe install a debug package?
+>      Failed to find function in /lib64/libpthread-2.14.90.so. Perhaps it is a local variable?
+>        Error: Failed to add events. (-22)
+>
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+>
+> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+> index 9c6989ca2bea..2eac49096840 100644
+> --- a/tools/perf/util/probe-event.c
+> +++ b/tools/perf/util/probe-event.c
+> @@ -2309,7 +2309,8 @@ static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
+>   	}
+>   	available_func_filter = strfilter__new(function, NULL);
+>   	if (map__load(map, filter_available_functions)) {
+> -		pr_err("Failed to load map.\n");
+> +		pr_err("Failed to find requested symbol in %s. Is it a global variable?\n",
+> +		       name);
+>   		goto out;
+>   	}
+>
+>
+
