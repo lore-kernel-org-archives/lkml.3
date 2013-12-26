@@ -1,87 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552Ab3LZQ6n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 11:58:43 -0500
-Received: from smtprelay0225.hostedemail.com ([216.40.44.225]:35718 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753495Ab3LZQ6l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 11:58:41 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2895:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3871:3872:3874:4250:4321:4362:5007:6119:7652:10004:10400:10848:11026:11232:11658:11914:12043:12294:12296:12438:12517:12519:12740:13069:13161:13229:13311:13357:13894,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: lunch08_1155ef2f29435
-X-Filterd-Recvd-Size: 2486
-Message-ID: <1388077117.2459.10.camel@joe-AO722>
-Subject: Re: [PATCH] Add ff-memless-next module
-From: Joe Perches <joe@perches.com>
-To: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@prifuk.cz>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry.torokhov@gmail.com, elias.vds@gmail.com
-Date: Thu, 26 Dec 2013 08:58:37 -0800
-In-Reply-To: <4629786.9msWpURVJS@geidi-prime>
-References: <4629786.9msWpURVJS@geidi-prime>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1753603Ab3LZQ6w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 11:58:52 -0500
+Received: from blu0-omc4-s5.blu0.hotmail.com ([65.55.111.144]:32439 "EHLO
+	blu0-omc4-s5.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753554Ab3LZQ6s convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Dec 2013 11:58:48 -0500
+X-TMN: [gA4hzdOSWDPdIevQbDwnIqOsLPeb3hjR]
+X-Originating-Email: [lgxue@hotmail.com]
+Message-ID: <BLU172-W413E574F382D098B5F9028ACC20@phx.gbl>
+From: Joe Xue <lgxue@hotmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+CC: "cooloney@gmail.com" <cooloney@gmail.com>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "rob@landley.net" <rob@landley.net>,
+        "milo.kim@ti.com" <milo.kim@ti.com>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: RE: [PATCH] Add the LED burst trigger
+Date: Thu, 26 Dec 2013 11:58:47 -0500
+Importance: Normal
+In-Reply-To: <BLU172-W3236C029069708048D5697ACC20@phx.gbl>
+References: <1387895407-28031-1-git-send-email-lgxue@hotmail.com>,<20131225230935.GB13593@amd.pavel.ucw.cz>,<BLU172-W52032BFEF4512123D7516EACC20@phx.gbl>,<20131226142607.GA15225@amd.pavel.ucw.cz>,<BLU172-W3236C029069708048D5697ACC20@phx.gbl>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
+X-OriginalArrivalTime: 26 Dec 2013 16:58:47.0247 (UTC) FILETIME=[BE25EDF0:01CF025B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-12-26 at 17:33 +0100, Michal Malý wrote:
-> This patch adds "ff-memless-next" module. This module is based on the current
-> "ff-memless" module but it has considerably extended capabilities. These include:
-[]
-> Why is this written as a new module and not a patch for "ff-memless"? This
-> module uses a different API for the HW-specific driver; this was a necessary
-> step to make use of the module's additional features. All 25 drivers that
-> currently use "ff-memless" would have to be updated. "ff-memless-next" currently
-> does not support FF_RUMBLE which is needed to support various joypads.
+Hi all,
 
-Thanks for that explanation.
+I think Pavel's suggestion is a good idea, I'm starting to write another trigger named Morse code trigger.
 
-[]
+I prefer to keeping this burst trigger and add another Morse code trigger for different application. But I know the Morse code trigger will be the super set of the burst. Say the patten ... Morse code is same as the 3 times burst blinking.
 
-> +static unsigned long mlnx_get_envelope_update_time(const struct mlnx_effect *mlnxeff,
-> +						   const unsigned long update_rate_jiffies)
-> +{
+Anyway, after I finish that trigger, let community to decide which one will be adapted, or both.
 
-> +	/* Effect has an envelope with nonzero fade time */
-> +	if (mlnxeff->effect.replay.length) {
-> +		if (!envelope->fade_length)
-> +			return mlnxeff->stop_at;
-> +
-> +		/* Schedule the next update when the fade begins */
-> +		if (time_before(mlnxeff->updated_at, mlnxeff->fade_begin))
-> +			return mlnxeff->fade_begin;
-> +
-> +		/* Already fading */
-> +		else {
-> +			fade_next = mlnxeff->updated_at + update_rate_jiffies;
-> +
+Any suggestion about the new Morse trigger, please let me know.
 
-There's no need for an else and extra indentation here
- 
-	if (foo)
-		return;
-	else {			/* unnecessary else */
-		bar...
-	}
+Thank you Pavel.
 
-please just use
+Joe
 
-	if (foo)
-		return;
-
-	bar...
-
-> +			/* Schedule update when the effect stops */
-> +			if (time_after(fade_next, mlnxeff->stop_at))
-> +				return mlnxeff->stop_at;
-> +			/* Schedule update at the next checkpoint */
-> +			else
-> +				return fade_next;
-> +		}
-> +	}
-
-
+----------------------------------------
+> From: lgxue@hotmail.com
+> To: pavel@ucw.cz
+> CC: cooloney@gmail.com; rpurdie@rpsys.net; rob@landley.net; milo.kim@ti.com; linux-leds@vger.kernel.org; linux-kernel@vger.kernel.org; linux-doc@vger.kernel.org
+> Subject: RE: [PATCH] Add the LED burst trigger
+> Date: Thu, 26 Dec 2013 10:02:38 -0500
+>
+> Hi Pavel,
+>
+> Yes, your suggest looks reasonable. Only issue maybe is not easy to called by program. After all, the interface is called by program more ofter then by human being.
+>
+> I would like to change the way what you suggest, let see if other guys agree with your idea.
+>
+> Before that, I'll submit another change as per Geert's suggest that change HZ to Hz.
+>
+> Joe
+>
+> ----------------------------------------
+>> Date: Thu, 26 Dec 2013 15:26:08 +0100
+>> From: pavel@ucw.cz
+>> To: lgxue@hotmail.com
+>> CC: cooloney@gmail.com; rpurdie@rpsys.net; rob@landley.net; milo.kim@ti.com; linux-leds@vger.kernel.org; linux-kernel@vger.kernel.org; linux-doc@vger.kernel.org
+>> Subject: Re: [PATCH] Add the LED burst trigger
+>>
+>> Hi!
+>>
+>>> Yes, Morse code can indicate any means. But when we look at the LEDs, would we like to also have a Morse code book in hand?
+>>>
+>>> The burst led blink idea is because it is easy to use and easy to describe. Mostly when users on site are describing the LEDs states to the support engineer.
+>>>
+>>
+>> Well.. above 7 or so blinks, people will be unable to count. "one
+>> short, one long" will help to extend that.
+>>
+>> Plus, there may be patterns such as "keep it ON, count number of brief
+>> OFFs"...
+>>
+>> That's why I suggested:
+>>
+>>>> echo 40> step_length_ms
+>>>> echo "- - - "> pattern
+>>>>
+>>>> do the same trick?
+>>>>
+>>>> Plus, you could for example do
+>>>>
+>>>> echo "- --- "> pattern
+>>>>
+>>>> to do morse code...
+>>
+>> Interface
+>>
+>> (Note that your client stripped some spaces out of it).
+>>
+>> With that, it should be very easy to program all the reasonable
+>> blinking patterns for single LED without PWM.
+>> Pavel
+>> --
+>> (english) http://www.livejournal.com/~pavelmachek
+>> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at http://www.tux.org/lkml/ --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at http://www.tux.org/lkml/ 		 	   		  
