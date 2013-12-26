@@ -1,139 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753432Ab3LZPhs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 10:37:48 -0500
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:52377 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753355Ab3LZPhq (ORCPT
+	id S1753461Ab3LZPjE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 10:39:04 -0500
+Received: from mail-yh0-f41.google.com ([209.85.213.41]:46849 "EHLO
+	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753306Ab3LZPjD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 10:37:46 -0500
-Date: Thu, 26 Dec 2013 07:37:43 -0800
+	Thu, 26 Dec 2013 10:39:03 -0500
+Date: Thu, 26 Dec 2013 07:38:59 -0800
 From: "H.J. Lu" <hjl.tools@gmail.com>
 To: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Use __kernel_long_t in struct timex
-Message-ID: <20131226153743.GC23355@gmail.com>
-References: <20131225002458.GA363@gmail.com>
- <20131226153509.GA23355@gmail.com>
+Subject: Re: [PATCH] Use __kernel_ulong_t in uapi struct ipc64_perm
+Message-ID: <20131226153859.GD23355@gmail.com>
+References: <20131225154541.GA12109@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="/NkBOFFp2J2Af1nK"
+Content-Type: multipart/mixed; boundary="3siQDZowHQqNOShm"
 Content-Disposition: inline
-In-Reply-To: <20131226153509.GA23355@gmail.com>
+In-Reply-To: <20131225154541.GA12109@gmail.com>
+Toc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---/NkBOFFp2J2Af1nK
+--3siQDZowHQqNOShm
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Thu, Dec 26, 2013 at 07:35:09AM -0800, H.J. Lu wrote:
-> On Tue, Dec 24, 2013 at 04:24:58PM -0800, H.J. Lu wrote:
-> > X32 adjtimex system call is the same as x86-64 adjtimex system call,
-> > which uses 64-bit integer for long in struct timex. But x32 long is
-> > 32 bit.  This patch replaces long in struct timex with __kernel_long_t.
-> > 
+On Wed, Dec 25, 2013 at 07:45:41AM -0800, H.J. Lu wrote:
+> X32 IPC system call is the same as x86-64 IPC system call, which uses
+> 64-bit integer for unsigned long in struct ipc64_perm.  But x32 long is
+> 32 bit.  This patch replaces unsigned long in uapi struct ipc64_perm with
+> __kernel_ulong_t.
 > 
-> Here is the updated patch which uses __kernel_long_t only if
-> __BITS_PER_LONG == 64.
 
-Forgot to include the new patch.  Here it is.
-
+Here is the updated patch which uses __kernel_ulong_t only if
+__BITS_PER_LONG == 64. 
+ 
 H.J.
 
---/NkBOFFp2J2Af1nK
+--3siQDZowHQqNOShm
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="0001-Use-__kernel_long_t-in-struct-timex.patch"
+Content-Disposition: attachment; filename="0003-Use-__kernel_ulong_t-in-uapi-struct-ipc64_perm.patch"
 
->From fd1986128a354cf9fb3786b0138e7b84690d9835 Mon Sep 17 00:00:00 2001
+>From 81b4c3c55f994d54eafcaf4adaa2a16786c41fdd Mon Sep 17 00:00:00 2001
 From: "H.J. Lu" <hjl.tools@gmail.com>
-Date: Tue, 24 Dec 2013 16:20:28 -0800
-Subject: [PATCH] Use __kernel_long_t in struct timex
+Date: Wed, 25 Dec 2013 07:13:02 -0800
+Subject: [PATCH] Use __kernel_ulong_t in uapi struct ipc64_perm
 
-X32 adjtimex system call is the same as x86-64 adjtimex system call,
-which uses 64-bit integer for long in struct timex. But x32 long is
-32 bit.  This patch replaces long in struct timex with __kernel_long_t
-if __BITS_PER_LONG == 64.
+X32 IPC system call is the same as x86-64 IPC system call, which uses
+64-bit integer for unsigned long in struct ipc64_perm.  But x32 long is
+32 bit.  This patch replaces unsigned long in uapi struct ipc64_perm with
+__kernel_ulong_t if __BITS_PER_LONG == 64.
 
 Signed-off-by: H.J. Lu <hjl.tools@gmail.com>
 ---
- include/uapi/linux/timex.h | 46 ++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 38 insertions(+), 8 deletions(-)
+ include/uapi/asm-generic/ipcbuf.h | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/include/uapi/linux/timex.h b/include/uapi/linux/timex.h
-index a7ea81f..98314e9 100644
---- a/include/uapi/linux/timex.h
-+++ b/include/uapi/linux/timex.h
-@@ -63,28 +63,58 @@
-  */
- struct timex {
- 	unsigned int modes;	/* mode selector */
+diff --git a/include/uapi/asm-generic/ipcbuf.h b/include/uapi/asm-generic/ipcbuf.h
+index 76982b2..4635fa5 100644
+--- a/include/uapi/asm-generic/ipcbuf.h
++++ b/include/uapi/asm-generic/ipcbuf.h
+@@ -27,8 +27,13 @@ struct ipc64_perm {
+ 	unsigned char		__pad1[4 - sizeof(__kernel_mode_t)];
+ 	unsigned short		seq;
+ 	unsigned short		__pad2;
 +#if __BITS_PER_LONG == 64
-+	__kernel_long_t offset;	/* time offset (usec) */
-+	__kernel_long_t freq;	/* frequency offset (scaled ppm) */
-+	__kernel_long_t maxerror;/* maximum error (usec) */
-+	__kernel_long_t esterror;/* estimated error (usec) */
++	__kernel_ulong_t	__unused1;
++	__kernel_ulong_t	__unused2;
 +#else
- 	long offset;		/* time offset (usec) */
- 	long freq;		/* frequency offset (scaled ppm) */
- 	long maxerror;		/* maximum error (usec) */
- 	long esterror;		/* estimated error (usec) */
+ 	unsigned long		__unused1;
+ 	unsigned long		__unused2;
 +#endif
- 	int status;		/* clock command/status */
-+#if __BITS_PER_LONG == 64
-+	__kernel_long_t constant;/* pll time constant */
-+	__kernel_long_t precision;/* clock precision (usec) (read only) */
-+	__kernel_long_t tolerance;/* clock frequency tolerance (ppm)
-+				   * (read only)
-+				   */
-+#else
- 	long constant;		/* pll time constant */
- 	long precision;		/* clock precision (usec) (read only) */
- 	long tolerance;		/* clock frequency tolerance (ppm)
- 				 * (read only)
- 				 */
-+#endif
- 	struct timeval time;	/* (read only, except for ADJ_SETOFFSET) */
-+#if __BITS_PER_LONG == 64
-+	__kernel_long_t tick;	/* (modified) usecs between clock ticks */
-+
-+	__kernel_long_t ppsfreq;/* pps frequency (scaled ppm) (ro) */
-+	__kernel_long_t jitter; /* pps jitter (us) (ro) */
-+#else
- 	long tick;		/* (modified) usecs between clock ticks */
+ };
  
--	long ppsfreq;           /* pps frequency (scaled ppm) (ro) */
--	long jitter;            /* pps jitter (us) (ro) */
-+	long ppsfreq;		/* pps frequency (scaled ppm) (ro) */
-+	long jitter;		/* pps jitter (us) (ro) */
-+#endif
- 	int shift;              /* interval duration (s) (shift) (ro) */
--	long stabil;            /* pps stability (scaled ppm) (ro) */
--	long jitcnt;            /* jitter limit exceeded (ro) */
--	long calcnt;            /* calibration intervals (ro) */
--	long errcnt;            /* calibration errors (ro) */
--	long stbcnt;            /* stability limit exceeded (ro) */
--
-+#if __BITS_PER_LONG == 64
-+	__kernel_long_t stabil; /* pps stability (scaled ppm) (ro) */
-+	__kernel_long_t jitcnt; /* jitter limit exceeded (ro) */
-+	__kernel_long_t calcnt; /* calibration intervals (ro) */
-+	__kernel_long_t errcnt; /* calibration errors (ro) */
-+	__kernel_long_t stbcnt; /* stability limit exceeded (ro) */
-+
-+#else
-+	long stabil;		/* pps stability (scaled ppm) (ro) */
-+	long jitcnt;		/* jitter limit exceeded (ro) */
-+	long calcnt;		/* calibration intervals (ro) */
-+	long errcnt;		/* calibration errors (ro) */
-+	long stbcnt;		/* stability limit exceeded (ro) */
-+#endif
- 	int tai;		/* TAI offset (ro) */
- 
- 	int  :32; int  :32; int  :32; int  :32;
+ #endif /* __ASM_GENERIC_IPCBUF_H */
 -- 
 1.8.4.2
 
 
---/NkBOFFp2J2Af1nK--
+--3siQDZowHQqNOShm--
