@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290Ab3LZOax (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 09:30:53 -0500
-Received: from m199-177.yeah.net ([123.58.177.199]:56476 "EHLO
-	m199-177.yeah.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753137Ab3LZOav (ORCPT
+	id S1753261Ab3LZOhq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 09:37:46 -0500
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:48744 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753124Ab3LZOho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 09:30:51 -0500
-From: Li Wang <liwang@ubuntukylin.com>
-To: ceph-devel@vger.kernel.org
-Cc: Sage Weil <sage@inktank.com>, Milosz Tanski <milosz@adfin.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yunchuan Wen <yunchuanwen@ubuntukylin.com>,
-        Min Chen <minchen@ubuntukylin.com>, Li Wang <liwang@ubuntukylin.com>
-Subject: [PATCH 2/3] Ceph fscache: Update object store limit after file writing
-Date: Thu, 26 Dec 2013 06:29:27 -0800
-Message-Id: <60624625dc3bf53737dabf368a23ca7151c9a616.1388066937.git.liwang@ubuntukylin.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1388066937.git.liwang@ubuntukylin.com>
-References: <cover.1388066937.git.liwang@ubuntukylin.com>
-In-Reply-To: <cover.1388066937.git.liwang@ubuntukylin.com>
-References: <cover.1388066937.git.liwang@ubuntukylin.com>
-X-HM-Spam-Status: e1koWUFPN1dZCBgUCR5ZQU9MVUhKSUJCTkJKS01PT05IV1kJDhceCFlBWS
-	grPSQoND0vPToyNyQyNSQzPjo*PilBTVVKSEJANiMkIj4oJDI1JDM#Oj8#KUFLVUhPSUArLykkNT
-	QkMjUkMz46Pz4pQUlVQ05DQDg0LjUvKSIkODVBS1VJTUNAKT48MjQ1JDooMjpBSFVPT01AKyk0LT
-	I1OD4kMy41OjVBQlVCSk5APyI1OjYyOCQyKyQ1NCQyNSQzPjo*PilBS1VMQ0JAPzAyNiQ1NDU#QU
-	tVS0ApPjo3JDIrJDI1JCk5NyQyNSQzPjo*PilBTFVLS0NANi43LzIkKTgrLyQ*Mj09Pik#NS8kMj
-	UkMz46Pz4pQU9VS0tJQDIrJC80PzoiJDg1LyRLJEpLS0FLVUxKTUAyKyRKJDM0LikkODUvJEskSk
-	tLQUtVS0AyKyRKJDYyNS4vPiQ4NS8kSyRKS0FLVUtAMiskTiQ2MjUuLz4kODUvJEskSktBS1VLQD
-	IrJEhLJDYyNS4vPiQ4NS8kSyROS0FLVUtANTQvJD06NjQuKCQ*NDY6MjUkKCs9JD06MjdBSktVS0
-	AoLjkkPkFKVU5OQD01JCguOSQ#NSw0KT8oJDM3MSRKS0tJS0pBS1VJQ1kG
-X-HM-Sender-Digest: e1kSHx4VD1lBWUc6MQg6Cjo4LDo4EDorKjhIOj4qOkMwCjFVSlVKSEND
-	S01DSU9OQ0xDVTMWGhIXVRcSDBoVHDsOGQ4VDw4QAhcSFVUYFBZFWVdZDB4ZWUEdGhcIHldZCAFZ
-	QUlPQk03V1kSC1lBWU1KVUpDTFVOT1VCWQY+
+	Thu, 26 Dec 2013 09:37:44 -0500
+Message-ID: <52BC3F37.6050103@linaro.org>
+Date: Thu, 26 Dec 2013 08:37:43 -0600
+From: Alex Elder <alex.elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Sage Weil <sage@inktank.com>
+CC: ceph-devel <ceph-devel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] MAINTAINERS: update an e-mail address
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yunchuan Wen <yunchuanwen@ubuntukylin.com>
+[Sage, perhaps you could sign off on or ack this, and take it in
+through your tree.  Thanks.  -Alex]
 
-Synchronize object->store_limit[_l] with new inode->i_size after file writing.
+I no longer have direct access to my Inktank e-mail.  I still pay
+attention to rbd, so update its entry in MAINTAINERS accordingly.
 
-Signed-off-by: Yunchuan Wen <yunchuanwen@ubuntukylin.com>
-Signed-off-by: Min Chen <minchen@ubuntukylin.com>
-Signed-off-by: Li Wang <liwang@ubuntukylin.com>
+Signed-off-by: Alex Elder <elder@linaro.org>
 ---
- fs/ceph/file.c |    3 +++
- 1 file changed, 3 insertions(+)
+ MAINTAINERS |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/ceph/file.c b/fs/ceph/file.c
-index 3de8982..b6df7ab 100644
---- a/fs/ceph/file.c
-+++ b/fs/ceph/file.c
-@@ -786,6 +786,7 @@ retry_snap:
- 			goto retry_snap;
- 		}
- 	} else {
-+		loff_t old_size = inode->i_size;
- 		/*
- 		 * No need to acquire the i_truncate_mutex. Because
- 		 * the MDS revokes Fwb caps before sending truncate
-@@ -796,6 +797,8 @@ retry_snap:
- 		written = generic_file_buffered_write(iocb, iov, nr_segs,
- 						      pos, &iocb->ki_pos,
- 						      count, 0);
-+		if (inode->i_size > old_size)
-+			ceph_fscache_update_objectsize(inode);
- 		mutex_unlock(&inode->i_mutex);
- 	}
- 
+diff --git a/MAINTAINERS b/MAINTAINERS
+index d5e4ff3..d42633c 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -7016,7 +7016,7 @@ F:	drivers/media/parport/*-qcam*
+ RADOS BLOCK DEVICE (RBD)
+ M:	Yehuda Sadeh <yehuda@inktank.com>
+ M:	Sage Weil <sage@inktank.com>
+-M:	Alex Elder <elder@inktank.com>
++M:	Alex Elder <elder@kernel.org>
+ M:	ceph-devel@vger.kernel.org
+ W:	http://ceph.com/
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git
 -- 
 1.7.9.5
 
