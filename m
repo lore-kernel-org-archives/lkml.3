@@ -1,90 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724Ab3LZLJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 06:09:57 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:60610 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831Ab3LZLJz (ORCPT
+	id S1752716Ab3LZLSj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 06:18:39 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:41218 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751826Ab3LZLSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 06:09:55 -0500
-Message-ID: <52BC0E56.80003@huawei.com>
-Date: Thu, 26 Dec 2013 19:09:10 +0800
-From: Ding Tianhong <dingtianhong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Thu, 26 Dec 2013 06:18:38 -0500
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
-        <linux-media@vger.kernel.org>,
+In-Reply-To: <1387895407-28031-1-git-send-email-lgxue@hotmail.com>
+References: <1387895407-28031-1-git-send-email-lgxue@hotmail.com>
+Date: Thu, 26 Dec 2013 12:18:37 +0100
+X-Google-Sender-Auth: kh12CCws8gHDYH7SFi-7vaSr6L4
+Message-ID: <CAMuHMdUnOyeJ8opD9wwcS0RGJ-js+p3fXkA0iVJO1Vcri_RcbA@mail.gmail.com>
+Subject: Re: [PATCH] Add the LED burst trigger
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: lgxue@hotmail.com
+Cc: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Rob Landley <rob@landley.net>, "Milo(Woogyom) Kim" <milo.kim@ti.com>,
+        linux-leds@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH v3 13/19] media: dvb_core: slight optimization of addr
- compare
-References: <52BA5113.7070908@huawei.com> <52BABA23.2040709@cogentembedded.com>
-In-Reply-To: <52BABA23.2040709@cogentembedded.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.199]
-X-CFilter-Loop: Reflected
+        linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/12/25 18:57, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 25-12-2013 7:29, Ding Tianhong wrote:
-> 
->> Use possibly more efficient ether_addr_equal
->> instead of memcmp.
-> 
->> Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
->> Cc: linux-media@vger.kernel.org
->> Cc: linux-kernel@vger.kernel.org
->> Signed-off-by: Yang Yingliang <yangyingliang@huawei.com>
->> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
->> ---
->>   drivers/media/dvb-core/dvb_net.c | 8 ++++----
->>   1 file changed, 4 insertions(+), 4 deletions(-)
-> 
->> diff --git a/drivers/media/dvb-core/dvb_net.c b/drivers/media/dvb-core/dvb_net.c
->> index f91c80c..3dfc33b 100644
->> --- a/drivers/media/dvb-core/dvb_net.c
->> +++ b/drivers/media/dvb-core/dvb_net.c
->> @@ -179,7 +179,7 @@ static __be16 dvb_net_eth_type_trans(struct sk_buff *skb,
->>       eth = eth_hdr(skb);
->>
->>       if (*eth->h_dest & 1) {
->> -        if(memcmp(eth->h_dest,dev->broadcast, ETH_ALEN)==0)
->> +        if(ether_addr_equal(eth->h_dest,dev->broadcast))
-> 
->    There should be space after comma.
-> 
->> @@ -674,11 +674,11 @@ static void dvb_net_ule( struct net_device *dev, const u8 *buf, size_t buf_len )
->>                       if (priv->rx_mode != RX_MODE_PROMISC) {
->>                           if (priv->ule_skb->data[0] & 0x01) {
->>                               /* multicast or broadcast */
->> -                            if (memcmp(priv->ule_skb->data, bc_addr, ETH_ALEN)) {
->> +                            if (!ether_addr_equal(priv->ule_skb->data, bc_addr)) {
->>                                   /* multicast */
->>                                   if (priv->rx_mode == RX_MODE_MULTI) {
->>                                       int i;
->> -                                    for(i = 0; i < priv->multi_num && memcmp(priv->ule_skb->data, priv->multi_macs[i], ETH_ALEN); i++)
->> +                                    for(i = 0; i < priv->multi_num && !ether_addr_equal(priv->ule_skb->data, priv->multi_macs[i]); i++)
-> 
->    Shouldn't this line be broken?
-> 
+On Tue, Dec 24, 2013 at 3:30 PM,  <lgxue@hotmail.com> wrote:
+> +Three properties are exported. They are freq, times and delay_off.
+> +
+> +     freq      - the blink frequency, default value is 3 means 3HZ
 
-ok, thanks.
+Please write "3 Hz". In the kernel "HZ" means the number of jiffies per
+second, and "3 HZ" thus represents a 3-second period.
 
-Regards
->>                                           ;
->>                                       if (i == priv->multi_num)
->>                                           drop = 1;
-> 
-> WBR, Sergei
-> 
-> 
-> 
-> 
+> +     times     - burst blink times in one cycle, no default value
+> +     delay_off - off time between two burst blinks, default value is 500 ms
+> +
+> +2. Case studies
+> +
+> +     Example 1
+> +
+> +     echo burst > trigger
+> +     echo 2 > times
+> +
+> +     The behaviour is like below:
+> +
+> +     on(1/6s)off(1/6s)on(1/6s)off(1/6m)
+> +     ...off 500ms...
+> +     on(1/6s)off(1/6s)on(1/3s)off(1/6m)
 
+on(1/6s)off(1/6s)on(1/6s)off(1/6s)
 
+> +     ...off 500ms
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
