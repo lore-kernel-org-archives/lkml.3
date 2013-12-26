@@ -1,49 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab3LZKxW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 05:53:22 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:44289 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831Ab3LZKxV (ORCPT
+	id S1752724Ab3LZLJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 06:09:57 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:60610 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831Ab3LZLJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 05:53:21 -0500
-Date: Thu, 26 Dec 2013 02:53:16 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] block: blk-mq: support draining mq queue
-Message-ID: <20131226105316.GA16268@infradead.org>
-References: <1387815539-12257-1-git-send-email-tom.leiming@gmail.com>
- <1387815539-12257-2-git-send-email-tom.leiming@gmail.com>
- <20131223162442.GA9383@infradead.org>
- <CACVXFVN=sxHxUY_0c9xWKw3nXhj60UeSjvFTHs52zHNEAg__4w@mail.gmail.com>
- <20131226094518.GA22894@infradead.org>
- <CACVXFVOOEGPt7JXKmk=dTz3H6TgadBoOx1_D_hksi6J1L7OjYw@mail.gmail.com>
+	Thu, 26 Dec 2013 06:09:55 -0500
+Message-ID: <52BC0E56.80003@huawei.com>
+Date: Thu, 26 Dec 2013 19:09:10 +0800
+From: Ding Tianhong <dingtianhong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACVXFVOOEGPt7JXKmk=dTz3H6TgadBoOx1_D_hksi6J1L7OjYw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
+        <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH v3 13/19] media: dvb_core: slight optimization of addr
+ compare
+References: <52BA5113.7070908@huawei.com> <52BABA23.2040709@cogentembedded.com>
+In-Reply-To: <52BABA23.2040709@cogentembedded.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.199]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 26, 2013 at 06:12:30PM +0800, Ming Lei wrote:
-> IMO, if one block API can serve for both non-MQ and MQ cases, why do
-> we have to split it into blk_foo() and blk_mq_foo()?
-
-To make the usage obvious and to allow killing the old code more
-easily.  Looking back I have to see I'd actually prefer it the MQ
-code simply used different data structures.
-
+On 2013/12/25 18:57, Sergei Shtylyov wrote:
+> Hello.
 > 
-> IMO it is very possible that parallel path might keep for a while, and at least
-> the current scsi-mq patches do so.
+> On 25-12-2013 7:29, Ding Tianhong wrote:
+> 
+>> Use possibly more efficient ether_addr_equal
+>> instead of memcmp.
+> 
+>> Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+>> Cc: linux-media@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org
+>> Signed-off-by: Yang Yingliang <yangyingliang@huawei.com>
+>> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+>> ---
+>>   drivers/media/dvb-core/dvb_net.c | 8 ++++----
+>>   1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+>> diff --git a/drivers/media/dvb-core/dvb_net.c b/drivers/media/dvb-core/dvb_net.c
+>> index f91c80c..3dfc33b 100644
+>> --- a/drivers/media/dvb-core/dvb_net.c
+>> +++ b/drivers/media/dvb-core/dvb_net.c
+>> @@ -179,7 +179,7 @@ static __be16 dvb_net_eth_type_trans(struct sk_buff *skb,
+>>       eth = eth_hdr(skb);
+>>
+>>       if (*eth->h_dest & 1) {
+>> -        if(memcmp(eth->h_dest,dev->broadcast, ETH_ALEN)==0)
+>> +        if(ether_addr_equal(eth->h_dest,dev->broadcast))
+> 
+>    There should be space after comma.
+> 
+>> @@ -674,11 +674,11 @@ static void dvb_net_ule( struct net_device *dev, const u8 *buf, size_t buf_len )
+>>                       if (priv->rx_mode != RX_MODE_PROMISC) {
+>>                           if (priv->ule_skb->data[0] & 0x01) {
+>>                               /* multicast or broadcast */
+>> -                            if (memcmp(priv->ule_skb->data, bc_addr, ETH_ALEN)) {
+>> +                            if (!ether_addr_equal(priv->ule_skb->data, bc_addr)) {
+>>                                   /* multicast */
+>>                                   if (priv->rx_mode == RX_MODE_MULTI) {
+>>                                       int i;
+>> -                                    for(i = 0; i < priv->multi_num && memcmp(priv->ule_skb->data, priv->multi_macs[i], ETH_ALEN); i++)
+>> +                                    for(i = 0; i < priv->multi_num && !ether_addr_equal(priv->ule_skb->data, priv->multi_macs[i]); i++)
+> 
+>    Shouldn't this line be broken?
+> 
 
-That might be okay for the current prototype, but there's not point in
-merging it if it can't replace the old legacy request code.  And yes,
-this will require a lot more work.
+ok, thanks.
+
+Regards
+>>                                           ;
+>>                                       if (i == priv->multi_num)
+>>                                           drop = 1;
+> 
+> WBR, Sergei
+> 
+> 
+> 
+> 
+
 
