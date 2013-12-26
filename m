@@ -1,482 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020Ab3LZTAD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 14:00:03 -0500
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:50071 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753798Ab3LZS5l (ORCPT
+	id S1753767Ab3LZTAx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 14:00:53 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:38554 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753770Ab3LZTAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 13:57:41 -0500
-From: Sebastian Rachuj <sebastian.rachuj@studium.uni-erlangen.de>
-To: sebastian.rachuj@studium.uni-erlangen.de
-Cc: linux-kernel@i4.cs.fau.de, linux@rationality.eu,
-        forest@alittletooquiet.net, gregkh@linuxfoundation.org,
-        more.andres@gmail.com, tvboxspy@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 05/11] Staging: vt6656: Correct single space mistakes
-Date: Thu, 26 Dec 2013 19:55:34 +0100
-Message-Id: <1388084140-21562-6-git-send-email-sebastian.rachuj@studium.uni-erlangen.de>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1388084140-21562-1-git-send-email-sebastian.rachuj@studium.uni-erlangen.de>
-References: <1388084140-21562-1-git-send-email-sebastian.rachuj@studium.uni-erlangen.de>
+	Thu, 26 Dec 2013 14:00:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131224204625.GB20471@gmail.com>
+References: <CA+55aFxZ2u+M72u3HSD7TVY2+WRRi27pYC=_4Wawr5y1m8DfnQ@mail.gmail.com>
+	<20131224204625.GB20471@gmail.com>
+Date: Thu, 26 Dec 2013 11:00:49 -0800
+X-Google-Sender-Auth: dKPYNajARN2xSPYhe2N7NsWcTeU
+Message-ID: <CA+55aFzPBdbfKovMT8Edr4SmE2_=+OKJFac9XW2awegogTkVTA@mail.gmail.com>
+Subject: Re: [RFC] speeding up the stat() family of system calls...
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=001a11c2a3368d2fe404ee7498ac
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Simon Schuster <linux@rationality.eu>
+--001a11c2a3368d2fe404ee7498ac
+Content-Type: text/plain; charset=UTF-8
 
-Adds missing spaces between an if-statement and its condition as well
-as between the condition and the following curly brace. At casts
-there is also a space added between the type and the variable.
+On Tue, Dec 24, 2013 at 12:46 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> Looks cool - it looks rather similar to the try/catch model Richard
+> Henderson came up with many eons ago when we implemented the original
+> exception mechanism for Linux, which IIRC we decided wasn't safe due
+> to lack of compiler support.
+>
+> Now we have compiler support ... written by Richard Henderson ;-)
 
-Spaces that either follow an opening parenthese or the sizeof operator
-or that preceed semicolons are removed as well.
+Interestingly, looking at the cp_new_stat() profiles, the games we
+play to get efficient range checking seem to actually hurt us. Maybe
+it's the "sbb" that is just expensive, or maybe it's turning a (very
+predictable) conditional branch into a data dependency chain instead.
+Or maybe it's just random noise in my profiles that happened to make
+those sbb's look bad.
 
-Signed-off-by: Sebastian Rachuj <sebastian.rachuj@studium.uni-erlangen.de>
-Signed-off-by: Simon Schuster <linux@rationality.eu>
----
- drivers/staging/vt6656/bssdb.c | 136 ++++++++++++++++++++---------------------
- 1 file changed, 68 insertions(+), 68 deletions(-)
+What do people think about this access_ok() simplification that gets
+rid of inline asm, and instead optimizes the (reasonably common) case
+of a constant size. The complex case that requires overflow checking
+*might* get a bit slower (it's not clear: it really wasn't generating
+wonderful code), but the simple case of a known constant size actually
+gets simpler.
 
-diff --git a/drivers/staging/vt6656/bssdb.c b/drivers/staging/vt6656/bssdb.c
-index 84bac2d..38c267b 100644
---- a/drivers/staging/vt6656/bssdb.c
-+++ b/drivers/staging/vt6656/bssdb.c
-@@ -104,12 +104,12 @@ PKnownBSS BSSpSearchBSSList(struct vnt_private *pDevice,
- 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
- 			"BSSpSearchBSSList BSSID[%pM]\n", pbyDesireBSSID);
- 		if ((!is_broadcast_ether_addr(pbyDesireBSSID)) &&
--			(memcmp(pbyDesireBSSID, ZeroBSSID, 6) != 0)){
-+			(memcmp(pbyDesireBSSID, ZeroBSSID, 6) != 0)) {
- 				pbyBSSID = pbyDesireBSSID;
- 		}
- 	}
- 	if (pbyDesireSSID != NULL) {
--		if (((PWLAN_IE_SSID)pbyDesireSSID)->len != 0) {
-+		if (((PWLAN_IE_SSID) pbyDesireSSID)->len != 0) {
- 			pSSID = (PWLAN_IE_SSID) pbyDesireSSID;
- 		}
- 	}
-@@ -126,8 +126,8 @@ PKnownBSS BSSpSearchBSSList(struct vnt_private *pDevice,
- 				if (ether_addr_equal(pCurrBSS->abyBSSID, pbyBSSID)) {
- 					if (pSSID != NULL) {
- 						/* compare ssid */
--						if ( !memcmp(pSSID->abySSID,
--							((PWLAN_IE_SSID)pCurrBSS->abySSID)->abySSID,
-+						if (!memcmp(pSSID->abySSID,
-+							((PWLAN_IE_SSID) pCurrBSS->abySSID)->abySSID,
- 							pSSID->len)) {
- 							if ((pMgmt->eConfigMode == WMAC_CONFIG_AUTO) ||
- 								((pMgmt->eConfigMode == WMAC_CONFIG_IBSS_STA) && WLAN_GET_CAP_INFO_IBSS(pCurrBSS->wCapInfo)) ||
-@@ -164,16 +164,16 @@ PKnownBSS BSSpSearchBSSList(struct vnt_private *pDevice,
- 				if (pSSID != NULL) {
- 					/* matched SSID */
- 					if (memcmp(pSSID->abySSID,
--						((PWLAN_IE_SSID)pCurrBSS->abySSID)->abySSID,
-+						((PWLAN_IE_SSID) pCurrBSS->abySSID)->abySSID,
- 						pSSID->len) ||
--						(pSSID->len != ((PWLAN_IE_SSID)pCurrBSS->abySSID)->len)) {
-+						(pSSID->len != ((PWLAN_IE_SSID) pCurrBSS->abySSID)->len)) {
- 						/* SSID not match skip this BSS */
- 						continue;
- 					  }
- 				}
- 				if (((pMgmt->eConfigMode == WMAC_CONFIG_IBSS_STA) && WLAN_GET_CAP_INFO_ESS(pCurrBSS->wCapInfo)) ||
- 					((pMgmt->eConfigMode == WMAC_CONFIG_ESS_STA) && WLAN_GET_CAP_INFO_IBSS(pCurrBSS->wCapInfo))
--					){
-+					) {
- 					/* Type not match skip this BSS */
- 					DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"BSS type mismatch.... Config[%d] BSS[0x%04x]\n", pMgmt->eConfigMode, pCurrBSS->wCapInfo);
- 					continue;
-@@ -211,7 +211,7 @@ PKnownBSS BSSpSearchBSSList(struct vnt_private *pDevice,
- 			pSelect->bSelected = true;
- 			if (pDevice->bRoaming == false)  {
- 				/* Einsn Add @20070907 */
--				memcpy(pbyDesireSSID, pCurrBSS->abySSID,WLAN_IEHDR_LEN + WLAN_SSID_MAXLEN + 1) ;
-+				memcpy(pbyDesireSSID, pCurrBSS->abySSID,WLAN_IEHDR_LEN + WLAN_SSID_MAXLEN + 1);
- 			}
- 
- 			return pSelect;
-@@ -276,9 +276,9 @@ PKnownBSS BSSpAddrIsInBSSList(struct vnt_private *pDevice,
- 		pBSSList = &(pMgmt->sBSSList[ii]);
- 		if (pBSSList->bActive) {
- 			if (ether_addr_equal(pBSSList->abyBSSID, abyBSSID)) {
--				if (pSSID->len == ((PWLAN_IE_SSID)pBSSList->abySSID)->len){
-+				if (pSSID->len == ((PWLAN_IE_SSID) pBSSList->abySSID)->len) {
- 					if (memcmp(pSSID->abySSID,
--						((PWLAN_IE_SSID)pBSSList->abySSID)->abySSID,
-+						((PWLAN_IE_SSID) pBSSList->abySSID)->abySSID,
- 						pSSID->len) == 0)
- 						return pBSSList;
- 				}
-@@ -316,26 +316,26 @@ int BSSbInsertToBSSList(struct vnt_private *pDevice,
- {
- 	struct vnt_manager *pMgmt = &pDevice->vnt_mgmt;
- 	struct vnt_rx_mgmt *pRxPacket =
--		(struct vnt_rx_mgmt *)pRxPacketContext;
-+		(struct vnt_rx_mgmt *) pRxPacketContext;
- 	PKnownBSS pBSSList = NULL;
- 	unsigned int ii;
- 	bool bParsingQuiet = false;
- 
--	pBSSList = (PKnownBSS)&(pMgmt->sBSSList[0]);
-+	pBSSList = (PKnownBSS) &(pMgmt->sBSSList[0]);
- 
- 	for (ii = 0; ii < MAX_BSS_NUM; ii++) {
--		pBSSList = (PKnownBSS)&(pMgmt->sBSSList[ii]);
-+		pBSSList = (PKnownBSS) &(pMgmt->sBSSList[ii]);
- 		if (!pBSSList->bActive)
- 			break;
- 	}
- 
--	if (ii == MAX_BSS_NUM){
-+	if (ii == MAX_BSS_NUM) {
- 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Get free KnowBSS node failed.\n");
- 		return false;
- 	}
- 	/* save the BSS info */
- 	pBSSList->bActive = true;
--	memcpy( pBSSList->abyBSSID, abyBSSIDAddr, WLAN_BSSID_LEN);
-+	memcpy(pBSSList->abyBSSID, abyBSSIDAddr, WLAN_BSSID_LEN);
- 	pBSSList->qwBSSTimestamp = cpu_to_le64(qwTimestamp);
- 	pBSSList->wBeaconInterval = cpu_to_le16(wBeaconInterval);
- 	pBSSList->wCapInfo = cpu_to_le16(wCapInfo);
-@@ -343,13 +343,13 @@ int BSSbInsertToBSSList(struct vnt_private *pDevice,
- 
- 	if (pSSID->len > WLAN_SSID_MAXLEN)
- 		pSSID->len = WLAN_SSID_MAXLEN;
--	memcpy( pBSSList->abySSID, pSSID, pSSID->len + WLAN_IEHDR_LEN);
-+	memcpy(pBSSList->abySSID, pSSID, pSSID->len + WLAN_IEHDR_LEN);
- 
- 	pBSSList->uChannel = byCurrChannel;
- 
- 	if (pSuppRates->len > WLAN_RATES_MAXLEN)
- 		pSuppRates->len = WLAN_RATES_MAXLEN;
--	memcpy( pBSSList->abySuppRates, pSuppRates, pSuppRates->len + WLAN_IEHDR_LEN);
-+	memcpy(pBSSList->abySuppRates, pSuppRates, pSuppRates->len + WLAN_IEHDR_LEN);
- 
- 	if (pExtSuppRates != NULL) {
- 		if (pExtSuppRates->len > WLAN_RATES_MAXLEN)
-@@ -424,8 +424,8 @@ int BSSbInsertToBSSList(struct vnt_private *pDevice,
- 				break;
- 			}
- 		}
--		if ((bIs802_1x == true) && (pSSID->len == ((PWLAN_IE_SSID)pMgmt->abyDesireSSID)->len) &&
--			( !memcmp(pSSID->abySSID, ((PWLAN_IE_SSID)pMgmt->abyDesireSSID)->abySSID, pSSID->len))) {
-+		if ((bIs802_1x == true) && (pSSID->len == ((PWLAN_IE_SSID) pMgmt->abyDesireSSID)->len) &&
-+			(!memcmp(pSSID->abySSID, ((PWLAN_IE_SSID) pMgmt->abyDesireSSID)->abySSID, pSSID->len))) {
- 
- 			bAdd_PMKID_Candidate((void *) pDevice,
- 					 pBSSList->abyBSSID,
-@@ -446,7 +446,7 @@ int BSSbInsertToBSSList(struct vnt_private *pDevice,
- 	if (pDevice->bUpdateBBVGA) {
- 		/* Monitor if RSSI is too strong. */
- 		pBSSList->byRSSIStatCnt = 0;
--		RFvRSSITodBm(pDevice, (u8)(pRxPacket->uRSSI), &pBSSList->ldBmMAX);
-+		RFvRSSITodBm(pDevice, (u8) (pRxPacket->uRSSI), &pBSSList->ldBmMAX);
- 		pBSSList->ldBmAverage[0] = pBSSList->ldBmMAX;
- 		pBSSList->ldBmAverRange = pBSSList->ldBmMAX;
- 		for (ii = 1; ii < RSSI_STAT_COUNT; ii++)
-@@ -490,7 +490,7 @@ int BSSbUpdateToBSSList(struct vnt_private *pDevice,
- {
- 	struct vnt_manager *pMgmt = &pDevice->vnt_mgmt;
- 	struct vnt_rx_mgmt *pRxPacket =
--		(struct vnt_rx_mgmt *)pRxPacketContext;
-+		(struct vnt_rx_mgmt *) pRxPacketContext;
- 	int ii, jj;
- 	signed long ldBm, ldBmSum;
- 	bool bParsingQuiet = false;
-@@ -533,7 +533,7 @@ int BSSbUpdateToBSSList(struct vnt_private *pDevice,
- 
- 	pBSSList->byRxRate = pRxPacket->byRxRate;
- 	pBSSList->qwLocalTSF = pRxPacket->qwLocalTSF;
--	if(bChannelHit)
-+	if (bChannelHit)
- 		pBSSList->uRSSI = pRxPacket->uRSSI;
- 	pBSSList->bySQ = pRxPacket->bySQ;
- 
-@@ -570,7 +570,7 @@ int BSSbUpdateToBSSList(struct vnt_private *pDevice,
- 	}
- 
- 	if (pRxPacket->uRSSI != 0) {
--		RFvRSSITodBm(pDevice, (u8)(pRxPacket->uRSSI), &ldBm);
-+		RFvRSSITodBm(pDevice, (u8) (pRxPacket->uRSSI), &ldBm);
- 		/* Monitor if RSSI is too strong. */
- 		pBSSList->byRSSIStatCnt++;
- 		pBSSList->byRSSIStatCnt %= RSSI_STAT_COUNT;
-@@ -656,7 +656,7 @@ void BSSvCreateOneNode(struct vnt_private *pDevice, u32 *puNodeIndex)
- 	}
- 
- 	/* if not found replace uInActiveCount with the largest one. */
--	if ( ii == (MAX_NODE_NUM + 1)) {
-+	if (ii == (MAX_NODE_NUM + 1)) {
- 		*puNodeIndex = SelectIndex;
- 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Replace inactive node = %d\n", SelectIndex);
- 		/* clear ps buffer */
-@@ -723,15 +723,15 @@ void BSSvUpdateAPNode(struct vnt_private *pDevice,
- 	if (pDevice->byBBType == BB_TYPE_11B) {
- 		uRateLen = WLAN_RATES_MAXLEN_11B;
- 	}
--	pMgmt->abyCurrSuppRates[1] = RATEuSetIE((PWLAN_IE_SUPP_RATES)pSuppRates,
--						(PWLAN_IE_SUPP_RATES)pMgmt->abyCurrSuppRates,
-+	pMgmt->abyCurrSuppRates[1] = RATEuSetIE((PWLAN_IE_SUPP_RATES) pSuppRates,
-+						(PWLAN_IE_SUPP_RATES) pMgmt->abyCurrSuppRates,
- 						uRateLen);
--	pMgmt->abyCurrExtSuppRates[1] = RATEuSetIE((PWLAN_IE_SUPP_RATES)pExtSuppRates,
--						(PWLAN_IE_SUPP_RATES)pMgmt->abyCurrExtSuppRates,
-+	pMgmt->abyCurrExtSuppRates[1] = RATEuSetIE((PWLAN_IE_SUPP_RATES) pExtSuppRates,
-+						(PWLAN_IE_SUPP_RATES) pMgmt->abyCurrExtSuppRates,
- 						uRateLen);
- 	RATEvParseMaxRate((void *) pDevice,
--			  (PWLAN_IE_SUPP_RATES)pMgmt->abyCurrSuppRates,
--			  (PWLAN_IE_SUPP_RATES)pMgmt->abyCurrExtSuppRates,
-+			  (PWLAN_IE_SUPP_RATES) pMgmt->abyCurrSuppRates,
-+			  (PWLAN_IE_SUPP_RATES) pMgmt->abyCurrExtSuppRates,
- 			  true,
- 			  &(pMgmt->sNodeDBTable[0].wMaxBasicRate),
- 			  &(pMgmt->sNodeDBTable[0].wMaxSuppRate),
-@@ -767,8 +767,8 @@ void BSSvAddMulticastNode(struct vnt_private *pDevice)
- 	pMgmt->sNodeDBTable[0].bPSEnable = false;
- 	skb_queue_head_init(&pMgmt->sNodeDBTable[0].sTxPSQueue);
- 	RATEvParseMaxRate((void *) pDevice,
--			  (PWLAN_IE_SUPP_RATES)pMgmt->abyCurrSuppRates,
--			  (PWLAN_IE_SUPP_RATES)pMgmt->abyCurrExtSuppRates,
-+			  (PWLAN_IE_SUPP_RATES) pMgmt->abyCurrSuppRates,
-+			  (PWLAN_IE_SUPP_RATES) pMgmt->abyCurrExtSuppRates,
- 			  true,
- 			  &(pMgmt->sNodeDBTable[0].wMaxBasicRate),
- 			  &(pMgmt->sNodeDBTable[0].wMaxSuppRate),
-@@ -809,9 +809,9 @@ void BSSvSecondCallBack(struct work_struct *work)
- 	pDevice->uAssocCount = 0;
- 
- 	/* Power Saving Mode Tx Burst */
--	if ( pDevice->bEnablePSMode == true ) {
-+	if (pDevice->bEnablePSMode == true) {
- 		pDevice->ulPSModeWaitTx++;
--		if ( pDevice->ulPSModeWaitTx >= 2 ) {
-+		if (pDevice->ulPSModeWaitTx >= 2) {
- 			pDevice->ulPSModeWaitTx = 0;
- 			pDevice->bPSModeTxBurst = false;
- 		}
-@@ -828,25 +828,25 @@ void BSSvSecondCallBack(struct work_struct *work)
- 		pDevice->byERPFlag &= ~(WLAN_SET_ERP_USE_PROTECTION(1));
- 	}
- 
--	if(pDevice->byReAssocCount > 0) {
-+	if (pDevice->byReAssocCount > 0) {
- 		pDevice->byReAssocCount++;
--		if((pDevice->byReAssocCount > 10) && (pDevice->bLinkPass != true)) {  /* 10 sec timeout */
-+		if ((pDevice->byReAssocCount > 10) && (pDevice->bLinkPass != true)) {  /* 10 sec timeout */
- 			printk("Re-association timeout!!!\n");
- 			pDevice->byReAssocCount = 0;
--			/* if(pDevice->bWPASuppWextEnabled == true) */
-+			/* if (pDevice->bWPASuppWextEnabled == true) */
- 			{
- 				union iwreq_data  wrqu;
--				memset(&wrqu, 0, sizeof (wrqu));
-+				memset(&wrqu, 0, sizeof(wrqu));
- 				wrqu.ap_addr.sa_family = ARPHRD_ETHER;
- 				PRINT_K("wireless_send_event--->SIOCGIWAP(disassociated)\n");
- 				wireless_send_event(pDevice->dev, SIOCGIWAP, &wrqu, NULL);
- 			}
- 		}
--		else if(pDevice->bLinkPass == true)
-+		else if (pDevice->bLinkPass == true)
- 			pDevice->byReAssocCount = 0;
- 	}
- 
--	pMgmt->eLastState = pMgmt->eCurrState ;
-+	pMgmt->eLastState = pMgmt->eCurrState;
- 
- 	s_uCalculateLinkQual(pDevice);
- 
-@@ -893,13 +893,13 @@ void BSSvSecondCallBack(struct work_struct *work)
- 			if (!pDevice->bFixRate) {
- 				if (ii > 0) {
- 					/* ii = 0 for multicast node (AP & Adhoc) */
--					RATEvTxRateFallBack((void *)pDevice,
-+					RATEvTxRateFallBack((void *) pDevice,
- 						&(pMgmt->sNodeDBTable[ii]));
- 				}
- 				else {
- 					/* ii = 0 reserved for unicast AP node (Infra STA) */
- 					if (pMgmt->eCurrMode == WMAC_MODE_ESS_STA)
--						RATEvTxRateFallBack((void *)pDevice,
-+						RATEvTxRateFallBack((void *) pDevice,
- 							&(pMgmt->sNodeDBTable[ii]));
- 				}
- 
-@@ -940,14 +940,14 @@ void BSSvSecondCallBack(struct work_struct *work)
- 			if (pDevice->bShortSlotTime) {
- 				pDevice->bShortSlotTime = false;
- 				BBvSetShortSlotTime(pDevice);
--				vUpdateIFS((void *)pDevice);
-+				vUpdateIFS((void *) pDevice);
- 			}
- 		}
- 		else {
- 			if (!pDevice->bShortSlotTime) {
- 				pDevice->bShortSlotTime = true;
- 				BBvSetShortSlotTime(pDevice);
--				vUpdateIFS((void *)pDevice);
-+				vUpdateIFS((void *) pDevice);
- 			}
- 		}
- 
-@@ -976,8 +976,8 @@ void BSSvSecondCallBack(struct work_struct *work)
- 			pMgmt->sNodeDBTable[0].bPSEnable = false;
- 	}
- 
--	pItemSSID = (PWLAN_IE_SSID)pMgmt->abyDesireSSID;
--	pCurrSSID = (PWLAN_IE_SSID)pMgmt->abyCurrSSID;
-+	pItemSSID = (PWLAN_IE_SSID) pMgmt->abyDesireSSID;
-+	pCurrSSID = (PWLAN_IE_SSID) pMgmt->abyCurrSSID;
- 
- 	if ((pMgmt->eCurrMode == WMAC_MODE_STANDBY) ||
- 		(pMgmt->eCurrMode == WMAC_MODE_ESS_STA)) {
-@@ -990,7 +990,7 @@ void BSSvSecondCallBack(struct work_struct *work)
- 			}
- 
- 			if ((pMgmt->sNodeDBTable[0].uInActiveCount >= (LOST_BEACON_COUNT/2)) &&
--				(pDevice->byBBVGACurrent != pDevice->abyBBVGA[0]) ) {
-+				(pDevice->byBBVGACurrent != pDevice->abyBBVGA[0])) {
- 				pDevice->byBBVGANew = pDevice->abyBBVGA[0];
- 				bScheduleCommand((void *) pDevice,
- 					WLAN_CMD_CHANGE_BBSENSITIVITY,
-@@ -1011,7 +1011,7 @@ void BSSvSecondCallBack(struct work_struct *work)
- 				/* let wpa supplicant know AP may disconnect */
- 				{
- 					union iwreq_data  wrqu;
--					memset(&wrqu, 0, sizeof (wrqu));
-+					memset(&wrqu, 0, sizeof(wrqu));
- 						wrqu.ap_addr.sa_family = ARPHRD_ETHER;
- 					PRINT_K("wireless_send_event--->SIOCGIWAP(disassociated)\n");
- 					wireless_send_event(pDevice->dev, SIOCGIWAP, &wrqu, NULL);
-@@ -1021,9 +1021,9 @@ void BSSvSecondCallBack(struct work_struct *work)
- 		else if (pItemSSID->len != 0) {
- 			/* Davidwang */
- 			if ((pDevice->bEnableRoaming == true)&&(!(pMgmt->Cisco_cckm))) {
--				DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "bRoaming %d, !\n", pDevice->bRoaming );
--				DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "bIsRoaming %d, !\n", pDevice->bIsRoaming );
--				if ((pDevice->bRoaming == true) && (pDevice->bIsRoaming == true)){
-+				DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "bRoaming %d, !\n", pDevice->bRoaming);
-+				DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "bIsRoaming %d, !\n", pDevice->bIsRoaming);
-+				if ((pDevice->bRoaming == true) && (pDevice->bIsRoaming == true)) {
- 					DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Fast   Roaming ...\n");
- 					BSSvClearBSSList((void *) pDevice, pDevice->bLinkPass);
- 					bScheduleCommand((void *) pDevice,
-@@ -1046,12 +1046,12 @@ void BSSvSecondCallBack(struct work_struct *work)
- 				if (pDevice->uAutoReConnectTime < 10) {
- 					pDevice->uAutoReConnectTime++;
- 					/* network manager support need not do Roaming scan??? */
--					if(pDevice->bWPASuppWextEnabled == true)
-+					if (pDevice->bWPASuppWextEnabled == true)
- 						pDevice->uAutoReConnectTime = 0;
- 				}
- 				else {
- 					/* mike use old encryption status for wpa reauthen */
--					if(pDevice->bWPADEVUp)
-+					if (pDevice->bWPADEVUp)
- 						pDevice->eEncryptionStatus = pDevice->eOldEncryptionStatus;
- 
- 					DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Roaming ...\n");
-@@ -1164,11 +1164,11 @@ void BSSvUpdateNodeTxCounter(struct vnt_private *pDevice, u8 byTSR, u8 byPktNO)
- 	if (wFIFOCtl & FIFOCTL_NEEDACK) {
- 		if (pMgmt->eCurrMode == WMAC_MODE_ESS_STA) {
- 			pMgmt->sNodeDBTable[0].uTxAttempts += 1;
--			if ( !(byTSR & (TSR_TMO | TSR_RETRYTMO))) {
-+			if (!(byTSR & (TSR_TMO | TSR_RETRYTMO))) {
- 				/* transmit success, TxAttempts at least plus one */
- 				pMgmt->sNodeDBTable[0].uTxOk[MAX_RATE]++;
--				if ( (byFallBack == AUTO_FB_NONE) ||
--					 (wRate < RATE_18M) ) {
-+				if ((byFallBack == AUTO_FB_NONE) ||
-+					 (wRate < RATE_18M)) {
- 					wFallBackRate = wRate;
- 				} else if (byFallBack == AUTO_FB_0) {
- 					if (byTxRetry < 5)
-@@ -1188,8 +1188,8 @@ void BSSvUpdateNodeTxCounter(struct vnt_private *pDevice, u8 byTSR, u8 byPktNO)
- 			pMgmt->sNodeDBTable[0].uTxRetry += byTxRetry;
- 			if (byTxRetry != 0) {
- 				pMgmt->sNodeDBTable[0].uTxFail[MAX_RATE] += byTxRetry;
--				if ( (byFallBack == AUTO_FB_NONE) ||
--					(wRate < RATE_18M) ) {
-+				if ((byFallBack == AUTO_FB_NONE) ||
-+					(wRate < RATE_18M)) {
- 					pMgmt->sNodeDBTable[0].uTxFail[wRate] += byTxRetry;
- 				} else if (byFallBack == AUTO_FB_0) {
- 					for (ii = 0; ii < byTxRetry; ii++) {
-@@ -1222,11 +1222,11 @@ void BSSvUpdateNodeTxCounter(struct vnt_private *pDevice, u8 byTSR, u8 byPktNO)
- 						  pbyDestAddr,
- 						  &uNodeIndex)) {
- 				pMgmt->sNodeDBTable[uNodeIndex].uTxAttempts += 1;
--				if ( !(byTSR & (TSR_TMO | TSR_RETRYTMO))) {
-+				if (!(byTSR & (TSR_TMO | TSR_RETRYTMO))) {
- 					/* transmit success, TxAttempts at least plus one */
- 					pMgmt->sNodeDBTable[uNodeIndex].uTxOk[MAX_RATE]++;
--					if ( (byFallBack == AUTO_FB_NONE) ||
--						(wRate < RATE_18M) ) {
-+					if ((byFallBack == AUTO_FB_NONE) ||
-+						(wRate < RATE_18M)) {
- 						wFallBackRate = wRate;
- 					} else if (byFallBack == AUTO_FB_0) {
- 						if (byTxRetry < 5)
-@@ -1246,8 +1246,8 @@ void BSSvUpdateNodeTxCounter(struct vnt_private *pDevice, u8 byTSR, u8 byPktNO)
- 				pMgmt->sNodeDBTable[uNodeIndex].uTxRetry += byTxRetry;
- 				if (byTxRetry != 0) {
- 					pMgmt->sNodeDBTable[uNodeIndex].uTxFail[MAX_RATE] += byTxRetry;
--					if ( (byFallBack == AUTO_FB_NONE) ||
--						(wRate < RATE_18M) ) {
-+					if ((byFallBack == AUTO_FB_NONE) ||
-+						(wRate < RATE_18M)) {
- 						pMgmt->sNodeDBTable[uNodeIndex].uTxFail[wRate] += byTxRetry;
- 					} else if (byFallBack == AUTO_FB_0) {
- 						for (ii = 0; ii < byTxRetry; ii++) {
-@@ -1299,7 +1299,7 @@ void BSSvClearNodeDBTable(struct vnt_private *pDevice, u32 uStartIndex)
- 		if (pMgmt->sNodeDBTable[ii].bActive) {
- 			/* check if sTxPSQueue has been initial */
- 			if (pMgmt->sNodeDBTable[ii].sTxPSQueue.next != NULL) {
--				while ((skb = skb_dequeue(&pMgmt->sNodeDBTable[ii].sTxPSQueue)) != NULL){
-+				while ((skb = skb_dequeue(&pMgmt->sNodeDBTable[ii].sTxPSQueue)) != NULL) {
- 					DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "PS skb != NULL %d\n", ii);
- 					dev_kfree_skb(skb);
- 				}
-@@ -1317,7 +1317,7 @@ static void s_vCheckSensitivity(struct vnt_private *pDevice)
- 
- 	if ((pMgmt->eCurrState == WMAC_STATE_ASSOC) ||
- 		((pMgmt->eCurrMode == WMAC_MODE_IBSS_STA) && (pMgmt->eCurrState == WMAC_STATE_JOINTED))) {
--		pBSSList = BSSpAddrIsInBSSList(pDevice, pMgmt->abyCurrBSSID, (PWLAN_IE_SSID)pMgmt->abyCurrSSID);
-+		pBSSList = BSSpAddrIsInBSSList(pDevice, pMgmt->abyCurrBSSID, (PWLAN_IE_SSID) pMgmt->abyCurrSSID);
- 		if (pBSSList != NULL) {
- 			/* Update BB register if RSSI is too strong */
- 			signed long    LocalldBmAverage = 0;
-@@ -1373,7 +1373,7 @@ static void s_uCalculateLinkQual(struct vnt_private *pDevice)
- 	if (pDevice->bLinkPass != true) {
- 		pDevice->wstats.qual.qual = 0;
- 	} else {
--		RFvRSSITodBm(pDevice, (u8)(pDevice->uCurrRSSI), &ldBm);
-+		RFvRSSITodBm(pDevice, (u8) (pDevice->uCurrRSSI), &ldBm);
- 		if (-ldBm < 50)
- 			RssiRatio = 4000;
- 		else if (-ldBm > 90)
-@@ -1383,7 +1383,7 @@ static void s_uCalculateLinkQual(struct vnt_private *pDevice)
- 
- 		qual = (RssiRatio + TxOkRatio + RxOkRatio) / 100;
- 		if (qual < 100)
--			pDevice->wstats.qual.qual = (u8)qual;
-+			pDevice->wstats.qual.qual = (u8) qual;
- 		else
- 			pDevice->wstats.qual.qual = 100;
- 	}
-@@ -1407,7 +1407,7 @@ static void s_vCheckPreEDThreshold(struct vnt_private *pDevice)
- 
- 	if ((pMgmt->eCurrState == WMAC_STATE_ASSOC) ||
- 		((pMgmt->eCurrMode == WMAC_MODE_IBSS_STA) && (pMgmt->eCurrState == WMAC_STATE_JOINTED))) {
--		pBSSList = BSSpAddrIsInBSSList(pDevice, pMgmt->abyCurrBSSID, (PWLAN_IE_SSID)pMgmt->abyCurrSSID);
-+		pBSSList = BSSpAddrIsInBSSList(pDevice, pMgmt->abyCurrBSSID, (PWLAN_IE_SSID) pMgmt->abyCurrSSID);
- 		if (pBSSList != NULL) {
- 			pDevice->byBBPreEDRSSI = (u8) (~(pBSSList->ldBmAverRange) + 1);
- 			BBvUpdatePreEDThreshold(pDevice, false);
--- 
-1.8.1.2
+Random aside: this simplification made the special spurious
+access_ok() check in kernel/futex.c (the NULL user pointer check in
+futex_init()) just go away entirely, because the compiler could now
+see that it can never trigger for a NULL pointer.. Not a performance
+issue, but it was kind of funny to notice how getting rid of the
+inline asm actually made the compiler able to notice that.
 
+                  Linus
+
+--001a11c2a3368d2fe404ee7498ac
+Content-Type: application/octet-stream; name=vfs-simplify-uaccess-range
+Content-Disposition: attachment; filename=vfs-simplify-uaccess-range
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hpodmihc0
+
+IGFyY2gveDg2L2luY2x1ZGUvYXNtL3VhY2Nlc3MuaCB8IDI4ICsrKysrKysrKysrKysrKysrLS0t
+LS0tLS0tLS0KIDEgZmlsZSBjaGFuZ2VkLCAxNyBpbnNlcnRpb25zKCspLCAxMSBkZWxldGlvbnMo
+LSkKCmRpZmYgLS1naXQgYS9hcmNoL3g4Ni9pbmNsdWRlL2FzbS91YWNjZXNzLmggYi9hcmNoL3g4
+Ni9pbmNsdWRlL2FzbS91YWNjZXNzLmgKaW5kZXggOGVjNTdjMDdiMTI1Li44NGVjZjFkZjJhYzYg
+MTAwNjQ0Ci0tLSBhL2FyY2gveDg2L2luY2x1ZGUvYXNtL3VhY2Nlc3MuaAorKysgYi9hcmNoL3g4
+Ni9pbmNsdWRlL2FzbS91YWNjZXNzLmgKQEAgLTQwLDIyICs0MCwyOCBAQAogLyoKICAqIFRlc3Qg
+d2hldGhlciBhIGJsb2NrIG9mIG1lbW9yeSBpcyBhIHZhbGlkIHVzZXIgc3BhY2UgYWRkcmVzcy4K
+ICAqIFJldHVybnMgMCBpZiB0aGUgcmFuZ2UgaXMgdmFsaWQsIG5vbnplcm8gb3RoZXJ3aXNlLgot
+ICoKLSAqIFRoaXMgaXMgZXF1aXZhbGVudCB0byB0aGUgZm9sbG93aW5nIHRlc3Q6Ci0gKiAodTMz
+KWFkZHIgKyAodTMzKXNpemUgPiAodTMzKWN1cnJlbnQtPmFkZHJfbGltaXQuc2VnICh1NjUgZm9y
+IHg4Nl82NCkKLSAqCi0gKiBUaGlzIG5lZWRzIDMzLWJpdCAoNjUtYml0IGZvciB4ODZfNjQpIGFy
+aXRobWV0aWMuIFdlIGhhdmUgYSBjYXJyeS4uLgogICovCitzdGF0aWMgaW5saW5lIGludCBfX2No
+a19yYW5nZV9ub3Rfb2sodW5zaWduZWQgbG9uZyBhZGRyLCB1bnNpZ25lZCBsb25nIHNpemUsIHVu
+c2lnbmVkIGxvbmcgbGltaXQpCit7CisJLyoKKwkgKiBJZiB3ZSBoYXZlIHVzZWQgInNpemVvZigp
+IiBmb3IgdGhlIHNpemUsCisJICogd2Uga25vdyBpdCB3b24ndCBvdmVyZmxvdyB0aGUgbGltaXQg
+KGJ1dAorCSAqIGl0IG1pZ2h0IG92ZXJmbG93IHRoZSAnYWRkcicsIHNvIGl0J3MKKwkgKiBpbXBv
+cnRhbnQgdG8gc3VidHJhY3QgdGhlIHNpemUgZnJvbSB0aGUKKwkgKiBsaW1pdCwgbm90IGFkZCBp
+dCB0byB0aGUgYWRkcmVzcykuCisJICovCisJaWYgKF9fYnVpbHRpbl9jb25zdGFudF9wKHNpemUp
+KQorCQlyZXR1cm4gYWRkciA+IGxpbWl0IC0gc2l6ZTsKKworCS8qIEFyYml0cmFyeSBzaXplcz8g
+QmUgY2FyZWZ1bCBhYm91dCBvdmVyZmxvdyAqLworCWFkZHIgKz0gc2l6ZTsKKwlyZXR1cm4gKGFk
+ZHIgPCBzaXplKSB8fCAoYWRkciA+IGxpbWl0KTsKK30KIAogI2RlZmluZSBfX3JhbmdlX25vdF9v
+ayhhZGRyLCBzaXplLCBsaW1pdCkJCQkJXAogKHsJCQkJCQkJCQlcCi0JdW5zaWduZWQgbG9uZyBm
+bGFnLCByb2tzdW07CQkJCQlcCiAJX19jaGtfdXNlcl9wdHIoYWRkcik7CQkJCQkJXAotCWFzbSgi
+YWRkICUzLCUxIDsgc2JiICUwLCUwIDsgY21wICUxLCU0IDsgc2JiICQwLCUwIgkJXAotCSAgICA6
+ICI9JnIiIChmbGFnKSwgIj1yIiAocm9rc3VtKQkJCQlcCi0JICAgIDogIjEiIChhZGRyKSwgImci
+ICgobG9uZykoc2l6ZSkpLAkJCQlcCi0JICAgICAgInJtIiAobGltaXQpKTsJCQkJCQlcCi0JZmxh
+ZzsJCQkJCQkJCVwKKwlfX2Noa19yYW5nZV9ub3Rfb2soKHVuc2lnbmVkIGxvbmcgX19mb3JjZSko
+YWRkciksIHNpemUsIGxpbWl0KTsgXAogfSkKIAogLyoqCg==
+--001a11c2a3368d2fe404ee7498ac--
