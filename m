@@ -1,103 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375Ab3LZWA2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 17:00:28 -0500
-Received: from mail.wdtv.com ([66.118.69.84]:36588 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752733Ab3LZWA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 17:00:27 -0500
-From: Gene Heskett <gheskett@wdtv.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Subject: Re: section miss-matches in older 3.8.3 kernel, and one question
-Date: Thu, 26 Dec 2013 17:00:17 -0500
-Cc: lkml <linux-kernel@vger.kernel.org>
-References: <201312261358.59464.gheskett@wdtv.com> <52BC8C74.3060205@infradead.org> <201312261641.10746.gheskett@wdtv.com>
-In-Reply-To: <201312261641.10746.gheskett@wdtv.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1256"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312261700.17621.gheskett@wdtv.com>
+	id S1753908Ab3LZWDz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 17:03:55 -0500
+Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:23758 "EHLO
+	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752140Ab3LZWDy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Dec 2013 17:03:54 -0500
+To: akpm@linux-foundation.org, torvalds@linux-foundation.org
+Cc: paulmck@linux.vnet.ibm.com, normalperson@yhbt.net, nzimmer@sgi.com,
+        viro@zeniv.linux.org.uk, nelhage@nelhage.com, davidel@xmailserver.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+From: Jason Baron <jbaron@akamai.com>
+Subject: [PATCH] epoll: Do not take the nested ep->mtx on EPOLL_CTL_DEL
+Message-Id: <20131226220353.254A9FE054@prod-mail-relay02.akamai.com>
+Date: Thu, 26 Dec 2013 22:03:53 +0000 (GMT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 26 December 2013, Gene Heskett wrote:
->On Thursday 26 December 2013, Randy Dunlap wrote:
->>On 12/26/13 10:58, Gene Heskett wrote:
->>> Greetings;
->>> 
->>> In my attempts to find a 64 bit or PAE enabled kernel to run on my
->>> older ASUS M2N-SLI Delux mobo, I saw a note go by during the build
->>> that there were 9 section-miss-matches.
->>> 
->>> But when I applied the cli option recommended to the make lines in my
->>> makeit script, I only got these 2 squawks.
->>> 
->>> WARNING: drivers/net/ethernet/amd/depca.o(.text+0xcce): Section
->>> mismatch in reference from the function depca_isa_probe() to the
->>> function
->>> .init.text:DepcaSignature()
->>> The function depca_isa_probe() references
->>> the function __init DepcaSignature().
->>> This is often because depca_isa_probe lacks a __init
->>> annotation or the annotation of DepcaSignature is wrong.
->>> 
->>> WARNING: drivers/net/ethernet/amd/depca.o(.text+0xd22): Section
->>> mismatch in reference from the function depca_isa_probe() to the
->>> function
->>> .init.text:depca_hw_init()
->>> The function depca_isa_probe() references
->>> the function __init depca_hw_init().
->>> This is often because depca_isa_probe lacks a __init
->>> annotation or the annotation of depca_hw_init is wrong.
->>> 
->>> I am not capable to fixing these, too many years & miles on the wet
->>> ram, but I thought that maybe someone might be interested.
->>
->>This driver was removed from the kernel source tree on Jan. 16, 2013.
->>
->>Sure, it's still in 3.8.x so those section mismatches could be fixed,
->>but most section mismatches have been recently fixed by eliminating
->>CONFIG_HOTPLUG and removing the use of all __devinit* and __devexit*.
->>
->>Do you use this driver?  is it barfing?
->>or you just happened to build it and saw these warnings?
->
->The latter Randy, and I can recall when they were moderately important in
->the 2.6 days.  FWIW, I just built, but haven't reboot tested yet, a
->3.12.0, with no reported errors... But now kmail is back to freezing its
->composer for 2 or 3 minutes at a time while running 3.8.3. 3.8.2 didn't
->do that nearly as often.
->
->Thanks, Randy
->
->Cheers, Gene
+The EPOLL_CTL_DEL path of epoll contains a classic, ab-ba deadlock. That is,
+epoll_ctl(a, EPOLL_CTL_DEL, b, x), will deadlock with epoll_ctl(b,
+EPOLL_CTL_DEL, a, x). The deadlock was introduced with commmit 67347fe4e6326
+(epoll: do not take global 'epmutex' for simple topologies).
 
-A 3rd ps, 3.12.0 now running, but I see this in dmesg:
+The acquistion of the ep->mtx for the destination 'ep' was added such that a
+concurrent EPOLL_CTL_ADD operation would see the correct state of the ep.
+(Specifically, the check for '!list_empty(&f.file->f_ep_links'.)
+However, by simply not acquiring the lock, we do not serialize behind
+the ep->mtx from the add path, and thus may perform a full path check when if we
+had waited a little longer it may not have been necessary. However, this is a
+transient state, and performing the full loop checking in this case is not
+harmful.
 
-microcode: CPU0: patch_level=0x01000065
-microcode: CPU1: patch_level=0x01000065
-microcode: CPU2: patch_level=0x01000065
-microcode: CPU3: patch_level=0x01000065
-microcode: Microcode Update Driver: v2.00 <tigran@aivazian.fsnet.co.uk>, 
-Peter Oruba
+The important point is that we wouldn't miss doing the full loop checking when
+required, since EPOLL_CTL_ADD always locks any 'ep's that its operating upon.
+The reason we don't need to do lock ordering in the add path, is that
+we are already are holding the global 'epmutex' whenever we do the
+double lock. Further, the original posting of this patch, which was tested
+for the intended performance gains, did not perform this additional locking.
 
-The correct patch level for this phenom cpu is 0x01000083
+Signed-off-by: Jason Baron <jbaron@akamai.com>
+---
+ fs/eventpoll.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
-I had enabled an option for early microcode, perhaps I should disable it 
-and rebuild?
-
-Cheers, Gene
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index 8b5e258..af90312 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -1907,10 +1907,6 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
+ 			}
+ 		}
+ 	}
+-	if (op == EPOLL_CTL_DEL && is_file_epoll(tf.file)) {
+-		tep = tf.file->private_data;
+-		mutex_lock_nested(&tep->mtx, 1);
+-	}
+ 
+ 	/*
+ 	 * Try to lookup the file inside our RB tree, Since we grabbed "mtx"
 -- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Genes Web page <http://geneslinuxbox.net:6309/gene>
+1.8.2
 
-job interview, n.:
-	The excruciating process during which personnel officers
-	separate the wheat from the chaff -- then hire the chaff.
-A pen in the hand of this president is far more
-dangerous than 200 million guns in the hands of
-         law-abiding citizens.
