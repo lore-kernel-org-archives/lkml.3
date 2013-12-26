@@ -1,107 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab3LZTX7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 14:23:59 -0500
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:50292 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753651Ab3LZTX6 (ORCPT
+	id S1753803Ab3LZTbF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 14:31:05 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:45172 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658Ab3LZTbD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 14:23:58 -0500
-From: Matthias Schoepe <matthias.schoepe@studium.uni-erlangen.de>
-To: devel@driverdev.osuosl.org
-Cc: andreas.frembs@studium.uni-erlangen.de, linux-kernel@i4.cs.fau.de,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        Matthias Schoepe <matthias.schoepe@studium.uni-erlangen.de>
-Subject: [PATCH] Staging rtl8192e: Fixing checkpatch errors
-Date: Thu, 26 Dec 2013 20:23:32 +0100
-Message-Id: <1388085812-3914-1-git-send-email-matthias.schoepe@studium.uni-erlangen.de>
-X-Mailer: git-send-email 1.8.1.2
+	Thu, 26 Dec 2013 14:31:03 -0500
+Date: Thu, 26 Dec 2013 11:31:01 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Mike Turquette <mturquette@linaro.org>, linux-arm-msm@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>,
+        Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 03/15] clk: Add regmap core helpers for
+ enable/disable/is_enabled
+Message-ID: <20131226193101.GH31766@codeaurora.org>
+References: <1387847559-18330-1-git-send-email-sboyd@codeaurora.org>
+ <1387847559-18330-4-git-send-email-sboyd@codeaurora.org>
+ <20131224150741.GG8064@book.gsilab.sittig.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131224150741.GG8064@book.gsilab.sittig.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We fixed checkpatch errors of the following type:
-	ERROR: "foo * bar" should be "foo *bar"
+On 12/24, Gerhard Sittig wrote:
+> On Mon, Dec 23, 2013 at 17:12 -0800, Stephen Boyd wrote:
+> > 
+> > The clock framework already has support for simple gate clocks
+> > but if drivers want to use the gate clock functionality they need
+> > to wrap the gate clock in another struct and chain the ops by
+> > calling the gate ops from their own custom ops. Plus the gate
+> > clock implementation only supports MMIO accessors so other bus
+> > type clocks don't benefit from the potential code reuse. Add some
+> > simple regmap helpers for enable/disable/is_enabled that drivers
+> > can use as drop in replacements for their clock ops or as simple
+> > functions they call from their own custom ops. This is based on 
+> > similar helps in the regulator framework.
+> 
+> The same comment applies as to the previous version.  Is it
+> useful to introduce copies of the gate handling while the
+> difference in only in how the hardware registers get accessed?
+> 
 
-The error was fixed in the following files of the rtl8192e staging driver:
-	rtllib_softmac.c
-	rtllib_rx.c
-	rtllib_crypt.c
-	rtllib.h
+I don't plan to use the clk-gate.c implementation because I need
+more than just a bit toggling clock. We can easily make
+clk-gate.c use these helpers if you're worried about the very
+small amount of code duplication between the two. I'd be glad to
+do that, I just didn't include it here because I don't have a use
+for it.
 
-There are no functional changes in this patch.
+> > --- a/include/linux/clk-provider.h
+> > +++ b/include/linux/clk-provider.h
+> > @@ -177,11 +177,21 @@ struct clk_init_data {
+> > [ ... ]
+> > @@ -447,6 +457,9 @@ struct clk *__clk_lookup(const char *name);
+> >  long __clk_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
+> >  			      unsigned long *best_parent_rate,
+> >  			      struct clk **best_parent_p);
+> > +int clk_is_enabled_regmap(struct clk_hw *hw);
+> > +int clk_enable_regmap(struct clk_hw *hw);
+> > +void clk_disable_regmap(struct clk_hw *hw);
+> 
+> Looking at the patch:  Do you expect callers to remember whether
+> a clock gate is backed by mmio or by regmap access, to call a
+> different set of routines? 
 
-Signed-off-by: Matthias Schoepe <matthias.schoepe@studium.uni-erlangen.de>
-Signed-off-by: Andreas Frembs <andreas.frembs@studium.uni-erlangen.de>
+There are only regmap functions. I'm not sure where the choice
+is, but I expect the callers to know what they're doing. If you
+look at the rest of this series you'll see that I assign these
+functions directly to the clk_ops, or I call them from the
+enable/disable functions that need to do some status bit polling
+after the clock is enabled or disabled.
 
----
- drivers/staging/rtl8192e/rtllib.h         | 2 +-
- drivers/staging/rtl8192e/rtllib_crypt.c   | 2 +-
- drivers/staging/rtl8192e/rtllib_rx.c      | 2 +-
- drivers/staging/rtl8192e/rtllib_softmac.c | 4 ++--
- 4 files changed, 5 insertions(+), 5 deletions(-)
+> Should this not be hidden behind the
+> API and be transparent after clock registration?
 
-diff --git a/drivers/staging/rtl8192e/rtllib.h b/drivers/staging/rtl8192e/rtllib.h
-index 05ef49f..83f5f57 100644
---- a/drivers/staging/rtl8192e/rtllib.h
-+++ b/drivers/staging/rtl8192e/rtllib.h
-@@ -2896,7 +2896,7 @@ extern void HTConstructCapabilityElement(struct rtllib_device *ieee,
- extern void HTConstructInfoElement(struct rtllib_device *ieee,
- 				   u8 *posHTInfo, u8 *len, u8 isEncrypt);
- extern void HTConstructRT2RTAggElement(struct rtllib_device *ieee,
--				       u8 *posRT2RTAgg, u8* len);
-+				       u8 *posRT2RTAgg, u8 *len);
- extern void HTOnAssocRsp(struct rtllib_device *ieee);
- extern void HTInitializeHTInfo(struct rtllib_device *ieee);
- extern void HTInitializeBssDesc(struct bss_ht *pBssHT);
-diff --git a/drivers/staging/rtl8192e/rtllib_crypt.c b/drivers/staging/rtl8192e/rtllib_crypt.c
-index 86152d0..60c0ced 100644
---- a/drivers/staging/rtl8192e/rtllib_crypt.c
-+++ b/drivers/staging/rtl8192e/rtllib_crypt.c
-@@ -183,7 +183,7 @@ struct lib80211_crypto_ops *rtllib_get_crypto_ops(const char *name)
- EXPORT_SYMBOL(rtllib_get_crypto_ops);
- 
- 
--static void * rtllib_crypt_null_init(int keyidx) { return (void *) 1; }
-+static void *rtllib_crypt_null_init(int keyidx) { return (void *) 1; }
- static void rtllib_crypt_null_deinit(void *priv) {}
- 
- static struct lib80211_crypto_ops rtllib_crypt_null = {
-diff --git a/drivers/staging/rtl8192e/rtllib_rx.c b/drivers/staging/rtl8192e/rtllib_rx.c
-index 1a011b9..374160d 100644
---- a/drivers/staging/rtl8192e/rtllib_rx.c
-+++ b/drivers/staging/rtl8192e/rtllib_rx.c
-@@ -211,7 +211,7 @@ rtllib_rx_frame_mgmt(struct rtllib_device *ieee, struct sk_buff *skb,
- 	 * this is not mandatory.... but seems that the probe
- 	 * response parser uses it
- 	 */
--	struct rtllib_hdr_3addr * hdr = (struct rtllib_hdr_3addr *)skb->data;
-+	struct rtllib_hdr_3addr *hdr = (struct rtllib_hdr_3addr *)skb->data;
- 
- 	rx_stats->len = skb->len;
- 	rtllib_rx_mgt(ieee, skb, rx_stats);
-diff --git a/drivers/staging/rtl8192e/rtllib_softmac.c b/drivers/staging/rtl8192e/rtllib_softmac.c
-index 933bd6d..304b23e 100644
---- a/drivers/staging/rtl8192e/rtllib_softmac.c
-+++ b/drivers/staging/rtl8192e/rtllib_softmac.c
-@@ -1451,7 +1451,7 @@ static void rtllib_associate_abort_cb(unsigned long dev)
- 	rtllib_associate_abort((struct rtllib_device *) dev);
- }
- 
--static void rtllib_associate_step1(struct rtllib_device *ieee, u8 * daddr)
-+static void rtllib_associate_step1(struct rtllib_device *ieee, u8 *daddr)
- {
- 	struct rtllib_network *beacon = &ieee->current_network;
- 	struct sk_buff *skb;
-@@ -1785,7 +1785,7 @@ void rtllib_softmac_check_all_nets(struct rtllib_device *ieee)
- 	spin_unlock_irqrestore(&ieee->lock, flags);
- }
- 
--static inline u16 auth_parse(struct sk_buff *skb, u8** challenge, int *chlen)
-+static inline u16 auth_parse(struct sk_buff *skb, u8 **challenge, int *chlen)
- {
- 	struct rtllib_authentication *a;
- 	u8 *t;
+I don't really understand what you mean by hiding it behind the
+API? What API? If we're talking about clk_register_gate() I think
+we would need to add a clk_register_regmap_gate() function
+because the reg argument is an __iomem pointer. It doesn't look
+like it can be transparent unless that pointer is reused as an
+offset. I don't attempt to do anything about that here though
+because I don't use the clk-gate.c code.
+
+> 
+> I'd suggest to fold regmap support into Tero Kristo's ll_ops
+> approach, and to discuss this in his v12 thread.
+
+Sure, I'll go look at and reply to that thread. How do you think
+I can benefit from Tero's patch series? From what I can tell
+ll_ops are a simplified version of regmap. Was regmap dismissed
+because the omap clock driver is not actually a platform driver?
+There doesn't seem to be any details in the thread(s) about why
+the ll_ops were proposed over regmap. From my perspective, using
+a regmap like is proposed in my patches is the better way to do
+this and it doesn't require any thing like ll_ops or clk_readl()
+to do it.
+
 -- 
-1.8.5.2
-
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
