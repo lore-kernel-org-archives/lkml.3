@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab3LZPLd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 10:11:33 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:57638 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753244Ab3LZPLb (ORCPT
+	id S1753362Ab3LZPOh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 10:14:37 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:50485 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753335Ab3LZPOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 10:11:31 -0500
-Message-ID: <52BC4720.1070904@linaro.org>
-Date: Thu, 26 Dec 2013 09:11:28 -0600
-From: Alex Elder <alex.elder@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 26 Dec 2013 10:14:35 -0500
+Date: Thu, 26 Dec 2013 16:14:31 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Joseph Schuchart <joseph.schuchart@tu-dresden.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        thomas.ilsche@tu-dresden.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Perf: Correct Assumptions about Sample Timestamps in
+ Passes
+Message-ID: <20131226151429.GA15303@localhost.localdomain>
+References: <528484CB.7@tu-dresden.de>
+ <20131114083930.GC16543@gmail.com>
+ <528490DE.4080204@tu-dresden.de>
+ <20131114100552.GA5064@gmail.com>
+ <528E1EE6.9040407@tu-dresden.de>
+ <20131127135137.GA24403@gmail.com>
+ <52B437AA.4090102@tu-dresden.de>
+ <52B479E1.7020204@gmail.com>
+ <20131223131051.GB585@localhost.localdomain>
+ <52B84C49.70001@gmail.com>
 MIME-Version: 1.0
-To: Sage Weil <sage@inktank.com>, David Miller <davem@davemloft.net>,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, Al Viro <viro@ZenIV.linux.org.uk>, jeffm@suse.com,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>, mst@redhat.com,
-        Ingo Molnar <mingo@kernel.org>
-CC: reiserfs-devel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        ceph-devel <ceph-devel@vger.kernel.org>, netdev@vger.kernel.org
-Subject: [PATCH 0/3] kernel.h: centrally define U32_MAX, etc.
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52B84C49.70001@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Although types u32, s32, u16, s16 and so on are fundamental kernel
-types, there is no central symbolic definition of their maximum and
-minimum values.  In the past I've added and used such definitions
-where I've needed them but they really belong in "kernel.h".
+On Mon, Dec 23, 2013 at 09:44:25AM -0500, David Ahern wrote:
+> On 12/23/13, 8:10 AM, Frederic Weisbecker wrote:
+> >On Fri, Dec 20, 2013 at 10:09:53AM -0700, David Ahern wrote:
+> >>On 12/20/13, 5:27 AM, Joseph Schuchart wrote:
+> >>>I know this comes late, but: As far as I can see, your change does not
+> >>>preserve the logic of the code I suggested. The idea was to first gather
+> >>>all the maximum timestamps of all cpus (that is, the last timestamp seen
+> >>>on each cpu) and then determine the minimum of these maxima. These are
+> >>>two distinct steps that I think cannot be combined in one update. Your
+> >>
+> >>  A number of people have reported similar problems -- timestamps
+> >>below last flush time. This approach would solve that problem for
+> >>data processed from files, so it would be a good improvement.
+> >
+> >Could it be near what you're looking for?
+> >
+> >https://lkml.org/lkml/2012/2/18/53
+> >
+> 
+> Forgot about that patch. It is similar to what Joseph wants for
+> analyzing a file.
+> 
+> I was carrying that patch while working on perf-kvm-stat-live last
+> Fall. It does not solve the problem for live commands, so ended up
+> dropping it and going with local (to the command) hacks. I still
+> think for live commands getting a perf_clock timestamp at the start
+> of a round and using that as the flush time will work best.
 
-This series does this, in three steps.  The first makes existing
-definitions be done conditionally; the second defines them in
-"kernel.h"; and the third gets rid of the conditional definitions.
+Ok, but how would you fetch this perf clock timestamp, with an explicit read?
 
-(These three can obviously be squashed into a single commit.)
-
-    					-Alex
-
-Alex Elder (3):
-  conditionally define U32_MAX
-  kernel.h: define u8, s8, u32, etc. limits
-  remove extra definitions of U32_MAX
-
- fs/reiserfs/reiserfs.h      |    2 --
- include/linux/ceph/decode.h |   17 -----------------
- include/linux/kernel.h      |   13 +++++++++++++
- net/ipv4/tcp_illinois.c     |    1 -
- 4 files changed, 13 insertions(+), 20 deletions(-)
-
--- 
-1.7.9.5
-
+In the meantime, I can fix and post my old patch, which should solve at least
+the perf.data based event stream.
