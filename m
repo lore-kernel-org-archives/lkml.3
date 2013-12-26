@@ -1,72 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab3LZO0l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 09:26:41 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:35222 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753025Ab3LZO0j (ORCPT
+	id S1753299Ab3LZO0q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 09:26:46 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:38829 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753025Ab3LZO0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 09:26:39 -0500
-Date: Thu, 26 Dec 2013 11:26:34 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH] perf stat: Do not show stats if workload fails
-Message-ID: <20131226142634.GF30980@ghostprotocols.net>
-References: <1387518748-25340-1-git-send-email-dsahern@gmail.com>
- <20131220075759.GA12937@gmail.com>
- <20131223193757.GA1396@ghostprotocols.net>
- <52B8D582.9090009@gmail.com>
- <20131224125342.GC17780@ghostprotocols.net>
- <20131224133003.GA23382@ghostprotocols.net>
- <52BC390A.2000504@gmail.com>
- <20131226141507.GD30980@ghostprotocols.net>
- <52BC3AA9.1020404@gmail.com>
+	Thu, 26 Dec 2013 09:26:43 -0500
+Message-ID: <52BC3CA1.7000701@linaro.org>
+Date: Thu, 26 Dec 2013 08:26:41 -0600
+From: Alex Elder <alex.elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52BC3AA9.1020404@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mike Turquette <mturquette@linaro.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] clk: support hardware-specific debugfs entries
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Dec 26, 2013 at 09:18:17AM -0500, David Ahern escreveu:
-> On 12/26/13, 9:15 AM, Arnaldo Carvalho de Melo wrote:
-> >Right, but I can't apply that patch, as it makes 'perf stat
-> >whatever-workload' to fail, as I realized when doing a demo to someone
-> >interested in using perf ;-\
-> >
-> >So for now I'm not applying that one.
-> 
-> right, so you want one with < 0 check or wait for something else? I
-> was not expecting to find it in your perf/core branch, yet there it
-> is.
+Add a new clk_ops->debug_init method to allow a clock hardware
+driver to populate the clock's debugfs directory with entries
+beyond those common for every clock.
 
-I'll remove it from there, but try it, IIRC there will be some other
-problem :-\
+Signed-off-by: Alex Elder <elder@linaro.org>
+---
+ drivers/clk/clk.c            |    4 ++++
+ include/linux/clk-provider.h |   10 ++++++++++
+ 2 files changed, 14 insertions(+)
 
-I'd have to reread the messages I sent, but from what I recall the
-return from perf_evlist__start_workload() will _always_ be valid, i.e.
-what you're testing there is just if the parent wrote a byte to a pipe
-to signal the waiting child to call exec, and that _will_ work, the
-exec()? perhaps not, you'd have to setup the signal error reporting
-mechanism, etc.
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 2cf2ea6..c82a1bc 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -268,6 +268,10 @@ static int clk_debug_create_one(struct clk *clk,
+struct dentry *pdentry)
+ 	if (!d)
+ 		goto err_out;
 
-Perhaps this should be somehow done by perf_evlist__start_workload, so
-that what it reports is the result of the exec in the child, and not
-merely if it managed to tell it to try to exec...
++	if (clk->ops->debug_init)
++		if (clk->ops->debug_init(clk->hw, clk->dentry))
++			goto err_out;
++
+ 	ret = 0;
+ 	goto out;
 
-- Arnaldo
- 
-> >
-> >Ah, at this point elves are everywhere, dammit! ;-)
-> 
-> An elf put it there?
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 7e59253..4812512 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -31,6 +31,7 @@
+ #define CLK_SET_RATE_NO_REPARENT BIT(7) /* don't re-parent on rate
+change */
 
-Right, dwarves may be involved, didn't had the time to figure that
-out...
- 
-> David
+ struct clk_hw;
++struct dentry;
+
+ /**
+  * struct clk_ops -  Callback operations for hardware clocks; these are to
+@@ -108,6 +109,12 @@ struct clk_hw;
+  *		which is likely helpful for most .set_rate implementation.
+  *		Returns 0 on success, -EERROR otherwise.
+  *
++ * @debug_init:	Set up type-specific debugfs entries for this clock.  This
++ *		is called once, after the debugfs directory entry for this
++ *		clock has been created.  The dentry pointer representing that
++ *		directory is provided as an argument.  Called with
++ *		prepare_lock held.  Returns 0 on success, -EERROR otherwise.
++ *
+  * The clk_enable/clk_disable and clk_prepare/clk_unprepare pairs allow
+  * implementations to split any work between atomic (enable) and sleepable
+  * (prepare) contexts.  If enabling a clock requires code that might sleep,
+@@ -140,6 +147,9 @@ struct clk_ops {
+ 	int		(*set_rate)(struct clk_hw *hw, unsigned long,
+ 				    unsigned long);
+ 	void		(*init)(struct clk_hw *hw);
++#ifdef CONFIG_COMMON_CLK_DEBUG
++	int		(*debug_init)(struct clk_hw *hw, struct dentry *dentry);
++#endif
+ };
+
+ /**
+-- 
+1.7.9.5
+
