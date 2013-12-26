@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734Ab3LZKWr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 05:22:47 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:64899 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713Ab3LZKWf (ORCPT
+	id S1752857Ab3LZKXS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 05:23:18 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:34796 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752574Ab3LZKWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 05:22:35 -0500
+	Thu, 26 Dec 2013 05:22:45 -0500
 From: Tushar Behera <tushar.behera@linaro.org>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-samsung-soc@vger.kernel.org
 Cc: mturquette@linaro.org, lee.jones@linaro.org, kgene.kim@samsung.com,
         patches@linaro.org
-Subject: [PATCH RESEND 1/4] clk: clk-s2mps11: Refactor for including support for other MFD clocks
-Date: Thu, 26 Dec 2013 15:48:58 +0530
-Message-Id: <1388053141-30085-2-git-send-email-tushar.behera@linaro.org>
+Subject: [PATCH RESEND 4/4] ARM: dts: Add S5M8767 clock nodes on Arndale board
+Date: Thu, 26 Dec 2013 15:49:01 +0530
+Message-Id: <1388053141-30085-5-git-send-email-tushar.behera@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1388053141-30085-1-git-send-email-tushar.behera@linaro.org>
 References: <1383202124-1775-1-git-send-email-tushar.behera@linaro.org>
@@ -23,91 +23,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The clocks in S2MPS11 and S5M8767 are managed in the same way, baring
-a difference in the register offset. It would be better to update
-existing S2MPS11 driver to support the clocks in S5M8767, rather than
-creating an almost duplicate driver altogether.
-
 Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
 Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-Reviewed-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
-CC: Mike Turquette <mturquette@linaro.org>
 ---
- drivers/clk/clk-s2mps11.c |   20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
+ arch/arm/boot/dts/exynos5250-arndale.dts |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
-index 00a3abe..43e25bb 100644
---- a/drivers/clk/clk-s2mps11.c
-+++ b/drivers/clk/clk-s2mps11.c
-@@ -48,6 +48,7 @@ struct s2mps11_clk {
- 	struct clk_lookup *lookup;
- 	u32 mask;
- 	bool enabled;
-+	unsigned int reg;
- };
- 
- static struct s2mps11_clk *to_s2mps11_clk(struct clk_hw *hw)
-@@ -61,7 +62,7 @@ static int s2mps11_clk_prepare(struct clk_hw *hw)
- 	int ret;
- 
- 	ret = regmap_update_bits(s2mps11->iodev->regmap_pmic,
--				S2MPS11_REG_RTC_CTRL,
-+				 s2mps11->reg,
- 				 s2mps11->mask, s2mps11->mask);
- 	if (!ret)
- 		s2mps11->enabled = true;
-@@ -74,7 +75,7 @@ static void s2mps11_clk_unprepare(struct clk_hw *hw)
- 	struct s2mps11_clk *s2mps11 = to_s2mps11_clk(hw);
- 	int ret;
- 
--	ret = regmap_update_bits(s2mps11->iodev->regmap_pmic, S2MPS11_REG_RTC_CTRL,
-+	ret = regmap_update_bits(s2mps11->iodev->regmap_pmic, s2mps11->reg,
- 			   s2mps11->mask, ~s2mps11->mask);
- 
- 	if (!ret)
-@@ -155,6 +156,7 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
- 	struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
- 	struct s2mps11_clk *s2mps11_clks, *s2mps11_clk;
- 	struct device_node *clk_np = NULL;
-+	unsigned int s2mps11_reg;
- 	int i, ret = 0;
- 	u32 val;
- 
-@@ -169,13 +171,23 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
- 	if (IS_ERR(clk_np))
- 		return PTR_ERR(clk_np);
- 
-+	switch(platform_get_device_id(pdev)->driver_data) {
-+	case S2MPS11X:
-+		s2mps11_reg = S2MPS11_REG_RTC_CTRL;
-+		break;
-+	default:
-+		dev_err(&pdev->dev, "Invalid device type\n");
-+		return -EINVAL;
-+	};
+diff --git a/arch/arm/boot/dts/exynos5250-arndale.dts b/arch/arm/boot/dts/exynos5250-arndale.dts
+index b42e658..3bb730d 100644
+--- a/arch/arm/boot/dts/exynos5250-arndale.dts
++++ b/arch/arm/boot/dts/exynos5250-arndale.dts
+@@ -71,6 +71,13 @@
+ 			s5m8767,pmic-buck-ds-gpios = <&gpx2 3 0>,
+ 							<&gpx2 4 0>,
+ 							<&gpx2 5 0>;
 +
- 	for (i = 0; i < S2MPS11_CLKS_NUM; i++, s2mps11_clk++) {
- 		s2mps11_clk->iodev = iodev;
- 		s2mps11_clk->hw.init = &s2mps11_clks_init[i];
- 		s2mps11_clk->mask = 1 << i;
-+		s2mps11_clk->reg = s2mps11_reg;
- 
- 		ret = regmap_read(s2mps11_clk->iodev->regmap_pmic,
--				  S2MPS11_REG_RTC_CTRL, &val);
-+				  s2mps11_clk->reg, &val);
- 		if (ret < 0)
- 			goto err_reg;
- 
-@@ -241,7 +253,7 @@ static int s2mps11_clk_remove(struct platform_device *pdev)
- }
- 
- static const struct platform_device_id s2mps11_clk_id[] = {
--	{ "s2mps11-clk", 0},
-+	{ "s2mps11-clk", S2MPS11X},
- 	{ },
- };
- MODULE_DEVICE_TABLE(platform, s2mps11_clk_id);
++			s5m8767_osc: clocks {
++				#clock-cells = <1>;
++				clock-output-names = "s5m8767_ap",
++						"s5m8767_cp", "s5m8767_bt";
++			};
++
+ 			regulators {
+ 				ldo1_reg: LDO1 {
+ 					regulator-name = "VDD_ALIVE_1.0V";
 -- 
 1.7.9.5
 
