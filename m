@@ -1,74 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530Ab3LZCMD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Dec 2013 21:12:03 -0500
-Received: from mga02.intel.com ([134.134.136.20]:4082 "EHLO mga02.intel.com"
+	id S1752598Ab3LZCMk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Dec 2013 21:12:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14914 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752477Ab3LZCMA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Dec 2013 21:12:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,551,1384329600"; 
-   d="scan'208";a="457740099"
-From: "Du, ChangbinX" <changbinx.du@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "sarah.a.sharp@linux.intel.com" <sarah.a.sharp@linux.intel.com>,
-        "Lan, Tianyu" <tianyu.lan@intel.com>,
-        "burzalodowa@gmail.com" <burzalodowa@gmail.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] usb/core: fix NULL pointer dereference in
- recursively_mark_NOTATTACHED
-Thread-Topic: [PATCH] usb/core: fix NULL pointer dereference in
- recursively_mark_NOTATTACHED
-Thread-Index: Ac7/zXecO35CkBpaT+GTORmHLtV6Vf//wciA//4eTGCAA+P8AIABIPeA//7BKBA=
-Date: Thu, 26 Dec 2013 02:11:54 +0000
-Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A01A3190F@SHSMSX103.ccr.corp.intel.com>
-References: <Pine.LNX.4.44L0.1312241623390.337-100000@netrider.rowland.org>
- <Pine.LNX.4.44L0.1312251002020.9215-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1312251002020.9215-100000@netrider.rowland.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752477Ab3LZCMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 25 Dec 2013 21:12:25 -0500
+Date: Thu, 26 Dec 2013 10:12:38 +0800
+From: Dave Young <dyoung@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: matt@console-pimps.org, greg@kroah.com, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: split efi systab in sysfs
+Message-ID: <20131226021238.GB3750@dhcp-16-126.nay.redhat.com>
+References: <20131226015308.GA3750@dhcp-16-126.nay.redhat.com>
+ <52BB8C8F.1020606@zytor.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52BB8C8F.1020606@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, 24 Dec 2013, Alan Stern wrote:
-> I think this will fix it.  Take a close look and do some careful testing.
+On 12/25/13 at 05:55pm, H. Peter Anvin wrote:
+> On 12/25/2013 05:53 PM, Dave Young wrote:
+> > Hi, Matt and Peter
+> > 
+> > Currently /sys/firmware/efi/systab contains multi-lines for efi systab
+> > entries. As previous discussion with Greg, this is not a good in sysfs.
+> > I wonder if there's other users for this file except kexec-tools.
+> > 
+> > If kexec-tools is the only user, maybe I can split it as several files.
+> > In kexec-tools just use /sys/firmware/efi/"$entry_name" and if $entry_name
+> > does not exist then switch to old systab file. 
+> > 
 > 
-> Alan Stern
-> 
-> Index: usb-3.13/drivers/usb/core/hub.c
-> ==========================================================
-> =========
-> --- usb-3.13.orig/drivers/usb/core/hub.c
-> +++ usb-3.13/drivers/usb/core/hub.c
-> @@ -1622,11 +1622,14 @@ static void hub_disconnect(struct usb_in
->  	hub->error = 0;
->  	hub_quiesce(hub, HUB_DISCONNECT);
-> 
-> -	usb_set_intfdata (intf, NULL);
-> -
->  	for (i = 0; i < hdev->maxchild; i++)
->  		usb_hub_remove_port_device(hub, i + 1);
-> +
-> +	/* Avoid races with recursively_mark_NOTATTACHED() */
-> +	spin_lock_irq(&device_state_lock);
->  	hub->hdev->maxchild = 0;
-> +	usb_set_intfdata(intf, NULL);
-> +	spin_unlock_irq(&device_state_lock);
-> 
->  	if (hub->hdev->speed == USB_SPEED_HIGH)
->  		highspeed_hubs--;
-> 
+> Yes, the sysfs standard is "one entry per datum".  I have no idea about
+> who the user(s) might be, though.
 
-Sorry for late response. Agree with you. I will test your patch carefully and 
-let you know the result. Thanks!
-
+Even the only known user kexec-tools, for new kernel + old kexec-tools we
+have no way to support, maybe this systab should be kept forever...
