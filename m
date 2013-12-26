@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab3LZTFo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 14:05:44 -0500
-Received: from mail.wdtv.com ([66.118.69.84]:57821 "EHLO mail.wdtv.com"
+	id S1753740Ab3LZTOJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 14:14:09 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45632 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753611Ab3LZTFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 14:05:42 -0500
-From: Gene Heskett <gheskett@wdtv.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Subject: section miss-matches in older 3.8.3 kernel, and one question
-Date: Thu, 26 Dec 2013 13:58:59 -0500
+	id S1753687Ab3LZTOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Dec 2013 14:14:08 -0500
+Message-ID: <52BC7FE1.6070508@zytor.com>
+Date: Thu, 26 Dec 2013 11:13:37 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
+To: "H.J. Lu" <hjl.tools@gmail.com>, Christoph Hellwig <hch@infradead.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Use __kernel_long_t/__kernel_ulong_t in <linux/resource.h>
+References: <20131225145447.GA18146@gmail.com>	<20131226100348.GA7751@infradead.org> <CAMe9rOqx1HDT_rtiz2R0Cz5iAp0AFXhjw6RpTkjgFT_DDDWfVA@mail.gmail.com>
+In-Reply-To: <CAMe9rOqx1HDT_rtiz2R0Cz5iAp0AFXhjw6RpTkjgFT_DDDWfVA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201312261358.59464.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings;
+On 12/26/2013 05:52 AM, H.J. Lu wrote:
+>>
+>>  a) please send all your related patches as a series
+> 
+> My patches are independent of each other.  They can
+> be applied in order.
+> 
 
-In my attempts to find a 64 bit or PAE enabled kernel to run on my older 
-ASUS M2N-SLI Delux mobo, I saw a note go by during the build that there 
-were 9 section-miss-matches.
+Sure, but the convention in the Linux community is to send them all as a
+"series" using git send-email, preferably with a introductory cover
+letter as the "0/N patch" so they arrive in a single thread and can be
+reviewed together.  Otherwise bits tend to get lost in the enormous
+flood of email that is LKML.
 
-But when I applied the cli option recommended to the make lines in my 
-makeit script, I only got these 2 squawks.
+	-hpa
 
-WARNING: drivers/net/ethernet/amd/depca.o(.text+0xcce): Section mismatch in 
-reference from the function depca_isa_probe() to the function 
-.init.text:DepcaSignature()
-The function depca_isa_probe() references
-the function __init DepcaSignature().
-This is often because depca_isa_probe lacks a __init 
-annotation or the annotation of DepcaSignature is wrong.
 
-WARNING: drivers/net/ethernet/amd/depca.o(.text+0xd22): Section mismatch in 
-reference from the function depca_isa_probe() to the function 
-.init.text:depca_hw_init()
-The function depca_isa_probe() references
-the function __init depca_hw_init().
-This is often because depca_isa_probe lacks a __init 
-annotation or the annotation of depca_hw_init is wrong.
-
-I am not capable to fixing these, too many years & miles on the wet ram, 
-but I thought that maybe someone might be interested.
-
-Also, these kernels seem to want to drop me to an initramfs$ prompt, where, 
-since both kayboard and mouse are wireless usb, there is no connection, so 
-I have to hit the reset button & try a known good kernel.
-
-Has the use of mkinitramfs been deprecated? and if so, replace by what?
-
-Thanks.
-
-Cheers, Gene
--- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Genes Web page <http://geneslinuxbox.net:6309/gene>
-
-Vini, vidi, Linux!
-A pen in the hand of this president is far more
-dangerous than 200 million guns in the hands of
-         law-abiding citizens.
