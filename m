@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611Ab3LZGD4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 01:03:56 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:48055 "EHLO
+	id S1752655Ab3LZGEK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 01:04:10 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:48070 "EHLO
 	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab3LZGDx (ORCPT
+	with ESMTP id S1752158Ab3LZGDz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 01:03:53 -0500
-Subject: [PATCH -tip v2 1/2] [CLEANUP] perf-probe: Expand given path to
- absolute path
+	Thu, 26 Dec 2013 01:03:55 -0500
+Subject: [PATCH -tip v2 2/2] perf-probe: Support basic dwarf-based
+ operations on uprobe events
 To: Ingo Molnar <mingo@kernel.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
@@ -18,8 +18,8 @@ Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Oleg Nesterov <oleg@redhat.com>,
         "David A. Long" <dave.long@linaro.org>, systemtap@sourceware.org,
         yrl.pp-manager.tt@hitachi.com, Namhyung Kim <namhyung@kernel.org>
-Date: Thu, 26 Dec 2013 05:41:50 +0000
-Message-ID: <20131226054150.22364.12187.stgit@kbuild-fedora.novalocal>
+Date: Thu, 26 Dec 2013 05:41:53 +0000
+Message-ID: <20131226054152.22364.47021.stgit@kbuild-fedora.novalocal>
 In-Reply-To: <20131226054148.22364.25224.stgit@kbuild-fedora.novalocal>
 References: <20131226054148.22364.25224.stgit@kbuild-fedora.novalocal>
 User-Agent: StGit/0.16
@@ -30,93 +30,332 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Expand given path to absolute path in the option parser,
-except for a module name.
+Support basic dwarf(debuginfo) based operations for uprobe events.
+With this change, perf probe can analyze debuginfo of user
+application binary to set up new uprobe event.
+This allows perf-probe --add(with local variables, line numbers)
+and --line works with -x option.
+(Actually, --vars has already accepted -x option)
 
-Since realpath at later stage in processing several probe
-point, can be called several times(even if currently doesn't,
-it can happen when we expands the feature), it is waste of the
-performance.
-Processing it once at the early stage can avoid that.
+For example, the following command shows the probe-able lines of
+a given user space function. Something that so far was only
+available in the 'perf probe' tool for kernel space functions:
+----
+# ./perf probe -x perf --line map__load
+<map__load@/home/fedora/ksrc/linux-2.6/tools/perf/util/map.c:0>
+      0  int map__load(struct map *map, symbol_filter_t filter)
+      1  {
+      2         const char *name = map->dso->long_name;
+                int nr;
 
-Changes from previous one:
- - Fix not to print null string.
- - Allocate memory for given path/module name everytime.
+      5         if (dso__loaded(map->dso, map->type))
+      6                 return 0;
+
+      8         nr = dso__load(map->dso, map, filter);
+      9         if (nr < 0) {
+     10                 if (map->dso->has_build_id) {
+----
+
+And this shows the available variables at the given line of
+the function.
+----
+# ./perf probe -x perf --vars map__load:8
+Available variables at map__load:8
+        @<map__load+96>
+                char*   name
+                struct map*     map
+                symbol_filter_t filter
+        @<map__find_symbol+112>
+                char*   name
+                symbol_filter_t filter
+        @<map__find_symbol_by_name+136>
+                char*   name
+                symbol_filter_t filter
+        @<map_groups__find_symbol_by_name+176>
+                char*   name
+                struct map*     map
+                symbol_filter_t filter
+----
+
+At last, we can now define a probe(s) with all available
+variables on the given line.
+----
+# ./perf probe -x perf --add 'map__load:8 $vars'
+
+Added new events:
+  probe_perf:map__load (on map__load:8 with $vars)
+  probe_perf:map__load_1 (on map__load:8 with $vars)
+  probe_perf:map__load_2 (on map__load:8 with $vars)
+  probe_perf:map__load_3 (on map__load:8 with $vars)
+
+You can now use it in all perf tools, such as:
+
+        perf record -e probe_perf:map__load_3 -aR sleep 1
+----
+
+Changes from previous version:
+ - Add examples in the patch description.
+ - Use .text section start address and dwarf symbol address
+   for calculating the offset of given symbol, instead of
+   searching the symbol in symtab again.
+   With this change, we can safely handle multiple local
+   function instances (e.g. scnprintf in perf).
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
- tools/perf/builtin-probe.c    |   16 +++++++++++++++-
- tools/perf/util/probe-event.c |   11 ++---------
- 2 files changed, 17 insertions(+), 10 deletions(-)
+ tools/perf/builtin-probe.c     |    2 -
+ tools/perf/util/probe-event.c  |  151 ++++++++++++++++++++++++++++++++++++----
+ tools/perf/util/probe-event.h  |    1 
+ tools/perf/util/probe-finder.c |    1 
+ 4 files changed, 138 insertions(+), 17 deletions(-)
 
 diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 6ea9e85..5681266 100644
+index 5681266..20b3e15 100644
 --- a/tools/perf/builtin-probe.c
 +++ b/tools/perf/builtin-probe.c
-@@ -169,6 +169,7 @@ static int opt_set_target(const struct option *opt, const char *str,
- 			int unset __maybe_unused)
- {
- 	int ret = -ENOENT;
-+	char *tmp;
- 
- 	if  (str && !params.target) {
- 		if (!strcmp(opt->long_name, "exec"))
-@@ -180,7 +181,20 @@ static int opt_set_target(const struct option *opt, const char *str,
- 		else
- 			return ret;
- 
--		params.target = str;
-+		/* Expand given path to absolute path, except for modulename */
-+		if (params.uprobes || strchr(str, '/')) {
-+			tmp = realpath(str, NULL);
-+			if (!tmp) {
-+				pr_warning("Failed to find the path of %s.\n",
-+					   str);
-+				return ret;
-+			}
-+		} else {
-+			tmp = strdup(str);
-+			if (!tmp)
-+				return -ENOMEM;
-+		}
-+		params.target = tmp;
- 		ret = 0;
+@@ -425,7 +425,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
  	}
  
+ #ifdef HAVE_DWARF_SUPPORT
+-	if (params.show_lines && !params.uprobes) {
++	if (params.show_lines) {
+ 		if (params.mod_events) {
+ 			pr_err("  Error: Don't use --line with"
+ 			       " --add/--del.\n");
 diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index d7cff57..05be5de 100644
+index 05be5de..2f82267 100644
 --- a/tools/perf/util/probe-event.c
 +++ b/tools/perf/util/probe-event.c
-@@ -2281,7 +2281,7 @@ static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
- 	struct perf_probe_point *pp = &pev->point;
- 	struct symbol *sym;
- 	struct map *map = NULL;
--	char *function = NULL, *name = NULL;
-+	char *function = NULL;
- 	int ret = -EINVAL;
- 	unsigned long long vaddr = 0;
+@@ -172,6 +172,52 @@ const char *kernel_get_module_path(const char *module)
+ 	return (dso) ? dso->long_name : NULL;
+ }
  
-@@ -2297,12 +2297,7 @@ static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
- 		goto out;
- 	}
- 
--	name = realpath(exec, NULL);
--	if (!name) {
--		pr_warning("Cannot find realpath for %s.\n", exec);
--		goto out;
--	}
--	map = dso__new_map(name);
-+	map = dso__new_map(exec);
- 	if (!map) {
- 		pr_warning("Cannot find appropriate DSO for %s.\n", exec);
- 		goto out;
-@@ -2367,7 +2362,5 @@ out:
- 	}
- 	if (function)
- 		free(function);
--	if (name)
--		free(name);
++/* Copied from unwind.c */
++static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
++				    GElf_Shdr *shp, const char *name)
++{
++	Elf_Scn *sec = NULL;
++
++	while ((sec = elf_nextscn(elf, sec)) != NULL) {
++		char *str;
++
++		gelf_getshdr(sec, shp);
++		str = elf_strptr(elf, ep->e_shstrndx, shp->sh_name);
++		if (!strcmp(name, str))
++			break;
++	}
++
++	return sec;
++}
++
++static int get_text_start_address(const char *exec, unsigned long *address)
++{
++	Elf *elf;
++	GElf_Ehdr ehdr;
++	GElf_Shdr shdr;
++	int fd, ret = -ENOENT;
++
++	fd = open(exec, O_RDONLY);
++	if (fd < 0)
++		return -errno;
++
++	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
++	if (elf == NULL)
++		return -EINVAL;
++
++	if (gelf_getehdr(elf, &ehdr) == NULL)
++		goto out;
++
++	if (!elf_section_by_name(elf, &ehdr, &shdr, ".text"))
++		goto out;
++
++	*address = shdr.sh_addr - shdr.sh_offset;
++	ret = 0;
++out:
++	elf_end(elf);
++	return ret;
++}
++
+ static int init_user_exec(void)
+ {
+ 	int ret = 0;
+@@ -186,6 +232,37 @@ static int init_user_exec(void)
  	return ret;
  }
+ 
++static int convert_exec_to_group(const char *exec, char **result)
++{
++	char *ptr1, *ptr2, *exec_copy;
++	char buf[64];
++	int ret;
++
++	exec_copy = strdup(exec);
++	if (!exec_copy)
++		return -ENOMEM;
++
++	ptr1 = basename(exec_copy);
++	if (!ptr1) {
++		ret = -EINVAL;
++		goto out;
++	}
++
++	ptr2 = strpbrk(ptr1, "-._");
++	if (ptr2)
++		*ptr2 = '\0';
++	ret = e_snprintf(buf, 64, "%s_%s", PERFPROBE_GROUP, ptr1);
++	if (ret < 0)
++		goto out;
++
++	*result = strdup(buf);
++	ret = *result ? 0 : -ENOMEM;
++
++out:
++	free(exec_copy);
++	return ret;
++}
++
+ static int convert_to_perf_probe_point(struct probe_trace_point *tp,
+ 					struct perf_probe_point *pp)
+ {
+@@ -261,6 +338,40 @@ static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
+ 	return 0;
+ }
+ 
++static int add_exec_to_probe_trace_events(struct probe_trace_event *tevs,
++					  int ntevs, const char *exec)
++{
++	int i, ret = 0;
++	unsigned long offset, stext = 0;
++	char buf[32];
++
++	if (!exec)
++		return 0;
++
++	ret = get_text_start_address(exec, &stext);
++	if (ret < 0)
++		return ret;
++
++	for (i = 0; i < ntevs && ret >= 0; i++) {
++		offset = tevs[i].point.address - stext;
++		offset += tevs[i].point.offset;
++		tevs[i].point.offset = 0;
++		free(tevs[i].point.symbol);
++		ret = e_snprintf(buf, 32, "0x%lx", offset);
++		if (ret < 0)
++			break;
++		tevs[i].point.module = strdup(exec);
++		tevs[i].point.symbol = strdup(buf);
++		if (!tevs[i].point.symbol || !tevs[i].point.module) {
++			ret = -ENOMEM;
++			break;
++		}
++		tevs[i].uprobes = true;
++	}
++
++	return ret;
++}
++
+ static int add_module_to_probe_trace_events(struct probe_trace_event *tevs,
+ 					    int ntevs, const char *module)
+ {
+@@ -305,15 +416,6 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
+ 	struct debuginfo *dinfo;
+ 	int ntevs, ret = 0;
+ 
+-	if (pev->uprobes) {
+-		if (need_dwarf) {
+-			pr_warning("Debuginfo-analysis is not yet supported"
+-					" with -x/--exec option.\n");
+-			return -ENOSYS;
+-		}
+-		return convert_name_to_addr(pev, target);
+-	}
+-
+ 	dinfo = open_debuginfo(target);
+ 
+ 	if (!dinfo) {
+@@ -332,9 +434,14 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
+ 
+ 	if (ntevs > 0) {	/* Succeeded to find trace events */
+ 		pr_debug("find %d probe_trace_events.\n", ntevs);
+-		if (target)
+-			ret = add_module_to_probe_trace_events(*tevs, ntevs,
+-							       target);
++		if (target) {
++			if (pev->uprobes)
++				ret = add_exec_to_probe_trace_events(*tevs,
++						 ntevs, target);
++			else
++				ret = add_module_to_probe_trace_events(*tevs,
++						 ntevs, target);
++		}
+ 		return ret < 0 ? ret : ntevs;
+ 	}
+ 
+@@ -654,9 +761,6 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
+ 		return -ENOSYS;
+ 	}
+ 
+-	if (pev->uprobes)
+-		return convert_name_to_addr(pev, target);
+-
+ 	return 0;
+ }
+ 
+@@ -1913,14 +2017,29 @@ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
+ 					  int max_tevs, const char *target)
+ {
+ 	struct symbol *sym;
+-	int ret = 0, i;
++	int ret, i;
+ 	struct probe_trace_event *tev;
+ 
++	if (pev->uprobes && !pev->group) {
++		/* Replace group name if not given */
++		ret = convert_exec_to_group(target, &pev->group);
++		if (ret != 0) {
++			pr_warning("Failed to make a group name.\n");
++			return ret;
++		}
++	}
++
+ 	/* Convert perf_probe_event with debuginfo */
+ 	ret = try_to_find_probe_trace_events(pev, tevs, max_tevs, target);
+ 	if (ret != 0)
+ 		return ret;	/* Found in debuginfo or got an error */
+ 
++	if (pev->uprobes) {
++		ret = convert_name_to_addr(pev, target);
++		if (ret < 0)
++			return ret;
++	}
++
+ 	/* Allocate trace event buffer */
+ 	tev = *tevs = zalloc(sizeof(struct probe_trace_event));
+ 	if (tev == NULL)
+diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
+index f9f3de8..d481c46 100644
+--- a/tools/perf/util/probe-event.h
++++ b/tools/perf/util/probe-event.h
+@@ -12,6 +12,7 @@ struct probe_trace_point {
+ 	char		*symbol;	/* Base symbol */
+ 	char		*module;	/* Module name */
+ 	unsigned long	offset;		/* Offset from symbol */
++	unsigned long	address;	/* Actual address of the trace point */
+ 	bool		retprobe;	/* Return probe flag */
+ };
+ 
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index ffb657f..7db7e05 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -729,6 +729,7 @@ static int convert_to_trace_point(Dwarf_Die *sp_die, Dwfl_Module *mod,
+ 		return -ENOENT;
+ 	}
+ 	tp->offset = (unsigned long)(paddr - sym.st_value);
++	tp->address = (unsigned long)paddr;
+ 	tp->symbol = strdup(symbol);
+ 	if (!tp->symbol)
+ 		return -ENOMEM;
 
 
