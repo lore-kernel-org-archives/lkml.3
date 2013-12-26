@@ -1,65 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865Ab3LZUHT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 15:07:19 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:53143 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753800Ab3LZUHS (ORCPT
+	id S1753900Ab3LZUHf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 15:07:35 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:38178 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753800Ab3LZUHd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 15:07:18 -0500
-Message-ID: <52BC8C74.3060205@infradead.org>
-Date: Thu, 26 Dec 2013 12:07:16 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 26 Dec 2013 15:07:33 -0500
+X-Originating-IP: 50.43.14.201
+Date: Thu, 26 Dec 2013 12:07:23 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] checkpatch: Add tests for function pointer style
+ misuses
+Message-ID: <20131226200723.GA7267@leaf>
+References: <cover.1388085015.git.joe@perches.com>
+ <4c5453ce99c368d91032e2a6614fe270fa94d122.1388085015.git.joe@perches.com>
 MIME-Version: 1.0
-To: Gene Heskett <gheskett@wdtv.com>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: section miss-matches in older 3.8.3 kernel, and one question
-References: <201312261358.59464.gheskett@wdtv.com>
-In-Reply-To: <201312261358.59464.gheskett@wdtv.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <4c5453ce99c368d91032e2a6614fe270fa94d122.1388085015.git.joe@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/26/13 10:58, Gene Heskett wrote:
-> Greetings;
+On Thu, Dec 26, 2013 at 11:20:28AM -0800, Joe Perches wrote:
+> Kernel style uses function pointers in this form:
+>         "type (*funcptr)(args...)"
 > 
-> In my attempts to find a 64 bit or PAE enabled kernel to run on my older 
-> ASUS M2N-SLI Delux mobo, I saw a note go by during the build that there 
-> were 9 section-miss-matches.
+> Emit warnings when this function pointer form isn't used.
 > 
-> But when I applied the cli option recommended to the make lines in my 
-> makeit script, I only got these 2 squawks.
-> 
-> WARNING: drivers/net/ethernet/amd/depca.o(.text+0xcce): Section mismatch in 
-> reference from the function depca_isa_probe() to the function 
-> .init.text:DepcaSignature()
-> The function depca_isa_probe() references
-> the function __init DepcaSignature().
-> This is often because depca_isa_probe lacks a __init 
-> annotation or the annotation of DepcaSignature is wrong.
-> 
-> WARNING: drivers/net/ethernet/amd/depca.o(.text+0xd22): Section mismatch in 
-> reference from the function depca_isa_probe() to the function 
-> .init.text:depca_hw_init()
-> The function depca_isa_probe() references
-> the function __init depca_hw_init().
-> This is often because depca_isa_probe lacks a __init 
-> annotation or the annotation of depca_hw_init is wrong.
-> 
-> I am not capable to fixing these, too many years & miles on the wet ram, 
-> but I thought that maybe someone might be interested.
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-This driver was removed from the kernel source tree on Jan. 16, 2013.
+Two comments below.
 
-Sure, it's still in 3.8.x so those section mismatches could be fixed,
-but most section mismatches have been recently fixed by eliminating
-CONFIG_HOTPLUG and removing the use of all __devinit* and __devexit*.
+>  scripts/checkpatch.pl | 59 +++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 59 insertions(+)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 0fcbc5f..f5d4560 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -2810,6 +2810,65 @@ sub process {
+>  			}
+>  		}
+>  
+> +# Function pointer declarations
+> +# check spacing between type, funcptr, and args
+> +# canonical declaration is "type (*funcptr)(args...)"
+> +#
+> +# the $Declare variable will capture all spaces after the type
+> +# so check it for multiple spaces
+> +		if ($line =~ /^.\s*($Declare)\((\s*)\*(\s*)$Ident(\s*)\)(\s*)\(/) {
+> +			my $declare = $1;
+> +			my $pre_pointer_space = $2;
+> +			my $post_pointer_space = $3;
+> +			my $funcname = $4;
+> +			my $post_funcname_space = $5;
+> +			my $pre_args_space = $6;
+> +
+> +			if ($declare !~ /\s$/) {
+> +				WARN("SPACING",
+> +				     "missing space after return type\n" . $herecurr);
+> +			}
+> +
+> +# unnecessary space "type  (*funcptr)(args...)"
+> +			elsif ($declare =~ /\s{2,}$/) {
+> +				WARN("SPACING",
+> +				     "Multiple spaces after return type\n" . $herecurr);
+> +			}
+> +
+> +# unnecessary space "type ( *funcptr)(args...)"
+> +			if (defined $pre_pointer_space &&
+> +			    $pre_pointer_space =~ /^\s/) {
+> +				WARN("SPACING",
+> +				     "Unnecessary space after function pointer open parenthesis\n" . $herecurr);
 
-Do you use this driver?  is it barfing?
-or you just happened to build it and saw these warnings?
+There are two parentheticals in a proper function pointer declaration,
+so this is slightly ambiguous.  Perhaps "between open parenthesis and
+'*' in function pointer declaration"?
 
-thanks,
--- 
-~Randy
+> +# unnecessary space "type (* funcptr)(args...)"
+> +			if (defined $post_pointer_space &&
+> +			    $post_pointer_space =~ /^\s/) {
+> +				WARN("SPACING",
+> +				     "Unnecessary space before function pointer name\n" . $herecurr);
+> +			}
+> +
+> +# unnecessary space "type (*funcptr )(args...)"
+> +			if (defined $post_funcname_space &&
+> +			    $post_funcname_space =~ /^\s/) {
+> +				WARN("SPACING",
+> +				     "Unnecessary space after function pointer name\n" . $herecurr);
+> +			}
+> +
+> +# unnecessary space "type (*funcptr) (args...)"
+> +			if (defined $pre_args_space &&
+> +			    $pre_args_space =~ /^\s/) {
+> +				WARN("SPACING",
+> +				     "Unnecessary space before function pointer name\n" . $herecurr);
+
+Copy/paste problem here?  I think this should be "Unnecessary space
+before function pointer argument types" or similar.
+
+With both of the above two issues fixed:
+
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
