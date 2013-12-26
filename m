@@ -1,111 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012Ab3LZKMd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 05:12:33 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:52400 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897Ab3LZKMc (ORCPT
+	id S1752669Ab3LZKNm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 05:13:42 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:64676 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186Ab3LZKNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 05:12:32 -0500
+	Thu, 26 Dec 2013 05:13:40 -0500
 MIME-Version: 1.0
-In-Reply-To: <20131226094518.GA22894@infradead.org>
-References: <1387815539-12257-1-git-send-email-tom.leiming@gmail.com>
-	<1387815539-12257-2-git-send-email-tom.leiming@gmail.com>
-	<20131223162442.GA9383@infradead.org>
-	<CACVXFVN=sxHxUY_0c9xWKw3nXhj60UeSjvFTHs52zHNEAg__4w@mail.gmail.com>
-	<20131226094518.GA22894@infradead.org>
-Date: Thu, 26 Dec 2013 18:12:30 +0800
-Message-ID: <CACVXFVOOEGPt7JXKmk=dTz3H6TgadBoOx1_D_hksi6J1L7OjYw@mail.gmail.com>
-Subject: Re: [PATCH 1/4] block: blk-mq: support draining mq queue
-From: Ming Lei <tom.leiming@gmail.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <1387545857-9472-5-git-send-email-k.debski@samsung.com>
+References: <1387545857-9472-1-git-send-email-k.debski@samsung.com>
+	<1387545857-9472-5-git-send-email-k.debski@samsung.com>
+Date: Thu, 26 Dec 2013 15:43:38 +0530
+Message-ID: <CAFp+6iHd12a8Aqg2BjixzokohPEuYsK9gPu+fkQ1u3-5uw2L=g@mail.gmail.com>
+Subject: Re: [PATCH v5 4/9] usb: ehci-s5p: Change to use phy provided by the
+ generic phy framework
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Kamil Debski <k.debski@samsung.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>, kishon <kishon@ti.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Mateusz Krawczuk <mat.krawczuk@gmail.com>, yulgon.kim@samsung.com,
+        Praveen Paneri <p.paneri@samsung.com>, av.tikhomirov@samsung.com,
+        Jingoo Han <jg1.han@samsung.com>, Kumar Gala <galak@codeaurora.org>,
+        matt.porter@linaro.org, tjakobi@math.uni-bielefeld.de,
+        Alan Stern <stern@rowland.harvard.edu>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
+Hi Kamil,
 
-On Thu, Dec 26, 2013 at 5:45 PM, Christoph Hellwig <hch@infradead.org> wrote:
-> On Tue, Dec 24, 2013 at 11:30:58AM +0800, Ming Lei wrote:
->> Some drivers don't have LLDD, like null_blk, virtio-blk, ...
+
+On Fri, Dec 20, 2013 at 6:54 PM, Kamil Debski <k.debski@samsung.com> wrote:
+> Change the phy provider used from the old one using the USB phy
+> framework to a new one using the Generic phy framework.
 >
-> Well, they are the low-level driver in this case.
+> Signed-off-by: Kamil Debski <k.debski@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+
+Commit title:
+s/ehci-s5p/ehci-exynos
+
+> ---
+>  Documentation/devicetree/bindings/usb/usb-ehci.txt |   35 +++++++
+>  drivers/usb/host/ehci-exynos.c                     |   97 +++++++++++++-------
+>  2 files changed, 98 insertions(+), 34 deletions(-)
 >
->> Actually the below block APIs
->>                blk_get_request()
->>                blk_put_request()
->>                blk_execute_rq_nowait()
->>                blk_register_queue()
->>                blk_unregister_queue()
->>                blk_insert_flush()
->>                ....
->>
->> have been there to support MQ.
+> diff --git a/Documentation/devicetree/bindings/usb/usb-ehci.txt b/Documentation/devicetree/bindings/usb/usb-ehci.txt
+> index fa18612..413f7cd 100644
+> --- a/Documentation/devicetree/bindings/usb/usb-ehci.txt
+> +++ b/Documentation/devicetree/bindings/usb/usb-ehci.txt
+> @@ -14,6 +14,10 @@ If controller implementation operates with big endian descriptors,
+>  If both big endian registers and descriptors are used by the controller
+>  implementation, "big-endian" property can be specified instead of having
+>  both "big-endian-regs" and "big-endian-desc".
+> +  - port: if in the SoC there are EHCI phys, they should be listed here.
+> +One phy per port. Each port should have its reg entry with a consecutive
+> +number. Also it should contain phys and phy-names entries specifying the
+> +phy used by the port.
 >
-> All these are called by higher level code and not the driver, so we need
-> a switch between MQ and non-MQ support somewhere.
+>  Example (Sequoia 440EPx):
+>      ehci@e0000300 {
+> @@ -23,3 +27,34 @@ Example (Sequoia 440EPx):
+>            reg = <0 e0000300 90 0 e0000390 70>;
+>            big-endian;
+>     };
+> +
+> +Example (Exynos 4212):
+> +    ehci@12580000 {
+> +        compatible = "samsung,exynos4210-ehci";
+> +        reg = <0x12580000 0x20000>;
+> +        interrupts = <0 70 0>;
+> +        clocks = <&clock 304>, <&clock 305>;
+> +        clock-names = "usbhost", "otg";
+> +        status = "disabled";
+> +        #address-cells = <1>;
+> +        #size-cells = <0>;
+> +        port@0 {
+> +            reg = <0>;
+> +            phys = <&usb2phy 1>;
+> +            phy-names = "host";
+> +            status = "disabled";
+> +        };
+> +        port@1 {
+> +            reg = <1>;
+> +            phys = <&usb2phy 2>;
+> +            phy-names = "hsic0";
+> +            status = "disabled";
+> +        };
+> +        port@2 {
+> +            reg = <2>;
+> +            phys = <&usb2phy 3>;
+> +            phy-names = "hsic1";
+> +            status = "disabled";
+> +        };
+> +    };
 
-But sometimes there is no so-called high level code, and only one driver
-for driving the block device, such as two drivers above, and we have lots
-of such drivers, so looks not easy to apply the rule for all drivers suppose
-there is.
+Should we place above documentation in
+"Documentation/devicetree/bindings/usb/exynos-usb.txt" ?
+or is it something that i am missing.
 
-IMO, if one block API can serve for both non-MQ and MQ cases, why do
-we have to split it into blk_foo() and blk_mq_foo()?
-
+> +
+> diff --git a/drivers/usb/host/ehci-exynos.c b/drivers/usb/host/ehci-exynos.c
+> index d1d8c47..7c35501 100644
+> --- a/drivers/usb/host/ehci-exynos.c
+> +++ b/drivers/usb/host/ehci-exynos.c
+> @@ -19,12 +19,12 @@
+>  #include <linux/module.h>
+>  #include <linux/of.h>
+>  #include <linux/of_gpio.h>
+> +#include <linux/phy/phy.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/usb/phy.h>
+>  #include <linux/usb/samsung_usb_phy.h>
+>  #include <linux/usb.h>
+>  #include <linux/usb/hcd.h>
+> -#include <linux/usb/otg.h>
 >
->> One problem about the 2nd way is that MQ drivers may become a bit
->> ugly if the driver still need to support traditional request/bio mechanism.
+>  #include "ehci.h"
 >
-> On the other hand drivers have no legitimate case for long-term parallel
-> MQ/non-MQ code paths.  The only exception is null_blk as a benchmarking
-> vehicle, but we should not optimize for that.
-
-IMO it is very possible that parallel path might keep for a while, and at least
-the current scsi-mq patches do so.
-
+> @@ -42,10 +42,10 @@
+>  static const char hcd_name[] = "ehci-exynos";
+>  static struct hc_driver __read_mostly exynos_ehci_hc_driver;
 >
->> >> +             spin_unlock_irq(lock);
->> >> +     }
->> >
->> > Why doesn't the mq case set QUEUE_FLAG_DEAD here?
->>
->> Looks DEAD flag is set to prevent request_fn from being called,
->> and there is no request_fn for MQ, so I don't set it and QUEUE_FLAG_DYING
->> has been checked in blk_mq_queue_enter() already.
->>
->> But we can do it easily.
+> +#define PHY_NUMBER 3
+>  struct exynos_ehci_hcd {
+>         struct clk *clk;
+> -       struct usb_phy *phy;
+> -       struct usb_otg *otg;
+> +       struct phy *phy[PHY_NUMBER];
+>  };
 >
-> Do we have a per-context flag to prevent calling into the driver
-> instead?  Sorry, it's been a while that I last looked at the code, but
-> anyone just looking over the difference will have the same question, so
-> the answer needs to go into a comment.
-
-It is OK to add comment or just keep the two cases consistent, and looks
-I prefer to the later.
-
+>  #define to_exynos_ehci(hcd) (struct exynos_ehci_hcd *)(hcd_to_ehci(hcd)->priv)
+> @@ -69,13 +69,43 @@ static void exynos_setup_vbus_gpio(struct platform_device *pdev)
+>                 dev_err(dev, "can't request ehci vbus gpio %d", gpio);
+>  }
 >
->> > Also blk_execute_rq_nowait now needs to check the dying case for MQ as
->> > well.
->>
->> In this patch the dying flag is only checked in blk_mq_queue_enter()
->> which is called in allocating request path, so once the request is
->> allocated, we just simply wait for its completion in blk_mq_drain_queue().
->>
->> Even for non-MQ case, looks blk_queue_dying(q) is checked to avoid
->> being freed early before running queue, I am not sure if it is good
->> because the I/O might or can have been completed.  And it isn't a problem
->> for MQ because this request can't be reused when dying is set.
+> +static int exynos_phys_on(struct phy *p[])
+> +{
+> +       int i;
+> +       int ret = 0;
+> +
+> +       for (i = 0; ret == 0 && i < PHY_NUMBER; i++)
+> +               if (p[i])
+> +                       ret = phy_power_on(p[i]);
+> +       if (ret)
+> +               for (i--; i > 0; i--)
+> +                       if (p[i])
+> +                               phy_power_off(p[i]);
+
+So we are turning off, say, port0 phy in case port1 phy power_on fails;
+can't we still leave a usb2.0 phy(a normal host phy) 'on' in case the
+HSIC phy fails ?
+
+> +
+> +       return ret;
+> +}
+> +
+> +static int exynos_phys_off(struct phy *p[])
+> +{
+> +       int i;
+> +       int ret = 0;
+> +
+> +       for (i = 0; ret == 0 && i < PHY_NUMBER; i++)
+> +               if (p[i])
+> +                       ret = phy_power_off(p[i]);
+> +
+> +       return ret;
+> +}
+> +
+>  static int exynos_ehci_probe(struct platform_device *pdev)
+>  {
+>         struct exynos_ehci_hcd *exynos_ehci;
+>         struct usb_hcd *hcd;
+>         struct ehci_hcd *ehci;
+>         struct resource *res;
+> -       struct usb_phy *phy;
+> +       struct phy *phy;
+> +       struct device_node *child;
+> +       int phy_number;
+>         int irq;
+>         int err;
 >
-> Good.  I think we'll want comments like that preferable in the code, but
-> at very least in the commit log.
+> @@ -102,14 +132,26 @@ static int exynos_ehci_probe(struct platform_device *pdev)
+>                                         "samsung,exynos5440-ehci"))
+>                 goto skip_phy;
+>
+> -       phy = devm_usb_get_phy(&pdev->dev, USB_PHY_TYPE_USB2);
+> -       if (IS_ERR(phy)) {
+> -               usb_put_hcd(hcd);
+> -               dev_warn(&pdev->dev, "no platform data or transceiver defined\n");
+> -               return -EPROBE_DEFER;
+> -       } else {
+> -               exynos_ehci->phy = phy;
+> -               exynos_ehci->otg = phy->otg;
+> +       for_each_available_child_of_node(pdev->dev.of_node, child) {
+> +               err = of_property_read_u32(child, "reg", &phy_number);
+> +               if (err) {
+> +                       dev_err(&pdev->dev, "Failed to parse device tree\n");
+> +                       of_node_put(child);
+> +                       return err;
+> +               }
+> +               if (phy_number >= PHY_NUMBER) {
+> +                       dev_err(&pdev->dev, "Failed to parse device tree - number out of range\n");
+> +                       of_node_put(child);
+> +                       return -EINVAL;
+> +               }
+> +               phy = devm_of_phy_get(&pdev->dev, child, 0);
+> +               of_node_put(child);
+> +               if (IS_ERR(phy)) {
+> +                       dev_err(&pdev->dev, "Failed to get phy number %d",
+> +                                                               phy_number);
+> +                       return PTR_ERR(phy);
+> +               }
+> +               exynos_ehci->phy[phy_number] = phy;
+>         }
+>
+>  skip_phy:
+> @@ -149,11 +191,11 @@ skip_phy:
+>                 goto fail_io;
+>         }
+>
+> -       if (exynos_ehci->otg)
+> -               exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
+> -
+> -       if (exynos_ehci->phy)
+> -               usb_phy_init(exynos_ehci->phy);
+> +       err = exynos_phys_on(exynos_ehci->phy);
+> +       if (err) {
+> +               dev_err(&pdev->dev, "Failed to enabled phys\n");
+> +               goto fail_io;
+> +       }
+>
+>         ehci = hcd_to_ehci(hcd);
+>         ehci->caps = hcd->regs;
+> @@ -173,8 +215,7 @@ skip_phy:
+>         return 0;
+>
+>  fail_add_hcd:
+> -       if (exynos_ehci->phy)
+> -               usb_phy_shutdown(exynos_ehci->phy);
+> +       exynos_phys_off(exynos_ehci->phy);
+>  fail_io:
+>         clk_disable_unprepare(exynos_ehci->clk);
+>  fail_clk:
+> @@ -189,11 +230,7 @@ static int exynos_ehci_remove(struct platform_device *pdev)
+>
+>         usb_remove_hcd(hcd);
+>
+> -       if (exynos_ehci->otg)
+> -               exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
+> -
+> -       if (exynos_ehci->phy)
+> -               usb_phy_shutdown(exynos_ehci->phy);
+> +       exynos_phys_off(exynos_ehci->phy);
+>
+>         clk_disable_unprepare(exynos_ehci->clk);
+>
+> @@ -213,11 +250,7 @@ static int exynos_ehci_suspend(struct device *dev)
+>
+>         rc = ehci_suspend(hcd, do_wakeup);
+>
+> -       if (exynos_ehci->otg)
+> -               exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
+> -
+> -       if (exynos_ehci->phy)
+> -               usb_phy_shutdown(exynos_ehci->phy);
+> +       exynos_phys_off(exynos_ehci->phy);
+>
+>         clk_disable_unprepare(exynos_ehci->clk);
+>
+> @@ -231,11 +264,7 @@ static int exynos_ehci_resume(struct device *dev)
+>
+>         clk_prepare_enable(exynos_ehci->clk);
+>
+> -       if (exynos_ehci->otg)
+> -               exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
+> -
+> -       if (exynos_ehci->phy)
+> -               usb_phy_init(exynos_ehci->phy);
+> +       exynos_phys_on(exynos_ehci->phy);
+>
+>         /* DMA burst Enable */
+>         writel(EHCI_INSNREG00_ENABLE_DMA_BURST, EHCI_INSNREG00(hcd->regs));
+> --
 
-OK.
+Rest all looks good. :-)
+I tested this patch along with other patches in the series on smdk5250.
+
+Tested-by: Vivek Gautam <gautam.vivek@samsung.com>
+
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
-Thanks,
+
 -- 
-Ming Lei
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
