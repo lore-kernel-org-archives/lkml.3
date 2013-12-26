@@ -1,125 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665Ab3LZCye (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 25 Dec 2013 21:54:34 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:62292 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752477Ab3LZCyb convert rfc822-to-8bit (ORCPT
+	id S1752597Ab3LZDDU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 25 Dec 2013 22:03:20 -0500
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:10071
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752477Ab3LZDDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 25 Dec 2013 21:54:31 -0500
-X-AuditID: cbfee61a-b7fb26d00000724f-9a-52bb9a61b057
-From: Chao Yu <chao2.yu@samsung.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-References: <002201ceff8c$efbd2da0$cf3788e0$@samsung.com>
- <1388012129.2101.302.camel@kjgkr>
-In-reply-to: <1388012129.2101.302.camel@kjgkr>
-Subject: RE: [f2fs-dev] [PATCH 1/3 V2] f2fs: check filename length in
- recover_dentry
-Date: Thu, 26 Dec 2013 10:53:39 +0800
-Message-id: <000001cf01e5$c9e8a7c0$5db9f740$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQJueX9xlPqsTCmpqoBrxwP2EeL6OAFBAuqYmRy/LYA=
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9jAd3EWbuDDD7PELO4vusvk8WlRe4W
-	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK+PFnDdsBfPEKq6d
-	LmpgPCLYxcjJISFgIvH2/BU2CFtM4sK99UA2F4eQwCJGiSe3NjFBOD8YJbobvoJVsQmoSCzv
-	+M8EYosISEvM+jSPBcRmFsiUmPN6MiuILSQQK9H58CgziM0poCcxpXkaWI2wQJhE8+Hf7CA2
-	i4CqxORD68Dm8ApYSqxbdJAdwhaU+DH5HtRMdYlJ8xYxQ9jaEk/eXWCFuFRBYsfZ14wQN1hJ
-	tP/ZxQpRIy6x8cgtlgmMQrOQjJqFZNQsJKNmIWlZwMiyilE0tSC5oDgpPddQrzgxt7g0L10v
-	OT93EyM48J9J7WBc2WBxiFGAg1GJh7dDd3eQEGtiWXFl7iFGCQ5mJRHeXd1AId6UxMqq1KL8
-	+KLSnNTiQ4zSHCxK4rwHWq0DhQTSE0tSs1NTC1KLYLJMHJxSDYxsLBaJvizfF3jsFlicbDNL
-	YtH3n2ITipSCqvr9+Dfo712asUjnGP++wrNnFnEKhCZ0nD3B/FH2vIngb97uqICd7wzeqVcl
-	enZt3PGg0eVg/Lyfr5xWLPr9sIHRQXLi4a8Jc+TStLnmCu3rW85SERN5jXux/Iq1d1n/RSyq
-	mreVqyLk0sNJeyKVWIozEg21mIuKEwGseS0FeAIAAA==
+	Wed, 25 Dec 2013 22:03:19 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1155h)
+Date: Thu, 26 Dec 2013 10:32:07 +0800
+From: Huang Shijie <b32955@freescale.com>
+To: Caizhiyong <caizhiyong@hisilicon.com>
+CC: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: Re: [PATCH] mtd: nand: remove unused function input parameter
+Message-ID: <20131226023206.GB6752@shlinux2.ap.freescale.net>
+References: <C3050A4DBA34F345975765E43127F10F25E47D50@SZXEMA512-MBX.china.huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <C3050A4DBA34F345975765E43127F10F25E47D50@SZXEMA512-MBX.china.huawei.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-> -----Original Message-----
-> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
-> Sent: Thursday, December 26, 2013 6:55 AM
-> To: Chao Yu
-> Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net
-> Subject: Re: [f2fs-dev] [PATCH 1/3 V2] f2fs: check filename length in recover_dentry
+On Wed, Dec 25, 2013 at 12:40:50PM +0000, Caizhiyong wrote:
+> From: Cai Zhiyong <caizhiyong@huawei.com>
+> Date: Wed, 25 Dec 2013 20:11:15 +0800
+> Subject: [PATCH] mtd: nand: remove unused function input parameter
 > 
-> Hi,
+> The nand_get_flash_type parameter "busw" input value is not used by any
+> branch, and it is updated before use it in the function, so remove it, 
+> define the "busw" as an internal variable.
 > 
-> 2013-12-23 (월), 11:12 +0800, Chao Yu:
-> > In current flow, we will get Null return value of f2fs_find_entry in
-> > recover_dentry when name.len is bigger than F2FS_NAME_LEN, and then we
-> > still add this inode into its dir entry.
-> > To avoid this situation, we must check filename length before we use it.
-> >
-> > Another point is that we could remove the code of checking filename length
-> > In f2fs_find_entry, because f2fs_lookup will be called previously to ensure of
-> > validity of filename length.
+> Signed-off-by: Cai Zhiyong <caizhiyong@huawei.com>
+> ---
+>  drivers/mtd/nand/nand_base.c | 12 +++++-------
+>  1 file changed, 5 insertions(+), 7 deletions(-)
 > 
-> The f2fs_find_entry is called by f2fs_unlink and f2fs_rename too.
+> diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+> index 9b3bb3c..a123afa 100644
+> --- a/drivers/mtd/nand/nand_base.c
+> +++ b/drivers/mtd/nand/nand_base.c
+> @@ -3337,10 +3337,10 @@ static bool find_full_id_nand(struct mtd_info *mtd, struct nand_chip *chip,
+>   */
+>  static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
+>  						  struct nand_chip *chip,
+> -						  int busw,
+>  						  int *maf_id, int *dev_id,
+>  						  struct nand_flash_dev *type)
+>  {
+> +	int busw;
+>  	int i, maf_idx;
+>  	u8 id_data[8];
+>  
+> @@ -3497,18 +3497,16 @@ ident_done:
+>  int nand_scan_ident(struct mtd_info *mtd, int maxchips,
+>  		    struct nand_flash_dev *table)
+>  {
+> -	int i, busw, nand_maf_id, nand_dev_id;
+> +	int i, nand_maf_id, nand_dev_id;
+>  	struct nand_chip *chip = mtd->priv;
+>  	struct nand_flash_dev *type;
+>  
+> -	/* Get buswidth to select the correct functions */
+> -	busw = chip->options & NAND_BUSWIDTH_16;
+>  	/* Set the default functions */
+> -	nand_set_defaults(chip, busw);
+> +	nand_set_defaults(chip, chip->options & NAND_BUSWIDTH_16);
+>  
+>  	/* Read the flash type */
+> -	type = nand_get_flash_type(mtd, chip, busw,
+> -				&nand_maf_id, &nand_dev_id, table);
+> +	type = nand_get_flash_type(mtd, chip, &nand_maf_id,
+> +				   &nand_dev_id, table);
+I think the "busw" is to make the code more readable, since the nand_set_defaults
+also needs a busw.
 
-As I check code and test, f2fs_unlink and f2fs_rename is protected by
-f2fs_lookup well.
-Oldfile/newfile/deletedfile name length is check previously in f2fs_lookup.
+Let Brian judge it.
 
-> So, you can't remove this, instead it'd be better remove it from
-> f2fs_lookup.
+thanks
+Huang Shijie
 
-I think verification of filename length could not be removed from lookup.
-Ever you remove it, we could create file in f2fs device with filename length
-that vfs not supported.
-In my test, kernel seems not be stable after that kind of file created in f2fs.
-
-> Thanks,
-> 
-> >
-> > V2:
-> >  o add WARN_ON() as Jaegeuk Kim suggested.
-> >
-> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > ---
-> >  fs/f2fs/dir.c      |    3 ---
-> >  fs/f2fs/recovery.c |    6 ++++++
-> >  2 files changed, 6 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
-> > index 07ad850..f0b4630 100644
-> > --- a/fs/f2fs/dir.c
-> > +++ b/fs/f2fs/dir.c
-> > @@ -190,9 +190,6 @@ struct f2fs_dir_entry *f2fs_find_entry(struct inode *dir,
-> >  	unsigned int max_depth;
-> >  	unsigned int level;
-> >
-> > -	if (unlikely(namelen > F2FS_NAME_LEN))
-> > -		return NULL;
-> > -
-> >  	if (npages == 0)
-> >  		return NULL;
-> >
-> > diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-> > index a3f4542..4d411a2 100644
-> > --- a/fs/f2fs/recovery.c
-> > +++ b/fs/f2fs/recovery.c
-> > @@ -62,6 +62,12 @@ static int recover_dentry(struct page *ipage, struct inode *inode)
-> >
-> >  	name.len = le32_to_cpu(raw_inode->i_namelen);
-> >  	name.name = raw_inode->i_name;
-> > +
-> > +	if (unlikely(name.len > F2FS_NAME_LEN)) {
-> > +		WARN_ON(1);
-> > +		err = -ENAMETOOLONG;
-> > +		goto out;
-> > +	}
-> >  retry:
-> >  	de = f2fs_find_entry(dir, &name, &page);
-> >  	if (de && inode->i_ino == le32_to_cpu(de->ino))
-> 
-> --
-> Jaegeuk Kim
-> Samsung
 
