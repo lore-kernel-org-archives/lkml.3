@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754461Ab3L0Jsx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 04:48:53 -0500
-Received: from mga11.intel.com ([192.55.52.93]:26571 "EHLO mga11.intel.com"
+	id S1754501Ab3L0JtI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 04:49:08 -0500
+Received: from mga02.intel.com ([134.134.136.20]:5381 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754159Ab3L0Jsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 04:48:51 -0500
+	id S1754192Ab3L0JtF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Dec 2013 04:49:05 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,559,1384329600"; 
-   d="asc'?scan'208";a="456405580"
-Message-ID: <1388137730.2183.150.camel@jtkirshe-mobl>
-Subject: Re: [PATCH net-next 06/20] net: igbvf: slight optimization of addr
+   d="asc'?scan'208";a="458338113"
+Message-ID: <1388137743.2183.151.camel@jtkirshe-mobl>
+Subject: Re: [PATCH net-next 07/20] net: ixgbe: slight optimization of addr
  compare
 From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 To: Ding Tianhong <dingtianhong@huawei.com>
 Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
         "David S. Miller" <davem@davemloft.net>,
         Netdev <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 27 Dec 2013 01:48:50 -0800
-In-Reply-To: <52BD22BB.1060705@huawei.com>
-References: <52BD22BB.1060705@huawei.com>
+Date: Fri, 27 Dec 2013 01:49:03 -0800
+In-Reply-To: <52BD22BF.70108@huawei.com>
+References: <52BD22BF.70108@huawei.com>
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-GELYHPrkvNWXAN8A6tnj"
+	protocol="application/pgp-signature"; boundary="=-0jDMcv8i2aUI0N+A8kzu"
 X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,7 +31,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-GELYHPrkvNWXAN8A6tnj
+--=-0jDMcv8i2aUI0N+A8kzu
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
@@ -42,16 +41,15 @@ On Fri, 2013-12-27 at 14:48 +0800, Ding Tianhong wrote:
 >=20
 > Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 > Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
-> Cc: Carolyn Wyborny <carolyn.wyborny@intel.com>
-> Cc: Don Skidmore <donald.c.skidmore@intel.com>
+> Cc: Bruce Allan <bruce.w.allan@intel.com>
 > Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 > ---
->  drivers/net/ethernet/intel/igbvf/netdev.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 
 Thanks Ding, I have added this patch to my queue.
 
---=-GELYHPrkvNWXAN8A6tnj
+--=-0jDMcv8i2aUI0N+A8kzu
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 Content-Transfer-Encoding: 7bit
@@ -59,20 +57,20 @@ Content-Transfer-Encoding: 7bit
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.15 (GNU/Linux)
 
-iQIcBAABCgAGBQJSvU0CAAoJEOVv75VaS+3OZuUQAISVBZDuB5c8cglWGd5t7s6F
-d204sporr2TSL6pUSIJn5mxJHnHhUSYt5QM9Wu77lRzc/HIjIqCzaO3I11OCA5FW
-tFdT4YG7ctC+uTwKY8KaHFy0bev7tRkk6ySUIbMzknuAbbJClhj0x2FMDpyFJCvB
-8MSfsMVXH5Kblu6l5iBf+ZdZ7eF8XQ/6CGby27TlWjo/toxQo+iyam4yie2Xr6U1
-c3tZCDwHdE9Wi4awJrhKt+MakeuF0HiatvZDvnUgWgzYfc/yKnHyFcS25qolU7JP
-pRsYMI91Rm80+eMEI1neyD2DHGRlT4OYxC8QBCFdmsdQhg5mxC/qxGuVkLEvJ4oL
-9XmfD1fqguSIOYeEGqt5qVk0xMyEtr5tT/A2zbQIPGGxrxCHwnaP5M9NsBfMRBmS
-EPCzGxR8EK3i9dQ2BHXRmj1m8/vw6r/Kvr4JfWlVAz182UfNv5+vX8ghdPw7yaBp
-S3Gzgd0VuoNI2peX84nDrJH5mKPpLrXYdkTZS3WSuad9L7n3tn7KMERIg1O+Maqq
-fCDn3wp6HnkY6VbKZ3cXRJslamQ2uzWSnE4IeLFmrHmlA84VOk0EcXmsM124o8mM
-07gcbvnCSPa2DkMzOdXQkVqPzm8yPwoCqaeu3J1EeyGeKMTaecJyAeqjuKNEgaqQ
-nQ3qvMMkv4ZskmD1pfOM
-=T00M
+iQIcBAABCgAGBQJSvU0PAAoJEOVv75VaS+3Oi9wP/jSFVgwDTUbJH7HX+zKbGgGr
+ZNgd+2iJXABOTh3pCgizF+rKzIQVaLuk4S6Vn8SkSx12tugxMMoPt5C7d7zQOzMD
+lrpO7hGjMG+JHPaJCQWOVli200jUO+9zQYTKCBmzs5pCoGAwy3pwO7Zq67o/wBNU
+lwDGdBxyatk2hIcMCzlW9mQluosS/TgLy3VfXP4x6nIFx4lwbjCZ613c43qqiqSh
+BmhcE/3iTDgouT+gwLjEKvmLG19yEdzDedQ2SK7jSZg43Qcrmm3iu8QM35DMvRmQ
+w9I7uWw99MuCiRf9MAe+iYiVoaPign/5rEm2+Cwi6AIpw57JDmcN/kGXZHEuddYx
+M+dBuq4diJoGzOjfSwj6PCzksFJtpHZwu+uu9sBxkhPl5ELkjHY+6ISbauHI+Xy/
+757CNWUQLSW0BCoDm09/BiEZOZssaf9p+Gm0hU4O/4JnbEMFCG2b2mZIxPnbJgF9
+nRcCiZ/WmzlsVkaIiIzzVhTbSFr6WtoAyPSmKfzSCNfbvRE5dtClgau0ZHEuU5Cs
+sGWzTPW8hIqfeiwndr8rvwwbYRSg+GOXLF4IpMZfsSXoR6QGls8Fv/9/iSCt62UI
+OQeyvUFKx63R2sA2AG3Pk6jjGMcZ9GMB5pGuoJrXQ6CndECGTF8CRIhyfvqHoV2e
+p8L/lfXstboSAVi+7HjZ
+=SxhN
 -----END PGP SIGNATURE-----
 
---=-GELYHPrkvNWXAN8A6tnj--
+--=-0jDMcv8i2aUI0N+A8kzu--
 
