@@ -1,221 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab3L0JSf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 04:18:35 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:10168 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754060Ab3L0JSb (ORCPT
+	id S1754226Ab3L0JXS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 04:23:18 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:36823 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754107Ab3L0JXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 04:18:31 -0500
-X-AuditID: cbfee68e-b7f566d000002344-1e-52bd45df5464
+	Fri, 27 Dec 2013 04:23:15 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee68f-b7f156d00000276c-b8-52bd47028c40
+Content-transfer-encoding: 8BIT
+Message-id: <1388136123.2101.310.camel@kjgkr>
+Subject: Re: [PATCH] f2fs: fix build warning for f2fs_has_inline_data()
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH] f2fs: handle errors correctly during f2fs_reserve_block
-Date: Fri, 27 Dec 2013 18:17:09 +0900
-Message-id: <1388135829-21292-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Mailer: git-send-email 1.8.4.474.g128a96c
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t8zQ937rnuDDNb8Z7G4vusvk8WlRe4W
-	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK6O/+wZzwWPViocT
-	GtkaGPvluhg5OSQETCSenXvBBmGLSVy4tx7I5uIQEljGKHFqWzcrTNGF/feYIBKLGCXO/e9m
-	h3CamSSmXZvE2MXIwcEmoC2xeb8BSIOIALPEgqnnGUFqmAUmMEr8X/SeBaRGWMBD4lpzDkgN
-	i4CqxJK995hBbF4Bd4lru88wQyzTltj2fCJYr4TAYzaJXU23WSAaBCS+TT4ENkdCQFZi0wGo
-	ekmJgytusExgFFzAyLCKUTS1ILmgOCm9yEivODG3uDQvXS85P3cTIyQE+3Yw3jxgfYgxGWjc
-	RGYp0eR8YAjnlcQbGpsZWZiamBobmVuakSasJM676GFSkJBAemJJanZqakFqUXxRaU5q8SFG
-	Jg5OqQbGeX81Uld/3HPz4rcXmu/55WYvPBVSeHvu87NeO33nJnY1ml/w4bPqSfHfP7du7t6c
-	w2ui72w71Rk1o2Cz2aaPE479+dj6Xv8U5y65i8+36p7a+LfEvvyU56Wliye9vFqnZS6pZzX5
-	gsz0uc/uqb3WPfnj3KmJVeZvdPMPri77xJcUtqt6/QzulmlKLMUZiYZazEXFiQDIQfa5VwIA	AA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrAIsWRmVeSWpSXmKPExsVy+t9jAd37rnuDDP4EWVzf9ZfJ4tIid4s9
-	e0+yWFzeNYfNgcVj94LPTB59W1YxenzeJBfAHNXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxv
-	amZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtExJoSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9I
-	EFyPkQEaSFjHmNHffYO54LFqxcMJjWwNjP1yXYycHBICJhIX9t9jgrDFJC7cW8/WxcjFISSw
-	iFHi3P9udginmUli2rVJjF2MHBxsAtoSm/cbgDSICDBLLJh6nhGkhllgAqPE/0XvWUBqhAU8
-	JK4154DUsAioSizZe48ZxOYVcJe4tvsMM8QybYltzycyTmDkXsDIsIpRNLUguaA4KT3XSK84
-	Mbe4NC9dLzk/dxMjOLyfSe9gXNVgcYhRgINRiYfXYcOeICHWxLLiytxDjBIczEoivE02e4OE
-	eFMSK6tSi/Lji0pzUosPMSYDbZ/ILCWanA+MvbySeENjEzMjSyMzCyMTc3PShJXEeQ+2WgcK
-	CaQnlqRmp6YWpBbBbGHi4JRqYIx6JXXm6HQr6b7vrzw3ePuyP16z7Ngk7rceBy5uPcE+0+uA
-	S9nLyayu/5gzo4049ulrXWHfcEd2t+IUjy7PkC8dSw8/XlT5ySnK7cAbA5vXfrLPjxmyZspE
-	Pfzdo8O+35Y1/uKd6dtvJJfarDuy5d7pgpkf1gpcsm2Qm2yQJr+2emueg16nlr0SS3FGoqEW
-	c1FxIgA44QW3swIAAA==
+Reply-to: jaegeuk.kim@samsung.com
+To: Haicheng Li <haicheng.li@linux.intel.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, Haicheng Li <haicheng.lee@gmail.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, Huajun Li <huajun.li@intel.com>
+Date: Fri, 27 Dec 2013 18:22:03 +0900
+In-reply-to: <1388126708-27839-1-git-send-email-haicheng.li@linux.intel.com>
+References: <1388126708-27839-1-git-send-email-haicheng.li@linux.intel.com>
+Organization: Samsung
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t8zY10m971BBjd/iVu8PKRp8f75emaL
+	GwvKLM4862C0+Np/h83i0iJ3iz17T7JYXN41h82Bw2PnrLvsHov3vGTymHcy0GP3gs9MHn1b
+	VjF6fN4kF8AWxWWTkpqTWZZapG+XwJXxbMNqxoLVAhVNHd2sDYwLeLsYOTkkBEwk5k9tYYKw
+	xSQu3FvP1sXIxSEksIxR4trLo4wwRTu2XmaHSCxilPiz+RErSIJXQFDix+R7LF2MHBzMAvIS
+	Ry5lg4SZBdQlJs1bxAxR/4pR4lIDyFSQel2JHw/XM4PUCwu4SzyfxQdisgloS2zebwBSISSg
+	KPF2/12w6SJA1RPfzmYCGcMscJNR4uWcV+wgCRYBVYnG3olgRZwCPhLrjp5ghmj2llj+4x5Y
+	Db+AqMThhduZIe5Xktjd3gl2v4TAT3aJf/d3MUIMEpD4NvkQ2P0SArISmw5A1UtKHFxxg2UC
+	o8QsJF/OQvhyFpIvFzAyr2IUTS1ILihOSi8y1itOzC0uzUvXS87P3cQIidf+HYx3D1gfYkwG
+	2jiRWUo0OR8Y73kl8YbGZkYWpiamxkbmlmakCSuJ895/mBQkJJCeWJKanZpakFoUX1Sak1p8
+	iJGJg1OqgXF1QYrUodDPH0z/rZh0u9N/3qxjgU9eLNNYqdolf1avJkt8446G8Estyjtneb4M
+	sXyw8qTlrtJXrwKahEtK1u0rfuq0+Jrsw2CRTy+jX71Q/928WsoyquXtStPg1iABJcePx9aL
+	Sst94132+bXxBYffK3z6Y0zilynGLzh24gh/S/PiAGbluYuVWIozEg21mIuKEwEvjEJV7QIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOKsWRmVeSWpSXmKPExsVy+t9jAV0m971BBpObhS1eHtK0eP98PbPF
+	jQVlFmeedTBafO2/w2ZxaZG7xZ69J1ksLu+aw+bA4bFz1l12j8V7XjJ5zDsZ6LF7wWcmj74t
+	qxg9Pm+SC2CLamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
+	0HXLzAG6RkmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeY8WzDasaC1QIV
+	TR3drA2MC3i7GDk5JARMJHZsvcwOYYtJXLi3nq2LkYtDSGARo8SfzY9YQRK8AoISPybfY+li
+	5OBgFpCXOHIpGyTMLKAuMWneImaI+leMEpcaQJpB6nUlfjxczwxSLyzgLvF8Fh+IySagLbF5
+	vwFIhZCAosTb/XfBposAVU98O5sJZAyzwE1GiZdzXoHdwyKgKtHYOxGsiFPAR2Ld0RPMEM3e
+	Est/3AOr4RcQlTi8cDszxP1KErvbO9knMArNQnL1LISrZyG5egEj8ypG0dSC5ILipPRcQ73i
+	xNzi0rx0veT83E2M4GTwTGoH48oGi0OMAhyMSjy8Dhv2BAmxJpYVV+YeYpTgYFYS4W2y2Rsk
+	xJuSWFmVWpQfX1Sak1p8iDEZ6PCJzFKiyfnARJVXEm9obGJmZGlkZmFkYm5OmrCSOO+BVutA
+	IYH0xJLU7NTUgtQimC1MHJxSDYyqu6UvWM8LmmnWtYYlpiTrc5uxbYb+rYnn6p8mPXrQeD1p
+	5dsn5+dFyke1lTNXJQpMvBn7PmfmbaMTWz77HqsQ2dva8bN9Wft0BeZQV8v3q70ttrRPT/fS
+	2XJVKO5R2A3hGWc4JhQntqQwdPL8XHNvrU7Wk7+OJV86nvivfNUxtezeev3KR9uUWIozEg21
+	mIuKEwE5yjd1SgMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The get_dnode_of_data nullifies inode and node page when error is occurred.
+Hi,
 
-There are two cases that passes inode page into get_dnode_of_data().
+Could you refer the following patch that I sent?
 
-1. make_empty_dir()
-    -> get_new_data_page()
-      -> f2fs_reserve_block(ipage)
-	-> get_dnode_of_data()
+Re: [PATCH 5/6] f2fs: add the number of inline_data files to status info
 
-2. f2fs_convert_inline_data()
-    -> __f2fs_convert_inline_data()
-      -> f2fs_reserve_block(ipage)
-	-> get_dnode_of_data()
+Thanks,
 
-This patch adds correct error handling codes when get_dnode_of_data() returns
-an error.
+2013-12-27 (금), 14:45 +0800, Haicheng Li:
+> This patch is to fix the issue reported by Fengguang Wu:
+> > Note: the f2fs/linux-3.4 HEAD 22a48d188024830d61365ce97a0a8a0bedd494a9 builds fine.
+> >       It only hurts bisectibility.
+> >
+> > All error/warnings:
+> >
+> >    In file included from fs/f2fs/data.c:22:0:
+> >    fs/f2fs/data.c: In function 'f2fs_direct_IO':
+> > >> fs/f2fs/f2fs.h:1302:12: error: inlining failed in call to
+> > >> always_inline 'f2fs_has_inline_data': function body not available
+> >     inline int f2fs_has_inline_data(struct inode *);
+> ..snip..
+> 
+> Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
+> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> Cc: Huajun Li <huajun.li@intel.com>
+> ---
+>  fs/f2fs/f2fs.h   |    5 ++++-
+>  fs/f2fs/inline.c |    5 -----
+>  2 files changed, 4 insertions(+), 6 deletions(-)
+> 
+> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> index 6991a28..e143ca1 100644
+> --- a/fs/f2fs/f2fs.h
+> +++ b/fs/f2fs/f2fs.h
+> @@ -1314,7 +1314,10 @@ extern const struct inode_operations f2fs_special_inode_operations;
+>  /*
+>   * inline.c
+>   */
+> -inline int f2fs_has_inline_data(struct inode *);
+> +static inline int f2fs_has_inline_data(struct inode *inode)
+> +{
+> +	return is_inode_flag_set(F2FS_I(inode), FI_INLINE_DATA);
+> +}
+>  bool f2fs_may_inline(struct inode *);
+>  int f2fs_read_inline_data(struct inode *, struct page *);
+>  int f2fs_convert_inline_data(struct inode *, pgoff_t);
+> diff --git a/fs/f2fs/inline.c b/fs/f2fs/inline.c
+> index 0e940ce..bcc6f65 100644
+> --- a/fs/f2fs/inline.c
+> +++ b/fs/f2fs/inline.c
+> @@ -13,11 +13,6 @@
+>  
+>  #include "f2fs.h"
+>  
+> -inline int f2fs_has_inline_data(struct inode *inode)
+> -{
+> -	return is_inode_flag_set(F2FS_I(inode), FI_INLINE_DATA);
+> -}
+> -
+>  bool f2fs_may_inline(struct inode *inode)
+>  {
+>  	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
 
-At first, f2fs_reserve_block() calls f2fs_put_dnode() whenever reserve_new_block
-returns an error.
-So, the rule of f2fs_reserve_block() is to nullify inode page when there is any
-error internally.
-
-Finally, two callers of f2fs_reserve_block() should call f2fs_put_dnode()
-appropriately if they got an error since successful f2fs_reserve_block().
-
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- fs/f2fs/data.c   | 29 ++++++++++++++++++++---------
- fs/f2fs/dir.c    |  7 ++++---
- fs/f2fs/inline.c |  6 ++----
- 3 files changed, 26 insertions(+), 16 deletions(-)
-
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index fc7a28c..63d1902 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -258,13 +258,16 @@ int f2fs_reserve_block(struct dnode_of_data *dn, pgoff_t index)
- 	bool need_put = dn->inode_page ? false : true;
- 	int err;
- 
-+	/* if inode_page exists, index should be zero */
-+	f2fs_bug_on(!need_put && index);
-+
- 	err = get_dnode_of_data(dn, index, ALLOC_NODE);
- 	if (err)
- 		return err;
-+
- 	if (dn->data_blkaddr == NULL_ADDR)
- 		err = reserve_new_block(dn);
--
--	if (need_put)
-+	if (err || need_put)
- 		f2fs_put_dnode(dn);
- 	return err;
- }
-@@ -510,10 +513,10 @@ repeat:
-  *
-  * Also, caller should grab and release a rwsem by calling f2fs_lock_op() and
-  * f2fs_unlock_op().
-- * Note that, npage is set only by make_empty_dir.
-+ * Note that, ipage is set only by make_empty_dir.
-  */
- struct page *get_new_data_page(struct inode *inode,
--		struct page *npage, pgoff_t index, bool new_i_size)
-+		struct page *ipage, pgoff_t index, bool new_i_size)
- {
- 	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
- 	struct address_space *mapping = inode->i_mapping;
-@@ -521,14 +524,16 @@ struct page *get_new_data_page(struct inode *inode,
- 	struct dnode_of_data dn;
- 	int err;
- 
--	set_new_dnode(&dn, inode, npage, npage, 0);
-+	set_new_dnode(&dn, inode, ipage, NULL, 0);
- 	err = f2fs_reserve_block(&dn, index);
- 	if (err)
- 		return ERR_PTR(err);
- repeat:
- 	page = grab_cache_page(mapping, index);
--	if (!page)
--		return ERR_PTR(-ENOMEM);
-+	if (!page) {
-+		err = -ENOMEM;
-+		goto put_err;
-+	}
- 
- 	if (PageUptodate(page))
- 		return page;
-@@ -540,11 +545,13 @@ repeat:
- 		err = f2fs_submit_page_bio(sbi, page, dn.data_blkaddr,
- 								READ_SYNC);
- 		if (err)
--			return ERR_PTR(err);
-+			goto put_err;
-+
- 		lock_page(page);
- 		if (unlikely(!PageUptodate(page))) {
- 			f2fs_put_page(page, 1);
--			return ERR_PTR(-EIO);
-+			err = -EIO;
-+			goto put_err;
- 		}
- 		if (unlikely(page->mapping != mapping)) {
- 			f2fs_put_page(page, 1);
-@@ -560,6 +567,10 @@ repeat:
- 		mark_inode_dirty_sync(inode);
- 	}
- 	return page;
-+
-+put_err:
-+	f2fs_put_dnode(&dn);
-+	return ERR_PTR(err);
- }
- 
- static int __allocate_data_block(struct dnode_of_data *dn)
-diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
-index 6da77e5..f815ca0 100644
---- a/fs/f2fs/dir.c
-+++ b/fs/f2fs/dir.c
-@@ -342,11 +342,11 @@ static struct page *init_inode_metadata(struct inode *inode,
- 
- 		err = f2fs_init_acl(inode, dir, page);
- 		if (err)
--			goto error;
-+			goto put_error;
- 
- 		err = f2fs_init_security(inode, dir, name, page);
- 		if (err)
--			goto error;
-+			goto put_error;
- 
- 		wait_on_page_writeback(page);
- 	} else {
-@@ -370,8 +370,9 @@ static struct page *init_inode_metadata(struct inode *inode,
- 	}
- 	return page;
- 
--error:
-+put_error:
- 	f2fs_put_page(page, 1);
-+error:
- 	remove_inode_page(inode);
- 	return ERR_PTR(err);
- }
-diff --git a/fs/f2fs/inline.c b/fs/f2fs/inline.c
-index bcc6f65..afbdf87 100644
---- a/fs/f2fs/inline.c
-+++ b/fs/f2fs/inline.c
-@@ -81,10 +81,9 @@ static int __f2fs_convert_inline_data(struct inode *inode, struct page *page)
- 	 * i_addr[0] is not used for inline data,
- 	 * so reserving new block will not destroy inline data
- 	 */
--	set_new_dnode(&dn, inode, ipage, ipage, 0);
-+	set_new_dnode(&dn, inode, ipage, NULL, 0);
- 	err = f2fs_reserve_block(&dn, 0);
- 	if (err) {
--		f2fs_put_page(ipage, 1);
- 		f2fs_unlock_op(sbi);
- 		return err;
- 	}
-@@ -111,9 +110,8 @@ static int __f2fs_convert_inline_data(struct inode *inode, struct page *page)
- 	stat_dec_inline_inode(inode);
- 
- 	sync_inode_page(&dn);
--	f2fs_put_page(ipage, 1);
-+	f2fs_put_dnode(&dn);
- 	f2fs_unlock_op(sbi);
--
- 	return err;
- }
- 
 -- 
-1.8.4.474.g128a96c
+Jaegeuk Kim
+Samsung
 
