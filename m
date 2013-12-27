@@ -1,67 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118Ab3L0CVz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 21:21:55 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:42343 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754011Ab3L0CVy (ORCPT
+	id S1754108Ab3L0Cgf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 21:36:35 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:52621 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754065Ab3L0Cgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 21:21:54 -0500
-Date: Thu, 26 Dec 2013 21:21:42 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        linux-ide@vger.kernel.org,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>
-Subject: Re: No freezing of kernel threads (was: Re: [GIT PULL] libata fixes
- for v3.13-rc5)
-Message-ID: <20131227022142.GD16483@htj.dyndns.org>
-References: <20131226190120.GC16483@htj.dyndns.org>
- <Pine.LNX.4.44L0.1312262048540.29101-100000@netrider.rowland.org>
+	Thu, 26 Dec 2013 21:36:33 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID rBR2aVfb029319, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next 0/6] Support new chip
+Date: Fri, 27 Dec 2013 10:34:04 +0800
+Message-ID: <1388111649-1014-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.8.3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1312262048540.29101-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Adjust the code to make it easy to add the settings for the new chip.
+Then, add the relative parameters of the RTL8153.
 
-On Thu, Dec 26, 2013 at 09:14:49PM -0500, Alan Stern wrote:
-> I can't disagree with this.  But the design may well be perfectly
-> adequate for some use cases.  Given a workqueue or kthread which should
-> not operate during system sleep, we have to:
-> 
-> 	Tell the wq/thread to stop running because a sleep is about
-> 	to start, and
-> 
-> 	Provide a function the wq/thread can call to put itself on 
-> 	hold for the duration of the sleep.
-> 
-> The freezer does both these things pretty efficiently.  Problems may
+Hayes Wang (6):
+  r8152: move rtl8152_unload and ocp_reg_write
+  r8152: modify the method of accessing PHY
+  r8152: change some definitions
+  r8152: add rtl_ops
+  r8152: split rtl8152_enable
+  r8152: support RTL8153
 
-I don't even like the interface itself.  It's too implicit and spread
-all over the place - we basically had to spread it all over the wait
-interfaces, and the implementation is far more involved than called
-for.  I don't know how you're defining "efficiently" but that isn't a
-word I'd use to describe the freezer.
-
-> So you're suggesting changing the kthread to a workqueue thread, but
-> keeping the existing list of scheduled events instead of relying on the
-> workqueue's own queue of work items?  What's the advantage?  Making
-> such a change wouldn't simplify anything.
-
-Well, that'd be an easy first step which does away with the dedicated
-kthread, likely reduces cache footprint and allows use of wq
-synchronization / freezing constructs which are easier to deal with.
-More involved conversion would of course be doable but even simple
-conversion seems like a win.
-
-Thanks.
+ drivers/net/usb/cdc_ether.c |  10 +
+ drivers/net/usb/r8152.c     | 812 +++++++++++++++++++++++++++++++++++++++-----
+ drivers/net/usb/r815x.c     |   2 +-
+ 3 files changed, 741 insertions(+), 83 deletions(-)
 
 -- 
-tejun
+1.8.3.1
+
