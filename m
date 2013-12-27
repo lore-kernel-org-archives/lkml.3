@@ -1,78 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab3L0Nq1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 08:46:27 -0500
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:52561 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753143Ab3L0NqZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 08:46:25 -0500
+	id S1754623Ab3L0Nub (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 08:50:31 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:38793 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753143Ab3L0Nu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Dec 2013 08:50:29 -0500
+Message-ID: <52BD856E.7010609@ti.com>
+Date: Fri, 27 Dec 2013 19:19:34 +0530
+From: Sricharan R <r.sricharan@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <20131227124749.GE10961@minantech.com>
-References: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com>
-	<CAKohpomqHApogDEXA5LyWk-+B-Y1mwNQ63-wL3PPGz64s_3Dmw@mail.gmail.com>
-	<20131227122422.62857cec@alan.etchedpixels.co.uk>
-	<20131227124749.GE10961@minantech.com>
-Date: Fri, 27 Dec 2013 08:46:25 -0500
-X-Google-Sender-Auth: ABkopLHq6OpdeyaoJOEnGx22sBg
-Message-ID: <CA+5PVA60GSC0tTLJWLtVqb5eTPMzrszxtoBnUP8B_Q_60=oGyw@mail.gmail.com>
-Subject: Re: intel_pstate divide error with v3.13-rc4-256-gb7000ad
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Gleb Natapov <gleb@kernel.org>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Kashyap Chamarthy <kchamart@redhat.com>,
-        "Richard W.M. Jones" <rjones@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: <tony@atomide.com>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linus.walleij@linaro.org>, <linux@arm.linux.org.uk>, <rnayak@ti.com>,
+        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
+        <mark.rutland@arm.com>, <robherring2@gmail.com>, <tglx@linutronix.de>,
+        <galak@codeaurora.org>, <rob.herring@calxeda.com>, <nm@ti.com>,
+        <bcousson@baylibre.com>
+Subject: Re: [PATCH V5 0/4] DRIVERS: IRQCHIP: Add support for crossbar IP
+References: <1386066445-28245-1-git-send-email-r.sricharan@ti.com> <52B168A5.4010202@ti.com> <52BBB614.5010707@ti.com> <52BC6B16.80507@ti.com>
+In-Reply-To: <52BC6B16.80507@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 27, 2013 at 7:47 AM, Gleb Natapov <gleb@kernel.org> wrote:
-> On Fri, Dec 27, 2013 at 12:24:22PM +0000, One Thousand Gnomes wrote:
->> On Tue, 24 Dec 2013 21:36:01 +0530
->> Viresh Kumar <viresh.kumar@linaro.org> wrote:
+On Thursday 26 December 2013 11:14 PM, Santosh Shilimkar wrote:
+> Sricharan,
+> 
+> On Wednesday 25 December 2013 11:52 PM, Sricharan R wrote:
+>> Hi Thomas,
+>> On Wednesday 18 December 2013 02:49 PM, Sricharan R wrote:
+>>> Hi Thomas,
+>>>
+>>> On Tuesday 03 December 2013 03:57 PM, Sricharan R wrote:
+>>>> Some socs have a large number of interrupts requests to service
+>>>> the needs of its many peripherals and subsystems. All of the interrupt
+>>>> requests lines from the subsystems are not needed at the same
+>>>> time, so they have to be muxed to the controllers appropriately.
+>>>> In such places a interrupt controllers are preceded by an
+>>>> IRQ CROSSBAR that provides flexibility in muxing the device interrupt
+>>>> requests to the controller inputs.
+>>>>
+>>>> This series models the peripheral interrupts that can be routed through
+>>>> the crossbar to the GIC as 'routable-irqs'. The routable irqs are added
+>>>> in a separate linear domain inside the GIC. The registered routable domain's
+>>>> callback are invoked as a part of the GIC's callback, which in turn should
+>>>> allocate a free irq line and configure the IP accordingly. So every peripheral
+>>>> in the dts files mentions the fixed crossbar number as its interrupt. A free
+>>>> gic line for that gets allocated and configured when the peripheral interrupts
+>>>> are mapped.
+>>>>
+>>>> The minimal crossbar driver to track and allocate free GIC lines and configure the
+>>>> crossbar is added here, along with the DT bindings.
+>>>>
+>>>> V5:
+>>>>    Addressed a comment from Mark Rutland <mark.rutland@arm.com>,
+>>>>    updated tags and rebased on 3.13-rc2
+>>>>
+>>>> V4:
+>>>>    Addressed a couple of comments and split the DTS file updates in to
+>>>>    a separate series.
+>>>>
+>>>> V3:
+>>>>    Addressed few more comments from Thomas Gleixner <tglx@linutronix.de>
+>>>>
+>>>>    Rebased patches 3,4,5,7 which updates the DTS file on top of below branch
+>>>> 	   git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git
+>>>> 	   for_3.13/dts
+>>>>
+>>>>    Rebased patches 1,2,6 on top of 3.12 mainline
+>>>>    Updated Commit tags
+>>>>
+>>>> V2:
+>>>>    Addressed Thomas Gleixner <tglx@linutronix.de> comments and
+>>>>    Kumar Gala <galak@codeaurora.org>
+>>>>
+>>>>    Split updating the DRA7.dtsi file for adding the routable-irqs
+>>>>
+>>>> Previous discussions that led to this is at
+>>>> 	https://lkml.org/lkml/2013/9/18/540
+>>>>
+>>>> The V1,V2,V3,V4 post of these patches is at
+>>>>       [V1]  https://lkml.org/lkml/2013/9/30/283
+>>>>       [V2]  http://www.spinics.net/lists/linux-omap/msg99540.html
+>>>>       [V3]  http://www.kernelhub.org/?msg=356470&p=2
+>>>>       [V4]  http://www.spinics.net/lists/linux-doc/msg16726.html
+>>>>
+>>>> Sricharan R (4):
+>>>>   DRIVERS: IRQCHIP: IRQ-GIC: Add support for routable irqs
+>>>>   DRIVERS: IRQCHIP: CROSSBAR: Add support for Crossbar IP
+>>>>   ARM: OMAP4+: Correct Wakeup-gen code to use physical irq number
+>>>>   ARM: DRA: Enable Crossbar IP support for DRA7XX
+>>>>
+>>>>  Documentation/devicetree/bindings/arm/gic.txt      |    6 +
+>>>>  .../devicetree/bindings/arm/omap/crossbar.txt      |   27 +++
+>>>>  arch/arm/mach-omap2/Kconfig                        |    1 +
+>>>>  arch/arm/mach-omap2/omap-wakeupgen.c               |    4 +-
+>>>>  arch/arm/mach-omap2/omap4-common.c                 |    2 +
+>>>>  drivers/irqchip/Kconfig                            |    8 +
+>>>>  drivers/irqchip/Makefile                           |    1 +
+>>>>  drivers/irqchip/irq-crossbar.c                     |  208 ++++++++++++++++++++
+>>>>  drivers/irqchip/irq-gic.c                          |   81 +++++++-
+>>>>  include/linux/irqchip/arm-gic.h                    |    7 +-
+>>>>  include/linux/irqchip/irq-crossbar.h               |   11 ++
+>>>>  11 files changed, 343 insertions(+), 13 deletions(-)
+>>>>  create mode 100644 Documentation/devicetree/bindings/arm/omap/crossbar.txt
+>>>>  create mode 100644 drivers/irqchip/irq-crossbar.c
+>>>>  create mode 100644 include/linux/irqchip/irq-crossbar.h
+>>>>
+>>>
+>>> I have addressed all the comments on this series, can this be merged now ?
+>>>
+>>   Ping..
 >>
->> > Adding Dirk..
->> >
->> > On 24 December 2013 20:06, Josh Boyer <jwboyer@fedoraproject.org> wrote:
->> > > Hi All,
->> > >
->> > > We've had a report [1] that the pstate driver causes KVM guests to
->> > > fail to boot because of a divide error.  See the backtrace below.
->> > >
->> > >     4.839784] Intel P-state driver initializing.
->> > > [    4.859972] Intel pstate controlling: cpu 0
->> > > [    4.867653] cpufreq: __cpufreq_add_dev: ->get() failed
->> >
->> > After a call to ->init(), ->get() is supposed to work.
->> > @Dirk: Any idea why it failed?
->> >
->> > And then I don't know what made this divide by zero to happen :)
->>
->> > > [    4.878127] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
->>
->> Emulator bug perhaps ?
->>
-> KVM does not emulate P-states at all. intel_pstate_init() calls
-> intel_pstate_msrs_not_valid() before printing "Intel P-state driver
-> initializing."  which suppose to fail since it checks that two reads of
-> MSR_IA32_APERF return different values, but KVM does not emulate this msr
-> at all, so both calls should return zero (KVM suppose to inject #GP, all rdmsrl
-> are patched to be rdmsrl_safe in a guest).
->
-> Anything interesting in host dmesg? Is it reproducible?
+> Thomas has already given his reviewed-by tag so the patches can be
+> taken via arm-soc tree considering OMAP and GIC changes. Can you
+> create a branch with all these patches applied and send it
+> to Tony ?
+> 
+Ok, i will send out a branch for this.
 
-Seems reproducible.  I forgot to link to the actual bug in my original
-report, but you can find it here:
-
-https://bugzilla.redhat.com/show_bug.cgi?id=1046317
-
-Adding Richard and Kashyap on CC.
-
-josh
+Regards,
+ Sricharan
