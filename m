@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab3L0OV7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 09:21:59 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:59827 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753063Ab3L0OV6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 09:21:58 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>,
-        Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
+	id S1754650Ab3L0OfV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 09:35:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61010 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753063Ab3L0OfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Dec 2013 09:35:18 -0500
+Date: Fri, 27 Dec 2013 14:34:49 +0000
+From: "Richard W.M. Jones" <rjones@redhat.com>
+To: Kashyap Chamarthy <kchamart@redhat.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>, Gleb Natapov <gleb@kernel.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
         Linux PM list <linux-pm@vger.kernel.org>,
         "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
 Subject: Re: intel_pstate divide error with v3.13-rc4-256-gb7000ad
-Date: Fri, 27 Dec 2013 15:35:29 +0100
-Message-ID: <2312220.jMindkoXyA@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAKohpomqHApogDEXA5LyWk-+B-Y1mwNQ63-wL3PPGz64s_3Dmw@mail.gmail.com>
-References: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com> <CAKohpomqHApogDEXA5LyWk-+B-Y1mwNQ63-wL3PPGz64s_3Dmw@mail.gmail.com>
+Message-ID: <20131227143449.GN28747@redhat.com>
+References: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com>
+ <CAKohpomqHApogDEXA5LyWk-+B-Y1mwNQ63-wL3PPGz64s_3Dmw@mail.gmail.com>
+ <20131227122422.62857cec@alan.etchedpixels.co.uk>
+ <20131227124749.GE10961@minantech.com>
+ <CA+5PVA60GSC0tTLJWLtVqb5eTPMzrszxtoBnUP8B_Q_60=oGyw@mail.gmail.com>
+ <52BD8B8B.1050209@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52BD8B8B.1050209@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 24, 2013 09:36:01 PM Viresh Kumar wrote:
-> Adding Dirk..
-> 
-> On 24 December 2013 20:06, Josh Boyer <jwboyer@fedoraproject.org> wrote:
-> > Hi All,
-> >
-> > We've had a report [1] that the pstate driver causes KVM guests to
-> > fail to boot because of a divide error.  See the backtrace below.
-> >
-> >     4.839784] Intel P-state driver initializing.
-> > [    4.859972] Intel pstate controlling: cpu 0
-> > [    4.867653] cpufreq: __cpufreq_add_dev: ->get() failed
-> 
-> After a call to ->init(), ->get() is supposed to work.
-> @Dirk: Any idea why it failed?
+Probably the qemu command line is more interesting, which is in this
+comment and reproduced below.
 
-Well, it looks like sample->freq is 0 in intel_pstate_get().
+https://bugzilla.redhat.com/show_bug.cgi?id=1046317#c1
 
-> And then I don't know what made this divide by zero to happen :)
+/usr/bin/qemu-kvm \
+    -global virtio-blk-pci.scsi=off \
+    -nodefconfig \
+    -enable-fips \
+    -nodefaults \
+    -display none \
+    -machine accel=kvm:tcg \
+    -cpu host,+kvmclock \
+    -m 500 \
+    -no-reboot \
+    -no-hpet \
+    -kernel /var/tmp/.guestfs-0/kernel.32370 \
+    -initrd /var/tmp/.guestfs-0/initrd.32370 \
+    -device virtio-scsi-pci,id=scsi \
+    -drive file=/tmp/libguestfswnVOx7/scratch.1,cache=unsafe,format=raw,id=hd0,if=none \
+    -device scsi-hd,drive=hd0 \
+    -drive file=/var/tmp/.guestfs-0/root.32370,snapshot=on,id=appliance,cache=unsafe,if=none \
+    -device scsi-hd,drive=appliance \
+    -device virtio-serial-pci \
+    -serial stdio \
+    -device sga \
+    -chardev socket,path=/tmp/libguestfswnVOx7/guestfsd.sock,id=channel0 \
+    -device virtserialport,chardev=channel0,name=org.libguestfs.channel.0 \
+    -append 'panic=1 console=ttyS0 udevtimeout=600 no_timer_check acpi=off printk.time=1 cgroup_disable=memory root=/dev/sdb selinux=0 guestfs_verbose=1 TERM=screen'
 
->From code inspection it looks like that is caused by the
-intel_pstate_get_scaled_busy() called from intel_pstate_adjust_busy_pstate(),
-so it appears that cpu->pstate.current_state is 0 at that point.
+Rich.
 
-I'm wondering if something like the (untested) patch below helps, then?
-
-Rafael
-
-
----
- drivers/cpufreq/intel_pstate.c |    5 +++++
- 1 file changed, 5 insertions(+)
-
-Index: linux-pm/drivers/cpufreq/intel_pstate.c
-===================================================================
---- linux-pm.orig/drivers/cpufreq/intel_pstate.c
-+++ linux-pm/drivers/cpufreq/intel_pstate.c
-@@ -652,6 +652,11 @@ static int intel_pstate_init_cpu(unsigne
- 	cpu = all_cpu_data[cpunum];
- 
- 	intel_pstate_get_cpu_pstates(cpu);
-+	if (!cpu->pstate.current_state) {
-+		all_cpu_data[cpunum] = NULL;
-+		kfree(cpu);
-+		return -ENODATA;
-+	}
- 
- 	cpu->cpu = cpunum;
- 
-
+-- 
+Richard Jones, Virtualization Group, Red Hat http://people.redhat.com/~rjones
+Fedora Windows cross-compiler. Compile Windows programs, test, and
+build Windows installers. Over 100 libraries supported.
+http://fedoraproject.org/wiki/MinGW
