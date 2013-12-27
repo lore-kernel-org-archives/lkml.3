@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478Ab3L0Gt3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 01:49:29 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:40058 "EHLO
+	id S1754709Ab3L0Gxy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 01:53:54 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:39970 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754437Ab3L0Gt0 (ORCPT
+	with ESMTP id S1754363Ab3L0GtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 01:49:26 -0500
-Message-ID: <52BD22DA.5020606@huawei.com>
-Date: Fri, 27 Dec 2013 14:48:58 +0800
+	Fri, 27 Dec 2013 01:49:16 -0500
+Message-ID: <52BD22CF.4080408@huawei.com>
+Date: Fri, 27 Dec 2013 14:48:47 +0800
 From: Ding Tianhong <dingtianhong@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
 To: "David S. Miller" <davem@davemloft.net>, Netdev <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH net-next 14/20] net: renesas: slight optimization of addr
- compare
+Subject: [PATCH net-next 11/20] net: packetengines: slight optimization of
+ addr
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.72.199]
@@ -30,22 +30,34 @@ to instead of memcmp.
 Cc: "David S. Miller" <davem@davemloft.net>
 Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 ---
- drivers/net/ethernet/renesas/sh_eth.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/packetengines/yellowfin.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/ethernet/renesas/sh_eth.c b/drivers/net/ethernet/renesas/sh_eth.c
-index ca742e1..2d00bce 100644
---- a/drivers/net/ethernet/renesas/sh_eth.c
-+++ b/drivers/net/ethernet/renesas/sh_eth.c
-@@ -2207,7 +2207,7 @@ static int sh_eth_tsu_find_entry(struct net_device *ndev, const u8 *addr)
- 
- 	for (i = 0; i < SH_ETH_TSU_CAM_ENTRIES; i++, reg_offset += 8) {
- 		sh_eth_tsu_read_entry(reg_offset, c_addr);
--		if (memcmp(addr, c_addr, ETH_ALEN) == 0)
-+		if (ether_addr_equal(addr, c_addr))
- 			return i;
- 	}
- 
+diff --git a/drivers/net/ethernet/packetengines/yellowfin.c b/drivers/net/ethernet/packetengines/yellowfin.c
+index d28593b..b83ac0e 100644
+--- a/drivers/net/ethernet/packetengines/yellowfin.c
++++ b/drivers/net/ethernet/packetengines/yellowfin.c
+@@ -1097,12 +1097,12 @@ static int yellowfin_rx(struct net_device *dev)
+ 			if (status2 & 0x80) dev->stats.rx_dropped++;
+ #ifdef YF_PROTOTYPE		/* Support for prototype hardware errata. */
+ 		} else if ((yp->flags & HasMACAddrBug)  &&
+-			memcmp(le32_to_cpu(yp->rx_ring_dma +
+-				entry*sizeof(struct yellowfin_desc)),
+-				dev->dev_addr, 6) != 0 &&
+-			memcmp(le32_to_cpu(yp->rx_ring_dma +
+-				entry*sizeof(struct yellowfin_desc)),
+-				"\377\377\377\377\377\377", 6) != 0) {
++			!ether_addr_equal(le32_to_cpu(yp->rx_ring_dma +
++						      entry * sizeof(struct yellowfin_desc)),
++							  dev->dev_addr) &&
++			!ether_addr_equal(le32_to_cpu(yp->rx_ring_dma +
++							  entry * sizeof(struct yellowfin_desc)),
++							  "\377\377\377\377\377\377")) {
+ 			if (bogus_rx++ == 0)
+ 				netdev_warn(dev, "Bad frame to %pM\n",
+ 					    buf_addr);
 -- 
-1.8.0
+1.7.1
+
+
 
