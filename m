@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755009Ab3L0Usc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 15:48:32 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35725 "EHLO
+	id S1755059Ab3L0Usz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 15:48:55 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35719 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754879Ab3L0Ur1 (ORCPT
+	with ESMTP id S1754864Ab3L0Ur0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 15:47:27 -0500
+	Fri, 27 Dec 2013 15:47:26 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 49/49] perf tools: Use zfree to help detect use after free bugs
-Date: Fri, 27 Dec 2013 17:47:05 -0300
-Message-Id: <1388177225-17349-16-git-send-email-acme@infradead.org>
+Subject: [PATCH 48/49] perf tools: Introduce zfree
+Date: Fri, 27 Dec 2013 17:47:04 -0300
+Message-Id: <1388177225-17349-15-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1388177225-17349-1-git-send-email-acme@infradead.org>
 References: <1388177225-17349-1-git-send-email-acme@infradead.org>
@@ -31,8 +31,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Several areas already used this technique, so do some audit to
-consistently use it elsewhere.
+For the frequent idiom of:
+
+   free(ptr);
+   ptr = NULL;
+
+Make it expect a pointer to the pointer being freed, so that it becomes
+clear at first sight that the variable being freed is being modified.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -43,674 +48,583 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-9sbere0kkplwe45ak6rk4a1f@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-pfw02ezuab37kha18wlut7ir@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-diff.c          |  2 +-
- tools/perf/builtin-sched.c         |  2 +-
- tools/perf/builtin-script.c        |  6 +++---
- tools/perf/ui/browsers/hists.c     |  2 +-
- tools/perf/ui/stdio/hist.c         |  2 +-
- tools/perf/util/annotate.c         | 20 ++++++++++----------
- tools/perf/util/cgroup.c           |  2 +-
- tools/perf/util/comm.c             |  2 +-
- tools/perf/util/evsel.c            |  8 ++++----
- tools/perf/util/header.c           | 10 +++++-----
- tools/perf/util/help.c             |  4 ++--
- tools/perf/util/hist.c             |  6 +++---
- tools/perf/util/parse-events.c     |  8 ++++----
- tools/perf/util/pmu.c              |  2 +-
- tools/perf/util/probe-event.c      |  8 ++++----
- tools/perf/util/probe-finder.c     |  2 +-
- tools/perf/util/session.c          | 24 ++++++++++++------------
- tools/perf/util/srcline.c          |  6 +++---
- tools/perf/util/strbuf.c           |  2 +-
- tools/perf/util/strfilter.c        |  2 +-
- tools/perf/util/string.c           |  2 +-
- tools/perf/util/strlist.c          |  3 ++-
- tools/perf/util/svghelper.c        |  5 +++--
- tools/perf/util/symbol-elf.c       |  2 +-
- tools/perf/util/symbol-minimal.c   |  3 ++-
- tools/perf/util/symbol.c           |  2 +-
- tools/perf/util/thread_map.c       | 10 +++++-----
- tools/perf/util/trace-event-info.c |  4 ++--
- tools/perf/util/values.c           | 14 +++++++-------
- 29 files changed, 84 insertions(+), 81 deletions(-)
+ tools/perf/arch/common.c           |  3 +--
+ tools/perf/builtin-annotate.c      |  3 +--
+ tools/perf/builtin-stat.c          |  6 ++----
+ tools/perf/builtin-timechart.c     |  3 +--
+ tools/perf/builtin-trace.c         | 12 ++++--------
+ tools/perf/ui/browser.c            |  6 ++----
+ tools/perf/ui/browsers/hists.c     |  6 ++----
+ tools/perf/ui/gtk/util.c           |  3 +--
+ tools/perf/util/alias.c            |  6 ++----
+ tools/perf/util/annotate.c         | 12 ++++--------
+ tools/perf/util/dso.c              |  9 +++------
+ tools/perf/util/evlist.c           |  9 +++------
+ tools/perf/util/evsel.c            |  6 ++----
+ tools/perf/util/header.c           |  3 +--
+ tools/perf/util/help.c             |  3 +--
+ tools/perf/util/machine.c          | 12 +++++-------
+ tools/perf/util/probe-event.c      |  6 ++----
+ tools/perf/util/probe-finder.c     | 24 ++++++++----------------
+ tools/perf/util/symbol.c           |  9 +++------
+ tools/perf/util/thread_map.c       | 10 ++++------
+ tools/perf/util/trace-event-info.c |  6 ++----
+ tools/perf/util/util.h             |  2 ++
+ 22 files changed, 56 insertions(+), 103 deletions(-)
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 2a85cc9a2d09..e6a0844bc2f0 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -654,7 +654,7 @@ static void data__free(struct data__file *d)
- 	for (col = 0; col < PERF_HPP_DIFF__MAX_INDEX; col++) {
- 		struct diff_hpp_fmt *fmt = &d->fmt[col];
+diff --git a/tools/perf/arch/common.c b/tools/perf/arch/common.c
+index aacef07ebf31..42faf369211c 100644
+--- a/tools/perf/arch/common.c
++++ b/tools/perf/arch/common.c
+@@ -154,8 +154,7 @@ static int perf_session_env__lookup_binutils_path(struct perf_session_env *env,
+ 		}
+ 		if (lookup_path(buf))
+ 			goto out;
+-		free(buf);
+-		buf = NULL;
++		zfree(&buf);
+ 	}
  
--		free(fmt->header);
-+		zfree(&fmt->header);
+ 	if (!strcmp(arch, "arm"))
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 4136f9970fd5..ab65057a0317 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -180,8 +180,7 @@ find_next:
+ 			 * symbol, free he->ms.sym->src to signal we already
+ 			 * processed this symbol.
+ 			 */
+-			free(notes->src);
+-			notes->src = NULL;
++			zfree(&notes->src);
+ 		}
  	}
  }
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index dab98b50c9fe..106a5e5b7842 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -185,8 +185,7 @@ static int perf_evsel__alloc_stat_priv(struct perf_evsel *evsel)
  
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 0f3c65518a2c..6a76a07b6789 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -469,7 +469,7 @@ static void *thread_func(void *ctx)
- 	char comm2[22];
- 	int fd;
- 
--	free(parms);
-+	zfree(&parms);
- 
- 	sprintf(comm2, ":%s", this_task->comm);
- 	prctl(PR_SET_NAME, comm2);
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 62ef190c4320..6040000bdfa6 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -1102,9 +1102,9 @@ static struct script_desc *script_desc__new(const char *name)
- 
- static void script_desc__delete(struct script_desc *s)
+ static void perf_evsel__free_stat_priv(struct perf_evsel *evsel)
  {
--	free(s->name);
--	free(s->half_liner);
--	free(s->args);
-+	zfree(&s->name);
-+	zfree(&s->half_liner);
-+	zfree(&s->args);
- 	free(s);
+-	free(evsel->priv);
+-	evsel->priv = NULL;
++	zfree(&evsel->priv);
+ }
+ 
+ static int perf_evsel__alloc_prev_raw_counts(struct perf_evsel *evsel)
+@@ -208,8 +207,7 @@ static int perf_evsel__alloc_prev_raw_counts(struct perf_evsel *evsel)
+ 
+ static void perf_evsel__free_prev_raw_counts(struct perf_evsel *evsel)
+ {
+-	free(evsel->prev_raw_counts);
+-	evsel->prev_raw_counts = NULL;
++	zfree(&evsel->prev_raw_counts);
+ }
+ 
+ static void perf_evlist__free_stats(struct perf_evlist *evlist)
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index 20d4212fa337..652af0b66a62 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -488,8 +488,7 @@ static const char *cat_backtrace(union perf_event *event,
+ 				 * It seems the callchain is corrupted.
+ 				 * Discard all.
+ 				 */
+-				free(p);
+-				p = NULL;
++				zfree(&p);
+ 				goto exit;
+ 			}
+ 			continue;
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index f64b5b0aa8b1..c5b4bc51175c 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -146,8 +146,7 @@ static int perf_evsel__init_tp_ptr_field(struct perf_evsel *evsel,
+ 
+ static void perf_evsel__delete_priv(struct perf_evsel *evsel)
+ {
+-	free(evsel->priv);
+-	evsel->priv = NULL;
++	zfree(&evsel->priv);
+ 	perf_evsel__delete(evsel);
+ }
+ 
+@@ -165,8 +164,7 @@ static int perf_evsel__init_syscall_tp(struct perf_evsel *evsel, void *handler)
+ 	return -ENOMEM;
+ 
+ out_delete:
+-	free(evsel->priv);
+-	evsel->priv = NULL;
++	zfree(&evsel->priv);
+ 	return -ENOENT;
+ }
+ 
+@@ -1278,10 +1276,8 @@ static size_t syscall_arg__scnprintf_close_fd(char *bf, size_t size,
+ 	size_t printed = syscall_arg__scnprintf_fd(bf, size, arg);
+ 	struct thread_trace *ttrace = arg->thread->priv;
+ 
+-	if (ttrace && fd >= 0 && fd <= ttrace->paths.max) {
+-		free(ttrace->paths.table[fd]);
+-		ttrace->paths.table[fd] = NULL;
+-	}
++	if (ttrace && fd >= 0 && fd <= ttrace->paths.max)
++		zfree(&ttrace->paths.table[fd]);
+ 
+ 	return printed;
+ }
+diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
+index 94223d404f43..d11541d4d7d7 100644
+--- a/tools/perf/ui/browser.c
++++ b/tools/perf/ui/browser.c
+@@ -256,8 +256,7 @@ int ui_browser__show(struct ui_browser *browser, const char *title,
+ 	__ui_browser__show_title(browser, title);
+ 
+ 	browser->title = title;
+-	free(browser->helpline);
+-	browser->helpline = NULL;
++	zfree(&browser->helpline);
+ 
+ 	va_start(ap, helpline);
+ 	err = vasprintf(&browser->helpline, helpline, ap);
+@@ -272,8 +271,7 @@ void ui_browser__hide(struct ui_browser *browser)
+ {
+ 	pthread_mutex_lock(&ui__lock);
+ 	ui_helpline__pop();
+-	free(browser->helpline);
+-	browser->helpline = NULL;
++	zfree(&browser->helpline);
+ 	pthread_mutex_unlock(&ui__lock);
  }
  
 diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 022d1731b801..a7045ea6d1d5 100644
+index 0d9dd99507ee..022d1731b801 100644
 --- a/tools/perf/ui/browsers/hists.c
 +++ b/tools/perf/ui/browsers/hists.c
-@@ -1327,7 +1327,7 @@ static int switch_data_file(void)
+@@ -1267,10 +1267,8 @@ static inline void free_popup_options(char **options, int n)
+ {
+ 	int i;
  
- 			abs_path[nr_options] = strdup(path);
- 			if (!abs_path[nr_options]) {
--				free(options[nr_options]);
-+				zfree(&options[nr_options]);
- 				ui__warning("Can't search all data files due to memory shortage.\n");
- 				fclose(file);
- 				break;
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index c244cb524ef2..831fbb77d1ff 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -510,7 +510,7 @@ print_entries:
- 
- 	free(line);
- out:
--	free(rem_sq_bracket);
-+	zfree(&rem_sq_bracket);
- 
- 	return ret;
+-	for (i = 0; i < n; ++i) {
+-		free(options[i]);
+-		options[i] = NULL;
+-	}
++	for (i = 0; i < n; ++i)
++		zfree(&options[i]);
  }
+ 
+ /* Check whether the browser is for 'top' or 'report' */
+diff --git a/tools/perf/ui/gtk/util.c b/tools/perf/ui/gtk/util.c
+index 696c1fbe4248..52e7fc48af9f 100644
+--- a/tools/perf/ui/gtk/util.c
++++ b/tools/perf/ui/gtk/util.c
+@@ -23,8 +23,7 @@ int perf_gtk__deactivate_context(struct perf_gtk_context **ctx)
+ 	if (!perf_gtk__is_active_context(*ctx))
+ 		return -1;
+ 
+-	free(*ctx);
+-	*ctx = NULL;
++	zfree(ctx);
+ 	return 0;
+ }
+ 
+diff --git a/tools/perf/util/alias.c b/tools/perf/util/alias.c
+index e6d134773d0a..c0b43ee40d95 100644
+--- a/tools/perf/util/alias.c
++++ b/tools/perf/util/alias.c
+@@ -55,8 +55,7 @@ int split_cmdline(char *cmdline, const char ***argv)
+ 				src++;
+ 				c = cmdline[src];
+ 				if (!c) {
+-					free(*argv);
+-					*argv = NULL;
++					zfree(argv);
+ 					return error("cmdline ends with \\");
+ 				}
+ 			}
+@@ -68,8 +67,7 @@ int split_cmdline(char *cmdline, const char ***argv)
+ 	cmdline[dst] = 0;
+ 
+ 	if (quoted) {
+-		free(*argv);
+-		*argv = NULL;
++		zfree(argv);
+ 		return error("unclosed quote");
+ 	}
+ 
 diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index a78721d14694..469eb679fb9d 100644
+index 27ab7b59dbf4..a78721d14694 100644
 --- a/tools/perf/util/annotate.c
 +++ b/tools/perf/util/annotate.c
-@@ -26,10 +26,10 @@ static int disasm_line__parse(char *line, char **namep, char **rawp);
- 
- static void ins__delete(struct ins_operands *ops)
- {
--	free(ops->source.raw);
--	free(ops->source.name);
--	free(ops->target.raw);
--	free(ops->target.name);
-+	zfree(&ops->source.raw);
-+	zfree(&ops->source.name);
-+	zfree(&ops->target.raw);
-+	zfree(&ops->target.name);
- }
- 
- static int ins__raw_scnprintf(struct ins *ins, char *bf, size_t size,
-@@ -204,9 +204,9 @@ static int lock__scnprintf(struct ins *ins, char *bf, size_t size,
- 
- static void lock__delete(struct ins_operands *ops)
- {
--	free(ops->locked.ops);
--	free(ops->target.raw);
--	free(ops->target.name);
-+	zfree(&ops->locked.ops);
-+	zfree(&ops->target.raw);
-+	zfree(&ops->target.name);
- }
- 
- static struct ins_ops lock_ops = {
-@@ -583,7 +583,7 @@ static struct disasm_line *disasm_line__new(s64 offset, char *line, size_t privs
- 	return dl;
- 
- out_free_line:
--	free(dl->line);
-+	zfree(&dl->line);
- out_delete:
- 	free(dl);
- 	return NULL;
-@@ -591,8 +591,8 @@ out_delete:
- 
- void disasm_line__free(struct disasm_line *dl)
- {
--	free(dl->line);
--	free(dl->name);
-+	zfree(&dl->line);
-+	zfree(&dl->name);
- 	if (dl->ins && dl->ins->ops->free)
- 		dl->ins->ops->free(&dl->ops);
- 	else
-diff --git a/tools/perf/util/cgroup.c b/tools/perf/util/cgroup.c
-index 96bbda1ddb83..0922aa4218c2 100644
---- a/tools/perf/util/cgroup.c
-+++ b/tools/perf/util/cgroup.c
-@@ -133,7 +133,7 @@ void close_cgroup(struct cgroup_sel *cgrp)
- 	/* XXX: not reentrant */
- 	if (--cgrp->refcnt == 0) {
- 		close(cgrp->fd);
--		free(cgrp->name);
-+		zfree(&cgrp->name);
- 		free(cgrp);
- 	}
- }
-diff --git a/tools/perf/util/comm.c b/tools/perf/util/comm.c
-index ee0df0e24cdb..67d1e404c0cb 100644
---- a/tools/perf/util/comm.c
-+++ b/tools/perf/util/comm.c
-@@ -21,7 +21,7 @@ static void comm_str__put(struct comm_str *cs)
- {
- 	if (!--cs->ref) {
- 		rb_erase(&cs->rb_node, &comm_str_root);
--		free(cs->str);
-+		zfree(&cs->str);
- 		free(cs);
- 	}
- }
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 93b6031d5459..ade8d9c1c431 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -208,7 +208,7 @@ struct perf_evsel *perf_evsel__newtp_idx(const char *sys, const char *name, int
- 	return evsel;
- 
- out_free:
--	free(evsel->name);
-+	zfree(&evsel->name);
- 	free(evsel);
- 	return NULL;
- }
-@@ -766,7 +766,7 @@ void perf_evsel__close_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
- 
- void perf_evsel__free_counts(struct perf_evsel *evsel)
- {
--	free(evsel->counts);
-+	zfree(&evsel->counts);
- }
- 
- void perf_evsel__exit(struct perf_evsel *evsel)
-@@ -780,10 +780,10 @@ void perf_evsel__delete(struct perf_evsel *evsel)
- {
- 	perf_evsel__exit(evsel);
- 	close_cgroup(evsel->cgrp);
--	free(evsel->group_name);
-+	zfree(&evsel->group_name);
- 	if (evsel->tp_format)
- 		pevent_free_format(evsel->tp_format);
--	free(evsel->name);
-+	zfree(&evsel->name);
- 	free(evsel);
- }
- 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 20f3a9c97bd8..a4a60b7887ee 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -800,10 +800,10 @@ static void free_cpu_topo(struct cpu_topo *tp)
- 		return;
- 
- 	for (i = 0 ; i < tp->core_sib; i++)
--		free(tp->core_siblings[i]);
-+		zfree(&tp->core_siblings[i]);
- 
- 	for (i = 0 ; i < tp->thread_sib; i++)
--		free(tp->thread_siblings[i]);
-+		zfree(&tp->thread_siblings[i]);
- 
- 	free(tp);
- }
-@@ -1232,8 +1232,8 @@ static void free_event_desc(struct perf_evsel *events)
- 		return;
- 
- 	for (evsel = events; evsel->attr.size; evsel++) {
--		free(evsel->name);
--		free(evsel->id);
-+		zfree(&evsel->name);
-+		zfree(&evsel->id);
- 	}
- 
- 	free(events);
-@@ -2105,7 +2105,7 @@ static int process_group_desc(struct perf_file_section *section __maybe_unused,
- 	ret = 0;
- out_free:
- 	for (i = 0; i < nr_groups; i++)
--		free(desc[i].name);
-+		zfree(&desc[i].name);
- 	free(desc);
- 
- 	return ret;
-diff --git a/tools/perf/util/help.c b/tools/perf/util/help.c
-index 7b68978e50d2..86c37c472263 100644
---- a/tools/perf/util/help.c
-+++ b/tools/perf/util/help.c
-@@ -22,8 +22,8 @@ static void clean_cmdnames(struct cmdnames *cmds)
- 	unsigned int i;
- 
- 	for (i = 0; i < cmds->cnt; ++i)
--		free(cmds->names[i]);
--	free(cmds->names);
-+		zfree(&cmds->names[i]);
-+	zfree(&cmds->names);
- 	cmds->cnt = 0;
- 	cmds->alloc = 0;
- }
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 6cd4823a7a8b..4ed3e883240d 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -372,7 +372,7 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 			 * This mem info was allocated from machine__resolve_mem
- 			 * and will not be used anymore.
- 			 */
--			free(entry->mem_info);
-+			zfree(&entry->mem_info);
- 
- 			/* If the map of an existing hist_entry has
- 			 * become out-of-date due to an exec() or
-@@ -475,8 +475,8 @@ hist_entry__collapse(struct hist_entry *left, struct hist_entry *right)
- 
- void hist_entry__free(struct hist_entry *he)
- {
--	free(he->branch_info);
--	free(he->mem_info);
-+	zfree(&he->branch_info);
-+	zfree(&he->mem_info);
- 	free_srcline(he->srcline);
- 	free(he);
- }
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 094c28ba2fae..0153435b8427 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -204,7 +204,7 @@ struct tracepoint_path *tracepoint_id_to_path(u64 config)
- 				}
- 				path->name = malloc(MAX_EVENT_LENGTH);
- 				if (!path->name) {
--					free(path->system);
-+					zfree(&path->system);
- 					free(path);
- 					return NULL;
- 				}
-@@ -236,8 +236,8 @@ struct tracepoint_path *tracepoint_name_to_path(const char *name)
- 	path->name = strdup(str+1);
- 
- 	if (path->system == NULL || path->name == NULL) {
--		free(path->system);
--		free(path->name);
-+		zfree(&path->system);
-+		zfree(&path->name);
- 		free(path);
- 		path = NULL;
- 	}
-@@ -917,7 +917,7 @@ int parse_events_terms(struct list_head *terms, const char *str)
- 	ret = parse_events__scanner(str, &data, PE_START_TERMS);
- 	if (!ret) {
- 		list_splice(data.terms, terms);
--		free(data.terms);
-+		zfree(&data.terms);
- 		return 0;
- 	}
- 
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 56fc10a5e288..0934d645ebdc 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -755,7 +755,7 @@ void print_pmu_events(const char *event_glob, bool name_only)
- 			continue;
- 		}
- 		printf("  %-50s [Kernel PMU event]\n", aliases[j]);
--		free(aliases[j]);
-+		zfree(&aliases[j]);
- 		printed++;
- 	}
- 	if (printed)
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 4d3cd1a0278a..86ed8580c3cb 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -356,7 +356,7 @@ static int add_exec_to_probe_trace_events(struct probe_trace_event *tevs,
- 		offset = tevs[i].point.address - stext;
- 		offset += tevs[i].point.offset;
- 		tevs[i].point.offset = 0;
--		free(tevs[i].point.symbol);
-+		zfree(&tevs[i].point.symbol);
- 		ret = e_snprintf(buf, 32, "0x%lx", offset);
- 		if (ret < 0)
- 			break;
-@@ -683,7 +683,7 @@ static int show_available_vars_at(struct debuginfo *dinfo,
- 		 */
- 		fprintf(stdout, "\t@<%s+%lu>\n", vl->point.symbol,
- 			vl->point.offset);
--		free(vl->point.symbol);
-+		zfree(&vl->point.symbol);
- 		nvars = 0;
- 		if (vl->vars) {
- 			strlist__for_each(node, vl->vars) {
-@@ -1592,7 +1592,7 @@ void clear_perf_probe_event(struct perf_probe_event *pev)
- 		field = pev->args[i].field;
- 		while (field) {
- 			next = field->next;
--			free(field->name);
-+			zfree(&field->name);
- 			free(field);
- 			field = next;
- 		}
-@@ -2153,7 +2153,7 @@ end:
- 	for (i = 0; i < npevs; i++) {
- 		for (j = 0; j < pkgs[i].ntevs; j++)
- 			clear_probe_trace_event(&pkgs[i].tevs[j]);
--		free(pkgs[i].tevs);
-+		zfree(&pkgs[i].tevs);
- 	}
- 	free(pkgs);
- 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 6d8796e38d7f..061edb162b5b 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -1409,7 +1409,7 @@ int debuginfo__find_available_vars_at(struct debuginfo *dbg,
- 	if (ret < 0) {
- 		/* Free vlist for error */
- 		while (af.nvls--) {
--			free(af.vls[af.nvls].point.symbol);
-+			zfree(&af.vls[af.nvls].point.symbol);
- 			strlist__delete(af.vls[af.nvls].vars);
- 		}
- 		zfree(vls);
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index d3a857be9682..8ffe29c55d0f 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -132,18 +132,18 @@ static void perf_session__delete_threads(struct perf_session *session)
- 
- static void perf_session_env__delete(struct perf_session_env *env)
- {
--	free(env->hostname);
--	free(env->os_release);
--	free(env->version);
--	free(env->arch);
--	free(env->cpu_desc);
--	free(env->cpuid);
--
--	free(env->cmdline);
--	free(env->sibling_cores);
--	free(env->sibling_threads);
--	free(env->numa_nodes);
--	free(env->pmu_mappings);
-+	zfree(&env->hostname);
-+	zfree(&env->os_release);
-+	zfree(&env->version);
-+	zfree(&env->arch);
-+	zfree(&env->cpu_desc);
-+	zfree(&env->cpuid);
-+
-+	zfree(&env->cmdline);
-+	zfree(&env->sibling_cores);
-+	zfree(&env->sibling_threads);
-+	zfree(&env->numa_nodes);
-+	zfree(&env->pmu_mappings);
- }
- 
- void perf_session__delete(struct perf_session *session)
-diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index 58b2bd8f38c9..7e67879ebd25 100644
---- a/tools/perf/util/srcline.c
-+++ b/tools/perf/util/srcline.c
-@@ -129,7 +129,7 @@ static struct a2l_data *addr2line_init(const char *path)
- 
- out:
- 	if (a2l) {
--		free((void *)a2l->input);
-+		zfree((void **)&a2l->input);
- 		free(a2l);
- 	}
- 	bfd_close(abfd);
-@@ -140,8 +140,8 @@ static void addr2line_cleanup(struct a2l_data *a2l)
- {
- 	if (a2l->abfd)
- 		bfd_close(a2l->abfd);
--	free((void *)a2l->input);
--	free(a2l->syms);
-+	zfree((void **)&a2l->input);
-+	zfree(&a2l->syms);
- 	free(a2l);
- }
- 
-diff --git a/tools/perf/util/strbuf.c b/tools/perf/util/strbuf.c
-index cfa906882e2c..4abe23550c73 100644
---- a/tools/perf/util/strbuf.c
-+++ b/tools/perf/util/strbuf.c
-@@ -28,7 +28,7 @@ void strbuf_init(struct strbuf *sb, ssize_t hint)
- void strbuf_release(struct strbuf *sb)
- {
- 	if (sb->alloc) {
--		free(sb->buf);
-+		zfree(&sb->buf);
- 		strbuf_init(sb, 0);
- 	}
- }
-diff --git a/tools/perf/util/strfilter.c b/tools/perf/util/strfilter.c
-index 3edd0538161f..79a757a2a15c 100644
---- a/tools/perf/util/strfilter.c
-+++ b/tools/perf/util/strfilter.c
-@@ -14,7 +14,7 @@ static void strfilter_node__delete(struct strfilter_node *node)
- {
- 	if (node) {
- 		if (node->p && !is_operator(*node->p))
--			free((char *)node->p);
-+			zfree((char **)&node->p);
- 		strfilter_node__delete(node->l);
- 		strfilter_node__delete(node->r);
- 		free(node);
-diff --git a/tools/perf/util/string.c b/tools/perf/util/string.c
-index f0b0c008c507..2553e5b55b89 100644
---- a/tools/perf/util/string.c
-+++ b/tools/perf/util/string.c
-@@ -128,7 +128,7 @@ void argv_free(char **argv)
- {
- 	char **p;
- 	for (p = argv; *p; p++)
--		free(*p);
-+		zfree(p);
- 
- 	free(argv);
- }
-diff --git a/tools/perf/util/strlist.c b/tools/perf/util/strlist.c
-index eabdce0a2daa..61a90bf24b4d 100644
---- a/tools/perf/util/strlist.c
-+++ b/tools/perf/util/strlist.c
-@@ -5,6 +5,7 @@
-  */
- 
- #include "strlist.h"
-+#include "util.h"
- #include <errno.h>
- #include <stdio.h>
- #include <stdlib.h>
-@@ -38,7 +39,7 @@ out_delete:
- static void str_node__delete(struct str_node *snode, bool dupstr)
- {
- 	if (dupstr)
--		free((void *)snode->s);
-+		zfree((void **)&snode->s);
- 	free(snode);
- }
- 
-diff --git a/tools/perf/util/svghelper.c b/tools/perf/util/svghelper.c
-index 56a84f2cc46d..43262b83c541 100644
---- a/tools/perf/util/svghelper.c
-+++ b/tools/perf/util/svghelper.c
-@@ -21,6 +21,7 @@
- 
- #include "perf.h"
- #include "svghelper.h"
-+#include "util.h"
- #include "cpumap.h"
- 
- static u64 first_time, last_time;
-@@ -708,8 +709,8 @@ int svg_build_topology_map(char *sib_core, int sib_core_nr,
+@@ -185,8 +185,7 @@ static int lock__parse(struct ins_operands *ops)
  	return 0;
  
- exit:
--	free(t.sib_core);
--	free(t.sib_thr);
-+	zfree(&t.sib_core);
-+	zfree(&t.sib_thr);
+ out_free_ops:
+-	free(ops->locked.ops);
+-	ops->locked.ops = NULL;
++	zfree(&ops->locked.ops);
+ 	return 0;
+ }
  
+@@ -256,8 +255,7 @@ static int mov__parse(struct ins_operands *ops)
+ 	return 0;
+ 
+ out_free_source:
+-	free(ops->source.raw);
+-	ops->source.raw = NULL;
++	zfree(&ops->source.raw);
  	return -1;
  }
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index bf0ce29567b6..4b0a127a4d3b 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -554,7 +554,7 @@ bool symsrc__has_symtab(struct symsrc *ss)
  
- void symsrc__destroy(struct symsrc *ss)
- {
--	free(ss->name);
-+	zfree(&ss->name);
- 	elf_end(ss->elf);
- 	close(ss->fd);
- }
-diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
-index ac7070a2f2b6..bd15f490d04f 100644
---- a/tools/perf/util/symbol-minimal.c
-+++ b/tools/perf/util/symbol-minimal.c
-@@ -1,4 +1,5 @@
- #include "symbol.h"
-+#include "util.h"
+@@ -560,8 +558,7 @@ static int disasm_line__parse(char *line, char **namep, char **rawp)
+ 	return 0;
  
- #include <stdio.h>
- #include <fcntl.h>
-@@ -275,7 +276,7 @@ bool symsrc__has_symtab(struct symsrc *ss __maybe_unused)
- 
- void symsrc__destroy(struct symsrc *ss)
- {
--	free(ss->name);
-+	zfree(&ss->name);
- 	close(ss->fd);
+ out_free_name:
+-	free(*namep);
+-	*namep = NULL;
++	zfree(namep);
+ 	return -1;
  }
  
+@@ -1113,8 +1110,7 @@ static void symbol__free_source_line(struct symbol *sym, int len)
+ 		src_line = (void *)src_line + sizeof_src_line;
+ 	}
+ 
+-	free(notes->src->lines);
+-	notes->src->lines = NULL;
++	zfree(&notes->src->lines);
+ }
+ 
+ /* Get the filename:line for the colored entries */
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index 4ddeecb9ff85..4045d086d9d9 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -497,21 +497,18 @@ void dso__delete(struct dso *dso)
+ 		symbols__delete(&dso->symbols[i]);
+ 
+ 	if (dso->short_name_allocated) {
+-		free((char *)dso->short_name);
+-		dso->short_name		  = NULL;
++		zfree((char **)&dso->short_name);
+ 		dso->short_name_allocated = false;
+ 	}
+ 
+ 	if (dso->long_name_allocated) {
+-		free((char *)dso->long_name);
+-		dso->long_name		 = NULL;
++		zfree((char **)&dso->long_name);
+ 		dso->long_name_allocated = false;
+ 	}
+ 
+ 	dso_cache__free(&dso->cache);
+ 	dso__free_a2l(dso);
+-	free(dso->symsrc_filename);
+-	dso->symsrc_filename = NULL;
++	zfree(&dso->symsrc_filename);
+ 	free(dso);
+ }
+ 
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index da3182914984..b08a7ecdcea1 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -101,10 +101,8 @@ static void perf_evlist__purge(struct perf_evlist *evlist)
+ 
+ void perf_evlist__exit(struct perf_evlist *evlist)
+ {
+-	free(evlist->mmap);
+-	free(evlist->pollfd);
+-	evlist->mmap = NULL;
+-	evlist->pollfd = NULL;
++	zfree(&evlist->mmap);
++	zfree(&evlist->pollfd);
+ }
+ 
+ void perf_evlist__delete(struct perf_evlist *evlist)
+@@ -587,8 +585,7 @@ void perf_evlist__munmap(struct perf_evlist *evlist)
+ 	for (i = 0; i < evlist->nr_mmaps; i++)
+ 		__perf_evlist__munmap(evlist, i);
+ 
+-	free(evlist->mmap);
+-	evlist->mmap = NULL;
++	zfree(&evlist->mmap);
+ }
+ 
+ static int perf_evlist__alloc_mmap(struct perf_evlist *evlist)
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 6874e0485693..93b6031d5459 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -750,8 +750,7 @@ void perf_evsel__free_id(struct perf_evsel *evsel)
+ {
+ 	xyarray__delete(evsel->sample_id);
+ 	evsel->sample_id = NULL;
+-	free(evsel->id);
+-	evsel->id = NULL;
++	zfree(&evsel->id);
+ }
+ 
+ void perf_evsel__close_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
+@@ -1960,8 +1959,7 @@ bool perf_evsel__fallback(struct perf_evsel *evsel, int err,
+ 		evsel->attr.type   = PERF_TYPE_SOFTWARE;
+ 		evsel->attr.config = PERF_COUNT_SW_CPU_CLOCK;
+ 
+-		free(evsel->name);
+-		evsel->name = NULL;
++		zfree(&evsel->name);
+ 		return true;
+ 	}
+ 
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 10730b0af804..20f3a9c97bd8 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1324,8 +1324,7 @@ read_event_desc(struct perf_header *ph, int fd)
+ 		}
+ 	}
+ out:
+-	if (buf)
+-		free(buf);
++	free(buf);
+ 	return events;
+ error:
+ 	if (events)
+diff --git a/tools/perf/util/help.c b/tools/perf/util/help.c
+index 8b1f6e891b8a..7b68978e50d2 100644
+--- a/tools/perf/util/help.c
++++ b/tools/perf/util/help.c
+@@ -263,9 +263,8 @@ static void add_cmd_list(struct cmdnames *cmds, struct cmdnames *old)
+ 
+ 	for (i = 0; i < old->cnt; i++)
+ 		cmds->names[cmds->cnt++] = old->names[i];
+-	free(old->names);
++	zfree(&old->names);
+ 	old->cnt = 0;
+-	old->names = NULL;
+ }
+ 
+ const char *help_unknown_cmd(const char *cmd)
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index c78cc84f433e..a98538dc465a 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -102,8 +102,7 @@ void machine__exit(struct machine *machine)
+ 	map_groups__exit(&machine->kmaps);
+ 	dsos__delete(&machine->user_dsos);
+ 	dsos__delete(&machine->kernel_dsos);
+-	free(machine->root_dir);
+-	machine->root_dir = NULL;
++	zfree(&machine->root_dir);
+ }
+ 
+ void machine__delete(struct machine *machine)
+@@ -562,11 +561,10 @@ void machine__destroy_kernel_maps(struct machine *machine)
+ 			 * on one of them.
+ 			 */
+ 			if (type == MAP__FUNCTION) {
+-				free((char *)kmap->ref_reloc_sym->name);
+-				kmap->ref_reloc_sym->name = NULL;
+-				free(kmap->ref_reloc_sym);
+-			}
+-			kmap->ref_reloc_sym = NULL;
++				zfree((char **)&kmap->ref_reloc_sym->name);
++				zfree(&kmap->ref_reloc_sym);
++			} else
++				kmap->ref_reloc_sym = NULL;
+ 		}
+ 
+ 		map__delete(machine->vmlinux_maps[type]);
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 095a98ec7444..4d3cd1a0278a 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -506,15 +506,13 @@ static int get_real_path(const char *raw_path, const char *comp_dir,
+ 		case EFAULT:
+ 			raw_path = strchr(++raw_path, '/');
+ 			if (!raw_path) {
+-				free(*new_path);
+-				*new_path = NULL;
++				zfree(new_path);
+ 				return -ENOENT;
+ 			}
+ 			continue;
+ 
+ 		default:
+-			free(*new_path);
+-			*new_path = NULL;
++			zfree(new_path);
+ 			return -errno;
+ 		}
+ 	}
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index 8c087359b7ce..6d8796e38d7f 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -226,10 +226,8 @@ struct debuginfo *debuginfo__new(const char *path)
+ 	if (!dbg)
+ 		return NULL;
+ 
+-	if (debuginfo__init_offline_dwarf(dbg, path) < 0) {
+-		free(dbg);
+-		dbg = NULL;
+-	}
++	if (debuginfo__init_offline_dwarf(dbg, path) < 0)
++		zfree(&dbg);
+ 
+ 	return dbg;
+ }
+@@ -241,10 +239,8 @@ struct debuginfo *debuginfo__new_online_kernel(unsigned long addr)
+ 	if (!dbg)
+ 		return NULL;
+ 
+-	if (debuginfo__init_online_kernel_dwarf(dbg, (Dwarf_Addr)addr) < 0) {
+-		free(dbg);
+-		dbg = NULL;
+-	}
++	if (debuginfo__init_online_kernel_dwarf(dbg, (Dwarf_Addr)addr) < 0)
++		zfree(&dbg);
+ 
+ 	return dbg;
+ }
+@@ -1302,8 +1298,7 @@ int debuginfo__find_trace_events(struct debuginfo *dbg,
+ 
+ 	ret = debuginfo__find_probes(dbg, &tf.pf);
+ 	if (ret < 0) {
+-		free(*tevs);
+-		*tevs = NULL;
++		zfree(tevs);
+ 		return ret;
+ 	}
+ 
+@@ -1417,8 +1412,7 @@ int debuginfo__find_available_vars_at(struct debuginfo *dbg,
+ 			free(af.vls[af.nvls].point.symbol);
+ 			strlist__delete(af.vls[af.nvls].vars);
+ 		}
+-		free(af.vls);
+-		*vls = NULL;
++		zfree(vls);
+ 		return ret;
+ 	}
+ 
+@@ -1522,8 +1516,7 @@ post:
+ 	if (fname) {
+ 		ppt->file = strdup(fname);
+ 		if (ppt->file == NULL) {
+-			free(ppt->function);
+-			ppt->function = NULL;
++			zfree(&ppt->function);
+ 			ret = -ENOMEM;
+ 			goto end;
+ 		}
+@@ -1577,8 +1570,7 @@ static int find_line_range_by_line(Dwarf_Die *sp_die, struct line_finder *lf)
+ 		else
+ 			ret = 0;	/* Lines are not found */
+ 	else {
+-		free(lf->lr->path);
+-		lf->lr->path = NULL;
++		zfree(&lf->lr->path);
+ 	}
+ 	return ret;
+ }
 diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index fd9e1a4fad16..39ce9adbaaf0 100644
+index 923d00040bbf..fd9e1a4fad16 100644
 --- a/tools/perf/util/symbol.c
 +++ b/tools/perf/util/symbol.c
-@@ -796,7 +796,7 @@ static void delete_modules(struct rb_root *modules)
- 		mi = rb_entry(next, struct module_info, rb_node);
- 		next = rb_next(&mi->rb_node);
- 		rb_erase(&mi->rb_node, modules);
--		free(mi->name);
-+		zfree(&mi->name);
- 		free(mi);
- 	}
+@@ -1621,13 +1621,10 @@ static int dso__load_guest_kernel_sym(struct dso *dso, struct map *map,
+ 
+ static void vmlinux_path__exit(void)
+ {
+-	while (--vmlinux_path__nr_entries >= 0) {
+-		free(vmlinux_path[vmlinux_path__nr_entries]);
+-		vmlinux_path[vmlinux_path__nr_entries] = NULL;
+-	}
++	while (--vmlinux_path__nr_entries >= 0)
++		zfree(&vmlinux_path[vmlinux_path__nr_entries]);
+ 
+-	free(vmlinux_path);
+-	vmlinux_path = NULL;
++	zfree(&vmlinux_path);
  }
+ 
+ static int vmlinux_path__init(void)
 diff --git a/tools/perf/util/thread_map.c b/tools/perf/util/thread_map.c
-index cf44644a4058..5d3215912105 100644
+index 9b5f856cc280..cf44644a4058 100644
 --- a/tools/perf/util/thread_map.c
 +++ b/tools/perf/util/thread_map.c
-@@ -41,7 +41,7 @@ struct thread_map *thread_map__new_by_pid(pid_t pid)
- 	}
+@@ -9,6 +9,7 @@
+ #include "strlist.h"
+ #include <string.h>
+ #include "thread_map.h"
++#include "util.h"
  
- 	for (i=0; i<items; i++)
--		free(namelist[i]);
-+		zfree(&namelist[i]);
- 	free(namelist);
- 
- 	return threads;
-@@ -118,7 +118,7 @@ struct thread_map *thread_map__new_by_uid(uid_t uid)
- 			threads->map[threads->nr + i] = atoi(namelist[i]->d_name);
- 
- 		for (i = 0; i < items; i++)
--			free(namelist[i]);
-+			zfree(&namelist[i]);
- 		free(namelist);
- 
- 		threads->nr += items;
-@@ -135,7 +135,7 @@ out_free_threads:
- 
- out_free_namelist:
- 	for (i = 0; i < items; i++)
--		free(namelist[i]);
-+		zfree(&namelist[i]);
+ /* Skip "." and ".." directories */
+ static int filter(const struct dirent *dir)
+@@ -138,8 +139,7 @@ out_free_namelist:
  	free(namelist);
  
  out_free_closedir:
-@@ -194,7 +194,7 @@ static struct thread_map *thread_map__new_by_pid_str(const char *pid_str)
+-	free(threads);
+-	threads = NULL;
++	zfree(&threads);
+ 	goto out_closedir;
+ }
  
- 		for (i = 0; i < items; i++) {
- 			threads->map[j++] = atoi(namelist[i]->d_name);
--			free(namelist[i]);
-+			zfree(&namelist[i]);
- 		}
- 		threads->nr = total_tasks;
- 		free(namelist);
-@@ -206,7 +206,7 @@ out:
- 
- out_free_namelist:
- 	for (i = 0; i < items; i++)
--		free(namelist[i]);
-+		zfree(&namelist[i]);
+@@ -210,8 +210,7 @@ out_free_namelist:
  	free(namelist);
  
  out_free_threads:
+-	free(threads);
+-	threads = NULL;
++	zfree(&threads);
+ 	goto out;
+ }
+ 
+@@ -262,8 +261,7 @@ out:
+ 	return threads;
+ 
+ out_free_threads:
+-	free(threads);
+-	threads = NULL;
++	zfree(&threads);
+ 	goto out;
+ }
+ 
 diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-index 9f73bf43862c..7e6fcfe8b438 100644
+index c354b95a2348..9f73bf43862c 100644
 --- a/tools/perf/util/trace-event-info.c
 +++ b/tools/perf/util/trace-event-info.c
-@@ -397,8 +397,8 @@ put_tracepoints_path(struct tracepoint_path *tps)
- 		struct tracepoint_path *t = tps;
- 
- 		tps = tps->next;
--		free(t->name);
--		free(t->system);
-+		zfree(&t->name);
-+		zfree(&t->system);
- 		free(t);
+@@ -562,10 +562,8 @@ out:
+ 		output_fd = fd;
  	}
- }
-diff --git a/tools/perf/util/values.c b/tools/perf/util/values.c
-index 697c8b4e59cc..0fb3c1fcd3e6 100644
---- a/tools/perf/util/values.c
-+++ b/tools/perf/util/values.c
-@@ -31,14 +31,14 @@ void perf_read_values_destroy(struct perf_read_values *values)
- 		return;
  
- 	for (i = 0; i < values->threads; i++)
--		free(values->value[i]);
--	free(values->value);
--	free(values->pid);
--	free(values->tid);
--	free(values->counterrawid);
-+		zfree(&values->value[i]);
-+	zfree(&values->value);
-+	zfree(&values->pid);
-+	zfree(&values->tid);
-+	zfree(&values->counterrawid);
- 	for (i = 0; i < values->counters; i++)
--		free(values->countername[i]);
--	free(values->countername);
-+		zfree(&values->countername[i]);
-+	zfree(&values->countername);
+-	if (err) {
+-		free(tdata);
+-		tdata = NULL;
+-	}
++	if (err)
++		zfree(&tdata);
+ 
+ 	put_tracepoints_path(tps);
+ 	return tdata;
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 9a2c268ad718..6995d66f225c 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -186,6 +186,8 @@ static inline void *zalloc(size_t size)
+ 	return calloc(1, size);
  }
  
- static void perf_read_values__enlarge_threads(struct perf_read_values *values)
++#define zfree(ptr) ({ free(*ptr); *ptr = NULL; })
++
+ static inline int has_extension(const char *filename, const char *ext)
+ {
+ 	size_t len = strlen(filename);
 -- 
 1.8.1.4
 
