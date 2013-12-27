@@ -1,53 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754759Ab3L0UFs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 15:05:48 -0500
-Received: from mail-gg0-f171.google.com ([209.85.161.171]:63110 "EHLO
-	mail-gg0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754702Ab3L0UFr (ORCPT
+	id S1754781Ab3L0UMo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 15:12:44 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:51382
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754728Ab3L0UMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 15:05:47 -0500
-Date: Fri, 27 Dec 2013 17:05:38 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Arun Sharma <asharma@fb.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [GIT PULL 00/35] perf/core improvements and fixes
-Message-ID: <20131227200538.GD13381@ghostprotocols.net>
-References: <1387566550-3524-1-git-send-email-acme@infradead.org>
+	Fri, 27 Dec 2013 15:12:42 -0500
+X-IronPort-AV: E=Sophos;i="4.95,562,1384297200"; 
+   d="scan'208";a="42485766"
+Date: Fri, 27 Dec 2013 21:12:37 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Joe Perches <joe@perches.com>
+cc: Eric Dumazet <eric.dumazet@gmail.com>, Julia Lawall <julia.lawall@lip6.fr>,
+        Ding Tianhong <dingtianhong@huawei.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH net-next 19/20] net: plip: slight optimization of addr
+ compare
+In-Reply-To: <1388163982.30298.12.camel@joe-AO722>
+Message-ID: <alpine.DEB.2.02.1312272112110.2018@localhost6.localdomain6>
+References: <52BD22ED.4030302@huawei.com>  <1388159283.12212.80.camel@edumazet-glaptop2.roam.corp.google.com> <1388163982.30298.12.camel@joe-AO722>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387566550-3524-1-git-send-email-acme@infradead.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Dec 20, 2013 at 04:08:35PM -0300, Arnaldo Carvalho de Melo escreveu:
-> User visible changes:
+On Fri, 27 Dec 2013, Joe Perches wrote:
+
+> On Fri, 2013-12-27 at 07:48 -0800, Eric Dumazet wrote:
+> > On Fri, 2013-12-27 at 14:49 +0800, Ding Tianhong wrote:
+> > > Use possibly more efficient ether_addr_equal
+> > > to instead of memcmp.
+> []
+> > > diff --git a/drivers/net/plip/plip.c b/drivers/net/plip/plip.c
+> []
+> > > @@ -549,7 +549,7 @@ static __be16 plip_type_trans(struct sk_buff *skb, struct net_device *dev)
+> > >  
+> > >  	if(*eth->h_dest&1)
+> > >  	{
+> > > -		if(memcmp(eth->h_dest,dev->broadcast, ETH_ALEN)==0)
+> > > +		if(ether_addr_equal(eth->h_dest, dev->broadcast))
+> > >  			skb->pkt_type=PACKET_BROADCAST;
+> > >  		else
+> > >  			skb->pkt_type=PACKET_MULTICAST;
+> > 
+> > What about :
+> > 
+> >         if (is_multicast_ether_addr(eth->h_dest)) {
+> >                 if (ether_addr_equal_64bits(eth->h_dest, dev->broadcast))
+> >                         skb->pkt_type = PACKET_BROADCAST;
+> >                 else
+> >                         skb->pkt_type = PACKET_MULTICAST;
+> >         }
 > 
-> Improvements:
+> That is better though I wonder how many systems are
+> still using laplink via parallel null-printer cables.
 > 
-> . Do not show stats if workload fails in 'stat' (David Ahern)
+> No matter, better is better.
+> 
+> The same optimization using ether_addr_equal_64bits
+> may be possible to do in other places given other
+> structs too.
+> 
+> Perhaps it's a possible spatch/coccinelle conversion,
+> 
+> I don't know spatch well enough to know if a
+> mechanism to check if structure members have other
+> fields that follow them in the structure or if the
+> structure member is an array of a minimum size.
+> 
+> Maybe Julia does.  (cc'd)
 
-Hi Ingo,
+I'm not sure to competely understand the issues.  Could you explain more?
 
-	Please hold on, as reported elsewhere, the above change broke
-'perf stat valid-workload', so I removed it from my tree.
-
-	I'll resubmit soon with a bunch more,
-
-Thanks,
-
-- Arnaldo
+thanks,
+julia
