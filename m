@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755059Ab3L0Usz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 15:48:55 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35719 "EHLO
+	id S1755046Ab3L0Usw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 15:48:52 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35720 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754864Ab3L0Ur0 (ORCPT
+	with ESMTP id S1754870Ab3L0Ur0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 27 Dec 2013 15:47:26 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 48/49] perf tools: Introduce zfree
-Date: Fri, 27 Dec 2013 17:47:04 -0300
-Message-Id: <1388177225-17349-15-git-send-email-acme@infradead.org>
+        "David A. Long" <dave.long@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, systemtap@sourceware.org,
+        yrl.pp-manager.tt@hitachi.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 43/49] perf probe: Support basic dwarf-based operations on uprobe events
+Date: Fri, 27 Dec 2013 17:46:59 -0300
+Message-Id: <1388177225-17349-10-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1388177225-17349-1-git-send-email-acme@infradead.org>
 References: <1388177225-17349-1-git-send-email-acme@infradead.org>
@@ -29,602 +30,344 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-For the frequent idiom of:
+Support basic dwarf(debuginfo) based operations for uprobe events.  With
+this change, perf probe can analyze debuginfo of user application binary
+to set up new uprobe event.
 
-   free(ptr);
-   ptr = NULL;
+This allows perf-probe --add(with local variables, line numbers) and
+--line works with -x option.  (Actually, --vars has already accepted -x
+option)
 
-Make it expect a pointer to the pointer being freed, so that it becomes
-clear at first sight that the variable being freed is being modified.
+For example, the following command shows the probe-able lines of a given
+user space function. Something that so far was only available in the
+'perf probe' tool for kernel space functions:
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
+  # ./perf probe -x perf --line map__load
+  <map__load@/home/fedora/ksrc/linux-2.6/tools/perf/util/map.c:0>
+        0  int map__load(struct map *map, symbol_filter_t filter)
+        1  {
+        2         const char *name = map->dso->long_name;
+                  int nr;
+
+        5         if (dso__loaded(map->dso, map->type))
+        6                 return 0;
+
+        8         nr = dso__load(map->dso, map, filter);
+        9         if (nr < 0) {
+       10                 if (map->dso->has_build_id) {
+
+And this shows the available variables at the given line of the
+function.
+
+  # ./perf probe -x perf --vars map__load:8
+  Available variables at map__load:8
+          @<map__load+96>
+                  char*   name
+                  struct map*     map
+                  symbol_filter_t filter
+          @<map__find_symbol+112>
+                  char*   name
+                  symbol_filter_t filter
+          @<map__find_symbol_by_name+136>
+                  char*   name
+                  symbol_filter_t filter
+          @<map_groups__find_symbol_by_name+176>
+                  char*   name
+                  struct map*     map
+                  symbol_filter_t filter
+
+And lastly, we can now define probe(s) with all available
+variables on the given line:
+
+  # ./perf probe -x perf --add 'map__load:8 $vars'
+
+  Added new events:
+    probe_perf:map__load (on map__load:8 with $vars)
+    probe_perf:map__load_1 (on map__load:8 with $vars)
+    probe_perf:map__load_2 (on map__load:8 with $vars)
+    probe_perf:map__load_3 (on map__load:8 with $vars)
+
+  You can now use it in all perf tools, such as:
+
+          perf record -e probe_perf:map__load_3 -aR sleep 1
+
+  Changes from previous version:
+   - Add examples in the patch description.
+   - Use .text section start address and dwarf symbol address
+     for calculating the offset of given symbol, instead of
+     searching the symbol in symtab again.
+     With this change, we can safely handle multiple local
+     function instances (e.g. scnprintf in perf).
+
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
+Cc: David A. Long <dave.long@linaro.org>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-pfw02ezuab37kha18wlut7ir@git.kernel.org
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: systemtap@sourceware.org
+Cc: yrl.pp-manager.tt@hitachi.com
+Link: http://lkml.kernel.org/r/20131226054152.22364.47021.stgit@kbuild-fedora.novalocal
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/arch/common.c           |  3 +--
- tools/perf/builtin-annotate.c      |  3 +--
- tools/perf/builtin-stat.c          |  6 ++----
- tools/perf/builtin-timechart.c     |  3 +--
- tools/perf/builtin-trace.c         | 12 ++++--------
- tools/perf/ui/browser.c            |  6 ++----
- tools/perf/ui/browsers/hists.c     |  6 ++----
- tools/perf/ui/gtk/util.c           |  3 +--
- tools/perf/util/alias.c            |  6 ++----
- tools/perf/util/annotate.c         | 12 ++++--------
- tools/perf/util/dso.c              |  9 +++------
- tools/perf/util/evlist.c           |  9 +++------
- tools/perf/util/evsel.c            |  6 ++----
- tools/perf/util/header.c           |  3 +--
- tools/perf/util/help.c             |  3 +--
- tools/perf/util/machine.c          | 12 +++++-------
- tools/perf/util/probe-event.c      |  6 ++----
- tools/perf/util/probe-finder.c     | 24 ++++++++----------------
- tools/perf/util/symbol.c           |  9 +++------
- tools/perf/util/thread_map.c       | 10 ++++------
- tools/perf/util/trace-event-info.c |  6 ++----
- tools/perf/util/util.h             |  2 ++
- 22 files changed, 56 insertions(+), 103 deletions(-)
+ tools/perf/builtin-probe.c     |   2 +-
+ tools/perf/util/probe-event.c  | 151 ++++++++++++++++++++++++++++++++++++-----
+ tools/perf/util/probe-event.h  |   1 +
+ tools/perf/util/probe-finder.c |   1 +
+ 4 files changed, 138 insertions(+), 17 deletions(-)
 
-diff --git a/tools/perf/arch/common.c b/tools/perf/arch/common.c
-index aacef07ebf31..42faf369211c 100644
---- a/tools/perf/arch/common.c
-+++ b/tools/perf/arch/common.c
-@@ -154,8 +154,7 @@ static int perf_session_env__lookup_binutils_path(struct perf_session_env *env,
- 		}
- 		if (lookup_path(buf))
- 			goto out;
--		free(buf);
--		buf = NULL;
-+		zfree(&buf);
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index 1792a3f1f4ce..43ff33d0007b 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -424,7 +424,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
  	}
  
- 	if (!strcmp(arch, "arm"))
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 4136f9970fd5..ab65057a0317 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -180,8 +180,7 @@ find_next:
- 			 * symbol, free he->ms.sym->src to signal we already
- 			 * processed this symbol.
- 			 */
--			free(notes->src);
--			notes->src = NULL;
-+			zfree(&notes->src);
- 		}
- 	}
- }
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index dab98b50c9fe..106a5e5b7842 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -185,8 +185,7 @@ static int perf_evsel__alloc_stat_priv(struct perf_evsel *evsel)
- 
- static void perf_evsel__free_stat_priv(struct perf_evsel *evsel)
- {
--	free(evsel->priv);
--	evsel->priv = NULL;
-+	zfree(&evsel->priv);
- }
- 
- static int perf_evsel__alloc_prev_raw_counts(struct perf_evsel *evsel)
-@@ -208,8 +207,7 @@ static int perf_evsel__alloc_prev_raw_counts(struct perf_evsel *evsel)
- 
- static void perf_evsel__free_prev_raw_counts(struct perf_evsel *evsel)
- {
--	free(evsel->prev_raw_counts);
--	evsel->prev_raw_counts = NULL;
-+	zfree(&evsel->prev_raw_counts);
- }
- 
- static void perf_evlist__free_stats(struct perf_evlist *evlist)
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index 20d4212fa337..652af0b66a62 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -488,8 +488,7 @@ static const char *cat_backtrace(union perf_event *event,
- 				 * It seems the callchain is corrupted.
- 				 * Discard all.
- 				 */
--				free(p);
--				p = NULL;
-+				zfree(&p);
- 				goto exit;
- 			}
- 			continue;
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index f64b5b0aa8b1..c5b4bc51175c 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -146,8 +146,7 @@ static int perf_evsel__init_tp_ptr_field(struct perf_evsel *evsel,
- 
- static void perf_evsel__delete_priv(struct perf_evsel *evsel)
- {
--	free(evsel->priv);
--	evsel->priv = NULL;
-+	zfree(&evsel->priv);
- 	perf_evsel__delete(evsel);
- }
- 
-@@ -165,8 +164,7 @@ static int perf_evsel__init_syscall_tp(struct perf_evsel *evsel, void *handler)
- 	return -ENOMEM;
- 
- out_delete:
--	free(evsel->priv);
--	evsel->priv = NULL;
-+	zfree(&evsel->priv);
- 	return -ENOENT;
- }
- 
-@@ -1278,10 +1276,8 @@ static size_t syscall_arg__scnprintf_close_fd(char *bf, size_t size,
- 	size_t printed = syscall_arg__scnprintf_fd(bf, size, arg);
- 	struct thread_trace *ttrace = arg->thread->priv;
- 
--	if (ttrace && fd >= 0 && fd <= ttrace->paths.max) {
--		free(ttrace->paths.table[fd]);
--		ttrace->paths.table[fd] = NULL;
--	}
-+	if (ttrace && fd >= 0 && fd <= ttrace->paths.max)
-+		zfree(&ttrace->paths.table[fd]);
- 
- 	return printed;
- }
-diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
-index 94223d404f43..d11541d4d7d7 100644
---- a/tools/perf/ui/browser.c
-+++ b/tools/perf/ui/browser.c
-@@ -256,8 +256,7 @@ int ui_browser__show(struct ui_browser *browser, const char *title,
- 	__ui_browser__show_title(browser, title);
- 
- 	browser->title = title;
--	free(browser->helpline);
--	browser->helpline = NULL;
-+	zfree(&browser->helpline);
- 
- 	va_start(ap, helpline);
- 	err = vasprintf(&browser->helpline, helpline, ap);
-@@ -272,8 +271,7 @@ void ui_browser__hide(struct ui_browser *browser)
- {
- 	pthread_mutex_lock(&ui__lock);
- 	ui_helpline__pop();
--	free(browser->helpline);
--	browser->helpline = NULL;
-+	zfree(&browser->helpline);
- 	pthread_mutex_unlock(&ui__lock);
- }
- 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 0d9dd99507ee..022d1731b801 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -1267,10 +1267,8 @@ static inline void free_popup_options(char **options, int n)
- {
- 	int i;
- 
--	for (i = 0; i < n; ++i) {
--		free(options[i]);
--		options[i] = NULL;
--	}
-+	for (i = 0; i < n; ++i)
-+		zfree(&options[i]);
- }
- 
- /* Check whether the browser is for 'top' or 'report' */
-diff --git a/tools/perf/ui/gtk/util.c b/tools/perf/ui/gtk/util.c
-index 696c1fbe4248..52e7fc48af9f 100644
---- a/tools/perf/ui/gtk/util.c
-+++ b/tools/perf/ui/gtk/util.c
-@@ -23,8 +23,7 @@ int perf_gtk__deactivate_context(struct perf_gtk_context **ctx)
- 	if (!perf_gtk__is_active_context(*ctx))
- 		return -1;
- 
--	free(*ctx);
--	*ctx = NULL;
-+	zfree(ctx);
- 	return 0;
- }
- 
-diff --git a/tools/perf/util/alias.c b/tools/perf/util/alias.c
-index e6d134773d0a..c0b43ee40d95 100644
---- a/tools/perf/util/alias.c
-+++ b/tools/perf/util/alias.c
-@@ -55,8 +55,7 @@ int split_cmdline(char *cmdline, const char ***argv)
- 				src++;
- 				c = cmdline[src];
- 				if (!c) {
--					free(*argv);
--					*argv = NULL;
-+					zfree(argv);
- 					return error("cmdline ends with \\");
- 				}
- 			}
-@@ -68,8 +67,7 @@ int split_cmdline(char *cmdline, const char ***argv)
- 	cmdline[dst] = 0;
- 
- 	if (quoted) {
--		free(*argv);
--		*argv = NULL;
-+		zfree(argv);
- 		return error("unclosed quote");
- 	}
- 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 27ab7b59dbf4..a78721d14694 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -185,8 +185,7 @@ static int lock__parse(struct ins_operands *ops)
- 	return 0;
- 
- out_free_ops:
--	free(ops->locked.ops);
--	ops->locked.ops = NULL;
-+	zfree(&ops->locked.ops);
- 	return 0;
- }
- 
-@@ -256,8 +255,7 @@ static int mov__parse(struct ins_operands *ops)
- 	return 0;
- 
- out_free_source:
--	free(ops->source.raw);
--	ops->source.raw = NULL;
-+	zfree(&ops->source.raw);
- 	return -1;
- }
- 
-@@ -560,8 +558,7 @@ static int disasm_line__parse(char *line, char **namep, char **rawp)
- 	return 0;
- 
- out_free_name:
--	free(*namep);
--	*namep = NULL;
-+	zfree(namep);
- 	return -1;
- }
- 
-@@ -1113,8 +1110,7 @@ static void symbol__free_source_line(struct symbol *sym, int len)
- 		src_line = (void *)src_line + sizeof_src_line;
- 	}
- 
--	free(notes->src->lines);
--	notes->src->lines = NULL;
-+	zfree(&notes->src->lines);
- }
- 
- /* Get the filename:line for the colored entries */
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 4ddeecb9ff85..4045d086d9d9 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -497,21 +497,18 @@ void dso__delete(struct dso *dso)
- 		symbols__delete(&dso->symbols[i]);
- 
- 	if (dso->short_name_allocated) {
--		free((char *)dso->short_name);
--		dso->short_name		  = NULL;
-+		zfree((char **)&dso->short_name);
- 		dso->short_name_allocated = false;
- 	}
- 
- 	if (dso->long_name_allocated) {
--		free((char *)dso->long_name);
--		dso->long_name		 = NULL;
-+		zfree((char **)&dso->long_name);
- 		dso->long_name_allocated = false;
- 	}
- 
- 	dso_cache__free(&dso->cache);
- 	dso__free_a2l(dso);
--	free(dso->symsrc_filename);
--	dso->symsrc_filename = NULL;
-+	zfree(&dso->symsrc_filename);
- 	free(dso);
- }
- 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index da3182914984..b08a7ecdcea1 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -101,10 +101,8 @@ static void perf_evlist__purge(struct perf_evlist *evlist)
- 
- void perf_evlist__exit(struct perf_evlist *evlist)
- {
--	free(evlist->mmap);
--	free(evlist->pollfd);
--	evlist->mmap = NULL;
--	evlist->pollfd = NULL;
-+	zfree(&evlist->mmap);
-+	zfree(&evlist->pollfd);
- }
- 
- void perf_evlist__delete(struct perf_evlist *evlist)
-@@ -587,8 +585,7 @@ void perf_evlist__munmap(struct perf_evlist *evlist)
- 	for (i = 0; i < evlist->nr_mmaps; i++)
- 		__perf_evlist__munmap(evlist, i);
- 
--	free(evlist->mmap);
--	evlist->mmap = NULL;
-+	zfree(&evlist->mmap);
- }
- 
- static int perf_evlist__alloc_mmap(struct perf_evlist *evlist)
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 6874e0485693..93b6031d5459 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -750,8 +750,7 @@ void perf_evsel__free_id(struct perf_evsel *evsel)
- {
- 	xyarray__delete(evsel->sample_id);
- 	evsel->sample_id = NULL;
--	free(evsel->id);
--	evsel->id = NULL;
-+	zfree(&evsel->id);
- }
- 
- void perf_evsel__close_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
-@@ -1960,8 +1959,7 @@ bool perf_evsel__fallback(struct perf_evsel *evsel, int err,
- 		evsel->attr.type   = PERF_TYPE_SOFTWARE;
- 		evsel->attr.config = PERF_COUNT_SW_CPU_CLOCK;
- 
--		free(evsel->name);
--		evsel->name = NULL;
-+		zfree(&evsel->name);
- 		return true;
- 	}
- 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 10730b0af804..20f3a9c97bd8 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1324,8 +1324,7 @@ read_event_desc(struct perf_header *ph, int fd)
- 		}
- 	}
- out:
--	if (buf)
--		free(buf);
-+	free(buf);
- 	return events;
- error:
- 	if (events)
-diff --git a/tools/perf/util/help.c b/tools/perf/util/help.c
-index 8b1f6e891b8a..7b68978e50d2 100644
---- a/tools/perf/util/help.c
-+++ b/tools/perf/util/help.c
-@@ -263,9 +263,8 @@ static void add_cmd_list(struct cmdnames *cmds, struct cmdnames *old)
- 
- 	for (i = 0; i < old->cnt; i++)
- 		cmds->names[cmds->cnt++] = old->names[i];
--	free(old->names);
-+	zfree(&old->names);
- 	old->cnt = 0;
--	old->names = NULL;
- }
- 
- const char *help_unknown_cmd(const char *cmd)
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index c78cc84f433e..a98538dc465a 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -102,8 +102,7 @@ void machine__exit(struct machine *machine)
- 	map_groups__exit(&machine->kmaps);
- 	dsos__delete(&machine->user_dsos);
- 	dsos__delete(&machine->kernel_dsos);
--	free(machine->root_dir);
--	machine->root_dir = NULL;
-+	zfree(&machine->root_dir);
- }
- 
- void machine__delete(struct machine *machine)
-@@ -562,11 +561,10 @@ void machine__destroy_kernel_maps(struct machine *machine)
- 			 * on one of them.
- 			 */
- 			if (type == MAP__FUNCTION) {
--				free((char *)kmap->ref_reloc_sym->name);
--				kmap->ref_reloc_sym->name = NULL;
--				free(kmap->ref_reloc_sym);
--			}
--			kmap->ref_reloc_sym = NULL;
-+				zfree((char **)&kmap->ref_reloc_sym->name);
-+				zfree(&kmap->ref_reloc_sym);
-+			} else
-+				kmap->ref_reloc_sym = NULL;
- 		}
- 
- 		map__delete(machine->vmlinux_maps[type]);
+ #ifdef HAVE_DWARF_SUPPORT
+-	if (params.show_lines && !params.uprobes) {
++	if (params.show_lines) {
+ 		if (params.mod_events) {
+ 			pr_err("  Error: Don't use --line with"
+ 			       " --add/--del.\n");
 diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 095a98ec7444..4d3cd1a0278a 100644
+index 68013b91377c..72b56aef105e 100644
 --- a/tools/perf/util/probe-event.c
 +++ b/tools/perf/util/probe-event.c
-@@ -506,15 +506,13 @@ static int get_real_path(const char *raw_path, const char *comp_dir,
- 		case EFAULT:
- 			raw_path = strchr(++raw_path, '/');
- 			if (!raw_path) {
--				free(*new_path);
--				*new_path = NULL;
-+				zfree(new_path);
- 				return -ENOENT;
- 			}
- 			continue;
- 
- 		default:
--			free(*new_path);
--			*new_path = NULL;
-+			zfree(new_path);
- 			return -errno;
- 		}
- 	}
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 8c087359b7ce..6d8796e38d7f 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -226,10 +226,8 @@ struct debuginfo *debuginfo__new(const char *path)
- 	if (!dbg)
- 		return NULL;
- 
--	if (debuginfo__init_offline_dwarf(dbg, path) < 0) {
--		free(dbg);
--		dbg = NULL;
--	}
-+	if (debuginfo__init_offline_dwarf(dbg, path) < 0)
-+		zfree(&dbg);
- 
- 	return dbg;
+@@ -172,6 +172,52 @@ const char *kernel_get_module_path(const char *module)
+ 	return (dso) ? dso->long_name : NULL;
  }
-@@ -241,10 +239,8 @@ struct debuginfo *debuginfo__new_online_kernel(unsigned long addr)
- 	if (!dbg)
- 		return NULL;
  
--	if (debuginfo__init_online_kernel_dwarf(dbg, (Dwarf_Addr)addr) < 0) {
--		free(dbg);
--		dbg = NULL;
--	}
-+	if (debuginfo__init_online_kernel_dwarf(dbg, (Dwarf_Addr)addr) < 0)
-+		zfree(&dbg);
- 
- 	return dbg;
- }
-@@ -1302,8 +1298,7 @@ int debuginfo__find_trace_events(struct debuginfo *dbg,
- 
- 	ret = debuginfo__find_probes(dbg, &tf.pf);
- 	if (ret < 0) {
--		free(*tevs);
--		*tevs = NULL;
-+		zfree(tevs);
- 		return ret;
- 	}
- 
-@@ -1417,8 +1412,7 @@ int debuginfo__find_available_vars_at(struct debuginfo *dbg,
- 			free(af.vls[af.nvls].point.symbol);
- 			strlist__delete(af.vls[af.nvls].vars);
- 		}
--		free(af.vls);
--		*vls = NULL;
-+		zfree(vls);
- 		return ret;
- 	}
- 
-@@ -1522,8 +1516,7 @@ post:
- 	if (fname) {
- 		ppt->file = strdup(fname);
- 		if (ppt->file == NULL) {
--			free(ppt->function);
--			ppt->function = NULL;
-+			zfree(&ppt->function);
- 			ret = -ENOMEM;
- 			goto end;
- 		}
-@@ -1577,8 +1570,7 @@ static int find_line_range_by_line(Dwarf_Die *sp_die, struct line_finder *lf)
- 		else
- 			ret = 0;	/* Lines are not found */
- 	else {
--		free(lf->lr->path);
--		lf->lr->path = NULL;
-+		zfree(&lf->lr->path);
- 	}
++/* Copied from unwind.c */
++static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
++				    GElf_Shdr *shp, const char *name)
++{
++	Elf_Scn *sec = NULL;
++
++	while ((sec = elf_nextscn(elf, sec)) != NULL) {
++		char *str;
++
++		gelf_getshdr(sec, shp);
++		str = elf_strptr(elf, ep->e_shstrndx, shp->sh_name);
++		if (!strcmp(name, str))
++			break;
++	}
++
++	return sec;
++}
++
++static int get_text_start_address(const char *exec, unsigned long *address)
++{
++	Elf *elf;
++	GElf_Ehdr ehdr;
++	GElf_Shdr shdr;
++	int fd, ret = -ENOENT;
++
++	fd = open(exec, O_RDONLY);
++	if (fd < 0)
++		return -errno;
++
++	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
++	if (elf == NULL)
++		return -EINVAL;
++
++	if (gelf_getehdr(elf, &ehdr) == NULL)
++		goto out;
++
++	if (!elf_section_by_name(elf, &ehdr, &shdr, ".text"))
++		goto out;
++
++	*address = shdr.sh_addr - shdr.sh_offset;
++	ret = 0;
++out:
++	elf_end(elf);
++	return ret;
++}
++
+ static int init_user_exec(void)
+ {
+ 	int ret = 0;
+@@ -186,6 +232,37 @@ static int init_user_exec(void)
  	return ret;
  }
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 923d00040bbf..fd9e1a4fad16 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1621,13 +1621,10 @@ static int dso__load_guest_kernel_sym(struct dso *dso, struct map *map,
  
- static void vmlinux_path__exit(void)
++static int convert_exec_to_group(const char *exec, char **result)
++{
++	char *ptr1, *ptr2, *exec_copy;
++	char buf[64];
++	int ret;
++
++	exec_copy = strdup(exec);
++	if (!exec_copy)
++		return -ENOMEM;
++
++	ptr1 = basename(exec_copy);
++	if (!ptr1) {
++		ret = -EINVAL;
++		goto out;
++	}
++
++	ptr2 = strpbrk(ptr1, "-._");
++	if (ptr2)
++		*ptr2 = '\0';
++	ret = e_snprintf(buf, 64, "%s_%s", PERFPROBE_GROUP, ptr1);
++	if (ret < 0)
++		goto out;
++
++	*result = strdup(buf);
++	ret = *result ? 0 : -ENOMEM;
++
++out:
++	free(exec_copy);
++	return ret;
++}
++
+ static int convert_to_perf_probe_point(struct probe_trace_point *tp,
+ 					struct perf_probe_point *pp)
  {
--	while (--vmlinux_path__nr_entries >= 0) {
--		free(vmlinux_path[vmlinux_path__nr_entries]);
--		vmlinux_path[vmlinux_path__nr_entries] = NULL;
+@@ -261,6 +338,40 @@ static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
+ 	return 0;
+ }
+ 
++static int add_exec_to_probe_trace_events(struct probe_trace_event *tevs,
++					  int ntevs, const char *exec)
++{
++	int i, ret = 0;
++	unsigned long offset, stext = 0;
++	char buf[32];
++
++	if (!exec)
++		return 0;
++
++	ret = get_text_start_address(exec, &stext);
++	if (ret < 0)
++		return ret;
++
++	for (i = 0; i < ntevs && ret >= 0; i++) {
++		offset = tevs[i].point.address - stext;
++		offset += tevs[i].point.offset;
++		tevs[i].point.offset = 0;
++		free(tevs[i].point.symbol);
++		ret = e_snprintf(buf, 32, "0x%lx", offset);
++		if (ret < 0)
++			break;
++		tevs[i].point.module = strdup(exec);
++		tevs[i].point.symbol = strdup(buf);
++		if (!tevs[i].point.symbol || !tevs[i].point.module) {
++			ret = -ENOMEM;
++			break;
++		}
++		tevs[i].uprobes = true;
++	}
++
++	return ret;
++}
++
+ static int add_module_to_probe_trace_events(struct probe_trace_event *tevs,
+ 					    int ntevs, const char *module)
+ {
+@@ -305,15 +416,6 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
+ 	struct debuginfo *dinfo;
+ 	int ntevs, ret = 0;
+ 
+-	if (pev->uprobes) {
+-		if (need_dwarf) {
+-			pr_warning("Debuginfo-analysis is not yet supported"
+-					" with -x/--exec option.\n");
+-			return -ENOSYS;
+-		}
+-		return convert_name_to_addr(pev, target);
 -	}
-+	while (--vmlinux_path__nr_entries >= 0)
-+		zfree(&vmlinux_path[vmlinux_path__nr_entries]);
+-
+ 	dinfo = open_debuginfo(target);
  
--	free(vmlinux_path);
--	vmlinux_path = NULL;
-+	zfree(&vmlinux_path);
- }
+ 	if (!dinfo) {
+@@ -332,9 +434,14 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
  
- static int vmlinux_path__init(void)
-diff --git a/tools/perf/util/thread_map.c b/tools/perf/util/thread_map.c
-index 9b5f856cc280..cf44644a4058 100644
---- a/tools/perf/util/thread_map.c
-+++ b/tools/perf/util/thread_map.c
-@@ -9,6 +9,7 @@
- #include "strlist.h"
- #include <string.h>
- #include "thread_map.h"
-+#include "util.h"
- 
- /* Skip "." and ".." directories */
- static int filter(const struct dirent *dir)
-@@ -138,8 +139,7 @@ out_free_namelist:
- 	free(namelist);
- 
- out_free_closedir:
--	free(threads);
--	threads = NULL;
-+	zfree(&threads);
- 	goto out_closedir;
- }
- 
-@@ -210,8 +210,7 @@ out_free_namelist:
- 	free(namelist);
- 
- out_free_threads:
--	free(threads);
--	threads = NULL;
-+	zfree(&threads);
- 	goto out;
- }
- 
-@@ -262,8 +261,7 @@ out:
- 	return threads;
- 
- out_free_threads:
--	free(threads);
--	threads = NULL;
-+	zfree(&threads);
- 	goto out;
- }
- 
-diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-index c354b95a2348..9f73bf43862c 100644
---- a/tools/perf/util/trace-event-info.c
-+++ b/tools/perf/util/trace-event-info.c
-@@ -562,10 +562,8 @@ out:
- 		output_fd = fd;
+ 	if (ntevs > 0) {	/* Succeeded to find trace events */
+ 		pr_debug("find %d probe_trace_events.\n", ntevs);
+-		if (target)
+-			ret = add_module_to_probe_trace_events(*tevs, ntevs,
+-							       target);
++		if (target) {
++			if (pev->uprobes)
++				ret = add_exec_to_probe_trace_events(*tevs,
++						 ntevs, target);
++			else
++				ret = add_module_to_probe_trace_events(*tevs,
++						 ntevs, target);
++		}
+ 		return ret < 0 ? ret : ntevs;
  	}
  
--	if (err) {
--		free(tdata);
--		tdata = NULL;
--	}
-+	if (err)
-+		zfree(&tdata);
+@@ -654,9 +761,6 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
+ 		return -ENOSYS;
+ 	}
  
- 	put_tracepoints_path(tps);
- 	return tdata;
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 9a2c268ad718..6995d66f225c 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -186,6 +186,8 @@ static inline void *zalloc(size_t size)
- 	return calloc(1, size);
+-	if (pev->uprobes)
+-		return convert_name_to_addr(pev, target);
+-
+ 	return 0;
  }
  
-+#define zfree(ptr) ({ free(*ptr); *ptr = NULL; })
-+
- static inline int has_extension(const char *filename, const char *ext)
+@@ -1913,14 +2017,29 @@ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
+ 					  int max_tevs, const char *target)
  {
- 	size_t len = strlen(filename);
+ 	struct symbol *sym;
+-	int ret = 0, i;
++	int ret, i;
+ 	struct probe_trace_event *tev;
+ 
++	if (pev->uprobes && !pev->group) {
++		/* Replace group name if not given */
++		ret = convert_exec_to_group(target, &pev->group);
++		if (ret != 0) {
++			pr_warning("Failed to make a group name.\n");
++			return ret;
++		}
++	}
++
+ 	/* Convert perf_probe_event with debuginfo */
+ 	ret = try_to_find_probe_trace_events(pev, tevs, max_tevs, target);
+ 	if (ret != 0)
+ 		return ret;	/* Found in debuginfo or got an error */
+ 
++	if (pev->uprobes) {
++		ret = convert_name_to_addr(pev, target);
++		if (ret < 0)
++			return ret;
++	}
++
+ 	/* Allocate trace event buffer */
+ 	tev = *tevs = zalloc(sizeof(struct probe_trace_event));
+ 	if (tev == NULL)
+diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
+index f9f3de8b4220..d481c46e0796 100644
+--- a/tools/perf/util/probe-event.h
++++ b/tools/perf/util/probe-event.h
+@@ -12,6 +12,7 @@ struct probe_trace_point {
+ 	char		*symbol;	/* Base symbol */
+ 	char		*module;	/* Module name */
+ 	unsigned long	offset;		/* Offset from symbol */
++	unsigned long	address;	/* Actual address of the trace point */
+ 	bool		retprobe;	/* Return probe flag */
+ };
+ 
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index ffb657ffd327..7db7e05ccb89 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -729,6 +729,7 @@ static int convert_to_trace_point(Dwarf_Die *sp_die, Dwfl_Module *mod,
+ 		return -ENOENT;
+ 	}
+ 	tp->offset = (unsigned long)(paddr - sym.st_value);
++	tp->address = (unsigned long)paddr;
+ 	tp->symbol = strdup(symbol);
+ 	if (!tp->symbol)
+ 		return -ENOMEM;
 -- 
 1.8.1.4
 
