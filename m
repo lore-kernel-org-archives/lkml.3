@@ -1,226 +1,1746 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902Ab3L0GRG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 01:17:06 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:55784 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030Ab3L0GRE (ORCPT
+	id S1752978Ab3L0GYm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 01:24:42 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:39964 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827Ab3L0GYk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 01:17:04 -0500
-X-AuditID: cbfee68e-b7f566d000002344-ee-52bd1b5d4e0b
-Message-id: <1388124951.2101.308.camel@kjgkr>
-Subject: Re: [PATCH 5/6] f2fs: add the number of inline_data files to status
- info
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Date: Fri, 27 Dec 2013 15:15:51 +0900
-In-reply-to: <1388116820-15038-5-git-send-email-jaegeuk.kim@samsung.com>
-References: <1388116820-15038-1-git-send-email-jaegeuk.kim@samsung.com>
- <1388116820-15038-5-git-send-email-jaegeuk.kim@samsung.com>
-Organization: Samsung
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAIsWRmVeSWpSXmKPExsVy+t8zQ91Y6b1BBtefa1hcWuRusWfvSRaL
-	y7vmsDkwe+xe8JnJ4/MmuQCmKC6blNSczLLUIn27BK6M9vN7mQs6dCoWbbnF1sB4UqWLkZND
-	QsBEYu+e+4wQtpjEhXvr2boYuTiEBJYxSnTOvsoKU3Tm0GxmiMQiRolDZxaygCSEBF4xSky4
-	5QNi8wroSqy8cRUsLiwQLDHz11P2LkYODjYBbYnN+w0gyhUl3u6/ywoSFgGyL793AjGZBTwk
-	dh0rBalgEVCVmDhnL9gQTqDw6s8djBBbWxklznz8yAyS4BcQlTi8cDuYzSygLjFp3iJmiDOV
-	JHa3d7JDxOUlNq95ywxxmaDEj8n3WEAGSQhsYpfYOfcyM8Q2AYlvkw+xgBwhISArsekA1BxJ
-	iYMrbrBMYJSYhWTFLCRjZyEZu4CReRWjaGpBckFxUnqRkV5xYm5xaV66XnJ+7iZGSGz17WC8
-	ecD6EGMy0MqJzFKiyfnA2MwriTc0NjOyMDUxNTYytzQjTVhJnHfRw6QgIYH0xJLU7NTUgtSi
-	+KLSnNTiQ4xMHJxSDYxBMoLWPm0rCv4fl5peL2PzakEqQ1iu+BFRlcjgwgJLUZ6T0eL1HQWz
-	ubd2/P5n5pNr6LTBWk3QbM5i47c3vikts11442zbyf+LONmTRG/47T29fbfRlwdyC31my2iu
-	vXRUceGflLraKCYtGX9WNvVQvpTVkekyIlZOwbLuZ8Wm/j8oyXnlnhJLcUaioRZzUXEiABVy
-	1NfDAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+xgG6s9N4ggy3HVSwuLXK32LP3JIvF
-	5V1z2ByYPXYv+Mzk8XmTXABTVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmS
-	Ql5ibqqtkotPgK5bZg7QDiWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1j
-	Rvv5vcwFHToVi7bcYmtgPKnSxcjJISFgInHm0GxmCFtM4sK99WxdjFwcQgKLGCUOnVnIApIQ
-	EnjFKDHhlg+IzSugK7HyxlWwuLBAsMTMX0/Zuxg5ONgEtCU27zeAKFeUeLv/LitIWATIvvze
-	CcRkFvCQ2HWsFKSCRUBVYuKcvWBDOIHCqz93MEJsbWWUOPPxI9g5/AKiEocXbgezmQXUJSbN
-	WwR1ppLE7vZOdoi4vMTmNW+ZIS4TlPgx+R7LBEahWUhaZiEpm4WkbAEj8ypG0dSC5ILipPRc
-	I73ixNzi0rx0veT83E2M4Mh9Jr2DcVWDxSFGAQ5GJR5ehw17goRYE8uKK3MPMUpwMCuJ8H6+
-	AhTiTUmsrEotyo8vKs1JLT7EmAz03kRmKdHkfGBSySuJNzQ2MTOyNDKzMDIxNydNWEmc92Cr
-	daCQQHpiSWp2ampBahHMFiYOTqkGRveNu67NFXkteEvnReSah7E/9x3i3X5RMmDlxvhNsbPm
-	ZtmuP1C0Ztf0JScWNr648bNnS3dajJ7Dk+Np30WOCyjWXXk2SVHnVunbqi2zGVN0j64/dGAS
-	9xrzZMfL03i4pfynntr3a13tpUv5/veT/1yPrtr6+/SpxRmTPLdrrFZvNHBtZ87/8yBKiaU4
-	I9FQi7moOBEAq2fq1CADAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 27 Dec 2013 01:24:40 -0500
+Date: Fri, 27 Dec 2013 14:24:21 +0800
+From: Shaohua Li <shli@kernel.org>
+To: linux-kernel@vger.kernel.org, dm-devel@redhat.com
+Cc: snitzer@redhat.com, agk@redhat.com, axboe@kernel.dk
+Subject: [PATCG]DM: dm-compression: a compressed DM target for SSD
+Message-ID: <20131227062421.GA21053@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change log from v1:
- o fix kbuild failure
+This is a simple DM target supporting compression for SSD only. Under layer SSD
+must support 512B sector size, the target only supports 4k sector size.
 
->From a9ebdcffd30b9642b2973ea8e9688e7b0d4bf7e3 Mon Sep 17 00:00:00 2001
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Date: Tue, 26 Nov 2013 11:08:57 +0900
-Subject: [PATCH] f2fs: add the number of inline_data files to status
-info
+Disk layout:
+|super|...meta...|..data...|
 
-This patch adds the number of inline_data files into the status
-information.
-Note that the number is reset whenever the filesystem is newly mounted.
+Store unit is 4k (a block). Super is 1 block, which stores meta and data size
+and compression algorithm. Meta is a bitmap. For each data block, there are 5
+bits meta.
 
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Data:
+Data of a block is compressed. Compressed data is round up to 512B, which is
+the payload. In disk, payload is stored at the begining of logical sector of
+the block. Let's look at an example. Say we store data to block A, which is in
+sector B(A*8), its orginal size is 4k, compressed size is 1500. Compressed data
+(CD) will use 3 sectors (512B). The 3 sectors are the payload. Payload will be
+stored at sector B.
+
+---------------------------------------------------
+... | CD1 | CD2 | CD3 |   |   |   |   |    | ...
+---------------------------------------------------
+    ^B    ^B+1  ^B+2                  ^B+7 ^B+8
+
+For this block, we will not use sector B+3 to B+7 (a hole). We use 4 meta bits
+to present payload size. The compressed size (1500) isn't stored in meta
+directly. Instead, we store it at the last 32bits of payload. In this example,
+we store it at the end of sector B+2. If compressed size + sizeof(32bits)
+crosses a sector, payload size will increase one sector. If payload uses 8
+sectors, we store uncompressed data directly.
+
+If IO size is bigger than one block, we can store the data as an extent. Data
+of the whole extent will compressed and stored in the similar way like above.
+The first block of the extent is the head, all others are the tail. If extent
+is 1 block, the block is head. We have 1 bit of meta to present if a block is
+head or tail. If 4 meta bits of head block can't store extent payload size, we
+will borrow tail block meta bits to store payload size. Max allowd extent size
+is 128k, so we don't compress/decompress too big size data.
+
+Meta:
+Modifying data will modify meta too. Meta will be written(flush) to disk
+depending on meta write policy. We support writeback and writethrough mode. In
+writeback mode, meta will be written to disk in an interval or a FLUSH request.
+In writethrough mode, data and meta data will be written to disk together.
+
+Advantages:
+1. simple. Since we store compressed data in-place, we don't need complicated
+disk data management.
+2. efficient. For each 4k, we only need 5 bits meta. 1T data will use less than
+200M meta, so we can load all meta into memory. And actual compression size is
+in payload. So if IO doesn't need RMW and we use writeback meta flush, we don't
+need extra IO for meta.
+
+Disadvantages:
+1. hole. Since we store compressed data in-place, there are a lot of holes (in
+above example, B+3 - B+7) Hole can impact IO, because we can't do IO merge.
+2. 1:1 size. Compression doesn't change disk size. If disk is 1T, we can only store
+1T data even we do compression.
+
+But this is for SSD only. Generally SSD firmware has a FTL layer to map disk
+sectors to flash nand. High end SSD firmware has filesystem-like FTL.
+1. hole. Disk has a lot of holes, but SSD FTL can still store data continuous
+in nand. Even we can't do IO merge in OS layer, SSD firmware can do it.
+2. 1:1 size. On one side, we write compressed data to SSD, which means less
+data is written to SSD. This will be very helpful to improve SSD garbage
+collection, and so write speed and life cycle. So even this is a problem, the
+target is still helpful. On the other side, advanced SSD FTL can easily do thin
+provision. For example, if nand is 1T and we let SSD report it as 2T, and use
+the SSD as compressed target. In such SSD, we don't have the 1:1 size issue.
+
+So if SSD FTL can map non-continuous disk sectors to continuous nand and
+support thin provision, the compressed target will work very well.
+
+Signed-off-by: Shaohua Li <shli@fusionio.com>
 ---
- fs/f2fs/debug.c  |  3 +++
- fs/f2fs/f2fs.h   | 22 ++++++++++++++++++++--
- fs/f2fs/inline.c |  7 ++-----
- fs/f2fs/inode.c  |  1 +
- 4 files changed, 26 insertions(+), 7 deletions(-)
+ drivers/md/Kconfig          |    6 
+ drivers/md/Makefile         |    1 
+ drivers/md/dm-compression.c | 1464 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/md/dm-compression.h |  140 ++++
+ 4 files changed, 1611 insertions(+)
 
-diff --git a/fs/f2fs/debug.c b/fs/f2fs/debug.c
-index 61adbcb..711a0d4 100644
---- a/fs/f2fs/debug.c
-+++ b/fs/f2fs/debug.c
-@@ -45,6 +45,7 @@ static void update_general_status(struct f2fs_sb_info
-*sbi)
- 	si->valid_count = valid_user_blocks(sbi);
- 	si->valid_node_count = valid_node_count(sbi);
- 	si->valid_inode_count = valid_inode_count(sbi);
-+	si->inline_inode = sbi->inline_inode;
- 	si->utilization = utilization(sbi);
+Index: linux/drivers/md/Kconfig
+===================================================================
+--- linux.orig/drivers/md/Kconfig	2013-12-27 11:05:06.699835262 +0800
++++ linux/drivers/md/Kconfig	2013-12-27 11:05:06.687835408 +0800
+@@ -290,6 +290,12 @@ config DM_CACHE_CLEANER
+          A simple cache policy that writes back all data to the
+          origin.  Used when decommissioning a dm-cache.
  
- 	si->free_segs = free_segments(sbi);
-@@ -200,6 +201,8 @@ static int stat_show(struct seq_file *s, void *v)
- 		seq_printf(s, "Other: %u)\n  - Data: %u\n",
- 			   si->valid_node_count - si->valid_inode_count,
- 			   si->valid_count - si->valid_node_count);
-+		seq_printf(s, "  - Inline_data Inode: %u\n",
-+			   si->inline_inode);
- 		seq_printf(s, "\nMain area: %d segs, %d secs %d zones\n",
- 			   si->main_area_segs, si->main_area_sections,
- 			   si->main_area_zones);
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index af35039..0b6bada 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -460,6 +460,7 @@ struct f2fs_sb_info {
- 	unsigned int segment_count[2];		/* # of allocated segments */
- 	unsigned int block_count[2];		/* # of allocated blocks */
- 	int total_hit_ext, read_hit_ext;	/* extent cache hit ratio */
-+	int inline_inode;			/* # of inline_data inodes */
- 	int bg_gc;				/* background gc calls */
- 	unsigned int n_dirty_dirs;		/* # of dir inodes */
- #endif
-@@ -992,6 +993,11 @@ static inline int inline_xattr_size(struct inode
-*inode)
- 		return 0;
- }
++config DM_COMPRESSION
++       tristate "Compression target"
++       depends on BLK_DEV_DM
++       ---help---
++         Allow volume managers to compress data for SSD.
++
+ config DM_MIRROR
+        tristate "Mirror target"
+        depends on BLK_DEV_DM
+Index: linux/drivers/md/Makefile
+===================================================================
+--- linux.orig/drivers/md/Makefile	2013-12-27 11:05:06.699835262 +0800
++++ linux/drivers/md/Makefile	2013-12-27 11:05:06.691835358 +0800
+@@ -52,6 +52,7 @@ obj-$(CONFIG_DM_VERITY)		+= dm-verity.o
+ obj-$(CONFIG_DM_CACHE)		+= dm-cache.o
+ obj-$(CONFIG_DM_CACHE_MQ)	+= dm-cache-mq.o
+ obj-$(CONFIG_DM_CACHE_CLEANER)	+= dm-cache-cleaner.o
++obj-$(CONFIG_DM_COMPRESSION)		+= dm-compression.o
  
-+static inline int f2fs_has_inline_data(struct inode *inode)
+ ifeq ($(CONFIG_DM_UEVENT),y)
+ dm-mod-objs			+= dm-uevent.o
+Index: linux/drivers/md/dm-compression.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux/drivers/md/dm-compression.c	2013-12-27 14:01:10.143035242 +0800
+@@ -0,0 +1,1464 @@
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/blkdev.h>
++#include <linux/bio.h>
++#include <linux/slab.h>
++#include <linux/device-mapper.h>
++#include <linux/dm-io.h>
++#include <linux/crypto.h>
++#include <linux/lzo.h>
++#include <linux/kthread.h>
++#include <linux/page-flags.h>
++#include <linux/completion.h>
++#include "dm-compression.h"
++
++#define DM_MSG_PREFIX "dm-comp"
++
++static struct dmcp_compressor_data compressors[] = {
++	[DMCP_COMP_ALG_LZO] = {
++		.name = "lzo",
++		.comp_len = lzo_comp_len,
++	},
++};
++static int default_compressor;
++
++static struct kmem_cache *dmcp_req_cachep;
++static struct kmem_cache *dmcp_io_range_cachep;
++static struct kmem_cache *dmcp_meta_io_cachep;
++
++static struct dmcp_io_worker dmcp_io_workers[NR_CPUS];
++static struct workqueue_struct *dmcp_wq;
++
++static u8 dmcp_get_meta(struct dmcp_info *info, u64 block_index)
 +{
-+	return is_inode_flag_set(F2FS_I(inode), FI_INLINE_DATA);
++	u64 first_bit = block_index * DMCP_META_BITS;
++	int bits, offset;
++	u8 data, ret = 0;
++
++	offset = first_bit & 7;
++	bits = min_t(u8, DMCP_META_BITS, 8 - offset);
++
++	data = info->meta_bitmap[first_bit >> 3];
++	ret = (data >> offset) & ((1 << bits) - 1);
++
++	if (bits < DMCP_META_BITS) {
++		data = info->meta_bitmap[(first_bit >> 3) + 1];
++		bits = DMCP_META_BITS - bits;
++		ret |= (data & ((1 << bits) - 1)) << (DMCP_META_BITS - bits);
++	}
++	return ret;
 +}
 +
- static inline void *inline_data_addr(struct page *page)
- {
- 	struct f2fs_inode *ri;
-@@ -1201,7 +1207,7 @@ struct f2fs_stat_info {
- 	int ndirty_node, ndirty_dent, ndirty_dirs, ndirty_meta;
- 	int nats, sits, fnids;
- 	int total_count, utilization;
--	int bg_gc;
-+	int bg_gc, inline_inode;
- 	unsigned int valid_count, valid_node_count, valid_inode_count;
- 	unsigned int bimodal, avg_vblocks;
- 	int util_free, util_valid, util_invalid;
-@@ -1230,6 +1236,17 @@ static inline struct f2fs_stat_info
-*F2FS_STAT(struct f2fs_sb_info *sbi)
- #define stat_dec_dirty_dir(sbi)		((sbi)->n_dirty_dirs--)
- #define stat_inc_total_hit(sb)		((F2FS_SB(sb))->total_hit_ext++)
- #define stat_inc_read_hit(sb)		((F2FS_SB(sb))->read_hit_ext++)
-+#define stat_inc_inline_inode(inode)					\
-+	do {								\
-+		if (f2fs_has_inline_data(inode))			\
-+			((F2FS_SB(inode->i_sb))->inline_inode++);	\
-+	} while (0)
-+#define stat_dec_inline_inode(inode)					\
-+	do {								\
-+		if (f2fs_has_inline_data(inode))			\
-+			((F2FS_SB(inode->i_sb))->inline_inode--);	\
-+	} while (0)
++static void dmcp_set_meta(struct dmcp_info *info, u64 block_index, u8 meta,
++							bool dirty_meta)
++{
++	u64 first_bit = block_index * DMCP_META_BITS;
++	int bits, offset;
++	u8 data;
++	struct page *page;
 +
- #define stat_inc_seg_type(sbi, curseg)					\
- 		((sbi)->segment_count[(curseg)->alloc_type]++)
- #define stat_inc_block_count(sbi, curseg)				\
-@@ -1273,6 +1290,8 @@ void f2fs_destroy_root_stats(void);
- #define stat_dec_dirty_dir(sbi)
- #define stat_inc_total_hit(sb)
- #define stat_inc_read_hit(sb)
-+#define stat_inc_inline_inode(inode)
-+#define stat_dec_inline_inode(inode)
- #define stat_inc_seg_type(sbi, curseg)
- #define stat_inc_block_count(sbi, curseg)
- #define stat_inc_seg_count(si, type)
-@@ -1299,7 +1318,6 @@ extern const struct inode_operations
-f2fs_special_inode_operations;
- /*
-  * inline.c
-  */
--inline int f2fs_has_inline_data(struct inode *);
- bool f2fs_may_inline(struct inode *);
- int f2fs_read_inline_data(struct inode *, struct page *);
- int f2fs_convert_inline_data(struct inode *, pgoff_t);
-diff --git a/fs/f2fs/inline.c b/fs/f2fs/inline.c
-index 1843bc7..5b259df 100644
---- a/fs/f2fs/inline.c
-+++ b/fs/f2fs/inline.c
-@@ -13,11 +13,6 @@
- 
- #include "f2fs.h"
- 
--inline int f2fs_has_inline_data(struct inode *inode)
--{
--	return is_inode_flag_set(F2FS_I(inode), FI_INLINE_DATA);
--}
--
- bool f2fs_may_inline(struct inode *inode)
- {
- 	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-@@ -113,6 +108,7 @@ static int __f2fs_convert_inline_data(struct inode
-*inode, struct page *page)
- 	zero_user_segment(ipage, INLINE_DATA_OFFSET,
- 				 INLINE_DATA_OFFSET + MAX_INLINE_DATA);
- 	clear_inode_flag(F2FS_I(inode), FI_INLINE_DATA);
-+	stat_dec_inline_inode(inode);
- 
- 	sync_inode_page(&dn);
- 	f2fs_put_page(ipage, 1);
-@@ -165,6 +161,7 @@ int f2fs_write_inline_data(struct inode *inode,
- 	if (!f2fs_has_inline_data(inode)) {
- 		truncate_data_blocks_range(&dn, 1);
- 		set_inode_flag(F2FS_I(inode), FI_INLINE_DATA);
-+		stat_inc_inline_inode(inode);
- 	}
- 
- 	sync_inode_page(&dn);
-diff --git a/fs/f2fs/inode.c b/fs/f2fs/inode.c
-index a91f451..915f9a8 100644
---- a/fs/f2fs/inode.c
-+++ b/fs/f2fs/inode.c
-@@ -277,6 +277,7 @@ void f2fs_evict_inode(struct inode *inode)
- 
- 	f2fs_lock_op(sbi);
- 	remove_inode_page(inode);
-+	stat_dec_inline_inode(inode);
- 	f2fs_unlock_op(sbi);
- 
- 	sb_end_intwrite(inode->i_sb);
--- 
-1.8.4.474.g128a96c
-
-
-
--- 
-Jaegeuk Kim
-Samsung
-
++	offset = first_bit & 7;
++	bits = min_t(u8, DMCP_META_BITS, 8 - offset);
++
++	data = info->meta_bitmap[first_bit >> 3];
++	data &= ~(((1 << bits) - 1) << offset);
++	data |= (meta & ((1 << bits) - 1)) << offset;
++	info->meta_bitmap[first_bit >> 3] = data;
++
++	if (info->write_mode == DMCP_WRITE_BACK) {
++		page = vmalloc_to_page(&info->meta_bitmap[first_bit >> 3]);
++		if (dirty_meta)
++			SetPageDirty(page);
++		else
++			ClearPageDirty(page);
++	}
++
++	if (bits < DMCP_META_BITS) {
++		meta >>= bits;
++		data = info->meta_bitmap[(first_bit >> 3) + 1];
++		bits = DMCP_META_BITS - bits;
++		data = (data >> bits) << bits;
++		data |= meta & ((1 << bits) - 1);
++		info->meta_bitmap[(first_bit >> 3) + 1] = data;
++
++		if (info->write_mode == DMCP_WRITE_BACK) {
++			page = vmalloc_to_page(&info->meta_bitmap[
++						(first_bit >> 3) + 1]);
++			if (dirty_meta)
++				SetPageDirty(page);
++			else
++				ClearPageDirty(page);
++		}
++	}
++}
++
++static void dmcp_set_extent(struct dmcp_req *req, u64 block, u16 logical_blocks,
++	sector_t data_sectors)
++{
++	int i;
++	u8 data;
++
++	for (i = 0; i < logical_blocks; i++) {
++		data = min_t(sector_t, data_sectors, 8);
++		data_sectors -= data;
++		if (i != 0)
++			data |= DMCP_TAIL_MASK;
++		/* For FUA, we write out meta data directly */
++		dmcp_set_meta(req->info, block + i, data,
++					!(req->bio->bi_rw & REQ_FUA));
++	}
++}
++
++static void dmcp_get_extent(struct dmcp_info *info, u64 block_index,
++	u64 *first_block_index, u16 *logical_sectors, u16 *data_sectors)
++{
++	u8 data;
++
++	data = dmcp_get_meta(info, block_index);
++	while (data & DMCP_TAIL_MASK) {
++		block_index--;
++		data = dmcp_get_meta(info, block_index);
++	}
++	*first_block_index = block_index;
++	*logical_sectors = DMCP_BLOCK_SIZE >> 9;
++	*data_sectors = data & DMCP_LENGTH_MASK;
++	block_index++;
++	while (block_index < info->data_blocks) {
++		data = dmcp_get_meta(info, block_index);
++		if (!(data & DMCP_TAIL_MASK))
++			break;
++		*logical_sectors += DMCP_BLOCK_SIZE >> 9;
++		*data_sectors += data & DMCP_LENGTH_MASK;
++		block_index++;
++	}
++}
++
++static int dmcp_access_super(struct dmcp_info *info, void *addr, int rw)
++{
++	struct dm_io_region region;
++	struct dm_io_request req;
++	unsigned long io_error = 0;
++	int ret;
++
++	region.bdev = info->dev->bdev;
++	region.sector = 0;
++	region.count = DMCP_BLOCK_SIZE >> 9;
++
++	req.bi_rw = rw;
++	req.mem.type = DM_IO_KMEM;
++	req.mem.offset = 0;
++	req.mem.ptr.addr = addr;
++	req.notify.fn = NULL;
++	req.client = info->io_client;
++
++	ret = dm_io(&req, 1, &region, &io_error);
++	if (ret || io_error)
++		return -EIO;
++	return 0;
++}
++
++static void dmcp_meta_io_done(unsigned long error, void *context)
++{
++	struct dmcp_meta_io *meta_io = context;
++
++	meta_io->fn(meta_io->data, error);
++	kmem_cache_free(dmcp_meta_io_cachep, meta_io);
++}
++
++static int dmcp_write_meta(struct dmcp_info *info, u64 start_page, u64 end_page,
++	void *data, void (*fn)(void *data, unsigned long error), int rw)
++{
++	struct dmcp_meta_io *meta_io;
++
++	BUG_ON(end_page > info->meta_bitmap_pages);
++
++	meta_io = kmem_cache_alloc(dmcp_meta_io_cachep, GFP_NOIO);
++	if (!meta_io) {
++		fn(data, -ENOMEM);
++		return -ENOMEM;
++	}
++	meta_io->data = data;
++	meta_io->fn = fn;
++
++	meta_io->io_region.bdev = info->dev->bdev;
++	meta_io->io_region.sector = DMCP_META_START_SECTOR +
++					(start_page << (PAGE_SHIFT - 9));
++	meta_io->io_region.count = (end_page - start_page) << (PAGE_SHIFT - 9);
++
++	atomic64_add(meta_io->io_region.count << 9, &info->meta_write_size);
++
++	meta_io->io_req.bi_rw = rw;
++	meta_io->io_req.mem.type = DM_IO_VMA;
++	meta_io->io_req.mem.offset = 0;
++	meta_io->io_req.mem.ptr.addr = info->meta_bitmap +
++						(start_page << PAGE_SHIFT);
++	meta_io->io_req.notify.fn = dmcp_meta_io_done;
++	meta_io->io_req.notify.context = meta_io;
++	meta_io->io_req.client = info->io_client;
++
++	dm_io(&meta_io->io_req, 1, &meta_io->io_region, NULL);
++	return 0;
++}
++
++struct writeback_flush_data {
++	struct completion complete;
++	atomic_t cnt;
++};
++
++static void writeback_flush_io_done(void *data, unsigned long error)
++{
++	struct writeback_flush_data *wb = data;
++
++	if (atomic_dec_return(&wb->cnt))
++		return;
++	complete(&wb->complete);
++}
++
++static void dmcp_flush_dirty_meta(struct dmcp_info *info,
++			struct writeback_flush_data *data)
++{
++	struct page *page;
++	u64 start = 0, index;
++	u32 pending = 0, cnt = 0;
++	bool dirty;
++	struct blk_plug plug;
++
++	blk_start_plug(&plug);
++	for (index = 0; index < info->meta_bitmap_pages; index++, cnt++) {
++		if (cnt == 256) {
++			cnt = 0;
++			cond_resched();
++		}
++
++		page = vmalloc_to_page(info->meta_bitmap +
++					(index << PAGE_SHIFT));
++		dirty = TestClearPageDirty(page);
++
++		if (pending == 0 && dirty) {
++			start = index;
++			pending++;
++			continue;
++		} else if (pending == 0)
++			continue;
++		else if (pending > 0 && dirty) {
++			pending++;
++			continue;
++		}
++
++		/* pending > 0 && !dirty */
++		atomic_inc(&data->cnt);
++		dmcp_write_meta(info, start, start + pending, data,
++			writeback_flush_io_done, WRITE);
++		pending = 0;
++	}
++
++	if (pending > 0) {
++		atomic_inc(&data->cnt);
++		dmcp_write_meta(info, start, start + pending, data,
++			writeback_flush_io_done, WRITE);
++	}
++	blkdev_issue_flush(info->dev->bdev, GFP_NOIO, NULL);
++	blk_finish_plug(&plug);
++}
++
++static int dmcp_meta_writeback_thread(void *data)
++{
++	struct dmcp_info *info = data;
++	struct writeback_flush_data wb;
++
++	atomic_set(&wb.cnt, 1);
++	init_completion(&wb.complete);
++
++	while (!kthread_should_stop()) {
++		schedule_timeout_interruptible(
++			msecs_to_jiffies(info->writeback_delay * 1000));
++		dmcp_flush_dirty_meta(info, &wb);
++	}
++
++	dmcp_flush_dirty_meta(info, &wb);
++
++	writeback_flush_io_done(&wb, 0);
++	wait_for_completion(&wb.complete);
++	return 0;
++}
++
++static int dmcp_init_meta(struct dmcp_info *info, bool new)
++{
++	struct dm_io_region region;
++	struct dm_io_request req;
++	unsigned long io_error = 0;
++	struct blk_plug plug;
++	int ret;
++	ssize_t len = DIV_ROUND_UP_ULL(info->meta_bitmap_bits, BITS_PER_LONG);
++
++	len *= sizeof(unsigned long);
++
++	region.bdev = info->dev->bdev;
++	region.sector = DMCP_META_START_SECTOR;
++	region.count = (len + 511) >> 9;
++
++	req.mem.type = DM_IO_VMA;
++	req.mem.offset = 0;
++	req.mem.ptr.addr = info->meta_bitmap;
++	req.notify.fn = NULL;
++	req.client = info->io_client;
++
++	blk_start_plug(&plug);
++	if (new) {
++		memset(info->meta_bitmap, 0, len);
++		req.bi_rw = WRITE_FLUSH;
++		ret = dm_io(&req, 1, &region, &io_error);
++	} else {
++		req.bi_rw = READ;
++		ret = dm_io(&req, 1, &region, &io_error);
++	}
++	blk_finish_plug(&plug);
++
++	if (ret || io_error) {
++		info->ti->error = "Access metadata error";
++		return -EIO;
++	}
++
++	if (info->write_mode == DMCP_WRITE_BACK) {
++		info->writeback_tsk = kthread_run(dmcp_meta_writeback_thread,
++			info, "dmcp_writeback");
++		if (!info->writeback_tsk) {
++			info->ti->error = "Create writeback thread error";
++			return -EINVAL;
++		}
++	}
++
++	return 0;
++}
++
++static int dmcp_alloc_compressor(struct dmcp_info *info)
++{
++	int i;
++
++	for_each_possible_cpu(i) {
++		info->tfm[i] = crypto_alloc_comp(
++			compressors[info->comp_alg].name, 0, 0);
++		if (IS_ERR(info->tfm[i])) {
++			info->tfm[i] = NULL;
++			goto err;
++		}
++	}
++	return 0;
++err:
++	for_each_possible_cpu(i) {
++		if (info->tfm[i]) {
++			crypto_free_comp(info->tfm[i]);
++			info->tfm[i] = NULL;
++		}
++	}
++	return -ENOMEM;
++}
++
++static void dmcp_free_compressor(struct dmcp_info *info)
++{
++	int i;
++
++	for_each_possible_cpu(i) {
++		if (info->tfm[i]) {
++			crypto_free_comp(info->tfm[i]);
++			info->tfm[i] = NULL;
++		}
++	}
++}
++
++static int dmcp_read_or_create_super(struct dmcp_info *info)
++{
++	void *addr;
++	struct dmcp_super_block *super;
++	u64 total_blocks;
++	u64 data_blocks, meta_blocks;
++	u32 rem, cnt;
++	bool new_super = false;
++	int ret;
++	ssize_t len;
++
++	total_blocks = i_size_read(info->dev->bdev->bd_inode) >>
++					DMCP_BLOCK_SHIFT;
++	data_blocks = total_blocks - 1;
++	rem = do_div(data_blocks, DMCP_BLOCK_SIZE * 8 + DMCP_META_BITS);
++	meta_blocks = data_blocks * DMCP_META_BITS;
++	data_blocks *= DMCP_BLOCK_SIZE * 8;
++
++	cnt = rem;
++	rem /= (DMCP_BLOCK_SIZE * 8 / DMCP_META_BITS + 1);
++	data_blocks += rem * (DMCP_BLOCK_SIZE * 8 / DMCP_META_BITS);
++	meta_blocks += rem;
++
++	cnt %= (DMCP_BLOCK_SIZE * 8 / DMCP_META_BITS + 1);
++	meta_blocks += 1;
++	data_blocks += cnt - 1;
++
++	info->data_blocks = data_blocks;
++	info->data_start = (1 + meta_blocks) << DMCP_BLOCK_SECTOR_SHIFT;
++
++	addr = kzalloc(DMCP_BLOCK_SIZE, GFP_KERNEL);
++	if (!addr) {
++		info->ti->error = "Cannot allocate super";
++		return -ENOMEM;
++	}
++
++	super = addr;
++	ret = dmcp_access_super(info, addr, READ);
++	if (ret)
++		goto out;
++
++	if (le64_to_cpu(super->magic) == DMCP_SUPER_MAGIC) {
++		if (le64_to_cpu(super->meta_blocks) != meta_blocks ||
++		    le64_to_cpu(super->data_blocks) != data_blocks) {
++			info->ti->error = "Super is invalid";
++			ret = -EINVAL;
++			goto out;
++		}
++		if (!crypto_has_comp(compressors[super->comp_alg].name, 0, 0)) {
++			info->ti->error =
++					"Compressor algorithm doesn't support";
++			ret = -EINVAL;
++			goto out;
++		}
++	} else {
++		super->magic = cpu_to_le64(DMCP_SUPER_MAGIC);
++		super->meta_blocks = cpu_to_le64(meta_blocks);
++		super->data_blocks = cpu_to_le64(data_blocks);
++		super->comp_alg = default_compressor;
++		ret = dmcp_access_super(info, addr, WRITE_FUA);
++		if (ret) {
++			info->ti->error = "Access super fails";
++			goto out;
++		}
++		new_super = true;
++	}
++
++	info->comp_alg = super->comp_alg;
++	if (dmcp_alloc_compressor(info)) {
++		ret = -ENOMEM;
++		goto out;
++	}
++
++	info->meta_bitmap_bits = data_blocks * DMCP_META_BITS;
++	len = DIV_ROUND_UP_ULL(info->meta_bitmap_bits, BITS_PER_LONG);
++	len *= sizeof(unsigned long);
++	info->meta_bitmap_pages = (len + PAGE_SIZE - 1) >> PAGE_SHIFT;
++	info->meta_bitmap = vmalloc(info->meta_bitmap_pages * PAGE_SIZE);
++	if (!info->meta_bitmap) {
++		ret = -ENOMEM;
++		goto bitmap_err;
++	}
++
++	ret = dmcp_init_meta(info, new_super);
++	if (ret)
++		goto meta_err;
++
++	return 0;
++meta_err:
++	vfree(info->meta_bitmap);
++bitmap_err:
++	dmcp_free_compressor(info);
++out:
++	kfree(addr);
++	return ret;
++}
++
++/*
++ * <dev> <writethough>/<writeback> <meta_commit_delay>
++ */
++static int dmcp_ctr(struct dm_target *ti, unsigned int argc, char **argv)
++{
++	struct dmcp_info *info;
++	char write_mode[15];
++	int ret, i;
++
++	if (argc < 2) {
++		ti->error = "Invalid argument count";
++		return -EINVAL;
++	}
++
++	info = kzalloc(sizeof(*info), GFP_KERNEL);
++	if (!info) {
++		ti->error = "dm-compression: Cannot allocate context";
++		return -ENOMEM;
++	}
++	info->ti = ti;
++
++	if (sscanf(argv[1], "%s", write_mode) != 1) {
++		ti->error = "Invalid argument";
++		ret = -EINVAL;
++		goto err_para;
++	}
++
++	if (strcmp(write_mode, "writeback") == 0) {
++		if (argc != 3) {
++			ti->error = "Invalid argument";
++			ret = -EINVAL;
++			goto err_para;
++		}
++		info->write_mode = DMCP_WRITE_BACK;
++		if (sscanf(argv[2], "%u", &info->writeback_delay) != 1) {
++			ti->error = "Invalid argument";
++			ret = -EINVAL;
++			goto err_para;
++		}
++	} else if (strcmp(write_mode, "writethrough") == 0) {
++		info->write_mode = DMCP_WRITE_THROUGH;
++	} else {
++		ti->error = "Invalid argument";
++		ret = -EINVAL;
++		goto err_para;
++	}
++
++	if (dm_get_device(ti, argv[0], dm_table_get_mode(ti->table),
++							&info->dev)) {
++		ti->error = "Can't get device";
++		ret = -EINVAL;
++		goto err_para;
++	}
++
++	info->io_client = dm_io_client_create();
++	if (!info->io_client) {
++		ti->error = "Can't create io client";
++		ret = -EINVAL;
++		goto err_ioclient;
++	}
++
++	if (bdev_logical_block_size(info->dev->bdev) != 512) {
++		ti->error = "Can't logical block size too big";
++		ret = -EINVAL;
++		goto err_blocksize;
++	}
++
++	ret = dmcp_read_or_create_super(info);
++	if (ret)
++		goto err_blocksize;
++
++	for (i = 0; i < BITMAP_HASH_LEN; i++) {
++		info->bitmap_locks[i].io_running = 0;
++		spin_lock_init(&info->bitmap_locks[i].wait_lock);
++		INIT_LIST_HEAD(&info->bitmap_locks[i].wait_list);
++	}
++
++	atomic64_set(&info->compressed_write_size, 0);
++	atomic64_set(&info->uncompressed_write_size, 0);
++	atomic64_set(&info->meta_write_size, 0);
++	ti->num_flush_bios = 1;
++	/* ti->num_discard_bios = 1; */
++	ti->private = info;
++	return 0;
++err_blocksize:
++	dm_io_client_destroy(info->io_client);
++err_ioclient:
++	dm_put_device(ti, info->dev);
++err_para:
++	kfree(info);
++	return ret;
++}
++
++static void dmcp_dtr(struct dm_target *ti)
++{
++	struct dmcp_info *info = ti->private;
++
++	if (info->write_mode == DMCP_WRITE_BACK)
++		kthread_stop(info->writeback_tsk);
++	dmcp_free_compressor(info);
++	vfree(info->meta_bitmap);
++	dm_io_client_destroy(info->io_client);
++	dm_put_device(ti, info->dev);
++	kfree(info);
++}
++
++static u64 dmcp_sector_to_block(sector_t sect)
++{
++	return sect >> DMCP_BLOCK_SECTOR_SHIFT;
++}
++
++static struct dmcp_hash_lock *dmcp_block_hash_lock(struct dmcp_info *info,
++						u64 block_index)
++{
++	return &info->bitmap_locks[(block_index >> BITMAP_HASH_SHIFT) &
++			BITMAP_HASH_MASK];
++}
++
++static struct dmcp_hash_lock *dmcp_trylock_block(struct dmcp_info *info,
++					struct dmcp_req *req, u64 block_index)
++{
++	struct dmcp_hash_lock *hash_lock;
++
++	hash_lock = dmcp_block_hash_lock(req->info, block_index);
++
++	spin_lock_irq(&hash_lock->wait_lock);
++	if (!hash_lock->io_running) {
++		hash_lock->io_running = 1;
++		spin_unlock_irq(&hash_lock->wait_lock);
++		return hash_lock;
++	}
++	list_add_tail(&req->sibling, &hash_lock->wait_list);
++	spin_unlock_irq(&hash_lock->wait_lock);
++	return NULL;
++}
++
++static void dmcp_queue_req_list(struct dmcp_info *info, struct list_head *list);
++static void dmcp_unlock_block(struct dmcp_info *info,
++			struct dmcp_req *req, struct dmcp_hash_lock *hash_lock)
++{
++	LIST_HEAD(pending_list);
++	unsigned long flags;
++
++	spin_lock_irqsave(&hash_lock->wait_lock, flags);
++	/* wakeup all pending reqs to avoid live lock */
++	list_splice_init(&hash_lock->wait_list, &pending_list);
++	hash_lock->io_running = 0;
++	spin_unlock_irqrestore(&hash_lock->wait_lock, flags);
++
++	dmcp_queue_req_list(info, &pending_list);
++}
++
++static int dmcp_lock_req_range(struct dmcp_req *req)
++{
++	u64 block_index, first_block_index;
++	u64 first_lock_block, second_lock_block;
++	u16 logical_sectors, data_sectors;
++
++	block_index = dmcp_sector_to_block(req->bio->bi_sector);
++	req->locks[0] = dmcp_trylock_block(req->info, req, block_index);
++	if (!req->locks[0])
++		return 0;
++	dmcp_get_extent(req->info, block_index, &first_block_index,
++				&logical_sectors, &data_sectors);
++	if (dmcp_block_hash_lock(req->info, first_block_index) !=
++						req->locks[0]) {
++		dmcp_unlock_block(req->info, req, req->locks[0]);
++
++		first_lock_block = first_block_index;
++		second_lock_block = block_index;
++		goto two_locks;
++	}
++
++	block_index = dmcp_sector_to_block(bio_end_sector(req->bio) - 1);
++	dmcp_get_extent(req->info, block_index, &first_block_index,
++				&logical_sectors, &data_sectors);
++	first_block_index += dmcp_sector_to_block(logical_sectors) - 1;
++	if (dmcp_block_hash_lock(req->info, first_block_index) !=
++						req->locks[0]) {
++		second_lock_block = first_block_index;
++		goto second_lock;
++	}
++	req->locked_locks = 1;
++	return 1;
++
++two_locks:
++	req->locks[0] = dmcp_trylock_block(req->info, req, first_lock_block);
++	if (!req->locks[0])
++		return 0;
++second_lock:
++	req->locks[1] = dmcp_trylock_block(req->info, req, second_lock_block);
++	if (!req->locks[1]) {
++		dmcp_unlock_block(req->info, req, req->locks[0]);
++		return 0;
++	}
++	/* Don't need check if meta is changed */
++	req->locked_locks = 2;
++	return 1;
++}
++
++static void dmcp_unlock_req_range(struct dmcp_req *req)
++{
++	int i;
++	for (i = req->locked_locks - 1; i >= 0; i--)
++		dmcp_unlock_block(req->info, req, req->locks[i]);
++}
++
++static void dmcp_queue_req(struct dmcp_info *info, struct dmcp_req *req)
++{
++	unsigned long flags;
++	struct dmcp_io_worker *worker = &dmcp_io_workers[req->cpu];
++
++	spin_lock_irqsave(&worker->lock, flags);
++	list_add_tail(&req->sibling, &worker->pending);
++	spin_unlock_irqrestore(&worker->lock, flags);
++
++	queue_work_on(req->cpu, dmcp_wq, &worker->work);
++}
++
++static void dmcp_queue_req_list(struct dmcp_info *info, struct list_head *list)
++{
++	struct dmcp_req *req;
++	while (!list_empty(list)) {
++		req = list_first_entry(list, struct dmcp_req, sibling);
++		list_del_init(&req->sibling);
++		dmcp_queue_req(info, req);
++	}
++}
++
++static void dmcp_get_req(struct dmcp_req *req)
++{
++	atomic_inc(&req->io_pending);
++}
++
++static void dmcp_free_io_range(struct dmcp_io_range *io)
++{
++	kfree(io->decomp_data);
++	kfree(io->comp_data);
++	kmem_cache_free(dmcp_io_range_cachep, io);
++}
++
++static void dmcp_put_req(struct dmcp_req *req)
++{
++	struct dmcp_io_range *io;
++
++	if (atomic_dec_return(&req->io_pending))
++		return;
++
++	if (req->stage == STAGE_INIT) /* waiting for locking */
++		return;
++
++	if (req->stage == STAGE_READ_DECOMP ||
++	    req->stage == STAGE_WRITE_COMP ||
++	    req->result)
++		req->stage = STAGE_DONE;
++
++	if (req->stage != STAGE_DONE) {
++		dmcp_queue_req(req->info, req);
++		return;
++	}
++
++	while (!list_empty(&req->all_io)) {
++		io = list_entry(req->all_io.next, struct dmcp_io_range, next);
++		list_del(&io->next);
++		dmcp_free_io_range(io);
++	}
++
++	dmcp_unlock_req_range(req);
++
++	bio_endio(req->bio, req->result);
++	kmem_cache_free(dmcp_req_cachep, req);
++}
++
++static void dmcp_io_range_done(unsigned long error, void *context)
++{
++	struct dmcp_io_range *io = context;
++
++	if (error)
++		io->req->result = error;
++	dmcp_put_req(io->req);
++}
++
++static inline int dmcp_compressor_len(struct dmcp_info *info, int len)
++{
++	if (compressors[info->comp_alg].comp_len)
++		return compressors[info->comp_alg].comp_len(len);
++	return len;
++}
++
++/*
++ * caller should set region.sector, region.count. bi_rw. IO always to/from
++ * comp_data
++ */
++static struct dmcp_io_range *dmcp_create_io_range(struct dmcp_req *req,
++	int comp_len, int decomp_len)
++{
++	struct dmcp_io_range *io;
++
++	io = kmem_cache_alloc(dmcp_io_range_cachep, GFP_NOIO);
++	if (!io)
++		return NULL;
++
++	io->comp_data = kmalloc(dmcp_compressor_len(req->info, comp_len),
++								GFP_NOIO);
++	io->decomp_data = kmalloc(decomp_len, GFP_NOIO);
++	if (!io->decomp_data || !io->comp_data) {
++		kfree(io->decomp_data);
++		kfree(io->comp_data);
++		kmem_cache_free(dmcp_io_range_cachep, io);
++		return NULL;
++	}
++
++	io->io_req.notify.fn = dmcp_io_range_done;
++	io->io_req.notify.context = io;
++	io->io_req.client = req->info->io_client;
++	io->io_req.mem.type = DM_IO_KMEM;
++	io->io_req.mem.ptr.addr = io->comp_data;
++	io->io_req.mem.offset = 0;
++
++	io->io_region.bdev = req->info->dev->bdev;
++
++	io->decomp_len = decomp_len;
++	io->comp_len = comp_len;
++	io->req = req;
++	return io;
++}
++
++static void dmcp_bio_copy(struct bio *bio, off_t bio_off, void *buf,
++		ssize_t len, bool to_buf)
++{
++	struct bio_vec *bv;
++	off_t buf_off = 0;
++	ssize_t size;
++	void *addr;
++
++	if (bio_off + len > (bio_sectors(bio) << 9))
++		BUG();
++
++	bv = __BVEC_START(bio);
++	while (bio_off > bv->bv_len) {
++		bio_off -= bv->bv_len;
++		bv++;
++	}
++
++	while (len) {
++		addr = kmap_atomic(bv->bv_page);
++		size = min_t(ssize_t, len, bv->bv_len - bio_off);
++		if (to_buf)
++			memcpy(buf + buf_off, addr + bio_off + bv->bv_offset,
++				size);
++		else
++			memcpy(addr + bio_off + bv->bv_offset, buf + buf_off,
++				size);
++		kunmap_atomic(addr);
++
++		bio_off = 0;
++		buf_off += size;
++		len -= size;
++		bv++;
++	}
++}
++
++/*
++ * return value:
++ * < 0 : error
++ * == 0 : ok
++ * == 1 : ok, but comp/decomp is skipped
++ * Compressed data size is roundup of 512, which makes the payload.
++ * We store the actual compressed len in the last u32 of the payload.
++ * If there is no free space, we add 512 to the payload size.
++ */
++static int dmcp_io_range_comp(struct dmcp_info *info, void *comp_data,
++	unsigned int *comp_len, void *decomp_data, unsigned int decomp_len,
++	bool do_comp)
++{
++	struct crypto_comp *tfm;
++	u32 *addr;
++	unsigned int actual_comp_len;
++	int ret;
++
++	if (do_comp) {
++		actual_comp_len = *comp_len;
++
++		tfm = info->tfm[get_cpu()];
++		ret = crypto_comp_compress(tfm, decomp_data, decomp_len,
++			comp_data, &actual_comp_len);
++		put_cpu();
++
++		atomic64_add(decomp_len, &info->uncompressed_write_size);
++		if (ret || decomp_len < actual_comp_len + sizeof(u32) + 512) {
++			*comp_len = decomp_len;
++			atomic64_add(*comp_len, &info->compressed_write_size);
++			return 1;
++		}
++
++		*comp_len = round_up(actual_comp_len, 512);
++		if (*comp_len - actual_comp_len < sizeof(u32))
++			*comp_len += 512;
++		atomic64_add(*comp_len, &info->compressed_write_size);
++		addr = comp_data + *comp_len;
++		addr--;
++		*addr = cpu_to_le32(actual_comp_len);
++	} else {
++		if (*comp_len == decomp_len)
++			return 1;
++		addr = comp_data + *comp_len;
++		addr--;
++		actual_comp_len = le32_to_cpu(*addr);
++
++		tfm = info->tfm[get_cpu()];
++		ret = crypto_comp_decompress(tfm, comp_data, actual_comp_len,
++			decomp_data, &decomp_len);
++		put_cpu();
++		if (ret)
++			return -EINVAL;
++	}
++	return 0;
++}
++
++static void dmcp_handle_read_decomp(struct dmcp_req *req)
++{
++	struct dmcp_io_range *io;
++	off_t bio_off = 0;
++	int ret;
++
++	req->stage = STAGE_READ_DECOMP;
++
++	if (req->result)
++		return;
++
++	list_for_each_entry(io, &req->all_io, next) {
++		ssize_t dst_off = 0, src_off = 0, len;
++
++		io->io_region.sector -= req->info->data_start;
++
++		/* Do decomp here */
++		ret = dmcp_io_range_comp(req->info, io->comp_data,
++			&io->comp_len, io->decomp_data, io->decomp_len, false);
++		if (ret < 0) {
++			req->result = -EIO;
++			return;
++		}
++
++		if (io->io_region.sector >= req->bio->bi_sector)
++			dst_off = (io->io_region.sector - req->bio->bi_sector)
++				<< 9;
++		else
++			src_off = (req->bio->bi_sector - io->io_region.sector)
++				<< 9;
++		len = min_t(ssize_t, io->decomp_len - src_off,
++			(bio_sectors(req->bio) << 9) - dst_off);
++
++		/* io range in all_io list is ordered for read IO */
++		while (bio_off != dst_off) {
++			ssize_t size = min_t(ssize_t, PAGE_SIZE,
++					dst_off - bio_off);
++			dmcp_bio_copy(req->bio, bio_off, empty_zero_page,
++					size, false);
++			bio_off += size;
++		}
++
++		if (ret == 1)
++			dmcp_bio_copy(req->bio, dst_off,
++					io->comp_data + src_off, len, false);
++		else
++			dmcp_bio_copy(req->bio, dst_off,
++					io->decomp_data + src_off, len, false);
++		bio_off = dst_off + len;
++	}
++
++	while (bio_off != (bio_sectors(req->bio) << 9)) {
++		ssize_t size = min_t(ssize_t, PAGE_SIZE,
++			(bio_sectors(req->bio) << 9) - bio_off);
++		dmcp_bio_copy(req->bio, bio_off, empty_zero_page, size, false);
++		bio_off += size;
++	}
++}
++
++static void dmcp_read_one_extent(struct dmcp_req *req, u64 block,
++	u16 logical_sectors, u16 data_sectors)
++{
++	struct dmcp_io_range *io;
++
++	io = dmcp_create_io_range(req, data_sectors << 9,
++		logical_sectors << 9);
++	if (!io) {
++		req->result = -EIO;
++		return;
++	}
++
++	dmcp_get_req(req);
++	list_add_tail(&io->next, &req->all_io);
++
++	io->io_region.sector = (block << DMCP_BLOCK_SECTOR_SHIFT) +
++				req->info->data_start;
++	io->io_region.count = data_sectors;
++
++	io->io_req.bi_rw = READ;
++	dm_io(&io->io_req, 1, &io->io_region, NULL);
++}
++
++static void dmcp_handle_read_read_existing(struct dmcp_req *req)
++{
++	u64 block_index, first_block_index;
++	u16 logical_sectors, data_sectors;
++
++	req->stage = STAGE_READ_EXISTING;
++
++	block_index = dmcp_sector_to_block(req->bio->bi_sector);
++again:
++	dmcp_get_extent(req->info, block_index, &first_block_index,
++		&logical_sectors, &data_sectors);
++	if (data_sectors > 0)
++		dmcp_read_one_extent(req, first_block_index, logical_sectors,
++			data_sectors);
++
++	if (req->result)
++		return;
++
++	block_index = first_block_index + (logical_sectors >>
++				DMCP_BLOCK_SECTOR_SHIFT);
++	if ((block_index << DMCP_BLOCK_SECTOR_SHIFT) < bio_end_sector(req->bio))
++		goto again;
++
++	/* A shortcut if all data is in already */
++	if (list_empty(&req->all_io))
++		dmcp_handle_read_decomp(req);
++}
++
++static void dmcp_handle_read_request(struct dmcp_req *req)
++{
++	dmcp_get_req(req);
++
++	if (req->stage == STAGE_INIT) {
++		if (!dmcp_lock_req_range(req)) {
++			dmcp_put_req(req);
++			return;
++		}
++
++		dmcp_handle_read_read_existing(req);
++	} else if (req->stage == STAGE_READ_EXISTING)
++		dmcp_handle_read_decomp(req);
++
++	dmcp_put_req(req);
++}
++
++static void dmcp_write_meta_done(void *context, unsigned long error)
++{
++	struct dmcp_req *req = context;
++	dmcp_put_req(req);
++}
++
++static u64 dmcp_block_meta_page_index(u64 block, bool end)
++{
++	u64 bits = block * DMCP_META_BITS - !!end;
++	/* (1 << 3) bits per byte */
++	return bits >> (3 + PAGE_SHIFT);
++}
++
++static int dmcp_handle_write_modify(struct dmcp_io_range *io, u64 *meta_start,
++	u64 *meta_end, bool *handle_bio)
++{
++	struct dmcp_req *req = io->req;
++	sector_t start, count;
++	unsigned int comp_len;
++	off_t offset;
++	u64 page_index;
++	int ret;
++
++	io->io_region.sector -= req->info->data_start;
++
++	/* decompress original data */
++	ret = dmcp_io_range_comp(req->info, io->comp_data, &io->comp_len,
++			io->decomp_data, io->decomp_len, false);
++	if (ret < 0) {
++		req->result = -EINVAL;
++		return -EIO;
++	}
++
++	start = io->io_region.sector;
++	count = io->decomp_len >> 9;
++	if (start < req->bio->bi_sector && start + count >
++					bio_end_sector(req->bio)) {
++		/* we don't split an extent */
++		if (ret == 1) {
++			memcpy(io->decomp_data, io->comp_data, io->decomp_len);
++			dmcp_bio_copy(req->bio, 0,
++			   io->decomp_data + ((req->bio->bi_sector - start) <<
++			   9), bio_sectors(req->bio) << 9, true);
++		} else {
++			dmcp_bio_copy(req->bio, 0,
++			   io->decomp_data + ((req->bio->bi_sector - start) <<
++			   9), bio_sectors(req->bio) << 9, true);
++			kfree(io->comp_data);
++			/* New compressed len might be bigger */
++			io->comp_data = kmalloc(dmcp_compressor_len(req->info,
++						io->decomp_len), GFP_NOIO);
++			io->comp_len = io->decomp_len;
++			if (!io->comp_data) {
++				req->result = -ENOMEM;
++				return -EIO;
++			}
++			io->io_req.mem.ptr.addr = io->comp_data;
++		}
++		/* need compress data */
++		ret = 0;
++		offset = 0;
++		*handle_bio = false;
++	} else if (start < req->bio->bi_sector) {
++		count = req->bio->bi_sector - start;
++		offset = 0;
++	} else {
++		offset = bio_end_sector(req->bio) - start;
++		start = bio_end_sector(req->bio);
++		count = count - offset;
++	}
++
++	/* Original data is uncompressed, we don't need writeback */
++	if (ret == 1) {
++		comp_len = count << 9;
++		goto handle_meta;
++	}
++
++	/* assume compress less data uses less space (at least 4k lsess data) */
++	comp_len = io->comp_len;
++	ret = dmcp_io_range_comp(req->info, io->comp_data, &comp_len,
++		io->decomp_data + (offset << 9), count << 9, true);
++	if (ret < 0) {
++		req->result = -EIO;
++		return -EIO;
++	}
++
++	dmcp_get_req(req);
++	if (ret == 1)
++		io->io_req.mem.ptr.addr = io->decomp_data + (offset << 9);
++	io->io_region.count = comp_len >> 9;
++	io->io_region.sector = start + req->info->data_start;
++
++	io->io_req.bi_rw = req->bio->bi_rw;
++	dm_io(&io->io_req, 1, &io->io_region, NULL);
++handle_meta:
++	dmcp_set_extent(req, start >> DMCP_BLOCK_SECTOR_SHIFT,
++		count >> DMCP_BLOCK_SECTOR_SHIFT, comp_len >> 9);
++
++	page_index = dmcp_block_meta_page_index(start >>
++					DMCP_BLOCK_SECTOR_SHIFT, false);
++	if (*meta_start > page_index)
++		*meta_start = page_index;
++	page_index = dmcp_block_meta_page_index(
++			(start + count) >> DMCP_BLOCK_SECTOR_SHIFT, true);
++	if (*meta_end < page_index)
++		*meta_end = page_index;
++	return 0;
++}
++
++static void dmcp_handle_write_comp(struct dmcp_req *req)
++{
++	struct dmcp_io_range *io;
++	sector_t count;
++	unsigned int comp_len;
++	u64 meta_start = -1L, meta_end = 0, page_index;
++	int ret;
++	bool handle_bio = true;
++
++	req->stage = STAGE_WRITE_COMP;
++
++	if (req->result)
++		return;
++
++	list_for_each_entry(io, &req->all_io, next) {
++		if (dmcp_handle_write_modify(io, &meta_start, &meta_end,
++						&handle_bio))
++			return;
++	}
++
++	if (!handle_bio)
++		goto update_meta;
++
++	count = bio_sectors(req->bio);
++	io = dmcp_create_io_range(req, count << 9, count << 9);
++	if (!io) {
++		req->result = -EIO;
++		return;
++	}
++	dmcp_bio_copy(req->bio, 0, io->decomp_data, count << 9, true);
++
++	/* compress data */
++	comp_len = io->comp_len;
++	ret = dmcp_io_range_comp(req->info, io->comp_data, &comp_len,
++		io->decomp_data, count << 9, true);
++	if (ret < 0) {
++		dmcp_free_io_range(io);
++		req->result = -EIO;
++		return;
++	}
++
++	dmcp_get_req(req);
++	list_add_tail(&io->next, &req->all_io);
++	io->io_region.sector = req->bio->bi_sector + req->info->data_start;
++	if (ret == 1)
++		io->io_req.mem.ptr.addr = io->decomp_data;
++	io->io_region.count = comp_len >> 9;
++	io->io_req.bi_rw = req->bio->bi_rw;
++	dm_io(&io->io_req, 1, &io->io_region, NULL);
++	dmcp_set_extent(req, req->bio->bi_sector >> DMCP_BLOCK_SECTOR_SHIFT,
++		count >> DMCP_BLOCK_SECTOR_SHIFT, comp_len >> 9);
++
++	page_index = dmcp_block_meta_page_index(
++		req->bio->bi_sector >> DMCP_BLOCK_SECTOR_SHIFT, false);
++	if (meta_start > page_index)
++		meta_start = page_index;
++	page_index = dmcp_block_meta_page_index(
++		(req->bio->bi_sector + count) >> DMCP_BLOCK_SECTOR_SHIFT,
++		true);
++	if (meta_end < page_index)
++		meta_end = page_index;
++update_meta:
++	if (req->info->write_mode == DMCP_WRITE_THROUGH ||
++						(req->bio->bi_rw & REQ_FUA)) {
++		dmcp_get_req(req);
++		dmcp_write_meta(req->info, meta_start, meta_end + 1, req,
++			dmcp_write_meta_done, req->bio->bi_rw);
++	}
++}
++
++static void dmcp_handle_write_read_existing(struct dmcp_req *req)
++{
++	u64 block_index, first_block_index;
++	u16 logical_sectors, data_sectors;
++
++	req->stage = STAGE_READ_EXISTING;
++
++	block_index = dmcp_sector_to_block(req->bio->bi_sector);
++	dmcp_get_extent(req->info, block_index, &first_block_index,
++		&logical_sectors, &data_sectors);
++	if (data_sectors > 0 && (first_block_index < block_index ||
++	    first_block_index + dmcp_sector_to_block(logical_sectors) >
++	    dmcp_sector_to_block(bio_end_sector(req->bio))))
++		dmcp_read_one_extent(req, first_block_index, logical_sectors,
++				data_sectors);
++
++	if (req->result)
++		return;
++
++	if (first_block_index + dmcp_sector_to_block(logical_sectors) >=
++	    dmcp_sector_to_block(bio_end_sector(req->bio)))
++		goto out;
++
++	block_index = dmcp_sector_to_block(bio_end_sector(req->bio)) - 1;
++	dmcp_get_extent(req->info, block_index, &first_block_index,
++		&logical_sectors, &data_sectors);
++	if (data_sectors > 0 &&
++	    first_block_index + dmcp_sector_to_block(logical_sectors) >
++	    block_index + 1)
++		dmcp_read_one_extent(req, first_block_index, logical_sectors,
++							data_sectors);
++
++	if (req->result)
++		return;
++out:
++	if (list_empty(&req->all_io))
++		dmcp_handle_write_comp(req);
++}
++
++static void dmcp_handle_write_request(struct dmcp_req *req)
++{
++	dmcp_get_req(req);
++
++	if (req->stage == STAGE_INIT) {
++		if (!dmcp_lock_req_range(req)) {
++			dmcp_put_req(req);
++			return;
++		}
++
++		dmcp_handle_write_read_existing(req);
++	} else if (req->stage == STAGE_READ_EXISTING)
++		dmcp_handle_write_comp(req);
++
++	dmcp_put_req(req);
++}
++
++/* For writeback mode */
++static void dmcp_handle_flush_request(struct dmcp_req *req)
++{
++	struct writeback_flush_data wb;
++
++	atomic_set(&wb.cnt, 1);
++	init_completion(&wb.complete);
++
++	dmcp_flush_dirty_meta(req->info, &wb);
++
++	writeback_flush_io_done(&wb, 0);
++	wait_for_completion(&wb.complete);
++
++	bio_endio(req->bio, 0);
++	kmem_cache_free(dmcp_req_cachep, req);
++}
++
++static void dmcp_handle_request(struct dmcp_req *req)
++{
++	if (req->bio->bi_rw & REQ_FLUSH)
++		dmcp_handle_flush_request(req);
++	else if (req->bio->bi_rw & REQ_WRITE)
++		dmcp_handle_write_request(req);
++	else
++		dmcp_handle_read_request(req);
++}
++
++static void dmcp_do_request_work(struct work_struct *work)
++{
++	struct dmcp_io_worker *worker = container_of(work,
++				struct dmcp_io_worker, work);
++	LIST_HEAD(list);
++	struct dmcp_req *req;
++	struct blk_plug plug;
++	bool repeat;
++
++	blk_start_plug(&plug);
++again:
++	spin_lock_irq(&worker->lock);
++	list_splice_init(&worker->pending, &list);
++	spin_unlock_irq(&worker->lock);
++
++	repeat = !list_empty(&list);
++	while (!list_empty(&list)) {
++		req = list_first_entry(&list, struct dmcp_req, sibling);
++		list_del(&req->sibling);
++
++		dmcp_handle_request(req);
++	}
++	if (repeat)
++		goto again;
++	blk_finish_plug(&plug);
++}
++
++static int dmcp_map(struct dm_target *ti, struct bio *bio)
++{
++	struct dmcp_info *info = ti->private;
++	struct dmcp_req *req;
++
++	if ((bio->bi_rw & REQ_FLUSH) &&
++			info->write_mode == DMCP_WRITE_THROUGH) {
++		bio->bi_bdev = info->dev->bdev;
++		return DM_MAPIO_REMAPPED;
++	}
++	req = kmem_cache_alloc(dmcp_req_cachep, GFP_NOIO);
++	if (!req)
++		return -EIO;
++
++	req->bio = bio;
++	req->info = info;
++	atomic_set(&req->io_pending, 0);
++	INIT_LIST_HEAD(&req->all_io);
++	req->result = 0;
++	req->stage = STAGE_INIT;
++	req->locked_locks = 0;
++
++	req->cpu = raw_smp_processor_id();
++	dmcp_queue_req(info, req);
++
++	return DM_MAPIO_SUBMITTED;
++}
++
++static void dmcp_status(struct dm_target *ti, status_type_t type,
++			  unsigned status_flags, char *result, unsigned maxlen)
++{
++	struct dmcp_info *info = ti->private;
++	unsigned int sz = 0;
++
++	switch (type) {
++	case STATUSTYPE_INFO:
++		DMEMIT("Data Size %lu Compressed Data Size %lu Meta Size %lu",
++			atomic64_read(&info->uncompressed_write_size),
++			atomic64_read(&info->compressed_write_size),
++			atomic64_read(&info->meta_write_size));
++		break;
++	case STATUSTYPE_TABLE:
++		if (info->write_mode == DMCP_WRITE_BACK)
++			DMEMIT("%s %s %d", info->dev->name, "writeback",
++				info->writeback_delay);
++		else
++			DMEMIT("%s %s", info->dev->name, "writethrough");
++		break;
++	}
++}
++
++static int dmcp_iterate_devices(struct dm_target *ti,
++				  iterate_devices_callout_fn fn, void *data)
++{
++	struct dmcp_info *info = ti->private;
++
++	return fn(ti, info->dev, info->data_start,
++		info->data_blocks << DMCP_BLOCK_SECTOR_SHIFT, data);
++}
++
++static void dmcp_io_hints(struct dm_target *ti,
++			    struct queue_limits *limits)
++{
++	/* No blk_limits_logical_block_size */
++	limits->logical_block_size = limits->physical_block_size =
++		limits->io_min = DMCP_BLOCK_SIZE;
++	blk_limits_max_hw_sectors(limits, DMCP_MAX_SIZE >> 9);
++}
++
++static struct target_type dmcp_target = {
++	.name   = "compression",
++	.version = {1, 0, 0},
++	.module = THIS_MODULE,
++	.ctr    = dmcp_ctr,
++	.dtr    = dmcp_dtr,
++	.map    = dmcp_map,
++	.status = dmcp_status,
++	.iterate_devices = dmcp_iterate_devices,
++	.io_hints = dmcp_io_hints,
++};
++
++static int __init dmcp_init(void)
++{
++	int r;
++
++	for (r = 0; r < ARRAY_SIZE(compressors); r++)
++		if (crypto_has_comp(compressors[r].name, 0, 0))
++			break;
++	if (r >= ARRAY_SIZE(compressors)) {
++		DMWARN("No crypto compressors are supported");
++		return -EINVAL;
++	}
++
++	default_compressor = r;
++
++	r = -ENOMEM;
++	dmcp_req_cachep = kmem_cache_create("dmcp_requests",
++		sizeof(struct dmcp_req), 0, 0, NULL);
++	if (!dmcp_req_cachep) {
++		DMWARN("Can't create request cache");
++		goto err;
++	}
++
++	dmcp_io_range_cachep = kmem_cache_create("dmcp_io_range",
++		sizeof(struct dmcp_io_range), 0, 0, NULL);
++	if (!dmcp_io_range_cachep) {
++		DMWARN("Can't create io_range cache");
++		goto err;
++	}
++
++	dmcp_meta_io_cachep = kmem_cache_create("dmcp_meta_io",
++		sizeof(struct dmcp_meta_io), 0, 0, NULL);
++	if (!dmcp_meta_io_cachep) {
++		DMWARN("Can't create meta_io cache");
++		goto err;
++	}
++
++	dmcp_wq = alloc_workqueue("dmcp_io",
++		WQ_UNBOUND|WQ_MEM_RECLAIM|WQ_CPU_INTENSIVE, 0);
++	if (!dmcp_wq) {
++		DMWARN("Can't create io workqueue");
++		goto err;
++	}
++
++	r = dm_register_target(&dmcp_target);
++	if (r < 0) {
++		DMWARN("target registration failed");
++		goto err;
++	}
++
++	for_each_possible_cpu(r) {
++		INIT_LIST_HEAD(&dmcp_io_workers[r].pending);
++		spin_lock_init(&dmcp_io_workers[r].lock);
++		INIT_WORK(&dmcp_io_workers[r].work, dmcp_do_request_work);
++	}
++	return 0;
++err:
++	if (dmcp_req_cachep)
++		kmem_cache_destroy(dmcp_req_cachep);
++	if (dmcp_io_range_cachep)
++		kmem_cache_destroy(dmcp_io_range_cachep);
++	if (dmcp_meta_io_cachep)
++		kmem_cache_destroy(dmcp_meta_io_cachep);
++	if (dmcp_wq)
++		destroy_workqueue(dmcp_wq);
++
++	return r;
++}
++
++static void __exit dmcp_exit(void)
++{
++	dm_unregister_target(&dmcp_target);
++	kmem_cache_destroy(dmcp_req_cachep);
++	kmem_cache_destroy(dmcp_io_range_cachep);
++	kmem_cache_destroy(dmcp_meta_io_cachep);
++	destroy_workqueue(dmcp_wq);
++}
++
++module_init(dmcp_init);
++module_exit(dmcp_exit);
++
++MODULE_AUTHOR("Shaohua Li <shli@kernel.org>");
++MODULE_DESCRIPTION(DM_NAME " target with data compression for SSD");
++MODULE_LICENSE("GPL");
+Index: linux/drivers/md/dm-compression.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux/drivers/md/dm-compression.h	2013-12-27 11:05:06.691835358 +0800
+@@ -0,0 +1,140 @@
++#ifndef __DM_COMPRESSION_H__
++#define __DM_COMPRESSION_H__
++#include <linux/types.h>
++
++#define DMCP_SUPER_MAGIC 0x106526c206506c09
++struct dmcp_super_block {
++	__le64 magic;
++	__le64 meta_blocks;
++	__le64 data_blocks;
++	u8 comp_alg;
++} __attribute__((packed));
++
++#define DMCP_COMP_ALG_LZO 0
++
++#ifdef __KERNEL__
++struct dmcp_compressor_data {
++	char *name;
++	int (*comp_len)(int comp_len);
++};
++
++static inline int lzo_comp_len(int comp_len)
++{
++	return lzo1x_worst_compress(comp_len);
++}
++
++/*
++ * Minium logical sector size of this target is 4096 byte, which is a block.
++ * Data of a block is compressed. Compressed data is round up to 512B, which is
++ * the payload. For each block, we have 5 bits meta data. bit 0 - 3 stands
++ * payload length. 0 - 8 sectors. If compressed payload length is 8 sectors, we
++ * just store uncompressed data. Actual compressed data length is stored at the
++ * last 32 bits of payload if data is compressed. In disk, payload is stored at
++ * the begining of logical sector of the block. If IO size is bigger than one
++ * block, we store the whole data as an extent. Bit 4 stands tail for an
++ * extent. Max allowed extent size is 128k.
++ */
++#define DMCP_BLOCK_SIZE 4096
++#define DMCP_BLOCK_SHIFT 12
++#define DMCP_BLOCK_SECTOR_SHIFT (DMCP_BLOCK_SHIFT - 9)
++
++#define DMCP_MIN_SIZE 4096
++#define DMCP_MAX_SIZE (128 * 1024)
++
++#define DMCP_LENGTH_MASK ((1 << 4) - 1)
++#define DMCP_TAIL_MASK (1 << 4)
++#define DMCP_META_BITS 5
++
++#define DMCP_META_START_SECTOR (DMCP_BLOCK_SIZE >> 9)
++
++enum DMCP_WRITE_MODE {
++	DMCP_WRITE_BACK,
++	DMCP_WRITE_THROUGH,
++};
++
++/* 128*4 = 512k, since max IO size is 128k, an IO crosses at most 2 hash */
++#define BITMAP_HASH_SHIFT 7
++#define BITMAP_HASH_MASK ((1 << 6) - 1)
++#define BITMAP_HASH_LEN 64
++struct dmcp_hash_lock {
++	int io_running;
++	spinlock_t wait_lock;
++	struct list_head wait_list;
++};
++
++struct dmcp_info {
++	struct dm_target *ti;
++	struct dm_dev *dev;
++
++	int comp_alg;
++	struct crypto_comp *tfm[NR_CPUS];
++
++	sector_t data_start;
++	u64 data_blocks;
++
++	char *meta_bitmap;
++	u64 meta_bitmap_bits;
++	u64 meta_bitmap_pages;
++	struct dmcp_hash_lock bitmap_locks[BITMAP_HASH_LEN];
++
++	enum DMCP_WRITE_MODE write_mode;
++	unsigned int writeback_delay; /* second */
++	struct task_struct *writeback_tsk;
++	struct dm_io_client *io_client;
++
++	atomic64_t compressed_write_size;
++	atomic64_t uncompressed_write_size;
++	atomic64_t meta_write_size;
++};
++
++struct dmcp_meta_io {
++	struct dm_io_request io_req;
++	struct dm_io_region io_region;
++	void *data;
++	void (*fn)(void *data, unsigned long error);
++};
++
++struct dmcp_io_range {
++	struct dm_io_request io_req;
++	struct dm_io_region io_region;
++	void *decomp_data;
++	unsigned int decomp_len;
++	void *comp_data;
++	unsigned int comp_len; /* For write, this is estimated */
++	struct list_head next;
++	struct dmcp_req *req;
++};
++
++enum DMCP_REQ_STAGE {
++	STAGE_INIT,
++	STAGE_READ_EXISTING,
++	STAGE_READ_DECOMP,
++	STAGE_WRITE_COMP,
++	STAGE_DONE,
++};
++
++struct dmcp_req {
++	struct bio *bio;
++	struct dmcp_info *info;
++	struct list_head sibling;
++
++	struct list_head all_io;
++	atomic_t io_pending;
++	enum DMCP_REQ_STAGE stage;
++
++	struct dmcp_hash_lock *locks[2];
++	int locked_locks;
++	int result;
++
++	int cpu;
++	struct work_struct work;
++};
++
++struct dmcp_io_worker {
++	struct list_head pending;
++	spinlock_t lock;
++	struct work_struct work;
++};
++#endif
++
++#endif
