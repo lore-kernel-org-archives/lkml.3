@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab3L0WGo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 17:06:44 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56870 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754786Ab3L0WGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 17:06:43 -0500
-Message-ID: <52BDF9EA.7050400@zytor.com>
-Date: Fri, 27 Dec 2013 14:06:34 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: "H.J. Lu" <hjl.tools@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/8] Use __kernel_long_t in struct timex
-References: <1388165112-6545-1-git-send-email-hjl.tools@gmail.com> <1388165112-6545-2-git-send-email-hjl.tools@gmail.com>
-In-Reply-To: <1388165112-6545-2-git-send-email-hjl.tools@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754918Ab3L0WOg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 17:14:36 -0500
+Received: from mail-gg0-f177.google.com ([209.85.161.177]:45304 "EHLO
+	mail-gg0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754893Ab3L0WOf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Dec 2013 17:14:35 -0500
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
+Cc: "H.J. Lu" <hjl.tools@gmail.com>
+Subject: [PATCH 5/8] Use __kernel_ulong_t in struct msqid64_ds
+Date: Fri, 27 Dec 2013 14:14:21 -0800
+Message-Id: <1388182464-28428-6-git-send-email-hjl.tools@gmail.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1388182464-28428-1-git-send-email-hjl.tools@gmail.com>
+References: <1388182464-28428-1-git-send-email-hjl.tools@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/27/2013 09:25 AM, H.J. Lu wrote:
-> X32 adjtimex system call is the same as x86-64 adjtimex system call,
-> which uses 64-bit integer for long in struct timex. But x32 long is
-> 32 bit.  This patch replaces long in struct timex with __kernel_long_t
-> if __BITS_PER_LONG == 64.
-> 
-> Signed-off-by: H.J. Lu <hjl.tools@gmail.com>
-> ---
->  include/uapi/linux/timex.h | 46 ++++++++++++++++++++++++++++++++++++++--------
->  1 file changed, 38 insertions(+), 8 deletions(-)
-> 
-> diff --git a/include/uapi/linux/timex.h b/include/uapi/linux/timex.h
-> index a7ea81f..98314e9 100644
-> --- a/include/uapi/linux/timex.h
-> +++ b/include/uapi/linux/timex.h
-> @@ -63,28 +63,58 @@
->   */
->  struct timex {
->  	unsigned int modes;	/* mode selector */
-> +#if __BITS_PER_LONG == 64
-> +	__kernel_long_t offset;	/* time offset (usec) */
-> +	__kernel_long_t freq;	/* frequency offset (scaled ppm) */
-> +	__kernel_long_t maxerror;/* maximum error (usec) */
-> +	__kernel_long_t esterror;/* estimated error (usec) */
-> +#else
->  	long offset;		/* time offset (usec) */
->  	long freq;		/* frequency offset (scaled ppm) */
->  	long maxerror;		/* maximum error (usec) */
->  	long esterror;		/* estimated error (usec) */
-> +#endif
->  	int status;		/* clock command/status */
+Both x32 and x86-64 use the same struct msqid64_ds for system calls.
+But x32 long is 32-bit. This patch replaces unsigned long with
+__kernel_ulong_t in struct msqid64_ds.
 
-I thought we already discussed this?  No __BITS_PER_LONG conditionals,
-please, unless you can strongly motivate them... and if so, we probably
-should introduce another __kernel type instead.
+Signed-off-by: H.J. Lu <hjl.tools@gmail.com>
+---
+ include/uapi/asm-generic/msgbuf.h | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-	-hpa
-
+diff --git a/include/uapi/asm-generic/msgbuf.h b/include/uapi/asm-generic/msgbuf.h
+index aec850d..f55ecc4 100644
+--- a/include/uapi/asm-generic/msgbuf.h
++++ b/include/uapi/asm-generic/msgbuf.h
+@@ -35,13 +35,13 @@ struct msqid64_ds {
+ #if __BITS_PER_LONG != 64
+ 	unsigned long	__unused3;
+ #endif
+-	unsigned long  msg_cbytes;	/* current number of bytes on queue */
+-	unsigned long  msg_qnum;	/* number of messages in queue */
+-	unsigned long  msg_qbytes;	/* max number of bytes on queue */
++	__kernel_ulong_t msg_cbytes;	/* current number of bytes on queue */
++	__kernel_ulong_t msg_qnum;	/* number of messages in queue */
++	__kernel_ulong_t msg_qbytes;	/* max number of bytes on queue */
+ 	__kernel_pid_t msg_lspid;	/* pid of last msgsnd */
+ 	__kernel_pid_t msg_lrpid;	/* last receive pid */
+-	unsigned long  __unused4;
+-	unsigned long  __unused5;
++	__kernel_ulong_t __unused4;
++	__kernel_ulong_t __unused5;
+ };
+ 
+ #endif /* __ASM_GENERIC_MSGBUF_H */
+-- 
+1.8.4.2
 
