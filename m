@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762Ab3L0T2R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 14:28:17 -0500
-Received: from isrv.corpit.ru ([86.62.121.231]:34178 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754598Ab3L0T2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 14:28:16 -0500
-X-Greylist: delayed 332 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Dec 2013 14:28:16 EST
-Message-ID: <52BDD382.7070505@msgid.tls.msk.ru>
-Date: Fri, 27 Dec 2013 23:22:42 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	id S1754726Ab3L0Tha (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 14:37:30 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:44541 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754394Ab3L0Th2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Dec 2013 14:37:28 -0500
+Date: Fri, 27 Dec 2013 20:37:26 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Joe Xue <lgxue@hotmail.com>, "cooloney@gmail.com" <cooloney@gmail.com>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "rob@landley.net" <rob@landley.net>,
+        "milo.kim@ti.com" <milo.kim@ti.com>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH] Add the LED burst trigger
+Message-ID: <20131227193726.GA29672@amd.pavel.ucw.cz>
+References: <1387895407-28031-1-git-send-email-lgxue@hotmail.com>
+ <20131225230935.GB13593@amd.pavel.ucw.cz>
+ <BLU172-W52032BFEF4512123D7516EACC20@phx.gbl>
+ <20131227115746.4cbd9523@alan.etchedpixels.co.uk>
+ <20131227125725.GA21506@amd.pavel.ucw.cz>
+ <20131227141826.3fe406e4@alan.etchedpixels.co.uk>
+ <20131227152354.GA24152@amd.pavel.ucw.cz>
+ <20131227181349.475abe88@alan.etchedpixels.co.uk>
 MIME-Version: 1.0
-To: Linux-kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        KVM list <kvm@vger.kernel.org>
-Subject: 3.10.25 kernel behaves unstable as a qemu/kvm guest
-X-Enigmail-Version: 1.5.1
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131227181349.475abe88@alan.etchedpixels.co.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi!
 
-This is just an initial/preliminary heads-up, maybe mis-directed, about
-a possible issue.
+> > Well, this one will be really smaller. And yes, it will make some
+> > memory non-swappable, but I believe with triggers and infrastructure
+> > for N900 (and similar) it will be worth it.
+> 
+> Ah yes thats such a major proportion of platforms
 
-I upgraded 2 machines today to 3.10.25, and both shows some.. strangeness
-within linux guests, which are also running 3.10.25.  Revering to 3.10.24
-in guests (compiled by the same compiler with the same options) or
-using older qemu/kvm (running with 1.7 now) fixes it.
+I don't know other cellphone hardware in details, but there are 900M
+Android devices and multi-colored LEDs are quite common.
 
-All guests are using virtio-net and virtio-blk.
+> > Plus, it will actually save CPU cycles, and thus significant power.
+> 
+> All of which will be totally wiped out if you bump all the millions of
+> x86 server boxes in the world up by one page of kernel space and cause a
+> few disk I/Os
 
-On one machine (prod), one guest (also prod) loads okay, but the networking
-is not functioning: no packets are received by the guest.  I weren't able
-to debug this further at this time, so reverted back to an older qemu/kvm
-(1.1).
+I don't suggest people enable this on PCs/servers. This is useful for
+small devices, not for PCs. LED subsystem is not usually used on
+PCs...
 
-On another machine (my home workstation where I can experiment), the same
-combination (3.10.25 on host & guest and qemu 1.7) shows rather unstable
-behavour: about every 1/2 boot it stalls somewhere at the initial boot,
-either after initializing PNP, or initializing networking, or sometimes
-after initializing virtio, and the rest 1/2 it boots okay.
+> > > little driver but the rest belongs in a library and the library can use
+> > > accelerators (of any kind) if available, or even things like lightbulbs
+> > > via X10 so you can have the big red light in the control room flash if
+> > > the machine dies  8)
+> > 
+> > Well, I'd prefer my cellphone to signal me "you have a message" by
+> > flashing blue light, not by dimming lights in the control room ;-).
+> 
+> Where the cellphone has an offload it makes sense to use it, but in the
+> general case userspace is much more flexible. You may not want a flashing
+> big red light and a siren but if its in kernel then nobody can have it,
+> if it's through a library you can.
 
-When it stalls, it consumes no CPU, qemu process is responsive, the guest
-just does nothing.  Like this:
+Well, library is nicer for sending message to the admin over social
+network of the month, while kernel module is better for Arduino-based
+USB-connected Turing-complete 3-color led.
 
- ...
- NET: Registering protocol family 2
- TCP: established hash table entries: 8192 (order: 5, 131072 bytes)
- TCP bind hash table entries: 8192 (order: 5, 131072 bytes)
- TCP: Hash tables configured (established 8192 bind 8192)
- TCP: reno registered
- [at this point it hanged]
+Unfortunately, collaboration between GNU and Android worlds ends at
+the kernel-userspace barrier, so we are unlikely to end up with one
+useful library... 
 
-(after this it normally registers UDP hash tables and other net stuff)
+[You are right that we could have done something like lpd and have
+library+daemon in the userspace playing the LED patterns. I just
+believe that this is easier and better done in kernel.]
 
-I'm not sure yet what's going on.  I understand that there are no guest-related
-changes in 3.10.25 (compared with .24), so there should be something else.
-The fact that it stalls randomly suggests there's some uninitialized value
-somewhere.
-
-I'll try to debug it further.  Just a heads-up for now.
-
-Thanks,
-
-/mjt
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
