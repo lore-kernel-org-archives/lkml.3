@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752Ab3L0TZk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 14:25:40 -0500
-Received: from mail-yh0-f41.google.com ([209.85.213.41]:54987 "EHLO
-	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754032Ab3L0TZj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 14:25:39 -0500
-Date: Fri, 27 Dec 2013 16:25:30 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "David A. Long" <dave.long@linaro.org>, systemtap@sourceware.org,
-        yrl.pp-manager.tt@hitachi.com, Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH -tip v2 1/2] [CLEANUP] perf-probe: Expand given path to
- absolute path
-Message-ID: <20131227192530.GC13381@ghostprotocols.net>
-References: <20131226054148.22364.25224.stgit@kbuild-fedora.novalocal>
- <20131226054150.22364.12187.stgit@kbuild-fedora.novalocal>
- <52BC39D6.3090908@gmail.com>
- <20131226142248.GE30980@ghostprotocols.net>
- <52BD1ACA.7030506@hitachi.com>
- <52BD8C9B.8030206@gmail.com>
- <20131227174902.GA13381@ghostprotocols.net>
+	id S1754762Ab3L0T2R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 14:28:17 -0500
+Received: from isrv.corpit.ru ([86.62.121.231]:34178 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754598Ab3L0T2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Dec 2013 14:28:16 -0500
+X-Greylist: delayed 332 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Dec 2013 14:28:16 EST
+Message-ID: <52BDD382.7070505@msgid.tls.msk.ru>
+Date: Fri, 27 Dec 2013 23:22:42 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131227174902.GA13381@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linux-kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        KVM list <kvm@vger.kernel.org>
+Subject: 3.10.25 kernel behaves unstable as a qemu/kvm guest
+X-Enigmail-Version: 1.5.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Dec 27, 2013 at 02:49:02PM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Fri, Dec 27, 2013 at 09:20:11AM -0500, David Ahern escreveu:
-> > On 12/27/13, 1:14 AM, Masami Hiramatsu wrote:
-> > >Nowhere, since there is no terminal code for user
-> > >command interface.
-> 
-> > >Those memories are released when the program terminated.
-> > >I think it is just a waste of the time to free the memory
-> > >pieces which are not used(and allocated) repeatedly.
-> > >Or, is there any chance to call this part directly from
-> > >other command?
-> 
-> There is always the chance of parts of a tool to be librarized, I think
-> the rule is: allocator -> lifetime -> destructor, explicit.
-> 
-> We may want to explicitely disable some big destructor call (or lots of
-> destructors, like symbols + hists, etc) because it may make exit time to
-> be overly long, but at least we'll know what destructors to call when
-> such code gets librarized.
+Hello.
 
-Having said that, I applied the current patch, as it doesn't makes
-things much worser than they already are, i.e. we need to audit that
-code further, and these patches provided an useful new functionality.
+This is just an initial/preliminary heads-up, maybe mis-directed, about
+a possible issue.
 
-- Arnaldo
+I upgraded 2 machines today to 3.10.25, and both shows some.. strangeness
+within linux guests, which are also running 3.10.25.  Revering to 3.10.24
+in guests (compiled by the same compiler with the same options) or
+using older qemu/kvm (running with 1.7 now) fixes it.
+
+All guests are using virtio-net and virtio-blk.
+
+On one machine (prod), one guest (also prod) loads okay, but the networking
+is not functioning: no packets are received by the guest.  I weren't able
+to debug this further at this time, so reverted back to an older qemu/kvm
+(1.1).
+
+On another machine (my home workstation where I can experiment), the same
+combination (3.10.25 on host & guest and qemu 1.7) shows rather unstable
+behavour: about every 1/2 boot it stalls somewhere at the initial boot,
+either after initializing PNP, or initializing networking, or sometimes
+after initializing virtio, and the rest 1/2 it boots okay.
+
+When it stalls, it consumes no CPU, qemu process is responsive, the guest
+just does nothing.  Like this:
+
+ ...
+ NET: Registering protocol family 2
+ TCP: established hash table entries: 8192 (order: 5, 131072 bytes)
+ TCP bind hash table entries: 8192 (order: 5, 131072 bytes)
+ TCP: Hash tables configured (established 8192 bind 8192)
+ TCP: reno registered
+ [at this point it hanged]
+
+(after this it normally registers UDP hash tables and other net stuff)
+
+I'm not sure yet what's going on.  I understand that there are no guest-related
+changes in 3.10.25 (compared with .24), so there should be something else.
+The fact that it stalls randomly suggests there's some uninitialized value
+somewhere.
+
+I'll try to debug it further.  Just a heads-up for now.
+
+Thanks,
+
+/mjt
