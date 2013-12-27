@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141Ab3L0IiH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 03:38:07 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:43035 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754024Ab3L0IiD (ORCPT
+	id S1754138Ab3L0Ixj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 03:53:39 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:21316 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754025Ab3L0Ixi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 03:38:03 -0500
-Message-ID: <52BD3C2F.9010409@ti.com>
-Date: Fri, 27 Dec 2013 14:07:03 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Fri, 27 Dec 2013 03:53:38 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VS-1(z579eh551biz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h17326ah8275bh8275dh1de097h186068hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Fri, 27 Dec 2013 16:53:27 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+CC: <broonie@kernel.org>, <alsa-devel@alsa-project.org>,
+        Jingchang Lu <b35083@freescale.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv4 2/4] ARM: dts: Add Freescale SAI ALSA SoC Digital Audio
+ Interface node for VF610.
+Message-ID: <20131227085322.GA3367@S2101-09.ap.freescale.net>
+References: <1387501387-2151-1-git-send-email-Li.Xiubo@freescale.com>
+ <1387501387-2151-2-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
-        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
-        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
-        <mark.rutland@arm.com>, <robherring2@gmail.com>, <tglx@linutronix.de>,
-        <galak@codeaurora.org>, <rob.herring@calxeda.com>,
-        <santosh.shilimkar@ti.com>, <nm@ti.com>, <bcousson@baylibre.com>
-Subject: Re: [PATCH V5 2/4] DRIVERS: IRQCHIP: CROSSBAR: Add support for Crossbar
- IP
-References: <1386066445-28245-1-git-send-email-r.sricharan@ti.com> <1386066445-28245-3-git-send-email-r.sricharan@ti.com> <20131226200106.GA30559@saruman.home>
-In-Reply-To: <20131226200106.GA30559@saruman.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1387501387-2151-2-git-send-email-Li.Xiubo@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
-
-On Friday 27 December 2013 01:31 AM, Felipe Balbi wrote:
-> Hi,
+On Fri, Dec 20, 2013 at 09:03:05AM +0800, Xiubo Li wrote:
+> This patch adds the SAI's edma mux Tx and Rx support.
 > 
-> On Tue, Dec 03, 2013 at 03:57:23PM +0530, Sricharan R wrote:
->> +static const struct of_device_id crossbar_match[] __initconst = {
->> +	{ .compatible = "ti,irq-crossbar" },
->> +	{}
->> +};
->> +
->> +int irqcrossbar_init(void)
->> +{
->> +	struct device_node *np;
->> +	np = of_find_matching_node(NULL, crossbar_match);
->> +	if (!np)
->> +		return -ENODEV;
->> +
->> +	crossbar_of_init(np);
->> +	return 0;
->> +}
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> Signed-off-by: Jingchang Lu <b35083@freescale.com>
+> ---
+>  arch/arm/boot/dts/vf610.dtsi | 3 +++
+>  1 file changed, 3 insertions(+)
 > 
-> instead, please use IRQCHIP_DECLARE() then you won't need to expose this
-> symbol to be used by arch/arm/ code.
+> diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
+> index e84d84c..2d6ddd0 100644
+> --- a/arch/arm/boot/dts/vf610.dtsi
+> +++ b/arch/arm/boot/dts/vf610.dtsi
+> @@ -166,6 +166,9 @@
+>  				interrupts = <0 86 0x04>;
+>  				clocks = <&clks VF610_CLK_SAI2>;
+>  				clock-names = "sai";
+> +				dma-names = "tx", "rx";
+> +				dmas = <&edma0 0 VF610_EDMA_MUXID0_SAI2_TX>,
+> +					<&edma0 0 VF610_EDMA_MUXID0_SAI2_RX>;
+
+Where are these VF610_EDMA_MUXID0_* macros defined?  I cannot find them
+in my tree.
+
+Shawn
+
+>  				status = "disabled";
+>  			};
+>  
+> -- 
+> 1.8.4
 > 
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-Crossbar node does not have a "interrupt-controller" property and
-not a regular Interrupt controller. This was added in here
-after all below discussions
-
- https://lkml.org/lkml/2013/9/18/540
-
-So IRQCHIP_DECLARE() macro cannot be used here.
-
-Regards,
- Sricharan
