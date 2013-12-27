@@ -1,102 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab3L0Abm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 19:31:42 -0500
-Received: from blu0-omc4-s27.blu0.hotmail.com ([65.55.111.166]:7295 "EHLO
-	blu0-omc4-s27.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751229Ab3L0Abl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 19:31:41 -0500
-X-TMN: [1r7GzfZhq5k/5td0g0WdvDKstvTFFvZv]
-X-Originating-Email: [lgxue@hotmail.com]
-Message-ID: <BLU172-W30E6E7C0BC2B6C08FA0552ACCD0@phx.gbl>
-From: Joe Xue <lgxue@hotmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-CC: "cooloney@gmail.com" <cooloney@gmail.com>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "rob@landley.net" <rob@landley.net>,
-        "milo.kim@ti.com" <milo.kim@ti.com>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: RE: [PATCH] Add the LED burst trigger
-Date: Thu, 26 Dec 2013 19:31:40 -0500
-Importance: Normal
-In-Reply-To: <20131226142607.GA15225@amd.pavel.ucw.cz>
-References: <1387895407-28031-1-git-send-email-lgxue@hotmail.com>,<20131225230935.GB13593@amd.pavel.ucw.cz>,<BLU172-W52032BFEF4512123D7516EACC20@phx.gbl>,<20131226142607.GA15225@amd.pavel.ucw.cz>
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginalArrivalTime: 27 Dec 2013 00:31:40.0527 (UTC) FILETIME=[02AF67F0:01CF029B]
+	id S1753962Ab3L0Aoe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 19:44:34 -0500
+Received: from mail-pa0-f73.google.com ([209.85.220.73]:43256 "EHLO
+	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752355Ab3L0Aob (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Dec 2013 19:44:31 -0500
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH 0/7] misc Tegra clock fixes
+Date: Thu, 26 Dec 2013 16:44:20 -0800
+Message-Id: <1388105067-24438-1-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 1.8.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Fixes for various clock-related issues found during bringup of
+Tegra124-based Venice2 and Norrin boards.
 
-I'm writing the Morse code trigger.
-what about this
+Andrew Bresticker (3):
+  clk: tegra: fix sdmmc clks on Tegra1x4
+  clk: tegra: cclk_lp has a pllx/2 divider
+  clk: tegra: use max divider if divider overflows
 
-echo "-.-. *"> patten
--              a long on then a off
-.              a short on then a off
-space     a long off
-*             mean repeat the patten
-s             mean indicate the patten just one time then stop
+David Ung (1):
+  clk: tegra: PLLD2 fixes for hdmi
 
-Do we also need a  "step_length_ms" as Pavel's suggestion?
-If so, we can define long on as 2*step_length_ms and short on as 1*step_length_ms.
+Gabe Black (1):
+  clk: tegra: Fix PLLP rate table
 
-Any other parameters do you guys think we should add?
+Mark Zhang (1):
+  clk: tegra: fix host1x clock on Tegra124
 
-Any suggestion is very appreciated.
+Rhyland Klein (1):
+  clk: tegra: Fix PLLD mnp table
 
-Thanks
+ drivers/clk/tegra/clk-divider.c          |  2 +-
+ drivers/clk/tegra/clk-id.h               |  4 +++
+ drivers/clk/tegra/clk-tegra-periph.c     |  4 +++
+ drivers/clk/tegra/clk-tegra-super-gen4.c |  2 +-
+ drivers/clk/tegra/clk-tegra114.c         |  8 +++---
+ drivers/clk/tegra/clk-tegra124.c         | 46 +++++++++++++++++++-------------
+ 6 files changed, 41 insertions(+), 25 deletions(-)
 
-Joe
+-- 
+1.8.5.1
 
-
-
-----------------------------------------
-> Date: Thu, 26 Dec 2013 15:26:08 +0100
-> From: pavel@ucw.cz
-> To: lgxue@hotmail.com
-> CC: cooloney@gmail.com; rpurdie@rpsys.net; rob@landley.net; milo.kim@ti.com; linux-leds@vger.kernel.org; linux-kernel@vger.kernel.org; linux-doc@vger.kernel.org
-> Subject: Re: [PATCH] Add the LED burst trigger
->
-> Hi!
->
->> Yes, Morse code can indicate any means. But when we look at the LEDs, would we like to also have a Morse code book in hand?
->>
->> The burst led blink idea is because it is easy to use and easy to describe. Mostly when users on site are describing the LEDs states to the support engineer.
->>
->
-> Well.. above 7 or so blinks, people will be unable to count. "one
-> short, one long" will help to extend that.
->
-> Plus, there may be patterns such as "keep it ON, count number of brief
-> OFFs"...
->
-> That's why I suggested:
->
->>> echo 40> step_length_ms
->>> echo "- - - "> pattern
->>>
->>> do the same trick?
->>>
->>> Plus, you could for example do
->>>
->>> echo "- --- "> pattern
->>>
->>> to do morse code...
->
-> Interface
->
-> (Note that your client stripped some spaces out of it).
->
-> With that, it should be very easy to program all the reasonable
-> blinking patterns for single LED without PWM.
-> Pavel
-> --
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html 		 	   		  
