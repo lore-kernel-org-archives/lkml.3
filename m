@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339Ab3L0KKc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 05:10:32 -0500
-Received: from mail.eclipso.de ([217.69.254.102]:49724 "HELO mail.eclipso.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754208Ab3L0KKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 05:10:30 -0500
-X-Greylist: delayed 302 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Dec 2013 05:10:30 EST
-Date: Fri, 27 Dec 2013 11:05:26 +0100
+	id S1754377Ab3L0KRj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 05:17:39 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:38841 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754245Ab3L0KRe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Dec 2013 05:17:34 -0500
 MIME-Version: 1.0
-Message-ID: <8191a78f885837fe5c89d9ffb6dd251a@mail.eclipso.de>
-X-Mailer: eclipso.eu/7.3.0
-X-Sender-IP: 82.217.125.67
-From: "Roy Spliet" <rspliet@eclipso.eu>
-Subject: Re: nouveau nvaa clock missing break?
-Reply-To: "Roy Spliet" <rspliet@eclipso.eu>
-To: "Kees Cook" <keescook@google.com>
-Cc: <bskeggs@redhat.com>, <linux-kernel@vger.kernel.org>,
-        <dri-devel@lists.freedesktop.org>
-In-Reply-To: <CAGXu5j+mBiXj2+iPKGU+Ffb3oXqL+cH8JULH_hoORJNiQgQQFQ@mail.gmail.com>
-References: <CAGXu5j+mBiXj2+iPKGU+Ffb3oXqL+cH8JULH_hoORJNiQgQQFQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
+In-Reply-To: <20131227063843.GA3310@kroah.com>
+References: <1388120848-15879-1-git-send-email-tushar.behera@linaro.org>
+	<20131227051843.GA840@kroah.com>
+	<CAHbNUh27ZZ5UxuLMPvv6weNOSG4XKV9ZRrmTB9F0RvgQxufGDQ@mail.gmail.com>
+	<20131227063843.GA3310@kroah.com>
+Date: Fri, 27 Dec 2013 15:47:31 +0530
+Message-ID: <CAHbNUh0NBVEBJbSG7UWgnHbORgbKCrA_74=jiArSvv5jaFk1SQ@mail.gmail.com>
+Subject: Re: [PATCH] serial: samsung: Remove hard-coded major/minor numbers
+From: Tushar Behera <tushar.behera@linaro.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-serial <linux-serial@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, jslaby <jslaby@suse.cz>,
+        Patch Tracking <patches@linaro.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        ben@simtec.co.uk, Thomas Abraham <thomas.abraham@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, heiko <heiko@sntech.de>,
+        Kgene Kim <kgene.kim@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Kees,
+On 27 December 2013 12:08, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Fri, Dec 27, 2013 at 12:00:20PM +0530, Tushar Behera wrote:
+>> On 27 December 2013 10:48, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> > On Fri, Dec 27, 2013 at 10:37:28AM +0530, Tushar Behera wrote:
 
-Thanks for your feedback. Let me first reassure you that this fall-through is indeed intentional: vdiv should be set regardless of the clock source. A comment line would definitely be in place though for future nouveau hackers.
-In read_pll, post_div can never be zero in valid execution. If the register-read returns zero, the GPU has either fallen off the bus, or crashed because someone set a divider of 0. I agree that this is not very robust and will probably lead to a divide-by-zero on hardware failure. Checking it doesn't harm I bet!
-I will propose a patch addressing these issues as soon as I find some free time. Thanks again for the feedback. Yours,
+[ ... ]
 
-Roy
-
---- Ursprüngliche Nachricht ---
-Von: Kees Cook <keescook@google.com>
-Datum: 20:51:22 26-12-2013
-An: Roy Spliet <rspliet@eclipso.eu>
-Betreff: nouveau nvaa clock missing break?
-
-> Hi,
+>> >> @@ -951,8 +949,6 @@ static struct uart_driver s3c24xx_uart_drv = {
+>> >>       .nr             = CONFIG_SERIAL_SAMSUNG_UARTS,
+>> >>       .cons           = S3C24XX_SERIAL_CONSOLE,
+>> >>       .dev_name       = S3C24XX_SERIAL_NAME,
+>> >> -     .major          = S3C24XX_SERIAL_MAJOR,
+>> >> -     .minor          = S3C24XX_SERIAL_MINOR,
+>> >
+>> > Doesn't this break existing systems and configurations that are
+>> > expecting 204:64 as the location of this serial port?
+>> >
+>>
+>> I tested this on Exynos4210-Origen, Exynos5250-Arndale board, it works
+>> fine there. I haven't tested on any older boards.
 >
-> Just curious if this code is missing a "break" or not...
->
-> /drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c: 373 in nvaa_clock_prog()
->
->
->         switch (priv->vsrc) {
->         case nv_clk_src_cclk:
->                 mast |= 0x00400000;
->         default:
->                 nv_wr32(clk, 0x4600, priv->vdiv);
->         }
->
-> Coverity noticed it as CID 1135671. If it's intentional, it might be
-> nice to add a "fall through" comment there.
->
-> Coverity also complained about read_pll (CID 1135670) where post_div
-> could (unlikely) be 0 and used for a divide-by-zero.
->
-> Thanks!
->
-> -Kees
->
-> --
-> Kees Cook
-> Chrome OS Security
+> How did it work?  You are relying on some userspace tools to do this
+> properly, right?  What about systems without those specific tools?
 >
 
+Enabling CONFIG_DEVTMPFS, all the /dev/ttySAC<n> nodes are generated
+and the appropriate console is specified through command line
+argument.
 
+>> > Why change this one and not the amba-pl011 driver?
+>> >
+>>
+>> I could only test this driver, so thought of changing this rather than
+>> modifying amba-pl011 driver. I don't have any other reason.
+>
+> Please get the samsung driver maintainer to agree with this and sign off
+> on it before trying to get it merged again.
+>
+> greg k-h
+
+Adding a few other developers who have contributed to this file or are
+working on different Samsung platforms to get an ack/sign-off.
+
+-- 
+Tushar Behera
