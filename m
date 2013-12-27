@@ -1,133 +1,440 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058Ab3L0ApJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 19:45:09 -0500
-Received: from mail-pb0-f74.google.com ([209.85.160.74]:54476 "EHLO
-	mail-pb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753994Ab3L0Aov (ORCPT
+	id S1754091Ab3L0ApM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 19:45:12 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:56721 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754000Ab3L0Ao6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 19:44:51 -0500
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Andrew Bresticker <abrestic@chromium.org>
-Subject: [PATCH 5/7] clk: tegra: fix sdmmc clks on Tegra1x4
-Date: Thu, 26 Dec 2013 16:44:25 -0800
-Message-Id: <1388105067-24438-6-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 1.8.5.1
-In-Reply-To: <1388105067-24438-1-git-send-email-abrestic@chromium.org>
-References: <1388105067-24438-1-git-send-email-abrestic@chromium.org>
+	Thu, 26 Dec 2013 19:44:58 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Toshi Kani <toshi.kani@hp.com>,
+        Yinghai Lu <yinghai@kernel.org>, Zhang Rui <rui.zhang@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>
+Subject: Re: [PATCH 1/2][Untested] ACPI / hotplug: Add demand_offline hotplug profile flag
+Date: Fri, 27 Dec 2013 01:58:29 +0100
+Message-ID: <4207104.v8BDjft7nT@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <52BBAC36.3060705@jp.fujitsu.com>
+References: <1421028.Rsfpmhnym3@vostro.rjw.lan> <52BB9E0C.8020102@jp.fujitsu.com> <52BBAC36.3060705@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sdmmc clocks on Tegra114 and Tegra124 are 3-bit wide muxes with
-6 parents.  Add support for tegra_clk_sdmmc*_8 and switch Tegra114
-and Tegra124 to use these clocks instead.
+On Thursday, December 26, 2013 01:10:30 PM Yasuaki Ishimatsu wrote:
+> (2013/12/26 12:10), Yasuaki Ishimatsu wrote:
+> > (2013/12/23 23:00), Rafael J. Wysocki wrote:
+> >> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >>
+> >> Add a new ACPI hotplug profile flag, demand_offline, such that if
+> >> set for the given ACPI device object's scan handler, it will cause
+> >> acpi_scan_hot_remove() to check if that device object's physical
+> >> companions are offline upfront and fail the hot removal if that
+> >> is not the case.
+> >>
+> >> That flag will be useful to overcome a problem with containers on
+> >> some system where they can only be hot-removed after some cleanup
+> >> operations carried out by user space, which needs to be notified
+> >> of the container hot-removal before the kernel attempts to offline
+> >> devices in the container.  In those cases the current implementation
+> >> of acpi_scan_hot_remove() is not sufficient, because it first tries
+> >> to offline the devices in the container and only if that is
+> >> suffcessful it tries to offline the container itself.  As a result,
+> >> the container hot-removal notification is not delivered to user space
+> >> at the right time.
+> >>
+> >> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >> ---
+> >>   drivers/acpi/scan.c     |   41 +++++++++++++++++++++++++++++++++++++----
+> >>   include/acpi/acpi_bus.h |    3 ++-
+> >>   2 files changed, 39 insertions(+), 5 deletions(-)
+> >>
+> >> Index: linux-pm/drivers/acpi/scan.c
+> >> ===================================================================
+> >> --- linux-pm.orig/drivers/acpi/scan.c
+> >> +++ linux-pm/drivers/acpi/scan.c
+> >> @@ -126,6 +126,24 @@ acpi_device_modalias_show(struct device
+> >>   }
+> >>   static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
+> >>
+> >> +static bool acpi_scan_is_offline(struct acpi_device *adev)
+> >> +{
+> >> +    struct acpi_device_physical_node *pn;
+> >> +    bool offline = true;
+> >> +
+> >> +    mutex_lock(&adev->physical_node_lock);
+> >> +
+> >> +    list_for_each_entry(pn, &adev->physical_node_list, node)
+> >
+> >> +        if (!pn->dev->offline) {
+> >
+> 
+> > Please check pn->dev->bus and pn->dev->bus->offline too as follow:
+> >
+> >          if (pn->dev->bus && pn->dev->bus->offline &&
+> >              !pn->dev->offline) {
+> >
+> 
+> Adding above check, I could remove container device by using eject sysfs.
+> But following messages were shown:
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+Well, it looks like I have overlooked that error during my testing.
+
+> [ 1017.543000] ------------[ cut here ]------------
+> [ 1017.543000] WARNING: CPU: 0 PID: 6 at drivers/base/core.c:251 device_release+0x92/0xa0()
+> [ 1017.543000] Device 'ACPI0004:01' does not have a release() function, it is broken and must be fixed.
+> [ 1017.653000] Modules linked in: xt_CHECKSUM nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6t_REJECT ipmi_devintf ipt_REJECT cfg80211 xt_conntrack rfkill ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables ip6table_nat nf_conntrack_ipv6 nf_defrag_ipv6 nf_nat_ipv6 
+> ip6table_mangle ip6table_security ip6table_raw ip6table_filter ip6_tables iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack iptable_mangle iptable_security iptable_raw iptable_filter sg ip_tables vfat fat x86_pkg_temp_thermal coretemp iTCO_wdt iTCO_vendor_support kvm_intel 
+> kvm crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel lrw gf128mul glue_helper ablk_helper cryptd dm_mirror dm_region_hash dm_log dm_mod microcode lpc_ich igb sb_edac e1000e pcspkr i2c_i801
+> [ 1017.653000]  edac_core mfd_core dca ptp pps_core shpchp ipmi_si ipmi_msghandler tpm_infineon nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sd_mod mgag200 syscopyarea sysfillrect sysimgblt lpfc i2c_algo_bit drm_kms_helper ttm drm crc_t10dif crct10dif_common scsi_transport_fc megaraid_sas 
+> i2c_core scsi_tgt
+> [ 1017.653000] CPU: 0 PID: 6 Comm: kworker/u512:0 Tainted: G        W    3.13.0-rc5+ #5
+> [ 1017.653000] Hardware name:
+> [ 1017.653000] Workqueue: kacpi_hotplug acpi_hotplug_work_fn
+> [ 1017.653000]  0000000000000009 ffff880873a6dc68 ffffffff815d85ca ffff880873a6dcb0
+> [ 1017.653000]  ffff880873a6dca0 ffffffff8106594d ffff8a07d221c010 ffff8a07d221c000
+> [ 1017.653000]  ffff8808715472c0 ffff880871e91018 0000000000000103 ffff880873a6dd00
+> [ 1017.653000] Call Trace:
+> [ 1017.653000]  [<ffffffff815d85ca>] dump_stack+0x45/0x56
+> [ 1017.653000]  [<ffffffff8106594d>] warn_slowpath_common+0x7d/0xa0
+> [ 1017.653000]  [<ffffffff810659bc>] warn_slowpath_fmt+0x4c/0x50
+> [ 1017.653000]  [<ffffffff813ad892>] device_release+0x92/0xa0
+> [ 1017.653000]  [<ffffffff812b7197>] kobject_cleanup+0x77/0x1b0
+> [ 1017.653000]  [<ffffffff812b7045>] kobject_put+0x35/0x70
+> [ 1017.653000]  [<ffffffff813ae38c>] device_unregister+0x2c/0x60
+> [ 1017.653000]  [<ffffffff8134c87c>] container_device_detach+0x28/0x2a
+> [ 1017.653000]  [<ffffffff81323096>] acpi_bus_trim+0x56/0x89
+> [ 1017.653000]  [<ffffffff813246ae>] acpi_device_hotplug+0x168/0x383
+> [ 1017.653000]  [<ffffffff8131efba>] acpi_hotplug_work_fn+0x1c/0x27
+> [ 1017.653000]  [<ffffffff81080f1b>] process_one_work+0x17b/0x460
+> [ 1017.653000]  [<ffffffff81081ccb>] worker_thread+0x11b/0x400
+> [ 1017.653000]  [<ffffffff81081bb0>] ? rescuer_thread+0x3e0/0x3e0
+> [ 1017.653000]  [<ffffffff81088a12>] kthread+0xd2/0xf0
+> [ 1017.653000]  [<ffffffff81088940>] ? kthread_create_on_node+0x180/0x180
+> [ 1017.653000]  [<ffffffff815e82fc>] ret_from_fork+0x7c/0xb0
+> [ 1017.653000]  [<ffffffff81088940>] ? kthread_create_on_node+0x180/0x180
+> [ 1017.653000] ---[ end trace 41394323eb4b690a ]---
+
+Below is an updated version of patch [2/2] that should fix this problem (and
+the other one with the PCI host bridge not supporting offline too).
+
+Thanks,
+Rafael
+
+
 ---
- drivers/clk/tegra/clk-id.h           | 4 ++++
- drivers/clk/tegra/clk-tegra-periph.c | 4 ++++
- drivers/clk/tegra/clk-tegra114.c     | 8 ++++----
- drivers/clk/tegra/clk-tegra124.c     | 8 ++++----
- 4 files changed, 16 insertions(+), 8 deletions(-)
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Subject: ACPI / hotplug / driver core: Handle containers in a special way
 
-diff --git a/drivers/clk/tegra/clk-id.h b/drivers/clk/tegra/clk-id.h
-index cf0c323..c39613c 100644
---- a/drivers/clk/tegra/clk-id.h
-+++ b/drivers/clk/tegra/clk-id.h
-@@ -180,9 +180,13 @@ enum clk_id {
- 	tegra_clk_sbc6_8,
- 	tegra_clk_sclk,
- 	tegra_clk_sdmmc1,
-+	tegra_clk_sdmmc1_8,
- 	tegra_clk_sdmmc2,
-+	tegra_clk_sdmmc2_8,
- 	tegra_clk_sdmmc3,
-+	tegra_clk_sdmmc3_8,
- 	tegra_clk_sdmmc4,
-+	tegra_clk_sdmmc4_8,
- 	tegra_clk_se,
- 	tegra_clk_soc_therm,
- 	tegra_clk_sor0,
-diff --git a/drivers/clk/tegra/clk-tegra-periph.c b/drivers/clk/tegra/clk-tegra-periph.c
-index 5c35885..c212473 100644
---- a/drivers/clk/tegra/clk-tegra-periph.c
-+++ b/drivers/clk/tegra/clk-tegra-periph.c
-@@ -465,6 +465,10 @@ static struct tegra_periph_init_data periph_clks[] = {
- 	MUX("adx1", mux_plla_pllc_pllp_clkm, CLK_SOURCE_ADX1, 180, TEGRA_PERIPH_ON_APB, tegra_clk_adx1),
- 	MUX("amx1", mux_plla_pllc_pllp_clkm, CLK_SOURCE_AMX1, 185, TEGRA_PERIPH_ON_APB, tegra_clk_amx1),
- 	MUX("vi_sensor2", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_VI_SENSOR2, 20, TEGRA_PERIPH_NO_RESET, tegra_clk_vi_sensor2),
-+	MUX8("sdmmc1", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SDMMC1, 14, 0, tegra_clk_sdmmc1_8),
-+	MUX8("sdmmc2", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SDMMC2, 9, 0, tegra_clk_sdmmc2_8),
-+	MUX8("sdmmc3", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SDMMC3, 69, 0, tegra_clk_sdmmc3_8),
-+	MUX8("sdmmc4", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SDMMC4, 15, 0, tegra_clk_sdmmc4_8),
- 	MUX8("sbc1", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SBC1, 41, TEGRA_PERIPH_ON_APB, tegra_clk_sbc1_8),
- 	MUX8("sbc2", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SBC2, 44, TEGRA_PERIPH_ON_APB, tegra_clk_sbc2_8),
- 	MUX8("sbc3", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SBC3, 46, TEGRA_PERIPH_ON_APB, tegra_clk_sbc3_8),
-diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
-index 90d9d25..80431f0 100644
---- a/drivers/clk/tegra/clk-tegra114.c
-+++ b/drivers/clk/tegra/clk-tegra114.c
-@@ -682,12 +682,12 @@ static struct tegra_clk tegra114_clks[tegra_clk_max] __initdata = {
- 	[tegra_clk_timer] = { .dt_id = TEGRA114_CLK_TIMER, .present = true },
- 	[tegra_clk_uarta] = { .dt_id = TEGRA114_CLK_UARTA, .present = true },
- 	[tegra_clk_uartd] = { .dt_id = TEGRA114_CLK_UARTD, .present = true },
--	[tegra_clk_sdmmc2] = { .dt_id = TEGRA114_CLK_SDMMC2, .present = true },
-+	[tegra_clk_sdmmc2_8] = { .dt_id = TEGRA114_CLK_SDMMC2, .present = true },
- 	[tegra_clk_i2s1] = { .dt_id = TEGRA114_CLK_I2S1, .present = true },
- 	[tegra_clk_i2c1] = { .dt_id = TEGRA114_CLK_I2C1, .present = true },
- 	[tegra_clk_ndflash] = { .dt_id = TEGRA114_CLK_NDFLASH, .present = true },
--	[tegra_clk_sdmmc1] = { .dt_id = TEGRA114_CLK_SDMMC1, .present = true },
--	[tegra_clk_sdmmc4] = { .dt_id = TEGRA114_CLK_SDMMC4, .present = true },
-+	[tegra_clk_sdmmc1_8] = { .dt_id = TEGRA114_CLK_SDMMC1, .present = true },
-+	[tegra_clk_sdmmc4_8] = { .dt_id = TEGRA114_CLK_SDMMC4, .present = true },
- 	[tegra_clk_pwm] = { .dt_id = TEGRA114_CLK_PWM, .present = true },
- 	[tegra_clk_i2s0] = { .dt_id = TEGRA114_CLK_I2S0, .present = true },
- 	[tegra_clk_i2s2] = { .dt_id = TEGRA114_CLK_I2S2, .present = true },
-@@ -723,7 +723,7 @@ static struct tegra_clk tegra114_clks[tegra_clk_max] __initdata = {
- 	[tegra_clk_bsev] = { .dt_id = TEGRA114_CLK_BSEV, .present = true },
- 	[tegra_clk_i2c3] = { .dt_id = TEGRA114_CLK_I2C3, .present = true },
- 	[tegra_clk_sbc4_8] = { .dt_id = TEGRA114_CLK_SBC4, .present = true },
--	[tegra_clk_sdmmc3] = { .dt_id = TEGRA114_CLK_SDMMC3, .present = true },
-+	[tegra_clk_sdmmc3_8] = { .dt_id = TEGRA114_CLK_SDMMC3, .present = true },
- 	[tegra_clk_owr] = { .dt_id = TEGRA114_CLK_OWR, .present = true },
- 	[tegra_clk_csite] = { .dt_id = TEGRA114_CLK_CSITE, .present = true },
- 	[tegra_clk_la] = { .dt_id = TEGRA114_CLK_LA, .present = true },
-diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
-index 743ccb4..b4cf650 100644
---- a/drivers/clk/tegra/clk-tegra124.c
-+++ b/drivers/clk/tegra/clk-tegra124.c
-@@ -761,12 +761,12 @@ static struct tegra_clk tegra124_clks[tegra_clk_max] __initdata = {
- 	[tegra_clk_rtc] = { .dt_id = TEGRA124_CLK_RTC, .present = true },
- 	[tegra_clk_timer] = { .dt_id = TEGRA124_CLK_TIMER, .present = true },
- 	[tegra_clk_uarta] = { .dt_id = TEGRA124_CLK_UARTA, .present = true },
--	[tegra_clk_sdmmc2] = { .dt_id = TEGRA124_CLK_SDMMC2, .present = true },
-+	[tegra_clk_sdmmc2_8] = { .dt_id = TEGRA124_CLK_SDMMC2, .present = true },
- 	[tegra_clk_i2s1] = { .dt_id = TEGRA124_CLK_I2S1, .present = true },
- 	[tegra_clk_i2c1] = { .dt_id = TEGRA124_CLK_I2C1, .present = true },
- 	[tegra_clk_ndflash] = { .dt_id = TEGRA124_CLK_NDFLASH, .present = true },
--	[tegra_clk_sdmmc1] = { .dt_id = TEGRA124_CLK_SDMMC1, .present = true },
--	[tegra_clk_sdmmc4] = { .dt_id = TEGRA124_CLK_SDMMC4, .present = true },
-+	[tegra_clk_sdmmc1_8] = { .dt_id = TEGRA124_CLK_SDMMC1, .present = true },
-+	[tegra_clk_sdmmc4_8] = { .dt_id = TEGRA124_CLK_SDMMC4, .present = true },
- 	[tegra_clk_pwm] = { .dt_id = TEGRA124_CLK_PWM, .present = true },
- 	[tegra_clk_i2s2] = { .dt_id = TEGRA124_CLK_I2S2, .present = true },
- 	[tegra_clk_gr2d] = { .dt_id = TEGRA124_CLK_GR_2D, .present = true },
-@@ -802,7 +802,7 @@ static struct tegra_clk tegra124_clks[tegra_clk_max] __initdata = {
- 	[tegra_clk_uartd] = { .dt_id = TEGRA124_CLK_UARTD, .present = true },
- 	[tegra_clk_i2c3] = { .dt_id = TEGRA124_CLK_I2C3, .present = true },
- 	[tegra_clk_sbc4] = { .dt_id = TEGRA124_CLK_SBC4, .present = true },
--	[tegra_clk_sdmmc3] = { .dt_id = TEGRA124_CLK_SDMMC3, .present = true },
-+	[tegra_clk_sdmmc3_8] = { .dt_id = TEGRA124_CLK_SDMMC3, .present = true },
- 	[tegra_clk_pcie] = { .dt_id = TEGRA124_CLK_PCIE, .present = true },
- 	[tegra_clk_owr] = { .dt_id = TEGRA124_CLK_OWR, .present = true },
- 	[tegra_clk_afi] = { .dt_id = TEGRA124_CLK_AFI, .present = true },
--- 
-1.8.5.1
+ACPI container devices require special hotplug handling, at least
+on some systems, since generally user space needs to carry out
+system-specific cleanup before it makes sense to offline devices in
+the container.  However, the current ACPI hotplug code for containers
+first attempts to offline devices in the container and only then it
+notifies user space of the container offline.
+
+Moreover, after commit 202317a573b2 (ACPI / scan: Add acpi_device
+objects for all device nodes in the namespace), ACPI device objects
+representing containers are present as long as the ACPI namespace
+nodes corresponding to them are present, which may be forever, even
+if the container devices are physically detached from the system (the
+return values of the corresponding _STA methods change in those
+cases, but generally the namespace nodes themselves are still there).
+Thus it is useful to introduce entities representing containers that
+will go away during container hot-unplug.
+
+The goal of this change is to address both the above issues.
+
+The idea is to create a "companion" container system device for each
+of the ACPI container device objects during the initial namespace
+scan or on a hotplug event making the container present.  That system
+device will be unregistered on container removal.  A new bus type
+for container devices is added for this purpose, because device
+offline and online operations need to be defined for them.  The
+online operation is a trivial function that is always successful
+and the offline uses a callback pointed to by the container device's
+offline member.
+
+For ACPI containers that callback simply walks the list of ACPI
+device objects right below the container object (its children) and
+checks if all of their physical companion devices are offline.  If
+that's not the case, it returns -EBUSY and the container system
+devivce cannot be put offline.  Consequently, to put the container
+system device offline, it is necessary to put all of the physical
+devices depending on its ACPI companion object offline beforehand.
+
+Container system devices created for ACPI container objects are
+initially online.  They are created by the container ACPI scan
+handler whose hotplug.demand_offline flag is set.  That causes
+acpi_scan_hot_remove() to check if the companion container system
+device is offline before attempting to remove an ACPI container or
+any devices below it.  If the check fails, a KOBJ_CHANGE uevent is
+emitted for the container system device in question and user space
+is expected to offline all devices below the container and the
+container itself in response to it.  Then, user space can finalize
+the removal of the container with the help of its ACPI device
+object's eject attribute in sysfs.
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/container.c  |   48 ++++++++++++++++++++++++++++++++++++++++++----
+ drivers/acpi/internal.h   |    1 
+ drivers/acpi/scan.c       |   10 +++++----
+ drivers/base/Makefile     |    2 -
+ drivers/base/base.h       |    1 
+ drivers/base/container.c  |   44 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/base/init.c       |    1 
+ include/linux/container.h |   25 +++++++++++++++++++++++
+ 8 files changed, 123 insertions(+), 9 deletions(-)
+
+Index: linux-pm/include/linux/container.h
+===================================================================
+--- /dev/null
++++ linux-pm/include/linux/container.h
+@@ -0,0 +1,25 @@
++/*
++ * Definitions for container bus type.
++ *
++ * Copyright (C) 2013, Intel Corporation
++ * Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/device.h>
++
++/* drivers/base/power/container.c */
++extern struct bus_type container_subsys;
++
++struct container_dev {
++	struct device dev;
++	int (*offline)(struct container_dev *cdev);
++};
++
++static inline struct container_dev *to_container_dev(struct device *dev)
++{
++	return container_of(dev, struct container_dev, dev);
++}
+Index: linux-pm/drivers/base/container.c
+===================================================================
+--- /dev/null
++++ linux-pm/drivers/base/container.c
+@@ -0,0 +1,44 @@
++/*
++ * System bus type for containers.
++ *
++ * Copyright (C) 2013, Intel Corporation
++ * Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/container.h>
++
++#include "base.h"
++
++#define CONTAINER_BUS_NAME	"container"
++
++static int trivial_online(struct device *dev)
++{
++	return 0;
++}
++
++static int container_offline(struct device *dev)
++{
++	struct container_dev *cdev = to_container_dev(dev);
++
++	return cdev->offline ? cdev->offline(cdev) : 0;
++}
++
++struct bus_type container_subsys = {
++	.name = CONTAINER_BUS_NAME,
++	.dev_name = CONTAINER_BUS_NAME,
++	.online = trivial_online,
++	.offline = container_offline,
++};
++
++void __init container_dev_init(void)
++{
++	int ret;
++
++	ret = subsys_system_register(&container_subsys, NULL);
++	if (ret)
++		pr_err("%s() failed: %d\n", __func__, ret);
++}
+Index: linux-pm/drivers/base/base.h
+===================================================================
+--- linux-pm.orig/drivers/base/base.h
++++ linux-pm/drivers/base/base.h
+@@ -100,6 +100,7 @@ static inline int hypervisor_init(void)
+ #endif
+ extern int platform_bus_init(void);
+ extern void cpu_dev_init(void);
++extern void container_dev_init(void);
+ 
+ struct kobject *virtual_device_parent(struct device *dev);
+ 
+Index: linux-pm/drivers/base/init.c
+===================================================================
+--- linux-pm.orig/drivers/base/init.c
++++ linux-pm/drivers/base/init.c
+@@ -33,4 +33,5 @@ void __init driver_init(void)
+ 	platform_bus_init();
+ 	cpu_dev_init();
+ 	memory_dev_init();
++	container_dev_init();
+ }
+Index: linux-pm/drivers/base/Makefile
+===================================================================
+--- linux-pm.orig/drivers/base/Makefile
++++ linux-pm/drivers/base/Makefile
+@@ -4,7 +4,7 @@ obj-y			:= core.o bus.o dd.o syscore.o \
+ 			   driver.o class.o platform.o \
+ 			   cpu.o firmware.o init.o map.o devres.o \
+ 			   attribute_container.o transport_class.o \
+-			   topology.o
++			   topology.o container.o
+ obj-$(CONFIG_DEVTMPFS)	+= devtmpfs.o
+ obj-$(CONFIG_DMA_CMA) += dma-contiguous.o
+ obj-y			+= power/
+Index: linux-pm/drivers/acpi/internal.h
+===================================================================
+--- linux-pm.orig/drivers/acpi/internal.h
++++ linux-pm/drivers/acpi/internal.h
+@@ -73,6 +73,7 @@ static inline void acpi_lpss_init(void)
+ #endif
+ 
+ bool acpi_queue_hotplug_work(struct work_struct *work);
++bool acpi_scan_is_offline(struct acpi_device *adev, bool uevent);
+ 
+ /* --------------------------------------------------------------------------
+                      Device Node Initialization / Removal
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -126,7 +126,7 @@ acpi_device_modalias_show(struct device
+ }
+ static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
+ 
+-static bool acpi_scan_is_offline(struct acpi_device *adev)
++bool acpi_scan_is_offline(struct acpi_device *adev, bool uevent)
+ {
+ 	struct acpi_device_physical_node *pn;
+ 	bool offline = true;
+@@ -134,8 +134,10 @@ static bool acpi_scan_is_offline(struct
+ 	mutex_lock(&adev->physical_node_lock);
+ 
+ 	list_for_each_entry(pn, &adev->physical_node_list, node)
+-		if (!pn->dev->offline) {
+-			kobject_uevent(&pn->dev->kobj, KOBJ_CHANGE);
++		if (device_supports_offline(pn->dev) && !pn->dev->offline) {
++			if (uevent)
++				kobject_uevent(&pn->dev->kobj, KOBJ_CHANGE);
++
+ 			offline = false;
+ 			break;
+ 		}
+@@ -267,7 +269,7 @@ static int acpi_scan_hot_remove(struct a
+ 	acpi_status status;
+ 
+ 	if (device->handler->hotplug.demand_offline && !acpi_force_hot_remove) {
+-		if (!acpi_scan_is_offline(device))
++		if (!acpi_scan_is_offline(device, true))
+ 			return -EBUSY;
+ 	} else {
+ 		int error = acpi_scan_try_to_offline(device);
+Index: linux-pm/drivers/acpi/container.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/container.c
++++ linux-pm/drivers/acpi/container.c
+@@ -27,8 +27,7 @@
+  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  */
+ #include <linux/acpi.h>
+-
+-#include "internal.h"
++#include <linux/container.h>
+ 
+ #include "internal.h"
+ 
+@@ -44,16 +43,56 @@ static const struct acpi_device_id conta
+ 	{"", 0},
+ };
+ 
++static int acpi_container_offline(struct container_dev *cdev)
++{
++	struct acpi_device *adev = ACPI_COMPANION(&cdev->dev);
++	struct acpi_device *child;
++
++	/* Check all of the dependent devices' physical companions. */
++	list_for_each_entry(child, &adev->children, node)
++		if (!acpi_scan_is_offline(child, false))
++			return -EBUSY;
++
++	return 0;
++}
++
++static void acpi_container_release(struct device *dev)
++{
++	kfree(to_container_dev(dev));
++}
++
+ static int container_device_attach(struct acpi_device *adev,
+ 				   const struct acpi_device_id *not_used)
+ {
+-	kobject_uevent(&adev->dev.kobj, KOBJ_ONLINE);
++	struct container_dev *cdev;
++	struct device *dev;
++	int ret;
++
++	cdev = kzalloc(sizeof(*cdev), GFP_KERNEL);
++	if (!cdev)
++		return -ENOMEM;
++
++	cdev->offline = acpi_container_offline;
++	dev = &cdev->dev;
++	dev->bus = &container_subsys;
++	dev_set_name(dev, "%s", dev_name(&adev->dev));
++	ACPI_COMPANION_SET(dev, adev);
++	dev->release = acpi_container_release;
++	ret = device_register(dev);
++	if (ret)
++		return ret;
++
++	adev->driver_data = dev;
+ 	return 1;
+ }
+ 
+ static void container_device_detach(struct acpi_device *adev)
+ {
+-	kobject_uevent(&adev->dev.kobj, KOBJ_OFFLINE);
++	struct device *dev = acpi_driver_data(adev);
++
++	adev->driver_data = NULL;
++	if (dev)
++		device_unregister(dev);
+ }
+ 
+ static struct acpi_scan_handler container_handler = {
+@@ -62,6 +101,7 @@ static struct acpi_scan_handler containe
+ 	.detach = container_device_detach,
+ 	.hotplug = {
+ 		.enabled = true,
++		.demand_offline = true,
+ 	},
+ };
+ 
 
