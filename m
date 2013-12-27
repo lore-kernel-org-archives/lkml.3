@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293Ab3L0GtB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 01:49:01 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:39740 "EHLO
+	id S1754249Ab3L0Gs5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 01:48:57 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:39730 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754215Ab3L0Gs6 (ORCPT
+	with ESMTP id S1754181Ab3L0Gsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 01:48:58 -0500
-Message-ID: <52BD2298.1070105@huawei.com>
-Date: Fri, 27 Dec 2013 14:47:52 +0800
+	Fri, 27 Dec 2013 01:48:55 -0500
+Message-ID: <52BD22B8.9060204@huawei.com>
+Date: Fri, 27 Dec 2013 14:48:24 +0800
 From: Ding Tianhong <dingtianhong@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+To: Sathya Perla <sathya.perla@emulex.com>,
+        Subbu Seetharaman <subbu.seetharaman@emulex.com>,
+        Ajit Khaparde <ajit.khaparde@emulex.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Netdev <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH net-next 00/20] slight optimization of addr compare for net
- modules
+Subject: [PATCH net-next 05/20] net: benet: slight optimization of addr compare
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.72.199]
@@ -25,63 +27,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the second patchset for slight optimization of address compare,
-mainly for net tree, just following the Joe's opinion, it will help review
-the code for maintainers and supports.
+Use possibly more efficient ether_addr_equal
+to instead of memcmp.
 
-Best Regards
-Ding
+Cc: Sathya Perla <sathya.perla@emulex.com>
+Cc: Subbu Seetharaman <subbu.seetharaman@emulex.com>
+Cc: Ajit Khaparde <ajit.khaparde@emulex.com>
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+---
+ drivers/net/ethernet/emulex/benet/be_main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Ding Tianhong (20):
-  net: 3com: slight optimization of addr compare
-  net: bnx2x: slight optimization of addr compare
-  net: cxgb3: slight optimization of addr compare
-  net: enic: slight optimization of addr compare
-  net: benet: slight optimization of addr compare
-  net: igbvf: slight optimization of addr compare
-  net: ixgbe: slight optimization of addr compare
-  net: mlx4: slight optimization of addr compare
-  net: ksz884x: slight optimization of addr compare
-  net: vxge: slight optimization of addr compare
-  net: packetengines: slight optimization of addr compare
-  net: netxen: slight optimization of addr compare
-  net: qlcnic: slight optimization of addr compare
-  net: renesas: slight optimization of addr compare
-  net: seeq: slight optimization of addr compare
-  net: sun: optimization of addr compare
-  net: ti: slight optimization of addr compare
-  net: fddi: slight optimization of addr compare
-  net: plip: slight optimization of addr compare
-  net: caif: slight optimization of addr compare
-
- drivers/net/ethernet/3com/3c509.c                     |  3 +--
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c        | 10 ++++------
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c     |  2 +-
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_vfpf.c      |  2 +-
- drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c    |  2 +-
- drivers/net/ethernet/chelsio/cxgb3/l2t.c              |  2 +-
- drivers/net/ethernet/cisco/enic/enic_pp.c             |  2 +-
- drivers/net/ethernet/emulex/benet/be_main.c           |  2 +-
- drivers/net/ethernet/intel/igbvf/netdev.c             |  2 +-
- drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c        |  3 +--
- drivers/net/ethernet/mellanox/mlx4/en_netdev.c        |  4 ++--
- drivers/net/ethernet/mellanox/mlx4/resource_tracker.c |  2 +-
- drivers/net/ethernet/micrel/ksz884x.c                 |  9 ++++-----
- drivers/net/ethernet/neterion/vxge/vxge-main.c        |  2 +-
- drivers/net/ethernet/packetengines/yellowfin.c        |  8 ++------
- drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c    |  2 +-
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c        |  4 ++--
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c        |  4 ++--
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c      |  4 ++--
- drivers/net/ethernet/renesas/sh_eth.c                 |  2 +-
- drivers/net/ethernet/seeq/sgiseeq.c                   |  2 +-
- drivers/net/ethernet/sun/sunvnet.c                    |  2 +-
- drivers/net/ethernet/ti/cpsw_ale.c                    |  2 +-
- drivers/net/fddi/skfp/fplustm.c                       |  3 ++-
- drivers/net/plip/plip.c                               |  2 +-
- net/caif/cfrfml.c                                     |  2 +-
- 26 files changed, 38 insertions(+), 46 deletions(-)
-
+diff --git a/drivers/net/ethernet/emulex/benet/be_main.c b/drivers/net/ethernet/emulex/benet/be_main.c
+index f67586a..b5c238a 100644
+--- a/drivers/net/ethernet/emulex/benet/be_main.c
++++ b/drivers/net/ethernet/emulex/benet/be_main.c
+@@ -287,7 +287,7 @@ static int be_mac_addr_set(struct net_device *netdev, void *p)
+ 	/* The MAC change did not happen, either due to lack of privilege
+ 	 * or PF didn't pre-provision.
+ 	 */
+-	if (memcmp(addr->sa_data, mac, ETH_ALEN)) {
++	if (!ether_addr_equal(addr->sa_data, mac)) {
+ 		status = -EPERM;
+ 		goto err;
+ 	}
 -- 
 1.8.0
 
