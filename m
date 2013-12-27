@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab3L0Aq0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 19:46:26 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47982 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752289Ab3L0AqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 19:46:22 -0500
-Message-ID: <52BCCDC4.1090409@zytor.com>
-Date: Thu, 26 Dec 2013 16:45:56 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] speeding up the stat() family of system calls...
-References: <CA+55aFxZ2u+M72u3HSD7TVY2+WRRi27pYC=_4Wawr5y1m8DfnQ@mail.gmail.com>	<20131224204625.GB20471@gmail.com> <CA+55aFzPBdbfKovMT8Edr4SmE2_=+OKJFac9XW2awegogTkVTA@mail.gmail.com>
-In-Reply-To: <CA+55aFzPBdbfKovMT8Edr4SmE2_=+OKJFac9XW2awegogTkVTA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753974Ab3L0AuZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 19:50:25 -0500
+Received: from mail-qc0-f202.google.com ([209.85.216.202]:38596 "EHLO
+	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752289Ab3L0AuY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Dec 2013 19:50:24 -0500
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Gabe Black <gabeblack@chromium.org>, Gabe Black <gabeblack@google.com>,
+        Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH 1/7] clk: tegra: Fix PLLP rate table
+Date: Thu, 26 Dec 2013 16:44:21 -0800
+Message-Id: <1388105067-24438-2-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 1.8.5.1
+In-Reply-To: <1388105067-24438-1-git-send-email-abrestic@chromium.org>
+References: <1388105067-24438-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/26/2013 11:00 AM, Linus Torvalds wrote:
-> 
-> Interestingly, looking at the cp_new_stat() profiles, the games we
-> play to get efficient range checking seem to actually hurt us. Maybe
-> it's the "sbb" that is just expensive, or maybe it's turning a (very
-> predictable) conditional branch into a data dependency chain instead.
-> Or maybe it's just random noise in my profiles that happened to make
-> those sbb's look bad.
-> 
+From: Gabe Black <gabeblack@chromium.org>
 
-I'm not at all surprised... there is a pretty serious data dependency
-chain here and in the end we end up manifesting a value in a register
-that has to be tested even though it is available in the flags.  Inline
-assembly also means the compiler can't optimize it at all.
+This table had settings for 216MHz, but PLLP is (and is supposed to be)
+configured at 408MHz.  If that table is used and PLLP_BASE_OVRRIDE is
+not set, the kernel will panic in clk_pll_recalc_rate().
 
-I have to wonder if we actually have to test the upper limit, though: we
-can always guarantee a guard zone between user space and kernel space,
-and thus guarantee either a #PF or #GP if someone tries to overflow user
-space.  Testing just the lower limit would be much cheaper, especially
-on 64 bits where we can simply test the sign bit.
+Signed-off-by: Gabe Black <gabeblack@google.com>
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+---
+ drivers/clk/tegra/clk-tegra124.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-What do you think?
-
-	-hpa
+diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
+index aff86b5..28bb238 100644
+--- a/drivers/clk/tegra/clk-tegra124.c
++++ b/drivers/clk/tegra/clk-tegra124.c
+@@ -516,11 +516,11 @@ static struct div_nmp pllp_nmp = {
+ };
+ 
+ static struct tegra_clk_pll_freq_table pll_p_freq_table[] = {
+-	{12000000, 216000000, 432, 12, 1, 8},
+-	{13000000, 216000000, 432, 13, 1, 8},
+-	{16800000, 216000000, 360, 14, 1, 8},
+-	{19200000, 216000000, 360, 16, 1, 8},
+-	{26000000, 216000000, 432, 26, 1, 8},
++	{12000000, 408000000, 408, 12, 0, 8},
++	{13000000, 408000000, 408, 13, 0, 8},
++	{16800000, 408000000, 340, 14, 0, 8},
++	{19200000, 408000000, 340, 16, 0, 8},
++	{26000000, 408000000, 408, 26, 0, 8},
+ 	{0, 0, 0, 0, 0, 0},
+ };
+ 
+-- 
+1.8.5.1
 
