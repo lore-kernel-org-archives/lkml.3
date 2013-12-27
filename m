@@ -1,175 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968Ab3L0WsD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 17:48:03 -0500
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:10952
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754852Ab3L0WsB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 17:48:01 -0500
-X-IronPort-AV: E=Sophos;i="4.95,563,1384297200"; 
-   d="scan'208";a="42494142"
-Date: Fri, 27 Dec 2013 23:47:57 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Joe Perches <joe@perches.com>
-cc: Julia Lawall <julia.lawall@lip6.fr>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Ding Tianhong <dingtianhong@huawei.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH net-next 19/20] net: plip: slight optimization of addr
- compare
-In-Reply-To: <1388177217.30298.24.camel@joe-AO722>
-Message-ID: <alpine.DEB.2.02.1312272338170.2018@localhost6.localdomain6>
-References: <52BD22ED.4030302@huawei.com>  <1388159283.12212.80.camel@edumazet-glaptop2.roam.corp.google.com>  <1388163982.30298.12.camel@joe-AO722>  <alpine.DEB.2.02.1312272112110.2018@localhost6.localdomain6> <1388177217.30298.24.camel@joe-AO722>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754944Ab3L0WxK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 17:53:10 -0500
+Received: from dan.rpsys.net ([93.97.175.187]:52890 "EHLO dan.rpsys.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754848Ab3L0WxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Dec 2013 17:53:08 -0500
+X-Greylist: delayed 438 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Dec 2013 17:53:07 EST
+Message-ID: <1388184301.11527.29.camel@ted>
+Subject: Re: [PATCH] Add the LED burst trigger
+From: Richard Purdie <richard.purdie@linuxfoundation.org>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Pavel Machek <pavel@ucw.cz>, Joe Xue <lgxue@hotmail.com>,
+        "cooloney@gmail.com" <cooloney@gmail.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "milo.kim@ti.com" <milo.kim@ti.com>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Date: Fri, 27 Dec 2013 22:45:01 +0000
+In-Reply-To: <20131227181349.475abe88@alan.etchedpixels.co.uk>
+References: <1387895407-28031-1-git-send-email-lgxue@hotmail.com>
+	 <20131225230935.GB13593@amd.pavel.ucw.cz>
+	 <BLU172-W52032BFEF4512123D7516EACC20@phx.gbl>
+	 <20131227115746.4cbd9523@alan.etchedpixels.co.uk>
+	 <20131227125725.GA21506@amd.pavel.ucw.cz>
+	 <20131227141826.3fe406e4@alan.etchedpixels.co.uk>
+	 <20131227152354.GA24152@amd.pavel.ucw.cz>
+	 <20131227181349.475abe88@alan.etchedpixels.co.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi Julia.
+On Fri, 2013-12-27 at 18:13 +0000, One Thousand Gnomes wrote:
+> > Well, this one will be really smaller. And yes, it will make some
+> > memory non-swappable, but I believe with triggers and infrastructure
+> > for N900 (and similar) it will be worth it.
 > 
-> Maybe this explanation is helpful?
+> Ah yes thats such a major proportion of platforms
 > 
-> ethernet addresses are u8[6] (48 bits)
+> > Plus, it will actually save CPU cycles, and thus significant power.
 > 
-> ether_addr_equal_64bits gets passed a pointer to u8[8]
-> and is more efficient on 64 bit architectures than
-> ether_addr_equal because the test can be done with a
-> single compare and shift.
-> 
-> The idea is not to access past the end of the ethernet
-> address as appropriate (think pointer to eeprom or other
-> such end-of-addressable memory conditions)
-> 
-> If a struct containing an ethernet address has additional
-> members after the ethernet address, or the u8[6] address
-> passed to ether_addr_equal is not going to access past
-> the end of memory or the structure, then
-> ether_addr_equal_64bits should be used in lieu of
-> ether_addr_equal.
+> All of which will be totally wiped out if you bump all the millions of
+> x86 server boxes in the world up by one page of kernel space and cause a
+> few disk I/Os
 
-I tried the following semantic patch:
+FWIW the LED subsystem was designed to take advantage of kernel modules.
+If you don't use a given trigger, it needn't be in memory, loaded or
+even built at all. If something changed there which made that not
+possible, that would be rather sad.
 
-@r@
-type T;
-T *eth;
-identifier fld;
-type T1;
-T1 *eth1;
-identifier fld1;
-expression e1;
-position p;
-@@
+I agree with you that we shouldn't bump the kernel size unnecessarily
+but I don't think triggers should do so. I actually think the kernel
+could do with going on a diet and at least made so you can untangle more
+of the pieces you don't want/need.
 
-ether_addr_equal@p(eth->fld, eth1->fld1)
+Cheers,
 
-@ok@
-type r.T, t1, t2;
-identifier r.fld, fld2;
-@@
+Richard
 
-T { ...
-    t1 fld[...];
-    t2 fld2;
-    ...
-  };
-
-@ok1@
-type r.T1, t1, t2;
-identifier r.fld1, fld2;
-@@
-
-T1 { ...
-    t1 fld1[...];
-    t2 fld2;
-    ...
-  };
-
-@depends on ok && ok1@
-position r.p;
-@@
-
-*ether_addr_equal@p(...)
-
-The first rule finds an existing call to ether_addr_equal where both 
-arguments are structure field references.  It gets the type of the 
-structure in each case, and notes the field name.  The next two rules 
-check each of the structure declarations to ensure that the field is 
-declared as an array and it is followed by at least one other field.  The 
-last rule generates some output for cases where both fields pass the test.
-
-Note that this is not at all exhaustive, because it is not checking cases 
-where one argument is a parameter that is passed from some call site where 
-the argument is a field that has this property.  Thus, it does not find 
-the case in drivers/net/ethernet/intel/i40e/i40e_main.c.  Nevertheless, it 
-does find a few occurrences, as shown below.  In this output, - indicates 
-an item of interest, not something to be removed.  It is not a patch, even 
-though it looks like one.
-
-One can get quite a lot more results if one doesn't require that both 
-arguments satisfy the property, ie allowing one argument to be a function 
-parameter rather than a structure field reference.  So perhaps it would be 
-worth making a (more complicated) semantic patch to find such cases.
-
-julia
-
-diff -u -p /var/linuxes/linux-next/drivers/net/wireless/ipw2x00/libipw_rx.c /tmp/nothing/drivers/net/wireless/ipw2x00/libipw_rx.c
---- /var/linuxes/linux-next/drivers/net/wireless/ipw2x00/libipw_rx.c
-+++ /tmp/nothing/drivers/net/wireless/ipw2x00/libipw_rx.c
-@@ -1468,7 +1468,6 @@ static inline int is_same_network(struct
- 	 * as one network */
- 	return ((src->ssid_len == dst->ssid_len) &&
- 		(src->channel == dst->channel) &&
--		ether_addr_equal(src->bssid, dst->bssid) &&
- 		!memcmp(src->ssid, dst->ssid, src->ssid_len));
- }
- 
-diff -u -p /var/linuxes/linux-next/drivers/scsi/fcoe/fcoe_ctlr.c /tmp/nothing/drivers/scsi/fcoe/fcoe_ctlr.c
---- /var/linuxes/linux-next/drivers/scsi/fcoe/fcoe_ctlr.c
-+++ /tmp/nothing/drivers/scsi/fcoe/fcoe_ctlr.c
-@@ -339,7 +339,6 @@ static void fcoe_ctlr_announce(struct fc
- 	spin_unlock_bh(&fip->ctlr_lock);
- 	sel = fip->sel_fcf;
- 
--	if (sel && ether_addr_equal(sel->fcf_mac, fip->dest_addr))
- 		goto unlock;
- 	if (!is_zero_ether_addr(fip->dest_addr)) {
- 		printk(KERN_NOTICE "libfcoe: host%d: "
-diff -u -p /var/linuxes/linux-next/drivers/scsi/fcoe/fcoe_sysfs.c /tmp/nothing/drivers/scsi/fcoe/fcoe_sysfs.c
---- /var/linuxes/linux-next/drivers/scsi/fcoe/fcoe_sysfs.c
-+++ /tmp/nothing/drivers/scsi/fcoe/fcoe_sysfs.c
-@@ -657,7 +657,6 @@ static int fcoe_fcf_device_match(struct
- 	if (new->switch_name == old->switch_name &&
- 	    new->fabric_name == old->fabric_name &&
- 	    new->fc_map == old->fc_map &&
--	    ether_addr_equal(new->mac, old->mac))
- 		return 1;
- 	return 0;
- }
-diff -u -p /var/linuxes/linux-next/drivers/staging/slicoss/slicoss.c /tmp/nothing/drivers/staging/slicoss/slicoss.c
---- /var/linuxes/linux-next/drivers/staging/slicoss/slicoss.c
-+++ /tmp/nothing/drivers/staging/slicoss/slicoss.c
-@@ -787,8 +787,6 @@ static bool slic_mac_filter(struct adapt
- 			struct mcast_address *mcaddr = adapter->mcastaddrs;
- 
- 			while (mcaddr) {
--				if (ether_addr_equal(mcaddr->address,
--						     ether_frame->ether_dhost)) {
- 					adapter->rcv_multicasts++;
- 					netdev->stats.multicast++;
- 					return true;
-diff -u -p /var/linuxes/linux-next/drivers/staging/vt6655/wpactl.c /tmp/nothing/drivers/staging/vt6655/wpactl.c
---- /var/linuxes/linux-next/drivers/staging/vt6655/wpactl.c
-+++ /tmp/nothing/drivers/staging/vt6655/wpactl.c
-@@ -394,7 +394,6 @@ int wpa_set_keys(PSDevice pDevice, void
- 
- 		} else {
- 			// Key Table Full
--			if (ether_addr_equal(param->addr, pDevice->abyBSSID)) {
- 				//DBG_PRN_WLAN03(("return NDIS_STATUS_INVALID_DATA -Key Table Full.2\n"));
- 				//spin_unlock_irq(&pDevice->lock);
- 				return -EINVAL;
