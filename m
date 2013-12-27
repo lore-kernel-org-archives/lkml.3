@@ -1,284 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891Ab3L0FvK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 00:51:10 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:39939 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750947Ab3L0FvI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 00:51:08 -0500
-From: Olof Johansson <olof@lixom.net>
-To: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, Olof Johansson <olof@lixom.net>
-Subject: [PATCH] mtd: nand: remove pasemi_nand driver
-Date: Thu, 26 Dec 2013 21:52:04 -0800
-Message-Id: <1388123524-9000-1-git-send-email-olof@lixom.net>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752944Ab3L0GJx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 01:09:53 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:50491 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751639Ab3L0GJv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Dec 2013 01:09:51 -0500
+Message-ID: <52BD199A.8070607@zytor.com>
+Date: Thu, 26 Dec 2013 22:09:30 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] speeding up the stat() family of system calls...
+References: <CA+55aFxZ2u+M72u3HSD7TVY2+WRRi27pYC=_4Wawr5y1m8DfnQ@mail.gmail.com>	<20131224204625.GB20471@gmail.com> <CA+55aFzPBdbfKovMT8Edr4SmE2_=+OKJFac9XW2awegogTkVTA@mail.gmail.com>
+In-Reply-To: <CA+55aFzPBdbfKovMT8Edr4SmE2_=+OKJFac9XW2awegogTkVTA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PA Semi platform is sparsely used these days (with just a handful
-of known users out there). I'm 100% sure none of them use the MTD NAND
-driver -- most standard use cases include PCI-e SATA controllers for
-storage instead, and boot is done from LPC NOR flash.
+On 12/26/2013 11:00 AM, Linus Torvalds wrote:
+> 
+> Interestingly, looking at the cp_new_stat() profiles, the games we
+> play to get efficient range checking seem to actually hurt us. Maybe
+> it's the "sbb" that is just expensive, or maybe it's turning a (very
+> predictable) conditional branch into a data dependency chain instead.
+> Or maybe it's just random noise in my profiles that happened to make
+> those sbb's look bad.
+> 
 
-So, there's little reason to keep carrying a driver that's not used by
-anybody and that just gets hit by some tree-wide or tools-based changes
-every now and then.
+Much to my surprise, this patch adds almost 10K of text to an
+"allyesconfig" build.  I wouldn't have expected it.  I'll look at it
+some more tomorrow.
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
----
- drivers/mtd/nand/pasemi_nand.c |  238 ----------------------------------------
- 1 file changed, 238 deletions(-)
- delete mode 100644 drivers/mtd/nand/pasemi_nand.c
+	-hpa
 
-diff --git a/drivers/mtd/nand/pasemi_nand.c b/drivers/mtd/nand/pasemi_nand.c
-deleted file mode 100644
-index 90f871a..0000000
---- a/drivers/mtd/nand/pasemi_nand.c
-+++ /dev/null
-@@ -1,238 +0,0 @@
--/*
-- * Copyright (C) 2006-2007 PA Semi, Inc
-- *
-- * Author: Egor Martovetsky <egor@pasemi.com>
-- * Maintained by: Olof Johansson <olof@lixom.net>
-- *
-- * Driver for the PWRficient onchip NAND flash interface
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-- */
--
--#undef DEBUG
--
--#include <linux/slab.h>
--#include <linux/init.h>
--#include <linux/module.h>
--#include <linux/mtd/mtd.h>
--#include <linux/mtd/nand.h>
--#include <linux/mtd/nand_ecc.h>
--#include <linux/of_address.h>
--#include <linux/of_irq.h>
--#include <linux/of_platform.h>
--#include <linux/platform_device.h>
--#include <linux/pci.h>
--
--#include <asm/io.h>
--
--#define LBICTRL_LPCCTL_NR		0x00004000
--#define CLE_PIN_CTL			15
--#define ALE_PIN_CTL			14
--
--static unsigned int lpcctl;
--static struct mtd_info *pasemi_nand_mtd;
--static const char driver_name[] = "pasemi-nand";
--
--static void pasemi_read_buf(struct mtd_info *mtd, u_char *buf, int len)
--{
--	struct nand_chip *chip = mtd->priv;
--
--	while (len > 0x800) {
--		memcpy_fromio(buf, chip->IO_ADDR_R, 0x800);
--		buf += 0x800;
--		len -= 0x800;
--	}
--	memcpy_fromio(buf, chip->IO_ADDR_R, len);
--}
--
--static void pasemi_write_buf(struct mtd_info *mtd, const u_char *buf, int len)
--{
--	struct nand_chip *chip = mtd->priv;
--
--	while (len > 0x800) {
--		memcpy_toio(chip->IO_ADDR_R, buf, 0x800);
--		buf += 0x800;
--		len -= 0x800;
--	}
--	memcpy_toio(chip->IO_ADDR_R, buf, len);
--}
--
--static void pasemi_hwcontrol(struct mtd_info *mtd, int cmd,
--			     unsigned int ctrl)
--{
--	struct nand_chip *chip = mtd->priv;
--
--	if (cmd == NAND_CMD_NONE)
--		return;
--
--	if (ctrl & NAND_CLE)
--		out_8(chip->IO_ADDR_W + (1 << CLE_PIN_CTL), cmd);
--	else
--		out_8(chip->IO_ADDR_W + (1 << ALE_PIN_CTL), cmd);
--
--	/* Push out posted writes */
--	eieio();
--	inl(lpcctl);
--}
--
--int pasemi_device_ready(struct mtd_info *mtd)
--{
--	return !!(inl(lpcctl) & LBICTRL_LPCCTL_NR);
--}
--
--static int pasemi_nand_probe(struct platform_device *ofdev)
--{
--	struct pci_dev *pdev;
--	struct device_node *np = ofdev->dev.of_node;
--	struct resource res;
--	struct nand_chip *chip;
--	int err = 0;
--
--	err = of_address_to_resource(np, 0, &res);
--
--	if (err)
--		return -EINVAL;
--
--	/* We only support one device at the moment */
--	if (pasemi_nand_mtd)
--		return -ENODEV;
--
--	pr_debug("pasemi_nand at %pR\n", &res);
--
--	/* Allocate memory for MTD device structure and private data */
--	pasemi_nand_mtd = kzalloc(sizeof(struct mtd_info) +
--				  sizeof(struct nand_chip), GFP_KERNEL);
--	if (!pasemi_nand_mtd) {
--		printk(KERN_WARNING
--		       "Unable to allocate PASEMI NAND MTD device structure\n");
--		err = -ENOMEM;
--		goto out;
--	}
--
--	/* Get pointer to private data */
--	chip = (struct nand_chip *)&pasemi_nand_mtd[1];
--
--	/* Link the private data with the MTD structure */
--	pasemi_nand_mtd->priv = chip;
--	pasemi_nand_mtd->owner = THIS_MODULE;
--
--	chip->IO_ADDR_R = of_iomap(np, 0);
--	chip->IO_ADDR_W = chip->IO_ADDR_R;
--
--	if (!chip->IO_ADDR_R) {
--		err = -EIO;
--		goto out_mtd;
--	}
--
--	pdev = pci_get_device(PCI_VENDOR_ID_PASEMI, 0xa008, NULL);
--	if (!pdev) {
--		err = -ENODEV;
--		goto out_ior;
--	}
--
--	lpcctl = pci_resource_start(pdev, 0);
--	pci_dev_put(pdev);
--
--	if (!request_region(lpcctl, 4, driver_name)) {
--		err = -EBUSY;
--		goto out_ior;
--	}
--
--	chip->cmd_ctrl = pasemi_hwcontrol;
--	chip->dev_ready = pasemi_device_ready;
--	chip->read_buf = pasemi_read_buf;
--	chip->write_buf = pasemi_write_buf;
--	chip->chip_delay = 0;
--	chip->ecc.mode = NAND_ECC_SOFT;
--
--	/* Enable the following for a flash based bad block table */
--	chip->bbt_options = NAND_BBT_USE_FLASH;
--
--	/* Scan to find existence of the device */
--	if (nand_scan(pasemi_nand_mtd, 1)) {
--		err = -ENXIO;
--		goto out_lpc;
--	}
--
--	if (mtd_device_register(pasemi_nand_mtd, NULL, 0)) {
--		printk(KERN_ERR "pasemi_nand: Unable to register MTD device\n");
--		err = -ENODEV;
--		goto out_lpc;
--	}
--
--	printk(KERN_INFO "PA Semi NAND flash at %08llx, control at I/O %x\n",
--	       res.start, lpcctl);
--
--	return 0;
--
-- out_lpc:
--	release_region(lpcctl, 4);
-- out_ior:
--	iounmap(chip->IO_ADDR_R);
-- out_mtd:
--	kfree(pasemi_nand_mtd);
-- out:
--	return err;
--}
--
--static int pasemi_nand_remove(struct platform_device *ofdev)
--{
--	struct nand_chip *chip;
--
--	if (!pasemi_nand_mtd)
--		return 0;
--
--	chip = pasemi_nand_mtd->priv;
--
--	/* Release resources, unregister device */
--	nand_release(pasemi_nand_mtd);
--
--	release_region(lpcctl, 4);
--
--	iounmap(chip->IO_ADDR_R);
--
--	/* Free the MTD device structure */
--	kfree(pasemi_nand_mtd);
--
--	pasemi_nand_mtd = NULL;
--
--	return 0;
--}
--
--static const struct of_device_id pasemi_nand_match[] =
--{
--	{
--		.compatible   = "pasemi,localbus-nand",
--	},
--	{},
--};
--
--MODULE_DEVICE_TABLE(of, pasemi_nand_match);
--
--static struct platform_driver pasemi_nand_driver =
--{
--	.driver = {
--		.name = driver_name,
--		.owner = THIS_MODULE,
--		.of_match_table = pasemi_nand_match,
--	},
--	.probe		= pasemi_nand_probe,
--	.remove		= pasemi_nand_remove,
--};
--
--module_platform_driver(pasemi_nand_driver);
--
--MODULE_LICENSE("GPL");
--MODULE_AUTHOR("Egor Martovetsky <egor@pasemi.com>");
--MODULE_DESCRIPTION("NAND flash interface driver for PA Semi PWRficient");
--- 
-1.7.10.4
 
