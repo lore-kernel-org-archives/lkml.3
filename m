@@ -1,82 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818Ab3L0R1T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 12:27:19 -0500
-Received: from mail-gg0-f175.google.com ([209.85.161.175]:65466 "EHLO
-	mail-gg0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754559Ab3L0RZa (ORCPT
+	id S1754835Ab3L0R2R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 12:28:17 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:59714 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754068Ab3L0R2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 12:25:30 -0500
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
-Cc: "H.J. Lu" <hjl.tools@gmail.com>
-Subject: [PATCH 2/8] Use __kernel_long_t/__kernel_ulong_t in <linux/resource.h>
-Date: Fri, 27 Dec 2013 09:25:06 -0800
-Message-Id: <1388165112-6545-3-git-send-email-hjl.tools@gmail.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1388165112-6545-1-git-send-email-hjl.tools@gmail.com>
-References: <1388165112-6545-1-git-send-email-hjl.tools@gmail.com>
+	Fri, 27 Dec 2013 12:28:15 -0500
+Date: Fri, 27 Dec 2013 12:28:13 -0500 (EST)
+Message-Id: <20131227.122813.901851776030758668.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next 4/6] r8152: add rtl_ops
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1388111649-1014-5-git-send-email-hayeswang@realtek.com>
+References: <1388111649-1014-1-git-send-email-hayeswang@realtek.com>
+	<1388111649-1014-5-git-send-email-hayeswang@realtek.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 27 Dec 2013 09:28:15 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both x32 and x86-64 use the same struct rusage and struct rlimit for
-system calls.  But x32 log is 32-bit.  This patch change uapi
-<linux/resource.h> to use __kernel_long_t in struct rusage and
-__kernel_ulong_t in and struct rlimit if __BITS_PER_LONG == 64.
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Fri, 27 Dec 2013 10:34:08 +0800
 
-Signed-off-by: H.J. Lu <hjl.tools@gmail.com>
----
- include/uapi/linux/resource.h | 26 ++++++++++++++++++++++++--
- 1 file changed, 24 insertions(+), 2 deletions(-)
+>  
+> +static int rtl_ops_init(struct r8152 *tp, const struct usb_device_id *id)
+ ...
+>  
+> +	if (rtl_ops_init(tp, id)) {
+> +		netif_err(tp, probe, netdev, "Unknown Device");
+> +		return -ENODEV;
 
-diff --git a/include/uapi/linux/resource.h b/include/uapi/linux/resource.h
-index e0ed284..87d2daa 100644
---- a/include/uapi/linux/resource.h
-+++ b/include/uapi/linux/resource.h
-@@ -23,6 +23,22 @@
- struct	rusage {
- 	struct timeval ru_utime;	/* user time used */
- 	struct timeval ru_stime;	/* system time used */
-+#if __BITS_PER_LONG == 64
-+	__kernel_long_t	ru_maxrss;	/* maximum resident set size */
-+	__kernel_long_t	ru_ixrss;	/* integral shared memory size */
-+	__kernel_long_t	ru_idrss;	/* integral unshared data size */
-+	__kernel_long_t	ru_isrss;	/* integral unshared stack size */
-+	__kernel_long_t	ru_minflt;	/* page reclaims */
-+	__kernel_long_t	ru_majflt;	/* page faults */
-+	__kernel_long_t	ru_nswap;	/* swaps */
-+	__kernel_long_t	ru_inblock;	/* block input operations */
-+	__kernel_long_t	ru_oublock;	/* block output operations */
-+	__kernel_long_t	ru_msgsnd;	/* messages sent */
-+	__kernel_long_t	ru_msgrcv;	/* messages received */
-+	__kernel_long_t	ru_nsignals;	/* signals received */
-+	__kernel_long_t	ru_nvcsw;	/* voluntary context switches */
-+	__kernel_long_t	ru_nivcsw;	/* involuntary " */
-+#else
- 	long	ru_maxrss;		/* maximum resident set size */
- 	long	ru_ixrss;		/* integral shared memory size */
- 	long	ru_idrss;		/* integral unshared data size */
-@@ -37,11 +53,17 @@ struct	rusage {
- 	long	ru_nsignals;		/* signals received */
- 	long	ru_nvcsw;		/* voluntary context switches */
- 	long	ru_nivcsw;		/* involuntary " */
-+#endif
- };
- 
- struct rlimit {
--	unsigned long	rlim_cur;
--	unsigned long	rlim_max;
-+#if __BITS_PER_LONG == 64
-+	__kernel_ulong_t	rlim_cur;
-+	__kernel_ulong_t	rlim_max;
-+#else
-+	unsigned long		rlim_cur;
-+	unsigned long		rlim_max;
-+#endif
- };
- 
- #define RLIM64_INFINITY		(~0ULL)
--- 
-1.8.4.2
+You're completely ignoring the error code returned from rtl_ops_init()
+(which, as an aside, uses -EFAULT which doesn't seem all that
+appropriate).
 
+You might as well have rtl_ops_init() return a boolean.
