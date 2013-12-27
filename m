@@ -1,95 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754279Ab3L0Eci (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 23:32:38 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:52361 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754230Ab3L0EcY (ORCPT
+	id S1754228Ab3L0E7W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 23:59:22 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:6273 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753698Ab3L0E7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 23:32:24 -0500
-X-Sasl-enc: +oq40Ak/rVXg2wOV2Fd7jf2Tq64frZVAiXOuGVLXTzp2 1388118739
-Subject: [PATCH] autofs - fix symlinks aren't checked for expiry
-To: Andrew Morton <akpm@linux-foundation.org>
-From: Ian Kent <raven@themaw.net>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        autofs mailing list <autofs@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri, 27 Dec 2013 12:32:16 +0800
-Message-ID: <20131227043216.3519.3477.stgit@perseus.fritz.box>
-In-Reply-To: <20131227042828.3519.11223.stgit@perseus.fritz.box>
-References: <20131227042828.3519.11223.stgit@perseus.fritz.box>
-User-Agent: StGit/0.16
+	Thu, 26 Dec 2013 23:59:20 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 26 Dec 2013 21:00:08 -0800
+From: Mark Zhang <markz@nvidia.com>
+To: <linux@arm.linux.org.uk>, <steve.capper@linaro.org>, <nico@linaro.org>,
+        <ccross@android.com>, <catalin.marinas@arm.com>, <will.deacon@arm.com>,
+        <lauraa@codeaurora.org>, <akpm@linux-foundation.org>,
+        <christoffer.dall@linaro.org>, <viro@zeniv.linux.org.uk>,
+        <gregory.clement@free-electrons.com>, <ben-linux@fluff.org>,
+        <paul.gortmaker@windriver.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Gary King <gking@nvidia.com>
+Subject: [PATCH] arm: mm: add memory type for inner-writeback
+Date: Fri, 27 Dec 2013 12:58:48 +0800
+Message-ID: <1388120328-17148-1-git-send-email-markz@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Kent <ikent@redhat.com>
+From: Colin Cross <ccross@android.com>
 
-The autofs4 module doesn't consider symlinks for expire as it did
-in the older autofs v3 module (so it's actually a long stnding
-regression).
+For streaming-style operations (e.g., software rendering of graphics
+surfaces shared with non-coherent DMA devices), the cost of performing
+L2 cache maintenance can exceed the benefit of having the larger cache
+(this is particularly true for OUTER_CACHE configurations like the ARM
+PL2x0).
 
-The user space daemon has focused on the use of bind mounts instead
-of symlinks for a long time now and that's why this has not been
-noticed. But with the future addition of amd map parsing to
-automount(8), not to mention amd itself (of am-utils), symlink
-expiry will be needed.
+This change uses the currently-unused mapping 5 (TEX[0]=1, C=0, B=1)
+in the tex remapping tables as an inner-writeback-write-allocate, outer
+non-cacheable memory type, so that this mapping will be available to
+clients which will benefit from the reduced L2 maintenance.
 
-The direct and offset mount types can't be symlinks and the tree
-mounts of version 4 were always real mounts so only indirect
-mounts need expire symlinks.
-
-Since the current users of the autofs4 module haven't reproted
-this as a problem to date this patch probably isn't a candidate
-for backport to stable.
-
-Signed-off-by: Ian Kent <ikent@redhat.com>
+Signed-off-by: Gary King <gking@nvidia.com>
 ---
- fs/autofs4/expire.c  |   14 ++++++++++++++
- fs/autofs4/symlink.c |    4 ++++
- 2 files changed, 18 insertions(+)
+ arch/arm/include/asm/pgtable-2level.h | 1 +
+ arch/arm/include/asm/pgtable.h        | 3 +++
+ arch/arm/mm/proc-macros.S             | 2 +-
+ arch/arm/mm/proc-v7-2level.S          | 4 ++--
+ arch/arm/mm/proc-xsc3.S               | 2 +-
+ arch/arm/mm/proc-xscale.S             | 2 +-
+ 6 files changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/fs/autofs4/expire.c b/fs/autofs4/expire.c
-index 3d9d3f5..394e90b 100644
---- a/fs/autofs4/expire.c
-+++ b/fs/autofs4/expire.c
-@@ -402,6 +402,20 @@ struct dentry *autofs4_expire_indirect(struct super_block *sb,
- 			goto next;
- 		}
+diff --git a/arch/arm/include/asm/pgtable-2level.h b/arch/arm/include/asm/pgtable-2level.h
+index dfff709fda3c..528b397b6c91 100644
+--- a/arch/arm/include/asm/pgtable-2level.h
++++ b/arch/arm/include/asm/pgtable-2level.h
+@@ -141,6 +141,7 @@
+ #define L_PTE_MT_DEV_WC		(_AT(pteval_t, 0x09) << 2)	/* 1001 */
+ #define L_PTE_MT_DEV_CACHED	(_AT(pteval_t, 0x0b) << 2)	/* 1011 */
+ #define L_PTE_MT_MASK		(_AT(pteval_t, 0x0f) << 2)
++#define L_PTE_MT_INNER_WB	(_AT(pteval_t, 0x05) << 2)	/* 0101 (armv6, armv7) */
  
-+		if (dentry->d_inode && S_ISLNK(dentry->d_inode->i_mode)) {
-+			DPRINTK("checking symlink %p %.*s",
-+				dentry, (int)dentry->d_name.len, dentry->d_name.name);
-+			/*
-+			 * A symlink can't be "busy" in the usual sense so
-+			 * just check last used for expire timeout.
-+			 */
-+			if (autofs4_can_expire(dentry, timeout, do_now)) {
-+				expired = dentry;
-+				goto found;
-+			}
-+			goto next;
-+		}
+ #ifndef __ASSEMBLY__
+ 
+diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
+index 7d59b524f2af..2b0601a9a18e 100644
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -134,6 +134,9 @@ extern pgprot_t phys_mem_access_prot(struct file *file, unsigned long pfn,
+ 	__pgprot_modify(prot, L_PTE_MT_MASK, L_PTE_MT_UNCACHED | L_PTE_XN)
+ #endif
+ 
++#define pgprot_inner_writeback(prot) \
++	__pgprot_modify(prot, L_PTE_MT_MASK, L_PTE_MT_INNER_WB)
 +
- 		if (simple_empty(dentry))
- 			goto next;
+ #endif /* __ASSEMBLY__ */
  
-diff --git a/fs/autofs4/symlink.c b/fs/autofs4/symlink.c
-index f27c094..1e8ea19 100644
---- a/fs/autofs4/symlink.c
-+++ b/fs/autofs4/symlink.c
-@@ -14,6 +14,10 @@
+ /*
+diff --git a/arch/arm/mm/proc-macros.S b/arch/arm/mm/proc-macros.S
+index e3c48a3fe063..fa829840ee16 100644
+--- a/arch/arm/mm/proc-macros.S
++++ b/arch/arm/mm/proc-macros.S
+@@ -127,7 +127,7 @@
+ 	.long	PTE_CACHEABLE					@ L_PTE_MT_WRITETHROUGH
+ 	.long	PTE_CACHEABLE | PTE_BUFFERABLE			@ L_PTE_MT_WRITEBACK
+ 	.long	PTE_BUFFERABLE					@ L_PTE_MT_DEV_SHARED
+-	.long	0x00						@ unused
++	.long	PTE_EXT_TEX(4) | PTE_BUFFERABLE			@ L_PTE_MT_INNER_WB
+ 	.long	0x00						@ L_PTE_MT_MINICACHE (not present)
+ 	.long	PTE_EXT_TEX(1) | PTE_CACHEABLE | PTE_BUFFERABLE	@ L_PTE_MT_WRITEALLOC
+ 	.long	0x00						@ unused
+diff --git a/arch/arm/mm/proc-v7-2level.S b/arch/arm/mm/proc-v7-2level.S
+index bdd3be4be77a..059a9d7242c2 100644
+--- a/arch/arm/mm/proc-v7-2level.S
++++ b/arch/arm/mm/proc-v7-2level.S
+@@ -144,8 +144,8 @@ ENDPROC(cpu_v7_set_pte_ext)
+ 	 *   NS1 = PRRR[19] = 1		- normal shareable property
+ 	 *   NOS = PRRR[24+n] = 1	- not outer shareable
+ 	 */
+-.equ	PRRR,	0xff0a81a8
+-.equ	NMRR,	0x40e040e0
++.equ	PRRR,	0xff0a89a8
++.equ	NMRR,	0x40e044e0
  
- static void *autofs4_follow_link(struct dentry *dentry, struct nameidata *nd)
- {
-+	struct autofs_sb_info *sbi = autofs4_sbi(dentry->d_sb);
-+	struct autofs_info *ino = autofs4_dentry_ino(dentry);
-+	if (ino && !autofs4_oz_mode(sbi))
-+		ino->last_used = jiffies;
- 	nd_set_link(nd, dentry->d_inode->i_private);
- 	return NULL;
- }
+ 	/*
+ 	 * Macro for setting up the TTBRx and TTBCR registers.
+diff --git a/arch/arm/mm/proc-xsc3.S b/arch/arm/mm/proc-xsc3.S
+index dc1645890042..9c374495e778 100644
+--- a/arch/arm/mm/proc-xsc3.S
++++ b/arch/arm/mm/proc-xsc3.S
+@@ -381,7 +381,7 @@ cpu_xsc3_mt_table:
+ 	.long	PTE_EXT_TEX(5) | PTE_CACHEABLE			@ L_PTE_MT_WRITETHROUGH
+ 	.long	PTE_CACHEABLE | PTE_BUFFERABLE			@ L_PTE_MT_WRITEBACK
+ 	.long	PTE_EXT_TEX(1) | PTE_BUFFERABLE			@ L_PTE_MT_DEV_SHARED
+-	.long	0x00						@ unused
++	.long	PTE_EXT_TEX(4) | PTE_BUFFERABLE			@ L_PTE_MT_INNER_WB (not present?)
+ 	.long	0x00						@ L_PTE_MT_MINICACHE (not present)
+ 	.long	PTE_EXT_TEX(5) | PTE_CACHEABLE | PTE_BUFFERABLE	@ L_PTE_MT_WRITEALLOC (not present?)
+ 	.long	0x00						@ unused
+diff --git a/arch/arm/mm/proc-xscale.S b/arch/arm/mm/proc-xscale.S
+index d19b1cfcad91..2ac1b88e02ac 100644
+--- a/arch/arm/mm/proc-xscale.S
++++ b/arch/arm/mm/proc-xscale.S
+@@ -491,7 +491,7 @@ cpu_xscale_mt_table:
+ 	.long	PTE_CACHEABLE					@ L_PTE_MT_WRITETHROUGH
+ 	.long	PTE_CACHEABLE | PTE_BUFFERABLE			@ L_PTE_MT_WRITEBACK
+ 	.long	PTE_EXT_TEX(1) | PTE_BUFFERABLE			@ L_PTE_MT_DEV_SHARED
+-	.long	0x00						@ unused
++	.long	PTE_EXT_TEX(1) | PTE_CACHEABLE | PTE_BUFFERABLE	@ L_PTE_MT_INNER_WB
+ 	.long	PTE_EXT_TEX(1) | PTE_CACHEABLE			@ L_PTE_MT_MINICACHE
+ 	.long	PTE_EXT_TEX(1) | PTE_CACHEABLE | PTE_BUFFERABLE	@ L_PTE_MT_WRITEALLOC
+ 	.long	0x00						@ unused
+-- 
+1.8.1.5
 
