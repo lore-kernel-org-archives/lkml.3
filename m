@@ -1,98 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044Ab3L0BSL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 20:18:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39799 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753042Ab3L0BSK (ORCPT
+	id S1754038Ab3L0BZn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 20:25:43 -0500
+Received: from smtprelay0139.hostedemail.com ([216.40.44.139]:60242 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753993Ab3L0BZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 20:18:10 -0500
-Date: Thu, 26 Dec 2013 17:19:49 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ian Kent <raven@themaw.net>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        autofs mailing list <autofs@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] autofs - fix fix symlinks arent checked for expiry
-Message-Id: <20131226171949.9ca42eaa.akpm@linux-foundation.org>
-In-Reply-To: <1388106592.2446.25.camel@perseus.fritz.box>
-References: <20131224094459.20051.4889.stgit@perseus.fritz.box>
-	<20131226134253.5f4b2f02a00e11b8de49770e@linux-foundation.org>
-	<1388106592.2446.25.camel@perseus.fritz.box>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Thu, 26 Dec 2013 20:25:42 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3865:3866:3870:3874:4321:4362:4605:5007:7652:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: board03_4e985593de837
+X-Filterd-Recvd-Size: 1413
+Message-ID: <1388107538.30298.0.camel@joe-AO722>
+Subject: Re: [PATCH 1/5] checkpatch: Add tests for function pointer style
+ misuses
+From: Joe Perches <joe@perches.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: akpm@linux-foundation.org, Manfred Spraul <manfred@colorfullife.com>,
+        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Date: Thu, 26 Dec 2013 17:25:38 -0800
+In-Reply-To: <20131227005835.GA10986@leaf>
+References: <20131227005835.GA10986@leaf>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Dec 2013 09:09:52 +0800 Ian Kent <raven@themaw.net> wrote:
+On Thu, 2013-12-26 at 16:58 -0800, Josh Triplett wrote:
+> On Thu, Dec 26, 2013 at 12:07:23PM -0800, Josh Triplett wrote:
+> > On Thu, Dec 26, 2013 at 11:20:28AM -0800, Joe Perches wrote:
+> > > Kernel style uses function pointers in this form:
+> > >         "type (*funcptr)(args...)"
+> > > 
+> > > Emit warnings when this function pointer form isn't used.
+[]
+> Here's a patch that fixes the two messages I commented about, which
+> applies on top of the version of the patch that went into -mm.
 
-> On Thu, 2013-12-26 at 13:42 -0800, Andrew Morton wrote:
-> > On Tue, 24 Dec 2013 17:44:59 +0800 Ian Kent <raven@themaw.net> wrote:
-> > 
-> > > When following a symlink the last_used counter is unconditionally
-> > > updated causing the expire checks from user space to prevent
-> > > expiry. Opps!
-> > 
-> > A bit unclear.  You're saying that userspace's act of checking expiry
-> > status will itself disrupt the expiry process?
-> 
-> If the user space expire code uses stat(2) instead of lstat(2), yes.
-> It's quite possible this will be the case since it made no difference
-> when not using symlinks in the autofs directory tree.
-> 
-> > 
-> > Also, it's rather unclear what the userspace impact is here, and how
-> > severe it is.  Please always carefully describe the user-visible impact
-> > so that others can decide which kernel version(s) need the patch.
-> 
-> The impact of this is that symlinks within an an autofs directory tree
-> don't cause a callback to the daemon so they can be expired (removed in
-> this case).
-> 
-> autofs4_oz_mode() is the mechanism that's used to identify the user
-> space process that's managing the automount tree. It's used in a number
-> of places to prevent the process managing the tree from doing things
-> like triggering mounts itself or updating the last_used counter.
-> 
-> It's a bit of a puzzle why it worked when I originally tested it.  But
-> later when I looked at it to work out why some symlinks weren't expiring
-> it was obvious.
-> 
-> Do you want me to re-submit this with an updated description?
+Acked-by: Joe Perches <joe@perches.com>
 
-Yes please.  The questions which a bugfix changelog should answer are
-"should this be backported to -stable and if so, why".  It's also
-helpful if it answers "if not, why not".
-
-> > 
-> > > --- a/fs/autofs4/symlink.c
-> > > +++ b/fs/autofs4/symlink.c
-> > > @@ -14,8 +14,9 @@
-> > >  
-> > >  static void *autofs4_follow_link(struct dentry *dentry, struct nameidata *nd)
-> > >  {
-> > > +	struct autofs_sb_info *sbi = autofs4_sbi(dentry->d_sb);
-> > >  	struct autofs_info *ino = autofs4_dentry_ino(dentry);
-> > > -	if (ino)
-> > > +	if (ino && !autofs4_oz_mode(sbi))
-> > >  		ino->last_used = jiffies;
-> > >  	nd_set_link(nd, dentry->d_inode->i_private);
-> > >  	return NULL;
-> > 
-> > What kernel is this against?  3.13-rc5 is quite different:
-> 
-> That's a good question.
-> Which tree should I be basing patches on?
-
-Current Linus git is almost always the one to target.
-
-> As it turns out it is against 3.13-rc5 which was the version the linus
-> tree was at (when I pulled it) prior to mailing the patch.
-
-Nope, autofs4_follow_link() looks like
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/fs/autofs4/symlink.c
-all the way back to 3.12.
+thanks Josh, Joe
 
