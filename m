@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237Ab3L0JDv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 04:03:51 -0500
-Received: from mga01.intel.com ([192.55.52.88]:15178 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754181Ab3L0JDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 04:03:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,559,1384329600"; 
-   d="asc'?scan'208";a="456391524"
-Message-ID: <1388135003.2183.145.camel@jtkirshe-mobl>
-Subject: Re: [PATCH 2/2] ixgbe: set driver_max_VFs should be done before
- enabling SRIOV
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Ethan Zhao <ethan.kernel@gmail.com>
-Cc: jesse.brandeburg@intel.com, bruce.w.allan@intel.com,
-        carolyn.wyborny@intel.com, davem@davemloft.net,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 27 Dec 2013 01:03:23 -0800
-In-Reply-To: <1387901251-1672-1-git-send-email-ethan.kernel@gmail.com>
-References: <1387901251-1672-1-git-send-email-ethan.kernel@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-w8qPRrrI0g8Z0RHX0NYt"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	id S1754251Ab3L0JIS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 04:08:18 -0500
+Received: from mail-by2lp0235.outbound.protection.outlook.com ([207.46.163.235]:33910
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754060Ab3L0JIQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Dec 2013 04:08:16 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: "broonie@kernel.org" <broonie@kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Jingchang Lu <jingchang.lu@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCHv4 2/4] ARM: dts: Add Freescale SAI ALSA SoC Digital
+ Audio Interface node for VF610.
+Thread-Topic: [PATCHv4 2/4] ARM: dts: Add Freescale SAI ALSA SoC Digital
+ Audio Interface node for VF610.
+Thread-Index: AQHO/Sa+uGbX95GUw0WP/tIzSnlqC5pnx+mAgAACYJA=
+Date: Fri, 27 Dec 2013 09:08:13 +0000
+Message-ID: <4d5402daa3384da795fdb895531e32a6@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1387501387-2151-1-git-send-email-Li.Xiubo@freescale.com>
+ <1387501387-2151-2-git-send-email-Li.Xiubo@freescale.com>
+ <20131227085322.GA3367@S2101-09.ap.freescale.net>
+In-Reply-To: <20131227085322.GA3367@S2101-09.ap.freescale.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 0073BFEF03
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(199002)(189002)(164054003)(51704005)(77982001)(83072002)(65816001)(80022001)(19580395003)(66066001)(81686001)(59766001)(87266001)(79102001)(81342001)(56776001)(85852003)(85306002)(54316002)(81542001)(80976001)(81816001)(63696002)(74366001)(87936001)(74316001)(46102001)(49866001)(47736001)(50986001)(47976001)(4396001)(74706001)(54356001)(76482001)(74876001)(53806001)(74662001)(83322001)(47446002)(74502001)(33646001)(31966008)(76796001)(76786001)(90146001)(56816005)(51856001)(69226001)(76576001)(2656002)(24736002)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB475;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Shawn,
 
---=-w8qPRrrI0g8Z0RHX0NYt
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> > diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
+> > index e84d84c..2d6ddd0 100644
+> > --- a/arch/arm/boot/dts/vf610.dtsi
+> > +++ b/arch/arm/boot/dts/vf610.dtsi
+> > @@ -166,6 +166,9 @@
+> >  				interrupts = <0 86 0x04>;
+> >  				clocks = <&clks VF610_CLK_SAI2>;
+> >  				clock-names = "sai";
+> > +				dma-names = "tx", "rx";
+> > +				dmas = <&edma0 0 VF610_EDMA_MUXID0_SAI2_TX>,
+> > +					<&edma0 0 VF610_EDMA_MUXID0_SAI2_RX>;
+> 
+> Where are these VF610_EDMA_MUXID0_* macros defined?  I cannot find them
+> in my tree.
+>
 
-On Wed, 2013-12-25 at 00:07 +0800, Ethan Zhao wrote:
-> commit 43dc4e01 Limit number of reported VFs to device specific value
-> It doesn't work and always returns -EBUSY because VFs ware already
-> enabled.
->=20
-> ixgbe_enable_sriov()
->         pci_enable_sriov()
->                 sriov_enable()
->                 {
->                 ... ..
->                 iov->ctrl |=3D PCI_SRIOV_CTRL_VFE | PCI_SRIOV_CTRL_MSE;
->                 pci_cfg_access_lock(dev);
->                 ... ...
->                 }
->=20
-> pci_sriov_set_totalvfs()
-> {
-> ... ...
-> if (dev->sriov->ctrl & PCI_SRIOV_CTRL_VFE)
->                 return -EBUSY;
-> ...
-> }
->=20
-> So should set driver_max_VFs with pci_sriov_set_totalvfs() before
-> enable VFs with ixgbe_enable_sriov().
->=20
-> Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
-> ---
->  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+Sorry, this is depended on the eDMA driver, which is still doing the upstream
+work by another colleague.
 
-Thanks Ethan, I have added this patch as well to my queue.
+I will let you know if the eDMA driver has been merged in.
 
---=-w8qPRrrI0g8Z0RHX0NYt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+Thanks,
 
-iQIcBAABCgAGBQJSvUJbAAoJEOVv75VaS+3OFf0P/3A2eH7tHcNsfM0FtBH/iFGj
-PBKsJ+z4ObPUCmQoJEiVUHM9N6cpfYs9aD0ph9ktfAN9N2tvxfiKR+CXUetS+RYL
-WqAM+35Uhy4b26MyceLn/0Xeo3V3de7aZuWgmRPvVWrZkuOOooj8J6CUusqihuvh
-NGKwZ/PAB/ZuZ1frhndy8rBZRlkxxJpYt7j40jZlARoay4/LmuPZhM0fEZSpIPCq
-SwkI0WsPewnwH+0u95b8QSMYXYMF/UP5PgkXf1O7pzgsW3hVHmU9AiiPwJXSf4eq
-zMiF2OLrPU61DnOFb58oEfHvPCwrYO6GkJ6CvZtrH9LKQJmreZaJMRVFnjc44vSe
-GmtmcMda8QpOvrfuboDxkM4X/zVsdv2RZKbuoiYit/mh7ZS9ohlYGRQgrA8DlMP2
-XgDmq3TZq/QTbDe2o3yzBmRi8CfNufgrUS8eolk9es/OH9hxjV+DHAWFsM7ZBEce
-DC/5EUG9X24x2E7gCKbxv/V6+Hf58qhMYfg9VbENczXo/Rhp4XZzyveqEWQCOQCV
-1sIoCXlIMudzWAJNXxjSKY0YMlkjXe3kzT9CCIQCtrGcBo5PbrAhuQEnUPW23X00
-An6img9c5HSwp54A8Po5NnRoWZb14vlOG+P73wQLzEcYRnYyhc0VX3bVXuszXVyl
-Q/dNNac4yhMyeF13YkDP
-=5G+d
------END PGP SIGNATURE-----
-
---=-w8qPRrrI0g8Z0RHX0NYt--
+Best Regards,
+Xiubo
+ 
 
