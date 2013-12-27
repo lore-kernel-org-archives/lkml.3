@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755091Ab3L0WQS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 17:16:18 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:51038 "HELO
+	id S1755076Ab3L0WQR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 17:16:17 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:57823 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755054Ab3L0WQO (ORCPT
+	with SMTP id S1755057Ab3L0WQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 27 Dec 2013 17:16:14 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
@@ -16,12 +16,12 @@ Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
         Bjorn Helgaas <bhelgaas@google.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         Aaron Lu <aaron.lu@intel.com>
-Subject: [PATCH 1/2] ACPI / hotplug: Add demand_offline hotplug profile flag
-Date: Fri, 27 Dec 2013 23:23:42 +0100
-Message-ID: <2072876.4FiiQkgF4K@vostro.rjw.lan>
+Subject: [PATCH 0/2] ACPI / hotplug / driver core: Special handling for container devices
+Date: Fri, 27 Dec 2013 23:21:59 +0100
+Message-ID: <63118574.0bgUpLnDbK@vostro.rjw.lan>
 User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <63118574.0bgUpLnDbK@vostro.rjw.lan>
-References: <1421028.Rsfpmhnym3@vostro.rjw.lan> <2686210.6vSP0yehxh@vostro.rjw.lan> <63118574.0bgUpLnDbK@vostro.rjw.lan>
+In-Reply-To: <2686210.6vSP0yehxh@vostro.rjw.lan>
+References: <1421028.Rsfpmhnym3@vostro.rjw.lan> <52BD0DC1.2000909@jp.fujitsu.com> <2686210.6vSP0yehxh@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -29,120 +29,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Hi Greg,
 
-Add a new ACPI hotplug profile flag, demand_offline, such that if
-set for the given ACPI device object's scan handler, it will cause
-acpi_scan_hot_remove() to check if that device object's physical
-companions are offline upfront and fail the hot removal if that
-is not the case.
+The following series of 2 patches (patch [2/2] in particular) make changes
+needed to handle hot-removal of system container devices (represented by
+ACPI container and module device objects) on Fujitsu systems.  Those devices
+represent things like CPU packages, so we need to be able to take care of them
+cleanly for things like in-the-field CPU socked replacement to work.
 
-That flag will be useful to overcome a problem with containers on
-some system where they can only be hot-removed after some cleanup
-operations carried out by user space, which needs to be notified
-of the container hot-removal before the kernel attempts to offline
-devices in the container.  In those cases the current implementation
-of acpi_scan_hot_remove() is not sufficient, because it first tries
-to offline the devices in the container and only if that is
-suffcessful it tries to offline the container itself.  As a result,
-the container hot-removal notification is not delivered to user space
-at the right time.
+The problem being addressed here is that on the systems in question the removal
+of container devices has to be carried out with the help of user space that
+needs to be notified of the container removal before the kernel attempts to
+offline any devices below the container (e.g. in the package represented by the
+container device object in the ACPI tables).  However, our current code works
+the other way around and the entire thing is messed up.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/scan.c     |   41 +++++++++++++++++++++++++++++++++++++----
- include/acpi/acpi_bus.h |    3 ++-
- 2 files changed, 39 insertions(+), 5 deletions(-)
+This patchset adds the bare bones of what's needed to address that issue and it
+should be possible to build on top of the code added by it in the future if
+need be.
 
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -126,6 +126,24 @@ acpi_device_modalias_show(struct device
- }
- static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
- 
-+static bool acpi_scan_is_offline(struct acpi_device *adev)
-+{
-+	struct acpi_device_physical_node *pn;
-+	bool offline = true;
-+
-+	mutex_lock(&adev->physical_node_lock);
-+
-+	list_for_each_entry(pn, &adev->physical_node_list, node)
-+		if (device_supports_offline(pn->dev) && !pn->dev->offline) {
-+			kobject_uevent(&pn->dev->kobj, KOBJ_CHANGE);
-+			offline = false;
-+			break;
-+		}
-+
-+	mutex_unlock(&adev->physical_node_lock);
-+	return offline;
-+}
-+
- static acpi_status acpi_bus_offline(acpi_handle handle, u32 lvl, void *data,
- 				    void **ret_p)
- {
-@@ -196,12 +214,11 @@ static acpi_status acpi_bus_online(acpi_
- 	return AE_OK;
- }
- 
--static int acpi_scan_hot_remove(struct acpi_device *device)
-+static int acpi_scan_try_to_offline(struct acpi_device *device)
- {
- 	acpi_handle handle = device->handle;
--	struct device *errdev;
-+	struct device *errdev = NULL;
- 	acpi_status status;
--	unsigned long long sta;
- 
- 	/*
- 	 * Carry out two passes here and ignore errors in the first pass,
-@@ -212,7 +229,6 @@ static int acpi_scan_hot_remove(struct a
- 	 *
- 	 * If the first pass is successful, the second one isn't needed, though.
- 	 */
--	errdev = NULL;
- 	status = acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
- 				     NULL, acpi_bus_offline, (void *)false,
- 				     (void **)&errdev);
-@@ -241,6 +257,23 @@ static int acpi_scan_hot_remove(struct a
- 			return -EBUSY;
- 		}
- 	}
-+	return 0;
-+}
-+
-+static int acpi_scan_hot_remove(struct acpi_device *device)
-+{
-+	acpi_handle handle = device->handle;
-+	unsigned long long sta;
-+	acpi_status status;
-+
-+	if (device->handler->hotplug.demand_offline && !acpi_force_hot_remove) {
-+		if (!acpi_scan_is_offline(device))
-+			return -EBUSY;
-+	} else {
-+		int error = acpi_scan_try_to_offline(device);
-+		if (error)
-+			return error;
-+	}
- 
- 	ACPI_DEBUG_PRINT((ACPI_DB_INFO,
- 		"Hot-removing device %s...\n", dev_name(&device->dev)));
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -91,8 +91,9 @@ struct acpi_device;
- 
- struct acpi_hotplug_profile {
- 	struct kobject kobj;
--	bool enabled:1;
- 	int (*scan_dependent)(struct acpi_device *adev);
-+	bool enabled:1;
-+	bool demand_offline:1;
- };
- 
- static inline struct acpi_hotplug_profile *to_acpi_hotplug_profile(
+Patch [1/2] introduces a new demand_offline flag for struct acpi_hotplug_profile
+that makes acpi_scan_hot_remove() check the offline status of the device object's
+companion physical devices to start with and return -EBUSY if at least one of them
+is not offline.
+
+Patch [2/2] uses that flag to implement the container handling.  The details are
+in the changelog, but that's how it works.
+
+During the initial namespace scan the container ACPI scan handler creates
+"physical" system container device under /sys/devices/system/container/ for
+each ACPI container object whose status is "present" at that time (the sysfs
+name of that device is the same as the sysfs name of the corresponding
+container object and they are linked to each other via the firmware_node and
+physical_node symbolic links, respectively).  Those system container devices
+are initially online.
+
+The container ACPI scan handler has the demand_offline flag set in its hotplug
+profile, so when a container eject event happens, acpi_scan_hot_remove() will
+notice that the flag is set in the device object's scan handler and will
+check the online status of its "physical" companion device, which is online
+(that is the system container device the above paragraph is about).  That will
+cause KOBJ_CHANGE to be emitted for the system container device and -EBUSY to
+be returned by acpi_scan_hot_remove().  User space is expected to respond to
+that KOBJ_CHANGE by doing what's necessary to remove the container.
+
+To that end, it needs to offline the system container device through its online
+sysfs attribute (which is present, because the bus type for containers provides
+the online and offline callbacks).  However, the offline for system container
+devices will only succeed if the physical devices right below the container
+(e.g. in the package represented by it) are all offline, so user space will
+have to offline those devices before attempting to offline the system container
+device itself.  When finished, user space can trigger the container removal
+with the help of the eject sysfs attribute of the ACPI container object pointed
+to by the system container device's firmware_node link (this time the check in
+acpi_scan_hot_remove() will succeed, because the system container device in
+question is now offline).
+
+Please let me know if you have any objections.  If not, I'd like to queue up
+these patches for 3.14.
+
+Thanks,
+Rafael
 
