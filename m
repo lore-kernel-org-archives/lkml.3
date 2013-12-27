@@ -1,127 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab3L0ChI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 21:37:08 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:52626 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754065Ab3L0Cg6 (ORCPT
+	id S1754368Ab3L0CkY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 21:40:24 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:36015 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754066Ab3L0CkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 21:36:58 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID rBR2auFD029346, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 1/6] r8152: move rtl8152_unload and ocp_reg_write
-Date: Fri, 27 Dec 2013 10:34:05 +0800
-Message-ID: <1388111649-1014-2-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1388111649-1014-1-git-send-email-hayeswang@realtek.com>
-References: <1388111649-1014-1-git-send-email-hayeswang@realtek.com>
+	Thu, 26 Dec 2013 21:40:22 -0500
+Date: Fri, 27 Dec 2013 10:39:18 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: tomi.valkeinen@ti.com
+Cc: plagnioj@jcrosoft.com, airlied@redhat.com, gregkh@linuxfoundation.org,
+        akpm@linux-foundation.org, kamal@whence.com,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] fbcon: trivial optimization for fbcon_exit
+Message-ID: <20131227023917.GA3908@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>, tomi.valkeinen@ti.com,
+	plagnioj@jcrosoft.com, airlied@redhat.com,
+	gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+	kamal@whence.com, linux-fbdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the locations of rtl8152_unload() and ocp_reg_write().
+Break out as soon as we find a mapped entry con2fb_map.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+Signed-off-by: Wang YanQing <udknight@gmail.com>
 ---
- drivers/net/usb/r8152.c | 58 ++++++++++++++++++++++++-------------------------
- 1 file changed, 29 insertions(+), 29 deletions(-)
+ drivers/video/console/fbcon.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 5107372..79bb553 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -653,6 +653,20 @@ static void ocp_write_byte(struct r8152 *tp, u16 type, u16 index, u32 data)
- 	generic_ocp_write(tp, index, byen, sizeof(tmp), &tmp, type);
- }
+diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
+index cd8a802..f39931f 100644
+--- a/drivers/video/console/fbcon.c
++++ b/drivers/video/console/fbcon.c
+@@ -3547,8 +3547,10 @@ static void fbcon_exit(void)
+ 			"no"));
  
-+static void ocp_reg_write(struct r8152 *tp, u16 addr, u16 data)
-+{
-+	u16 ocp_base, ocp_index;
-+
-+	ocp_base = addr & 0xf000;
-+	if (ocp_base != tp->ocp_base) {
-+		ocp_write_word(tp, MCU_TYPE_PLA, PLA_OCP_GPHY_BASE, ocp_base);
-+		tp->ocp_base = ocp_base;
-+	}
-+
-+	ocp_index = (addr & 0x0fff) | 0xb000;
-+	ocp_write_word(tp, MCU_TYPE_PLA, ocp_index, data);
-+}
-+
- static void r8152_mdio_write(struct r8152 *tp, u32 reg_addr, u32 value)
- {
- 	u32	ocp_data;
-@@ -715,20 +729,6 @@ void write_mii_word(struct net_device *netdev, int phy_id, int reg, int val)
- 	r8152_mdio_write(tp, reg, val);
- }
+ 		for (j = first_fb_vc; j <= last_fb_vc; j++) {
+-			if (con2fb_map[j] == i)
++			if (con2fb_map[j] == i) {
+ 				mapped = 1;
++				break;
++			}
+ 		}
  
--static void ocp_reg_write(struct r8152 *tp, u16 addr, u16 data)
--{
--	u16 ocp_base, ocp_index;
--
--	ocp_base = addr & 0xf000;
--	if (ocp_base != tp->ocp_base) {
--		ocp_write_word(tp, MCU_TYPE_PLA, PLA_OCP_GPHY_BASE, ocp_base);
--		tp->ocp_base = ocp_base;
--	}
--
--	ocp_index = (addr & 0x0fff) | 0xb000;
--	ocp_write_word(tp, MCU_TYPE_PLA, ocp_index, data);
--}
--
- static
- int r8152_submit_rx(struct r8152 *tp, struct rx_agg *agg, gfp_t mem_flags);
- 
-@@ -2079,6 +2079,21 @@ static void r8152b_get_version(struct r8152 *tp)
- 	}
- }
- 
-+static void rtl8152_unload(struct r8152 *tp)
-+{
-+	u32	ocp_data;
-+
-+	if (tp->version != RTL_VER_01) {
-+		ocp_data = ocp_read_word(tp, MCU_TYPE_USB, USB_UPS_CTRL);
-+		ocp_data |= POWER_CUT;
-+		ocp_write_word(tp, MCU_TYPE_USB, USB_UPS_CTRL, ocp_data);
-+	}
-+
-+	ocp_data = ocp_read_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS);
-+	ocp_data &= ~RWSUME_INDICATE;
-+	ocp_write_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS, ocp_data);
-+}
-+
- static int rtl8152_probe(struct usb_interface *intf,
- 			 const struct usb_device_id *id)
- {
-@@ -2150,21 +2165,6 @@ out:
- 	return ret;
- }
- 
--static void rtl8152_unload(struct r8152 *tp)
--{
--	u32	ocp_data;
--
--	if (tp->version != RTL_VER_01) {
--		ocp_data = ocp_read_word(tp, MCU_TYPE_USB, USB_UPS_CTRL);
--		ocp_data |= POWER_CUT;
--		ocp_write_word(tp, MCU_TYPE_USB, USB_UPS_CTRL, ocp_data);
--	}
--
--	ocp_data = ocp_read_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS);
--	ocp_data &= ~RWSUME_INDICATE;
--	ocp_write_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS, ocp_data);
--}
--
- static void rtl8152_disconnect(struct usb_interface *intf)
- {
- 	struct r8152 *tp = usb_get_intfdata(intf);
+ 		if (mapped) {
 -- 
-1.8.3.1
-
+1.8.3.4.8.g69490f3.dirty
