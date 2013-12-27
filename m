@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132Ab3L0RB4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 12:01:56 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:62997 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753716Ab3L0RBy (ORCPT
+	id S1754238Ab3L0RG0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 12:06:26 -0500
+Received: from smtprelay0233.hostedemail.com ([216.40.44.233]:38111 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753653Ab3L0RGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 12:01:54 -0500
-Date: Fri, 27 Dec 2013 19:01:48 +0200
-From: Gleb Natapov <gleb@kernel.org>
-To: Kashyap Chamarthy <kchamart@redhat.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "Richard W.M. Jones" <rjones@redhat.com>
-Subject: Re: intel_pstate divide error with v3.13-rc4-256-gb7000ad
-Message-ID: <20131227170147.GH10961@minantech.com>
-References: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com>
- <CAKohpomqHApogDEXA5LyWk-+B-Y1mwNQ63-wL3PPGz64s_3Dmw@mail.gmail.com>
- <20131227122422.62857cec@alan.etchedpixels.co.uk>
- <20131227124749.GE10961@minantech.com>
- <CA+5PVA60GSC0tTLJWLtVqb5eTPMzrszxtoBnUP8B_Q_60=oGyw@mail.gmail.com>
- <52BD8B8B.1050209@redhat.com>
- <20131227165248.GG10961@minantech.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131227165248.GG10961@minantech.com>
+	Fri, 27 Dec 2013 12:06:25 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:3872:3874:4321:4605:5007:7652:8603:10004:10400:10450:10455:10481:10848:11026:11232:11658:11914:12043:12296:12438:12517:12519:12740:13069:13161:13229:13311:13357:19900:19904:19999,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: day23_8f077562ecc40
+X-Filterd-Recvd-Size: 2531
+Message-ID: <1388163982.30298.12.camel@joe-AO722>
+Subject: Re: [PATCH net-next 19/20] net: plip: slight optimization of addr
+ compare
+From: Joe Perches <joe@perches.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>, Julia Lawall <julia.lawall@lip6.fr>
+Cc: Ding Tianhong <dingtianhong@huawei.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 27 Dec 2013 09:06:22 -0800
+In-Reply-To: <1388159283.12212.80.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <52BD22ED.4030302@huawei.com>
+	 <1388159283.12212.80.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 27, 2013 at 06:52:48PM +0200, Gleb Natapov wrote:
-> On Fri, Dec 27, 2013 at 03:15:39PM +0100, Kashyap Chamarthy wrote:
-> > [. . .]
-> > 
-> > >> KVM does not emulate P-states at all. intel_pstate_init() calls
-> > >> intel_pstate_msrs_not_valid() before printing "Intel P-state driver
-> > >> initializing."  which suppose to fail since it checks that two reads of
-> > >> MSR_IA32_APERF return different values, but KVM does not emulate this msr
-> > >> at all, so both calls should return zero (KVM suppose to inject #GP, all rdmsrl
-> > >> are patched to be rdmsrl_safe in a guest).
-> > >>
-> > >> Anything interesting in host dmesg?
-> > 
-> > Heya Gleb,
-> > 
-> > Here's the relevant dmesg snippet (full dmesg, refer the attachment below):
-> That's guest dmesg. What about host one? Can you ftrace the failure?
+On Fri, 2013-12-27 at 07:48 -0800, Eric Dumazet wrote:
+> On Fri, 2013-12-27 at 14:49 +0800, Ding Tianhong wrote:
+> > Use possibly more efficient ether_addr_equal
+> > to instead of memcmp.
+[]
+> > diff --git a/drivers/net/plip/plip.c b/drivers/net/plip/plip.c
+[]
+> > @@ -549,7 +549,7 @@ static __be16 plip_type_trans(struct sk_buff *skb, struct net_device *dev)
+> >  
+> >  	if(*eth->h_dest&1)
+> >  	{
+> > -		if(memcmp(eth->h_dest,dev->broadcast, ETH_ALEN)==0)
+> > +		if(ether_addr_equal(eth->h_dest, dev->broadcast))
+> >  			skb->pkt_type=PACKET_BROADCAST;
+> >  		else
+> >  			skb->pkt_type=PACKET_MULTICAST;
 > 
-Ugh, it looks like guest dmesg but there are KVM messages there too ("[
-281.443662] kvm [2452]: vcpu0 unhandled rdmsr: 0xe8" is unhandled access
-to MSR_IA32_APERF I was talking about above), so I guess this is nested
-guest invocation?  Does it happen in non nested guest?
+> What about :
+> 
+>         if (is_multicast_ether_addr(eth->h_dest)) {
+>                 if (ether_addr_equal_64bits(eth->h_dest, dev->broadcast))
+>                         skb->pkt_type = PACKET_BROADCAST;
+>                 else
+>                         skb->pkt_type = PACKET_MULTICAST;
+>         }
 
---
-			Gleb.
+That is better though I wonder how many systems are
+still using laplink via parallel null-printer cables.
+
+No matter, better is better.
+
+The same optimization using ether_addr_equal_64bits
+may be possible to do in other places given other
+structs too.
+
+Perhaps it's a possible spatch/coccinelle conversion,
+
+I don't know spatch well enough to know if a
+mechanism to check if structure members have other
+fields that follow them in the structure or if the
+structure member is an array of a minimum size.
+
+Maybe Julia does.  (cc'd)
+
