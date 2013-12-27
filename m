@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754549Ab3L0NEg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 08:04:36 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:58807 "EHLO
+	id S1754592Ab3L0NFZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 08:05:25 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:58922 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752945Ab3L0NEe convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754509Ab3L0NFY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 08:04:34 -0500
+	Fri, 27 Dec 2013 08:05:24 -0500
 From: Caizhiyong <caizhiyong@hisilicon.com>
 To: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
 CC: David Woodhouse <dwmw2@infradead.org>,
@@ -18,11 +18,12 @@ CC: David Woodhouse <dwmw2@infradead.org>,
         "Brian Norris" <computersforpeace@gmail.com>,
         "Gupta, Pekon" <pekon@ti.com>,
         "Rashika Kheria" <rashika.kheria@gmail.com>
-Subject: mtd: nand: remove NAND_MAX_OOBSIZE and NAND_MAX_PAGESIZE
-Thread-Topic: mtd: nand: remove NAND_MAX_OOBSIZE and NAND_MAX_PAGESIZE
-Thread-Index: Ac8DA+IkaW3tylUPRKm57aAuGPmB8Q==
-Date: Fri, 27 Dec 2013 13:02:27 +0000
-Message-ID: <C3050A4DBA34F345975765E43127F10F25E480B4@SZXEMA512-MBX.china.huawei.com>
+Subject: [PATCH] mtd: nand: remove NAND_MAX_OOBSIZE and NAND_MAX_PAGESIZE
+Thread-Topic: [PATCH] mtd: nand: remove NAND_MAX_OOBSIZE and
+ NAND_MAX_PAGESIZE
+Thread-Index: Ac8DBArv16K0d+s0Sfag04LtsfgfKQ==
+Date: Fri, 27 Dec 2013 13:03:32 +0000
+Message-ID: <C3050A4DBA34F345975765E43127F10F25E480C3@SZXEMA512-MBX.china.huawei.com>
 Accept-Language: zh-CN, en-US
 Content-Language: zh-CN
 X-MS-Has-Attach: 
