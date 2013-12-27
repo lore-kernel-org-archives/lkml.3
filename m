@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab3L0R2R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 12:28:17 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:59714 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754068Ab3L0R2P (ORCPT
+	id S1754647Ab3L0R3q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 12:29:46 -0500
+Received: from zabrina.hetzner-de.towertech.it ([178.63.16.19]:54992 "EHLO
+	zabrina.hetzner-de.towertech.it" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753923Ab3L0R3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 12:28:15 -0500
-Date: Fri, 27 Dec 2013 12:28:13 -0500 (EST)
-Message-Id: <20131227.122813.901851776030758668.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH net-next 4/6] r8152: add rtl_ops
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1388111649-1014-5-git-send-email-hayeswang@realtek.com>
-References: <1388111649-1014-1-git-send-email-hayeswang@realtek.com>
-	<1388111649-1014-5-git-send-email-hayeswang@realtek.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Fri, 27 Dec 2013 12:29:45 -0500
+Date: Fri, 27 Dec 2013 18:29:42 +0100
+From: Alessandro Zummo <a.zummo@towertech.it>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: grant.likely@linaro.org, robh+dt@kernel.org, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: question about drivers/rtc/rtc-cmos.c
+Message-ID: <20131227182942.66e7b109@linux.lan.towertech.it>
+In-Reply-To: <alpine.DEB.2.02.1312252028170.2020@localhost6.localdomain6>
+References: <alpine.DEB.2.02.1312252028170.2020@localhost6.localdomain6>
+Organization: Tower Technologies
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 27 Dec 2013 09:28:15 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Fri, 27 Dec 2013 10:34:08 +0800
+On Wed, 25 Dec 2013 20:32:12 +0100 (CET)
+Julia Lawall <julia.lawall@lip6.fr> wrote:
 
->  
-> +static int rtl_ops_init(struct r8152 *tp, const struct usb_device_id *id)
- ...
->  
-> +	if (rtl_ops_init(tp, id)) {
-> +		netif_err(tp, probe, netdev, "Unknown Device");
-> +		return -ENODEV;
 
-You're completely ignoring the error code returned from rtl_ops_init()
-(which, as an aside, uses -EFAULT which doesn't seem all that
-appropriate).
+> Is it intentional that the error code returned by 
+> hpet_register_irq_handler is put ina local variable that will not be seen 
+> at label cleanup1?  The return value is retval, which is 0 at this point.
 
-You might as well have rtl_ops_init() return a boolean.
+  Well, I'd say it's an error. Did you got it by hand
+  or with one of your tools? ;)
+
+-- 
+
+ Best regards,
+
+ Alessandro Zummo,
+  Tower Technologies - Torino, Italy
+
+  http://www.towertech.it
+
