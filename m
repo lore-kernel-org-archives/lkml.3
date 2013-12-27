@@ -1,43 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab3L0RaX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 12:30:23 -0500
-Received: from oker.escape.de ([194.120.234.254]:43779 "EHLO oker.escape.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754047Ab3L0RaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 12:30:21 -0500
-Date: Fri, 27 Dec 2013 18:15:07 +0100
-From: Jochen Striepe <jochen@tolot.escape.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: 3.10.5: rcu_sched detected stalls on CPUs/tasks
-Message-ID: <20131227171507.GE26013@pompeji.miese-zwerge.org>
-References: <20130909215836.GD17483@pompeji.miese-zwerge.org>
- <20130909222751.GL3966@linux.vnet.ibm.com>
- <20130914112834.GM1509@pompeji.miese-zwerge.org>
- <20130923164931.GC2322@pompeji.miese-zwerge.org>
- <20131206002614.GD15492@linux.vnet.ibm.com>
- <20131206135804.GI2208@pompeji.miese-zwerge.org>
- <20131206145441.GA24148@linux.vnet.ibm.com>
- <20131210112257.GJ2208@pompeji.miese-zwerge.org>
- <20131216224006.GA5919@linux.vnet.ibm.com>
- <20131222022523.GD26013@pompeji.miese-zwerge.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131222022523.GD26013@pompeji.miese-zwerge.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754631Ab3L0Rea (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 12:34:30 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:59759 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753716Ab3L0Re3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Dec 2013 12:34:29 -0500
+Date: Fri, 27 Dec 2013 12:34:27 -0500 (EST)
+Message-Id: <20131227.123427.362811725046494702.davem@davemloft.net>
+To: sasha.levin@oracle.com
+Cc: venkat.x.venkatsubra@oracle.com, rds-devel@oss.oracle.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rds: prevent dereference of a NULL device
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1387428582-961-1-git-send-email-sasha.levin@oracle.com>
+References: <1387428582-961-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 27 Dec 2013 09:34:29 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi,
+From: Sasha Levin <sasha.levin@oracle.com>
+Date: Wed, 18 Dec 2013 23:49:42 -0500
 
-On Sun, Dec 22, 2013 at 03:25:23AM +0100, Jochen Striepe wrote:
-> Applies, compiles, and runs smoothly on top of 3.12.6. I'll send word
-> if anything odd shows up.
+> Binding might result in a NULL device, which is dereferenced
+> causing this BUG:
+ ...
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 
-Tested with various loads, everything nice and working so far.
-
-Have a nice weekend,
-Jochen.
+Applied and queued up for -stable, thanks.
