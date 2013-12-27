@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556Ab3L0Mcy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 07:32:54 -0500
-Received: from palinux.external.hp.com ([192.25.206.14]:36738 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307Ab3L0Mcx (ORCPT
+	id S1754589Ab3L0Mdi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 07:33:38 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:48175 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307Ab3L0Mdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 07:32:53 -0500
-Date: Fri, 27 Dec 2013 05:32:50 -0700
-From: Matthew Wilcox <matthew@wil.cx>
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: Benjamin <bcrl@kvack.org>, linux-aio@kvack.org,
-        fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] aio: optimize free kioctx slot search
-Message-ID: <20131227123250.GA22587@parisc-linux.org>
-References: <52BC0352.2040504@cn.fujitsu.com> <20131226141356.GH11091@parisc-linux.org> <52BD5738.4010308@cn.fujitsu.com>
+	Fri, 27 Dec 2013 07:33:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52BD5738.4010308@cn.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <BLU172-W30E6E7C0BC2B6C08FA0552ACCD0@phx.gbl>
+References: <1387895407-28031-1-git-send-email-lgxue@hotmail.com>
+	<20131225230935.GB13593@amd.pavel.ucw.cz>
+	<BLU172-W52032BFEF4512123D7516EACC20@phx.gbl>
+	<20131226142607.GA15225@amd.pavel.ucw.cz>
+	<BLU172-W30E6E7C0BC2B6C08FA0552ACCD0@phx.gbl>
+Date: Fri, 27 Dec 2013 13:33:36 +0100
+X-Google-Sender-Auth: jfL8l3Su13hdt-il0CvG1na73EQ
+Message-ID: <CAMuHMdWKa92mKsNtrj-eKdhz=CFf2LfoSmC6=p4-QyEX54LFUw@mail.gmail.com>
+Subject: Re: [PATCH] Add the LED burst trigger
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Joe Xue <lgxue@hotmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, "cooloney@gmail.com" <cooloney@gmail.com>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "rob@landley.net" <rob@landley.net>,
+        "milo.kim@ti.com" <milo.kim@ti.com>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 27, 2013 at 06:32:24PM +0800, Gu Zheng wrote:
-> Hi Matthew,
-> On 12/26/2013 10:13 PM, Matthew Wilcox wrote:
-> 
-> > On Thu, Dec 26, 2013 at 06:22:10PM +0800, Gu Zheng wrote:
-> >> to the new free slot if it's smaller than 'next_free'. So that we can
-> >> ensure that the slots before 'next_free' are all used, and the search can start
-> >> from 'next_free' to reduce the search and improve the performance.
-> > 
-> > Have you benchmarked it?  What kinds of improvements are you seeing?
-> 
-> Not yet. But the improvement is obvious, we can always reduce the search region and
-> improve the hit rate when trying to find a free slot with this change.
+On Fri, Dec 27, 2013 at 1:31 AM, Joe Xue <lgxue@hotmail.com> wrote:
+> echo "-.-. *"> patten
+> -              a long on then a off
+> .              a short on then a off
+> space     a long off
+> *             mean repeat the patten
+> s             mean indicate the patten just one time then stop
 
-It's not so obvious to me.  You've added extra stores, which may dirty
-an additional cacheline.  That may end up costing more than it saves.
-I suspect the difference is lost in the noise, but I've been wrong about
-these things before.
+Why both "*" and "s"? What happens if none of them is specified?
 
--- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
