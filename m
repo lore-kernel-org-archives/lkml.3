@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016Ab3L0ApC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 19:45:02 -0500
-Received: from mail-qc0-f202.google.com ([209.85.216.202]:51734 "EHLO
-	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753993Ab3L0Aov (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 19:44:51 -0500
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Mark Zhang <markz@nvidia.com>,
-        Andrew Bresticker <abrestic@chromium.org>
-Subject: [PATCH 4/7] clk: tegra: fix host1x clock on Tegra124
-Date: Thu, 26 Dec 2013 16:44:24 -0800
-Message-Id: <1388105067-24438-5-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 1.8.5.1
-In-Reply-To: <1388105067-24438-1-git-send-email-abrestic@chromium.org>
-References: <1388105067-24438-1-git-send-email-abrestic@chromium.org>
+	id S1754115Ab3L0Aq0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 19:46:26 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47982 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752289Ab3L0AqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Dec 2013 19:46:22 -0500
+Message-ID: <52BCCDC4.1090409@zytor.com>
+Date: Thu, 26 Dec 2013 16:45:56 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] speeding up the stat() family of system calls...
+References: <CA+55aFxZ2u+M72u3HSD7TVY2+WRRi27pYC=_4Wawr5y1m8DfnQ@mail.gmail.com>	<20131224204625.GB20471@gmail.com> <CA+55aFzPBdbfKovMT8Edr4SmE2_=+OKJFac9XW2awegogTkVTA@mail.gmail.com>
+In-Reply-To: <CA+55aFzPBdbfKovMT8Edr4SmE2_=+OKJFac9XW2awegogTkVTA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Zhang <markz@nvidia.com>
+On 12/26/2013 11:00 AM, Linus Torvalds wrote:
+> 
+> Interestingly, looking at the cp_new_stat() profiles, the games we
+> play to get efficient range checking seem to actually hurt us. Maybe
+> it's the "sbb" that is just expensive, or maybe it's turning a (very
+> predictable) conditional branch into a data dependency chain instead.
+> Or maybe it's just random noise in my profiles that happened to make
+> those sbb's look bad.
+> 
 
-The host1x clock on Tegra124 is a 3-bit wide mux with 6 parents.
-Change thte id to tegra_clk_host1x_8 so that the correct clock gets
-registered.
+I'm not at all surprised... there is a pretty serious data dependency
+chain here and in the end we end up manifesting a value in a register
+that has to be tested even though it is available in the flags.  Inline
+assembly also means the compiler can't optimize it at all.
 
-Signed-off-by: Mark Zhang <markz@nvidia.com>
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
----
- drivers/clk/tegra/clk-tegra124.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I have to wonder if we actually have to test the upper limit, though: we
+can always guarantee a guard zone between user space and kernel space,
+and thus guarantee either a #PF or #GP if someone tries to overflow user
+space.  Testing just the lower limit would be much cheaper, especially
+on 64 bits where we can simply test the sign bit.
 
-diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
-index 0fc9126..743ccb4 100644
---- a/drivers/clk/tegra/clk-tegra124.c
-+++ b/drivers/clk/tegra/clk-tegra124.c
-@@ -775,7 +775,7 @@ static struct tegra_clk tegra124_clks[tegra_clk_max] __initdata = {
- 	[tegra_clk_gr3d] = { .dt_id = TEGRA124_CLK_GR_3D, .present = true },
- 	[tegra_clk_disp2] = { .dt_id = TEGRA124_CLK_DISP2, .present = true },
- 	[tegra_clk_disp1] = { .dt_id = TEGRA124_CLK_DISP1, .present = true },
--	[tegra_clk_host1x] = { .dt_id = TEGRA124_CLK_HOST1X, .present = true },
-+	[tegra_clk_host1x_8] = { .dt_id = TEGRA124_CLK_HOST1X, .present = true },
- 	[tegra_clk_vcp] = { .dt_id = TEGRA124_CLK_VCP, .present = true },
- 	[tegra_clk_i2s0] = { .dt_id = TEGRA124_CLK_I2S0, .present = true },
- 	[tegra_clk_apbdma] = { .dt_id = TEGRA124_CLK_APBDMA, .present = true },
--- 
-1.8.5.1
+What do you think?
+
+	-hpa
 
