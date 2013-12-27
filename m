@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab3L0OUe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 09:20:34 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:49748 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036Ab3L0OUc (ORCPT
+	id S1754695Ab3L0OV7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 09:21:59 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:59827 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753063Ab3L0OV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 09:20:32 -0500
-Message-ID: <52BD8C9B.8030206@gmail.com>
-Date: Fri, 27 Dec 2013 09:20:11 -0500
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 27 Dec 2013 09:21:58 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: intel_pstate divide error with v3.13-rc4-256-gb7000ad
+Date: Fri, 27 Dec 2013 15:35:29 +0100
+Message-ID: <2312220.jMindkoXyA@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAKohpomqHApogDEXA5LyWk-+B-Y1mwNQ63-wL3PPGz64s_3Dmw@mail.gmail.com>
+References: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com> <CAKohpomqHApogDEXA5LyWk-+B-Y1mwNQ63-wL3PPGz64s_3Dmw@mail.gmail.com>
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Ingo Molnar <mingo@kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "David A. Long" <dave.long@linaro.org>, systemtap@sourceware.org,
-        yrl.pp-manager.tt@hitachi.com, Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH -tip v2 1/2] [CLEANUP] perf-probe: Expand given path to
- absolute path
-References: <20131226054148.22364.25224.stgit@kbuild-fedora.novalocal> <20131226054150.22364.12187.stgit@kbuild-fedora.novalocal> <52BC39D6.3090908@gmail.com> <20131226142248.GE30980@ghostprotocols.net> <52BD1ACA.7030506@hitachi.com>
-In-Reply-To: <52BD1ACA.7030506@hitachi.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/27/13, 1:14 AM, Masami Hiramatsu wrote:
-> Nowhere, since there is no terminal code for user
-> command interface.
->
-> Those memories are released when the program terminated.
-> I think it is just a waste of the time to free the memory
-> pieces which are not used(and allocated) repeatedly.
-> Or, is there any chance to call this part directly from
-> other command?
+On Tuesday, December 24, 2013 09:36:01 PM Viresh Kumar wrote:
+> Adding Dirk..
+> 
+> On 24 December 2013 20:06, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+> > Hi All,
+> >
+> > We've had a report [1] that the pstate driver causes KVM guests to
+> > fail to boot because of a divide error.  See the backtrace below.
+> >
+> >     4.839784] Intel P-state driver initializing.
+> > [    4.859972] Intel pstate controlling: cpu 0
+> > [    4.867653] cpufreq: __cpufreq_add_dev: ->get() failed
+> 
+> After a call to ->init(), ->get() is supposed to work.
+> @Dirk: Any idea why it failed?
 
-Most of the functionality has a destructor to clean up memory 
-allocations. probe code needs to follow suit.
+Well, it looks like sample->freq is 0 in intel_pstate_get().
 
-e.g, from builtin-record.c:
+> And then I don't know what made this divide by zero to happen :)
 
-     err = __cmd_record(&record, argc, argv);
+>From code inspection it looks like that is caused by the
+intel_pstate_get_scaled_busy() called from intel_pstate_adjust_busy_pstate(),
+so it appears that cpu->pstate.current_state is 0 at that point.
 
-     perf_evlist__munmap(evsel_list);
-     perf_evlist__close(evsel_list);
-out_free_fd:
-     perf_evlist__delete_maps(evsel_list);
-out_symbol_exit:
-     symbol__exit();
+I'm wondering if something like the (untested) patch below helps, then?
 
-and __cmd_record ends by cleaning up the session struct.
+Rafael
 
-David
+
+---
+ drivers/cpufreq/intel_pstate.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+Index: linux-pm/drivers/cpufreq/intel_pstate.c
+===================================================================
+--- linux-pm.orig/drivers/cpufreq/intel_pstate.c
++++ linux-pm/drivers/cpufreq/intel_pstate.c
+@@ -652,6 +652,11 @@ static int intel_pstate_init_cpu(unsigne
+ 	cpu = all_cpu_data[cpunum];
+ 
+ 	intel_pstate_get_cpu_pstates(cpu);
++	if (!cpu->pstate.current_state) {
++		all_cpu_data[cpunum] = NULL;
++		kfree(cpu);
++		return -ENODATA;
++	}
+ 
+ 	cpu->cpu = cpunum;
+ 
+
