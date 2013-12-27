@@ -1,94 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab3L0NMQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 08:12:16 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:54381 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754532Ab3L0NMO (ORCPT
+	id S1754580Ab3L0Nq1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 08:46:27 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:52561 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753143Ab3L0NqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 08:12:14 -0500
-From: Neil Zhang <zhangwm@marvell.com>
-To: Neil Zhang <zhangwm@marvell.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "haojian.zhuang@gmail.com" <haojian.zhuang@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 27 Dec 2013 05:12:02 -0800
-Subject: RE: [PATCH v3] irqchip: mmp: avoid use head file in a specific arch
-Thread-Topic: [PATCH v3] irqchip: mmp: avoid use head file in a specific arch
-Thread-Index: Ac7ycHa4RrZSN0MjSPqOLZTJ4tymYgFVJwOQAtAD6MA=
-Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE53828A6514@SC-VEXCH4.marvell.com>
-References: <1386326807-21688-1-git-send-email-zhangwm@marvell.com>
- <175CCF5F49938B4D99B2E3EF7F558EBE4F8E3166DD@SC-VEXCH4.marvell.com>
-In-Reply-To: <175CCF5F49938B4D99B2E3EF7F558EBE4F8E3166DD@SC-VEXCH4.marvell.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="gb2312"
+	Fri, 27 Dec 2013 08:46:25 -0500
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2013-12-27_02:2013-12-27,2013-12-27,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1312270058
+In-Reply-To: <20131227124749.GE10961@minantech.com>
+References: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com>
+	<CAKohpomqHApogDEXA5LyWk-+B-Y1mwNQ63-wL3PPGz64s_3Dmw@mail.gmail.com>
+	<20131227122422.62857cec@alan.etchedpixels.co.uk>
+	<20131227124749.GE10961@minantech.com>
+Date: Fri, 27 Dec 2013 08:46:25 -0500
+X-Google-Sender-Auth: ABkopLHq6OpdeyaoJOEnGx22sBg
+Message-ID: <CA+5PVA60GSC0tTLJWLtVqb5eTPMzrszxtoBnUP8B_Q_60=oGyw@mail.gmail.com>
+Subject: Re: intel_pstate divide error with v3.13-rc4-256-gb7000ad
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Gleb Natapov <gleb@kernel.org>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Kashyap Chamarthy <kchamart@redhat.com>,
+        "Richard W.M. Jones" <rjones@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBRDCMvq008816
 
-Thomas,
+On Fri, Dec 27, 2013 at 7:47 AM, Gleb Natapov <gleb@kernel.org> wrote:
+> On Fri, Dec 27, 2013 at 12:24:22PM +0000, One Thousand Gnomes wrote:
+>> On Tue, 24 Dec 2013 21:36:01 +0530
+>> Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>>
+>> > Adding Dirk..
+>> >
+>> > On 24 December 2013 20:06, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+>> > > Hi All,
+>> > >
+>> > > We've had a report [1] that the pstate driver causes KVM guests to
+>> > > fail to boot because of a divide error.  See the backtrace below.
+>> > >
+>> > >     4.839784] Intel P-state driver initializing.
+>> > > [    4.859972] Intel pstate controlling: cpu 0
+>> > > [    4.867653] cpufreq: __cpufreq_add_dev: ->get() failed
+>> >
+>> > After a call to ->init(), ->get() is supposed to work.
+>> > @Dirk: Any idea why it failed?
+>> >
+>> > And then I don't know what made this divide by zero to happen :)
+>>
+>> > > [    4.878127] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+>>
+>> Emulator bug perhaps ?
+>>
+> KVM does not emulate P-states at all. intel_pstate_init() calls
+> intel_pstate_msrs_not_valid() before printing "Intel P-state driver
+> initializing."  which suppose to fail since it checks that two reads of
+> MSR_IA32_APERF return different values, but KVM does not emulate this msr
+> at all, so both calls should return zero (KVM suppose to inject #GP, all rdmsrl
+> are patched to be rdmsrl_safe in a guest).
+>
+> Anything interesting in host dmesg? Is it reproducible?
 
-> -----Original Message-----
-> From: Neil Zhang
-> Sent: 2013Äê12ÔÂ13ÈÕ 13:36
-> To: Neil Zhang; tglx@linutronix.de; haojian.zhuang@gmail.com;
-> linux-kernel@vger.kernel.org
-> Subject: RE: [PATCH v3] irqchip: mmp: avoid use head file in a specific arch
-> 
-> Thomas,
-> 
-> > -----Original Message-----
-> > From: Neil Zhang [mailto:zhangwm@marvell.com]
-> > Sent: 2013Äê12ÔÂ6ÈÕ 18:47
-> > To: tglx@linutronix.de; haojian.zhuang@gmail.com;
-> > linux-kernel@vger.kernel.org
-> > Cc: Neil Zhang
-> > Subject: [PATCH v3] irqchip: mmp: avoid use head file in a specific
-> > arch
-> >
-> > For example, arm64 doesn't have mach/irq.h.
-> >
-> > Signed-off-by: Neil Zhang <zhangwm@marvell.com>
-> > Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
-> > ---
-> >  drivers/irqchip/irq-mmp.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/irqchip/irq-mmp.c b/drivers/irqchip/irq-mmp.c
-> > index 2cb7cd0..470c5de 100644
-> > --- a/drivers/irqchip/irq-mmp.c
-> > +++ b/drivers/irqchip/irq-mmp.c
-> > @@ -22,7 +22,7 @@
-> >  #include <linux/of_irq.h>
-> >
-> >  #include <asm/exception.h>
-> > -#include <asm/mach/irq.h>
-> > +#include <asm/hardirq.h>
-> >
-> >  #include "irqchip.h"
-> >
-> > --
-> > 1.7.9.5
-> 
-> Ping?
-> 
-> Best Regards,
-> Neil Zhang
+Seems reproducible.  I forgot to link to the actual bug in my original
+report, but you can find it here:
 
-Would you please check this patch?
+https://bugzilla.redhat.com/show_bug.cgi?id=1046317
 
-Best Regards,
-Neil Zhang
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Adding Richard and Kashyap on CC.
+
+josh
