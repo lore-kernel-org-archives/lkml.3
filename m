@@ -1,53 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267Ab3L0Jph (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 04:45:37 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59624 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754169Ab3L0Jpg (ORCPT
+	id S1754378Ab3L0JrP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 04:47:15 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:46138 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754330Ab3L0JrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 04:45:36 -0500
-Date: Fri, 27 Dec 2013 10:45:32 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Ivaylo DImitrov <ivo.g.dimitrov.75@gmail.com>
-Cc: gregkh@linuxfoundation.org, omar.ramirez@copitl.com, pali.rohar@gmail.com,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Ivaylo Dimitrov <freemangordon@abv.bg>
-Subject: Re: [PATCH] Staging: tidspbridge: Use hashtable implementation
-Message-ID: <20131227094532.GA17143@amd.pavel.ucw.cz>
-References: <1387992592-3208-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387992592-3208-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 27 Dec 2013 04:47:14 -0500
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH] mm/slub: fix accumulate per cpu partial cache objects
+Date: Fri, 27 Dec 2013 17:46:59 +0800
+Message-Id: <1388137619-14741-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13122709-5564-0000-0000-00000B4B25B2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+SLUB per cpu partial cache is a list of slab caches to accelerate objects 
+allocation. However, current codes just accumulate the objects number of 
+the first slab cache of per cpu partial cache instead of traverse the whole 
+list.
 
-> From: Ivaylo Dimitrov <freemangordon@abv.bg>
-> 
-> Use upstream hashtable implementation instead of generic code
-> 
-> Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+---
+ mm/slub.c |   32 +++++++++++++++++++++++---------
+ 1 files changed, 23 insertions(+), 9 deletions(-)
 
-> @@ -991,8 +989,11 @@ static struct dynload_symbol *dbll_add_to_symbol_table(struct dynamic_loader_sym
->  		sym_ptr =
->  		    (struct dbll_symbol *)gh_insert(lib->sym_tab, (void *)name,
->  						    (void *)&symbol);
-> -		if (sym_ptr == NULL)
-> +		if (IS_ERR(sym_ptr))
-> +		{
-
-You want this { to go to the previous line. Otherwise looks good,
-
-Reviewed-by: Pavel Machek <pavel@ucw.cz>
-
-Thanks,
-
-									Pavel
+diff --git a/mm/slub.c b/mm/slub.c
+index 545a170..799bfdc 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -4280,7 +4280,7 @@ static ssize_t show_slab_objects(struct kmem_cache *s,
+ 			struct kmem_cache_cpu *c = per_cpu_ptr(s->cpu_slab,
+ 							       cpu);
+ 			int node;
+-			struct page *page;
++			struct page *page, *p;
+ 
+ 			page = ACCESS_ONCE(c->page);
+ 			if (!page)
+@@ -4298,8 +4298,9 @@ static ssize_t show_slab_objects(struct kmem_cache *s,
+ 			nodes[node] += x;
+ 
+ 			page = ACCESS_ONCE(c->partial);
+-			if (page) {
+-				x = page->pobjects;
++			while ((p = page)) {
++				page = p->next;
++				x = p->pobjects;
+ 				total += x;
+ 				nodes[node] += x;
+ 			}
+@@ -4520,13 +4521,15 @@ static ssize_t slabs_cpu_partial_show(struct kmem_cache *s, char *buf)
+ 	int pages = 0;
+ 	int cpu;
+ 	int len;
++	struct page *p;
+ 
+ 	for_each_online_cpu(cpu) {
+ 		struct page *page = per_cpu_ptr(s->cpu_slab, cpu)->partial;
+ 
+-		if (page) {
+-			pages += page->pages;
+-			objects += page->pobjects;
++		while ((p = page)) {
++			page = p->next;
++			pages += p->pages;
++			objects += p->pobjects;
+ 		}
+ 	}
+ 
+@@ -4535,10 +4538,21 @@ static ssize_t slabs_cpu_partial_show(struct kmem_cache *s, char *buf)
+ #ifdef CONFIG_SMP
+ 	for_each_online_cpu(cpu) {
+ 		struct page *page = per_cpu_ptr(s->cpu_slab, cpu) ->partial;
++		objects = 0;
++		pages = 0;
++
++		if (!page)
++			continue;
++
++		while ((p = page)) {
++			page = p->next;
++			pages += p->pages;
++			objects += p->pobjects;
++		}
+ 
+-		if (page && len < PAGE_SIZE - 20)
+-			len += sprintf(buf + len, " C%d=%d(%d)", cpu,
+-				page->pobjects, page->pages);
++		if (len < PAGE_SIZE - 20)
++			len += sprintf(buf + len, " C%d=%d(%d)", cpu,
++				objects, pages);
+ 	}
+ #endif
+ 	return len + sprintf(buf + len, "\n");
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.7.6
+
