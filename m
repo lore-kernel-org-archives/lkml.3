@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586Ab3L0OSt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 09:18:49 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55498 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752938Ab3L0OSr (ORCPT
+	id S1754680Ab3L0OUe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 09:20:34 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:49748 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753036Ab3L0OUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 09:18:47 -0500
-Date: Fri, 27 Dec 2013 14:18:26 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Joe Xue <lgxue@hotmail.com>, "cooloney@gmail.com" <cooloney@gmail.com>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "rob@landley.net" <rob@landley.net>,
-        "milo.kim@ti.com" <milo.kim@ti.com>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH] Add the LED burst trigger
-Message-ID: <20131227141826.3fe406e4@alan.etchedpixels.co.uk>
-In-Reply-To: <20131227125725.GA21506@amd.pavel.ucw.cz>
-References: <1387895407-28031-1-git-send-email-lgxue@hotmail.com>
-	<20131225230935.GB13593@amd.pavel.ucw.cz>
-	<BLU172-W52032BFEF4512123D7516EACC20@phx.gbl>
-	<20131227115746.4cbd9523@alan.etchedpixels.co.uk>
-	<20131227125725.GA21506@amd.pavel.ucw.cz>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 27 Dec 2013 09:20:32 -0500
+Message-ID: <52BD8C9B.8030206@gmail.com>
+Date: Fri, 27 Dec 2013 09:20:11 -0500
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "David A. Long" <dave.long@linaro.org>, systemtap@sourceware.org,
+        yrl.pp-manager.tt@hitachi.com, Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH -tip v2 1/2] [CLEANUP] perf-probe: Expand given path to
+ absolute path
+References: <20131226054148.22364.25224.stgit@kbuild-fedora.novalocal> <20131226054150.22364.12187.stgit@kbuild-fedora.novalocal> <52BC39D6.3090908@gmail.com> <20131226142248.GE30980@ghostprotocols.net> <52BD1ACA.7030506@hitachi.com>
+In-Reply-To: <52BD1ACA.7030506@hitachi.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> At least nokia N900 actually has "hardware acceleration" for LED
-> blinking. (Tiny CPU connected over i2c, able to control 3 LEDs, turing
-> complete with something like 20 _bits_ of storage and 30 program
-> steps). Apparently, it makes more stable patterns (timing is very hard
-> to guarantee from userspace) and better power consumption (no need to
-> wake the CPU to blink the LEDs).
-> 
-> Now, wins from going userspace->kernel will not be too huge. But "If
-> the hardware can accelerate it, kernel should offer it even on
-> hardware that can not do it, for consistency".
+On 12/27/13, 1:14 AM, Masami Hiramatsu wrote:
+> Nowhere, since there is no terminal code for user
+> command interface.
+>
+> Those memories are released when the program terminated.
+> I think it is just a waste of the time to free the memory
+> pieces which are not used(and allocated) repeatedly.
+> Or, is there any chance to call this part directly from
+> other command?
 
-Why ? My x86-64 box can run with 8GB processes, perhaps we should emulate
-64bit on a 32bit kernel for consistency ?
+Most of the functionality has a destructor to clean up memory 
+allocations. probe code needs to follow suit.
 
-It's another waste of resources - pages of memory that would cumulatively
-be vastly more efficiently used by user space. Yes the N800 might want a
-little driver but the rest belongs in a library and the library can use
-accelerators (of any kind) if available, or even things like lightbulbs
-via X10 so you can have the big red light in the control room flash if
-the machine dies  8)
+e.g, from builtin-record.c:
 
-Alan
+     err = __cmd_record(&record, argc, argv);
+
+     perf_evlist__munmap(evsel_list);
+     perf_evlist__close(evsel_list);
+out_free_fd:
+     perf_evlist__delete_maps(evsel_list);
+out_symbol_exit:
+     symbol__exit();
+
+and __cmd_record ends by cleaning up the session struct.
+
+David
