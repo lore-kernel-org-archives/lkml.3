@@ -1,47 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754429Ab3L0JsJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 04:48:09 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:60049 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754399Ab3L0JsH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 04:48:07 -0500
-Date: Fri, 27 Dec 2013 10:48:01 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-Cc: tomi.valkeinen@ti.com, tony@atomide.com, linux@arm.linux.org.uk,
-        pali.rohar@gmail.com, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ivaylo Dimitrov <freemangordon@abv.bg>
-Subject: Re: [PATCH] ARM: omapfb: Add early framebuffer memory allocator
-Message-ID: <20131227094801.GB17143@amd.pavel.ucw.cz>
-References: <52A062A0.3070005@ti.com>
- <1388013159-3036-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1388013159-3036-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754461Ab3L0Jsx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 04:48:53 -0500
+Received: from mga11.intel.com ([192.55.52.93]:26571 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754159Ab3L0Jsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Dec 2013 04:48:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,559,1384329600"; 
+   d="asc'?scan'208";a="456405580"
+Message-ID: <1388137730.2183.150.camel@jtkirshe-mobl>
+Subject: Re: [PATCH net-next 06/20] net: igbvf: slight optimization of addr
+ compare
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: Ding Tianhong <dingtianhong@huawei.com>
+Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 27 Dec 2013 01:48:50 -0800
+In-Reply-To: <52BD22BB.1060705@huawei.com>
+References: <52BD22BB.1060705@huawei.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-GELYHPrkvNWXAN8A6tnj"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2013-12-26 01:12:39, Ivaylo Dimitrov wrote:
-> From: Ivaylo Dimitrov <freemangordon@abv.bg>
-> 
-> On memory limited devices, CMA fails easily when asked to allocate big
-> chunks of memory like framebuffer memory needed for video playback.
-> 
-> Add boot parameter "omapfb_memsize" which allocates memory to be used
-> as dma coherent memory, so dma_alloc_attrs won't hit CMA allocator when
-> trying to allocate memory for the framebuffers
-> 
-> Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
 
-Hmm, would it make sense to add a parameter to reserve certain ammount
-of memory for CMA? omapfb is probably not the only user hitting
-this...?
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+--=-GELYHPrkvNWXAN8A6tnj
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, 2013-12-27 at 14:48 +0800, Ding Tianhong wrote:
+> Use possibly more efficient ether_addr_equal
+> to instead of memcmp.
+>=20
+> Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+> Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
+> Cc: Carolyn Wyborny <carolyn.wyborny@intel.com>
+> Cc: Don Skidmore <donald.c.skidmore@intel.com>
+> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+> ---
+>  drivers/net/ethernet/intel/igbvf/netdev.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+
+Thanks Ding, I have added this patch to my queue.
+
+--=-GELYHPrkvNWXAN8A6tnj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAABCgAGBQJSvU0CAAoJEOVv75VaS+3OZuUQAISVBZDuB5c8cglWGd5t7s6F
+d204sporr2TSL6pUSIJn5mxJHnHhUSYt5QM9Wu77lRzc/HIjIqCzaO3I11OCA5FW
+tFdT4YG7ctC+uTwKY8KaHFy0bev7tRkk6ySUIbMzknuAbbJClhj0x2FMDpyFJCvB
+8MSfsMVXH5Kblu6l5iBf+ZdZ7eF8XQ/6CGby27TlWjo/toxQo+iyam4yie2Xr6U1
+c3tZCDwHdE9Wi4awJrhKt+MakeuF0HiatvZDvnUgWgzYfc/yKnHyFcS25qolU7JP
+pRsYMI91Rm80+eMEI1neyD2DHGRlT4OYxC8QBCFdmsdQhg5mxC/qxGuVkLEvJ4oL
+9XmfD1fqguSIOYeEGqt5qVk0xMyEtr5tT/A2zbQIPGGxrxCHwnaP5M9NsBfMRBmS
+EPCzGxR8EK3i9dQ2BHXRmj1m8/vw6r/Kvr4JfWlVAz182UfNv5+vX8ghdPw7yaBp
+S3Gzgd0VuoNI2peX84nDrJH5mKPpLrXYdkTZS3WSuad9L7n3tn7KMERIg1O+Maqq
+fCDn3wp6HnkY6VbKZ3cXRJslamQ2uzWSnE4IeLFmrHmlA84VOk0EcXmsM124o8mM
+07gcbvnCSPa2DkMzOdXQkVqPzm8yPwoCqaeu3J1EeyGeKMTaecJyAeqjuKNEgaqQ
+nQ3qvMMkv4ZskmD1pfOM
+=T00M
+-----END PGP SIGNATURE-----
+
+--=-GELYHPrkvNWXAN8A6tnj--
+
