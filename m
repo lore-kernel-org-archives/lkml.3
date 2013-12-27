@@ -1,59 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab3L0Gzr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 01:55:47 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:39667 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754109Ab3L0Gsx (ORCPT
+	id S1753930Ab3L0Hee (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 02:34:34 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:48813 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753416Ab3L0Hed (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 01:48:53 -0500
-Message-ID: <52BD22B4.5080400@huawei.com>
-Date: Fri, 27 Dec 2013 14:48:20 +0800
-From: Ding Tianhong <dingtianhong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Fri, 27 Dec 2013 02:34:33 -0500
+Message-ID: <52BD2D81.7090506@hitachi.com>
+Date: Fri, 27 Dec 2013 16:34:25 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Christian Benvenuti <benve@cisco.com>, Sujith Sankar <ssujith@cisco.com>,
-        Govindarajulu Varadarajan <govindarajulu90@gmail.com>,
-        Neel Patel <neepatel@cisco.com>, Nishank Trivedi <nistrive@cisco.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH net-next 04/20] net: enic: slight optimization of addr compare
-Content-Type: text/plain; charset="UTF-8"
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: Re: [PATCH] perf probe: Improve error message when function
+ not found
+References: <1387562649-25929-1-git-send-email-dsahern@gmail.com> <52BC3295.3020007@gmail.com>
+In-Reply-To: <52BC3295.3020007@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.199]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use possibly more efficient ether_addr_equal
-to instead of memcmp.
+(2013/12/26 22:43), David Ahern wrote:
+> Masami:
+> 
+> If you do not have any problems with this version please Ack so Arnaldo 
+> will pick it up.
 
-Cc: Christian Benvenuti <benve@cisco.com>
-Cc: Sujith Sankar <ssujith@cisco.com>
-Cc: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
-Cc: Neel Patel <neepatel@cisco.com>
-Cc: Nishank Trivedi <nistrive@cisco.com>
-Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
----
- drivers/net/ethernet/cisco/enic/enic_pp.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+David, as we talked about that before;
 
-diff --git a/drivers/net/ethernet/cisco/enic/enic_pp.c b/drivers/net/ethernet/cisco/enic/enic_pp.c
-index 43464f0..e6a8319 100644
---- a/drivers/net/ethernet/cisco/enic/enic_pp.c
-+++ b/drivers/net/ethernet/cisco/enic/enic_pp.c
-@@ -162,7 +162,7 @@ static int enic_are_pp_different(struct enic_port_profile *pp1,
- 	return strcmp(pp1->name, pp2->name) | !!memcmp(pp1->instance_uuid,
- 		pp2->instance_uuid, PORT_UUID_MAX) |
- 		!!memcmp(pp1->host_uuid, pp2->host_uuid, PORT_UUID_MAX) |
--		!!memcmp(pp1->mac_addr, pp2->mac_addr, ETH_ALEN);
-+		!ether_addr_equal(pp1->mac_addr, pp2->mac_addr);
- }
- 
- static int enic_pp_preassociate(struct enic *enic, int vf,
+(2013/12/04 10:23), Masami Hiramatsu wrote:> (2013/12/04 0:15), David Ahern wrote:
+>> On 12/2/13, 10:12 PM, Masami Hiramatsu wrote:
+>>>> That needs to be explicitly stated in the error message -- only global
+>>>> symbols may be given.
+>>>
+>>> Ah, I see. In that case, I think the "variable" is not a correct word,
+>>> the "symbol" is better, because perf probe can take tracing variable
+>>> arguments after the trace point definition. :)
+>>
+>> Right, variable is not the correct word. So how about this:
+>>
+>> "Failed to find requested symbol in %s. Is it a global symbol?"
+>
+> Yeah, that's good for me now :)
+
+But your patch, still using the "variable"....
+
+>> +		pr_err("Failed to find requested symbol in %s. Is it a global variable?\n",
+>> +		       name);
+
+Thus, I can't give Ack for this.
+
+Anyway, I'd like to rewrite this part since it is too limited,
+after my 2 weeks off.
+
+Thank you,
+
+> On 12/20/13, 1:04 PM, David Ahern wrote:
+>> When requesting a function from a userspace library the error message to
+>> the user is less than helpful. e.g.,
+>>
+>>      perf probe -x /lib64/libpthread-2.14.90.so -a 'lock_full=__pthread_mutex_lock_full'
+>>      no symbols found in /lib64/libpthread-2.14.90.so, maybe install a debug package?
+>>      Failed to load map.
+>>         Error: Failed to add events. (-22)
+>>
+>> yet the symbol really does exist but is a local symbol which is filtered:
+>>
+>> nm /lib64/libpthread-2.14.90.so | grep __pthread_mutex_lock_full
+>> 0000000000005700 t __pthread_mutex_lock_full
+>>
+>> With this patch:
+>>      perf probe -x /lib64/libpthread-2.14.90.so -a 'lock_full=__pthread_mutex_lock_full'
+>>
+>>      no symbols found in /lib64/libpthread-2.14.90.so, maybe install a debug package?
+>>      Failed to find function in /lib64/libpthread-2.14.90.so. Perhaps it is a local variable?
+>>        Error: Failed to add events. (-22)
+>>
+>> Signed-off-by: David Ahern <dsahern@gmail.com>
+>> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+>>
+>> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+>> index 9c6989ca2bea..2eac49096840 100644
+>> --- a/tools/perf/util/probe-event.c
+>> +++ b/tools/perf/util/probe-event.c
+>> @@ -2309,7 +2309,8 @@ static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
+>>   	}
+>>   	available_func_filter = strfilter__new(function, NULL);
+>>   	if (map__load(map, filter_available_functions)) {
+>> -		pr_err("Failed to load map.\n");
+>> +		pr_err("Failed to find requested symbol in %s. Is it a global variable?\n",
+>> +		       name);
+>>   		goto out;
+>>   	}
+
 -- 
-1.8.0
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
