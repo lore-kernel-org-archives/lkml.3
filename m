@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197Ab3L0WRn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 17:17:43 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:55358 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754828Ab3L0WOc (ORCPT
+	id S1754913Ab3L0WTy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 17:19:54 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:51217 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754815Ab3L0WTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 17:14:32 -0500
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
-Cc: "H.J. Lu" <hjl.tools@gmail.com>
-Subject: [PATCH 0/8] Update kernel uabi header files for x32
-Date: Fri, 27 Dec 2013 14:14:16 -0800
-Message-Id: <1388182464-28428-1-git-send-email-hjl.tools@gmail.com>
-X-Mailer: git-send-email 1.8.4.2
+	Fri, 27 Dec 2013 17:19:53 -0500
+Message-ID: <52BDFD00.7020909@oracle.com>
+Date: Fri, 27 Dec 2013 17:19:44 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: dump page when hitting a VM_BUG_ON using VM_BUG_ON_PAGE
+References: <1388114452-30769-1-git-send-email-sasha.levin@oracle.com> <20131227103847.GA19453@node.dhcp.inet.fi>
+In-Reply-To: <20131227103847.GA19453@node.dhcp.inet.fi>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-X32 uses the same kernel system call interface as x86-64 for many
-system calls.  However, "long" is 64-bit for x86-64 and is 32-bit for
-x32.  Where long or unsigned long are used in struct types for such
-system calls, they are wrong for x32.  __kernel_[u]long_t is [unsigned]
-long for all ABIs other than x32.  I am submitting 8 patches to replace
-long or unsigned long with __kernel_[u]long_t so that those struct types
-can be used with x32 system calls.
+On 12/27/2013 05:38 AM, Kirill A. Shutemov wrote:
+> On Thu, Dec 26, 2013 at 10:20:52PM -0500, Sasha Levin wrote:
+>> Most of the VM_BUG_ON assertions are performed on a page. Usually, when
+>> one of these assertions fails we'll get a BUG_ON with a call stack and
+>> the registers.
+>>
+>> I've recently noticed based on the requests to add a small piece of code
+>> that dumps the page to various VM_BUG_ON sites that the page dump is quite
+>> useful to people debugging issues in mm.
+>>
+>> This patch adds a VM_BUG_ON_PAGE(cond, page) which beyond doing what
+>> VM_BUG_ON() does, also dumps the page before executing the actual BUG_ON.
+>>
+>> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+>
+> I like the idea. One thing I've noticed you have a lot of page flag based
+> asserts, like:
+>
+> 	VM_BUG_ON_PAGE(PageLRU(page), page);
+> 	VM_BUG_ON_PAGE(!PageLocked(page), page);
+>
+> What about adding per-page-flag assert macros, like:
+>
+> 	PageNotLRU_assert(page);
+> 	PageLocked_assert(page);
+>
+> ? This way we will always dump right page on bug.
+>
 
-H.J. Lu (8):
-  Use __kernel_long_t in struct timex
-  Use __kernel_long_t/__kernel_ulong_t in <linux/resource.h>
-  Use __kernel_ulong_t in uapi struct ipc64_perm
-  Use __kernel_long_t in struct msgbuf
-  Use __kernel_ulong_t in struct msqid64_ds
-  Use __kernel_ulong_t in x86 struct semid64_ds
-  Use __kernel_ulong_t in shmid64_ds/shminfo64/shm_info
-  Use __kernel_long_t in struct mq_attr
+Sure, sounds good.
 
- arch/x86/include/uapi/asm/sembuf.h | 10 ++++-----
- include/uapi/asm-generic/ipcbuf.h  |  5 +++++
- include/uapi/asm-generic/msgbuf.h  | 19 +++++++++++-----
- include/uapi/asm-generic/shmbuf.h  | 36 +++++++++++++++++++++--------
- include/uapi/linux/mqueue.h        | 18 ++++++++++-----
- include/uapi/linux/msg.h           |  8 +++++--
- include/uapi/linux/resource.h      | 26 +++++++++++++++++++--
- include/uapi/linux/shm.h           | 14 +++++++++---
- include/uapi/linux/timex.h         | 46 +++++++++++++++++++++++++++++++-------
- 9 files changed, 143 insertions(+), 39 deletions(-)
+I'll send another patch on top of this one.
 
--- 
-1.8.4.2
 
+Thanks,
+Sasha
