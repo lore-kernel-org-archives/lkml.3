@@ -1,97 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198Ab3L0DSu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 22:18:50 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:60543 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754125Ab3L0DSs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 22:18:48 -0500
-Date: Fri, 27 Dec 2013 12:18:45 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Julian Anastasov <ja@ssi.bg>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, netdev@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <festevam@gmail.com>
-Subject: Re: [PATCH -v2] ipvs: Remove unused variable ret from
- sync_thread_master()
-Message-ID: <20131227031845.GA3795@verge.net.au>
-References: <1384266864-564-1-git-send-email-geert@linux-m68k.org>
- <alpine.LFD.2.03.1311130934390.1647@ssi.bg>
- <alpine.LFD.2.11.1312190919160.2940@ja.home.ssi.bg>
+	id S1754224Ab3L0DTO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 22:19:14 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48991 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754125Ab3L0DTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Dec 2013 22:19:12 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <52BCCDC4.1090409@zytor.com>
+References: <CA+55aFxZ2u+M72u3HSD7TVY2+WRRi27pYC=_4Wawr5y1m8DfnQ@mail.gmail.com> <20131224204625.GB20471@gmail.com> <CA+55aFzPBdbfKovMT8Edr4SmE2_=+OKJFac9XW2awegogTkVTA@mail.gmail.com> <52BCCDC4.1090409@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1312190919160.2940@ja.home.ssi.bg>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [RFC] speeding up the stat() family of system calls...
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 26 Dec 2013 19:18:34 -0800
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <2a58cbc0-77a1-4770-a399-ef820c88c1bd@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 09:23:51AM +0200, Julian Anastasov wrote:
-> 
-> 	Hello,
-> 
-> On Wed, 13 Nov 2013, Julian Anastasov wrote:
-> 
-> > On Tue, 12 Nov 2013, Geert Uytterhoeven wrote:
-> > 
-> > > net/netfilter/ipvs/ip_vs_sync.c: In function 'sync_thread_master':
-> > > net/netfilter/ipvs/ip_vs_sync.c:1640:8: warning: unused variable 'ret' [-Wunused-variable]
-> > > 
-> > > Commit 35a2af94c7ce7130ca292c68b1d27fcfdb648f6b ("sched/wait: Make the
-> > > __wait_event*() interface more friendly") changed how the interruption
-> > > state is returned. However, sync_thread_master() ignores this state,
-> > > now causing a compile warning.
-> > > 
-> > > According to Julian Anastasov <ja@ssi.bg>, this behavior is OK:
-> > > 
-> > >     "Yes, your patch looks ok to me. In the past we used ssleep() but IPVS
-> > >      users were confused why IPVS threads increase the load average. So, we
-> > >      switched to _interruptible calls and later the socket polling was
-> > >      added."
-> > > 
-> > > Document this, as requested by Peter Zijlstra, to avoid precious developers
-> > > disappearing in this pitfall in the future.
-> > > 
-> > > Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> > > ---
-> > > v2: Document that sync_thread_master() ignores the interruption state,
-> > > 
-> > >  net/netfilter/ipvs/ip_vs_sync.c |    5 ++++-
-> > >  1 file changed, 4 insertions(+), 1 deletion(-)
-> > > 
-> > > diff --git a/net/netfilter/ipvs/ip_vs_sync.c b/net/netfilter/ipvs/ip_vs_sync.c
-> > > index f63c2388f38d..db801263ee9f 100644
-> > > --- a/net/netfilter/ipvs/ip_vs_sync.c
-> > > +++ b/net/netfilter/ipvs/ip_vs_sync.c
-> > > @@ -1637,7 +1637,10 @@ static int sync_thread_master(void *data)
-> > >  			continue;
-> > >  		}
-> > >  		while (ip_vs_send_sync_msg(tinfo->sock, sb->mesg) < 0) {
-> > > -			int ret = __wait_event_interruptible(*sk_sleep(sk),
-> > > +			/* (Ab)use interruptible sleep to avoid increasing
-> > > +			 * the load avg.
-> > > +			 */
-> > > +			__wait_event_interruptible(*sk_sleep(sk),
-> > >  						   sock_writeable(sk) ||
-> > >  						   kthread_should_stop());
-> > >  			if (unlikely(kthread_should_stop()))
-> > 
-> > 	Fabio Estevam posted similar change too early but
-> > we are better with such comment.
-> > 
-> > Acked-by: Julian Anastasov <ja@ssi.bg>
-> > 
-> > 	Also, the TASK_UNINTERRUPTIBLE | TASK_IDLE idea looks good
-> > to me. If such change is planned may be the above patch
-> > better not to go via the ipvs-next tree to avoid conflicts?
-> > As we don't have any changes in this area let us know if
-> > someone takes the above patch for another tree.
-> 
-> 	Simon, lets apply this patch to ipvs-next tree...
+Ok the sign bit doesn't really make any sense on second thought... to work with set_fs() we have to load something from memory anyway and then we might as well do a compare...
 
-Thanks, done.
+"H. Peter Anvin" <hpa@zytor.com> wrote:
+>On 12/26/2013 11:00 AM, Linus Torvalds wrote:
+>> 
+>> Interestingly, looking at the cp_new_stat() profiles, the games we
+>> play to get efficient range checking seem to actually hurt us. Maybe
+>> it's the "sbb" that is just expensive, or maybe it's turning a (very
+>> predictable) conditional branch into a data dependency chain instead.
+>> Or maybe it's just random noise in my profiles that happened to make
+>> those sbb's look bad.
+>> 
+>
+>I'm not at all surprised... there is a pretty serious data dependency
+>chain here and in the end we end up manifesting a value in a register
+>that has to be tested even though it is available in the flags.  Inline
+>assembly also means the compiler can't optimize it at all.
+>
+>I have to wonder if we actually have to test the upper limit, though:
+>we
+>can always guarantee a guard zone between user space and kernel space,
+>and thus guarantee either a #PF or #GP if someone tries to overflow
+>user
+>space.  Testing just the lower limit would be much cheaper, especially
+>on 64 bits where we can simply test the sign bit.
+>
+>What do you think?
+>
+>	-hpa
+
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
