@@ -1,262 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515Ab3L0KG2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 05:06:28 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:8856 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754292Ab3L0KFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 05:05:49 -0500
-X-IronPort-AV: E=Sophos;i="4.95,559,1384272000"; 
-   d="scan'208";a="9336934"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: acme@redhat.com, mingo@kernel.org, dsahern@gmail.com,
-        linux-kernel@vger.kernel.org
-Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH 2/8] perf tools: Make the all print_xxx_event functions to return unsigned int.
-Date: Fri, 27 Dec 2013 18:03:28 -0500
-Message-Id: <46b19040b75df5b4d188af3add8abd90ce17aead.1388184724.git.yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <cover.1388184724.git.yangds.fnst@cn.fujitsu.com>
-References: <cover.1388184724.git.yangds.fnst@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/27 18:04:49,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/27 18:04:53,
-	Serialize complete at 2013/12/27 18:04:53
+	id S1754339Ab3L0KKc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 05:10:32 -0500
+Received: from mail.eclipso.de ([217.69.254.102]:49724 "HELO mail.eclipso.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754208Ab3L0KKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Dec 2013 05:10:30 -0500
+X-Greylist: delayed 302 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Dec 2013 05:10:30 EST
+Date: Fri, 27 Dec 2013 11:05:26 +0100
+MIME-Version: 1.0
+Message-ID: <8191a78f885837fe5c89d9ffb6dd251a@mail.eclipso.de>
+X-Mailer: eclipso.eu/7.3.0
+X-Sender-IP: 82.217.125.67
+From: "Roy Spliet" <rspliet@eclipso.eu>
+Subject: Re: nouveau nvaa clock missing break?
+Reply-To: "Roy Spliet" <rspliet@eclipso.eu>
+To: "Kees Cook" <keescook@google.com>
+Cc: <bskeggs@redhat.com>, <linux-kernel@vger.kernel.org>,
+        <dri-devel@lists.freedesktop.org>
+In-Reply-To: <CAGXu5j+mBiXj2+iPKGU+Ffb3oXqL+cH8JULH_hoORJNiQgQQFQ@mail.gmail.com>
+References: <CAGXu5j+mBiXj2+iPKGU+Ffb3oXqL+cH8JULH_hoORJNiQgQQFQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the most of print_XXX_event() functions are returning void. Then we can
-not know whether the printing work is completed well.
+Hello Kees,
 
-This patch change the return type to unsigned int, it means the count of events we
-have printed in print_XXX_event() function.
+Thanks for your feedback. Let me first reassure you that this fall-through is indeed intentional: vdiv should be set regardless of the clock source. A comment line would definitely be in place though for future nouveau hackers.
+In read_pll, post_div can never be zero in valid execution. If the register-read returns zero, the GPU has either fallen off the bus, or crashed because someone set a divider of 0. I agree that this is not very robust and will probably lead to a divide-by-zero on hardware failure. Checking it doesn't harm I bet!
+I will propose a patch addressing these issues as soon as I find some free time. Thanks again for the feedback. Yours,
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
----
- tools/perf/util/parse-events.c | 79 ++++++++++++++++++++++++------------------
- tools/perf/util/parse-events.h |  8 ++---
- 2 files changed, 50 insertions(+), 37 deletions(-)
+Roy
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index d887ea4..eb0d0eef 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -1000,22 +1000,23 @@ static const char * const event_type_descriptors[] = {
-  * Print the events from <debugfs_mount_point>/tracing/events
-  */
- 
--void print_tracepoint_events(const char *subsys_glob, const char *event_glob,
--			     bool name_only)
-+unsigned int print_tracepoint_events(const char *subsys_glob, const char *event_glob,
-+			             bool name_only)
- {
- 	DIR *sys_dir, *evt_dir;
- 	struct dirent *sys_next, *evt_next, sys_dirent, evt_dirent;
- 	char evt_path[MAXPATHLEN];
- 	char dir_path[MAXPATHLEN];
-+	unsigned int count = 0;
- 
- 	if (debugfs_valid_mountpoint(tracing_events_path)) {
- 		printf("  [ Tracepoints not available: %s ]\n", strerror(errno));
--		return;
-+		return count;
- 	}
- 
- 	sys_dir = opendir(tracing_events_path);
- 	if (!sys_dir)
--		return;
-+		return count;
- 
- 	for_each_subsystem(sys_dir, sys_dirent, sys_next) {
- 		if (subsys_glob != NULL && 
-@@ -1035,6 +1036,7 @@ void print_tracepoint_events(const char *subsys_glob, const char *event_glob,
- 
- 			if (name_only) {
- 				printf("%s:%s ", sys_dirent.d_name, evt_dirent.d_name);
-+				count++;
- 				continue;
- 			}
- 
-@@ -1042,10 +1044,13 @@ void print_tracepoint_events(const char *subsys_glob, const char *event_glob,
- 				 sys_dirent.d_name, evt_dirent.d_name);
- 			printf("  %-50s [%s]\n", evt_path,
- 				event_type_descriptors[PERF_TYPE_TRACEPOINT]);
-+			count++;
- 		}
- 		closedir(evt_dir);
- 	}
- 	closedir(sys_dir);
-+
-+	return count;
- }
- 
- /*
-@@ -1116,11 +1121,12 @@ static bool is_event_supported(u8 type, unsigned config)
- 	return ret;
- }
- 
--static void __print_events_type(u8 type, struct event_symbol *syms,
--				unsigned max)
-+static unsigned int __print_events_type(u8 type, struct event_symbol *syms,
-+					unsigned max)
- {
- 	char name[64];
- 	unsigned i;
-+	unsigned int count = 0;
- 
- 	for (i = 0; i < max ; i++, syms++) {
- 		if (!is_event_supported(type, i))
-@@ -1133,20 +1139,23 @@ static void __print_events_type(u8 type, struct event_symbol *syms,
- 			snprintf(name, sizeof(name), "%s", syms->symbol);
- 
- 		printf("  %-50s [%s]\n", name, event_type_descriptors[type]);
-+		count++;
- 	}
-+
-+	return count;
- }
- 
--void print_events_type(u8 type)
-+unsigned int print_events_type(u8 type)
- {
- 	if (type == PERF_TYPE_SOFTWARE)
--		__print_events_type(type, event_symbols_sw, PERF_COUNT_SW_MAX);
-+		return __print_events_type(type, event_symbols_sw, PERF_COUNT_SW_MAX);
- 	else
--		__print_events_type(type, event_symbols_hw, PERF_COUNT_HW_MAX);
-+		return __print_events_type(type, event_symbols_hw, PERF_COUNT_HW_MAX);
- }
- 
--int print_hwcache_events(const char *event_glob, bool name_only)
-+unsigned int print_hwcache_events(const char *event_glob, bool name_only)
- {
--	unsigned int type, op, i, printed = 0;
-+	unsigned int type, op, i, count = 0;
- 	char name[64];
- 
- 	for (type = 0; type < PERF_COUNT_HW_CACHE_MAX; type++) {
-@@ -1170,21 +1179,22 @@ int print_hwcache_events(const char *event_glob, bool name_only)
- 				else
- 					printf("  %-50s [%s]\n", name,
- 					       event_type_descriptors[PERF_TYPE_HW_CACHE]);
--				++printed;
-+				count++;
- 			}
- 		}
- 	}
- 
--	if (printed)
-+	if (count)
- 		printf("\n");
--	return printed;
-+	return count;
- }
- 
--static void print_symbol_events(const char *event_glob, unsigned type,
--				struct event_symbol *syms, unsigned max,
--				bool name_only)
-+static unsigned print_symbol_events(const char *event_glob, unsigned type,
-+		   		    struct event_symbol *syms, unsigned max,
-+				    bool name_only)
- {
--	unsigned i, printed = 0;
-+	unsigned i;
-+	unsigned int count = 0;
- 	char name[MAX_NAME_LEN];
- 
- 	for (i = 0; i < max; i++, syms++) {
-@@ -1199,6 +1209,7 @@ static void print_symbol_events(const char *event_glob, unsigned type,
- 
- 		if (name_only) {
- 			printf("%s ", syms->symbol);
-+			count++;
- 			continue;
- 		}
- 
-@@ -1209,37 +1220,37 @@ static void print_symbol_events(const char *event_glob, unsigned type,
- 
- 		printf("  %-50s [%s]\n", name, event_type_descriptors[type]);
- 
--		printed++;
-+		count++;
- 	}
- 
--	if (printed)
-+	if (count)
- 		printf("\n");
-+	return count;
- }
- 
- /*
-  * Print the help text for the event symbols:
-  */
--void print_events(const char *event_glob, bool name_only)
-+unsigned int print_events(const char *event_glob, bool name_only)
- {
--	if (!name_only) {
--		printf("\n");
--		printf("List of pre-defined events (to be used in -e):\n");
--	}
-+	unsigned int count = 0;
- 
--	print_symbol_events(event_glob, PERF_TYPE_HARDWARE,
--			    event_symbols_hw, PERF_COUNT_HW_MAX, name_only);
-+	count += print_symbol_events(event_glob, PERF_TYPE_HARDWARE,
-+			     	     event_symbols_hw, PERF_COUNT_HW_MAX,
-+				     name_only);
- 
--	print_symbol_events(event_glob, PERF_TYPE_SOFTWARE,
--			    event_symbols_sw, PERF_COUNT_SW_MAX, name_only);
-+	count += print_symbol_events(event_glob, PERF_TYPE_SOFTWARE,
-+			 	     event_symbols_sw, PERF_COUNT_SW_MAX,
-+				     name_only);
- 
--	print_hwcache_events(event_glob, name_only);
-+	count += print_hwcache_events(event_glob, name_only);
- 
--	print_pmu_events(event_glob, name_only);
-+	count += print_pmu_events(event_glob, name_only);
- 
--	print_tracepoint_events(event_glob, NULL, name_only);
-+	count += print_tracepoint_events(event_glob, NULL, name_only);
- 
- 	if (event_glob != NULL)
--		return;
-+		return count;
- 
- 	if (!name_only) {
- 		printf("  %-50s [%s]\n",
-@@ -1256,6 +1267,8 @@ void print_events(const char *event_glob, bool name_only)
- 			event_type_descriptors[PERF_TYPE_BREAKPOINT]);
- 		printf("\n");
- 	}
-+
-+	return count;
- }
- 
- int parse_events__is_hardcoded_term(struct parse_events_term *term)
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index f1cb4c4..bb7d674 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -101,11 +101,11 @@ void parse_events_update_lists(struct list_head *list_event,
- 			       struct list_head *list_all);
- void parse_events_error(void *data, void *scanner, char const *msg);
- 
--void print_events(const char *event_glob, bool name_only);
--void print_events_type(u8 type);
--void print_tracepoint_events(const char *subsys_glob, const char *event_glob,
-+unsigned int print_events(const char *event_glob, bool name_only);
-+unsigned int print_events_type(u8 type);
-+unsigned int print_tracepoint_events(const char *subsys_glob, const char *event_glob,
- 			     bool name_only);
--int print_hwcache_events(const char *event_glob, bool name_only);
-+unsigned int print_hwcache_events(const char *event_glob, bool name_only);
- extern int is_valid_tracepoint(const char *event_string);
- 
- extern int valid_debugfs_mount(const char *debugfs);
--- 
-1.8.2.1
+--- Ursprüngliche Nachricht ---
+Von: Kees Cook <keescook@google.com>
+Datum: 20:51:22 26-12-2013
+An: Roy Spliet <rspliet@eclipso.eu>
+Betreff: nouveau nvaa clock missing break?
+
+> Hi,
+>
+> Just curious if this code is missing a "break" or not...
+>
+> /drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c: 373 in nvaa_clock_prog()
+>
+>
+>         switch (priv->vsrc) {
+>         case nv_clk_src_cclk:
+>                 mast |= 0x00400000;
+>         default:
+>                 nv_wr32(clk, 0x4600, priv->vdiv);
+>         }
+>
+> Coverity noticed it as CID 1135671. If it's intentional, it might be
+> nice to add a "fall through" comment there.
+>
+> Coverity also complained about read_pll (CID 1135670) where post_div
+> could (unlikely) be 0 and used for a divide-by-zero.
+>
+> Thanks!
+>
+> -Kees
+>
+> --
+> Kees Cook
+> Chrome OS Security
+>
+
 
