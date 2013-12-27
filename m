@@ -1,133 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721Ab3L0TVz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 14:21:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61917 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753709Ab3L0TVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 14:21:54 -0500
-Date: Fri, 27 Dec 2013 17:21:42 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Cc: mingo@kernel.org, dsahern@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/8] perf tools: Fix bug in 'perf list event_glob'.
-Message-ID: <20131227192142.GA3277@infradead.org>
-References: <cover.1388184724.git.yangds.fnst@cn.fujitsu.com>
- <5d72ccb261f7f30da7d2e0e05bf5c6352672c9a4.1388184724.git.yangds.fnst@cn.fujitsu.com>
+	id S1754752Ab3L0TZk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 14:25:40 -0500
+Received: from mail-yh0-f41.google.com ([209.85.213.41]:54987 "EHLO
+	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754032Ab3L0TZj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Dec 2013 14:25:39 -0500
+Date: Fri, 27 Dec 2013 16:25:30 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "David A. Long" <dave.long@linaro.org>, systemtap@sourceware.org,
+        yrl.pp-manager.tt@hitachi.com, Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH -tip v2 1/2] [CLEANUP] perf-probe: Expand given path to
+ absolute path
+Message-ID: <20131227192530.GC13381@ghostprotocols.net>
+References: <20131226054148.22364.25224.stgit@kbuild-fedora.novalocal>
+ <20131226054150.22364.12187.stgit@kbuild-fedora.novalocal>
+ <52BC39D6.3090908@gmail.com>
+ <20131226142248.GE30980@ghostprotocols.net>
+ <52BD1ACA.7030506@hitachi.com>
+ <52BD8C9B.8030206@gmail.com>
+ <20131227174902.GA13381@ghostprotocols.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5d72ccb261f7f30da7d2e0e05bf5c6352672c9a4.1388184724.git.yangds.fnst@cn.fujitsu.com>
+In-Reply-To: <20131227174902.GA13381@ghostprotocols.net>
 X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Dec 27, 2013 at 06:03:27PM -0500, Dongsheng Yang escreveu:
-> As what the usage showing, we can input a event_glob as an argument to list
-> all symbols. But it does not work well right now.
+Em Fri, Dec 27, 2013 at 02:49:02PM -0300, Arnaldo Carvalho de Melo escreveu:
+> Em Fri, Dec 27, 2013 at 09:20:11AM -0500, David Ahern escreveu:
+> > On 12/27/13, 1:14 AM, Masami Hiramatsu wrote:
+> > >Nowhere, since there is no terminal code for user
+> > >command interface.
 > 
-> Example:
-> 	# perf list kvmmmu
+> > >Those memories are released when the program terminated.
+> > >I think it is just a waste of the time to free the memory
+> > >pieces which are not used(and allocated) repeatedly.
+> > >Or, is there any chance to call this part directly from
+> > >other command?
 > 
-> 	List of pre-defined events (to be used in -e):
+> There is always the chance of parts of a tool to be librarized, I think
+> the rule is: allocator -> lifetime -> destructor, explicit.
 > 
-> This patch make it work well as follows.
+> We may want to explicitely disable some big destructor call (or lots of
+> destructors, like symbols + hists, etc) because it may make exit time to
+> be overly long, but at least we'll know what destructors to call when
+> such code gets librarized.
 
-It works:
-
-List of pre-defined events (to be used in -e):
-[root@zoo ~]# perf list kvmmmu*:*
-  kvmmmu:kvm_mmu_pagetable_walk                      [Tracepoint event]
-  kvmmmu:kvm_mmu_paging_element                      [Tracepoint event]
-  kvmmmu:kvm_mmu_set_accessed_bit                    [Tracepoint event]
-  kvmmmu:kvm_mmu_set_dirty_bit                       [Tracepoint event]
-  kvmmmu:kvm_mmu_walker_error                        [Tracepoint event]
-  kvmmmu:kvm_mmu_get_page                            [Tracepoint event]
-  kvmmmu:kvm_mmu_sync_page                           [Tracepoint event]
-  kvmmmu:kvm_mmu_unsync_page                         [Tracepoint event]
-  kvmmmu:kvm_mmu_prepare_zap_page                    [Tracepoint event]
-  kvmmmu:mark_mmio_spte                              [Tracepoint event]
-  kvmmmu:handle_mmio_page_fault                      [Tracepoint event]
-  kvmmmu:fast_page_fault                             [Tracepoint event]
-  kvmmmu:kvm_mmu_invalidate_zap_all_pages            [Tracepoint event]
-  kvmmmu:check_mmio_spte                             [Tracepoint event]
-[root@zoo ~]#
-
-The documentation says, as you repeated above, that a glob can be
-provided, not a _substring_ :-)
-
-To achive a result similar to:
-
-[root@zoo ~]# perf list hw
-  cpu-cycles OR cycles                               [Hardware event]
-  instructions                                       [Hardware event]
-  cache-references                                   [Hardware event]
-  cache-misses                                       [Hardware event]
-  branch-instructions OR branches                    [Hardware event]
-  branch-misses                                      [Hardware event]
-  bus-cycles                                         [Hardware event]
-  stalled-cycles-frontend OR idle-cycles-frontend    [Hardware event]
-  ref-cycles                                         [Hardware event]
-[root@zoo ~]#
-
-We could say that if no ':' is found in the provided string, and it
-doesn't matches one of the other classes, i.e. hw, sw, cache, etc, and
-it is the name of a tracepoint subsystem, then it would be equivalent
-to 'tracepoint_subsys:*', i.e. 'perf list skb' woud be equivalent to:
-
-[root@zoo ~]# perf list skb:*
-  skb:kfree_skb                                      [Tracepoint event]
-  skb:consume_skb                                    [Tracepoint event]
-  skb:skb_copy_datagram_iovec                        [Tracepoint event]
-[root@zoo ~]# 
+Having said that, I applied the current patch, as it doesn't makes
+things much worser than they already are, i.e. we need to audit that
+code further, and these patches provided an useful new functionality.
 
 - Arnaldo
- 
-> Verification:
-> 	# perf list kvmmmu
-> 
-> 	List of pre-defined events (to be used in -e):
-> 	  kvmmmu:kvm_mmu_pagetable_walk                      [Tracepoint event]
-> 	  kvmmmu:kvm_mmu_paging_element                      [Tracepoint event]
-> 	  kvmmmu:kvm_mmu_set_accessed_bit                    [Tracepoint event]
-> 	  kvmmmu:kvm_mmu_set_dirty_bit                       [Tracepoint event]
-> 	  kvmmmu:kvm_mmu_walker_error                        [Tracepoint event]
-> 	  kvmmmu:kvm_mmu_get_page                            [Tracepoint event]
-> 	  kvmmmu:kvm_mmu_sync_page                           [Tracepoint event]
-> 	  kvmmmu:kvm_mmu_unsync_page                         [Tracepoint event]
-> 	  kvmmmu:kvm_mmu_prepare_zap_page                    [Tracepoint event]
-> 	  kvmmmu:mark_mmio_spte                              [Tracepoint event]
-> 	  kvmmmu:handle_mmio_page_fault                      [Tracepoint event]
-> 	  kvmmmu:fast_page_fault                             [Tracepoint event]
-> 
-> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-> ---
->  tools/perf/util/parse-events.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-> index 094c28b..d887ea4 100644
-> --- a/tools/perf/util/parse-events.c
-> +++ b/tools/perf/util/parse-events.c
-> @@ -1236,6 +1236,8 @@ void print_events(const char *event_glob, bool name_only)
->  
->  	print_pmu_events(event_glob, name_only);
->  
-> +	print_tracepoint_events(event_glob, NULL, name_only);
-> +
->  	if (event_glob != NULL)
->  		return;
->  
-> @@ -1254,8 +1256,6 @@ void print_events(const char *event_glob, bool name_only)
->  			event_type_descriptors[PERF_TYPE_BREAKPOINT]);
->  		printf("\n");
->  	}
-> -
-> -	print_tracepoint_events(NULL, NULL, name_only);
->  }
->  
->  int parse_events__is_hardcoded_term(struct parse_events_term *term)
-> -- 
-> 1.8.2.1
