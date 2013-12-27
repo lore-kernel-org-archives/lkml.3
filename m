@@ -1,78 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238Ab3L0RG0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 12:06:26 -0500
-Received: from smtprelay0233.hostedemail.com ([216.40.44.233]:38111 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753653Ab3L0RGZ (ORCPT
+	id S1754235Ab3L0RKv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 12:10:51 -0500
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:22467 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751225Ab3L0RKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 12:06:25 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:3872:3874:4321:4605:5007:7652:8603:10004:10400:10450:10455:10481:10848:11026:11232:11658:11914:12043:12296:12438:12517:12519:12740:13069:13161:13229:13311:13357:19900:19904:19999,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: day23_8f077562ecc40
-X-Filterd-Recvd-Size: 2531
-Message-ID: <1388163982.30298.12.camel@joe-AO722>
-Subject: Re: [PATCH net-next 19/20] net: plip: slight optimization of addr
- compare
-From: Joe Perches <joe@perches.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>, Julia Lawall <julia.lawall@lip6.fr>
-Cc: Ding Tianhong <dingtianhong@huawei.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 27 Dec 2013 09:06:22 -0800
-In-Reply-To: <1388159283.12212.80.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <52BD22ED.4030302@huawei.com>
-	 <1388159283.12212.80.camel@edumazet-glaptop2.roam.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
+	Fri, 27 Dec 2013 12:10:49 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Am8QACO0vVJbsm8//2dsb2JhbABYKIJjgzq3KAICgRkXdIJTExwjGIECN4gIAckXjx2EPQEDiUGOVQGSFIM6Lw
+Date: Fri, 27 Dec 2013 17:11:45 +0800
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        akpm@linux-foundation.org, rdunlap@infradead.org
+Subject: [PATCH 1/1] reiserfs:Adding tmpfile support (v2)
+Message-Id: <20131227171145.c2a14e80dcbe7f7c1dd470b7@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-12-27 at 07:48 -0800, Eric Dumazet wrote:
-> On Fri, 2013-12-27 at 14:49 +0800, Ding Tianhong wrote:
-> > Use possibly more efficient ether_addr_equal
-> > to instead of memcmp.
-[]
-> > diff --git a/drivers/net/plip/plip.c b/drivers/net/plip/plip.c
-[]
-> > @@ -549,7 +549,7 @@ static __be16 plip_type_trans(struct sk_buff *skb, struct net_device *dev)
-> >  
-> >  	if(*eth->h_dest&1)
-> >  	{
-> > -		if(memcmp(eth->h_dest,dev->broadcast, ETH_ALEN)==0)
-> > +		if(ether_addr_equal(eth->h_dest, dev->broadcast))
-> >  			skb->pkt_type=PACKET_BROADCAST;
-> >  		else
-> >  			skb->pkt_type=PACKET_MULTICAST;
-> 
-> What about :
-> 
->         if (is_multicast_ether_addr(eth->h_dest)) {
->                 if (ether_addr_equal_64bits(eth->h_dest, dev->broadcast))
->                         skb->pkt_type = PACKET_BROADCAST;
->                 else
->                         skb->pkt_type = PACKET_MULTICAST;
->         }
+New function reiserfs_tmpfile:
+ -Duplicate reiserfs_create
+ -Remove dquot_initialize (cf ext2/tmpfile)
+ -Remove add_entry code
+ -Add d_tmpfile generic call
+ -Add add_save_link (cf ext3/orphan_add)
+reiserfs_link function:
+ -Add remove_save_link (cf ext3/orphan_del)
 
-That is better though I wonder how many systems are
-still using laplink via parallel null-printer cables.
+Saved link is removed in normal use (close) 
+cf reiserfs_evict_inode (reiserfsck is ok)
+Note : This patch still requires reiserfs_link testing.
 
-No matter, better is better.
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/reiserfs/namei.c | 63 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 63 insertions(+)
 
-The same optimization using ether_addr_equal_64bits
-may be possible to do in other places given other
-structs too.
-
-Perhaps it's a possible spatch/coccinelle conversion,
-
-I don't know spatch well enough to know if a
-mechanism to check if structure members have other
-fields that follow them in the structure or if the
-structure member is an array of a minimum size.
-
-Maybe Julia does.  (cc'd)
-
+diff --git a/fs/reiserfs/namei.c b/fs/reiserfs/namei.c
+index dc5236f..60339d4 100644
+--- a/fs/reiserfs/namei.c
++++ b/fs/reiserfs/namei.c
+@@ -637,6 +637,66 @@ static int reiserfs_create(struct inode *dir, struct dentry *dentry, umode_t mod
+ 	return retval;
+ }
+ 
++
++/* tmpfile function based on reiserfs_create without filename entry
++*/
++
++static int reiserfs_tmpfile(struct inode *dir, struct dentry *dentry,
++	umode_t mode)
++{
++	int retval;
++	struct inode *inode;
++	int jbegin_count =
++	    JOURNAL_PER_BALANCE_CNT * 2 +
++	    2 * (REISERFS_QUOTA_INIT_BLOCKS(dir->i_sb) +
++		 REISERFS_QUOTA_TRANS_BLOCKS(dir->i_sb));
++	struct reiserfs_transaction_handle th;
++	struct reiserfs_security_handle security;
++
++	inode = new_inode(dir->i_sb);
++	if (!inode)
++		return -ENOMEM;
++
++	new_inode_init(inode, dir, mode);
++
++	jbegin_count += reiserfs_cache_default_acl(dir);
++	retval = reiserfs_security_init(dir, inode, &dentry->d_name, &security);
++	if (retval < 0) {
++		drop_new_inode(inode);
++		return retval;
++	}
++	jbegin_count += retval;
++	reiserfs_write_lock(dir->i_sb);
++
++	retval = journal_begin(&th, dir->i_sb, jbegin_count);
++	if (retval) {
++		drop_new_inode(inode);
++		goto out_failed;
++	}
++
++	retval =
++	    reiserfs_new_inode(&th, dir, mode, NULL, 0 /*i_size */ , dentry,
++			       inode, &security);
++	if (retval)
++		goto out_failed;
++
++	inode->i_op = &reiserfs_file_inode_operations;
++	inode->i_fop = &reiserfs_file_operations;
++	inode->i_mapping->a_ops = &reiserfs_address_space_operations;
++
++	reiserfs_update_inode_transaction(inode);
++	reiserfs_update_inode_transaction(dir);
++
++	unlock_new_inode(inode);
++	d_tmpfile(dentry, inode);
++	add_save_link(&th, inode, 0);
++	retval = journal_end(&th, dir->i_sb, jbegin_count);
++
++      out_failed:
++	reiserfs_write_unlock(dir->i_sb);
++	return retval;
++}
++
+ static int reiserfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode,
+ 			  dev_t rdev)
+ {
+@@ -1146,6 +1206,8 @@ static int reiserfs_link(struct dentry *old_dentry, struct inode *dir,
+ 	reiserfs_update_sd(&th, inode);
+ 
+ 	ihold(inode);
++	if (inode->i_nlink == 1)
++		remove_save_link(inode, 0);
+ 	d_instantiate(dentry, inode);
+ 	retval = journal_end(&th, dir->i_sb, jbegin_count);
+ 	reiserfs_write_unlock(dir->i_sb);
+@@ -1522,6 +1584,7 @@ const struct inode_operations reiserfs_dir_inode_operations = {
+ 	.removexattr = reiserfs_removexattr,
+ 	.permission = reiserfs_permission,
+ 	.get_acl = reiserfs_get_acl,
++	.tmpfile = reiserfs_tmpfile,
+ };
+ 
+ /*
+-- 
+1.8.1.4
