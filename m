@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab3L0UrY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 15:47:24 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35657 "EHLO
+	id S1754824Ab3L0UrW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 15:47:22 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35664 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754725Ab3L0UrS (ORCPT
+	with ESMTP id S1754797Ab3L0UrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 27 Dec 2013 15:47:18 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Chunwei Chen <tuxoko@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
+        stable@vger.kernel.org, #@infradead.org, 3.3+@infradead.org,
+        David Ahern <dsahern@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 41/49] perf config: Ignore generated files in feature-checks
-Date: Fri, 27 Dec 2013 17:46:57 -0300
-Message-Id: <1388177225-17349-8-git-send-email-acme@infradead.org>
+Subject: [PATCH 35/49] perf kvm: Fix kvm report without guestmount.
+Date: Fri, 27 Dec 2013 17:46:51 -0300
+Message-Id: <1388177225-17349-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1388177225-17349-1-git-send-email-acme@infradead.org>
 References: <1388177225-17349-1-git-send-email-acme@infradead.org>
@@ -24,255 +25,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chunwei Chen <tuxoko@gmail.com>
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 
-1. Rename the test-* binary files to test-*.bin for easier pattern matching as
-   suggested by Ingo.
-2. Ignore *.bin and *.d files.
+Currently, if we use perf kvm --guestkallsyms --guestmodules report, we
+can not get the perf information from perf data file. All sample are
+shown as unknown.
 
-Signed-off-by: Chunwei Chen <tuxoko@gmail.com>
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/52B52B9B.50708@gmail.com
+Reproducing steps:
+	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules record -a sleep 1
+	[ perf record: Woken up 1 times to write data ]
+	[ perf record: Captured and wrote 0.624 MB perf.data.guest (~27260 samples) ]
+	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules report |grep %
+	   100.00%  [guest/6471]  [unknown]         [g] 0xffffffff8164f330
+
+This bug was introduced by 207b57926 (perf kvm: Fix regression with guest machine creation).
+In original code, it uses perf_session__find_machine(), it means we deliver symbol to machine
+which has the same pid, if no machine found, deliver it to *default* guest. But if we use
+perf_session__findnew_machine() here, if no machine was found, new machine with pid will be built
+and added. Then the default guest which with pid == 0 will never get a symbol.
+
+And because the new machine initialized here has no kernel map created, the symbol delivered to
+it will be marked as "unknown".
+
+This patch here is to revert commit 207b57926 and fix the SEGFAULT bug in another way.
+
+Verification steps:
+	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
+	[ perf record: Woken up 1 times to write data ]
+	[ perf record: Captured and wrote 0.651 MB perf.data.guest (~28437 samples) ]
+	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules report |grep %
+	    22.64%    :6471  [guest.kernel.kallsyms]  [g] update_rq_clock.part.70
+	    19.99%    :6471  [guest.kernel.kallsyms]  [g] d_free
+	    18.46%    :6471  [guest.kernel.kallsyms]  [g] bio_phys_segments
+	    16.25%    :6471  [guest.kernel.kallsyms]  [g] dequeue_task
+	    12.78%    :6471  [guest.kernel.kallsyms]  [g] __switch_to
+	     7.91%    :6471  [guest.kernel.kallsyms]  [g] scheduler_tick
+	     1.75%    :6471  [guest.kernel.kallsyms]  [g] native_apic_mem_write
+	     0.21%    :6471  [guest.kernel.kallsyms]  [g] apic_timer_interrupt
+
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Acked-by: David Ahern <dsahern@gmail.com>
+Cc: stable@vger.kernel.org # 3.3+
+Cc: David Ahern <dsahern@gmail.com>
+Link: http://lkml.kernel.org/r/1387564907-3045-1-git-send-email-yangds.fnst@cn.fujitsu.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/config/Makefile                  |   6 +-
- tools/perf/config/feature-checks/.gitignore |   2 +
- tools/perf/config/feature-checks/Makefile   | 110 ++++++++++++++--------------
- 3 files changed, 60 insertions(+), 58 deletions(-)
- create mode 100644 tools/perf/config/feature-checks/.gitignore
+ tools/perf/util/session.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 5a1f4df3c3a8..14faeeb0d752 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -126,7 +126,7 @@ endif
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index cbacaab3e9c4..d3a857be9682 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -830,6 +830,7 @@ static struct machine *
+ 					       struct perf_sample *sample)
+ {
+ 	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
++	struct machine *machine;
  
- feature_check = $(eval $(feature_check_code))
- define feature_check_code
--  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS) $(FEATURE_CHECK_CFLAGS-$(1))" LDFLAGS="$(LDFLAGS) $(FEATURE_CHECK_LDFLAGS-$(1))" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
-+  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS) $(FEATURE_CHECK_CFLAGS-$(1))" LDFLAGS="$(LDFLAGS) $(FEATURE_CHECK_LDFLAGS-$(1))" -C config/feature-checks test-$1.bin >/dev/null 2>/dev/null && echo 1 || echo 0)
- endef
+ 	if (perf_guest &&
+ 	    ((cpumode == PERF_RECORD_MISC_GUEST_KERNEL) ||
+@@ -842,7 +843,11 @@ static struct machine *
+ 		else
+ 			pid = sample->pid;
  
- feature_set = $(eval $(feature_set_code))
-@@ -173,7 +173,7 @@ CORE_FEATURE_TESTS =			\
- # to skip the print-out of the long features list if the file
- # existed before and after it was built:
- #
--ifeq ($(wildcard $(OUTPUT)config/feature-checks/test-all),)
-+ifeq ($(wildcard $(OUTPUT)config/feature-checks/test-all.bin),)
-   test-all-failed := 1
- else
-   test-all-failed := 0
-@@ -203,7 +203,7 @@ ifeq ($(feature-all), 1)
-   #
-   $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_set,$(feat)))
- else
--  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS=$(LDFLAGS) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
-+  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS=$(LDFLAGS) -i -j -C config/feature-checks $(addsuffix .bin,$(CORE_FEATURE_TESTS)) >/dev/null 2>&1)
-   $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_check,$(feat)))
- endif
+-		return perf_session__findnew_machine(session, pid);
++		machine = perf_session__find_machine(session, pid);
++		if (!machine)
++			machine = perf_session__findnew_machine(session,
++						DEFAULT_GUEST_KERNEL_ID);
++		return machine;
+ 	}
  
-diff --git a/tools/perf/config/feature-checks/.gitignore b/tools/perf/config/feature-checks/.gitignore
-new file mode 100644
-index 000000000000..80f3da0c3515
---- /dev/null
-+++ b/tools/perf/config/feature-checks/.gitignore
-@@ -0,0 +1,2 @@
-+*.d
-+*.bin
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index bc86462e80a2..7cf6fcdacebe 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -1,90 +1,90 @@
- 
- FILES=					\
--	test-all			\
--	test-backtrace			\
--	test-bionic			\
--	test-dwarf			\
--	test-fortify-source		\
--	test-glibc			\
--	test-gtk2			\
--	test-gtk2-infobar		\
--	test-hello			\
--	test-libaudit			\
--	test-libbfd			\
--	test-liberty			\
--	test-liberty-z			\
--	test-cplus-demangle		\
--	test-libelf			\
--	test-libelf-getphdrnum		\
--	test-libelf-mmap		\
--	test-libnuma			\
--	test-libperl			\
--	test-libpython			\
--	test-libpython-version		\
--	test-libslang			\
--	test-libunwind			\
--	test-libunwind-debug-frame	\
--	test-on-exit			\
--	test-stackprotector-all		\
--	test-timerfd
-+	test-all.bin			\
-+	test-backtrace.bin		\
-+	test-bionic.bin			\
-+	test-dwarf.bin			\
-+	test-fortify-source.bin		\
-+	test-glibc.bin			\
-+	test-gtk2.bin			\
-+	test-gtk2-infobar.bin		\
-+	test-hello.bin			\
-+	test-libaudit.bin		\
-+	test-libbfd.bin			\
-+	test-liberty.bin		\
-+	test-liberty-z.bin		\
-+	test-cplus-demangle.bin		\
-+	test-libelf.bin			\
-+	test-libelf-getphdrnum.bin	\
-+	test-libelf-mmap.bin		\
-+	test-libnuma.bin		\
-+	test-libperl.bin		\
-+	test-libpython.bin		\
-+	test-libpython-version.bin	\
-+	test-libslang.bin		\
-+	test-libunwind.bin		\
-+	test-libunwind-debug-frame.bin	\
-+	test-on-exit.bin		\
-+	test-stackprotector-all.bin	\
-+	test-timerfd.bin
- 
- CC := $(CC) -MD
- 
- all: $(FILES)
- 
--BUILD = $(CC) $(CFLAGS) -o $(OUTPUT)$@ $@.c $(LDFLAGS)
-+BUILD = $(CC) $(CFLAGS) -o $(OUTPUT)$@ $(patsubst %.bin,%.c,$@) $(LDFLAGS)
- 
- ###############################
- 
--test-all:
-+test-all.bin:
- 	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
- 
--test-hello:
-+test-hello.bin:
- 	$(BUILD)
- 
--test-stackprotector-all:
-+test-stackprotector-all.bin:
- 	$(BUILD) -Werror -fstack-protector-all
- 
--test-fortify-source:
-+test-fortify-source.bin:
- 	$(BUILD) -O2 -Werror -D_FORTIFY_SOURCE=2
- 
--test-bionic:
-+test-bionic.bin:
- 	$(BUILD)
- 
--test-libelf:
-+test-libelf.bin:
- 	$(BUILD) -lelf
- 
--test-glibc:
-+test-glibc.bin:
- 	$(BUILD)
- 
--test-dwarf:
-+test-dwarf.bin:
- 	$(BUILD) -ldw
- 
--test-libelf-mmap:
-+test-libelf-mmap.bin:
- 	$(BUILD) -lelf
- 
--test-libelf-getphdrnum:
-+test-libelf-getphdrnum.bin:
- 	$(BUILD) -lelf
- 
--test-libnuma:
-+test-libnuma.bin:
- 	$(BUILD) -lnuma
- 
--test-libunwind:
-+test-libunwind.bin:
- 	$(BUILD) -lelf
- 
--test-libunwind-debug-frame:
-+test-libunwind-debug-frame.bin:
- 	$(BUILD) -lelf
- 
--test-libaudit:
-+test-libaudit.bin:
- 	$(BUILD) -laudit
- 
--test-libslang:
-+test-libslang.bin:
- 	$(BUILD) -I/usr/include/slang -lslang
- 
--test-gtk2:
-+test-gtk2.bin:
- 	$(BUILD) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
- 
--test-gtk2-infobar:
-+test-gtk2-infobar.bin:
- 	$(BUILD) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
- 
- grep-libs  = $(filter -l%,$(1))
-@@ -96,7 +96,7 @@ PERL_EMBED_LIBADD = $(call grep-libs,$(PERL_EMBED_LDOPTS))
- PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
- FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
- 
--test-libperl:
-+test-libperl.bin:
- 	$(BUILD) $(FLAGS_PERL_EMBED)
- 
- override PYTHON := python
-@@ -113,31 +113,31 @@ PYTHON_EMBED_LIBADD = $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
- PYTHON_EMBED_CCOPTS = $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
- FLAGS_PYTHON_EMBED = $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
- 
--test-libpython:
-+test-libpython.bin:
- 	$(BUILD) $(FLAGS_PYTHON_EMBED)
- 
--test-libpython-version:
-+test-libpython-version.bin:
- 	$(BUILD) $(FLAGS_PYTHON_EMBED)
- 
--test-libbfd:
-+test-libbfd.bin:
- 	$(BUILD) -DPACKAGE='"perf"' -lbfd -ldl
- 
--test-liberty:
-+test-liberty.bin:
- 	$(CC) -o $(OUTPUT)$@ test-libbfd.c -DPACKAGE='"perf"' -lbfd -ldl -liberty
- 
--test-liberty-z:
-+test-liberty-z.bin:
- 	$(CC) -o $(OUTPUT)$@ test-libbfd.c -DPACKAGE='"perf"' -lbfd -ldl -liberty -lz
- 
--test-cplus-demangle:
-+test-cplus-demangle.bin:
- 	$(BUILD) -liberty
- 
--test-on-exit:
-+test-on-exit.bin:
- 	$(BUILD)
- 
--test-backtrace:
-+test-backtrace.bin:
- 	$(BUILD)
- 
--test-timerfd:
-+test-timerfd.bin:
- 	$(BUILD)
- 
- -include *.d
+ 	return &session->machines.host;
 -- 
 1.8.1.4
 
