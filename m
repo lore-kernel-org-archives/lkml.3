@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735Ab3L0RZg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 12:25:36 -0500
-Received: from mail-yh0-f43.google.com ([209.85.213.43]:51820 "EHLO
-	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754542Ab3L0RZe (ORCPT
+	id S1754788Ab3L0R0h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 12:26:37 -0500
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:35012 "EHLO
+	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754715Ab3L0RZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 12:25:34 -0500
+	Fri, 27 Dec 2013 12:25:35 -0500
 From: "H.J. Lu" <hjl.tools@gmail.com>
 To: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
 Cc: "H.J. Lu" <hjl.tools@gmail.com>
-Subject: [PATCH 6/8] Use __kernel_ulong_t in x86 struct semid64_ds
-Date: Fri, 27 Dec 2013 09:25:10 -0800
-Message-Id: <1388165112-6545-7-git-send-email-hjl.tools@gmail.com>
+Subject: [PATCH 8/8] Use __kernel_long_t in struct mq_attr
+Date: Fri, 27 Dec 2013 09:25:12 -0800
+Message-Id: <1388165112-6545-9-git-send-email-hjl.tools@gmail.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1388165112-6545-1-git-send-email-hjl.tools@gmail.com>
 References: <1388165112-6545-1-git-send-email-hjl.tools@gmail.com>
@@ -20,37 +20,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both x32 and x86-64 use the same struct semid64_ds for system calls.
-But x32 long is 32-bit. This patch replaces unsigned long with
-__kernel_ulong_t in x86 struct semid64_ds.
+Both x32 and x86-64 use the same struct mq_attr for system calls.  But
+x32 long is 32-bit. This patch replaces long with __kernel_long_t in
+struct mq_attr if __BITS_PER_LONG == 64.
 
 Signed-off-by: H.J. Lu <hjl.tools@gmail.com>
 ---
- arch/x86/include/uapi/asm/sembuf.h | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ include/uapi/linux/mqueue.h | 18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/uapi/asm/sembuf.h b/arch/x86/include/uapi/asm/sembuf.h
-index ee50c80..cc2d6a3 100644
---- a/arch/x86/include/uapi/asm/sembuf.h
-+++ b/arch/x86/include/uapi/asm/sembuf.h
-@@ -13,12 +13,12 @@
- struct semid64_ds {
- 	struct ipc64_perm sem_perm;	/* permissions .. see ipc.h */
- 	__kernel_time_t	sem_otime;	/* last semop time */
--	unsigned long	__unused1;
-+	__kernel_ulong_t __unused1;
- 	__kernel_time_t	sem_ctime;	/* last change time */
--	unsigned long	__unused2;
--	unsigned long	sem_nsems;	/* no. of semaphores in array */
--	unsigned long	__unused3;
--	unsigned long	__unused4;
-+	__kernel_ulong_t __unused2;
-+	__kernel_ulong_t sem_nsems;	/* no. of semaphores in array */
-+	__kernel_ulong_t __unused3;
-+	__kernel_ulong_t __unused4;
+diff --git a/include/uapi/linux/mqueue.h b/include/uapi/linux/mqueue.h
+index 8b5a796..03bf30e 100644
+--- a/include/uapi/linux/mqueue.h
++++ b/include/uapi/linux/mqueue.h
+@@ -23,11 +23,19 @@
+ #define MQ_BYTES_MAX	819200
+ 
+ struct mq_attr {
+-	long	mq_flags;	/* message queue flags			*/
+-	long	mq_maxmsg;	/* maximum number of messages		*/
+-	long	mq_msgsize;	/* maximum message size			*/
+-	long	mq_curmsgs;	/* number of messages currently queued	*/
+-	long	__reserved[4];	/* ignored for input, zeroed for output */
++#if __BITS_PER_LONG == 64
++	__kernel_long_t	mq_flags;	/* message queue flags			*/
++	__kernel_long_t	mq_maxmsg;	/* maximum number of messages		*/
++	__kernel_long_t	mq_msgsize;	/* maximum message size			*/
++	__kernel_long_t	mq_curmsgs;	/* number of messages currently queued	*/
++	__kernel_long_t	__reserved[4];	/* ignored for input, zeroed for output */
++#else
++	long	mq_flags;		/* message queue flags			*/
++	long	mq_maxmsg;		/* maximum number of messages		*/
++	long	mq_msgsize;		/* maximum message size			*/
++	long	mq_curmsgs;		/* number of messages currently queued	*/
++	long	__reserved[4];		/* ignored for input, zeroed for output */
++#endif
  };
  
- #endif /* _ASM_X86_SEMBUF_H */
+ /*
 -- 
 1.8.4.2
 
