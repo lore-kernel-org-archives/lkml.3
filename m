@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180Ab3L0WRT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 17:17:19 -0500
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:48164 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754831Ab3L0WOc (ORCPT
+	id S1755197Ab3L0WRn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 17:17:43 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:55358 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754828Ab3L0WOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 27 Dec 2013 17:14:32 -0500
 From: "H.J. Lu" <hjl.tools@gmail.com>
 To: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
 Cc: "H.J. Lu" <hjl.tools@gmail.com>
-Subject: [PATCH 4/8] Use __kernel_long_t in struct msgbuf
-Date: Fri, 27 Dec 2013 14:14:20 -0800
-Message-Id: <1388182464-28428-5-git-send-email-hjl.tools@gmail.com>
+Subject: [PATCH 0/8] Update kernel uabi header files for x32
+Date: Fri, 27 Dec 2013 14:14:16 -0800
+Message-Id: <1388182464-28428-1-git-send-email-hjl.tools@gmail.com>
 X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1388182464-28428-1-git-send-email-hjl.tools@gmail.com>
-References: <1388182464-28428-1-git-send-email-hjl.tools@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-X32 msgsnd/msgrcv system calls are the same as x86-64 msgsnd/msgrcv system
-calls, which use 64-bit integer for long in struct msgbuf . But x32 long
-is 32 bit.  This patch replaces long in struct msgbuf with __kernel_long_t.
+X32 uses the same kernel system call interface as x86-64 for many
+system calls.  However, "long" is 64-bit for x86-64 and is 32-bit for
+x32.  Where long or unsigned long are used in struct types for such
+system calls, they are wrong for x32.  __kernel_[u]long_t is [unsigned]
+long for all ABIs other than x32.  I am submitting 8 patches to replace
+long or unsigned long with __kernel_[u]long_t so that those struct types
+can be used with x32 system calls.
 
-Signed-off-by: H.J. Lu <hjl.tools@gmail.com>
----
- include/uapi/linux/msg.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+H.J. Lu (8):
+  Use __kernel_long_t in struct timex
+  Use __kernel_long_t/__kernel_ulong_t in <linux/resource.h>
+  Use __kernel_ulong_t in uapi struct ipc64_perm
+  Use __kernel_long_t in struct msgbuf
+  Use __kernel_ulong_t in struct msqid64_ds
+  Use __kernel_ulong_t in x86 struct semid64_ds
+  Use __kernel_ulong_t in shmid64_ds/shminfo64/shm_info
+  Use __kernel_long_t in struct mq_attr
 
-diff --git a/include/uapi/linux/msg.h b/include/uapi/linux/msg.h
-index 22d95c6..a703755 100644
---- a/include/uapi/linux/msg.h
-+++ b/include/uapi/linux/msg.h
-@@ -34,8 +34,8 @@ struct msqid_ds {
- 
- /* message buffer for msgsnd and msgrcv calls */
- struct msgbuf {
--	long mtype;         /* type of message */
--	char mtext[1];      /* message text */
-+	__kernel_long_t mtype;          /* type of message */
-+	char mtext[1];                  /* message text */
- };
- 
- /* buffer for msgctl calls IPC_INFO, MSG_INFO */
+ arch/x86/include/uapi/asm/sembuf.h | 10 ++++-----
+ include/uapi/asm-generic/ipcbuf.h  |  5 +++++
+ include/uapi/asm-generic/msgbuf.h  | 19 +++++++++++-----
+ include/uapi/asm-generic/shmbuf.h  | 36 +++++++++++++++++++++--------
+ include/uapi/linux/mqueue.h        | 18 ++++++++++-----
+ include/uapi/linux/msg.h           |  8 +++++--
+ include/uapi/linux/resource.h      | 26 +++++++++++++++++++--
+ include/uapi/linux/shm.h           | 14 +++++++++---
+ include/uapi/linux/timex.h         | 46 +++++++++++++++++++++++++++++++-------
+ 9 files changed, 143 insertions(+), 39 deletions(-)
+
 -- 
 1.8.4.2
 
