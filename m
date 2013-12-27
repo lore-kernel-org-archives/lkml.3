@@ -1,106 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051Ab3L0Bls (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Dec 2013 20:41:48 -0500
-Received: from m59-178.qiye.163.com ([123.58.178.59]:40416 "EHLO
-	m59-178.qiye.163.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754011Ab3L0Blp (ORCPT
+	id S1754048Ab3L0Bz6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Dec 2013 20:55:58 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:33938 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754023Ab3L0Bz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Dec 2013 20:41:45 -0500
-MIME-Version: 1.0
-In-Reply-To: <CANP1eJFMZrT+GbHhg3gWqsy=whSozEiWmZj-L08EyhD8LcqzeQ@mail.gmail.com>
-References: <cover.1388066937.git.liwang@ubuntukylin.com>
-	<CANP1eJFMZrT+GbHhg3gWqsy=whSozEiWmZj-L08EyhD8LcqzeQ@mail.gmail.com>
-Date: Fri, 27 Dec 2013 09:41:39 +0800
-Message-ID: <CAAb4LOxn29vH4j5g1cgxgoXc8rHOp9zjMo+O3JJ1jzuhnJU5yw@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Ceph fscache: Fix kernel panic due to a race
-From: Yunchuan Wen <yunchuanwen@ubuntukylin.com>
-To: Milosz Tanski <milosz@adfin.com>
-Cc: Li Wang <liwang@ubuntukylin.com>, ceph-devel <ceph-devel@vger.kernel.org>,
-        Sage Weil <sage@inktank.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-X-HM-Spam-Status: e1koWUFPN1dZCBgUCR5ZQUlKVU1OQkJCQkNPTE9KSUpKV1kJDhceCFlBWS
-	grPSQoND0vPToyNyQyNSQzPjo*PilBS1VLQDYjJCI#KCQyNSQzPjo*PilBS1VLQCsvKSQiPigkMj
-	UkMz46Pz4pQUtVS0A4NC41LykiJC4oQUtVS0ApPjwyNDUkNTQpLzMkOjY#KTI4OkFLVUtAPyI1Oj
-	YyOCQyKyQ1NCQyNSQzPjo*PilBS1VLQCk#OjckMiskMjUkKTk3JDI1JDM#Oj8#KUFKSVVLQDYuNy
-	8yJCk4Ky8kKDI2Mjc6KSQyNSQzPjo*PilBTlVLQDIrJC80PzoiJDg1LyRLJEpLS0FLVUtAMiskTi
-	Q2MjUuLz4kODUvJEskSktBS1VLQDIrJEokNjI1Li8#JDg1LyRLJEpLQUtVS0AyKyRKJDM0LikkOD
-	UvJEskSktLQUtVS0AyKyRISyQ2MjUuLz4kODUvJEskTktBS1VLQDU0LyQ9OjY0LigkPzQ2OjI1JC
-	grPSQ9OjI3QUpLVUtAPTUkNjoiJE9KQiQzNzEkSiRLQ0tIS09BS1VISEA9KyQpPiQ9LCQzNzEkS0
-	NLSEtNQVZMVU5AKC45JD5BSlVOTkA9NSQoLjkkPjUsNCk*KCQzNzEkSktLSUtKQUtVSUNZBg++
-X-HM-Sender-Digest: e1kSHx4VD1lBWUc6MzI6Vgw6OjowEDojHD84OjcuOhdPCzBVSlVKSEND
-	SktDTktITktOVTMWGhIXVQIOFRgTDhoVDB4VOw4ZDhUPDhACFxIVVRgUFkVZV1kMHhlZQR0aFwge
-	V1kIAVlBTk5PQzdXWRILWUFZSUtCVUNOVUlKT1VPSlkG
+	Thu, 26 Dec 2013 20:55:56 -0500
+X-Sasl-enc: BOab60/65eVl4QEaoo25R83wxJIg2H0qwkijLz0X+xbY 1388109354
+Message-ID: <1388109352.2568.16.camel@perseus.fritz.box>
+Subject: Re: [PATCH] autofs - fix fix symlinks arent checked for expiry
+From: Ian Kent <raven@themaw.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        autofs mailing list <autofs@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Fri, 27 Dec 2013 09:55:52 +0800
+In-Reply-To: <20131226171949.9ca42eaa.akpm@linux-foundation.org>
+References: <20131224094459.20051.4889.stgit@perseus.fritz.box>
+	 <20131226134253.5f4b2f02a00e11b8de49770e@linux-foundation.org>
+	 <1388106592.2446.25.camel@perseus.fritz.box>
+	 <20131226171949.9ca42eaa.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Milosz
-I am not very sure about how to enable caching in write path.
+On Thu, 2013-12-26 at 17:19 -0800, Andrew Morton wrote:
+> On Fri, 27 Dec 2013 09:09:52 +0800 Ian Kent <raven@themaw.net> wrote:
+> 
+> > On Thu, 2013-12-26 at 13:42 -0800, Andrew Morton wrote:
+> > > On Tue, 24 Dec 2013 17:44:59 +0800 Ian Kent <raven@themaw.net> wrote:
+> > > 
+> > > > When following a symlink the last_used counter is unconditionally
+> > > > updated causing the expire checks from user space to prevent
+> > > > expiry. Opps!
+> > > 
+> > > A bit unclear.  You're saying that userspace's act of checking expiry
+> > > status will itself disrupt the expiry process?
+> > 
+> > If the user space expire code uses stat(2) instead of lstat(2), yes.
+> > It's quite possible this will be the case since it made no difference
+> > when not using symlinks in the autofs directory tree.
+> > 
+> > > 
+> > > Also, it's rather unclear what the userspace impact is here, and how
+> > > severe it is.  Please always carefully describe the user-visible impact
+> > > so that others can decide which kernel version(s) need the patch.
+> > 
+> > The impact of this is that symlinks within an an autofs directory tree
+> > don't cause a callback to the daemon so they can be expired (removed in
+> > this case).
+> > 
+> > autofs4_oz_mode() is the mechanism that's used to identify the user
+> > space process that's managing the automount tree. It's used in a number
+> > of places to prevent the process managing the tree from doing things
+> > like triggering mounts itself or updating the last_used counter.
+> > 
+> > It's a bit of a puzzle why it worked when I originally tested it.  But
+> > later when I looked at it to work out why some symlinks weren't expiring
+> > it was obvious.
+> > 
+> > Do you want me to re-submit this with an updated description?
+> 
+> Yes please.  The questions which a bugfix changelog should answer are
+> "should this be backported to -stable and if so, why".  It's also
+> helpful if it answers "if not, why not".
 
-I just compile the latest kernel with "Enable Ceph client caching
-support", start cachefilesd, and mount cephfs with -o fsc.
-Then, the kernel will panic easily when the script runs to "dd
-if=cephfs/foo of=/dev/null bs=8 count=1024"
+Yes, that's not clear.
+I'd say it's not necessary to back port.
+
+But I'm really keen for this to be merged in the current kernel because
+I'm making upstream changes to autofs (adding a parser for amd style
+mount maps) that will be able to make use of it (I can give details if
+you want).
+
+It's probably a month or two before I commit them to git, and longer
+before they get into a source release.
+
+And I can include the kernel patch in the autofs git tree for those that
+need it.
+
+OTOH this affects am-utils (the amd package, http://www.am-utils.org/)
+now, so since it's a fairly small change, maybe it should be back
+ported.
+
+Unfortunately it's even worse than it sounds because the am-utils
+package isn't receiving much attention, both upstream (for about six
+years now) and downstream (certainly in Fedora anyway).
+
+am-utils in Fedora hasn't worked properly for quite some time and I was
+unable to get any sensible assistance from upstream.
+
+I'll put together a more detailed description based on above and merge
+autofs-fix-symlinks-arent-checked-for-expiry.patch and
+autofs-fix-fix-symlinks-arent-checked-for-expiry.patch
+and re-submit.
+
+> 
+> > > 
+> > > > --- a/fs/autofs4/symlink.c
+> > > > +++ b/fs/autofs4/symlink.c
+> > > > @@ -14,8 +14,9 @@
+> > > >  
+> > > >  static void *autofs4_follow_link(struct dentry *dentry, struct nameidata *nd)
+> > > >  {
+> > > > +	struct autofs_sb_info *sbi = autofs4_sbi(dentry->d_sb);
+> > > >  	struct autofs_info *ino = autofs4_dentry_ino(dentry);
+> > > > -	if (ino)
+> > > > +	if (ino && !autofs4_oz_mode(sbi))
+> > > >  		ino->last_used = jiffies;
+> > > >  	nd_set_link(nd, dentry->d_inode->i_private);
+> > > >  	return NULL;
+> > > 
+> > > What kernel is this against?  3.13-rc5 is quite different:
+> > 
+> > That's a good question.
+> > Which tree should I be basing patches on?
+> 
+> Current Linus git is almost always the one to target.
+> 
+> > As it turns out it is against 3.13-rc5 which was the version the linus
+> > tree was at (when I pulled it) prior to mailing the patch.
+> 
+> Nope, autofs4_follow_link() looks like
+> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/fs/autofs4/symlink.c
+> all the way back to 3.12.
+> 
 
 
-2013/12/27 Milosz Tanski <milosz@adfin.com>:
-> Li,
->
-> I looked at the patchset am I correct that this only happens when we
-> enable caching in the write path?
->
-> - Milosz
->
-> On Thu, Dec 26, 2013 at 9:29 AM, Li Wang <liwang@ubuntukylin.com> wrote:
->> From: Yunchuan Wen <yunchuanwen@ubuntukylin.com>
->>
->> The following scripts could easily panic the kernel,
->>
->> #!/bin/bash
->> mount -t ceph -o fsc MONADDR:/ cephfs
->> rm -rf cephfs/foo
->> dd if=/dev/zero of=cephfs/foo bs=8 count=512
->> echo 3 > /proc/sys/vm/drop_caches
->> dd if=cephfs/foo of=/dev/null bs=8 count=1024
->>
->> This is due to when writing a page into fscache, the code will
->> assert that the write position does not exceed the
->> object->store_limit_l, which is supposed to be equal to inode->i_size.
->> However, for current implementation, after file writing, the
->> object->store_limit_l is not synchronized with new
->> inode->i_size immediately, which introduces a race that if writing
->> a new page into fscache, will reach the ASSERT that write position
->> has exceeded the object->store_limit_l, and cause kernel panic.
->> This patch fixes it.
->>
->> Yunchuan Wen (3):
->>   Ceph fscache: Add an interface to synchronize object store limit
->>   Ceph fscache: Update object store limit after writing
->>   Ceph fscache: Wait for completion of object initialization
->>
->>  fs/ceph/cache.c |    1 +
->>  fs/ceph/cache.h |   10 ++++++++++
->>  fs/ceph/file.c  |    3 +++
->>  3 files changed, 14 insertions(+)
->>
->> --
->> 1.7.9.5
->>
->
->
->
-> --
-> Milosz Tanski
-> CTO
-> 10 East 53rd Street, 37th floor
-> New York, NY 10022
->
-> p: 646-253-9055
-> e: milosz@adfin.com
-> --
-> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
