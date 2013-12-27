@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754597Ab3L0Gtl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 01:49:41 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:40350 "EHLO
+	id S1754569Ab3L0Gtj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 01:49:39 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:40340 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754546Ab3L0Gth (ORCPT
+	with ESMTP id S1754484Ab3L0Gtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 01:49:37 -0500
-Message-ID: <52BD22BB.1060705@huawei.com>
-Date: Fri, 27 Dec 2013 14:48:27 +0800
+	Fri, 27 Dec 2013 01:49:36 -0500
+Message-ID: <52BD22E6.3090101@huawei.com>
+Date: Fri, 27 Dec 2013 14:49:10 +0800
 From: Ding Tianhong <dingtianhong@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Netdev <netdev@vger.kernel.org>,
+To: "David S. Miller" <davem@davemloft.net>, Netdev <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH net-next 06/20] net: igbvf: slight optimization of addr compare
+Subject: [PATCH net-next 17/20] net: ti: slight optimization of addr compare
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.72.199]
@@ -31,28 +26,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Use possibly more efficient ether_addr_equal
 to instead of memcmp.
 
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
-Cc: Carolyn Wyborny <carolyn.wyborny@intel.com>
-Cc: Don Skidmore <donald.c.skidmore@intel.com>
+Cc: "David S. Miller" <davem@davemloft.net>
 Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 ---
- drivers/net/ethernet/intel/igbvf/netdev.c | 2 +-
+ drivers/net/ethernet/ti/cpsw_ale.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/intel/igbvf/netdev.c b/drivers/net/ethernet/intel/igbvf/netdev.c
-index 04bf22e..675435f 100644
---- a/drivers/net/ethernet/intel/igbvf/netdev.c
-+++ b/drivers/net/ethernet/intel/igbvf/netdev.c
-@@ -1745,7 +1745,7 @@ static int igbvf_set_mac(struct net_device *netdev, void *p)
- 
- 	hw->mac.ops.rar_set(hw, hw->mac.addr, 0);
- 
--	if (memcmp(addr->sa_data, hw->mac.addr, 6))
-+	if (!ether_addr_equal(addr->sa_data, hw->mac.addr))
- 		return -EADDRNOTAVAIL;
- 
- 	memcpy(netdev->dev_addr, addr->sa_data, netdev->addr_len);
+diff --git a/drivers/net/ethernet/ti/cpsw_ale.c b/drivers/net/ethernet/ti/cpsw_ale.c
+index 7fa60d6..63e9819 100644
+--- a/drivers/net/ethernet/ti/cpsw_ale.c
++++ b/drivers/net/ethernet/ti/cpsw_ale.c
+@@ -163,7 +163,7 @@ int cpsw_ale_match_addr(struct cpsw_ale *ale, u8 *addr, u16 vid)
+ 		if (cpsw_ale_get_vlan_id(ale_entry) != vid)
+ 			continue;
+ 		cpsw_ale_get_addr(ale_entry, entry_addr);
+-		if (memcmp(entry_addr, addr, 6) == 0)
++		if (ether_addr_equal(entry_addr, addr))
+ 			return idx;
+ 	}
+ 	return -ENOENT;
 -- 
 1.8.0
 
