@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783Ab3L0UA2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 15:00:28 -0500
-Received: from hofr.at ([212.69.189.236]:60468 "EHLO mail.hofr.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754481Ab3L0UA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 15:00:27 -0500
-Date: Fri, 27 Dec 2013 21:00:24 +0100
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
-        John Kacur <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.12.6-rt9
-Message-ID: <20131227200024.GA19505@opentech.at>
-References: <20131223225017.GA8623@linutronix.de>
+	id S1754759Ab3L0UFs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 15:05:48 -0500
+Received: from mail-gg0-f171.google.com ([209.85.161.171]:63110 "EHLO
+	mail-gg0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754702Ab3L0UFr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Dec 2013 15:05:47 -0500
+Date: Fri, 27 Dec 2013 17:05:38 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Arun Sharma <asharma@fb.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [GIT PULL 00/35] perf/core improvements and fixes
+Message-ID: <20131227200538.GD13381@ghostprotocols.net>
+References: <1387566550-3524-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131223225017.GA8623@linutronix.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1387566550-3524-1-git-send-email-acme@infradead.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Dec 2013, Sebastian Andrzej Siewior wrote:
-
-> Dear RT folks!
+Em Fri, Dec 20, 2013 at 04:08:35PM -0300, Arnaldo Carvalho de Melo escreveu:
+> User visible changes:
 > 
-> I'm pleased to announce the v3.12.6-rt9 patch set.
+> Improvements:
 > 
-> Changes since v3.12.6-rt8
-<snip>
-> - A patch from Thomas Gleixner not to raise the timer softirq
->   unconditionally (only if a timer is pending)
-> 
+> . Do not show stats if workload fails in 'stat' (David Ahern)
 
-This one seems to deadlock early in the boot sequence on x86
-(i3/i7/Phenom-4x here and Carsten Emde also had boot failures)
+Hi Ingo,
 
-after droping this patch with:
-patch -p1 -R < ../paches/timers-do-not-raise-softirq-unconditionally.patch
-3.12.6-rt9 boots up fine. cyclictest seems to be back to what it was before
-(only ran for a few minutes idle and 1h with load on an i3).
+	Please hold on, as reported elsewhere, the above change broke
+'perf stat valid-workload', so I removed it from my tree.
 
-The main problem with this patch though are proceduaral isues 
-the commit note - which is a mail exchange - actually does not explain what 
-the rational for the changes is (...well I don't understand the logic of
-run_local_timers - if someone can explain - pleas do) and notably:
+	I'll resubmit soon with a bunch more,
 
-from timers-do-not-raise-softirq-unconditionally.patch
-<snip>
-well, that very same problem is in mainline if you add "threadirqs" to
-the command line. But we can be smart about this. The untested patch
-                                                    ^^^^^^^^^^^^^^^^^^
-below should address that issue. If that works on mainline we can
-adapt it for RT (needs a trylock(&base->lock) there).
-<snip>
+Thanks,
 
- does make me wonder why this went into -rt9 ?
- It also build fails with CONFIG_PREEMPT_RT_FULL not set.
-
- as with this patch, systems that booted just fine with 3.12.5-rt7 don't
- even boot (atleast my 3 x86 test boxes here did not) this raises some
- questions regarding the process of getting patches into -rtX - are
- we going to fast here ?
-
- I would prefere if such patches would go out with a request for testing
- or atleast a "might blow up your system" note in them...
-
-thx!
-hofrat
+- Arnaldo
