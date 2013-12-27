@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824Ab3L0UrW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 15:47:22 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35664 "EHLO
+	id S1754960Ab3L0UvC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 15:51:02 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35697 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754797Ab3L0UrS (ORCPT
+	with ESMTP id S1754815Ab3L0UrW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 15:47:18 -0500
+	Fri, 27 Dec 2013 15:47:22 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        stable@vger.kernel.org, #@infradead.org, 3.3+@infradead.org,
-        David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 35/49] perf kvm: Fix kvm report without guestmount.
-Date: Fri, 27 Dec 2013 17:46:51 -0300
-Message-Id: <1388177225-17349-2-git-send-email-acme@infradead.org>
+Subject: [PATCH 44/49] perf ui/tui: Protect windows by ui__lock
+Date: Fri, 27 Dec 2013 17:47:00 -0300
+Message-Id: <1388177225-17349-11-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1388177225-17349-1-git-send-email-acme@infradead.org>
 References: <1388177225-17349-1-git-send-email-acme@infradead.org>
@@ -25,79 +26,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Currently, if we use perf kvm --guestkallsyms --guestmodules report, we
-can not get the perf information from perf data file. All sample are
-shown as unknown.
+Sometimes perf top TUI breaks display with concurrent help/input window
+and pr_* messages since they're not protected by ui__lock.
 
-Reproducing steps:
-	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules record -a sleep 1
-	[ perf record: Woken up 1 times to write data ]
-	[ perf record: Captured and wrote 0.624 MB perf.data.guest (~27260 samples) ]
-	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules report |grep %
-	   100.00%  [guest/6471]  [unknown]         [g] 0xffffffff8164f330
+You can check it by pressing (and not releasing) 'h' key on a "perf top
+-vvv" TUI session.
 
-This bug was introduced by 207b57926 (perf kvm: Fix regression with guest machine creation).
-In original code, it uses perf_session__find_machine(), it means we deliver symbol to machine
-which has the same pid, if no machine found, deliver it to *default* guest. But if we use
-perf_session__findnew_machine() here, if no machine was found, new machine with pid will be built
-and added. Then the default guest which with pid == 0 will never get a symbol.
-
-And because the new machine initialized here has no kernel map created, the symbol delivered to
-it will be marked as "unknown".
-
-This patch here is to revert commit 207b57926 and fix the SEGFAULT bug in another way.
-
-Verification steps:
-	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
-	[ perf record: Woken up 1 times to write data ]
-	[ perf record: Captured and wrote 0.651 MB perf.data.guest (~28437 samples) ]
-	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules report |grep %
-	    22.64%    :6471  [guest.kernel.kallsyms]  [g] update_rq_clock.part.70
-	    19.99%    :6471  [guest.kernel.kallsyms]  [g] d_free
-	    18.46%    :6471  [guest.kernel.kallsyms]  [g] bio_phys_segments
-	    16.25%    :6471  [guest.kernel.kallsyms]  [g] dequeue_task
-	    12.78%    :6471  [guest.kernel.kallsyms]  [g] __switch_to
-	     7.91%    :6471  [guest.kernel.kallsyms]  [g] scheduler_tick
-	     1.75%    :6471  [guest.kernel.kallsyms]  [g] native_apic_mem_write
-	     0.21%    :6471  [guest.kernel.kallsyms]  [g] apic_timer_interrupt
-
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Acked-by: David Ahern <dsahern@gmail.com>
-Cc: stable@vger.kernel.org # 3.3+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/r/1387564907-3045-1-git-send-email-yangds.fnst@cn.fujitsu.com
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1388036284-32342-2-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/session.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ tools/perf/ui/tui/util.c | 19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index cbacaab3e9c4..d3a857be9682 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -830,6 +830,7 @@ static struct machine *
- 					       struct perf_sample *sample)
- {
- 	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
-+	struct machine *machine;
- 
- 	if (perf_guest &&
- 	    ((cpumode == PERF_RECORD_MISC_GUEST_KERNEL) ||
-@@ -842,7 +843,11 @@ static struct machine *
- 		else
- 			pid = sample->pid;
- 
--		return perf_session__findnew_machine(session, pid);
-+		machine = perf_session__find_machine(session, pid);
-+		if (!machine)
-+			machine = perf_session__findnew_machine(session,
-+						DEFAULT_GUEST_KERNEL_ID);
-+		return machine;
+diff --git a/tools/perf/ui/tui/util.c b/tools/perf/ui/tui/util.c
+index 092902e30cee..bf890f72fe80 100644
+--- a/tools/perf/ui/tui/util.c
++++ b/tools/perf/ui/tui/util.c
+@@ -92,6 +92,8 @@ int ui_browser__input_window(const char *title, const char *text, char *input,
+ 		t = sep + 1;
  	}
  
- 	return &session->machines.host;
++	pthread_mutex_lock(&ui__lock);
++
+ 	max_len += 2;
+ 	nr_lines += 8;
+ 	y = SLtt_Screen_Rows / 2 - nr_lines / 2;
+@@ -120,13 +122,19 @@ int ui_browser__input_window(const char *title, const char *text, char *input,
+ 	SLsmg_write_nstring((char *)exit_msg, max_len);
+ 	SLsmg_refresh();
+ 
++	pthread_mutex_unlock(&ui__lock);
++
+ 	x += 2;
+ 	len = 0;
+ 	key = ui__getch(delay_secs);
+ 	while (key != K_TIMER && key != K_ENTER && key != K_ESC) {
++		pthread_mutex_lock(&ui__lock);
++
+ 		if (key == K_BKSPC) {
+-			if (len == 0)
++			if (len == 0) {
++				pthread_mutex_unlock(&ui__lock);
+ 				goto next_key;
++			}
+ 			SLsmg_gotorc(y, x + --len);
+ 			SLsmg_write_char(' ');
+ 		} else {
+@@ -136,6 +144,8 @@ int ui_browser__input_window(const char *title, const char *text, char *input,
+ 		}
+ 		SLsmg_refresh();
+ 
++		pthread_mutex_unlock(&ui__lock);
++
+ 		/* XXX more graceful overflow handling needed */
+ 		if (len == sizeof(buf) - 1) {
+ 			ui_helpline__push("maximum size of symbol name reached!");
+@@ -174,6 +184,8 @@ int ui__question_window(const char *title, const char *text,
+ 		t = sep + 1;
+ 	}
+ 
++	pthread_mutex_lock(&ui__lock);
++
+ 	max_len += 2;
+ 	nr_lines += 4;
+ 	y = SLtt_Screen_Rows / 2 - nr_lines / 2,
+@@ -195,6 +207,9 @@ int ui__question_window(const char *title, const char *text,
+ 	SLsmg_gotorc(y + nr_lines - 1, x);
+ 	SLsmg_write_nstring((char *)exit_msg, max_len);
+ 	SLsmg_refresh();
++
++	pthread_mutex_unlock(&ui__lock);
++
+ 	return ui__getch(delay_secs);
+ }
+ 
+@@ -215,9 +230,7 @@ static int __ui__warning(const char *title, const char *format, va_list args)
+ 	if (vasprintf(&s, format, args) > 0) {
+ 		int key;
+ 
+-		pthread_mutex_lock(&ui__lock);
+ 		key = ui__question_window(title, s, "Press any key...", 0);
+-		pthread_mutex_unlock(&ui__lock);
+ 		free(s);
+ 		return key;
+ 	}
 -- 
 1.8.1.4
 
