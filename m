@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab3L0Gvk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 01:51:40 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:52913 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754512Ab3L0Gte (ORCPT
+	id S1754527Ab3L0Gtd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 01:49:33 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:11872 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754432Ab3L0GtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 01:49:34 -0500
-Message-ID: <52BD22E2.5060702@huawei.com>
-Date: Fri, 27 Dec 2013 14:49:06 +0800
+	Fri, 27 Dec 2013 01:49:25 -0500
+Message-ID: <52BD22D6.50100@huawei.com>
+Date: Fri, 27 Dec 2013 14:48:54 +0800
 From: Ding Tianhong <dingtianhong@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>, Netdev <netdev@vger.kernel.org>,
+To: Himanshu Madhani <himanshu.madhani@qlogic.com>,
+        Rajesh Borundia <rajesh.borundia@qlogic.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Netdev <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH net-next 16/20] net: sun: optimization of addr compare
+Subject: [PATCH net-next 13/20] net: qlcnic: slight optimization of addr compare
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.72.199]
@@ -23,28 +26,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use possibly more efficient ether_addr_equal
-to instead of memcmp.
+Use the possibly more efficient ether_addr_equal or
+ether_addr_equal_unaligned to instead of memcmp.
 
-Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Himanshu Madhani <himanshu.madhani@qlogic.com>
+Cc: Rajesh Borundia <rajesh.borundia@qlogic.com>
 Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 ---
- drivers/net/ethernet/sun/sunvnet.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c   | 4 ++--
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c   | 4 ++--
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c | 4 ++--
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/ethernet/sun/sunvnet.c b/drivers/net/ethernet/sun/sunvnet.c
-index 3df5684..1c24a8f 100644
---- a/drivers/net/ethernet/sun/sunvnet.c
-+++ b/drivers/net/ethernet/sun/sunvnet.c
-@@ -751,7 +751,7 @@ static struct vnet_mcast_entry *__vnet_mc_find(struct vnet *vp, u8 *addr)
- 	struct vnet_mcast_entry *m;
- 
- 	for (m = vp->mcast_list; m; m = m->next) {
--		if (!memcmp(m->addr, addr, ETH_ALEN))
-+		if (ether_addr_equal(m->addr, addr))
- 			return m;
+diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c
+index 3fe971c..a9a149b 100644
+--- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c
++++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c
+@@ -462,7 +462,7 @@ int qlcnic_nic_del_mac(struct qlcnic_adapter *adapter, const u8 *addr)
+ 	/* Delete MAC from the existing list */
+ 	list_for_each(head, &adapter->mac_list) {
+ 		cur = list_entry(head, struct qlcnic_mac_vlan_list, list);
+-		if (memcmp(addr, cur->mac_addr, ETH_ALEN) == 0) {
++		if (ether_addr_equal(addr, cur->mac_addr)) {
+ 			err = qlcnic_sre_macaddr_change(adapter, cur->mac_addr,
+ 							0, QLCNIC_MAC_DEL);
+ 			if (err)
+@@ -483,7 +483,7 @@ int qlcnic_nic_add_mac(struct qlcnic_adapter *adapter, const u8 *addr, u16 vlan)
+ 	/* look up if already exists */
+ 	list_for_each(head, &adapter->mac_list) {
+ 		cur = list_entry(head, struct qlcnic_mac_vlan_list, list);
+-		if (memcmp(addr, cur->mac_addr, ETH_ALEN) == 0 &&
++		if (ether_addr_equal(addr, cur->mac_addr) &&
+ 		    cur->vlan_id == vlan)
+ 			return 0;
  	}
- 	return NULL;
+diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
+index 0538022..a215e0f 100644
+--- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
++++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
+@@ -202,7 +202,7 @@ static struct qlcnic_filter *qlcnic_find_mac_filter(struct hlist_head *head,
+ 	struct hlist_node *n;
+ 
+ 	hlist_for_each_entry_safe(tmp_fil, n, head, fnode) {
+-		if (!memcmp(tmp_fil->faddr, addr, ETH_ALEN) &&
++		if (ether_addr_equal(tmp_fil->faddr, addr) &&
+ 		    tmp_fil->vlan_id == vlan_id)
+ 			return tmp_fil;
+ 	}
+@@ -346,7 +346,7 @@ static void qlcnic_send_filter(struct qlcnic_adapter *adapter,
+ 	head = &(adapter->fhash.fhead[hindex]);
+ 
+ 	hlist_for_each_entry_safe(tmp_fil, n, head, fnode) {
+-		if (!memcmp(tmp_fil->faddr, &src_addr, ETH_ALEN) &&
++		if (ether_addr_equal(tmp_fil->faddr, &src_addr) &&
+ 		    tmp_fil->vlan_id == vlan_id) {
+ 			if (jiffies > (QLCNIC_READD_AGE * HZ + tmp_fil->ftime))
+ 				qlcnic_change_filter(adapter, &src_addr,
+diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
+index bf132c9..d131ec1 100644
+--- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
++++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
+@@ -313,7 +313,7 @@ static void qlcnic_delete_adapter_mac(struct qlcnic_adapter *adapter)
+ 
+ 	list_for_each(head, &adapter->mac_list) {
+ 		cur = list_entry(head, struct qlcnic_mac_vlan_list, list);
+-		if (!memcmp(adapter->mac_addr, cur->mac_addr, ETH_ALEN)) {
++		if (ether_addr_equal_unaligned(adapter->mac_addr, cur->mac_addr)) {
+ 			qlcnic_sre_macaddr_change(adapter, cur->mac_addr,
+ 						  0, QLCNIC_MAC_DEL);
+ 			list_del(&cur->list);
+@@ -337,7 +337,7 @@ static int qlcnic_set_mac(struct net_device *netdev, void *p)
+ 	if (!is_valid_ether_addr(addr->sa_data))
+ 		return -EINVAL;
+ 
+-	if (!memcmp(adapter->mac_addr, addr->sa_data, ETH_ALEN))
++	if (ether_addr_equal_unaligned(adapter->mac_addr, addr->sa_data))
+ 		return 0;
+ 
+ 	if (test_bit(__QLCNIC_DEV_UP, &adapter->state)) {
 -- 
 1.8.0
 
