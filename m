@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650Ab3L0OfV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 09:35:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61010 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753063Ab3L0OfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 09:35:18 -0500
-Date: Fri, 27 Dec 2013 14:34:49 +0000
-From: "Richard W.M. Jones" <rjones@redhat.com>
-To: Kashyap Chamarthy <kchamart@redhat.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>, Gleb Natapov <gleb@kernel.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: intel_pstate divide error with v3.13-rc4-256-gb7000ad
-Message-ID: <20131227143449.GN28747@redhat.com>
-References: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com>
- <CAKohpomqHApogDEXA5LyWk-+B-Y1mwNQ63-wL3PPGz64s_3Dmw@mail.gmail.com>
- <20131227122422.62857cec@alan.etchedpixels.co.uk>
- <20131227124749.GE10961@minantech.com>
- <CA+5PVA60GSC0tTLJWLtVqb5eTPMzrszxtoBnUP8B_Q_60=oGyw@mail.gmail.com>
- <52BD8B8B.1050209@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52BD8B8B.1050209@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1754678Ab3L0Oi7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 09:38:59 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:60470 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753080Ab3L0Oi5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Dec 2013 09:38:57 -0500
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: ying.huang@intel.com, tony.luck@intel.com
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ethan Zhao <ethan.kernel@gmail.com>
+Subject: [PATCH] ghes: don't return 0 even when failed to read estatus in ghes_proc()
+Date: Fri, 27 Dec 2013 22:38:40 +0800
+Message-Id: <1388155120-419-1-git-send-email-ethan.kernel@gmail.com>
+X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Probably the qemu command line is more interesting, which is in this
-comment and reproduced below.
+ghes_proc() always return 0 even failed to read estatus, so when it is
+called in interrupt handler ghes_irq_func(), we don't know the interrupt
+was handled well or not, because the ghes_irq_func() will return only
+IRQ_HANDLED.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=1046317#c1
+Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
+---
+ drivers/acpi/apei/ghes.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-/usr/bin/qemu-kvm \
-    -global virtio-blk-pci.scsi=off \
-    -nodefconfig \
-    -enable-fips \
-    -nodefaults \
-    -display none \
-    -machine accel=kvm:tcg \
-    -cpu host,+kvmclock \
-    -m 500 \
-    -no-reboot \
-    -no-hpet \
-    -kernel /var/tmp/.guestfs-0/kernel.32370 \
-    -initrd /var/tmp/.guestfs-0/initrd.32370 \
-    -device virtio-scsi-pci,id=scsi \
-    -drive file=/tmp/libguestfswnVOx7/scratch.1,cache=unsafe,format=raw,id=hd0,if=none \
-    -device scsi-hd,drive=hd0 \
-    -drive file=/var/tmp/.guestfs-0/root.32370,snapshot=on,id=appliance,cache=unsafe,if=none \
-    -device scsi-hd,drive=appliance \
-    -device virtio-serial-pci \
-    -serial stdio \
-    -device sga \
-    -chardev socket,path=/tmp/libguestfswnVOx7/guestfsd.sock,id=channel0 \
-    -device virtserialport,chardev=channel0,name=org.libguestfs.channel.0 \
-    -append 'panic=1 console=ttyS0 udevtimeout=600 no_timer_check acpi=off printk.time=1 cgroup_disable=memory root=/dev/sdb selinux=0 guestfs_verbose=1 TERM=screen'
-
-Rich.
-
+diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+index 8ec37bb..9368b73 100644
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -665,7 +665,7 @@ static void ghes_estatus_cache_add(
+ 
+ static int ghes_proc(struct ghes *ghes)
+ {
+-	int rc;
++	int rc = 0;
+ 
+ 	rc = ghes_read_estatus(ghes, 0);
+ 	if (rc)
+@@ -677,7 +677,7 @@ static int ghes_proc(struct ghes *ghes)
+ 	ghes_do_proc(ghes, ghes->estatus);
+ out:
+ 	ghes_clear_estatus(ghes);
+-	return 0;
++	return rc;
+ }
+ 
+ static void ghes_add_timer(struct ghes *ghes)
 -- 
-Richard Jones, Virtualization Group, Red Hat http://people.redhat.com/~rjones
-Fedora Windows cross-compiler. Compile Windows programs, test, and
-build Windows installers. Over 100 libraries supported.
-http://fedoraproject.org/wiki/MinGW
+1.8.3.4 (Apple Git-47)
+
