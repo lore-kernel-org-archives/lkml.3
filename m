@@ -1,33 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754947Ab3L0Wod (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 17:44:33 -0500
-Received: from mail-bn1hn0129.outbound.protection.outlook.com ([157.56.110.129]:1086
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754848Ab3L0Woc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 17:44:32 -0500
-Reply-To: <tomhook57@yahoo.com>
-From: "Mr. Tom Hook" <tomhook57@outlook.com>
-Subject: Good day
-Date: Sat, 28 Dec 2013 05:28:34 +0700
+	id S1754968Ab3L0WsD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 17:48:03 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:10952
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754852Ab3L0WsB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Dec 2013 17:48:01 -0500
+X-IronPort-AV: E=Sophos;i="4.95,563,1384297200"; 
+   d="scan'208";a="42494142"
+Date: Fri, 27 Dec 2013 23:47:57 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Joe Perches <joe@perches.com>
+cc: Julia Lawall <julia.lawall@lip6.fr>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Ding Tianhong <dingtianhong@huawei.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH net-next 19/20] net: plip: slight optimization of addr
+ compare
+In-Reply-To: <1388177217.30298.24.camel@joe-AO722>
+Message-ID: <alpine.DEB.2.02.1312272338170.2018@localhost6.localdomain6>
+References: <52BD22ED.4030302@huawei.com>  <1388159283.12212.80.camel@edumazet-glaptop2.roam.corp.google.com>  <1388163982.30298.12.camel@joe-AO722>  <alpine.DEB.2.02.1312272112110.2018@localhost6.localdomain6> <1388177217.30298.24.camel@joe-AO722>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-ID: <c75c79d4-d6a0-4c03-b0de-e5989927f75f@COSEXCH10.lsi.com>
-To: Undisclosed recipients:;
-X-EOPAttributedMessage: 0
-X-Matching-Connectors: 130326569540189042;(f081dce6-2920-4dfc-23e8-08d07091c5e3);()
-X-Forefront-Antispam-Report: CIP:192.19.220.100;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:SPM;SFS:(10019001)(199002)(189002)(51856001)(19580395003)(56816005)(79102001)(4396001)(44976005)(1671002)(83322001)(62966002)(76482001)(90146001)(44716002)(63696002)(85852003)(62236002)(50986001)(6806004)(83072002)(50466002)(61296002)(50226001)(59766001)(74366001)(56776001)(77982001)(65816001)(80022001)(20776003)(881003)(81542001)(43066001)(81342001)(69226001)(87286001)(77156001)(85306002)(76176001)(74662001)(87266001)(551934002)(54316002)(33646001)(74502001)(74876001)(47446002)(221733001)(88136002)(77096001)(89996001)(76786001)(49866001)(76796001)(74706001)(80976001)(46102001)(563864002)(31686002)(47976001)(47776003)(23686002)(47736001)(555904002)(87936001)(175304002);DIR:OUT;SFP:1501;SCL:6;SRVR:BLUPR07MB561;H:COSEXCH10.lsi.com;CLIP:192.19.220.100;FPR:;RD:cosexch10.lsi.com;A:1;MX:1;LANG:en;
-X-OriginatorOrg: lsicorp.onmicrosoft.com
-X-Forefront-PRVS: 0073BFEF03
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can we invest in your country.My name is Mr.Tom Hook a banker here; there is an unfinished business transaction in my branch. This is a business that will profit both of us, if you are interested get back to me for more details please because the money needs to invest outside my country. I wait for your quick response 
-Mr. Tom Hook
+> Hi Julia.
+> 
+> Maybe this explanation is helpful?
+> 
+> ethernet addresses are u8[6] (48 bits)
+> 
+> ether_addr_equal_64bits gets passed a pointer to u8[8]
+> and is more efficient on 64 bit architectures than
+> ether_addr_equal because the test can be done with a
+> single compare and shift.
+> 
+> The idea is not to access past the end of the ethernet
+> address as appropriate (think pointer to eeprom or other
+> such end-of-addressable memory conditions)
+> 
+> If a struct containing an ethernet address has additional
+> members after the ethernet address, or the u8[6] address
+> passed to ether_addr_equal is not going to access past
+> the end of memory or the structure, then
+> ether_addr_equal_64bits should be used in lieu of
+> ether_addr_equal.
+
+I tried the following semantic patch:
+
+@r@
+type T;
+T *eth;
+identifier fld;
+type T1;
+T1 *eth1;
+identifier fld1;
+expression e1;
+position p;
+@@
+
+ether_addr_equal@p(eth->fld, eth1->fld1)
+
+@ok@
+type r.T, t1, t2;
+identifier r.fld, fld2;
+@@
+
+T { ...
+    t1 fld[...];
+    t2 fld2;
+    ...
+  };
+
+@ok1@
+type r.T1, t1, t2;
+identifier r.fld1, fld2;
+@@
+
+T1 { ...
+    t1 fld1[...];
+    t2 fld2;
+    ...
+  };
+
+@depends on ok && ok1@
+position r.p;
+@@
+
+*ether_addr_equal@p(...)
+
+The first rule finds an existing call to ether_addr_equal where both 
+arguments are structure field references.  It gets the type of the 
+structure in each case, and notes the field name.  The next two rules 
+check each of the structure declarations to ensure that the field is 
+declared as an array and it is followed by at least one other field.  The 
+last rule generates some output for cases where both fields pass the test.
+
+Note that this is not at all exhaustive, because it is not checking cases 
+where one argument is a parameter that is passed from some call site where 
+the argument is a field that has this property.  Thus, it does not find 
+the case in drivers/net/ethernet/intel/i40e/i40e_main.c.  Nevertheless, it 
+does find a few occurrences, as shown below.  In this output, - indicates 
+an item of interest, not something to be removed.  It is not a patch, even 
+though it looks like one.
+
+One can get quite a lot more results if one doesn't require that both 
+arguments satisfy the property, ie allowing one argument to be a function 
+parameter rather than a structure field reference.  So perhaps it would be 
+worth making a (more complicated) semantic patch to find such cases.
+
+julia
+
+diff -u -p /var/linuxes/linux-next/drivers/net/wireless/ipw2x00/libipw_rx.c /tmp/nothing/drivers/net/wireless/ipw2x00/libipw_rx.c
+--- /var/linuxes/linux-next/drivers/net/wireless/ipw2x00/libipw_rx.c
++++ /tmp/nothing/drivers/net/wireless/ipw2x00/libipw_rx.c
+@@ -1468,7 +1468,6 @@ static inline int is_same_network(struct
+ 	 * as one network */
+ 	return ((src->ssid_len == dst->ssid_len) &&
+ 		(src->channel == dst->channel) &&
+-		ether_addr_equal(src->bssid, dst->bssid) &&
+ 		!memcmp(src->ssid, dst->ssid, src->ssid_len));
+ }
+ 
+diff -u -p /var/linuxes/linux-next/drivers/scsi/fcoe/fcoe_ctlr.c /tmp/nothing/drivers/scsi/fcoe/fcoe_ctlr.c
+--- /var/linuxes/linux-next/drivers/scsi/fcoe/fcoe_ctlr.c
++++ /tmp/nothing/drivers/scsi/fcoe/fcoe_ctlr.c
+@@ -339,7 +339,6 @@ static void fcoe_ctlr_announce(struct fc
+ 	spin_unlock_bh(&fip->ctlr_lock);
+ 	sel = fip->sel_fcf;
+ 
+-	if (sel && ether_addr_equal(sel->fcf_mac, fip->dest_addr))
+ 		goto unlock;
+ 	if (!is_zero_ether_addr(fip->dest_addr)) {
+ 		printk(KERN_NOTICE "libfcoe: host%d: "
+diff -u -p /var/linuxes/linux-next/drivers/scsi/fcoe/fcoe_sysfs.c /tmp/nothing/drivers/scsi/fcoe/fcoe_sysfs.c
+--- /var/linuxes/linux-next/drivers/scsi/fcoe/fcoe_sysfs.c
++++ /tmp/nothing/drivers/scsi/fcoe/fcoe_sysfs.c
+@@ -657,7 +657,6 @@ static int fcoe_fcf_device_match(struct
+ 	if (new->switch_name == old->switch_name &&
+ 	    new->fabric_name == old->fabric_name &&
+ 	    new->fc_map == old->fc_map &&
+-	    ether_addr_equal(new->mac, old->mac))
+ 		return 1;
+ 	return 0;
+ }
+diff -u -p /var/linuxes/linux-next/drivers/staging/slicoss/slicoss.c /tmp/nothing/drivers/staging/slicoss/slicoss.c
+--- /var/linuxes/linux-next/drivers/staging/slicoss/slicoss.c
++++ /tmp/nothing/drivers/staging/slicoss/slicoss.c
+@@ -787,8 +787,6 @@ static bool slic_mac_filter(struct adapt
+ 			struct mcast_address *mcaddr = adapter->mcastaddrs;
+ 
+ 			while (mcaddr) {
+-				if (ether_addr_equal(mcaddr->address,
+-						     ether_frame->ether_dhost)) {
+ 					adapter->rcv_multicasts++;
+ 					netdev->stats.multicast++;
+ 					return true;
+diff -u -p /var/linuxes/linux-next/drivers/staging/vt6655/wpactl.c /tmp/nothing/drivers/staging/vt6655/wpactl.c
+--- /var/linuxes/linux-next/drivers/staging/vt6655/wpactl.c
++++ /tmp/nothing/drivers/staging/vt6655/wpactl.c
+@@ -394,7 +394,6 @@ int wpa_set_keys(PSDevice pDevice, void
+ 
+ 		} else {
+ 			// Key Table Full
+-			if (ether_addr_equal(param->addr, pDevice->abyBSSID)) {
+ 				//DBG_PRN_WLAN03(("return NDIS_STATUS_INVALID_DATA -Key Table Full.2\n"));
+ 				//spin_unlock_irq(&pDevice->lock);
+ 				return -EINVAL;
