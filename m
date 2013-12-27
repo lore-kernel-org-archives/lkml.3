@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557Ab3L0MkF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 07:40:05 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:41752 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752748Ab3L0MkC (ORCPT
+	id S1754538Ab3L0Mr7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 07:47:59 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:63933 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752748Ab3L0Mr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 07:40:02 -0500
-Message-ID: <52BD751B.4060307@landley.net>
-Date: Fri, 27 Dec 2013 06:39:55 -0600
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 27 Dec 2013 07:47:57 -0500
+Date: Fri, 27 Dec 2013 14:47:49 +0200
+From: Gleb Natapov <gleb@kernel.org>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: intel_pstate divide error with v3.13-rc4-256-gb7000ad
+Message-ID: <20131227124749.GE10961@minantech.com>
+References: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com>
+ <CAKohpomqHApogDEXA5LyWk-+B-Y1mwNQ63-wL3PPGz64s_3Dmw@mail.gmail.com>
+ <20131227122422.62857cec@alan.etchedpixels.co.uk>
 MIME-Version: 1.0
-To: Joe Xue <lgxue@hotmail.com>, Pavel Machek <pavel@ucw.cz>
-CC: "cooloney@gmail.com" <cooloney@gmail.com>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "milo.kim@ti.com" <milo.kim@ti.com>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH] Add the LED burst trigger
-References: <1387895407-28031-1-git-send-email-lgxue@hotmail.com>,<20131225230935.GB13593@amd.pavel.ucw.cz>,<BLU172-W52032BFEF4512123D7516EACC20@phx.gbl>,<20131226142607.GA15225@amd.pavel.ucw.cz>,<BLU172-W3236C029069708048D5697ACC20@phx.gbl> <BLU172-W413E574F382D098B5F9028ACC20@phx.gbl>
-In-Reply-To: <BLU172-W413E574F382D098B5F9028ACC20@phx.gbl>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131227122422.62857cec@alan.etchedpixels.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/26/13 10:58, Joe Xue wrote:
-> Hi all,
+On Fri, Dec 27, 2013 at 12:24:22PM +0000, One Thousand Gnomes wrote:
+> On Tue, 24 Dec 2013 21:36:01 +0530
+> Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> 
+> > Adding Dirk..
+> > 
+> > On 24 December 2013 20:06, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+> > > Hi All,
+> > >
+> > > We've had a report [1] that the pstate driver causes KVM guests to
+> > > fail to boot because of a divide error.  See the backtrace below.
+> > >
+> > >     4.839784] Intel P-state driver initializing.
+> > > [    4.859972] Intel pstate controlling: cpu 0
+> > > [    4.867653] cpufreq: __cpufreq_add_dev: ->get() failed
+> > 
+> > After a call to ->init(), ->get() is supposed to work.
+> > @Dirk: Any idea why it failed?
+> > 
+> > And then I don't know what made this divide by zero to happen :)
+> 
+> > > [    4.878127] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> 
+> Emulator bug perhaps ?
 >
-> I think Pavel's suggestion is a good idea, I'm starting to write another trigger named Morse code trigger.
+KVM does not emulate P-states at all. intel_pstate_init() calls
+intel_pstate_msrs_not_valid() before printing "Intel P-state driver
+initializing."  which suppose to fail since it checks that two reads of
+MSR_IA32_APERF return different values, but KVM does not emulate this msr
+at all, so both calls should return zero (KVM suppose to inject #GP, all rdmsrl
+are patched to be rdmsrl_safe in a guest).
 
-Those who don't know history are doomed to fail the class and have to 
-retake it with the same instructor next year:
+Anything interesting in host dmesg? Is it reproducible? 
 
-https://lkml.org/lkml/2003/1/30/43
-
-And it didn't go very far because a decade ago not many people actually 
-knew morse code anymore, even back then. (And I think that was back 
-before they finally dropped the requirement to get a ham radio license...)
-
-Rob
+--
+			Gleb.
