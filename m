@@ -1,88 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726Ab3L0Tha (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 14:37:30 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:44541 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754394Ab3L0Th2 (ORCPT
+	id S1754741Ab3L0Tow (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 14:44:52 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:59566 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754598Ab3L0Tov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 14:37:28 -0500
-Date: Fri, 27 Dec 2013 20:37:26 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Joe Xue <lgxue@hotmail.com>, "cooloney@gmail.com" <cooloney@gmail.com>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "rob@landley.net" <rob@landley.net>,
-        "milo.kim@ti.com" <milo.kim@ti.com>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH] Add the LED burst trigger
-Message-ID: <20131227193726.GA29672@amd.pavel.ucw.cz>
-References: <1387895407-28031-1-git-send-email-lgxue@hotmail.com>
- <20131225230935.GB13593@amd.pavel.ucw.cz>
- <BLU172-W52032BFEF4512123D7516EACC20@phx.gbl>
- <20131227115746.4cbd9523@alan.etchedpixels.co.uk>
- <20131227125725.GA21506@amd.pavel.ucw.cz>
- <20131227141826.3fe406e4@alan.etchedpixels.co.uk>
- <20131227152354.GA24152@amd.pavel.ucw.cz>
- <20131227181349.475abe88@alan.etchedpixels.co.uk>
+	Fri, 27 Dec 2013 14:44:51 -0500
+Date: Fri, 27 Dec 2013 20:44:47 +0100
+From: Heinz Diehl <htd@fancy-poultry.org>
+To: linux-kernel@vger.kernel.org
+Subject: Re: Problem with cpufreq and i5 since post 3.9.0
+Message-ID: <20131227194447.GA8188@fancy-poultry.org>
+References: <20131227185924.GH17115@Blackswan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131227181349.475abe88@alan.etchedpixels.co.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131227185924.GH17115@Blackswan>
+Organization: private site
+OpenPGP: id=60F4A92C; url=http://www.fritha.org/htd.asc;
+ preference=signencrypt
+User-Agent: Mutt/1.5.22+18 (3306cb186f49) (2013-10-16)
+X-Provags-ID: V02:K0:DDAx8P9L3PwtgJUnW4dsvFZCRyTcBpxUZ+1gKxB25Fx
+ rnV6Jh0b0FH04lniIZ2CBlm1Sj52ytg0L6kEw3tjMPj6Kc1r/g
+ YRlMmDWhY0gECgwv7iDb4PzHz40cmxuJP8q09d/5VKJTcfIIQA
+ jDEDkYqwIBQ2cSXlZiHQgQVh3mHUu2FYpvlss1U4PKMaXgxBwN
+ FKlDYnXurgPJ/W67rhZfnBBv8iLcmp2mlZ9W08ObxfTUoSNEBw
+ VU8R/xyw9KfZ/1eIOfCYFTLrW3ZS8XAlQJ4LlnfoNuPQb8Vkjh
+ aVCq8CpMNkn63R1ggX/jyJYKiJyth8mqBt1KcBE/z59/76gfIP
+ /y6GfxKkWc6PmAy+M6wJlXqIFr8ORQuOMz+Uqsn9x
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 27.12.2013, David Woodfall wrote: 
 
-> > Well, this one will be really smaller. And yes, it will make some
-> > memory non-swappable, but I believe with triggers and infrastructure
-> > for N900 (and similar) it will be worth it.
-> 
-> Ah yes thats such a major proportion of platforms
+> But any of the newer kernel versions I've tested only give me
+> performance and powersave.
 
-I don't know other cellphone hardware in details, but there are 900M
-Android devices and multi-colored LEDs are quite common.
+I don't use any Fedora kernel, so I can't tell which governors are
+enabled in those. You should check the value of "CONFIG_CPU_FREQ_GOV"
+in the respective .config file for your installed kernel.
 
-> > Plus, it will actually save CPU cycles, and thus significant power.
-> 
-> All of which will be totally wiped out if you bump all the millions of
-> x86 server boxes in the world up by one page of kernel space and cause a
-> few disk I/Os
+In short: It seems that only "performance" and "powersave" are
+compiled in.
 
-I don't suggest people enable this on PCs/servers. This is useful for
-small devices, not for PCs. LED subsystem is not usually used on
-PCs...
-
-> > > little driver but the rest belongs in a library and the library can use
-> > > accelerators (of any kind) if available, or even things like lightbulbs
-> > > via X10 so you can have the big red light in the control room flash if
-> > > the machine dies  8)
-> > 
-> > Well, I'd prefer my cellphone to signal me "you have a message" by
-> > flashing blue light, not by dimming lights in the control room ;-).
-> 
-> Where the cellphone has an offload it makes sense to use it, but in the
-> general case userspace is much more flexible. You may not want a flashing
-> big red light and a siren but if its in kernel then nobody can have it,
-> if it's through a library you can.
-
-Well, library is nicer for sending message to the admin over social
-network of the month, while kernel module is better for Arduino-based
-USB-connected Turing-complete 3-color led.
-
-Unfortunately, collaboration between GNU and Android worlds ends at
-the kernel-userspace barrier, so we are unlikely to end up with one
-useful library... 
-
-[You are right that we could have done something like lpd and have
-library+daemon in the userspace playing the LED patterns. I just
-believe that this is easier and better done in kernel.]
-
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
