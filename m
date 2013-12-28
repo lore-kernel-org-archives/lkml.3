@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755416Ab3L1NkJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 08:40:09 -0500
-Received: from [65.55.111.173] ([65.55.111.173]:32886 "EHLO
-	blu0-omc4-s34.blu0.hotmail.com" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755356Ab3L1NkH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 08:40:07 -0500
-X-TMN: [QDAPvtLYAG7AAKiL34JQG88WTLds4hXv]
-X-Originating-Email: [lgxue@hotmail.com]
-Message-ID: <BLU172-W7ED2FA23CAA436EA47FCBACCC0@phx.gbl>
-From: Joe Xue <lgxue@hotmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-CC: "cooloney@gmail.com" <cooloney@gmail.com>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "rob@landley.net" <rob@landley.net>,
-        "milo.kim@ti.com" <milo.kim@ti.com>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: RE: [PATCH] Add the LED burst trigger
-Date: Sat, 28 Dec 2013 08:39:46 -0500
-Importance: Normal
-In-Reply-To: <20131228101622.GA13564@amd.pavel.ucw.cz>
-References: <1387895407-28031-1-git-send-email-lgxue@hotmail.com>,<20131225230935.GB13593@amd.pavel.ucw.cz>,<BLU172-W52032BFEF4512123D7516EACC20@phx.gbl>,<20131226142607.GA15225@amd.pavel.ucw.cz>,<BLU172-W30E6E7C0BC2B6C08FA0552ACCD0@phx.gbl>,<20131227095705.GC17143@amd.pavel.ucw.cz>,<BLU172-W8D850A8DEA8C0D87FBF45ACCC0@phx.gbl>,<20131228101622.GA13564@amd.pavel.ucw.cz>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
-X-OriginalArrivalTime: 28 Dec 2013 13:39:47.0126 (UTC) FILETIME=[461B8D60:01CF03D2]
+	id S1755410Ab3L1N5P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 08:57:15 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:49954 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755369Ab3L1N5O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Dec 2013 08:57:14 -0500
+Message-ID: <1388239027.5328.39.camel@marge.simpson.net>
+Subject: Re: [ANNOUNCE] 3.12.6-rt9
+From: Mike Galbraith <bitbucket@online.de>
+To: Nicholas Mc Guire <der.herr@hofr.at>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
+        John Kacur <jkacur@redhat.com>
+Date: Sat, 28 Dec 2013 14:57:07 +0100
+In-Reply-To: <20131228074331.GA26538@opentech.at>
+References: <20131223225017.GA8623@linutronix.de>
+	 <20131227200024.GA19505@opentech.at>
+	 <1388201449.5387.70.camel@marge.simpson.net>
+	 <1388202516.5387.79.camel@marge.simpson.net>
+	 <20131228074331.GA26538@opentech.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:QaOBpfyTUHBO9slTI5DEm4bOX4V5YeWcwp5oqJqvB2Z
+ TseD25lK31Fy/9fwZp6f1tcA1w3OogbueyO+VYVVafryg6vE5N
+ CLFixvmdfnJ8IldnZrILiXimUBJNr819tG5mwWhKlJgExeWK1z
+ 1KBOfxPzvUMowjNsKHGTqsBcIAhupI5ehT2f5XPCC5Mc7eBE70
+ NKTDfEfUpu5eqTUahxSBoF6DvtmzEX5Bd4fmWbKGrzgRh4ji6E
+ u8MdvvDiEcOVb96H7GMAnGr8gsA/QBmvkTX5LLRGDNWU9EP8cS
+ i3yYZ9MPg1hMYIEGO70P/eUtu1uBwWy6N9NhkwpmnYYLgDw6TW
+ ez6H1EQ6y3BTnIxyu1zqeeDp50CpG3HFR1y4QggX0+PR0srcSj
+ ETLqZ5jnIfRPg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Sat, 2013-12-28 at 08:43 +0100, Nicholas Mc Guire wrote:
 
->> Good idea.
->> I have finished but I'll change it to this way soon and test it in next some days.
->>
->> What the idea about the character to indicate stop?
->>
->> I mean this patten maybe indicate just once maybe indicate repeatedly until the next patten.
->>
->> What about "/"?
->> If there is a "/" at end then stop it else repeat it?
->
-> Actually, I'd put a do_repeat attribute somewhere instead of using
-> magic character for automatic repeats.
+> This type of blowups will not help to go mainline (refereing to 3.12.X here, 
+> 3.4/6/8/10 is a different story).
 
-Use this way, the user or application don't have to access two attribution files to control LEDs, and without "/" is default. If application need to blink patten once just give a "/" at the end of patten.
+Nah.  Breakage is a vital sign.  When breakage stops, bury it.
 
-> And while " " for pause and "#" for light would work. Maybe we chould
-> do "\0" for pause and "\177" for light... and interpret everything
-> between as an intensity. That will make it useful for LEDs with
-> variable intensites, too...
+-Mike
 
-"\0" is not easy to give if application is a script.
-intensity is a good idea, but makes it more complex, and user need to convert the "\num" to a ASCII code.
-
-Joe 		 	   		  
