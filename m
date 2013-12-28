@@ -1,94 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab3L1RD6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 12:03:58 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42392 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755301Ab3L1RD5 (ORCPT
+	id S1755512Ab3L1REg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 12:04:36 -0500
+Received: from smtprelay0092.hostedemail.com ([216.40.44.92]:55011 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755301Ab3L1REe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 12:03:57 -0500
-Date: Sat, 28 Dec 2013 18:03:42 +0100
-From: Markus Pargmann <mpa@pengutronix.de>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Mark Brown <broonie@kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: tps65910: Simplify setting enable_mask for
- regulators
-Message-ID: <20131228170342.GJ23493@pengutronix.de>
-References: <1388199755.8941.0.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1388199755.8941.0.camel@phoenix>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 17:26:47 up 126 days,  1:57, 38 users,  load average: 0.00, 0.03,
- 0.05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: mpa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Sat, 28 Dec 2013 12:04:34 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 40,2.5,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:152:355:379:541:599:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2693:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3871:4250:4321:5007:7652:8531:10011:10400:10481:10848:11026:11232:11658:11783:11914:12517:12519:12740:13069:13311:13357:13894:19900,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
+X-HE-Tag: bait79_27a1187f96d3c
+X-Filterd-Recvd-Size: 1645
+Message-ID: <1388250271.24123.4.camel@joe-AO722>
+Subject: Re: [PATCH net-next v2 20/20] net: caif: slight optimization of
+ addr compare
+From: Joe Perches <joe@perches.com>
+To: Ding Tianhong <dthxman@gmail.com>
+Cc: Ding Tianhong <dingtianhong@huawei.com>,
+        Dmitry Tarnyagin <dmitry.tarnyagin@lockless.no>,
+        "David S. Miller" <davem@davemloft.net>,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sat, 28 Dec 2013 09:04:31 -0800
+In-Reply-To: <52BEE7F0.1070506@gmail.com>
+References: <52BE6D50.9000308@huawei.com>
+	 <1388213953.24123.2.camel@joe-AO722> <52BEE7F0.1070506@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 28, 2013 at 11:02:35AM +0800, Axel Lin wrote:
-> BBCH_BBCHEN_MASK is equivalent to TPS65910_SUPPLY_STATE_ENABLED.
-> So all regulators have the same enable_mask setting.
-> 
+On Sat, 2013-12-28 at 23:02 +0800, Ding Tianhong wrote:
+> 于 2013/12/28 14:59, Joe Perches 写道:
+> > On Sat, 2013-12-28 at 14:18 +0800, Ding Tianhong wrote:
+> >> Use possibly more efficient ether_addr_equal
+> >> to instead of memcmp.
+> > 
+> > This may be a distinction without difference, but
+> > is a CAIF seghead also an ethernet address?
+> > 
+> NO，this is a coincidence, the CAIF seghead is 6 bytes too,
+> So from a logical point of view, maybe a new function with
+> suitable name will be more reasonable here, but the name of
+> ether_addr_equal is not correctly here.:)
 
-Thanks for spotting this. You could also remove BBCH_BBCHEN_* from
-include/linux/mfd/tps65910.h.
+So please remove this one from the series.
 
-Regards,
 
-Markus
-
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->  drivers/regulator/tps65910-regulator.c | 16 +---------------
->  1 file changed, 1 insertion(+), 15 deletions(-)
-> 
-> diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
-> index 979ea0a..f50dd84 100644
-> --- a/drivers/regulator/tps65910-regulator.c
-> +++ b/drivers/regulator/tps65910-regulator.c
-> @@ -1207,21 +1207,7 @@ static int tps65910_probe(struct platform_device *pdev)
->  		pmic->desc[i].type = REGULATOR_VOLTAGE;
->  		pmic->desc[i].owner = THIS_MODULE;
->  		pmic->desc[i].enable_reg = pmic->get_ctrl_reg(i);
-> -
-> -		switch (i) {
-> -		case TPS65910_REG_VBB:
-> -			if (tps65910_chip_id(tps65910) == TPS65910)
-> -				pmic->desc[i].enable_mask = BBCH_BBCHEN_MASK;
-> -			else
-> -				pmic->desc[i].enable_mask =
-> -					TPS65910_SUPPLY_STATE_ENABLED;
-> -			break;
-> -
-> -		default:
-> -			pmic->desc[i].enable_mask =
-> -				TPS65910_SUPPLY_STATE_ENABLED;
-> -			break;
-> -		}
-> +		pmic->desc[i].enable_mask = TPS65910_SUPPLY_STATE_ENABLED;
->  
->  		config.dev = tps65910->dev;
->  		config.init_data = reg_data;
-> -- 
-> 1.8.1.2
-> 
-> 
-> 
-> 
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
