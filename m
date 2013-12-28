@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750787Ab3L1FGZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 00:06:25 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:7156 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705Ab3L1FGY (ORCPT
+	id S1750969Ab3L1FIP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 00:08:15 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:64303 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705Ab3L1FIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 00:06:24 -0500
-Message-ID: <52BE5C2D.1030602@huawei.com>
-Date: Sat, 28 Dec 2013 13:05:49 +0800
+	Sat, 28 Dec 2013 00:08:13 -0500
+Message-ID: <52BE5CA0.40009@huawei.com>
+Date: Sat, 28 Dec 2013 13:07:44 +0800
 From: Ding Tianhong <dingtianhong@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
+To: Joe Perches <joe@perches.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Julia Lawall <julia.lawall@lip6.fr>
 CC: "David S. Miller" <davem@davemloft.net>, Netdev <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH net-next 19/20] net: plip: slight optimization of addr
  compare
-References: <52BD22ED.4030302@huawei.com> <1388159283.12212.80.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1388159283.12212.80.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <52BD22ED.4030302@huawei.com>	 <1388159283.12212.80.camel@edumazet-glaptop2.roam.corp.google.com> <1388163982.30298.12.camel@joe-AO722>
+In-Reply-To: <1388163982.30298.12.camel@joe-AO722>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.72.199]
@@ -27,48 +28,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/12/27 23:48, Eric Dumazet wrote:
-> On Fri, 2013-12-27 at 14:49 +0800, Ding Tianhong wrote:
->> Use possibly more efficient ether_addr_equal
->> to instead of memcmp.
+On 2013/12/28 1:06, Joe Perches wrote:
+> On Fri, 2013-12-27 at 07:48 -0800, Eric Dumazet wrote:
+>> On Fri, 2013-12-27 at 14:49 +0800, Ding Tianhong wrote:
+>>> Use possibly more efficient ether_addr_equal
+>>> to instead of memcmp.
+> []
+>>> diff --git a/drivers/net/plip/plip.c b/drivers/net/plip/plip.c
+> []
+>>> @@ -549,7 +549,7 @@ static __be16 plip_type_trans(struct sk_buff *skb, struct net_device *dev)
+>>>  
+>>>  	if(*eth->h_dest&1)
+>>>  	{
+>>> -		if(memcmp(eth->h_dest,dev->broadcast, ETH_ALEN)==0)
+>>> +		if(ether_addr_equal(eth->h_dest, dev->broadcast))
+>>>  			skb->pkt_type=PACKET_BROADCAST;
+>>>  		else
+>>>  			skb->pkt_type=PACKET_MULTICAST;
 >>
->> Cc: "David S. Miller" <davem@davemloft.net>
->> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
->> ---
->>  drivers/net/plip/plip.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
+>> What about :
 >>
->> diff --git a/drivers/net/plip/plip.c b/drivers/net/plip/plip.c
->> index 7b4ff35..26614df 100644
->> --- a/drivers/net/plip/plip.c
->> +++ b/drivers/net/plip/plip.c
->> @@ -549,7 +549,7 @@ static __be16 plip_type_trans(struct sk_buff *skb, struct net_device *dev)
->>  
->>  	if(*eth->h_dest&1)
->>  	{
->> -		if(memcmp(eth->h_dest,dev->broadcast, ETH_ALEN)==0)
->> +		if(ether_addr_equal(eth->h_dest, dev->broadcast))
->>  			skb->pkt_type=PACKET_BROADCAST;
->>  		else
->>  			skb->pkt_type=PACKET_MULTICAST;
+>>         if (is_multicast_ether_addr(eth->h_dest)) {
+>>                 if (ether_addr_equal_64bits(eth->h_dest, dev->broadcast))
+>>                         skb->pkt_type = PACKET_BROADCAST;
+>>                 else
+>>                         skb->pkt_type = PACKET_MULTICAST;
+>>         }
 > 
-> What about :
+> That is better though I wonder how many systems are
+> still using laplink via parallel null-printer cables.
 > 
->         if (is_multicast_ether_addr(eth->h_dest)) {
->                 if (ether_addr_equal_64bits(eth->h_dest, dev->broadcast))
->                         skb->pkt_type = PACKET_BROADCAST;
->                 else
->                         skb->pkt_type = PACKET_MULTICAST;
->         }
+> No matter, better is better.
+> 
+> The same optimization using ether_addr_equal_64bits
+> may be possible to do in other places given other
+> structs too.
+> 
+> Perhaps it's a possible spatch/coccinelle conversion,
+> 
+> I don't know spatch well enough to know if a
+> mechanism to check if structure members have other
+> fields that follow them in the structure or if the
+> structure member is an array of a minimum size.
+> 
+> Maybe Julia does.  (cc'd)
 > 
 > 
-> 
-more better, thanks.
+As the below patch said, that a lot of ether_addr_equal
+could be instead of ether_addr_equal_64bits, and I need to
+review them and resend.
 
 Regards
-Ding
+Ding 
 
-> 
 > 
 
 
