@@ -1,94 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753585Ab3L1AlN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 19:41:13 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63633 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751659Ab3L1AlM (ORCPT
+	id S1754836Ab3L1A5I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 19:57:08 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:33579 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752422Ab3L1A5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 19:41:12 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: [GIT PULL] ACPI and power management fixes and new device IDs for v3.13-rc6
-Date: Sat, 28 Dec 2013 01:54:44 +0100
-Message-ID: <6028840.QzJRjqMWxJ@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+	Fri, 27 Dec 2013 19:57:05 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX190/GLCXO00wv0h6ut/e09P
+Date: Fri, 27 Dec 2013 16:56:52 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Belisko Marek <marek.belisko@gmail.com>
+Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.13 gta04 mmc not working
+Message-ID: <20131228005651.GD5116@atomide.com>
+References: <CAAfyv36c8XktjUxpX0NQLh9vgBdr-FTKToamUT5ankzTZG_wJw@mail.gmail.com>
+ <CAAfyv36uE6hgEYW6t9Zhmn6W1Zd6XCR9xz8vNNuxaL4XzXvCUQ@mail.gmail.com>
+ <20131227181620.GC5116@atomide.com>
+ <CAAfyv356QxMGCGa3CC0UNeLrVLzMguSFgV6C-mwDKgUMfmWt-g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAfyv356QxMGCGa3CC0UNeLrVLzMguSFgV6C-mwDKgUMfmWt-g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+* Belisko Marek <marek.belisko@gmail.com> [131227 11:57]:
+> On Fri, Dec 27, 2013 at 7:16 PM, Tony Lindgren <tony@atomide.com> wrote:
+> > * Belisko Marek <marek.belisko@gmail.com> [131221 15:58]:
+> >> OK seems I found solution:
+> >> http://marc.info/?l=linux-omap&m=138756097116464&w=2
+> >
+> > Good to hear :)
+> >
+> >> @Tony: Is this going to 3.13?
+> >
+> > Sorry too intrusive for 3.13, should be all set to go into v3.14.
+> So we keep DT mmc booting broken in 3.13 for omap3?
 
-Please pull from the git repository at
+Yeah for some dual voltage cards. For DT booting, that series is
+getting into the area of "fixes for things that never worked before"
+although it is working for legacy booting :)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm+acpi-3.13-rc6
+Regards,
 
-to receive fixes and some new device IDs for ACPI and power management
-with top-most commit bfde19c4c2467cbcb5c11ec0fdaa771b8c16cbce
-
-  Merge branches 'powercap' and 'acpi-lpss' with new device IDs
-
-on top of commit 413541dd66d51f791a0b169d9b9014e4f56be13c
-
-  Linux 3.13-rc5
-
-These include a fix for a cpufreq regression related to system suspend
-(more fixes in this area are in the works), a fix for an older cpufreq
-bug, a fix for a memory leak in the system suspend console handling
-code and new device IDs for two drviers.
-
-Specifics:
-
-- Fix for a cpufreq regression causing stale sysfs files to be left
-  behind during system resume if cpufreq_add_dev() fails for one or
-  more CPUs from Viresh Kumar.
-
-- Fix for a bug in cpufreq causing CONFIG_CPU_FREQ_DEFAULT_* to be
-  ignored when the intel_pstate driver is used from Jason Baron.
-
-- System suspend fix for a memory leak in pm_vt_switch_unregister()
-  that forgot to release objects after removing them from
-  pm_vt_switch_list.  From Masami Ichikawa.
-
-- Intel Valley View device ID and energy unit encoding update for the
-  (recently added) Intel RAPL (Running Average Power Limit) driver
-  from Jacob Pan.
-
-- Intel Bay Trail SoC GPIO and ACPI device IDs for the Low Power
-  Subsystem (LPSS) ACPI driver from Paul Drews.
-
-Thanks!
-
-
----------------
-
-Jacob Pan (1):
-      powercap / RAPL: add support for ValleyView Soc
-
-Jason Baron (1):
-      cpufreq: Use CONFIG_CPU_FREQ_DEFAULT_* to set initial policy for setpolicy drivers
-
-Masami Ichikawa (1):
-      PM / sleep: Fix memory leak in pm_vt_switch_unregister().
-
-Paul Drews (1):
-      ACPI: Add BayTrail SoC GPIO and LPSS ACPI IDs
-
-Viresh Kumar (1):
-      cpufreq: remove sysfs files for CPUs which failed to come back after resume
-
----------------
-
- drivers/acpi/acpi_lpss.c           |  1 +
- drivers/cpufreq/cpufreq.c          | 69 ++++++++++++++++++++------------------
- drivers/pinctrl/pinctrl-baytrail.c |  1 +
- drivers/powercap/intel_rapl.c      | 13 +++++--
- kernel/power/console.c             |  1 +
- 5 files changed, 51 insertions(+), 34 deletions(-)
-
+Tony
