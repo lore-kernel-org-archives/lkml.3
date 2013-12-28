@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab3L1BBF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 20:01:05 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57983 "EHLO
+	id S1754882Ab3L1BG5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 20:06:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58018 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754603Ab3L1BBB (ORCPT
+	with ESMTP id S1754323Ab3L1BGz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 20:01:01 -0500
-Date: Fri, 27 Dec 2013 17:00:50 -0800
+	Fri, 27 Dec 2013 20:06:55 -0500
+Date: Fri, 27 Dec 2013 17:06:42 -0800
 From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-34f873a773c59f738aff8f412fa59d528f1b3e3f@git.kernel.org>
+Message-ID: <tip-a740576a4abf933de8f50787f24f24456cebd761@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
@@ -19,7 +19,7 @@ References: <CA+55aFzPBdbfKovMT8Edr4SmE2_=+OKJFac9XW2awegogTkVTA@mail.gmail.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:x86/asm] x86: Slightly tweak the access_ok()
   C variant for better code
-Git-Commit-ID: 34f873a773c59f738aff8f412fa59d528f1b3e3f
+Git-Commit-ID: a740576a4abf933de8f50787f24f24456cebd761
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,17 +28,17 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 27 Dec 2013 17:00:56 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 27 Dec 2013 17:06:49 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  34f873a773c59f738aff8f412fa59d528f1b3e3f
-Gitweb:     http://git.kernel.org/tip/34f873a773c59f738aff8f412fa59d528f1b3e3f
+Commit-ID:  a740576a4abf933de8f50787f24f24456cebd761
+Gitweb:     http://git.kernel.org/tip/a740576a4abf933de8f50787f24f24456cebd761
 Author:     H. Peter Anvin <hpa@zytor.com>
 AuthorDate: Fri, 27 Dec 2013 16:52:47 -0800
 Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Fri, 27 Dec 2013 16:58:17 -0800
+CommitDate: Fri, 27 Dec 2013 17:02:53 -0800
 
 x86: Slightly tweak the access_ok() C variant for better code
 
@@ -63,7 +63,7 @@ Signed-off-by: H. Peter Anvin <hpa@zytor.com>
  1 file changed, 5 insertions(+), 3 deletions(-)
 
 diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
-index 84ecf1d..4f02113 100644
+index 84ecf1d..6f1bb74 100644
 --- a/arch/x86/include/asm/uaccess.h
 +++ b/arch/x86/include/asm/uaccess.h
 @@ -41,7 +41,7 @@
@@ -91,7 +91,7 @@ index 84ecf1d..4f02113 100644
   */
  #define access_ok(type, addr, size) \
 -	(likely(__range_not_ok(addr, size, user_addr_max()) == 0))
-+	unlikely(!__range_not_ok(addr, size, user_addr_max()))
++	likely(!__range_not_ok(addr, size, user_addr_max()))
  
  /*
   * The exception table consists of pairs of addresses relative to the
