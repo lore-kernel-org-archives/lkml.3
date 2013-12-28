@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750927Ab3L1FgI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 00:36:08 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:2886 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737Ab3L1FgG (ORCPT
+	id S1751197Ab3L1GRJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 01:17:09 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:42516 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764Ab3L1GRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 00:36:06 -0500
-Message-ID: <52BE6327.5020906@huawei.com>
-Date: Sat, 28 Dec 2013 13:35:35 +0800
+	Sat, 28 Dec 2013 01:17:07 -0500
+Message-ID: <52BE6CDD.40904@huawei.com>
+Date: Sat, 28 Dec 2013 14:17:01 +0800
 From: Ding Tianhong <dingtianhong@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Eric Dumazet <eric.dumazet@gmail.com>, Julia Lawall <julia.lawall@lip6.fr>,
-        "David S. Miller" <davem@davemloft.net>,
-        Netdev <netdev@vger.kernel.org>,
+To: "David S. Miller" <davem@davemloft.net>, Netdev <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH net-next 19/20] net: plip: slight optimization of addr
+Subject: [PATCH net-next v2 01/20] net: 3com: slight optimization of addr
  compare
-References: <52BD22ED.4030302@huawei.com>	 <1388159283.12212.80.camel@edumazet-glaptop2.roam.corp.google.com>	 <1388163982.30298.12.camel@joe-AO722> <52BE5CA0.40009@huawei.com> <1388207506.30298.40.camel@joe-AO722>
-In-Reply-To: <1388207506.30298.40.camel@joe-AO722>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.72.199]
@@ -29,72 +24,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/12/28 13:11, Joe Perches wrote:
-> On Sat, 2013-12-28 at 13:07 +0800, Ding Tianhong wrote:
->> On 2013/12/28 1:06, Joe Perches wrote:
->>> On Fri, 2013-12-27 at 07:48 -0800, Eric Dumazet wrote:
->>>> On Fri, 2013-12-27 at 14:49 +0800, Ding Tianhong wrote:
->>>>> Use possibly more efficient ether_addr_equal
->>>>> to instead of memcmp.
->>> []
->>>>> diff --git a/drivers/net/plip/plip.c b/drivers/net/plip/plip.c
->>> []
->>>>> @@ -549,7 +549,7 @@ static __be16 plip_type_trans(struct sk_buff *skb, struct net_device *dev)
->>>>>  
->>>>>  	if(*eth->h_dest&1)
->>>>>  	{
->>>>> -		if(memcmp(eth->h_dest,dev->broadcast, ETH_ALEN)==0)
->>>>> +		if(ether_addr_equal(eth->h_dest, dev->broadcast))
->>>>>  			skb->pkt_type=PACKET_BROADCAST;
->>>>>  		else
->>>>>  			skb->pkt_type=PACKET_MULTICAST;
->>>>
->>>> What about :
->>>>
->>>>         if (is_multicast_ether_addr(eth->h_dest)) {
->>>>                 if (ether_addr_equal_64bits(eth->h_dest, dev->broadcast))
->>>>                         skb->pkt_type = PACKET_BROADCAST;
->>>>                 else
->>>>                         skb->pkt_type = PACKET_MULTICAST;
->>>>         }
->>>
->>> That is better though I wonder how many systems are
->>> still using laplink via parallel null-printer cables.
->>>
->>> No matter, better is better.
->>>
->>> The same optimization using ether_addr_equal_64bits
->>> may be possible to do in other places given other
->>> structs too.
->>>
->>> Perhaps it's a possible spatch/coccinelle conversion,
->>>
->>> I don't know spatch well enough to know if a
->>> mechanism to check if structure members have other
->>> fields that follow them in the structure or if the
->>> structure member is an array of a minimum size.
->>>
->>> Maybe Julia does.  (cc'd)
->>>
->>>
->> As the below patch said, that a lot of ether_addr_equal
->> could be instead of ether_addr_equal_64bits, and I need to
->> review them and resend.
-> 
-> I don't think so.
-> 
-> I think what you've done so far is fine.
-> 
-> Any conversions to ether_addr_equal_64bit
-> can be done later.
-> 
+Use possibly more efficient ether_addr_equal
+to instead of memcmp.
 
-Ok, thanks.
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+---
+ drivers/net/ethernet/3com/3c509.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Regards
-Ding
-> 
-> 
-> 
+diff --git a/drivers/net/ethernet/3com/3c509.c b/drivers/net/ethernet/3com/3c509.c
+index ede8daa..9142b47 100644
+--- a/drivers/net/ethernet/3com/3c509.c
++++ b/drivers/net/ethernet/3com/3c509.c
+@@ -252,8 +252,7 @@ static int el3_isa_id_sequence(__be16 *phys_addr)
+ 		for (i = 0; i < el3_cards; i++) {
+ 			struct el3_private *lp = netdev_priv(el3_devs[i]);
+ 			if (lp->type == EL3_PNP &&
+-			    !memcmp(phys_addr, el3_devs[i]->dev_addr,
+-				    ETH_ALEN)) {
++			    ether_addr_equal(phys_addr, el3_devs[i]->dev_addr)) {
+ 				if (el3_debug > 3)
+ 					pr_debug("3c509 with address %02x %02x %02x %02x %02x %02x was found by ISAPnP\n",
+ 						phys_addr[0] & 0xff, phys_addr[0] >> 8,
+-- 
+1.8.0
 
 
