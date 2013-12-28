@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab3L1GSD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 01:18:03 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:25021 "EHLO
+	id S1755196Ab3L1GR6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 01:17:58 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:25005 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755174Ab3L1GR7 (ORCPT
+	with ESMTP id S1755171Ab3L1GR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 01:17:59 -0500
-Message-ID: <52BE6D0D.9050301@huawei.com>
-Date: Sat, 28 Dec 2013 14:17:49 +0800
+	Sat, 28 Dec 2013 01:17:56 -0500
+Message-ID: <52BE6D01.1010109@huawei.com>
+Date: Sat, 28 Dec 2013 14:17:37 +0800
 From: Ding Tianhong <dingtianhong@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>, Netdev <netdev@vger.kernel.org>,
+To: Amir Vadai <amirv@mellanox.com>, "David S. Miller" <davem@davemloft.net>,
+        Netdev <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH net-next v2 11/20] net: packetengines: slight optimization
- of addr
+Subject: [PATCH net-next v2 08/20] net: mlx4: slight optimization of addr
+ compare
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.72.199]
@@ -27,37 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Use possibly more efficient ether_addr_equal
 to instead of memcmp.
 
-Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Amir Vadai <amirv@mellanox.com>
 Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 ---
- drivers/net/ethernet/packetengines/yellowfin.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/net/ethernet/mellanox/mlx4/en_netdev.c        | 4 ++--
+ drivers/net/ethernet/mellanox/mlx4/resource_tracker.c | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/packetengines/yellowfin.c b/drivers/net/ethernet/packetengines/yellowfin.c
-index d28593b..b83ac0e 100644
---- a/drivers/net/ethernet/packetengines/yellowfin.c
-+++ b/drivers/net/ethernet/packetengines/yellowfin.c
-@@ -1097,12 +1097,12 @@ static int yellowfin_rx(struct net_device *dev)
- 			if (status2 & 0x80) dev->stats.rx_dropped++;
- #ifdef YF_PROTOTYPE		/* Support for prototype hardware errata. */
- 		} else if ((yp->flags & HasMACAddrBug)  &&
--			memcmp(le32_to_cpu(yp->rx_ring_dma +
--				entry*sizeof(struct yellowfin_desc)),
--				dev->dev_addr, 6) != 0 &&
--			memcmp(le32_to_cpu(yp->rx_ring_dma +
--				entry*sizeof(struct yellowfin_desc)),
--				"\377\377\377\377\377\377", 6) != 0) {
-+			!ether_addr_equal(le32_to_cpu(yp->rx_ring_dma +
-+						      entry * sizeof(struct yellowfin_desc)),
-+							  dev->dev_addr) &&
-+			!ether_addr_equal(le32_to_cpu(yp->rx_ring_dma +
-+							  entry * sizeof(struct yellowfin_desc)),
-+							  "\377\377\377\377\377\377")) {
- 			if (bogus_rx++ == 0)
- 				netdev_warn(dev, "Bad frame to %pM\n",
- 					    buf_addr);
+diff --git a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
+index 6f92090..7e43858 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
+@@ -782,7 +782,7 @@ static void update_mclist_flags(struct mlx4_en_priv *priv,
+ 	list_for_each_entry(dst_tmp, dst, list) {
+ 		found = false;
+ 		list_for_each_entry(src_tmp, src, list) {
+-			if (!memcmp(dst_tmp->addr, src_tmp->addr, ETH_ALEN)) {
++			if (ether_addr_equal(dst_tmp->addr, src_tmp->addr)) {
+ 				found = true;
+ 				break;
+ 			}
+@@ -797,7 +797,7 @@ static void update_mclist_flags(struct mlx4_en_priv *priv,
+ 	list_for_each_entry(src_tmp, src, list) {
+ 		found = false;
+ 		list_for_each_entry(dst_tmp, dst, list) {
+-			if (!memcmp(dst_tmp->addr, src_tmp->addr, ETH_ALEN)) {
++			if (ether_addr_equal(dst_tmp->addr, src_tmp->addr)) {
+ 				dst_tmp->action = MCLIST_NONE;
+ 				found = true;
+ 				break;
+diff --git a/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c b/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
+index 2f3f2bc..2e3232c 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
++++ b/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
+@@ -3634,7 +3634,7 @@ static int validate_eth_header_mac(int slave, struct _rule_hw *eth_header,
+ 	    !is_broadcast_ether_addr(eth_header->eth.dst_mac)) {
+ 		list_for_each_entry_safe(res, tmp, rlist, list) {
+ 			be_mac = cpu_to_be64(res->mac << 16);
+-			if (!memcmp(&be_mac, eth_header->eth.dst_mac, ETH_ALEN))
++			if (ether_addr_equal((u8 *)&be_mac, eth_header->eth.dst_mac))
+ 				return 0;
+ 		}
+ 		pr_err("MAC %pM doesn't belong to VF %d, Steering rule rejected\n",
 -- 
-1.7.1
-
+1.8.0
 
 
