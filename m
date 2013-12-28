@@ -1,119 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580Ab3L1RK4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 12:10:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42382 "EHLO mx1.redhat.com"
+	id S1755495Ab3L1RUr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 12:20:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16346 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755301Ab3L1RKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 12:10:54 -0500
-Message-ID: <52BF060E.7090905@redhat.com>
-Date: Sat, 28 Dec 2013 12:10:38 -0500
+	id S1755432Ab3L1RUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Dec 2013 12:20:46 -0500
 From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: rui wang <ruiv.wang@gmail.com>
-CC: Tony Luck <tony.luck@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, X86-ML <x86@kernel.org>,
-        Michel Lespinasse <walken@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Yang Zhang <yang.z.zhang@intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>, janet.morgan@intel.com,
-        "Yu, Fenghua" <fenghua.yu@intel.com>,
-        chen gong <gong.chen@linux.intel.com>
-Subject: Re: [PATCH] x86: Add check for number of available vectors before
- CPU down [v2]
-References: <1387394945-5704-1-git-send-email-prarit@redhat.com>	<CA+8MBbKHZ0i0mEYLUrmWwaofvnRcxc7Dvm+w0CfZf2uQydjdjQ@mail.gmail.com>	<CA+8MBbLMFW5fnUdgNRFpPv9+U1DqB5AeoDOV44kZHozibxjqSg@mail.gmail.com>	<52B336D4.8010809@redhat.com> <CANVTcTa2AiHYrLQt-P_=4GmER_mqbSCZwY13phOkSA4XxrzF=A@mail.gmail.com>
-In-Reply-To: <CANVTcTa2AiHYrLQt-P_=4GmER_mqbSCZwY13phOkSA4XxrzF=A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Michel Lespinasse <walken@google.com>,
+        Andi Kleen <ak@linux.intel.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Yang Zhang <yang.z.zhang@Intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>, janet.morgan@Intel.com,
+        tony.luck@Intel.com, ruiv.wang@gmail.com
+Subject: [PATCH] x86, Fix do_IRQ interrupt warning for cpu hotplug retriggered irqs [v2]
+Date: Sat, 28 Dec 2013 12:20:28 -0500
+Message-Id: <1388251228-18558-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64831
 
+When downing a cpu it is possible that there are unhandled irqs left in
+the APIC IRR register.  The following code path shows how the problem
+can occur:
 
-On 12/20/2013 04:41 AM, rui wang wrote:
-> On 12/20/13, Prarit Bhargava <prarit@redhat.com> wrote:
->>
->>
->> On 12/19/2013 01:05 PM, Tony Luck wrote:
->>> On Wed, Dec 18, 2013 at 11:50 AM, Tony Luck <tony.luck@intel.com> wrote:
->>>> Looks good to me.
->>>
->>> Though now I've been confused by an offline question about affinity.
->>
->> Heh :)  I'm pursuing it now.  Rui has asked a pretty good question that I
->> don't
->> know the answer to off the top of my head.  I'm still looking at the code.
->>
->>>
->>> Suppose we have some interrupt that has affinity to multiple cpus. E.g.
->>> (real example from one of my machines):
->>>
->>> # cat /proc/irq/94/smp_affinity_list
->>> 26,54
->>>
->>> Now If I want to take either cpu26 or cpu54 offline - I'm guessing that I
->>> don't
->>> really need to find a new home for vector 94 - because the other one of
->>> that
->>> pair already has that set up.  But your check_vectors code doesn't look
->>> like
->>> it accounts for that - if we take cpu26 offline - it would see that
->>> cpu54 doesn't
->>> have 94 free - but doesn't check that it is for the same interrupt.
->>>
->>> But I may be mixing "vectors" and "irqs" here.
->>
->> Yep.  The question really is this: is the irq mapped to a single vector or
->> multiple vectors. (I think)
->>
-> 
-> The vector number for an irq is programmed in the LSB of the IOAPIC
-> IRTE (or MSI data register in the case of MSI/MSIx). So there can be
-> only one vector number (although multiple CPUs can be specified
-> through DM). An MSI-capable device can dynamically change the lower
-> few bits in the LSB to signal multiple interrupts with a contiguous
-> range of vectors in powers of 2,but each of these vectors is treated
-> as a separate IRQ. i.e. each of them has a separate irq desc, or a
-> separate line in the /proc/interrupt file. This patch shows the MSI
-> irq allocation in detail:
-> http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?id=51906e779f2b13b38f8153774c4c7163d412ffd9
-> 
-> Thanks
-> Rui
-> 
+1. CPU 5 is to go down.
+2. CPU 5 IRQ 12 IRR is set to request service, but ISR is not set.
+3. cpu_disable on CPU 5 executes via stop_machine()
+4. IRQs are migrated off of CPU 5, and the vectors' irqs are set to -1.
+4. stop_machine() finishes cpu_disable()
+5. cpu_die() for CPU 5 executes in normal context.
+6. CPU 5 attempts to handle IRQ 12 because the IRR is set for IRQ 12.  The
+code attempts to find the vector's IRQ and cannot because it has been set to -1.
+7. do_IRQ warning displays warning about CPU 5 IRQ 12.
 
-Gong and Rui,
+When this happens, do_IRQ() spits out a warning like
 
-After looking at this in detail I realized I made a mistake in my patch by
-including the check for the smp_affinity.  Simply put, it shouldn't be there
-given Rui's explanation above.
+kernel: [  614.414443] do_IRQ: 5.124 No irq handler for vector (irq -1)
 
-So I think the patch simply needs to do:
+I added a debug printk to output which CPU & vector was retriggered and
+discovered that that we are getting bogus events.  I see a 100% correlation
+between this debug printk in fixup_irqs() and the do_IRQ() warning.
 
-        this_count = 0;
-        for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
-                irq = __this_cpu_read(vector_irq[vector]);
-                if (irq >= 0) {
-                        desc = irq_to_desc(irq);
-                        data = irq_desc_get_irq_data(desc);
-                        affinity = data->affinity;
-                        if (irq_has_action(irq) && !irqd_is_per_cpu(data))
-                                this_count++;
-                }
-        }
+This patchset resolves this by adding definitions for VECTOR_UNDEFINED(-1) and
+VECTOR_RETRIGGERED(-2) and modifying the code to use them.
 
-Can the two of you confirm the above is correct?  It would be greatly appreciated.
+[v2]: sent with more detailed commit message
 
-Tony, I apologize -- your comments made me think you were stating a fact and not
-asking a question on the behavior of affinity.  I completely misunderstood what
-you were suggesting.  I thought you were implying that that the affinity "tied"
-IRQ behavior together; it does not.  It is simply a suggestion of what IRQs
-should be assigned to a particular CPU.  There is an expectation that the system
-will attempt to honour the affinity, however, it is not like each CPU is
-assigned a separate IRQ.
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Yang Zhang <yang.z.zhang@Intel.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: janet.morgan@intel.com
+Cc: tony.luck@intel.com
+Cc: ruiv.wang@gmail.com
+---
+ arch/x86/include/asm/hw_irq.h  |    2 ++
+ arch/x86/kernel/apic/io_apic.c |   13 +++++++------
+ arch/x86/kernel/irq.c          |   17 +++++++++++------
+ arch/x86/kernel/irqinit.c      |    4 ++--
+ 4 files changed, 22 insertions(+), 14 deletions(-)
 
-P.
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index 92b3bae..22c425e 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -188,6 +188,8 @@ extern __visible void smp_invalidate_interrupt(struct pt_regs *);
+ 
+ extern void (*__initconst interrupt[NR_VECTORS-FIRST_EXTERNAL_VECTOR])(void);
+ 
++#define VECTOR_UNDEFINED	-1
++#define VECTOR_RETRIGGERED	-2
+ typedef int vector_irq_t[NR_VECTORS];
+ DECLARE_PER_CPU(vector_irq_t, vector_irq);
+ extern void setup_vector_irq(int cpu);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index e63a5bd..6e1541c 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1143,7 +1143,8 @@ next:
+ 			goto next;
+ 
+ 		for_each_cpu_and(new_cpu, tmp_mask, cpu_online_mask)
+-			if (per_cpu(vector_irq, new_cpu)[vector] != -1)
++			if (per_cpu(vector_irq, new_cpu)[vector] >
++							      VECTOR_UNDEFINED)
+ 				goto next;
+ 		/* Found one! */
+ 		current_vector = vector;
+@@ -1183,7 +1184,7 @@ static void __clear_irq_vector(int irq, struct irq_cfg *cfg)
+ 
+ 	vector = cfg->vector;
+ 	for_each_cpu_and(cpu, cfg->domain, cpu_online_mask)
+-		per_cpu(vector_irq, cpu)[vector] = -1;
++		per_cpu(vector_irq, cpu)[vector] = VECTOR_UNDEFINED;
+ 
+ 	cfg->vector = 0;
+ 	cpumask_clear(cfg->domain);
+@@ -1195,7 +1196,7 @@ static void __clear_irq_vector(int irq, struct irq_cfg *cfg)
+ 								vector++) {
+ 			if (per_cpu(vector_irq, cpu)[vector] != irq)
+ 				continue;
+-			per_cpu(vector_irq, cpu)[vector] = -1;
++			per_cpu(vector_irq, cpu)[vector] = VECTOR_UNDEFINED;
+ 			break;
+ 		}
+ 	}
+@@ -1228,12 +1229,12 @@ void __setup_vector_irq(int cpu)
+ 	/* Mark the free vectors */
+ 	for (vector = 0; vector < NR_VECTORS; ++vector) {
+ 		irq = per_cpu(vector_irq, cpu)[vector];
+-		if (irq < 0)
++		if (irq <= VECTOR_UNDEFINED)
+ 			continue;
+ 
+ 		cfg = irq_cfg(irq);
+ 		if (!cpumask_test_cpu(cpu, cfg->domain))
+-			per_cpu(vector_irq, cpu)[vector] = -1;
++			per_cpu(vector_irq, cpu)[vector] = VECTOR_UNDEFINED;
+ 	}
+ 	raw_spin_unlock(&vector_lock);
+ }
+@@ -2208,7 +2209,7 @@ asmlinkage void smp_irq_move_cleanup_interrupt(void)
+ 		struct irq_cfg *cfg;
+ 		irq = __this_cpu_read(vector_irq[vector]);
+ 
+-		if (irq == -1)
++		if (irq <= VECTOR_UNDEFINED)
+ 			continue;
+ 
+ 		desc = irq_to_desc(irq);
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 22d0687..030f0e2 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -193,9 +193,10 @@ __visible unsigned int __irq_entry do_IRQ(struct pt_regs *regs)
+ 	if (!handle_irq(irq, regs)) {
+ 		ack_APIC_irq();
+ 
+-		if (printk_ratelimit())
+-			pr_emerg("%s: %d.%d No irq handler for vector (irq %d)\n",
+-				__func__, smp_processor_id(), vector, irq);
++		if (irq != VECTOR_RETRIGGERED)
++			pr_emerg_ratelimited("%s: %d.%d No irq handler for vector (irq %d)\n",
++					     __func__, smp_processor_id(),
++					     vector, irq);
+ 	}
+ 
+ 	irq_exit();
+@@ -344,7 +345,7 @@ void fixup_irqs(void)
+ 	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
+ 		unsigned int irr;
+ 
+-		if (__this_cpu_read(vector_irq[vector]) < 0)
++		if (__this_cpu_read(vector_irq[vector]) <= VECTOR_UNDEFINED)
+ 			continue;
+ 
+ 		irr = apic_read(APIC_IRR + (vector / 32 * 0x10));
+@@ -355,11 +356,15 @@ void fixup_irqs(void)
+ 			data = irq_desc_get_irq_data(desc);
+ 			chip = irq_data_get_irq_chip(data);
+ 			raw_spin_lock(&desc->lock);
+-			if (chip->irq_retrigger)
++			if (chip->irq_retrigger) {
+ 				chip->irq_retrigger(data);
++				__this_cpu_write(vector_irq[vector],
++						 VECTOR_RETRIGGERED);
++			}
+ 			raw_spin_unlock(&desc->lock);
+ 		}
+-		__this_cpu_write(vector_irq[vector], -1);
++		if (__this_cpu_read(vector_irq[vector]) != VECTOR_RETRIGGERED)
++			__this_cpu_write(vector_irq[vector], VECTOR_UNDEFINED);
+ 	}
+ }
+ #endif
+diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
+index a2a1fbc..7f50156 100644
+--- a/arch/x86/kernel/irqinit.c
++++ b/arch/x86/kernel/irqinit.c
+@@ -52,7 +52,7 @@ static struct irqaction irq2 = {
+ };
+ 
+ DEFINE_PER_CPU(vector_irq_t, vector_irq) = {
+-	[0 ... NR_VECTORS - 1] = -1,
++	[0 ... NR_VECTORS - 1] = VECTOR_UNDEFINED,
+ };
+ 
+ int vector_used_by_percpu_irq(unsigned int vector)
+@@ -60,7 +60,7 @@ int vector_used_by_percpu_irq(unsigned int vector)
+ 	int cpu;
+ 
+ 	for_each_online_cpu(cpu) {
+-		if (per_cpu(vector_irq, cpu)[vector] != -1)
++		if (per_cpu(vector_irq, cpu)[vector] > VECTOR_UNDEFINED)
+ 			return 1;
+ 	}
+ 
+-- 
+1.7.9.3
+
