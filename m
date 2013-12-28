@@ -1,49 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755075Ab3L1Dsw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 22:48:52 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:56070 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755005Ab3L1Dsv (ORCPT
+	id S1755125Ab3L1Dva (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 22:51:30 -0500
+Received: from m199-177.yeah.net ([123.58.177.199]:42728 "EHLO
+	m199-177.yeah.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755037Ab3L1Dv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 22:48:51 -0500
-Message-ID: <1388202516.5387.79.camel@marge.simpson.net>
-Subject: Re: [ANNOUNCE] 3.12.6-rt9
-From: Mike Galbraith <bitbucket@online.de>
-To: Nicholas Mc Guire <der.herr@hofr.at>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
-        John Kacur <jkacur@redhat.com>
-Date: Sat, 28 Dec 2013 04:48:36 +0100
-In-Reply-To: <1388201449.5387.70.camel@marge.simpson.net>
-References: <20131223225017.GA8623@linutronix.de>
-	 <20131227200024.GA19505@opentech.at>
-	 <1388201449.5387.70.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Fri, 27 Dec 2013 22:51:28 -0500
+Message-ID: <52BE4AB1.6090901@ubuntukylin.com>
+Date: Sat, 28 Dec 2013 11:51:13 +0800
+From: Li Wang <liwang@ubuntukylin.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Milosz Tanski <milosz@adfin.com>
+CC: ceph-devel <ceph-devel@vger.kernel.org>, Sage Weil <sage@inktank.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Yunchuan Wen <yunchuanwen@ubuntukylin.com>
+Subject: Re: [PATCH 0/3] Ceph fscache: Fix kernel panic due to a race
+References: <cover.1388066937.git.liwang@ubuntukylin.com> <CANP1eJFMZrT+GbHhg3gWqsy=whSozEiWmZj-L08EyhD8LcqzeQ@mail.gmail.com>
+In-Reply-To: <CANP1eJFMZrT+GbHhg3gWqsy=whSozEiWmZj-L08EyhD8LcqzeQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:G1kuCja3omUPVBqqbneJiUyZ0OY1JVHUCmJjC8xO/PW
- bFKSL+tAlClhricCYdLOLzAK6np+Fdm4qo7zPmEo/FTdsWROvK
- ne2DtkzjVM61lcSFkPS56O87/ULC8F/uOUG8UvzReFItV+AjRJ
- XRKF7PyrQ/7Z6uCCDTj+k+qWJIgJiol5b4UorTQ46ZqRr+Ci1O
- /ZrDrs8gRT8mk40wVA056zeTkcTMUvXxyJxchqkKAcovPqKzv2
- dhK6PqW06VjjJw4RXH2xwkc0enZLV3qqGGVu4Uda8irasIl/Pp
- EsLT8DqpVJ/ytYciCDOVrDgpXYM3oKhf5/Kfei1Vj+WRPveSab
- N9piU4ARoXYt5LJdmLM52zykd2nRXSy6pLpcw5J8puD5V5z4Ch
- 47zQjXeCYZLSA==
+X-HM-Spam-Status: e1koWUFPN1dZCBgUCR5ZQU9IVUlCSUJCQklNTE5MQ0pJTldZCQ4XHghZQV
+	koKz0kKDQ9Lz06MjckMjUkMz46Pz4pQU1VSkhCQDYjJCI#KCQyNSQzPjo*PilBS1VIT0lAKy8pJD
+	U0JDI1JDM#Oj8#KUFJVUNOQ0A4NC41LykiJDg1QUtVSU1DQCk#PDI0NSQ6KDI6QUhVT09NQCspNC
+	0yNTg#JDMuNTo1QUJVQkpOQD8iNTo2MjgkMiskNTQkMjUkMz46Pz4pQUtVTENCQD8wMjYkNTQ1Pk
+	FLVUtAKT46NyQyKyQyNSQpOTckMjUkMz46Pz4pQUxVS0tDQDYuNy8yJCk4Ky8kPzI9PT4pPjUvJD
+	I1JDM#Oj8#KUFPVUtLSUAyKyQvND86IiQ4NS8kSyRKS0tBS1VMSk1AMiskSiQzNC4pJDg1LyRLJE
+	pLS0FLVUtAMiskSiQ2MjUuLz4kODUvJEskSktBS1VLQDIrJE4kNjI1Li8#JDg1LyRLJEpLQUtVS0
+	AyKyRISyQ2MjUuLz4kODUvJEskTktBS1VLQDU0LyQ9OjY0LigkPzQ2OjI1JCgrPSQ9OjI3QUpLVU
+	tAPTUkNjoiJE9KQiQzNzEkSiRLQ0tIS09BS1VISEA9KyQpPiQ9LCQzNzEkS0NLSEtNQVZMVU5AKC
+	45JD5BSlVOTkA9NSQoLjkkPjUsNCk*KCQzNzEkSktLSUtKQUtVSUNAPTUkOTIvTCQzNzEkS0xKSU
+	tJQUhVSk5ZBg++
+X-HM-Sender-Digest: e1kSHx4VD1lBWUc6MQg6Cjo4LDo4EDorKjhIOj4qOkMwCjFVSlVKSEND
+	SUtJTUNLS0lLVTMWGhIXVRcSDBoVHDsOGQ4VDw4QAhcSFVUYFBZFWVdZDB4ZWUEdGhcIHldZCAFZ
+	QU9IS0k3V1kSC1lBWU1KVUpDTFVOT1VCWQY+
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-12-28 at 04:30 +0100, Mike Galbraith wrote:
+Hi Milosz,
+   As far as I know, logically, currently fscache does not play
+as write cache for Ceph, except that there is a
+call to ceph_readpage_to_fscache() in ceph_writepage(), but that
+is nothing related to our test case. According to our observation,
+our test case never goes through ceph_writepage(), instead, it goes
+through ceph_writepages(). So in other words, I donot think this
+is related to caching in write path.
+   May I try to explain the panic in more detail,
 
-> (Less than wonderful changelogs probably comes from the fact that
-> maintaining -rt out of tree is time consuming as all hell.  Everybody
-> gets to breaks it, a couple guys get to fix it up again and again.)
+(1) dd if=/dev/zero of=cephfs/foo bs=8 count=512
+(2) echo 3 > /proc/sys/vm/drop_caches
+(3) dd if=cephfs/foo of=/dev/null bs=8 count=1024
 
-P.S.  try rolling your tree forward to master or tip for entertainment,
-you'll see what I mean.  Hi Peter, Rik.. other breakers of worlds :)
+For statement (1), it is frequently appending a file, so
+ceph_aio_write() frequently updates the inode->i_size,
+however, these updates did not immediately reflected to
+object->store_limit_l. For statement (3), when we
+start reading the second page at [4096, 8192), ceph find that the page
+does not be cached in fscache, then it decides to write this page into
+fscache, during this process in cachefiles_write_page(), it found that 
+object->store_limit_l < 4096 (page->index << 12), it causes panic. Does
+it make sense?
 
+Cheers,
+Li Wang
+
+On 2013/12/27 6:51, Milosz Tanski wrote:
+> Li,
+>
+> I looked at the patchset am I correct that this only happens when we
+> enable caching in the write path?
+>
+> - Milosz
+>
+> On Thu, Dec 26, 2013 at 9:29 AM, Li Wang <liwang@ubuntukylin.com> wrote:
+>> From: Yunchuan Wen <yunchuanwen@ubuntukylin.com>
+>>
+>> The following scripts could easily panic the kernel,
+>>
+>> #!/bin/bash
+>> mount -t ceph -o fsc MONADDR:/ cephfs
+>> rm -rf cephfs/foo
+>> dd if=/dev/zero of=cephfs/foo bs=8 count=512
+>> echo 3 > /proc/sys/vm/drop_caches
+>> dd if=cephfs/foo of=/dev/null bs=8 count=1024
+>>
+>> This is due to when writing a page into fscache, the code will
+>> assert that the write position does not exceed the
+>> object->store_limit_l, which is supposed to be equal to inode->i_size.
+>> However, for current implementation, after file writing, the
+>> object->store_limit_l is not synchronized with new
+>> inode->i_size immediately, which introduces a race that if writing
+>> a new page into fscache, will reach the ASSERT that write position
+>> has exceeded the object->store_limit_l, and cause kernel panic.
+>> This patch fixes it.
+>>
+>> Yunchuan Wen (3):
+>>    Ceph fscache: Add an interface to synchronize object store limit
+>>    Ceph fscache: Update object store limit after writing
+>>    Ceph fscache: Wait for completion of object initialization
+>>
+>>   fs/ceph/cache.c |    1 +
+>>   fs/ceph/cache.h |   10 ++++++++++
+>>   fs/ceph/file.c  |    3 +++
+>>   3 files changed, 14 insertions(+)
+>>
+>> --
+>> 1.7.9.5
+>>
+>
+>
+>
