@@ -1,53 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab3L1A5I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 19:57:08 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:33579 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752422Ab3L1A5F (ORCPT
+	id S1754908Ab3L1BA4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Dec 2013 20:00:56 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57978 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752422Ab3L1BAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 19:57:05 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX190/GLCXO00wv0h6ut/e09P
-Date: Fri, 27 Dec 2013 16:56:52 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Belisko Marek <marek.belisko@gmail.com>
-Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.13 gta04 mmc not working
-Message-ID: <20131228005651.GD5116@atomide.com>
-References: <CAAfyv36c8XktjUxpX0NQLh9vgBdr-FTKToamUT5ankzTZG_wJw@mail.gmail.com>
- <CAAfyv36uE6hgEYW6t9Zhmn6W1Zd6XCR9xz8vNNuxaL4XzXvCUQ@mail.gmail.com>
- <20131227181620.GC5116@atomide.com>
- <CAAfyv356QxMGCGa3CC0UNeLrVLzMguSFgV6C-mwDKgUMfmWt-g@mail.gmail.com>
+	Fri, 27 Dec 2013 20:00:54 -0500
+Date: Fri, 27 Dec 2013 17:00:40 -0800
+From: tip-bot for Linus Torvalds <tipbot@zytor.com>
+Message-ID: <tip-c5fe5d80680e2949ffe102180f5fc6cefc0d145f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de
+In-Reply-To: <CA+55aFzPBdbfKovMT8Edr4SmE2_=+OKJFac9XW2awegogTkVTA@mail.gmail.com>
+References: <CA+55aFzPBdbfKovMT8Edr4SmE2_=+OKJFac9XW2awegogTkVTA@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asm] x86: Replace assembly access_ok() with a C variant
+Git-Commit-ID: c5fe5d80680e2949ffe102180f5fc6cefc0d145f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <CAAfyv356QxMGCGa3CC0UNeLrVLzMguSFgV6C-mwDKgUMfmWt-g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 27 Dec 2013 17:00:46 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Belisko Marek <marek.belisko@gmail.com> [131227 11:57]:
-> On Fri, Dec 27, 2013 at 7:16 PM, Tony Lindgren <tony@atomide.com> wrote:
-> > * Belisko Marek <marek.belisko@gmail.com> [131221 15:58]:
-> >> OK seems I found solution:
-> >> http://marc.info/?l=linux-omap&m=138756097116464&w=2
-> >
-> > Good to hear :)
-> >
-> >> @Tony: Is this going to 3.13?
-> >
-> > Sorry too intrusive for 3.13, should be all set to go into v3.14.
-> So we keep DT mmc booting broken in 3.13 for omap3?
+Commit-ID:  c5fe5d80680e2949ffe102180f5fc6cefc0d145f
+Gitweb:     http://git.kernel.org/tip/c5fe5d80680e2949ffe102180f5fc6cefc0d145f
+Author:     Linus Torvalds <torvalds@linux-foundation.org>
+AuthorDate: Fri, 27 Dec 2013 15:30:58 -0800
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Fri, 27 Dec 2013 16:58:17 -0800
 
-Yeah for some dual voltage cards. For DT booting, that series is
-getting into the area of "fixes for things that never worked before"
-although it is working for legacy booting :)
+x86: Replace assembly access_ok() with a C variant
 
-Regards,
+It turns out that the assembly variant doesn't actually produce that
+good code, presumably partly because it creates a long dependency
+chain with no scheduling, and partly because we cannot get a flags
+result out of gcc (which could be fixed with asm goto, but it turns
+out not to be worth it.)
 
-Tony
+The C code allows gcc to schedule and generate multiple (easily
+predictable) branches, and as a side benefit we can really optimize
+the case where the size is constant.
+
+Link: http://lkml.kernel.org/r/CA%2B55aFzPBdbfKovMT8Edr4SmE2_=%2BOKJFac9XW2awegogTkVTA@mail.gmail.com
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/include/asm/uaccess.h | 28 +++++++++++++++++-----------
+ 1 file changed, 17 insertions(+), 11 deletions(-)
+
+diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
+index 8ec57c0..84ecf1d 100644
+--- a/arch/x86/include/asm/uaccess.h
++++ b/arch/x86/include/asm/uaccess.h
+@@ -40,22 +40,28 @@
+ /*
+  * Test whether a block of memory is a valid user space address.
+  * Returns 0 if the range is valid, nonzero otherwise.
+- *
+- * This is equivalent to the following test:
+- * (u33)addr + (u33)size > (u33)current->addr_limit.seg (u65 for x86_64)
+- *
+- * This needs 33-bit (65-bit for x86_64) arithmetic. We have a carry...
+  */
++static inline int __chk_range_not_ok(unsigned long addr, unsigned long size, unsigned long limit)
++{
++	/*
++	 * If we have used "sizeof()" for the size,
++	 * we know it won't overflow the limit (but
++	 * it might overflow the 'addr', so it's
++	 * important to subtract the size from the
++	 * limit, not add it to the address).
++	 */
++	if (__builtin_constant_p(size))
++		return addr > limit - size;
++
++	/* Arbitrary sizes? Be careful about overflow */
++	addr += size;
++	return (addr < size) || (addr > limit);
++}
+ 
+ #define __range_not_ok(addr, size, limit)				\
+ ({									\
+-	unsigned long flag, roksum;					\
+ 	__chk_user_ptr(addr);						\
+-	asm("add %3,%1 ; sbb %0,%0 ; cmp %1,%4 ; sbb $0,%0"		\
+-	    : "=&r" (flag), "=r" (roksum)				\
+-	    : "1" (addr), "g" ((long)(size)),				\
+-	      "rm" (limit));						\
+-	flag;								\
++	__chk_range_not_ok((unsigned long __force)(addr), size, limit); \
+ })
+ 
+ /**
