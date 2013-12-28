@@ -1,28 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108Ab3L1E4J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Dec 2013 23:56:09 -0500
-Received: from mail06.syd.iprimus.net.au ([210.50.76.229]:39744 "EHLO
-	mail06.syd.iprimus.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755074Ab3L1E4I (ORCPT
+	id S1750787Ab3L1FGZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 00:06:25 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:7156 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705Ab3L1FGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Dec 2013 23:56:08 -0500
-X-Greylist: delayed 593 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Dec 2013 23:56:08 EST
-X-IronPort-AV: E=Sophos;i="4.95,564,1384261200"; 
-   d="scan'208";a="87470628"
-Date: Sat, 28 Dec 2013 05:46:11 +0100
-Message-ID: <52B1F10600006789@cpms02.int.iprimus.net.au>
-From: nationalpromo@iprimus.com.au
-Subject: Re: Immediate reply needed&#8207;
+	Sat, 28 Dec 2013 00:06:24 -0500
+Message-ID: <52BE5C2D.1030602@huawei.com>
+Date: Sat, 28 Dec 2013 13:05:49 +0800
+From: Ding Tianhong <dingtianhong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>, Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH net-next 19/20] net: plip: slight optimization of addr
+ compare
+References: <52BD22ED.4030302@huawei.com> <1388159283.12212.80.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1388159283.12212.80.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+X-Originating-IP: [10.135.72.199]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a proposal for you for 2,500,000.00 GBP, I am Ms. Jennifer Mills
-and I work with the lottery company, if you are interested, please do contact
-me asap.
+On 2013/12/27 23:48, Eric Dumazet wrote:
+> On Fri, 2013-12-27 at 14:49 +0800, Ding Tianhong wrote:
+>> Use possibly more efficient ether_addr_equal
+>> to instead of memcmp.
+>>
+>> Cc: "David S. Miller" <davem@davemloft.net>
+>> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+>> ---
+>>  drivers/net/plip/plip.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/net/plip/plip.c b/drivers/net/plip/plip.c
+>> index 7b4ff35..26614df 100644
+>> --- a/drivers/net/plip/plip.c
+>> +++ b/drivers/net/plip/plip.c
+>> @@ -549,7 +549,7 @@ static __be16 plip_type_trans(struct sk_buff *skb, struct net_device *dev)
+>>  
+>>  	if(*eth->h_dest&1)
+>>  	{
+>> -		if(memcmp(eth->h_dest,dev->broadcast, ETH_ALEN)==0)
+>> +		if(ether_addr_equal(eth->h_dest, dev->broadcast))
+>>  			skb->pkt_type=PACKET_BROADCAST;
+>>  		else
+>>  			skb->pkt_type=PACKET_MULTICAST;
+> 
+> What about :
+> 
+>         if (is_multicast_ether_addr(eth->h_dest)) {
+>                 if (ether_addr_equal_64bits(eth->h_dest, dev->broadcast))
+>                         skb->pkt_type = PACKET_BROADCAST;
+>                 else
+>                         skb->pkt_type = PACKET_MULTICAST;
+>         }
+> 
+> 
+> 
+more better, thanks.
+
+Regards
+Ding
+
+> 
+> 
+
 
