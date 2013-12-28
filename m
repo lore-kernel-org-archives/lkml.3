@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751114Ab3L1UBN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 15:01:13 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:60956 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750758Ab3L1UBJ (ORCPT
+	id S1751067Ab3L1UGW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 15:06:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36987 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750711Ab3L1UGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 15:01:09 -0500
-X-Sasl-enc: UI7NQ57fD1NVLOCWmnHqC8wtrTa1cUe64gwEUvbKZ4a1 1388260868
-From: Alexander van Heukelum <heukelum@fastmail.fm>
-To: Jani Nikula <jani.nikula@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>
-Cc: Alexander van Heukelum <heukelum@fastmail.fm>,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Revert "drm/i915: assume all GM45 Acer laptops use inverted backlight PWM"
-Date: Sat, 28 Dec 2013 21:00:39 +0100
-Message-Id: <1388260839-3873-2-git-send-email-heukelum@fastmail.fm>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1388260839-3873-1-git-send-email-heukelum@fastmail.fm>
-References: <1388260839-3873-1-git-send-email-heukelum@fastmail.fm>
+	Sat, 28 Dec 2013 15:06:21 -0500
+Date: Sat, 28 Dec 2013 12:08:15 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Jiri Kosina <jkosina@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] lib/vsprintf: add %pT[C012] format specifier
+Message-Id: <20131228120815.31f7d378.akpm@linux-foundation.org>
+In-Reply-To: <1388260405.24123.18.camel@joe-AO722>
+References: <201312252137.IDC43215.OLtJQFHOFMVFSO@I-love.SAKURA.ne.jp>
+	<20131227150211.61328c02d61722cb212649e9@linux-foundation.org>
+	<201312281243.CCB82366.tMHFVQFSOOFJOL@I-love.SAKURA.ne.jp>
+	<CAMuHMdXVrL-9Fq3ixCZvh1TubGg7HFc0HKPbq-YYu+Q1zxWcEA@mail.gmail.com>
+	<20131228112509.8a62548c.akpm@linux-foundation.org>
+	<CAMuHMdWfi4mSQLA01_fYrs1ybQ5YysO2EF4q1EBNy+7nbKXN6g@mail.gmail.com>
+	<1388260405.24123.18.camel@joe-AO722>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My Acer 8510TZ stops displaying anything when X starts with Linus' current
-tree. I bisected it down to commit ee1452d74584.
+On Sat, 28 Dec 2013 11:53:25 -0800 Joe Perches <joe@perches.com> wrote:
 
-This patch reverts commit ee1452d74584.
+> > > #define PRINTK_PID      "\002"
+> > > #define PRINTK_TASK_ID  "\003"  /* "comm:pid" */
+> > >
+> > >         printk(PRINTK_TASK_ID ": hair on fire\n");
+> > >
+> > > It's certainly compact.  I doubt if there's any existing code which
+> > > deliberately prints control chars?
+> > 
+> > But the rest looks OK to me.
+> 
+> Tell me again, what's wrong with using p or current?
+> 
+> printk("%pt", current);
 
-After the revert, everything works as before.
+Nothing much.  It's just that all these callsites are generating the
+code to pass an argument which the callee already has access to. 
+Optimizing that will reduce text size a bit.
 
-Signed-off-by: Alexander van Heukelum <heukelum@fastmail.fm>
-
----
- drivers/gpu/drm/i915/intel_display.c | 19 ++++++++++++++-----
- 1 file changed, 14 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 54e82a8..769b864 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -10541,11 +10541,20 @@ static struct intel_quirk intel_quirks[] = {
- 	/* Sony Vaio Y cannot use SSC on LVDS */
- 	{ 0x0046, 0x104d, 0x9076, quirk_ssc_force_disable },
- 
--	/*
--	 * All GM45 Acer (and its brands eMachines and Packard Bell) laptops
--	 * seem to use inverted backlight PWM.
--	 */
--	{ 0x2a42, 0x1025, PCI_ANY_ID, quirk_invert_brightness },
-+	/* Acer Aspire 5734Z must invert backlight brightness */
-+	{ 0x2a42, 0x1025, 0x0459, quirk_invert_brightness },
-+
-+	/* Acer/eMachines G725 */
-+	{ 0x2a42, 0x1025, 0x0210, quirk_invert_brightness },
-+
-+	/* Acer/eMachines e725 */
-+	{ 0x2a42, 0x1025, 0x0212, quirk_invert_brightness },
-+
-+	/* Acer/Packard Bell NCL20 */
-+	{ 0x2a42, 0x1025, 0x034b, quirk_invert_brightness },
-+
-+	/* Acer Aspire 4736Z */
-+	{ 0x2a42, 0x1025, 0x0260, quirk_invert_brightness },
- 
- 	/* Dell XPS13 HD Sandy Bridge */
- 	{ 0x0116, 0x1028, 0x052e, quirk_no_pcm_pwm_enable },
--- 
-1.8.3.2
-
+There's also the matter of providing a standard and abstracted way of
+representing a task, instead of directly accessing its ->comm.  But
+that's a separate thing from new printk tokens.
