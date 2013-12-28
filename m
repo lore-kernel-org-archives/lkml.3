@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751356Ab3L1Ten (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 14:34:43 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:41064 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797Ab3L1Tel (ORCPT
+	id S1750861Ab3L1Txf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 14:53:35 -0500
+Received: from smtprelay0026.hostedemail.com ([216.40.44.26]:59217 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750711Ab3L1Txe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 14:34:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131228192935.GA28119@amd.pavel.ucw.cz>
-References: <1387895407-28031-1-git-send-email-lgxue@hotmail.com>
-	<20131225230935.GB13593@amd.pavel.ucw.cz>
-	<BLU172-W52032BFEF4512123D7516EACC20@phx.gbl>
-	<20131226142607.GA15225@amd.pavel.ucw.cz>
-	<BLU172-W30E6E7C0BC2B6C08FA0552ACCD0@phx.gbl>
-	<20131227095705.GC17143@amd.pavel.ucw.cz>
-	<BLU172-W8D850A8DEA8C0D87FBF45ACCC0@phx.gbl>
-	<20131228101622.GA13564@amd.pavel.ucw.cz>
-	<CAMuHMdVz7FWgYZRVHy6pK+g_2QKxTW00N8jmjWHe05m5CJvPOw@mail.gmail.com>
-	<20131228192935.GA28119@amd.pavel.ucw.cz>
-Date: Sat, 28 Dec 2013 20:34:40 +0100
-X-Google-Sender-Auth: 1Af4oGSYBGc-DCvJByXV13sJfUo
-Message-ID: <CAMuHMdXDJ6uhe6srV-+0a8=cpBUgP+VakG+_wyLwAuiQSRVhqQ@mail.gmail.com>
-Subject: Re: how to represent sequence of brightnesses in /sys (was Re:
- [PATCH] Add the LED burst trigger)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Greg KH <greg@kroah.com>, Joe Xue <lgxue@hotmail.com>,
-        "cooloney@gmail.com" <cooloney@gmail.com>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "rob@landley.net" <rob@landley.net>,
-        "milo.kim@ti.com" <milo.kim@ti.com>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 28 Dec 2013 14:53:34 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3871:3872:3874:4250:4321:4605:5007:7652:7904:10004:10400:10848:11026:11232:11473:11658:11914:12296:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: crack00_3bfd931d8e82e
+X-Filterd-Recvd-Size: 2122
+Message-ID: <1388260405.24123.18.camel@joe-AO722>
+Subject: Re: [PATCH] lib/vsprintf: add %pT[C012] format specifier
+From: Joe Perches <joe@perches.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Jiri Kosina <jkosina@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sat, 28 Dec 2013 11:53:25 -0800
+In-Reply-To: <CAMuHMdWfi4mSQLA01_fYrs1ybQ5YysO2EF4q1EBNy+7nbKXN6g@mail.gmail.com>
+References: <201312252137.IDC43215.OLtJQFHOFMVFSO@I-love.SAKURA.ne.jp>
+	 <20131227150211.61328c02d61722cb212649e9@linux-foundation.org>
+	 <201312281243.CCB82366.tMHFVQFSOOFJOL@I-love.SAKURA.ne.jp>
+	 <CAMuHMdXVrL-9Fq3ixCZvh1TubGg7HFc0HKPbq-YYu+Q1zxWcEA@mail.gmail.com>
+	 <20131228112509.8a62548c.akpm@linux-foundation.org>
+	 <CAMuHMdWfi4mSQLA01_fYrs1ybQ5YysO2EF4q1EBNy+7nbKXN6g@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 28, 2013 at 8:29 PM, Pavel Machek <pavel@ucw.cz> wrote:
->> Sysfs is meant to be human-readable/writable, so please use plain ASCII
->> numbers in strings instead.
->
-> Actually, sysfs is meant to be one value per file, and it is
+On Sat, 2013-12-28 at 20:25 +0100, Geert Uytterhoeven wrote:
+> On Sat, Dec 28, 2013 at 8:25 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> >> Is any of the "\x" (backslash + character) unused and thus available?
+> >
+> > I guess control characters would work.
+> >
+> > #define PRINTK_COMM     "\001"
+> 
+> Not that one, cfr. include/linux/kern_levels.h ;-)
 
-Ideally, yes.
+yup.
 
-> understood that data that are "natively blob" are just passed as
-> blob. (I believe this qualifies).
+> > #define PRINTK_PID      "\002"
+> > #define PRINTK_TASK_ID  "\003"  /* "comm:pid" */
+> >
+> >         printk(PRINTK_TASK_ID ": hair on fire\n");
+> >
+> > It's certainly compact.  I doubt if there's any existing code which
+> > deliberately prints control chars?
+> 
+> But the rest looks OK to me.
 
-But it doesn't buy us much here, does it? It will make e.g. shell scripts
-needlessly complicated.
+Tell me again, what's wrong with using p or current?
 
-> Sequence of ascii numbers would work for me, but I don't think that is
-> allowed.
+printk("%pt", current);
 
-Gr{oetje,eeting}s,
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
