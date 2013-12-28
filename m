@@ -1,34 +1,24 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337Ab3LUGgG (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sat, 21 Dec 2013 01:36:06 -0500
-Received: from outbound004.roc2.bluetie.com ([208.89.132.144]:36626 "EHLO
-	outbound004.roc2.bluetie.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751043Ab3LUGgE (ORCPT
+	id S1751340Ab3L1VzB (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Sat, 28 Dec 2013 16:55:01 -0500
+Received: from smtp.tjrn.jus.br ([186.209.102.50]:48701 "EHLO
+	z-cairo.tjrn.jus.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047Ab3L1Vy7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Dec 2013 01:36:04 -0500
-X-Greylist: delayed 487 seconds by postgrey-1.27 at vger.kernel.org; Sat, 21 Dec 2013 01:36:04 EST
-X-CMAE-OUT-Analysis: v=2.1 cv=MYZV5fPf c=1 sm=1 tr=0
- a=/JjmqX1UcUuSpPXcp9ITbA==:117 a=QoHJ8kPOAAAA:8 a=4VA_gLiXcpYA:10
- a=IkcTkHD0fZMA:10 a=VwQbUJbxAAAA:8 a=8qFmQIM1JJcA:10 a=mEgR1ULEAAAA:20
- a=wpmEEhYQFEMunKC3k_wA:9 a=jjr//+d8++h3idp61RL+V+rVJvg=:19
- a=jkwP77aQ2psP8Imo3Zf8GXsARoQ=:19 a=QEXdDO2ut3YA:10 a=wOsKXF8nl8cA:10
- a=jPYMW6S8CTwA:10 a=o0eJl8sZrB0A:10 a=69wIrqM2kUEA:10
-X-CMAE-OUT-Score: 0.00
-Message-ID: <20131221012701.21666@web001.roc2.bluetie.com>
-X-HTTP-Received: from i0s1mkukzr.myway [91.121.158.63] by web001.roc2.bluetie.com (BlueTie WebMail ); Sat, 21 Dec 2013 01:27:01 -0500
-X-Mailer: BlueTie MTA
-Date: Sat, 21 Dec 2013 01:27:01 -0500
-To: i0s1mkukzr@myway.com
-From: "i0s1mkukzr" <i0s1mkukzr.myway@bluetie.com>
-Importance: normal
-Subject: Hi
-Content-Type: text/plain; charset=UTF-8
+	Sat, 28 Dec 2013 16:54:59 -0500
+X-Greylist: delayed 428 seconds by postgrey-1.27 at vger.kernel.org; Sat, 28 Dec 2013 16:54:59 EST
+Content-Type: text/plain; charset=US-ASCII
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Hello
+To: Recipients <info@hotmail.com>
+From: "LEUNG CHEUNG" <info@hotmail.com>
+Date: Sun, 29 Dec 2013 03:15:36 +0530
+Reply-To: mr.leungcheng25@hotmail.com
+Message-Id: <20131228214356.C551A1314345@z-saopaulo.tjrn.jus.br>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by spinics.net id rBL6abkq027185
 
-Diploma?
-
-http://tiny.cc/gdjpc13gaw
+I need your assistance to transfer $22,500,000.00 Dollars from Hong Kong
