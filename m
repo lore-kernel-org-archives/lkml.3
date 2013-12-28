@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462Ab3L1P7G (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 10:59:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45065 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754677Ab3L1P7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 10:59:04 -0500
-Message-ID: <52BEF53E.4000704@redhat.com>
-Date: Sat, 28 Dec 2013 10:58:54 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-CC: linux-kernel@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Yang Zhang <yang.z.zhang@Intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Janet Morgan <janet.morgan@Intel.com>, Tony Luck <tony.luck@Intel.com>,
-        Ruiv Wang <ruiv.wang@gmail.com>, Andi Kleen <ak@linux.intel.com>,
-        x86@kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] x86, irq, fix logical AND/OR error in check_irq_vectors_for_cpu_disable()
-References: <1387809552-20529-1-git-send-email-prarit@redhat.com> <20131224025059.GA24419@gchen.bj.intel.com> <52B989CD.6060403@redhat.com> <20131225024048.GA29542@gchen.bj.intel.com> <52BDA70C.1080508@redhat.com> <52BE244B.5040206@linux.intel.com>
-In-Reply-To: <52BE244B.5040206@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755469Ab3L1QDg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 11:03:36 -0500
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:48074 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755411Ab3L1QDf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Dec 2013 11:03:35 -0500
+From: Arthur Schwalbenberg <arthurs578@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: john.stultz@linaro.org, dan.carpenter@oracle.com, arthurs578@gmail.com,
+        cruzjbishop@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] 	Staging: Android: Fixed coding issue return parenthesis in alarm_dev.c
+Date: Sat, 28 Dec 2013 11:03:28 -0500
+Message-Id: <1388246608-11272-1-git-send-email-arthurs578@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+	This is a patch to the alarm_dev.c file that fixes up a return is not
+	a function warning found by the checkpatch.pl tool
 
+	Signed-off-by: Arthur Schwalbenberg <arthurs578@gmail.com>
+---
+ drivers/staging/android/alarm-dev.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-On 12/27/2013 08:07 PM, H. Peter Anvin wrote:
-> On 12/27/2013 08:13 AM, Prarit Bhargava wrote:
->>>
->>> Back to my question, assume cpu1 will be off-lined and one irq affinity is
->>> set as (1, 2) -- this irq will be bypassed. Looks good. But if one irq
->>> affinity is set as only (1), -- this irq is bypassed, too. Not right!
->>
->> Oh, yes, this is a bug.  ... and as you point out ...
->>
-> 
-> Does this mean the patch that is currently in my tree should not be
-> pushed to Linus?  It sounds like that to me...
+diff --git a/drivers/staging/android/alarm-dev.c b/drivers/staging/android/alarm-dev.c
+index 647694f..96b2f53 100644
+--- a/drivers/staging/android/alarm-dev.c
++++ b/drivers/staging/android/alarm-dev.c
+@@ -68,8 +68,8 @@ static struct devalarm alarms[ANDROID_ALARM_TYPE_COUNT];
+  */
+ static int is_wakeup(enum android_alarm_type type)
+ {
+-	return (type == ANDROID_ALARM_RTC_WAKEUP ||
+-		type == ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP);
++	return type == ANDROID_ALARM_RTC_WAKEUP ||
++	       type == ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP;
+ }
+ 
+ 
+-- 
+1.8.3.2
 
-Yes, hpa -- please drop the patch.  I will resubmit an updated patch after testing.
-
-P.
-
-> 
-> 	-hpa
-> 
