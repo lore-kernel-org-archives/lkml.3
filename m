@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab3L1RsU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 12:48:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36560 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553Ab3L1RsU (ORCPT
+	id S1755474Ab3L1SwC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 13:52:02 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:42433 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab3L1SwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 12:48:20 -0500
-Date: Sat, 28 Dec 2013 09:48:57 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Arthur Schwalbenberg <arthurs578@gmail.com>
-Cc: john.stultz@linaro.org, dan.carpenter@oracle.com, cruzjbishop@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] 	Staging: Android: Fixed coding issue return parenthesis
- in alarm_dev.c
-Message-ID: <20131228174857.GA15772@kroah.com>
-References: <1388246608-11272-1-git-send-email-arthurs578@gmail.com>
+	Sat, 28 Dec 2013 13:52:00 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1388246608-11272-1-git-send-email-arthurs578@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20131228101622.GA13564@amd.pavel.ucw.cz>
+References: <1387895407-28031-1-git-send-email-lgxue@hotmail.com>
+	<20131225230935.GB13593@amd.pavel.ucw.cz>
+	<BLU172-W52032BFEF4512123D7516EACC20@phx.gbl>
+	<20131226142607.GA15225@amd.pavel.ucw.cz>
+	<BLU172-W30E6E7C0BC2B6C08FA0552ACCD0@phx.gbl>
+	<20131227095705.GC17143@amd.pavel.ucw.cz>
+	<BLU172-W8D850A8DEA8C0D87FBF45ACCC0@phx.gbl>
+	<20131228101622.GA13564@amd.pavel.ucw.cz>
+Date: Sat, 28 Dec 2013 19:51:59 +0100
+X-Google-Sender-Auth: nf4tR4inrC2-BLP27stmmabQkeY
+Message-ID: <CAMuHMdVz7FWgYZRVHy6pK+g_2QKxTW00N8jmjWHe05m5CJvPOw@mail.gmail.com>
+Subject: Re: [PATCH] Add the LED burst trigger
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Joe Xue <lgxue@hotmail.com>, "cooloney@gmail.com" <cooloney@gmail.com>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "rob@landley.net" <rob@landley.net>,
+        "milo.kim@ti.com" <milo.kim@ti.com>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 28, 2013 at 11:03:28AM -0500, Arthur Schwalbenberg wrote:
-> 	This is a patch to the alarm_dev.c file that fixes up a return is not
-> 	a function warning found by the checkpatch.pl tool
-> 
-> 	Signed-off-by: Arthur Schwalbenberg <arthurs578@gmail.com>
+On Sat, Dec 28, 2013 at 11:16 AM, Pavel Machek <pavel@ucw.cz> wrote:
+>> Good idea.
+>> I have finished but I'll change it to this way soon and test it in next some days.
+>>
+>> What the idea about the character to indicate stop?
+>>
+>> I mean this patten maybe indicate just once maybe indicate repeatedly until the next patten.
+>>
+>> What about "/"?
+>> If there is a "/" at end then stop it else repeat it?
+>
+> Actually, I'd put a do_repeat attribute somewhere instead of using
+> magic character for automatic repeats.
+>
+> And while " " for pause and "#" for light would work. Maybe we chould
+> do "\0" for pause and "\177" for light... and interpret everything
+> between as an intensity. That will make it useful for LEDs with
+> variable intensites, too...
 
-Why the odd indentation?
+Sysfs is meant to be human-readable/writable, so please use plain ASCII
+numbers in strings instead.
 
-> ---
->  drivers/staging/android/alarm-dev.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/staging/android/alarm-dev.c b/drivers/staging/android/alarm-dev.c
-> index 647694f..96b2f53 100644
-> --- a/drivers/staging/android/alarm-dev.c
-> +++ b/drivers/staging/android/alarm-dev.c
-> @@ -68,8 +68,8 @@ static struct devalarm alarms[ANDROID_ALARM_TYPE_COUNT];
->   */
->  static int is_wakeup(enum android_alarm_type type)
->  {
-> -	return (type == ANDROID_ALARM_RTC_WAKEUP ||
-> -		type == ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP);
-> +	return type == ANDROID_ALARM_RTC_WAKEUP ||
-> +	       type == ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP;
->  }
+Gr{oetje,eeting}s,
 
-This change is already in linux-next, right?  I can't apply the same
-change more than once to the tree...
+                        Geert
 
-greg k-h
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
