@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751596Ab3L1GRk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 01:17:40 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:42522 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764Ab3L1GRO (ORCPT
+	id S1755216Ab3L1GSD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 01:18:03 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:25021 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755174Ab3L1GR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 01:17:14 -0500
-Message-ID: <52BE6CD8.3040300@huawei.com>
-Date: Sat, 28 Dec 2013 14:16:56 +0800
+	Sat, 28 Dec 2013 01:17:59 -0500
+Message-ID: <52BE6D0D.9050301@huawei.com>
+Date: Sat, 28 Dec 2013 14:17:49 +0800
 From: Ding Tianhong <dingtianhong@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-        Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Eric Dumazet <edumazet@google.com>
-Subject: [PATCH net-next v2 00/20] slight optimization of addr compare for
- net modules
+To: "David S. Miller" <davem@davemloft.net>, Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH net-next v2 11/20] net: packetengines: slight optimization
+ of addr
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.72.199]
@@ -27,71 +24,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the second patchset for slight optimization of address compare,
-mainly for net tree, just following the Joe's opinion, it will help review
-the code for maintainers and supports.
+Use possibly more efficient ether_addr_equal
+to instead of memcmp.
 
-v2: Change some style for patch 2.
-    According Eric's suggestion, use the ether_addr_equal_64bits to instead
-    of ether_addr_equal for patch 19.
-    In fact, there are a lot of places which could use ether_addr_equal_64bits
-    to instead of ether_addr_equal, but not this time, thanks for Joe's
-    opinion.
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+---
+ drivers/net/ethernet/packetengines/yellowfin.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-Best Regards
-Ding
-
-Ding Tianhong (20):
-  net: 3com: slight optimization of addr compare
-  net: bnx2x: slight optimization of addr compare
-  net: cxgb3: slight optimization of addr compare
-  net: enic: slight optimization of addr compare
-  net: benet: slight optimization of addr compare
-  net: igbvf: slight optimization of addr compare
-  net: ixgbe: slight optimization of addr compare
-  net: mlx4: slight optimization of addr compare
-  net: ksz884x: slight optimization of addr compare
-  net: vxge: slight optimization of addr compare
-  net: packetengines: slight optimization of addr compare
-  net: netxen: slight optimization of addr compare
-  net: qlcnic: slight optimization of addr compare
-  net: renesas: slight optimization of addr compare
-  net: seeq: slight optimization of addr compare
-  net: sun: optimization of addr compare
-  net: ti: slight optimization of addr compare
-  net: fddi: slight optimization of addr compare
-  net: plip: slight optimization of addr compare
-  net: caif: slight optimization of addr compare
-
- drivers/net/ethernet/3com/3c509.c                     |  3 +--
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c        | 10 ++++------
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c     |  2 +-
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_vfpf.c      |  2 +-
- drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c    |  2 +-
- drivers/net/ethernet/chelsio/cxgb3/l2t.c              |  2 +-
- drivers/net/ethernet/cisco/enic/enic_pp.c             |  2 +-
- drivers/net/ethernet/emulex/benet/be_main.c           |  2 +-
- drivers/net/ethernet/intel/igbvf/netdev.c             |  2 +-
- drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c        |  3 +--
- drivers/net/ethernet/mellanox/mlx4/en_netdev.c        |  4 ++--
- drivers/net/ethernet/mellanox/mlx4/resource_tracker.c |  2 +-
- drivers/net/ethernet/micrel/ksz884x.c                 |  9 ++++-----
- drivers/net/ethernet/neterion/vxge/vxge-main.c        |  2 +-
- drivers/net/ethernet/packetengines/yellowfin.c        |  8 ++------
- drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c    |  2 +-
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c        |  4 ++--
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c        |  4 ++--
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c      |  4 ++--
- drivers/net/ethernet/renesas/sh_eth.c                 |  2 +-
- drivers/net/ethernet/seeq/sgiseeq.c                   |  2 +-
- drivers/net/ethernet/sun/sunvnet.c                    |  2 +-
- drivers/net/ethernet/ti/cpsw_ale.c                    |  2 +-
- drivers/net/fddi/skfp/fplustm.c                       |  3 ++-
- drivers/net/plip/plip.c                               |  2 +-
- net/caif/cfrfml.c                                     |  2 +-
- 26 files changed, 38 insertions(+), 46 deletions(-)
-
+diff --git a/drivers/net/ethernet/packetengines/yellowfin.c b/drivers/net/ethernet/packetengines/yellowfin.c
+index d28593b..b83ac0e 100644
+--- a/drivers/net/ethernet/packetengines/yellowfin.c
++++ b/drivers/net/ethernet/packetengines/yellowfin.c
+@@ -1097,12 +1097,12 @@ static int yellowfin_rx(struct net_device *dev)
+ 			if (status2 & 0x80) dev->stats.rx_dropped++;
+ #ifdef YF_PROTOTYPE		/* Support for prototype hardware errata. */
+ 		} else if ((yp->flags & HasMACAddrBug)  &&
+-			memcmp(le32_to_cpu(yp->rx_ring_dma +
+-				entry*sizeof(struct yellowfin_desc)),
+-				dev->dev_addr, 6) != 0 &&
+-			memcmp(le32_to_cpu(yp->rx_ring_dma +
+-				entry*sizeof(struct yellowfin_desc)),
+-				"\377\377\377\377\377\377", 6) != 0) {
++			!ether_addr_equal(le32_to_cpu(yp->rx_ring_dma +
++						      entry * sizeof(struct yellowfin_desc)),
++							  dev->dev_addr) &&
++			!ether_addr_equal(le32_to_cpu(yp->rx_ring_dma +
++							  entry * sizeof(struct yellowfin_desc)),
++							  "\377\377\377\377\377\377")) {
+ 			if (bogus_rx++ == 0)
+ 				netdev_warn(dev, "Bad frame to %pM\n",
+ 					    buf_addr);
 -- 
-1.8.0
+1.7.1
+
 
 
