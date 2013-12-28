@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538Ab3L1WKQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 17:10:16 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:39992 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751136Ab3L1WKM (ORCPT
+	id S1751505Ab3L1WZe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 17:25:34 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:43787 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751037Ab3L1WZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 17:10:12 -0500
-X-Sasl-enc: zDgcEmq5SHJ0ursAWMfUoA20oOuTLn1qvBhVzKB/04wO 1388268605
-Date: Sat, 28 Dec 2013 20:10:03 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Julian Andres Klode <jak@jak-linux.org>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "open list:THINKPAD ACPI EXT..." 
-	<ibm-acpi-devel@lists.sourceforge.net>,
-        "open list:THINKPAD ACPI EXT..." 
-	<platform-driver-x86@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] thinkpad_acpi: Add support for controlling charge
- thresholds
-Message-ID: <20131228221003.GA24911@khazad-dum.debian.net>
-References: <1384178195-12218-1-git-send-email-jak@jak-linux.org>
- <20131228211026.GA14725@jak-x230>
+	Sat, 28 Dec 2013 17:25:32 -0500
+Message-ID: <52BF5DE9.3060501@cogentembedded.com>
+Date: Sun, 29 Dec 2013 02:25:29 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131228211026.GA14725@jak-x230>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ding Tianhong <dthxman@gmail.com>, Ding Tianhong <dingtianhong@huawei.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH net-next v2 11/20] net: packetengines: slight optimization
+ of addr
+References: <52BE6D0D.9050301@huawei.com> <52BED8ED.2040908@cogentembedded.com> <52BEEBD5.1040301@gmail.com>
+In-Reply-To: <52BEEBD5.1040301@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 28 Dec 2013, Julian Andres Klode wrote:
-> On Mon, Nov 11, 2013 at 02:56:29PM +0100, Julian Andres Klode wrote:
-> > This patch series adds support for specifying charging thresholds,
-> > forcing a battery to discharge, and inhibiting charging, on ThinkPad
-> > Laptops using Sandy Bridge or newer processors.
-> 
-> Hello again,
-> 
-> it's been about 1.5 months now after I submitted this patch series
-> and I have not received any response yet.
-> 
-> I fixed the issues pointed out by Bjørn Mork in the previous patch
-> except for the one with the battery names, as I have no idea how
-> battery numbers are created or mapped. I can only say that the names
-> are the same on my test machine, I don't have any other ones.
-> 
-> Henrique, it would be really great if you could take a look.
+Hello.
 
-I did.  I just did not manage to finish looking over it, it is not really
-okay as-is, mostly because it did not create a power-supply device and
-properly extended that thing in a generic way, which would be vastly
-preferable to adding yet another private interface.
+On 12/28/2013 06:18 PM, Ding Tianhong wrote:
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+>>> Use possibly more efficient ether_addr_equal
+>>> to instead of memcmp.
+
+>>> Cc: "David S. Miller" <davem@davemloft.net>
+>>> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+>>> ---
+>>>    drivers/net/ethernet/packetengines/yellowfin.c |   12 ++++++------
+>>>    1 files changed, 6 insertions(+), 6 deletions(-)
+
+>>> diff --git a/drivers/net/ethernet/packetengines/yellowfin.c b/drivers/net/ethernet/packetengines/yellowfin.c
+>>> index d28593b..b83ac0e 100644
+>>> --- a/drivers/net/ethernet/packetengines/yellowfin.c
+>>> +++ b/drivers/net/ethernet/packetengines/yellowfin.c
+>>> @@ -1097,12 +1097,12 @@ static int yellowfin_rx(struct net_device *dev)
+>>>                if (status2 & 0x80) dev->stats.rx_dropped++;
+>>>    #ifdef YF_PROTOTYPE        /* Support for prototype hardware errata. */
+>>>            } else if ((yp->flags & HasMACAddrBug)  &&
+>>> -            memcmp(le32_to_cpu(yp->rx_ring_dma +
+>>> -                entry*sizeof(struct yellowfin_desc)),
+>>> -                dev->dev_addr, 6) != 0 &&
+>>> -            memcmp(le32_to_cpu(yp->rx_ring_dma +
+>>> -                entry*sizeof(struct yellowfin_desc)),
+>>> -                "\377\377\377\377\377\377", 6) != 0) {
+>>> +            !ether_addr_equal(le32_to_cpu(yp->rx_ring_dma +
+>>> +                              entry * sizeof(struct yellowfin_desc)),
+>>> +                              dev->dev_addr) &&
+
+>>     Previous line was aligned correctly, the above line should start under le32_to_cpu.
+
+>>> +            !ether_addr_equal(le32_to_cpu(yp->rx_ring_dma +
+>>> +                              entry * sizeof(struct yellowfin_desc)),
+
+>>     Start the continuation lines under 'yp', please.
+
+>>> +                              "\377\377\377\377\377\377")) {
+
+>>     This line should start under le32_to_cpu.
+
+>> WBR, Sergei
+
+
+> Hi sergei:
+> you mean this way?
+> 	!ether_addr_equal(le32_to_cpu(yp->rx_ring_dma +
+> 				      entry * sizeof(struct yellowfin_desc)),
+> 			  dev->dev_addr) &&
+>
+> 	!ether_addr_equal(le32_to_cpu(yp->rx_ring_dma +
+> 				      entry * sizeof(struct yellowfin_desc)),
+> 			  "\377\377\377\377\377\377")) {
+
+    Yes, exactly.
+
+> Regards
+> Ding
+
+WBR, Sergei
+
