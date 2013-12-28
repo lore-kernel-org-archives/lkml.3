@@ -1,214 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751454Ab3L1Wyy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 17:54:54 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54596 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751037Ab3L1Wyw (ORCPT
+	id S1751397Ab3L1XGw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 18:06:52 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:49484 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751190Ab3L1XGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 17:54:52 -0500
-Message-ID: <1388271276.14575.12.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 3.4] mmc: block: fix a bug of error handling in MMC
- driver
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Yoshitake Kobayashi <yoshitake.kobayashi@toshiba.co.jp>
-Cc: gregkh@linuxfoundation.org, stable@vger.kernel.org, cjb@laptop.org,
-        linux-kernel@vger.kernel.org
-Date: Sat, 28 Dec 2013 23:54:36 +0100
-In-Reply-To: <1386262023-30954-1-git-send-email-yoshitake.kobayashi@toshiba.co.jp>
-References: <1386262023-30954-1-git-send-email-yoshitake.kobayashi@toshiba.co.jp>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-aYqw/0ICfzrZ3y3RJ7ao"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 151.217.234.213
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sat, 28 Dec 2013 18:06:49 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yinghai Lu <yinghai@kernel.org>, Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH][tentative] PCI / ACPI: Rework PCI host bridge removal to avoid sysfs warnings
+Date: Sun, 29 Dec 2013 00:20:22 +0100
+Message-ID: <37552283.kG1L4S8Daa@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
---=-aYqw/0ICfzrZ3y3RJ7ao
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+The device_del(&host_bridge->dev) in pci_stop_root_bus() is
+problematic, because it causes all sysfs directories below
+the host bridge to be removed recursively and when
+pci_remove_root_bus() attempts to remove devices on the root
+bus (whose sysfs directories are gone now along with all their
+subdirectories), it causes warnings similar to this one to be
+printed:
 
-On Fri, 2013-12-06 at 01:47 +0900, Yoshitake Kobayashi wrote:
-> From: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
->=20
-> commit c8760069627ad3b0dbbea170f0c4c58b16e18d3d upstream.
->=20
-> Current MMC driver doesn't handle generic error (bit19 of device
-> status) in write sequence. As a result, write data gets lost when
-> generic error occurs. For example, a generic error when updating a
-> filesystem management information causes a loss of write data and
-> corrupts the filesystem. In the worst case, the system will never
-> boot.
->=20
-> This patch includes the following functionality:
->   1. To enable error checking for the response of CMD12 and CMD13
->      in write command sequence
->   2. To retry write sequence when a generic error occurs
->=20
-> [Backported to 3.4-stable]
->=20
-> Signed-off-by: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
-> Signed-off-by: Chris Ball <cjb@laptop.org>
+WARNING: CPU: 0 PID: 6 at fs/sysfs/group.c:214 sysfs_remove_group+0xc6/0xd0()
+sysfs group ffffffff819ac5c0 not found for kobject '0001:ff:10.2'
+Modules linked in: <irrelevant list>
+CPU: 0 PID: 6 Comm: kworker/u512:0 Tainted: G        W    3.13.0-rc5+ #11
+Hardware name:
+Workqueue: kacpi_hotplug acpi_hotplug_work_fn
+ 0000000000000009 ffff8808738d3bd8 ffffffff815d84ea ffff8808738d3c20
+ ffff8808738d3c10 ffffffff8106594d 0000000000000000 ffffffff819ac5c0
+ ffff880871b9d0a8 ffff8a07d1895000 0000000000000103 ffff8808738d3c70
+Call Trace:
+ [<ffffffff815d84ea>] dump_stack+0x45/0x56
+ [<ffffffff8106594d>] warn_slowpath_common+0x7d/0xa0
+ [<ffffffff810659bc>] warn_slowpath_fmt+0x4c/0x50
+ [<ffffffff8122b52e>] ? sysfs_get_dirent_ns+0x4e/0x70
+ [<ffffffff8122c806>] sysfs_remove_group+0xc6/0xd0
+ [<ffffffff813b83f3>] dpm_sysfs_remove+0x43/0x50
+ [<ffffffff813ae105>] device_del+0x45/0x1c0
+ [<ffffffff812e51f6>] pci_remove_bus_device+0x66/0xd0
+ [<ffffffff812e5363>] pci_remove_root_bus+0x73/0x80
+ [<ffffffff813276ab>] acpi_pci_root_remove+0x42/0x4f
+ [<ffffffff81323070>] acpi_bus_trim+0x56/0x89
+ [<ffffffff81323052>] acpi_bus_trim+0x38/0x89
+ [<ffffffff813245df>] acpi_device_hotplug+0x137/0x33b
+ [<ffffffff8131efba>] acpi_hotplug_work_fn+0x1c/0x27
+ [<ffffffff81080f1b>] process_one_work+0x17b/0x460
+ [<ffffffff81081ccb>] worker_thread+0x11b/0x400
+ [<ffffffff81081bb0>] ? rescuer_thread+0x3e0/0x3e0
+ [<ffffffff81088a12>] kthread+0xd2/0xf0
+ [<ffffffff81088940>] ? kthread_create_on_node+0x180/0x180
+ [<ffffffff815e823c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff81088940>] ? kthread_create_on_node+0x180/0x180
 
-I've also queued this up for 3.2, thanks.
+To avoid that, the host bridge device has to be deleted after all of
+its children, so merge pci_stop_root_bus() and pci_remove_root_bus()
+into one function, pci_stop_and_remove_root_bus(), that first will
+use pci_stop_and_remove_bus_device() to stop and remove all devices
+on the root bus and then will delete the host bridge device, remove
+its bus and drop the final reference to it.
 
-Ben.
+Reported-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
 
-> ---
->  drivers/mmc/card/block.c |   47 ++++++++++++++++++++++++++++++++++++++++=
-+++--
->  1 files changed, 44 insertions(+), 3 deletions(-)
->=20
-> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-> index 833ff16..91042a2 100644
-> --- a/drivers/mmc/card/block.c
-> +++ b/drivers/mmc/card/block.c
-> @@ -701,7 +701,7 @@ static int mmc_blk_cmd_error(struct request *req, con=
-st char *name, int error,
->   * Otherwise we don't understand what happened, so abort.
->   */
->  static int mmc_blk_cmd_recovery(struct mmc_card *card, struct request *r=
-eq,
-> -	struct mmc_blk_request *brq, int *ecc_err)
-> +	struct mmc_blk_request *brq, int *ecc_err, int *gen_err)
->  {
->  	bool prev_cmd_status_valid =3D true;
->  	u32 status, stop_status =3D 0;
-> @@ -739,6 +739,16 @@ static int mmc_blk_cmd_recovery(struct mmc_card *car=
-d, struct request *req,
->  	    (brq->cmd.resp[0] & R1_CARD_ECC_FAILED))
->  		*ecc_err =3D 1;
-> =20
-> +	/* Flag General errors */
-> +	if (!mmc_host_is_spi(card->host) && rq_data_dir(req) !=3D READ)
-> +		if ((status & R1_ERROR) ||
-> +			(brq->stop.resp[0] & R1_ERROR)) {
-> +			pr_err("%s: %s: general error sending stop or status command, stop cm=
-d response %#x, card status %#x\n",
-> +			       req->rq_disk->disk_name, __func__,
-> +			       brq->stop.resp[0], status);
-> +			*gen_err =3D 1;
-> +		}
-> +
->  	/*
->  	 * Check the current card state.  If it is in some data transfer
->  	 * mode, tell it to stop (and hopefully transition back to TRAN.)
-> @@ -758,6 +768,13 @@ static int mmc_blk_cmd_recovery(struct mmc_card *car=
-d, struct request *req,
->  			return ERR_ABORT;
->  		if (stop_status & R1_CARD_ECC_FAILED)
->  			*ecc_err =3D 1;
-> +		if (!mmc_host_is_spi(card->host) && rq_data_dir(req) !=3D READ)
-> +			if (stop_status & R1_ERROR) {
-> +				pr_err("%s: %s: general error sending stop command, stop cmd respons=
-e %#x\n",
-> +				       req->rq_disk->disk_name, __func__,
-> +				       stop_status);
-> +				*gen_err =3D 1;
-> +			}
->  	}
-> =20
->  	/* Check for set block count errors */
-> @@ -1007,7 +1024,7 @@ static int mmc_blk_err_check(struct mmc_card *card,
->  						    mmc_active);
->  	struct mmc_blk_request *brq =3D &mq_mrq->brq;
->  	struct request *req =3D mq_mrq->req;
-> -	int ecc_err =3D 0;
-> +	int ecc_err =3D 0, gen_err =3D 0;
-> =20
->  	/*
->  	 * sbc.error indicates a problem with the set block count
-> @@ -1021,7 +1038,7 @@ static int mmc_blk_err_check(struct mmc_card *card,
->  	 */
->  	if (brq->sbc.error || brq->cmd.error || brq->stop.error ||
->  	    brq->data.error) {
-> -		switch (mmc_blk_cmd_recovery(card, req, brq, &ecc_err)) {
-> +		switch (mmc_blk_cmd_recovery(card, req, brq, &ecc_err, &gen_err)) {
->  		case ERR_RETRY:
->  			return MMC_BLK_RETRY;
->  		case ERR_ABORT:
-> @@ -1051,6 +1068,15 @@ static int mmc_blk_err_check(struct mmc_card *card=
-,
->  	 */
->  	if (!mmc_host_is_spi(card->host) && rq_data_dir(req) !=3D READ) {
->  		u32 status;
-> +
-> +		/* Check stop command response */
-> +		if (brq->stop.resp[0] & R1_ERROR) {
-> +			pr_err("%s: %s: general error sending stop command, stop cmd response=
- %#x\n",
-> +			       req->rq_disk->disk_name, __func__,
-> +			       brq->stop.resp[0]);
-> +			gen_err =3D 1;
-> +		}
-> +
->  		do {
->  			int err =3D get_card_status(card, &status, 5);
->  			if (err) {
-> @@ -1058,6 +1084,14 @@ static int mmc_blk_err_check(struct mmc_card *card=
-,
->  				       req->rq_disk->disk_name, err);
->  				return MMC_BLK_CMD_ERR;
->  			}
-> +
-> +			if (status & R1_ERROR) {
-> +				pr_err("%s: %s: general error sending status command, card status %#=
-x\n",
-> +				       req->rq_disk->disk_name, __func__,
-> +				       status);
-> +				gen_err =3D 1;
-> +			}
-> +
->  			/*
->  			 * Some cards mishandle the status bits,
->  			 * so make sure to check both the busy
-> @@ -1067,6 +1101,13 @@ static int mmc_blk_err_check(struct mmc_card *card=
-,
->  			 (R1_CURRENT_STATE(status) =3D=3D R1_STATE_PRG));
->  	}
-> =20
-> +	/* if general error occurs, retry the write operation. */
-> +	if (gen_err) {
-> +		pr_warning("%s: retrying write for general error\n",
-> +				req->rq_disk->disk_name);
-> +		return MMC_BLK_RETRY;
-> +	}
-> +
->  	if (brq->data.error) {
->  		pr_err("%s: error %d transferring data, sector %u, nr %u, cmd response=
- %#x, card status %#x\n",
->  		       req->rq_disk->disk_name, brq->data.error,
+Hi,
 
---=20
-Ben Hutchings
-Kids!  Bringing about Armageddon can be dangerous.  Do not attempt it in
-your own home. - Terry Pratchett and Neil Gaiman, `Good Omens'
+I can't really test this patch, but I don't know how it can break anything.
 
---=-aYqw/0ICfzrZ3y3RJ7ao
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+The only user of pci_stop_root_bus() and pci_remove_root_bus() is
+acpi_pci_root_remove() and the code ordering there seems to be somewhat
+arbitrary.  If you are aware of any reason why it may not work, please let
+me know. :-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+Thanks,
+Rafael
 
-iQIVAwUAUr9WrOe/yOyVhhEJAQoXMg//UGbaPTuVR99xBnqEjhmynaLOPSVI9xAe
-IualSR30O2QNzTLx60CguBmvHL6QyhR2eqTsYPUICBBj4UjyEC6sGUjhMEIDHta0
-N9qgniXEW+/sUc/vyv1fDfMxeGeUD6BiOvUD6VuFouTVCMN0bGa2uf5TUWDKKQu2
-N7mm8eMpAVezTJ0cwS+LmFRTHDUJ0snI5kxzExrus/SQUG5BVZZPWQlrxNy/PZ9X
-Sh8QpWxKoSE6Zh32vPDuRH47EGU5WoHCjqCK1/4Y8yVrxlj/tCTNt2PuYcjMq2Dw
-sdnCGH3Rujdc8oAt87kuBHucRkZiZR+nbiZmlkLlkgniUry2MJGpocTV+mXsNAPj
-PEaRfLiUSibw6zVociuLURNGlxRBRsmZSPSEQKgdRXKHrJuCyIjTWo9mh89Rj3NY
-ksWpD6VZ853qnr33u75/YhzMAqxMlZyEtLazZvua2fFCX2gQt+S/XohnKuR/hfne
-gcF9PhlKoQfRSsKKcMJWw98i2ndtKQuGRZNoEjzcYd/360fsNvakHvbG9gp3V8Dz
-S1j+LZTNe8G1j/9oeQoRjwn2/C37ETAs3f6jjZlN/QkDMmQ9T7Qz4Ss4KWLO2MEk
-ogrvfMdkpMswgJ6IG7lI1u1WYAMPZNzwRrYqX9HOW8STIxknMFIWFmGA6kTfXwgH
-etwXM7EoTvE=
-=90rh
------END PGP SIGNATURE-----
+---
+ drivers/acpi/pci_root.c |    4 +---
+ drivers/pci/remove.c    |   23 ++++-------------------
+ include/linux/pci.h     |    3 +--
+ 3 files changed, 6 insertions(+), 24 deletions(-)
 
---=-aYqw/0ICfzrZ3y3RJ7ao--
+Index: linux-pm/drivers/acpi/pci_root.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/pci_root.c
++++ linux-pm/drivers/acpi/pci_root.c
+@@ -611,12 +611,10 @@ static void acpi_pci_root_remove(struct
+ {
+ 	struct acpi_pci_root *root = acpi_driver_data(device);
+ 
+-	pci_stop_root_bus(root->bus);
+-
+ 	device_set_run_wake(root->bus->bridge, false);
+ 	pci_acpi_remove_bus_pm_notifier(device);
+ 
+-	pci_remove_root_bus(root->bus);
++	pci_stop_and_remove_root_bus(root->bus);
+ 
+ 	kfree(root);
+ }
+Index: linux-pm/drivers/pci/remove.c
+===================================================================
+--- linux-pm.orig/drivers/pci/remove.c
++++ linux-pm/drivers/pci/remove.c
+@@ -114,7 +114,7 @@ void pci_stop_and_remove_bus_device(stru
+ }
+ EXPORT_SYMBOL(pci_stop_and_remove_bus_device);
+ 
+-void pci_stop_root_bus(struct pci_bus *bus)
++void pci_stop_and_remove_root_bus(struct pci_bus *bus)
+ {
+ 	struct pci_dev *child, *tmp;
+ 	struct pci_host_bridge *host_bridge;
+@@ -123,29 +123,14 @@ void pci_stop_root_bus(struct pci_bus *b
+ 		return;
+ 
+ 	host_bridge = to_pci_host_bridge(bus->bridge);
+-	list_for_each_entry_safe_reverse(child, tmp,
+-					 &bus->devices, bus_list)
+-		pci_stop_bus_device(child);
++	list_for_each_entry_safe_reverse(child, tmp, &bus->devices, bus_list)
++		pci_stop_and_remove_bus_device(child);
+ 
+ 	/* stop the host bridge */
+ 	device_del(&host_bridge->dev);
+-}
+-
+-void pci_remove_root_bus(struct pci_bus *bus)
+-{
+-	struct pci_dev *child, *tmp;
+-	struct pci_host_bridge *host_bridge;
+-
+-	if (!pci_is_root_bus(bus))
+-		return;
+-
+-	host_bridge = to_pci_host_bridge(bus->bridge);
+-	list_for_each_entry_safe(child, tmp,
+-				 &bus->devices, bus_list)
+-		pci_remove_bus_device(child);
++	/* remove the root bus */
+ 	pci_remove_bus(bus);
+ 	host_bridge->bus = NULL;
+-
+ 	/* remove the host bridge */
+ 	put_device(&host_bridge->dev);
+ }
+Index: linux-pm/include/linux/pci.h
+===================================================================
+--- linux-pm.orig/include/linux/pci.h
++++ linux-pm/include/linux/pci.h
+@@ -779,8 +779,7 @@ struct pci_dev *pci_dev_get(struct pci_d
+ void pci_dev_put(struct pci_dev *dev);
+ void pci_remove_bus(struct pci_bus *b);
+ void pci_stop_and_remove_bus_device(struct pci_dev *dev);
+-void pci_stop_root_bus(struct pci_bus *bus);
+-void pci_remove_root_bus(struct pci_bus *bus);
++void pci_stop_and_remove_root_bus(struct pci_bus *bus);
+ void pci_setup_cardbus(struct pci_bus *bus);
+ void pci_sort_breadthfirst(void);
+ #define dev_is_pci(d) ((d)->bus == &pci_bus_type)
+
