@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349Ab3L1MgW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 07:36:22 -0500
-Received: from mga02.intel.com ([134.134.136.20]:36732 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755313Ab3L1MgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 07:36:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,566,1384329600"; 
-   d="scan'208";a="431007496"
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: davem@davemloft.net
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>, netdev@vger.kernel.org,
-        gospo@redhat.com, sassmann@redhat.com, <linux-kernel@vger.kernel.org>
-Subject: [net-next] pci_regs.h: Add PCI bus link speed and width defines
-Date: Sat, 28 Dec 2013 04:36:13 -0800
-Message-Id: <1388234173-31654-1-git-send-email-jeffrey.t.kirsher@intel.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S1755370Ab3L1Mgm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 07:36:42 -0500
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:59875 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755313Ab3L1Mgk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Dec 2013 07:36:40 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlsSAAXFvlJbsn23/2dsb2JhbABYKIJjumQCAoEUF3SCJQEBAQMBOhwjBQsIAw4KLjkeBhOHfAwByTwXjx0HhDYBA4lBjlUBkhSDOi8
+Date: Sat, 28 Dec 2013 12:37:38 +0800
+From: Fabian Frederick <fabf@skynet.be>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] selftests : Adding symbolic link limits test script
+Message-Id: <20131228123738.962401ca9282626693aba5bf@skynet.be>
+In-Reply-To: <20131227143822.2b2a8bc448fb7e0800f05f53@linux-foundation.org>
+References: <20131225172310.6eb4aa79f79a9fa5a79b3f4e@skynet.be>
+	<20131227143822.2b2a8bc448fb7e0800f05f53@linux-foundation.org>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing PCI bus link speed 8.0 GT/s and bus link widths of
-x1, x2, x4 and x8.
+On Fri, 27 Dec 2013 14:38:22 -0800
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-CC: <linux-kernel@vger.kernel.org>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
----
- include/uapi/linux/pci_regs.h | 5 +++++
- 1 file changed, 5 insertions(+)
+> On Wed, 25 Dec 2013 17:23:10 +0100 Fabian Frederick <fabf@skynet.be> wrote:
+> 
+> > This patch adds fs directory in selftests and a script to explain recursive
+> > and consecutive symbolic linking limits who have been debated
+> > so many times.
+> 
+> hm, it's a "test" which doesn't really test anything - it always
+> succeeds.
+> 
+> Why do you think the kernel needs this?
 
-diff --git a/include/uapi/linux/pci_regs.h b/include/uapi/linux/pci_regs.h
-index 4a98e85..c870c2a 100644
---- a/include/uapi/linux/pci_regs.h
-+++ b/include/uapi/linux/pci_regs.h
-@@ -489,7 +489,12 @@
- #define  PCI_EXP_LNKSTA_CLS	0x000f	/* Current Link Speed */
- #define  PCI_EXP_LNKSTA_CLS_2_5GB 0x0001 /* Current Link Speed 2.5GT/s */
- #define  PCI_EXP_LNKSTA_CLS_5_0GB 0x0002 /* Current Link Speed 5.0GT/s */
-+#define  PCI_EXP_LNKSTA_CLS_8_0GB 0x0003 /* Current Link Speed 8.0GT/s */
- #define  PCI_EXP_LNKSTA_NLW	0x03f0	/* Negotiated Link Width */
-+#define  PCI_EXP_LNKSTA_NLW_X1	0x0010	/* Current Link Width x1 */
-+#define  PCI_EXP_LNKSTA_NLW_X2	0x0020	/* Current Link Width x2 */
-+#define  PCI_EXP_LNKSTA_NLW_X4	0x0040	/* Current Link Width x4 */
-+#define  PCI_EXP_LNKSTA_NLW_X8	0x0080	/* Current Link Width x8 */
- #define  PCI_EXP_LNKSTA_NLW_SHIFT 4	/* start of NLW mask in link status */
- #define  PCI_EXP_LNKSTA_LT	0x0800	/* Link Training */
- #define  PCI_EXP_LNKSTA_SLC	0x1000	/* Slot Clock Configuration */
--- 
-1.8.3.1
+Thanks for testing Andrew !
 
+As the script states, first loop is trying 10 recursive links but logically stops at 8.
+The second one is trying 50 consecutive links but stops at 40.
+Those limits are hardcoded values all over the place in vfs namei.c.
+btw people have been asking for global definition, sysctl and so on for
+years but nothing has changed AFAICS.
+
+This script tries to show the difference between recursive and consecutive symlinking.
+Besides this script could be useful for testing specific FS limitation as well.
+If you find it useful, I can add some features to be more self-explanatory ...
+If it's still not the case let's forget about it :) 
+
+Fabian
