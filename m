@@ -1,101 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192Ab3L2Ouk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 09:50:40 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63600 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751681Ab3L2Oui (ORCPT
+	id S1751689Ab3L2PsC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 10:48:02 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:50336 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887Ab3L2PsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 09:50:38 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Kashyap Chamarthy <kchamart@redhat.com>
-Cc: Gleb Natapov <gleb@kernel.org>, Josh Boyer <jwboyer@fedoraproject.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "Richard W.M. Jones" <rjones@redhat.com>
-Subject: Re: intel_pstate divide error with v3.13-rc4-256-gb7000ad
-Date: Sun, 29 Dec 2013 16:04:12 +0100
-Message-ID: <4794554.Hmd2RUNYDT@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <52C011A2.3040800@redhat.com>
-References: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com> <231382870.yshsPRR4KM@vostro.rjw.lan> <52C011A2.3040800@redhat.com>
+	Sun, 29 Dec 2013 10:48:00 -0500
+Date: Sun, 29 Dec 2013 07:45:54 -0800
+From: Olof Johansson <olof@lixom.net>
+To: torvalds@linux-foundation.org
+Cc: olof@lixom.net, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] ARM: SoC fixes for 3.13-rc
+Message-ID: <20131229154554.GA14633@quad.lixom.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, December 29, 2013 01:12:18 PM Kashyap Chamarthy wrote:
-> [. . .]
-> 
-> >> Here's host dmesg: https://bugzilla.kernel.org/attachment.cgi?id=119751
-> >>
-> >>>> Can you ftrace the failure?
-> >>
-> >> Can try, need some time (rest of the day I'll be away travelling,
-> >> will try to do it over the weekend, and update the Kernel
-> >> bugzilla with observations).
-> >>
-> >>>>
-> >>> Ugh, it looks like guest dmesg but there are KVM messages there too ("[
-> >>> 281.443662] kvm [2452]: vcpu0 unhandled rdmsr: 0xe8" is unhandled access
-> >>> to MSR_IA32_APERF I was talking about above), so I guess this is nested
-> >>> guest invocation? 
-> >>
-> >> Yeah -- sorry, I forgot to note it's in a nested environment :(
-> >>
-> >>> Does it happen in non nested guest?
-> >>
-> >> I need to that.
-> >>
-> >> Note to self: Also try with a newer Kernel on the host.
-> > 
-> > Please try the patch I posted earlier today when you're at it:
-> > 
-> > https://patchwork.kernel.org/patch/3411991/
-> 
-> I applied the patch & tried to build the Kernel, it failed with:
-> 
-> =======
-> .
-> .
-> .
-> Generating a 4096 bit RSA private key
-> ............................................................................................................drivers/cpufreq/intel_pstate.c:
-> In function 'intel_pstate_init_cpu':
-> drivers/cpufreq/intel_pstate.c:617:18: error: 'struct pstate_data' has no member named
-> 'current_state'
->   if (!cpu->pstate.current_state) {
+Hi Linus,
 
-My bad, that should have been current_pstate.  Updated patch is appended.
+The following changes since commit 413541dd66d51f791a0b169d9b9014e4f56be13c:
 
-Thanks,
-Rafael
+  Linux 3.13-rc5 (2013-12-22 13:08:32 -0800)
 
+are available in the git repository at:
 
----
- drivers/cpufreq/intel_pstate.c |    5 +++++
- 1 file changed, 5 insertions(+)
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
 
-Index: linux-pm/drivers/cpufreq/intel_pstate.c
-===================================================================
---- linux-pm.orig/drivers/cpufreq/intel_pstate.c
-+++ linux-pm/drivers/cpufreq/intel_pstate.c
-@@ -614,6 +614,11 @@ static int intel_pstate_init_cpu(unsigne
- 	cpu = all_cpu_data[cpunum];
- 
- 	intel_pstate_get_cpu_pstates(cpu);
-+	if (!cpu->pstate.current_pstate) {
-+		all_cpu_data[cpunum] = NULL;
-+		kfree(cpu);
-+		return -ENODATA;
-+	}
- 
- 	cpu->cpu = cpunum;
- 
+for you to fetch changes up to 9b17c16525552b247cb2d9bb8eeadc87950b36ff:
 
+  Merge tag 'omap-for-v3.13/intc-ldp-fix' of git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap into fixes (2013-12-28 15:38:32 -0800)
+
+----------------------------------------------------------------
+
+ARM: SoC fixes for 3.13-rc
+
+Another smallish batch of fixes, it's been quiet due to the holidays. Nothing
+controversial here, a handful of things across the board.
+
+----------------------------------------------------------------
+Ben Dooks (1):
+      ARM: shmobile: r8a7790: fix shdi resource sizes
+
+Kuninori Morimoto (1):
+      ARM: shmobile: bockw: fixup DMA mask
+
+Laurent Pinchart (1):
+      ARM: shmobile: armadillo: Add PWM backlight power supply
+
+Linus Walleij (1):
+      ARM: pxa: fix USB gadget driver compilation regression
+
+Olof Johansson (2):
+      Merge tag 'renesas-fixes2-for-v3.13' of git://git.kernel.org/.../horms/renesas into fixes
+      Merge tag 'omap-for-v3.13/intc-ldp-fix' of git://git.kernel.org/.../tmlind/linux-omap into fixes
+
+Rajendra Nayak (1):
+      ARM: DRA7: hwmod: Fix boot crash with DEBUG_LL
+
+Suman Anna (1):
+      ARM: OMAP2+: hwmod_data: fix missing OMAP_INTC_START in irq data
+
+Tony Lindgren (2):
+      ARM: OMAP2+: Fix LCD panel backlight regression for LDP legacy booting
+      Merge tag 'for-v3.13-rc/hwmod-fixes-b' of git://git.kernel.org/.../pjw/omap-pending into debug-ll-and-ldp-backlight-fix
+
+ arch/arm/boot/dts/r8a7790.dtsi                     | 4 ++--
+ arch/arm/mach-omap2/board-ldp.c                    | 7 ++++++-
+ arch/arm/mach-omap2/omap_hwmod_2xxx_ipblock_data.c | 4 ++--
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c         | 6 +++---
+ arch/arm/mach-omap2/omap_hwmod_7xx_data.c          | 2 +-
+ arch/arm/mach-pxa/include/mach/lubbock.h           | 2 ++
+ arch/arm/mach-shmobile/board-armadillo800eva.c     | 7 +++++++
+ arch/arm/mach-shmobile/board-bockw.c               | 2 +-
+ 8 files changed, 24 insertions(+), 10 deletions(-)
