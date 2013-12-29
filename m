@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655Ab3L2C4s (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:56:48 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55013 "EHLO
+	id S1756700Ab3L2C5c (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:57:32 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55071 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751887Ab3L2CKA (ORCPT
+	by vger.kernel.org with ESMTP id S1752183Ab3L2CJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:10:00 -0500
+	Sat, 28 Dec 2013 21:09:59 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Dan Carpenter" <dan.carpenter@oracle.com>,
-        "Dan Williams" <dcbw@redhat.com>, "Fabian Yamaguchi" <fabs@goesec.de>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "Nico Golde" <nico@ngolde.de>
+CC: akpm@linux-foundation.org, "Jan Stancek" <jstancek@redhat.com>,
+        "Veaceslav Falico" <vfalico@redhat.com>,
+        "Eric Dumazet" <edumazet@google.com>,
+        "Daniel Borkmann" <dborkman@redhat.com>, "Phil Sutter" <phil@nwl.cc>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Willem de Bruijn" <willemb@google.com>
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.328447716@decadent.org.uk>
+Message-ID: <lsq.1388282924.611233044@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 177/185] libertas: potential oops in debugfs
+Subject: [PATCH 3.2 168/185] af_packet: block BH in prb_shutdown_retire_blk_timer()
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,46 +35,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Veaceslav Falico <vfalico@redhat.com>
 
-commit a497e47d4aec37aaf8f13509f3ef3d1f6a717d88 upstream.
+[ Upstream commit ec6f809ff6f19fafba3212f6aff0dda71dfac8e8 ]
 
-If we do a zero size allocation then it will oops.  Also we can't be
-sure the user passes us a NUL terminated string so I've added a
-terminator.
+Currently we're using plain spin_lock() in prb_shutdown_retire_blk_timer(),
+however the timer might fire right in the middle and thus try to re-aquire
+the same spinlock, leaving us in a endless loop.
 
-This code can only be triggered by root.
+To fix that, use the spin_lock_bh() to block it.
 
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Dan Williams <dcbw@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Fixes: f6fb8f100b80 ("af-packet: TPACKET_V3 flexible buffer implementation.")
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Daniel Borkmann <dborkman@redhat.com>
+CC: Willem de Bruijn <willemb@google.com>
+CC: Phil Sutter <phil@nwl.cc>
+CC: Eric Dumazet <edumazet@google.com>
+Reported-by: Jan Stancek <jstancek@redhat.com>
+Tested-by: Jan Stancek <jstancek@redhat.com>
+Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/libertas/debugfs.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ net/packet/af_packet.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/libertas/debugfs.c
-+++ b/drivers/net/wireless/libertas/debugfs.c
-@@ -919,7 +919,10 @@ static ssize_t lbs_debugfs_write(struct
- 	char *p2;
- 	struct debug_data *d = f->private_data;
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index 7616c58..4f19bf2 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -505,9 +505,9 @@ static void prb_shutdown_retire_blk_timer(struct packet_sock *po,
  
--	pdata = kmalloc(cnt, GFP_KERNEL);
-+	if (cnt == 0)
-+		return 0;
-+
-+	pdata = kmalloc(cnt + 1, GFP_KERNEL);
- 	if (pdata == NULL)
- 		return 0;
+ 	pkc = tx_ring ? &po->tx_ring.prb_bdqc : &po->rx_ring.prb_bdqc;
  
-@@ -928,6 +931,7 @@ static ssize_t lbs_debugfs_write(struct
- 		kfree(pdata);
- 		return 0;
- 	}
-+	pdata[cnt] = '\0';
+-	spin_lock(&rb_queue->lock);
++	spin_lock_bh(&rb_queue->lock);
+ 	pkc->delete_blk_timer = 1;
+-	spin_unlock(&rb_queue->lock);
++	spin_unlock_bh(&rb_queue->lock);
  
- 	p0 = pdata;
- 	for (i = 0; i < num_of_items; i++) {
+ 	prb_del_retire_blk_timer(pkc);
+ }
 
