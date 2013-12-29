@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab3L2CLU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:11:20 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55673 "EHLO
+	id S1755571Ab3L2CRO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:17:14 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55643 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753416Ab3L2CLQ (ORCPT
+	by vger.kernel.org with ESMTP id S1753298Ab3L2CLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:11:16 -0500
+	Sat, 28 Dec 2013 21:11:20 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Tejun Heo" <tj@kernel.org>,
-        "James Ralston" <james.d.ralston@intel.com>
+CC: akpm@linux-foundation.org, "Mikulas Patocka" <mpatocka@redhat.com>,
+        "Tejun Heo" <tj@kernel.org>, "Jens Axboe" <axboe@kernel.dk>
 Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.742464243@decadent.org.uk>
+Message-ID: <lsq.1388282923.877615414@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 024/185] ahci: Add Device IDs for Intel Wildcat Point-LP
+Subject: [PATCH 3.2 040/185] loop: fix crash if blk_alloc_queue fails
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,30 +31,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Ralston <james.d.ralston@intel.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 9f961a5f6efc87a79571d7166257b36af28ffcfe upstream.
+commit 3ec981e30fae1f3c8728a05c730acaa1f627bcfb upstream.
 
-This patch adds the AHCI-mode SATA Device IDs for the Intel Wildcat Point-LP PCH.
+loop: fix crash if blk_alloc_queue fails
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+If blk_alloc_queue fails, loop_add cleans up, but it doesn't clean up the
+identifier allocated with idr_alloc. That causes crash on module unload in
+idr_for_each(&loop_index_idr, &loop_exit_cb, NULL); where we attempt to
+remove non-existed device with that id.
+
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000380
+IP: [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
+PGD 43d399067 PUD 43d0ad067 PMD 0
+Oops: 0000 [#1] PREEMPT SMP
+Modules linked in: loop(-) dm_snapshot dm_zero dm_mirror dm_region_hash dm_log dm_loop dm_mod ip6table_filter ip6_tables uvesafb cfbcopyarea cfbimgblt cfbfillrect fbcon font bitblit fbcon_rotate fbcon_cw fbcon_ud fbcon_ccw softcursor fb fbdev msr ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 xt_state ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc tun ipv6 cpufreq_userspace cpufreq_stats cpufreq_ondemand cpufreq_conservative cpufreq_powersave spadfs fuse hid_generic usbhid hid raid0 md_mod dmi_sysfs nf_nat_ftp nf_nat nf_conntrack_ftp nf_conntrack snd_usb_audio snd_pcm_oss snd_mixer_oss snd_pcm snd_timer snd_page_alloc lm85 hwmon_vid snd_hwdep snd_usbmidi_lib snd_rawmidi snd soundcore acpi_cpufreq ohci_hcd freq_table tg3 ehci_pci mperf ehci_hcd kvm_amd kvm sata_svw serverworks libphy libata ide_core k10temp usbcore hwmon microcode ptp pcspkr pps_core e100 skge mii usb_common i2c_piix4 floppy evdev rtc_cmos i2c_core processor but!
+ ton unix
+CPU: 7 PID: 2735 Comm: rmmod Tainted: G        W    3.10.15-devel #15
+Hardware name: empty empty/S3992-E, BIOS 'V1.06   ' 06/09/2009
+task: ffff88043d38e780 ti: ffff88043d21e000 task.ti: ffff88043d21e000
+RIP: 0010:[<ffffffff812057c9>]  [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
+RSP: 0018:ffff88043d21fe10  EFLAGS: 00010282
+RAX: ffffffffa05102e0 RBX: 0000000000000000 RCX: 0000000000000000
+RDX: 0000000000000000 RSI: ffff88043ea82800 RDI: 0000000000000000
+RBP: ffff88043d21fe48 R08: 0000000000000000 R09: 0000000000000001
+R10: 0000000000000001 R11: 0000000000000000 R12: 00000000000000ff
+R13: 0000000000000080 R14: 0000000000000000 R15: ffff88043ea82800
+FS:  00007ff646534700(0000) GS:ffff880447000000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000380 CR3: 000000043e9bf000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Stack:
+ ffffffff8100aba4 0000000000000092 ffff88043d21fe48 ffff88043ea82800
+ 00000000000000ff ffff88043d21fe98 0000000000000000 ffff88043d21fe60
+ ffffffffa05102b4 0000000000000000 ffff88043d21fe70 ffffffffa05102ec
+Call Trace:
+ [<ffffffff8100aba4>] ? native_sched_clock+0x24/0x80
+ [<ffffffffa05102b4>] loop_remove+0x14/0x40 [loop]
+ [<ffffffffa05102ec>] loop_exit_cb+0xc/0x10 [loop]
+ [<ffffffff81217b74>] idr_for_each+0x104/0x190
+ [<ffffffffa05102e0>] ? loop_remove+0x40/0x40 [loop]
+ [<ffffffff8109adc5>] ? trace_hardirqs_on_caller+0x105/0x1d0
+ [<ffffffffa05135dc>] loop_exit+0x34/0xa58 [loop]
+ [<ffffffff810a98ea>] SyS_delete_module+0x13a/0x260
+ [<ffffffff81221d5e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff813cff16>] system_call_fastpath+0x1a/0x1f
+Code: f0 4c 8b 6d f8 c9 c3 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 41 56 41 55 4c 8d af 80 00 00 00 41 54 53 48 89 fb 48 83 ec 18 <48> 83 bf 80 03 00
+00 00 74 4d e8 98 fe ff ff 31 f6 48 c7 c7 20
+RIP  [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
+ RSP <ffff88043d21fe10>
+CR2: 0000000000000380
+---[ end trace 64ec069ec70f1309 ]---
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/ata/ahci.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/block/loop.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -303,6 +303,10 @@ static const struct pci_device_id ahci_p
- 	{ PCI_VDEVICE(INTEL, 0x8d66), board_ahci }, /* Wellsburg RAID */
- 	{ PCI_VDEVICE(INTEL, 0x8d6e), board_ahci }, /* Wellsburg RAID */
- 	{ PCI_VDEVICE(INTEL, 0x23a3), board_ahci }, /* Coleto Creek AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x9c83), board_ahci }, /* Wildcat Point-LP AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x9c85), board_ahci }, /* Wildcat Point-LP RAID */
-+	{ PCI_VDEVICE(INTEL, 0x9c87), board_ahci }, /* Wildcat Point-LP RAID */
-+	{ PCI_VDEVICE(INTEL, 0x9c8f), board_ahci }, /* Wildcat Point-LP RAID */
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1635,7 +1635,7 @@ static int loop_add(struct loop_device *
  
- 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
- 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+ 	lo->lo_queue = blk_alloc_queue(GFP_KERNEL);
+ 	if (!lo->lo_queue)
+-		goto out_free_dev;
++		goto out_free_idr;
+ 
+ 	disk = lo->lo_disk = alloc_disk(1 << part_shift);
+ 	if (!disk)
+@@ -1679,6 +1679,8 @@ static int loop_add(struct loop_device *
+ 
+ out_free_queue:
+ 	blk_cleanup_queue(lo->lo_queue);
++out_free_idr:
++	idr_remove(&loop_index_idr, i);
+ out_free_dev:
+ 	kfree(lo);
+ out:
 
