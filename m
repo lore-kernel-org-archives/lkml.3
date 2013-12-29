@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab3L2CKw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:10:52 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55358 "EHLO
+	id S1753814Ab3L2CLM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:11:12 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55587 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752500Ab3L2CKm (ORCPT
+	by vger.kernel.org with ESMTP id S1753416Ab3L2CLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:10:42 -0500
+	Sat, 28 Dec 2013 21:11:03 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Felipe Balbi" <balbi@ti.com>,
-        "Michael Grzeschik" <m.grzeschik@pengutronix.de>
-Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.913763610@decadent.org.uk>
+CC: akpm@linux-foundation.org, "John W. Linville" <linville@tuxdriver.com>,
+        "Matthieu Baerts" <matttbe@gmail.com>,
+        "Larry Finger" <Larry.Finger@lwfinger.net>
+Date: Sun, 29 Dec 2013 03:08:43 +0100
+Message-ID: <lsq.1388282923.777167251@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 092/185] usb: gadget: composite: reset delayed_status
- on reset_config
+Subject: [PATCH 3.2 047/185] rtlwifi: rtl8192se: Fix incorrect signal
+ strength for unassociated AP
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,30 +33,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 2bac51a1827a18821150ed8c9f9752c02f9c2b02 upstream.
+commit b4ade797668e33b4e8353c2701ce01d7084dfafa upstream.
 
-The delayed_status value is used to keep track of status response
-packets on ep0. It needs to be reset or the set_config function would
-still delay the answer, if the usb device got unplugged while waiting
-for setup_continue to be called.
+The routine that processes received frames was returning the RSSI value for the
+signal strength; however, that value is available only for associated APs. As
+a result, the strength was the absurd value of 10 dBm. As a result, scans
+return incorrect values for the strength, which causes unwanted attempts to roam.
 
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+This patch fixes https://bugzilla.kernel.org/show_bug.cgi?id=63881.
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-by: Matthieu Baerts <matttbe@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/gadget/composite.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/rtlwifi/rtl8192se/trx.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/gadget/composite.c
-+++ b/drivers/usb/gadget/composite.c
-@@ -585,6 +585,7 @@ static void reset_config(struct usb_comp
- 		bitmap_zero(f->endpoints, 32);
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
+@@ -582,7 +582,7 @@ bool rtl92se_rx_query_desc(struct ieee80
  	}
- 	cdev->config = NULL;
-+	cdev->delayed_status = 0;
- }
  
- static int set_config(struct usb_composite_dev *cdev,
+ 	/*rx_status->qual = stats->signal; */
+-	rx_status->signal = stats->rssi + 10;
++	rx_status->signal = stats->recvsignalpower + 10;
+ 	/*rx_status->noise = -stats->noise; */
+ 
+ 	return true;
 
