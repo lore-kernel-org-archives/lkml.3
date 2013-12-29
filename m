@@ -1,96 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751635Ab3L2Bms (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 20:42:48 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:36331 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751194Ab3L2Bmp (ORCPT
+	id S1751769Ab3L2BpY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 20:45:24 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:42064 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194Ab3L2BpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 20:42:45 -0500
-X-Sasl-enc: RVARrqRWBHytXLRNrubqn/JhI4S7Uuqe3wdaGHZVkE0Z 1388281364
-Date: Sat, 28 Dec 2013 17:43:24 -0800
-From: Greg KH <greg@kroah.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Joe Xue <lgxue@hotmail.com>,
-        "cooloney@gmail.com" <cooloney@gmail.com>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "rob@landley.net" <rob@landley.net>,
-        "milo.kim@ti.com" <milo.kim@ti.com>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: how to represent sequence of brightnesses in /sys (was Re:
- [PATCH] Add the LED burst trigger)
-Message-ID: <20131229014324.GB18455@kroah.com>
-References: <BLU172-W30E6E7C0BC2B6C08FA0552ACCD0@phx.gbl>
- <20131227095705.GC17143@amd.pavel.ucw.cz>
- <BLU172-W8D850A8DEA8C0D87FBF45ACCC0@phx.gbl>
- <20131228101622.GA13564@amd.pavel.ucw.cz>
- <CAMuHMdVz7FWgYZRVHy6pK+g_2QKxTW00N8jmjWHe05m5CJvPOw@mail.gmail.com>
- <20131228192935.GA28119@amd.pavel.ucw.cz>
- <CAMuHMdXDJ6uhe6srV-+0a8=cpBUgP+VakG+_wyLwAuiQSRVhqQ@mail.gmail.com>
- <20131228212523.GA8733@amd.pavel.ucw.cz>
- <20131228215042.GA7048@kroah.com>
- <20131228235045.GA8786@amd.pavel.ucw.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131228235045.GA8786@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Sat, 28 Dec 2013 20:45:22 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, kirill@shutemov.name,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [RFC 1/2] mm: additional page lock debugging
+Date: Sat, 28 Dec 2013 20:45:03 -0500
+Message-Id: <1388281504-11453-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.3.2
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 29, 2013 at 12:50:46AM +0100, Pavel Machek wrote:
-> On Sat 2013-12-28 13:50:42, Greg KH wrote:
-> > On Sat, Dec 28, 2013 at 10:25:23PM +0100, Pavel Machek wrote:
-> > > Hi!
-> > > 
-> > > > >> Sysfs is meant to be human-readable/writable, so please use plain ASCII
-> > > > >> numbers in strings instead.
-> > > > >
-> > > > > Actually, sysfs is meant to be one value per file, and it is
-> > > > 
-> > > > Ideally, yes.
-> > > > 
-> > > > > understood that data that are "natively blob" are just passed as
-> > > > > blob. (I believe this qualifies).
-> > > > 
-> > > > But it doesn't buy us much here, does it? It will make e.g. shell scripts
-> > > > needlessly complicated.
-> > > 
-> > > echo -ne '\012' is not that bad, and parsing array of integers from
-> > > kernel will be an ugly piece of code.
-> > 
-> > Ick, no.  What are you trying to do here?  Have the kernel intrepret a
-> > sequence of bytes to flash an LED?  I thought we have frameworks in
-> > userspace already to handle this type of thing.  Please don't invent new
-> > ways of doing stuff...
-> 
-> Idea would be "sequence of brigtnesses" (one file) and "delay between
-> changes" (second file).
+We've recently stumbled on several issues with the page lock which
+triggered BUG_ON()s.
 
-Ick.
+While working on them, it was clear that due to the complexity of
+locking its pretty hard to figure out if something is supposed
+to be locked or not, and if we encountered a race it was quite a
+pain narrowing it down.
 
-> Reason to do it in kernel is that some machines actually have
-> "coprocessor" on i2c that can do it while main CPU is suspended. (For
-> more reasons, see beggining of thread).
+This is an attempt at solving this situation. This patch adds simple
+asserts to catch cases where someone is trying to lock the page lock
+while it's already locked, and cases to catch someone unlocking the
+lock without it being held.
 
-Ick ick.
+My initial patch attempted to use lockdep to get further coverege,
+but that attempt uncovered the amount of issues triggered and made
+it impossible to debug the lockdep integration without clearing out
+a large portion of existing bugs.
 
-> Binary attribute with array of bytes should be acceptable, rights?
+This patch adds a new option since it will horribly break any system
+booting with it due to the amount of issues that it uncovers. This is
+more of a "call for help" to other mm/ hackers to help clean it up.
 
-Not at all.
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ include/linux/pagemap.h | 11 +++++++++++
+ lib/Kconfig.debug       |  9 +++++++++
+ mm/filemap.c            |  4 +++-
+ 3 files changed, 23 insertions(+), 1 deletion(-)
 
-> (IOW write(..., buf, size) )
-> 
-> Ascii array of decimal integers -- no so, right?
-> 
-> (IOW printf("%d %d ..", buf[0], buf[1]) )
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index 1710d1b..da24939 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -321,6 +321,14 @@ static inline pgoff_t linear_page_index(struct vm_area_struct *vma,
+ 	return pgoff >> (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+ }
+ 
++#ifdef CONFIG_DEBUG_VM_PAGE_LOCKS
++#define VM_ASSERT_LOCKED(page) VM_BUG_ON_PAGE(!PageLocked(page), (page))
++#define VM_ASSERT_UNLOCKED(page) VM_BUG_ON_PAGE(PageLocked(page), (page))
++#else
++#define VM_ASSERT_LOCKED(page) do { } while (0)
++#define VM_ASSERT_UNLOCKED(page) do { } while (0)
++#endif
++
+ extern void __lock_page(struct page *page);
+ extern int __lock_page_killable(struct page *page);
+ extern int __lock_page_or_retry(struct page *page, struct mm_struct *mm,
+@@ -329,16 +337,19 @@ extern void unlock_page(struct page *page);
+ 
+ static inline void __set_page_locked(struct page *page)
+ {
++	VM_ASSERT_UNLOCKED(page);
+ 	__set_bit(PG_locked, &page->flags);
+ }
+ 
+ static inline void __clear_page_locked(struct page *page)
+ {
++	VM_ASSERT_LOCKED(page);
+ 	__clear_bit(PG_locked, &page->flags);
+ }
+ 
+ static inline int trylock_page(struct page *page)
+ {
++	VM_ASSERT_UNLOCKED(page);
+ 	return (likely(!test_and_set_bit_lock(PG_locked, &page->flags)));
+ }
+ 
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 48d32cd..ae4b60d 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -510,6 +510,15 @@ config DEBUG_VM_RB
+ 
+ 	  If unsure, say N.
+ 
++config DEBUG_VM_PAGE_LOCKS
++	bool "Debug VM page locking"
++	depends on DEBUG_VM
++	help
++	  Debug page locking by catching double locks and double frees. These
++	  checks may impact performance.
++
++	  If unsure, say N.
++
+ config DEBUG_VIRTUAL
+ 	bool "Debug VM translations"
+ 	depends on DEBUG_KERNEL && X86
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 7a7f3e0..665addc 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -607,7 +607,7 @@ EXPORT_SYMBOL_GPL(add_page_wait_queue);
+  */
+ void unlock_page(struct page *page)
+ {
+-	VM_BUG_ON_PAGE(!PageLocked(page), page);
++	VM_ASSERT_LOCKED(page);
+ 	clear_bit_unlock(PG_locked, &page->flags);
+ 	smp_mb__after_clear_bit();
+ 	wake_up_page(page, PG_locked);
+@@ -639,6 +639,7 @@ void __lock_page(struct page *page)
+ {
+ 	DEFINE_WAIT_BIT(wait, &page->flags, PG_locked);
+ 
++	VM_ASSERT_UNLOCKED(page);
+ 	__wait_on_bit_lock(page_waitqueue(page), &wait, sleep_on_page,
+ 							TASK_UNINTERRUPTIBLE);
+ }
+@@ -648,6 +649,7 @@ int __lock_page_killable(struct page *page)
+ {
+ 	DEFINE_WAIT_BIT(wait, &page->flags, PG_locked);
+ 
++	VM_ASSERT_UNLOCKED(page);
+ 	return __wait_on_bit_lock(page_waitqueue(page), &wait,
+ 					sleep_on_page_killable, TASK_KILLABLE);
+ }
+-- 
+1.8.3.2
 
-Use an ioctl with a structure to get things correct as a character
-device.  As odds are, you aren't going to be able to create a "generic"
-format for all of this for all types of devices that support such a
-"co-processor".
-
-greg k-h
