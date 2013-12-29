@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174Ab3L2Cjh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:39:37 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55266 "EHLO
+	id S1756161Ab3L2Cjf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:39:35 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55386 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752446Ab3L2CKf (ORCPT
+	by vger.kernel.org with ESMTP id S1752677Ab3L2CKf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:10:35 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Gustavo Zacarias" <gustavo@zacarias.com.ar>
-Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.7165450@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Michael Neuling" <mikey@neuling.org>,
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
+Date: Sun, 29 Dec 2013 03:08:43 +0100
+Message-ID: <lsq.1388282923.859058816@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 115/185] USB: serial: option: blacklist interface 1
- for Huawei E173s-6
+Subject: [PATCH 3.2 088/185] powerpc/signals: Improved mark VSX not saved
+ with small contexts fix
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,42 +32,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gustavo Zacarias <gustavo@zacarias.com.ar>
+From: Michael Neuling <mikey@neuling.org>
 
-commit 8f173e22abf2258ddfa73f46eadbb6a6c29f1631 upstream.
+commit ec67ad82814bee92251fd963bf01c7a173856555 upstream.
 
-Interface 1 on this device isn't for option to bind to otherwise an oops
-on usb_wwan with log flooding will happen when accessing the port:
+In a recent patch:
+  commit c13f20ac48328b05cd3b8c19e31ed6c132b44b42
+  Author: Michael Neuling <mikey@neuling.org>
+  powerpc/signals: Mark VSX not saved with small contexts
 
-tty_release: ttyUSB1: read/write wait queue active!
+We fixed an issue but an improved solution was later discussed after the patch
+was merged.
 
-It doesn't seem to respond to QMI if it's added to qmi_wwan so don't add
-it there - it's likely used by the card reader.
+Firstly, this patch doesn't handle the 64bit signals case, which could also hit
+this issue (but has never been reported).
 
-Signed-off-by: Gustavo Zacarias <gustavo@zacarias.com.ar>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Secondly, the original patch isn't clear what MSR VSX should be set to.  The
+new approach below always clears the MSR VSX bit (to indicate no VSX is in the
+context) and sets it only in the specific case where VSX is available (ie. when
+VSX has been used and the signal context passed has space to provide the
+state).
+
+This reverts the original patch and replaces it with the improved solution.  It
+also adds a 64 bit version.
+
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/option.c | 3 +++
- 1 file changed, 3 insertions(+)
+ arch/powerpc/kernel/signal_32.c | 16 +++++++---------
+ arch/powerpc/kernel/signal_64.c |  6 ++++++
+ 2 files changed, 13 insertions(+), 9 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -85,6 +85,7 @@ static void option_instat_callback(struc
- #define HUAWEI_PRODUCT_K4505			0x1464
- #define HUAWEI_PRODUCT_K3765			0x1465
- #define HUAWEI_PRODUCT_K4605			0x14C6
-+#define HUAWEI_PRODUCT_E173S6			0x1C07
- 
- #define QUANTA_VENDOR_ID			0x0408
- #define QUANTA_PRODUCT_Q101			0xEA02
-@@ -586,6 +587,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c23, USB_CLASS_COMM, 0x02, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173S6, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E1750, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t) &net_intf2_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1441, USB_CLASS_COMM, 0x02, 0xff) },
+--- a/arch/powerpc/kernel/signal_32.c
++++ b/arch/powerpc/kernel/signal_32.c
+@@ -445,6 +445,12 @@ static int save_user_regs(struct pt_regs
+ #endif /* CONFIG_ALTIVEC */
+ 	if (copy_fpr_to_user(&frame->mc_fregs, current))
+ 		return 1;
++
++	/*
++	 * Clear the MSR VSX bit to indicate there is no valid state attached
++	 * to this context, except in the specific case below where we set it.
++	 */
++	msr &= ~MSR_VSX;
+ #ifdef CONFIG_VSX
+ 	/*
+ 	 * Copy VSR 0-31 upper half from thread_struct to local
+@@ -457,15 +463,7 @@ static int save_user_regs(struct pt_regs
+ 		if (copy_vsx_to_user(&frame->mc_vsregs, current))
+ 			return 1;
+ 		msr |= MSR_VSX;
+-	} else if (!ctx_has_vsx_region)
+-		/*
+-		 * With a small context structure we can't hold the VSX
+-		 * registers, hence clear the MSR value to indicate the state
+-		 * was not saved.
+-		 */
+-		msr &= ~MSR_VSX;
+-
+-
++	}
+ #endif /* CONFIG_VSX */
+ #ifdef CONFIG_SPE
+ 	/* save spe registers */
+--- a/arch/powerpc/kernel/signal_64.c
++++ b/arch/powerpc/kernel/signal_64.c
+@@ -116,6 +116,12 @@ static long setup_sigcontext(struct sigc
+ 	flush_fp_to_thread(current);
+ 	/* copy fpr regs and fpscr */
+ 	err |= copy_fpr_to_user(&sc->fp_regs, current);
++
++	/*
++	 * Clear the MSR VSX bit to indicate there is no valid state attached
++	 * to this context, except in the specific case below where we set it.
++	 */
++	msr &= ~MSR_VSX;
+ #ifdef CONFIG_VSX
+ 	/*
+ 	 * Copy VSX low doubleword to local buffer for formatting,
 
