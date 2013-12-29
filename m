@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab3L2CLM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:11:12 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55587 "EHLO
+	id S1754080Ab3L2CLZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:11:25 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55721 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753416Ab3L2CLD (ORCPT
+	by vger.kernel.org with ESMTP id S1753992Ab3L2CLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:11:03 -0500
+	Sat, 28 Dec 2013 21:11:21 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "John W. Linville" <linville@tuxdriver.com>,
-        "Matthieu Baerts" <matttbe@gmail.com>,
-        "Larry Finger" <Larry.Finger@lwfinger.net>
+CC: akpm@linux-foundation.org, "Dave Jones" <davej@redhat.com>,
+        "Theodore Ts'o" <tytso@mit.edu>
 Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.777167251@decadent.org.uk>
+Message-ID: <lsq.1388282923.235786900@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 047/185] rtlwifi: rtl8192se: Fix incorrect signal
- strength for unassociated AP
+Subject: [PATCH 3.2 022/185] ext4: avoid bh leak in retry path of
+ ext4_expand_extra_isize_ea()
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,35 +32,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit b4ade797668e33b4e8353c2701ce01d7084dfafa upstream.
+commit dcb9917ba041866686fe152850364826c4622a36 upstream.
 
-The routine that processes received frames was returning the RSSI value for the
-signal strength; however, that value is available only for associated APs. As
-a result, the strength was the absurd value of 10 dBm. As a result, scans
-return incorrect values for the strength, which causes unwanted attempts to roam.
-
-This patch fixes https://bugzilla.kernel.org/show_bug.cgi?id=63881.
-
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Reported-by: Matthieu Baerts <matttbe@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[bwh: Backported to 3.2: adjust context]
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/rtlwifi/rtl8192se/trx.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/xattr.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192se/trx.c
-@@ -582,7 +582,7 @@ bool rtl92se_rx_query_desc(struct ieee80
- 	}
- 
- 	/*rx_status->qual = stats->signal; */
--	rx_status->signal = stats->rssi + 10;
-+	rx_status->signal = stats->recvsignalpower + 10;
- 	/*rx_status->noise = -stats->noise; */
- 
- 	return true;
+--- a/fs/ext4/xattr.c
++++ b/fs/ext4/xattr.c
+@@ -1271,6 +1271,7 @@ retry:
+ 					new_extra_isize = s_min_extra_isize;
+ 					kfree(is); is = NULL;
+ 					kfree(bs); bs = NULL;
++					brelse(bh);
+ 					goto retry;
+ 				}
+ 				error = -1;
 
