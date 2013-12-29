@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199Ab3L2CPn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:15:43 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55827 "EHLO
+	id S1754032Ab3L2CLX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:11:23 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55713 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754533Ab3L2CNS (ORCPT
+	by vger.kernel.org with ESMTP id S1753689Ab3L2CLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:13:18 -0500
+	Sat, 28 Dec 2013 21:11:21 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Dan Williams" <dcbw@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
+CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>
 Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.63791474@decadent.org.uk>
+Message-ID: <lsq.1388282923.866403094@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 052/185] prism54: set netdev type to "wlan"
+Subject: [PATCH 3.2 032/185] ALSA: hda - Add support for CX20952
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,43 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 8e3ffa471091c560deb6738ed9ab7445b7a5fd04 upstream.
+commit 8f42d7698751a45cd9f7134a5da49bc5b6206179 upstream.
 
-Userspace uses the netdev devtype for stuff like device naming and type
-detection.  Be nice and set it.  Remove the pointless #if/#endif around
-SET_NETDEV_DEV too.
+It's a superset of the existing CX2075x codecs, so we can reuse the
+existing parser code.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/prism54/islpci_dev.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_conexant.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/net/wireless/prism54/islpci_dev.c
-+++ b/drivers/net/wireless/prism54/islpci_dev.c
-@@ -812,6 +812,10 @@ static const struct net_device_ops islpc
- 	.ndo_validate_addr	= eth_validate_addr,
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -4610,6 +4610,8 @@ static const struct hda_codec_preset snd
+ 	  .patch = patch_conexant_auto },
+ 	{ .id = 0x14f15115, .name = "CX20757",
+ 	  .patch = patch_conexant_auto },
++	{ .id = 0x14f151d7, .name = "CX20952",
++	  .patch = patch_conexant_auto },
+ 	{} /* terminator */
  };
  
-+static struct device_type wlan_type = {
-+	.name	= "wlan",
-+};
-+
- struct net_device *
- islpci_setup(struct pci_dev *pdev)
- {
-@@ -822,9 +826,8 @@ islpci_setup(struct pci_dev *pdev)
- 		return ndev;
+@@ -4636,6 +4638,7 @@ MODULE_ALIAS("snd-hda-codec-id:14f15111"
+ MODULE_ALIAS("snd-hda-codec-id:14f15113");
+ MODULE_ALIAS("snd-hda-codec-id:14f15114");
+ MODULE_ALIAS("snd-hda-codec-id:14f15115");
++MODULE_ALIAS("snd-hda-codec-id:14f151d7");
  
- 	pci_set_drvdata(pdev, ndev);
--#if defined(SET_NETDEV_DEV)
- 	SET_NETDEV_DEV(ndev, &pdev->dev);
--#endif
-+	SET_NETDEV_DEVTYPE(ndev, &wlan_type);
- 
- 	/* setup the structure members */
- 	ndev->base_addr = pci_resource_start(pdev, 0);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Conexant HD-audio codec");
 
