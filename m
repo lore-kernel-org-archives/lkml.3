@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111Ab3L2CvS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:51:18 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55032 "EHLO
+	id S1756120Ab3L2CwG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:52:06 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55123 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751950Ab3L2CKM (ORCPT
+	by vger.kernel.org with ESMTP id S1752220Ab3L2CKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:10:12 -0500
+	Sat, 28 Dec 2013 21:10:11 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "=?UTF-8?Q?J=C3=B6rn=20?=Engel" <joern@logfs.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        "Steve Hodgson" <steve@purestorage.com>,
-        "Dave Jones" <davej@redhat.com>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Jukka Rissanen" <jukka.rissanen@linux.intel.com>
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.365029570@decadent.org.uk>
+Message-ID: <lsq.1388282924.16018583@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 183/185] ftrace: Check module functions being traced
- on reload
+Subject: [PATCH 3.2 153/185] 6lowpan: Uncompression of traffic class field
+ was  incorrect
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,237 +32,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Jukka Rissanen <jukka.rissanen@linux.intel.com>
 
-commit 8c4f3c3fa9681dc549cd35419b259496082fef8b upstream.
+[ Upstream commit 1188f05497e7bd2f2614b99c54adfbe7413d5749 ]
 
-There's been a nasty bug that would show up and not give much info.
-The bug displayed the following warning:
+If priority/traffic class field in IPv6 header is set (seen when
+using ssh), the uncompression sets the TC and Flow fields incorrectly.
 
- WARNING: at kernel/trace/ftrace.c:1529 __ftrace_hash_rec_update+0x1e3/0x230()
- Pid: 20903, comm: bash Tainted: G           O 3.6.11+ #38405.trunk
- Call Trace:
-  [<ffffffff8103e5ff>] warn_slowpath_common+0x7f/0xc0
-  [<ffffffff8103e65a>] warn_slowpath_null+0x1a/0x20
-  [<ffffffff810c2ee3>] __ftrace_hash_rec_update+0x1e3/0x230
-  [<ffffffff810c4f28>] ftrace_hash_move+0x28/0x1d0
-  [<ffffffff811401cc>] ? kfree+0x2c/0x110
-  [<ffffffff810c68ee>] ftrace_regex_release+0x8e/0x150
-  [<ffffffff81149f1e>] __fput+0xae/0x220
-  [<ffffffff8114a09e>] ____fput+0xe/0x10
-  [<ffffffff8105fa22>] task_work_run+0x72/0x90
-  [<ffffffff810028ec>] do_notify_resume+0x6c/0xc0
-  [<ffffffff8126596e>] ? trace_hardirqs_on_thunk+0x3a/0x3c
-  [<ffffffff815c0f88>] int_signal+0x12/0x17
- ---[ end trace 793179526ee09b2c ]---
+Example:
 
-It was finally narrowed down to unloading a module that was being traced.
+This is IPv6 header of a sent packet. Note the priority/TC (=1) in
+the first byte.
 
-It was actually more than that. When functions are being traced, there's
-a table of all functions that have a ref count of the number of active
-tracers attached to that function. When a function trace callback is
-registered to a function, the function's record ref count is incremented.
-When it is unregistered, the function's record ref count is decremented.
-If an inconsistency is detected (ref count goes below zero) the above
-warning is shown and the function tracing is permanently disabled until
-reboot.
+00000000: 61 00 00 00 00 2c 06 40 fe 80 00 00 00 00 00 00
+00000010: 02 02 72 ff fe c6 42 10 fe 80 00 00 00 00 00 00
+00000020: 02 1e ab ff fe 4c 52 57
 
-The ftrace callback ops holds a hash of functions that it filters on
-(and/or filters off). If the hash is empty, the default means to filter
-all functions (for the filter_hash) or to disable no functions (for the
-notrace_hash).
+This gets compressed like this in the sending side
 
-When a module is unloaded, it frees the function records that represent
-the module functions. These records exist on their own pages, that is
-function records for one module will not exist on the same page as
-function records for other modules or even the core kernel.
+00000000: 72 31 04 06 02 1e ab ff fe 4c 52 57 ec c2 00 16
+00000010: aa 2d fe 92 86 4e be c6 ....
 
-Now when a module unloads, the records that represents its functions are
-freed. When the module is loaded again, the records are recreated with
-a default ref count of zero (unless there's a callback that traces all
-functions, then they will also be traced, and the ref count will be
-incremented).
+In the receiving end, the packet gets uncompressed to this
+IPv6 header
 
-The problem is that if an ftrace callback hash includes functions of the
-module being unloaded, those hash entries will not be removed. If the
-module is reloaded in the same location, the hash entries still point
-to the functions of the module but the module's ref counts do not reflect
-that.
+00000000: 60 06 06 02 00 2a 1e 40 fe 80 00 00 00 00 00 00
+00000010: 02 02 72 ff fe c6 42 10 fe 80 00 00 00 00 00 00
+00000020: ab ff fe 4c 52 57 ec c2
 
-With the help of Steve and Joern, we found a reproducer:
+First four bytes are set incorrectly and we have also lost
+two bytes from destination address.
 
- Using uinput module and uinput_release function.
+The fix is to switch the case values in switch statement
+when checking the TC field.
 
- cd /sys/kernel/debug/tracing
- modprobe uinput
- echo uinput_release > set_ftrace_filter
- echo function > current_tracer
- rmmod uinput
- modprobe uinput
- # check /proc/modules to see if loaded in same addr, otherwise try again
- echo nop > current_tracer
-
- [BOOM]
-
-The above loads the uinput module, which creates a table of functions that
-can be traced within the module.
-
-We add uinput_release to the filter_hash to trace just that function.
-
-Enable function tracincg, which increments the ref count of the record
-associated to uinput_release.
-
-Remove uinput, which frees the records including the one that represents
-uinput_release.
-
-Load the uinput module again (and make sure it's at the same address).
-This recreates the function records all with a ref count of zero,
-including uinput_release.
-
-Disable function tracing, which will decrement the ref count for uinput_release
-which is now zero because of the module removal and reload, and we have
-a mismatch (below zero ref count).
-
-The solution is to check all currently tracing ftrace callbacks to see if any
-are tracing any of the module's functions when a module is loaded (it already does
-that with callbacks that trace all functions). If a callback happens to have
-a module function being traced, it increments that records ref count and starts
-tracing that function.
-
-There may be a strange side effect with this, where tracing module functions
-on unload and then reloading a new module may have that new module's functions
-being traced. This may be something that confuses the user, but it's not
-a big deal. Another approach is to disable all callback hashes on module unload,
-but this leaves some ftrace callbacks that may not be registered, but can
-still have hashes tracing the module's function where ftrace doesn't know about
-it. That situation can cause the same bug. This solution solves that case too.
-Another benefit of this solution, is it is possible to trace a module's
-function on unload and load.
-
-Link: http://lkml.kernel.org/r/20130705142629.GA325@redhat.com
-
-Reported-by: Jörn Engel <joern@logfs.org>
-Reported-by: Dave Jones <davej@redhat.com>
-Reported-by: Steve Hodgson <steve@purestorage.com>
-Tested-by: Steve Hodgson <steve@purestorage.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[bwh: Backported to 3.2: adjust context, indentation]
+Signed-off-by: Jukka Rissanen <jukka.rissanen@linux.intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -1799,12 +1799,57 @@ static cycle_t		ftrace_update_time;
- static unsigned long	ftrace_update_cnt;
- unsigned long		ftrace_update_tot_cnt;
- 
--static int ops_traces_mod(struct ftrace_ops *ops)
-+static inline int ops_traces_mod(struct ftrace_ops *ops)
- {
--	struct ftrace_hash *hash;
-+	/*
-+	 * Filter_hash being empty will default to trace module.
-+	 * But notrace hash requires a test of individual module functions.
-+	 */
-+	return ftrace_hash_empty(ops->filter_hash) &&
-+		ftrace_hash_empty(ops->notrace_hash);
-+}
-+
-+/*
-+ * Check if the current ops references the record.
-+ *
-+ * If the ops traces all functions, then it was already accounted for.
-+ * If the ops does not trace the current record function, skip it.
-+ * If the ops ignores the function via notrace filter, skip it.
-+ */
-+static inline bool
-+ops_references_rec(struct ftrace_ops *ops, struct dyn_ftrace *rec)
-+{
-+	/* If ops isn't enabled, ignore it */
-+	if (!(ops->flags & FTRACE_OPS_FL_ENABLED))
-+		return 0;
-+
-+	/* If ops traces all mods, we already accounted for it */
-+	if (ops_traces_mod(ops))
-+		return 0;
-+
-+	/* The function must be in the filter */
-+	if (!ftrace_hash_empty(ops->filter_hash) &&
-+	    !ftrace_lookup_ip(ops->filter_hash, rec->ip))
-+		return 0;
-+
-+	/* If in notrace hash, we ignore it too */
-+	if (ftrace_lookup_ip(ops->notrace_hash, rec->ip))
-+		return 0;
-+
-+	return 1;
-+}
-+
-+static int referenced_filters(struct dyn_ftrace *rec)
-+{
-+	struct ftrace_ops *ops;
-+	int cnt = 0;
-+
-+	for (ops = ftrace_ops_list; ops != &ftrace_list_end; ops = ops->next) {
-+		if (ops_references_rec(ops, rec))
-+		    cnt++;
-+	}
- 
--	hash = ops->filter_hash;
--	return ftrace_hash_empty(hash);
-+	return cnt;
- }
- 
- static int ftrace_update_code(struct module *mod)
-@@ -1812,6 +1857,7 @@ static int ftrace_update_code(struct mod
- 	struct dyn_ftrace *p;
- 	cycle_t start, stop;
- 	unsigned long ref = 0;
-+	bool test = false;
- 
- 	/*
- 	 * When adding a module, we need to check if tracers are
-@@ -1824,9 +1870,12 @@ static int ftrace_update_code(struct mod
- 
- 		for (ops = ftrace_ops_list;
- 		     ops != &ftrace_list_end; ops = ops->next) {
--			if (ops->flags & FTRACE_OPS_FL_ENABLED &&
--			    ops_traces_mod(ops))
--				ref++;
-+			if (ops->flags & FTRACE_OPS_FL_ENABLED) {
-+				if (ops_traces_mod(ops))
-+					ref++;
-+				else
-+					test = true;
-+			}
- 		}
- 	}
- 
-@@ -1834,6 +1883,7 @@ static int ftrace_update_code(struct mod
- 	ftrace_update_cnt = 0;
- 
- 	while (ftrace_new_addrs) {
-+		int cnt = ref;
- 
- 		/* If something went wrong, bail without enabling anything */
- 		if (unlikely(ftrace_disabled))
-@@ -1841,7 +1891,9 @@ static int ftrace_update_code(struct mod
- 
- 		p = ftrace_new_addrs;
- 		ftrace_new_addrs = p->newlist;
--		p->flags = ref;
-+		if (test)
-+			cnt += referenced_filters(p);
-+		p->flags = cnt;
- 
- 		/*
- 		 * Do the initial record conversion from mcount jump
-@@ -1864,7 +1916,7 @@ static int ftrace_update_code(struct mod
- 		 * conversion puts the module to the correct state, thus
- 		 * passing the ftrace_make_call check.
- 		 */
--		if (ftrace_start_up && ref) {
-+		if (ftrace_start_up && cnt) {
- 			int failed = __ftrace_replace_code(p, 1);
- 			if (failed) {
- 				ftrace_bug(failed, p->ip);
+ net/ieee802154/6lowpan.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/net/ieee802154/6lowpan.c b/net/ieee802154/6lowpan.c
+index 19d6aef..5d42df2 100644
+--- a/net/ieee802154/6lowpan.c
++++ b/net/ieee802154/6lowpan.c
+@@ -563,7 +563,7 @@ lowpan_process_data(struct sk_buff *skb)
+ 	 * Traffic class carried in-line
+ 	 * ECN + DSCP (1 byte), Flow Label is elided
+ 	 */
+-	case 1: /* 10b */
++	case 2: /* 10b */
+ 		if (!skb->len)
+ 			goto drop;
+ 		tmp = lowpan_fetch_skb_u8(skb);
+@@ -576,7 +576,7 @@ lowpan_process_data(struct sk_buff *skb)
+ 	 * Flow Label carried in-line
+ 	 * ECN + 2-bit Pad + Flow Label (3 bytes), DSCP is elided
+ 	 */
+-	case 2: /* 01b */
++	case 1: /* 01b */
+ 		if (!skb->len)
+ 			goto drop;
+ 		tmp = lowpan_fetch_skb_u8(skb);
 
