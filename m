@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756468Ab3L2Ctb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:49:31 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55132 "EHLO
+	id S1756470Ab3L2Ctr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:49:47 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55112 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752194Ab3L2CKP (ORCPT
+	by vger.kernel.org with ESMTP id S1752185Ab3L2CKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:10:15 -0500
+	Sat, 28 Dec 2013 21:10:14 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Gwendal Grignou" <gwendal@google.com>,
-        "Tejun Heo" <tj@kernel.org>
-Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.128059994@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Ben Greear" <greearb@candelatech.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Daniel Borkmann" <dborkman@redhat.com>,
+        "Salam Noureddine" <noureddine@aristanetworks.com>,
+        "Eric Dumazet" <eric.dumazet@gmail.com>
+Date: Sun, 29 Dec 2013 03:08:44 +0100
+Message-ID: <lsq.1388282924.369649104@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 010/185] libata: Fix display of sata speed
+Subject: [PATCH 3.2 167/185] packet: fix use after free race in send path
+ when dev  is released
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,65 +35,221 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gwendal Grignou <gwendal@google.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 3e85c3ecbc520751324a191d23bb94873ed01b10 upstream.
+[ Upstream commit e40526cb20b5ee53419452e1f03d97092f144418 ]
 
-6.0 Gbps link speed was not decoded properly:
-speed was reported at 3.0 Gbps only.
+Salam reported a use after free bug in PF_PACKET that occurs when
+we're sending out frames on a socket bound device and suddenly the
+net device is being unregistered. It appears that commit 827d9780
+introduced a possible race condition between {t,}packet_snd() and
+packet_notifier(). In the case of a bound socket, packet_notifier()
+can drop the last reference to the net_device and {t,}packet_snd()
+might end up suddenly sending a packet over a freed net_device.
 
-Tested: On a machine where libata reports 6.0 Gbps in
-        /var/log/messages:
-    ata1: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
+To avoid reverting 827d9780 and thus introducing a performance
+regression compared to the current state of things, we decided to
+hold a cached RCU protected pointer to the net device and maintain
+it on write side via bind spin_lock protected register_prot_hook()
+and __unregister_prot_hook() calls.
 
-    Before:
-    	cat /sys/class/ata_link/link1/sata_spd
-    	3.0 Gbps
-    After:
-    	cat /sys/class/ata_link/link1/sata_spd
-    	6.0 Gbps
+In {t,}packet_snd() path, we access this pointer under rcu_read_lock
+through packet_cached_dev_get() that holds reference to the device
+to prevent it from being freed through packet_notifier() while
+we're in send path. This is okay to do as dev_put()/dev_hold() are
+per-cpu counters, so this should not be a performance issue. Also,
+the code simplifies a bit as we don't need need_rls_dev anymore.
 
-Signed-off-by: Gwendal Grignou <gwendal@google.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Fixes: 827d978037d7 ("af-packet: Use existing netdev reference for bound sockets.")
+Reported-by: Salam Noureddine <noureddine@aristanetworks.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Salam Noureddine <noureddine@aristanetworks.com>
+Cc: Ben Greear <greearb@candelatech.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/ata/libata-transport.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ net/packet/af_packet.c | 60 +++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 37 insertions(+), 23 deletions(-)
 
---- a/drivers/ata/libata-transport.c
-+++ b/drivers/ata/libata-transport.c
-@@ -312,25 +312,25 @@ int ata_tport_add(struct device *parent,
- /*
-  * ATA link attributes
-  */
-+static int noop(int x) { return x; }
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index 74db1cb..7616c58 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -295,6 +295,7 @@ struct packet_sock {
+ 	unsigned int		tp_reserve;
+ 	unsigned int		tp_loss:1;
+ 	unsigned int		tp_tstamp;
++	struct net_device __rcu	*cached_dev;
+ 	struct packet_type	prot_hook ____cacheline_aligned_in_smp;
+ };
  
--
--#define ata_link_show_linkspeed(field)					\
-+#define ata_link_show_linkspeed(field, format)			        \
- static ssize_t								\
- show_ata_link_##field(struct device *dev,				\
- 		      struct device_attribute *attr, char *buf)		\
- {									\
- 	struct ata_link *link = transport_class_to_link(dev);		\
- 									\
--	return sprintf(buf,"%s\n", sata_spd_string(fls(link->field)));	\
-+	return sprintf(buf, "%s\n", sata_spd_string(format(link->field))); \
+@@ -350,11 +351,15 @@ static void __fanout_link(struct sock *sk, struct packet_sock *po);
+ static void register_prot_hook(struct sock *sk)
+ {
+ 	struct packet_sock *po = pkt_sk(sk);
++
+ 	if (!po->running) {
+-		if (po->fanout)
++		if (po->fanout) {
+ 			__fanout_link(sk, po);
+-		else
++		} else {
+ 			dev_add_pack(&po->prot_hook);
++			rcu_assign_pointer(po->cached_dev, po->prot_hook.dev);
++		}
++
+ 		sock_hold(sk);
+ 		po->running = 1;
+ 	}
+@@ -372,10 +377,13 @@ static void __unregister_prot_hook(struct sock *sk, bool sync)
+ 	struct packet_sock *po = pkt_sk(sk);
+ 
+ 	po->running = 0;
+-	if (po->fanout)
++	if (po->fanout) {
+ 		__fanout_unlink(sk, po);
+-	else
++	} else {
+ 		__dev_remove_pack(&po->prot_hook);
++		RCU_INIT_POINTER(po->cached_dev, NULL);
++	}
++
+ 	__sock_put(sk);
+ 
+ 	if (sync) {
+@@ -2032,12 +2040,24 @@ static int tpacket_fill_skb(struct packet_sock *po, struct sk_buff *skb,
+ 	return tp_len;
  }
  
--#define ata_link_linkspeed_attr(field)					\
--	ata_link_show_linkspeed(field)					\
-+#define ata_link_linkspeed_attr(field, format)				\
-+	ata_link_show_linkspeed(field, format)				\
- static DEVICE_ATTR(field, S_IRUGO, show_ata_link_##field, NULL)
++static struct net_device *packet_cached_dev_get(struct packet_sock *po)
++{
++	struct net_device *dev;
++
++	rcu_read_lock();
++	dev = rcu_dereference(po->cached_dev);
++	if (dev)
++		dev_hold(dev);
++	rcu_read_unlock();
++
++	return dev;
++}
++
+ static int tpacket_snd(struct packet_sock *po, struct msghdr *msg)
+ {
+ 	struct sk_buff *skb;
+ 	struct net_device *dev;
+ 	__be16 proto;
+-	bool need_rls_dev = false;
+ 	int err, reserve = 0;
+ 	void *ph;
+ 	struct sockaddr_ll *saddr = (struct sockaddr_ll *)msg->msg_name;
+@@ -2050,7 +2070,7 @@ static int tpacket_snd(struct packet_sock *po, struct msghdr *msg)
  
--ata_link_linkspeed_attr(hw_sata_spd_limit);
--ata_link_linkspeed_attr(sata_spd_limit);
--ata_link_linkspeed_attr(sata_spd);
-+ata_link_linkspeed_attr(hw_sata_spd_limit, fls);
-+ata_link_linkspeed_attr(sata_spd_limit, fls);
-+ata_link_linkspeed_attr(sata_spd, noop);
+ 	err = -EBUSY;
+ 	if (saddr == NULL) {
+-		dev = po->prot_hook.dev;
++		dev	= packet_cached_dev_get(po);
+ 		proto	= po->num;
+ 		addr	= NULL;
+ 	} else {
+@@ -2064,19 +2084,17 @@ static int tpacket_snd(struct packet_sock *po, struct msghdr *msg)
+ 		proto	= saddr->sll_protocol;
+ 		addr	= saddr->sll_addr;
+ 		dev = dev_get_by_index(sock_net(&po->sk), saddr->sll_ifindex);
+-		need_rls_dev = true;
+ 	}
  
+ 	err = -ENXIO;
+ 	if (unlikely(dev == NULL))
+ 		goto out;
+-
+-	reserve = dev->hard_header_len;
+-
+ 	err = -ENETDOWN;
+ 	if (unlikely(!(dev->flags & IFF_UP)))
+ 		goto out_put;
  
- static DECLARE_TRANSPORT_CLASS(ata_link_class,
++	reserve = dev->hard_header_len;
++
+ 	size_max = po->tx_ring.frame_size
+ 		- (po->tp_hdrlen - sizeof(struct sockaddr_ll));
+ 
+@@ -2152,8 +2170,7 @@ out_status:
+ 	__packet_set_status(po, ph, status);
+ 	kfree_skb(skb);
+ out_put:
+-	if (need_rls_dev)
+-		dev_put(dev);
++	dev_put(dev);
+ out:
+ 	mutex_unlock(&po->pg_vec_lock);
+ 	return err;
+@@ -2191,7 +2208,6 @@ static int packet_snd(struct socket *sock,
+ 	struct sk_buff *skb;
+ 	struct net_device *dev;
+ 	__be16 proto;
+-	bool need_rls_dev = false;
+ 	unsigned char *addr;
+ 	int err, reserve = 0;
+ 	struct virtio_net_hdr vnet_hdr = { 0 };
+@@ -2205,7 +2221,7 @@ static int packet_snd(struct socket *sock,
+ 	 */
+ 
+ 	if (saddr == NULL) {
+-		dev = po->prot_hook.dev;
++		dev	= packet_cached_dev_get(po);
+ 		proto	= po->num;
+ 		addr	= NULL;
+ 	} else {
+@@ -2217,19 +2233,17 @@ static int packet_snd(struct socket *sock,
+ 		proto	= saddr->sll_protocol;
+ 		addr	= saddr->sll_addr;
+ 		dev = dev_get_by_index(sock_net(sk), saddr->sll_ifindex);
+-		need_rls_dev = true;
+ 	}
+ 
+ 	err = -ENXIO;
+-	if (dev == NULL)
++	if (unlikely(dev == NULL))
+ 		goto out_unlock;
+-	if (sock->type == SOCK_RAW)
+-		reserve = dev->hard_header_len;
+-
+ 	err = -ENETDOWN;
+-	if (!(dev->flags & IFF_UP))
++	if (unlikely(!(dev->flags & IFF_UP)))
+ 		goto out_unlock;
+ 
++	if (sock->type == SOCK_RAW)
++		reserve = dev->hard_header_len;
+ 	if (po->has_vnet_hdr) {
+ 		vnet_hdr_len = sizeof(vnet_hdr);
+ 
+@@ -2350,15 +2364,14 @@ static int packet_snd(struct socket *sock,
+ 	if (err > 0 && (err = net_xmit_errno(err)) != 0)
+ 		goto out_unlock;
+ 
+-	if (need_rls_dev)
+-		dev_put(dev);
++	dev_put(dev);
+ 
+ 	return len;
+ 
+ out_free:
+ 	kfree_skb(skb);
+ out_unlock:
+-	if (dev && need_rls_dev)
++	if (dev)
+ 		dev_put(dev);
+ out:
+ 	return err;
+@@ -2575,6 +2588,7 @@ static int packet_create(struct net *net, struct socket *sock, int protocol,
+ 	po = pkt_sk(sk);
+ 	sk->sk_family = PF_PACKET;
+ 	po->num = proto;
++	RCU_INIT_POINTER(po->cached_dev, NULL);
+ 
+ 	sk->sk_destruct = packet_sock_destruct;
+ 	sk_refcnt_debug_inc(sk);
 
