@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966Ab3L2CKl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:10:41 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55245 "EHLO
+	id S1756093Ab3L2Cgn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:36:43 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55393 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752389Ab3L2CKY (ORCPT
+	by vger.kernel.org with ESMTP id S1752237Ab3L2CKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:10:24 -0500
+	Sat, 28 Dec 2013 21:10:41 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Kevin B. Smith" <kevin.b.smith@intel.com>,
-        "Sunil K. Pandey" <sunil.k.pandey@intel.com>,
-        "H. J. Lu" <hjl.tools@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
+CC: akpm@linux-foundation.org, "Herbert Xu" <herbert@gondor.apana.org.au>,
+        "Jussi Kivilinna" <jussi.kivilinna@mbnet.fi>,
+        "Horia Geanta" <horia.geanta@freescale.com>
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.67481407@decadent.org.uk>
+Message-ID: <lsq.1388282924.907139331@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 129/185] x86, build: Pass in additional -mno-mmx,
- -mno-sse options
+Subject: [PATCH 3.2 107/185] crypto: ccm - Fix handling of zero plaintext
+ when computing mac
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,69 +33,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Horia Geanta <horia.geanta@freescale.com>
 
-commit 8b3b005d675726e38bc504d2e35a991e55819155 upstream.
+commit 5638cabf3e4883f38dfb246c30980cebf694fbda upstream.
 
-In checkin
+There are cases when cryptlen can be zero in crypto_ccm_auth():
+-encryptiom: input scatterlist length is zero (no plaintext)
+-decryption: input scatterlist contains only the mac
+plus the condition of having different source and destination buffers
+(or else scatterlist length = max(plaintext_len, ciphertext_len)).
 
-    5551a34e5aea x86-64, build: Always pass in -mno-sse
+These are not handled correctly, leading to crashes like:
 
-we unconditionally added -mno-sse to the main build, to keep newer
-compilers from generating SSE instructions from autovectorization.
-However, this did not extend to the special environments
-(arch/x86/boot, arch/x86/boot/compressed, and arch/x86/realmode/rm).
-Add -mno-sse to the compiler command line for these environments, and
-add -mno-mmx to all the environments as well, as we don't want a
-compiler to generate MMX code either.
+root@p4080ds:~/crypto# insmod tcrypt.ko mode=45
+------------[ cut here ]------------
+kernel BUG at crypto/scatterwalk.c:37!
+Oops: Exception in kernel mode, sig: 5 [#1]
+SMP NR_CPUS=8 P4080 DS
+Modules linked in: tcrypt(+) crc32c xts xcbc vmac pcbc ecb gcm ghash_generic gf128mul ccm ctr seqiv
+CPU: 3 PID: 1082 Comm: cryptomgr_test Not tainted 3.11.0 #14
+task: ee12c5b0 ti: eecd0000 task.ti: eecd0000
+NIP: c0204d98 LR: f9225848 CTR: c0204d80
+REGS: eecd1b70 TRAP: 0700   Not tainted  (3.11.0)
+MSR: 00029002 <CE,EE,ME>  CR: 22044022  XER: 20000000
 
-This patch also removes a $(cc-option) call for -m32, since we have
-long since stopped supporting compilers too old for the -m32 option,
-and in fact hardcode it in other places in the Makefiles.
+GPR00: f9225c94 eecd1c20 ee12c5b0 eecd1c28 ee879400 ee879400 00000000 ee607464
+GPR08: 00000001 00000001 00000000 006b0000 c0204d80 00000000 00000002 c0698e20
+GPR16: ee987000 ee895000 fffffff4 ee879500 00000100 eecd1d58 00000001 00000000
+GPR24: ee879400 00000020 00000000 00000000 ee5b2800 ee607430 00000004 ee607460
+NIP [c0204d98] scatterwalk_start+0x18/0x30
+LR [f9225848] get_data_to_compute+0x28/0x2f0 [ccm]
+Call Trace:
+[eecd1c20] [f9225974] get_data_to_compute+0x154/0x2f0 [ccm] (unreliable)
+[eecd1c70] [f9225c94] crypto_ccm_auth+0x184/0x1d0 [ccm]
+[eecd1cb0] [f9225d40] crypto_ccm_encrypt+0x60/0x2d0 [ccm]
+[eecd1cf0] [c020d77c] __test_aead+0x3ec/0xe20
+[eecd1e20] [c020f35c] test_aead+0x6c/0xe0
+[eecd1e40] [c020f420] alg_test_aead+0x50/0xd0
+[eecd1e60] [c020e5e4] alg_test+0x114/0x2e0
+[eecd1ee0] [c020bd1c] cryptomgr_test+0x4c/0x60
+[eecd1ef0] [c0047058] kthread+0xa8/0xb0
+[eecd1f40] [c000eb0c] ret_from_kernel_thread+0x5c/0x64
+Instruction dump:
+0f080000 81290024 552807fe 0f080000 5529003a 4bffffb4 90830000 39400000
+39000001 8124000c 2f890000 7d28579e <0f090000> 81240008 91230004 4e800020
+---[ end trace 6d652dfcd1be37bd ]---
 
-Reported-by: Kevin B. Smith <kevin.b.smith@intel.com>
-Cc: Sunil K. Pandey <sunil.k.pandey@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: H. J. Lu <hjl.tools@gmail.com>
-Link: http://lkml.kernel.org/n/tip-j21wzqv790q834n7yc6g80j1@git.kernel.org
-[bwh: Backported to 3.2:
- - Drop changes to arch/x86/Makefile, which sets these flags earlier
- - Adjust context
- - Drop changes to arch/x86/realmode/rm/Makefile which doesn't exist]
+Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+Signed-off-by: Horia Geanta <horia.geanta@freescale.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/arch/x86/boot/Makefile
-+++ b/arch/x86/boot/Makefile
-@@ -51,18 +51,18 @@ $(obj)/cpustr.h: $(obj)/mkcpustr FORCE
+ crypto/ccm.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/crypto/ccm.c
++++ b/crypto/ccm.c
+@@ -271,7 +271,8 @@ static int crypto_ccm_auth(struct aead_r
+ 	}
  
- # How to compile the 16-bit code.  Note we always compile for -march=i386,
- # that way we can complain to the user if the CPU is insufficient.
--KBUILD_CFLAGS	:= $(LINUXINCLUDE) -g -Os -D_SETUP -D__KERNEL__ \
-+KBUILD_CFLAGS	:= $(LINUXINCLUDE) -m32 -g -Os -D_SETUP -D__KERNEL__ \
- 		   -DDISABLE_BRANCH_PROFILING \
- 		   -Wall -Wstrict-prototypes \
- 		   -march=i386 -mregparm=3 \
- 		   -include $(srctree)/$(src)/code16gcc.h \
- 		   -fno-strict-aliasing -fomit-frame-pointer \
-+		   -mno-mmx -mno-sse \
- 		   $(call cc-option, -ffreestanding) \
- 		   $(call cc-option, -fno-toplevel-reorder,\
--			$(call cc-option, -fno-unit-at-a-time)) \
-+		   $(call cc-option, -fno-unit-at-a-time)) \
- 		   $(call cc-option, -fno-stack-protector) \
- 		   $(call cc-option, -mpreferred-stack-boundary=2)
--KBUILD_CFLAGS	+= $(call cc-option, -m32)
- KBUILD_AFLAGS	:= $(KBUILD_CFLAGS) -D__ASSEMBLY__
- GCOV_PROFILE := n
+ 	/* compute plaintext into mac */
+-	get_data_to_compute(cipher, pctx, plain, cryptlen);
++	if (cryptlen)
++		get_data_to_compute(cipher, pctx, plain, cryptlen);
  
---- a/arch/x86/boot/compressed/Makefile
-+++ b/arch/x86/boot/compressed/Makefile
-@@ -12,6 +12,7 @@ KBUILD_CFLAGS += -DDISABLE_BRANCH_PROFIL
- cflags-$(CONFIG_X86_32) := -march=i386
- cflags-$(CONFIG_X86_64) := -mcmodel=small
- KBUILD_CFLAGS += $(cflags-y)
-+KBUILD_CFLAGS += -mno-mmx -mno-sse
- KBUILD_CFLAGS += $(call cc-option,-ffreestanding)
- KBUILD_CFLAGS += $(call cc-option,-fno-stack-protector)
- 
+ out:
+ 	return err;
 
