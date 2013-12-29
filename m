@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751662Ab3L2AXu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 19:23:50 -0500
-Received: from blu0-omc4-s34.blu0.hotmail.com ([65.55.111.173]:35887 "EHLO
-	blu0-omc4-s34.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751047Ab3L2AXt convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 19:23:49 -0500
-X-TMN: [KkUz0Gw6UV6v3CoK4es+E1qTgmUGYE11]
-X-Originating-Email: [lgxue@hotmail.com]
-Message-ID: <BLU172-W44367CDA588A7077F0987ACCF0@phx.gbl>
-From: Joe Xue <lgxue@hotmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-CC: "cooloney@gmail.com" <cooloney@gmail.com>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "rob@landley.net" <rob@landley.net>,
-        "milo.kim@ti.com" <milo.kim@ti.com>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: RE: [PATCH] Add the LED burst trigger
-Date: Sat, 28 Dec 2013 19:23:47 -0500
-Importance: Normal
-In-Reply-To: <20131228192630.GA28026@amd.pavel.ucw.cz>
-References: <1387895407-28031-1-git-send-email-lgxue@hotmail.com>,<20131225230935.GB13593@amd.pavel.ucw.cz>,<BLU172-W52032BFEF4512123D7516EACC20@phx.gbl>,<20131226142607.GA15225@amd.pavel.ucw.cz>,<BLU172-W30E6E7C0BC2B6C08FA0552ACCD0@phx.gbl>,<20131227095705.GC17143@amd.pavel.ucw.cz>,<BLU172-W8D850A8DEA8C0D87FBF45ACCC0@phx.gbl>,<20131228101622.GA13564@amd.pavel.ucw.cz>,<BLU172-W7ED2FA23CAA436EA47FCBACCC0@phx.gbl>,<20131228192630.GA28026@amd.pavel.ucw.cz>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
-X-OriginalArrivalTime: 29 Dec 2013 00:23:48.0355 (UTC) FILETIME=[3E132D30:01CF042C]
+	id S1751502Ab3L2AdN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 19:33:13 -0500
+Received: from www262.sakura.ne.jp ([202.181.97.72]:58701 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047Ab3L2AdM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Dec 2013 19:33:12 -0500
+X-Nat-Received: from [202.181.97.72]:50572 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1388277169.6033
+To: joe@perches.com, akpm@linux-foundation.org
+Cc: geert@linux-m68k.org, jkosina@suse.cz, viro@zeniv.linux.org.uk,
+        davem@davemloft.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lib/vsprintf: add %pT[C012] format specifier
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <20131228112509.8a62548c.akpm@linux-foundation.org>
+	<CAMuHMdWfi4mSQLA01_fYrs1ybQ5YysO2EF4q1EBNy+7nbKXN6g@mail.gmail.com>
+	<1388260405.24123.18.camel@joe-AO722>
+	<20131228120815.31f7d378.akpm@linux-foundation.org>
+	<1388262293.24123.22.camel@joe-AO722>
+In-Reply-To: <1388262293.24123.22.camel@joe-AO722>
+Message-Id: <201312290932.GGH35442.JFVFFHSOMOQOtL@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sun, 29 Dec 2013 09:32:44 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 28122013 #7186739, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
+Joe Perches wrote:
+> On Sat, 2013-12-28 at 12:08 -0800, Andrew Morton wrote:
+> > On Sat, 28 Dec 2013 11:53:25 -0800 Joe Perches <joe@perches.com> wrote:
+> > 
+> > > > > #define PRINTK_PID      "\002"
+> > > > > #define PRINTK_TASK_ID  "\003"  /* "comm:pid" */
+> 
+> > > > >
+> > > > >         printk(PRINTK_TASK_ID ": hair on fire\n");
+> > > > >
+> > > > > It's certainly compact.  I doubt if there's any existing code which
+> > > > > deliberately prints control chars?
 
-I have finished the patten trigger and have tested it.
-Do you mind me putting your name as suggest-by? For part idea is from you.
+What about using bytes from \x7F to \xFF ?
 
-Joe
-----------------------------------------
-> Date: Sat, 28 Dec 2013 20:26:30 +0100
-> From: pavel@ucw.cz
-> To: lgxue@hotmail.com
-> CC: cooloney@gmail.com; rpurdie@rpsys.net; rob@landley.net; milo.kim@ti.com; linux-leds@vger.kernel.org; linux-kernel@vger.kernel.org; linux-doc@vger.kernel.org
-> Subject: Re: [PATCH] Add the LED burst trigger
->
-> Hi!
->
->>> And while " " for pause and "#" for light would work. Maybe we chould
->>> do "\0" for pause and "\177" for light... and interpret everything
->>> between as an intensity. That will make it useful for LEDs with
->>> variable intensites, too...
->>
->> "\0" is not easy to give if application is a script.
->> intensity is a good idea, but makes it more complex, and user need to convert the "\num" to a ASCII code.
->>
->
->
-> OTOH it is easier for C programs _and_ we can support different
-> brightness levels.
->
-> It is not that bad from script:
->
-> echo -ne '\0\051\0377'> foo...
->
-> Pavel
-> --
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at http://www.tux.org/lkml/ 		 	   		  
+We are not passing multibyte characters like UTF-8 in the format string (are
+we?) because the non-first byte of multibyte characters by error matching %
+will cause security problem (format string bug) because the format string is
+parsed as char array.
+
+Then, we could do something like below.
+
+  pr_info("%s", current->comm);   => pr_info("\x7F\x80");
+  pr_info("%d", current->pid);    => pr_info("\x7F\x81");
+  pr_info("%10d", current->pid);  => pr_info("\x7F10\x81");
+
+If precision field support is unnecessary, we could use only \x80 to \xFF .
+
+  pr_info("%s", current->comm);   => pr_info("\x80");
+  pr_info("%d", current->pid);    => pr_info("\x81");
