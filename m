@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756650Ab3L2Czf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:55:35 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55107 "EHLO
+	id S1756635Ab3L2Cze (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:55:34 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54966 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752177Ab3L2CKG (ORCPT
+	by vger.kernel.org with ESMTP id S1751929Ab3L2CKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:10:06 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,11 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Dan Carpenter" <dan.carpenter@oracle.com>
-Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.894128643@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Paul Moore" <pmoore@redhat.com>
+Date: Sun, 29 Dec 2013 03:08:43 +0100
+Message-ID: <lsq.1388282923.134503117@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 155/185] isdnloop: use strlcpy() instead of strcpy()
+Subject: [PATCH 3.2 001/185] selinux: correct locking in selinux_netlbl_socket_connect)
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,44 +30,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Paul Moore <pmoore@redhat.com>
 
-[ Upstream commit f9a23c84486ed350cce7bb1b2828abd1f6658796 ]
+commit 42d64e1add3a1ce8a787116036163b8724362145 upstream.
 
-These strings come from a copy_from_user() and there is no way to be
-sure they are NUL terminated.
+The SELinux/NetLabel glue code has a locking bug that affects systems
+with NetLabel enabled, see the kernel error message below.  This patch
+corrects this problem by converting the bottom half socket lock to a
+more conventional, and correct for this call-path, lock_sock() call.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+ ===============================
+ [ INFO: suspicious RCU usage. ]
+ 3.11.0-rc3+ #19 Not tainted
+ -------------------------------
+ net/ipv4/cipso_ipv4.c:1928 suspicious rcu_dereference_protected() usage!
+
+ other info that might help us debug this:
+
+ rcu_scheduler_active = 1, debug_locks = 0
+ 2 locks held by ping/731:
+  #0:  (slock-AF_INET/1){+.-...}, at: [...] selinux_netlbl_socket_connect
+  #1:  (rcu_read_lock){.+.+..}, at: [<...>] netlbl_conn_setattr
+
+ stack backtrace:
+ CPU: 1 PID: 731 Comm: ping Not tainted 3.11.0-rc3+ #19
+ Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+  0000000000000001 ffff88006f659d28 ffffffff81726b6a ffff88003732c500
+  ffff88006f659d58 ffffffff810e4457 ffff88006b845a00 0000000000000000
+  000000000000000c ffff880075aa2f50 ffff88006f659d90 ffffffff8169bec7
+ Call Trace:
+  [<ffffffff81726b6a>] dump_stack+0x54/0x74
+  [<ffffffff810e4457>] lockdep_rcu_suspicious+0xe7/0x120
+  [<ffffffff8169bec7>] cipso_v4_sock_setattr+0x187/0x1a0
+  [<ffffffff8170f317>] netlbl_conn_setattr+0x187/0x190
+  [<ffffffff8170f195>] ? netlbl_conn_setattr+0x5/0x190
+  [<ffffffff8131ac9e>] selinux_netlbl_socket_connect+0xae/0xc0
+  [<ffffffff81303025>] selinux_socket_connect+0x135/0x170
+  [<ffffffff8119d127>] ? might_fault+0x57/0xb0
+  [<ffffffff812fb146>] security_socket_connect+0x16/0x20
+  [<ffffffff815d3ad3>] SYSC_connect+0x73/0x130
+  [<ffffffff81739a85>] ? sysret_check+0x22/0x5d
+  [<ffffffff810e5e2d>] ? trace_hardirqs_on_caller+0xfd/0x1c0
+  [<ffffffff81373d4e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+  [<ffffffff815d52be>] SyS_connect+0xe/0x10
+  [<ffffffff81739a59>] system_call_fastpath+0x16/0x1b
+
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/isdn/isdnloop/isdnloop.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ security/selinux/netlabel.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/isdn/isdnloop/isdnloop.c b/drivers/isdn/isdnloop/isdnloop.c
-index 509135f..4df80fb 100644
---- a/drivers/isdn/isdnloop/isdnloop.c
-+++ b/drivers/isdn/isdnloop/isdnloop.c
-@@ -1083,8 +1083,10 @@ isdnloop_start(isdnloop_card * card, isdnloop_sdef * sdefp)
- 				spin_unlock_irqrestore(&card->isdnloop_lock, flags);
- 				return -ENOMEM;
- 			}
--			for (i = 0; i < 3; i++)
--				strcpy(card->s0num[i], sdef.num[i]);
-+			for (i = 0; i < 3; i++) {
-+				strlcpy(card->s0num[i], sdef.num[i],
-+					sizeof(card->s0num[0]));
-+			}
- 			break;
- 		case ISDN_PTYPE_1TR6:
- 			if (isdnloop_fake(card, "DRV1.04TC-1TR6-CAPI-CNS-BASIS-29.11.95",
-@@ -1097,7 +1099,7 @@ isdnloop_start(isdnloop_card * card, isdnloop_sdef * sdefp)
- 				spin_unlock_irqrestore(&card->isdnloop_lock, flags);
- 				return -ENOMEM;
- 			}
--			strcpy(card->s0num[0], sdef.num[0]);
-+			strlcpy(card->s0num[0], sdef.num[0], sizeof(card->s0num[0]));
- 			card->s0num[1][0] = '\0';
- 			card->s0num[2][0] = '\0';
- 			break;
+--- a/security/selinux/netlabel.c
++++ b/security/selinux/netlabel.c
+@@ -442,8 +442,7 @@ int selinux_netlbl_socket_connect(struct
+ 	    sksec->nlbl_state != NLBL_CONNLABELED)
+ 		return 0;
+ 
+-	local_bh_disable();
+-	bh_lock_sock_nested(sk);
++	lock_sock(sk);
+ 
+ 	/* connected sockets are allowed to disconnect when the address family
+ 	 * is set to AF_UNSPEC, if that is what is happening we want to reset
+@@ -464,7 +463,6 @@ int selinux_netlbl_socket_connect(struct
+ 		sksec->nlbl_state = NLBL_CONNLABELED;
+ 
+ socket_connect_return:
+-	bh_unlock_sock(sk);
+-	local_bh_enable();
++	release_sock(sk);
+ 	return rc;
+ }
 
