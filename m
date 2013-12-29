@@ -1,54 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751963Ab3L2Gxs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 01:53:48 -0500
+	id S1751684Ab3L2Gxr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 01:53:47 -0500
 Received: from SpacedOut.fries.net ([67.64.210.234]:56779 "EHLO
 	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885Ab3L2GxB (ORCPT
+	with ESMTP id S1751186Ab3L2GxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 01:53:01 -0500
+	Sun, 29 Dec 2013 01:53:03 -0500
 X-Greylist: delayed 366 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 Dec 2013 01:53:00 EST
 From: David Fries <David@Fries.net>
 To: linux-kernel@vger.kernel.org
 Cc: Evgeniy Polyakov <zbr@ioremap.net>, Marcin Jurkowski <marcin1j@gmail.com>,
         Josh Boyer <jwboyer@gmail.com>,
         Sven Geggus <lists@fuchsschwanzdomain.de>
-Subject: [PATCH 00/14] w1: async netlink, search, fixes, and improvements
-Date: Sun, 29 Dec 2013 00:45:42 -0600
-Message-Id: <1388299556-12669-1-git-send-email-David@Fries.net>
+Subject: [PATCH 05/14] w1: continue slave search where previous left off
+Date: Sun, 29 Dec 2013 00:45:47 -0600
+Message-Id: <1388299556-12669-6-git-send-email-David@Fries.net>
 X-Mailer: git-send-email 1.7.10.4
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Sun, 29 Dec 2013 00:46:34 -0600 (CST)
+In-Reply-To: <1388299556-12669-1-git-send-email-David@Fries.net>
+References: <1388299556-12669-1-git-send-email-David@Fries.net>
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Sun, 29 Dec 2013 00:46:36 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series aims to extend and improve the netlink interface to
-the one wire system.  Netlink is exposed as a socket interface which
-is normally assumed to be asynchronous which only blocks waiting on
-incoming packets or a fulls end buffer, but were executed on the
-calling thread.  A bus device search can be a lengthy operation and
-temperature conversion can take 750 ms.  With this patch series those
-lengthy operations are now processed on the thread originally created
-to do automatic searching, which gives it a reason to exist when
-automatic search is disabled.  Some other improvements for netlink is
-additional commands to add, remove, and list the known slaves, and
-send replies only to the requester.  They were previously multicast to
-everyone listening on the group, this required an additional argument
-to cn_netlink_send.
+Search will detect at most max_slave_count devices per run, if there
+are more pick up the next search where the previous left off.
 
-Search improvements include returning all devices found, as the first
-that wouldn't fit in a packet would be lost.  I marked only this patch
-for the stable tree, though you would have to have a lot of devices on
-one bus to hit it.  I had a fix to support aborting from netlink
-rather than just avoiding the oops as the previous patch did.
-The search can now pick up where it left off, along with setting the
-maximum number of slaves to search for at a time, a large network
-could split up the search operation into multiple passes.  ds2490 USB
-dongle now gains support for hardware search and along with not
-undoing the interface selection operation takes the search for my
-network from 23.16 seconds to .307346 seconds.
+Signed-off-by: David Fries <David@Fries.net>
+Cc: Evgeniy Polyakov <zbr@ioremap.net>
+---
+ drivers/w1/w1.c |   18 +++++++++++++++---
+ drivers/w1/w1.h |    3 +++
+ 2 files changed, 18 insertions(+), 3 deletions(-)
 
-The largest single change is to change the comment style for DocBook
-to process in addition to comment some additional functions and
-data structures.
+diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
+index 34ffdc6..4c89f85 100644
+--- a/drivers/w1/w1.c
++++ b/drivers/w1/w1.c
+@@ -918,7 +918,8 @@ void w1_search(struct w1_master *dev, u8 search_type, w1_slave_found_callback cb
+ 	u8  triplet_ret = 0;
+ 
+ 	search_bit = 0;
+-	rn = last_rn = 0;
++	rn = dev->search_id;
++	last_rn = 0;
+ 	last_device = 0;
+ 	last_zero = -1;
+ 
+@@ -989,16 +990,27 @@ void w1_search(struct w1_master *dev, u8 search_type, w1_slave_found_callback cb
+ 		mutex_unlock(&dev->bus_mutex);
+ 
+ 		if ( (triplet_ret & 0x03) != 0x03 ) {
+-			if ( (desc_bit == last_zero) || (last_zero < 0))
++			if ((desc_bit == last_zero) || (last_zero < 0)) {
+ 				last_device = 1;
++				dev->search_id = 0;
++			} else {
++				dev->search_id = rn;
++			}
+ 			desc_bit = last_zero;
+ 			cb(dev, rn);
+ 		}
+ 
+ 		if (!last_device && slave_count == dev->max_slave_count &&
+ 			!test_bit(W1_WARN_MAX_COUNT, &dev->flags)) {
++			/* Only max_slave_count will be scanned in a search,
++			 * but it will start where it left off next search
++			 * until all ids are identified and then it will start
++			 * over.  A continued search will report the previous
++			 * last id as the first id (provided it is still on the
++			 * bus).
++			 */
+ 			dev_info(&dev->dev, "%s: max_slave_count %d reached, "
+-				"additional sensors ignored\n", __func__,
++				"will continue next search.\n", __func__,
+ 				dev->max_slave_count);
+ 			set_bit(W1_WARN_MAX_COUNT, &dev->flags);
+ 		}
+diff --git a/drivers/w1/w1.h b/drivers/w1/w1.h
+index bd10b3c..80fbdf9 100644
+--- a/drivers/w1/w1.h
++++ b/drivers/w1/w1.h
+@@ -150,6 +150,7 @@ struct w1_bus_master
+ 
+ 	/** Really nice hardware can handles the different types of ROM search
+ 	 *  w1_master* is passed to the slave found callback.
++	 *  u8 is search_type, W1_SEARCH or W1_ALARM_SEARCH
+ 	 */
+ 	void		(*search)(void *, struct w1_master *,
+ 		u8, w1_slave_found_callback);
+@@ -177,6 +178,8 @@ struct w1_master
+ 	int			initialized;
+ 	u32			id;
+ 	int			search_count;
++	/* id to start searching on, to continue a search or 0 to restart */
++	u64			search_id;
+ 
+ 	atomic_t		refcnt;
+ 
+-- 
+1.7.10.4
 
