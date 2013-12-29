@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756211Ab3L2C52 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:57:28 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55079 "EHLO
+	id S1756717Ab3L2C6T (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:58:19 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55083 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752093Ab3L2CJ7 (ORCPT
+	by vger.kernel.org with ESMTP id S1752148Ab3L2CJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:09:59 -0500
+	Sat, 28 Dec 2013 21:09:57 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Prarit Bhargava" <prarit@redhat.com>,
-        benh@kernel.crashing.org, Prarit@decadent.org.uk
-Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.255279067@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Ying Xue" <ying.xue@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Sun, 29 Dec 2013 03:08:44 +0100
+Message-ID: <lsq.1388282924.48507577@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 018/185] powerpc/vio: use strcpy in modalias_show
+Subject: [PATCH 3.2 164/185] atm: idt77252: fix dev refcnt leak
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,37 +31,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Prarit Bhargava <prarit@redhat.com>
+From: Ying Xue <ying.xue@windriver.com>
 
-commit 411cabf79e684171669ad29a0628c400b4431e95 upstream.
+[ Upstream commit b5de4a22f157ca345cdb3575207bf46402414bc1 ]
 
-Commit e82b89a6f19bae73fb064d1b3dd91fcefbb478f4 used strcat instead of
-strcpy which can result in an overflow of newlines on the buffer.
+init_card() calls dev_get_by_name() to get a network deceive. But it
+doesn't decrease network device reference count after the device is
+used.
 
-Signed-off-by: Prarit Bhargava
-Cc: benh@kernel.crashing.org
-Cc: ben@decadent.org.uk
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Ying Xue <ying.xue@windriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/powerpc/kernel/vio.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/atm/idt77252.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/vio.c
-+++ b/arch/powerpc/kernel/vio.c
-@@ -1352,12 +1352,12 @@ static ssize_t modalias_show(struct devi
- 
- 	dn = dev->of_node;
- 	if (!dn) {
--		strcat(buf, "\n");
-+		strcpy(buf, "\n");
- 		return strlen(buf);
+diff --git a/drivers/atm/idt77252.c b/drivers/atm/idt77252.c
+index 1c05212..b0e75ce 100644
+--- a/drivers/atm/idt77252.c
++++ b/drivers/atm/idt77252.c
+@@ -3513,7 +3513,7 @@ init_card(struct atm_dev *dev)
+ 	tmp = dev_get_by_name(&init_net, tname);	/* jhs: was "tmp = dev_get(tname);" */
+ 	if (tmp) {
+ 		memcpy(card->atmdev->esi, tmp->dev_addr, 6);
+-
++		dev_put(tmp);
+ 		printk("%s: ESI %pM\n", card->name, card->atmdev->esi);
  	}
- 	cp = of_get_property(dn, "compatible", NULL);
- 	if (!cp) {
--		strcat(buf, "\n");
-+		strcpy(buf, "\n");
- 		return strlen(buf);
- 	}
- 
+ 	/*
 
