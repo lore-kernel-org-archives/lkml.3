@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753063Ab3L2Vv7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 16:51:59 -0500
+	id S1754485Ab3L2Vy1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 16:54:27 -0500
 Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:61815 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752943Ab3L2Vv4 (ORCPT
+	by vger.kernel.org with ESMTP id S1753087Ab3L2Vv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 16:51:56 -0500
+	Sun, 29 Dec 2013 16:51:58 -0500
 X-IronPort-AV: E=Sophos;i="4.95,570,1384297200"; 
-   d="scan'208";a="50832539"
+   d="scan'208";a="50832554"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Geoff Levand <geoff@infradead.org>
-Cc: kernel-janitors@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linuxppc-dev@lists.ozlabs.org, cbe-oss-dev@lists.ozlabs.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 19/25]  fix error return code
-Date: Sun, 29 Dec 2013 23:47:34 +0100
-Message-Id: <1388357260-4843-20-git-send-email-Julia.Lawall@lip6.fr>
+To: Faisal Latif <faisal.latif@intel.com>
+Cc: kernel-janitors@vger.kernel.org, Roland Dreier <roland@kernel.org>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 22/25] RDMA/nes: fix error return code
+Date: Sun, 29 Dec 2013 23:47:37 +0100
+Message-Id: <1388357260-4843-23-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1388357260-4843-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1388357260-4843-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -55,19 +55,24 @@ Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 ---
 Not tested.
 
- drivers/scsi/ps3rom.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/infiniband/hw/nes/nes.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/ps3rom.c b/drivers/scsi/ps3rom.c
-index e6e2a30..04d77ce 100644
---- a/drivers/scsi/ps3rom.c
-+++ b/drivers/scsi/ps3rom.c
-@@ -387,6 +387,7 @@ static int ps3rom_probe(struct ps3_system_bus_device *_dev)
- 	if (!host) {
- 		dev_err(&dev->sbd.core, "%s:%u: scsi_host_alloc failed\n",
- 			__func__, __LINE__);
-+		error = -ENOMEM;
- 		goto fail_teardown;
- 	}
+diff --git a/drivers/infiniband/hw/nes/nes.c b/drivers/infiniband/hw/nes/nes.c
+index 4291410..353c7b0 100644
+--- a/drivers/infiniband/hw/nes/nes.c
++++ b/drivers/infiniband/hw/nes/nes.c
+@@ -675,8 +675,11 @@ static int nes_probe(struct pci_dev *pcidev, const struct pci_device_id *ent)
+ 	INIT_DELAYED_WORK(&nesdev->work, nes_recheck_link_status);
  
+ 	/* Initialize network devices */
+-	if ((netdev = nes_netdev_init(nesdev, mmio_regs)) == NULL)
++	netdev = nes_netdev_init(nesdev, mmio_regs);
++	if (netdev == NULL) {
++		ret = -ENOMEM;
+ 		goto bail7;
++	}
+ 
+ 	/* Register network device */
+ 	ret = register_netdev(netdev);
 
