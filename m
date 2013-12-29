@@ -1,166 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528Ab3L2WFK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 17:05:10 -0500
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:60590
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752267Ab3L2WFI (ORCPT
+	id S1752715Ab3L2WR3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 17:17:29 -0500
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:58121 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752469Ab3L2WR2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 17:05:08 -0500
-X-IronPort-AV: E=Sophos;i="4.95,570,1384297200"; 
-   d="scan'208";a="42755641"
-Date: Sun, 29 Dec 2013 23:05:04 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Joe Perches <joe@perches.com>
-cc: Julia Lawall <julia.lawall@lip6.fr>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Ding Tianhong <dingtianhong@huawei.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH net-next 19/20] net: plip: slight optimization of addr
- compare
-In-Reply-To: <1388177217.30298.24.camel@joe-AO722>
-Message-ID: <alpine.DEB.2.02.1312292257250.2009@localhost6.localdomain6>
-References: <52BD22ED.4030302@huawei.com>  <1388159283.12212.80.camel@edumazet-glaptop2.roam.corp.google.com>  <1388163982.30298.12.camel@joe-AO722>  <alpine.DEB.2.02.1312272112110.2018@localhost6.localdomain6> <1388177217.30298.24.camel@joe-AO722>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sun, 29 Dec 2013 17:17:28 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+To: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1388053141-30085-2-git-send-email-tushar.behera@linaro.org>
+Cc: lee.jones@linaro.org, kgene.kim@samsung.com, patches@linaro.org
+References: <1383202124-1775-1-git-send-email-tushar.behera@linaro.org>
+ <1388053141-30085-1-git-send-email-tushar.behera@linaro.org>
+ <1388053141-30085-2-git-send-email-tushar.behera@linaro.org>
+Message-ID: <20131229221723.12054.40917@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH RESEND 1/4] clk: clk-s2mps11: Refactor for including support for
+ other MFD clocks
+Date: Sun, 29 Dec 2013 14:17:23 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi Julia.
+Quoting Tushar Behera (2013-12-26 02:18:58)
+> The clocks in S2MPS11 and S5M8767 are managed in the same way, baring
+> a difference in the register offset. It would be better to update
+> existing S2MPS11 driver to support the clocks in S5M8767, rather than
+> creating an almost duplicate driver altogether.
+
+Can you rebase patches #1 & #2 onto clk-next? They do not apply cleanly
+as-is.
+
+Regards,
+Mike
+
 > 
-> Maybe this explanation is helpful?
+> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+> Reviewed-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+> CC: Mike Turquette <mturquette@linaro.org>
+> ---
+>  drivers/clk/clk-s2mps11.c |   20 ++++++++++++++++----
+>  1 file changed, 16 insertions(+), 4 deletions(-)
 > 
-> ethernet addresses are u8[6] (48 bits)
+> diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
+> index 00a3abe..43e25bb 100644
+> --- a/drivers/clk/clk-s2mps11.c
+> +++ b/drivers/clk/clk-s2mps11.c
+> @@ -48,6 +48,7 @@ struct s2mps11_clk {
+>         struct clk_lookup *lookup;
+>         u32 mask;
+>         bool enabled;
+> +       unsigned int reg;
+>  };
+>  
+>  static struct s2mps11_clk *to_s2mps11_clk(struct clk_hw *hw)
+> @@ -61,7 +62,7 @@ static int s2mps11_clk_prepare(struct clk_hw *hw)
+>         int ret;
+>  
+>         ret = regmap_update_bits(s2mps11->iodev->regmap_pmic,
+> -                               S2MPS11_REG_RTC_CTRL,
+> +                                s2mps11->reg,
+>                                  s2mps11->mask, s2mps11->mask);
+>         if (!ret)
+>                 s2mps11->enabled = true;
+> @@ -74,7 +75,7 @@ static void s2mps11_clk_unprepare(struct clk_hw *hw)
+>         struct s2mps11_clk *s2mps11 = to_s2mps11_clk(hw);
+>         int ret;
+>  
+> -       ret = regmap_update_bits(s2mps11->iodev->regmap_pmic, S2MPS11_REG_RTC_CTRL,
+> +       ret = regmap_update_bits(s2mps11->iodev->regmap_pmic, s2mps11->reg,
+>                            s2mps11->mask, ~s2mps11->mask);
+>  
+>         if (!ret)
+> @@ -155,6 +156,7 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
+>         struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
+>         struct s2mps11_clk *s2mps11_clks, *s2mps11_clk;
+>         struct device_node *clk_np = NULL;
+> +       unsigned int s2mps11_reg;
+>         int i, ret = 0;
+>         u32 val;
+>  
+> @@ -169,13 +171,23 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
+>         if (IS_ERR(clk_np))
+>                 return PTR_ERR(clk_np);
+>  
+> +       switch(platform_get_device_id(pdev)->driver_data) {
+> +       case S2MPS11X:
+> +               s2mps11_reg = S2MPS11_REG_RTC_CTRL;
+> +               break;
+> +       default:
+> +               dev_err(&pdev->dev, "Invalid device type\n");
+> +               return -EINVAL;
+> +       };
+> +
+>         for (i = 0; i < S2MPS11_CLKS_NUM; i++, s2mps11_clk++) {
+>                 s2mps11_clk->iodev = iodev;
+>                 s2mps11_clk->hw.init = &s2mps11_clks_init[i];
+>                 s2mps11_clk->mask = 1 << i;
+> +               s2mps11_clk->reg = s2mps11_reg;
+>  
+>                 ret = regmap_read(s2mps11_clk->iodev->regmap_pmic,
+> -                                 S2MPS11_REG_RTC_CTRL, &val);
+> +                                 s2mps11_clk->reg, &val);
+>                 if (ret < 0)
+>                         goto err_reg;
+>  
+> @@ -241,7 +253,7 @@ static int s2mps11_clk_remove(struct platform_device *pdev)
+>  }
+>  
+>  static const struct platform_device_id s2mps11_clk_id[] = {
+> -       { "s2mps11-clk", 0},
+> +       { "s2mps11-clk", S2MPS11X},
+>         { },
+>  };
+>  MODULE_DEVICE_TABLE(platform, s2mps11_clk_id);
+> -- 
+> 1.7.9.5
 > 
-> ether_addr_equal_64bits gets passed a pointer to u8[8]
-> and is more efficient on 64 bit architectures than
-> ether_addr_equal because the test can be done with a
-> single compare and shift.
-> 
-> The idea is not to access past the end of the ethernet
-> address as appropriate (think pointer to eeprom or other
-> such end-of-addressable memory conditions)
-> 
-> If a struct containing an ethernet address has additional
-> members after the ethernet address, or the u8[6] address
-> passed to ether_addr_equal is not going to access past
-> the end of memory or the structure, then
-> ether_addr_equal_64bits should be used in lieu of
-> ether_addr_equal.
-
-After some work on getting more include files to be taken into account, I 
-get the following list of cases where both arguments have the form of a 
-field reference, the field has array type, and the field is not at the end 
-of the structure.  I guess these are all candidates for 
-ether_addr_equal_64bits (assuming that they correctly do satisfy these 
-properties)?
-
-Most of the uses of ether_addr_equal unfortunately take at least one 
-pointer as an argument.  If the pointer is a parameter one has to check 
-all of the calls sites.  If the function is static, this is perhaps not 
-too bad, but from looking at some examples, it seems that this is often 
-not the case.
-
-There seem to also be quite a number of comparisons that use memcmp rather 
-than ether_addr_equal.  It seems that using ether_addr_equal would require 
-knowing about alignment.  In some cases, the structure field declaration 
-explicitly mentions alignment.  I'm not sure how to be sure that it holds 
-otherwise.  In particular, many of the relevant structures are declared as 
-__packed.  Perhaps that is also an issue for using 
-ether_addr_equal_64bits?
-
-julia
-
->From linux-next of 20131224.
-
-file drivers/scsi/fcoe/fcoe_ctlr.c on line 1524
-file drivers/scsi/fcoe/fcoe_ctlr.c on line 1528
-file drivers/scsi/fcoe/fcoe_ctlr.c on line 342
-file drivers/scsi/fcoe/fcoe_ctlr.c on line 1042
-file drivers/scsi/fcoe/fcoe_sysfs.c on line 660
-file drivers/scsi/fcoe/fcoe.c on line 1465
-file drivers/net/wireless/rtlwifi/ps.c on line 926
-file drivers/net/wireless/rtlwifi/ps.c on line 481
-file drivers/net/wireless/rtlwifi/base.c on line 1296
-file drivers/net/wireless/rtlwifi/base.c on line 1784
-file drivers/net/wireless/p54/txrx.c on line 311
-file drivers/net/wireless/rt2x00/rt2x00dev.c on line 568
-file drivers/net/wireless/rt2x00/rt2x00dev.c on line 571
-file drivers/net/wireless/ipw2x00/libipw_rx.c on line 1471
-file drivers/net/wireless/ath/carl9170/rx.c on line 605
-file drivers/net/wireless/ath/carl9170/rx.c on line 606
-file drivers/net/wireless/ath/carl9170/rx.c on line 539
-file drivers/net/wireless/ath/ath9k/htc_drv_txrx.c on line 1080
-file drivers/net/wireless/ath/ath9k/recv.c on line 985
-file drivers/net/wireless/ath/ath5k/base.c on line 1248
-file drivers/net/wireless/ath/ath5k/base.c on line 1312
-file drivers/net/wireless/iwlegacy/3945.c on line 472
-file drivers/net/wireless/iwlegacy/3945.c on line 469
-file drivers/net/wireless/iwlegacy/common.c on line 3749
-file drivers/net/wireless/iwlegacy/common.c on line 3750
-file drivers/net/wireless/iwlegacy/common.c on line 3751
-file drivers/net/wireless/mwl8k.c on line 1261
-file drivers/net/wireless/at76c50x-usb.c on line 1724
-file drivers/net/wireless/iwlwifi/dvm/rxon.c on line 878
-file drivers/net/wireless/iwlwifi/dvm/rxon.c on line 879
-file drivers/net/wireless/iwlwifi/dvm/rxon.c on line 880
-file drivers/net/wireless/iwlwifi/dvm/rx.c on line 783
-file drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c on line 334
-file drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c on line 580
-file drivers/net/vxlan.c on line 1371
-file drivers/staging/slicoss/slicoss.c on line 790
-file drivers/staging/vt6656/wpactl.c on line 230
-file drivers/staging/vt6656/dpc.c on line 357
-file drivers/staging/vt6656/dpc.c on line 369
-file net/bluetooth/bnep/core.c on line 407
-file net/bluetooth/bnep/core.c on line 410
-file net/wireless/scan.c on line 636
-file net/wireless/mlme.c on line 561
-file net/wireless/mlme.c on line 575
-file net/wireless/mlme.c on line 588
-file net/hsr/hsr_framereg.c on line 88
-file net/hsr/hsr_framereg.c on line 187
-file net/hsr/hsr_framereg.c on line 90
-file net/hsr/hsr_framereg.c on line 178
-file net/802/stp.c on line 49
-file net/mac80211/tx.c on line 1693
-file net/mac80211/mesh.c on line 1055
-file net/mac80211/mesh.c on line 1005
-file net/mac80211/scan.c on line 187
-file net/mac80211/scan.c on line 188
-file net/mac80211/mlme.c on line 2584
-file net/mac80211/mlme.c on line 4036
-file net/mac80211/mlme.c on line 3827
-file net/mac80211/mlme.c on line 2784
-file net/mac80211/mlme.c on line 2814
-file net/mac80211/mlme.c on line 2217
-file net/mac80211/mlme.c on line 2245
-file net/mac80211/mlme.c on line 2708
-file net/mac80211/mlme.c on line 2712
-file net/mac80211/mlme.c on line 2695
-file net/mac80211/iface.c on line 288
-file net/mac80211/rx.c on line 1910
-file net/mac80211/rx.c on line 1641
-file net/mac80211/rx.c on line 1642
-file net/mac80211/rx.c on line 3104
-file net/mac80211/rx.c on line 2341
-file net/mac80211/rx.c on line 2521
-file net/mac80211/rx.c on line 2340
-file net/mac80211/rx.c on line 2335
-file net/mac80211/rx.c on line 3093
-file net/mac80211/rx.c on line 3111
-file net/mac80211/rx.c on line 3127
-file net/mac80211/rx.c on line 3137
-file net/mac80211/rx.c on line 3147
-file net/mac80211/rx.c on line 3168
-file net/mac80211/rx.c on line 3103
-file net/mac80211/rx.c on line 2146
-file net/mac80211/sta_info.c on line 416
-file net/mac80211/status.c on line 595
-file net/mac80211/ibss.c on line 1126
-file net/mac80211/ibss.c on line 1018
-file net/mac80211/ibss.c on line 1437
