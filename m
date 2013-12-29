@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab3L2CLX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:11:23 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55713 "EHLO
+	id S1755543Ab3L2CQX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:16:23 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55612 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753689Ab3L2CLV (ORCPT
+	by vger.kernel.org with ESMTP id S1753515Ab3L2CLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:11:21 -0500
+	Sat, 28 Dec 2013 21:11:23 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>
+CC: akpm@linux-foundation.org, "Trond Myklebust" <Trond.Myklebust@netapp.com>
 Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.866403094@decadent.org.uk>
+Message-ID: <lsq.1388282923.378009929@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 032/185] ALSA: hda - Add support for CX20952
+Subject: [PATCH 3.2 042/185] SUNRPC: Fix a data corruption issue when
+ retransmitting RPC calls
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,36 +31,150 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 8f42d7698751a45cd9f7134a5da49bc5b6206179 upstream.
+commit a6b31d18b02ff9d7915c5898c9b5ca41a798cd73 upstream.
 
-It's a superset of the existing CX2075x codecs, so we can reuse the
-existing parser code.
+The following scenario can cause silent data corruption when doing
+NFS writes. It has mainly been observed when doing database writes
+using O_DIRECT.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+1) The RPC client uses sendpage() to do zero-copy of the page data.
+2) Due to networking issues, the reply from the server is delayed,
+   and so the RPC client times out.
+
+3) The client issues a second sendpage of the page data as part of
+   an RPC call retransmission.
+
+4) The reply to the first transmission arrives from the server
+   _before_ the client hardware has emptied the TCP socket send
+   buffer.
+5) After processing the reply, the RPC state machine rules that
+   the call to be done, and triggers the completion callbacks.
+6) The application notices the RPC call is done, and reuses the
+   pages to store something else (e.g. a new write).
+
+7) The client NIC drains the TCP socket send buffer. Since the
+   page data has now changed, it reads a corrupted version of the
+   initial RPC call, and puts it on the wire.
+
+This patch fixes the problem in the following manner:
+
+The ordering guarantees of TCP ensure that when the server sends a
+reply, then we know that the _first_ transmission has completed. Using
+zero-copy in that situation is therefore safe.
+If a time out occurs, we then send the retransmission using sendmsg()
+(i.e. no zero-copy), We then know that the socket contains a full copy of
+the data, and so it will retransmit a faithful reproduction even if the
+RPC call completes, and the application reuses the O_DIRECT buffer in
+the meantime.
+
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/hda/patch_conexant.c | 3 +++
- 1 file changed, 3 insertions(+)
+ net/sunrpc/xprtsock.c | 28 +++++++++++++++++++++-------
+ 1 file changed, 21 insertions(+), 7 deletions(-)
 
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -4610,6 +4610,8 @@ static const struct hda_codec_preset snd
- 	  .patch = patch_conexant_auto },
- 	{ .id = 0x14f15115, .name = "CX20757",
- 	  .patch = patch_conexant_auto },
-+	{ .id = 0x14f151d7, .name = "CX20952",
-+	  .patch = patch_conexant_auto },
- 	{} /* terminator */
- };
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -390,8 +390,10 @@ static int xs_send_kvec(struct socket *s
+ 	return kernel_sendmsg(sock, &msg, NULL, 0, 0);
+ }
  
-@@ -4636,6 +4638,7 @@ MODULE_ALIAS("snd-hda-codec-id:14f15111"
- MODULE_ALIAS("snd-hda-codec-id:14f15113");
- MODULE_ALIAS("snd-hda-codec-id:14f15114");
- MODULE_ALIAS("snd-hda-codec-id:14f15115");
-+MODULE_ALIAS("snd-hda-codec-id:14f151d7");
+-static int xs_send_pagedata(struct socket *sock, struct xdr_buf *xdr, unsigned int base, int more)
++static int xs_send_pagedata(struct socket *sock, struct xdr_buf *xdr, unsigned int base, int more, bool zerocopy)
+ {
++	ssize_t (*do_sendpage)(struct socket *sock, struct page *page,
++			int offset, size_t size, int flags);
+ 	struct page **ppage;
+ 	unsigned int remainder;
+ 	int err, sent = 0;
+@@ -400,6 +402,9 @@ static int xs_send_pagedata(struct socke
+ 	base += xdr->page_base;
+ 	ppage = xdr->pages + (base >> PAGE_SHIFT);
+ 	base &= ~PAGE_MASK;
++	do_sendpage = sock->ops->sendpage;
++	if (!zerocopy)
++		do_sendpage = sock_no_sendpage;
+ 	for(;;) {
+ 		unsigned int len = min_t(unsigned int, PAGE_SIZE - base, remainder);
+ 		int flags = XS_SENDMSG_FLAGS;
+@@ -407,7 +412,7 @@ static int xs_send_pagedata(struct socke
+ 		remainder -= len;
+ 		if (remainder != 0 || more)
+ 			flags |= MSG_MORE;
+-		err = sock->ops->sendpage(sock, *ppage, base, len, flags);
++		err = do_sendpage(sock, *ppage, base, len, flags);
+ 		if (remainder == 0 || err != len)
+ 			break;
+ 		sent += err;
+@@ -428,9 +433,10 @@ static int xs_send_pagedata(struct socke
+  * @addrlen: UDP only -- length of destination address
+  * @xdr: buffer containing this request
+  * @base: starting position in the buffer
++ * @zerocopy: true if it is safe to use sendpage()
+  *
+  */
+-static int xs_sendpages(struct socket *sock, struct sockaddr *addr, int addrlen, struct xdr_buf *xdr, unsigned int base)
++static int xs_sendpages(struct socket *sock, struct sockaddr *addr, int addrlen, struct xdr_buf *xdr, unsigned int base, bool zerocopy)
+ {
+ 	unsigned int remainder = xdr->len - base;
+ 	int err, sent = 0;
+@@ -458,7 +464,7 @@ static int xs_sendpages(struct socket *s
+ 	if (base < xdr->page_len) {
+ 		unsigned int len = xdr->page_len - base;
+ 		remainder -= len;
+-		err = xs_send_pagedata(sock, xdr, base, remainder != 0);
++		err = xs_send_pagedata(sock, xdr, base, remainder != 0, zerocopy);
+ 		if (remainder == 0 || err != len)
+ 			goto out;
+ 		sent += err;
+@@ -561,7 +567,7 @@ static int xs_local_send_request(struct
+ 			req->rq_svec->iov_base, req->rq_svec->iov_len);
  
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Conexant HD-audio codec");
+ 	status = xs_sendpages(transport->sock, NULL, 0,
+-						xdr, req->rq_bytes_sent);
++						xdr, req->rq_bytes_sent, true);
+ 	dprintk("RPC:       %s(%u) = %d\n",
+ 			__func__, xdr->len - req->rq_bytes_sent, status);
+ 	if (likely(status >= 0)) {
+@@ -617,7 +623,7 @@ static int xs_udp_send_request(struct rp
+ 	status = xs_sendpages(transport->sock,
+ 			      xs_addr(xprt),
+ 			      xprt->addrlen, xdr,
+-			      req->rq_bytes_sent);
++			      req->rq_bytes_sent, true);
+ 
+ 	dprintk("RPC:       xs_udp_send_request(%u) = %d\n",
+ 			xdr->len - req->rq_bytes_sent, status);
+@@ -688,6 +694,7 @@ static int xs_tcp_send_request(struct rp
+ 	struct rpc_xprt *xprt = req->rq_xprt;
+ 	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
+ 	struct xdr_buf *xdr = &req->rq_snd_buf;
++	bool zerocopy = true;
+ 	int status;
+ 
+ 	xs_encode_stream_record_marker(&req->rq_snd_buf);
+@@ -695,13 +702,20 @@ static int xs_tcp_send_request(struct rp
+ 	xs_pktdump("packet data:",
+ 				req->rq_svec->iov_base,
+ 				req->rq_svec->iov_len);
++	/* Don't use zero copy if this is a resend. If the RPC call
++	 * completes while the socket holds a reference to the pages,
++	 * then we may end up resending corrupted data.
++	 */
++	if (task->tk_flags & RPC_TASK_SENT)
++		zerocopy = false;
+ 
+ 	/* Continue transmitting the packet/record. We must be careful
+ 	 * to cope with writespace callbacks arriving _after_ we have
+ 	 * called sendmsg(). */
+ 	while (1) {
+ 		status = xs_sendpages(transport->sock,
+-					NULL, 0, xdr, req->rq_bytes_sent);
++					NULL, 0, xdr, req->rq_bytes_sent,
++					zerocopy);
+ 
+ 		dprintk("RPC:       xs_tcp_send_request(%u) = %d\n",
+ 				xdr->len - req->rq_bytes_sent, status);
 
