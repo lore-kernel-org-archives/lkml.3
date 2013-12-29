@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756536Ab3L2CvU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:51:20 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55045 "EHLO
+	id S1756111Ab3L2CvS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:51:18 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55032 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751978Ab3L2CKM (ORCPT
+	by vger.kernel.org with ESMTP id S1751950Ab3L2CKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:10:12 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,16 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Xiangliang Yu" <yuxiangl@marvell.com>,
-        "xiangliang yu" <yxlraid@gmail.com>, "Tejun Heo" <tj@kernel.org>
-Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.684853623@decadent.org.uk>
+CC: akpm@linux-foundation.org,
+        "=?UTF-8?Q?J=C3=B6rn=20?=Engel" <joern@logfs.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        "Steve Hodgson" <steve@purestorage.com>,
+        "Dave Jones" <davej@redhat.com>
+Date: Sun, 29 Dec 2013 03:08:44 +0100
+Message-ID: <lsq.1388282924.365029570@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 011/185] ahci: disabled FBS prior to issuing software
- reset
+Subject: [PATCH 3.2 183/185] ftrace: Check module functions being traced
+ on reload
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,125 +35,237 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: xiangliang yu <yxlraid@gmail.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 89dafa20f3daab5b3e0c13d0068a28e8e64e2102 upstream.
+commit 8c4f3c3fa9681dc549cd35419b259496082fef8b upstream.
 
-Tested with Marvell 88se9125, attached with one port mulitplier(5 ports)
-and one disk, we will get following boot log messages if using current
-code:
+There's been a nasty bug that would show up and not give much info.
+The bug displayed the following warning:
 
-  ata8: SATA link up 6.0 Gbps (SStatus 133 SControl 330)
-  ata8.15: Port Multiplier 1.2, 0x1b4b:0x9715 r160, 5 ports, feat 0x1/0x1f
-  ahci 0000:03:00.0: FBS is enabled
-  ata8.00: hard resetting link
-  ata8.00: SATA link down (SStatus 0 SControl 330)
-  ata8.01: hard resetting link
-  ata8.01: SATA link down (SStatus 0 SControl 330)
-  ata8.02: hard resetting link
-  ata8.02: SATA link down (SStatus 0 SControl 330)
-  ata8.03: hard resetting link
-  ata8.03: SATA link up 6.0 Gbps (SStatus 133 SControl 133)
-  ata8.04: hard resetting link
-  ata8.04: failed to resume link (SControl 133)
-  ata8.04: failed to read SCR 0 (Emask=0x40)
-  ata8.04: failed to read SCR 0 (Emask=0x40)
-  ata8.04: failed to read SCR 1 (Emask=0x40)
-  ata8.04: failed to read SCR 0 (Emask=0x40)
-  ata8.03: native sectors (2) is smaller than sectors (976773168)
-  ata8.03: ATA-8: ST3500413AS, JC4B, max UDMA/133
-  ata8.03: 976773168 sectors, multi 0: LBA48 NCQ (depth 31/32)
-  ata8.03: configured for UDMA/133
-  ata8.04: failed to IDENTIFY (I/O error, err_mask=0x100)
-  ata8.15: hard resetting link
-  ata8.15: SATA link up 6.0 Gbps (SStatus 133 SControl 330)
-  ata8.15: Port Multiplier vendor mismatch '0x1b4b' != '0x133'
-  ata8.15: PMP revalidation failed (errno=-19)
-  ata8.15: hard resetting link
-  ata8.15: SATA link up 6.0 Gbps (SStatus 133 SControl 330)
-  ata8.15: Port Multiplier vendor mismatch '0x1b4b' != '0x133'
-  ata8.15: PMP revalidation failed (errno=-19)
-  ata8.15: limiting SATA link speed to 3.0 Gbps
-  ata8.15: hard resetting link
-  ata8.15: SATA link up 3.0 Gbps (SStatus 123 SControl 320)
-  ata8.15: Port Multiplier vendor mismatch '0x1b4b' != '0x133'
-  ata8.15: PMP revalidation failed (errno=-19)
-  ata8.15: failed to recover PMP after 5 tries, giving up
-  ata8.15: Port Multiplier detaching
-  ata8.03: disabled
-  ata8.00: disabled
-  ata8: EH complete
+ WARNING: at kernel/trace/ftrace.c:1529 __ftrace_hash_rec_update+0x1e3/0x230()
+ Pid: 20903, comm: bash Tainted: G           O 3.6.11+ #38405.trunk
+ Call Trace:
+  [<ffffffff8103e5ff>] warn_slowpath_common+0x7f/0xc0
+  [<ffffffff8103e65a>] warn_slowpath_null+0x1a/0x20
+  [<ffffffff810c2ee3>] __ftrace_hash_rec_update+0x1e3/0x230
+  [<ffffffff810c4f28>] ftrace_hash_move+0x28/0x1d0
+  [<ffffffff811401cc>] ? kfree+0x2c/0x110
+  [<ffffffff810c68ee>] ftrace_regex_release+0x8e/0x150
+  [<ffffffff81149f1e>] __fput+0xae/0x220
+  [<ffffffff8114a09e>] ____fput+0xe/0x10
+  [<ffffffff8105fa22>] task_work_run+0x72/0x90
+  [<ffffffff810028ec>] do_notify_resume+0x6c/0xc0
+  [<ffffffff8126596e>] ? trace_hardirqs_on_thunk+0x3a/0x3c
+  [<ffffffff815c0f88>] int_signal+0x12/0x17
+ ---[ end trace 793179526ee09b2c ]---
 
-The reason is that current detection code doesn't follow AHCI spec:
+It was finally narrowed down to unloading a module that was being traced.
 
-First,the port multiplier detection process look like this:
+It was actually more than that. When functions are being traced, there's
+a table of all functions that have a ref count of the number of active
+tracers attached to that function. When a function trace callback is
+registered to a function, the function's record ref count is incremented.
+When it is unregistered, the function's record ref count is decremented.
+If an inconsistency is detected (ref count goes below zero) the above
+warning is shown and the function tracing is permanently disabled until
+reboot.
 
-	ahci_hardreset(link, class, deadline)
-	if (class == ATA_DEV_PMP) {
-		sata_pmp_attach(dev)	/* will enable FBS */
-		sata_pmp_init_links(ap, nr_ports);
-		ata_for_each_link(link, ap, EDGE) {
-			sata_std_hardreset(link, class, deadline);
-			if (link_is_online)	/* do soft reset */
-				ahci_softreset(link, class, deadline);
-		}
-	}
-But, according to chapter 9.3.9 in AHCI spec: Prior to issuing software
-reset, software shall clear PxCMD.ST to '0' and then clear PxFBS.EN to
-'0'.
+The ftrace callback ops holds a hash of functions that it filters on
+(and/or filters off). If the hash is empty, the default means to filter
+all functions (for the filter_hash) or to disable no functions (for the
+notrace_hash).
 
-The patch test ok with kernel 3.11.1.
+When a module is unloaded, it frees the function records that represent
+the module functions. These records exist on their own pages, that is
+function records for one module will not exist on the same page as
+function records for other modules or even the core kernel.
 
-tj: Patch white space contaminated, applied manually with trivial
-    updates.
+Now when a module unloads, the records that represents its functions are
+freed. When the module is loaded again, the records are recreated with
+a default ref count of zero (unless there's a callback that traces all
+functions, then they will also be traced, and the ref count will be
+incremented).
 
-Signed-off-by: Xiangliang Yu <yuxiangl@marvell.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+The problem is that if an ftrace callback hash includes functions of the
+module being unloaded, those hash entries will not be removed. If the
+module is reloaded in the same location, the hash entries still point
+to the functions of the module but the module's ref counts do not reflect
+that.
+
+With the help of Steve and Joern, we found a reproducer:
+
+ Using uinput module and uinput_release function.
+
+ cd /sys/kernel/debug/tracing
+ modprobe uinput
+ echo uinput_release > set_ftrace_filter
+ echo function > current_tracer
+ rmmod uinput
+ modprobe uinput
+ # check /proc/modules to see if loaded in same addr, otherwise try again
+ echo nop > current_tracer
+
+ [BOOM]
+
+The above loads the uinput module, which creates a table of functions that
+can be traced within the module.
+
+We add uinput_release to the filter_hash to trace just that function.
+
+Enable function tracincg, which increments the ref count of the record
+associated to uinput_release.
+
+Remove uinput, which frees the records including the one that represents
+uinput_release.
+
+Load the uinput module again (and make sure it's at the same address).
+This recreates the function records all with a ref count of zero,
+including uinput_release.
+
+Disable function tracing, which will decrement the ref count for uinput_release
+which is now zero because of the module removal and reload, and we have
+a mismatch (below zero ref count).
+
+The solution is to check all currently tracing ftrace callbacks to see if any
+are tracing any of the module's functions when a module is loaded (it already does
+that with callbacks that trace all functions). If a callback happens to have
+a module function being traced, it increments that records ref count and starts
+tracing that function.
+
+There may be a strange side effect with this, where tracing module functions
+on unload and then reloading a new module may have that new module's functions
+being traced. This may be something that confuses the user, but it's not
+a big deal. Another approach is to disable all callback hashes on module unload,
+but this leaves some ftrace callbacks that may not be registered, but can
+still have hashes tracing the module's function where ftrace doesn't know about
+it. That situation can cause the same bug. This solution solves that case too.
+Another benefit of this solution, is it is possible to trace a module's
+function on unload and load.
+
+Link: http://lkml.kernel.org/r/20130705142629.GA325@redhat.com
+
+Reported-by: Jörn Engel <joern@logfs.org>
+Reported-by: Dave Jones <davej@redhat.com>
+Reported-by: Steve Hodgson <steve@purestorage.com>
+Tested-by: Steve Hodgson <steve@purestorage.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+[bwh: Backported to 3.2: adjust context, indentation]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/ata/libahci.c | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
-
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -1247,9 +1247,11 @@ int ahci_do_softreset(struct ata_link *l
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1799,12 +1799,57 @@ static cycle_t		ftrace_update_time;
+ static unsigned long	ftrace_update_cnt;
+ unsigned long		ftrace_update_tot_cnt;
+ 
+-static int ops_traces_mod(struct ftrace_ops *ops)
++static inline int ops_traces_mod(struct ftrace_ops *ops)
  {
- 	struct ata_port *ap = link->ap;
- 	struct ahci_host_priv *hpriv = ap->host->private_data;
-+	struct ahci_port_priv *pp = ap->private_data;
- 	const char *reason = NULL;
- 	unsigned long now, msecs;
- 	struct ata_taskfile tf;
-+	bool fbs_disabled = false;
- 	int rc;
- 
- 	DPRINTK("ENTER\n");
-@@ -1259,6 +1261,16 @@ int ahci_do_softreset(struct ata_link *l
- 	if (rc && rc != -EOPNOTSUPP)
- 		ata_link_warn(link, "failed to reset engine (errno=%d)\n", rc);
- 
+-	struct ftrace_hash *hash;
 +	/*
-+	 * According to AHCI-1.2 9.3.9: if FBS is enable, software shall
-+	 * clear PxFBS.EN to '0' prior to issuing software reset to devices
-+	 * that is attached to port multiplier.
++	 * Filter_hash being empty will default to trace module.
++	 * But notrace hash requires a test of individual module functions.
 +	 */
-+	if (!ata_is_host_link(link) && pp->fbs_enabled) {
-+		ahci_disable_fbs(ap);
-+		fbs_disabled = true;
++	return ftrace_hash_empty(ops->filter_hash) &&
++		ftrace_hash_empty(ops->notrace_hash);
++}
++
++/*
++ * Check if the current ops references the record.
++ *
++ * If the ops traces all functions, then it was already accounted for.
++ * If the ops does not trace the current record function, skip it.
++ * If the ops ignores the function via notrace filter, skip it.
++ */
++static inline bool
++ops_references_rec(struct ftrace_ops *ops, struct dyn_ftrace *rec)
++{
++	/* If ops isn't enabled, ignore it */
++	if (!(ops->flags & FTRACE_OPS_FL_ENABLED))
++		return 0;
++
++	/* If ops traces all mods, we already accounted for it */
++	if (ops_traces_mod(ops))
++		return 0;
++
++	/* The function must be in the filter */
++	if (!ftrace_hash_empty(ops->filter_hash) &&
++	    !ftrace_lookup_ip(ops->filter_hash, rec->ip))
++		return 0;
++
++	/* If in notrace hash, we ignore it too */
++	if (ftrace_lookup_ip(ops->notrace_hash, rec->ip))
++		return 0;
++
++	return 1;
++}
++
++static int referenced_filters(struct dyn_ftrace *rec)
++{
++	struct ftrace_ops *ops;
++	int cnt = 0;
++
++	for (ops = ftrace_ops_list; ops != &ftrace_list_end; ops = ops->next) {
++		if (ops_references_rec(ops, rec))
++		    cnt++;
 +	}
-+
- 	ata_tf_init(link->device, &tf);
  
- 	/* issue the first D2H Register FIS */
-@@ -1299,6 +1311,10 @@ int ahci_do_softreset(struct ata_link *l
- 	} else
- 		*class = ahci_dev_classify(ap);
+-	hash = ops->filter_hash;
+-	return ftrace_hash_empty(hash);
++	return cnt;
+ }
  
-+	/* re-enable FBS if disabled before */
-+	if (fbs_disabled)
-+		ahci_enable_fbs(ap);
-+
- 	DPRINTK("EXIT, class=%u\n", *class);
- 	return 0;
+ static int ftrace_update_code(struct module *mod)
+@@ -1812,6 +1857,7 @@ static int ftrace_update_code(struct mod
+ 	struct dyn_ftrace *p;
+ 	cycle_t start, stop;
+ 	unsigned long ref = 0;
++	bool test = false;
  
+ 	/*
+ 	 * When adding a module, we need to check if tracers are
+@@ -1824,9 +1870,12 @@ static int ftrace_update_code(struct mod
+ 
+ 		for (ops = ftrace_ops_list;
+ 		     ops != &ftrace_list_end; ops = ops->next) {
+-			if (ops->flags & FTRACE_OPS_FL_ENABLED &&
+-			    ops_traces_mod(ops))
+-				ref++;
++			if (ops->flags & FTRACE_OPS_FL_ENABLED) {
++				if (ops_traces_mod(ops))
++					ref++;
++				else
++					test = true;
++			}
+ 		}
+ 	}
+ 
+@@ -1834,6 +1883,7 @@ static int ftrace_update_code(struct mod
+ 	ftrace_update_cnt = 0;
+ 
+ 	while (ftrace_new_addrs) {
++		int cnt = ref;
+ 
+ 		/* If something went wrong, bail without enabling anything */
+ 		if (unlikely(ftrace_disabled))
+@@ -1841,7 +1891,9 @@ static int ftrace_update_code(struct mod
+ 
+ 		p = ftrace_new_addrs;
+ 		ftrace_new_addrs = p->newlist;
+-		p->flags = ref;
++		if (test)
++			cnt += referenced_filters(p);
++		p->flags = cnt;
+ 
+ 		/*
+ 		 * Do the initial record conversion from mcount jump
+@@ -1864,7 +1916,7 @@ static int ftrace_update_code(struct mod
+ 		 * conversion puts the module to the correct state, thus
+ 		 * passing the ftrace_make_call check.
+ 		 */
+-		if (ftrace_start_up && ref) {
++		if (ftrace_start_up && cnt) {
+ 			int failed = __ftrace_replace_code(p, 1);
+ 			if (failed) {
+ 				ftrace_bug(failed, p->ip);
 
