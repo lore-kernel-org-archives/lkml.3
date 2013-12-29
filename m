@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756382Ab3L2DED (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 22:04:03 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54958 "EHLO
+	id S1756253Ab3L2DEA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 22:04:00 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54973 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751877Ab3L2CJv (ORCPT
+	by vger.kernel.org with ESMTP id S1751775Ab3L2CJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:09:51 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Johan Hovold" <jhovold@gmail.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+CC: akpm@linux-foundation.org, "Stanislaw Gruszka" <stf_xl@wp.pl>,
+        "John W. Linville" <linville@tuxdriver.com>
 Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.950172094@decadent.org.uk>
+Message-ID: <lsq.1388282923.460591346@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 003/185] USB: mos7840: fix tiocmget error handling
+Subject: [PATCH 3.2 006/185] rt2400pci: fix RSSI read
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,32 +31,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Stanislaw Gruszka <stf_xl@wp.pl>
 
-commit a91ccd26e75235d86248d018fe3779732bcafd8d upstream.
+commit 2bf127a5cc372b9319afcbae10b090663b621c8b upstream.
 
-Make sure to return errors from tiocmget rather than rely on
-uninitialised stack data.
+RSSI value is provided on word3 not on word2.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/mos7840.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/net/wireless/rt2x00/rt2400pci.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -1689,7 +1689,11 @@ static int mos7840_tiocmget(struct tty_s
- 		return -ENODEV;
+--- a/drivers/net/wireless/rt2x00/rt2400pci.c
++++ b/drivers/net/wireless/rt2x00/rt2400pci.c
+@@ -1253,7 +1253,7 @@ static void rt2400pci_fill_rxdone(struct
+ 	 */
+ 	rxdesc->timestamp = ((u64)rx_high << 32) | rx_low;
+ 	rxdesc->signal = rt2x00_get_field32(word2, RXD_W2_SIGNAL) & ~0x08;
+-	rxdesc->rssi = rt2x00_get_field32(word2, RXD_W3_RSSI) -
++	rxdesc->rssi = rt2x00_get_field32(word3, RXD_W3_RSSI) -
+ 	    entry->queue->rt2x00dev->rssi_offset;
+ 	rxdesc->size = rt2x00_get_field32(word0, RXD_W0_DATABYTE_COUNT);
  
- 	status = mos7840_get_uart_reg(port, MODEM_STATUS_REGISTER, &msr);
-+	if (status != 1)
-+		return -EIO;
- 	status = mos7840_get_uart_reg(port, MODEM_CONTROL_REGISTER, &mcr);
-+	if (status != 1)
-+		return -EIO;
- 	result = ((mcr & MCR_DTR) ? TIOCM_DTR : 0)
- 	    | ((mcr & MCR_RTS) ? TIOCM_RTS : 0)
- 	    | ((mcr & MCR_LOOPBACK) ? TIOCM_LOOP : 0)
 
