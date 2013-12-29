@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755769Ab3L2Czd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:55:33 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55120 "EHLO
+	id S1752224Ab3L2CKB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:10:01 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55015 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752186Ab3L2CKG (ORCPT
+	by vger.kernel.org with ESMTP id S1751987Ab3L2CJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:10:06 -0500
+	Sat, 28 Dec 2013 21:09:57 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Janak Desai" <Janak.Desai@gtri.gatech.edu>,
-        "Paul Moore" <pmoore@redhat.com>
+CC: akpm@linux-foundation.org, "Stephan Mueller" <stephan.mueller@atsec.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Neil Horman" <nhorman@tuxdriver.com>,
+        "Herbert Xu" <herbert@gondor.apana.org.au>,
+        "Petr Matousek" <pmatouse@redhat.com>
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.696267146@decadent.org.uk>
+Message-ID: <lsq.1388282924.764091660@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 144/185] selinux: handle TCP SYN-ACK packets correctly
- in selinux_ip_output()
+Subject: [PATCH 3.2 173/185] crypto: ansi_cprng - Fix off by one error in
+ non-block size request
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,81 +35,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Moore <pmoore@redhat.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-commit 47180068276a04ed31d24fe04c673138208b07a9 upstream.
+commit 714b33d15130cbb5ab426456d4e3de842d6c5b8a upstream.
 
-In selinux_ip_output() we always label packets based on the parent
-socket.  While this approach works in almost all cases, it doesn't
-work in the case of TCP SYN-ACK packets when the correct label is not
-the label of the parent socket, but rather the label of the larval
-socket represented by the request_sock struct.
+Stephan Mueller reported to me recently a error in random number generation in
+the ansi cprng. If several small requests are made that are less than the
+instances block size, the remainder for loop code doesn't increment
+rand_data_valid in the last iteration, meaning that the last bytes in the
+rand_data buffer gets reused on the subsequent smaller-than-a-block request for
+random data.
 
-Unfortunately, since the request_sock isn't queued on the parent
-socket until *after* the SYN-ACK packet is sent, we can't lookup the
-request_sock to determine the correct label for the packet; at this
-point in time the best we can do is simply pass/NF_ACCEPT the packet.
-It must be said that simply passing the packet without any explicit
-labeling action, while far from ideal, is not terrible as the SYN-ACK
-packet will inherit any IP option based labeling from the initial
-connection request so the label *should* be correct and all our
-access controls remain in place so we shouldn't have to worry about
-information leaks.
+The fix is pretty easy, just re-code the for loop to make sure that
+rand_data_valid gets incremented appropriately
 
-Reported-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
-Tested-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Reported-by: Stephan Mueller <stephan.mueller@atsec.com>
+CC: Stephan Mueller <stephan.mueller@atsec.com>
+CC: Petr Matousek <pmatouse@redhat.com>
+CC: Herbert Xu <herbert@gondor.apana.org.au>
+CC: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- security/selinux/hooks.c | 25 +++++++++++++++++++++++--
- 1 file changed, 23 insertions(+), 2 deletions(-)
+ crypto/ansi_cprng.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -53,6 +53,7 @@
- #include <net/icmp.h>
- #include <net/ip.h>		/* for local_port_range[] */
- #include <net/tcp.h>		/* struct or_callable used in sock_rcv_skb */
-+#include <net/inet_connection_sock.h>
- #include <net/net_namespace.h>
- #include <net/netlabel.h>
- #include <linux/uaccess.h>
-@@ -4542,6 +4543,7 @@ static unsigned int selinux_ipv6_forward
- static unsigned int selinux_ip_output(struct sk_buff *skb,
- 				      u16 family)
- {
-+	struct sock *sk;
- 	u32 sid;
- 
- 	if (!netlbl_enabled())
-@@ -4550,8 +4552,27 @@ static unsigned int selinux_ip_output(st
- 	/* we do this in the LOCAL_OUT path and not the POST_ROUTING path
- 	 * because we want to make sure we apply the necessary labeling
- 	 * before IPsec is applied so we can leverage AH protection */
--	if (skb->sk) {
--		struct sk_security_struct *sksec = skb->sk->sk_security;
-+	sk = skb->sk;
-+	if (sk) {
-+		struct sk_security_struct *sksec;
-+
-+		if (sk->sk_state == TCP_LISTEN)
-+			/* if the socket is the listening state then this
-+			 * packet is a SYN-ACK packet which means it needs to
-+			 * be labeled based on the connection/request_sock and
-+			 * not the parent socket.  unfortunately, we can't
-+			 * lookup the request_sock yet as it isn't queued on
-+			 * the parent socket until after the SYN-ACK is sent.
-+			 * the "solution" is to simply pass the packet as-is
-+			 * as any IP option based labeling should be copied
-+			 * from the initial connection request (in the IP
-+			 * layer).  it is far from ideal, but until we get a
-+			 * security label in the packet itself this is the
-+			 * best we can do. */
-+			return NF_ACCEPT;
-+
-+		/* standard practice, label using the parent socket */
-+		sksec = sk->sk_security;
- 		sid = sksec->sid;
- 	} else
- 		sid = SECINITSID_KERNEL;
+--- a/crypto/ansi_cprng.c
++++ b/crypto/ansi_cprng.c
+@@ -230,11 +230,11 @@ remainder:
+ 	 */
+ 	if (byte_count < DEFAULT_BLK_SZ) {
+ empty_rbuf:
+-		for (; ctx->rand_data_valid < DEFAULT_BLK_SZ;
+-			ctx->rand_data_valid++) {
++		while (ctx->rand_data_valid < DEFAULT_BLK_SZ) {
+ 			*ptr = ctx->rand_data[ctx->rand_data_valid];
+ 			ptr++;
+ 			byte_count--;
++			ctx->rand_data_valid++;
+ 			if (byte_count == 0)
+ 				goto done;
+ 		}
 
