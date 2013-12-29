@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838Ab3L2DFZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 22:05:25 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54987 "EHLO
+	id S1756462Ab3L2DFx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 22:05:53 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55000 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751799Ab3L2CJr (ORCPT
+	by vger.kernel.org with ESMTP id S1751800Ab3L2CJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:09:47 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,16 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "John Stultz" <john.stultz@linaro.org>,
-        "Vit Ondruch" <v.ondruch@tiscali.cz>,
-        "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>
-Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.830646529@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Bo Shen" <voice.shen@atmel.com>,
+        "Mark Brown" <broonie@linaro.org>,
+        "Charles Keepax" <ckeepax@opensource.wolfsonmicro.com>
+Date: Sun, 29 Dec 2013 03:08:44 +0100
+Message-ID: <lsq.1388282924.542096980@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 008/185] alarmtimer: return EINVAL instead of ENOTSUPP
- if rtcdev doesn't exist
+Subject: [PATCH 3.2 122/185] ASoC: wm8731: fix dsp mode configuration
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,58 +32,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: Bo Shen <voice.shen@atmel.com>
 
-commit 98d6f4dd84a134d942827584a3c5f67ffd8ec35f upstream.
+commit b4af6ef99a60c5b56df137d7accd81ba1ee1254e upstream.
 
-Fedora Ruby maintainer reported latest Ruby doesn't work on Fedora Rawhide
-on ARM. (http://bugs.ruby-lang.org/issues/9008)
+According to WM8731 "PD, Rev 4.9 October 2012" datasheet, when it
+works in DSP mode A, LRP = 1, while works in DSP mode B, LRP = 0.
+So, fix LRP for DSP mode as the datesheet specification.
 
-Because of, commit 1c6b39ad3f (alarmtimers: Return -ENOTSUPP if no
-RTC device is present) intruduced to return ENOTSUPP when
-clock_get{time,res} can't find a RTC device. However this is incorrect.
-
-First, ENOTSUPP isn't exported to userland (ENOTSUP or EOPNOTSUP are the
-closest userland equivlents).
-
-Second, Posix and Linux man pages agree that clock_gettime and
-clock_getres should return EINVAL if clk_id argument is invalid.
-While the arugment that the clockid is valid, but just not supported
-on this hardware could be made, this is just a technicality that
-doesn't help userspace applicaitons, and only complicates error
-handling.
-
-Thus, this patch changes the code to use EINVAL.
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Reported-by: Vit Ondruch <v.ondruch@tiscali.cz>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-[jstultz: Tweaks to commit message to include full rational]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Bo Shen <voice.shen@atmel.com>
+Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/time/alarmtimer.c | 4 ++--
+ sound/soc/codecs/wm8731.c | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/kernel/time/alarmtimer.c
-+++ b/kernel/time/alarmtimer.c
-@@ -468,7 +468,7 @@ static int alarm_clock_getres(const cloc
- 	clockid_t baseid = alarm_bases[clock2alarm(which_clock)].base_clockid;
- 
- 	if (!alarmtimer_get_rtcdev())
--		return -ENOTSUPP;
-+		return -EINVAL;
- 
- 	return hrtimer_get_res(baseid, tp);
- }
-@@ -485,7 +485,7 @@ static int alarm_clock_get(clockid_t whi
- 	struct alarm_base *base = &alarm_bases[clock2alarm(which_clock)];
- 
- 	if (!alarmtimer_get_rtcdev())
--		return -ENOTSUPP;
-+		return -EINVAL;
- 
- 	*tp = ktime_to_timespec(base->gettime());
- 	return 0;
+--- a/sound/soc/codecs/wm8731.c
++++ b/sound/soc/codecs/wm8731.c
+@@ -392,10 +392,10 @@ static int wm8731_set_dai_fmt(struct snd
+ 		iface |= 0x0001;
+ 		break;
+ 	case SND_SOC_DAIFMT_DSP_A:
+-		iface |= 0x0003;
++		iface |= 0x0013;
+ 		break;
+ 	case SND_SOC_DAIFMT_DSP_B:
+-		iface |= 0x0013;
++		iface |= 0x0003;
+ 		break;
+ 	default:
+ 		return -EINVAL;
 
