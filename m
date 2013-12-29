@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049Ab3L2Cd7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:33:59 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55423 "EHLO
+	id S1756034Ab3L2Cd5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:33:57 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55475 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752923Ab3L2CKq (ORCPT
+	by vger.kernel.org with ESMTP id S1752389Ab3L2CKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:10:46 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Joel Becker" <jlbec@evilplan.org>,
-        "Al Viro" <viro@zeniv.linux.org.uk>,
-        "Junxiao Bi" <junxiao.bi@oracle.com>
-Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.825763747@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Wei Yongjun" <yongjun_wei@trendmicro.com.cn>,
+        "Hans Verkuil" <hans.verkuil@cisco.com>,
+        "Mauro Carvalho Chehab" <m.chehab@samsung.com>
+Date: Sun, 29 Dec 2013 03:08:44 +0100
+Message-ID: <lsq.1388282924.632032943@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 084/185] configfs: fix race between dentry put and lookup
+Subject: [PATCH 3.2 108/185] [media] saa7164: fix return value check in
+ saa7164_initdev()
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,92 +33,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit 76ae281f6307331aa063288edb6422ae99f435f0 upstream.
+commit 89f4d45b2752df5d222b5f63919ce59e2d8afaf4 upstream.
 
-A race window in configfs, it starts from one dentry is UNHASHED and end
-before configfs_d_iput is called.  In this window, if a lookup happen,
-since the original dentry was UNHASHED, so a new dentry will be
-allocated, and then in configfs_attach_attr(), sd->s_dentry will be
-updated to the new dentry.  Then in configfs_d_iput(),
-BUG_ON(sd->s_dentry != dentry) will be triggered and system panic.
+In case of error, the function kthread_run() returns ERR_PTR()
+and never returns NULL. The NULL test in the return value check
+should be replaced with IS_ERR().
 
-sys_open:                     sys_close:
- ...                           fput
-                                dput
-                                 dentry_kill
-                                  __d_drop <--- dentry unhashed here,
-                                           but sd->dentry still point
-                                           to this dentry.
-
- lookup_real
-  configfs_lookup
-   configfs_attach_attr---> update sd->s_dentry
-                            to new allocated dentry here.
-
-                                   d_kill
-                                     configfs_d_iput <--- BUG_ON(sd->s_dentry != dentry)
-                                                     triggered here.
-
-To fix it, change configfs_d_iput to not update sd->s_dentry if
-sd->s_count > 2, that means there are another dentry is using the sd
-beside the one that is going to be put.  Use configfs_dirent_lock in
-configfs_attach_attr to sync with configfs_d_iput.
-
-With the following steps, you can reproduce the bug.
-
-1. enable ocfs2, this will mount configfs at /sys/kernel/config and
-   fill configure in it.
-
-2. run the following script.
-	while [ 1 ]; do cat /sys/kernel/config/cluster/$your_cluster_name/idle_timeout_ms > /dev/null; done &
-	while [ 1 ]; do cat /sys/kernel/config/cluster/$your_cluster_name/idle_timeout_ms > /dev/null; done &
-
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/configfs/dir.c | 16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ drivers/media/video/saa7164/saa7164-core.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/fs/configfs/dir.c
-+++ b/fs/configfs/dir.c
-@@ -56,10 +56,19 @@ static void configfs_d_iput(struct dentr
- 	struct configfs_dirent *sd = dentry->d_fsdata;
+--- a/drivers/media/video/saa7164/saa7164-core.c
++++ b/drivers/media/video/saa7164/saa7164-core.c
+@@ -1386,9 +1386,11 @@ static int __devinit saa7164_initdev(str
+ 		if (fw_debug) {
+ 			dev->kthread = kthread_run(saa7164_thread_function, dev,
+ 				"saa7164 debug");
+-			if (!dev->kthread)
++			if (IS_ERR(dev->kthread)) {
++				dev->kthread = NULL;
+ 				printk(KERN_ERR "%s() Failed to create "
+ 					"debug kernel thread\n", __func__);
++			}
+ 		}
  
- 	if (sd) {
--		BUG_ON(sd->s_dentry != dentry);
- 		/* Coordinate with configfs_readdir */
- 		spin_lock(&configfs_dirent_lock);
--		sd->s_dentry = NULL;
-+		/* Coordinate with configfs_attach_attr where will increase
-+		 * sd->s_count and update sd->s_dentry to new allocated one.
-+		 * Only set sd->dentry to null when this dentry is the only
-+		 * sd owner.
-+		 * If not do so, configfs_d_iput may run just after
-+		 * configfs_attach_attr and set sd->s_dentry to null
-+		 * even it's still in use.
-+		 */
-+		if (atomic_read(&sd->s_count) <= 2)
-+			sd->s_dentry = NULL;
-+
- 		spin_unlock(&configfs_dirent_lock);
- 		configfs_put(sd);
- 	}
-@@ -436,8 +445,11 @@ static int configfs_attach_attr(struct c
- 	struct configfs_attribute * attr = sd->s_element;
- 	int error;
- 
-+	spin_lock(&configfs_dirent_lock);
- 	dentry->d_fsdata = configfs_get(sd);
- 	sd->s_dentry = dentry;
-+	spin_unlock(&configfs_dirent_lock);
-+
- 	error = configfs_create(dentry, (attr->ca_mode & S_IALLUGO) | S_IFREG,
- 				configfs_init_file);
- 	if (error) {
+ 	} /* != BOARD_UNKNOWN */
 
