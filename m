@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296Ab3L2Cpi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:45:38 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55295 "EHLO
+	id S1756285Ab3L2Cpg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:45:36 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55263 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752495Ab3L2CK1 (ORCPT
+	by vger.kernel.org with ESMTP id S1752444Ab3L2CK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:10:27 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Herbert Xu" <herbert@gondor.apana.org.au>,
-        "Tom Lendacky" <thomas.lendacky@amd.com>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Duan Jiong" <duanj.fnst@cn.fujitsu.com>,
+        "Hannes Frederic Sowa" <hannes@stressinduktion.org>
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.504268211@decadent.org.uk>
+Message-ID: <lsq.1388282924.224350176@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 105/185] crypto: scatterwalk - Set the chain pointer
- indication bit
+Subject: [PATCH 3.2 150/185] ipv6: use rt6_get_dflt_router to get default
+ router in  rt6_route_rcv
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,34 +33,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tom Lendacky <thomas.lendacky@amd.com>
+From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
 
-commit 41da8b5adba77e22584f8b45f9641504fa885308 upstream.
+[ Upstream commit f104a567e673f382b09542a8dc3500aa689957b4 ]
 
-The scatterwalk_crypto_chain function invokes the scatterwalk_sg_chain
-function to chain two scatterlists, but the chain pointer indication
-bit is not set.  When the resulting scatterlist is used, for example,
-by sg_nents to count the number of scatterlist entries, a segfault occurs
-because sg_nents does not follow the chain pointer to the chained scatterlist.
+As the rfc 4191 said, the Router Preference and Lifetime values in a
+::/0 Route Information Option should override the preference and lifetime
+values in the Router Advertisement header. But when the kernel deals with
+a ::/0 Route Information Option, the rt6_get_route_info() always return
+NULL, that means that overriding will not happen, because those default
+routers were added without flag RTF_ROUTEINFO in rt6_add_dflt_router().
 
-Update scatterwalk_sg_chain to set the chain pointer indication bit as is
-done by the sg_chain function.
+In order to deal with that condition, we should call rt6_get_dflt_router
+when the prefix length is 0.
 
-Signed-off-by: Tom Lendacky <thomas.lendacky@amd.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/crypto/scatterwalk.h | 1 +
- 1 file changed, 1 insertion(+)
+ net/ipv6/route.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/include/crypto/scatterwalk.h
-+++ b/include/crypto/scatterwalk.h
-@@ -58,6 +58,7 @@ static inline void scatterwalk_sg_chain(
- {
- 	sg_set_page(&sg1[num - 1], (void *)sg2, 0, 0);
- 	sg1[num - 1].page_link &= ~0x02;
-+	sg1[num - 1].page_link |= 0x01;
- }
+diff --git a/net/ipv6/route.c b/net/ipv6/route.c
+index bc9103d..1768238 100644
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -592,8 +592,11 @@ int rt6_route_rcv(struct net_device *dev, u8 *opt, int len,
+ 		prefix = &prefix_buf;
+ 	}
  
- static inline struct scatterlist *scatterwalk_sg_next(struct scatterlist *sg)
+-	rt = rt6_get_route_info(net, prefix, rinfo->prefix_len, gwaddr,
+-				dev->ifindex);
++	if (rinfo->prefix_len == 0)
++		rt = rt6_get_dflt_router(gwaddr, dev);
++	else
++		rt = rt6_get_route_info(net, prefix, rinfo->prefix_len,
++					gwaddr, dev->ifindex);
+ 
+ 	if (rt && !lifetime) {
+ 		ip6_del_rt(rt);
 
