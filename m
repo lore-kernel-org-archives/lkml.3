@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755985Ab3L2C7K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:59:10 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55024 "EHLO
+	id S1755651Ab3L2C7J (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:59:09 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55026 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751948Ab3L2CJ4 (ORCPT
+	by vger.kernel.org with ESMTP id S1751787Ab3L2CJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:09:56 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Trond Myklebust" <Trond.Myklebust@netapp.com>,
-        "Jorge Mora" <mora@netapp.com>,
-        "Weston Andros Adamson" <dros@netapp.com>
-Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.199624110@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Jiri Kosina" <jkosina@suse.cz>,
+        "Kees Cook" <keescook@chromium.org>,
+        "Benjamin Tissoires" <benjamin.tissoires@redhat.com>
+Date: Sun, 29 Dec 2013 03:08:44 +0100
+Message-ID: <lsq.1388282924.974406425@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 002/185] NFSv4: Fix a use-after-free situation in
- _nfs4_proc_getlk()
+Subject: [PATCH 3.2 172/185] HID: multitouch: validate indexes details
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,45 +32,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-commit a6f951ddbdfb7bd87d31a44f61abe202ed6ce57f upstream.
+commit 8821f5dc187bdf16cfb32ef5aa8c3035273fa79a upstream.
 
-In nfs4_proc_getlk(), when some error causes a retry of the call to
-_nfs4_proc_getlk(), we can end up with Oopses of the form
+When working on report indexes, always validate that they are in bounds.
+Without this, a HID device could report a malicious feature report that
+could trick the driver into a heap overflow:
 
- BUG: unable to handle kernel NULL pointer dereference at 0000000000000134
- IP: [<ffffffff8165270e>] _raw_spin_lock+0xe/0x30
-<snip>
- Call Trace:
-  [<ffffffff812f287d>] _atomic_dec_and_lock+0x4d/0x70
-  [<ffffffffa053c4f2>] nfs4_put_lock_state+0x32/0xb0 [nfsv4]
-  [<ffffffffa053c585>] nfs4_fl_release_lock+0x15/0x20 [nfsv4]
-  [<ffffffffa0522c06>] _nfs4_proc_getlk.isra.40+0x146/0x170 [nfsv4]
-  [<ffffffffa052ad99>] nfs4_proc_lock+0x399/0x5a0 [nfsv4]
+[  634.885003] usb 1-1: New USB device found, idVendor=0596, idProduct=0500
+...
+[  676.469629] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
 
-The problem is that we don't clear the request->fl_ops after the first
-try and so when we retry, nfs4_set_lock_state() exits early without
-setting the lock stateid.
-Regression introduced by commit 70cc6487a4e08b8698c0e2ec935fb48d10490162
-(locks: make ->lock release private data before returning in GETLK case)
+Note that we need to change the indexes from s8 to s16 as they can
+be between -1 and 255.
 
-Reported-by: Weston Andros Adamson <dros@netapp.com>
-Reported-by: Jorge Mora <mora@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+CVE-2013-2897
+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Acked-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+[bwh: Backported to 3.2: mt_device::{cc,cc_value,inputmode}_index do not
+ exist and the corresponding indices do not need to be validated.
+ mt_device::maxcontact_report_id does not exist either.  So all we need
+ to do is to widen mt_device::inputmode.]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfs/nfs4proc.c | 1 +
- 1 file changed, 1 insertion(+)
-
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -4052,6 +4052,7 @@ static int _nfs4_proc_getlk(struct nfs4_
- 			status = 0;
- 	}
- 	request->fl_ops->fl_release_private(request);
-+	request->fl_ops = NULL;
- out:
- 	return status;
- }
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -66,7 +66,7 @@ struct mt_device {
+ 	unsigned last_field_index;	/* last field index of the report */
+ 	unsigned last_slot_field;	/* the last field of a slot */
+ 	int last_mt_collection;	/* last known mt-related collection */
+-	__s8 inputmode;		/* InputMode HID feature, -1 if non-existent */
++	__s16 inputmode;	/* InputMode HID feature, -1 if non-existent */
+ 	__u8 num_received;	/* how many contacts we received */
+ 	__u8 num_expected;	/* expected last contact index */
+ 	__u8 maxcontacts;
 
