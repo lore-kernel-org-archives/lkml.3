@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756285Ab3L2Cpg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:45:36 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55263 "EHLO
+	id S1756269Ab3L2Cpe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:45:34 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55302 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752444Ab3L2CK1 (ORCPT
+	by vger.kernel.org with ESMTP id S1752534Ab3L2CK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:10:27 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Duan Jiong" <duanj.fnst@cn.fujitsu.com>,
-        "Hannes Frederic Sowa" <hannes@stressinduktion.org>
+CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>,
+        "Kailang Yang" <kailang@realtek.com>
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.224350176@decadent.org.uk>
+Message-ID: <lsq.1388282924.160900539@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 150/185] ipv6: use rt6_get_dflt_router to get default
- router in  rt6_route_rcv
+Subject: [PATCH 3.2 099/185] ALSA: hda/realtek - Set pcbeep amp for ALC668
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,44 +31,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+From: Kailang Yang <kailang@realtek.com>
 
-[ Upstream commit f104a567e673f382b09542a8dc3500aa689957b4 ]
+commit 9ad54547cf6f4410eba83bb95dfd2a0966718d6d upstream.
 
-As the rfc 4191 said, the Router Preference and Lifetime values in a
-::/0 Route Information Option should override the preference and lifetime
-values in the Router Advertisement header. But when the kernel deals with
-a ::/0 Route Information Option, the rt6_get_route_info() always return
-NULL, that means that overriding will not happen, because those default
-routers were added without flag RTF_ROUTEINFO in rt6_add_dflt_router().
+Set the missing pcbeep default amp for ALC668.
 
-In order to deal with that condition, we should call rt6_get_dflt_router
-when the prefix length is 0.
-
-Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kailang Yang <kailang@realtek.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv6/route.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_realtek.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/ipv6/route.c b/net/ipv6/route.c
-index bc9103d..1768238 100644
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -592,8 +592,11 @@ int rt6_route_rcv(struct net_device *dev, u8 *opt, int len,
- 		prefix = &prefix_buf;
- 	}
- 
--	rt = rt6_get_route_info(net, prefix, rinfo->prefix_len, gwaddr,
--				dev->ifindex);
-+	if (rinfo->prefix_len == 0)
-+		rt = rt6_get_dflt_router(gwaddr, dev);
-+	else
-+		rt = rt6_get_route_info(net, prefix, rinfo->prefix_len,
-+					gwaddr, dev->ifindex);
- 
- 	if (rt && !lifetime) {
- 		ip6_del_rt(rt);
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -5943,6 +5943,7 @@ static int patch_alc662(struct hda_codec
+ 		case 0x10ec0272:
+ 		case 0x10ec0663:
+ 		case 0x10ec0665:
++		case 0x10ec0668:
+ 			set_beep_amp(spec, 0x0b, 0x04, HDA_INPUT);
+ 			break;
+ 		case 0x10ec0273:
 
