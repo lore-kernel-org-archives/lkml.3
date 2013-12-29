@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756062Ab3L2CeB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:34:01 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55103 "EHLO
+	id S1756049Ab3L2Cd7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:33:59 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55423 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751753Ab3L2CKp (ORCPT
+	by vger.kernel.org with ESMTP id S1752923Ab3L2CKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:10:45 -0500
+	Sat, 28 Dec 2013 21:10:46 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Chris Metcalf" <cmetcalf@tilera.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.633947455@decadent.org.uk>
+CC: akpm@linux-foundation.org,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Joel Becker" <jlbec@evilplan.org>,
+        "Al Viro" <viro@zeniv.linux.org.uk>,
+        "Junxiao Bi" <junxiao.bi@oracle.com>
+Date: Sun, 29 Dec 2013 03:08:43 +0100
+Message-ID: <lsq.1388282923.825763747@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 156/185] connector: improved unaligned access error fix
+Subject: [PATCH 3.2 084/185] configfs: fix race between dentry put and lookup
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,239 +34,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: Junxiao Bi <junxiao.bi@oracle.com>
 
-[ Upstream commit 1ca1a4cf59ea343a1a70084fe7cc96f37f3cf5b1 ]
+commit 76ae281f6307331aa063288edb6422ae99f435f0 upstream.
 
-In af3e095a1fb4, Erik Jacobsen fixed one type of unaligned access
-bug for ia64 by converting a 64-bit write to use put_unaligned().
-Unfortunately, since gcc will convert a short memset() to a series
-of appropriately-aligned stores, the problem is now visible again
-on tilegx, where the memset that zeros out proc_event is converted
-to three 64-bit stores, causing an unaligned access panic.
+A race window in configfs, it starts from one dentry is UNHASHED and end
+before configfs_d_iput is called.  In this window, if a lookup happen,
+since the original dentry was UNHASHED, so a new dentry will be
+allocated, and then in configfs_attach_attr(), sd->s_dentry will be
+updated to the new dentry.  Then in configfs_d_iput(),
+BUG_ON(sd->s_dentry != dentry) will be triggered and system panic.
 
-A better fix for the original problem is to ensure that proc_event
-is aligned to 8 bytes here.  We can do that relatively easily by
-arranging to start the struct cn_msg aligned to 8 bytes and then
-offset by 4 bytes.  Doing so means that the immediately following
-proc_event structure is then correctly aligned to 8 bytes.
+sys_open:                     sys_close:
+ ...                           fput
+                                dput
+                                 dentry_kill
+                                  __d_drop <--- dentry unhashed here,
+                                           but sd->dentry still point
+                                           to this dentry.
 
-The result is that the memset() stores are now aligned, and as an
-added benefit, we can remove the put_unaligned() calls in the code.
+ lookup_real
+  configfs_lookup
+   configfs_attach_attr---> update sd->s_dentry
+                            to new allocated dentry here.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+                                   d_kill
+                                     configfs_d_iput <--- BUG_ON(sd->s_dentry != dentry)
+                                                     triggered here.
+
+To fix it, change configfs_d_iput to not update sd->s_dentry if
+sd->s_count > 2, that means there are another dentry is using the sd
+beside the one that is going to be put.  Use configfs_dirent_lock in
+configfs_attach_attr to sync with configfs_d_iput.
+
+With the following steps, you can reproduce the bug.
+
+1. enable ocfs2, this will mount configfs at /sys/kernel/config and
+   fill configure in it.
+
+2. run the following script.
+	while [ 1 ]; do cat /sys/kernel/config/cluster/$your_cluster_name/idle_timeout_ms > /dev/null; done &
+	while [ 1 ]; do cat /sys/kernel/config/cluster/$your_cluster_name/idle_timeout_ms > /dev/null; done &
+
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/connector/cn_proc.c | 66 ++++++++++++++++++++++++++-------------------
- 1 file changed, 39 insertions(+), 27 deletions(-)
+ fs/configfs/dir.c | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/connector/cn_proc.c b/drivers/connector/cn_proc.c
-index 66d5384..094a710 100644
---- a/drivers/connector/cn_proc.c
-+++ b/drivers/connector/cn_proc.c
-@@ -31,11 +31,23 @@
- #include <linux/ptrace.h>
- #include <linux/atomic.h>
+--- a/fs/configfs/dir.c
++++ b/fs/configfs/dir.c
+@@ -56,10 +56,19 @@ static void configfs_d_iput(struct dentr
+ 	struct configfs_dirent *sd = dentry->d_fsdata;
  
--#include <asm/unaligned.h>
--
- #include <linux/cn_proc.h>
- 
--#define CN_PROC_MSG_SIZE (sizeof(struct cn_msg) + sizeof(struct proc_event))
-+/*
-+ * Size of a cn_msg followed by a proc_event structure.  Since the
-+ * sizeof struct cn_msg is a multiple of 4 bytes, but not 8 bytes, we
-+ * add one 4-byte word to the size here, and then start the actual
-+ * cn_msg structure 4 bytes into the stack buffer.  The result is that
-+ * the immediately following proc_event structure is aligned to 8 bytes.
-+ */
-+#define CN_PROC_MSG_SIZE (sizeof(struct cn_msg) + sizeof(struct proc_event) + 4)
+ 	if (sd) {
+-		BUG_ON(sd->s_dentry != dentry);
+ 		/* Coordinate with configfs_readdir */
+ 		spin_lock(&configfs_dirent_lock);
+-		sd->s_dentry = NULL;
++		/* Coordinate with configfs_attach_attr where will increase
++		 * sd->s_count and update sd->s_dentry to new allocated one.
++		 * Only set sd->dentry to null when this dentry is the only
++		 * sd owner.
++		 * If not do so, configfs_d_iput may run just after
++		 * configfs_attach_attr and set sd->s_dentry to null
++		 * even it's still in use.
++		 */
++		if (atomic_read(&sd->s_count) <= 2)
++			sd->s_dentry = NULL;
 +
-+/* See comment above; we test our assumption about sizeof struct cn_msg here. */
-+static inline struct cn_msg *buffer_to_cn_msg(__u8 *buffer)
-+{
-+	BUILD_BUG_ON(sizeof(struct cn_msg) != 20);
-+	return (struct cn_msg *)(buffer + 4);
-+}
+ 		spin_unlock(&configfs_dirent_lock);
+ 		configfs_put(sd);
+ 	}
+@@ -436,8 +445,11 @@ static int configfs_attach_attr(struct c
+ 	struct configfs_attribute * attr = sd->s_element;
+ 	int error;
  
- static atomic_t proc_event_num_listeners = ATOMIC_INIT(0);
- static struct cb_id cn_proc_event_id = { CN_IDX_PROC, CN_VAL_PROC };
-@@ -55,19 +67,19 @@ void proc_fork_connector(struct task_struct *task)
- {
- 	struct cn_msg *msg;
- 	struct proc_event *ev;
--	__u8 buffer[CN_PROC_MSG_SIZE];
-+	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
- 	struct timespec ts;
- 	struct task_struct *parent;
- 
- 	if (atomic_read(&proc_event_num_listeners) < 1)
- 		return;
- 
--	msg = (struct cn_msg*)buffer;
-+	msg = buffer_to_cn_msg(buffer);
- 	ev = (struct proc_event*)msg->data;
- 	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
--	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-+	ev->timestamp_ns = timespec_to_ns(&ts);
- 	ev->what = PROC_EVENT_FORK;
- 	rcu_read_lock();
- 	parent = rcu_dereference(task->real_parent);
-@@ -90,17 +102,17 @@ void proc_exec_connector(struct task_struct *task)
- 	struct cn_msg *msg;
- 	struct proc_event *ev;
- 	struct timespec ts;
--	__u8 buffer[CN_PROC_MSG_SIZE];
-+	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
- 
- 	if (atomic_read(&proc_event_num_listeners) < 1)
- 		return;
- 
--	msg = (struct cn_msg*)buffer;
-+	msg = buffer_to_cn_msg(buffer);
- 	ev = (struct proc_event*)msg->data;
- 	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
--	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-+	ev->timestamp_ns = timespec_to_ns(&ts);
- 	ev->what = PROC_EVENT_EXEC;
- 	ev->event_data.exec.process_pid = task->pid;
- 	ev->event_data.exec.process_tgid = task->tgid;
-@@ -116,14 +128,14 @@ void proc_id_connector(struct task_struct *task, int which_id)
- {
- 	struct cn_msg *msg;
- 	struct proc_event *ev;
--	__u8 buffer[CN_PROC_MSG_SIZE];
-+	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
- 	struct timespec ts;
- 	const struct cred *cred;
- 
- 	if (atomic_read(&proc_event_num_listeners) < 1)
- 		return;
- 
--	msg = (struct cn_msg*)buffer;
-+	msg = buffer_to_cn_msg(buffer);
- 	ev = (struct proc_event*)msg->data;
- 	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	ev->what = which_id;
-@@ -144,7 +156,7 @@ void proc_id_connector(struct task_struct *task, int which_id)
- 	rcu_read_unlock();
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
--	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-+	ev->timestamp_ns = timespec_to_ns(&ts);
- 
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = 0; /* not used */
-@@ -158,17 +170,17 @@ void proc_sid_connector(struct task_struct *task)
- 	struct cn_msg *msg;
- 	struct proc_event *ev;
- 	struct timespec ts;
--	__u8 buffer[CN_PROC_MSG_SIZE];
-+	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
- 
- 	if (atomic_read(&proc_event_num_listeners) < 1)
- 		return;
- 
--	msg = (struct cn_msg *)buffer;
-+	msg = buffer_to_cn_msg(buffer);
- 	ev = (struct proc_event *)msg->data;
- 	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
--	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-+	ev->timestamp_ns = timespec_to_ns(&ts);
- 	ev->what = PROC_EVENT_SID;
- 	ev->event_data.sid.process_pid = task->pid;
- 	ev->event_data.sid.process_tgid = task->tgid;
-@@ -185,17 +197,17 @@ void proc_ptrace_connector(struct task_struct *task, int ptrace_id)
- 	struct cn_msg *msg;
- 	struct proc_event *ev;
- 	struct timespec ts;
--	__u8 buffer[CN_PROC_MSG_SIZE];
-+	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
- 
- 	if (atomic_read(&proc_event_num_listeners) < 1)
- 		return;
- 
--	msg = (struct cn_msg *)buffer;
-+	msg = buffer_to_cn_msg(buffer);
- 	ev = (struct proc_event *)msg->data;
- 	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
--	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-+	ev->timestamp_ns = timespec_to_ns(&ts);
- 	ev->what = PROC_EVENT_PTRACE;
- 	ev->event_data.ptrace.process_pid  = task->pid;
- 	ev->event_data.ptrace.process_tgid = task->tgid;
-@@ -220,17 +232,17 @@ void proc_comm_connector(struct task_struct *task)
- 	struct cn_msg *msg;
- 	struct proc_event *ev;
- 	struct timespec ts;
--	__u8 buffer[CN_PROC_MSG_SIZE];
-+	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
- 
- 	if (atomic_read(&proc_event_num_listeners) < 1)
- 		return;
- 
--	msg = (struct cn_msg *)buffer;
-+	msg = buffer_to_cn_msg(buffer);
- 	ev = (struct proc_event *)msg->data;
- 	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
--	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-+	ev->timestamp_ns = timespec_to_ns(&ts);
- 	ev->what = PROC_EVENT_COMM;
- 	ev->event_data.comm.process_pid  = task->pid;
- 	ev->event_data.comm.process_tgid = task->tgid;
-@@ -247,18 +259,18 @@ void proc_exit_connector(struct task_struct *task)
- {
- 	struct cn_msg *msg;
- 	struct proc_event *ev;
--	__u8 buffer[CN_PROC_MSG_SIZE];
-+	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
- 	struct timespec ts;
- 
- 	if (atomic_read(&proc_event_num_listeners) < 1)
- 		return;
- 
--	msg = (struct cn_msg*)buffer;
-+	msg = buffer_to_cn_msg(buffer);
- 	ev = (struct proc_event*)msg->data;
- 	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
--	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-+	ev->timestamp_ns = timespec_to_ns(&ts);
- 	ev->what = PROC_EVENT_EXIT;
- 	ev->event_data.exit.process_pid = task->pid;
- 	ev->event_data.exit.process_tgid = task->tgid;
-@@ -284,18 +296,18 @@ static void cn_proc_ack(int err, int rcvd_seq, int rcvd_ack)
- {
- 	struct cn_msg *msg;
- 	struct proc_event *ev;
--	__u8 buffer[CN_PROC_MSG_SIZE];
-+	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
- 	struct timespec ts;
- 
- 	if (atomic_read(&proc_event_num_listeners) < 1)
- 		return;
- 
--	msg = (struct cn_msg*)buffer;
-+	msg = buffer_to_cn_msg(buffer);
- 	ev = (struct proc_event*)msg->data;
- 	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	msg->seq = rcvd_seq;
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
--	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-+	ev->timestamp_ns = timespec_to_ns(&ts);
- 	ev->cpu = -1;
- 	ev->what = PROC_EVENT_NONE;
- 	ev->event_data.ack.err = err;
++	spin_lock(&configfs_dirent_lock);
+ 	dentry->d_fsdata = configfs_get(sd);
+ 	sd->s_dentry = dentry;
++	spin_unlock(&configfs_dirent_lock);
++
+ 	error = configfs_create(dentry, (attr->ca_mode & S_IALLUGO) | S_IFREG,
+ 				configfs_init_file);
+ 	if (error) {
 
