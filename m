@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755759Ab3L2Ccv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:32:51 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55454 "EHLO
+	id S1754357Ab3L2Ccu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:32:50 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55397 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752897Ab3L2CKr (ORCPT
+	by vger.kernel.org with ESMTP id S1752805Ab3L2CKr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:10:47 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Rashika Kheria" <rashika.kheria@gmail.com>,
-        "Jerome Marchand" <jmarchan@redhat.com>,
-        "Minchan Kim" <minchan@kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+CC: akpm@linux-foundation.org, "Pratyush Anand" <pratyush.anand@st.com>,
+        "Felipe Balbi" <balbi@ti.com>,
+        "Alan Stern" <stern@rowland.harvard.edu>
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.310055095@decadent.org.uk>
+Message-ID: <lsq.1388282924.675755596@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 094/185] Staging: zram: Fix access of NULL pointer
+Subject: [PATCH 3.2 093/185] usb: dwc3: fix implementation of endpoint wedge
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,50 +32,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rashika Kheria <rashika.kheria@gmail.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 46a51c80216cb891f271ad021f59009f34677499 upstream.
+commit a535d81c92615b8ffb99b7e1fd1fb01effaed1af upstream.
 
-This patch fixes the bug in reset_store caused by accessing NULL pointer.
+The dwc3 UDC driver doesn't implement endpoint wedging correctly.
+When an endpoint is wedged, the gadget driver should be allowed to
+clear the wedge by calling usb_ep_clear_halt().  Only the host is
+prevented from resetting the endpoint.
 
-The bdev gets its value from bdget_disk() which could fail when memory
-pressure is severe and hence can return NULL because allocation of
-inode in bdget could fail.
+This patch fixes the implementation.
 
-Hence, this patch introduces a check for bdev to prevent reference to a
-NULL pointer in the later part of the code. It also removes unnecessary
-check of bdev for fsync_bdev().
-
-Acked-by: Jerome Marchand <jmarchan@redhat.com>
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust filename]
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Pratyush Anand <pratyush.anand@st.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/zram/zram_sysfs.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/usb/dwc3/ep0.c    | 2 ++
+ drivers/usb/dwc3/gadget.c | 5 +----
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
---- a/drivers/staging/zram/zram_sysfs.c
-+++ b/drivers/staging/zram/zram_sysfs.c
-@@ -95,6 +95,9 @@ static ssize_t reset_store(struct device
- 	zram = dev_to_zram(dev);
- 	bdev = bdget_disk(zram->disk, 0);
+--- a/drivers/usb/dwc3/ep0.c
++++ b/drivers/usb/dwc3/ep0.c
+@@ -394,6 +394,8 @@ static int dwc3_ep0_handle_feature(struc
+ 			dep =  dwc3_wIndex_to_dep(dwc, ctrl->wIndex);
+ 			if (!dep)
+ 				return -EINVAL;
++			if (set == 0 && (dep->flags & DWC3_EP_WEDGE))
++				break;
+ 			ret = __dwc3_gadget_ep_set_halt(dep, set);
+ 			if (ret)
+ 				return -EINVAL;
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -903,9 +903,6 @@ int __dwc3_gadget_ep_set_halt(struct dwc
+ 		else
+ 			dep->flags |= DWC3_EP_STALL;
+ 	} else {
+-		if (dep->flags & DWC3_EP_WEDGE)
+-			return 0;
+-
+ 		ret = dwc3_send_gadget_ep_cmd(dwc, dep->number,
+ 			DWC3_DEPCMD_CLEARSTALL, &params);
+ 		if (ret)
+@@ -913,7 +910,7 @@ int __dwc3_gadget_ep_set_halt(struct dwc
+ 					value ? "set" : "clear",
+ 					dep->name);
+ 		else
+-			dep->flags &= ~DWC3_EP_STALL;
++			dep->flags &= ~(DWC3_EP_STALL | DWC3_EP_WEDGE);
+ 	}
  
-+	if (!bdev)
-+		return -ENOMEM;
-+
- 	/* Do not reset an active device! */
- 	if (bdev->bd_holders)
- 		return -EBUSY;
-@@ -107,8 +110,7 @@ static ssize_t reset_store(struct device
- 		return -EINVAL;
- 
- 	/* Make sure all pending I/O is finished */
--	if (bdev)
--		fsync_bdev(bdev);
-+	fsync_bdev(bdev);
- 
- 	down_write(&zram->init_lock);
- 	if (zram->init_done)
+ 	return ret;
 
