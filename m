@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753Ab3L2Vvw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 16:51:52 -0500
+	id S1752888Ab3L2Vvy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 16:51:54 -0500
 Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:61815 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752267Ab3L2Vvu (ORCPT
+	by vger.kernel.org with ESMTP id S1752711Ab3L2Vvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 16:51:50 -0500
+	Sun, 29 Dec 2013 16:51:52 -0500
 X-IronPort-AV: E=Sophos;i="4.95,570,1384297200"; 
-   d="scan'208";a="50832521"
+   d="scan'208";a="50832523"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Jayamohan Kallickal <jayamohan.kallickal@emulex.com>
+To: Antti Palosaari <crope@iki.fi>
 Cc: kernel-janitors@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/25]  fix error return code
-Date: Sun, 29 Dec 2013 23:47:16 +0100
-Message-Id: <1388357260-4843-2-git-send-email-Julia.Lawall@lip6.fr>
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/25]  fix error return code
+Date: Sun, 29 Dec 2013 23:47:18 +0100
+Message-Id: <1388357260-4843-4-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1388357260-4843-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1388357260-4843-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -26,12 +26,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Set the return variable to an error code as done elsewhere in the function.
+The rest of the function uses ret to store the return value, even setting
+ret to i a few lines before this, so return ret instead of i.
 
-Additionally, in each case there is no need to initialize ret to 0, since
-its value is immediately overwritten.
-
-A simplified version of the semantic match that finds the first problem is as
+A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
 
 // <smpl>
@@ -57,63 +55,20 @@ Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 ---
 Not tested.
 
- drivers/scsi/be2iscsi/be_main.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/media/usb/dvb-usb-v2/ec168.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/be2iscsi/be_main.c b/drivers/scsi/be2iscsi/be_main.c
-index 1f37505..82f4587 100644
---- a/drivers/scsi/be2iscsi/be_main.c
-+++ b/drivers/scsi/be2iscsi/be_main.c
-@@ -4326,7 +4326,7 @@ static int beiscsi_get_boot_info(struct beiscsi_hba *phba)
- 	struct be_dma_mem nonemb_cmd;
- 	unsigned int tag;
- 	unsigned int s_handle;
--	int ret = -ENOMEM;
-+	int ret;
+diff --git a/drivers/media/usb/dvb-usb-v2/ec168.c b/drivers/media/usb/dvb-usb-v2/ec168.c
+index 5c68f39..0c2b377 100644
+--- a/drivers/media/usb/dvb-usb-v2/ec168.c
++++ b/drivers/media/usb/dvb-usb-v2/ec168.c
+@@ -170,7 +170,7 @@ static int ec168_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msg[],
  
- 	/* Get the session handle of the boot target */
- 	ret = be_mgmt_get_boot_shandle(phba, &s_handle);
-@@ -4356,6 +4356,7 @@ static int beiscsi_get_boot_info(struct beiscsi_hba *phba)
- 			    BEISCSI_LOG_INIT | BEISCSI_LOG_CONFIG,
- 			    "BM_%d : beiscsi_get_session_info"
- 			    " Failed\n");
-+		ret = -ENOMEM;
+ error:
+ 	mutex_unlock(&d->i2c_mutex);
+-	return i;
++	return ret;
+ }
  
- 		goto boot_freemem;
- 	}
-@@ -4455,7 +4456,8 @@ static int beiscsi_init_port(struct beiscsi_hba *phba)
- 		goto do_cleanup_ctrlr;
- 	}
- 
--	if (hba_setup_cid_tbls(phba)) {
-+	ret = hba_setup_cid_tbls(phba);
-+	if (ret < 0) {
- 		beiscsi_log(phba, KERN_ERR, BEISCSI_LOG_INIT,
- 			    "BM_%d : Failed in hba_setup_cid_tbls\n");
- 		kfree(phba->io_sgl_hndl_base);
-@@ -5479,7 +5481,7 @@ static int beiscsi_dev_probe(struct pci_dev *pcidev,
- 	struct hwi_controller *phwi_ctrlr;
- 	struct hwi_context_memory *phwi_context;
- 	struct be_eq_obj *pbe_eq;
--	int ret = 0, i;
-+	int ret, i;
- 
- 	ret = beiscsi_enable_pci(pcidev);
- 	if (ret < 0) {
-@@ -5492,6 +5494,7 @@ static int beiscsi_dev_probe(struct pci_dev *pcidev,
- 	if (!phba) {
- 		dev_err(&pcidev->dev,
- 			"beiscsi_dev_probe - Failed in beiscsi_hba_alloc\n");
-+		ret = -ENOMEM;
- 		goto disable_pci;
- 	}
- 
-@@ -5586,6 +5589,7 @@ static int beiscsi_dev_probe(struct pci_dev *pcidev,
- 		beiscsi_log(phba, KERN_ERR, BEISCSI_LOG_INIT,
- 			    "BM_%d : beiscsi_dev_probe-"
- 			    "Failed in beiscsi_init_port\n");
-+		ret = -ENOMEM;
- 		goto free_port;
- 	}
- 
+ static u32 ec168_i2c_func(struct i2c_adapter *adapter)
 
