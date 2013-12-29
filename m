@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756118Ab3L2Cia (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:38:30 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55429 "EHLO
+	id S1756104Ab3L2Ci2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:38:28 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752848Ab3L2CKj (ORCPT
+	by vger.kernel.org with ESMTP id S1752616Ab3L2CKj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:10:39 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Johan Hovold" <jhovold@gmail.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Colin Leitner" <colin.leitner@gmail.com>,
-        "Colin Leitner" <colin.leitner@googlemail.com>
+CC: akpm@linux-foundation.org, "Mel Gorman" <mgorman@suse.de>,
+        "John Stultz" <john.stultz@linaro.org>,
+        "Peter Zijlstra" <peterz@infradead.org>, "Tejun Heo" <tj@kernel.org>,
+        "Li Zefan" <lizefan@huawei.com>, "Juri Lelli" <juri.lelli@gmail.com>
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.369558416@decadent.org.uk>
+Message-ID: <lsq.1388282924.304067156@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 118/185] USB: mos7840: correct handling of CS5 setting
+Subject: [PATCH 3.2 103/185] cpuset: Fix memory allocator deadlock
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,65 +33,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Leitner <colin.leitner@googlemail.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 78692cc3382e0603a47e1f2aaeffe0d99891994d upstream.
+commit 0fc0287c9ed1ffd3706f8b4d9b314aa102ef1245 upstream.
 
-This patch removes an erroneous check of CSIZE, which made it impossible to set
-CS5.
+Juri hit the below lockdep report:
 
-Compiles clean, but couldn't test against hardware.
+[    4.303391] ======================================================
+[    4.303392] [ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
+[    4.303394] 3.12.0-dl-peterz+ #144 Not tainted
+[    4.303395] ------------------------------------------------------
+[    4.303397] kworker/u4:3/689 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
+[    4.303399]  (&p->mems_allowed_seq){+.+...}, at: [<ffffffff8114e63c>] new_slab+0x6c/0x290
+[    4.303417]
+[    4.303417] and this task is already holding:
+[    4.303418]  (&(&q->__queue_lock)->rlock){..-...}, at: [<ffffffff812d2dfb>] blk_execute_rq_nowait+0x5b/0x100
+[    4.303431] which would create a new lock dependency:
+[    4.303432]  (&(&q->__queue_lock)->rlock){..-...} -> (&p->mems_allowed_seq){+.+...}
+[    4.303436]
 
-Signed-off-by: Colin Leitner <colin.leitner@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[    4.303898] the dependencies between the lock to be acquired and SOFTIRQ-irq-unsafe lock:
+[    4.303918] -> (&p->mems_allowed_seq){+.+...} ops: 2762 {
+[    4.303922]    HARDIRQ-ON-W at:
+[    4.303923]                     [<ffffffff8108ab9a>] __lock_acquire+0x65a/0x1ff0
+[    4.303926]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
+[    4.303929]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
+[    4.303931]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
+[    4.303933]    SOFTIRQ-ON-W at:
+[    4.303933]                     [<ffffffff8108abcc>] __lock_acquire+0x68c/0x1ff0
+[    4.303935]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
+[    4.303940]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
+[    4.303955]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
+[    4.303959]    INITIAL USE at:
+[    4.303960]                    [<ffffffff8108a884>] __lock_acquire+0x344/0x1ff0
+[    4.303963]                    [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
+[    4.303966]                    [<ffffffff81063dd6>] kthreadd+0x86/0x180
+[    4.303969]                    [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
+[    4.303972]  }
+
+Which reports that we take mems_allowed_seq with interrupts enabled. A
+little digging found that this can only be from
+cpuset_change_task_nodemask().
+
+This is an actual deadlock because an interrupt doing an allocation will
+hit get_mems_allowed()->...->__read_seqcount_begin(), which will spin
+forever waiting for the write side to complete.
+
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Reported-by: Juri Lelli <juri.lelli@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Tested-by: Juri Lelli <juri.lelli@gmail.com>
+Acked-by: Li Zefan <lizefan@huawei.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/mos7840.c | 32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+ kernel/cpuset.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -1987,25 +1987,25 @@ static void mos7840_change_port_settings
- 	iflag = tty->termios->c_iflag;
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -983,8 +983,10 @@ static void cpuset_change_task_nodemask(
+ 	need_loop = task_has_mempolicy(tsk) ||
+ 			!nodes_intersects(*newmems, tsk->mems_allowed);
  
- 	/* Change the number of bits */
--	if (cflag & CSIZE) {
--		switch (cflag & CSIZE) {
--		case CS5:
--			lData = LCR_BITS_5;
--			break;
-+	switch (cflag & CSIZE) {
-+	case CS5:
-+		lData = LCR_BITS_5;
-+		break;
+-	if (need_loop)
++	if (need_loop) {
++		local_irq_disable();
+ 		write_seqcount_begin(&tsk->mems_allowed_seq);
++	}
  
--		case CS6:
--			lData = LCR_BITS_6;
--			break;
-+	case CS6:
-+		lData = LCR_BITS_6;
-+		break;
+ 	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
+ 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
+@@ -992,8 +994,10 @@ static void cpuset_change_task_nodemask(
+ 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP2);
+ 	tsk->mems_allowed = *newmems;
  
--		case CS7:
--			lData = LCR_BITS_7;
--			break;
--		default:
--		case CS8:
--			lData = LCR_BITS_8;
--			break;
--		}
-+	case CS7:
-+		lData = LCR_BITS_7;
-+		break;
-+
-+	default:
-+	case CS8:
-+		lData = LCR_BITS_8;
-+		break;
- 	}
-+
- 	/* Change the Parity bit */
- 	if (cflag & PARENB) {
- 		if (cflag & PARODD) {
+-	if (need_loop)
++	if (need_loop) {
+ 		write_seqcount_end(&tsk->mems_allowed_seq);
++		local_irq_enable();
++	}
+ 
+ 	task_unlock(tsk);
+ }
 
