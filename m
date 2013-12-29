@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755678Ab3L2Cf5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:35:57 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55391 "EHLO
+	id S1755839Ab3L2CgR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:36:17 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55465 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752705Ab3L2CKo (ORCPT
+	by vger.kernel.org with ESMTP id S1752985Ab3L2CKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:10:44 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,16 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "" <ian.campbell@citrix.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>, "Pavel Machek" <pavel@ucw.cz>,
-        "" <gregkh@linuxfoundation.org>, "" <len.brown@intel.com>,
-        "Heiko Stuebner" <heiko@sntech.de>, "" <rjw@rjwysocki.net>,
-        "Laxman Dewangan" <ldewangan@nvidia.com>
-Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.763420580@decadent.org.uk>
+CC: akpm@linux-foundation.org, "J. Bruce Fields" <bfields@redhat.com>
+Date: Sun, 29 Dec 2013 03:08:43 +0100
+Message-ID: <lsq.1388282923.900042915@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 097/185] irq: Enable all irqs unconditionally in
- irq_resume
+Subject: [PATCH 3.2 074/185] nfsd4: fix xdr decoding of large non-write
+ compounds
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,56 +31,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laxman Dewangan <ldewangan@nvidia.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit ac01810c9d2814238f08a227062e66a35a0e1ea2 upstream.
+commit 365da4adebb1c012febf81019ad3dc5bb52e2a13 upstream.
 
-When the system enters suspend, it disables all interrupts in
-suspend_device_irqs(), including the interrupts marked EARLY_RESUME.
+This fixes a regression from 247500820ebd02ad87525db5d9b199e5b66f6636
+"nfsd4: fix decoding of compounds across page boundaries".  The previous
+code was correct: argp->pagelist is initialized in
+nfs4svc_deocde_compoundargs to rqstp->rq_arg.pages, and is therefore a
+pointer to the page *after* the page we are currently decoding.
 
-On the resume side things are different. The EARLY_RESUME interrupts
-are reenabled in sys_core_ops->resume and the non EARLY_RESUME
-interrupts are reenabled in the normal system resume path.
+The reason that patch nevertheless fixed a problem with decoding
+compounds containing write was a bug in the write decoding introduced by
+5a80a54d21c96590d013378d8c5f65f879451ab4 "nfsd4: reorganize write
+decoding", after which write decoding no longer adhered to the rule that
+argp->pagelist point to the next page.
 
-When suspend_noirq() failed or suspend is aborted for any other
-reason, we might omit the resume side call to sys_core_ops->resume()
-and therefor the interrupts marked EARLY_RESUME are not reenabled and
-stay disabled forever.
-
-To solve this, enable all irqs unconditionally in irq_resume()
-regardless whether interrupts marked EARLY_RESUMEhave been already
-enabled or not.
-
-This might try to reenable already enabled interrupts in the non
-failure case, but the only affected platform is XEN and it has been
-confirmed that it does not cause any side effects.
-
-[ tglx: Massaged changelog. ]
-
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Acked-by-and-tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Acked-by: Heiko Stuebner <heiko@sntech.de>
-Reviewed-by: Pavel Machek <pavel@ucw.cz>
-Cc: <ian.campbell@citrix.com>
-Cc: <rjw@rjwysocki.net>
-Cc: <len.brown@intel.com>
-Cc: <gregkh@linuxfoundation.org>
-Link: http://lkml.kernel.org/r/1385388587-16442-1-git-send-email-ldewangan@nvidia.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+[bwh: Backported to 3.2: adjust context; there is only one instance to fix]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/irq/pm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfsd/nfs4xdr.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/kernel/irq/pm.c
-+++ b/kernel/irq/pm.c
-@@ -50,7 +50,7 @@ static void resume_irqs(bool want_early)
- 		bool is_early = desc->action &&
- 			desc->action->flags & IRQF_EARLY_RESUME;
- 
--		if (is_early != want_early)
-+		if (!is_early && want_early)
- 			continue;
- 
- 		raw_spin_lock_irqsave(&desc->lock, flags);
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -177,8 +177,8 @@ static __be32 *read_buf(struct nfsd4_com
+ 	 */
+ 	memcpy(p, argp->p, avail);
+ 	/* step to next page */
+-	argp->pagelist++;
+ 	argp->p = page_address(argp->pagelist[0]);
++	argp->pagelist++;
+ 	if (argp->pagelen < PAGE_SIZE) {
+ 		argp->end = argp->p + (argp->pagelen>>2);
+ 		argp->pagelen = 0;
 
