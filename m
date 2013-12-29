@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756751Ab3L2DA5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 22:00:57 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54998 "EHLO
+	id S1756239Ab3L2DAz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 22:00:55 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54991 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751963Ab3L2CJy (ORCPT
+	by vger.kernel.org with ESMTP id S1751793Ab3L2CJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:09:54 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,16 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Marcelo Tosatti" <mtosatti@redhat.com>,
-        "Gleb Natapov" <gleb@redhat.com>,
-        "Alex Williamson" <alex.williamson@redhat.com>
+CC: akpm@linux-foundation.org, "Michael S. Tsirkin" <mst@redhat.com>,
+        "Daniel Borkmann" <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Eric Dumazet" <edumazet@google.com>,
+        "Jason Wang" <jasowang@redhat.com>,
+        "Petr Matousek" <pmatouse@redhat.com>
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.793664959@decadent.org.uk>
+Message-ID: <lsq.1388282924.481234836@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 175/185] KVM: Fix iommu map/unmap to handle memory
- slot moves
+Subject: [PATCH 3.2 180/185] net: flow_dissector: fail on evil iph->ihl
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,72 +35,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Jason Wang <jasowang@redhat.com>
 
-commit e40f193f5bb022e927a57a4f5d5194e4f12ddb74 upstream.
+commit 6f092343855a71e03b8d209815d8c45bf3a27fcd upstream.
 
-The iommu integration into memory slots expects memory slots to be
-added or removed and doesn't handle the move case.  We can unmap
-slots from the iommu after we mark them invalid and map them before
-installing the final memslot array.  Also re-order the kmemdup vs
-map so we don't leave iommu mappings if we get ENOMEM.
+We don't validate iph->ihl which may lead a dead loop if we meet a IPIP
+skb whose iph->ihl is zero. Fix this by failing immediately when iph->ihl
+is evil (less than 5).
 
-Reviewed-by: Gleb Natapov <gleb@redhat.com>
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-[bwh: Backported to 3.2: adjust context]
+This issue were introduced by commit ec5efe7946280d1e84603389a1030ccec0a767ae
+(rps: support IPIP encapsulation).
+
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: Petr Matousek <pmatouse@redhat.com>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[bwh: Backported to 3.2: the affected code is in __skb_get_rxhash()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- virt/kvm/kvm_main.c | 19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ net/core/flow_dissector.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -788,6 +788,8 @@ skip_lpage:
- 		old_memslots = kvm->memslots;
- 		rcu_assign_pointer(kvm->memslots, slots);
- 		synchronize_srcu_expedited(&kvm->srcu);
-+		/* slot was deleted or moved, clear iommu mapping */
-+		kvm_iommu_unmap_pages(kvm, &old);
- 		/* From this point no new shadow pages pointing to a deleted,
- 		 * or moved, memslot will be created.
- 		 *
-@@ -803,14 +805,6 @@ skip_lpage:
- 	if (r)
- 		goto out_free;
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2609,6 +2609,8 @@ ip:
+ 			goto done;
  
--	/* map/unmap the pages in iommu page table */
--	if (npages) {
--		r = kvm_iommu_map_pages(kvm, &new);
--		if (r)
--			goto out_free;
--	} else
--		kvm_iommu_unmap_pages(kvm, &old);
--
- 	r = -ENOMEM;
- 	slots = kzalloc(sizeof(struct kvm_memslots), GFP_KERNEL);
- 	if (!slots)
-@@ -820,6 +814,13 @@ skip_lpage:
- 		slots->nmemslots = mem->slot + 1;
- 	slots->generation++;
- 
-+	/* map new memory slot into the iommu */
-+	if (npages) {
-+		r = kvm_iommu_map_pages(kvm, &new);
-+		if (r)
-+			goto out_slots;
-+	}
-+
- 	/* actual memory is freed via old in kvm_free_physmem_slot below */
- 	if (!npages) {
- 		new.rmap = NULL;
-@@ -847,6 +848,8 @@ skip_lpage:
- 
- 	return 0;
- 
-+out_slots:
-+	kfree(slots);
- out_free:
- 	kvm_free_physmem_slot(&new, &old);
- out:
+ 		ip = (const struct iphdr *) (skb->data + nhoff);
++		if (ip->ihl < 5)
++			goto done;
+ 		if (ip_is_fragment(ip))
+ 			ip_proto = 0;
+ 		else
 
