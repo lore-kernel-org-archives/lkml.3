@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526Ab3L2VwE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 16:52:04 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:31762 "EHLO
+	id S1753647Ab3L2VwV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 16:52:21 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:31758 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753058Ab3L2Vv6 (ORCPT
+	by vger.kernel.org with ESMTP id S1752943Ab3L2VwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 16:51:58 -0500
+	Sun, 29 Dec 2013 16:52:01 -0500
 X-IronPort-AV: E=Sophos;i="4.95,570,1384297200"; 
-   d="scan'208";a="50832552"
+   d="scan'208";a="50832555"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Antti Palosaari <crope@iki.fi>
+To: Zhang Rui <rui.zhang@intel.com>
 Cc: kernel-janitors@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 20/25]  fix error return code
-Date: Sun, 29 Dec 2013 23:47:35 +0100
-Message-Id: <1388357260-4843-21-git-send-email-Julia.Lawall@lip6.fr>
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 23/25] thermal: exynos: fix error return code
+Date: Sun, 29 Dec 2013 23:47:38 +0100
+Message-Id: <1388357260-4843-24-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1388357260-4843-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1388357260-4843-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -54,59 +56,19 @@ Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 ---
 Not tested.
 
- drivers/media/tuners/e4000.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ drivers/thermal/samsung/exynos_tmu.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/media/tuners/e4000.c b/drivers/media/tuners/e4000.c
-index 72971a8..40c1da7 100644
---- a/drivers/media/tuners/e4000.c
-+++ b/drivers/media/tuners/e4000.c
-@@ -243,8 +243,10 @@ static int e4000_set_params(struct dvb_frontend *fe)
- 			break;
+diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+index 32f38b9..0d96a51 100644
+--- a/drivers/thermal/samsung/exynos_tmu.c
++++ b/drivers/thermal/samsung/exynos_tmu.c
+@@ -205,6 +205,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ skip_calib_data:
+ 	if (pdata->max_trigger_level > MAX_THRESHOLD_LEVS) {
+ 		dev_err(&pdev->dev, "Invalid max trigger level\n");
++		ret = -EINVAL;
+ 		goto out;
  	}
  
--	if (i == ARRAY_SIZE(e4000_pll_lut))
-+	if (i == ARRAY_SIZE(e4000_pll_lut)) {
-+		ret = -EINVAL;
- 		goto err;
-+	}
- 
- 	/*
- 	 * Note: Currently f_vco overflows when c->frequency is 1 073 741 824 Hz
-@@ -271,8 +273,10 @@ static int e4000_set_params(struct dvb_frontend *fe)
- 			break;
- 	}
- 
--	if (i == ARRAY_SIZE(e400_lna_filter_lut))
-+	if (i == ARRAY_SIZE(e400_lna_filter_lut)) {
-+		ret = -EINVAL;
- 		goto err;
-+	}
- 
- 	ret = e4000_wr_reg(priv, 0x10, e400_lna_filter_lut[i].val);
- 	if (ret < 0)
-@@ -284,8 +288,10 @@ static int e4000_set_params(struct dvb_frontend *fe)
- 			break;
- 	}
- 
--	if (i == ARRAY_SIZE(e4000_if_filter_lut))
-+	if (i == ARRAY_SIZE(e4000_if_filter_lut)) {
-+		ret = -EINVAL;
- 		goto err;
-+	}
- 
- 	buf[0] = e4000_if_filter_lut[i].reg11_val;
- 	buf[1] = e4000_if_filter_lut[i].reg12_val;
-@@ -300,8 +306,10 @@ static int e4000_set_params(struct dvb_frontend *fe)
- 			break;
- 	}
- 
--	if (i == ARRAY_SIZE(e4000_band_lut))
-+	if (i == ARRAY_SIZE(e4000_band_lut)) {
-+		ret = -EINVAL;
- 		goto err;
-+	}
- 
- 	ret = e4000_wr_reg(priv, 0x07, e4000_band_lut[i].reg07_val);
- 	if (ret < 0)
 
