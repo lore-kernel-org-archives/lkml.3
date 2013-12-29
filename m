@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab3L2Vy1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 16:54:27 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:61815 "EHLO
+	id S1754413Ab3L2Vy0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 16:54:26 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:31760 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753087Ab3L2Vv6 (ORCPT
+	by vger.kernel.org with ESMTP id S1753114Ab3L2Vv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 29 Dec 2013 16:51:58 -0500
 X-IronPort-AV: E=Sophos;i="4.95,570,1384297200"; 
-   d="scan'208";a="50832554"
+   d="scan'208";a="50832534"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Faisal Latif <faisal.latif@intel.com>
-Cc: kernel-janitors@vger.kernel.org, Roland Dreier <roland@kernel.org>,
-        Sean Hefty <sean.hefty@intel.com>,
+To: Tom Tucker <tom@opengridcomputing.com>
+Cc: kernel-janitors@vger.kernel.org, Steve Wise <swise@opengridcomputing.com>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
         Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 22/25] RDMA/nes: fix error return code
-Date: Sun, 29 Dec 2013 23:47:37 +0100
-Message-Id: <1388357260-4843-23-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 14/25] RDMA/amso1100: fix error return code
+Date: Sun, 29 Dec 2013 23:47:29 +0100
+Message-Id: <1388357260-4843-15-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1388357260-4843-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1388357260-4843-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -55,24 +55,44 @@ Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 ---
 Not tested.
 
- drivers/infiniband/hw/nes/nes.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/infiniband/hw/amso1100/c2.c      |    4 +++-
+ drivers/infiniband/hw/amso1100/c2_rnic.c |    3 ++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/infiniband/hw/nes/nes.c b/drivers/infiniband/hw/nes/nes.c
-index 4291410..353c7b0 100644
---- a/drivers/infiniband/hw/nes/nes.c
-+++ b/drivers/infiniband/hw/nes/nes.c
-@@ -675,8 +675,11 @@ static int nes_probe(struct pci_dev *pcidev, const struct pci_device_id *ent)
- 	INIT_DELAYED_WORK(&nesdev->work, nes_recheck_link_status);
+diff --git a/drivers/infiniband/hw/amso1100/c2.c b/drivers/infiniband/hw/amso1100/c2.c
+index d53cf51..00400c3 100644
+--- a/drivers/infiniband/hw/amso1100/c2.c
++++ b/drivers/infiniband/hw/amso1100/c2.c
+@@ -1082,6 +1082,7 @@ static int c2_probe(struct pci_dev *pcidev, const struct pci_device_id *ent)
  
- 	/* Initialize network devices */
--	if ((netdev = nes_netdev_init(nesdev, mmio_regs)) == NULL)
-+	netdev = nes_netdev_init(nesdev, mmio_regs);
-+	if (netdev == NULL) {
+ 	/* Initialize network device */
+ 	if ((netdev = c2_devinit(c2dev, mmio_regs)) == NULL) {
 +		ret = -ENOMEM;
- 		goto bail7;
-+	}
+ 		iounmap(mmio_regs);
+ 		goto bail4;
+ 	}
+@@ -1151,7 +1152,8 @@ static int c2_probe(struct pci_dev *pcidev, const struct pci_device_id *ent)
+ 		goto bail10;
+ 	}
  
- 	/* Register network device */
- 	ret = register_netdev(netdev);
+-	if (c2_register_device(c2dev))
++	ret = c2_register_device(c2dev);
++	if (ret)
+ 		goto bail10;
+ 
+ 	return 0;
+diff --git a/drivers/infiniband/hw/amso1100/c2_rnic.c b/drivers/infiniband/hw/amso1100/c2_rnic.c
+index b7c9869..d2a6d96 100644
+--- a/drivers/infiniband/hw/amso1100/c2_rnic.c
++++ b/drivers/infiniband/hw/amso1100/c2_rnic.c
+@@ -576,7 +576,8 @@ int c2_rnic_init(struct c2_dev *c2dev)
+ 		goto bail4;
+ 
+ 	/* Initialize cached the adapter limits */
+-	if (c2_rnic_query(c2dev, &c2dev->props))
++	err = c2_rnic_query(c2dev, &c2dev->props);
++	if (err)
+ 		goto bail5;
+ 
+ 	/* Initialize the PD pool */
 
