@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756372Ab3L2Crg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:47:36 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54976 "EHLO
+	id S1756361Ab3L2Crf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:47:35 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55194 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751806Ab3L2CKX (ORCPT
+	by vger.kernel.org with ESMTP id S1752355Ab3L2CKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:10:23 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        "Dave Wysochanski" <dwysocha@redhat.com>
+CC: akpm@linux-foundation.org, "Russell King" <rmk+kernel@arm.linux.org.uk>,
+        "Will Deacon" <will.deacon@arm.com>,
+        "Konstantin Khlebnikov" <k.khlebnikov@samsung.com>
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.19999998@decadent.org.uk>
+Message-ID: <lsq.1388282924.661315400@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 184/185] ftrace: Fix function graph with loading of
- modules
+Subject: [PATCH 3.2 127/185] ARM: 7912/1: check stack pointer in get_wchan
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,247 +32,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
 
-commit 8a56d7761d2d041ae5e8215d20b4167d8aa93f51 upstream.
+commit 1b15ec7a7427d4188ba91b9bbac696250a059d22 upstream.
 
-Commit 8c4f3c3fa9681 "ftrace: Check module functions being traced on reload"
-fixed module loading and unloading with respect to function tracing, but
-it missed the function graph tracer. If you perform the following
+get_wchan() is lockless. Task may wakeup at any time and change its own stack,
+thus each next stack frame may be overwritten and filled with random stuff.
 
- # cd /sys/kernel/debug/tracing
- # echo function_graph > current_tracer
- # modprobe nfsd
- # echo nop > current_tracer
+/proc/$pid/stack interface had been disabled for non-current tasks, see [1]
+But 'wchan' still allows to trigger stack frame unwinding on volatile stack.
 
-You'll get the following oops message:
+This patch fixes oops in unwind_frame() by adding stack pointer validation on
+each step (as x86 code do), unwind_frame() already checks frame pointer.
 
- ------------[ cut here ]------------
- WARNING: CPU: 2 PID: 2910 at /linux.git/kernel/trace/ftrace.c:1640 __ftrace_hash_rec_update.part.35+0x168/0x1b9()
- Modules linked in: nfsd exportfs nfs_acl lockd ipt_MASQUERADE sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables uinput snd_hda_codec_idt
- CPU: 2 PID: 2910 Comm: bash Not tainted 3.13.0-rc1-test #7
- Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
-  0000000000000668 ffff8800787efcf8 ffffffff814fe193 ffff88007d500000
-  0000000000000000 ffff8800787efd38 ffffffff8103b80a 0000000000000668
-  ffffffff810b2b9a ffffffff81a48370 0000000000000001 ffff880037aea000
- Call Trace:
-  [<ffffffff814fe193>] dump_stack+0x4f/0x7c
-  [<ffffffff8103b80a>] warn_slowpath_common+0x81/0x9b
-  [<ffffffff810b2b9a>] ? __ftrace_hash_rec_update.part.35+0x168/0x1b9
-  [<ffffffff8103b83e>] warn_slowpath_null+0x1a/0x1c
-  [<ffffffff810b2b9a>] __ftrace_hash_rec_update.part.35+0x168/0x1b9
-  [<ffffffff81502f89>] ? __mutex_lock_slowpath+0x364/0x364
-  [<ffffffff810b2cc2>] ftrace_shutdown+0xd7/0x12b
-  [<ffffffff810b47f0>] unregister_ftrace_graph+0x49/0x78
-  [<ffffffff810c4b30>] graph_trace_reset+0xe/0x10
-  [<ffffffff810bf393>] tracing_set_tracer+0xa7/0x26a
-  [<ffffffff810bf5e1>] tracing_set_trace_write+0x8b/0xbd
-  [<ffffffff810c501c>] ? ftrace_return_to_handler+0xb2/0xde
-  [<ffffffff811240a8>] ? __sb_end_write+0x5e/0x5e
-  [<ffffffff81122aed>] vfs_write+0xab/0xf6
-  [<ffffffff8150a185>] ftrace_graph_caller+0x85/0x85
-  [<ffffffff81122dbd>] SyS_write+0x59/0x82
-  [<ffffffff8150a185>] ftrace_graph_caller+0x85/0x85
-  [<ffffffff8150a2d2>] system_call_fastpath+0x16/0x1b
- ---[ end trace 940358030751eafb ]---
+Also I've found another report of this oops on stackoverflow (irony).
 
-The above mentioned commit didn't go far enough. Well, it covered the
-function tracer by adding checks in __register_ftrace_function(). The
-problem is that the function graph tracer circumvents that (for a slight
-efficiency gain when function graph trace is running with a function
-tracer. The gain was not worth this).
+Link: http://www.spinics.net/lists/arm-kernel/msg110589.html [1]
+Link: http://stackoverflow.com/questions/18479894/unwind-frame-cause-a-kernel-paging-error
 
-The problem came with ftrace_startup() which should always be called after
-__register_ftrace_function(), if you want this bug to be completely fixed.
-
-Anyway, this solution moves __register_ftrace_function() inside of
-ftrace_startup() and removes the need to call them both.
-
-Reported-by: Dave Wysochanski <dwysocha@redhat.com>
-Fixes: ed926f9b35cd ("ftrace: Use counters to enable functions to trace")
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/trace/ftrace.c | 68 +++++++++++++++++++++++++--------------------------
- 1 file changed, 34 insertions(+), 34 deletions(-)
+ arch/arm/kernel/process.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -259,9 +259,6 @@ static int remove_ftrace_ops(struct ftra
- 
- static int __register_ftrace_function(struct ftrace_ops *ops)
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -468,6 +468,7 @@ EXPORT_SYMBOL(kernel_thread);
+ unsigned long get_wchan(struct task_struct *p)
  {
--	if (ftrace_disabled)
--		return -ENODEV;
--
- 	if (FTRACE_WARN_ON(ops == &global_ops))
- 		return -EINVAL;
- 
-@@ -290,9 +287,6 @@ static int __unregister_ftrace_function(
- {
- 	int ret;
- 
--	if (ftrace_disabled)
--		return -ENODEV;
--
- 	if (WARN_ON(!(ops->flags & FTRACE_OPS_FL_ENABLED)))
- 		return -EBUSY;
- 
-@@ -1703,10 +1697,15 @@ static void ftrace_startup_enable(int co
- static int ftrace_startup(struct ftrace_ops *ops, int command)
- {
- 	bool hash_enable = true;
-+	int ret;
- 
- 	if (unlikely(ftrace_disabled))
- 		return -ENODEV;
- 
-+	ret = __register_ftrace_function(ops);
-+	if (ret)
-+		return ret;
-+
- 	ftrace_start_up++;
- 	command |= FTRACE_UPDATE_CALLS;
- 
-@@ -1728,12 +1727,17 @@ static int ftrace_startup(struct ftrace_
- 	return 0;
- }
- 
--static void ftrace_shutdown(struct ftrace_ops *ops, int command)
-+static int ftrace_shutdown(struct ftrace_ops *ops, int command)
- {
- 	bool hash_disable = true;
-+	int ret;
- 
- 	if (unlikely(ftrace_disabled))
--		return;
-+		return -ENODEV;
-+
-+	ret = __unregister_ftrace_function(ops);
-+	if (ret)
-+		return ret;
- 
- 	ftrace_start_up--;
- 	/*
-@@ -1768,9 +1772,10 @@ static void ftrace_shutdown(struct ftrac
- 	}
- 
- 	if (!command || !ftrace_enabled)
--		return;
-+		return 0;
- 
- 	ftrace_run_update_code(command);
-+	return 0;
- }
- 
- static void ftrace_startup_sysctl(void)
-@@ -2622,16 +2627,13 @@ static void __enable_ftrace_function_pro
- 	if (i == FTRACE_FUNC_HASHSIZE)
- 		return;
- 
--	ret = __register_ftrace_function(&trace_probe_ops);
--	if (!ret)
--		ret = ftrace_startup(&trace_probe_ops, 0);
-+	ret = ftrace_startup(&trace_probe_ops, 0);
- 
- 	ftrace_probe_registered = 1;
- }
- 
- static void __disable_ftrace_function_probe(void)
- {
--	int ret;
- 	int i;
- 
- 	if (!ftrace_probe_registered)
-@@ -2644,9 +2646,7 @@ static void __disable_ftrace_function_pr
- 	}
- 
- 	/* no more funcs left */
--	ret = __unregister_ftrace_function(&trace_probe_ops);
--	if (!ret)
--		ftrace_shutdown(&trace_probe_ops, 0);
-+	ftrace_shutdown(&trace_probe_ops, 0);
- 
- 	ftrace_probe_registered = 0;
- }
-@@ -3619,12 +3619,15 @@ device_initcall(ftrace_nodyn_init);
- static inline int ftrace_init_dyn_debugfs(struct dentry *d_tracer) { return 0; }
- static inline void ftrace_startup_enable(int command) { }
- /* Keep as macros so we do not need to define the commands */
--# define ftrace_startup(ops, command)			\
--	({						\
--		(ops)->flags |= FTRACE_OPS_FL_ENABLED;	\
--		0;					\
-+# define ftrace_startup(ops, command)					\
-+	({								\
-+		int ___ret = __register_ftrace_function(ops);		\
-+		if (!___ret)						\
-+			(ops)->flags |= FTRACE_OPS_FL_ENABLED;		\
-+		___ret;							\
- 	})
--# define ftrace_shutdown(ops, command)	do { } while (0)
-+# define ftrace_shutdown(ops, command) __unregister_ftrace_function(ops)
-+
- # define ftrace_startup_sysctl()	do { } while (0)
- # define ftrace_shutdown_sysctl()	do { } while (0)
- 
-@@ -3964,15 +3967,8 @@ int register_ftrace_function(struct ftra
- 
- 	mutex_lock(&ftrace_lock);
- 
--	if (unlikely(ftrace_disabled))
--		goto out_unlock;
--
--	ret = __register_ftrace_function(ops);
--	if (!ret)
--		ret = ftrace_startup(ops, 0);
-+	ret = ftrace_startup(ops, 0);
- 
--
-- out_unlock:
- 	mutex_unlock(&ftrace_lock);
- 	return ret;
- }
-@@ -3989,9 +3985,7 @@ int unregister_ftrace_function(struct ft
- 	int ret;
- 
- 	mutex_lock(&ftrace_lock);
--	ret = __unregister_ftrace_function(ops);
--	if (!ret)
--		ftrace_shutdown(ops, 0);
-+	ret = ftrace_shutdown(ops, 0);
- 	mutex_unlock(&ftrace_lock);
- 
- 	return ret;
-@@ -4185,6 +4179,12 @@ ftrace_suspend_notifier_call(struct noti
- 	return NOTIFY_DONE;
- }
- 
-+/* Just a place holder for function graph */
-+static struct ftrace_ops fgraph_ops __read_mostly = {
-+	.func		= ftrace_stub,
-+	.flags		= FTRACE_OPS_FL_GLOBAL,
-+};
-+
- int register_ftrace_graph(trace_func_graph_ret_t retfunc,
- 			trace_func_graph_ent_t entryfunc)
- {
-@@ -4211,7 +4211,7 @@ int register_ftrace_graph(trace_func_gra
- 	ftrace_graph_return = retfunc;
- 	ftrace_graph_entry = entryfunc;
- 
--	ret = ftrace_startup(&global_ops, FTRACE_START_FUNC_RET);
-+	ret = ftrace_startup(&fgraph_ops, FTRACE_START_FUNC_RET);
- 
- out:
- 	mutex_unlock(&ftrace_lock);
-@@ -4228,7 +4228,7 @@ void unregister_ftrace_graph(void)
- 	ftrace_graph_active--;
- 	ftrace_graph_return = (trace_func_graph_ret_t)ftrace_stub;
- 	ftrace_graph_entry = ftrace_graph_entry_stub;
--	ftrace_shutdown(&global_ops, FTRACE_STOP_FUNC_RET);
-+	ftrace_shutdown(&fgraph_ops, FTRACE_STOP_FUNC_RET);
- 	unregister_pm_notifier(&ftrace_suspend_notifier);
- 	unregister_trace_sched_switch(ftrace_graph_probe_sched_switch, NULL);
- 
+ 	struct stackframe frame;
++	unsigned long stack_page;
+ 	int count = 0;
+ 	if (!p || p == current || p->state == TASK_RUNNING)
+ 		return 0;
+@@ -476,9 +477,11 @@ unsigned long get_wchan(struct task_stru
+ 	frame.sp = thread_saved_sp(p);
+ 	frame.lr = 0;			/* recovered from the stack */
+ 	frame.pc = thread_saved_pc(p);
++	stack_page = (unsigned long)task_stack_page(p);
+ 	do {
+-		int ret = unwind_frame(&frame);
+-		if (ret < 0)
++		if (frame.sp < stack_page ||
++		    frame.sp >= stack_page + THREAD_SIZE ||
++		    unwind_frame(&frame) < 0)
+ 			return 0;
+ 		if (!in_sched_functions(frame.pc))
+ 			return frame.pc;
 
