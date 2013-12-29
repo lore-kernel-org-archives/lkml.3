@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab3L2CLZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:11:25 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55721 "EHLO
+	id S1754187Ab3L2CLc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:11:32 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55550 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753992Ab3L2CLV (ORCPT
+	by vger.kernel.org with ESMTP id S1752250Ab3L2CLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:11:21 -0500
+	Sat, 28 Dec 2013 21:11:25 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Dave Jones" <davej@redhat.com>,
-        "Theodore Ts'o" <tytso@mit.edu>
+CC: akpm@linux-foundation.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Joe Perches" <joe@perches.com>, "Ryan Mallon" <rmallon@gmail.com>,
+        "Alexander Viro" <viro@zeniv.linux.org.uk>,
+        "Kees Cook" <keescook@chromium.org>
 Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.235786900@decadent.org.uk>
+Message-ID: <lsq.1388282923.630376977@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 022/185] ext4: avoid bh leak in retry path of
- ext4_expand_extra_isize_ea()
+Subject: [PATCH 3.2 057/185] vsprintf: check real user/group id for %pK
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,25 +34,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Ryan Mallon <rmallon@gmail.com>
 
-commit dcb9917ba041866686fe152850364826c4622a36 upstream.
+commit 312b4e226951f707e120b95b118cbc14f3d162b2 upstream.
 
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Some setuid binaries will allow reading of files which have read
+permission by the real user id.  This is problematic with files which
+use %pK because the file access permission is checked at open() time,
+but the kptr_restrict setting is checked at read() time.  If a setuid
+binary opens a %pK file as an unprivileged user, and then elevates
+permissions before reading the file, then kernel pointer values may be
+leaked.
+
+This happens for example with the setuid pppd application on Ubuntu 12.04:
+
+  $ head -1 /proc/kallsyms
+  00000000 T startup_32
+
+  $ pppd file /proc/kallsyms
+  pppd: In file /proc/kallsyms: unrecognized option 'c1000000'
+
+This will only leak the pointer value from the first line, but other
+setuid binaries may leak more information.
+
+Fix this by adding a check that in addition to the current process having
+CAP_SYSLOG, that effective user and group ids are equal to the real ids.
+If a setuid binary reads the contents of a file which uses %pK then the
+pointer values will be printed as NULL if the real user is unprivileged.
+
+Update the sysctl documentation to reflect the changes, and also correct
+the documentation to state the kptr_restrict=0 is the default.
+
+This is a only temporary solution to the issue.  The correct solution is
+to do the permission check at open() time on files, and to replace %pK
+with a function which checks the open() time permission.  %pK uses in
+printk should be removed since no sane permission check can be done, and
+instead protected by using dmesg_restrict.
+
+Signed-off-by: Ryan Mallon <rmallon@gmail.com>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Joe Perches <joe@perches.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Compare ids directly instead of using {uid,gid}_eq()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext4/xattr.c | 1 +
- 1 file changed, 1 insertion(+)
+ Documentation/sysctl/kernel.txt | 25 ++++++++++++++++++-------
+ lib/vsprintf.c                  | 33 ++++++++++++++++++++++++++++++---
+ 2 files changed, 48 insertions(+), 10 deletions(-)
 
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -1271,6 +1271,7 @@ retry:
- 					new_extra_isize = s_min_extra_isize;
- 					kfree(is); is = NULL;
- 					kfree(bs); bs = NULL;
-+					brelse(bh);
- 					goto retry;
- 				}
- 				error = -1;
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -283,13 +283,24 @@ Default value is "/sbin/hotplug".
+ kptr_restrict:
+ 
+ This toggle indicates whether restrictions are placed on
+-exposing kernel addresses via /proc and other interfaces.  When
+-kptr_restrict is set to (0), there are no restrictions.  When
+-kptr_restrict is set to (1), the default, kernel pointers
+-printed using the %pK format specifier will be replaced with 0's
+-unless the user has CAP_SYSLOG.  When kptr_restrict is set to
+-(2), kernel pointers printed using %pK will be replaced with 0's
+-regardless of privileges.
++exposing kernel addresses via /proc and other interfaces.
++
++When kptr_restrict is set to (0), the default, there are no restrictions.
++
++When kptr_restrict is set to (1), kernel pointers printed using the %pK
++format specifier will be replaced with 0's unless the user has CAP_SYSLOG
++and effective user and group ids are equal to the real ids. This is
++because %pK checks are done at read() time rather than open() time, so
++if permissions are elevated between the open() and the read() (e.g via
++a setuid binary) then %pK will not leak kernel pointers to unprivileged
++users. Note, this is a temporary solution only. The correct long-term
++solution is to do the permission checks at open() time. Consider removing
++world read permissions from files that use %pK, and using dmesg_restrict
++to protect against uses of %pK in dmesg(8) if leaking kernel pointer
++values to unprivileged users is a concern.
++
++When kptr_restrict is set to (2), kernel pointers printed using
++%pK will be replaced with 0's regardless of privileges.
+ 
+ ==============================================================
+ 
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -25,6 +25,7 @@
+ #include <linux/kallsyms.h>
+ #include <linux/uaccess.h>
+ #include <linux/ioport.h>
++#include <linux/cred.h>
+ #include <net/addrconf.h>
+ 
+ #include <asm/page.h>		/* for PAGE_SIZE */
+@@ -892,10 +893,35 @@ char *pointer(const char *fmt, char *buf
+ 				spec.field_width = 2 * sizeof(void *);
+ 			return string(buf, end, "pK-error", spec);
+ 		}
+-		if (!((kptr_restrict == 0) ||
+-		      (kptr_restrict == 1 &&
+-		       has_capability_noaudit(current, CAP_SYSLOG))))
++
++		switch (kptr_restrict) {
++		case 0:
++			/* Always print %pK values */
++			break;
++		case 1: {
++			/*
++			 * Only print the real pointer value if the current
++			 * process has CAP_SYSLOG and is running with the
++			 * same credentials it started with. This is because
++			 * access to files is checked at open() time, but %pK
++			 * checks permission at read() time. We don't want to
++			 * leak pointer values if a binary opens a file using
++			 * %pK and then elevates privileges before reading it.
++			 */
++			const struct cred *cred = current_cred();
++
++			if (!has_capability_noaudit(current, CAP_SYSLOG) ||
++			    cred->euid != cred->uid ||
++			    cred->egid != cred->gid)
++				ptr = NULL;
++			break;
++		}
++		case 2:
++		default:
++			/* Always print 0's for %pK */
+ 			ptr = NULL;
++			break;
++		}
+ 		break;
+ 	}
+ 	spec.flags |= SMALL;
 
