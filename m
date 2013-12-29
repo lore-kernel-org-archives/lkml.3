@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab3L2V4k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 16:56:40 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:31762 "EHLO
+	id S1755437Ab3L2V45 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 16:56:57 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:61815 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752925Ab3L2Vvz (ORCPT
+	by vger.kernel.org with ESMTP id S1752874Ab3L2Vvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 29 Dec 2013 16:51:55 -0500
 X-IronPort-AV: E=Sophos;i="4.95,570,1384297200"; 
-   d="scan'208";a="50832536"
+   d="scan'208";a="50832535"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 To: linux-kernel@vger.kernel.org
 Cc: kernel-janitors@vger.kernel.org
-Subject: [PATCH 16/25] block: fix error return code
-Date: Sun, 29 Dec 2013 23:47:31 +0100
-Message-Id: <1388357260-4843-17-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 17/25]  fix error return code
+Date: Sun, 29 Dec 2013 23:47:30 +0100
+Message-Id: <1388357260-4843-16-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1388357260-4843-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1388357260-4843-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -52,34 +52,19 @@ Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 ---
 Not tested.
 
- drivers/cdrom/gdrom.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/char/xilinx_hwicap/xilinx_hwicap.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/cdrom/gdrom.c b/drivers/cdrom/gdrom.c
-index 51e75ad..93d29b1 100644
---- a/drivers/cdrom/gdrom.c
-+++ b/drivers/cdrom/gdrom.c
-@@ -807,16 +807,20 @@ static int probe_gdrom(struct platform_device *devptr)
- 	if (err)
- 		goto probe_fail_cmdirq_register;
- 	gd.gdrom_rq = blk_init_queue(gdrom_request, &gdrom_lock);
--	if (!gd.gdrom_rq)
-+	if (!gd.gdrom_rq) {
-+		err = -ENOMEM;
- 		goto probe_fail_requestq;
-+	}
- 
- 	err = probe_gdrom_setupqueue();
- 	if (err)
- 		goto probe_fail_toc;
- 
- 	gd.toc = kzalloc(sizeof(struct gdromtoc), GFP_KERNEL);
--	if (!gd.toc)
-+	if (!gd.toc) {
-+		err = -ENOMEM;
- 		goto probe_fail_toc;
-+	}
- 	add_disk(gd.disk);
- 	return 0;
+diff --git a/drivers/char/xilinx_hwicap/xilinx_hwicap.c b/drivers/char/xilinx_hwicap/xilinx_hwicap.c
+index f6345f9..9b1a5ac 100644
+--- a/drivers/char/xilinx_hwicap/xilinx_hwicap.c
++++ b/drivers/char/xilinx_hwicap/xilinx_hwicap.c
+@@ -661,6 +661,7 @@ static int hwicap_setup(struct device *dev, int id,
+ 	drvdata->base_address = ioremap(drvdata->mem_start, drvdata->mem_size);
+ 	if (!drvdata->base_address) {
+ 		dev_err(dev, "ioremap() failed\n");
++		retval = -ENOMEM;
+ 		goto failed2;
+ 	}
  
 
