@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755668Ab3L2CmH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:42:07 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55370 "EHLO
+	id S1756219Ab3L2Cmu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:42:50 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55318 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751934Ab3L2CKd (ORCPT
+	by vger.kernel.org with ESMTP id S1752509Ab3L2CKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:10:33 -0500
+	Sat, 28 Dec 2013 21:10:31 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>,
-        "Kailang Yang" <kailang@realtek.com>
+CC: akpm@linux-foundation.org, "Mikulas Patocka" <mpatocka@redhat.com>,
+        "Mike Snitzer" <snitzer@redhat.com>
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.274866110@decadent.org.uk>
+Message-ID: <lsq.1388282924.498316727@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 098/185] ALSA: hda/realtek - Add support of ALC231 codec
+Subject: [PATCH 3.2 132/185] dm table: fail dm_table_create on dm_round_up
+ overflow
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,28 +32,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kailang Yang <kailang@realtek.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit ba4c4d0a9021ab034554d532a98133d668b87599 upstream.
+commit 5b2d06576c5410c10d95adfd5c4d8b24de861d87 upstream.
 
-It's compatible with ALC269.
+The dm_round_up function may overflow to zero.  In this case,
+dm_table_create() must fail rather than go on to allocate an empty array
+with alloc_targets().
 
-Signed-off-by: Kailang Yang <kailang@realtek.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[bwh: Backported to 3.2: adjust context]
+This fixes a possible memory corruption that could be caused by passing
+too large a number in "param->target_count".
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/hda/patch_realtek.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/md/dm-table.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -6019,6 +6019,7 @@ static int patch_alc680(struct hda_codec
-  */
- static const struct hda_codec_preset snd_hda_preset_realtek[] = {
- 	{ .id = 0x10ec0221, .name = "ALC221", .patch = patch_alc269 },
-+	{ .id = 0x10ec0231, .name = "ALC231", .patch = patch_alc269 },
- 	{ .id = 0x10ec0260, .name = "ALC260", .patch = patch_alc260 },
- 	{ .id = 0x10ec0262, .name = "ALC262", .patch = patch_alc262 },
- 	{ .id = 0x10ec0267, .name = "ALC267", .patch = patch_alc268 },
+--- a/drivers/md/dm-table.c
++++ b/drivers/md/dm-table.c
+@@ -215,6 +215,11 @@ int dm_table_create(struct dm_table **re
+ 
+ 	num_targets = dm_round_up(num_targets, KEYS_PER_NODE);
+ 
++	if (!num_targets) {
++		kfree(t);
++		return -ENOMEM;
++	}
++
+ 	if (alloc_targets(t, num_targets)) {
+ 		kfree(t);
+ 		t = NULL;
 
