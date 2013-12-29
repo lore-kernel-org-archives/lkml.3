@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756635Ab3L2Cze (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:55:34 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54966 "EHLO
+	id S1755769Ab3L2Czd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:55:33 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55120 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751929Ab3L2CKG (ORCPT
+	by vger.kernel.org with ESMTP id S1752186Ab3L2CKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:10:06 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,11 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Paul Moore" <pmoore@redhat.com>
-Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.134503117@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Janak Desai" <Janak.Desai@gtri.gatech.edu>,
+        "Paul Moore" <pmoore@redhat.com>
+Date: Sun, 29 Dec 2013 03:08:44 +0100
+Message-ID: <lsq.1388282924.696267146@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 001/185] selinux: correct locking in selinux_netlbl_socket_connect)
+Subject: [PATCH 3.2 144/185] selinux: handle TCP SYN-ACK packets correctly
+ in selinux_ip_output()
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,74 +34,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Paul Moore <pmoore@redhat.com>
 
-commit 42d64e1add3a1ce8a787116036163b8724362145 upstream.
+commit 47180068276a04ed31d24fe04c673138208b07a9 upstream.
 
-The SELinux/NetLabel glue code has a locking bug that affects systems
-with NetLabel enabled, see the kernel error message below.  This patch
-corrects this problem by converting the bottom half socket lock to a
-more conventional, and correct for this call-path, lock_sock() call.
+In selinux_ip_output() we always label packets based on the parent
+socket.  While this approach works in almost all cases, it doesn't
+work in the case of TCP SYN-ACK packets when the correct label is not
+the label of the parent socket, but rather the label of the larval
+socket represented by the request_sock struct.
 
- ===============================
- [ INFO: suspicious RCU usage. ]
- 3.11.0-rc3+ #19 Not tainted
- -------------------------------
- net/ipv4/cipso_ipv4.c:1928 suspicious rcu_dereference_protected() usage!
+Unfortunately, since the request_sock isn't queued on the parent
+socket until *after* the SYN-ACK packet is sent, we can't lookup the
+request_sock to determine the correct label for the packet; at this
+point in time the best we can do is simply pass/NF_ACCEPT the packet.
+It must be said that simply passing the packet without any explicit
+labeling action, while far from ideal, is not terrible as the SYN-ACK
+packet will inherit any IP option based labeling from the initial
+connection request so the label *should* be correct and all our
+access controls remain in place so we shouldn't have to worry about
+information leaks.
 
- other info that might help us debug this:
-
- rcu_scheduler_active = 1, debug_locks = 0
- 2 locks held by ping/731:
-  #0:  (slock-AF_INET/1){+.-...}, at: [...] selinux_netlbl_socket_connect
-  #1:  (rcu_read_lock){.+.+..}, at: [<...>] netlbl_conn_setattr
-
- stack backtrace:
- CPU: 1 PID: 731 Comm: ping Not tainted 3.11.0-rc3+ #19
- Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-  0000000000000001 ffff88006f659d28 ffffffff81726b6a ffff88003732c500
-  ffff88006f659d58 ffffffff810e4457 ffff88006b845a00 0000000000000000
-  000000000000000c ffff880075aa2f50 ffff88006f659d90 ffffffff8169bec7
- Call Trace:
-  [<ffffffff81726b6a>] dump_stack+0x54/0x74
-  [<ffffffff810e4457>] lockdep_rcu_suspicious+0xe7/0x120
-  [<ffffffff8169bec7>] cipso_v4_sock_setattr+0x187/0x1a0
-  [<ffffffff8170f317>] netlbl_conn_setattr+0x187/0x190
-  [<ffffffff8170f195>] ? netlbl_conn_setattr+0x5/0x190
-  [<ffffffff8131ac9e>] selinux_netlbl_socket_connect+0xae/0xc0
-  [<ffffffff81303025>] selinux_socket_connect+0x135/0x170
-  [<ffffffff8119d127>] ? might_fault+0x57/0xb0
-  [<ffffffff812fb146>] security_socket_connect+0x16/0x20
-  [<ffffffff815d3ad3>] SYSC_connect+0x73/0x130
-  [<ffffffff81739a85>] ? sysret_check+0x22/0x5d
-  [<ffffffff810e5e2d>] ? trace_hardirqs_on_caller+0xfd/0x1c0
-  [<ffffffff81373d4e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-  [<ffffffff815d52be>] SyS_connect+0xe/0x10
-  [<ffffffff81739a59>] system_call_fastpath+0x16/0x1b
-
+Reported-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
+Tested-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
 Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- security/selinux/netlabel.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ security/selinux/hooks.c | 25 +++++++++++++++++++++++--
+ 1 file changed, 23 insertions(+), 2 deletions(-)
 
---- a/security/selinux/netlabel.c
-+++ b/security/selinux/netlabel.c
-@@ -442,8 +442,7 @@ int selinux_netlbl_socket_connect(struct
- 	    sksec->nlbl_state != NLBL_CONNLABELED)
- 		return 0;
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -53,6 +53,7 @@
+ #include <net/icmp.h>
+ #include <net/ip.h>		/* for local_port_range[] */
+ #include <net/tcp.h>		/* struct or_callable used in sock_rcv_skb */
++#include <net/inet_connection_sock.h>
+ #include <net/net_namespace.h>
+ #include <net/netlabel.h>
+ #include <linux/uaccess.h>
+@@ -4542,6 +4543,7 @@ static unsigned int selinux_ipv6_forward
+ static unsigned int selinux_ip_output(struct sk_buff *skb,
+ 				      u16 family)
+ {
++	struct sock *sk;
+ 	u32 sid;
  
--	local_bh_disable();
--	bh_lock_sock_nested(sk);
-+	lock_sock(sk);
- 
- 	/* connected sockets are allowed to disconnect when the address family
- 	 * is set to AF_UNSPEC, if that is what is happening we want to reset
-@@ -464,7 +463,6 @@ int selinux_netlbl_socket_connect(struct
- 		sksec->nlbl_state = NLBL_CONNLABELED;
- 
- socket_connect_return:
--	bh_unlock_sock(sk);
--	local_bh_enable();
-+	release_sock(sk);
- 	return rc;
- }
+ 	if (!netlbl_enabled())
+@@ -4550,8 +4552,27 @@ static unsigned int selinux_ip_output(st
+ 	/* we do this in the LOCAL_OUT path and not the POST_ROUTING path
+ 	 * because we want to make sure we apply the necessary labeling
+ 	 * before IPsec is applied so we can leverage AH protection */
+-	if (skb->sk) {
+-		struct sk_security_struct *sksec = skb->sk->sk_security;
++	sk = skb->sk;
++	if (sk) {
++		struct sk_security_struct *sksec;
++
++		if (sk->sk_state == TCP_LISTEN)
++			/* if the socket is the listening state then this
++			 * packet is a SYN-ACK packet which means it needs to
++			 * be labeled based on the connection/request_sock and
++			 * not the parent socket.  unfortunately, we can't
++			 * lookup the request_sock yet as it isn't queued on
++			 * the parent socket until after the SYN-ACK is sent.
++			 * the "solution" is to simply pass the packet as-is
++			 * as any IP option based labeling should be copied
++			 * from the initial connection request (in the IP
++			 * layer).  it is far from ideal, but until we get a
++			 * security label in the packet itself this is the
++			 * best we can do. */
++			return NF_ACCEPT;
++
++		/* standard practice, label using the parent socket */
++		sksec = sk->sk_security;
+ 		sid = sksec->sid;
+ 	} else
+ 		sid = SECINITSID_KERNEL;
 
