@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579Ab3L2CLD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:11:03 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55496 "EHLO
+	id S1755900Ab3L2CZn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:25:43 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55602 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752250Ab3L2CKx (ORCPT
+	by vger.kernel.org with ESMTP id S1753487Ab3L2CLC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:10:53 -0500
+	Sat, 28 Dec 2013 21:11:02 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David Bulkow" <David.Bulkow@stratus.com>,
-        "Yinghai Lu" <yinghai@kernel.org>,
-        "Mika Westerberg" <mika.westerberg@linux.intel.com>,
-        "Bjorn Helgaas" <bhelgaas@google.com>
+CC: akpm@linux-foundation.org, "John W. Linville" <linville@tuxdriver.com>,
+        "Avinash Patil" <patila@marvell.com>, "Bing Zhao" <bzhao@marvell.com>
 Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.861559681@decadent.org.uk>
+Message-ID: <lsq.1388282923.365685007@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 079/185] PCI: Remove duplicate pci_disable_device()
- from pcie_portdrv_remove()
+Subject: [PATCH 3.2 050/185] mwifiex: correct packet length for packets
+ from SDIO interface
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,40 +32,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Avinash Patil <patila@marvell.com>
 
-commit e7cc5cf74544d97d7b69e2701595037474db1f96 upstream.
+commit d03b4aa77e1187b77dfe37d14a923547f00baa66 upstream.
 
-The pcie_portdrv .probe() method calls pci_enable_device() once, in
-pcie_port_device_register(), but the .remove() method calls
-pci_disable_device() twice, in pcie_port_device_remove() and in
-pcie_portdrv_remove().
+While receiving a packet on SDIO interface, we allocate skb with
+size multiple of SDIO block size. We need to resize this skb
+after RX using packet length from RX header.
 
-That causes a "disabling already-disabled device" warning when removing a
-PCIe port device.  This happens all the time when removing Thunderbolt
-devices, but is also easy to reproduce with, e.g.,
-"echo 0000:00:1c.3 > /sys/bus/pci/drivers/pcieport/unbind"
-
-This patch removes the disable from pcie_portdrv_remove().
-
-[bhelgaas: changelog, tag for stable]
-Reported-by: David Bulkow <David.Bulkow@stratus.com>
-Reported-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Avinash Patil <patila@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/pci/pcie/portdrv_pci.c | 1 -
- 1 file changed, 1 deletion(-)
+ drivers/net/wireless/mwifiex/sdio.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/pci/pcie/portdrv_pci.c
-+++ b/drivers/pci/pcie/portdrv_pci.c
-@@ -151,7 +151,6 @@ static int __devinit pcie_portdrv_probe(
- static void pcie_portdrv_remove(struct pci_dev *dev)
+--- a/drivers/net/wireless/mwifiex/sdio.c
++++ b/drivers/net/wireless/mwifiex/sdio.c
+@@ -936,7 +936,10 @@ static int mwifiex_decode_rx_packet(stru
+ 				    struct sk_buff *skb, u32 upld_typ)
  {
- 	pcie_port_device_remove(dev);
--	pci_disable_device(dev);
- }
+ 	u8 *cmd_buf;
++	__le16 *curr_ptr = (__le16 *)skb->data;
++	u16 pkt_len = le16_to_cpu(*curr_ptr);
  
- static int error_detected_iter(struct device *device, void *data)
++	skb_trim(skb, pkt_len);
+ 	skb_pull(skb, INTF_HEADER_LEN);
+ 
+ 	switch (upld_typ) {
 
