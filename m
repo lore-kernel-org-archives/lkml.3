@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893Ab3L2Cgj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:36:39 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55170 "EHLO
+	id S1755886Ab3L2Cht (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:37:49 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55273 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752247Ab3L2CKm (ORCPT
+	by vger.kernel.org with ESMTP id S1752496Ab3L2CKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:10:42 -0500
+	Sat, 28 Dec 2013 21:10:40 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Andy Honig" <ahonig@google.com>,
-        "Paolo Bonzini" <pbonzini@redhat.com>
+CC: akpm@linux-foundation.org, "Scott Wood" <scottwood@freescale.com>,
+        "Linus Walleij" <linus.walleij@linaro.org>,
+        "Liu Gang" <Gang.Liu@freescale.com>,
+        "Anatolij Gustschin" <agust@denx.de>
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.246219733@decadent.org.uk>
+Message-ID: <lsq.1388282924.390297699@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 143/185] KVM: x86: Fix potential divide by 0 in lapic
- (CVE-2013-6367)
+Subject: [PATCH 3.2 121/185] powerpc/gpio: Fix the wrong GPIO input data
+ on MPC8572/MPC8536
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,43 +34,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Honig <ahonig@google.com>
+From: Liu Gang <Gang.Liu@freescale.com>
 
-commit b963a22e6d1a266a67e9eecc88134713fd54775c upstream.
+commit 1aeef303b5d9e243c41d5b80f8bb059366514a10 upstream.
 
-Under guest controllable circumstances apic_get_tmcct will execute a
-divide by zero and cause a crash.  If the guest cpuid support
-tsc deadline timers and performs the following sequence of requests
-the host will crash.
-- Set the mode to periodic
-- Set the TMICT to 0
-- Set the mode bits to 11 (neither periodic, nor one shot, nor tsc deadline)
-- Set the TMICT to non-zero.
-Then the lapic_timer.period will be 0, but the TMICT will not be.  If the
-guest then reads from the TMCCT then the host will perform a divide by 0.
+For MPC8572/MPC8536, the status of GPIOs defined as output
+cannot be determined by reading GPDAT register, so the code
+use shadow data register instead. But the code may give the
+wrong status of GPIOs defined as input under some scenarios:
 
-This patch ensures that if the lapic_timer.period is 0, then the division
-does not occur.
+1. If some pins were configured as inputs and were asserted
+high before booting the kernel, the shadow data has been
+initialized with those pin values.
+2. Some pins have been configured as output first and have
+been set to the high value, then reconfigured as input.
 
-Reported-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-[bwh: Backported to 3.2: s/kvm_apic_get_reg/apic_get_reg/]
+The above cases will make the shadow data for those input
+pins to be set to high. Then reading the pin status will
+always return high even if the actual pin status is low.
+
+The code should eliminate the effects of the shadow data to
+the input pins, and the status of those pins should be
+read directly from GPDAT.
+
+Acked-by: Scott Wood <scottwood@freescale.com>
+Acked-by: Anatolij Gustschin <agust@denx.de>
+Signed-off-by: Liu Gang <Gang.Liu@freescale.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kvm/lapic.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpio/gpio-mpc8xxx.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -537,7 +537,8 @@ static u32 apic_get_tmcct(struct kvm_lap
- 	ASSERT(apic != NULL);
+--- a/drivers/gpio/gpio-mpc8xxx.c
++++ b/drivers/gpio/gpio-mpc8xxx.c
+@@ -69,10 +69,14 @@ static int mpc8572_gpio_get(struct gpio_
+ 	u32 val;
+ 	struct of_mm_gpio_chip *mm = to_of_mm_gpio_chip(gc);
+ 	struct mpc8xxx_gpio_chip *mpc8xxx_gc = to_mpc8xxx_gpio_chip(mm);
++	u32 out_mask, out_shadow;
  
- 	/* if initial count is 0, current count should also be 0 */
--	if (apic_get_reg(apic, APIC_TMICT) == 0)
-+	if (apic_get_reg(apic, APIC_TMICT) == 0 ||
-+		apic->lapic_timer.period == 0)
- 		return 0;
+-	val = in_be32(mm->regs + GPIO_DAT) & ~in_be32(mm->regs + GPIO_DIR);
++	out_mask = in_be32(mm->regs + GPIO_DIR);
  
- 	remaining = hrtimer_get_remaining(&apic->lapic_timer.timer);
+-	return (val | mpc8xxx_gc->data) & mpc8xxx_gpio2mask(gpio);
++	val = in_be32(mm->regs + GPIO_DAT) & ~out_mask;
++	out_shadow = mpc8xxx_gc->data & out_mask;
++
++	return (val | out_shadow) & mpc8xxx_gpio2mask(gpio);
+ }
+ 
+ static int mpc8xxx_gpio_get(struct gpio_chip *gc, unsigned int gpio)
 
