@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756273Ab3L2DBk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 22:01:40 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54985 "EHLO
+	id S1756781Ab3L2DCE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 22:02:04 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55006 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751959Ab3L2CJx (ORCPT
+	by vger.kernel.org with ESMTP id S1751835Ab3L2CJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:09:53 -0500
+	Sat, 28 Dec 2013 21:09:52 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Steven Rostedt" <srostedt@redhat.com>,
-        "Steven Rostedt" <rostedt@goodmis.org>
+CC: akpm@linux-foundation.org, "Ingo Molnar" <mingo@kernel.org>,
+        "Peter Zijlstra" <peterz@infradead.org>,
+        "Ben Segall" <bsegall@google.com>, pjt@google.com
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.249755651@decadent.org.uk>
+Message-ID: <lsq.1388282924.974768125@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 181/185] ftrace: Fix ftrace hash record update with
- notrace
+Subject: [PATCH 3.2 147/185] sched: Avoid throttle_cfs_rq() racing with
+ period_timer stopping
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,45 +33,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Ben Segall <bsegall@google.com>
 
-commit c842e975520f8ab09e293cc92f51a1f396251fd5 upstream.
+commit f9f9ffc237dd924f048204e8799da74f9ecf40cf upstream.
 
-When disabling the "notrace" records, that means we want to trace them.
-If the notrace_hash is zero, it means that we want to trace all
-records. But to disable a zero notrace_hash means nothing.
+throttle_cfs_rq() doesn't check to make sure that period_timer is running,
+and while update_curr/assign_cfs_runtime does, a concurrently running
+period_timer on another cpu could cancel itself between this cpu's
+update_curr and throttle_cfs_rq(). If there are no other cfs_rqs running
+in the tg to restart the timer, this causes the cfs_rq to be stranded
+forever.
 
-The check for the notrace_hash count was incorrect with:
+Fix this by calling __start_cfs_bandwidth() in throttle if the timer is
+inactive.
 
-	if (hash && !hash->count)
-		return
+(Also add some sched_debug lines for cfs_bandwidth.)
 
-With the correct comment above it that states that we do nothing
-if the notrace_hash has zero count. But !hash also means that
-the notrace hash has zero count. I think this was done to
-protect against dereferencing NULL. But if !hash is true, then
-we go through the following loop without doing a single thing.
+Tested: make a run/sleep task in a cgroup, loop switching the cgroup
+between 1ms/100ms quota and unlimited, checking for timer_active=0 and
+throttled=1 as a failure. With the throttle_cfs_rq() change commented out
+this fails, with the full patch it passes.
 
-Fix it to:
-
-	if (!hash || !hash->count)
-		return;
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Ben Segall <bsegall@google.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: pjt@google.com
+Link: http://lkml.kernel.org/r/20131016181632.22647.84174.stgit@sword-of-the-dawn.mtv.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+[bwh: Backported to 3.2: adjust filenames]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/trace/ftrace.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/sched_debug.c |    8 ++++++++
+ kernel/sched_fair.c  |    2 ++
+ 2 files changed, 10 insertions(+)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -1358,7 +1358,7 @@ static void __ftrace_hash_rec_update(str
- 		 * If the notrace hash has no items,
- 		 * then there's nothing to do.
- 		 */
--		if (hash && !hash->count)
-+		if (!hash || !hash->count)
- 			return;
- 	}
+--- a/kernel/sched_debug.c
++++ b/kernel/sched_debug.c
+@@ -213,6 +213,14 @@ void print_cfs_rq(struct seq_file *m, in
+ 	SEQ_printf(m, "  .%-30s: %d\n", "load_tg",
+ 			atomic_read(&cfs_rq->tg->load_weight));
+ #endif
++#ifdef CONFIG_CFS_BANDWIDTH
++	SEQ_printf(m, "  .%-30s: %d\n", "tg->cfs_bandwidth.timer_active",
++			cfs_rq->tg->cfs_bandwidth.timer_active);
++	SEQ_printf(m, "  .%-30s: %d\n", "throttled",
++			cfs_rq->throttled);
++	SEQ_printf(m, "  .%-30s: %d\n", "throttle_count",
++			cfs_rq->throttle_count);
++#endif
+ 
+ 	print_cfs_group_stats(m, cpu, cfs_rq->tg);
+ #endif
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -1527,6 +1527,8 @@ static void throttle_cfs_rq(struct cfs_r
+ 	cfs_rq->throttled_timestamp = rq->clock;
+ 	raw_spin_lock(&cfs_b->lock);
+ 	list_add_tail_rcu(&cfs_rq->throttled_list, &cfs_b->throttled_cfs_rq);
++	if (!cfs_b->timer_active)
++		__start_cfs_bandwidth(cfs_b);
+ 	raw_spin_unlock(&cfs_b->lock);
+ }
  
 
