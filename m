@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123Ab3L2CKs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:10:48 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55226 "EHLO
+	id S1756001Ab3L2Ccx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:32:53 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55321 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752089Ab3L2CKd (ORCPT
+	by vger.kernel.org with ESMTP id S1752573Ab3L2CKr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:10:33 -0500
+	Sat, 28 Dec 2013 21:10:47 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mikulas Patocka" <mpatocka@redhat.com>,
-        "Mike Snitzer" <snitzer@redhat.com>
+CC: akpm@linux-foundation.org, "Jovi Zhangwei" <jovi.zhangwei@gmail.com>,
+        "Shuah Khan" <shuah.kh@samsung.com>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.795423478@decadent.org.uk>
+Message-ID: <lsq.1388282924.704810660@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 131/185] dm snapshot: avoid snapshot space leak on crash
+Subject: [PATCH 3.2 100/185] tracing: Allow events to have NULL strings
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,192 +32,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 230c83afdd9cd384348475bea1e14b80b3b6b1b8 upstream.
+commit 4e58e54754dc1fec21c3a9e824bc108b05fdf46e upstream.
 
-There is a possible leak of snapshot space in case of crash.
+If an TRACE_EVENT() uses __assign_str() or __get_str on a NULL pointer
+then the following oops will happen:
 
-The reason for space leaking is that chunks in the snapshot device are
-allocated sequentially, but they are finished (and stored in the metadata)
-out of order, depending on the order in which copying finished.
+BUG: unable to handle kernel NULL pointer dereference at   (null)
+IP: [<c127a17b>] strlen+0x10/0x1a
+*pde = 00000000 ^M
+Oops: 0000 [#1] PREEMPT SMP
+Modules linked in:
+CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.13.0-rc1-test+ #2
+Hardware name:                  /DG965MQ, BIOS MQ96510J.86A.0372.2006.0605.1717 06/05/2006^M
+task: f5cde9f0 ti: f5e5e000 task.ti: f5e5e000
+EIP: 0060:[<c127a17b>] EFLAGS: 00210046 CPU: 1
+EIP is at strlen+0x10/0x1a
+EAX: 00000000 EBX: c2472da8 ECX: ffffffff EDX: c2472da8
+ESI: c1c5e5fc EDI: 00000000 EBP: f5e5fe84 ESP: f5e5fe80
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+CR0: 8005003b CR2: 00000000 CR3: 01f32000 CR4: 000007d0
+Stack:
+ f5f18b90 f5e5feb8 c10687a8 0759004f 00000005 00000005 00000005 00200046
+ 00000002 00000000 c1082a93 f56c7e28 c2472da8 c1082a93 f5e5fee4 c106bc61^M
+ 00000000 c1082a93 00000000 00000000 00000001 00200046 00200082 00000000
+Call Trace:
+ [<c10687a8>] ftrace_raw_event_lock+0x39/0xc0
+ [<c1082a93>] ? ktime_get+0x29/0x69
+ [<c1082a93>] ? ktime_get+0x29/0x69
+ [<c106bc61>] lock_release+0x57/0x1a5
+ [<c1082a93>] ? ktime_get+0x29/0x69
+ [<c10824dd>] read_seqcount_begin.constprop.7+0x4d/0x75
+ [<c1082a93>] ? ktime_get+0x29/0x69^M
+ [<c1082a93>] ktime_get+0x29/0x69
+ [<c108a46a>] __tick_nohz_idle_enter+0x1e/0x426
+ [<c10690e8>] ? lock_release_holdtime.part.19+0x48/0x4d
+ [<c10bc184>] ? time_hardirqs_off+0xe/0x28
+ [<c1068c82>] ? trace_hardirqs_off_caller+0x3f/0xaf
+ [<c108a8cb>] tick_nohz_idle_enter+0x59/0x62
+ [<c1079242>] cpu_startup_entry+0x64/0x192
+ [<c102299c>] start_secondary+0x277/0x27c
+Code: 90 89 c6 89 d0 88 c4 ac 38 e0 74 09 84 c0 75 f7 be 01 00 00 00 89 f0 48 5e 5d c3 55 89 e5 57 66 66 66 66 90 83 c9 ff 89 c7 31 c0 <f2> ae f7 d1 8d 41 ff 5f 5d c3 55 89 e5 57 66 66 66 66 90 31 ff
+EIP: [<c127a17b>] strlen+0x10/0x1a SS:ESP 0068:f5e5fe80
+CR2: 0000000000000000
+---[ end trace 01bc47bf519ec1b2 ]---
 
-For example, supposed that the metadata contains the following records
-SUPERBLOCK
-METADATA (blocks 0 ... 250)
-DATA 0
-DATA 1
-DATA 2
-...
-DATA 250
+New tracepoints have been added that have allowed for NULL pointers
+being assigned to strings. To fix this, change the TRACE_EVENT() code
+to check for NULL and if it is, it will assign "(null)" to it instead
+(similar to what glibc printf does).
 
-Now suppose that you allocate 10 new data blocks 251-260. Suppose that
-copying of these blocks finish out of order (block 260 finished first
-and the block 251 finished last). Now, the snapshot device looks like
-this:
-SUPERBLOCK
-METADATA (blocks 0 ... 250, 260, 259, 258, 257, 256)
-DATA 0
-DATA 1
-DATA 2
-...
-DATA 250
-DATA 251
-DATA 252
-DATA 253
-DATA 254
-DATA 255
-METADATA (blocks 255, 254, 253, 252, 251)
-DATA 256
-DATA 257
-DATA 258
-DATA 259
-DATA 260
-
-Now, if the machine crashes after writing the first metadata block but
-before writing the second metadata block, the space for areas DATA 250-255
-is leaked, it contains no valid data and it will never be used in the
-future.
-
-This patch makes dm-snapshot complete exceptions in the same order they
-were allocated, thus fixing this bug.
-
-Note: when backporting this patch to the stable kernel, change the version
-field in the following way:
-* if version in the stable kernel is {1, 11, 1}, change it to {1, 12, 0}
-* if version in the stable kernel is {1, 10, 0} or {1, 10, 1}, change it
-  to {1, 10, 2}
-Userspace reads the version to determine if the bug was fixed, so the
-version change is needed.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Reported-by: Shuah Khan <shuah.kh@samsung.com>
+Reported-by: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+Link: http://lkml.kernel.org/r/CAGdX0WFeEuy+DtpsJzyzn0343qEEjLX97+o1VREFkUEhndC+5Q@mail.gmail.com
+Link: http://lkml.kernel.org/r/528D6972.9010702@samsung.com
+Fixes: 9cbf117662e2 ("tracing/events: provide string with undefined size support")
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/dm-snap.c | 71 ++++++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 64 insertions(+), 7 deletions(-)
+ include/trace/ftrace.h | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/md/dm-snap.c
-+++ b/drivers/md/dm-snap.c
-@@ -66,6 +66,18 @@ struct dm_snapshot {
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -379,7 +379,8 @@ ftrace_define_fields_##call(struct ftrac
+ 	__data_size += (len) * sizeof(type);
  
- 	atomic_t pending_exceptions_count;
+ #undef __string
+-#define __string(item, src) __dynamic_array(char, item, strlen(src) + 1)
++#define __string(item, src) __dynamic_array(char, item,			\
++		    strlen((src) ? (const char *)(src) : "(null)") + 1)
  
-+	/* Protected by "lock" */
-+	sector_t exception_start_sequence;
-+
-+	/* Protected by kcopyd single-threaded callback */
-+	sector_t exception_complete_sequence;
-+
-+	/*
-+	 * A list of pending exceptions that completed out of order.
-+	 * Protected by kcopyd single-threaded callback.
-+	 */
-+	struct list_head out_of_order_list;
-+
- 	mempool_t *pending_pool;
+ #undef DECLARE_EVENT_CLASS
+ #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
+@@ -504,7 +505,7 @@ static inline notrace int ftrace_get_off
  
- 	struct dm_exception_table pending;
-@@ -171,6 +183,14 @@ struct dm_snap_pending_exception {
- 	 */
- 	int started;
+ #undef __assign_str
+ #define __assign_str(dst, src)						\
+-	strcpy(__get_str(dst), src);
++	strcpy(__get_str(dst), (src) ? (const char *)(src) : "(null)");
  
-+	/* There was copying error. */
-+	int copy_error;
-+
-+	/* A sequence number, it is used for in-order completion. */
-+	sector_t exception_sequence;
-+
-+	struct list_head out_of_order_entry;
-+
- 	/*
- 	 * For writing a complete chunk, bypassing the copy.
- 	 */
-@@ -1090,6 +1110,9 @@ static int snapshot_ctr(struct dm_target
- 	s->valid = 1;
- 	s->active = 0;
- 	atomic_set(&s->pending_exceptions_count, 0);
-+	s->exception_start_sequence = 0;
-+	s->exception_complete_sequence = 0;
-+	INIT_LIST_HEAD(&s->out_of_order_list);
- 	init_rwsem(&s->lock);
- 	INIT_LIST_HEAD(&s->list);
- 	spin_lock_init(&s->pe_lock);
-@@ -1448,6 +1471,19 @@ static void commit_callback(void *contex
- 	pending_complete(pe, success);
- }
- 
-+static void complete_exception(struct dm_snap_pending_exception *pe)
-+{
-+	struct dm_snapshot *s = pe->snap;
-+
-+	if (unlikely(pe->copy_error))
-+		pending_complete(pe, 0);
-+
-+	else
-+		/* Update the metadata if we are persistent */
-+		s->store->type->commit_exception(s->store, &pe->e,
-+						 commit_callback, pe);
-+}
-+
- /*
-  * Called when the copy I/O has finished.  kcopyd actually runs
-  * this code so don't block.
-@@ -1457,13 +1493,32 @@ static void copy_callback(int read_err,
- 	struct dm_snap_pending_exception *pe = context;
- 	struct dm_snapshot *s = pe->snap;
- 
--	if (read_err || write_err)
--		pending_complete(pe, 0);
-+	pe->copy_error = read_err || write_err;
- 
--	else
--		/* Update the metadata if we are persistent */
--		s->store->type->commit_exception(s->store, &pe->e,
--						 commit_callback, pe);
-+	if (pe->exception_sequence == s->exception_complete_sequence) {
-+		s->exception_complete_sequence++;
-+		complete_exception(pe);
-+
-+		while (!list_empty(&s->out_of_order_list)) {
-+			pe = list_entry(s->out_of_order_list.next,
-+					struct dm_snap_pending_exception, out_of_order_entry);
-+			if (pe->exception_sequence != s->exception_complete_sequence)
-+				break;
-+			s->exception_complete_sequence++;
-+			list_del(&pe->out_of_order_entry);
-+			complete_exception(pe);
-+		}
-+	} else {
-+		struct list_head *lh;
-+		struct dm_snap_pending_exception *pe2;
-+
-+		list_for_each_prev(lh, &s->out_of_order_list) {
-+			pe2 = list_entry(lh, struct dm_snap_pending_exception, out_of_order_entry);
-+			if (pe2->exception_sequence < pe->exception_sequence)
-+				break;
-+		}
-+		list_add(&pe->out_of_order_entry, lh);
-+	}
- }
- 
- /*
-@@ -1558,6 +1613,8 @@ __find_pending_exception(struct dm_snaps
- 		return NULL;
- 	}
- 
-+	pe->exception_sequence = s->exception_start_sequence++;
-+
- 	dm_insert_exception(&s->pending, &pe->e);
- 
- 	return pe;
-@@ -2200,7 +2257,7 @@ static struct target_type origin_target
- 
- static struct target_type snapshot_target = {
- 	.name    = "snapshot",
--	.version = {1, 10, 1},
-+	.version = {1, 10, 2},
- 	.module  = THIS_MODULE,
- 	.ctr     = snapshot_ctr,
- 	.dtr     = snapshot_dtr,
+ #undef TP_fast_assign
+ #define TP_fast_assign(args...) args
 
