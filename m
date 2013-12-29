@@ -1,142 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751557Ab3L2AzE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 19:55:04 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:47825 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324Ab3L2AzC (ORCPT
+	id S1751635Ab3L2Bms (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 20:42:48 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:36331 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751194Ab3L2Bmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 19:55:02 -0500
-Message-ID: <52BF72E1.9030207@infradead.org>
-Date: Sat, 28 Dec 2013 16:54:57 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Sat, 28 Dec 2013 20:42:45 -0500
+X-Sasl-enc: RVARrqRWBHytXLRNrubqn/JhI4S7Uuqe3wdaGHZVkE0Z 1388281364
+Date: Sat, 28 Dec 2013 17:43:24 -0800
+From: Greg KH <greg@kroah.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Joe Xue <lgxue@hotmail.com>,
+        "cooloney@gmail.com" <cooloney@gmail.com>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "rob@landley.net" <rob@landley.net>,
+        "milo.kim@ti.com" <milo.kim@ti.com>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: how to represent sequence of brightnesses in /sys (was Re:
+ [PATCH] Add the LED burst trigger)
+Message-ID: <20131229014324.GB18455@kroah.com>
+References: <BLU172-W30E6E7C0BC2B6C08FA0552ACCD0@phx.gbl>
+ <20131227095705.GC17143@amd.pavel.ucw.cz>
+ <BLU172-W8D850A8DEA8C0D87FBF45ACCC0@phx.gbl>
+ <20131228101622.GA13564@amd.pavel.ucw.cz>
+ <CAMuHMdVz7FWgYZRVHy6pK+g_2QKxTW00N8jmjWHe05m5CJvPOw@mail.gmail.com>
+ <20131228192935.GA28119@amd.pavel.ucw.cz>
+ <CAMuHMdXDJ6uhe6srV-+0a8=cpBUgP+VakG+_wyLwAuiQSRVhqQ@mail.gmail.com>
+ <20131228212523.GA8733@amd.pavel.ucw.cz>
+ <20131228215042.GA7048@kroah.com>
+ <20131228235045.GA8786@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-To: Hayato Suzuki <hytszk@gmail.com>, trivial@kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] [trivial] treewide:Fix typo Kconfig
-References: <1388276129-2132-1-git-send-email-hytszk@gmail.com>
-In-Reply-To: <1388276129-2132-1-git-send-email-hytszk@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131228235045.GA8786@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/28/13 16:15, Hayato Suzuki wrote:
-> Correct spelling typo in Kconfig.
+On Sun, Dec 29, 2013 at 12:50:46AM +0100, Pavel Machek wrote:
+> On Sat 2013-12-28 13:50:42, Greg KH wrote:
+> > On Sat, Dec 28, 2013 at 10:25:23PM +0100, Pavel Machek wrote:
+> > > Hi!
+> > > 
+> > > > >> Sysfs is meant to be human-readable/writable, so please use plain ASCII
+> > > > >> numbers in strings instead.
+> > > > >
+> > > > > Actually, sysfs is meant to be one value per file, and it is
+> > > > 
+> > > > Ideally, yes.
+> > > > 
+> > > > > understood that data that are "natively blob" are just passed as
+> > > > > blob. (I believe this qualifies).
+> > > > 
+> > > > But it doesn't buy us much here, does it? It will make e.g. shell scripts
+> > > > needlessly complicated.
+> > > 
+> > > echo -ne '\012' is not that bad, and parsing array of integers from
+> > > kernel will be an ugly piece of code.
+> > 
+> > Ick, no.  What are you trying to do here?  Have the kernel intrepret a
+> > sequence of bytes to flash an LED?  I thought we have frameworks in
+> > userspace already to handle this type of thing.  Please don't invent new
+> > ways of doing stuff...
 > 
-> Signed-off-by: Hayato Suzuki <hytszk@gmail.com>
-> ---
->  arch/powerpc/platforms/40x/Kconfig | 2 +-
->  arch/x86/crypto/aesni-intel_avx.S  | 8 ++++----
->  crypto/Kconfig                     | 2 +-
->  init/Kconfig                       | 2 +-
->  sound/oss/Kconfig                  | 2 +-
->  5 files changed, 8 insertions(+), 8 deletions(-)
+> Idea would be "sequence of brigtnesses" (one file) and "delay between
+> changes" (second file).
+
+Ick.
+
+> Reason to do it in kernel is that some machines actually have
+> "coprocessor" on i2c that can do it while main CPU is suspended. (For
+> more reasons, see beggining of thread).
+
+Ick ick.
+
+> Binary attribute with array of bytes should be acceptable, rights?
+
+Not at all.
+
+> (IOW write(..., buf, size) )
 > 
-> diff --git a/arch/powerpc/platforms/40x/Kconfig b/arch/powerpc/platforms/40x/Kconfig
-> index 6e287f1..e5fbb2c 100644
-> --- a/arch/powerpc/platforms/40x/Kconfig
-> +++ b/arch/powerpc/platforms/40x/Kconfig
-> @@ -82,7 +82,7 @@ config OBS600
->  	select 405EX
->  	select PPC40x_SIMPLE
->  	help
-> -	  This option enables support for PlatHome OpenBlockS 600 server
-
-google tells me that Plat'Home is correct.
-
-> +	  This option enables support for Platform OpenBlockS 600 server
->  
->  
->  config PPC40x_SIMPLE
-> diff --git a/arch/x86/crypto/aesni-intel_avx.S b/arch/x86/crypto/aesni-intel_avx.S
-> index 522ab68..3f202c2 100644
-> --- a/arch/x86/crypto/aesni-intel_avx.S
-> +++ b/arch/x86/crypto/aesni-intel_avx.S
-> @@ -1282,7 +1282,7 @@ _zero_cipher_left\@:
->  
->          je      _multiple_of_16_bytes\@
->  
-> -        # handle the last <16 Byte block seperately
-> +        # handle the last <16 Byte block separately
->  
->  
->          vpaddd   ONE(%rip), %xmm9, %xmm9             # INCR CNT to get Yn
-> @@ -1308,7 +1308,7 @@ _only_less_than_16\@:
->  
->          je      _multiple_of_16_bytes\@
->  
-> -        # handle the last <16 Byte block seperately
-> +        # handle the last <16 Byte block separately
->  
->  
->          vpaddd  ONE(%rip), %xmm9, %xmm9              # INCR CNT to get Yn
-> @@ -2559,7 +2559,7 @@ _zero_cipher_left\@:
->  
->          je      _multiple_of_16_bytes\@
->  
-> -        # handle the last <16 Byte block seperately
-> +        # handle the last <16 Byte block separately
->  
->  
->          vpaddd   ONE(%rip), %xmm9, %xmm9             # INCR CNT to get Yn
-> @@ -2585,7 +2585,7 @@ _only_less_than_16\@:
->  
->          je      _multiple_of_16_bytes\@
->  
-> -        # handle the last <16 Byte block seperately
-> +        # handle the last <16 Byte block separately
->  
->  
->          vpaddd  ONE(%rip), %xmm9, %xmm9              # INCR CNT to get Yn
-> diff --git a/crypto/Kconfig b/crypto/Kconfig
-> index 7bcb70d..ceb085e 100644
-> --- a/crypto/Kconfig
-> +++ b/crypto/Kconfig
-> @@ -1120,7 +1120,7 @@ config CRYPTO_SERPENT_SSE2_X86_64
->  	  Keys are allowed to be from 0 to 256 bits in length, in steps
->  	  of 8 bits.
->  
-> -	  This module provides Serpent cipher algorithm that processes eigth
-> +	  This module provides Serpent cipher algorithm that processes eight
->  	  blocks parallel using SSE2 instruction set.
->  
->  	  See also:
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 8d402e3..46b5089 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -523,7 +523,7 @@ config CONTEXT_TRACKING_FORCE
->  	  dynticks working.
->  
->  	  This option stands for testing when an arch implements the
-> -	  context tracking backend but doesn't yet fullfill all the
-> +	  context tracking backend but doesn't yet fulfill all the
->  	  requirements to make the full dynticks feature working.
->  	  Without the full dynticks, there is no way to test the support
->  	  for context tracking and the subsystems that rely on it: RCU
-> diff --git a/sound/oss/Kconfig b/sound/oss/Kconfig
-> index 1a96402..fbf07e9 100644
-> --- a/sound/oss/Kconfig
-> +++ b/sound/oss/Kconfig
-> @@ -318,7 +318,7 @@ config SOUND_MSS
->  	  made by Microsoft or Aztech SG 16 Pro (or NX16 Pro).  Also you may
->  	  say Y in case your card is NOT among these:
->  
-> -	  ATI Stereo F/X, AdLib, Audio Excell DSP16, Cardinal DSP16,
-> +	  ATI Stereo F/X, AdLib, Audio Excel DSP16, Cardinal DSP16,
-
-It can be difficult to tell with product names.  Are you sure about
-this one?
-I can't find anything definitive about it.
-
->  	  Ensoniq SoundScape (and compatibles made by Reveal and Spea),
->  	  Gravis Ultrasound, Gravis Ultrasound ACE, Gravis Ultrasound Max,
->  	  Gravis Ultrasound with 16 bit option, Logitech Sound Man 16,
+> Ascii array of decimal integers -- no so, right?
 > 
+> (IOW printf("%d %d ..", buf[0], buf[1]) )
 
+Use an ioctl with a structure to get things correct as a character
+device.  As odds are, you aren't going to be able to create a "generic"
+format for all of this for all types of devices that support such a
+"co-processor".
 
--- 
-~Randy
+greg k-h
