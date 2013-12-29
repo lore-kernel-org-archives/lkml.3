@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755827Ab3L2CXp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:23:45 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55515 "EHLO
+	id S1755834Ab3L2CYI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:24:08 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55546 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753144Ab3L2CLJ (ORCPT
+	by vger.kernel.org with ESMTP id S1753353Ab3L2CLI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:11:09 -0500
+	Sat, 28 Dec 2013 21:11:08 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "=?UTF-8?q?Andreas=20Bie=C3=9Fmann?=" <andreas@biessmann.de>,
-        "Hans-Christian Egtvedt" <egtvedt@samfundet.no>,
-        "Haavard Skinnemoen" <hskinnemoen@gmail.com>
+CC: akpm@linux-foundation.org, "Larry Finger" <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Mark Cave-Ayland" <mark.cave-ayland@ilande.co.uk>
 Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.101445311@decadent.org.uk>
+Message-ID: <lsq.1388282923.731935749@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 075/185] avr32: setup crt for early panic()
+Subject: [PATCH 3.2 068/185] rtlwifi: rtl8192cu: Fix more pointer
+ arithmetic errors
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,119 +33,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Bießmann <andreas@biessmann.de>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 7a2a74f4b856993218aa7cdeeb6c3103101340db upstream.
+commit eafbdde9c5629bea58df07275c5917eb42afbbe7 upstream.
 
-Before the CRT was (fully) set up in kernel_entry (bss cleared before in
-_start, but also not before jump to panic() in no_tag_table case).
+This driver uses a number of macros to get and set various fields in the
+RX and TX descriptors. To work correctly, a u8 pointer to the descriptor
+must be used; however, in some cases a descriptor structure pointer is used
+instead. In addition, a duplicated statement is removed.
 
-This patch fixes this up to have a fully working CRT when branching to panic()
-in no_tag_table.
-
-Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-by: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/avr32/boot/u-boot/head.S | 30 +++++++++++++++++++++++++-----
- arch/avr32/kernel/head.S      | 20 --------------------
- 2 files changed, 25 insertions(+), 25 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/mac.c | 6 +++---
+ drivers/net/wireless/rtlwifi/rtl8192cu/trx.c | 6 +++---
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
---- a/arch/avr32/boot/u-boot/head.S
-+++ b/arch/avr32/boot/u-boot/head.S
-@@ -8,6 +8,8 @@
-  * published by the Free Software Foundation.
-  */
- #include <asm/setup.h>
-+#include <asm/thread_info.h>
-+#include <asm/sysreg.h>
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
+@@ -782,7 +782,7 @@ static long _rtl92c_signal_scale_mapping
  
- 	/*
- 	 * The kernel is loaded where we want it to be and all caches
-@@ -20,11 +22,6 @@
- 	.section .init.text,"ax"
- 	.global _start
- _start:
--	/* Check if the boot loader actually provided a tag table */
--	lddpc	r0, magic_number
--	cp.w	r12, r0
--	brne	no_tag_table
--
- 	/* Initialize .bss */
- 	lddpc	r2, bss_start_addr
- 	lddpc   r3, end_addr
-@@ -34,6 +31,25 @@ _start:
- 	cp      r2, r3
- 	brlo    1b
+ static void _rtl92c_query_rxphystatus(struct ieee80211_hw *hw,
+ 				      struct rtl_stats *pstats,
+-				      struct rx_desc_92c *pdesc,
++				      struct rx_desc_92c *p_desc,
+ 				      struct rx_fwinfo_92c *p_drvinfo,
+ 				      bool packet_match_bssid,
+ 				      bool packet_toself,
+@@ -797,11 +797,11 @@ static void _rtl92c_query_rxphystatus(st
+ 	u32 rssi, total_rssi = 0;
+ 	bool in_powersavemode = false;
+ 	bool is_cck_rate;
++	u8 *pdesc = (u8 *)p_desc;
  
-+	/* Initialize status register */
-+	lddpc	r0, init_sr
-+	mtsr	SYSREG_SR, r0
-+
-+	/* Set initial stack pointer */
-+	lddpc	sp, stack_addr
-+	sub	sp, -THREAD_SIZE
-+
-+#ifdef CONFIG_FRAME_POINTER
-+	/* Mark last stack frame */
-+	mov	lr, 0
-+	mov	r7, 0
-+#endif
-+
-+	/* Check if the boot loader actually provided a tag table */
-+	lddpc	r0, magic_number
-+	cp.w	r12, r0
-+	brne	no_tag_table
-+
- 	/*
- 	 * Save the tag table address for later use. This must be done
- 	 * _after_ .bss has been initialized...
-@@ -53,6 +69,10 @@ bss_start_addr:
- 	.long   __bss_start
- end_addr:
- 	.long   _end
-+init_sr:
-+	.long	0x007f0000	/* Supervisor mode, everything masked */
-+stack_addr:
-+	.long	init_thread_union
+-	is_cck_rate = RX_HAL_IS_CCK_RATE(pdesc);
++	is_cck_rate = RX_HAL_IS_CCK_RATE(p_desc);
+ 	pstats->packet_matchbssid = packet_match_bssid;
+ 	pstats->packet_toself = packet_toself;
+-	pstats->is_cck = is_cck_rate;
+ 	pstats->packet_beacon = packet_beacon;
+ 	pstats->is_cck = is_cck_rate;
+ 	pstats->RX_SIGQ[0] = -1;
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
+@@ -303,10 +303,10 @@ out:
+ bool rtl92cu_rx_query_desc(struct ieee80211_hw *hw,
+ 			   struct rtl_stats *stats,
+ 			   struct ieee80211_rx_status *rx_status,
+-			   u8 *p_desc, struct sk_buff *skb)
++			   u8 *pdesc, struct sk_buff *skb)
+ {
+ 	struct rx_fwinfo_92c *p_drvinfo;
+-	struct rx_desc_92c *pdesc = (struct rx_desc_92c *)p_desc;
++	struct rx_desc_92c *p_desc = (struct rx_desc_92c *)pdesc;
+ 	u32 phystatus = GET_RX_DESC_PHY_STATUS(pdesc);
  
- no_tag_table:
- 	sub	r12, pc, (. - 2f)
---- a/arch/avr32/kernel/head.S
-+++ b/arch/avr32/kernel/head.S
-@@ -10,33 +10,13 @@
- #include <linux/linkage.h>
- 
- #include <asm/page.h>
--#include <asm/thread_info.h>
--#include <asm/sysreg.h>
- 
- 	.section .init.text,"ax"
- 	.global kernel_entry
- kernel_entry:
--	/* Initialize status register */
--	lddpc   r0, init_sr
--	mtsr	SYSREG_SR, r0
--
--	/* Set initial stack pointer */
--	lddpc   sp, stack_addr
--	sub	sp, -THREAD_SIZE
--
--#ifdef CONFIG_FRAME_POINTER
--	/* Mark last stack frame */
--	mov	lr, 0
--	mov	r7, 0
--#endif
--
- 	/* Start the show */
- 	lddpc   pc, kernel_start_addr
- 
- 	.align  2
--init_sr:
--	.long   0x007f0000	/* Supervisor mode, everything masked */
--stack_addr:
--	.long   init_thread_union
- kernel_start_addr:
- 	.long   start_kernel
+ 	stats->length = (u16) GET_RX_DESC_PKT_LEN(pdesc);
+@@ -345,7 +345,7 @@ bool rtl92cu_rx_query_desc(struct ieee80
+ 	if (phystatus) {
+ 		p_drvinfo = (struct rx_fwinfo_92c *)(skb->data +
+ 						     stats->rx_bufshift);
+-		rtl92c_translate_rx_signal_stuff(hw, skb, stats, pdesc,
++		rtl92c_translate_rx_signal_stuff(hw, skb, stats, p_desc,
+ 						 p_drvinfo);
+ 	}
+ 	/*rx_status->qual = stats->signal; */
 
