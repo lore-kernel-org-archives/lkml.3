@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800Ab3L2DC6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 22:02:58 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55022 "EHLO
+	id S1756785Ab3L2DC5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 22:02:57 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55020 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751906Ab3L2CJv (ORCPT
+	by vger.kernel.org with ESMTP id S1751971Ab3L2CJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:09:51 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -14,14 +14,13 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Nico Golde" <nico@ngolde.de>,
-        "Mahesh Rajashekhara" <Mahesh.Rajashekhara@pmcs.com>,
-        "Fabian Yamaguchi" <fabs@goesec.de>
+        "Hannes Frederic Sowa" <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.68024822@decadent.org.uk>
+Message-ID: <lsq.1388282924.891693645@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 178/185] aacraid: prevent invalid pointer dereference
+Subject: [PATCH 3.2 163/185] ipv6: fix leaking uninitialized port number
+ of  offender sockaddr
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,38 +33,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-commit b4789b8e6be3151a955ade74872822f30e8cd914 upstream.
+[ Upstream commit 1fa4c710b6fe7b0aac9907240291b6fe6aafc3b8 ]
 
-It appears that driver runs into a problem here if fibsize is too small
-because we allocate user_srbcmd with fibsize size only but later we
-access it until user_srbcmd->sg.count to copy it over to srbcmd.
+Offenders don't have port numbers, so set it to 0.
 
-It is not correct to test (fibsize < sizeof(*user_srbcmd)) because this
-structure already includes one sg element and this is not needed for
-commands without data.  So, we would recommend to add the following
-(instead of test for fibsize == 0).
-
-Signed-off-by: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/aacraid/commctrl.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/ipv6/datagram.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/scsi/aacraid/commctrl.c
-+++ b/drivers/scsi/aacraid/commctrl.c
-@@ -508,7 +508,8 @@ static int aac_send_raw_srb(struct aac_d
- 		goto cleanup;
- 	}
- 
--	if (fibsize > (dev->max_fib_size - sizeof(struct aac_fibhdr))) {
-+	if ((fibsize < (sizeof(struct user_aac_srb) - sizeof(struct user_sgentry))) ||
-+	    (fibsize > (dev->max_fib_size - sizeof(struct aac_fibhdr)))) {
- 		rcode = -EINVAL;
- 		goto cleanup;
- 	}
+diff --git a/net/ipv6/datagram.c b/net/ipv6/datagram.c
+index 144c105..3c7c948 100644
+--- a/net/ipv6/datagram.c
++++ b/net/ipv6/datagram.c
+@@ -375,6 +375,7 @@ int ipv6_recv_error(struct sock *sk, struct msghdr *msg, int len, int *addr_len)
+ 	if (serr->ee.ee_origin != SO_EE_ORIGIN_LOCAL) {
+ 		sin->sin6_family = AF_INET6;
+ 		sin->sin6_flowinfo = 0;
++		sin->sin6_port = 0;
+ 		sin->sin6_scope_id = 0;
+ 		if (skb->protocol == htons(ETH_P_IPV6)) {
+ 			ipv6_addr_copy(&sin->sin6_addr, &ipv6_hdr(skb)->saddr);
 
