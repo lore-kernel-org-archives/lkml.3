@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756203Ab3L2Cmt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:42:49 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55345 "EHLO
+	id S1756242Ab3L2Cne (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:43:34 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55165 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752393Ab3L2CKb (ORCPT
+	by vger.kernel.org with ESMTP id S1752295Ab3L2CKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:10:31 -0500
+	Sat, 28 Dec 2013 21:10:30 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mark Brown" <broonie@linaro.org>,
-        "Charles Keepax" <ckeepax@opensource.wolfsonmicro.com>
-Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.67769133@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Marek Vasut" <marex@denx.de>,
+        "Olof Johansson" <olof@lixom.net>,
+        "Sergei Ianovich" <ynvich@gmail.com>,
+        "Haojian Zhuang" <haojian.zhuang@gmail.com>
+Date: Sun, 29 Dec 2013 03:08:44 +0100
+Message-ID: <lsq.1388282924.795629417@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 089/185] ASoC: wm8990: Mark the register map as dirty
- when powering down
+Subject: [PATCH 3.2 137/185] ARM: pxa: prevent PXA270 occasional reboot
+ freezes
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,28 +34,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@linaro.org>
+From: Sergei Ianovich <ynvich@gmail.com>
 
-commit 2ab2b74277a86afe0dd92976db695a2bb8b93366 upstream.
+commit ff88b4724fde18056a4c539f7327389aec0f4c2d upstream.
 
-Otherwise we'll skip sync on resume.
+Erratum 71 of PXA270M Processor Family Specification Update
+(April 19, 2010) explains that watchdog reset time is just
+8us insead of 10ms in EMTS.
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+If SDRAM is not reset, it causes memory bus congestion and
+the device hangs. We put SDRAM in selfresh mode before watchdog
+reset, removing potential freezes.
+
+Without this patch PXA270-based ICP DAS LP-8x4x hangs after up to 40
+reboots. With this patch it has successfully rebooted 500 times.
+
+Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
+Tested-by: Marek Vasut <marex@denx.de>
+Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+Signed-off-by: Olof Johansson <olof@lixom.net>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/soc/codecs/wm8990.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm/mach-pxa/reset.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm8990.c
-+++ b/sound/soc/codecs/wm8990.c
-@@ -1266,6 +1266,8 @@ static int wm8990_set_bias_level(struct
+--- a/arch/arm/mach-pxa/reset.c
++++ b/arch/arm/mach-pxa/reset.c
+@@ -12,6 +12,7 @@
  
- 		/* disable POBCTRL, SOFT_ST and BUFDCOPEN */
- 		snd_soc_write(codec, WM8990_ANTIPOP2, 0x0);
-+
-+		codec->cache_sync = 1;
+ #include <mach/regs-ost.h>
+ #include <mach/reset.h>
++#include <mach/smemc.h>
+ 
+ unsigned int reset_status;
+ EXPORT_SYMBOL(reset_status);
+@@ -79,6 +80,12 @@ static void do_hw_reset(void)
+ 	OWER = OWER_WME;
+ 	OSSR = OSSR_M3;
+ 	OSMR3 = OSCR + 368640;	/* ... in 100 ms */
++	/*
++	 * SDRAM hangs on watchdog reset on Marvell PXA270 (erratum 71)
++	 * we put SDRAM into self-refresh to prevent that
++	 */
++	while (1)
++		writel_relaxed(MDREFR_SLFRSH, MDREFR);
+ }
+ 
+ void arch_reset(char mode, const char *cmd)
+@@ -99,4 +106,3 @@ void arch_reset(char mode, const char *c
  		break;
  	}
- 
+ }
+-
 
