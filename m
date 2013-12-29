@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107Ab3L2Cw2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:52:28 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54989 "EHLO
+	id S1756156Ab3L2Cx0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:53:26 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54978 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751805Ab3L2CKK (ORCPT
+	by vger.kernel.org with ESMTP id S1751833Ab3L2CKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:10:10 -0500
+	Sat, 28 Dec 2013 21:10:09 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "KOBAYASHI Yoshitake" <yoshitake.kobayashi@toshiba.co.jp>,
-        "Chris Ball" <cjb@laptop.org>
-Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.885460314@decadent.org.uk>
+CC: akpm@linux-foundation.org, "John W. Linville" <linville@tuxdriver.com>,
+        "Stanislaw Gruszka" <stf_xl@wp.pl>,
+        "Helmut Schaa" <helmut.schaa@googlemail.com>
+Date: Sun, 29 Dec 2013 03:08:43 +0100
+Message-ID: <lsq.1388282923.223169617@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 185/185] mmc: block: fix a bug of error handling in
- MMC driver
+Subject: [PATCH 3.2 007/185] rt2x00: check if device is still available on
+ rt2x00mac_flush()
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,136 +33,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
+From: Stanislaw Gruszka <stf_xl@wp.pl>
 
-commit c8760069627ad3b0dbbea170f0c4c58b16e18d3d upstream.
+commit 5671ab05cf2a579218985ef56595387932d78ee4 upstream.
 
-Current MMC driver doesn't handle generic error (bit19 of device
-status) in write sequence. As a result, write data gets lost when
-generic error occurs. For example, a generic error when updating a
-filesystem management information causes a loss of write data and
-corrupts the filesystem. In the worst case, the system will never
-boot.
+Fix random kernel panic with below messages when remove dongle.
 
-This patch includes the following functionality:
-  1. To enable error checking for the response of CMD12 and CMD13
-     in write command sequence
-  2. To retry write sequence when a generic error occurs
+[ 2212.355447] BUG: unable to handle kernel NULL pointer dereference at 0000000000000250
+[ 2212.355527] IP: [<ffffffffa02667f2>] rt2x00usb_kick_tx_entry+0x12/0x160 [rt2x00usb]
+[ 2212.355599] PGD 0
+[ 2212.355626] Oops: 0000 [#1] SMP
+[ 2212.355664] Modules linked in: rt2800usb rt2x00usb rt2800lib crc_ccitt rt2x00lib mac80211 cfg80211 tun arc4 fuse rfcomm bnep snd_hda_codec_realtek snd_hda_intel snd_hda_codec btusb uvcvideo bluetooth snd_hwdep x86_pkg_temp_thermal snd_seq coretemp aesni_intel aes_x86_64 snd_seq_device glue_helper snd_pcm ablk_helper videobuf2_vmalloc sdhci_pci videobuf2_memops videobuf2_core sdhci videodev mmc_core serio_raw snd_page_alloc microcode i2c_i801 snd_timer hid_multitouch thinkpad_acpi lpc_ich mfd_core snd tpm_tis wmi tpm tpm_bios soundcore acpi_cpufreq i915 i2c_algo_bit drm_kms_helper drm i2c_core video [last unloaded: cfg80211]
+[ 2212.356224] CPU: 0 PID: 34 Comm: khubd Not tainted 3.12.0-rc3-wl+ #3
+[ 2212.356268] Hardware name: LENOVO 3444CUU/3444CUU, BIOS G6ET93WW (2.53 ) 02/04/2013
+[ 2212.356319] task: ffff880212f687c0 ti: ffff880212f66000 task.ti: ffff880212f66000
+[ 2212.356392] RIP: 0010:[<ffffffffa02667f2>]  [<ffffffffa02667f2>] rt2x00usb_kick_tx_entry+0x12/0x160 [rt2x00usb]
+[ 2212.356481] RSP: 0018:ffff880212f67750  EFLAGS: 00010202
+[ 2212.356519] RAX: 000000000000000c RBX: 000000000000000c RCX: 0000000000000293
+[ 2212.356568] RDX: ffff8801f4dc219a RSI: 0000000000000000 RDI: 0000000000000240
+[ 2212.356617] RBP: ffff880212f67778 R08: ffffffffa02667e0 R09: 0000000000000002
+[ 2212.356665] R10: 0001f95254ab4b40 R11: ffff880212f675be R12: ffff8801f4dc2150
+[ 2212.356712] R13: 0000000000000000 R14: ffffffffa02667e0 R15: 000000000000000d
+[ 2212.356761] FS:  0000000000000000(0000) GS:ffff88021e200000(0000) knlGS:0000000000000000
+[ 2212.356813] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 2212.356852] CR2: 0000000000000250 CR3: 0000000001a0c000 CR4: 00000000001407f0
+[ 2212.356899] Stack:
+[ 2212.356917]  000000000000000c ffff8801f4dc2150 0000000000000000 ffffffffa02667e0
+[ 2212.356980]  000000000000000d ffff880212f677b8 ffffffffa03a31ad ffff8801f4dc219a
+[ 2212.357038]  ffff8801f4dc2150 0000000000000000 ffff8800b93217a0 ffff8801f49bc800
+[ 2212.357099] Call Trace:
+[ 2212.357122]  [<ffffffffa02667e0>] ? rt2x00usb_interrupt_txdone+0x90/0x90 [rt2x00usb]
+[ 2212.357174]  [<ffffffffa03a31ad>] rt2x00queue_for_each_entry+0xed/0x170 [rt2x00lib]
+[ 2212.357244]  [<ffffffffa026701c>] rt2x00usb_kick_queue+0x5c/0x60 [rt2x00usb]
+[ 2212.357314]  [<ffffffffa03a3682>] rt2x00queue_flush_queue+0x62/0xa0 [rt2x00lib]
+[ 2212.357386]  [<ffffffffa03a2930>] rt2x00mac_flush+0x30/0x70 [rt2x00lib]
+[ 2212.357470]  [<ffffffffa04edded>] ieee80211_flush_queues+0xbd/0x140 [mac80211]
+[ 2212.357555]  [<ffffffffa0502e52>] ieee80211_set_disassoc+0x2d2/0x3d0 [mac80211]
+[ 2212.357645]  [<ffffffffa0506da3>] ieee80211_mgd_deauth+0x1d3/0x240 [mac80211]
+[ 2212.357718]  [<ffffffff8108b17c>] ? try_to_wake_up+0xec/0x290
+[ 2212.357788]  [<ffffffffa04dbd18>] ieee80211_deauth+0x18/0x20 [mac80211]
+[ 2212.357872]  [<ffffffffa0418ddc>] cfg80211_mlme_deauth+0x9c/0x140 [cfg80211]
+[ 2212.357913]  [<ffffffffa041907c>] cfg80211_mlme_down+0x5c/0x60 [cfg80211]
+[ 2212.357962]  [<ffffffffa041cd18>] cfg80211_disconnect+0x188/0x1a0 [cfg80211]
+[ 2212.358014]  [<ffffffffa04013bc>] ? __cfg80211_stop_sched_scan+0x1c/0x130 [cfg80211]
+[ 2212.358067]  [<ffffffffa03f8954>] cfg80211_leave+0xc4/0xe0 [cfg80211]
+[ 2212.358124]  [<ffffffffa03f8d1b>] cfg80211_netdev_notifier_call+0x3ab/0x5e0 [cfg80211]
+[ 2212.358177]  [<ffffffff815140f8>] ? inetdev_event+0x38/0x510
+[ 2212.358217]  [<ffffffff81085a94>] ? __wake_up+0x44/0x50
+[ 2212.358254]  [<ffffffff8155995c>] notifier_call_chain+0x4c/0x70
+[ 2212.358293]  [<ffffffff81081156>] raw_notifier_call_chain+0x16/0x20
+[ 2212.358361]  [<ffffffff814b6dd5>] call_netdevice_notifiers_info+0x35/0x60
+[ 2212.358429]  [<ffffffff814b6ec9>] __dev_close_many+0x49/0xd0
+[ 2212.358487]  [<ffffffff814b7028>] dev_close_many+0x88/0x100
+[ 2212.358546]  [<ffffffff814b8150>] rollback_registered_many+0xb0/0x220
+[ 2212.358612]  [<ffffffff814b8319>] unregister_netdevice_many+0x19/0x60
+[ 2212.358694]  [<ffffffffa04d8eb2>] ieee80211_remove_interfaces+0x112/0x190 [mac80211]
+[ 2212.358791]  [<ffffffffa04c585f>] ieee80211_unregister_hw+0x4f/0x100 [mac80211]
+[ 2212.361994]  [<ffffffffa03a1221>] rt2x00lib_remove_dev+0x161/0x1a0 [rt2x00lib]
+[ 2212.365240]  [<ffffffffa0266e2e>] rt2x00usb_disconnect+0x2e/0x70 [rt2x00usb]
+[ 2212.368470]  [<ffffffff81419ce4>] usb_unbind_interface+0x64/0x1c0
+[ 2212.371734]  [<ffffffff813b446f>] __device_release_driver+0x7f/0xf0
+[ 2212.374999]  [<ffffffff813b4503>] device_release_driver+0x23/0x30
+[ 2212.378131]  [<ffffffff813b3c98>] bus_remove_device+0x108/0x180
+[ 2212.381358]  [<ffffffff813b0565>] device_del+0x135/0x1d0
+[ 2212.384454]  [<ffffffff81417760>] usb_disable_device+0xb0/0x270
+[ 2212.387451]  [<ffffffff8140d9cd>] usb_disconnect+0xad/0x1d0
+[ 2212.390294]  [<ffffffff8140f6cd>] hub_thread+0x63d/0x1660
+[ 2212.393034]  [<ffffffff8107c860>] ? wake_up_atomic_t+0x30/0x30
+[ 2212.395728]  [<ffffffff8140f090>] ? hub_port_debounce+0x130/0x130
+[ 2212.398412]  [<ffffffff8107baa0>] kthread+0xc0/0xd0
+[ 2212.401058]  [<ffffffff8107b9e0>] ? insert_kthread_work+0x40/0x40
+[ 2212.403639]  [<ffffffff8155de3c>] ret_from_fork+0x7c/0xb0
+[ 2212.406193]  [<ffffffff8107b9e0>] ? insert_kthread_work+0x40/0x40
+[ 2212.408732] Code: 24 58 08 00 00 bf 80 00 00 00 e8 3a c3 e0 e0 5b 41 5c 5d c3 0f 1f 44 00 00 0f 1f 44 00 00 55 48 89 e5 41 57 41 56 41 55 41 54 53 <48> 8b 47 10 48 89 fb 4c 8b 6f 28 4c 8b 20 49 8b 04 24 4c 8b 30
+[ 2212.414671] RIP  [<ffffffffa02667f2>] rt2x00usb_kick_tx_entry+0x12/0x160 [rt2x00usb]
+[ 2212.417646]  RSP <ffff880212f67750>
+[ 2212.420547] CR2: 0000000000000250
+[ 2212.441024] ---[ end trace 5442918f33832bce ]---
 
-Messages are added for v2 to show what occurs.
-
-[Backported to 3.4-stable]
-
-Signed-off-by: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
+Acked-by: Helmut Schaa <helmut.schaa@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/mmc/card/block.c | 45 ++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 42 insertions(+), 3 deletions(-)
+ drivers/net/wireless/rt2x00/rt2x00mac.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -634,7 +634,7 @@ static int mmc_blk_cmd_error(struct requ
-  * Otherwise we don't understand what happened, so abort.
-  */
- static int mmc_blk_cmd_recovery(struct mmc_card *card, struct request *req,
--	struct mmc_blk_request *brq, int *ecc_err)
-+	struct mmc_blk_request *brq, int *ecc_err, int *gen_err)
- {
- 	bool prev_cmd_status_valid = true;
- 	u32 status, stop_status = 0;
-@@ -665,6 +665,16 @@ static int mmc_blk_cmd_recovery(struct m
- 	    (brq->cmd.resp[0] & R1_CARD_ECC_FAILED))
- 		*ecc_err = 1;
+--- a/drivers/net/wireless/rt2x00/rt2x00mac.c
++++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
+@@ -771,6 +771,9 @@ void rt2x00mac_flush(struct ieee80211_hw
+ 	struct rt2x00_dev *rt2x00dev = hw->priv;
+ 	struct data_queue *queue;
  
-+	/* Flag General errors */
-+	if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ)
-+		if ((status & R1_ERROR) ||
-+			(brq->stop.resp[0] & R1_ERROR)) {
-+			pr_err("%s: %s: general error sending stop or status command, stop cmd response %#x, card status %#x\n",
-+			       req->rq_disk->disk_name, __func__,
-+			       brq->stop.resp[0], status);
-+			*gen_err = 1;
-+		}
++	if (!test_bit(DEVICE_STATE_PRESENT, &rt2x00dev->flags))
++		return;
 +
- 	/*
- 	 * Check the current card state.  If it is in some data transfer
- 	 * mode, tell it to stop (and hopefully transition back to TRAN.)
-@@ -684,6 +694,13 @@ static int mmc_blk_cmd_recovery(struct m
- 			return ERR_ABORT;
- 		if (stop_status & R1_CARD_ECC_FAILED)
- 			*ecc_err = 1;
-+		if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ)
-+			if (stop_status & R1_ERROR) {
-+				pr_err("%s: %s: general error sending stop command, stop cmd response %#x\n",
-+				       req->rq_disk->disk_name, __func__,
-+				       stop_status);
-+				*gen_err = 1;
-+			}
- 	}
- 
- 	/* Check for set block count errors */
-@@ -933,7 +950,7 @@ static int mmc_blk_err_check(struct mmc_
- 						    mmc_active);
- 	struct mmc_blk_request *brq = &mq_mrq->brq;
- 	struct request *req = mq_mrq->req;
--	int ecc_err = 0;
-+	int ecc_err = 0, gen_err = 0;
- 
- 	/*
- 	 * sbc.error indicates a problem with the set block count
-@@ -947,7 +964,7 @@ static int mmc_blk_err_check(struct mmc_
- 	 */
- 	if (brq->sbc.error || brq->cmd.error || brq->stop.error ||
- 	    brq->data.error) {
--		switch (mmc_blk_cmd_recovery(card, req, brq, &ecc_err)) {
-+		switch (mmc_blk_cmd_recovery(card, req, brq, &ecc_err, &gen_err)) {
- 		case ERR_RETRY:
- 			return MMC_BLK_RETRY;
- 		case ERR_ABORT:
-@@ -975,6 +992,15 @@ static int mmc_blk_err_check(struct mmc_
- 	 */
- 	if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ) {
- 		u32 status;
-+
-+		/* Check stop command response */
-+		if (brq->stop.resp[0] & R1_ERROR) {
-+			pr_err("%s: %s: general error sending stop command, stop cmd response %#x\n",
-+			       req->rq_disk->disk_name, __func__,
-+			       brq->stop.resp[0]);
-+			gen_err = 1;
-+		}
-+
- 		do {
- 			int err = get_card_status(card, &status, 5);
- 			if (err) {
-@@ -982,6 +1008,14 @@ static int mmc_blk_err_check(struct mmc_
- 				       req->rq_disk->disk_name, err);
- 				return MMC_BLK_CMD_ERR;
- 			}
-+
-+			if (status & R1_ERROR) {
-+				pr_err("%s: %s: general error sending status command, card status %#x\n",
-+				       req->rq_disk->disk_name, __func__,
-+				       status);
-+				gen_err = 1;
-+			}
-+
- 			/*
- 			 * Some cards mishandle the status bits,
- 			 * so make sure to check both the busy
-@@ -991,6 +1025,13 @@ static int mmc_blk_err_check(struct mmc_
- 			 (R1_CURRENT_STATE(status) == R1_STATE_PRG));
- 	}
- 
-+	/* if general error occurs, retry the write operation. */
-+	if (gen_err) {
-+		pr_warning("%s: retrying write for general error\n",
-+				req->rq_disk->disk_name);
-+		return MMC_BLK_RETRY;
-+	}
-+
- 	if (brq->data.error) {
- 		pr_err("%s: error %d transferring data, sector %u, nr %u, cmd response %#x, card status %#x\n",
- 		       req->rq_disk->disk_name, brq->data.error,
+ 	tx_queue_for_each(rt2x00dev, queue)
+ 		rt2x00queue_flush_queue(queue, drop);
+ }
 
