@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755648Ab3L2V7J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 16:59:09 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:61815 "EHLO
+	id S1755667Ab3L2V7g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 16:59:36 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:31758 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752786Ab3L2Vvy (ORCPT
+	by vger.kernel.org with ESMTP id S1752557Ab3L2Vvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 16:51:54 -0500
+	Sun, 29 Dec 2013 16:51:52 -0500
 X-IronPort-AV: E=Sophos;i="4.95,570,1384297200"; 
-   d="scan'208";a="50832525"
+   d="scan'208";a="50832524"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Roland Dreier <roland@kernel.org>
-Cc: kernel-janitors@vger.kernel.org, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 5/25] IB/mlx4: fix error return code
-Date: Sun, 29 Dec 2013 23:47:20 +0100
-Message-Id: <1388357260-4843-6-git-send-email-Julia.Lawall@lip6.fr>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/25] UBI: fix error return code
+Date: Sun, 29 Dec 2013 23:47:19 +0100
+Message-Id: <1388357260-4843-5-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1388357260-4843-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1388357260-4843-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -54,35 +54,40 @@ Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 ---
 Not tested.
 
- drivers/infiniband/hw/mlx4/sysfs.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/mtd/ubi/attach.c |    4 +++-
+ drivers/mtd/ubi/build.c  |    4 +++-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/infiniband/hw/mlx4/sysfs.c b/drivers/infiniband/hw/mlx4/sysfs.c
-index 97516eb..db2ea31 100644
---- a/drivers/infiniband/hw/mlx4/sysfs.c
-+++ b/drivers/infiniband/hw/mlx4/sysfs.c
-@@ -582,8 +582,10 @@ static int add_port(struct mlx4_ib_dev *dev, int port_num, int slave)
- 	p->pkey_group.attrs =
- 		alloc_group_attrs(show_port_pkey, store_port_pkey,
- 				  dev->dev->caps.pkey_table_len[port_num]);
--	if (!p->pkey_group.attrs)
-+	if (!p->pkey_group.attrs) {
-+		ret = -ENOMEM;
- 		goto err_alloc;
+diff --git a/drivers/mtd/ubi/attach.c b/drivers/mtd/ubi/attach.c
+index 33bb1f2..6f27d9a 100644
+--- a/drivers/mtd/ubi/attach.c
++++ b/drivers/mtd/ubi/attach.c
+@@ -1453,8 +1453,10 @@ int ubi_attach(struct ubi_device *ubi, int force_scan)
+ 		struct ubi_attach_info *scan_ai;
+ 
+ 		scan_ai = alloc_ai("ubi_ckh_aeb_slab_cache");
+-		if (!scan_ai)
++		if (!scan_ai) {
++			err = -ENOMEM;
+ 			goto out_wl;
++		}
+ 
+ 		err = scan_all(ubi, scan_ai, 0);
+ 		if (err) {
+diff --git a/drivers/mtd/ubi/build.c b/drivers/mtd/ubi/build.c
+index e05dc62..57deae9 100644
+--- a/drivers/mtd/ubi/build.c
++++ b/drivers/mtd/ubi/build.c
+@@ -1245,8 +1245,10 @@ static int __init ubi_init(void)
+ 	ubi_wl_entry_slab = kmem_cache_create("ubi_wl_entry_slab",
+ 					      sizeof(struct ubi_wl_entry),
+ 					      0, 0, NULL);
+-	if (!ubi_wl_entry_slab)
++	if (!ubi_wl_entry_slab) {
++		err = -ENOMEM;
+ 		goto out_dev_unreg;
 +	}
  
- 	ret = sysfs_create_group(&p->kobj, &p->pkey_group);
- 	if (ret)
-@@ -591,8 +593,10 @@ static int add_port(struct mlx4_ib_dev *dev, int port_num, int slave)
- 
- 	p->gid_group.name  = "gid_idx";
- 	p->gid_group.attrs = alloc_group_attrs(show_port_gid_idx, NULL, 1);
--	if (!p->gid_group.attrs)
-+	if (!p->gid_group.attrs) {
-+		ret = -ENOMEM;
- 		goto err_free_pkey;
-+	}
- 
- 	ret = sysfs_create_group(&p->kobj, &p->gid_group);
- 	if (ret)
+ 	err = ubi_debugfs_init();
+ 	if (err)
 
