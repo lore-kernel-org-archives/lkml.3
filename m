@@ -1,87 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751433Ab3L1Xuu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 18:50:50 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40796 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751037Ab3L1Xus (ORCPT
+	id S1751441Ab3L2APq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 19:15:46 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:57555 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751037Ab3L2APp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 18:50:48 -0500
-Date: Sun, 29 Dec 2013 00:50:46 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Greg KH <greg@kroah.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Joe Xue <lgxue@hotmail.com>,
-        "cooloney@gmail.com" <cooloney@gmail.com>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "rob@landley.net" <rob@landley.net>,
-        "milo.kim@ti.com" <milo.kim@ti.com>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: how to represent sequence of brightnesses in /sys (was Re:
- [PATCH] Add the LED burst trigger)
-Message-ID: <20131228235045.GA8786@amd.pavel.ucw.cz>
-References: <20131226142607.GA15225@amd.pavel.ucw.cz>
- <BLU172-W30E6E7C0BC2B6C08FA0552ACCD0@phx.gbl>
- <20131227095705.GC17143@amd.pavel.ucw.cz>
- <BLU172-W8D850A8DEA8C0D87FBF45ACCC0@phx.gbl>
- <20131228101622.GA13564@amd.pavel.ucw.cz>
- <CAMuHMdVz7FWgYZRVHy6pK+g_2QKxTW00N8jmjWHe05m5CJvPOw@mail.gmail.com>
- <20131228192935.GA28119@amd.pavel.ucw.cz>
- <CAMuHMdXDJ6uhe6srV-+0a8=cpBUgP+VakG+_wyLwAuiQSRVhqQ@mail.gmail.com>
- <20131228212523.GA8733@amd.pavel.ucw.cz>
- <20131228215042.GA7048@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131228215042.GA7048@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 28 Dec 2013 19:15:45 -0500
+From: Hayato Suzuki <hytszk@gmail.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org, Hayato Suzuki <hytszk@gmail.com>
+Subject: [PATCH 3/3] [trivial] treewide:Fix typo Kconfig
+Date: Sun, 29 Dec 2013 09:15:29 +0900
+Message-Id: <1388276129-2132-1-git-send-email-hytszk@gmail.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 2013-12-28 13:50:42, Greg KH wrote:
-> On Sat, Dec 28, 2013 at 10:25:23PM +0100, Pavel Machek wrote:
-> > Hi!
-> > 
-> > > >> Sysfs is meant to be human-readable/writable, so please use plain ASCII
-> > > >> numbers in strings instead.
-> > > >
-> > > > Actually, sysfs is meant to be one value per file, and it is
-> > > 
-> > > Ideally, yes.
-> > > 
-> > > > understood that data that are "natively blob" are just passed as
-> > > > blob. (I believe this qualifies).
-> > > 
-> > > But it doesn't buy us much here, does it? It will make e.g. shell scripts
-> > > needlessly complicated.
-> > 
-> > echo -ne '\012' is not that bad, and parsing array of integers from
-> > kernel will be an ugly piece of code.
-> 
-> Ick, no.  What are you trying to do here?  Have the kernel intrepret a
-> sequence of bytes to flash an LED?  I thought we have frameworks in
-> userspace already to handle this type of thing.  Please don't invent new
-> ways of doing stuff...
+Correct spelling typo in Kconfig.
 
-Idea would be "sequence of brigtnesses" (one file) and "delay between
-changes" (second file).
+Signed-off-by: Hayato Suzuki <hytszk@gmail.com>
+---
+ arch/powerpc/platforms/40x/Kconfig | 2 +-
+ arch/x86/crypto/aesni-intel_avx.S  | 8 ++++----
+ crypto/Kconfig                     | 2 +-
+ init/Kconfig                       | 2 +-
+ sound/oss/Kconfig                  | 2 +-
+ 5 files changed, 8 insertions(+), 8 deletions(-)
 
-Reason to do it in kernel is that some machines actually have
-"coprocessor" on i2c that can do it while main CPU is suspended. (For
-more reasons, see beggining of thread).
-
-Binary attribute with array of bytes should be acceptable, rights?
-
-(IOW write(..., buf, size) )
-
-Ascii array of decimal integers -- no so, right?
-
-(IOW printf("%d %d ..", buf[0], buf[1]) )
-
-Thanks,
-									Pavel
+diff --git a/arch/powerpc/platforms/40x/Kconfig b/arch/powerpc/platforms/40x/Kconfig
+index 6e287f1..e5fbb2c 100644
+--- a/arch/powerpc/platforms/40x/Kconfig
++++ b/arch/powerpc/platforms/40x/Kconfig
+@@ -82,7 +82,7 @@ config OBS600
+ 	select 405EX
+ 	select PPC40x_SIMPLE
+ 	help
+-	  This option enables support for PlatHome OpenBlockS 600 server
++	  This option enables support for Platform OpenBlockS 600 server
+ 
+ 
+ config PPC40x_SIMPLE
+diff --git a/arch/x86/crypto/aesni-intel_avx.S b/arch/x86/crypto/aesni-intel_avx.S
+index 522ab68..3f202c2 100644
+--- a/arch/x86/crypto/aesni-intel_avx.S
++++ b/arch/x86/crypto/aesni-intel_avx.S
+@@ -1282,7 +1282,7 @@ _zero_cipher_left\@:
+ 
+         je      _multiple_of_16_bytes\@
+ 
+-        # handle the last <16 Byte block seperately
++        # handle the last <16 Byte block separately
+ 
+ 
+         vpaddd   ONE(%rip), %xmm9, %xmm9             # INCR CNT to get Yn
+@@ -1308,7 +1308,7 @@ _only_less_than_16\@:
+ 
+         je      _multiple_of_16_bytes\@
+ 
+-        # handle the last <16 Byte block seperately
++        # handle the last <16 Byte block separately
+ 
+ 
+         vpaddd  ONE(%rip), %xmm9, %xmm9              # INCR CNT to get Yn
+@@ -2559,7 +2559,7 @@ _zero_cipher_left\@:
+ 
+         je      _multiple_of_16_bytes\@
+ 
+-        # handle the last <16 Byte block seperately
++        # handle the last <16 Byte block separately
+ 
+ 
+         vpaddd   ONE(%rip), %xmm9, %xmm9             # INCR CNT to get Yn
+@@ -2585,7 +2585,7 @@ _only_less_than_16\@:
+ 
+         je      _multiple_of_16_bytes\@
+ 
+-        # handle the last <16 Byte block seperately
++        # handle the last <16 Byte block separately
+ 
+ 
+         vpaddd  ONE(%rip), %xmm9, %xmm9              # INCR CNT to get Yn
+diff --git a/crypto/Kconfig b/crypto/Kconfig
+index 7bcb70d..ceb085e 100644
+--- a/crypto/Kconfig
++++ b/crypto/Kconfig
+@@ -1120,7 +1120,7 @@ config CRYPTO_SERPENT_SSE2_X86_64
+ 	  Keys are allowed to be from 0 to 256 bits in length, in steps
+ 	  of 8 bits.
+ 
+-	  This module provides Serpent cipher algorithm that processes eigth
++	  This module provides Serpent cipher algorithm that processes eight
+ 	  blocks parallel using SSE2 instruction set.
+ 
+ 	  See also:
+diff --git a/init/Kconfig b/init/Kconfig
+index 8d402e3..46b5089 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -523,7 +523,7 @@ config CONTEXT_TRACKING_FORCE
+ 	  dynticks working.
+ 
+ 	  This option stands for testing when an arch implements the
+-	  context tracking backend but doesn't yet fullfill all the
++	  context tracking backend but doesn't yet fulfill all the
+ 	  requirements to make the full dynticks feature working.
+ 	  Without the full dynticks, there is no way to test the support
+ 	  for context tracking and the subsystems that rely on it: RCU
+diff --git a/sound/oss/Kconfig b/sound/oss/Kconfig
+index 1a96402..fbf07e9 100644
+--- a/sound/oss/Kconfig
++++ b/sound/oss/Kconfig
+@@ -318,7 +318,7 @@ config SOUND_MSS
+ 	  made by Microsoft or Aztech SG 16 Pro (or NX16 Pro).  Also you may
+ 	  say Y in case your card is NOT among these:
+ 
+-	  ATI Stereo F/X, AdLib, Audio Excell DSP16, Cardinal DSP16,
++	  ATI Stereo F/X, AdLib, Audio Excel DSP16, Cardinal DSP16,
+ 	  Ensoniq SoundScape (and compatibles made by Reveal and Spea),
+ 	  Gravis Ultrasound, Gravis Ultrasound ACE, Gravis Ultrasound Max,
+ 	  Gravis Ultrasound with 16 bit option, Logitech Sound Man 16,
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.8.4.2
+
