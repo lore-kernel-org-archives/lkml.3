@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901Ab3L2CLP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:11:15 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55650 "EHLO
+	id S1755686Ab3L2CUc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:20:32 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55677 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753689Ab3L2CLN (ORCPT
+	by vger.kernel.org with ESMTP id S1753820Ab3L2CLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:11:13 -0500
+	Sat, 28 Dec 2013 21:11:15 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Larry Finger" <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
+CC: akpm@linux-foundation.org, "Naoya Horiguchi" <n-horiguchi@ah.jp.nec.com>,
+        "Kiyoshi Owada" <owada.kiyoshi@jp.panasonic.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Akira Takeuchi" <takeuchi.akr@jp.panasonic.com>
 Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.95673940@decadent.org.uk>
+Message-ID: <lsq.1388282923.51724079@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 048/185] rtlwifi: rtl8192cu: Fix incorrect signal
- strength for unassociated AP
+Subject: [PATCH 3.2 056/185] mm: ensure get_unmapped_area() returns higher
+ address than mmap_min_addr
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,32 +34,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
 
-commit 78dbfecb95be4635b995af3bd29fa10013409fcd upstream.
+commit 2afc745f3e3079ab16c826be4860da2529054dd2 upstream.
 
-The routine that processes received frames was returning the RSSI value for the
-signal strength; however, that value is available only for associated APs. As
-a result, the strength was the absurd value of 10 dBm. As a result, scans
-return incorrect values for the strength, which causes unwanted attempts to roam.
+This patch fixes the problem that get_unmapped_area() can return illegal
+address and result in failing mmap(2) etc.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[bwh: Backported to 3.2: adjust context]
+In case that the address higher than PAGE_SIZE is set to
+/proc/sys/vm/mmap_min_addr, the address lower than mmap_min_addr can be
+returned by get_unmapped_area(), even if you do not pass any virtual
+address hint (i.e.  the second argument).
+
+This is because the current get_unmapped_area() code does not take into
+account mmap_min_addr.
+
+This leads to two actual problems as follows:
+
+1. mmap(2) can fail with EPERM on the process without CAP_SYS_RAWIO,
+   although any illegal parameter is not passed.
+
+2. The bottom-up search path after the top-down search might not work in
+   arch_get_unmapped_area_topdown().
+
+Note: The first and third chunk of my patch, which changes "len" check,
+are for more precise check using mmap_min_addr, and not for solving the
+above problem.
+
+[How to reproduce]
+
+	--- test.c -------------------------------------------------
+	#include <stdio.h>
+	#include <unistd.h>
+	#include <sys/mman.h>
+	#include <sys/errno.h>
+
+	int main(int argc, char *argv[])
+	{
+		void *ret = NULL, *last_map;
+		size_t pagesize = sysconf(_SC_PAGESIZE);
+
+		do {
+			last_map = ret;
+			ret = mmap(0, pagesize, PROT_NONE,
+				MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+	//		printf("ret=%p\n", ret);
+		} while (ret != MAP_FAILED);
+
+		if (errno != ENOMEM) {
+			printf("ERR: unexpected errno: %d (last map=%p)\n",
+			errno, last_map);
+		}
+
+		return 0;
+	}
+	---------------------------------------------------------------
+
+	$ gcc -m32 -o test test.c
+	$ sudo sysctl -w vm.mmap_min_addr=65536
+	vm.mmap_min_addr = 65536
+	$ ./test  (run as non-priviledge user)
+	ERR: unexpected errno: 1 (last map=0x10000)
+
+Signed-off-by: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+Signed-off-by: Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2:
+ As we do not have vm_unmapped_area(), make arch_get_unmapped_area_topdown()
+ calculate the lower limit for the new area's end address and then compare
+ addresses with this instead of with len.  In the process, fix an off-by-one
+ error which could result in returning 0 if mm->mmap_base == len.]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/trx.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
-@@ -349,7 +349,7 @@ bool rtl92cu_rx_query_desc(struct ieee80
- 						 p_drvinfo);
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1368,7 +1368,7 @@ arch_get_unmapped_area(struct file *filp
+ 	struct vm_area_struct *vma;
+ 	unsigned long start_addr;
+ 
+-	if (len > TASK_SIZE)
++	if (len > TASK_SIZE - mmap_min_addr)
+ 		return -ENOMEM;
+ 
+ 	if (flags & MAP_FIXED)
+@@ -1377,7 +1377,7 @@ arch_get_unmapped_area(struct file *filp
+ 	if (addr) {
+ 		addr = PAGE_ALIGN(addr);
+ 		vma = find_vma(mm, addr);
+-		if (TASK_SIZE - len >= addr &&
++		if (TASK_SIZE - len >= addr && addr >= mmap_min_addr &&
+ 		    (!vma || addr + len <= vma->vm_start))
+ 			return addr;
  	}
- 	/*rx_status->qual = stats->signal; */
--	rx_status->signal = stats->rssi + 10;
-+	rx_status->signal = stats->recvsignalpower + 10;
- 	/*rx_status->noise = -stats->noise; */
- 	return true;
- }
+@@ -1442,9 +1442,10 @@ arch_get_unmapped_area_topdown(struct fi
+ 	struct vm_area_struct *vma;
+ 	struct mm_struct *mm = current->mm;
+ 	unsigned long addr = addr0;
++	unsigned long low_limit = max(PAGE_SIZE, mmap_min_addr);
+ 
+ 	/* requested length too big for entire address space */
+-	if (len > TASK_SIZE)
++	if (len > TASK_SIZE - mmap_min_addr)
+ 		return -ENOMEM;
+ 
+ 	if (flags & MAP_FIXED)
+@@ -1454,7 +1455,7 @@ arch_get_unmapped_area_topdown(struct fi
+ 	if (addr) {
+ 		addr = PAGE_ALIGN(addr);
+ 		vma = find_vma(mm, addr);
+-		if (TASK_SIZE - len >= addr &&
++		if (TASK_SIZE - len >= addr && addr >= mmap_min_addr &&
+ 				(!vma || addr + len <= vma->vm_start))
+ 			return addr;
+ 	}
+@@ -1469,14 +1470,14 @@ arch_get_unmapped_area_topdown(struct fi
+ 	addr = mm->free_area_cache;
+ 
+ 	/* make sure it can fit in the remaining address space */
+-	if (addr > len) {
++	if (addr >= low_limit + len) {
+ 		vma = find_vma(mm, addr-len);
+ 		if (!vma || addr <= vma->vm_start)
+ 			/* remember the address as a hint for next time */
+ 			return (mm->free_area_cache = addr-len);
+ 	}
+ 
+-	if (mm->mmap_base < len)
++	if (mm->mmap_base < low_limit + len)
+ 		goto bottomup;
+ 
+ 	addr = mm->mmap_base-len;
+@@ -1498,7 +1499,7 @@ arch_get_unmapped_area_topdown(struct fi
+ 
+ 		/* try just below the current vma->vm_start */
+ 		addr = vma->vm_start-len;
+-	} while (len < vma->vm_start);
++	} while (vma->vm_start >= low_limit + len);
+ 
+ bottomup:
+ 	/*
 
