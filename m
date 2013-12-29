@@ -1,113 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165Ab3L2Gxw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 01:53:52 -0500
+	id S1752063Ab3L2Gxv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 01:53:51 -0500
 Received: from SpacedOut.fries.net ([67.64.210.234]:56779 "EHLO
 	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226Ab3L2GxL (ORCPT
+	with ESMTP id S1751202Ab3L2GxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 01:53:11 -0500
+	Sun, 29 Dec 2013 01:53:08 -0500
 X-Greylist: delayed 366 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 Dec 2013 01:53:00 EST
 From: David Fries <David@Fries.net>
 To: linux-kernel@vger.kernel.org
 Cc: Evgeniy Polyakov <zbr@ioremap.net>, Marcin Jurkowski <marcin1j@gmail.com>,
         Josh Boyer <jwboyer@gmail.com>,
         Sven Geggus <lists@fuchsschwanzdomain.de>
-Subject: [PATCH 13/14] w1: use family_data instead of rom in w1_slave
-Date: Sun, 29 Dec 2013 00:45:55 -0600
-Message-Id: <1388299556-12669-14-git-send-email-David@Fries.net>
+Subject: [PATCH 11/14] w1: ds2490 USB setup fixes
+Date: Sun, 29 Dec 2013 00:45:53 -0600
+Message-Id: <1388299556-12669-12-git-send-email-David@Fries.net>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1388299556-12669-1-git-send-email-David@Fries.net>
 References: <1388299556-12669-1-git-send-email-David@Fries.net>
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Sun, 29 Dec 2013 00:46:39 -0600 (CST)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Sun, 29 Dec 2013 00:46:38 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first line printed from w1_slave gives the context of the w1
-device.  So does the second line, but if the CRC check failed, the
-second line contains the last successful result.  It is confusing when
-it prints the temperature next to the line that might be a previous
-conversion and has nothing to do with that printed temperature value.
-Modify the code to store the last good conversion in family_data,
-which is designed for custom data structures.
+Calling usb_reset_configuration after usb_set_interface resets the
+interface that was just selected, so call reset first.
+Using alternative 3 greatly speeds the one wire search.
+alt 0 or 1, 10ms int, 23.16 seconds
+alt 2 or 3,  1ms int, 2.99 to 3.05 seconds
+
+Use usb_interrupt_msg not usb_bulk_msg as it is an interrupt pipe
+(bulk worked, it was just technically the wrong call).
 
 Signed-off-by: David Fries <David@Fries.net>
 Cc: Evgeniy Polyakov <zbr@ioremap.net>
 ---
- drivers/w1/slaves/w1_therm.c |   21 +++++++++++++++++++--
- drivers/w1/w1.h              |    1 -
- 2 files changed, 19 insertions(+), 3 deletions(-)
+ drivers/w1/masters/ds2490.c |   22 ++++++++++++++--------
+ 1 file changed, 14 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/w1/slaves/w1_therm.c b/drivers/w1/slaves/w1_therm.c
-index 8b5ff33..1f11a20 100644
---- a/drivers/w1/slaves/w1_therm.c
-+++ b/drivers/w1/slaves/w1_therm.c
-@@ -27,6 +27,7 @@
- #include <linux/sched.h>
- #include <linux/device.h>
- #include <linux/types.h>
-+#include <linux/slab.h>
- #include <linux/delay.h>
+diff --git a/drivers/w1/masters/ds2490.c b/drivers/w1/masters/ds2490.c
+index 6a3d0a1..cd59e12 100644
+--- a/drivers/w1/masters/ds2490.c
++++ b/drivers/w1/masters/ds2490.c
+@@ -252,7 +252,8 @@ static int ds_recv_status_nodump(struct ds_device *dev, struct ds_status *st,
+ 	memset(st, 0, sizeof(*st));
  
- #include "../w1.h"
-@@ -58,6 +59,19 @@ MODULE_ALIAS("w1-family-" __stringify(W1_THERM_DS28EA00));
- static int w1_strong_pullup = 1;
- module_param_named(strong_pullup, w1_strong_pullup, int, 0);
+ 	count = 0;
+-	err = usb_bulk_msg(dev->udev, usb_rcvbulkpipe(dev->udev, dev->ep[EP_STATUS]), buf, size, &count, 100);
++	err = usb_interrupt_msg(dev->udev, usb_rcvintpipe(dev->udev,
++		dev->ep[EP_STATUS]), buf, size, &count, 100);
+ 	if (err < 0) {
+ 		printk(KERN_ERR "Failed to read 1-wire data from 0x%x: err=%d.\n", dev->ep[EP_STATUS], err);
+ 		return err;
+@@ -917,7 +918,7 @@ static int ds_probe(struct usb_interface *intf,
+ 	struct usb_endpoint_descriptor *endpoint;
+ 	struct usb_host_interface *iface_desc;
+ 	struct ds_device *dev;
+-	int i, err;
++	int i, err, alt;
  
-+static int w1_therm_add_slave(struct w1_slave *sl)
-+{
-+	sl->family_data = kzalloc(9, GFP_KERNEL);
-+	if (!sl->family_data)
-+		return -ENOMEM;
-+	return 0;
-+}
-+
-+static void w1_therm_remove_slave(struct w1_slave *sl)
-+{
-+	kfree(sl->family_data);
-+	sl->family_data = NULL;
-+}
+ 	dev = kmalloc(sizeof(struct ds_device), GFP_KERNEL);
+ 	if (!dev) {
+@@ -935,20 +936,25 @@ static int ds_probe(struct usb_interface *intf,
  
- static ssize_t w1_slave_show(struct device *device,
- 	struct device_attribute *attr, char *buf);
-@@ -71,6 +85,8 @@ static struct attribute *w1_therm_attrs[] = {
- ATTRIBUTE_GROUPS(w1_therm);
+ 	usb_set_intfdata(intf, dev);
  
- static struct w1_family_ops w1_therm_fops = {
-+	.add_slave	= w1_therm_add_slave,
-+	.remove_slave	= w1_therm_remove_slave,
- 	.groups		= w1_therm_groups,
- };
+-	err = usb_set_interface(dev->udev, intf->altsetting[0].desc.bInterfaceNumber, 3);
++	err = usb_reset_configuration(dev->udev);
+ 	if (err) {
+-		printk(KERN_ERR "Failed to set alternative setting 3 for %d interface: err=%d.\n",
+-				intf->altsetting[0].desc.bInterfaceNumber, err);
++		dev_err(&dev->udev->dev,
++			"Failed to reset configuration: err=%d.\n", err);
+ 		goto err_out_clear;
+ 	}
  
-@@ -253,12 +269,13 @@ static ssize_t w1_slave_show(struct device *device,
- 	c -= snprintf(buf + PAGE_SIZE - c, c, ": crc=%02x %s\n",
- 			   crc, (verdict) ? "YES" : "NO");
- 	if (verdict)
--		memcpy(sl->rom, rom, sizeof(sl->rom));
-+		memcpy(sl->family_data, rom, sizeof(rom));
- 	else
- 		dev_warn(device, "Read failed CRC check\n");
+-	err = usb_reset_configuration(dev->udev);
++	/* alternative 3, 1ms interrupt (greatly speeds search), 64 byte bulk */
++	alt = 3;
++	err = usb_set_interface(dev->udev,
++		intf->altsetting[alt].desc.bInterfaceNumber, alt);
+ 	if (err) {
+-		printk(KERN_ERR "Failed to reset configuration: err=%d.\n", err);
++		dev_err(&dev->udev->dev, "Failed to set alternative setting %d "
++			"for %d interface: err=%d.\n", alt,
++			intf->altsetting[alt].desc.bInterfaceNumber, err);
+ 		goto err_out_clear;
+ 	}
  
- 	for (i = 0; i < 9; ++i)
--		c -= snprintf(buf + PAGE_SIZE - c, c, "%02x ", sl->rom[i]);
-+		c -= snprintf(buf + PAGE_SIZE - c, c, "%02x ",
-+			      ((u8 *)sl->family_data)[i]);
- 
- 	c -= snprintf(buf + PAGE_SIZE - c, c, "t=%d\n",
- 		w1_convert_temp(rom, sl->family->fid));
-diff --git a/drivers/w1/w1.h b/drivers/w1/w1.h
-index 390a730..0eb5050 100644
---- a/drivers/w1/w1.h
-+++ b/drivers/w1/w1.h
-@@ -67,7 +67,6 @@ struct w1_slave
- 	struct list_head	w1_slave_entry;
- 	struct w1_reg_num	reg_num;
- 	atomic_t		refcnt;
--	u8			rom[9];
- 	int			ttl;
- 	unsigned long		flags;
- 
+-	iface_desc = &intf->altsetting[0];
++	iface_desc = &intf->altsetting[alt];
+ 	if (iface_desc->desc.bNumEndpoints != NUM_EP-1) {
+ 		printk(KERN_INFO "Num endpoints=%d. It is not DS9490R.\n", iface_desc->desc.bNumEndpoints);
+ 		err = -EINVAL;
 -- 
 1.7.10.4
 
