@@ -1,144 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755684Ab3L2C2s (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:28:48 -0500
-Received: from mga01.intel.com ([192.55.52.88]:34417 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752572Ab3L2C2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:28:46 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,567,1384329600"; 
-   d="scan'208";a="457062113"
-Message-ID: <1388284125.3048.5.camel@empanada>
-Subject: Re: [PATCH] Tracing events with GPIOs
-From: Tom Zanussi <tom.zanussi@intel.com>
-To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sat, 28 Dec 2013 20:28:45 -0600
-In-Reply-To: <1388163096.9098.10.camel@empanada>
-References: <1387239745-2890-1-git-send-email-jjhiblot@traphandler.com>
-	 <52AFA5E0.7040707@hitachi.com>
-	 <CACh+v5NgwyAD5xy-feykUDXpzVUuF2yFxP35TsnGk3r+LFtRPA@mail.gmail.com>
-	 <1387304970.3051.35.camel@empanada>
-	 <20131217140502.2aed31aa@gandalf.local.home>
-	 <1387313151.3051.39.camel@empanada>
-	 <CACh+v5NqzGWi+g+cSO65UJOfcajq721HUoAjN__BWqLLOG3zkA@mail.gmail.com>
-	 <1388163096.9098.10.camel@empanada>
+	id S1755955Ab3L2C3F (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:29:05 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55539 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752500Ab3L2CK4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Dec 2013 21:10:56 -0500
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Ilija Hadzic" <ihadzic@research.bell-labs.com>,
+        "Sukadev Bhattiprolu" <sukadev@linux.vnet.ibm.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>
+Date: Sun, 29 Dec 2013 03:08:43 +0100
+Message-ID: <lsq.1388282923.773087876@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 061/185] devpts: plug the memory leak in kill_sb
+In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
+X-SA-Exim-Connect-IP: 31.18.200.85
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-12-27 at 10:51 -0600, Tom Zanussi wrote:
-> On Fri, 2013-12-27 at 15:54 +0100, Jean-Jacques Hiblot wrote:
-> > Hi Tom, Steven,
-> > 
-> > I'm currently doing some tests with the event triggers
-> > (git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-> > for-next).
-> > At the moment I can't use event triggers with probes dynamically
-> > created (with perf probe or via
-> > /sys/kernel/debug/tracing/kprobe_events)
-> > Predefined probes like
-> > /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger are working
-> > fine.
-> > Am I missing something ?
-> > 
-> 
-> No, it's just that kprobes hasn't been hooked up yet to actually invoke
-> the triggers.
-> 
-> Let me look at doing that over the weekend...
-> 
+3.2.54-rc1 review patch.  If anyone has any objections, please let me know.
 
-OK, I just posted a patch to add trigger invocations to kprobes, which
-you can also find here:
+------------------
 
-http://git.yoctoproject.org/cgit/cgit.cgi/linux-yocto-contrib/log/?h=tzanussi/kprobes-event-triggers 
+From: Ilija Hadzic <ihadzic@research.bell-labs.com>
 
-I tested it a bit here, but it could use more, so please let me know how
-it goes..
+commit 66da0e1f9034140ae2f571ef96e254a25083906c upstream.
 
-Tom
+When devpts is unmounted, there may be a no-longer-used IDR tree hanging
+off the superblock we are about to kill.  This needs to be cleaned up
+before destroying the SB.
 
+The leak is usually not a big deal because unmounting devpts is typically
+done when shutting down the whole machine.  However, shutting down an LXC
+container instead of a physical machine exposes the problem (the garbage
+is detectable with kmemleak).
 
-> Tom
-> 
-> > example:
-> > 
-> > ----------------------------------------------------------------
-> > with a predefined probe
-> > ----------------------------------------------------------------
-> > 
-> > prompt> echo 'stacktrace' >
-> > /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-> > prompt> ls
-> > prompt> cat /sys/kernel/debug/tracing/trace
-> > # tracer: nop
-> > #
-> > # entries-in-buffer/entries-written: 14/14   #P:1
-> > #
-> > #                              _-----=> irqs-off
-> > #                             / _----=> need-resched
-> > #                            | / _---=> hardirq/softirq
-> > #                            || / _--=> preempt-depth
-> > #                            ||| /     delay
-> > #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-> > #              | |       |   ||||       |         |
-> >               ls-971   [000] ....   298.050000: <stack trace>
-> >  => ftrace_raw_event_kmem_alloc
-> >  => kmem_cache_alloc_trace
-> >  => do_execve
-> >  => SyS_execve
-> >  => ret_fast_syscall
-> >               ls-971   [000] ....   298.050000: <stack trace>
-> >  => ftrace_raw_event_kmem_alloc
-> >  => kmem_cache_alloc_trace
-> >  => load_elf_binary
-> > [...]
-> > 
-> > ----------------------------------------------------------------
-> > with a dynamically defined probe
-> > ----------------------------------------------------------------
-> > 
-> > prompt> perf probe -a in_kmalloc=__kmalloc
-> > prompt> echo 'stacktrace' >
-> > /sys/kernel/debug/tracing/events/probe/in_kmalloc/trigger
-> > prompt> perf record -e probe:in_kmalloc -aR sleep 10&
-> > [... do something here ...]
-> > prompt> perf report
-> > [...]
-> > # Samples: 24  of event 'probe:in_kmalloc'
-> > # Event count (approx.): 24
-> > #
-> > # Overhead  Command      Shared Object         Symbol
-> > # ........  .......  .................  .............
-> > #
-> >     50.00%       ls  [kernel.kallsyms]  [k] __kmalloc
-> >     12.50%    sleep  [kernel.kallsyms]  [k] __kmalloc
-> >     12.50%       sh  [kernel.kallsyms]  [k] __kmalloc
-> >     12.50%     perf  [kernel.kallsyms]  [k] __kmalloc
-> >     12.50%     more  [kernel.kallsyms]  [k] __kmalloc
-> > [...]
-> > 
-> > prompt> cat /sys/kernel/debug/tracing/trace
-> > # tracer: nop
-> > #
-> > # entries-in-buffer/entries-written: 0/0   #P:1
-> > #
-> > #                              _-----=> irqs-off
-> > #                             / _----=> need-resched
-> > #                            | / _---=> hardirq/softirq
-> > #                            || / _--=> preempt-depth
-> > #              random: nonblocking pool is initialized
-> >               ||| /     delay
-> > #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-> > #              | |       |   ||||       |         |
-> 
+Signed-off-by: Ilija Hadzic <ihadzic@research.bell-labs.com>
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ fs/devpts/inode.c | 1 +
+ 1 file changed, 1 insertion(+)
 
+--- a/fs/devpts/inode.c
++++ b/fs/devpts/inode.c
+@@ -413,6 +413,7 @@ static void devpts_kill_sb(struct super_
+ {
+ 	struct pts_fs_info *fsi = DEVPTS_SB(sb);
+ 
++	ida_destroy(&fsi->allocated_ptys);
+ 	kfree(fsi);
+ 	kill_litter_super(sb);
+ }
 
