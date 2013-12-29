@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756576Ab3L2Cwc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:52:32 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54996 "EHLO
+	id S1756563Ab3L2Cwa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:52:30 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55192 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751810Ab3L2CKK (ORCPT
+	by vger.kernel.org with ESMTP id S1752271Ab3L2CKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:10:10 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Russell King" <rmk+kernel@arm.linux.org.uk>,
-        "Catalin Marinas" <catalin.marinas@arm.com>,
-        "Will Deacon" <will.deacon@arm.com>
+CC: akpm@linux-foundation.org, "Jean Delvare" <khali@linux-fr.org>,
+        "Brian Carnes" <bmcarnes@gmail.com>
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.395767228@decadent.org.uk>
+Message-ID: <lsq.1388282924.876812081@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 176/185] ARM: 7527/1: uaccess: explicitly check __user
- pointer when !CPU_USE_DOMAINS
+Subject: [PATCH 3.2 138/185] hwmon: (w83l786ng) Fix fan speed control mode
+ setting and reporting
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,240 +32,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Brian Carnes <bmcarnes@gmail.com>
 
-commit 8404663f81d212918ff85f493649a7991209fa04 upstream.
+commit cf7559bc053471f32373d71d04a9aa19e0b48d59 upstream.
 
-The {get,put}_user macros don't perform range checking on the provided
-__user address when !CPU_HAS_DOMAINS.
+The wrong mask is used, which causes some fan speed control modes
+(pwmX_enable) to be incorrectly reported, and some modes to be
+impossible to set.
 
-This patch reworks the out-of-line assembly accessors to check the user
-address against a specified limit, returning -EFAULT if is is out of
-range.
+[JD: add subject and description.]
 
-[will: changed get_user register allocation to match put_user]
-[rmk: fixed building on older ARM architectures]
-
-Reported-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-[bwh: Backported to 3.2: TUSER() was called T()]
+Signed-off-by: Brian Carnes <bmcarnes@gmail.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/include/asm/assembler.h |  8 ++++++++
- arch/arm/include/asm/uaccess.h   | 40 +++++++++++++++++++++++++++-------------
- arch/arm/lib/getuser.S           | 23 +++++++++++++++--------
- arch/arm/lib/putuser.S           |  6 ++++++
- 4 files changed, 56 insertions(+), 21 deletions(-)
+ drivers/hwmon/w83l786ng.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/arm/include/asm/assembler.h
-+++ b/arch/arm/include/asm/assembler.h
-@@ -307,4 +307,12 @@
- 	.size \name , . - \name
- 	.endm
- 
-+	.macro check_uaccess, addr:req, size:req, limit:req, tmp:req, bad:req
-+#ifndef CONFIG_CPU_USE_DOMAINS
-+	adds	\tmp, \addr, #\size - 1
-+	sbcccs	\tmp, \tmp, \limit
-+	bcs	\bad
-+#endif
-+	.endm
-+
- #endif /* __ASM_ASSEMBLER_H__ */
---- a/arch/arm/include/asm/uaccess.h
-+++ b/arch/arm/include/asm/uaccess.h
-@@ -101,28 +101,39 @@ extern int __get_user_1(void *);
- extern int __get_user_2(void *);
- extern int __get_user_4(void *);
- 
--#define __get_user_x(__r2,__p,__e,__s,__i...)				\
-+#define __GUP_CLOBBER_1	"lr", "cc"
-+#ifdef CONFIG_CPU_USE_DOMAINS
-+#define __GUP_CLOBBER_2	"ip", "lr", "cc"
-+#else
-+#define __GUP_CLOBBER_2 "lr", "cc"
-+#endif
-+#define __GUP_CLOBBER_4	"lr", "cc"
-+
-+#define __get_user_x(__r2,__p,__e,__l,__s)				\
- 	   __asm__ __volatile__ (					\
- 		__asmeq("%0", "r0") __asmeq("%1", "r2")			\
-+		__asmeq("%3", "r1")					\
- 		"bl	__get_user_" #__s				\
- 		: "=&r" (__e), "=r" (__r2)				\
--		: "0" (__p)						\
--		: __i, "cc")
-+		: "0" (__p), "r" (__l)					\
-+		: __GUP_CLOBBER_##__s)
- 
- #define get_user(x,p)							\
- 	({								\
-+		unsigned long __limit = current_thread_info()->addr_limit - 1; \
- 		register const typeof(*(p)) __user *__p asm("r0") = (p);\
- 		register unsigned long __r2 asm("r2");			\
-+		register unsigned long __l asm("r1") = __limit;		\
- 		register int __e asm("r0");				\
- 		switch (sizeof(*(__p))) {				\
- 		case 1:							\
--			__get_user_x(__r2, __p, __e, 1, "lr");		\
--	       		break;						\
-+			__get_user_x(__r2, __p, __e, __l, 1);		\
-+			break;						\
- 		case 2:							\
--			__get_user_x(__r2, __p, __e, 2, "r3", "lr");	\
-+			__get_user_x(__r2, __p, __e, __l, 2);		\
- 			break;						\
- 		case 4:							\
--	       		__get_user_x(__r2, __p, __e, 4, "lr");		\
-+			__get_user_x(__r2, __p, __e, __l, 4);		\
- 			break;						\
- 		default: __e = __get_user_bad(); break;			\
- 		}							\
-@@ -135,31 +146,34 @@ extern int __put_user_2(void *, unsigned
- extern int __put_user_4(void *, unsigned int);
- extern int __put_user_8(void *, unsigned long long);
- 
--#define __put_user_x(__r2,__p,__e,__s)					\
-+#define __put_user_x(__r2,__p,__e,__l,__s)				\
- 	   __asm__ __volatile__ (					\
- 		__asmeq("%0", "r0") __asmeq("%2", "r2")			\
-+		__asmeq("%3", "r1")					\
- 		"bl	__put_user_" #__s				\
- 		: "=&r" (__e)						\
--		: "0" (__p), "r" (__r2)					\
-+		: "0" (__p), "r" (__r2), "r" (__l)			\
- 		: "ip", "lr", "cc")
- 
- #define put_user(x,p)							\
- 	({								\
-+		unsigned long __limit = current_thread_info()->addr_limit - 1; \
- 		register const typeof(*(p)) __r2 asm("r2") = (x);	\
- 		register const typeof(*(p)) __user *__p asm("r0") = (p);\
-+		register unsigned long __l asm("r1") = __limit;		\
- 		register int __e asm("r0");				\
- 		switch (sizeof(*(__p))) {				\
- 		case 1:							\
--			__put_user_x(__r2, __p, __e, 1);		\
-+			__put_user_x(__r2, __p, __e, __l, 1);		\
- 			break;						\
- 		case 2:							\
--			__put_user_x(__r2, __p, __e, 2);		\
-+			__put_user_x(__r2, __p, __e, __l, 2);		\
- 			break;						\
- 		case 4:							\
--			__put_user_x(__r2, __p, __e, 4);		\
-+			__put_user_x(__r2, __p, __e, __l, 4);		\
- 			break;						\
- 		case 8:							\
--			__put_user_x(__r2, __p, __e, 8);		\
-+			__put_user_x(__r2, __p, __e, __l, 8);		\
- 			break;						\
- 		default: __e = __put_user_bad(); break;			\
- 		}							\
---- a/arch/arm/lib/getuser.S
-+++ b/arch/arm/lib/getuser.S
-@@ -16,8 +16,9 @@
-  * __get_user_X
-  *
-  * Inputs:	r0 contains the address
-+ *		r1 contains the address limit, which must be preserved
-  * Outputs:	r0 is the error code
-- *		r2, r3 contains the zero-extended value
-+ *		r2 contains the zero-extended value
-  *		lr corrupted
-  *
-  * No other registers must be altered.  (see <asm/uaccess.h>
-@@ -27,33 +28,39 @@
-  * Note also that it is intended that __get_user_bad is not global.
-  */
- #include <linux/linkage.h>
-+#include <asm/assembler.h>
- #include <asm/errno.h>
- #include <asm/domain.h>
- 
- ENTRY(__get_user_1)
-+	check_uaccess r0, 1, r1, r2, __get_user_bad
- 1:	T(ldrb)	r2, [r0]
- 	mov	r0, #0
- 	mov	pc, lr
- ENDPROC(__get_user_1)
- 
- ENTRY(__get_user_2)
--#ifdef CONFIG_THUMB2_KERNEL
--2:	T(ldrb)	r2, [r0]
--3:	T(ldrb)	r3, [r0, #1]
-+	check_uaccess r0, 2, r1, r2, __get_user_bad
-+#ifdef CONFIG_CPU_USE_DOMAINS
-+rb	.req	ip
-+2:	ldrbt	r2, [r0], #1
-+3:	ldrbt	rb, [r0], #0
- #else
--2:	T(ldrb)	r2, [r0], #1
--3:	T(ldrb)	r3, [r0]
-+rb	.req	r0
-+2:	ldrb	r2, [r0]
-+3:	ldrb	rb, [r0, #1]
- #endif
- #ifndef __ARMEB__
--	orr	r2, r2, r3, lsl #8
-+	orr	r2, r2, rb, lsl #8
- #else
--	orr	r2, r3, r2, lsl #8
-+	orr	r2, rb, r2, lsl #8
- #endif
- 	mov	r0, #0
- 	mov	pc, lr
- ENDPROC(__get_user_2)
- 
- ENTRY(__get_user_4)
-+	check_uaccess r0, 4, r1, r2, __get_user_bad
- 4:	T(ldr)	r2, [r0]
- 	mov	r0, #0
- 	mov	pc, lr
---- a/arch/arm/lib/putuser.S
-+++ b/arch/arm/lib/putuser.S
-@@ -16,6 +16,7 @@
-  * __put_user_X
-  *
-  * Inputs:	r0 contains the address
-+ *		r1 contains the address limit, which must be preserved
-  *		r2, r3 contains the value
-  * Outputs:	r0 is the error code
-  *		lr corrupted
-@@ -27,16 +28,19 @@
-  * Note also that it is intended that __put_user_bad is not global.
-  */
- #include <linux/linkage.h>
-+#include <asm/assembler.h>
- #include <asm/errno.h>
- #include <asm/domain.h>
- 
- ENTRY(__put_user_1)
-+	check_uaccess r0, 1, r1, ip, __put_user_bad
- 1:	T(strb)	r2, [r0]
- 	mov	r0, #0
- 	mov	pc, lr
- ENDPROC(__put_user_1)
- 
- ENTRY(__put_user_2)
-+	check_uaccess r0, 2, r1, ip, __put_user_bad
- 	mov	ip, r2, lsr #8
- #ifdef CONFIG_THUMB2_KERNEL
- #ifndef __ARMEB__
-@@ -60,12 +64,14 @@ ENTRY(__put_user_2)
- ENDPROC(__put_user_2)
- 
- ENTRY(__put_user_4)
-+	check_uaccess r0, 4, r1, ip, __put_user_bad
- 4:	T(str)	r2, [r0]
- 	mov	r0, #0
- 	mov	pc, lr
- ENDPROC(__put_user_4)
- 
- ENTRY(__put_user_8)
-+	check_uaccess r0, 8, r1, ip, __put_user_bad
- #ifdef CONFIG_THUMB2_KERNEL
- 5:	T(str)	r2, [r0]
- 6:	T(str)	r3, [r0, #4]
+--- a/drivers/hwmon/w83l786ng.c
++++ b/drivers/hwmon/w83l786ng.c
+@@ -471,7 +471,7 @@ store_pwm_enable(struct device *dev, str
+ 	mutex_lock(&data->update_lock);
+ 	reg = w83l786ng_read_value(client, W83L786NG_REG_FAN_CFG);
+ 	data->pwm_enable[nr] = val;
+-	reg &= ~(0x02 << W83L786NG_PWM_ENABLE_SHIFT[nr]);
++	reg &= ~(0x03 << W83L786NG_PWM_ENABLE_SHIFT[nr]);
+ 	reg |= (val - 1) << W83L786NG_PWM_ENABLE_SHIFT[nr];
+ 	w83l786ng_write_value(client, W83L786NG_REG_FAN_CFG, reg);
+ 	mutex_unlock(&data->update_lock);
+@@ -740,7 +740,7 @@ static struct w83l786ng_data *w83l786ng_
+ 			    ((pwmcfg >> W83L786NG_PWM_MODE_SHIFT[i]) & 1)
+ 			    ? 0 : 1;
+ 			data->pwm_enable[i] =
+-			    ((pwmcfg >> W83L786NG_PWM_ENABLE_SHIFT[i]) & 2) + 1;
++			    ((pwmcfg >> W83L786NG_PWM_ENABLE_SHIFT[i]) & 3) + 1;
+ 			data->pwm[i] = w83l786ng_read_value(client,
+ 			    W83L786NG_REG_PWM[i]);
+ 		}
 
