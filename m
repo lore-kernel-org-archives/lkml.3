@@ -1,99 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab3L2Gxv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 01:53:51 -0500
+	id S1751963Ab3L2Gxs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 01:53:48 -0500
 Received: from SpacedOut.fries.net ([67.64.210.234]:56779 "EHLO
 	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751202Ab3L2GxI (ORCPT
+	with ESMTP id S1750885Ab3L2GxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 01:53:08 -0500
+	Sun, 29 Dec 2013 01:53:01 -0500
 X-Greylist: delayed 366 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 Dec 2013 01:53:00 EST
 From: David Fries <David@Fries.net>
 To: linux-kernel@vger.kernel.org
 Cc: Evgeniy Polyakov <zbr@ioremap.net>, Marcin Jurkowski <marcin1j@gmail.com>,
         Josh Boyer <jwboyer@gmail.com>,
         Sven Geggus <lists@fuchsschwanzdomain.de>
-Subject: [PATCH 11/14] w1: ds2490 USB setup fixes
-Date: Sun, 29 Dec 2013 00:45:53 -0600
-Message-Id: <1388299556-12669-12-git-send-email-David@Fries.net>
+Subject: [PATCH 00/14] w1: async netlink, search, fixes, and improvements
+Date: Sun, 29 Dec 2013 00:45:42 -0600
+Message-Id: <1388299556-12669-1-git-send-email-David@Fries.net>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1388299556-12669-1-git-send-email-David@Fries.net>
-References: <1388299556-12669-1-git-send-email-David@Fries.net>
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Sun, 29 Dec 2013 00:46:38 -0600 (CST)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Sun, 29 Dec 2013 00:46:34 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calling usb_reset_configuration after usb_set_interface resets the
-interface that was just selected, so call reset first.
-Using alternative 3 greatly speeds the one wire search.
-alt 0 or 1, 10ms int, 23.16 seconds
-alt 2 or 3,  1ms int, 2.99 to 3.05 seconds
+This patch series aims to extend and improve the netlink interface to
+the one wire system.  Netlink is exposed as a socket interface which
+is normally assumed to be asynchronous which only blocks waiting on
+incoming packets or a fulls end buffer, but were executed on the
+calling thread.  A bus device search can be a lengthy operation and
+temperature conversion can take 750 ms.  With this patch series those
+lengthy operations are now processed on the thread originally created
+to do automatic searching, which gives it a reason to exist when
+automatic search is disabled.  Some other improvements for netlink is
+additional commands to add, remove, and list the known slaves, and
+send replies only to the requester.  They were previously multicast to
+everyone listening on the group, this required an additional argument
+to cn_netlink_send.
 
-Use usb_interrupt_msg not usb_bulk_msg as it is an interrupt pipe
-(bulk worked, it was just technically the wrong call).
+Search improvements include returning all devices found, as the first
+that wouldn't fit in a packet would be lost.  I marked only this patch
+for the stable tree, though you would have to have a lot of devices on
+one bus to hit it.  I had a fix to support aborting from netlink
+rather than just avoiding the oops as the previous patch did.
+The search can now pick up where it left off, along with setting the
+maximum number of slaves to search for at a time, a large network
+could split up the search operation into multiple passes.  ds2490 USB
+dongle now gains support for hardware search and along with not
+undoing the interface selection operation takes the search for my
+network from 23.16 seconds to .307346 seconds.
 
-Signed-off-by: David Fries <David@Fries.net>
-Cc: Evgeniy Polyakov <zbr@ioremap.net>
----
- drivers/w1/masters/ds2490.c |   22 ++++++++++++++--------
- 1 file changed, 14 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/w1/masters/ds2490.c b/drivers/w1/masters/ds2490.c
-index 6a3d0a1..cd59e12 100644
---- a/drivers/w1/masters/ds2490.c
-+++ b/drivers/w1/masters/ds2490.c
-@@ -252,7 +252,8 @@ static int ds_recv_status_nodump(struct ds_device *dev, struct ds_status *st,
- 	memset(st, 0, sizeof(*st));
- 
- 	count = 0;
--	err = usb_bulk_msg(dev->udev, usb_rcvbulkpipe(dev->udev, dev->ep[EP_STATUS]), buf, size, &count, 100);
-+	err = usb_interrupt_msg(dev->udev, usb_rcvintpipe(dev->udev,
-+		dev->ep[EP_STATUS]), buf, size, &count, 100);
- 	if (err < 0) {
- 		printk(KERN_ERR "Failed to read 1-wire data from 0x%x: err=%d.\n", dev->ep[EP_STATUS], err);
- 		return err;
-@@ -917,7 +918,7 @@ static int ds_probe(struct usb_interface *intf,
- 	struct usb_endpoint_descriptor *endpoint;
- 	struct usb_host_interface *iface_desc;
- 	struct ds_device *dev;
--	int i, err;
-+	int i, err, alt;
- 
- 	dev = kmalloc(sizeof(struct ds_device), GFP_KERNEL);
- 	if (!dev) {
-@@ -935,20 +936,25 @@ static int ds_probe(struct usb_interface *intf,
- 
- 	usb_set_intfdata(intf, dev);
- 
--	err = usb_set_interface(dev->udev, intf->altsetting[0].desc.bInterfaceNumber, 3);
-+	err = usb_reset_configuration(dev->udev);
- 	if (err) {
--		printk(KERN_ERR "Failed to set alternative setting 3 for %d interface: err=%d.\n",
--				intf->altsetting[0].desc.bInterfaceNumber, err);
-+		dev_err(&dev->udev->dev,
-+			"Failed to reset configuration: err=%d.\n", err);
- 		goto err_out_clear;
- 	}
- 
--	err = usb_reset_configuration(dev->udev);
-+	/* alternative 3, 1ms interrupt (greatly speeds search), 64 byte bulk */
-+	alt = 3;
-+	err = usb_set_interface(dev->udev,
-+		intf->altsetting[alt].desc.bInterfaceNumber, alt);
- 	if (err) {
--		printk(KERN_ERR "Failed to reset configuration: err=%d.\n", err);
-+		dev_err(&dev->udev->dev, "Failed to set alternative setting %d "
-+			"for %d interface: err=%d.\n", alt,
-+			intf->altsetting[alt].desc.bInterfaceNumber, err);
- 		goto err_out_clear;
- 	}
- 
--	iface_desc = &intf->altsetting[0];
-+	iface_desc = &intf->altsetting[alt];
- 	if (iface_desc->desc.bNumEndpoints != NUM_EP-1) {
- 		printk(KERN_INFO "Num endpoints=%d. It is not DS9490R.\n", iface_desc->desc.bNumEndpoints);
- 		err = -EINVAL;
--- 
-1.7.10.4
+The largest single change is to change the comment style for DocBook
+to process in addition to comment some additional functions and
+data structures.
 
