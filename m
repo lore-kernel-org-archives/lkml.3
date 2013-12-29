@@ -1,245 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594Ab3L2VX0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 16:23:26 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:55286 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752106Ab3L2VXW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 16:23:22 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Linux PCI <linux-pci@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Mike Lothian <mike@fireburn.co.uk>, madcatx@atlas.cz,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@linux.ie>,
-        Takashi Iwai <tiwai@suse.de>,
-        =?ISO-8859-1?Q?Joaqu=EDn_Aramend=EDa?= <samsagax@gmail.com>
-Subject: [PATCH][update] ACPIPHP / radeon / nouveau: Fix VGA switcheroo problem related to hotplug events
-Date: Sun, 29 Dec 2013 22:36:56 +0100
-Message-ID: <3135179.iXEx1Rk87m@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <10163453.2AxBLHI1XI@vostro.rjw.lan>
-References: <10163453.2AxBLHI1XI@vostro.rjw.lan>
+	id S1752691Ab3L2VYe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 16:24:34 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:42348 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752106Ab3L2VYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Dec 2013 16:24:33 -0500
+From: Gene Heskett <gheskett@wdtv.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Subject: Re: [BUG BISECTED FAILED] Phenom microcode revision mis-identified
+Date: Sun, 29 Dec 2013 16:24:23 -0500
+Cc: linux-kernel@vger.kernel.org
+References: <201312291224.03854.gheskett@wdtv.com> <201312291449.16667.gheskett@wdtv.com> <20131229201906.GR19878@titan.lakedaemon.net>
+In-Reply-To: <20131229201906.GR19878@titan.lakedaemon.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: Text/Plain;
+  charset="windows-1256"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312291624.23346.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Sunday 29 December 2013, Jason Cooper wrote:
+>On Sun, Dec 29, 2013 at 02:49:16PM -0500, Gene Heskett wrote:
+>> On Sunday 29 December 2013, Jason Cooper wrote:
+>> >On Sun, Dec 29, 2013 at 12:47:02PM -0500, Gene Heskett wrote:
+>> >> On Sunday 29 December 2013, Gene Heskett wrote:
+>> >> >Resend, incorrect subject line
+>> >> >
+>> >> >Here is the copy/paste of the final git bisect bad report:
+>> >> >
+>> >> >First, the reason for the bisect:
+>> >> >gene@coyote:~/linux-stable$ dmesg | grep -A2 microcode
+>> >> >[    0.518304] microcode: CPU0: patch_level=0x01000065
+>> >> >[    0.518396] microcode: CPU1: patch_level=0x01000065
+>> >> >[    0.518498] microcode: CPU2: patch_level=0x01000065
+>> >> >[    0.518593] microcode: CPU3: patch_level=0x01000065
+>> >> >[    0.518745] microcode: Microcode Update Driver: v2.00
+>> >> ><tigran@aivazian.fsnet.co.uk>, Peter Oruba
+>> >> >
+>> >> >The output above should have in each cpu case, a second, or final
+>> >> >line showing a patch level 0x0100083 in all cases.
+>> >> >This failure is on an AMD phenom 9550 equipt machine.
+>> >> >
+>> >> >I can and have built from the tarball pull, a 3.8.2 which does work
+>> >> >correctly.  The tarball build of 3.8.3 fails as above, and a
+>> >> >tarball build of 3.12.6 still fails.
+>> >> >
+>> >> >gene@coyote:~/linux-stable$ git bisect bad
+>> >> >908e88f285b909011dc7dbce5abaacf123f2f68d is the first bad commit
+>> >> >commit 908e88f285b909011dc7dbce5abaacf123f2f68d
+>> >> >Author: Russell King <rmk+kernel@arm.linux.org.uk>
+>> >> >Date:   Mon Feb 25 16:09:12 2013 +0000
+>> >> >
+>> >> >I'll next do a "git checkout v3.8.2" to double check that it works.
+>> >
+>> >Please re-read the manpage for git bisect, particularly the section
+>> >"Basic bisect commands".  You need to keep repeating building and
+>> >booting the kernel, execute 'git bisect [good|bad]', as git bisect
+>> >checks out different commits to try.  Depending on the number of
+>> >commits, it can take 7 to 10 iterations before it nails it down to the
+>> >bad commit.
+>> >
+>> >$ git log --oneline v3.8.2..v3.8.3 | wc -l
+>> >103
+>> >
+>> >So you started at v3.8.3, said v3.8.2 is good.  git bisect will then
+>> >checkout a commit in the middle (of the 103 commits to choose from). 
+>> >You need to build that kernel, boot it, and see if the error occurs. 
+>> >Then, type 'git bisect [bad|good]' depending on what happened.  When
+>> >that command returns, it has checked out a different commit between
+>> >v3.8.2 and v3.8.3.  Build, boot, and run 'git bisect [good|bad]'
+>> >depending on if the patch_level was reported properly.  Repeat until
+>> >it reports nothing left to test.
+>> >
+>> >> FWIW, a git checkout v3.8.2  also fails, so next I'll move my
+>> >> working tarball build .configs into that tree & see if it works.
+>> >
+>> >If the config you started with worked for v3.8.2 and didn't for
+>> >v3.8.3, keep using it.
+>> >
+>> >> This is getting stranger, a checkout v3.8.2 is supposed to match the
+>> >> tarball I got from kernel.org isn't it?
+>> >
+>> >Yes, see above.  As soon as you started the bisection process, you
+>> >were no longer on version 3.8.2 or 3.8.3, but somewhere in between. 
+>> >That's what's supposed to happen.
+>> >
+>> >Once you run enough iterations to get nothing left to test, record the
+>> >commit it identified, and run 'git bisect reset'.
+>> 
+>> I did do that, the above report was the final of about 8 or 9 reboots
+>> after telling it each time "git bisect bad".
+>
+>I'm not trying to insult you, but just to be clear: After each reboot,
+>was the patch_level reported wrong?
 
-The changes in the ACPI-based PCI hotplug (ACPIPHP) subsystem made
-during the 3.12 development cycle uncovered a problem with VGA
-switcheroo that on some systems, when the device-specific method
-(ATPX in the radeon case, _DSM in the nouveau case) is used to turn
-off the discrete graphics, the BIOS generates ACPI hotplug events for
-that device and those events cause ACPIPHP to attempt to remove the
-device from the system (they are events for a device that was present
-previously and is not present any more, so that's what should be done
-according to the spec).  Then, the system stops functioning correctly.
+Yes, that was my first check after the reboot, grepping dmesg to see if it 
+worked.  If it didn't, I told it "git bisect bad", built and booted the 
+next step in the bisect.  I cheated, and now have my makeit script tracking 
+the version. :)
 
-Since the hotplug events in question were simply silently ignored
-previously, the least intrusive way to address that problem is to
-make ACPIPHP ignore them again.  For this purpose, introduce a new
-ACPI device flag, no_hotplug, and modify ACPIPHP to ignore hotplug
-events for PCI devices whose ACPI companions have that flag set.
-Next, make the radeon and nouveau switcheroo detection code set the
-no_hotplug flag for the discrete graphics' ACPI companion.
+>If it was correct, you needed to
+>run 'git bisect good' instead.  I can't think of any other reason why it
+>would finger the commit above.
+>
+This first bisect was started at 3.8.3, working toward 3.8.2 as good.  Even 
+the last, git said final build, was bad.  I agree, the text of that patch 
+should have had no connection to my problem.  But the first build going 
+forward from 3.8.2 to 3.8.3, is good.  So I am continuing forward, although 
+as I see the compiler beefing about something, and its not something I 
+need, it will not be in the next build as its just gingerbread anyway.
 
-Fixes: bbd34fcdd1b2 (ACPI / hotplug / PCI: Register all devices under the given bridge)
-References: https://bugzilla.kernel.org/show_bug.cgi?id=61891
-References: https://bugzilla.kernel.org/show_bug.cgi?id=64891
-Reported-and-tested-by: Mike Lothian <mike@fireburn.co.uk>
-Reported-and-tested-by: <madcatx@atlas.cz>
-Reported-by: Joaquín Aramendía <samsagax@gmail.com>
-Cc: Alex Deucher <alexdeucher@gmail.com>
-Cc: Dave Airlie <airlied@linux.ie>
-Cc: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: 3.12+ <stable@vger.kernel.org> # 3.12+
----
+The build I am booted to ATM s/b the halfway to 3.8.3 point, and it works:
 
-Hi All,
+microcode: CPU0: patch_level=0x01000065
+microcode: CPU0: new patch_level=0x01000083
+microcode: CPU1: patch_level=0x01000065
+microcode: CPU1: new patch_level=0x01000083
+microcode: CPU2: patch_level=0x01000065
+microcode: CPU2: new patch_level=0x01000083
+microcode: CPU3: patch_level=0x01000065
+microcode: CPU3: new patch_level=0x01000083
+microcode: Microcode Update Driver: v2.00 <tigran@aivazian.fsnet.co.uk>, 
+Peter Oruba
 
-According to recent testing results, the nouveau part is needed to address
-that issue on systems with analogous layouts.
+Continuing with the bisect...
+>> These will all be 32 bit PAE kernels though as I don't know how to
+>> convert it to 64 bit when a make xconfig doesn't give me that option.
+>
+>Ahhh, then you should start with i386_defconfig.  You can see the full
+>list at arch/x86/configs/.  I assumed you were running 64bit, my fault.
+>
+>thx,
+>
+>Jason.
 
-Thanks,
-Rafael
 
----
- drivers/gpu/drm/nouveau/nouveau_acpi.c       |   20 ++++++++++++++++++--
- drivers/gpu/drm/radeon/radeon_atpx_handler.c |   20 ++++++++++++++++++--
- drivers/pci/hotplug/acpiphp_glue.c           |   26 +++++++++++++++++++++++---
- include/acpi/acpi_bus.h                      |    3 ++-
- 4 files changed, 61 insertions(+), 8 deletions(-)
+Cheers, Gene
+-- 
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Genes Web page <http://geneslinuxbox.net:6309/gene>
 
-Index: linux-pm/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-===================================================================
---- linux-pm.orig/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-+++ linux-pm/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-@@ -33,6 +33,7 @@ static struct radeon_atpx_priv {
- 	bool atpx_detected;
- 	/* handle for device - and atpx */
- 	acpi_handle dhandle;
-+	acpi_handle other_handle;
- 	struct radeon_atpx atpx;
- } radeon_atpx_priv;
- 
-@@ -451,9 +452,10 @@ static bool radeon_atpx_pci_probe_handle
- 		return false;
- 
- 	status = acpi_get_handle(dhandle, "ATPX", &atpx_handle);
--	if (ACPI_FAILURE(status))
-+	if (ACPI_FAILURE(status)) {
-+		radeon_atpx_priv.other_handle = dhandle;
- 		return false;
--
-+	}
- 	radeon_atpx_priv.dhandle = dhandle;
- 	radeon_atpx_priv.atpx.handle = atpx_handle;
- 	return true;
-@@ -526,10 +528,24 @@ static bool radeon_atpx_detect(void)
- 	}
- 
- 	if (has_atpx && vga_count == 2) {
-+		struct acpi_device *adev = NULL;
-+
- 		acpi_get_name(radeon_atpx_priv.atpx.handle, ACPI_FULL_PATHNAME, &buffer);
- 		printk(KERN_INFO "VGA switcheroo: detected switching method %s handle\n",
- 		       acpi_method_name);
- 		radeon_atpx_priv.atpx_detected = true;
-+		/*
-+		 * On some systems hotplug events are generated for the device
-+		 * being switched off when ATPX is executed.  They cause ACPI
-+		 * hotplug to trigger and attempt to remove the device from
-+		 * the system, which causes it to break down.  Prevent that from
-+		 * happening by setting the no_hotplug flag for the ACPI device
-+		 * object in question.
-+		 */
-+		acpi_bus_get_device(radeon_atpx_priv.other_handle, &adev);
-+		if (adev)
-+			adev->flags.no_hotplug = true;
-+
- 		return true;
- 	}
- 	return false;
-Index: linux-pm/drivers/gpu/drm/nouveau/nouveau_acpi.c
-===================================================================
---- linux-pm.orig/drivers/gpu/drm/nouveau/nouveau_acpi.c
-+++ linux-pm/drivers/gpu/drm/nouveau/nouveau_acpi.c
-@@ -51,6 +51,7 @@ static struct nouveau_dsm_priv {
- 	bool dsm_detected;
- 	bool optimus_detected;
- 	acpi_handle dhandle;
-+	acpi_handle other_handle;
- 	acpi_handle rom_handle;
- } nouveau_dsm_priv;
- 
-@@ -260,9 +261,10 @@ static int nouveau_dsm_pci_probe(struct
- 	if (!dhandle)
- 		return false;
- 
--	if (!acpi_has_method(dhandle, "_DSM"))
-+	if (!acpi_has_method(dhandle, "_DSM")) {
-+		nouveau_dsm_priv.other_handle = dhandle;
- 		return false;
--
-+	}
- 	if (nouveau_test_dsm(dhandle, nouveau_dsm, NOUVEAU_DSM_POWER))
- 		retval |= NOUVEAU_DSM_HAS_MUX;
- 
-@@ -333,11 +335,25 @@ static bool nouveau_dsm_detect(void)
- 		nouveau_dsm_priv.optimus_detected = true;
- 		ret = true;
- 	} else if (vga_count == 2 && has_dsm && guid_valid) {
-+		struct acpi_device *adev = NULL;
-+
- 		acpi_get_name(nouveau_dsm_priv.dhandle, ACPI_FULL_PATHNAME,
- 			&buffer);
- 		printk(KERN_INFO "VGA switcheroo: detected DSM switching method %s handle\n",
- 			acpi_method_name);
- 		nouveau_dsm_priv.dsm_detected = true;
-+		/*
-+		 * On some systems hotplug events are generated for the device
-+		 * being switched off when _DSM is executed.  They cause ACPI
-+		 * hotplug to trigger and attempt to remove the device from
-+		 * the system, which causes it to break down.  Prevent that from
-+		 * happening by setting the no_hotplug flag for the ACPI device
-+		 * object in question.
-+		 */
-+		acpi_bus_get_device(nouveau_dsm_priv.other_handle, &adev);
-+		if (adev)
-+			adev->flags.no_hotplug = true;
-+
- 		ret = true;
- 	}
- 
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -169,7 +169,8 @@ struct acpi_device_flags {
- 	u32 ejectable:1;
- 	u32 power_manageable:1;
- 	u32 match_driver:1;
--	u32 reserved:27;
-+	u32 no_hotplug:1;
-+	u32 reserved:26;
- };
- 
- /* File System */
-Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
-+++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -643,6 +643,24 @@ static void disable_slot(struct acpiphp_
- 	slot->flags &= (~SLOT_ENABLED);
- }
- 
-+static bool acpiphp_no_hotplug(acpi_handle handle)
-+{
-+	struct acpi_device *adev = NULL;
-+
-+	acpi_bus_get_device(handle, &adev);
-+	return adev && adev->flags.no_hotplug;
-+}
-+
-+static bool slot_no_hotplug(struct acpiphp_slot *slot)
-+{
-+	struct acpiphp_func *func;
-+
-+	list_for_each_entry(func, &slot->funcs, sibling)
-+		if (acpiphp_no_hotplug(func_to_handle(func)))
-+			return true;
-+
-+	return false;
-+}
- 
- /**
-  * get_slot_status - get ACPI slot status
-@@ -701,7 +719,8 @@ static void trim_stale_devices(struct pc
- 		unsigned long long sta;
- 
- 		status = acpi_evaluate_integer(handle, "_STA", NULL, &sta);
--		alive = ACPI_SUCCESS(status) && sta == ACPI_STA_ALL;
-+		alive = (ACPI_SUCCESS(status) && sta == ACPI_STA_ALL)
-+			|| acpiphp_no_hotplug(handle);
- 	}
- 	if (!alive) {
- 		u32 v;
-@@ -741,8 +760,9 @@ static void acpiphp_check_bridge(struct
- 		struct pci_dev *dev, *tmp;
- 
- 		mutex_lock(&slot->crit_sect);
--		/* wake up all functions */
--		if (get_slot_status(slot) == ACPI_STA_ALL) {
-+		if (slot_no_hotplug(slot)) {
-+			; /* do nothing */
-+		} else if (get_slot_status(slot) == ACPI_STA_ALL) {
- 			/* remove stale devices if any */
- 			list_for_each_entry_safe(dev, tmp, &bus->devices,
- 						 bus_list)
-
+Never frighten a small man -- he'll kill you.
+A pen in the hand of this president is far more
+dangerous than 200 million guns in the hands of
+         law-abiding citizens.
