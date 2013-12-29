@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751030Ab3L2GrL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 01:47:11 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:21248 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750819Ab3L2GrJ (ORCPT
+	id S1751175Ab3L2GxB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 01:53:01 -0500
+Received: from SpacedOut.fries.net ([67.64.210.234]:56779 "EHLO
+	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab3L2GxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 01:47:09 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+aPqrDlMi8w7jFeBeVWsvOkxKglmiiCwY=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 714774FD99A
-Date: Sun, 29 Dec 2013 01:47:07 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Gene Heskett <gheskett@wdtv.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Git puzzle
-Message-ID: <20131229064707.GP19878@titan.lakedaemon.net>
-References: <201312282141.40725.gheskett@wdtv.com>
- <201312290011.26801.gheskett@wdtv.com>
- <20131229052556.GM19878@titan.lakedaemon.net>
- <201312290127.05858.gheskett@wdtv.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201312290127.05858.gheskett@wdtv.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 29 Dec 2013 01:53:00 -0500
+X-Greylist: delayed 366 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 Dec 2013 01:53:00 EST
+From: David Fries <David@Fries.net>
+To: linux-kernel@vger.kernel.org
+Cc: Evgeniy Polyakov <zbr@ioremap.net>, Marcin Jurkowski <marcin1j@gmail.com>,
+        Josh Boyer <jwboyer@gmail.com>,
+        Sven Geggus <lists@fuchsschwanzdomain.de>
+Subject: [PATCH 03/14] w1: Only wake up the search process if it is going to be searching
+Date: Sun, 29 Dec 2013 00:45:45 -0600
+Message-Id: <1388299556-12669-4-git-send-email-David@Fries.net>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1388299556-12669-1-git-send-email-David@Fries.net>
+References: <1388299556-12669-1-git-send-email-David@Fries.net>
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Sun, 29 Dec 2013 00:46:36 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 29, 2013 at 01:27:05AM -0500, Gene Heskett wrote:
-> On Sunday 29 December 2013, Jason Cooper wrote:
-...
-> >You may want to try the opposite approach.  x86_64_defconfig, then add
-> >just what is necessary to boot and reproduce the bug.
-> 
-> Did that, then added some stuff for my hdwe, made sure the Makefile version 
-> and my makeit script versions matched. Fired off my build/install script, 
-> But it bailed out at the mkinitramfs stage, couldn't find 
-> /lib/modules/3.8.2 because it was named "3.8.2+".
+It's valid to set the search count to 0 to stop searching, so don't
+wake up the search thread to not search.
 
-For this bisect run, can you do without the initramfs?  Just build the
-sata driver and the fs driver into the kernel.  You may want to drop
-makeit and just do the bare minimum, 'make bzImage && make modules &&
-make modules_install' or similar.
+Signed-off-by: David Fries <David@Fries.net>
+Cc: Evgeniy Polyakov <zbr@ioremap.net>
+---
+ drivers/w1/w1.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-The '+' means the kernel build system (using git) determined that there
-were changes to the source tree from the most recent tagged version.  If
-there weren't, it would just use the tag 3.8.2.  You can take a look at
-scripts/setlocalversion to see how it figures it out.
+diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
+index 67b6d5f..92766a9 100644
+--- a/drivers/w1/w1.c
++++ b/drivers/w1/w1.c
+@@ -243,7 +243,9 @@ static ssize_t w1_master_attribute_store_search(struct device * dev,
+ 	mutex_lock(&md->mutex);
+ 	md->search_count = tmp;
+ 	mutex_unlock(&md->mutex);
+-	wake_up_process(md->thread);
++	/* Only wake if it is going to be searching. */
++	if (tmp)
++		wake_up_process(md->thread);
+ 
+ 	return count;
+ }
+-- 
+1.7.10.4
 
-hth,
-
-Jason.
