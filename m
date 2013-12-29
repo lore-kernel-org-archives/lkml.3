@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756487Ab3L2Cts (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:49:48 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55204 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751930Ab3L2CKO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752432Ab3L2CKO (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 28 Dec 2013 21:10:14 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55097 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752175Ab3L2CKD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Dec 2013 21:10:03 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Russell King" <rmk+kernel@arm.linux.org.uk>,
-        "Konstantin Khlebnikov" <k.khlebnikov@samsung.com>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Dave Jones" <davej@redhat.com>, "Eric Dumazet" <edumazet@google.com>
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.513140252@decadent.org.uk>
+Message-ID: <lsq.1388282924.295185558@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 128/185] ARM: 7913/1: fix framepointer check in
- unwind_frame
+Subject: [PATCH 3.2 157/185] ipv4: fix possible seqlock deadlock
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,29 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 3abb6671a9c04479c4bd026798a05f857393b7e2 upstream.
+[ Upstream commit c9e9042994d37cbc1ee538c500e9da1bb9d1bcdf ]
 
-This patch fixes corner case when (fp + 4) overflows unsigned long,
-for example: fp = 0xFFFFFFFF -> fp + 4 == 3.
+ip4_datagram_connect() being called from process context,
+it should use IP_INC_STATS() instead of IP_INC_STATS_BH()
+otherwise we can deadlock on 32bit arches, or get corruptions of
+SNMP counters.
 
-Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Fixes: 584bdf8cbdf6 ("[IPV4]: Fix "ipOutNoRoutes" counter error for TCP and UDP")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/kernel/stacktrace.c | 2 +-
+ net/ipv4/datagram.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/kernel/stacktrace.c
-+++ b/arch/arm/kernel/stacktrace.c
-@@ -31,7 +31,7 @@ int notrace unwind_frame(struct stackfra
- 	high = ALIGN(low, THREAD_SIZE);
+diff --git a/net/ipv4/datagram.c b/net/ipv4/datagram.c
+index 424fafb..ec07510 100644
+--- a/net/ipv4/datagram.c
++++ b/net/ipv4/datagram.c
+@@ -57,7 +57,7 @@ int ip4_datagram_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
+ 	if (IS_ERR(rt)) {
+ 		err = PTR_ERR(rt);
+ 		if (err == -ENETUNREACH)
+-			IP_INC_STATS_BH(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
++			IP_INC_STATS(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
+ 		goto out;
+ 	}
  
- 	/* check current frame pointer is within bounds */
--	if (fp < (low + 12) || fp + 4 >= high)
-+	if (fp < low + 12 || fp > high - 4)
- 		return -EINVAL;
- 
- 	/* restore the registers from the stack frame */
 
