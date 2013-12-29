@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab3L2Cxz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:53:55 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55068 "EHLO
+	id S1756620Ab3L2Cxx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:53:53 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55155 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752253Ab3L2CKH (ORCPT
+	by vger.kernel.org with ESMTP id S1752241Ab3L2CKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:10:07 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,16 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Alasdair G Kergon" <agk@redhat.com>,
-        "Mike Snitzer" <snitzer@redhat.com>,
-        "Mikulas Patocka" <mpatocka@redhat.com>
-Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.830153121@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Nikolay Aleksandrov" <nikolay@redhat.com>,
+        "Jay Vosburgh" <fubar@us.ibm.com>,
+        "Veaceslav Falico" <vfalico@redhat.com>,
+        "Andy Gospodarek" <andy@greyhouse.net>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Sun, 29 Dec 2013 03:08:44 +0100
+Message-ID: <lsq.1388282924.592295673@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 019/185] dm: allocate buffer for messages with small
- number of arguments using GFP_NOIO
+Subject: [PATCH 3.2 154/185] bonding: fix two race conditions in 
+ bond_store_updelay/downdelay
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,59 +35,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Nikolay Aleksandrov <nikolay@redhat.com>
 
-commit f36afb3957353d2529cb2b00f78fdccd14fc5e9c upstream.
+[ Upstream commit b869ccfab1e324507fa3596e3e1308444fb68227 ]
 
-dm-mpath and dm-thin must process messages even if some device is
-suspended, so we allocate argv buffer with GFP_NOIO. These messages have
-a small fixed number of arguments.
+This patch fixes two race conditions between bond_store_updelay/downdelay
+and bond_store_miimon which could lead to division by zero as miimon can
+be set to 0 while either updelay/downdelay are being set and thus miss the
+zero check in the beginning, the zero div happens because updelay/downdelay
+are stored as new_value / bond->params.miimon. Use rtnl to synchronize with
+miimon setting.
 
-On the other hand, dm-switch needs to process bulk data using messages
-so excessive use of GFP_NOIO could cause trouble.
-
-The patch also lowers the default number of arguments from 64 to 8, so
-that there is smaller load on GFP_NOIO allocations.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Alasdair G Kergon <agk@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+CC: Jay Vosburgh <fubar@us.ibm.com>
+CC: Andy Gospodarek <andy@greyhouse.net>
+CC: Veaceslav Falico <vfalico@redhat.com>
+Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
+Acked-by: Veaceslav Falico <vfalico@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/dm-table.c | 18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ drivers/net/bonding/bond_sysfs.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/md/dm-table.c
-+++ b/drivers/md/dm-table.c
-@@ -581,14 +581,28 @@ static int adjoin(struct dm_table *table
+diff --git a/drivers/net/bonding/bond_sysfs.c b/drivers/net/bonding/bond_sysfs.c
+index aae24d1..cf95bd8 100644
+--- a/drivers/net/bonding/bond_sysfs.c
++++ b/drivers/net/bonding/bond_sysfs.c
+@@ -694,6 +694,8 @@ static ssize_t bonding_store_downdelay(struct device *d,
+ 	int new_value, ret = count;
+ 	struct bonding *bond = to_bond(d);
  
- /*
-  * Used to dynamically allocate the arg array.
-+ *
-+ * We do first allocation with GFP_NOIO because dm-mpath and dm-thin must
-+ * process messages even if some device is suspended. These messages have a
-+ * small fixed number of arguments.
-+ *
-+ * On the other hand, dm-switch needs to process bulk data using messages and
-+ * excessive use of GFP_NOIO could cause trouble.
-  */
- static char **realloc_argv(unsigned *array_size, char **old_argv)
- {
- 	char **argv;
- 	unsigned new_size;
-+	gfp_t gfp;
++	if (!rtnl_trylock())
++		return restart_syscall();
+ 	if (!(bond->params.miimon)) {
+ 		pr_err("%s: Unable to set down delay as MII monitoring is disabled\n",
+ 		       bond->dev->name);
+@@ -727,6 +729,7 @@ static ssize_t bonding_store_downdelay(struct device *d,
+ 	}
  
--	new_size = *array_size ? *array_size * 2 : 64;
--	argv = kmalloc(new_size * sizeof(*argv), GFP_KERNEL);
-+	if (*array_size) {
-+		new_size = *array_size * 2;
-+		gfp = GFP_KERNEL;
-+	} else {
-+		new_size = 8;
-+		gfp = GFP_NOIO;
-+	}
-+	argv = kmalloc(new_size * sizeof(*argv), gfp);
- 	if (argv) {
- 		memcpy(argv, old_argv, *array_size * sizeof(*argv));
- 		*array_size = new_size;
+ out:
++	rtnl_unlock();
+ 	return ret;
+ }
+ static DEVICE_ATTR(downdelay, S_IRUGO | S_IWUSR,
+@@ -749,6 +752,8 @@ static ssize_t bonding_store_updelay(struct device *d,
+ 	int new_value, ret = count;
+ 	struct bonding *bond = to_bond(d);
+ 
++	if (!rtnl_trylock())
++		return restart_syscall();
+ 	if (!(bond->params.miimon)) {
+ 		pr_err("%s: Unable to set up delay as MII monitoring is disabled\n",
+ 		       bond->dev->name);
+@@ -782,6 +787,7 @@ static ssize_t bonding_store_updelay(struct device *d,
+ 	}
+ 
+ out:
++	rtnl_unlock();
+ 	return ret;
+ }
+ static DEVICE_ATTR(updelay, S_IRUGO | S_IWUSR,
 
