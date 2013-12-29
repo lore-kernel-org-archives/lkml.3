@@ -1,81 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752358Ab3L2NaG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 08:30:06 -0500
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:45274 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426Ab3L2NaE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 08:30:04 -0500
-Date: Sun, 29 Dec 2013 15:29:56 +0200
-From: Amir Vadai <amirv@mellanox.com>
-To: Ding Tianhong <dingtianhong@huawei.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: net: mlx4: slight optimization of addr compare
-Message-ID: <20131229132944.GA2944@mtl-eit-vdi-22.mtl.labs.mlnx>
-References: <52BD22C3.9070908@huawei.com>
+	id S1752404Ab3L2NnZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 08:43:25 -0500
+Received: from miob.sk ([93.184.70.139]:34129 "EHLO miob.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751426Ab3L2NnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Dec 2013 08:43:24 -0500
+X-Greylist: delayed 724 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 Dec 2013 08:43:23 EST
+Message-ID: <14b6f07c3cb8edfc1046e8ae82d0a55e.squirrel@webmail.miob.sk>
+Date: Sun, 29 Dec 2013 14:30:57 +0100
+Subject: 
+From: "ADAMS WILLIAMS" <info@loan.co.uk>
+Reply-To: williams_adams@paysandu.com
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52BD22C3.9070908@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/12/13 14:48 +0800, Ding Tianhong wrote:
-> Use possibly more efficient ether_addr_equal
-> to instead of memcmp.
-> 
-> Cc: Amir Vadai <amirv@mellanox.com>
-> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
-> ---
->  drivers/net/ethernet/mellanox/mlx4/en_netdev.c        | 4 ++--
->  drivers/net/ethernet/mellanox/mlx4/resource_tracker.c | 2 +-
->  2 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-> index 6f92090..7e43858 100644
-> --- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-> +++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-> @@ -782,7 +782,7 @@ static void update_mclist_flags(struct mlx4_en_priv *priv,
->  	list_for_each_entry(dst_tmp, dst, list) {
->  		found = false;
->  		list_for_each_entry(src_tmp, src, list) {
-> -			if (!memcmp(dst_tmp->addr, src_tmp->addr, ETH_ALEN)) {
-> +			if (ether_addr_equal(dst_tmp->addr, src_tmp->addr)) {
->  				found = true;
->  				break;
->  			}
-> @@ -797,7 +797,7 @@ static void update_mclist_flags(struct mlx4_en_priv *priv,
->  	list_for_each_entry(src_tmp, src, list) {
->  		found = false;
->  		list_for_each_entry(dst_tmp, dst, list) {
-> -			if (!memcmp(dst_tmp->addr, src_tmp->addr, ETH_ALEN)) {
-> +			if (ether_addr_equal(dst_tmp->addr, src_tmp->addr)) {
->  				dst_tmp->action = MCLIST_NONE;
->  				found = true;
->  				break;
-> diff --git a/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c b/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
-> index 2f3f2bc..2e3232c 100644
-> --- a/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
-> +++ b/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
-> @@ -3634,7 +3634,7 @@ static int validate_eth_header_mac(int slave, struct _rule_hw *eth_header,
->  	    !is_broadcast_ether_addr(eth_header->eth.dst_mac)) {
->  		list_for_each_entry_safe(res, tmp, rlist, list) {
->  			be_mac = cpu_to_be64(res->mac << 16);
-> -			if (!memcmp(&be_mac, eth_header->eth.dst_mac, ETH_ALEN))
-> +			if (ether_addr_equal((u8 *)&be_mac, eth_header->eth.dst_mac))
->  				return 0;
->  		}
->  		pr_err("MAC %pM doesn't belong to VF %d, Steering rule rejected\n",
-> -- 
-> 1.8.0
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Acked-By: Amir Vadai <amirv@mellanox.com>
+
+
+
+Good Day,
+
+I am a private lender I give out Guarantee Business Loans, Automobile
+Purchase
+Loans, House Purchase Loans and other Personal Loans E.T.C I give out long
+term
+Loan ranging from $2,000.00 to $700,000.00 from one to Ten years maximum
+With 3% interest rate, If interested you can email me on my email here
+(williams_adams@paysandu.com)
+
