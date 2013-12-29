@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756361Ab3L2Crf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:47:35 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55194 "EHLO
+	id S1756400Ab3L2CsL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:48:11 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55147 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752355Ab3L2CKX (ORCPT
+	by vger.kernel.org with ESMTP id S1752227Ab3L2CKW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:10:23 -0500
+	Sat, 28 Dec 2013 21:10:22 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Russell King" <rmk+kernel@arm.linux.org.uk>,
-        "Will Deacon" <will.deacon@arm.com>,
-        "Konstantin Khlebnikov" <k.khlebnikov@samsung.com>
+CC: akpm@linux-foundation.org, "Darren Hart" <dvhart@linux.intel.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Andrea Arcangeli" <aarcange@redhat.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Mel Gorman" <mgorman@suse.de>, "Oleg Nesterov" <oleg@redhat.com>
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.661315400@decadent.org.uk>
+Message-ID: <lsq.1388282924.926384229@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 127/185] ARM: 7912/1: check stack pointer in get_wchan
+Subject: [PATCH 3.2 141/185] futex: fix handling of read-only-mapped hugepages
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,54 +34,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 1b15ec7a7427d4188ba91b9bbac696250a059d22 upstream.
+commit f12d5bfceb7e1f9051563381ec047f7f13956c3c upstream.
 
-get_wchan() is lockless. Task may wakeup at any time and change its own stack,
-thus each next stack frame may be overwritten and filled with random stuff.
+The hugepage code had the exact same bug that regular pages had in
+commit 7485d0d3758e ("futexes: Remove rw parameter from
+get_futex_key()").
 
-/proc/$pid/stack interface had been disabled for non-current tasks, see [1]
-But 'wchan' still allows to trigger stack frame unwinding on volatile stack.
+The regular page case was fixed by commit 9ea71503a8ed ("futex: Fix
+regression with read only mappings"), but the transparent hugepage case
+(added in a5b338f2b0b1: "thp: update futex compound knowledge") case
+remained broken.
 
-This patch fixes oops in unwind_frame() by adding stack pointer validation on
-each step (as x86 code do), unwind_frame() already checks frame pointer.
+Found by Dave Jones and his trinity tool.
 
-Also I've found another report of this oops on stackoverflow (irony).
-
-Link: http://www.spinics.net/lists/arm-kernel/msg110589.html [1]
-Link: http://stackoverflow.com/questions/18479894/unwind-frame-cause-a-kernel-paging-error
-
-Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Reported-and-tested-by: Dave Jones <davej@fedoraproject.org>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Darren Hart <dvhart@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/kernel/process.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ kernel/futex.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -468,6 +468,7 @@ EXPORT_SYMBOL(kernel_thread);
- unsigned long get_wchan(struct task_struct *p)
- {
- 	struct stackframe frame;
-+	unsigned long stack_page;
- 	int count = 0;
- 	if (!p || p == current || p->state == TASK_RUNNING)
- 		return 0;
-@@ -476,9 +477,11 @@ unsigned long get_wchan(struct task_stru
- 	frame.sp = thread_saved_sp(p);
- 	frame.lr = 0;			/* recovered from the stack */
- 	frame.pc = thread_saved_pc(p);
-+	stack_page = (unsigned long)task_stack_page(p);
- 	do {
--		int ret = unwind_frame(&frame);
--		if (ret < 0)
-+		if (frame.sp < stack_page ||
-+		    frame.sp >= stack_page + THREAD_SIZE ||
-+		    unwind_frame(&frame) < 0)
- 			return 0;
- 		if (!in_sched_functions(frame.pc))
- 			return frame.pc;
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -285,7 +285,7 @@ again:
+ 		put_page(page);
+ 		/* serialize against __split_huge_page_splitting() */
+ 		local_irq_disable();
+-		if (likely(__get_user_pages_fast(address, 1, 1, &page) == 1)) {
++		if (likely(__get_user_pages_fast(address, 1, !ro, &page) == 1)) {
+ 			page_head = compound_head(page);
+ 			/*
+ 			 * page_head is valid pointer but we must pin
 
