@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756437Ab3L2Csq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:48:46 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55208 "EHLO
+	id S1756468Ab3L2Ctb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:49:31 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55132 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752301Ab3L2CKV (ORCPT
+	by vger.kernel.org with ESMTP id S1752194Ab3L2CKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:10:21 -0500
+	Sat, 28 Dec 2013 21:10:15 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Guenter Roeck" <linux@roeck-us.net>,
-        "Jean Delvare" <khali@linux-fr.org>
-Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.244680006@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Gwendal Grignou" <gwendal@google.com>,
+        "Tejun Heo" <tj@kernel.org>
+Date: Sun, 29 Dec 2013 03:08:43 +0100
+Message-ID: <lsq.1388282923.128059994@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 139/185] hwmon: (w83l768ng) Fix fan speed control range
+Subject: [PATCH 3.2 010/185] libata: Fix display of sata speed
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,49 +31,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Gwendal Grignou <gwendal@google.com>
 
-commit 33a7ab91d509fa33b4bcd3ce0038cc80298050da upstream.
+commit 3e85c3ecbc520751324a191d23bb94873ed01b10 upstream.
 
-The W83L786NG stores the fan speed on 4 bits while the sysfs interface
-uses a 0-255 range. Thus the driver should scale the user input down
-to map it to the device range, and scale up the value read from the
-device before presenting it to the user. The reserved register nibble
-should be left unchanged.
+6.0 Gbps link speed was not decoded properly:
+speed was reported at 3.0 Gbps only.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-[bwh: Backported to 3.2: adjust context]
+Tested: On a machine where libata reports 6.0 Gbps in
+        /var/log/messages:
+    ata1: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
+
+    Before:
+    	cat /sys/class/ata_link/link1/sata_spd
+    	3.0 Gbps
+    After:
+    	cat /sys/class/ata_link/link1/sata_spd
+    	6.0 Gbps
+
+Signed-off-by: Gwendal Grignou <gwendal@google.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hwmon/w83l786ng.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/ata/libata-transport.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/hwmon/w83l786ng.c
-+++ b/drivers/hwmon/w83l786ng.c
-@@ -447,8 +447,11 @@ store_pwm(struct device *dev, struct dev
- 	struct w83l786ng_data *data = i2c_get_clientdata(client);
- 	u32 val = SENSORS_LIMIT(simple_strtoul(buf, NULL, 10), 0, 255);
+--- a/drivers/ata/libata-transport.c
++++ b/drivers/ata/libata-transport.c
+@@ -312,25 +312,25 @@ int ata_tport_add(struct device *parent,
+ /*
+  * ATA link attributes
+  */
++static int noop(int x) { return x; }
  
-+	val = DIV_ROUND_CLOSEST(val, 0x11);
-+
- 	mutex_lock(&data->update_lock);
--	data->pwm[nr] = val;
-+	data->pwm[nr] = val * 0x11;
-+	val |= w83l786ng_read_value(client, W83L786NG_REG_PWM[nr]) & 0xf0;
- 	w83l786ng_write_value(client, W83L786NG_REG_PWM[nr], val);
- 	mutex_unlock(&data->update_lock);
- 	return count;
-@@ -741,8 +744,9 @@ static struct w83l786ng_data *w83l786ng_
- 			    ? 0 : 1;
- 			data->pwm_enable[i] =
- 			    ((pwmcfg >> W83L786NG_PWM_ENABLE_SHIFT[i]) & 3) + 1;
--			data->pwm[i] = w83l786ng_read_value(client,
--			    W83L786NG_REG_PWM[i]);
-+			data->pwm[i] =
-+			    (w83l786ng_read_value(client, W83L786NG_REG_PWM[i])
-+			     & 0x0f) * 0x11;
- 		}
+-
+-#define ata_link_show_linkspeed(field)					\
++#define ata_link_show_linkspeed(field, format)			        \
+ static ssize_t								\
+ show_ata_link_##field(struct device *dev,				\
+ 		      struct device_attribute *attr, char *buf)		\
+ {									\
+ 	struct ata_link *link = transport_class_to_link(dev);		\
+ 									\
+-	return sprintf(buf,"%s\n", sata_spd_string(fls(link->field)));	\
++	return sprintf(buf, "%s\n", sata_spd_string(format(link->field))); \
+ }
+ 
+-#define ata_link_linkspeed_attr(field)					\
+-	ata_link_show_linkspeed(field)					\
++#define ata_link_linkspeed_attr(field, format)				\
++	ata_link_show_linkspeed(field, format)				\
+ static DEVICE_ATTR(field, S_IRUGO, show_ata_link_##field, NULL)
+ 
+-ata_link_linkspeed_attr(hw_sata_spd_limit);
+-ata_link_linkspeed_attr(sata_spd_limit);
+-ata_link_linkspeed_attr(sata_spd);
++ata_link_linkspeed_attr(hw_sata_spd_limit, fls);
++ata_link_linkspeed_attr(sata_spd_limit, fls);
++ata_link_linkspeed_attr(sata_spd, noop);
  
  
+ static DECLARE_TRANSPORT_CLASS(ata_link_class,
 
