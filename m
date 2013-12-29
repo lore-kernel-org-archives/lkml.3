@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755592Ab3L2CSE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:18:04 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55668 "EHLO
+	id S1755576Ab3L2CSB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:18:01 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55710 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753492Ab3L2CLT (ORCPT
+	by vger.kernel.org with ESMTP id S1753916Ab3L2CLT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:11:19 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,11 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Herbert Xu" <herbert@gondor.apana.org.au>
+CC: akpm@linux-foundation.org, "Eric Paris" <eparis@redhat.com>,
+        "Mathias Krause" <minipli@googlemail.com>,
+        "Al Viro" <viro@zeniv.linux.org.uk>,
+        "Richard Guy Briggs" <rgb@redhat.com>
 Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.124404315@decadent.org.uk>
+Message-ID: <lsq.1388282923.902653976@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 026/185] crypto: s390 - Fix aes-cbc IV corruption
+Subject: [PATCH 3.2 028/185] audit: fix info leak in AUDIT_GET requests
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,93 +33,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit f262f0f5cad0c9eca61d1d383e3b67b57dcbe5ea upstream.
+commit 64fbff9ae0a0a843365d922e0057fc785f23f0e3 upstream.
 
-The cbc-aes-s390 algorithm incorrectly places the IV in the tfm
-data structure.  As the tfm is shared between multiple threads,
-this introduces a possibility of data corruption.
+We leak 4 bytes of kernel stack in response to an AUDIT_GET request as
+we miss to initialize the mask member of status_set. Fix that.
 
-This patch fixes this by moving the parameter block containing
-the IV and key onto the stack (the block is 48 bytes long).
-
-The same bug exists elsewhere in the s390 crypto system and they
-will be fixed in subsequent patches.
-
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-[bwh: Backported to 3.2: adjust context]
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Eric Paris <eparis@redhat.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/s390/crypto/aes_s390.c | 19 ++++++++++++-------
- 1 file changed, 12 insertions(+), 7 deletions(-)
+ kernel/audit.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/s390/crypto/aes_s390.c
-+++ b/arch/s390/crypto/aes_s390.c
-@@ -35,7 +35,6 @@ static u8 *ctrblk;
- static char keylen_flag;
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -684,6 +684,7 @@ static int audit_receive_msg(struct sk_b
  
- struct s390_aes_ctx {
--	u8 iv[AES_BLOCK_SIZE];
- 	u8 key[AES_MAX_KEY_SIZE];
- 	long enc;
- 	long dec;
-@@ -442,29 +441,35 @@ static int cbc_aes_set_key(struct crypto
- 	return aes_set_key(tfm, in_key, key_len);
- }
- 
--static int cbc_aes_crypt(struct blkcipher_desc *desc, long func, void *param,
-+static int cbc_aes_crypt(struct blkcipher_desc *desc, long func,
- 			 struct blkcipher_walk *walk)
- {
-+	struct s390_aes_ctx *sctx = crypto_blkcipher_ctx(desc->tfm);
- 	int ret = blkcipher_walk_virt(desc, walk);
- 	unsigned int nbytes = walk->nbytes;
-+	struct {
-+		u8 iv[AES_BLOCK_SIZE];
-+		u8 key[AES_MAX_KEY_SIZE];
-+	} param;
- 
- 	if (!nbytes)
- 		goto out;
- 
--	memcpy(param, walk->iv, AES_BLOCK_SIZE);
-+	memcpy(param.iv, walk->iv, AES_BLOCK_SIZE);
-+	memcpy(param.key, sctx->key, sctx->key_len);
- 	do {
- 		/* only use complete blocks */
- 		unsigned int n = nbytes & ~(AES_BLOCK_SIZE - 1);
- 		u8 *out = walk->dst.virt.addr;
- 		u8 *in = walk->src.virt.addr;
- 
--		ret = crypt_s390_kmc(func, param, out, in, n);
-+		ret = crypt_s390_kmc(func, &param, out, in, n);
- 		BUG_ON((ret < 0) || (ret != n));
- 
- 		nbytes &= AES_BLOCK_SIZE - 1;
- 		ret = blkcipher_walk_done(desc, walk, nbytes);
- 	} while ((nbytes = walk->nbytes));
--	memcpy(walk->iv, param, AES_BLOCK_SIZE);
-+	memcpy(walk->iv, param.iv, AES_BLOCK_SIZE);
- 
- out:
- 	return ret;
-@@ -481,7 +486,7 @@ static int cbc_aes_encrypt(struct blkcip
- 		return fallback_blk_enc(desc, dst, src, nbytes);
- 
- 	blkcipher_walk_init(&walk, dst, src, nbytes);
--	return cbc_aes_crypt(desc, sctx->enc, sctx->iv, &walk);
-+	return cbc_aes_crypt(desc, sctx->enc, &walk);
- }
- 
- static int cbc_aes_decrypt(struct blkcipher_desc *desc,
-@@ -495,7 +500,7 @@ static int cbc_aes_decrypt(struct blkcip
- 		return fallback_blk_dec(desc, dst, src, nbytes);
- 
- 	blkcipher_walk_init(&walk, dst, src, nbytes);
--	return cbc_aes_crypt(desc, sctx->dec, sctx->iv, &walk);
-+	return cbc_aes_crypt(desc, sctx->dec, &walk);
- }
- 
- static struct crypto_alg cbc_aes_alg = {
+ 	switch (msg_type) {
+ 	case AUDIT_GET:
++		status_set.mask		 = 0;
+ 		status_set.enabled	 = audit_enabled;
+ 		status_set.failure	 = audit_failure;
+ 		status_set.pid		 = audit_pid;
 
