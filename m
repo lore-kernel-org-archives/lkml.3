@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755576Ab3L2CSB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:18:01 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55710 "EHLO
+	id S1755622Ab3L2CSo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:18:44 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55626 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753916Ab3L2CLT (ORCPT
+	by vger.kernel.org with ESMTP id S1753294Ab3L2CLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:11:19 -0500
+	Sat, 28 Dec 2013 21:11:18 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Eric Paris" <eparis@redhat.com>,
-        "Mathias Krause" <minipli@googlemail.com>,
-        "Al Viro" <viro@zeniv.linux.org.uk>,
-        "Richard Guy Briggs" <rgb@redhat.com>
+CC: akpm@linux-foundation.org, "Hannes Reinecke" <hare@suse.de>,
+        "Jens Axboe" <axboe@kernel.dk>, "Jeff Moyer" <jmoyer@redhat.com>
 Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.902653976@decadent.org.uk>
+Message-ID: <lsq.1388282923.578001396@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 028/185] audit: fix info leak in AUDIT_GET requests
+Subject: [PATCH 3.2 038/185] block: fix race between request completion
+ and timeout handling
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,31 +32,133 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Jeff Moyer <jmoyer@redhat.com>
 
-commit 64fbff9ae0a0a843365d922e0057fc785f23f0e3 upstream.
+commit 4912aa6c11e6a5d910264deedbec2075c6f1bb73 upstream.
 
-We leak 4 bytes of kernel stack in response to an AUDIT_GET request as
-we miss to initialize the mask member of status_set. Fix that.
+crocode i2c_i801 i2c_core iTCO_wdt iTCO_vendor_support shpchp ioatdma dca be2net sg ses enclosure ext4 mbcache jbd2 sd_mod crc_t10dif ahci megaraid_sas(U) dm_mirror dm_region_hash dm_log dm_mod [last unloaded: scsi_wait_scan]
 
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Eric Paris <eparis@redhat.com>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-Signed-off-by: Eric Paris <eparis@redhat.com>
+Pid: 491, comm: scsi_eh_0 Tainted: G        W  ----------------   2.6.32-220.13.1.el6.x86_64 #1 IBM  -[8722PAX]-/00D1461
+RIP: 0010:[<ffffffff8124e424>]  [<ffffffff8124e424>] blk_requeue_request+0x94/0xa0
+RSP: 0018:ffff881057eefd60  EFLAGS: 00010012
+RAX: ffff881d99e3e8a8 RBX: ffff881d99e3e780 RCX: ffff881d99e3e8a8
+RDX: ffff881d99e3e8a8 RSI: ffff881d99e3e780 RDI: ffff881d99e3e780
+RBP: ffff881057eefd80 R08: ffff881057eefe90 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000000 R12: ffff881057f92338
+R13: 0000000000000000 R14: ffff881057f92338 R15: ffff883058188000
+FS:  0000000000000000(0000) GS:ffff880040200000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
+CR2: 00000000006d3ec0 CR3: 000000302cd7d000 CR4: 00000000000406b0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process scsi_eh_0 (pid: 491, threadinfo ffff881057eee000, task ffff881057e29540)
+Stack:
+ 0000000000001057 0000000000000286 ffff8810275efdc0 ffff881057f16000
+<0> ffff881057eefdd0 ffffffff81362323 ffff881057eefe20 ffffffff8135f393
+<0> ffff881057e29af8 ffff8810275efdc0 ffff881057eefe78 ffff881057eefe90
+Call Trace:
+ [<ffffffff81362323>] __scsi_queue_insert+0xa3/0x150
+ [<ffffffff8135f393>] ? scsi_eh_ready_devs+0x5e3/0x850
+ [<ffffffff81362a23>] scsi_queue_insert+0x13/0x20
+ [<ffffffff8135e4d4>] scsi_eh_flush_done_q+0x104/0x160
+ [<ffffffff8135fb6b>] scsi_error_handler+0x35b/0x660
+ [<ffffffff8135f810>] ? scsi_error_handler+0x0/0x660
+ [<ffffffff810908c6>] kthread+0x96/0xa0
+ [<ffffffff8100c14a>] child_rip+0xa/0x20
+ [<ffffffff81090830>] ? kthread+0x0/0xa0
+ [<ffffffff8100c140>] ? child_rip+0x0/0x20
+Code: 00 00 eb d1 4c 8b 2d 3c 8f 97 00 4d 85 ed 74 bf 49 8b 45 00 49 83 c5 08 48 89 de 4c 89 e7 ff d0 49 8b 45 00 48 85 c0 75 eb eb a4 <0f> 0b eb fe 0f 1f 84 00 00 00 00 00 55 48 89 e5 0f 1f 44 00 00
+RIP  [<ffffffff8124e424>] blk_requeue_request+0x94/0xa0
+ RSP <ffff881057eefd60>
+
+The RIP is this line:
+        BUG_ON(blk_queued_rq(rq));
+
+After digging through the code, I think there may be a race between the
+request completion and the timer handler running.
+
+A timer is started for each request put on the device's queue (see
+blk_start_request->blk_add_timer).  If the request does not complete
+before the timer expires, the timer handler (blk_rq_timed_out_timer)
+will mark the request complete atomically:
+
+static inline int blk_mark_rq_complete(struct request *rq)
+{
+        return test_and_set_bit(REQ_ATOM_COMPLETE, &rq->atomic_flags);
+}
+
+and then call blk_rq_timed_out.  The latter function will call
+scsi_times_out, which will return one of BLK_EH_HANDLED,
+BLK_EH_RESET_TIMER or BLK_EH_NOT_HANDLED.  If BLK_EH_RESET_TIMER is
+returned, blk_clear_rq_complete is called, and blk_add_timer is again
+called to simply wait longer for the request to complete.
+
+Now, if the request happens to complete while this is going on, what
+happens?  Given that we know the completion handler will bail if it
+finds the REQ_ATOM_COMPLETE bit set, we need to focus on the completion
+handler running after that bit is cleared.  So, from the above
+paragraph, after the call to blk_clear_rq_complete.  If the completion
+sets REQ_ATOM_COMPLETE before the BUG_ON in blk_add_timer, we go boom
+there (I haven't seen this in the cores).  Next, if we get the
+completion before the call to list_add_tail, then the timer will
+eventually fire for an old req, which may either be freed or reallocated
+(there is evidence that this might be the case).  Finally, if the
+completion comes in *after* the addition to the timeout list, I think
+it's harmless.  The request will be removed from the timeout list,
+req_atom_complete will be set, and all will be well.
+
+This will only actually explain the coredumps *IF* the request
+structure was freed, reallocated *and* queued before the error handler
+thread had a chance to process it.  That is possible, but it may make
+sense to keep digging for another race.  I think that if this is what
+was happening, we would see other instances of this problem showing up
+as null pointer or garbage pointer dereferences, for example when the
+request structure was not re-used.  It looks like we actually do run
+into that situation in other reports.
+
+This patch moves the BUG_ON(test_bit(REQ_ATOM_COMPLETE,
+&req->atomic_flags)); from blk_add_timer to the only caller that could
+trip over it (blk_start_request).  It then inverts the calls to
+blk_clear_rq_complete and blk_add_timer in blk_rq_timed_out to address
+the race.  I've boot tested this patch, but nothing more.
+
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+Acked-by: Hannes Reinecke <hare@suse.de>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/audit.c | 1 +
- 1 file changed, 1 insertion(+)
+ block/blk-core.c    | 1 +
+ block/blk-timeout.c | 3 +--
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -684,6 +684,7 @@ static int audit_receive_msg(struct sk_b
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -2015,6 +2015,7 @@ void blk_start_request(struct request *r
+ 	if (unlikely(blk_bidi_rq(req)))
+ 		req->next_rq->resid_len = blk_rq_bytes(req->next_rq);
  
- 	switch (msg_type) {
- 	case AUDIT_GET:
-+		status_set.mask		 = 0;
- 		status_set.enabled	 = audit_enabled;
- 		status_set.failure	 = audit_failure;
- 		status_set.pid		 = audit_pid;
++	BUG_ON(test_bit(REQ_ATOM_COMPLETE, &req->atomic_flags));
+ 	blk_add_timer(req);
+ }
+ EXPORT_SYMBOL(blk_start_request);
+--- a/block/blk-timeout.c
++++ b/block/blk-timeout.c
+@@ -90,8 +90,8 @@ static void blk_rq_timed_out(struct requ
+ 		__blk_complete_request(req);
+ 		break;
+ 	case BLK_EH_RESET_TIMER:
+-		blk_clear_rq_complete(req);
+ 		blk_add_timer(req);
++		blk_clear_rq_complete(req);
+ 		break;
+ 	case BLK_EH_NOT_HANDLED:
+ 		/*
+@@ -173,7 +173,6 @@ void blk_add_timer(struct request *req)
+ 		return;
+ 
+ 	BUG_ON(!list_empty(&req->timeout_list));
+-	BUG_ON(test_bit(REQ_ATOM_COMPLETE, &req->atomic_flags));
+ 
+ 	/*
+ 	 * Some LLDs, like scsi, peek at the timeout to prevent a
 
