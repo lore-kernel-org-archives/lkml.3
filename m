@@ -1,114 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263Ab3L2Gxy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 01:53:54 -0500
+	id S1752165Ab3L2Gxw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 01:53:52 -0500
 Received: from SpacedOut.fries.net ([67.64.210.234]:56779 "EHLO
 	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab3L2GxM (ORCPT
+	with ESMTP id S1751226Ab3L2GxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 01:53:12 -0500
+	Sun, 29 Dec 2013 01:53:11 -0500
 X-Greylist: delayed 366 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 Dec 2013 01:53:00 EST
 From: David Fries <David@Fries.net>
 To: linux-kernel@vger.kernel.org
 Cc: Evgeniy Polyakov <zbr@ioremap.net>, Marcin Jurkowski <marcin1j@gmail.com>,
         Josh Boyer <jwboyer@gmail.com>,
         Sven Geggus <lists@fuchsschwanzdomain.de>
-Subject: [PATCH 02/14] w1: fixup search to support abort from netlink
-Date: Sun, 29 Dec 2013 00:45:44 -0600
-Message-Id: <1388299556-12669-3-git-send-email-David@Fries.net>
+Subject: [PATCH 13/14] w1: use family_data instead of rom in w1_slave
+Date: Sun, 29 Dec 2013 00:45:55 -0600
+Message-Id: <1388299556-12669-14-git-send-email-David@Fries.net>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1388299556-12669-1-git-send-email-David@Fries.net>
 References: <1388299556-12669-1-git-send-email-David@Fries.net>
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Sun, 29 Dec 2013 00:46:35 -0600 (CST)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Sun, 29 Dec 2013 00:46:39 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before 63706172f33 "rework kthread_stop()" kthread_should_stop()
-always returned false when called from a non-kthread task, after it
-would oops as a non-kthread didn't have that structure and netlink was
-calling search from a thread which wasn't a kthread.  9d1817cab2f030
-"w1: fix oops when w1_search is called from netlink connector",
-modified the code to avoid calling kthread_stop from a netlink thread.
-
-Introduce a w1_master flag and bit W1_ABORT_SEARCH to identify abort
-to cleanly support both kthread and netlink search abort.  A search
-can take seconds to run, so it is important to abort early if the
-hardware is removed in the middle of a search.
+The first line printed from w1_slave gives the context of the w1
+device.  So does the second line, but if the CRC check failed, the
+second line contains the last successful result.  It is confusing when
+it prints the temperature next to the line that might be a previous
+conversion and has nothing to do with that printed temperature value.
+Modify the code to store the last good conversion in family_data,
+which is designed for custom data structures.
 
 Signed-off-by: David Fries <David@Fries.net>
 Cc: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: Marcin Jurkowski <marcin1j@gmail.com>
-Cc: Josh Boyer <jwboyer@gmail.com>
-Cc: Sven Geggus <lists@fuchsschwanzdomain.de>
 ---
- drivers/w1/w1.c     |    3 +--
- drivers/w1/w1.h     |   10 ++++++++++
- drivers/w1/w1_int.c |    2 ++
- 3 files changed, 13 insertions(+), 2 deletions(-)
+ drivers/w1/slaves/w1_therm.c |   21 +++++++++++++++++++--
+ drivers/w1/w1.h              |    1 -
+ 2 files changed, 19 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
-index 66efa96..67b6d5f 100644
---- a/drivers/w1/w1.c
-+++ b/drivers/w1/w1.c
-@@ -960,8 +960,7 @@ void w1_search(struct w1_master *dev, u8 search_type, w1_slave_found_callback cb
- 			tmp64 = (triplet_ret >> 2);
- 			rn |= (tmp64 << i);
+diff --git a/drivers/w1/slaves/w1_therm.c b/drivers/w1/slaves/w1_therm.c
+index 8b5ff33..1f11a20 100644
+--- a/drivers/w1/slaves/w1_therm.c
++++ b/drivers/w1/slaves/w1_therm.c
+@@ -27,6 +27,7 @@
+ #include <linux/sched.h>
+ #include <linux/device.h>
+ #include <linux/types.h>
++#include <linux/slab.h>
+ #include <linux/delay.h>
  
--			/* ensure we're called from kthread and not by netlink callback */
--			if (!dev->priv && kthread_should_stop()) {
-+			if (test_bit(W1_ABORT_SEARCH, &dev->flags)) {
- 				mutex_unlock(&dev->bus_mutex);
- 				dev_dbg(&dev->dev, "Abort w1_search\n");
- 				return;
-diff --git a/drivers/w1/w1.h b/drivers/w1/w1.h
-index ca8081a..bc329d2 100644
---- a/drivers/w1/w1.h
-+++ b/drivers/w1/w1.h
-@@ -155,6 +155,14 @@ struct w1_bus_master
- 		u8, w1_slave_found_callback);
+ #include "../w1.h"
+@@ -58,6 +59,19 @@ MODULE_ALIAS("w1-family-" __stringify(W1_THERM_DS28EA00));
+ static int w1_strong_pullup = 1;
+ module_param_named(strong_pullup, w1_strong_pullup, int, 0);
+ 
++static int w1_therm_add_slave(struct w1_slave *sl)
++{
++	sl->family_data = kzalloc(9, GFP_KERNEL);
++	if (!sl->family_data)
++		return -ENOMEM;
++	return 0;
++}
++
++static void w1_therm_remove_slave(struct w1_slave *sl)
++{
++	kfree(sl->family_data);
++	sl->family_data = NULL;
++}
+ 
+ static ssize_t w1_slave_show(struct device *device,
+ 	struct device_attribute *attr, char *buf);
+@@ -71,6 +85,8 @@ static struct attribute *w1_therm_attrs[] = {
+ ATTRIBUTE_GROUPS(w1_therm);
+ 
+ static struct w1_family_ops w1_therm_fops = {
++	.add_slave	= w1_therm_add_slave,
++	.remove_slave	= w1_therm_remove_slave,
+ 	.groups		= w1_therm_groups,
  };
  
-+/**
-+ * enum w1_master_flags - bitfields used in w1_master.flags
-+ * @W1_ABORT_SEARCH: abort searching early on shutdown
-+ */
-+enum w1_master_flags {
-+	W1_ABORT_SEARCH = 0,
-+};
-+
- struct w1_master
- {
- 	struct list_head	w1_master_entry;
-@@ -178,6 +186,8 @@ struct w1_master
- 	/** 5V strong pullup duration in milliseconds, zero disabled. */
- 	int			pullup_duration;
+@@ -253,12 +269,13 @@ static ssize_t w1_slave_show(struct device *device,
+ 	c -= snprintf(buf + PAGE_SIZE - c, c, ": crc=%02x %s\n",
+ 			   crc, (verdict) ? "YES" : "NO");
+ 	if (verdict)
+-		memcpy(sl->rom, rom, sizeof(sl->rom));
++		memcpy(sl->family_data, rom, sizeof(rom));
+ 	else
+ 		dev_warn(device, "Read failed CRC check\n");
  
-+	long			flags;
-+
- 	struct task_struct	*thread;
- 	struct mutex		mutex;
- 	struct mutex		bus_mutex;
-diff --git a/drivers/w1/w1_int.c b/drivers/w1/w1_int.c
-index 590bd8a..423f3c2 100644
---- a/drivers/w1/w1_int.c
-+++ b/drivers/w1/w1_int.c
-@@ -172,6 +172,7 @@ int w1_add_master_device(struct w1_bus_master *master)
+ 	for (i = 0; i < 9; ++i)
+-		c -= snprintf(buf + PAGE_SIZE - c, c, "%02x ", sl->rom[i]);
++		c -= snprintf(buf + PAGE_SIZE - c, c, "%02x ",
++			      ((u8 *)sl->family_data)[i]);
  
- #if 0 /* Thread cleanup code, not required currently. */
- err_out_kill_thread:
-+	set_bit(W1_ABORT_SEARCH, &dev->flags);
- 	kthread_stop(dev->thread);
- #endif
- err_out_rm_attr:
-@@ -187,6 +188,7 @@ void __w1_remove_master_device(struct w1_master *dev)
- 	struct w1_netlink_msg msg;
- 	struct w1_slave *sl, *sln;
+ 	c -= snprintf(buf + PAGE_SIZE - c, c, "t=%d\n",
+ 		w1_convert_temp(rom, sl->family->fid));
+diff --git a/drivers/w1/w1.h b/drivers/w1/w1.h
+index 390a730..0eb5050 100644
+--- a/drivers/w1/w1.h
++++ b/drivers/w1/w1.h
+@@ -67,7 +67,6 @@ struct w1_slave
+ 	struct list_head	w1_slave_entry;
+ 	struct w1_reg_num	reg_num;
+ 	atomic_t		refcnt;
+-	u8			rom[9];
+ 	int			ttl;
+ 	unsigned long		flags;
  
-+	set_bit(W1_ABORT_SEARCH, &dev->flags);
- 	kthread_stop(dev->thread);
- 
- 	mutex_lock(&w1_mlock);
 -- 
 1.7.10.4
 
