@@ -1,53 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751175Ab3L2GxB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 01:53:01 -0500
+	id S1751349Ab3L2GxS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 01:53:18 -0500
 Received: from SpacedOut.fries.net ([67.64.210.234]:56779 "EHLO
 	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab3L2GxA (ORCPT
+	with ESMTP id S1750858Ab3L2GxC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 01:53:00 -0500
+	Sun, 29 Dec 2013 01:53:02 -0500
 X-Greylist: delayed 366 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 Dec 2013 01:53:00 EST
 From: David Fries <David@Fries.net>
 To: linux-kernel@vger.kernel.org
 Cc: Evgeniy Polyakov <zbr@ioremap.net>, Marcin Jurkowski <marcin1j@gmail.com>,
         Josh Boyer <jwboyer@gmail.com>,
         Sven Geggus <lists@fuchsschwanzdomain.de>
-Subject: [PATCH 03/14] w1: Only wake up the search process if it is going to be searching
-Date: Sun, 29 Dec 2013 00:45:45 -0600
-Message-Id: <1388299556-12669-4-git-send-email-David@Fries.net>
+Subject: [PATCH 01/14] w1: fix w1_send_slave dropping a slave id
+Date: Sun, 29 Dec 2013 00:45:43 -0600
+Message-Id: <1388299556-12669-2-git-send-email-David@Fries.net>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1388299556-12669-1-git-send-email-David@Fries.net>
 References: <1388299556-12669-1-git-send-email-David@Fries.net>
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Sun, 29 Dec 2013 00:46:36 -0600 (CST)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Sun, 29 Dec 2013 00:46:35 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's valid to set the search count to 0 to stop searching, so don't
-wake up the search thread to not search.
+Previous logic,
+if (avail > 8) {
+	store slave;
+	return;
+}
+send data; clear;
+
+The logic error is, if there isn't space send the buffer and clear,
+but the slave wasn't added to the now empty buffer loosing that slave
+id.  It also should have been "if (avail >= 8)" because when it is 8,
+there is space.
+
+Instead, if there isn't space send and clear the buffer, then there is
+always space for the slave id.
 
 Signed-off-by: David Fries <David@Fries.net>
+Cc: stable@vger.kernel.org
 Cc: Evgeniy Polyakov <zbr@ioremap.net>
 ---
- drivers/w1/w1.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/w1/w1_netlink.c |   25 +++++++++++++------------
+ 1 file changed, 13 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
-index 67b6d5f..92766a9 100644
---- a/drivers/w1/w1.c
-+++ b/drivers/w1/w1.c
-@@ -243,7 +243,9 @@ static ssize_t w1_master_attribute_store_search(struct device * dev,
- 	mutex_lock(&md->mutex);
- 	md->search_count = tmp;
- 	mutex_unlock(&md->mutex);
--	wake_up_process(md->thread);
-+	/* Only wake if it is going to be searching. */
-+	if (tmp)
-+		wake_up_process(md->thread);
+diff --git a/drivers/w1/w1_netlink.c b/drivers/w1/w1_netlink.c
+index 40788c9..73705af 100644
+--- a/drivers/w1/w1_netlink.c
++++ b/drivers/w1/w1_netlink.c
+@@ -54,28 +54,29 @@ static void w1_send_slave(struct w1_master *dev, u64 rn)
+ 	struct w1_netlink_msg *hdr = (struct w1_netlink_msg *)(msg + 1);
+ 	struct w1_netlink_cmd *cmd = (struct w1_netlink_cmd *)(hdr + 1);
+ 	int avail;
++	u64 *data;
  
- 	return count;
+ 	/* update kernel slave list */
+ 	w1_slave_found(dev, rn);
+ 
+ 	avail = dev->priv_size - cmd->len;
+ 
+-	if (avail > 8) {
+-		u64 *data = (void *)(cmd + 1) + cmd->len;
++	if (avail < 8) {
++		msg->ack++;
++		cn_netlink_send(msg, 0, GFP_KERNEL);
+ 
+-		*data = rn;
+-		cmd->len += 8;
+-		hdr->len += 8;
+-		msg->len += 8;
+-		return;
++		msg->len = sizeof(struct w1_netlink_msg) +
++			sizeof(struct w1_netlink_cmd);
++		hdr->len = sizeof(struct w1_netlink_cmd);
++		cmd->len = 0;
+ 	}
+ 
+-	msg->ack++;
+-	cn_netlink_send(msg, 0, GFP_KERNEL);
++	data = (void *)(cmd + 1) + cmd->len;
+ 
+-	msg->len = sizeof(struct w1_netlink_msg) + sizeof(struct w1_netlink_cmd);
+-	hdr->len = sizeof(struct w1_netlink_cmd);
+-	cmd->len = 0;
++	*data = rn;
++	cmd->len += 8;
++	hdr->len += 8;
++	msg->len += 8;
  }
+ 
+ static int w1_process_search_command(struct w1_master *dev, struct cn_msg *msg,
 -- 
 1.7.10.4
 
