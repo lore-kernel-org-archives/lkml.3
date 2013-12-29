@@ -1,88 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310Ab3L2NOQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 08:14:16 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:37041 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751426Ab3L2NOO (ORCPT
+	id S1752358Ab3L2NaG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 08:30:06 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:45274 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426Ab3L2NaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 08:14:14 -0500
-Date: Sun, 29 Dec 2013 13:14:10 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Borislav Petkov <bp@alien8.de>
-Subject: [GIT PULL] EFI kexec patches for v3.14
-Message-ID: <20131229131410.GB2618@console-pimps.org>
+	Sun, 29 Dec 2013 08:30:04 -0500
+Date: Sun, 29 Dec 2013 15:29:56 +0200
+From: Amir Vadai <amirv@mellanox.com>
+To: Ding Tianhong <dingtianhong@huawei.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: net: mlx4: slight optimization of addr compare
+Message-ID: <20131229132944.GA2944@mtl-eit-vdi-22.mtl.labs.mlnx>
+References: <52BD22C3.9070908@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <52BD22C3.9070908@huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-
-Please pull the following patches into a separate tip branch for some
-testing. These patches add kexec support for EFI systems.
-
----
-
-The following changes since commit 61d066977583803d333f1e7266b8ba772162dda4:
-
-  Merge tag 'efi-next' of git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi into x86/efi (2013-11-26 12:23:04 +0100)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git kexec
-
-for you to fetch changes up to 518548abd61808ea1e31614ccbdae34d3c32dfa4:
-
-  x86/efi: Delete superfluous global variables (2013-12-29 13:09:08 +0000)
-
-----------------------------------------------------------------
-Dave Young (10):
-      x86/efi: Remove unused variables in __map_region()
-      x86/efi: Add a wrapper function efi_map_region_fixed()
-      x86/efi: Fix off-by-one bug in EFI Boot Services reservation
-      x86/efi: Cleanup efi_enter_virtual_mode() function
-      efi: Export more EFI table variables to sysfs
-      efi: Export EFI runtime memory mapping to sysfs
-      x86/efi: Pass necessary EFI data for kexec via setup_data
-      x86: Add xloadflags bit for EFI runtime support on kexec
-      x86: Export x86 boot_params to sysfs
-      x86: Reserve setup_data ranges late after parsing memmap cmdline
-
-Matt Fleming (1):
-      x86/efi: Delete superfluous global variables
-
- Documentation/ABI/testing/sysfs-firmware-efi       |  20 ++
- .../ABI/testing/sysfs-firmware-efi-runtime-map     |  34 +++
- Documentation/ABI/testing/sysfs-kernel-boot_params |  38 +++
- Documentation/x86/boot.txt                         |   3 +
- arch/x86/boot/header.S                             |   9 +-
- arch/x86/include/asm/efi.h                         |  13 +
- arch/x86/include/uapi/asm/bootparam.h              |   2 +
- arch/x86/kernel/Makefile                           |   1 +
- arch/x86/kernel/ksysfs.c                           | 339 +++++++++++++++++++++
- arch/x86/kernel/setup.c                            |   7 +-
- arch/x86/platform/efi/efi.c                        | 308 ++++++++++++++-----
- arch/x86/platform/efi/efi_32.c                     |   3 +
- arch/x86/platform/efi/efi_64.c                     |  21 +-
- drivers/firmware/efi/Kconfig                       |  11 +
- drivers/firmware/efi/Makefile                      |   1 +
- drivers/firmware/efi/efi.c                         |  45 ++-
- drivers/firmware/efi/runtime-map.c                 | 181 +++++++++++
- include/linux/efi.h                                |  16 +
- 18 files changed, 970 insertions(+), 82 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-firmware-efi
- create mode 100644 Documentation/ABI/testing/sysfs-firmware-efi-runtime-map
- create mode 100644 Documentation/ABI/testing/sysfs-kernel-boot_params
- create mode 100644 arch/x86/kernel/ksysfs.c
- create mode 100644 drivers/firmware/efi/runtime-map.c
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+On 27/12/13 14:48 +0800, Ding Tianhong wrote:
+> Use possibly more efficient ether_addr_equal
+> to instead of memcmp.
+> 
+> Cc: Amir Vadai <amirv@mellanox.com>
+> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+> ---
+>  drivers/net/ethernet/mellanox/mlx4/en_netdev.c        | 4 ++--
+>  drivers/net/ethernet/mellanox/mlx4/resource_tracker.c | 2 +-
+>  2 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
+> index 6f92090..7e43858 100644
+> --- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
+> +++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
+> @@ -782,7 +782,7 @@ static void update_mclist_flags(struct mlx4_en_priv *priv,
+>  	list_for_each_entry(dst_tmp, dst, list) {
+>  		found = false;
+>  		list_for_each_entry(src_tmp, src, list) {
+> -			if (!memcmp(dst_tmp->addr, src_tmp->addr, ETH_ALEN)) {
+> +			if (ether_addr_equal(dst_tmp->addr, src_tmp->addr)) {
+>  				found = true;
+>  				break;
+>  			}
+> @@ -797,7 +797,7 @@ static void update_mclist_flags(struct mlx4_en_priv *priv,
+>  	list_for_each_entry(src_tmp, src, list) {
+>  		found = false;
+>  		list_for_each_entry(dst_tmp, dst, list) {
+> -			if (!memcmp(dst_tmp->addr, src_tmp->addr, ETH_ALEN)) {
+> +			if (ether_addr_equal(dst_tmp->addr, src_tmp->addr)) {
+>  				dst_tmp->action = MCLIST_NONE;
+>  				found = true;
+>  				break;
+> diff --git a/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c b/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
+> index 2f3f2bc..2e3232c 100644
+> --- a/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
+> +++ b/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
+> @@ -3634,7 +3634,7 @@ static int validate_eth_header_mac(int slave, struct _rule_hw *eth_header,
+>  	    !is_broadcast_ether_addr(eth_header->eth.dst_mac)) {
+>  		list_for_each_entry_safe(res, tmp, rlist, list) {
+>  			be_mac = cpu_to_be64(res->mac << 16);
+> -			if (!memcmp(&be_mac, eth_header->eth.dst_mac, ETH_ALEN))
+> +			if (ether_addr_equal((u8 *)&be_mac, eth_header->eth.dst_mac))
+>  				return 0;
+>  		}
+>  		pr_err("MAC %pM doesn't belong to VF %d, Steering rule rejected\n",
+> -- 
+> 1.8.0
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Acked-By: Amir Vadai <amirv@mellanox.com>
