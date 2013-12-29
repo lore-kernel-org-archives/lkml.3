@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab3L2CVp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:21:45 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55647 "EHLO
+	id S1755775Ab3L2CWF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:22:05 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55590 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752844Ab3L2CLO (ORCPT
+	by vger.kernel.org with ESMTP id S1753550Ab3L2CLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:11:14 -0500
+	Sat, 28 Dec 2013 21:11:11 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Wang Haitao" <wang.haitao1@zte.com.cn>,
-        "Pang Xunlei" <pang.xunlei@zte.com.cn>,
-        "Brian Norris" <computersforpeace@gmail.com>,
-        "Lu Zhongjun" <lu.zhongjun@zte.com.cn>,
-        "Zhang Yi" <zhang.yi20@zte.com.cn>
+CC: akpm@linux-foundation.org, "Larry Finger" <Larry.Finger@lwfinger.net>,
+        "Mark Cave-Ayland" <mark.cave-ayland@ilande.co.uk>,
+        "John W. Linville" <linville@tuxdriver.com>
 Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.206000971@decadent.org.uk>
+Message-ID: <lsq.1388282923.484809881@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 034/185] mtd: map: fixed bug in 64-bit systems
+Subject: [PATCH 3.2 046/185] rtlwifi: Fix endian error in extracting
+ packet type
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,69 +33,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wang Haitao <wang.haitao1@zte.com.cn>
+From: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
 
-commit a4d62babf988fe5dfde24437fa135ef147bc7aa0 upstream.
+commit 0c5d63f0ab6728f05ddefa25aff55e31297f95e6 upstream.
 
-Hardware:
-	CPU: XLP832,the 64-bit OS
-	NOR Flash:S29GL128S 128M
-Software:
-	Kernel:2.6.32.41
-	Filesystem:JFFS2
-When writing files, errors appear:
-	Write len 182  but return retlen 180
-	Write of 182 bytes at 0x072c815c failed. returned -5, retlen 180
-	Write len 186  but return retlen 184
-	Write of 186 bytes at 0x072caff4 failed. returned -5, retlen 184
-These errors exist only in 64-bit systems,not in 32-bit systems. After analysis, we
-found that the left shift operation is wrong in map_word_load_partial. For instance:
-	unsigned char buf[3] ={0x9e,0x3a,0xea};
-	map_bankwidth(map) is 4;
-	for (i=0; i < 3; i++) {
-		int bitpos;
-		bitpos = (map_bankwidth(map)-1-i)*8;
-		orig.x[0] &= ~(0xff << bitpos);
-		orig.x[0] |= buf[i] << bitpos;
-	}
+All of the rtlwifi drivers have an error in the routine that tests if
+the data is "special". If it is, the subsequant transmission will be
+at the lowest rate to enhance reliability. The 16-bit quantity is
+big-endian, but was being extracted in native CPU mode. One of the
+effects of this bug is to inhibit association under some conditions
+as the TX rate is too high.
 
-The value of orig.x[0] is expected to be 0x9e3aeaff, but in this situation(64-bit
-System) we'll get the wrong value of 0xffffffff9e3aeaff due to the 64-bit sign
-extension:
-buf[i] is defined as "unsigned char" and the left-shift operation will convert it
-to the type of "signed int", so when left-shift buf[i] by 24 bits, the final result
-will get the wrong value: 0xffffffff9e3aeaff.
+Based on suggestions by Joe Perches, the entire routine is rewritten.
 
-If the left-shift bits are less than 24, then sign extension will not occur. Whereas
-the bankwidth of the nor flash we used is 4, therefore this BUG emerges.
+One of the local headers contained duplicates of some of the ETH_P_XXX
+definitions. These are deleted.
 
-Signed-off-by: Pang Xunlei <pang.xunlei@zte.com.cn>
-Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
-Signed-off-by: Lu Zhongjun <lu.zhongjun@zte.com.cn>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[bwh: Backported to 3.2: adjust context; use rtl_lps_leave()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/mtd/map.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/include/linux/mtd/map.h
-+++ b/include/linux/mtd/map.h
-@@ -361,7 +361,7 @@ static inline map_word map_word_load_par
- 			bitpos = (map_bankwidth(map)-1-i)*8;
- #endif
- 			orig.x[0] &= ~(0xff << bitpos);
--			orig.x[0] |= buf[i-start] << bitpos;
-+			orig.x[0] |= (unsigned long)buf[i-start] << bitpos;
- 		}
- 	}
- 	return orig;
-@@ -380,7 +380,7 @@ static inline map_word map_word_ff(struc
+--- a/drivers/net/wireless/rtlwifi/base.c
++++ b/drivers/net/wireless/rtlwifi/base.c
+@@ -31,6 +31,7 @@
  
- 	if (map_bankwidth(map) < MAP_FF_LIMIT) {
- 		int bw = 8 * map_bankwidth(map);
--		r.x[0] = (1 << bw) - 1;
-+		r.x[0] = (1UL << bw) - 1;
- 	} else {
- 		for (i=0; i<map_words(map); i++)
- 			r.x[i] = ~0UL;
+ #include <linux/ip.h>
+ #include <linux/module.h>
++#include <linux/udp.h>
+ #include "wifi.h"
+ #include "rc.h"
+ #include "base.h"
+@@ -956,60 +957,51 @@ u8 rtl_is_special_data(struct ieee80211_
+ 	if (!ieee80211_is_data(fc))
+ 		return false;
+ 
++	ip = (const struct iphdr *)(skb->data + mac_hdr_len +
++				    SNAP_SIZE + PROTOC_TYPE_SIZE);
++	ether_type = be16_to_cpup((__be16 *)
++				  (skb->data + mac_hdr_len + SNAP_SIZE));
++
++	switch (ether_type) {
++	case ETH_P_IP: {
++		struct udphdr *udp;
++		u16 src;
++		u16 dst;
++
++		if (ip->protocol != IPPROTO_UDP)
++			return false;
++		udp = (struct udphdr *)((u8 *)ip + (ip->ihl << 2));
++		src = be16_to_cpu(udp->source);
++		dst = be16_to_cpu(udp->dest);
++
++		/* If this case involves port 68 (UDP BOOTP client) connecting
++		 * with port 67 (UDP BOOTP server), then return true so that
++		 * the lowest speed is used.
++		 */
++		if (!((src == 68 && dst == 67) || (src == 67 && dst == 68)))
++			return false;
+ 
+-	ip = (struct iphdr *)((u8 *) skb->data + mac_hdr_len +
+-			      SNAP_SIZE + PROTOC_TYPE_SIZE);
+-	ether_type = *(u16 *) ((u8 *) skb->data + mac_hdr_len + SNAP_SIZE);
+-	/*	ether_type = ntohs(ether_type); */
+-
+-	if (ETH_P_IP == ether_type) {
+-		if (IPPROTO_UDP == ip->protocol) {
+-			struct udphdr *udp = (struct udphdr *)((u8 *) ip +
+-							       (ip->ihl << 2));
+-			if (((((u8 *) udp)[1] == 68) &&
+-			     (((u8 *) udp)[3] == 67)) ||
+-			    ((((u8 *) udp)[1] == 67) &&
+-			     (((u8 *) udp)[3] == 68))) {
+-				/*
+-				 * 68 : UDP BOOTP client
+-				 * 67 : UDP BOOTP server
+-				 */
+-				RT_TRACE(rtlpriv, (COMP_SEND | COMP_RECV),
+-					 DBG_DMESG, ("dhcp %s !!\n",
+-						     (is_tx) ? "Tx" : "Rx"));
+-
+-				if (is_tx) {
+-					rtl_lps_leave(hw);
+-					ppsc->last_delaylps_stamp_jiffies =
+-					    jiffies;
+-				}
+-
+-				return true;
+-			}
+-		}
+-	} else if (ETH_P_ARP == ether_type) {
+-		if (is_tx) {
+-			rtl_lps_leave(hw);
+-			ppsc->last_delaylps_stamp_jiffies = jiffies;
+-		}
+-
+-		return true;
+-	} else if (ETH_P_PAE == ether_type) {
+ 		RT_TRACE(rtlpriv, (COMP_SEND | COMP_RECV), DBG_DMESG,
+-			 ("802.1X %s EAPOL pkt!!\n", (is_tx) ? "Tx" : "Rx"));
+-
+-		if (is_tx) {
+-			rtl_lps_leave(hw);
+-			ppsc->last_delaylps_stamp_jiffies = jiffies;
+-		}
+-
+-		return true;
+-	} else if (ETH_P_IPV6 == ether_type) {
+-		/* IPv6 */
+-		return true;
++			 ("dhcp %s !!\n", is_tx ? "Tx" : "Rx"));
++		break;
+ 	}
+-
+-	return false;
++	case ETH_P_ARP:
++		break;
++	case ETH_P_PAE:
++		RT_TRACE(rtlpriv, (COMP_SEND | COMP_RECV), DBG_DMESG,
++			 ("802.1X %s EAPOL pkt!!\n", is_tx ? "Tx" : "Rx"));
++		break;
++	case ETH_P_IPV6:
++		/* TODO: Is this right? */
++		return false;
++	default:
++		return false;
++	}
++	if (is_tx) {
++		rtl_lps_leave(hw);
++		ppsc->last_delaylps_stamp_jiffies = jiffies;
++	}
++	return true;
+ }
+ 
+ /*********************************************************
+--- a/drivers/net/wireless/rtlwifi/wifi.h
++++ b/drivers/net/wireless/rtlwifi/wifi.h
+@@ -73,11 +73,7 @@
+ #define RTL_SLOT_TIME_9				9
+ #define RTL_SLOT_TIME_20			20
+ 
+-/*related with tcp/ip. */
+-/*if_ehther.h*/
+-#define ETH_P_PAE		0x888E	/*Port Access Entity (IEEE 802.1X) */
+-#define ETH_P_IP		0x0800	/*Internet Protocol packet */
+-#define ETH_P_ARP		0x0806	/*Address Resolution packet */
++/*related to tcp/ip. */
+ #define SNAP_SIZE		6
+ #define PROTOC_TYPE_SIZE	2
+ 
 
