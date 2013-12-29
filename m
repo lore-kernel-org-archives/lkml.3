@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab3L2CwG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:52:06 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55123 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752220Ab3L2CKL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752346Ab3L2CKL (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 28 Dec 2013 21:10:11 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55058 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752089Ab3L2CKD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Dec 2013 21:10:03 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Jukka Rissanen" <jukka.rissanen@linux.intel.com>
-Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.16018583@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Tejun Heo" <tj@kernel.org>,
+        "Shan Hai" <shan.hai@windriver.com>
+Date: Sun, 29 Dec 2013 03:08:43 +0100
+Message-ID: <lsq.1388282923.704841631@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 153/185] 6lowpan: Uncompression of traffic class field
- was  incorrect
+Subject: [PATCH 3.2 012/185] drivers/libata: Set max sector to 65535 for
+ Slimtype DVD A DS8A9SH drive
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,67 +32,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jukka Rissanen <jukka.rissanen@linux.intel.com>
+From: Shan Hai <shan.hai@windriver.com>
 
-[ Upstream commit 1188f05497e7bd2f2614b99c54adfbe7413d5749 ]
+commit 0523f037f65dba10191b0fa9c51266f90ba64630 upstream.
 
-If priority/traffic class field in IPv6 header is set (seen when
-using ssh), the uncompression sets the TC and Flow fields incorrectly.
+The "Slimtype DVD A  DS8A9SH" drive locks up with following backtrace when
+the max sector is smaller than 65535 bytes, fix it by adding a quirk to set
+the max sector to 65535 bytes.
 
-Example:
+INFO: task flush-11:0:663 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+flush-11:0    D 00000000ffff5ceb     0   663      2 0x00000000
+ ffff88026d3b1710 0000000000000046 0000000000000001 0000000000000000
+ ffff88026f2530c0 ffff88026d365860 ffff88026d3b16e0 ffffffff812ffd52
+ ffff88026d4fd3d0 0000000100000001 ffff88026d3b16f0 ffff88026d3b1fd8
+Call Trace:
+ [<ffffffff812ffd52>] ? cfq_may_queue+0x52/0xf0
+ [<ffffffff81604338>] schedule+0x18/0x30
+ [<ffffffff81604392>] io_schedule+0x42/0x60
+ [<ffffffff812f22bb>] get_request_wait+0xeb/0x1f0
+ [<ffffffff81065660>] ? autoremove_wake_function+0x0/0x40
+ [<ffffffff812eb382>] ? elv_merge+0x42/0x210
+ [<ffffffff812f26ae>] __make_request+0x8e/0x4e0
+ [<ffffffff812f068e>] generic_make_request+0x21e/0x5e0
+ [<ffffffff812f0aad>] submit_bio+0x5d/0xd0
+ [<ffffffff81141422>] submit_bh+0xf2/0x130
+ [<ffffffff8114474c>] __block_write_full_page+0x1dc/0x3a0
+ [<ffffffff81143f60>] ? end_buffer_async_write+0x0/0x120
+ [<ffffffff811474e0>] ? blkdev_get_block+0x0/0x70
+ [<ffffffff811474e0>] ? blkdev_get_block+0x0/0x70
+ [<ffffffff81143f60>] ? end_buffer_async_write+0x0/0x120
+ [<ffffffff811449ee>] block_write_full_page_endio+0xde/0x100
+ [<ffffffff81144a20>] block_write_full_page+0x10/0x20
+ [<ffffffff81148703>] blkdev_writepage+0x13/0x20
+ [<ffffffff810d7525>] __writepage+0x15/0x40
+ [<ffffffff810d7c0f>] write_cache_pages+0x1cf/0x3e0
+ [<ffffffff810d7510>] ? __writepage+0x0/0x40
+ [<ffffffff810d7e42>] generic_writepages+0x22/0x30
+ [<ffffffff810d7e6f>] do_writepages+0x1f/0x40
+ [<ffffffff8113ae67>] writeback_single_inode+0xe7/0x3b0
+ [<ffffffff8113b574>] writeback_sb_inodes+0x184/0x280
+ [<ffffffff8113bedb>] writeback_inodes_wb+0x6b/0x1a0
+ [<ffffffff8113c24b>] wb_writeback+0x23b/0x2a0
+ [<ffffffff8113c42d>] wb_do_writeback+0x17d/0x190
+ [<ffffffff8113c48b>] bdi_writeback_task+0x4b/0xe0
+ [<ffffffff810e82a0>] ? bdi_start_fn+0x0/0x100
+ [<ffffffff810e8321>] bdi_start_fn+0x81/0x100
+ [<ffffffff810e82a0>] ? bdi_start_fn+0x0/0x100
+ [<ffffffff8106522e>] kthread+0x8e/0xa0
+ [<ffffffff81039274>] ? finish_task_switch+0x54/0xc0
+ [<ffffffff81003334>] kernel_thread_helper+0x4/0x10
+ [<ffffffff810651a0>] ? kthread+0x0/0xa0
+ [<ffffffff81003330>] ? kernel_thread_helper+0x0/0x10
 
-This is IPv6 header of a sent packet. Note the priority/TC (=1) in
-the first byte.
+ The above trace was triggered by
+   "dd if=/dev/zero of=/dev/sr0 bs=2048 count=32768"
 
-00000000: 61 00 00 00 00 2c 06 40 fe 80 00 00 00 00 00 00
-00000010: 02 02 72 ff fe c6 42 10 fe 80 00 00 00 00 00 00
-00000020: 02 1e ab ff fe 4c 52 57
-
-This gets compressed like this in the sending side
-
-00000000: 72 31 04 06 02 1e ab ff fe 4c 52 57 ec c2 00 16
-00000010: aa 2d fe 92 86 4e be c6 ....
-
-In the receiving end, the packet gets uncompressed to this
-IPv6 header
-
-00000000: 60 06 06 02 00 2a 1e 40 fe 80 00 00 00 00 00 00
-00000010: 02 02 72 ff fe c6 42 10 fe 80 00 00 00 00 00 00
-00000020: ab ff fe 4c 52 57 ec c2
-
-First four bytes are set incorrectly and we have also lost
-two bytes from destination address.
-
-The fix is to switch the case values in switch statement
-when checking the TC field.
-
-Signed-off-by: Jukka Rissanen <jukka.rissanen@linux.intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Shan Hai <shan.hai@windriver.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ieee802154/6lowpan.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/ata/libata-core.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/ieee802154/6lowpan.c b/net/ieee802154/6lowpan.c
-index 19d6aef..5d42df2 100644
---- a/net/ieee802154/6lowpan.c
-+++ b/net/ieee802154/6lowpan.c
-@@ -563,7 +563,7 @@ lowpan_process_data(struct sk_buff *skb)
- 	 * Traffic class carried in-line
- 	 * ECN + DSCP (1 byte), Flow Label is elided
- 	 */
--	case 1: /* 10b */
-+	case 2: /* 10b */
- 		if (!skb->len)
- 			goto drop;
- 		tmp = lowpan_fetch_skb_u8(skb);
-@@ -576,7 +576,7 @@ lowpan_process_data(struct sk_buff *skb)
- 	 * Flow Label carried in-line
- 	 * ECN + 2-bit Pad + Flow Label (3 bytes), DSCP is elided
- 	 */
--	case 2: /* 01b */
-+	case 1: /* 01b */
- 		if (!skb->len)
- 			goto drop;
- 		tmp = lowpan_fetch_skb_u8(skb);
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4067,6 +4067,7 @@ static const struct ata_blacklist_entry
+ 	{ "TORiSAN DVD-ROM DRD-N216", NULL,	ATA_HORKAGE_MAX_SEC_128 },
+ 	{ "QUANTUM DAT    DAT72-000", NULL,	ATA_HORKAGE_ATAPI_MOD16_DMA },
+ 	{ "Slimtype DVD A  DS8A8SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
++	{ "Slimtype DVD A  DS8A9SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
+ 
+ 	/* Devices we expect to fail diagnostics */
+ 
 
