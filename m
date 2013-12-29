@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752112Ab3L2CJz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:09:55 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54977 "EHLO
+	id S1752485Ab3L2CKR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:10:17 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55158 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751809Ab3L2CJt (ORCPT
+	by vger.kernel.org with ESMTP id S1752250Ab3L2CKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:09:49 -0500
+	Sat, 28 Dec 2013 21:10:11 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Julius Werner" <jwerner@chromium.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Alan Stern" <stern@rowland.harvard.edu>
-Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.810556825@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Andy Gospodarek" <andy@greyhouse.net>,
+        "Veaceslav Falico" <vfalico@redhat.com>,
+        "Jay Vosburgh" <fubar@us.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Sun, 29 Dec 2013 03:08:44 +0100
+Message-ID: <lsq.1388282924.309308173@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 005/185] usb: hub: Clear Port Reset Change during
- init/resume
+Subject: [PATCH 3.2 152/185] bonding: don't permit to use ARP monitoring
+ in 802.3ad  mode
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,42 +34,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julius Werner <jwerner@chromium.org>
+From: Veaceslav Falico <vfalico@redhat.com>
 
-commit e92aee330837e4911553761490a8fb843f2053a6 upstream.
+[ Upstream commit ec9f1d15db8185f63a2c3143dc1e90ba18541b08 ]
 
-This patch adds the Port Reset Change flag to the set of bits that are
-preemptively cleared on init/resume of a hub. In theory this bit should
-never be set unexpectedly... in practice it can still happen if BIOS,
-SMM or ACPI code plays around with USB devices without cleaning up
-correctly. This is especially dangerous for XHCI root hubs, which don't
-generate any more Port Status Change Events until all change bits are
-cleared, so this is a good precaution to have (similar to how it's
-already done for the Warm Port Reset Change flag).
+Currently the ARP monitoring is not supported with 802.3ad, and it's
+prohibited to use it via the module params.
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2:
- - Adjust context
- - s/usb_clear_port_feature/clear_port_feature/]
+However we still can set it afterwards via sysfs, cause we only check for
+*LB modes there.
+
+To fix this - add a check for 802.3ad mode in bonding_store_arp_interval.
+
+CC: Jay Vosburgh <fubar@us.ibm.com>
+CC: Andy Gospodarek <andy@greyhouse.net>
+Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/core/hub.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/net/bonding/bond_sysfs.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -900,6 +900,11 @@ static void hub_activate(struct usb_hub
- 			clear_port_feature(hub->hdev, port1,
- 					USB_PORT_FEAT_C_PORT_LINK_STATE);
- 		}
-+		if (portchange & USB_PORT_STAT_C_RESET) {
-+			need_debounce_delay = true;
-+			clear_port_feature(hub->hdev, port1,
-+					USB_PORT_FEAT_C_RESET);
-+		}
- 
- 		if ((portchange & USB_PORT_STAT_C_BH_RESET) &&
- 				hub_is_superspeed(hub->hdev)) {
+diff --git a/drivers/net/bonding/bond_sysfs.c b/drivers/net/bonding/bond_sysfs.c
+index 8ed48c2..aae24d1 100644
+--- a/drivers/net/bonding/bond_sysfs.c
++++ b/drivers/net/bonding/bond_sysfs.c
+@@ -534,8 +534,9 @@ static ssize_t bonding_store_arp_interval(struct device *d,
+ 		goto out;
+ 	}
+ 	if (bond->params.mode == BOND_MODE_ALB ||
+-	    bond->params.mode == BOND_MODE_TLB) {
+-		pr_info("%s: ARP monitoring cannot be used with ALB/TLB. Only MII monitoring is supported on %s.\n",
++	    bond->params.mode == BOND_MODE_TLB ||
++	    bond->params.mode == BOND_MODE_8023AD) {
++		pr_info("%s: ARP monitoring cannot be used with ALB/TLB/802.3ad. Only MII monitoring is supported on %s.\n",
+ 			bond->dev->name, bond->dev->name);
+ 		ret = -EINVAL;
+ 		goto out;
 
