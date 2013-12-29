@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755955Ab3L2C3F (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:29:05 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55539 "EHLO
+	id S1755936Ab3L2C3E (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:29:04 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55561 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752500Ab3L2CK4 (ORCPT
+	by vger.kernel.org with ESMTP id S1753280Ab3L2CK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:10:56 -0500
+	Sat, 28 Dec 2013 21:10:57 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Ilija Hadzic" <ihadzic@research.bell-labs.com>,
-        "Sukadev Bhattiprolu" <sukadev@linux.vnet.ibm.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
+CC: akpm@linux-foundation.org, "Alistair Popple" <alistair@popple.id.au>,
+        "Tejun Heo" <tj@kernel.org>
 Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.773087876@decadent.org.uk>
+Message-ID: <lsq.1388282923.222463470@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 061/185] devpts: plug the memory leak in kill_sb
+Subject: [PATCH 3.2 085/185] ahci: add support for IBM Akebono platform device
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,36 +31,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilija Hadzic <ihadzic@research.bell-labs.com>
+From: Alistair Popple <alistair@popple.id.au>
 
-commit 66da0e1f9034140ae2f571ef96e254a25083906c upstream.
+commit 2435dcb98cfe13c246aa27df393e22bc24bbcd20 upstream.
 
-When devpts is unmounted, there may be a no-longer-used IDR tree hanging
-off the superblock we are about to kill.  This needs to be cleaned up
-before destroying the SB.
+The new IBM Akebono board has a PPC476GTR SoC with an AHCI compliant
+SATA controller. This patch adds a compatible property for the new SoC
+to the AHCI platform driver.
 
-The leak is usually not a big deal because unmounting devpts is typically
-done when shutting down the whole machine.  However, shutting down an LXC
-container instead of a physical machine exposes the problem (the garbage
-is detectable with kmemleak).
-
-Signed-off-by: Ilija Hadzic <ihadzic@research.bell-labs.com>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alistair Popple <alistair@popple.id.au>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/devpts/inode.c | 1 +
+ drivers/ata/ahci_platform.c | 1 +
  1 file changed, 1 insertion(+)
 
---- a/fs/devpts/inode.c
-+++ b/fs/devpts/inode.c
-@@ -413,6 +413,7 @@ static void devpts_kill_sb(struct super_
- {
- 	struct pts_fs_info *fsi = DEVPTS_SB(sb);
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -204,6 +204,7 @@ static int __devexit ahci_remove(struct
  
-+	ida_destroy(&fsi->allocated_ptys);
- 	kfree(fsi);
- 	kill_litter_super(sb);
- }
+ static const struct of_device_id ahci_of_match[] = {
+ 	{ .compatible = "calxeda,hb-ahci", },
++	{ .compatible = "ibm,476gtr-ahci", },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, ahci_of_match);
 
