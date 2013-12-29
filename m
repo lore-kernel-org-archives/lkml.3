@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab3L2RSz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 12:18:55 -0500
-Received: from mail.wdtv.com ([66.118.69.84]:34560 "EHLO mail.wdtv.com"
+	id S1752221Ab3L2RYI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 12:24:08 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:49047 "EHLO mail.wdtv.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751347Ab3L2RSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 12:18:54 -0500
-From: Gene Heskett <gheskett@wdtv.com>
+	id S1751347Ab3L2RYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Dec 2013 12:24:06 -0500
 To: linux-kernel@vger.kernel.org
-Subject: {BUG BISECT]
-Date: Sun, 29 Dec 2013 12:18:44 -0500
+Subject: [BUG BISECTED]
+From: Gene Heskett <gheskett@wdtv.com>
+Date: Sun, 29 Dec 2013 12:24:03 -0500
 MIME-Version: 1.0
 Content-Type: text/plain;
-  charset="utf-8"
+  charset="windows-1256"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201312291218.44269.gheskett@wdtv.com>
+Message-Id: <201312291224.03854.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+Resend, incorrect subject line
 
 Here is the copy/paste of the final git bisect bad report:
 
