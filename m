@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647Ab3L2VwV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 16:52:21 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:31758 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752943Ab3L2VwB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753425Ab3L2VwB (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 29 Dec 2013 16:52:01 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:31762 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752996Ab3L2Vv5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Dec 2013 16:51:57 -0500
 X-IronPort-AV: E=Sophos;i="4.95,570,1384297200"; 
-   d="scan'208";a="50832555"
+   d="scan'208";a="50832529"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 23/25] thermal: exynos: fix error return code
-Date: Sun, 29 Dec 2013 23:47:38 +0100
-Message-Id: <1388357260-4843-24-git-send-email-Julia.Lawall@lip6.fr>
+To: Hiral Patel <hiralpat@cisco.com>
+Cc: kernel-janitors@vger.kernel.org, Suma Ramars <sramars@cisco.com>,
+        Brian Uchino <buchino@cisco.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 9/25]  fix error return code
+Date: Sun, 29 Dec 2013 23:47:24 +0100
+Message-Id: <1388357260-4843-10-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1388357260-4843-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1388357260-4843-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -56,19 +55,38 @@ Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 ---
 Not tested.
 
- drivers/thermal/samsung/exynos_tmu.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/scsi/fnic/fnic_main.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index 32f38b9..0d96a51 100644
---- a/drivers/thermal/samsung/exynos_tmu.c
-+++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -205,6 +205,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
- skip_calib_data:
- 	if (pdata->max_trigger_level > MAX_THRESHOLD_LEVS) {
- 		dev_err(&pdev->dev, "Invalid max trigger level\n");
-+		ret = -EINVAL;
- 		goto out;
- 	}
+diff --git a/drivers/scsi/fnic/fnic_main.c b/drivers/scsi/fnic/fnic_main.c
+index 33e4ec2..a3472a1 100644
+--- a/drivers/scsi/fnic/fnic_main.c
++++ b/drivers/scsi/fnic/fnic_main.c
+@@ -731,17 +731,23 @@ static int fnic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 		spin_lock_init(&fnic->io_req_lock[i]);
  
+ 	fnic->io_req_pool = mempool_create_slab_pool(2, fnic_io_req_cache);
+-	if (!fnic->io_req_pool)
++	if (!fnic->io_req_pool) {
++		err = -ENOMEM;
+ 		goto err_out_free_resources;
++	}
+ 
+ 	pool = mempool_create_slab_pool(2, fnic_sgl_cache[FNIC_SGL_CACHE_DFLT]);
+-	if (!pool)
++	if (!pool) {
++		err = -ENOMEM;
+ 		goto err_out_free_ioreq_pool;
++	}
+ 	fnic->io_sgl_pool[FNIC_SGL_CACHE_DFLT] = pool;
+ 
+ 	pool = mempool_create_slab_pool(2, fnic_sgl_cache[FNIC_SGL_CACHE_MAX]);
+-	if (!pool)
++	if (!pool) {
++		err = -ENOMEM;
+ 		goto err_out_free_dflt_pool;
++	}
+ 	fnic->io_sgl_pool[FNIC_SGL_CACHE_MAX] = pool;
+ 
+ 	/* setup vlan config, hw inserts vlan header */
 
