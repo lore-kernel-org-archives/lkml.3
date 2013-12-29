@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755869Ab3L2CZl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:25:41 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55555 "EHLO
+	id S1755854Ab3L2CZk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:25:40 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55584 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753277Ab3L2CLC (ORCPT
+	by vger.kernel.org with ESMTP id S1753402Ab3L2CLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:11:02 -0500
+	Sat, 28 Dec 2013 21:11:04 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
-        "Michael Neuling" <mikey@neuling.org>,
-        "Haren Myneni" <haren@linux.vnet.ibm.com>
+CC: akpm@linux-foundation.org, "Fengguang Wu" <fengguang.wu@intel.com>,
+        "Takashi Iwai" <tiwai@suse.de>
 Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.585624167@decadent.org.uk>
+Message-ID: <lsq.1388282923.346980705@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 081/185] powerpc/signals: Mark VSX not saved with
- small contexts
+Subject: [PATCH 3.2 053/185] ALSA: msnd: Avoid duplicated driver name
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,56 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit c13f20ac48328b05cd3b8c19e31ed6c132b44b42 upstream.
+commit 092f9cd16aac7d054af1755c945f37c1b33399e6 upstream.
 
-The VSX MSR bit in the user context indicates if the context contains VSX
-state.  Currently we set this when the process has touched VSX at any stage.
+msnd_pinnacle.c is used for both snd-msnd-pinnacle and
+snd-msnd-classic drivers, and both should have different driver
+names.  Using the same driver name results in the sysfs warning for
+duplicated entries like
+ kobject: 'msnd-pinnacle.7' (cec33408): kobject_release, parent   (null) (delayed)
+ kobject: 'msnd-pinnacle' (cecd4980): kobject_release, parent cf3ad9b0 (delayed)
+ ------------[ cut here ]------------
+ WARNING: CPU: 0 PID: 1 at fs/sysfs/dir.c:486 sysfs_warn_dup+0x7d/0xa0()
+ sysfs: cannot create duplicate filename '/bus/isa/drivers/msnd-pinnacle'
+ ......
 
-Unfortunately, if the user has not provided enough space to save the VSX state,
-we can't save it but we currently still set the MSR VSX bit.
-
-This patch changes this to clear the MSR VSX bit when the user doesn't provide
-enough space.  This indicates that there is no valid VSX state in the user
-context.
-
-This is needed to support get/set/make/swapcontext for applications that use
-VSX but only provide a small context.  For example, getcontext in glibc
-provides a smaller context since the VSX registers don't need to be saved over
-the glibc function call.  But since the program calling getcontext may have
-used VSX, the kernel currently says the VSX state is valid when it's not.  If
-the returned context is then used in setcontext (ie. a small context without
-VSX but with MSR VSX set), the kernel will refuse the context.  This situation
-has been reported by the glibc community.
-
-Based on patch from Carlos O'Donell.
-
-Tested-by: Haren Myneni <haren@linux.vnet.ibm.com>
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/powerpc/kernel/signal_32.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ sound/isa/msnd/msnd_pinnacle.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/kernel/signal_32.c
-+++ b/arch/powerpc/kernel/signal_32.c
-@@ -457,7 +457,15 @@ static int save_user_regs(struct pt_regs
- 		if (copy_vsx_to_user(&frame->mc_vsregs, current))
- 			return 1;
- 		msr |= MSR_VSX;
--	}
-+	} else if (!ctx_has_vsx_region)
-+		/*
-+		 * With a small context structure we can't hold the VSX
-+		 * registers, hence clear the MSR value to indicate the state
-+		 * was not saved.
-+		 */
-+		msr &= ~MSR_VSX;
-+
-+
- #endif /* CONFIG_VSX */
- #ifdef CONFIG_SPE
- 	/* save spe registers */
+--- a/sound/isa/msnd/msnd_pinnacle.c
++++ b/sound/isa/msnd/msnd_pinnacle.c
+@@ -73,9 +73,11 @@
+ #ifdef MSND_CLASSIC
+ #  include "msnd_classic.h"
+ #  define LOGNAME			"msnd_classic"
++#  define DEV_NAME			"msnd-classic"
+ #else
+ #  include "msnd_pinnacle.h"
+ #  define LOGNAME			"snd_msnd_pinnacle"
++#  define DEV_NAME			"msnd-pinnacle"
+ #endif
+ 
+ static void __devinit set_default_audio_parameters(struct snd_msnd *chip)
+@@ -1068,8 +1070,6 @@ static int __devexit snd_msnd_isa_remove
+ 	return 0;
+ }
+ 
+-#define DEV_NAME "msnd-pinnacle"
+-
+ static struct isa_driver snd_msnd_driver = {
+ 	.match		= snd_msnd_isa_match,
+ 	.probe		= snd_msnd_isa_probe,
 
