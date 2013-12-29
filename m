@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847Ab3L2CZB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:25:01 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55609 "EHLO
+	id S1753579Ab3L2CLD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:11:03 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55496 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753570Ab3L2CLF (ORCPT
+	by vger.kernel.org with ESMTP id S1752250Ab3L2CKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:11:05 -0500
+	Sat, 28 Dec 2013 21:10:53 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Ben Skeggs" <bskeggs@redhat.com>
+CC: akpm@linux-foundation.org, "David Bulkow" <David.Bulkow@stratus.com>,
+        "Yinghai Lu" <yinghai@kernel.org>,
+        "Mika Westerberg" <mika.westerberg@linux.intel.com>,
+        "Bjorn Helgaas" <bhelgaas@google.com>
 Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.920116243@decadent.org.uk>
+Message-ID: <lsq.1388282923.861559681@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 063/185] drm/nouveau: when bailing out of a pushbuf
- ioctl, do not remove previous fence
+Subject: [PATCH 3.2 079/185] PCI: Remove duplicate pci_disable_device()
+ from pcie_portdrv_remove()
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,26 +34,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: Yinghai Lu <yinghai@kernel.org>
 
-commit 9360bd1112d8874d21942e2ae74f5416b00a8db6 upstream.
+commit e7cc5cf74544d97d7b69e2701595037474db1f96 upstream.
 
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+The pcie_portdrv .probe() method calls pci_enable_device() once, in
+pcie_port_device_register(), but the .remove() method calls
+pci_disable_device() twice, in pcie_port_device_remove() and in
+pcie_portdrv_remove().
+
+That causes a "disabling already-disabled device" warning when removing a
+PCIe port device.  This happens all the time when removing Thunderbolt
+devices, but is also easy to reproduce with, e.g.,
+"echo 0000:00:1c.3 > /sys/bus/pci/drivers/pcieport/unbind"
+
+This patch removes the disable from pcie_portdrv_remove().
+
+[bhelgaas: changelog, tag for stable]
+Reported-by: David Bulkow <David.Bulkow@stratus.com>
+Reported-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/nouveau/nouveau_gem.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/pci/pcie/portdrv_pci.c | 1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/gpu/drm/nouveau/nouveau_gem.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_gem.c
-@@ -281,7 +281,8 @@ validate_fini_list(struct list_head *lis
- 	list_for_each_safe(entry, tmp, list) {
- 		nvbo = list_entry(entry, struct nouveau_bo, entry);
+--- a/drivers/pci/pcie/portdrv_pci.c
++++ b/drivers/pci/pcie/portdrv_pci.c
+@@ -151,7 +151,6 @@ static int __devinit pcie_portdrv_probe(
+ static void pcie_portdrv_remove(struct pci_dev *dev)
+ {
+ 	pcie_port_device_remove(dev);
+-	pci_disable_device(dev);
+ }
  
--		nouveau_bo_fence(nvbo, fence);
-+		if (likely(fence))
-+			nouveau_bo_fence(nvbo, fence);
- 
- 		if (unlikely(nvbo->validate_mapped)) {
- 			ttm_bo_kunmap(&nvbo->kmap);
+ static int error_detected_iter(struct device *device, void *data)
 
