@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283Ab3L2CMX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:12:23 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55725 "EHLO
+	id S1754411Ab3L2CMp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:12:45 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55804 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753986Ab3L2CLZ (ORCPT
+	by vger.kernel.org with ESMTP id S1754345Ab3L2CMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:11:25 -0500
+	Sat, 28 Dec 2013 21:12:43 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Marc Kleine-Budde" <mkl@pengutronix.de>,
-        "Markus Pargmann" <mpa@pengutronix.de>
+CC: akpm@linux-foundation.org, "Mikulas Patocka" <mpatocka@redhat.com>,
+        "Tejun Heo" <tj@kernel.org>, "Jens Axboe" <axboe@kernel.dk>
 Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.597095294@decadent.org.uk>
+Message-ID: <lsq.1388282923.418990972@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 020/185] can: c_can: Fix RX message handling, handle
- lost message before EOB
+Subject: [PATCH 3.2 039/185] blk-core: Fix memory corruption if
+ blkcg_init_queue fails
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,45 +32,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markus Pargmann <mpa@pengutronix.de>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 5d0f801a2ccec3b1fdabc3392c8d99ed0413d216 upstream.
+commit fff4996b7db7955414ac74386efa5e07fd766b50 upstream.
 
-If we handle end of block messages with higher priority than a lost message,
-we can run into an endless interrupt loop.
+If blkcg_init_queue fails, blk_alloc_queue_node doesn't call bdi_destroy
+to clean up structures allocated by the backing dev.
 
-This is reproducable with a am335x processor and "cansequence -r" at 1Mbit.
-As soon as we loose a packet we can't escape from an interrupt loop.
+------------[ cut here ]------------
+WARNING: at lib/debugobjects.c:260 debug_print_object+0x85/0xa0()
+ODEBUG: free active (active state 0) object type: percpu_counter hint:           (null)
+Modules linked in: dm_loop dm_mod ip6table_filter ip6_tables uvesafb cfbcopyarea cfbimgblt cfbfillrect fbcon font bitblit fbcon_rotate fbcon_cw fbcon_ud fbcon_ccw softcursor fb fbdev ipt_MASQUERADE iptable_nat nf_nat_ipv4 msr nf_conntrack_ipv4 nf_defrag_ipv4 xt_state ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc tun ipv6 cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_ondemand cpufreq_conservative spadfs fuse hid_generic usbhid hid raid0 md_mod dmi_sysfs nf_nat_ftp nf_nat nf_conntrack_ftp nf_conntrack lm85 hwmon_vid snd_usb_audio snd_pcm_oss snd_mixer_oss snd_pcm snd_timer snd_page_alloc snd_hwdep snd_usbmidi_lib snd_rawmidi snd soundcore acpi_cpufreq freq_table mperf sata_svw serverworks kvm_amd ide_core ehci_pci ohci_hcd libata ehci_hcd kvm usbcore tg3 usb_common libphy k10temp pcspkr ptp i2c_piix4 i2c_core evdev microcode hwmon rtc_cmos pps_core e100 skge floppy mii processor button unix
+CPU: 0 PID: 2739 Comm: lvchange Tainted: G        W
+3.10.15-devel #14
+Hardware name: empty empty/S3992-E, BIOS 'V1.06   ' 06/09/2009
+ 0000000000000009 ffff88023c3c1ae8 ffffffff813c8fd4 ffff88023c3c1b20
+ ffffffff810399eb ffff88043d35cd58 ffffffff81651940 ffff88023c3c1bf8
+ ffffffff82479d90 0000000000000005 ffff88023c3c1b80 ffffffff81039a67
+Call Trace:
+ [<ffffffff813c8fd4>] dump_stack+0x19/0x1b
+ [<ffffffff810399eb>] warn_slowpath_common+0x6b/0xa0
+ [<ffffffff81039a67>] warn_slowpath_fmt+0x47/0x50
+ [<ffffffff8122aaaf>] ? debug_check_no_obj_freed+0xcf/0x250
+ [<ffffffff81229a15>] debug_print_object+0x85/0xa0
+ [<ffffffff8122abe3>] debug_check_no_obj_freed+0x203/0x250
+ [<ffffffff8113c4ac>] kmem_cache_free+0x20c/0x3a0
+ [<ffffffff811f6709>] blk_alloc_queue_node+0x2a9/0x2c0
+ [<ffffffff811f672e>] blk_alloc_queue+0xe/0x10
+ [<ffffffffa04c0093>] dm_create+0x1a3/0x530 [dm_mod]
+ [<ffffffffa04c6bb0>] ? list_version_get_info+0xe0/0xe0 [dm_mod]
+ [<ffffffffa04c6c07>] dev_create+0x57/0x2b0 [dm_mod]
+ [<ffffffffa04c6bb0>] ? list_version_get_info+0xe0/0xe0 [dm_mod]
+ [<ffffffffa04c6bb0>] ? list_version_get_info+0xe0/0xe0 [dm_mod]
+ [<ffffffffa04c6528>] ctl_ioctl+0x268/0x500 [dm_mod]
+ [<ffffffff81097662>] ? get_lock_stats+0x22/0x70
+ [<ffffffffa04c67ce>] dm_ctl_ioctl+0xe/0x20 [dm_mod]
+ [<ffffffff81161aad>] do_vfs_ioctl+0x2ed/0x520
+ [<ffffffff8116cfc7>] ? fget_light+0x377/0x4e0
+ [<ffffffff81161d2b>] SyS_ioctl+0x4b/0x90
+ [<ffffffff813cff16>] system_call_fastpath+0x1a/0x1f
+---[ end trace 4b5ff0d55673d986 ]---
+------------[ cut here ]------------
 
-This patch fixes the problem by handling lost packets before EOB packets.
+This fix should be backported to stable kernels starting with 2.6.37. Note
+that in the kernels prior to 3.5 the affected code is different, but the
+bug is still there - bdi_init is called and bdi_destroy isn't.
 
-Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+[bwh: Backported to 3.2: add bdi_destroy() to the single error path
+ after the call to bdi_init()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/can/c_can/c_can.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ block/blk-core.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -764,9 +764,6 @@ static int c_can_do_rx_poll(struct net_d
- 			msg_ctrl_save = priv->read_reg(priv,
- 					&priv->regs->ifregs[0].msg_cntrl);
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -483,6 +483,7 @@ struct request_queue *blk_alloc_queue_no
+ 	}
  
--			if (msg_ctrl_save & IF_MCONT_EOB)
--				return num_rx_pkts;
--
- 			if (msg_ctrl_save & IF_MCONT_MSGLST) {
- 				c_can_handle_lost_msg_obj(dev, 0, msg_obj);
- 				num_rx_pkts++;
-@@ -774,6 +771,9 @@ static int c_can_do_rx_poll(struct net_d
- 				continue;
- 			}
- 
-+			if (msg_ctrl_save & IF_MCONT_EOB)
-+				return num_rx_pkts;
-+
- 			if (!(msg_ctrl_save & IF_MCONT_NEWDAT))
- 				continue;
- 
+ 	if (blk_throtl_init(q)) {
++		bdi_destroy(&q->backing_dev_info);
+ 		kmem_cache_free(blk_requestq_cachep, q);
+ 		return NULL;
+ 	}
 
