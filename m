@@ -1,88 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751451Ab3L2Ou3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 09:50:29 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57403 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750775Ab3L2Ou1 (ORCPT
+	id S1752192Ab3L2Ouk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 09:50:40 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:63600 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751681Ab3L2Oui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 09:50:27 -0500
-Message-ID: <1388328610.14575.26.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 3.2 000/185] 3.2.54-rc1 review
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Date: Sun, 29 Dec 2013 15:50:10 +0100
-In-Reply-To: <20131229135449.GA25007@roeck-us.net>
-References: <lsq.1388282923.751256928@decadent.org.uk>
-	 <20131229135449.GA25007@roeck-us.net>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-OINH1oXdepv7oA4w8Ow4"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 151.217.234.213
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 29 Dec 2013 09:50:38 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Kashyap Chamarthy <kchamart@redhat.com>
+Cc: Gleb Natapov <gleb@kernel.org>, Josh Boyer <jwboyer@fedoraproject.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "Richard W.M. Jones" <rjones@redhat.com>
+Subject: Re: intel_pstate divide error with v3.13-rc4-256-gb7000ad
+Date: Sun, 29 Dec 2013 16:04:12 +0100
+Message-ID: <4794554.Hmd2RUNYDT@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <52C011A2.3040800@redhat.com>
+References: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com> <231382870.yshsPRR4KM@vostro.rjw.lan> <52C011A2.3040800@redhat.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sunday, December 29, 2013 01:12:18 PM Kashyap Chamarthy wrote:
+> [. . .]
+> 
+> >> Here's host dmesg: https://bugzilla.kernel.org/attachment.cgi?id=119751
+> >>
+> >>>> Can you ftrace the failure?
+> >>
+> >> Can try, need some time (rest of the day I'll be away travelling,
+> >> will try to do it over the weekend, and update the Kernel
+> >> bugzilla with observations).
+> >>
+> >>>>
+> >>> Ugh, it looks like guest dmesg but there are KVM messages there too ("[
+> >>> 281.443662] kvm [2452]: vcpu0 unhandled rdmsr: 0xe8" is unhandled access
+> >>> to MSR_IA32_APERF I was talking about above), so I guess this is nested
+> >>> guest invocation? 
+> >>
+> >> Yeah -- sorry, I forgot to note it's in a nested environment :(
+> >>
+> >>> Does it happen in non nested guest?
+> >>
+> >> I need to that.
+> >>
+> >> Note to self: Also try with a newer Kernel on the host.
+> > 
+> > Please try the patch I posted earlier today when you're at it:
+> > 
+> > https://patchwork.kernel.org/patch/3411991/
+> 
+> I applied the patch & tried to build the Kernel, it failed with:
+> 
+> =======
+> .
+> .
+> .
+> Generating a 4096 bit RSA private key
+> ............................................................................................................drivers/cpufreq/intel_pstate.c:
+> In function 'intel_pstate_init_cpu':
+> drivers/cpufreq/intel_pstate.c:617:18: error: 'struct pstate_data' has no member named
+> 'current_state'
+>   if (!cpu->pstate.current_state) {
 
---=-OINH1oXdepv7oA4w8Ow4
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+My bad, that should have been current_pstate.  Updated patch is appended.
 
-On Sun, 2013-12-29 at 05:54 -0800, Guenter Roeck wrote:
-> On Sun, Dec 29, 2013 at 03:08:43AM +0100, Ben Hutchings wrote:
-> > This is the start of the stable review cycle for the 3.2.54 release.
-> > There are 185 patches in this series, which will be posted as responses
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> >=20
-> > Responses should be made by Wed Jan  1 00:00:00 UTC 2014.
-> > Anything received after that time might be too late.
-> >=20
-> > A combined patch relative to 3.2.53 will be posted as an additional
-> > response to this.  A shortlog and diffstat can be found below.
-> >=20
-> Build results:
-> 	total: 100 pass: 78 skipped: 14 fail: 8
->=20
-> qemu tests all pass.
->=20
-> Results are as expected.
+Thanks,
+Rafael
 
-Thanks for checking.
 
-Ben.
+---
+ drivers/cpufreq/intel_pstate.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---=20
-Ben Hutchings
-Klipstein's 4th Law of Prototyping and Production:
-                                    A fail-safe circuit will destroy others=
-.
+Index: linux-pm/drivers/cpufreq/intel_pstate.c
+===================================================================
+--- linux-pm.orig/drivers/cpufreq/intel_pstate.c
++++ linux-pm/drivers/cpufreq/intel_pstate.c
+@@ -614,6 +614,11 @@ static int intel_pstate_init_cpu(unsigne
+ 	cpu = all_cpu_data[cpunum];
+ 
+ 	intel_pstate_get_cpu_pstates(cpu);
++	if (!cpu->pstate.current_pstate) {
++		all_cpu_data[cpunum] = NULL;
++		kfree(cpu);
++		return -ENODATA;
++	}
+ 
+ 	cpu->cpu = cpunum;
+ 
 
---=-OINH1oXdepv7oA4w8Ow4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIVAwUAUsA2oue/yOyVhhEJAQrkIw//QLn5z5WAo5Cwg2piV4l2OnEyNCos3ejW
-3ffzOk8D15oVDptg/OJwHcMCqaj8rLj9lfKmxfOKLeMljNV41hp92q4HR5aoSqKe
-y7ia1x0nwHRYxGD9qBiJnGPTTsswqkOGunheH/NruIpVc1IanUWFS2sMTsct4MZF
-g3l3/gMKF2FwcGUa1LmKmMhbE0UhUiuKew6K/eUqHU139MmIkvaXm1Usyq6vP3vJ
-c/vGP9WSgZOwbHK8veuhaWZBJyyISC6ntLZKn5NyI6zqZ1Dhu+dvnptq6CsyzHpl
-iLhEYdznWOgcAajS8o5W8XQTvsiKY4cg3krhh0PYzEoN7wPIBfhg/s4KH8QB/mJU
-XAgk2Iety1TwlUSjaJ2uBVgVoXVbEYo33Jr8Ch4QM+gh841gheRECJHODnDJIfGv
-7VxYr3n2A+PNCwdeJjnUJ21Nz6cTjdbqr3Dgr7NQ/MIc3rPtLfvqA9HMGDwGDQJx
-GpC1ZVTSTXXpZ76GROluV3CDeOeAVPo5Vmyjn+oFDs1vfloh8fiE9gLO5hZ1B88D
-07QxFLRus61IX5Af+f0yCPC3VJrka2GLfqLEJkNcC/1xlxheKEKLzfEApaemNC0V
-8qv7/s7DyDdRbFSfvVXD/zvUcDc5IZ2DDJLrSY+n0d05Yl6NPxa/BEujpcga8O5I
-pPJMkg25i+I=
-=kw1f
------END PGP SIGNATURE-----
-
---=-OINH1oXdepv7oA4w8Ow4--
