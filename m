@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752346Ab3L2CKL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:10:11 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55058 "EHLO
+	id S1756576Ab3L2Cwc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:52:32 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54996 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752089Ab3L2CKD (ORCPT
+	by vger.kernel.org with ESMTP id S1751810Ab3L2CKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:10:03 -0500
+	Sat, 28 Dec 2013 21:10:10 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Tejun Heo" <tj@kernel.org>,
-        "Shan Hai" <shan.hai@windriver.com>
-Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.704841631@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Russell King" <rmk+kernel@arm.linux.org.uk>,
+        "Catalin Marinas" <catalin.marinas@arm.com>,
+        "Will Deacon" <will.deacon@arm.com>
+Date: Sun, 29 Dec 2013 03:08:44 +0100
+Message-ID: <lsq.1388282924.395767228@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 012/185] drivers/libata: Set max sector to 65535 for
- Slimtype DVD A DS8A9SH drive
+Subject: [PATCH 3.2 176/185] ARM: 7527/1: uaccess: explicitly check __user
+ pointer when !CPU_USE_DOMAINS
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,77 +33,240 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shan Hai <shan.hai@windriver.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 0523f037f65dba10191b0fa9c51266f90ba64630 upstream.
+commit 8404663f81d212918ff85f493649a7991209fa04 upstream.
 
-The "Slimtype DVD A  DS8A9SH" drive locks up with following backtrace when
-the max sector is smaller than 65535 bytes, fix it by adding a quirk to set
-the max sector to 65535 bytes.
+The {get,put}_user macros don't perform range checking on the provided
+__user address when !CPU_HAS_DOMAINS.
 
-INFO: task flush-11:0:663 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-flush-11:0    D 00000000ffff5ceb     0   663      2 0x00000000
- ffff88026d3b1710 0000000000000046 0000000000000001 0000000000000000
- ffff88026f2530c0 ffff88026d365860 ffff88026d3b16e0 ffffffff812ffd52
- ffff88026d4fd3d0 0000000100000001 ffff88026d3b16f0 ffff88026d3b1fd8
-Call Trace:
- [<ffffffff812ffd52>] ? cfq_may_queue+0x52/0xf0
- [<ffffffff81604338>] schedule+0x18/0x30
- [<ffffffff81604392>] io_schedule+0x42/0x60
- [<ffffffff812f22bb>] get_request_wait+0xeb/0x1f0
- [<ffffffff81065660>] ? autoremove_wake_function+0x0/0x40
- [<ffffffff812eb382>] ? elv_merge+0x42/0x210
- [<ffffffff812f26ae>] __make_request+0x8e/0x4e0
- [<ffffffff812f068e>] generic_make_request+0x21e/0x5e0
- [<ffffffff812f0aad>] submit_bio+0x5d/0xd0
- [<ffffffff81141422>] submit_bh+0xf2/0x130
- [<ffffffff8114474c>] __block_write_full_page+0x1dc/0x3a0
- [<ffffffff81143f60>] ? end_buffer_async_write+0x0/0x120
- [<ffffffff811474e0>] ? blkdev_get_block+0x0/0x70
- [<ffffffff811474e0>] ? blkdev_get_block+0x0/0x70
- [<ffffffff81143f60>] ? end_buffer_async_write+0x0/0x120
- [<ffffffff811449ee>] block_write_full_page_endio+0xde/0x100
- [<ffffffff81144a20>] block_write_full_page+0x10/0x20
- [<ffffffff81148703>] blkdev_writepage+0x13/0x20
- [<ffffffff810d7525>] __writepage+0x15/0x40
- [<ffffffff810d7c0f>] write_cache_pages+0x1cf/0x3e0
- [<ffffffff810d7510>] ? __writepage+0x0/0x40
- [<ffffffff810d7e42>] generic_writepages+0x22/0x30
- [<ffffffff810d7e6f>] do_writepages+0x1f/0x40
- [<ffffffff8113ae67>] writeback_single_inode+0xe7/0x3b0
- [<ffffffff8113b574>] writeback_sb_inodes+0x184/0x280
- [<ffffffff8113bedb>] writeback_inodes_wb+0x6b/0x1a0
- [<ffffffff8113c24b>] wb_writeback+0x23b/0x2a0
- [<ffffffff8113c42d>] wb_do_writeback+0x17d/0x190
- [<ffffffff8113c48b>] bdi_writeback_task+0x4b/0xe0
- [<ffffffff810e82a0>] ? bdi_start_fn+0x0/0x100
- [<ffffffff810e8321>] bdi_start_fn+0x81/0x100
- [<ffffffff810e82a0>] ? bdi_start_fn+0x0/0x100
- [<ffffffff8106522e>] kthread+0x8e/0xa0
- [<ffffffff81039274>] ? finish_task_switch+0x54/0xc0
- [<ffffffff81003334>] kernel_thread_helper+0x4/0x10
- [<ffffffff810651a0>] ? kthread+0x0/0xa0
- [<ffffffff81003330>] ? kernel_thread_helper+0x0/0x10
+This patch reworks the out-of-line assembly accessors to check the user
+address against a specified limit, returning -EFAULT if is is out of
+range.
 
- The above trace was triggered by
-   "dd if=/dev/zero of=/dev/sr0 bs=2048 count=32768"
+[will: changed get_user register allocation to match put_user]
+[rmk: fixed building on older ARM architectures]
 
-Signed-off-by: Shan Hai <shan.hai@windriver.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+[bwh: Backported to 3.2: TUSER() was called T()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/ata/libata-core.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/include/asm/assembler.h |  8 ++++++++
+ arch/arm/include/asm/uaccess.h   | 40 +++++++++++++++++++++++++++-------------
+ arch/arm/lib/getuser.S           | 23 +++++++++++++++--------
+ arch/arm/lib/putuser.S           |  6 ++++++
+ 4 files changed, 56 insertions(+), 21 deletions(-)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4067,6 +4067,7 @@ static const struct ata_blacklist_entry
- 	{ "TORiSAN DVD-ROM DRD-N216", NULL,	ATA_HORKAGE_MAX_SEC_128 },
- 	{ "QUANTUM DAT    DAT72-000", NULL,	ATA_HORKAGE_ATAPI_MOD16_DMA },
- 	{ "Slimtype DVD A  DS8A8SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
-+	{ "Slimtype DVD A  DS8A9SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
+--- a/arch/arm/include/asm/assembler.h
++++ b/arch/arm/include/asm/assembler.h
+@@ -307,4 +307,12 @@
+ 	.size \name , . - \name
+ 	.endm
  
- 	/* Devices we expect to fail diagnostics */
++	.macro check_uaccess, addr:req, size:req, limit:req, tmp:req, bad:req
++#ifndef CONFIG_CPU_USE_DOMAINS
++	adds	\tmp, \addr, #\size - 1
++	sbcccs	\tmp, \tmp, \limit
++	bcs	\bad
++#endif
++	.endm
++
+ #endif /* __ASM_ASSEMBLER_H__ */
+--- a/arch/arm/include/asm/uaccess.h
++++ b/arch/arm/include/asm/uaccess.h
+@@ -101,28 +101,39 @@ extern int __get_user_1(void *);
+ extern int __get_user_2(void *);
+ extern int __get_user_4(void *);
  
+-#define __get_user_x(__r2,__p,__e,__s,__i...)				\
++#define __GUP_CLOBBER_1	"lr", "cc"
++#ifdef CONFIG_CPU_USE_DOMAINS
++#define __GUP_CLOBBER_2	"ip", "lr", "cc"
++#else
++#define __GUP_CLOBBER_2 "lr", "cc"
++#endif
++#define __GUP_CLOBBER_4	"lr", "cc"
++
++#define __get_user_x(__r2,__p,__e,__l,__s)				\
+ 	   __asm__ __volatile__ (					\
+ 		__asmeq("%0", "r0") __asmeq("%1", "r2")			\
++		__asmeq("%3", "r1")					\
+ 		"bl	__get_user_" #__s				\
+ 		: "=&r" (__e), "=r" (__r2)				\
+-		: "0" (__p)						\
+-		: __i, "cc")
++		: "0" (__p), "r" (__l)					\
++		: __GUP_CLOBBER_##__s)
+ 
+ #define get_user(x,p)							\
+ 	({								\
++		unsigned long __limit = current_thread_info()->addr_limit - 1; \
+ 		register const typeof(*(p)) __user *__p asm("r0") = (p);\
+ 		register unsigned long __r2 asm("r2");			\
++		register unsigned long __l asm("r1") = __limit;		\
+ 		register int __e asm("r0");				\
+ 		switch (sizeof(*(__p))) {				\
+ 		case 1:							\
+-			__get_user_x(__r2, __p, __e, 1, "lr");		\
+-	       		break;						\
++			__get_user_x(__r2, __p, __e, __l, 1);		\
++			break;						\
+ 		case 2:							\
+-			__get_user_x(__r2, __p, __e, 2, "r3", "lr");	\
++			__get_user_x(__r2, __p, __e, __l, 2);		\
+ 			break;						\
+ 		case 4:							\
+-	       		__get_user_x(__r2, __p, __e, 4, "lr");		\
++			__get_user_x(__r2, __p, __e, __l, 4);		\
+ 			break;						\
+ 		default: __e = __get_user_bad(); break;			\
+ 		}							\
+@@ -135,31 +146,34 @@ extern int __put_user_2(void *, unsigned
+ extern int __put_user_4(void *, unsigned int);
+ extern int __put_user_8(void *, unsigned long long);
+ 
+-#define __put_user_x(__r2,__p,__e,__s)					\
++#define __put_user_x(__r2,__p,__e,__l,__s)				\
+ 	   __asm__ __volatile__ (					\
+ 		__asmeq("%0", "r0") __asmeq("%2", "r2")			\
++		__asmeq("%3", "r1")					\
+ 		"bl	__put_user_" #__s				\
+ 		: "=&r" (__e)						\
+-		: "0" (__p), "r" (__r2)					\
++		: "0" (__p), "r" (__r2), "r" (__l)			\
+ 		: "ip", "lr", "cc")
+ 
+ #define put_user(x,p)							\
+ 	({								\
++		unsigned long __limit = current_thread_info()->addr_limit - 1; \
+ 		register const typeof(*(p)) __r2 asm("r2") = (x);	\
+ 		register const typeof(*(p)) __user *__p asm("r0") = (p);\
++		register unsigned long __l asm("r1") = __limit;		\
+ 		register int __e asm("r0");				\
+ 		switch (sizeof(*(__p))) {				\
+ 		case 1:							\
+-			__put_user_x(__r2, __p, __e, 1);		\
++			__put_user_x(__r2, __p, __e, __l, 1);		\
+ 			break;						\
+ 		case 2:							\
+-			__put_user_x(__r2, __p, __e, 2);		\
++			__put_user_x(__r2, __p, __e, __l, 2);		\
+ 			break;						\
+ 		case 4:							\
+-			__put_user_x(__r2, __p, __e, 4);		\
++			__put_user_x(__r2, __p, __e, __l, 4);		\
+ 			break;						\
+ 		case 8:							\
+-			__put_user_x(__r2, __p, __e, 8);		\
++			__put_user_x(__r2, __p, __e, __l, 8);		\
+ 			break;						\
+ 		default: __e = __put_user_bad(); break;			\
+ 		}							\
+--- a/arch/arm/lib/getuser.S
++++ b/arch/arm/lib/getuser.S
+@@ -16,8 +16,9 @@
+  * __get_user_X
+  *
+  * Inputs:	r0 contains the address
++ *		r1 contains the address limit, which must be preserved
+  * Outputs:	r0 is the error code
+- *		r2, r3 contains the zero-extended value
++ *		r2 contains the zero-extended value
+  *		lr corrupted
+  *
+  * No other registers must be altered.  (see <asm/uaccess.h>
+@@ -27,33 +28,39 @@
+  * Note also that it is intended that __get_user_bad is not global.
+  */
+ #include <linux/linkage.h>
++#include <asm/assembler.h>
+ #include <asm/errno.h>
+ #include <asm/domain.h>
+ 
+ ENTRY(__get_user_1)
++	check_uaccess r0, 1, r1, r2, __get_user_bad
+ 1:	T(ldrb)	r2, [r0]
+ 	mov	r0, #0
+ 	mov	pc, lr
+ ENDPROC(__get_user_1)
+ 
+ ENTRY(__get_user_2)
+-#ifdef CONFIG_THUMB2_KERNEL
+-2:	T(ldrb)	r2, [r0]
+-3:	T(ldrb)	r3, [r0, #1]
++	check_uaccess r0, 2, r1, r2, __get_user_bad
++#ifdef CONFIG_CPU_USE_DOMAINS
++rb	.req	ip
++2:	ldrbt	r2, [r0], #1
++3:	ldrbt	rb, [r0], #0
+ #else
+-2:	T(ldrb)	r2, [r0], #1
+-3:	T(ldrb)	r3, [r0]
++rb	.req	r0
++2:	ldrb	r2, [r0]
++3:	ldrb	rb, [r0, #1]
+ #endif
+ #ifndef __ARMEB__
+-	orr	r2, r2, r3, lsl #8
++	orr	r2, r2, rb, lsl #8
+ #else
+-	orr	r2, r3, r2, lsl #8
++	orr	r2, rb, r2, lsl #8
+ #endif
+ 	mov	r0, #0
+ 	mov	pc, lr
+ ENDPROC(__get_user_2)
+ 
+ ENTRY(__get_user_4)
++	check_uaccess r0, 4, r1, r2, __get_user_bad
+ 4:	T(ldr)	r2, [r0]
+ 	mov	r0, #0
+ 	mov	pc, lr
+--- a/arch/arm/lib/putuser.S
++++ b/arch/arm/lib/putuser.S
+@@ -16,6 +16,7 @@
+  * __put_user_X
+  *
+  * Inputs:	r0 contains the address
++ *		r1 contains the address limit, which must be preserved
+  *		r2, r3 contains the value
+  * Outputs:	r0 is the error code
+  *		lr corrupted
+@@ -27,16 +28,19 @@
+  * Note also that it is intended that __put_user_bad is not global.
+  */
+ #include <linux/linkage.h>
++#include <asm/assembler.h>
+ #include <asm/errno.h>
+ #include <asm/domain.h>
+ 
+ ENTRY(__put_user_1)
++	check_uaccess r0, 1, r1, ip, __put_user_bad
+ 1:	T(strb)	r2, [r0]
+ 	mov	r0, #0
+ 	mov	pc, lr
+ ENDPROC(__put_user_1)
+ 
+ ENTRY(__put_user_2)
++	check_uaccess r0, 2, r1, ip, __put_user_bad
+ 	mov	ip, r2, lsr #8
+ #ifdef CONFIG_THUMB2_KERNEL
+ #ifndef __ARMEB__
+@@ -60,12 +64,14 @@ ENTRY(__put_user_2)
+ ENDPROC(__put_user_2)
+ 
+ ENTRY(__put_user_4)
++	check_uaccess r0, 4, r1, ip, __put_user_bad
+ 4:	T(str)	r2, [r0]
+ 	mov	r0, #0
+ 	mov	pc, lr
+ ENDPROC(__put_user_4)
+ 
+ ENTRY(__put_user_8)
++	check_uaccess r0, 8, r1, ip, __put_user_bad
+ #ifdef CONFIG_THUMB2_KERNEL
+ 5:	T(str)	r2, [r0]
+ 6:	T(str)	r3, [r0, #4]
 
