@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755980Ab3L2Cbz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:31:55 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55435 "EHLO
+	id S1755965Ab3L2Cbx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:31:53 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55401 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752875Ab3L2CKs (ORCPT
+	by vger.kernel.org with ESMTP id S1752819Ab3L2CKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:10:48 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "=?UTF-8?q?Andreas=20Bie=C3=9Fmann?=" <andreas@biessmann.de>,
-        "Hans-Christian Egtvedt" <egtvedt@samfundet.no>,
-        "Haavard Skinnemoen" <hskinnemoen@gmail.com>
+CC: akpm@linux-foundation.org, "Blaise Gassend" <blaise@suitabletech.com>,
+        "Johannes Berg" <johannes.berg@intel.com>
 Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.893199703@decadent.org.uk>
+Message-ID: <lsq.1388282923.377669219@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 076/185] avr32: fix out-of-range jump in large kernels
+Subject: [PATCH 3.2 090/185] mac80211: don't attempt to reorder multicast
+ frames
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,63 +32,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Bießmann <andreas@biessmann.de>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit d617b338bbfdd77e9cbd8e7dc949cee3dd73d575 upstream.
+commit 051a41fa4ee14f5c39668f0980973b9a195de560 upstream.
 
-This patch fixes following error (for big kernels):
+Multicast frames can't be transmitted as part of an aggregation
+session (such a session couldn't even be set up) so don't try to
+reorder them. Trying to do so would cause the reorder to stop
+working correctly since multicast QoS frames (as transmitted by
+the Aruba APs this was found with) would cause sequence number
+confusion in the buffer.
 
----8<---
-arch/avr32/boot/u-boot/head.o: In function `no_tag_table':
-(.init.text+0x44): relocation truncated to fit: R_AVR32_22H_PCREL against symbol `panic' defined in .text.unlikely section in kernel/built-in.o
-arch/avr32/kernel/built-in.o: In function `bad_return':
-(.ex.text+0x236): relocation truncated to fit: R_AVR32_22H_PCREL against symbol `panic' defined in .text.unlikely section in kernel/built-in.o
---->8---
-
-It comes up when the kernel increases and 'panic()' is too far away to fit in
-the +/- 2MiB range. Which in turn issues from the 21-bit displacement in
-'br{cond4}' mnemonic which is one of the two ways to do jumps (rjmp has just
-10-bit displacement and therefore a way smaller range). This fact was stated
-before in 8d29b7b9f81d6b83d869ff054e6c189d6da73f1f.
-One solution to solve this is to add a local storage for the symbol address
-and just load the $pc with that value.
-
-Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+Reported-by: Blaise Gassend <blaise@suitabletech.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/avr32/boot/u-boot/head.S    | 5 ++++-
- arch/avr32/kernel/entry-avr32b.S | 3 ++-
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ net/mac80211/rx.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/avr32/boot/u-boot/head.S
-+++ b/arch/avr32/boot/u-boot/head.S
-@@ -73,8 +73,11 @@ init_sr:
- 	.long	0x007f0000	/* Supervisor mode, everything masked */
- stack_addr:
- 	.long	init_thread_union
-+panic_addr:
-+	.long	panic
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -764,7 +764,8 @@ static void ieee80211_rx_reorder_ampdu(s
+ 	u16 sc;
+ 	int tid;
  
- no_tag_table:
- 	sub	r12, pc, (. - 2f)
--	bral	panic
-+	/* branch to panic() which can be far away with that construct */
-+	lddpc	pc, panic_addr
- 2:	.asciz	"Boot loader didn't provide correct magic number\n"
---- a/arch/avr32/kernel/entry-avr32b.S
-+++ b/arch/avr32/kernel/entry-avr32b.S
-@@ -399,9 +399,10 @@ handle_critical:
- 	/* We should never get here... */
- bad_return:
- 	sub	r12, pc, (. - 1f)
--	bral	panic
-+	lddpc	pc, 2f
- 	.align	2
- 1:	.asciz	"Return from critical exception!"
-+2:	.long	panic
+-	if (!ieee80211_is_data_qos(hdr->frame_control))
++	if (!ieee80211_is_data_qos(hdr->frame_control) ||
++	    is_multicast_ether_addr(hdr->addr1))
+ 		goto dont_reorder;
  
- 	.align	1
- do_bus_error_write:
+ 	/*
 
