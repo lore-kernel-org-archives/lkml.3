@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756604Ab3L2Cxv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:53:51 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55153 "EHLO
+	id S1756583Ab3L2Cxt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:53:49 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55076 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752232Ab3L2CKH (ORCPT
+	by vger.kernel.org with ESMTP id S1752123Ab3L2CKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:10:07 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Andy Honig" <ahonig@google.com>,
-        "Paolo Bonzini" <pbonzini@redhat.com>
+CC: akpm@linux-foundation.org,
+        "Hannes Frederic Sowa" <hannes@stressinduktion.org>,
+        "Eric Dumazet" <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.402515796@decadent.org.uk>
+Message-ID: <lsq.1388282924.603460755@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 142/185] KVM: Improve create VCPU parameter
- (CVE-2013-4587)
+Subject: [PATCH 3.2 160/185] net: add BUG_ON if kernel advertises
+ msg_namelen >  sizeof(struct sockaddr_storage)
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,35 +34,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Honig <ahonig@google.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-commit 338c7dbadd2671189cec7faf64c84d01071b3f96 upstream.
+[ Upstream commit 68c6beb373955da0886d8f4f5995b3922ceda4be ]
 
-In multiple functions the vcpu_id is used as an offset into a bitfield.  Ag
-malicious user could specify a vcpu_id greater than 255 in order to set or
-clear bits in kernel memory.  This could be used to elevate priveges in the
-kernel.  This patch verifies that the vcpu_id provided is less than 255.
-The api documentation already specifies that the vcpu_id must be less than
-max_vcpus, but this is currently not checked.
+In that case it is probable that kernel code overwrote part of the
+stack. So we should bail out loudly here.
 
-Reported-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+The BUG_ON may be removed in future if we are sure all protocols are
+conformant.
+
+Suggested-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- virt/kvm/kvm_main.c | 3 +++
- 1 file changed, 3 insertions(+)
+ net/socket.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1683,6 +1683,9 @@ static int kvm_vm_ioctl_create_vcpu(stru
- 	int r;
- 	struct kvm_vcpu *vcpu, *v;
+diff --git a/net/socket.c b/net/socket.c
+index 18d478a..8021b0f 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -215,12 +215,13 @@ static int move_addr_to_user(struct sockaddr *kaddr, int klen,
+ 	int err;
+ 	int len;
  
-+	if (id >= KVM_MAX_VCPUS)
-+		return -EINVAL;
-+
- 	vcpu = kvm_arch_vcpu_create(kvm, id);
- 	if (IS_ERR(vcpu))
- 		return PTR_ERR(vcpu);
++	BUG_ON(klen > sizeof(struct sockaddr_storage));
+ 	err = get_user(len, ulen);
+ 	if (err)
+ 		return err;
+ 	if (len > klen)
+ 		len = klen;
+-	if (len < 0 || len > sizeof(struct sockaddr_storage))
++	if (len < 0)
+ 		return -EINVAL;
+ 	if (len) {
+ 		if (audit_sockaddr(klen, kaddr))
 
