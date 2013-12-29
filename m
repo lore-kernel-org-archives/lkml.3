@@ -1,88 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754285Ab3L2V6G (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 16:58:06 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:62801 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753922Ab3L2V6D (ORCPT
+	id S1755628Ab3L2V6l (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 16:58:41 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:31762 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752798Ab3L2Vvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 16:58:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <1388357260-4843-20-git-send-email-Julia.Lawall@lip6.fr>
+	Sun, 29 Dec 2013 16:51:54 -0500
+X-IronPort-AV: E=Sophos;i="4.95,570,1384297200"; 
+   d="scan'208";a="50832527"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Geoff Levand <geoff@infradead.org>
+Cc: kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
+        cbe-oss-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 7/25] net: fix error return code
+Date: Sun, 29 Dec 2013 23:47:22 +0100
+Message-Id: <1388357260-4843-8-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1388357260-4843-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1388357260-4843-1-git-send-email-Julia.Lawall@lip6.fr>
-	<1388357260-4843-20-git-send-email-Julia.Lawall@lip6.fr>
-Date: Sun, 29 Dec 2013 22:58:02 +0100
-X-Google-Sender-Auth: qB4KTGOkrEDrRhNiVA7fOg2Pn7o
-Message-ID: <CAMuHMdWQ5oiXsL7j3T0yuDhFe6uumwcv0S1Ym-L+uTwqqAvCcA@mail.gmail.com>
-Subject: Re: [PATCH 19/25] fix error return code
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Geoff Levand <geoff@infradead.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "cbe-oss-dev@lists.ozlabs.org" <cbe-oss-dev@lists.ozlabs.org>,
-        scsi <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 29, 2013 at 11:47 PM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
->
-> Set the return variable to an error code as done elsewhere in the function.
->
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
->
-> // <smpl>
-> (
-> if@p1 (\(ret < 0\|ret != 0\))
->  { ... return ret; }
-> |
-> ret@p1 = 0
-> )
-> ... when != ret = e1
->     when != &ret
-> *if(...)
-> {
->   ... when != ret = e2
->       when forall
->  return ret;
-> }
->
-> // </smpl>
->
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Set the return variable to propagate any error code as done elsewhere in
+the function.
 
-> ---
-> Not tested.
->
->  drivers/scsi/ps3rom.c |    1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/scsi/ps3rom.c b/drivers/scsi/ps3rom.c
-> index e6e2a30..04d77ce 100644
-> --- a/drivers/scsi/ps3rom.c
-> +++ b/drivers/scsi/ps3rom.c
-> @@ -387,6 +387,7 @@ static int ps3rom_probe(struct ps3_system_bus_device *_dev)
->         if (!host) {
->                 dev_err(&dev->sbd.core, "%s:%u: scsi_host_alloc failed\n",
->                         __func__, __LINE__);
-> +               error = -ENOMEM;
->                 goto fail_teardown;
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-Gr{oetje,eeting}s,
+// <smpl>
+(
+if@p1 (\(ret < 0\|ret != 0\))
+ { ... return ret; }
+|
+ret@p1 = 0
+)
+... when != ret = e1
+    when != &ret
+*if(...)
+{
+  ... when != ret = e2
+      when forall
+ return ret;
+}
 
-                        Geert
+// </smpl>
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+---
+Not tested.
+
+ drivers/net/ethernet/toshiba/ps3_gelic_net.c |   18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/net/ethernet/toshiba/ps3_gelic_net.c b/drivers/net/ethernet/toshiba/ps3_gelic_net.c
+index f7f2ef4..d899d00 100644
+--- a/drivers/net/ethernet/toshiba/ps3_gelic_net.c
++++ b/drivers/net/ethernet/toshiba/ps3_gelic_net.c
+@@ -1739,12 +1739,14 @@ static int ps3_gelic_driver_probe(struct ps3_system_bus_device *dev)
+ 		GELIC_CARD_PORT_STATUS_CHANGED;
+ 
+ 
+-	if (gelic_card_init_chain(card, &card->tx_chain,
+-			card->descr, GELIC_NET_TX_DESCRIPTORS))
++	result = gelic_card_init_chain(card, &card->tx_chain,
++				       card->descr, GELIC_NET_TX_DESCRIPTORS);
++	if (result)
+ 		goto fail_alloc_tx;
+-	if (gelic_card_init_chain(card, &card->rx_chain,
+-				 card->descr + GELIC_NET_TX_DESCRIPTORS,
+-				 GELIC_NET_RX_DESCRIPTORS))
++	result = gelic_card_init_chain(card, &card->rx_chain,
++				       card->descr + GELIC_NET_TX_DESCRIPTORS,
++				       GELIC_NET_RX_DESCRIPTORS);
++	if (result)
+ 		goto fail_alloc_rx;
+ 
+ 	/* head of chain */
+@@ -1754,7 +1756,8 @@ static int ps3_gelic_driver_probe(struct ps3_system_bus_device *dev)
+ 		card->rx_top, card->tx_top, sizeof(struct gelic_descr),
+ 		GELIC_NET_RX_DESCRIPTORS);
+ 	/* allocate rx skbs */
+-	if (gelic_card_alloc_rx_skbs(card))
++	result = gelic_card_alloc_rx_skbs(card);
++	if (result)
+ 		goto fail_alloc_skbs;
+ 
+ 	spin_lock_init(&card->tx_lock);
+@@ -1772,7 +1775,8 @@ static int ps3_gelic_driver_probe(struct ps3_system_bus_device *dev)
+ 	}
+ 
+ #ifdef CONFIG_GELIC_WIRELESS
+-	if (gelic_wl_driver_probe(card)) {
++	result = gelic_wl_driver_probe(card);
++	if (result) {
+ 		dev_dbg(&dev->core, "%s: WL init failed\n", __func__);
+ 		goto fail_setup_netdev;
+ 	}
+
