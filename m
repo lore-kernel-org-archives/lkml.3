@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933Ab3L2ClP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:41:15 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55341 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752569Ab3L2CKe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:10:34 -0500
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	id S1755478Ab3L2Clo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:41:44 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:43030 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753173Ab3L2Cln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Dec 2013 21:41:43 -0500
+From: Gene Heskett <gheskett@wdtv.com>
+To: linux-kernel@vger.kernel.org
+Subject: Git puzzle
+Date: Sat, 28 Dec 2013 21:41:40 -0500
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "James Bottomley" <JBottomley@Parallels.com>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.388376967@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 112/185] [SCSI] hpsa: do not discard scsi status on
- aborted commands
-In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
-X-SA-Exim-Connect-IP: 31.18.200.85
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312282141.40725.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.54-rc1 review patch.  If anyone has any objections, please let me know.
+Hey guys, I need to setup a bisect using git but the man pages aren't 
+giving me what I need to know.  Mainly I have no clue what the URL for the 
+git repos looks like, I've been downloading and building the tarballs from 
+kernel.org all this time.
 
-------------------
+Assuming I start with fresh git pull of 3.8.2 which worked, working toward 
+3.8.3 which doesn't, and I have the disk space chowned to me, what is the 
+exact syntax to pull a clone of 3.8.2, and then do a bisect to 3.8.3 where 
+the microcode update for an AMD phenom doesn't work. Skipping fwd to 3.12.0 
+it still isn't working.
 
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Thanks for any help.  And Linus, it you're copying this list, happy 44th 
+birthday today.
 
-commit 2e311fbabdc23b7eaec77313dc3b9a151a5407b5 upstream.
+Cheers, Gene
+-- 
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Genes Web page <http://geneslinuxbox.net:6309/gene>
 
-We inadvertantly discarded the scsi status for aborted commands.
-For some commands (e.g. reads from tape drives) these can't be retried,
-and if we discarded the scsi status, the scsi mid layer couldn't notice
-anything was wrong and the error was not reported.
+Congratulations are in order for Tom Reid.
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/scsi/hpsa.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -1186,7 +1186,7 @@ static void complete_scsi_command(struct
- 					"has check condition: aborted command: "
- 					"ASC: 0x%x, ASCQ: 0x%x\n",
- 					cp, asc, ascq);
--				cmd->result = DID_SOFT_ERROR << 16;
-+				cmd->result |= DID_SOFT_ERROR << 16;
- 				break;
- 			}
- 			/* Must be some other type of check condition */
-
+He says he just found out he is the winner of the 2021 Psychic of the
+Year award.
+A pen in the hand of this president is far more
+dangerous than 200 million guns in the hands of
+         law-abiding citizens.
