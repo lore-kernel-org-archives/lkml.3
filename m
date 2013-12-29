@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182Ab3L2CO7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:14:59 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55847 "EHLO
+	id S1754199Ab3L2CPn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:15:43 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55827 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754713Ab3L2COB (ORCPT
+	by vger.kernel.org with ESMTP id S1754533Ab3L2CNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:14:01 -0500
+	Sat, 28 Dec 2013 21:13:18 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Thomas Hellstrom" <thellstrom@vmware.com>,
-        "Jakob Bornecrantz" <jakob@vmware.com>
+CC: akpm@linux-foundation.org, "Dan Williams" <dcbw@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
 Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.424344026@decadent.org.uk>
+Message-ID: <lsq.1388282923.63791474@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 030/185] drm/ttm: Fix memory type compatibility check
+Subject: [PATCH 3.2 052/185] prism54: set netdev type to "wlan"
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,91 +31,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Dan Williams <dcbw@redhat.com>
 
-commit 59c8e66378fb78adbcd05f0d09783dde6fef282b upstream.
+commit 8e3ffa471091c560deb6738ed9ab7445b7a5fd04 upstream.
 
-Also check the busy placements before deciding to move a buffer object.
-Failing to do this may result in a completely unneccessary move within a
-single memory type.
+Userspace uses the netdev devtype for stuff like device naming and type
+detection.  Be nice and set it.  Remove the pointless #if/#endif around
+SET_NETDEV_DEV too.
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/ttm/ttm_bo.c | 32 ++++++++++++++++++++------------
- 1 file changed, 20 insertions(+), 12 deletions(-)
+ drivers/net/wireless/prism54/islpci_dev.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/ttm/ttm_bo.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo.c
-@@ -1101,24 +1101,32 @@ out_unlock:
- 	return ret;
- }
+--- a/drivers/net/wireless/prism54/islpci_dev.c
++++ b/drivers/net/wireless/prism54/islpci_dev.c
+@@ -812,6 +812,10 @@ static const struct net_device_ops islpc
+ 	.ndo_validate_addr	= eth_validate_addr,
+ };
  
--static int ttm_bo_mem_compat(struct ttm_placement *placement,
--			     struct ttm_mem_reg *mem)
-+static bool ttm_bo_mem_compat(struct ttm_placement *placement,
-+			      struct ttm_mem_reg *mem,
-+			      uint32_t *new_flags)
- {
- 	int i;
- 
- 	if (mem->mm_node && placement->lpfn != 0 &&
- 	    (mem->start < placement->fpfn ||
- 	     mem->start + mem->num_pages > placement->lpfn))
--		return -1;
-+		return false;
- 
- 	for (i = 0; i < placement->num_placement; i++) {
--		if ((placement->placement[i] & mem->placement &
--			TTM_PL_MASK_CACHING) &&
--			(placement->placement[i] & mem->placement &
--			TTM_PL_MASK_MEM))
--			return i;
-+		*new_flags = placement->placement[i];
-+		if ((*new_flags & mem->placement & TTM_PL_MASK_CACHING) &&
-+		    (*new_flags & mem->placement & TTM_PL_MASK_MEM))
-+			return true;
- 	}
--	return -1;
++static struct device_type wlan_type = {
++	.name	= "wlan",
++};
 +
-+	for (i = 0; i < placement->num_busy_placement; i++) {
-+		*new_flags = placement->busy_placement[i];
-+		if ((*new_flags & mem->placement & TTM_PL_MASK_CACHING) &&
-+		    (*new_flags & mem->placement & TTM_PL_MASK_MEM))
-+			return true;
-+	}
-+
-+	return false;
- }
- 
- int ttm_bo_validate(struct ttm_buffer_object *bo,
-@@ -1127,6 +1135,7 @@ int ttm_bo_validate(struct ttm_buffer_ob
- 			bool no_wait_gpu)
+ struct net_device *
+ islpci_setup(struct pci_dev *pdev)
  {
- 	int ret;
-+	uint32_t new_flags;
+@@ -822,9 +826,8 @@ islpci_setup(struct pci_dev *pdev)
+ 		return ndev;
  
- 	BUG_ON(!atomic_read(&bo->reserved));
- 	/* Check that range is valid */
-@@ -1137,8 +1146,7 @@ int ttm_bo_validate(struct ttm_buffer_ob
- 	/*
- 	 * Check whether we need to move buffer.
- 	 */
--	ret = ttm_bo_mem_compat(placement, &bo->mem);
--	if (ret < 0) {
-+	if (!ttm_bo_mem_compat(placement, &bo->mem, &new_flags)) {
- 		ret = ttm_bo_move_buffer(bo, placement, interruptible, no_wait_reserve, no_wait_gpu);
- 		if (ret)
- 			return ret;
-@@ -1147,7 +1155,7 @@ int ttm_bo_validate(struct ttm_buffer_ob
- 		 * Use the access and other non-mapping-related flag bits from
- 		 * the compatible memory placement flags to the active flags
- 		 */
--		ttm_flag_masked(&bo->mem.placement, placement->placement[ret],
-+		ttm_flag_masked(&bo->mem.placement, new_flags,
- 				~TTM_PL_MASK_MEMTYPE);
- 	}
- 	/*
+ 	pci_set_drvdata(pdev, ndev);
+-#if defined(SET_NETDEV_DEV)
+ 	SET_NETDEV_DEV(ndev, &pdev->dev);
+-#endif
++	SET_NETDEV_DEVTYPE(ndev, &wlan_type);
+ 
+ 	/* setup the structure members */
+ 	ndev->base_addr = pci_resource_start(pdev, 0);
 
