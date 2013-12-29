@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756781Ab3L2DCE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 22:02:04 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55006 "EHLO
+	id S932068Ab3L2DCC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 22:02:02 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54960 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751835Ab3L2CJw (ORCPT
+	by vger.kernel.org with ESMTP id S1751898Ab3L2CJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:09:52 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Ingo Molnar" <mingo@kernel.org>,
-        "Peter Zijlstra" <peterz@infradead.org>,
-        "Ben Segall" <bsegall@google.com>, pjt@google.com
+CC: akpm@linux-foundation.org, "Janak Desai" <Janak.Desai@gtri.gatech.edu>,
+        "Paul Moore" <pmoore@redhat.com>
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.974768125@decadent.org.uk>
+Message-ID: <lsq.1388282924.600896437@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 147/185] sched: Avoid throttle_cfs_rq() racing with
- period_timer stopping
+Subject: [PATCH 3.2 145/185] selinux: handle TCP SYN-ACK packets correctly
+ in selinux_ip_postroute()
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,65 +32,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Segall <bsegall@google.com>
+From: Paul Moore <pmoore@redhat.com>
 
-commit f9f9ffc237dd924f048204e8799da74f9ecf40cf upstream.
+commit 446b802437f285de68ffb8d6fac3c44c3cab5b04 upstream.
 
-throttle_cfs_rq() doesn't check to make sure that period_timer is running,
-and while update_curr/assign_cfs_runtime does, a concurrently running
-period_timer on another cpu could cancel itself between this cpu's
-update_curr and throttle_cfs_rq(). If there are no other cfs_rqs running
-in the tg to restart the timer, this causes the cfs_rq to be stranded
-forever.
+In selinux_ip_postroute() we perform access checks based on the
+packet's security label.  For locally generated traffic we get the
+packet's security label from the associated socket; this works in all
+cases except for TCP SYN-ACK packets.  In the case of SYN-ACK packet's
+the correct security label is stored in the connection's request_sock,
+not the server's socket.  Unfortunately, at the point in time when
+selinux_ip_postroute() is called we can't query the request_sock
+directly, we need to recreate the label using the same logic that
+originally labeled the associated request_sock.
 
-Fix this by calling __start_cfs_bandwidth() in throttle if the timer is
-inactive.
+See the inline comments for more explanation.
 
-(Also add some sched_debug lines for cfs_bandwidth.)
-
-Tested: make a run/sleep task in a cgroup, loop switching the cgroup
-between 1ms/100ms quota and unlimited, checking for timer_active=0 and
-throttled=1 as a failure. With the throttle_cfs_rq() change commented out
-this fails, with the full patch it passes.
-
-Signed-off-by: Ben Segall <bsegall@google.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: pjt@google.com
-Link: http://lkml.kernel.org/r/20131016181632.22647.84174.stgit@sword-of-the-dawn.mtv.corp.google.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-[bwh: Backported to 3.2: adjust filenames]
+Reported-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
+Tested-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/sched_debug.c |    8 ++++++++
- kernel/sched_fair.c  |    2 ++
- 2 files changed, 10 insertions(+)
+ security/selinux/hooks.c | 68 +++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 53 insertions(+), 15 deletions(-)
 
---- a/kernel/sched_debug.c
-+++ b/kernel/sched_debug.c
-@@ -213,6 +213,14 @@ void print_cfs_rq(struct seq_file *m, in
- 	SEQ_printf(m, "  .%-30s: %d\n", "load_tg",
- 			atomic_read(&cfs_rq->tg->load_weight));
- #endif
-+#ifdef CONFIG_CFS_BANDWIDTH
-+	SEQ_printf(m, "  .%-30s: %d\n", "tg->cfs_bandwidth.timer_active",
-+			cfs_rq->tg->cfs_bandwidth.timer_active);
-+	SEQ_printf(m, "  .%-30s: %d\n", "throttled",
-+			cfs_rq->throttled);
-+	SEQ_printf(m, "  .%-30s: %d\n", "throttle_count",
-+			cfs_rq->throttle_count);
-+#endif
- 
- 	print_cfs_group_stats(m, cpu, cfs_rq->tg);
- #endif
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1527,6 +1527,8 @@ static void throttle_cfs_rq(struct cfs_r
- 	cfs_rq->throttled_timestamp = rq->clock;
- 	raw_spin_lock(&cfs_b->lock);
- 	list_add_tail_rcu(&cfs_rq->throttled_list, &cfs_b->throttled_cfs_rq);
-+	if (!cfs_b->timer_active)
-+		__start_cfs_bandwidth(cfs_b);
- 	raw_spin_unlock(&cfs_b->lock);
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -3705,6 +3705,30 @@ static int selinux_skb_peerlbl_sid(struc
+ 	return 0;
  }
  
++/**
++ * selinux_conn_sid - Determine the child socket label for a connection
++ * @sk_sid: the parent socket's SID
++ * @skb_sid: the packet's SID
++ * @conn_sid: the resulting connection SID
++ *
++ * If @skb_sid is valid then the user:role:type information from @sk_sid is
++ * combined with the MLS information from @skb_sid in order to create
++ * @conn_sid.  If @skb_sid is not valid then then @conn_sid is simply a copy
++ * of @sk_sid.  Returns zero on success, negative values on failure.
++ *
++ */
++static int selinux_conn_sid(u32 sk_sid, u32 skb_sid, u32 *conn_sid)
++{
++	int err = 0;
++
++	if (skb_sid != SECSID_NULL)
++		err = security_sid_mls_copy(sk_sid, skb_sid, conn_sid);
++	else
++		*conn_sid = sk_sid;
++
++	return err;
++}
++
+ /* socket security operations */
+ 
+ static int socket_sockcreate_sid(const struct task_security_struct *tsec,
+@@ -4296,7 +4320,7 @@ static int selinux_inet_conn_request(str
+ 	struct sk_security_struct *sksec = sk->sk_security;
+ 	int err;
+ 	u16 family = sk->sk_family;
+-	u32 newsid;
++	u32 connsid;
+ 	u32 peersid;
+ 
+ 	/* handle mapped IPv4 packets arriving via IPv6 sockets */
+@@ -4306,16 +4330,11 @@ static int selinux_inet_conn_request(str
+ 	err = selinux_skb_peerlbl_sid(skb, family, &peersid);
+ 	if (err)
+ 		return err;
+-	if (peersid == SECSID_NULL) {
+-		req->secid = sksec->sid;
+-		req->peer_secid = SECSID_NULL;
+-	} else {
+-		err = security_sid_mls_copy(sksec->sid, peersid, &newsid);
+-		if (err)
+-			return err;
+-		req->secid = newsid;
+-		req->peer_secid = peersid;
+-	}
++	err = selinux_conn_sid(sksec->sid, peersid, &connsid);
++	if (err)
++		return err;
++	req->secid = connsid;
++	req->peer_secid = peersid;
+ 
+ 	return selinux_netlbl_inet_conn_request(req, family);
+ }
+@@ -4654,12 +4673,12 @@ static unsigned int selinux_ip_postroute
+ 	if (!secmark_active && !peerlbl_active)
+ 		return NF_ACCEPT;
+ 
+-	/* if the packet is being forwarded then get the peer label from the
+-	 * packet itself; otherwise check to see if it is from a local
+-	 * application or the kernel, if from an application get the peer label
+-	 * from the sending socket, otherwise use the kernel's sid */
+ 	sk = skb->sk;
+ 	if (sk == NULL) {
++		/* Without an associated socket the packet is either coming
++		 * from the kernel or it is being forwarded; check the packet
++		 * to determine which and if the packet is being forwarded
++		 * query the packet directly to determine the security label. */
+ 		if (skb->skb_iif) {
+ 			secmark_perm = PACKET__FORWARD_OUT;
+ 			if (selinux_skb_peerlbl_sid(skb, family, &peer_sid))
+@@ -4668,7 +4687,26 @@ static unsigned int selinux_ip_postroute
+ 			secmark_perm = PACKET__SEND;
+ 			peer_sid = SECINITSID_KERNEL;
+ 		}
++	} else if (sk->sk_state == TCP_LISTEN) {
++		/* Locally generated packet but the associated socket is in the
++		 * listening state which means this is a SYN-ACK packet.  In
++		 * this particular case the correct security label is assigned
++		 * to the connection/request_sock but unfortunately we can't
++		 * query the request_sock as it isn't queued on the parent
++		 * socket until after the SYN-ACK packet is sent; the only
++		 * viable choice is to regenerate the label like we do in
++		 * selinux_inet_conn_request().  See also selinux_ip_output()
++		 * for similar problems. */
++		u32 skb_sid;
++		struct sk_security_struct *sksec = sk->sk_security;
++		if (selinux_skb_peerlbl_sid(skb, family, &skb_sid))
++			return NF_DROP;
++		if (selinux_conn_sid(sksec->sid, skb_sid, &peer_sid))
++			return NF_DROP;
++		secmark_perm = PACKET__SEND;
+ 	} else {
++		/* Locally generated packet, fetch the security label from the
++		 * associated socket. */
+ 		struct sk_security_struct *sksec = sk->sk_security;
+ 		peer_sid = sksec->sid;
+ 		secmark_perm = PACKET__SEND;
 
