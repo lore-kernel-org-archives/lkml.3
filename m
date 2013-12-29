@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719Ab3L2CKc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:10:32 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55152 "EHLO
+	id S1755795Ab3L2CmJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:42:09 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55347 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752237Ab3L2CKT (ORCPT
+	by vger.kernel.org with ESMTP id S1752576Ab3L2CKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:10:19 -0500
+	Sat, 28 Dec 2013 21:10:33 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, user-mode-linux-user@lists.sourceforge.net,
-        "Jeff Dike" <jdike@addtoit.com>, "Richard Weinberger" <richard@nod.at>,
-        "Sergei Trofimovich" <slyfox@gentoo.org>,
-        "Al Viro" <viro@zeniv.linux.org.uk>,
-        user-mode-linux-devel@lists.sourceforge.net
+CC: akpm@linux-foundation.org, "Oliver Hartkopp" <socketcan@hartkopp.net>,
+        "Marc Kleine-Budde" <mkl@pengutronix.de>,
+        "Wolfgang Grandegger" <wg@grandegger.com>
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.562737677@decadent.org.uk>
+Message-ID: <lsq.1388282924.588235080@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 148/185] um: add missing declaration of 'getrlimit()'
- and friends
+Subject: [PATCH 3.2 096/185] can: sja1000: fix {pre,post}_irq() handling
+ and IRQ handler return value
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,36 +33,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergei Trofimovich <slyfox@gentoo.org>
+From: Oliver Hartkopp <socketcan@hartkopp.net>
 
-commit fdfa4c952844fce881df8c76de9c7180cbe913ab upstream.
+commit 2fea6cd303c0d0cd9067da31d873b6a6d5bd75e7 upstream.
 
-arch/um/os-Linux/start_up.c: In function 'check_coredump_limit':
-arch/um/os-Linux/start_up.c:338:16: error: storage size of 'lim' isn't known
-arch/um/os-Linux/start_up.c:339:2: error: implicit declaration of function 'getrlimit' [-Werror=implicit-function-declaration]
+This patch fixes the issue that the sja1000_interrupt() function may have
+returned IRQ_NONE without processing the optional pre_irq() and post_irq()
+function before. Further the irq processing counter 'n' is moved to the end of
+the while statement to return correct IRQ_[NONE|HANDLED] values at error
+conditions.
 
-Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
-CC: Jeff Dike <jdike@addtoit.com>
-CC: Richard Weinberger <richard@nod.at>
-CC: Al Viro <viro@zeniv.linux.org.uk>
-CC: user-mode-linux-devel@lists.sourceforge.net
-CC: user-mode-linux-user@lists.sourceforge.net
-CC: linux-kernel@vger.kernel.org
-Signed-off-by: Richard Weinberger <richard@nod.at>
+Reported-by: Wolfgang Grandegger <wg@grandegger.com>
+Acked-by: Wolfgang Grandegger <wg@grandegger.com>
+Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+[bwh: Backported to 3.2: s/SJA1000_IER/REG_IER/; s/SJA1000_IR/REG_IR/]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/um/os-Linux/start_up.c | 2 ++
- 1 file changed, 2 insertions(+)
-
---- a/arch/um/os-Linux/start_up.c
-+++ b/arch/um/os-Linux/start_up.c
-@@ -15,6 +15,8 @@
- #include <sys/mman.h>
- #include <sys/stat.h>
- #include <sys/wait.h>
-+#include <sys/time.h>
-+#include <sys/resource.h>
- #include <asm/unistd.h>
- #include "init.h"
- #include "os.h"
+--- a/drivers/net/can/sja1000/sja1000.c
++++ b/drivers/net/can/sja1000/sja1000.c
+@@ -488,19 +488,19 @@ irqreturn_t sja1000_interrupt(int irq, v
+ 	uint8_t isrc, status;
+ 	int n = 0;
+ 
+-	/* Shared interrupts and IRQ off? */
+-	if (priv->read_reg(priv, REG_IER) == IRQ_OFF)
+-		return IRQ_NONE;
+-
+ 	if (priv->pre_irq)
+ 		priv->pre_irq(priv);
+ 
++	/* Shared interrupts and IRQ off? */
++	if (priv->read_reg(priv, REG_IER) == IRQ_OFF)
++		goto out;
++
+ 	while ((isrc = priv->read_reg(priv, REG_IR)) && (n < SJA1000_MAX_IRQ)) {
+-		n++;
++
+ 		status = priv->read_reg(priv, SJA1000_REG_SR);
+ 		/* check for absent controller due to hw unplug */
+ 		if (status == 0xFF && sja1000_is_absent(priv))
+-			return IRQ_NONE;
++			goto out;
+ 
+ 		if (isrc & IRQ_WUI)
+ 			dev_warn(dev->dev.parent, "wakeup interrupt\n");
+@@ -519,7 +519,7 @@ irqreturn_t sja1000_interrupt(int irq, v
+ 				status = priv->read_reg(priv, SJA1000_REG_SR);
+ 				/* check for absent controller */
+ 				if (status == 0xFF && sja1000_is_absent(priv))
+-					return IRQ_NONE;
++					goto out;
+ 			}
+ 		}
+ 		if (isrc & (IRQ_DOI | IRQ_EI | IRQ_BEI | IRQ_EPI | IRQ_ALI)) {
+@@ -527,8 +527,9 @@ irqreturn_t sja1000_interrupt(int irq, v
+ 			if (sja1000_err(dev, isrc, status))
+ 				break;
+ 		}
++		n++;
+ 	}
+-
++out:
+ 	if (priv->post_irq)
+ 		priv->post_irq(priv);
+ 
 
