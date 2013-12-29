@@ -1,92 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755926Ab3L2C2U (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:28:20 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55517 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752089Ab3L2CK6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:10:58 -0500
+	id S1755684Ab3L2C2s (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:28:48 -0500
+Received: from mga01.intel.com ([192.55.52.88]:34417 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752572Ab3L2C2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Dec 2013 21:28:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,567,1384329600"; 
+   d="scan'208";a="457062113"
+Message-ID: <1388284125.3048.5.camel@empanada>
+Subject: Re: [PATCH] Tracing events with GPIOs
+From: Tom Zanussi <tom.zanussi@intel.com>
+To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sat, 28 Dec 2013 20:28:45 -0600
+In-Reply-To: <1388163096.9098.10.camel@empanada>
+References: <1387239745-2890-1-git-send-email-jjhiblot@traphandler.com>
+	 <52AFA5E0.7040707@hitachi.com>
+	 <CACh+v5NgwyAD5xy-feykUDXpzVUuF2yFxP35TsnGk3r+LFtRPA@mail.gmail.com>
+	 <1387304970.3051.35.camel@empanada>
+	 <20131217140502.2aed31aa@gandalf.local.home>
+	 <1387313151.3051.39.camel@empanada>
+	 <CACh+v5NqzGWi+g+cSO65UJOfcajq721HUoAjN__BWqLLOG3zkA@mail.gmail.com>
+	 <1388163096.9098.10.camel@empanada>
 Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Guenter Roeck" <linux@roeck-us.net>,
-        "Jean Delvare" <khali@linux-fr.org>
-Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.174179991@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 066/185] hwmon: (lm90) Fix max6696 alarm handling
-In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
-X-SA-Exim-Connect-IP: 31.18.200.85
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.54-rc1 review patch.  If anyone has any objections, please let me know.
+On Fri, 2013-12-27 at 10:51 -0600, Tom Zanussi wrote:
+> On Fri, 2013-12-27 at 15:54 +0100, Jean-Jacques Hiblot wrote:
+> > Hi Tom, Steven,
+> > 
+> > I'm currently doing some tests with the event triggers
+> > (git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+> > for-next).
+> > At the moment I can't use event triggers with probes dynamically
+> > created (with perf probe or via
+> > /sys/kernel/debug/tracing/kprobe_events)
+> > Predefined probes like
+> > /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger are working
+> > fine.
+> > Am I missing something ?
+> > 
+> 
+> No, it's just that kprobes hasn't been hooked up yet to actually invoke
+> the triggers.
+> 
+> Let me look at doing that over the weekend...
+> 
 
-------------------
+OK, I just posted a patch to add trigger invocations to kprobes, which
+you can also find here:
 
-From: Guenter Roeck <linux@roeck-us.net>
+http://git.yoctoproject.org/cgit/cgit.cgi/linux-yocto-contrib/log/?h=tzanussi/kprobes-event-triggers 
 
-commit e41fae2b1ed8c78283d73651cd65be0228c0dd1c upstream.
+I tested it a bit here, but it could use more, so please let me know how
+it goes..
 
-Bit 2 of status register 2 on MAX6696 (external diode 2 open)
-sets ALERT; the bit thus has to be listed in alert_alarms.
-Also display a message in the alert handler if the condition
-is encountered.
+Tom
 
-Even though not all overtemperature conditions cause ALERT
-to be set, we should not ignore them in the alert handler.
-Display messages for all out-of-range conditions.
 
-Reported-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/hwmon/lm90.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+> Tom
+> 
+> > example:
+> > 
+> > ----------------------------------------------------------------
+> > with a predefined probe
+> > ----------------------------------------------------------------
+> > 
+> > prompt> echo 'stacktrace' >
+> > /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
+> > prompt> ls
+> > prompt> cat /sys/kernel/debug/tracing/trace
+> > # tracer: nop
+> > #
+> > # entries-in-buffer/entries-written: 14/14   #P:1
+> > #
+> > #                              _-----=> irqs-off
+> > #                             / _----=> need-resched
+> > #                            | / _---=> hardirq/softirq
+> > #                            || / _--=> preempt-depth
+> > #                            ||| /     delay
+> > #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+> > #              | |       |   ||||       |         |
+> >               ls-971   [000] ....   298.050000: <stack trace>
+> >  => ftrace_raw_event_kmem_alloc
+> >  => kmem_cache_alloc_trace
+> >  => do_execve
+> >  => SyS_execve
+> >  => ret_fast_syscall
+> >               ls-971   [000] ....   298.050000: <stack trace>
+> >  => ftrace_raw_event_kmem_alloc
+> >  => kmem_cache_alloc_trace
+> >  => load_elf_binary
+> > [...]
+> > 
+> > ----------------------------------------------------------------
+> > with a dynamically defined probe
+> > ----------------------------------------------------------------
+> > 
+> > prompt> perf probe -a in_kmalloc=__kmalloc
+> > prompt> echo 'stacktrace' >
+> > /sys/kernel/debug/tracing/events/probe/in_kmalloc/trigger
+> > prompt> perf record -e probe:in_kmalloc -aR sleep 10&
+> > [... do something here ...]
+> > prompt> perf report
+> > [...]
+> > # Samples: 24  of event 'probe:in_kmalloc'
+> > # Event count (approx.): 24
+> > #
+> > # Overhead  Command      Shared Object         Symbol
+> > # ........  .......  .................  .............
+> > #
+> >     50.00%       ls  [kernel.kallsyms]  [k] __kmalloc
+> >     12.50%    sleep  [kernel.kallsyms]  [k] __kmalloc
+> >     12.50%       sh  [kernel.kallsyms]  [k] __kmalloc
+> >     12.50%     perf  [kernel.kallsyms]  [k] __kmalloc
+> >     12.50%     more  [kernel.kallsyms]  [k] __kmalloc
+> > [...]
+> > 
+> > prompt> cat /sys/kernel/debug/tracing/trace
+> > # tracer: nop
+> > #
+> > # entries-in-buffer/entries-written: 0/0   #P:1
+> > #
+> > #                              _-----=> irqs-off
+> > #                             / _----=> need-resched
+> > #                            | / _---=> hardirq/softirq
+> > #                            || / _--=> preempt-depth
+> > #              random: nonblocking pool is initialized
+> >               ||| /     delay
+> > #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+> > #              | |       |   ||||       |         |
+> 
 
---- a/drivers/hwmon/lm90.c
-+++ b/drivers/hwmon/lm90.c
-@@ -268,7 +268,7 @@ static const struct lm90_params lm90_par
- 	[max6696] = {
- 		.flags = LM90_HAVE_EMERGENCY
- 		  | LM90_HAVE_EMERGENCY_ALARM | LM90_HAVE_TEMP3,
--		.alert_alarms = 0x187c,
-+		.alert_alarms = 0x1c7c,
- 		.max_convrate = 6,
- 		.reg_local_ext = MAX6657_REG_R_LOCAL_TEMPL,
- 	},
-@@ -1474,19 +1474,22 @@ static void lm90_alert(struct i2c_client
- 	if ((alarms & 0x7f) == 0 && (alarms2 & 0xfe) == 0) {
- 		dev_info(&client->dev, "Everything OK\n");
- 	} else {
--		if (alarms & 0x61)
-+		if ((alarms & 0x61) || (alarms2 & 0x80))
- 			dev_warn(&client->dev,
- 				 "temp%d out of range, please check!\n", 1);
--		if (alarms & 0x1a)
-+		if ((alarms & 0x1a) || (alarms2 & 0x20))
- 			dev_warn(&client->dev,
- 				 "temp%d out of range, please check!\n", 2);
- 		if (alarms & 0x04)
- 			dev_warn(&client->dev,
- 				 "temp%d diode open, please check!\n", 2);
- 
--		if (alarms2 & 0x18)
-+		if (alarms2 & 0x5a)
- 			dev_warn(&client->dev,
- 				 "temp%d out of range, please check!\n", 3);
-+		if (alarms2 & 0x04)
-+			dev_warn(&client->dev,
-+				 "temp%d diode open, please check!\n", 3);
- 
- 		/* Disable ALERT# output, because these chips don't implement
- 		  SMBus alert correctly; they should only hold the alert line
 
