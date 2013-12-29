@@ -1,35 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038Ab3L2KPV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 05:15:21 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:36454 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751863Ab3L2KPT (ORCPT
+	id S1751843Ab3L2KjM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 05:39:12 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:34252 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297Ab3L2KjL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 05:15:19 -0500
+	Sun, 29 Dec 2013 05:39:11 -0500
 MIME-Version: 1.0
-In-Reply-To: <20131215123515.GA12431@krava.brq.redhat.com>
-References: <1386679742-13357-1-git-send-email-artagnon@gmail.com>
- <1386679742-13357-4-git-send-email-artagnon@gmail.com> <20131215123515.GA12431@krava.brq.redhat.com>
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Sun, 29 Dec 2013 15:44:38 +0530
-Message-ID: <CALkWK0kXNJfqDcM30GEmZNDEKt5oBp571S1edwayH-GY9mOkKA@mail.gmail.com>
-Subject: Re: [PATCH v5 3/3] perf diff: color the Weighted Diff column
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
+In-Reply-To: <CAGHPBZogJzOUTM=WooJmNd92=QCivWa9W+c9Co1NJd-sgRTB1A@mail.gmail.com>
+References: <CAGHPBZogJzOUTM=WooJmNd92=QCivWa9W+c9Co1NJd-sgRTB1A@mail.gmail.com>
+Date: Sun, 29 Dec 2013 18:39:10 +0800
+Message-ID: <CAGHPBZr5LkBQNb0TceiS7x1_-jkZpMon+ji2ubr4aQ07bYe0qw@mail.gmail.com>
+Subject: Re: Confusion about Pinctrl and GPIO
+From: Rongrong Cao <caorr1980@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Olsa wrote:
-> this one is still wrong, you either need to use 'abs(wdiff) > 0'
-> or call value_color_snprintf (which is better) as in previous cases
+Anyone can help?
 
-This was very much intentional on my part (see commit message): I
-thought it would be nicer to color it this way because all the numbers
-tend to be large. However, I'll resubmit with value_color_snprintf()
-now.
-
-p.s- Sorry about the terribly late response; was on vacation.
+2013/12/26 曹荣荣 <caorr1980@gmail.com>:
+> Hi Linus and Stephen,
+>
+> I'm learning the pinctrl subsystem codes these days, and have a
+> confusion about it, I'm very appreciated if you can help.
+>
+> I noticed that Stephen<swarren@nvidia.com> submitted a patch for pinctrl:
+> http://www.gossamer-threads.com/lists/linux/kernel/1500890?do=post_view_threaded
+>
+> In this patch, Stephen said, "When an SoC muxes pins in a group, it's
+> quite possible for the group to contain e.g. 6 pins, but only 4 of
+> them actually be needed by the HW module that's mux'd to them. In this
+> case, the other 2 pins could be used as GPIOs. However, pinctrl marks
+> all the pins within the group as in-use by the selected mux function.
+> To allow the expected gpiolib interaction, separate the concepts of
+> pin ownership into two parts: One for the mux function and one for
+> GPIO usage. Finally, allow those two ownerships to exist in parallel.
+> "
+>
+> I agree that gpiolib should be able to use the two idle pins as GPIO,
+> but after apply this patch, gpiolib can also request the 4 pins used
+> by HW module succesfully, and this will override the settings of the 4
+> pins for HW module.
+>
+> I have read the latest Documentation/pinctrl.txt, and there is two
+> examples about muxing logic in "GPIO mode pitfalls" section, let me
+> take example A for instance:
+>
+>                        pin config
+>                        logic regs
+>                        |               +- SPI
+>      Physical pins --- pad --- pinmux -+- I2C
+>                                |       +- mmc
+>                                |       +- GPIO
+>                                pin
+>                                multiplex
+>                                logic regs
+>
+> Assuming that the pin has been configured as SPI mode, undoubtedly we
+> can't use it as GPIO any longer. However, if we call gpio_request()
+> (gpiolib API) to requet this pin for GPIO purpose, gpio_request()
+> still can return successfully. I think this is unreasonable,
+> gpio_request() should return an "error code" if the pin is in-use by
+> PINMUX.
+>
+> I read the codes of pin_request() in pinmux.c, and guess
+> pinmux_ops->gpio_request_enable() may be responsible to handle this
+> use case, that is, to return an "error code" if the pin has been owned
+> by pinmux. However, no drivers in drivers/pinctrl/ implements such
+> codes in pinmux_ops->gpio_request_enable().
+> Or, pinctrl subsystem is just resposible to set the pin in GPIO mode,
+> and gpio subsystem (gpiolib) is responsible for other things like set
+> direction, get value if input, or set high/low if output. Is my
+> understanding right?
+>
+>
+> ********************
+>
+> Let me talk again about the example described by Stephen. If actually
+> only 4 pins of the group which contains 6 pins are needed by HW
+> module, then why does the group be defined to contain 6 pins? I think
+> the group should be defined only containing 4 pins rather than 6 pins,
+> then the other 2 idle pins can be used for any other purpose.
+>
+> Thank you very much in advance!
