@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756384Ab3L2CsJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:48:09 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55260 "EHLO
+	id S1756451Ab3L2Csr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:48:47 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55178 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752439Ab3L2CKW (ORCPT
+	by vger.kernel.org with ESMTP id S1752251Ab3L2CKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:10:22 -0500
+	Sat, 28 Dec 2013 21:10:21 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Herbert Xu" <herbert@gondor.apana.org.au>,
-        "Tom Lendacky" <thomas.lendacky@amd.com>
+CC: akpm@linux-foundation.org,
+        "Dmitry Eremin-Solenikov" <dbaryshkov@gmail.com>,
+        "Olof Johansson" <olof@lixom.net>,
+        "Haojian Zhuang" <haojian.zhuang@gmail.com>
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.436690878@decadent.org.uk>
+Message-ID: <lsq.1388282924.644076901@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 126/185] crypto: scatterwalk - Use sg_chain_ptr on
- chain entries
+Subject: [PATCH 3.2 136/185] ARM: pxa: tosa: fix keys mapping
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,30 +33,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tom Lendacky <thomas.lendacky@amd.com>
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 
-commit 389a5390583a18e45bc4abd4439291abec5e7a63 upstream.
+commit 506cac15ac86f204b83e3cfccde73eeb4e7c5f34 upstream.
 
-Now that scatterwalk_sg_chain sets the chain pointer bit the sg_page
-call in scatterwalk_sg_next hits a BUG_ON when CONFIG_DEBUG_SG is
-enabled. Use sg_chain_ptr instead of sg_page on a chain entry.
+When converting from tosa-keyboard driver to matrix keyboard, tosa keys
+received extra 1 column shift. Replace that with correct values to make
+keyboard work again.
 
-Signed-off-by: Tom Lendacky <thomas.lendacky@amd.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Fixes: f69a6548c9d5 ('[ARM] pxa/tosa: make use of the matrix keypad driver')
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+Signed-off-by: Olof Johansson <olof@lixom.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/crypto/scatterwalk.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-pxa/tosa.c | 102 +++++++++++++++++++++++------------------------
+ 1 file changed, 51 insertions(+), 51 deletions(-)
 
---- a/include/crypto/scatterwalk.h
-+++ b/include/crypto/scatterwalk.h
-@@ -66,7 +66,7 @@ static inline struct scatterlist *scatte
- 	if (sg_is_last(sg))
- 		return NULL;
+--- a/arch/arm/mach-pxa/tosa.c
++++ b/arch/arm/mach-pxa/tosa.c
+@@ -424,57 +424,57 @@ static struct platform_device tosa_power
+  * Tosa Keyboard
+  */
+ static const uint32_t tosakbd_keymap[] = {
+-	KEY(0, 2, KEY_W),
+-	KEY(0, 6, KEY_K),
+-	KEY(0, 7, KEY_BACKSPACE),
+-	KEY(0, 8, KEY_P),
+-	KEY(1, 1, KEY_Q),
+-	KEY(1, 2, KEY_E),
+-	KEY(1, 3, KEY_T),
+-	KEY(1, 4, KEY_Y),
+-	KEY(1, 6, KEY_O),
+-	KEY(1, 7, KEY_I),
+-	KEY(1, 8, KEY_COMMA),
+-	KEY(2, 1, KEY_A),
+-	KEY(2, 2, KEY_D),
+-	KEY(2, 3, KEY_G),
+-	KEY(2, 4, KEY_U),
+-	KEY(2, 6, KEY_L),
+-	KEY(2, 7, KEY_ENTER),
+-	KEY(2, 8, KEY_DOT),
+-	KEY(3, 1, KEY_Z),
+-	KEY(3, 2, KEY_C),
+-	KEY(3, 3, KEY_V),
+-	KEY(3, 4, KEY_J),
+-	KEY(3, 5, TOSA_KEY_ADDRESSBOOK),
+-	KEY(3, 6, TOSA_KEY_CANCEL),
+-	KEY(3, 7, TOSA_KEY_CENTER),
+-	KEY(3, 8, TOSA_KEY_OK),
+-	KEY(3, 9, KEY_LEFTSHIFT),
+-	KEY(4, 1, KEY_S),
+-	KEY(4, 2, KEY_R),
+-	KEY(4, 3, KEY_B),
+-	KEY(4, 4, KEY_N),
+-	KEY(4, 5, TOSA_KEY_CALENDAR),
+-	KEY(4, 6, TOSA_KEY_HOMEPAGE),
+-	KEY(4, 7, KEY_LEFTCTRL),
+-	KEY(4, 8, TOSA_KEY_LIGHT),
+-	KEY(4, 10, KEY_RIGHTSHIFT),
+-	KEY(5, 1, KEY_TAB),
+-	KEY(5, 2, KEY_SLASH),
+-	KEY(5, 3, KEY_H),
+-	KEY(5, 4, KEY_M),
+-	KEY(5, 5, TOSA_KEY_MENU),
+-	KEY(5, 7, KEY_UP),
+-	KEY(5, 11, TOSA_KEY_FN),
+-	KEY(6, 1, KEY_X),
+-	KEY(6, 2, KEY_F),
+-	KEY(6, 3, KEY_SPACE),
+-	KEY(6, 4, KEY_APOSTROPHE),
+-	KEY(6, 5, TOSA_KEY_MAIL),
+-	KEY(6, 6, KEY_LEFT),
+-	KEY(6, 7, KEY_DOWN),
+-	KEY(6, 8, KEY_RIGHT),
++	KEY(0, 1, KEY_W),
++	KEY(0, 5, KEY_K),
++	KEY(0, 6, KEY_BACKSPACE),
++	KEY(0, 7, KEY_P),
++	KEY(1, 0, KEY_Q),
++	KEY(1, 1, KEY_E),
++	KEY(1, 2, KEY_T),
++	KEY(1, 3, KEY_Y),
++	KEY(1, 5, KEY_O),
++	KEY(1, 6, KEY_I),
++	KEY(1, 7, KEY_COMMA),
++	KEY(2, 0, KEY_A),
++	KEY(2, 1, KEY_D),
++	KEY(2, 2, KEY_G),
++	KEY(2, 3, KEY_U),
++	KEY(2, 5, KEY_L),
++	KEY(2, 6, KEY_ENTER),
++	KEY(2, 7, KEY_DOT),
++	KEY(3, 0, KEY_Z),
++	KEY(3, 1, KEY_C),
++	KEY(3, 2, KEY_V),
++	KEY(3, 3, KEY_J),
++	KEY(3, 4, TOSA_KEY_ADDRESSBOOK),
++	KEY(3, 5, TOSA_KEY_CANCEL),
++	KEY(3, 6, TOSA_KEY_CENTER),
++	KEY(3, 7, TOSA_KEY_OK),
++	KEY(3, 8, KEY_LEFTSHIFT),
++	KEY(4, 0, KEY_S),
++	KEY(4, 1, KEY_R),
++	KEY(4, 2, KEY_B),
++	KEY(4, 3, KEY_N),
++	KEY(4, 4, TOSA_KEY_CALENDAR),
++	KEY(4, 5, TOSA_KEY_HOMEPAGE),
++	KEY(4, 6, KEY_LEFTCTRL),
++	KEY(4, 7, TOSA_KEY_LIGHT),
++	KEY(4, 9, KEY_RIGHTSHIFT),
++	KEY(5, 0, KEY_TAB),
++	KEY(5, 1, KEY_SLASH),
++	KEY(5, 2, KEY_H),
++	KEY(5, 3, KEY_M),
++	KEY(5, 4, TOSA_KEY_MENU),
++	KEY(5, 6, KEY_UP),
++	KEY(5, 10, TOSA_KEY_FN),
++	KEY(6, 0, KEY_X),
++	KEY(6, 1, KEY_F),
++	KEY(6, 2, KEY_SPACE),
++	KEY(6, 3, KEY_APOSTROPHE),
++	KEY(6, 4, TOSA_KEY_MAIL),
++	KEY(6, 5, KEY_LEFT),
++	KEY(6, 6, KEY_DOWN),
++	KEY(6, 7, KEY_RIGHT),
+ };
  
--	return (++sg)->length ? sg : (void *)sg_page(sg);
-+	return (++sg)->length ? sg : sg_chain_ptr(sg);
- }
- 
- static inline void scatterwalk_crypto_chain(struct scatterlist *head,
+ static struct matrix_keymap_data tosakbd_keymap_data = {
 
