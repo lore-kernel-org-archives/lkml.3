@@ -1,125 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922Ab3L2RMB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 12:12:01 -0500
-Received: from hofr.at ([212.69.189.236]:40185 "EHLO mail.hofr.at"
+	id S1752000Ab3L2RSz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 12:18:55 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:34560 "EHLO mail.wdtv.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751448Ab3L2RL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 12:11:59 -0500
-Date: Sun, 29 Dec 2013 18:11:54 +0100
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: linux-rt-users@vger.kernel.org
-Cc: Sami Pietikainen <Sami.Pietikainen@wapice.com>,
-        Jouko Haapaluoma <jouko.haapaluoma@wapice.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH RT] add missing local serialization in ip_output.c
-Message-ID: <20131229171154.GA23586@opentech.at>
+	id S1751347Ab3L2RSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Dec 2013 12:18:54 -0500
+From: Gene Heskett <gheskett@wdtv.com>
+To: linux-kernel@vger.kernel.org
+Subject: {BUG BISECT]
+Date: Sun, 29 Dec 2013 12:18:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312291218.44269.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Here is the copy/paste of the final git bisect bad report:
 
-in response to the oops in ip_output.c:ip_send_unicast_reply under high 
-network load with CONFIG_PREEMPT_RT_FULL=y, reported by Sami Pietikainen 
-<Sami.Pietikainen@wapice.com>, this patch adds local serialization in 
-ip_send_unicast_reply.
+First, the reason for the bisect:
+gene@coyote:~/linux-stable$ dmesg | grep -A2 microcode
+[    0.518304] microcode: CPU0: patch_level=0x01000065
+[    0.518396] microcode: CPU1: patch_level=0x01000065
+[    0.518498] microcode: CPU2: patch_level=0x01000065
+[    0.518593] microcode: CPU3: patch_level=0x01000065
+[    0.518745] microcode: Microcode Update Driver: v2.00 
+<tigran@aivazian.fsnet.co.uk>, Peter Oruba
 
-from ip_output.c:
-/*
- *      Generic function to send a packet as reply to another packet.
- *      Used to send some TCP resets/acks so far.
- *
- *      Use a fake percpu inet socket to avoid false sharing and contention.
- */
-static DEFINE_PER_CPU(struct inet_sock, unicast_sock) = {
-...
+The output above should have in each cpu case, a second, or final line 
+showing a patch level 0x0100083 in all cases.
+This failure is on an AMD phenom 9550 equipt machine.
 
-which was added in commit be9f4a44 in linux-stable. The git log, wich
-introduced the PER_CPU unicast_sock, states:
-<snip>
-commit be9f4a44e7d41cee50ddb5f038fc2391cbbb4046
-Author: Eric Dumazet <edumazet@google.com>
-Date:   Thu Jul 19 07:34:03 2012 +0000
+I can and have built from the tarball pull, a 3.8.2 which does work 
+correctly.  The tarball build of 3.8.3 fails as above, and a tarball build 
+of 3.12.6 still fails.
 
-    ipv4: tcp: remove per net tcp_sock
-    
-    tcp_v4_send_reset() and tcp_v4_send_ack() use a single socket
-    per network namespace.
-    
-    This leads to bad behavior on multiqueue NICS, because many cpus
-    contend for the socket lock and once socket lock is acquired, extra
-    false sharing on various socket fields slow down the operations.
-    
-    To better resist to attacks, we use a percpu socket. Each cpu can
-    run without contention, using appropriate memory (local node)
-<snip>
+gene@coyote:~/linux-stable$ git bisect bad
+908e88f285b909011dc7dbce5abaacf123f2f68d is the first bad commit
+commit 908e88f285b909011dc7dbce5abaacf123f2f68d
+Author: Russell King <rmk+kernel@arm.linux.org.uk>
+Date:   Mon Feb 25 16:09:12 2013 +0000
 
-The per-cpu here thus is assuming exclusivity serializing per cpu - so 
-the use of get_cpu_ligh introduced in 
-net-use-cpu-light-in-ip-send-unicast-reply.patch, which droped the 
-preempt_disable in favor of a migrate_disable is probably wrong as this 
-only handles the referencial consistency but not the serialization. To
-evade a preempt_disable here a local lock would be needed.
+I'll next do a "git checkout v3.8.2" to double check that it works.
 
-Therapie: 
- * add local lock: 
- * and re-introduce local serialization:
- 
-Tested on x86 with high network load using the testcase from Sami Pietikainen
-  while : ; do wget -O - ftp://LOCAL_SERVER/empty_file > /dev/null 2>&1; done
-
-Link: http://www.spinics.net/lists/linux-rt-users/msg11007.html
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
----
- net/ipv4/ip_output.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
-
-diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
-index e9fa68c..1e68f65 100644
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@ -79,6 +79,7 @@
- #include <linux/mroute.h>
- #include <linux/netlink.h>
- #include <linux/tcp.h>
-+#include <linux/locallock.h>
- 
- int sysctl_ip_default_ttl __read_mostly = IPDEFTTL;
- EXPORT_SYMBOL(sysctl_ip_default_ttl);
-@@ -1468,6 +1469,9 @@ static DEFINE_PER_CPU(struct inet_sock, unicast_sock) = {
- 	.uc_ttl		= -1,
- };
- 
-+/* serialize concurrent calls on the same CPU to ip_send_unicast_reply */
-+static DEFINE_LOCAL_IRQ_LOCK(unicast_lock);
-+
- void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
- 			   __be32 saddr, const struct ip_reply_arg *arg,
- 			   unsigned int len)
-@@ -1506,7 +1510,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
- 		return;
- 
- 	get_cpu_light();
--	inet = &__get_cpu_var(unicast_sock);
-+	inet = &get_locked_var(unicast_lock, unicast_sock);
- 
- 	inet->tos = arg->tos;
- 	sk = &inet->sk;
-@@ -1530,6 +1534,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
- 		ip_push_pending_frames(sk, &fl4);
- 	}
- 
-+	put_locked_var(unicast_lock, unicast_sock);
- 	put_cpu_light();
- 
- 	ip_rt_put(rt);
--- 
-1.7.2.5
-
+Cheers, Gene
