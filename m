@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224Ab3L2CKB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:10:01 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55015 "EHLO
+	id S1755703Ab3L2C4a (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:56:30 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55127 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751987Ab3L2CJ5 (ORCPT
+	by vger.kernel.org with ESMTP id S1752215Ab3L2CKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 21:09:57 -0500
+	Sat, 28 Dec 2013 21:10:04 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Stephan Mueller" <stephan.mueller@atsec.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Neil Horman" <nhorman@tuxdriver.com>,
-        "Herbert Xu" <herbert@gondor.apana.org.au>,
-        "Petr Matousek" <pmatouse@redhat.com>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Nicolas HICHER" <nhicher@avencall.com>,
+        "Andreas Henriksson" <andreas@fatal.se>
 Date: Sun, 29 Dec 2013 03:08:44 +0100
-Message-ID: <lsq.1388282924.764091660@decadent.org.uk>
+Message-ID: <lsq.1388282924.863477412@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 173/185] crypto: ansi_cprng - Fix off by one error in
- non-block size request
+Subject: [PATCH 3.2 149/185] net: Fix "ip rule delete table 256"
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,46 +32,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Andreas Henriksson <andreas@fatal.se>
 
-commit 714b33d15130cbb5ab426456d4e3de842d6c5b8a upstream.
+[ Upstream commit 13eb2ab2d33c57ebddc57437a7d341995fc9138c ]
 
-Stephan Mueller reported to me recently a error in random number generation in
-the ansi cprng. If several small requests are made that are less than the
-instances block size, the remainder for loop code doesn't increment
-rand_data_valid in the last iteration, meaning that the last bytes in the
-rand_data buffer gets reused on the subsequent smaller-than-a-block request for
-random data.
+When trying to delete a table >= 256 using iproute2 the local table
+will be deleted.
+The table id is specified as a netlink attribute when it needs more then
+8 bits and iproute2 then sets the table field to RT_TABLE_UNSPEC (0).
+Preconditions to matching the table id in the rule delete code
+doesn't seem to take the "table id in netlink attribute" into condition
+so the frh_get_table helper function never gets to do its job when
+matching against current rule.
+Use the helper function twice instead of peaking at the table value directly.
 
-The fix is pretty easy, just re-code the for loop to make sure that
-rand_data_valid gets incremented appropriately
+Originally reported at: http://bugs.debian.org/724783
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Reported-by: Stephan Mueller <stephan.mueller@atsec.com>
-CC: Stephan Mueller <stephan.mueller@atsec.com>
-CC: Petr Matousek <pmatouse@redhat.com>
-CC: Herbert Xu <herbert@gondor.apana.org.au>
-CC: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Reported-by: Nicolas HICHER <nhicher@avencall.com>
+Signed-off-by: Andreas Henriksson <andreas@fatal.se>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- crypto/ansi_cprng.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/core/fib_rules.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/crypto/ansi_cprng.c
-+++ b/crypto/ansi_cprng.c
-@@ -230,11 +230,11 @@ remainder:
- 	 */
- 	if (byte_count < DEFAULT_BLK_SZ) {
- empty_rbuf:
--		for (; ctx->rand_data_valid < DEFAULT_BLK_SZ;
--			ctx->rand_data_valid++) {
-+		while (ctx->rand_data_valid < DEFAULT_BLK_SZ) {
- 			*ptr = ctx->rand_data[ctx->rand_data_valid];
- 			ptr++;
- 			byte_count--;
-+			ctx->rand_data_valid++;
- 			if (byte_count == 0)
- 				goto done;
- 		}
+diff --git a/net/core/fib_rules.c b/net/core/fib_rules.c
+index c02e63c..c0c21b1 100644
+--- a/net/core/fib_rules.c
++++ b/net/core/fib_rules.c
+@@ -443,7 +443,8 @@ static int fib_nl_delrule(struct sk_buff *skb, struct nlmsghdr* nlh, void *arg)
+ 		if (frh->action && (frh->action != rule->action))
+ 			continue;
+ 
+-		if (frh->table && (frh_get_table(frh, tb) != rule->table))
++		if (frh_get_table(frh, tb) &&
++		    (frh_get_table(frh, tb) != rule->table))
+ 			continue;
+ 
+ 		if (tb[FRA_PRIORITY] &&
 
