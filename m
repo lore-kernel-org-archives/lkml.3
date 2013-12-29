@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161Ab3L2Cjf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:39:35 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55386 "EHLO
+	id S1756147Ab3L2Cje (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:39:34 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55311 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752677Ab3L2CKf (ORCPT
+	by vger.kernel.org with ESMTP id S1752499Ab3L2CKf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:10:35 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Michael Neuling" <mikey@neuling.org>,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
-Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.859058816@decadent.org.uk>
+CC: akpm@linux-foundation.org, "James Bottomley" <JBottomley@Parallels.com>,
+        "Dan Williams" <dan.j.williams@intel.com>,
+        "Praveen Murali" <pmurali@logicube.com>
+Date: Sun, 29 Dec 2013 03:08:44 +0100
+Message-ID: <lsq.1388282924.168796121@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 088/185] powerpc/signals: Improved mark VSX not saved
- with small contexts fix
+Subject: [PATCH 3.2 101/185] [SCSI] libsas: fix usage of ata_tf_to_fis
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,83 +32,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit ec67ad82814bee92251fd963bf01c7a173856555 upstream.
+commit ae5fbae0ccd982dfca0ce363036ed92f5b13f150 upstream.
 
-In a recent patch:
-  commit c13f20ac48328b05cd3b8c19e31ed6c132b44b42
-  Author: Michael Neuling <mikey@neuling.org>
-  powerpc/signals: Mark VSX not saved with small contexts
+Since commit 110dd8f19df5 "[SCSI] libsas: fix scr_read/write users and
+update the libata documentation" we have been passing pmp=1 and is_cmd=0
+to ata_tf_to_fis().  Praveen reports that eSATA attached drives do not
+discover correctly.  His investigation found that the BIOS was passing
+pmp=0 while Linux was passing pmp=1 and failing to discover the drives.
+Update libsas to follow the libata example of pulling the pmp setting
+from the ata_link and correct is_cmd to be 1 since all tf's submitted
+through ->qc_issue are commands.  Presumably libsas lldds do not care
+about is_cmd as they have sideband mechanisms to perform link
+management.
 
-We fixed an issue but an improved solution was later discussed after the patch
-was merged.
+http://marc.info/?l=linux-scsi&m=138179681726990
 
-Firstly, this patch doesn't handle the 64bit signals case, which could also hit
-this issue (but has never been reported).
-
-Secondly, the original patch isn't clear what MSR VSX should be set to.  The
-new approach below always clears the MSR VSX bit (to indicate no VSX is in the
-context) and sets it only in the specific case where VSX is available (ie. when
-VSX has been used and the signal context passed has space to provide the
-state).
-
-This reverts the original patch and replaces it with the improved solution.  It
-also adds a 64 bit version.
-
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+[jejb: checkpatch fix]
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Reported-by: Praveen Murali <pmurali@logicube.com>
+Tested-by: Praveen Murali <pmurali@logicube.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/powerpc/kernel/signal_32.c | 16 +++++++---------
- arch/powerpc/kernel/signal_64.c |  6 ++++++
- 2 files changed, 13 insertions(+), 9 deletions(-)
+ drivers/scsi/libsas/sas_ata.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/signal_32.c
-+++ b/arch/powerpc/kernel/signal_32.c
-@@ -445,6 +445,12 @@ static int save_user_regs(struct pt_regs
- #endif /* CONFIG_ALTIVEC */
- 	if (copy_fpr_to_user(&frame->mc_fregs, current))
- 		return 1;
-+
-+	/*
-+	 * Clear the MSR VSX bit to indicate there is no valid state attached
-+	 * to this context, except in the specific case below where we set it.
-+	 */
-+	msr &= ~MSR_VSX;
- #ifdef CONFIG_VSX
- 	/*
- 	 * Copy VSR 0-31 upper half from thread_struct to local
-@@ -457,15 +463,7 @@ static int save_user_regs(struct pt_regs
- 		if (copy_vsx_to_user(&frame->mc_vsregs, current))
- 			return 1;
- 		msr |= MSR_VSX;
--	} else if (!ctx_has_vsx_region)
--		/*
--		 * With a small context structure we can't hold the VSX
--		 * registers, hence clear the MSR value to indicate the state
--		 * was not saved.
--		 */
--		msr &= ~MSR_VSX;
--
--
-+	}
- #endif /* CONFIG_VSX */
- #ifdef CONFIG_SPE
- 	/* save spe registers */
---- a/arch/powerpc/kernel/signal_64.c
-+++ b/arch/powerpc/kernel/signal_64.c
-@@ -116,6 +116,12 @@ static long setup_sigcontext(struct sigc
- 	flush_fp_to_thread(current);
- 	/* copy fpr regs and fpscr */
- 	err |= copy_fpr_to_user(&sc->fp_regs, current);
-+
-+	/*
-+	 * Clear the MSR VSX bit to indicate there is no valid state attached
-+	 * to this context, except in the specific case below where we set it.
-+	 */
-+	msr &= ~MSR_VSX;
- #ifdef CONFIG_VSX
- 	/*
- 	 * Copy VSX low doubleword to local buffer for formatting,
+--- a/drivers/scsi/libsas/sas_ata.c
++++ b/drivers/scsi/libsas/sas_ata.c
+@@ -197,7 +197,7 @@ static unsigned int sas_ata_qc_issue(str
+ 		qc->tf.nsect = 0;
+ 	}
+ 
+-	ata_tf_to_fis(&qc->tf, 1, 0, (u8*)&task->ata_task.fis);
++	ata_tf_to_fis(&qc->tf, qc->dev->link->pmp, 1, (u8 *)&task->ata_task.fis);
+ 	task->uldd_task = qc;
+ 	if (ata_is_atapi(qc->tf.protocol)) {
+ 		memcpy(task->ata_task.atapi_packet, qc->cdb, qc->dev->cdb_len);
 
