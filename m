@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437Ab3L2V45 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 16:56:57 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:61815 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752874Ab3L2Vvz (ORCPT
+	id S1755466Ab3L2V5L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 16:57:11 -0500
+Received: from 82-169-213-70.ip.telfort.nl ([82.169.213.70]:45290 "EHLO
+	helium.area128.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753360Ab3L2V5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 16:51:55 -0500
-X-IronPort-AV: E=Sophos;i="4.95,570,1384297200"; 
-   d="scan'208";a="50832535"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-janitors@vger.kernel.org
-Subject: [PATCH 17/25]  fix error return code
-Date: Sun, 29 Dec 2013 23:47:30 +0100
-Message-Id: <1388357260-4843-16-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1388357260-4843-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1388357260-4843-1-git-send-email-Julia.Lawall@lip6.fr>
+	Sun, 29 Dec 2013 16:57:09 -0500
+X-Greylist: delayed 524 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 Dec 2013 16:57:09 EST
+From: Antonios Vamporakis <ant@area128.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Antonios Vamporakis <ant@area128.com>,
+        John Crispin <blogic@openwrt.org>
+Subject: [PATCH] pinctrl/lantiq: fix typo
+Date: Sun, 29 Dec 2013 22:48:02 +0100
+Message-Id: <1388353682-19065-1-git-send-email-ant@area128.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-
-Set the return variable to an error code as done elsewhere in the function.
-
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
-
-// <smpl>
-(
-if@p1 (\(ret < 0\|ret != 0\))
- { ... return ret; }
-|
-ret@p1 = 0
-)
-... when != ret = e1
-    when != &ret
-*if(...)
-{
-  ... when != ret = e2
-      when forall
- return ret;
-}
-
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
+Signed-off-by: Antonios Vamporakis <ant@area128.com>
+CC: John Crispin <blogic@openwrt.org>
 ---
-Not tested.
+ drivers/pinctrl/pinctrl-xway.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
- drivers/char/xilinx_hwicap/xilinx_hwicap.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/char/xilinx_hwicap/xilinx_hwicap.c b/drivers/char/xilinx_hwicap/xilinx_hwicap.c
-index f6345f9..9b1a5ac 100644
---- a/drivers/char/xilinx_hwicap/xilinx_hwicap.c
-+++ b/drivers/char/xilinx_hwicap/xilinx_hwicap.c
-@@ -661,6 +661,7 @@ static int hwicap_setup(struct device *dev, int id,
- 	drvdata->base_address = ioremap(drvdata->mem_start, drvdata->mem_size);
- 	if (!drvdata->base_address) {
- 		dev_err(dev, "ioremap() failed\n");
-+		retval = -ENOMEM;
- 		goto failed2;
- 	}
+diff --git a/drivers/pinctrl/pinctrl-xway.c b/drivers/pinctrl/pinctrl-xway.c
+index ed2d1ba..e66f4ca 100644
+--- a/drivers/pinctrl/pinctrl-xway.c
++++ b/drivers/pinctrl/pinctrl-xway.c
+@@ -332,10 +332,10 @@ static const struct ltq_pin_group xway_grps[] = {
+ 	GRP_MUX("mdio", MDIO, pins_mdio),
+ 	GRP_MUX("gphy0 led0", GPHY, pins_gphy0_led0),
+ 	GRP_MUX("gphy0 led1", GPHY, pins_gphy0_led1),
+-	GRP_MUX("gphy0 lde2", GPHY, pins_gphy0_led2),
++	GRP_MUX("gphy0 led2", GPHY, pins_gphy0_led2),
+ 	GRP_MUX("gphy1 led0", GPHY, pins_gphy1_led0),
+ 	GRP_MUX("gphy1 led1", GPHY, pins_gphy1_led1),
+-	GRP_MUX("gphy1 lde2", GPHY, pins_gphy1_led2),
++	GRP_MUX("gphy1 led2", GPHY, pins_gphy1_led2),
+ };
  
+ static const struct ltq_pin_group ase_grps[] = {
+-- 
+1.8.3.2
 
