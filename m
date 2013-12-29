@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755686Ab3L2CUc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Dec 2013 21:20:32 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55677 "EHLO
+	id S1755697Ab3L2CVA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Dec 2013 21:21:00 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55565 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753820Ab3L2CLP (ORCPT
+	by vger.kernel.org with ESMTP id S1753587Ab3L2CLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Dec 2013 21:11:15 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Naoya Horiguchi" <n-horiguchi@ah.jp.nec.com>,
-        "Kiyoshi Owada" <owada.kiyoshi@jp.panasonic.com>,
+CC: akpm@linux-foundation.org, "Jesper Nilsson" <jesper.nilsson@axis.com>,
         "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Akira Takeuchi" <takeuchi.akr@jp.panasonic.com>
+        "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
+        "Mikael Starvik" <starvik@axis.com>
 Date: Sun, 29 Dec 2013 03:08:43 +0100
-Message-ID: <lsq.1388282923.51724079@decadent.org.uk>
+Message-ID: <lsq.1388282923.776841075@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 056/185] mm: ensure get_unmapped_area() returns higher
- address than mmap_min_addr
+Subject: [PATCH 3.2 055/185] cris: media platform drivers: fix build
 In-Reply-To: <lsq.1388282923.751256928@decadent.org.uk>
 X-SA-Exim-Connect-IP: 31.18.200.85
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,145 +33,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit 2afc745f3e3079ab16c826be4860da2529054dd2 upstream.
+commit 72a0c5571351f5184195754d23db3e14495b2080 upstream.
 
-This patch fixes the problem that get_unmapped_area() can return illegal
-address and result in failing mmap(2) etc.
+On cris arch, the functions below aren't defined:
 
-In case that the address higher than PAGE_SIZE is set to
-/proc/sys/vm/mmap_min_addr, the address lower than mmap_min_addr can be
-returned by get_unmapped_area(), even if you do not pass any virtual
-address hint (i.e.  the second argument).
+  drivers/media/platform/sh_veu.c: In function 'sh_veu_reg_read':
 
-This is because the current get_unmapped_area() code does not take into
-account mmap_min_addr.
+  drivers/media/platform/sh_veu.c:228:2: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/sh_veu.c: In function 'sh_veu_reg_write':
 
-This leads to two actual problems as follows:
+  drivers/media/platform/sh_veu.c:234:2: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/vsp1/vsp1.h: In function 'vsp1_read':
+  drivers/media/platform/vsp1/vsp1.h:66:2: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/vsp1/vsp1.h: In function 'vsp1_write':
+  drivers/media/platform/vsp1/vsp1.h:71:2: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/vsp1/vsp1.h: In function 'vsp1_read':
+  drivers/media/platform/vsp1/vsp1.h:66:2: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/vsp1/vsp1.h: In function 'vsp1_write':
+  drivers/media/platform/vsp1/vsp1.h:71:2: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/soc_camera/rcar_vin.c: In function 'rcar_vin_setup':
+  drivers/media/platform/soc_camera/rcar_vin.c:284:3: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]
 
-1. mmap(2) can fail with EPERM on the process without CAP_SYS_RAWIO,
-   although any illegal parameter is not passed.
+  drivers/media/platform/soc_camera/rcar_vin.c: In function 'rcar_vin_request_capture_stop':
+  drivers/media/platform/soc_camera/rcar_vin.c:353:2: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]
 
-2. The bottom-up search path after the top-down search might not work in
-   arch_get_unmapped_area_topdown().
+Yet, they're available, as CONFIG_GENERIC_IOMAP is defined.  What happens
+is that asm/io.h was not including asm-generic/iomap.h.
 
-Note: The first and third chunk of my patch, which changes "len" check,
-are for more precise check using mmap_min_addr, and not for solving the
-above problem.
-
-[How to reproduce]
-
-	--- test.c -------------------------------------------------
-	#include <stdio.h>
-	#include <unistd.h>
-	#include <sys/mman.h>
-	#include <sys/errno.h>
-
-	int main(int argc, char *argv[])
-	{
-		void *ret = NULL, *last_map;
-		size_t pagesize = sysconf(_SC_PAGESIZE);
-
-		do {
-			last_map = ret;
-			ret = mmap(0, pagesize, PROT_NONE,
-				MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-	//		printf("ret=%p\n", ret);
-		} while (ret != MAP_FAILED);
-
-		if (errno != ENOMEM) {
-			printf("ERR: unexpected errno: %d (last map=%p)\n",
-			errno, last_map);
-		}
-
-		return 0;
-	}
-	---------------------------------------------------------------
-
-	$ gcc -m32 -o test test.c
-	$ sudo sysctl -w vm.mmap_min_addr=65536
-	vm.mmap_min_addr = 65536
-	$ ./test  (run as non-priviledge user)
-	ERR: unexpected errno: 1 (last map=0x10000)
-
-Signed-off-by: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
-Signed-off-by: Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Suggested-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Mikael Starvik <starvik@axis.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2:
- As we do not have vm_unmapped_area(), make arch_get_unmapped_area_topdown()
- calculate the lower limit for the new area's end address and then compare
- addresses with this instead of with len.  In the process, fix an off-by-one
- error which could result in returning 0 if mm->mmap_base == len.]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1368,7 +1368,7 @@ arch_get_unmapped_area(struct file *filp
- 	struct vm_area_struct *vma;
- 	unsigned long start_addr;
+ arch/cris/include/asm/io.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/arch/cris/include/asm/io.h
++++ b/arch/cris/include/asm/io.h
+@@ -3,6 +3,7 @@
  
--	if (len > TASK_SIZE)
-+	if (len > TASK_SIZE - mmap_min_addr)
- 		return -ENOMEM;
+ #include <asm/page.h>   /* for __va, __pa */
+ #include <arch/io.h>
++#include <asm-generic/iomap.h>
+ #include <linux/kernel.h>
  
- 	if (flags & MAP_FIXED)
-@@ -1377,7 +1377,7 @@ arch_get_unmapped_area(struct file *filp
- 	if (addr) {
- 		addr = PAGE_ALIGN(addr);
- 		vma = find_vma(mm, addr);
--		if (TASK_SIZE - len >= addr &&
-+		if (TASK_SIZE - len >= addr && addr >= mmap_min_addr &&
- 		    (!vma || addr + len <= vma->vm_start))
- 			return addr;
- 	}
-@@ -1442,9 +1442,10 @@ arch_get_unmapped_area_topdown(struct fi
- 	struct vm_area_struct *vma;
- 	struct mm_struct *mm = current->mm;
- 	unsigned long addr = addr0;
-+	unsigned long low_limit = max(PAGE_SIZE, mmap_min_addr);
- 
- 	/* requested length too big for entire address space */
--	if (len > TASK_SIZE)
-+	if (len > TASK_SIZE - mmap_min_addr)
- 		return -ENOMEM;
- 
- 	if (flags & MAP_FIXED)
-@@ -1454,7 +1455,7 @@ arch_get_unmapped_area_topdown(struct fi
- 	if (addr) {
- 		addr = PAGE_ALIGN(addr);
- 		vma = find_vma(mm, addr);
--		if (TASK_SIZE - len >= addr &&
-+		if (TASK_SIZE - len >= addr && addr >= mmap_min_addr &&
- 				(!vma || addr + len <= vma->vm_start))
- 			return addr;
- 	}
-@@ -1469,14 +1470,14 @@ arch_get_unmapped_area_topdown(struct fi
- 	addr = mm->free_area_cache;
- 
- 	/* make sure it can fit in the remaining address space */
--	if (addr > len) {
-+	if (addr >= low_limit + len) {
- 		vma = find_vma(mm, addr-len);
- 		if (!vma || addr <= vma->vm_start)
- 			/* remember the address as a hint for next time */
- 			return (mm->free_area_cache = addr-len);
- 	}
- 
--	if (mm->mmap_base < len)
-+	if (mm->mmap_base < low_limit + len)
- 		goto bottomup;
- 
- 	addr = mm->mmap_base-len;
-@@ -1498,7 +1499,7 @@ arch_get_unmapped_area_topdown(struct fi
- 
- 		/* try just below the current vma->vm_start */
- 		addr = vma->vm_start-len;
--	} while (len < vma->vm_start);
-+	} while (vma->vm_start >= low_limit + len);
- 
- bottomup:
- 	/*
+ struct cris_io_operations
 
