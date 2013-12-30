@@ -1,130 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab3L3CkY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 21:40:24 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:11317 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753809Ab3L3CkW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 21:40:22 -0500
-Message-ID: <52C0DCF7.6040402@huawei.com>
-Date: Mon, 30 Dec 2013 10:39:51 +0800
-From: Ding Tianhong <dingtianhong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1753517Ab3L3C6Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 21:58:16 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:14408 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753203Ab3L3C6P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Dec 2013 21:58:15 -0500
+X-IronPort-AV: E=Sophos;i="4.95,571,1384272000"; 
+   d="scan'208";a="9348353"
+Message-ID: <52C1969A.30903@cn.fujitsu.com>
+Date: Mon, 30 Dec 2013 10:51:54 -0500
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, Ding Tianhong <dthxman@gmail.com>
-CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH net-next v2 11/20] net: packetengines: slight optimization
- of addr
-References: <52BE6D0D.9050301@huawei.com>	 <52BED8ED.2040908@cogentembedded.com> <52BEEBD5.1040301@gmail.com> <1388251380.24123.15.camel@joe-AO722>
-In-Reply-To: <1388251380.24123.15.camel@joe-AO722>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.135.72.199]
-X-CFilter-Loop: Reflected
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Ahern <dsahern@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] perf list: fix --raw-dump
+References: <1386756980-23121-1-git-send-email-artagnon@gmail.com> <52A8D2DA.7050409@gmail.com> <CALkWK0ksAB1xkaCR5jxaN-4n1KL3yQACp_62=ijmFZjj8KNuew@mail.gmail.com> <20131216131954.GB2368@infradead.org> <CALkWK0ntHgX0vw+ZqkW54xMj18g4mJaaCwavtXGn3StRyJajWQ@mail.gmail.com>
+In-Reply-To: <CALkWK0ntHgX0vw+ZqkW54xMj18g4mJaaCwavtXGn3StRyJajWQ@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/30 10:53:07,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/30 10:53:09,
+	Serialize complete at 2013/12/30 10:53:09
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/12/29 1:23, Joe Perches wrote:
-> On Sat, 2013-12-28 at 23:18 +0800, Ding Tianhong wrote:
->> 于 2013/12/28 21:58, Sergei Shtylyov 写道:
->>> Hello.
->>>
->>> On 28-12-2013 10:17, Ding Tianhong wrote:
->>>
->>>> Use possibly more efficient ether_addr_equal
->>>> to instead of memcmp.
->>>
->>>> Cc: "David S. Miller" <davem@davemloft.net>
->>>> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
->>>> ---
->>>>   drivers/net/ethernet/packetengines/yellowfin.c |   12 ++++++------
->>>>   1 files changed, 6 insertions(+), 6 deletions(-)
->>>
->>>> diff --git a/drivers/net/ethernet/packetengines/yellowfin.c b/drivers/net/ethernet/packetengines/yellowfin.c
->>>> index d28593b..b83ac0e 100644
->>>> --- a/drivers/net/ethernet/packetengines/yellowfin.c
->>>> +++ b/drivers/net/ethernet/packetengines/yellowfin.c
->>>> @@ -1097,12 +1097,12 @@ static int yellowfin_rx(struct net_device *dev)
->>>>               if (status2 & 0x80) dev->stats.rx_dropped++;
->>>>   #ifdef YF_PROTOTYPE        /* Support for prototype hardware errata. */
->>>>           } else if ((yp->flags & HasMACAddrBug)  &&
->>>> -            memcmp(le32_to_cpu(yp->rx_ring_dma +
->>>> -                entry*sizeof(struct yellowfin_desc)),
->>>> -                dev->dev_addr, 6) != 0 &&
->>>> -            memcmp(le32_to_cpu(yp->rx_ring_dma +
->>>> -                entry*sizeof(struct yellowfin_desc)),
->>>> -                "\377\377\377\377\377\377", 6) != 0) {
->>>> +            !ether_addr_equal(le32_to_cpu(yp->rx_ring_dma +
->>>> +                              entry * sizeof(struct yellowfin_desc)),
->>>> +                              dev->dev_addr) &&
->>>
->>>    Previous line was aligned correctly, the above line should start under le32_to_cpu.
->>>
->>>> +            !ether_addr_equal(le32_to_cpu(yp->rx_ring_dma +
->>>> +                              entry * sizeof(struct yellowfin_desc)),
->>>
->>>    Start the continuation lines under 'yp', please.
->>>
->>>> +                              "\377\377\377\377\377\377")) {
->>>
->>>    This line should start under le32_to_cpu.
->>>
->>> WBR, Sergei
->>>
->>
->> Hi sergei:
->> you mean this way?
->> 	!ether_addr_equal(le32_to_cpu(yp->rx_ring_dma +
->> 				      entry * sizeof(struct yellowfin_desc)),
->> 			  dev->dev_addr) &&
->>
->> 	!ether_addr_equal(le32_to_cpu(yp->rx_ring_dma +
->> 				      entry * sizeof(struct yellowfin_desc)),
->> 			  "\377\377\377\377\377\377")) {
-> 
-> Does this really matter?
-> Does anyone have a packetengine NIC anymore?
-> 
-> \377 octal is 0xff, so this is matching a broadcast address.
-> is_broadcast_ether_addr(addr) would be appropriate.
-> 
-> So would using a temporary address.
-> 
-> u8 *addr = (u8 *)(unsigned long)le32_to_cpu(etc)
-> 
-> but the whole thing looks very suspect as an le32
-> value could not be added to correctly on a
-> big-endian arch anyway.
-> 
-> My guess is this was tested only on an x86 and
-> it should be:
-> 
-> 	u8 *addr = (u8 *)(unsigned long)(le32_to_cpu(yp->rx_ring_dma) +
-> 					 entry * sizeof(struct yellowfin_desc));
-> 
-> It maybe better just to leave these two alone.
-> 
+On 12/29/2013 05:11 AM, Ramkumar Ramachandra wrote:
+> Arnaldo Carvalho de Melo wrote:
+>> So is the patch below the one to apply? When these things happen, it
+>> helps if you resubmit with a v2 in the subject line and then an explicit
+>> Ack is provided, be it from, in this case, David, or Ramkumar could just
+>> add it since David provided it in free form, ok?
+> Is any action required on my part: should I resubmit this, or has it
+> already been picked up?
 
-Hi Joe:
+Hi Ramkumar,
+     I sent a patch set for enhancement of perf list recently,
+[PATCH 0/8 V2] Enhancement for perf list.
+<http://lkml.kernel.org/r/cover.1388416837.git.yangds.fnst@cn.fujitsu.com>.
 
-I don't understand packetengine NIC anymore, But I think the change is clearly,
-as your said, the broadcast check is enough here, did you mean that?
+  It contains a patch [6/8] is very similar with yours here. But I make it
+works as a option for other argument,  such as hw, too. And I add
+a signed-off-by Ramkumar and signed-off-by David in that patch.
 
-	!is_broadcast_ether_addr((u8 *)(le32_to_cpu(yp->rx_ring_dma) +
-						    entry * sizeof(struct yellowfin_desc)))
+Do you mind we turn to that thread to fix --raw-dump ??
 
-Thanks
+Could you help to take a look at it??
 
-Regards
-Ding
-
-> 
-> .
-> 
-
+Yang
+>
+> p.s- Sorry about the terribly late response; was on vacation.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
