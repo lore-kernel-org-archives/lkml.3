@@ -1,89 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756116Ab3L3QTj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 11:19:39 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:61621 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755877Ab3L3QTh (ORCPT
+	id S932092Ab3L3QWW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 11:22:22 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58286 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820Ab3L3QWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 11:19:37 -0500
-From: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-To: tomi.valkeinen@ti.com
-Cc: plagnioj@jcrosoft.com, pali.rohar@gmail.com, pavel@ucw.cz,
-        linux-omap@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ivaylo Dimitrov <freemangordon@abv.bg>
-Subject: [PATCH] ARM: OMAPFB: panel-sony-acx565akm: fix missing mutex unlocks
-Date: Mon, 30 Dec 2013 18:17:52 +0200
-Message-Id: <1388420272-5132-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
-X-Mailer: git-send-email 1.8.4.msysgit.0
+	Mon, 30 Dec 2013 11:22:20 -0500
+Date: Mon, 30 Dec 2013 16:21:58 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Joe Xue <lgxue@hotmail.com>
+Cc: cooloney@gmail.com, rpurdie@rpsys.net, rob@landley.net, milo.kim@ti.com,
+        pavel@ucw.cz, linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH] Add LED pattern trigger
+Message-ID: <20131230162158.7420e811@alan.etchedpixels.co.uk>
+In-Reply-To: <1388362275-1618-1-git-send-email-lgxue@hotmail.com>
+References: <1388362275-1618-1-git-send-email-lgxue@hotmail.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ivaylo Dimitrov <freemangordon@abv.bg>
+> + * Based on Richard Purdie's ledtrig-timer.c and Atsushi Nemoto's
+> + * ledtrig-heartbeat.c and Shuah Khan's ledtrig-transient.c
 
-Commit c37dd677988ca50bc8bc60ab5ab053720583c168 fixes the unbalanced
-unlock in acx565akm_enable but introduces another problem - if
-acx565akm_panel_power_on exits early, the mutex is not unlocked. Fix
-that by unlocking the mutex on early return. Also add mutex protection in
-acx565akm_panel_power_off and remove an unused variable
+I stil think this belongs in user space except for platforms with hardware
+acceleration for it.
 
-Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
----
- .../omap2/displays-new/panel-sony-acx565akm.c      |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
+> +#define MAX_PATTEN_LEN	255
 
-diff --git a/drivers/video/omap2/displays-new/panel-sony-acx565akm.c b/drivers/video/omap2/displays-new/panel-sony-acx565akm.c
-index d94f35d..a093d3a 100644
---- a/drivers/video/omap2/displays-new/panel-sony-acx565akm.c
-+++ b/drivers/video/omap2/displays-new/panel-sony-acx565akm.c
-@@ -535,6 +535,7 @@ static int acx565akm_panel_power_on(struct omap_dss_device *dssdev)
- 
- 	r = in->ops.sdi->enable(in);
- 	if (r) {
-+		mutex_unlock(&ddata->mutex);
- 		pr_err("%s sdi enable failed\n", __func__);
- 		return r;
- 	}
-@@ -546,6 +547,7 @@ static int acx565akm_panel_power_on(struct omap_dss_device *dssdev)
- 		gpio_set_value(ddata->reset_gpio, 1);
- 
- 	if (ddata->enabled) {
-+		mutex_unlock(&ddata->mutex);
- 		dev_dbg(&ddata->spi->dev, "panel already enabled\n");
- 		return 0;
- 	}
-@@ -578,10 +580,14 @@ static void acx565akm_panel_power_off(struct omap_dss_device *dssdev)
- 	struct panel_drv_data *ddata = to_panel_data(dssdev);
- 	struct omap_dss_device *in = ddata->in;
- 
-+	mutex_lock(&ddata->mutex);
-+
- 	dev_dbg(dssdev->dev, "%s\n", __func__);
- 
--	if (!ddata->enabled)
-+	if (!ddata->enabled) {
-+		mutex_unlock(&ddata->mutex);
- 		return;
-+	}
- 
- 	set_display_state(ddata, 0);
- 	set_sleep_mode(ddata, 1);
-@@ -601,11 +607,13 @@ static void acx565akm_panel_power_off(struct omap_dss_device *dssdev)
- 	msleep(100);
- 
- 	in->ops.sdi->disable(in);
-+
-+	mutex_unlock(&ddata->mutex);
-+
- }
- 
- static int acx565akm_enable(struct omap_dss_device *dssdev)
- {
--	struct panel_drv_data *ddata = to_panel_data(dssdev);
- 	int r;
- 
- 	dev_dbg(dssdev->dev, "%s\n", __func__);
--- 
-1.5.6.1
+Arbitary limits that are not needed if it was in userspace, and not it
+seems a sensible one - why not use 256 ?
+
+> +static ssize_t pattern_delay_unit_store(struct device *dev,
+> +		struct device_attribute *attr, const char *buf, size_t size)
+> +{
+> +	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+> +	struct pattern_trig_data *pattern_data = led_cdev->trigger_data;
+> +	unsigned long state;
+> +	ssize_t ret = -EINVAL;
+> +
+> +	ret = kstrtoul(buf, 10, &state);
+> +	if (ret)
+> +		return ret;
+> +
+> +	pattern_data->delay_unit = state;
+
+What happens if this is zero ?
+
+> +static ssize_t pattern_pattern_store(struct device *dev,
+> +		struct device_attribute *attr, const char *buf, size_t size)
+> +{
+> +	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+> +	struct pattern_trig_data *pattern_data = led_cdev->trigger_data;
+> +	int i;
+> +	ssize_t ret = -EINVAL;
+> +
+> +	int len = (size > MAX_PATTEN_LEN) ? MAX_PATTEN_LEN : (size - 1);
+> +
+> +	/* legality check */
+> +	for (i = 0; i < len; i++) {
+> +		if (buf[i] != ' ' && buf[i] != '#' && buf[i] != '/')
+> +			return ret;
+> +	}
+> +
+> +	del_timer_sync(&pattern_data->timer);
+> +
+> +	memcpy(pattern_data->pattern, buf, len);
+> +	pattern_data->pattern[len] = '\0';
+> +	pattern_data->pattern_len = len;
+> +	pattern_data->count = 0;
+> +
+> +	mod_timer(&pattern_data->timer, jiffies + 1);
+
+What if the pattern isn't currently active ?
+
+> +	return size;
+
+You only consumed len bytes so you should return len here.
+
+> +}
+> +
+> +static DEVICE_ATTR(pattern, 0644, pattern_pattern_show, pattern_pattern_store);
+> +static DEVICE_ATTR(delay_unit, 0644,
+> +		pattern_delay_unit_show, pattern_delay_unit_store);
+
+Why are these world readable. If patterns tell you an action is due they
+provide information that other processes shouldn't have access to.
+
+> +	memset(tdata->pattern, 0, MAX_PATTEN_LEN + 1);
+
+Why +1, you don't need a zero terminator you know the length
+
+Why allocate a fixed 256 byte blob when you can make the data the end of
+the struct (ie pattern[0] in the declaration) and not waste memory.
+
+> +static void pattern_trig_deactivate(struct led_classdev *led_cdev)
+> +{
+> +	struct pattern_trig_data *pattern_data = led_cdev->trigger_data;
+> +
+> +	if (led_cdev->activated) {
+> +		del_timer_sync(&pattern_data->timer);
+> +		device_remove_file(led_cdev->dev, &dev_attr_pattern);
+> +		device_remove_file(led_cdev->dev, &dev_attr_delay_unit);
+
+This doesn't as far as I can see do what you think. If I have the file
+currently open then device_remove_file will not remove my existing access
+to it, but you just released the pattern data so I now write to free
+memory.
+
+> +		led_cdev->trigger_data = NULL;
+> +		led_cdev->activated = false;
+> +		kfree(pattern_data);
+> +	}
+> +	__led_set_brightness(led_cdev, LED_OFF);
+> +}
+> +
+> +static struct led_trigger pattern_trigger = {
+
+const ?
+
 
