@@ -1,58 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137Ab3L3TWg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 14:22:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20944 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756124Ab3L3TWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 14:22:35 -0500
-Message-ID: <1388431259.2564.15.camel@deneb.redhat.com>
-Subject: Re: [PATCH] arm64/xen: redefine xen_remap on arm64
-From: Mark Salter <msalter@redhat.com>
-To: Chen Baozi <baozich@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, xen-devel@lists.xenproject.org,
-        catalin.marinas@arm.com, stefano.stabellini@eu.citrix.com,
-        linux-kernel@vger.kernel.org
-Date: Mon, 30 Dec 2013 14:20:59 -0500
-In-Reply-To: <1388386511-32276-1-git-send-email-baozich@gmail.com>
-References: <1388386511-32276-1-git-send-email-baozich@gmail.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932161Ab3L3TkH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 14:40:07 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:45748 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932094Ab3L3TkF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Dec 2013 14:40:05 -0500
+References: <cover.1388409686.git.liwang@ubuntukylin.com> <52C1C6F7.8010809@intel.com>
+Mime-Version: 1.0 (1.0)
+In-Reply-To: <52C1C6F7.8010809@intel.com>
+Content-Type: text/plain;
+	charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Message-Id: <FFE7C704-791E-4B73-9251-EFB9135AB254@dilger.ca>
+Cc: Li Wang <liwang@ubuntukylin.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>, Zefan Li <lizefan@huawei.com>,
+        Matthew Wilcox <matthew@wil.cx>
+X-Mailer: iPhone Mail (11B554a)
+From: Andreas Dilger <adilger@dilger.ca>
+Subject: Re: [PATCH 0/3] Fadvise: Directory level page cache cleaning support
+Date: Mon, 30 Dec 2013 12:40:05 -0700
+To: Dave Hansen <dave.hansen@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-12-30 at 14:55 +0800, Chen Baozi wrote:
-> xen_remap used to be defined as ioremap_cached on arm64. In commit
-> c04e8e2fe, a new ioremap_cache was implemented, and ioremap_cached
-> was deleted, while xen_remap stays the same. This would lead to
-> the failure when building with CONFIG_HVC_XEN. Redefined xen_remap
-> on arm64 as ioremap_cache on arm64 to fix it.
+On Dec 30, 2013, at 12:18, Dave Hansen <dave.hansen@intel.com> wrote:
 > 
+> Why is this necessary to do in the kernel?  Why not leave it to
+> userspace to walk the filesystem(s)?
 
-I missed that include of arm header by arm64 when looking for users
-of arm64's ioremap_cached() when working on commit c04e8e2fe. Anyway,
-grepping the kernel tree, I see:
+I would suspect that trying to do it in userspace would be quite bad. It would require traversing the whole directory tree to issue cache flushed for each subdirectory, but it doesn't know when to stop traversal. That would mean the "cache flush" would turn into "cache pollute" and cause a lot of disk IO for subdirectories not in cache to begin with. 
 
-  ioremap_cached()
-    defined by: arm, metag, unicore32
-    used by: arch/arm/include/asm/xen/page.h
-             drivers/mtd/maps/pxa2xx-flash.c
-
-  ioremap_cache()
-    defined by: arm64, sh, xtensa, ia64, x86
-    used by: drivers/video/vesafb.c
-             drivers/char/toshiba.c
-             drivers/acpi/apei
-             drivers/lguest/lguest_device.c
-             drivers/sfi/sfi_core.c
-             include/linux/acpi_io.h
-
-I think it would be better to just avoid the confusion and the ifdef in
-asm/xen/page.h by globally changing ioremap_cached to ioremap_cache.
-
---Mark
-
-
+Cheers, Andreas
