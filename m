@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932076Ab3L3OEO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 09:04:14 -0500
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:39764 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755705Ab3L3OEM (ORCPT
+	id S1755975Ab3L3OHS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 09:07:18 -0500
+Received: from smtp.domeneshop.no ([194.63.252.54]:34865 "EHLO
+	smtp.domeneshop.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755705Ab3L3OHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 09:04:12 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Sebastian Reichel <sre@ring0.de>
-Subject: Re: [PATCH v2] Bluetooth: Add hci_h4p driver
-Date: Mon, 30 Dec 2013 15:04:06 +0100
-User-Agent: KMail/1.13.7 (Linux/3.11.0-15-generic; KDE/4.12.0; x86_64; ; )
-Cc: Pavel Machek <pavel@ucw.cz>, Marcel Holtmann <marcel@holtmann.org>,
-        =?utf-8?q?=D0=98=D0=B2=D0=B0=D0=B9=D0=BB=D0=BE?=
-	 =?utf-8?q?_=D0=94=D0=B8=D0=BC=D0=B8=D1=82=D1=80=D0=BE=D0=B2?= 
-	<freemangordon@abv.bg>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org development" 
-	<linux-bluetooth@vger.kernel.org>,
-        Ville Tervo <ville.tervo@nokia.com>
-References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com> <20131230121350.GB31236@amd.pavel.ucw.cz> <20131230131942.GA13816@earth.universe>
-In-Reply-To: <20131230131942.GA13816@earth.universe>
+	Mon, 30 Dec 2013 09:07:16 -0500
+Message-ID: <52C17D72.5090308@paradoxuncreated.com>
+Date: Mon, 30 Dec 2013 15:04:34 +0100
+From: Ove Karlsen <ove.karlsen@paradoxuncreated.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart9079777.of6x8moKOH";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: re: Gnu - more
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201312301504.06745@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart9079777.of6x8moKOH
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Once you accept idolatry, people may aswell make an idol that is in 
+enemity to others.
 
-On Monday 30 December 2013 14:19:44 Sebastian Reichel wrote:
-> Hi,
->=20
-> On Mon, Dec 30, 2013 at 01:13:50PM +0100, Pavel Machek wrote:
-> > [...]
-> >=20
-> > Well, I can rename config option, but renaming the module
-> > would break existing userland, no?
->=20
-> Why is the userland depending on the module name?
->=20
+http://www.gnu.org/graphics/bahlon/3d-gnu-head.jpg
 
-grep told me that hci_h4p is used only in these (text) files:
+This seems to be in enemity to Linus Torvalds, symbolically.
 
-* /etc/modprobe.d/maemo.conf
-   alias platform:hci_h4p hci_h4p
+People have been doing this for ages, and the head idols on certain 
+island, actually command idolaters, to pick hay/sail boat/other 
+activity, etc.
 
-So this is not needed if kernel driver contains correct=20
-MODULE_ALIAS macro.
+Normal godconsciousness is above these symbols, and make them 
+ineffective, so no doubt these were forgotten.
 
-* /etc/event.d/bluetooth-sysinfo
-   echo ... > /sys/devices/platform/hci_h4p/bdaddr
+As The Quran says "God has no partners in reign".
 
-This upstart script contains code for reading mac address from=20
-special sysinfod daemon and setting it to kernel driver. Once=20
-there will be uniform way for setting mac address that script can=20
-be changed.
+A lot of scientific thinking today also overrides idolatry, but often 
+has its own aswell. But that the universe is created, consists of 
+certain things, that the moon is part of a solar system, and not an 
+idolaterous symbol (aka man in the moon), is good learning, but avoid 
+"infinite mass" theories, and "random"/chaotic (white noise) theories 
+etc, as these are the idolaterous part, among several. Also seen in 
+theories such as "the godparticle", which is a bit like the modern Thor. 
+Where fantasy conjures up wild things, until discarded and the next 
+object comes.
 
-So I think that renaming module will not break anything if kernel=20
-module will get (somehow) correct mac address (or if random one=20
-is acceptable).
+Whether there actually are "quantums" one does not really know either, 
+and some of this is based in Einsteins extrapolations to infinity, which 
+is non-sensical math. So what happens when particle-accelerators go into 
+the range of error one does not know. Lets hope no "resonance 
+cascade"(/another world - both based in drugs it would seem.). :o)
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+In physics one often talks about oscillations, frequencies and 
+measurements. And a measurement is a quantity, and does nothing on its 
+own, ofcourse.
+
+The error comes when one starts to believe idols have power.
+
+Instead the entire sequence of events in the universe, actually contains 
+no resonance cascade. No bugs, no bogus code.
+
+That is proof enough for God, for me.
+
+A correct view of God, and monotheism, is without idolatry.
+
+PBWY!
 
 
---nextPart9079777.of6x8moKOH
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlLBfVYACgkQi/DJPQPkQ1IN0wCfViYDiCdqpg1Zi5iYWpem12WA
-jb8An1gSOP6Jwq1IvhfkryDvNCDtHT43
-=523S
------END PGP SIGNATURE-----
-
---nextPart9079777.of6x8moKOH--
