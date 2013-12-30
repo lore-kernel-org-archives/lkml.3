@@ -1,120 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755523Ab3L3KSy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 05:18:54 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:49537 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754795Ab3L3KSx (ORCPT
+	id S1755578Ab3L3KTp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 05:19:45 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:42854 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752051Ab3L3KTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 05:18:53 -0500
-Message-ID: <52C14889.7000700@gmail.com>
-Date: Mon, 30 Dec 2013 23:18:49 +1300
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: lkml <linux-kernel@vger.kernel.org>
-CC: mtk.manpages@gmail.com
-Subject: man-pages-3.55 is released
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 30 Dec 2013 05:19:43 -0500
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+To: mingo@kernel.org, tglx@linutronix.de
+Cc: axel.lin@ingics.com, ezequiel.garcia@free-electrons.com,
+        jg1.han@samsung.com, laurent.pinchart+renesas@ideasonboard.com,
+        linus.walleij@linaro.org, maxime.ripard@free-electrons.com,
+        michael.opdenacker@free-electrons.com, sboyd@codeaurora.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 01/20] clockevent: sun4i: Fill the irq field in the clockevent structure
+Date: Mon, 30 Dec 2013 11:19:20 +0100
+Message-Id: <1388398779-11222-1-git-send-email-daniel.lezcano@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <52C1479E.80808@linaro.org>
+References: <52C1479E.80808@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gidday,
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-I've released man-pages-3.55 - man pages for Linux.
+The clock event structure irq field was not filled previously to the
+interrupt we're using.
 
-Tarball download:
-    http://www.kernel.org/doc/man-pages/download.html
-Git repository:
-    https://git.kernel.org/cgit/docs/man-pages/man-pages.git/
-Online changelog:
-    http://man7.org/linux/man-pages/changelog.html#release_3.55
+This was resulting in the timer not being used at all when using a
+configuration with SMP enabled on a system with several CPUs, and with
+the cpumask set to the cpu_possible_mask.
 
-A short summary of the release is blogged at:
-http://linux-man-pages.blogspot.com/2013/12/man-pages-355-is-released.html
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/clocksource/sun4i_timer.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-The current version of the pages is browsable at:
-http://man7.org/linux/man-pages/
-
-A few changes in this release that may be of interest to readers of
-this list are given below.
-
-Cheers,
-
-Michael
-
-==================== Changes in man-pages-3.55 ====================
-
-Changes to individual pages
----------------------------
-
-fallocate.2
-    Christoph Hellwig
-        Clarify the zeroing behavior
-            fallocate() zeroes only space that did not previously contain
-            data, but leaves existing data untouched.
-
-perf_event_open.2
-    Vince Weaver
-        Linux 3.12 rdpmc/mmap
-            It turns out that the perf_event mmap page rdpmc/time setting was
-            broken, dating back to the introduction of the feature.  Due
-            to a mistake with a bitfield, two different values mapped to
-            the same feature bit.
-
-            A new somewhat backwards compatible interface was introduced
-            in Linux 3.12.  A much longer report on the issue can be found
-            here:
-               https://lwn.net/Articles/567894/
-    Vince Weaver
-        Linux 3.12 adds PERF_SAMPLE_IDENTIFIER
-            A new PERF_SAMPLE_IDENTIFIER sample type was added in Linux 3.12.
-    Vince Weaver
-        E2BIG documentation
-            The following documents the E2BIG error return for
-            perf_event_open().
-
-            I actually ran into this error the hard way and it took me
-            half a day to figure out why my ->size value was changing.
-    Vince Weaver
-        Linux 3.12 adds PERF_EVENT_IOC_ID
-            A new perf_event related ioctl, PERF_EVENT_IOC_ID, was added
-            in Linux 3.12.
-    Vince Weaver
-        PERF_COUNT_SW_DUMMY support
-            Support for the PERF_COUNT_SW_DUMMY event type was added in
-            Linux 3.12.
-    Vince Weaver  [Andreas Sandberg]
-        PERF_EVENT_IOC_PERIOD update
-            The PERF_EVENT_IOC_PERIOD ioctl was broken until 2.6.36,
-            and it turns out that the ARM architecture has some
-            differing behavior too.
-
-stat.2
-    Michael Kerrisk
-        Note filesystem support for nanosecond timestamps
-            Add some detail on which native filesystems do and don't
-            support nanosecond timestamps.
-    Michael Kerrisk  [Yang Yang]
-        Update discussion of nanosecond timestamps
-            The existing text describes the timestamp fields as 'time_t'
-            and delegates discussion of nanosecond timestamps under NOTES.
-            Nanosecond timestamps have been around for a while now,
-            and are in POSIX.1-2008, so reverse the orientation of the
-            discussion, putting the nanosecond fields into DESCRIPTION
-            and detailing the historical situation under NOTES.
-
-tty_ioctl.4
-    Michael Kerrisk  [Liu Jiaming]
-        Note that 'arg' should be 0 in the usual case when using TIOCSCTTY
-
-proc.5
-    Michael Kerrisk
-        Document /proc/sys/kernel/ngroups_max
-
+diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
+index 2fb4695..a7f492e 100644
+--- a/drivers/clocksource/sun4i_timer.c
++++ b/drivers/clocksource/sun4i_timer.c
+@@ -188,6 +188,7 @@ static void __init sun4i_timer_init(struct device_node *node)
+ 	writel(val | TIMER_IRQ_EN(0), timer_base + TIMER_IRQ_EN_REG);
+ 
+ 	sun4i_clockevent.cpumask = cpumask_of(0);
++	sun4i_clockevent.irq = irq;
+ 
+ 	clockevents_config_and_register(&sun4i_clockevent, rate,
+ 					TIMER_SYNC_TICKS, 0xffffffff);
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+1.7.9.5
+
