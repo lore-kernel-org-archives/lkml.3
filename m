@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932261Ab3L3RT2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 12:19:28 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:25199 "EHLO
+	id S932241Ab3L3RT0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 12:19:26 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:37280 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756210Ab3L3RTH (ORCPT
+	by vger.kernel.org with ESMTP id S1756051Ab3L3RTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Dec 2013 12:19:07 -0500
 X-IronPort-AV: E=Sophos;i="4.95,574,1384297200"; 
-   d="scan'208";a="51019972"
+   d="scan'208";a="51019971"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: kernel-janitors@vger.kernel.org, Chaoming Li <chaoming_li@realsil.com.cn>,
+To: Lennert Buytenhek <buytenh@wantstofly.org>
+Cc: kernel-janitors@vger.kernel.org,
         "John W. Linville" <linville@tuxdriver.com>,
         linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 6/11] rtlwifi: use ether_addr_equal_64bits
-Date: Mon, 30 Dec 2013 19:15:02 +0100
-Message-Id: <1388427307-8691-7-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 5/11] mwl8k: use ether_addr_equal_64bits
+Date: Mon, 30 Dec 2013 19:15:01 +0100
+Message-Id: <1388427307-8691-6-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -33,7 +33,7 @@ least two bytes of data beyond the array.
 
 The structures involved are:
 ieee80211_hdr defined in include/linux/ieee80211.h and
-rtl_mac defined in drivers/net/wireless/rtlwifi/wifi.h
+mwl8k_priv defined in drivers/net/wireless/mwl8k.c
 
 This was done using Coccinelle (http://coccinelle.lip6.fr/).
 
@@ -43,52 +43,20 @@ Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 The semantic patch used is rather long and can be found in message 0 of
 this patch series.
 
- drivers/net/wireless/rtlwifi/base.c |    4 ++--
- drivers/net/wireless/rtlwifi/ps.c   |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/wireless/mwl8k.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/rtlwifi/ps.c b/drivers/net/wireless/rtlwifi/ps.c
-index 0d81f76..deedae3 100644
---- a/drivers/net/wireless/rtlwifi/ps.c
-+++ b/drivers/net/wireless/rtlwifi/ps.c
-@@ -478,7 +478,7 @@ void rtl_swlps_beacon(struct ieee80211_hw *hw, void *data, unsigned int len)
- 		return;
+diff --git a/drivers/net/wireless/mwl8k.c b/drivers/net/wireless/mwl8k.c
+index b953ad6..13c9ac5 100644
+--- a/drivers/net/wireless/mwl8k.c
++++ b/drivers/net/wireless/mwl8k.c
+@@ -1258,7 +1258,7 @@ mwl8k_capture_bssid(struct mwl8k_priv *priv, struct ieee80211_hdr *wh)
+ {
+ 	return priv->capture_beacon &&
+ 		ieee80211_is_beacon(wh->frame_control) &&
+-		ether_addr_equal(wh->addr3, priv->capture_bssid);
++		ether_addr_equal_64bits(wh->addr3, priv->capture_bssid);
+ }
  
- 	/* and only beacons from the associated BSSID, please */
--	if (!ether_addr_equal(hdr->addr3, rtlpriv->mac80211.bssid))
-+	if (!ether_addr_equal_64bits(hdr->addr3, rtlpriv->mac80211.bssid))
- 		return;
- 
- 	rtlpriv->psc.last_beacon = jiffies;
-@@ -923,7 +923,7 @@ void rtl_p2p_info(struct ieee80211_hw *hw, void *data, unsigned int len)
- 		return;
- 
- 	/* and only beacons from the associated BSSID, please */
--	if (!ether_addr_equal(hdr->addr3, rtlpriv->mac80211.bssid))
-+	if (!ether_addr_equal_64bits(hdr->addr3, rtlpriv->mac80211.bssid))
- 		return;
- 
- 	/* check if this really is a beacon */
-diff --git a/drivers/net/wireless/rtlwifi/base.c b/drivers/net/wireless/rtlwifi/base.c
-index fcf9b62..d63a12c 100644
---- a/drivers/net/wireless/rtlwifi/base.c
-+++ b/drivers/net/wireless/rtlwifi/base.c
-@@ -1293,7 +1293,7 @@ void rtl_beacon_statistic(struct ieee80211_hw *hw, struct sk_buff *skb)
- 		return;
- 
- 	/* and only beacons from the associated BSSID, please */
--	if (!ether_addr_equal(hdr->addr3, rtlpriv->mac80211.bssid))
-+	if (!ether_addr_equal_64bits(hdr->addr3, rtlpriv->mac80211.bssid))
- 		return;
- 
- 	rtlpriv->link_info.bcn_rx_inperiod++;
-@@ -1781,7 +1781,7 @@ void rtl_recognize_peer(struct ieee80211_hw *hw, u8 *data, unsigned int len)
- 		return;
- 
- 	/* and only beacons from the associated BSSID, please */
--	if (!ether_addr_equal(hdr->addr3, rtlpriv->mac80211.bssid))
-+	if (!ether_addr_equal_64bits(hdr->addr3, rtlpriv->mac80211.bssid))
- 		return;
- 
- 	if (rtl_find_221_ie(hw, data, len))
+ static inline void mwl8k_save_beacon(struct ieee80211_hw *hw,
 
