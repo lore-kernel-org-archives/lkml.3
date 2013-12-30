@@ -1,40 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161Ab3L3TkH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 14:40:07 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:45748 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932094Ab3L3TkF convert rfc822-to-8bit (ORCPT
+	id S932180Ab3L3T7B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 14:59:01 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:56920 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932094Ab3L3T67 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 14:40:05 -0500
-References: <cover.1388409686.git.liwang@ubuntukylin.com> <52C1C6F7.8010809@intel.com>
-Mime-Version: 1.0 (1.0)
-In-Reply-To: <52C1C6F7.8010809@intel.com>
-Content-Type: text/plain;
-	charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Message-Id: <FFE7C704-791E-4B73-9251-EFB9135AB254@dilger.ca>
-Cc: Li Wang <liwang@ubuntukylin.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>, Zefan Li <lizefan@huawei.com>,
-        Matthew Wilcox <matthew@wil.cx>
-X-Mailer: iPhone Mail (11B554a)
-From: Andreas Dilger <adilger@dilger.ca>
-Subject: Re: [PATCH 0/3] Fadvise: Directory level page cache cleaning support
-Date: Mon, 30 Dec 2013 12:40:05 -0700
-To: Dave Hansen <dave.hansen@intel.com>
+	Mon, 30 Dec 2013 14:58:59 -0500
+X-IronPort-AV: E=Sophos;i="4.95,575,1384297200"; 
+   d="scan'208";a="51042059"
+Date: Mon, 30 Dec 2013 20:58:55 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Johannes Berg <johannes@sipsolutions.net>
+cc: Julia Lawall <Julia.Lawall@lip6.fr>, kernel-janitors@vger.kernel.org,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/11]  use ether_addr_equal_64bits
+In-Reply-To: <1388429761.4410.1.camel@jlt4.sipsolutions.net>
+Message-ID: <alpine.DEB.2.02.1312302057420.2209@localhost6.localdomain6>
+References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>  <1388427307-8691-5-git-send-email-Julia.Lawall@lip6.fr>  (sfid-20131230_182319_112673_F481A1D3) <1388429761.4410.1.camel@jlt4.sipsolutions.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dec 30, 2013, at 12:18, Dave Hansen <dave.hansen@intel.com> wrote:
-> 
-> Why is this necessary to do in the kernel?  Why not leave it to
-> userspace to walk the filesystem(s)?
+> Seems to be missing an "iwlwifi:" or so prefix, but I guess we can add
+> it when we take the patch ...
 
-I would suspect that trying to do it in userspace would be quite bad. It would require traversing the whole directory tree to issue cache flushed for each subdirectory, but it doesn't know when to stop traversal. That would mean the "cache flush" would turn into "cache pollute" and cause a lot of disk IO for subdirectories not in cache to begin with. 
+Sorry.  Not sure why that happened.  I'll look into it.
 
-Cheers, Andreas
+> Is there any way we could catch (sparse, or some other script?) that
+> struct reorganising won't break the condition needed ("within a
+> structure that contains at least two more bytes")?
+
+What kind of reorganizing could happen?  Do you mean that the programmer 
+might do at some time in the future, or something the compiler might do?
+
+julia
