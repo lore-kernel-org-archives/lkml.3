@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088Ab3L3Nps (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 08:45:48 -0500
-Received: from mail-we0-f175.google.com ([74.125.82.175]:40285 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755604Ab3L3NpE (ORCPT
+	id S932139Ab3L3NqM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 08:46:12 -0500
+Received: from m59-178.qiye.163.com ([123.58.178.59]:38323 "EHLO
+	m59-178.qiye.163.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756092Ab3L3NqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 08:45:04 -0500
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-To: mingo@redhat.com, peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: [PATCH 6/7] sched: pass struct rq to nohz_idle_balance function
-Date: Mon, 30 Dec 2013 14:44:52 +0100
-Message-Id: <1388411093-3413-7-git-send-email-daniel.lezcano@linaro.org>
+	Mon, 30 Dec 2013 08:46:03 -0500
+From: Li Wang <liwang@ubuntukylin.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>, Zefan Li <lizefan@huawei.com>,
+        Matthew Wilcox <matthew@wil.cx>, Li Wang <liwang@ubuntukylin.com>,
+        Yunchuan Wen <yunchuanwen@ubuntukylin.com>
+Subject: [PATCH 1/3] VFS: Add the declaration of shrink_pagecache_parent
+Date: Mon, 30 Dec 2013 21:45:16 +0800
+Message-Id: <110dae9d100e1a7221627fb9890c1c10d70ec3b1.1388409687.git.liwang@ubuntukylin.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1388411093-3413-1-git-send-email-daniel.lezcano@linaro.org>
-References: <1388411093-3413-1-git-send-email-daniel.lezcano@linaro.org>
+In-Reply-To: <cover.1388409686.git.liwang@ubuntukylin.com>
+References: <cover.1388409686.git.liwang@ubuntukylin.com>
+In-Reply-To: <cover.1388409686.git.liwang@ubuntukylin.com>
+References: <cover.1388409686.git.liwang@ubuntukylin.com>
+X-HM-Spam-Status: e1koWUFPN1dZCBgUCR5ZQU5VTk5LS0tLSkJLTEhPQ01IV1kJDhceCFlBWS
+	grPSQrOigoJDI1JDM#Oj8#KUFLVUtANiMkIj4oJDI1JDM#Oj8#KUFLVUtAKy8pJDU0JDI1JDM#Oj
+	8#KUFJVUtAODQuNS8pIiQ4NUFLVUtAKT48MjQ1JDooMjpBS1VLQCspNC0yNTg#JDMuNTo1QUtVS0
+	A*IjU6NjI4JDIrJDU0JDI1JDM#Oj8#KUFLVUtANi43LzIkKTgrLyQ*Mj09Pik#NS8kMjUkMz46Pz
+	4pQUlVS0AyKyQvND86IiQ4NS8kSyRKS0tBS1VLQDIrJE4kNjI1Li8#JDg1LyRLJEpLQUtVS0AyKy
+	RKJDYyNS4vPiQ4NS8kSyRKS0FLVUtAMiskSiQzNC4pJDg1LyRLJEpLS0FLVUtAMiskSEskNjI1Li
+	8#JDg1LyRLJE5LQUtVS0AoLjkkPkFKVU5OWQY+
+X-HM-Sender-Digest: e1kSHx4VD1lBWUc6MQg6Cjo4LDo4EDorKjhIOj4qOkMwCjFVSlVKSEND
+	T0pKSk5OT0tCVTMWGhIXVRcSDBoVHDsOGQ4VDw4QAhcSFVUYFBZFWVdZDB4ZWUEdGhcIHldZCAFZ
+	QUlPS043V1kSC1lBWUpKQlVIQlVKSU9VSkxLWQY+
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cpu information is stored in the struct rq. Pass the struct rq to
-nohz_idle_balance, so all the functions called in run_rebalance_domains have
-the same parameters and the 'this_cpu' variable becomes pointless.
 
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Signed-off-by: Li Wang <liwang@ubuntukylin.com>
+Signed-off-by: Yunchuan Wen <yunchuanwen@ubuntukylin.com>
 ---
- kernel/sched/fair.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ include/linux/dcache.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 0fbd8d0..59c57e7 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -6733,9 +6733,9 @@ out:
-  * In CONFIG_NO_HZ_COMMON case, the idle balance kickee will do the
-  * rebalancing for all the cpus for whom scheduler ticks are stopped.
-  */
--static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle)
-+static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle)
- {
--	struct rq *this_rq = cpu_rq(this_cpu);
-+	int this_cpu = this_rq->cpu;
- 	struct rq *rq;
- 	int balance_cpu;
+diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+index bf72e9a..6262171 100644
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -249,6 +249,7 @@ extern struct dentry *d_find_any_alias(struct inode *inode);
+ extern struct dentry * d_obtain_alias(struct inode *);
+ extern void shrink_dcache_sb(struct super_block *);
+ extern void shrink_dcache_parent(struct dentry *);
++extern void shrink_pagecache_parent(struct dentry *);
+ extern void shrink_dcache_for_umount(struct super_block *);
+ extern int d_invalidate(struct dentry *);
  
-@@ -6846,8 +6846,7 @@ static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle) { }
-  */
- static void run_rebalance_domains(struct softirq_action *h)
- {
--	int this_cpu = smp_processor_id();
--	struct rq *this_rq = cpu_rq(this_cpu);
-+	struct rq *this_rq = this_rq();
- 	enum cpu_idle_type idle = this_rq->idle_balance ?
- 						CPU_IDLE : CPU_NOT_IDLE;
- 
-@@ -6858,7 +6857,7 @@ static void run_rebalance_domains(struct softirq_action *h)
- 	 * balancing on behalf of the other idle cpus whose ticks are
- 	 * stopped.
- 	 */
--	nohz_idle_balance(this_cpu, idle);
-+	nohz_idle_balance(this_rq, idle);
- }
- 
- static inline int on_null_domain(struct rq *rq)
 -- 
 1.7.9.5
 
