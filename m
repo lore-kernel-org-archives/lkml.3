@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015Ab3L3KWx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 05:22:53 -0500
-Received: from mail-we0-f178.google.com ([74.125.82.178]:43778 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755743Ab3L3KUB (ORCPT
+	id S1756045Ab3L3KXX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 05:23:23 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:36912 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755700Ab3L3KT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 05:20:01 -0500
+	Mon, 30 Dec 2013 05:19:58 -0500
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: mingo@kernel.org, tglx@linutronix.de
 Cc: axel.lin@ingics.com, ezequiel.garcia@free-electrons.com,
@@ -14,9 +14,9 @@ Cc: axel.lin@ingics.com, ezequiel.garcia@free-electrons.com,
         linus.walleij@linaro.org, maxime.ripard@free-electrons.com,
         michael.opdenacker@free-electrons.com, sboyd@codeaurora.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 11/20] clocksource: orion: Switch to sched_clock_register()
-Date: Mon, 30 Dec 2013 11:19:30 +0100
-Message-Id: <1388398779-11222-11-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 09/20] clocksource: cadence_ttc_timer: Switch to sched_clock_register()
+Date: Mon, 30 Dec 2013 11:19:28 +0100
+Message-Id: <1388398779-11222-9-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1388398779-11222-1-git-send-email-daniel.lezcano@linaro.org>
 References: <52C1479E.80808@linaro.org>
@@ -31,36 +31,37 @@ The 32 bit sched_clock interface now supports 64 bits. Upgrade to
 the 64 bit function to allow us to remove the 32 bit registration
 interface.
 
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Tested-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Michal Simek <monstr@monstr.eu>
+Tested-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- drivers/clocksource/time-orion.c |    4 ++--
+ drivers/clocksource/cadence_ttc_timer.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/clocksource/time-orion.c b/drivers/clocksource/time-orion.c
-index 9c7f018..2006622 100644
---- a/drivers/clocksource/time-orion.c
-+++ b/drivers/clocksource/time-orion.c
-@@ -53,7 +53,7 @@ EXPORT_SYMBOL(orion_timer_ctrl_clrset);
- /*
-  * Free-running clocksource handling.
-  */
--static u32 notrace orion_read_sched_clock(void)
-+static u64 notrace orion_read_sched_clock(void)
- {
- 	return ~readl(timer_base + TIMER0_VAL);
+diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
+index b2bb3a4b..b865b4e 100644
+--- a/drivers/clocksource/cadence_ttc_timer.c
++++ b/drivers/clocksource/cadence_ttc_timer.c
+@@ -158,7 +158,7 @@ static cycle_t __ttc_clocksource_read(struct clocksource *cs)
+ 				TTC_COUNT_VAL_OFFSET);
  }
-@@ -135,7 +135,7 @@ static void __init orion_timer_init(struct device_node *np)
- 	clocksource_mmio_init(timer_base + TIMER0_VAL, "orion_clocksource",
- 			      clk_get_rate(clk), 300, 32,
- 			      clocksource_mmio_readl_down);
--	setup_sched_clock(orion_read_sched_clock, 32, clk_get_rate(clk));
-+	sched_clock_register(orion_read_sched_clock, 32, clk_get_rate(clk));
  
- 	/* setup timer1 as clockevent timer */
- 	if (setup_irq(irq, &orion_clkevt_irq))
+-static u32 notrace ttc_sched_clock_read(void)
++static u64 notrace ttc_sched_clock_read(void)
+ {
+ 	return __raw_readl(ttc_sched_clock_val_reg);
+ }
+@@ -306,7 +306,7 @@ static void __init ttc_setup_clocksource(struct clk *clk, void __iomem *base)
+ 	}
+ 
+ 	ttc_sched_clock_val_reg = base + TTC_COUNT_VAL_OFFSET;
+-	setup_sched_clock(ttc_sched_clock_read, 16,
++	sched_clock_register(ttc_sched_clock_read, 16,
+ 			clk_get_rate(ttccs->ttc.clk) / PRESCALE);
+ }
+ 
 -- 
 1.7.9.5
 
