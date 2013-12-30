@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756217Ab3L3Vdo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 16:33:44 -0500
-Received: from mga02.intel.com ([134.134.136.20]:4903 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755518Ab3L3Vdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 16:33:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,576,1384329600"; 
-   d="scan'208";a="431873657"
-Message-ID: <52C1E6B1.4010402@intel.com>
-Date: Mon, 30 Dec 2013 13:33:37 -0800
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S932291Ab3L3ViD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 16:38:03 -0500
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:33791 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932222Ab3L3ViA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Dec 2013 16:38:00 -0500
+Date: Mon, 30 Dec 2013 13:37:54 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Ingo Molnar <mingo@kernel.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>, peterz@infradead.org,
+        Andrew Morton <akpm@linux-foundation.org>, linux@arm.linux.org.uk,
+        ralf@linux-mips.org, tglx@linutronix.de,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        arjan@linux.intel.com, james.hogan@imgtec.com,
+        Michal Marek <mmarek@suse.cz>, lethal@linux-sh.org,
+        shawn.guo@linaro.org, Kees Cook <keescook@chromium.org>,
+        sfr@canb.auug.org.au, linux-kbuild@vger.kernel.org,
+        linux-tip-commits@vger.kernel.org
+Subject: [patch core/stackprotector] stackprotector: Fix build when compiler
+ lacks support
+In-Reply-To: <tip-8779657d29c0ebcc0c94ede4df2f497baf1b563f@git.kernel.org>
+Message-ID: <alpine.DEB.2.02.1312301331520.10482@chino.kir.corp.google.com>
+References: <1387481759-14535-3-git-send-email-keescook@chromium.org> <tip-8779657d29c0ebcc0c94ede4df2f497baf1b563f@git.kernel.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Andreas Dilger <adilger@dilger.ca>
-CC: Li Wang <liwang@ubuntukylin.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>, Zefan Li <lizefan@huawei.com>,
-        Matthew Wilcox <matthew@wil.cx>
-Subject: Re: [PATCH 0/3] Fadvise: Directory level page cache cleaning support
-References: <cover.1388409686.git.liwang@ubuntukylin.com> <52C1C6F7.8010809@intel.com> <FFE7C704-791E-4B73-9251-EFB9135AB254@dilger.ca>
-In-Reply-To: <FFE7C704-791E-4B73-9251-EFB9135AB254@dilger.ca>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-1315487975-1388439477=:10482"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/30/2013 11:40 AM, Andreas Dilger wrote:
-> On Dec 30, 2013, at 12:18, Dave Hansen <dave.hansen@intel.com> wrote:
->> Why is this necessary to do in the kernel?  Why not leave it to
->> userspace to walk the filesystem(s)?
-> 
-> I would suspect that trying to do it in userspace would be quite bad. It would require traversing the whole directory tree to issue cache flushed for each subdirectory, but it doesn't know when to stop traversal. That would mean the "cache flush" would turn into "cache pollute" and cause a lot of disk IO for subdirectories not in cache to begin with. 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-That makes sense for dentries at least and is a pretty good reason.
-Probably good enough to to include some text in the patch description.
-;)  Perhaps: "We need this interface because we have no way of
-determining what is in the dcache from userspace, and we do not want
-userspace to pollute the dcache going and looking for page cache to evict."
+--531381512-1315487975-1388439477=:10482
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 
-One other thing that bothers me: POSIX_FADV_DONTNEED on a directory
-seems like it should do something with the _directory_.  It should undo
-the kernel's caching that happens as a result of readdir().
+8779657d29c0 ("stackprotector: Introduce CONFIG_CC_STACKPROTECTOR_STRONG") 
+causes the build to break when the compiler doesn't support 
+-fstack-protector-strong:
 
-Should this also be trying to drop the dentry/inode entries like "echo 2
-> .../drop_caches" does?
+	cc1: error: unrecognized command line option ‘-fstack-protector-strong’
+	cc1: error: unrecognized command line option ‘-fstack-protector-strong’
+
+with at least gcc 4.6.3.
+
+Instead of breaking the build, just warn of the failure and disable the 
+feature.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ Makefile | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+--- a/Makefile
++++ b/Makefile
+@@ -603,10 +603,11 @@ ifdef CONFIG_CC_STACKPROTECTOR_REGULAR
+ 	      -fstack-protector not supported by compiler))
+   endif
+ else ifdef CONFIG_CC_STACKPROTECTOR_STRONG
+-  stackp-flag := -fstack-protector-strong
+-  ifeq ($(call cc-option, $(stackp-flag)),)
++  ifeq ($(call cc-option, -fstack-protector-strong),)
+     $(warning Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: \
+ 	      -fstack-protector-strong not supported by compiler)
++  else
++    stackp-flag := -fstack-protector-strong
+   endif
+ else
+   # Force off for distro compilers that enable stack protector by default.
+--531381512-1315487975-1388439477=:10482--
