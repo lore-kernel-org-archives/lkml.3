@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751395Ab3L3GFc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 01:05:32 -0500
-Received: from smtprelay0252.hostedemail.com ([216.40.44.252]:55096 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751311Ab3L3GF3 (ORCPT
+	id S1751438Ab3L3GHG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 01:07:06 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:53651 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092Ab3L3GHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 01:05:29 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2194:2199:2393:2559:2562:2692:2828:3138:3139:3140:3141:3142:3350:3622:3865:3868:3871:3873:3874:4250:4321:5007:7652:10004:10400:10481:10848:11026:11232:11658:11914:12043:12438:12517:12519:12740:13069:13076:13311:13357:19900,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: sound45_4caaccbc68529
-X-Filterd-Recvd-Size: 1770
-Message-ID: <1388383526.26796.21.camel@joe-AO722>
-Subject: Re: [PATCH net-next v2 11/20] net: packetengines: slight
- optimization of addr
-From: Joe Perches <joe@perches.com>
-To: Ding Tianhong <dingtianhong@huawei.com>
-Cc: Ding Tianhong <dthxman@gmail.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sun, 29 Dec 2013 22:05:26 -0800
-In-Reply-To: <52C0DCF7.6040402@huawei.com>
-References: <52BE6D0D.9050301@huawei.com>
-	 <52BED8ED.2040908@cogentembedded.com> <52BEEBD5.1040301@gmail.com>
-	 <1388251380.24123.15.camel@joe-AO722> <52C0DCF7.6040402@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 30 Dec 2013 01:07:04 -0500
+X-Greylist: delayed 493 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Dec 2013 01:07:04 EST
+From: Alex Elder <alex.elder@linaro.org>
+To: mike.turquette@linaro.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] clk: support hardware-specific debugfs entries
+Date: Sun, 29 Dec 2013 23:58:50 -0600
+Message-Id: <1388383130-8029-1-git-send-email-elder@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-12-30 at 10:39 +0800, Ding Tianhong wrote:
-> I don't understand packetengine NIC anymore, But I think the change is clearly,
-> as your said, the broadcast check is enough here, did you mean that?
-> 
-> 	!is_broadcast_ether_addr((u8 *)(le32_to_cpu(yp->rx_ring_dma) +
-> 						    entry * sizeof(struct yellowfin_desc)))
+Add a new clk_ops->debug_init method to allow a clock hardware
+driver to populate the clock's debugfs directory with entries
+beyond those common for every clock.
 
-Not quite.  I meant this could be:
+Signed-off-by: Alex Elder <elder@linaro.org>
+---
+v2: - Define debug_init unconditionally (suggested by Gerhard Sittig).
 
-		u8 *addr = (u8 *)(unsigned long)le32_to_cpu(yp->rx_ring_dma) +
-							    entry * sizeof(struct yellowfin_desc);
+ drivers/clk/clk.c            |    4 ++++
+ include/linux/clk-provider.h |    8 ++++++++
+ 2 files changed, 12 insertions(+)
 
-		if (!ether_addr_equal(addr, dev->dev_addr) &&
-		    !is_broadcast_ether_addr(addr)) {
-			etc...
-
-but again, I think thus hardly matters and could just as well
-be left alone.
-
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 2cf2ea6..c82a1bc 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -268,6 +268,10 @@ static int clk_debug_create_one(struct clk *clk, struct dentry *pdentry)
+ 	if (!d)
+ 		goto err_out;
+ 
++	if (clk->ops->debug_init)
++		if (clk->ops->debug_init(clk->hw, clk->dentry))
++			goto err_out;
++
+ 	ret = 0;
+ 	goto out;
+ 
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 7e59253..76ba2b2 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -31,6 +31,7 @@
+ #define CLK_SET_RATE_NO_REPARENT BIT(7) /* don't re-parent on rate change */
+ 
+ struct clk_hw;
++struct dentry;
+ 
+ /**
+  * struct clk_ops -  Callback operations for hardware clocks; these are to
+@@ -108,6 +109,12 @@ struct clk_hw;
+  *		which is likely helpful for most .set_rate implementation.
+  *		Returns 0 on success, -EERROR otherwise.
+  *
++ * @debug_init:	Set up type-specific debugfs entries for this clock.  This
++ *		is called once, after the debugfs directory entry for this
++ *		clock has been created.  The dentry pointer representing that
++ *		directory is provided as an argument.  Called with
++ *		prepare_lock held.  Returns 0 on success, -EERROR otherwise.
++ *
+  * The clk_enable/clk_disable and clk_prepare/clk_unprepare pairs allow
+  * implementations to split any work between atomic (enable) and sleepable
+  * (prepare) contexts.  If enabling a clock requires code that might sleep,
+@@ -140,6 +147,7 @@ struct clk_ops {
+ 	int		(*set_rate)(struct clk_hw *hw, unsigned long,
+ 				    unsigned long);
+ 	void		(*init)(struct clk_hw *hw);
++	int		(*debug_init)(struct clk_hw *hw, struct dentry *dentry);
+ };
+ 
+ /**
+-- 
+1.7.9.5
 
