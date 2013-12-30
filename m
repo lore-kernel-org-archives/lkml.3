@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168Ab3L3SFo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 13:05:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10679 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755634Ab3L3SFn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 13:05:43 -0500
-Date: Mon, 30 Dec 2013 19:06:00 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        John Johansen <john.johansen@canonical.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH 4/5] audit: anchor all pid references in the initial
-	pid namespace
-Message-ID: <20131230180600.GD2457@redhat.com>
-References: <cover.1387834776.git.rgb@redhat.com> <fec6d7e2e6d122393eab994c848f9e37639352c2.1387834776.git.rgb@redhat.com>
+	id S1756199Ab3L3SK2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 13:10:28 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:33899 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755867Ab3L3SK0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Dec 2013 13:10:26 -0500
+From: Christian Lamparter <chunkeey@googlemail.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: kernel-janitors@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/11] mac80211: use ether_addr_equal_64bits
+Date: Mon, 30 Dec 2013 10:10:10 -0800 (PST)
+Message-ID: <1458346.msaUrcf9Zq@debian64>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc4-wl+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <1388427307-8691-4-git-send-email-Julia.Lawall@lip6.fr>
+References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr> <1388427307-8691-4-git-send-email-Julia.Lawall@lip6.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <fec6d7e2e6d122393eab994c848f9e37639352c2.1387834776.git.rgb@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23, Richard Guy Briggs wrote:
->
-> Store and log all PIDs with reference to the initial PID namespace and
-> use the access functions task_pid_nr() and task_tgid_nr() for task->pid
-> and task->tgid rather than access them directly.
+Subject: p54: use ether_addr_equal_64bits
 
-At first glance this patch looks like a good cleanup, but...
+On Monday, December 30, 2013 07:14:59 PM you wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Ether_addr_equal_64bits is more efficient than ether_addr_equal, and can be
+> used when each argument is an array within a structure that contains at
+> least two bytes of data beyond the array.
+> 
+> The structures involved are:
+> ieee80211_hdr defined in include/linux/ieee80211.h and
+> p54_common defined in drivers/net/wireless/p54/p54.h
+> 
+> This was done using Coccinelle (http://coccinelle.lip6.fr/).
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-> @@ -429,6 +429,19 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
->  			f->val = 0;
->  		}
->
-> +		if ((f->type == AUDIT_PID) || (f->type == AUDIT_PPID)) {
-> +			struct pid *pid;
-> +			rcu_read_lock();
-> +			pid = find_vpid(f->val);
-> +			if (!pid) {
-> +				rcu_read_unlock();
-> +				err = -ESRCH;
-> +				goto exit_free;
-> +			}
-> +			f->val = pid_nr(pid);
-> +			rcu_read_unlock();
-> +		}
+Alright, I changed the subject to "p54: ..." (John, can you do that, or do
+you want another patch?). Since this has not much to do with mac80211. 
 
-I do not really understand this change, but this doesn't matter, I do
-not understand audit.
+Acked-by: Christian Lamparter <chunkeey@googlemail.com>
 
-However, I think this deserves a separate patch with the changelog.
+Regards,
 
-> @@ -278,9 +278,12 @@ static void dump_common_audit_data(struct audit_buffer *ab,
->  	}
->  	case LSM_AUDIT_DATA_TASK:
->  		tsk = a->u.tsk;
-> -		if (tsk && tsk->pid) {
-> -			audit_log_format(ab, " pid=%d comm=", tsk->pid);
-> -			audit_log_untrustedstring(ab, tsk->comm);
-> +		if (tsk) {
-> +			pid_t pid = task_pid_nr(tsk);
-> +			if (pid) {
-> +				audit_log_format(ab, " pid=%d comm=", pid);
-> +				audit_log_untrustedstring(ab, tsk->comm);
-
-Just curious, is it really possible that a->u.tsk is an idle thread?
-
-Oleg.
-
+Christian
