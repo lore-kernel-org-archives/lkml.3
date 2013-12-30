@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751730Ab3L3Hkq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 02:40:46 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:25788 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611Ab3L3Hko (ORCPT
+	id S1754243Ab3L3HlM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 02:41:12 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:45888 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431Ab3L3HlJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 02:40:44 -0500
-Message-ID: <52C12370.60408@huawei.com>
-Date: Mon, 30 Dec 2013 15:40:32 +0800
+	Mon, 30 Dec 2013 02:41:09 -0500
+Message-ID: <52C12373.1010502@huawei.com>
+Date: Mon, 30 Dec 2013 15:40:35 +0800
 From: Ding Tianhong <dingtianhong@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Ariel Elior <ariele@broadcom.com>, "David S. Miller" <davem@davemloft.net>,
+To: Santosh Raspatur <santosh@chelsio.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>
-Subject: [PATCH net-next v3 02/19] net: bnx2x: slight optimization of addr
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH net-next v3 03/19] net: cxgb3: slight optimization of addr
  compare
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
@@ -26,86 +26,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the possibly more efficient ether_addr_equal or
-ether_addr_equal_unaligned to instead of memcmp.
+Use possibly more efficient ether_addr_equal
+to instead of memcmp.
 
-Cc: Ariel Elior <ariele@broadcom.com>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Santosh Raspatur <santosh@chelsio.com>
 Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 ---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c    | 10 ++++------
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c |  2 +-
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_vfpf.c  |  2 +-
- 3 files changed, 6 insertions(+), 8 deletions(-)
+ drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c | 2 +-
+ drivers/net/ethernet/chelsio/cxgb3/l2t.c           | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c
-index 32c92ab..a83c67c 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c
-@@ -663,7 +663,7 @@ static int bnx2x_check_mac_add(struct bnx2x *bp,
+diff --git a/drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c b/drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c
+index 76ae0999..c0a9dd5 100644
+--- a/drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c
++++ b/drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c
+@@ -182,7 +182,7 @@ static struct net_device *get_iff_from_mac(struct adapter *adapter,
+ 	for_each_port(adapter, i) {
+ 		struct net_device *dev = adapter->port[i];
  
- 	/* Check if a requested MAC already exists */
- 	list_for_each_entry(pos, &o->head, link)
--		if (!memcmp(data->mac.mac, pos->u.mac.mac, ETH_ALEN) &&
-+		if (ether_addr_equal(data->mac.mac, pos->u.mac.mac) &&
- 		    (data->mac.is_inner_mac == pos->u.mac.is_inner_mac))
- 			return -EEXIST;
- 
-@@ -696,8 +696,7 @@ static int bnx2x_check_vlan_mac_add(struct bnx2x *bp,
- 
- 	list_for_each_entry(pos, &o->head, link)
- 		if ((data->vlan_mac.vlan == pos->u.vlan_mac.vlan) &&
--		    (!memcmp(data->vlan_mac.mac, pos->u.vlan_mac.mac,
--				  ETH_ALEN)) &&
-+		    ether_addr_equal_unaligned(data->vlan_mac.mac, pos->u.vlan_mac.mac) &&
- 		    (data->vlan_mac.is_inner_mac ==
- 		     pos->u.vlan_mac.is_inner_mac))
- 			return -EEXIST;
-@@ -716,7 +715,7 @@ static struct bnx2x_vlan_mac_registry_elem *
- 	DP(BNX2X_MSG_SP, "Checking MAC %pM for DEL command\n", data->mac.mac);
- 
- 	list_for_each_entry(pos, &o->head, link)
--		if ((!memcmp(data->mac.mac, pos->u.mac.mac, ETH_ALEN)) &&
-+		if (ether_addr_equal(data->mac.mac, pos->u.mac.mac) &&
- 		    (data->mac.is_inner_mac == pos->u.mac.is_inner_mac))
- 			return pos;
- 
-@@ -751,8 +750,7 @@ static struct bnx2x_vlan_mac_registry_elem *
- 
- 	list_for_each_entry(pos, &o->head, link)
- 		if ((data->vlan_mac.vlan == pos->u.vlan_mac.vlan) &&
--		    (!memcmp(data->vlan_mac.mac, pos->u.vlan_mac.mac,
--			     ETH_ALEN)) &&
-+		    ether_addr_equal_unaligned(data->vlan_mac.mac, pos->u.vlan_mac.mac) &&
- 		    (data->vlan_mac.is_inner_mac ==
- 		     pos->u.vlan_mac.is_inner_mac))
- 			return pos;
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c
-index 2e46c28..040276b 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c
-@@ -3605,7 +3605,7 @@ enum sample_bulletin_result bnx2x_sample_bulletin(struct bnx2x *bp)
- 
- 	/* the mac address in bulletin board is valid and is new */
- 	if (bulletin.valid_bitmap & 1 << MAC_ADDR_VALID &&
--	    memcmp(bulletin.mac, bp->old_bulletin.mac, ETH_ALEN)) {
-+	    !ether_addr_equal(bulletin.mac, bp->old_bulletin.mac)) {
- 		/* update new mac to net device */
- 		memcpy(bp->dev->dev_addr, bulletin.mac, ETH_ALEN);
+-		if (!memcmp(dev->dev_addr, mac, ETH_ALEN)) {
++		if (ether_addr_equal(dev->dev_addr, mac)) {
+ 			rcu_read_lock();
+ 			if (vlan && vlan != VLAN_VID_MASK) {
+ 				dev = __vlan_find_dev_deep(dev, htons(ETH_P_8021Q), vlan);
+diff --git a/drivers/net/ethernet/chelsio/cxgb3/l2t.c b/drivers/net/ethernet/chelsio/cxgb3/l2t.c
+index 8d53438..5f226ed 100644
+--- a/drivers/net/ethernet/chelsio/cxgb3/l2t.c
++++ b/drivers/net/ethernet/chelsio/cxgb3/l2t.c
+@@ -429,7 +429,7 @@ found:
+ 		} else {
+ 			e->state = neigh->nud_state & NUD_CONNECTED ?
+ 			    L2T_STATE_VALID : L2T_STATE_STALE;
+-			if (memcmp(e->dmac, neigh->ha, 6))
++			if (!ether_addr_equal(e->dmac, neigh->ha))
+ 				setup_l2e_send_pending(dev, NULL, e);
+ 		}
  	}
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_vfpf.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_vfpf.c
-index efa8a15..4d2ae15 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_vfpf.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_vfpf.c
-@@ -1702,7 +1702,7 @@ static void bnx2x_vf_mbx_set_q_filters(struct bnx2x *bp,
- 
- 		/* ...and only the mac set by the ndo */
- 		if (filters->n_mac_vlan_filters == 1 &&
--		    memcmp(filters->filters->mac, bulletin->mac, ETH_ALEN)) {
-+		    !ether_addr_equal(filters->filters->mac, bulletin->mac)) {
- 			BNX2X_ERR("VF[%d] requested the addition of a mac address not matching the one configured by set_vf_mac ndo\n",
- 				  vf->abs_vfid);
- 
 -- 
 1.8.0
 
