@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751669Ab3L3HeH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 02:34:07 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:60998 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567Ab3L3HeD (ORCPT
+	id S1751823Ab3L3HeW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 02:34:22 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:35076 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614Ab3L3HeG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 02:34:03 -0500
+	Mon, 30 Dec 2013 02:34:06 -0500
 From: Ramkumar Ramachandra <artagnon@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH v6 3/4] perf diff: color the Ratio column
-Date: Mon, 30 Dec 2013 13:04:20 +0530
-Message-Id: <1388388861-7931-4-git-send-email-artagnon@gmail.com>
+Subject: [PATCH v6 4/4] perf diff: color the Weighted Diff column
+Date: Mon, 30 Dec 2013 13:04:21 +0530
+Message-Id: <1388388861-7931-5-git-send-email-artagnon@gmail.com>
 X-Mailer: git-send-email 1.8.5.2.227.g53f3478
 In-Reply-To: <1388388861-7931-1-git-send-email-artagnon@gmail.com>
 References: <1388388861-7931-1-git-send-email-artagnon@gmail.com>
@@ -22,108 +22,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 In
 
-  $ perf diff -c ratio
+  $ perf diff -c wdiff:M,N
 
-color the Ratio column using value_color_snprintf(), a new function that
-operates exactly like percent_color_snprintf(). At first glance, it
-looks like percent_color_snprintf() can be turned into a non-variadic
-function simplifying things; however, 53805ec (perf tools: Remove cast
-of non-variadic function to variadic, 2013-10-31) explains why it needs
-to be a variadic function.
+color the numbers in the Weighted Diff column using
+value_color_snprintf().
 
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
 ---
- tools/perf/builtin-diff.c | 20 ++++++++++++++++++++
- tools/perf/util/color.c   | 10 +++++++---
- tools/perf/util/color.h   |  1 +
- 3 files changed, 28 insertions(+), 3 deletions(-)
+ tools/perf/builtin-diff.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
 diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index a8fc525..c07cd3c 100644
+index c07cd3c..9c69620 100644
 --- a/tools/perf/builtin-diff.c
 +++ b/tools/perf/builtin-diff.c
-@@ -794,6 +794,17 @@ static int __hpp__color_compare(struct perf_hpp_fmt *fmt,
- 		scnprintf(pfmt, 20, "%%%+d.2f%%%%", dfmt->header_width - 1);
- 		return percent_color_snprintf(hpp->buf, hpp->size,
+@@ -777,6 +777,7 @@ static int __hpp__color_compare(struct perf_hpp_fmt *fmt,
+ 		container_of(fmt, struct diff_hpp_fmt, fmt);
+ 	struct hist_entry *pair = get_pair_fmt(he, dfmt);
+ 	double diff;
++	s64 wdiff;
+ 	char pfmt[20] = " ";
+ 
+ 	if (!pair)
+@@ -805,6 +806,17 @@ static int __hpp__color_compare(struct perf_hpp_fmt *fmt,
+ 		scnprintf(pfmt, 20, "%%%d.6f", dfmt->header_width);
+ 		return value_color_snprintf(hpp->buf, hpp->size,
  					pfmt, diff);
-+	case COMPUTE_RATIO:
++	case COMPUTE_WEIGHTED_DIFF:
 +		if (he->dummy)
 +			goto dummy_print;
 +		if (pair->diff.computed)
-+			diff = pair->diff.period_ratio;
++			wdiff = pair->diff.wdiff;
 +		else
-+			diff = compute_ratio(he, pair);
++			wdiff = compute_wdiff(he, pair);
 +
-+		scnprintf(pfmt, 20, "%%%d.6f", dfmt->header_width);
++		scnprintf(pfmt, 20, "%%14ld", dfmt->header_width);
 +		return value_color_snprintf(hpp->buf, hpp->size,
-+					pfmt, diff);
++					pfmt, wdiff);
  	default:
  		BUG_ON(1);
  	}
-@@ -808,6 +819,12 @@ static int hpp__color_delta(struct perf_hpp_fmt *fmt,
- 	return __hpp__color_compare(fmt, hpp, he, COMPUTE_DELTA);
+@@ -825,6 +837,12 @@ static int hpp__color_ratio(struct perf_hpp_fmt *fmt,
+ 	return __hpp__color_compare(fmt, hpp, he, COMPUTE_RATIO);
  }
  
-+static int hpp__color_ratio(struct perf_hpp_fmt *fmt,
++static int hpp__color_wdiff(struct perf_hpp_fmt *fmt,
 +			struct perf_hpp *hpp, struct hist_entry *he)
 +{
-+	return __hpp__color_compare(fmt, hpp, he, COMPUTE_RATIO);
++	return __hpp__color_compare(fmt, hpp, he, COMPUTE_WEIGHTED_DIFF);
 +}
 +
  static void
  hpp__entry_unpair(struct hist_entry *he, int idx, char *buf, size_t size)
  {
-@@ -986,6 +1003,9 @@ static void data__hpp_register(struct data__file *d, int idx)
- 	case PERF_HPP_DIFF__DELTA:
- 		fmt->color = hpp__color_delta;
+@@ -1006,6 +1024,9 @@ static void data__hpp_register(struct data__file *d, int idx)
+ 	case PERF_HPP_DIFF__RATIO:
+ 		fmt->color = hpp__color_ratio;
  		break;
-+	case PERF_HPP_DIFF__RATIO:
-+		fmt->color = hpp__color_ratio;
++	case PERF_HPP_DIFF__WEIGHTED_DIFF:
++		fmt->color = hpp__color_wdiff;
 +		break;
  	default:
  		break;
  	}
-diff --git a/tools/perf/util/color.c b/tools/perf/util/color.c
-index 8cda46c..87b8672 100644
---- a/tools/perf/util/color.c
-+++ b/tools/perf/util/color.c
-@@ -319,15 +319,19 @@ int percent_color_fprintf(FILE *fp, const char *fmt, double percent)
- 	return r;
- }
- 
-+int value_color_snprintf(char *bf, size_t size, const char *fmt, double value)
-+{
-+	const char *color = get_percent_color(value);
-+	return color_snprintf(bf, size, color, fmt, value);
-+}
-+
- int percent_color_snprintf(char *bf, size_t size, const char *fmt, ...)
- {
- 	va_list args;
- 	double percent;
--	const char *color;
- 
- 	va_start(args, fmt);
- 	percent = va_arg(args, double);
- 	va_end(args);
--	color = get_percent_color(percent);
--	return color_snprintf(bf, size, color, fmt, percent);
-+	return value_color_snprintf(bf, size, fmt, percent);
- }
-diff --git a/tools/perf/util/color.h b/tools/perf/util/color.h
-index fced384..7ff30a6 100644
---- a/tools/perf/util/color.h
-+++ b/tools/perf/util/color.h
-@@ -39,6 +39,7 @@ int color_fprintf(FILE *fp, const char *color, const char *fmt, ...);
- int color_snprintf(char *bf, size_t size, const char *color, const char *fmt, ...);
- int color_fprintf_ln(FILE *fp, const char *color, const char *fmt, ...);
- int color_fwrite_lines(FILE *fp, const char *color, size_t count, const char *buf);
-+int value_color_snprintf(char *bf, size_t size, const char *fmt, double value);
- int percent_color_snprintf(char *bf, size_t size, const char *fmt, ...);
- int percent_color_fprintf(FILE *fp, const char *fmt, double percent);
- const char *get_percent_color(double percent);
 -- 
 1.8.5.2.227.g53f3478
 
