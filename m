@@ -1,78 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932225Ab3L3UOZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 15:14:25 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:37491 "EHLO
+	id S932360Ab3L3UPJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 15:15:09 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:37524 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932117Ab3L3UOV (ORCPT
+	with ESMTP id S932172Ab3L3UOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 15:14:21 -0500
+	Mon, 30 Dec 2013 15:14:23 -0500
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-edac@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Doug Thompson <dougthompson@xmission.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Subject: [PATCH v4 0/6] Krait L1/L2 EDAC driver
-Date: Mon, 30 Dec 2013 12:14:11 -0800
-Message-Id: <1388434457-4194-1-git-send-email-sboyd@codeaurora.org>
+        linux-arm-kernel@lists.infradead.org,
+        David Brown <davidb@codeaurora.org>
+Subject: [PATCH v4 6/6] ARM: dts: msm: Add Krait CPU/L2 nodes
+Date: Mon, 30 Dec 2013 12:14:17 -0800
+Message-Id: <1388434457-4194-7-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.5.2.228.g8f9f19c
+In-Reply-To: <1388434457-4194-1-git-send-email-sboyd@codeaurora.org>
+References: <1388434457-4194-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds support for the Krait L1/L2 cache error detection
-hardware. The first patch fixes a generic framework bug. The next
-two patches lay the groundwork for this driver to be added by 
-exporting percpu irq functions as well as adding the Krait l2 indirection
-register code. The next two patches add the driver and the binding and 
-the final patch hooks it all up by adding the device tree node.
+This allows us to probe the krait-edac driver.
 
-I'm not sure which tree this is supposed to go through. Ideally we could
-send the first 3 plus the 5th one through an edac tree. The final dts changes
-could go through arm-soc via davidb's tree and the Documentation patch could
-go through the devicetree tree.
+Cc: David Brown <davidb@codeaurora.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/boot/dts/qcom-msm8974.dtsi | 41 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
 
-Changes since v3:
- * Fixed l1_irq handler to properly dereference dev_id
-
-Changes since v2:
- * Picked up acks
- * s/an/a/ in DT binding
-
-Changes since v1:
- * Moved binding into cpus node
- * Picked up acks on first two patches
- * Commented krait l2 accessor functions
-
-Stephen Boyd (6):
-  edac: Don't try to cancel workqueue when it's never setup
-  genirq: export percpu irq functions for module usage
-  ARM: Add Krait L2 accessor functions
-  devicetree: bindings: Document Krait L1/L2 EDAC
-  edac: Add support for Krait CPU cache error detection
-  ARM: dts: msm: Add Krait CPU/L2 nodes
-
- Documentation/devicetree/bindings/arm/cpus.txt |  72 +++++
- arch/arm/boot/dts/qcom-msm8974.dtsi            |  41 +++
- arch/arm/common/Kconfig                        |   3 +
- arch/arm/common/Makefile                       |   1 +
- arch/arm/common/krait-l2-accessors.c           |  58 +++++
- arch/arm/include/asm/krait-l2-accessors.h      |  20 ++
- drivers/edac/Kconfig                           |   8 +
- drivers/edac/Makefile                          |   2 +
- drivers/edac/edac_device.c                     |   3 +
- drivers/edac/krait_edac.c                      | 346 +++++++++++++++++++++++++
- kernel/irq/manage.c                            |   2 +
- 11 files changed, 556 insertions(+)
- create mode 100644 arch/arm/common/krait-l2-accessors.c
- create mode 100644 arch/arm/include/asm/krait-l2-accessors.h
- create mode 100644 drivers/edac/krait_edac.c
-
+diff --git a/arch/arm/boot/dts/qcom-msm8974.dtsi b/arch/arm/boot/dts/qcom-msm8974.dtsi
+index 9fa57d7..7a494ea 100644
+--- a/arch/arm/boot/dts/qcom-msm8974.dtsi
++++ b/arch/arm/boot/dts/qcom-msm8974.dtsi
+@@ -9,6 +9,47 @@
+ 	compatible = "qcom,msm8974";
+ 	interrupt-parent = <&intc>;
+ 
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		interrupts = <1 9 0xf04>;
++		compatible = "qcom,krait";
++
++		cpu@0 {
++			device_type = "cpu";
++			compatible = "qcom,krait";
++			reg = <0>;
++			next-level-cache = <&L2>;
++		};
++
++		cpu@1 {
++			device_type = "cpu";
++			compatible = "qcom,krait";
++			reg = <1>;
++			next-level-cache = <&L2>;
++		};
++
++		cpu@2 {
++			device_type = "cpu";
++			compatible = "qcom,krait";
++			reg = <2>;
++			next-level-cache = <&L2>;
++		};
++
++		cpu@3 {
++			device_type = "cpu";
++			compatible = "qcom,krait";
++			reg = <3>;
++			next-level-cache = <&L2>;
++		};
++
++		L2: l2-cache {
++			compatible = "cache";
++			cache-level = <2>;
++			interrupts = <0 2 0x4>;
++		};
++	};
++
+ 	timer {
+ 		compatible = "arm,armv7-timer";
+ 		interrupts = <1 2 0xf08>,
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
