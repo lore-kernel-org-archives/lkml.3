@@ -1,33 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932324Ab3L3V5I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 16:57:08 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:50828 "EHLO
+	id S932349Ab3L3V6s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 16:58:48 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:60447 "EHLO
 	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932222Ab3L3V5G (ORCPT
+	by vger.kernel.org with ESMTP id S932330Ab3L3V6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 16:57:06 -0500
-X-Sasl-enc: 8RDuG8tR/qEYX+IO3xH5nKLfRxEGJYQzyVzkEIzAynRb 1388440624
-Date: Mon, 30 Dec 2013 19:57:01 -0200
+	Mon, 30 Dec 2013 16:58:46 -0500
+X-Sasl-enc: cbdyxi0yZgQjXntsphfnfx49ssKGqA/USceIQetTW2dL 1388440725
+Date: Mon, 30 Dec 2013 19:58:43 -0200
 From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Julia Lawall <julia.lawall@lip6.fr>, kernel-janitors@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/11]  use ether_addr_equal_64bits
-Message-ID: <20131230215701.GA4938@khazad-dum.debian.net>
-References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>
- <1388427307-8691-5-git-send-email-Julia.Lawall@lip6.fr>
- <1388429761.4410.1.camel@jlt4.sipsolutions.net>
- <alpine.DEB.2.02.1312302057420.2209@localhost6.localdomain6>
- <1388438724.4573.2.camel@jlt4.sipsolutions.net>
+To: Julian Andres Klode <jak@jak-linux.org>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        "open list:THINKPAD ACPI EXT..." 
+	<ibm-acpi-devel@lists.sourceforge.net>,
+        "open list:THINKPAD ACPI EXT..." 
+	<platform-driver-x86@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] thinkpad_acpi: Add support for controlling charge
+ thresholds
+Message-ID: <20131230215843.GB4938@khazad-dum.debian.net>
+References: <1384178195-12218-1-git-send-email-jak@jak-linux.org>
+ <1384178195-12218-2-git-send-email-jak@jak-linux.org>
+ <20131230132915.GB24241@jak-x230>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1388438724.4573.2.camel@jlt4.sipsolutions.net>
+In-Reply-To: <20131230132915.GB24241@jak-x230>
 X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
  39CB 4807
 X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
@@ -37,44 +37,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Dec 2013, Johannes Berg wrote:
-> On Mon, 2013-12-30 at 20:58 +0100, Julia Lawall wrote:
-> > > Is there any way we could catch (sparse, or some other script?) that
-> > > struct reorganising won't break the condition needed ("within a
-> > > structure that contains at least two more bytes")?
+On Mon, 30 Dec 2013, Julian Andres Klode wrote:
+> On Mon, Nov 11, 2013 at 02:56:30PM +0100, Julian Andres Klode wrote:
+> > Add support for battery charge thresholds in new Sandy Bridge and Ivy Bridge
+> > ThinkPads. Based on the unofficial documentation in tpacpi-bat.
 > > 
-> > What kind of reorganizing could happen?  Do you mean that the programmer 
-> > might do at some time in the future, or something the compiler might do?
+> > The threshold files support the values '0' for the controller's default,
+> > and 1-99 as percentages. Values outside of that range are rejected. The
+> > behaviour of '0' might be confusing, especially for the stop case where
+> > it basically seems to mean '100'.
 > 
-> I'm just thinking of a programmer, e.g. changing a struct like this:
+> Thinking more about this, it might make more sense to simply accept a 100
+> value and not accept a 0 value in the stop case (I tried multiple times to
+> write 100 to a stop_charge_thresh file, because that feels more natural).
 > 
->  struct foo {
->    u8 addr[ETH_ALEN];
-> -  u16 dummy;
->  };
-> 
-> for example.
+> Having a 0 mean 100% is just odd. So stop_charge_thresh should simply
+> accepts integer values in the range [1, 100] (and start_charge_thresh
+> should continue accept [0, 99], as 0 really means 0 there).
 
-That is easily resolved by:
-
-struct foo {
-	u8 addr[ETH_ALEN];
-	u16 required_padding;	/* do not remove upon pain of death */
-};
-
-Preferably with a comment nearby explaining just why that padding is so
-important in the first place.
-
-Unfortunately, we do have a lot of code with unexplained padding that one
-should never remove, and it is often nowhere nearly as obvious as stray
-elements with idiotic non-explanatory names in a structure.
-
-One example is the via-rng hw_random driver, where the buffer used by the
-"xstore" via-specific instriction *MUST* be longer than what the "xstore"
-instruction is documented to require due to CPU errata (you ask it to write
-from 1 to 8 bytes, and it may end up writing 16 bytes).  The xstore buffer
-is an array that was made long enough to avoid the errata, but that fact is
-documented only in a git commit message.
+Indeed.  Just return EINVAL for a stop threshold of 0.
 
 -- 
   "One disk to rule them all, One disk to find them. One disk to bring
