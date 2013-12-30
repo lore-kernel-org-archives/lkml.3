@@ -1,117 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755928Ab3L3NUa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 08:20:30 -0500
-Received: from ring0.de ([91.143.88.219]:50617 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755511Ab3L3NUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 08:20:12 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Mon, 30 Dec 2013 14:19:44 +0100
-From: Sebastian Reichel <sre@ring0.de>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org development" 
-	<linux-bluetooth@vger.kernel.org>,
-        Ville Tervo <ville.tervo@nokia.com>
-Subject: Re: [PATCH v2] Bluetooth: Add hci_h4p driver
-Message-ID: <20131230131942.GA13816@earth.universe>
-Mail-Followup-To: Pavel Machek <pavel@ucw.cz>,
-	Marcel Holtmann <marcel@holtmann.org>,
-	Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-	=?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= <freemangordon@abv.bg>,
-	"Gustavo F. Padovan" <gustavo@padovan.org>,
-	Johan Hedberg <johan.hedberg@gmail.com>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	"linux-bluetooth@vger.kernel.org development" <linux-bluetooth@vger.kernel.org>,
-	Ville Tervo <ville.tervo@nokia.com>
-References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com>
- <1727897.LBX8128hIo@izba>
- <C8D1F470-7964-4EAC-82E0-D53CF54DE086@holtmann.org>
- <20131230121350.GB31236@amd.pavel.ucw.cz>
+	id S1755960Ab3L3N00 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 08:26:26 -0500
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:54114 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511Ab3L3N0Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Dec 2013 08:26:25 -0500
+Date: Mon, 30 Dec 2013 14:26:19 +0100
+From: Julian Andres Klode <jak@jak-linux.org>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Julian Andres Klode <jak@jak-linux.org>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        "open list:THINKPAD ACPI EXT..." 
+	<ibm-acpi-devel@lists.sourceforge.net>,
+        "open list:THINKPAD ACPI EXT..." 
+	<platform-driver-x86@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] thinkpad_acpi: Add support for controlling charge
+ thresholds
+Message-ID: <20131230132619.GA24241@jak-x230>
+Mail-Followup-To: Julian Andres Klode <jak@jak-linux.org>,
+	Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+	Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+	Matthew Garrett <matthew.garrett@nebula.com>,
+	"open list:THINKPAD ACPI EXT..." <ibm-acpi-devel@lists.sourceforge.net>,
+	"open list:THINKPAD ACPI EXT..." <platform-driver-x86@vger.kernel.org>,
+	open list <linux-kernel@vger.kernel.org>
+References: <1384178195-12218-1-git-send-email-jak@jak-linux.org>
+ <20131228211026.GA14725@jak-x230>
+ <20131228221003.GA24911@khazad-dum.debian.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="vtzGhvizbBRQ85DL"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131230121350.GB31236@amd.pavel.ucw.cz>
+In-Reply-To: <20131228221003.GA24911@khazad-dum.debian.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Dec 28, 2013 at 08:10:03PM -0200, Henrique de Moraes Holschuh wrote:
+> On Sat, 28 Dec 2013, Julian Andres Klode wrote:
+> > On Mon, Nov 11, 2013 at 02:56:29PM +0100, Julian Andres Klode wrote:
+> > > This patch series adds support for specifying charging thresholds,
+> > > forcing a battery to discharge, and inhibiting charging, on ThinkPad
+> > > Laptops using Sandy Bridge or newer processors.
+> > 
+[...]
+> > Henrique, it would be really great if you could take a look.
+> 
+> I did.  I just did not manage to finish looking over it, it is not really
+> okay as-is, mostly because it did not create a power-supply device and
+> properly extended that thing in a generic way, which would be vastly
+> preferable to adding yet another private interface.
 
---vtzGhvizbBRQ85DL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks for the response.
 
-Hi,
+I think that a more generic approach is a good idea, but
+I don't think creating a new power supply device would be the right
+choice because this controls existing supplies rather than being a
+supply in itself, and I am not aware of any other kind of power
+supply device that allows setting things.
 
-On Mon, Dec 30, 2013 at 01:13:50PM +0100, Pavel Machek wrote:
-> [...]
->
-> Well, I can rename config option, but renaming the module would break
-> existing userland, no?
+We could extend the existing battery devices and then get paths like
+	/sys/class/power_supply/BAT0/start_charge_thresh
+which looks `natural'. There is one problem with that approach, though:
 
-Why is the userland depending on the module name?
+A ThinkPad supports multiple batteries: In my case, I could add a slice
+battery. But the ACPI driver only exposes a BAT0 device without a slice
+being attached (I assume a BAT1 will pop-up if you add a slice battery,
+but can't test it, as I don't own one). This means that you can only
+configure the slice battery when it's plugged in. I don't know if its
+a good idea to work like this.
 
-> >  Can we also make this just depend on some device tree information
-> > and not on a specific architecture. I know that this driver is
-> > pretty much OMAP specific, but if we want this upstream, we should
-> > at least try to make it more generic.
->=20
-> Nokia N900 is certainly moving towards device tree, but we are not
-> ready, yet...
+Another problem is that I don't know any other systems supporting charge
+thresholds, and I don't want to dictate interfaces built for ThinkPads
+as a generic way. 
+-- 
+Julian Andres Klode  - Debian Developer, Ubuntu Member
 
-Tony plans to remove OMAP3 boardcode (incl. omap3-rx51) in 3.14.
+See http://wiki.debian.org/JulianAndresKlode and http://jak-linux.org/.
 
-> > > [...]
-> > >
-> > Please do not introduce public includes for a driver. This
-> > should be all confined to the driver itself or if it platform
-> > data, it should go into the place for platform data.
->=20
-> (Could you insert newlines after 80 or so characters?)
->=20
-> Where would you like platform_data definition to go? That indeed is
-> for platform data, and quick grep shows drivers normally do public
-> header files for that.
-
-Probably it can simply be removed, because it's not useful in 3.14?
-
-> [...]
-
--- Sebastian
-
---vtzGhvizbBRQ85DL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSwXLuAAoJENju1/PIO/qarfAQAJDXrQcdpTiJX9WaAKb9bnB/
-8iCCMk/+dgfBlu/vycLeJ/oNT2INZwVCE7BpOq8b9hJFbTcKTBLKUgBtJbit89D7
-PChXS3DUByEb6wxU6E5LxX/WW5BRzhhYA0GxiaJGA6gp743EEF7l6yU8w2kf97qF
-8cqw0ZNXMb0ewMZ9NHo6lU26hNKHT7mvzn3b6wL1F/aoyS4BX+HZrhLD/F4ki89x
-HXPDzYFnKC/7RYMSi1JsZMlSupB7jT16UXUHZXEM7wDnUJMTyrEA/t1CuRYJCHTZ
-dZTc+fNGrJJDkXjWHnEey/idt+qoRr8vB6h3Zmp+omUnBe//SF7cgvLq6CP20sFG
-j50Q81u9cTVUUwSI0jB4K9Ch3bTaIlevsVZszeg9VDosB6/8EGLJL/BuSamLxA7n
-2rm2wfAQJD4D/6a193SfCsAL270fYY0et5+HqcEsbywVxkrYKPiqgdN6QmHUoQfp
-fBKmiGSKYTVFUK1Bt6i9qf30LqOePXBfZJmRzYBrBT/+QqSzz+ONeFOTXiZ0bZ7s
-4XoE8bPzgZ+8GJmZ7CWhPjZJMPNfA6C3c+jHRb0ls+VGc6X2XuZhY7gldbUA8mZK
-wYj8fMC6y3tIlejUouvxKPM80/CzqCT2TRKijcy2NE+legGsIGVEq8dNWrqZ5FUi
-GFbCmlCLFte/1Y8iMtrc
-=5I6S
------END PGP SIGNATURE-----
-
---vtzGhvizbBRQ85DL--
+Please do not top-post if possible.
