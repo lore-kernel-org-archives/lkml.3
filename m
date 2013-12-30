@@ -1,56 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204Ab3L3RHR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 12:07:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15088 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756051Ab3L3RHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 12:07:15 -0500
-Date: Mon, 30 Dec 2013 18:07:38 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, stable@vger.kernel.org
-Subject: Re: [PATCH 2/5] audit: convert PPIDs to the inital PID namespace.
-Message-ID: <20131230170738.GB2457@redhat.com>
-References: <cover.1387834776.git.rgb@redhat.com> <b607363a286c315801a0027401a2df9017a5c419.1387834776.git.rgb@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <b607363a286c315801a0027401a2df9017a5c419.1387834776.git.rgb@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756202Ab3L3RTF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 12:19:05 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:25199 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756051Ab3L3RTD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Dec 2013 12:19:03 -0500
+X-IronPort-AV: E=Sophos;i="4.95,574,1384297200"; 
+   d="scan'208";a="51019963"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: ath9k-devel@venema.h4ckr.net
+Cc: kernel-janitors@vger.kernel.org, ath5k-devel@venema.h4ckr.net,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        users@rt2x00.serialmonkey.com
+Subject: [PATCH 0/11] use ether_addr_equal_64bits
+Date: Mon, 30 Dec 2013 19:14:56 +0100
+Message-Id: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23, Richard Guy Briggs wrote:
->
-> @@ -1839,10 +1839,10 @@ void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
->  	spin_unlock_irq(&tsk->sighand->siglock);
->  
->  	audit_log_format(ab,
-> -			 " ppid=%ld pid=%d auid=%u uid=%u gid=%u"
-> +			 " ppid=%d pid=%d auid=%u uid=%u gid=%u"
->  			 " euid=%u suid=%u fsuid=%u"
->  			 " egid=%u sgid=%u fsgid=%u tty=%s ses=%u",
-> -			 sys_getppid(),
-> +			 task_ppid_nr(tsk),
+Ether_addr_equal_64bits is more efficient than ether_addr_equal, and can be
+used when each argument is an array within a structure that contains at
+least two bytes of data beyond the array.
 
-Hmm. But sys_getppid() returns tgid, not pid.
+The semantic patch that makes this change is as follows.  To give
+moderately good results, this semantic patch requires the spatch options
+--recursive-includes and --relax-include-path.  These options make spatch
+quite slow.  The results are also very incomplete.  In particular, there is
+no result if the structure definition cannot be found or if one of the
+arguments is a pointer.  The ocaml code prints some information justifying
+the transformation.
 
-This probably means that 1/5 should use task_tgid_nr_*() ?
+// <smpl>
+@pre@
+expression *e;
+position p;
+@@
 
-Note that ->real_parent is not necessarily the group leader.
+ether_addr_equal@p(...,e,...)
 
-> @@ -459,7 +459,7 @@ static int audit_filter_rules(struct task_struct *tsk,
->  		case AUDIT_PPID:
->  			if (ctx) {
->  				if (!ctx->ppid)
-> -					ctx->ppid = sys_getppid();
-> +					ctx->ppid = task_ppid_nr(tsk);
+@r@
+identifier T;
+struct T eth;
+identifier fld;
+identifier T1;
+struct T1 eth1;
+identifier fld1;
+position p!=pre.p;
+@@
 
-The same.
+ether_addr_equal@p(eth.fld, eth1.fld1)
 
-Oleg.
+@ok@
+identifier r.T;
+type t1, t2;
+identifier r.fld, fld2;
+position p;
+@@
 
+struct T@p { ...
+    t1 fld[...];
+    t2 fld2;
+    ...
+  };
+
+@ok1@
+identifier r.T1;
+type t1, t2;
+identifier r.fld1, fld2;
+position p1;
+@@
+
+struct T1@p1 { ...
+    t1 fld1[...];
+    t2 fld2;
+    ...
+  };
+
+@script:ocaml@
+rp << r.p;
+okp << ok.p;
+okp1 << ok1.p1;
+t << r.T;
+t1 << r.T1;
+@@
+
+let rp = List.hd rp in
+let okp = List.hd okp in
+let okp1 = List.hd okp1 in
+Printf.printf "## %s: struct %s defined in %s\n" rp.file t okp.file;
+Printf.printf "## %s: struct %s defined in %s\n" rp.file t1 okp1.file;
+flush stdout
+
+@depends on ok && ok1@
+position r.p;
+@@
+
+-ether_addr_equal@p
++ether_addr_equal_64bits
+  (...)
+// </smpl>
