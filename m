@@ -1,321 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756105Ab3L3KYe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 05:24:34 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:59166 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755616Ab3L3KTt (ORCPT
+	id S1754943Ab3L3Khe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 05:37:34 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:50687 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860Ab3L3Khd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 05:19:49 -0500
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-To: mingo@kernel.org, tglx@linutronix.de
-Cc: axel.lin@ingics.com, ezequiel.garcia@free-electrons.com,
-        jg1.han@samsung.com, laurent.pinchart+renesas@ideasonboard.com,
-        linus.walleij@linaro.org, maxime.ripard@free-electrons.com,
-        michael.opdenacker@free-electrons.com, sboyd@codeaurora.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 04/20] clocksource: Add Allwinner SoCs HS timers driver
-Date: Mon, 30 Dec 2013 11:19:23 +0100
-Message-Id: <1388398779-11222-4-git-send-email-daniel.lezcano@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1388398779-11222-1-git-send-email-daniel.lezcano@linaro.org>
-References: <52C1479E.80808@linaro.org>
- <1388398779-11222-1-git-send-email-daniel.lezcano@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Mon, 30 Dec 2013 05:37:33 -0500
+X-AuditID: cbfee61b-b7f456d000006dfd-9f-52c14cdf9dd5
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'???'" <jaegeuk.kim@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Subject: [f2fs-dev] [PATCH V2] f2fs: avoid to read inline data except first page
+Date: Mon, 30 Dec 2013 18:36:23 +0800
+Message-id: <000701cf054b$1db23ca0$5916b5e0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac8FSuMYYcVs8UGpTyuxuhFnE9iKew==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9jAd37PgeDDH72yFtc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlXGr4yp7wRyuiuZ3
+	p1kaGCdwdDFycEgImEi0H3XqYuQEMsUkLtxbz9bFyMUhJLCIUeLb9w3sEM4PRom7Ox4wgVSx
+	CahILO/4D2aLCChLrOpoZwOxmQUyJea8nswKYgsLBEgsO3SUHcRmEVCVODNhAQuIzStgKbF4
+	+m12CFtQ4sfkeywQvVoS63ceZ4Kw5SU2r3nLDHGRgsSOs68ZIXbpSZzYuJ8VokZcYuORWywT
+	GAVmIRk1C8moWUhGzULSsoCRZRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcCA/k97BuKrB
+	4hCjAAejEg9vwI0DQUKsiWXFlbmHGCU4mJVEeHncDwYJ8aYkVlalFuXHF5XmpBYfYpTmYFES
+	5z3Yah0oJJCeWJKanZpakFoEk2Xi4JRqYGQtCC5qFTHueFS9vWOdH3vU7Rm1NxT8/h4TvW46
+	7ee6B/uXJr895Ruz9WyxUuIOuwt1M8pP+AZusJSc+51DYBLH1q5ut4u7r14qP/i48Ma6GdJZ
+	hWYLnyXypd99EFR57tr03x7ivRqll77WXS/8JCj1aqXg1Pepkza3c8xg7GLRMLX+sGWjYbYS
+	S3FGoqEWc1FxIgDhbJRJYAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
+Here is a case which could read inline page data not from first page.
 
-Most of the Allwinner SoCs (at this time, all but the A10) also have a
-High Speed timers that are not using the 24MHz oscillator as a source
-but rather the AHB clock running much faster.
+1. write inline data
+2. lseek to offset 4096
+3. read 4096 bytes from offset 4096
+	(read_inline_data read inline data page to non-first page,
+	And previously VFS has add this page to page cache)
+4. ftruncate offset 8192
+5. read 4096 bytes from offset 4096
+	(we meet this updated page with inline data in cache)
 
-The IP is slightly different between the A10s/A13 and the one used in
-the A20/A31, since the latter have 4 timers available, while the former
-have only 2 of them.
+So we should leave this page with inited data and uptodate flag
+for this case.
 
-[dlezcano] : Fixed conflict with b788beda "Order Kconfig options
-		alphabetically"
+Change log from v1:
+ o fix a deadlock bug
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Tested-by: Emilio López <emilio@elopez.com.ar>
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
 ---
- .../bindings/timer/allwinner,sun5i-a13-hstimer.txt |   22 +++
- arch/arm/mach-sunxi/Kconfig                        |    1 +
- drivers/clocksource/Kconfig                        |    4 +
- drivers/clocksource/Makefile                       |    1 +
- drivers/clocksource/timer-sun5i.c                  |  192 ++++++++++++++++++++
- 5 files changed, 220 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/timer/allwinner,sun5i-a13-hstimer.txt
- create mode 100644 drivers/clocksource/timer-sun5i.c
+ fs/f2fs/inline.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/timer/allwinner,sun5i-a13-hstimer.txt b/Documentation/devicetree/bindings/timer/allwinner,sun5i-a13-hstimer.txt
-new file mode 100644
-index 0000000..7c26154
---- /dev/null
-+++ b/Documentation/devicetree/bindings/timer/allwinner,sun5i-a13-hstimer.txt
-@@ -0,0 +1,22 @@
-+Allwinner SoCs High Speed Timer Controller
-+
-+Required properties:
-+
-+- compatible :	should be "allwinner,sun5i-a13-hstimer" or
-+		"allwinner,sun7i-a20-hstimer"
-+- reg : Specifies base physical address and size of the registers.
-+- interrupts :	The interrupts of these timers (2 for the sun5i IP, 4 for the sun7i
-+		one)
-+- clocks: phandle to the source clock (usually the AHB clock)
-+
-+Example:
-+
-+timer@01c60000 {
-+	compatible = "allwinner,sun7i-a20-hstimer";
-+	reg = <0x01c60000 0x1000>;
-+	interrupts = <0 51 1>,
-+		     <0 52 1>,
-+		     <0 53 1>,
-+		     <0 54 1>;
-+	clocks = <&ahb1_gates 19>;
-+};
-diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
-index c9e72c8..bce0d42 100644
---- a/arch/arm/mach-sunxi/Kconfig
-+++ b/arch/arm/mach-sunxi/Kconfig
-@@ -12,3 +12,4 @@ config ARCH_SUNXI
- 	select PINCTRL_SUNXI
- 	select SPARSE_IRQ
- 	select SUN4I_TIMER
-+	select SUN5I_HSTIMER
-diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index bdb953e..884eeff 100644
---- a/drivers/clocksource/Kconfig
-+++ b/drivers/clocksource/Kconfig
-@@ -37,6 +37,10 @@ config SUN4I_TIMER
- 	select CLKSRC_MMIO
- 	bool
+diff --git a/fs/f2fs/inline.c b/fs/f2fs/inline.c
+index 5d121d7..69a923e 100644
+--- a/fs/f2fs/inline.c
++++ b/fs/f2fs/inline.c
+@@ -39,6 +39,11 @@ int f2fs_read_inline_data(struct inode *inode, struct page *page)
+ 	struct page *ipage;
+ 	void *src_addr, *dst_addr;
  
-+config SUN5I_HSTIMER
-+	select CLKSRC_MMIO
-+	bool
-+
- config VT8500_TIMER
- 	bool
- 
-diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
-index 33621ef..358358d 100644
---- a/drivers/clocksource/Makefile
-+++ b/drivers/clocksource/Makefile
-@@ -22,6 +22,7 @@ obj-$(CONFIG_ARCH_MOXART)	+= moxart_timer.o
- obj-$(CONFIG_ARCH_MXS)		+= mxs_timer.o
- obj-$(CONFIG_ARCH_PRIMA2)	+= timer-prima2.o
- obj-$(CONFIG_SUN4I_TIMER)	+= sun4i_timer.o
-+obj-$(CONFIG_SUN5I_HSTIMER)	+= timer-sun5i.o
- obj-$(CONFIG_ARCH_TEGRA)	+= tegra20_timer.o
- obj-$(CONFIG_VT8500_TIMER)	+= vt8500_timer.o
- obj-$(CONFIG_ARCH_NSPIRE)	+= zevio-timer.o
-diff --git a/drivers/clocksource/timer-sun5i.c b/drivers/clocksource/timer-sun5i.c
-new file mode 100644
-index 0000000..bddc522
---- /dev/null
-+++ b/drivers/clocksource/timer-sun5i.c
-@@ -0,0 +1,192 @@
-+/*
-+ * Allwinner SoCs hstimer driver.
-+ *
-+ * Copyright (C) 2013 Maxime Ripard
-+ *
-+ * Maxime Ripard <maxime.ripard@free-electrons.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/clockchips.h>
-+#include <linux/delay.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+#include <linux/irqreturn.h>
-+#include <linux/sched_clock.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+
-+#define TIMER_IRQ_EN_REG		0x00
-+#define TIMER_IRQ_EN(val)			BIT(val)
-+#define TIMER_IRQ_ST_REG		0x04
-+#define TIMER_CTL_REG(val)		(0x20 * (val) + 0x10)
-+#define TIMER_CTL_ENABLE			BIT(0)
-+#define TIMER_CTL_RELOAD			BIT(1)
-+#define TIMER_CTL_CLK_PRES(val)			(((val) & 0x7) << 4)
-+#define TIMER_CTL_ONESHOT			BIT(7)
-+#define TIMER_INTVAL_LO_REG(val)	(0x20 * (val) + 0x14)
-+#define TIMER_INTVAL_HI_REG(val)	(0x20 * (val) + 0x18)
-+#define TIMER_CNTVAL_LO_REG(val)	(0x20 * (val) + 0x1c)
-+#define TIMER_CNTVAL_HI_REG(val)	(0x20 * (val) + 0x20)
-+
-+#define TIMER_SYNC_TICKS	3
-+
-+static void __iomem *timer_base;
-+static u32 ticks_per_jiffy;
-+
-+/*
-+ * When we disable a timer, we need to wait at least for 2 cycles of
-+ * the timer source clock. We will use for that the clocksource timer
-+ * that is already setup and runs at the same frequency than the other
-+ * timers, and we never will be disabled.
-+ */
-+static void sun5i_clkevt_sync(void)
-+{
-+	u32 old = readl(timer_base + TIMER_CNTVAL_LO_REG(1));
-+
-+	while ((old - readl(timer_base + TIMER_CNTVAL_LO_REG(1))) < TIMER_SYNC_TICKS)
-+		cpu_relax();
-+}
-+
-+static void sun5i_clkevt_time_stop(u8 timer)
-+{
-+	u32 val = readl(timer_base + TIMER_CTL_REG(timer));
-+	writel(val & ~TIMER_CTL_ENABLE, timer_base + TIMER_CTL_REG(timer));
-+
-+	sun5i_clkevt_sync();
-+}
-+
-+static void sun5i_clkevt_time_setup(u8 timer, u32 delay)
-+{
-+	writel(delay, timer_base + TIMER_INTVAL_LO_REG(timer));
-+}
-+
-+static void sun5i_clkevt_time_start(u8 timer, bool periodic)
-+{
-+	u32 val = readl(timer_base + TIMER_CTL_REG(timer));
-+
-+	if (periodic)
-+		val &= ~TIMER_CTL_ONESHOT;
-+	else
-+		val |= TIMER_CTL_ONESHOT;
-+
-+	writel(val | TIMER_CTL_ENABLE | TIMER_CTL_RELOAD,
-+	       timer_base + TIMER_CTL_REG(timer));
-+}
-+
-+static void sun5i_clkevt_mode(enum clock_event_mode mode,
-+			      struct clock_event_device *clk)
-+{
-+	switch (mode) {
-+	case CLOCK_EVT_MODE_PERIODIC:
-+		sun5i_clkevt_time_stop(0);
-+		sun5i_clkevt_time_setup(0, ticks_per_jiffy);
-+		sun5i_clkevt_time_start(0, true);
-+		break;
-+	case CLOCK_EVT_MODE_ONESHOT:
-+		sun5i_clkevt_time_stop(0);
-+		sun5i_clkevt_time_start(0, false);
-+		break;
-+	case CLOCK_EVT_MODE_UNUSED:
-+	case CLOCK_EVT_MODE_SHUTDOWN:
-+	default:
-+		sun5i_clkevt_time_stop(0);
-+		break;
++	if (page->index) {
++		zero_user_segment(page, 0, PAGE_CACHE_SIZE);
++		goto out;
 +	}
-+}
 +
-+static int sun5i_clkevt_next_event(unsigned long evt,
-+				   struct clock_event_device *unused)
-+{
-+	sun5i_clkevt_time_stop(0);
-+	sun5i_clkevt_time_setup(0, evt - TIMER_SYNC_TICKS);
-+	sun5i_clkevt_time_start(0, false);
-+
-+	return 0;
-+}
-+
-+static struct clock_event_device sun5i_clockevent = {
-+	.name = "sun5i_tick",
-+	.rating = 340,
-+	.features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
-+	.set_mode = sun5i_clkevt_mode,
-+	.set_next_event = sun5i_clkevt_next_event,
-+};
-+
-+
-+static irqreturn_t sun5i_timer_interrupt(int irq, void *dev_id)
-+{
-+	struct clock_event_device *evt = (struct clock_event_device *)dev_id;
-+
-+	writel(0x1, timer_base + TIMER_IRQ_ST_REG);
-+	evt->event_handler(evt);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static struct irqaction sun5i_timer_irq = {
-+	.name = "sun5i_timer0",
-+	.flags = IRQF_TIMER | IRQF_IRQPOLL,
-+	.handler = sun5i_timer_interrupt,
-+	.dev_id = &sun5i_clockevent,
-+};
-+
-+static u32 sun5i_timer_sched_read(void)
-+{
-+	return ~readl(timer_base + TIMER_CNTVAL_LO_REG(1));
-+}
-+
-+static void __init sun5i_timer_init(struct device_node *node)
-+{
-+	unsigned long rate;
-+	struct clk *clk;
-+	int ret, irq;
-+	u32 val;
-+
-+	timer_base = of_iomap(node, 0);
-+	if (!timer_base)
-+		panic("Can't map registers");
-+
-+	irq = irq_of_parse_and_map(node, 0);
-+	if (irq <= 0)
-+		panic("Can't parse IRQ");
-+
-+	clk = of_clk_get(node, 0);
-+	if (IS_ERR(clk))
-+		panic("Can't get timer clock");
-+	clk_prepare_enable(clk);
-+	rate = clk_get_rate(clk);
-+
-+	writel(~0, timer_base + TIMER_INTVAL_LO_REG(1));
-+	writel(TIMER_CTL_ENABLE | TIMER_CTL_RELOAD,
-+	       timer_base + TIMER_CTL_REG(1));
-+
-+	setup_sched_clock(sun5i_timer_sched_read, 32, rate);
-+	clocksource_mmio_init(timer_base + TIMER_CNTVAL_LO_REG(1), node->name,
-+			      rate, 340, 32, clocksource_mmio_readl_down);
-+
-+	ticks_per_jiffy = DIV_ROUND_UP(rate, HZ);
-+
-+	ret = setup_irq(irq, &sun5i_timer_irq);
-+	if (ret)
-+		pr_warn("failed to setup irq %d\n", irq);
-+
-+	/* Enable timer0 interrupt */
-+	val = readl(timer_base + TIMER_IRQ_EN_REG);
-+	writel(val | TIMER_IRQ_EN(0), timer_base + TIMER_IRQ_EN_REG);
-+
-+	sun5i_clockevent.cpumask = cpu_possible_mask;
-+	sun5i_clockevent.irq = irq;
-+
-+	clockevents_config_and_register(&sun5i_clockevent, rate,
-+					TIMER_SYNC_TICKS, 0xffffffff);
-+}
-+CLOCKSOURCE_OF_DECLARE(sun5i_a13, "allwinner,sun5i-a13-hstimer",
-+		       sun5i_timer_init);
-+CLOCKSOURCE_OF_DECLARE(sun7i_a20, "allwinner,sun7i-a20-hstimer",
-+		       sun5i_timer_init);
+ 	ipage = get_node_page(sbi, inode->i_ino);
+ 	if (IS_ERR(ipage))
+ 		return PTR_ERR(ipage);
+@@ -52,6 +57,7 @@ int f2fs_read_inline_data(struct inode *inode, struct page *page)
+ 	kunmap(page);
+ 	f2fs_put_page(ipage, 1);
+ 
++out:
+ 	SetPageUptodate(page);
+ 	unlock_page(page);
+ 
 -- 
 1.7.9.5
 
