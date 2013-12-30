@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756200Ab3L3REO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 12:04:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58631 "EHLO mx1.redhat.com"
+	id S1756204Ab3L3RHR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 12:07:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15088 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756051Ab3L3REN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 12:04:13 -0500
-Date: Mon, 30 Dec 2013 18:04:31 +0100
+	id S1756051Ab3L3RHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Dec 2013 12:07:15 -0500
+Date: Mon, 30 Dec 2013 18:07:38 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Richard Guy Briggs <rgb@redhat.com>
 Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
         Eric Paris <eparis@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>, stable@vger.kernel.org
-Subject: Re: [PATCH 1/5] pid: get pid_t ppid of task in init_pid_ns
-Message-ID: <20131230170431.GA2457@redhat.com>
-References: <cover.1387834776.git.rgb@redhat.com> <c6524d385bffe974c071e46f8b1c9b1df69a7d9d.1387834776.git.rgb@redhat.com>
+Subject: Re: [PATCH 2/5] audit: convert PPIDs to the inital PID namespace.
+Message-ID: <20131230170738.GB2457@redhat.com>
+References: <cover.1387834776.git.rgb@redhat.com> <b607363a286c315801a0027401a2df9017a5c419.1387834776.git.rgb@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <c6524d385bffe974c071e46f8b1c9b1df69a7d9d.1387834776.git.rgb@redhat.com>
+In-Reply-To: <b607363a286c315801a0027401a2df9017a5c419.1387834776.git.rgb@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,48 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 12/23, Richard Guy Briggs wrote:
 >
-> +static inline pid_t task_ppid_nr_ns(struct task_struct *tsk, struct pid_namespace *ns)
-> +{
-> +	pid_t pid;
-> +
-> +	rcu_read_lock();
-> +	pid = pid_alive(tsk) ?
-> +		task_pid_nr_ns(rcu_dereference(tsk->real_parent), ns) : 0;
-> +	rcu_read_unlock();
-> +
-> +	return pid;
-> +}
+> @@ -1839,10 +1839,10 @@ void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
+>  	spin_unlock_irq(&tsk->sighand->siglock);
+>  
+>  	audit_log_format(ab,
+> -			 " ppid=%ld pid=%d auid=%u uid=%u gid=%u"
+> +			 " ppid=%d pid=%d auid=%u uid=%u gid=%u"
+>  			 " euid=%u suid=%u fsuid=%u"
+>  			 " egid=%u sgid=%u fsgid=%u tty=%s ses=%u",
+> -			 sys_getppid(),
+> +			 task_ppid_nr(tsk),
 
-I do not really mind, but perhaps
+Hmm. But sys_getppid() returns tgid, not pid.
 
-	pid_t pid = 0;
+This probably means that 1/5 should use task_tgid_nr_*() ?
 
-	rcu_read_lock();
-	if (pid_alive(task))
-		pid = task_pid_nr_ns(rcu_dereference(tsk->real_parent);
-	rcu_read_unlock();
+Note that ->real_parent is not necessarily the group leader.
 
-	return pid;
+> @@ -459,7 +459,7 @@ static int audit_filter_rules(struct task_struct *tsk,
+>  		case AUDIT_PPID:
+>  			if (ctx) {
+>  				if (!ctx->ppid)
+> -					ctx->ppid = sys_getppid();
+> +					ctx->ppid = task_ppid_nr(tsk);
 
-looks a bit cleaner.
-
-> +static inline pid_t task_ppid_nr(struct task_struct *tsk)
-> +{
-> +	pid_t pid;
-> +
-> +	rcu_read_lock();
-> +	pid = pid_alive(tsk) ?
-> +		task_pid_nr(rcu_dereference(tsk->real_parent)) : 0;
-> +	rcu_read_unlock();
-> +
-> +	return pid;
-> +}
-
-It could simply do
-
-	return task_ppid_nr_ns(tsk, init_pid_ns);
-
-but again, I won't argue.
+The same.
 
 Oleg.
 
