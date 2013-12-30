@@ -1,107 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202Ab3L3RTF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 12:19:05 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:25199 "EHLO
+	id S1756325Ab3L3RTb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 12:19:31 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:37279 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756051Ab3L3RTD (ORCPT
+	by vger.kernel.org with ESMTP id S1756142Ab3L3RTF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 12:19:03 -0500
+	Mon, 30 Dec 2013 12:19:05 -0500
 X-IronPort-AV: E=Sophos;i="4.95,574,1384297200"; 
-   d="scan'208";a="51019963"
+   d="scan'208";a="51019966"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: ath9k-devel@venema.h4ckr.net
-Cc: kernel-janitors@vger.kernel.org, ath5k-devel@venema.h4ckr.net,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-wireless@vger.kernel.org,
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Nick Kossifidis <mickflemm@gmail.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
         "John W. Linville" <linville@tuxdriver.com>,
-        users@rt2x00.serialmonkey.com
-Subject: [PATCH 0/11] use ether_addr_equal_64bits
-Date: Mon, 30 Dec 2013 19:14:56 +0100
-Message-Id: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>
+        linux-wireless@vger.kernel.org, ath5k-devel@venema.h4ckr.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/11] ath5k: use ether_addr_equal_64bits
+Date: Mon, 30 Dec 2013 19:14:58 +0100
+Message-Id: <1388427307-8691-3-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
 Ether_addr_equal_64bits is more efficient than ether_addr_equal, and can be
 used when each argument is an array within a structure that contains at
 least two bytes of data beyond the array.
 
-The semantic patch that makes this change is as follows.  To give
-moderately good results, this semantic patch requires the spatch options
---recursive-includes and --relax-include-path.  These options make spatch
-quite slow.  The results are also very incomplete.  In particular, there is
-no result if the structure definition cannot be found or if one of the
-arguments is a pointer.  The ocaml code prints some information justifying
-the transformation.
+The structures involved are:
+ieee80211_mgmt defined in include/linux/ieee80211.h and
+ath_common defined in drivers/net/wireless/ath/ath.h
 
-// <smpl>
-@pre@
-expression *e;
-position p;
-@@
+This was done using Coccinelle (http://coccinelle.lip6.fr/).
 
-ether_addr_equal@p(...,e,...)
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-@r@
-identifier T;
-struct T eth;
-identifier fld;
-identifier T1;
-struct T1 eth1;
-identifier fld1;
-position p!=pre.p;
-@@
+---
+The semantic patch used is rather long and can be found in message 0 of
+this patch series.
 
-ether_addr_equal@p(eth.fld, eth1.fld1)
+ drivers/net/wireless/ath/ath5k/base.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-@ok@
-identifier r.T;
-type t1, t2;
-identifier r.fld, fld2;
-position p;
-@@
+diff --git a/drivers/net/wireless/ath/ath5k/base.c b/drivers/net/wireless/ath/ath5k/base.c
+index 69f58b0..6396ad4 100644
+--- a/drivers/net/wireless/ath/ath5k/base.c
++++ b/drivers/net/wireless/ath/ath5k/base.c
+@@ -1245,7 +1245,7 @@ ath5k_check_ibss_tsf(struct ath5k_hw *ah, struct sk_buff *skb,
+ 
+ 	if (ieee80211_is_beacon(mgmt->frame_control) &&
+ 	    le16_to_cpu(mgmt->u.beacon.capab_info) & WLAN_CAPABILITY_IBSS &&
+-	    ether_addr_equal(mgmt->bssid, common->curbssid)) {
++	    ether_addr_equal_64bits(mgmt->bssid, common->curbssid)) {
+ 		/*
+ 		 * Received an IBSS beacon with the same BSSID. Hardware *must*
+ 		 * have updated the local TSF. We have to work around various
+@@ -1309,7 +1309,7 @@ ath5k_update_beacon_rssi(struct ath5k_hw *ah, struct sk_buff *skb, int rssi)
+ 
+ 	/* only beacons from our BSSID */
+ 	if (!ieee80211_is_beacon(mgmt->frame_control) ||
+-	    !ether_addr_equal(mgmt->bssid, common->curbssid))
++	    !ether_addr_equal_64bits(mgmt->bssid, common->curbssid))
+ 		return;
+ 
+ 	ewma_add(&ah->ah_beacon_rssi_avg, rssi);
 
-struct T@p { ...
-    t1 fld[...];
-    t2 fld2;
-    ...
-  };
-
-@ok1@
-identifier r.T1;
-type t1, t2;
-identifier r.fld1, fld2;
-position p1;
-@@
-
-struct T1@p1 { ...
-    t1 fld1[...];
-    t2 fld2;
-    ...
-  };
-
-@script:ocaml@
-rp << r.p;
-okp << ok.p;
-okp1 << ok1.p1;
-t << r.T;
-t1 << r.T1;
-@@
-
-let rp = List.hd rp in
-let okp = List.hd okp in
-let okp1 = List.hd okp1 in
-Printf.printf "## %s: struct %s defined in %s\n" rp.file t okp.file;
-Printf.printf "## %s: struct %s defined in %s\n" rp.file t1 okp1.file;
-flush stdout
-
-@depends on ok && ok1@
-position r.p;
-@@
-
--ether_addr_equal@p
-+ether_addr_equal_64bits
-  (...)
-// </smpl>
