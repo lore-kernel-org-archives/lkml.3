@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294Ab3L3CgH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 21:36:07 -0500
+	id S1753799Ab3L3CfI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 21:35:08 -0500
 Received: from cn.fujitsu.com ([222.73.24.84]:17195 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753651Ab3L3CfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 21:35:09 -0500
+	id S1753651Ab3L3CfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Dec 2013 21:35:05 -0500
 X-IronPort-AV: E=Sophos;i="4.95,571,1384272000"; 
-   d="scan'208";a="9348178"
+   d="scan'208";a="9348175"
 From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 To: linux-kernel@vger.kernel.org, acme@redhat.com
 Cc: mingo@kernel.org, dsahern@gmail.com, artagnon@gmail.com,
         Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH 5/8] perf tools: Add support of name_only for print_events_type() function.
-Date: Mon, 30 Dec 2013 10:26:40 -0500
-Message-Id: <0ad3f31b5c2d27da0a4cbd82129821136f56a581.1388416837.git.yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH 3/8] perf tools: free aliases[j] in pmu.c if name_only is true.
+Date: Mon, 30 Dec 2013 10:26:38 -0500
+Message-Id: <f4427175be649aa6cdf477980051688c525b46ab.1388416837.git.yangds.fnst@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <cover.1388416837.git.yangds.fnst@cn.fujitsu.com>
 References: <cover.1388416837.git.yangds.fnst@cn.fujitsu.com>
@@ -27,71 +27,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The all print_xxx_event() functions are supporting name_only argument except
-print_event_type().
-
-This patch add an argument of name_only for print_events_type() function.
-
 Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 ---
- tools/perf/util/parse-events.c | 14 ++++++++------
- tools/perf/util/parse-events.h |  2 +-
- 2 files changed, 9 insertions(+), 7 deletions(-)
+ tools/perf/util/pmu.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index e2a2066..d70f362 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -1122,7 +1122,7 @@ static bool is_event_supported(u8 type, unsigned config)
- }
- 
- static unsigned int __print_events_type(u8 type, struct event_symbol *syms,
--					unsigned max)
-+					unsigned max, bool name_only)
- {
- 	char name[64];
- 	unsigned i;
-@@ -1137,20 +1137,22 @@ static unsigned int __print_events_type(u8 type, struct event_symbol *syms,
- 				 syms->symbol, syms->alias);
- 		else
- 			snprintf(name, sizeof(name), "%s", syms->symbol);
--
--		printf("  %-50s [%s]\n", name, event_type_descriptors[type]);
-+		if (name_only)
-+			printf("  %-50s\n", name);
-+		else
-+			printf("  %-50s [%s]\n", name, event_type_descriptors[type]);
- 		count++;
- 	}
- 
- 	return count;
- }
- 
--unsigned int print_events_type(u8 type)
-+unsigned int print_events_type(u8 type, bool name_only)
- {
- 	if (type == PERF_TYPE_SOFTWARE)
--		return __print_events_type(type, event_symbols_sw, PERF_COUNT_SW_MAX);
-+		return __print_events_type(type, event_symbols_sw, PERF_COUNT_SW_MAX, name_only);
- 	else
--		return __print_events_type(type, event_symbols_hw, PERF_COUNT_HW_MAX);
-+		return __print_events_type(type, event_symbols_hw, PERF_COUNT_HW_MAX, name_only);
- }
- 
- unsigned int print_hwcache_events(const char *event_glob, bool name_only)
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index bb7d674..148a767 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -102,7 +102,7 @@ void parse_events_update_lists(struct list_head *list_event,
- void parse_events_error(void *data, void *scanner, char const *msg);
- 
- unsigned int print_events(const char *event_glob, bool name_only);
--unsigned int print_events_type(u8 type);
-+unsigned int print_events_type(u8 type, bool name_only);
- unsigned int print_tracepoint_events(const char *subsys_glob, const char *event_glob,
- 			     bool name_only);
- unsigned int print_hwcache_events(const char *event_glob, bool name_only);
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 331dc2c..169c480 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -752,6 +752,7 @@ unsigned int print_pmu_events(const char *event_glob, bool name_only)
+ 	for (j = 0; j < len; j++) {
+ 		if (name_only) {
+ 			printf("%s ", aliases[j]);
++			zfree(&aliases[j]);
+ 			count++;
+ 			continue;
+ 		}
 -- 
 1.8.2.1
 
