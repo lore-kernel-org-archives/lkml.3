@@ -1,171 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab3L3EDx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 23:03:53 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:64937 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754046Ab3L3EDv (ORCPT
+	id S1754196Ab3L3EIe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 23:08:34 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:49994 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753686Ab3L3EId (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 23:03:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131229221723.12054.40917@quantum>
-References: <1383202124-1775-1-git-send-email-tushar.behera@linaro.org>
-	<1388053141-30085-1-git-send-email-tushar.behera@linaro.org>
-	<1388053141-30085-2-git-send-email-tushar.behera@linaro.org>
-	<20131229221723.12054.40917@quantum>
-Date: Mon, 30 Dec 2013 09:33:50 +0530
-Message-ID: <CAHbNUh0tJHXv52bA9hBDZMH0Pi+x9uC=LojcvgS=ONnCgEmVTA@mail.gmail.com>
-Subject: Re: [PATCH RESEND 1/4] clk: clk-s2mps11: Refactor for including
- support for other MFD clocks
-From: Tushar Behera <tushar.behera@linaro.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>, Kgene Kim <kgene.kim@samsung.com>,
-        Patch Tracking <patches@linaro.org>,
-        Mark Brown <mark.brown@linaro.org>
-Content-Type: multipart/mixed; boundary=047d7b33cad20e547d04eeb8883a
+	Sun, 29 Dec 2013 23:08:33 -0500
+Message-ID: <1388376508.5345.23.camel@marge.simpson.net>
+Subject: Re: [RFC] sched: update rq clock when only get preempt
+From: Mike Galbraith <bitbucket@online.de>
+To: Lei Wen <adrian.wenl@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, leiwen@marvell.com
+Date: Mon, 30 Dec 2013 05:08:28 +0100
+In-Reply-To: <CALZhoST3oQnSOv0ZQ6CiHDgTC4D+t=Kd4Gp4oPqrnH__qMZ7Hw@mail.gmail.com>
+References: <CALZhoST3oQnSOv0ZQ6CiHDgTC4D+t=Kd4Gp4oPqrnH__qMZ7Hw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:5CzbQumrnWhSFssxxnED/UylOUf5bdETxUCz8VqLta8
+ ThnGh6U3usfpjjZus+8Zc3iT4/mEntJnDbkyaJpntID27IfLEJ
+ dBdUoiLGVjRYvOW7xAsPlTO4hSnE3BH3TnRrL2kyBOEhCdUme0
+ yt4aGRH2cOg7jIV0Eb1vfUM+BxkkGvE44OCQB5h0E3fW9xds3A
+ kfUD26biTxqh09dxB8mmAKgf/W4aFYU100vWbcAK+VS4bi5NKj
+ Gg6+4PkrML2Xk6AnX1DOfa98kNyjFS3v/E9MUG896vJA5pTx0b
+ H9yDWyvb66zwXWoUgMD8spcxPvsEqnGx65sRCk/uQEhFldxU0O
+ YCb8ZZFOBOpDd+lyWKnR+nuTS7/N9CtX/n7yC7XSRigHacQDeZ
+ Utl4IuFywkcWg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b33cad20e547d04eeb8883a
-Content-Type: text/plain; charset=UTF-8
+On Mon, 2013-12-30 at 11:14 +0800, Lei Wen wrote: 
+> Since we would update rq clock at task enqueue/dequeue, or schedule
+> tick. If we don't update the rq clock when our previous task get
+> preempted, our new started task would get a relative stale rq clock
+> which is updated during the previous task enqueue, or the last schedule
+> clock update.
 
-On 30 December 2013 03:47, Mike Turquette <mturquette@linaro.org> wrote:
-> Quoting Tushar Behera (2013-12-26 02:18:58)
->> The clocks in S2MPS11 and S5M8767 are managed in the same way, baring
->> a difference in the register offset. It would be better to update
->> existing S2MPS11 driver to support the clocks in S5M8767, rather than
->> creating an almost duplicate driver altogether.
->
-> Can you rebase patches #1 & #2 onto clk-next? They do not apply cleanly
-> as-is.
->
-> Regards,
-> Mike
->
+> @@ -2555,6 +2556,8 @@ need_resched:
+>                 idle_balance(cpu, rq);
+> 
+>         put_prev_task(rq, prev);
+> +       if (update)
+> +               update_rq_clock(rq);
 
-Commit 1b1ccee1e821 "mfd: s2mps11: Fix build after regmap field rename
-in sec-core.c" is also touching this file, which is in Mark's tree
-right now. If I rebase
-this patch on top clk-next, I am getting conflicts when I merge that
-with linux-next.
-Let me know how you want to handle this.
+If prev remained enqueued, the clock was updated by put_prev_task().
 
-I am attaching the rebased patches for your reference.
-If you want, I will send them again through git-send-email.
+-Mike
 
--- 
-Tushar Behera
-
---047d7b33cad20e547d04eeb8883a
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0001-clk-clk-s2mps11-Refactor-for-including-support-for-o.patch"
-Content-Disposition: attachment; 
-	filename="0001-clk-clk-s2mps11-Refactor-for-including-support-for-o.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hpt65wyx0
-
-RnJvbSBmNGY3MzBkNGJlYTM4NDhkMjFlNDg3YWEwOGZmMDE5YzU4OGU2ZWNkIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBUdXNoYXIgQmVoZXJhIDx0dXNoYXIuYmVoZXJhQGxpbmFyby5v
-cmc+CkRhdGU6IFdlZCwgMzAgT2N0IDIwMTMgMTU6NTU6NDQgKzA1MzAKU3ViamVjdDogW1BBVENI
-IDEvNF0gY2xrOiBjbGstczJtcHMxMTogUmVmYWN0b3IgZm9yIGluY2x1ZGluZyBzdXBwb3J0IGZv
-cgogb3RoZXIgTUZEIGNsb2NrcwoKVGhlIGNsb2NrcyBpbiBTMk1QUzExIGFuZCBTNU04NzY3IGFy
-ZSBtYW5hZ2VkIGluIHRoZSBzYW1lIHdheSwgYmFyaW5nCmEgZGlmZmVyZW5jZSBpbiB0aGUgcmVn
-aXN0ZXIgb2Zmc2V0LiBJdCB3b3VsZCBiZSBiZXR0ZXIgdG8gdXBkYXRlCmV4aXN0aW5nIFMyTVBT
-MTEgZHJpdmVyIHRvIHN1cHBvcnQgdGhlIGNsb2NrcyBpbiBTNU04NzY3LCByYXRoZXIgdGhhbgp0
-byBjcmVhdGUgYW4gYWxtb3N0IGR1cGxpY2F0ZSBkcml2ZXIgYWx0b2dldGhlci4KClNpZ25lZC1v
-ZmYtYnk6IFR1c2hhciBCZWhlcmEgPHR1c2hhci5iZWhlcmFAbGluYXJvLm9yZz4KUmV2aWV3ZWQt
-Ynk6IFRvbWFzeiBGaWdhIDx0LmZpZ2FAc2Ftc3VuZy5jb20+Ci0tLQogZHJpdmVycy9jbGsvY2xr
-LXMybXBzMTEuYyB8ICAgMjAgKysrKysrKysrKysrKysrKy0tLS0KIDEgZmlsZSBjaGFuZ2VkLCAx
-NiBpbnNlcnRpb25zKCspLCA0IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvY2xr
-L2Nsay1zMm1wczExLmMgYi9kcml2ZXJzL2Nsay9jbGstczJtcHMxMS5jCmluZGV4IDdiZTQxZTYu
-LjQ5NGQxZGYgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvY2xrL2Nsay1zMm1wczExLmMKKysrIGIvZHJp
-dmVycy9jbGsvY2xrLXMybXBzMTEuYwpAQCAtNDgsNiArNDgsNyBAQCBzdHJ1Y3QgczJtcHMxMV9j
-bGsgewogCXN0cnVjdCBjbGtfbG9va3VwICpsb29rdXA7CiAJdTMyIG1hc2s7CiAJYm9vbCBlbmFi
-bGVkOworCXVuc2lnbmVkIGludCByZWc7CiB9OwogCiBzdGF0aWMgc3RydWN0IHMybXBzMTFfY2xr
-ICp0b19zMm1wczExX2NsayhzdHJ1Y3QgY2xrX2h3ICpodykKQEAgLTYxLDcgKzYyLDcgQEAgc3Rh
-dGljIGludCBzMm1wczExX2Nsa19wcmVwYXJlKHN0cnVjdCBjbGtfaHcgKmh3KQogCWludCByZXQ7
-CiAKIAlyZXQgPSByZWdtYXBfdXBkYXRlX2JpdHMoczJtcHMxMS0+aW9kZXYtPnJlZ21hcCwKLQkJ
-CQlTMk1QUzExX1JFR19SVENfQ1RSTCwKKwkJCQkgczJtcHMxMS0+cmVnLAogCQkJCSBzMm1wczEx
-LT5tYXNrLCBzMm1wczExLT5tYXNrKTsKIAlpZiAoIXJldCkKIAkJczJtcHMxMS0+ZW5hYmxlZCA9
-IHRydWU7CkBAIC03NCw3ICs3NSw3IEBAIHN0YXRpYyB2b2lkIHMybXBzMTFfY2xrX3VucHJlcGFy
-ZShzdHJ1Y3QgY2xrX2h3ICpodykKIAlzdHJ1Y3QgczJtcHMxMV9jbGsgKnMybXBzMTEgPSB0b19z
-Mm1wczExX2Nsayhodyk7CiAJaW50IHJldDsKIAotCXJldCA9IHJlZ21hcF91cGRhdGVfYml0cyhz
-Mm1wczExLT5pb2Rldi0+cmVnbWFwLCBTMk1QUzExX1JFR19SVENfQ1RSTCwKKwlyZXQgPSByZWdt
-YXBfdXBkYXRlX2JpdHMoczJtcHMxMS0+aW9kZXYtPnJlZ21hcCwgczJtcHMxMS0+cmVnLAogCQkJ
-ICAgczJtcHMxMS0+bWFzaywgfnMybXBzMTEtPm1hc2spOwogCiAJaWYgKCFyZXQpCkBAIC0xNTUs
-NiArMTU2LDcgQEAgc3RhdGljIGludCBzMm1wczExX2Nsa19wcm9iZShzdHJ1Y3QgcGxhdGZvcm1f
-ZGV2aWNlICpwZGV2KQogCXN0cnVjdCBzZWNfcG1pY19kZXYgKmlvZGV2ID0gZGV2X2dldF9kcnZk
-YXRhKHBkZXYtPmRldi5wYXJlbnQpOwogCXN0cnVjdCBzMm1wczExX2NsayAqczJtcHMxMV9jbGtz
-LCAqczJtcHMxMV9jbGs7CiAJc3RydWN0IGRldmljZV9ub2RlICpjbGtfbnAgPSBOVUxMOworCXVu
-c2lnbmVkIGludCBzMm1wczExX3JlZzsKIAlpbnQgaSwgcmV0ID0gMDsKIAl1MzIgdmFsOwogCkBA
-IC0xNjksMTMgKzE3MSwyMyBAQCBzdGF0aWMgaW50IHMybXBzMTFfY2xrX3Byb2JlKHN0cnVjdCBw
-bGF0Zm9ybV9kZXZpY2UgKnBkZXYpCiAJaWYgKElTX0VSUihjbGtfbnApKQogCQlyZXR1cm4gUFRS
-X0VSUihjbGtfbnApOwogCisJc3dpdGNoKHBsYXRmb3JtX2dldF9kZXZpY2VfaWQocGRldiktPmRy
-aXZlcl9kYXRhKSB7CisJY2FzZSBTMk1QUzExWDoKKwkJczJtcHMxMV9yZWcgPSBTMk1QUzExX1JF
-R19SVENfQ1RSTDsKKwkJYnJlYWs7CisJZGVmYXVsdDoKKwkJZGV2X2VycigmcGRldi0+ZGV2LCAi
-SW52YWxpZCBkZXZpY2UgdHlwZVxuIik7CisJCXJldHVybiAtRUlOVkFMOworCX07CisKIAlmb3Ig
-KGkgPSAwOyBpIDwgUzJNUFMxMV9DTEtTX05VTTsgaSsrLCBzMm1wczExX2NsaysrKSB7CiAJCXMy
-bXBzMTFfY2xrLT5pb2RldiA9IGlvZGV2OwogCQlzMm1wczExX2Nsay0+aHcuaW5pdCA9ICZzMm1w
-czExX2Nsa3NfaW5pdFtpXTsKIAkJczJtcHMxMV9jbGstPm1hc2sgPSAxIDw8IGk7CisJCXMybXBz
-MTFfY2xrLT5yZWcgPSBzMm1wczExX3JlZzsKIAogCQlyZXQgPSByZWdtYXBfcmVhZChzMm1wczEx
-X2Nsay0+aW9kZXYtPnJlZ21hcCwKLQkJCQkgIFMyTVBTMTFfUkVHX1JUQ19DVFJMLCAmdmFsKTsK
-KwkJCQkgIHMybXBzMTFfY2xrLT5yZWcsICZ2YWwpOwogCQlpZiAocmV0IDwgMCkKIAkJCWdvdG8g
-ZXJyX3JlZzsKIApAQCAtMjQxLDcgKzI1Myw3IEBAIHN0YXRpYyBpbnQgczJtcHMxMV9jbGtfcmVt
-b3ZlKHN0cnVjdCBwbGF0Zm9ybV9kZXZpY2UgKnBkZXYpCiB9CiAKIHN0YXRpYyBjb25zdCBzdHJ1
-Y3QgcGxhdGZvcm1fZGV2aWNlX2lkIHMybXBzMTFfY2xrX2lkW10gPSB7Ci0JeyAiczJtcHMxMS1j
-bGsiLCAwfSwKKwl7ICJzMm1wczExLWNsayIsIFMyTVBTMTFYfSwKIAl7IH0sCiB9OwogTU9EVUxF
-X0RFVklDRV9UQUJMRShwbGF0Zm9ybSwgczJtcHMxMV9jbGtfaWQpOwotLSAKMS43LjkuNQoK
---047d7b33cad20e547d04eeb8883a
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0002-clk-clk-s2mps11-Add-support-for-clocks-in-S5M8767-MF.patch"
-Content-Disposition: attachment; 
-	filename="0002-clk-clk-s2mps11-Add-support-for-clocks-in-S5M8767-MF.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hpt65wza1
-
-RnJvbSA1ZjM4NDNkYTdiYzcxZDEyNmMwY2NlN2E4ZTg4YWFiMTg1MGM0YjljIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBUdXNoYXIgQmVoZXJhIDx0dXNoYXIuYmVoZXJhQGxpbmFyby5v
-cmc+CkRhdGU6IFdlZCwgMzAgT2N0IDIwMTMgMTU6NTY6MjcgKzA1MzAKU3ViamVjdDogW1BBVENI
-IDIvNF0gY2xrOiBjbGstczJtcHMxMTogQWRkIHN1cHBvcnQgZm9yIGNsb2NrcyBpbiBTNU04NzY3
-IE1GRAoKU2luY2UgY2xvY2sgb3BlcmF0aW9uIHdpdGhpbiBTMk1QUzExIGFuZCBTNU04NzY3IGFy
-ZSBzaW1pbGFyLCB3ZSBjYW4Kc3VwcG9ydCBib3RoIHRoZSBkZXZpY2VzIHdpdGhpbiBhIHNpbmds
-ZSBkcml2ZXIuCgpTaWduZWQtb2ZmLWJ5OiBUdXNoYXIgQmVoZXJhIDx0dXNoYXIuYmVoZXJhQGxp
-bmFyby5vcmc+ClJldmlld2VkLWJ5OiBUb21hc3ogRmlnYSA8dC5maWdhQHNhbXN1bmcuY29tPgot
-LS0KIGRyaXZlcnMvY2xrL0tjb25maWcgICAgICAgfCAgICA2ICsrKystLQogZHJpdmVycy9jbGsv
-Y2xrLXMybXBzMTEuYyB8ICAgIDUgKysrKysKIDIgZmlsZXMgY2hhbmdlZCwgOSBpbnNlcnRpb25z
-KCspLCAyIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvY2xrL0tjb25maWcgYi9k
-cml2ZXJzL2Nsay9LY29uZmlnCmluZGV4IDQwN2NmZmIuLjk5MzMyZGEgMTAwNjQ0Ci0tLSBhL2Ry
-aXZlcnMvY2xrL0tjb25maWcKKysrIGIvZHJpdmVycy9jbGsvS2NvbmZpZwpAQCAtNjUsMTAgKzY1
-LDEyIEBAIGNvbmZpZyBDT01NT05fQ0xLX1NJNTcwCiAJICBjbG9jayBnZW5lcmF0b3JzLgogCiBj
-b25maWcgQ09NTU9OX0NMS19TMk1QUzExCi0JdHJpc3RhdGUgIkNsb2NrIGRyaXZlciBmb3IgUzJN
-UFMxMSBNRkQiCisJdHJpc3RhdGUgIkNsb2NrIGRyaXZlciBmb3IgUzJNUFMxMS9TNU04NzY3IE1G
-RCIKIAlkZXBlbmRzIG9uIE1GRF9TRUNfQ09SRQogCS0tLWhlbHAtLS0KLQkgIFRoaXMgZHJpdmVy
-IHN1cHBvcnRzIFMyTVBTMTEgY3J5c3RhbCBvc2NpbGxhdG9yIGNsb2NrLgorCSAgVGhpcyBkcml2
-ZXIgc3VwcG9ydHMgUzJNUFMxMS9TNU04NzY3IGNyeXN0YWwgb3NjaWxsYXRvciBjbG9jay4gVGhl
-c2UKKwkgIG11bHRpLWZ1bmN0aW9uIGRldmljZXMgaGF2ZSAzIGZpeGVkLXJhdGUgb3NjaWxsYXRv
-cnMsIGNsb2NrZWQgYXQKKwkgIDMyS0h6IGVhY2guCiAKIGNvbmZpZyBDTEtfVFdMNjA0MAogCXRy
-aXN0YXRlICJFeHRlcm5hbCBNY1BETSBmdW5jdGlvbmFsIGNsb2NrIGZyb20gdHdsNjA0MCIKZGlm
-ZiAtLWdpdCBhL2RyaXZlcnMvY2xrL2Nsay1zMm1wczExLmMgYi9kcml2ZXJzL2Nsay9jbGstczJt
-cHMxMS5jCmluZGV4IDQ5NGQxZGYuLjM3ZTcyODUgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvY2xrL2Ns
-ay1zMm1wczExLmMKKysrIGIvZHJpdmVycy9jbGsvY2xrLXMybXBzMTEuYwpAQCAtMjcsNiArMjcs
-NyBAQAogI2luY2x1ZGUgPGxpbnV4L2Nsay1wcm92aWRlci5oPgogI2luY2x1ZGUgPGxpbnV4L3Bs
-YXRmb3JtX2RldmljZS5oPgogI2luY2x1ZGUgPGxpbnV4L21mZC9zYW1zdW5nL3MybXBzMTEuaD4K
-KyNpbmNsdWRlIDxsaW51eC9tZmQvc2Ftc3VuZy9zNW04NzY3Lmg+CiAjaW5jbHVkZSA8bGludXgv
-bWZkL3NhbXN1bmcvY29yZS5oPgogCiAjZGVmaW5lIHMybXBzMTFfbmFtZShhKSAoYS0+aHcuaW5p
-dC0+bmFtZSkKQEAgLTE3NSw2ICsxNzYsOSBAQCBzdGF0aWMgaW50IHMybXBzMTFfY2xrX3Byb2Jl
-KHN0cnVjdCBwbGF0Zm9ybV9kZXZpY2UgKnBkZXYpCiAJY2FzZSBTMk1QUzExWDoKIAkJczJtcHMx
-MV9yZWcgPSBTMk1QUzExX1JFR19SVENfQ1RSTDsKIAkJYnJlYWs7CisJY2FzZSBTNU04NzY3WDoK
-KwkJczJtcHMxMV9yZWcgPSBTNU04NzY3X1JFR19DVFJMMTsKKwkJYnJlYWs7CiAJZGVmYXVsdDoK
-IAkJZGV2X2VycigmcGRldi0+ZGV2LCAiSW52YWxpZCBkZXZpY2UgdHlwZVxuIik7CiAJCXJldHVy
-biAtRUlOVkFMOwpAQCAtMjU0LDYgKzI1OCw3IEBAIHN0YXRpYyBpbnQgczJtcHMxMV9jbGtfcmVt
-b3ZlKHN0cnVjdCBwbGF0Zm9ybV9kZXZpY2UgKnBkZXYpCiAKIHN0YXRpYyBjb25zdCBzdHJ1Y3Qg
-cGxhdGZvcm1fZGV2aWNlX2lkIHMybXBzMTFfY2xrX2lkW10gPSB7CiAJeyAiczJtcHMxMS1jbGsi
-LCBTMk1QUzExWH0sCisJeyAiczVtODc2Ny1jbGsiLCBTNU04NzY3WH0sCiAJeyB9LAogfTsKIE1P
-RFVMRV9ERVZJQ0VfVEFCTEUocGxhdGZvcm0sIHMybXBzMTFfY2xrX2lkKTsKLS0gCjEuNy45LjUK
-Cg==
---047d7b33cad20e547d04eeb8883a--
