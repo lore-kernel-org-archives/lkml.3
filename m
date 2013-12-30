@@ -1,85 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932272Ab3L3VDL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 16:03:11 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:42345 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932117Ab3L3VDK (ORCPT
+	id S932301Ab3L3VIy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 16:08:54 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:51101 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932169Ab3L3VIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 16:03:10 -0500
+	Mon, 30 Dec 2013 16:08:52 -0500
+Message-ID: <52C1E0DF.2000800@lwfinger.net>
+Date: Mon, 30 Dec 2013 15:08:47 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <14411385250870@web21g.yandex.ru>
-References: <5290F68C.4060900@roeck-us.net>
-	<14411385250870@web21g.yandex.ru>
-Date: Mon, 30 Dec 2013 22:03:09 +0100
-X-Google-Sender-Auth: m2_9QptRDL2xTpL0Ppgn8wZPEek
-Message-ID: <CAMuHMdU74A9sDcv8B213m8cryiBfTH7BC_8OuzfK020Hq3VV4g@mail.gmail.com>
-Subject: Re: New build failures in v3.13-rc1
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Kirill Tkhai <tkhai@yandex.ru>, "David S. Miller" <davem@davemloft.net>,
-        sparclinux <sparclinux@vger.kernel.org>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: kernel-janitors@vger.kernel.org, Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/11] rtlwifi: use ether_addr_equal_64bits
+References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr> <1388427307-8691-7-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1388427307-8691-7-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC davem, sparclinux
+On 12/30/2013 12:15 PM, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>
+> Ether_addr_equal_64bits is more efficient than ether_addr_equal, and can be
+> used when each argument is an array within a structure that contains at
+> least two bytes of data beyond the array.
+>
+> The structures involved are:
+> ieee80211_hdr defined in include/linux/ieee80211.h and
+> rtl_mac defined in drivers/net/wireless/rtlwifi/wifi.h
+>
+> This was done using Coccinelle (http://coccinelle.lip6.fr/).
+>
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-On Sun, Nov 24, 2013 at 12:54 AM, Kirill Tkhai <tkhai@yandex.ru> wrote:
-> 23.11.2013, 22:40, "Guenter Roeck" <linux@roeck-us.net>:
->> =======================
->> Building sparc64:allmodconfig ... failed
->> --------------
->> Error log:
->> arch/sparc/kernel/kgdb_64.c: In function 'kgdb_trap':
->> arch/sparc/kernel/kgdb_64.c:162:7: error: implicit declaration of function 'exception_enter' [-Werror=implicit-function-declaration]
->> arch/sparc/kernel/kgdb_64.c:176:2: error: implicit declaration of function 'exception_exit' [-Werror=implicit-function-declaration]
->> cc1: all warnings being treated as errors
->> make[2]: *** [arch/sparc/kernel/kgdb_64.o] Error 1
->>
->> Introduced by commit 812cb83a5 (sparc64: Implement HAVE_CONTEXT_TRACKING).
->>
->> Reverting that commit fixes the problem.
->>
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
+
+Larry
+
+
 >
-> The patch below fixes the problem:
->
-> Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
 > ---
->  arch/sparc/kernel/kgdb_64.c | 1 +
->  1 file changed, 1 insertion(+)
-> diff --git a/arch/sparc/kernel/kgdb_64.c b/arch/sparc/kernel/kgdb_64.c
-> index 60b19f5..b45fe3f 100644
-> --- a/arch/sparc/kernel/kgdb_64.c
-> +++ b/arch/sparc/kernel/kgdb_64.c
-> @@ -6,6 +6,7 @@
->  #include <linux/kgdb.h>
->  #include <linux/kdebug.h>
->  #include <linux/ftrace.h>
-> +#include <linux/context_tracking.h>
+> The semantic patch used is rather long and can be found in message 0 of
+> this patch series.
 >
->  #include <asm/cacheflush.h>
->  #include <asm/kdebug.h>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>   drivers/net/wireless/rtlwifi/base.c |    4 ++--
+>   drivers/net/wireless/rtlwifi/ps.c   |    4 ++--
+>   2 files changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/net/wireless/rtlwifi/ps.c b/drivers/net/wireless/rtlwifi/ps.c
+> index 0d81f76..deedae3 100644
+> --- a/drivers/net/wireless/rtlwifi/ps.c
+> +++ b/drivers/net/wireless/rtlwifi/ps.c
+> @@ -478,7 +478,7 @@ void rtl_swlps_beacon(struct ieee80211_hw *hw, void *data, unsigned int len)
+>   		return;
+>
+>   	/* and only beacons from the associated BSSID, please */
+> -	if (!ether_addr_equal(hdr->addr3, rtlpriv->mac80211.bssid))
+> +	if (!ether_addr_equal_64bits(hdr->addr3, rtlpriv->mac80211.bssid))
+>   		return;
+>
+>   	rtlpriv->psc.last_beacon = jiffies;
+> @@ -923,7 +923,7 @@ void rtl_p2p_info(struct ieee80211_hw *hw, void *data, unsigned int len)
+>   		return;
+>
+>   	/* and only beacons from the associated BSSID, please */
+> -	if (!ether_addr_equal(hdr->addr3, rtlpriv->mac80211.bssid))
+> +	if (!ether_addr_equal_64bits(hdr->addr3, rtlpriv->mac80211.bssid))
+>   		return;
+>
+>   	/* check if this really is a beacon */
+> diff --git a/drivers/net/wireless/rtlwifi/base.c b/drivers/net/wireless/rtlwifi/base.c
+> index fcf9b62..d63a12c 100644
+> --- a/drivers/net/wireless/rtlwifi/base.c
+> +++ b/drivers/net/wireless/rtlwifi/base.c
+> @@ -1293,7 +1293,7 @@ void rtl_beacon_statistic(struct ieee80211_hw *hw, struct sk_buff *skb)
+>   		return;
+>
+>   	/* and only beacons from the associated BSSID, please */
+> -	if (!ether_addr_equal(hdr->addr3, rtlpriv->mac80211.bssid))
+> +	if (!ether_addr_equal_64bits(hdr->addr3, rtlpriv->mac80211.bssid))
+>   		return;
+>
+>   	rtlpriv->link_info.bcn_rx_inperiod++;
+> @@ -1781,7 +1781,7 @@ void rtl_recognize_peer(struct ieee80211_hw *hw, u8 *data, unsigned int len)
+>   		return;
+>
+>   	/* and only beacons from the associated BSSID, please */
+> -	if (!ether_addr_equal(hdr->addr3, rtlpriv->mac80211.bssid))
+> +	if (!ether_addr_equal_64bits(hdr->addr3, rtlpriv->mac80211.bssid))
+>   		return;
+>
+>   	if (rtl_find_221_ie(hw, data, len))
+>
+>
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
