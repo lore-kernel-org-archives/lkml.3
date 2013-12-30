@@ -1,135 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396Ab3L3Wsc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 17:48:32 -0500
-Received: from mta-out.inet.fi ([195.156.147.13]:37340 "EHLO kirsi1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932334Ab3L3WsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 17:48:15 -0500
-Date: Tue, 31 Dec 2013 00:48:08 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+	id S932388Ab3L3XNW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 18:13:22 -0500
+Received: from s3.sipsolutions.net ([144.76.43.152]:44271 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932343Ab3L3XNU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Dec 2013 18:13:20 -0500
+Message-ID: <1388445188.18164.0.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH 4/11]  use ether_addr_equal_64bits
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Julia Lawall <julia.lawall@lip6.fr>, kernel-janitors@vger.kernel.org,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC 1/2] mm: additional page lock debugging
-Message-ID: <20131230224808.GA11674@node.dhcp.inet.fi>
-References: <1388281504-11453-1-git-send-email-sasha.levin@oracle.com>
- <20131230114317.GA8117@node.dhcp.inet.fi>
- <52C1A06B.4070605@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52C1A06B.4070605@oracle.com>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+Date: Tue, 31 Dec 2013 00:13:08 +0100
+In-Reply-To: <20131230215701.GA4938@khazad-dum.debian.net>
+References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>
+	 <1388427307-8691-5-git-send-email-Julia.Lawall@lip6.fr>
+	 <1388429761.4410.1.camel@jlt4.sipsolutions.net>
+	 <alpine.DEB.2.02.1312302057420.2209@localhost6.localdomain6>
+	 <1388438724.4573.2.camel@jlt4.sipsolutions.net>
+	 <20131230215701.GA4938@khazad-dum.debian.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 30, 2013 at 11:33:47AM -0500, Sasha Levin wrote:
-> On 12/30/2013 06:43 AM, Kirill A. Shutemov wrote:
-> >On Sat, Dec 28, 2013 at 08:45:03PM -0500, Sasha Levin wrote:
-> >>We've recently stumbled on several issues with the page lock which
-> >>triggered BUG_ON()s.
-> >>
-> >>While working on them, it was clear that due to the complexity of
-> >>locking its pretty hard to figure out if something is supposed
-> >>to be locked or not, and if we encountered a race it was quite a
-> >>pain narrowing it down.
-> >>
-> >>This is an attempt at solving this situation. This patch adds simple
-> >>asserts to catch cases where someone is trying to lock the page lock
-> >>while it's already locked, and cases to catch someone unlocking the
-> >>lock without it being held.
-> >>
-> >>My initial patch attempted to use lockdep to get further coverege,
-> >>but that attempt uncovered the amount of issues triggered and made
-> >>it impossible to debug the lockdep integration without clearing out
-> >>a large portion of existing bugs.
-> >>
-> >>This patch adds a new option since it will horribly break any system
-> >>booting with it due to the amount of issues that it uncovers. This is
-> >>more of a "call for help" to other mm/ hackers to help clean it up.
-> >>
-> >>Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> >>---
-> >>  include/linux/pagemap.h | 11 +++++++++++
-> >>  lib/Kconfig.debug       |  9 +++++++++
-> >>  mm/filemap.c            |  4 +++-
-> >>  3 files changed, 23 insertions(+), 1 deletion(-)
-> >>
-> >>diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-> >>index 1710d1b..da24939 100644
-> >>--- a/include/linux/pagemap.h
-> >>+++ b/include/linux/pagemap.h
-> >>@@ -321,6 +321,14 @@ static inline pgoff_t linear_page_index(struct vm_area_struct *vma,
-> >>  	return pgoff >> (PAGE_CACHE_SHIFT - PAGE_SHIFT);
-> >>  }
-> >>
-> >>+#ifdef CONFIG_DEBUG_VM_PAGE_LOCKS
-> >>+#define VM_ASSERT_LOCKED(page) VM_BUG_ON_PAGE(!PageLocked(page), (page))
-> >>+#define VM_ASSERT_UNLOCKED(page) VM_BUG_ON_PAGE(PageLocked(page), (page))
-> >>+#else
-> >>+#define VM_ASSERT_LOCKED(page) do { } while (0)
-> >>+#define VM_ASSERT_UNLOCKED(page) do { } while (0)
-> >>+#endif
-> >>+
-> >>  extern void __lock_page(struct page *page);
-> >>  extern int __lock_page_killable(struct page *page);
-> >>  extern int __lock_page_or_retry(struct page *page, struct mm_struct *mm,
-> >>@@ -329,16 +337,19 @@ extern void unlock_page(struct page *page);
-> >>
-> >>  static inline void __set_page_locked(struct page *page)
-> >>  {
-> >>+	VM_ASSERT_UNLOCKED(page);
-> >>  	__set_bit(PG_locked, &page->flags);
-> >>  }
-> >>
-> >>  static inline void __clear_page_locked(struct page *page)
-> >>  {
-> >>+	VM_ASSERT_LOCKED(page);
-> >>  	__clear_bit(PG_locked, &page->flags);
-> >>  }
-> >>
-> >>  static inline int trylock_page(struct page *page)
-> >>  {
-> >>+	VM_ASSERT_UNLOCKED(page);
-> >
-> >This is not correct. It's perfectly fine if the page is locked here: it's
-> >why trylock needed.
-> >
-> >IIUC, what we want to catch is the case when the page has already locked
-> >by the task.
+On Mon, 2013-12-30 at 19:57 -0200, Henrique de Moraes Holschuh wrote:
+> On Mon, 30 Dec 2013, Johannes Berg wrote:
+> > On Mon, 2013-12-30 at 20:58 +0100, Julia Lawall wrote:
+> > > > Is there any way we could catch (sparse, or some other script?) that
+> > > > struct reorganising won't break the condition needed ("within a
+> > > > structure that contains at least two more bytes")?
+> > > 
+> > > What kind of reorganizing could happen?  Do you mean that the programmer 
+> > > might do at some time in the future, or something the compiler might do?
+> > 
+> > I'm just thinking of a programmer, e.g. changing a struct like this:
+> > 
+> >  struct foo {
+> >    u8 addr[ETH_ALEN];
+> > -  u16 dummy;
+> >  };
+> > 
+> > for example.
 > 
-> Frankly, we shouldn't have trylock_page() at all.
-
-It has valid use cases: if you don't want to sleep on lock, just give up
-right away. Like grab_cache_page_nowait().
-
-> Look at page_referenced() for example. Instead of assuming that it has to be
-> called with page lock held, it's trying to acquire the lock and to free it only
-> if it's the one that allocated it.
-
-I agree here. page_referenced() looks badly.
-
-> Why isn't there a VM_BUG_ON() there to test whether the page is locked, and let
-> the callers handle that?
-
-At the moment trylock_page() is part of lock_page(), so you'll hit it all
-the time: on any contention.
-
-> >I don't think it's reasonable to re-implement this functionality. We
-> >really need to hook up lockdep.
+> That is easily resolved by:
 > 
-> The issue with adding lockdep straight away is that we need to deal with
-> long held page locks somehow nicely. Unlike regular locks, these may be
-> held for a rather long while, triggering really long locking chains which
-> lockdep doesn't really like.
-> 
-> Many places lock a long list of pages in bulk - we could allow that with
-> nesting, but then you lose your ability to detect trivial deadlocks.
+> struct foo {
+> 	u8 addr[ETH_ALEN];
+> 	u16 required_padding;	/* do not remove upon pain of death */
+> };
 
-I see. But we need something better then plain VM_BUG() to be able to
-analyze what happened.
+That'd be a stupid waste of struct space. If anything, there should be
+*only* a comment saying that at least two bytes are needed - I'd still
+prefer an automated check.
 
--- 
- Kirill A. Shutemov
+johannes
+
