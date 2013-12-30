@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756145Ab3L3QhL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 11:37:11 -0500
-Received: from [213.186.176.85] ([213.186.176.85]:6613 "EHLO mail.inu.edu.jo"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756010Ab3L3QhJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 11:37:09 -0500
-X-Greylist: delayed 327 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Dec 2013 11:37:08 EST
-Content-Type: text/plain; charset="iso-8859-1"
+	id S1756160Ab3L3QlG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 11:41:06 -0500
+Received: from canardo.mork.no ([148.122.252.1]:47819 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756010Ab3L3QlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Dec 2013 11:41:04 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CAKohpokW2FCN33VZOSUQ0xbgt6FgxtfQyPZintGL9URDHH8LCQ@mail.gmail.com>
+References: <f9d7b0d5424e4443597d2ed39bec3fedd2b10d1e.1387848958.git.viresh.kumar@linaro.org> <5562479.pVWRuDL0y6@vostro.rjw.lan> <CAKohponHBaGG1e5e+Wmg6rqMB-nbRx1e=F+u5AoaNb=mxfQL6A@mail.gmail.com> <CAKohpom9_-9bDJ9tWDHmm1inMporaHytAvmrgfPSs2koRqGzBw@mail.gmail.com> <CAKohpokW2FCN33VZOSUQ0xbgt6FgxtfQyPZintGL9URDHH8LCQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Viimeinen ilmoitus
-To: Recipients <STALLION@vger.kernel.org>
-From: STALLION@vger.kernel.org, MEGA@vger.kernel.org
-Date: Tue, 31 Dec 2013 05:29:27 -0800
-Reply-To: infostallion@aol.com
-X-Antivirus: avast! (VPS 131230-0, 12/30/2013), Outbound message
-X-Antivirus-Status: Clean
-Message-ID: <MAILLPke3fzk76oJDEI000007d2@mail.inu.edu.jo>
-X-OriginalArrivalTime: 30 Dec 2013 17:27:05.0781 (UTC) FILETIME=[5C34A650:01CF0584]
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 1/2] cpufreq: try to resume policies which failed on last resume
+From: =?ISO-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>
+Date: Mon, 30 Dec 2013 17:40:45 +0100
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <cb5a2c1a-7bca-494a-bbd0-704f93902ec9@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Viimeinen ilmoitus
-Sähköpostiosoitteesi ID on voittanut (450,000.00 euroa) Espanjan "El Gordo"
-Kansainvälinen E-mail arpajaisvoittoluettelot oli onnekas numeroita 9/11/13/24/43 ja
-Ref: ES/9420X2/68.
-Suunnittelua ja hallintaa Yhteystiedot:
-STALLION MEGA KORVAUSVAATIMUKSEN AGENCY
-Juan Carlos
- 
-E-mail infostallion@aol.com
-Tel :0034-632 361 467 (puhuu Englanti ja Espanja)
-Teidän koko nimi, osoite, ikä, ammatti, puhelinnumero,
-Lähetä replay tähän e-mail: infostallion@aol.com
-Onneksi olkoon.
-Ystävällisin terveisin,
+Yes, that's good. As you might have guessed by the lack of any response, I won't be able to test this in 2013.
 
----
-This email is free from viruses and malware because avast! Antivirus protection is active.
-http://www.avast.com
+Thanks for all the good work!
+
+
+BjÃ¸rn 
+
+Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>On 27 December 2013 15:27, Viresh Kumar <viresh.kumar@linaro.org>
+>wrote:
+>> I think there is nothing much different in this patch compared to
+>what Bjorn
+>> tested. So you can probably push that now and let him test linux-next
+>later
+>> once he is back?
+>
+>Just saw that you already pushed it. :)
 
