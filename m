@@ -1,134 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501Ab3L3G7n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 01:59:43 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:51430 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751270Ab3L3G7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 01:59:41 -0500
-Message-ID: <52C119B4.1010002@ti.com>
-Date: Mon, 30 Dec 2013 12:29:00 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>
-CC: <kgene.kim@samsung.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <grant.likely@linaro.org>,
-        <rob.herring@calxeda.com>, <swarren@wwwdotorg.org>,
-        <mark.rutland@arm.com>, <sachin.kamat@linaro.org>,
-        <b.zolnierkie@samsung.com>, <jg1.han@samsung.com>,
-        <t.figa@samsung.com>, <christoffer.dall@linaro.org>,
-        <joshi@samsung.com>, Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
-Subject: Re: [PATCH V3 2/2] ARM: dts: Enable ahci sata and sata phy
-References: <1386669911-17319-1-git-send-email-yuvaraj.cd@samsung.com> <1386669911-17319-3-git-send-email-yuvaraj.cd@samsung.com>
-In-Reply-To: <1386669911-17319-3-git-send-email-yuvaraj.cd@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751512Ab3L3H1F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 02:27:05 -0500
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:14216 "EHLO
+	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751346Ab3L3H1A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Dec 2013 02:27:00 -0500
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
+        David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
+Subject: [PATCH v5 1/4] PCI/MSI: Factor out pci_msi_vec_count() interface
+Date: Mon, 30 Dec 2013 08:28:13 +0100
+Message-Id: <4f6330995d90c654b045d5457ea90b0c633e07a6.1388262668.git.agordeev@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <cover.1388262668.git.agordeev@redhat.com>
+References: <cover.1388262668.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Device drivers can use this interface to obtain maximum number
+of MSI interrupts the device supports and use that number i.e.
+in a following call to pci_enable_msi_block() interface.
 
-On Tuesday 10 December 2013 03:35 PM, Yuvaraj Kumar C D wrote:
-> This patch adds dt entry for ahci sata controller and its
-> corresponding phy controller.phy node has been added w.r.t
-> new generic phy framework.
->
-> Changes since V2:
-> 	1.Used syscon interface to PMU handling.
-> 	2.Changed "sata-phy-i2c" to "exynos-sataphy-i2c".
->
-> Changes since V1:
-> 	1.Minor changes to node name convention.
-> 	2.Updated binding document.
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Reviewed-by: Tejun Heo <tj@kernel.org>
+---
+ Documentation/PCI/MSI-HOWTO.txt |   15 ++++++++++++++
+ drivers/pci/msi.c               |   41 +++++++++++++++++++++++++++++++-------
+ include/linux/pci.h             |    6 +++++
+ 3 files changed, 54 insertions(+), 8 deletions(-)
 
-Change history should be moved after '---'.
->
-> Signed-off-by: Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
-> ---
->   .../devicetree/bindings/ata/exynos-sata-phy.txt    |   19 ++++++++++++++-----
->   .../devicetree/bindings/ata/exynos-sata.txt        |   17 ++++++++++++-----
->   .../devicetree/bindings/ata/exynos_sataphy_i2c.txt |   12 ++++++++++++
->   arch/arm/boot/dts/exynos5250-arndale.dts           |    9 ++++++++-
->   arch/arm/boot/dts/exynos5250-smdk5250.dts          |    8 ++------
->   arch/arm/boot/dts/exynos5250.dtsi                  |   16 ++++++++++++----
->   6 files changed, 60 insertions(+), 21 deletions(-)
->   create mode 100644 Documentation/devicetree/bindings/ata/exynos_sataphy_i2c.txt
->
-> diff --git a/Documentation/devicetree/bindings/ata/exynos-sata-phy.txt b/Documentation/devicetree/bindings/ata/exynos-sata-phy.txt
-> index 37824fa..a679e17 100644
-> --- a/Documentation/devicetree/bindings/ata/exynos-sata-phy.txt
-> +++ b/Documentation/devicetree/bindings/ata/exynos-sata-phy.txt
+diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
+index a4d174e..a8b4178 100644
+--- a/Documentation/PCI/MSI-HOWTO.txt
++++ b/Documentation/PCI/MSI-HOWTO.txt
+@@ -169,6 +169,21 @@ on any interrupt for which it previously called request_irq().
+ Failure to do so results in a BUG_ON(), leaving the device with
+ MSI enabled and thus leaking its vector.
+ 
++4.2.5 pci_msi_vec_count
++
++int pci_msi_vec_count(struct pci_dev *dev)
++
++This function could be used to retrieve the number of MSI vectors the
++device requested (via the Multiple Message Capable register). The MSI
++specification only allows the returned value to be a power of two,
++up to a maximum of 2^5 (32).
++
++If this function returns a negative number, it indicates the device is
++not capable of sending MSIs.
++
++If this function returns a positive number, it indicates the maximum
++number of MSI interrupt vectors that could be allocated.
++
+ 4.3 Using MSI-X
+ 
+ The MSI-X capability is much more flexible than the MSI capability.
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index 22957aa..5233e28 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -852,6 +852,31 @@ static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
+ }
+ 
+ /**
++ * pci_msi_vec_count - Return the number of MSI vectors a device can send
++ * @dev: device to report about
++ *
++ * This function returns the number of MSI vectors a device requested via
++ * Multiple Message Capable register. It returns a negative errno if the
++ * device is not capable sending MSI interrupts. Otherwise, the call succeeds
++ * and returns a power of two, up to a maximum of 2^5 (32), according to the
++ * MSI specification.
++ **/
++int pci_msi_vec_count(struct pci_dev *dev)
++{
++	int ret;
++	u16 msgctl;
++
++	if (!dev->msi_cap)
++		return -EINVAL;
++
++	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &msgctl);
++	ret = 1 << ((msgctl & PCI_MSI_FLAGS_QMASK) >> 1);
++
++	return ret;
++}
++EXPORT_SYMBOL(pci_msi_vec_count);
++
++/**
+  * pci_enable_msi_block - configure device's MSI capability structure
+  * @dev: device to configure
+  * @nvec: number of interrupts to configure
+@@ -867,13 +892,13 @@ static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
+ int pci_enable_msi_block(struct pci_dev *dev, int nvec)
+ {
+ 	int status, maxvec;
+-	u16 msgctl;
+ 
+-	if (!dev->msi_cap || dev->current_state != PCI_D0)
++	if (dev->current_state != PCI_D0)
+ 		return -EINVAL;
+ 
+-	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &msgctl);
+-	maxvec = 1 << ((msgctl & PCI_MSI_FLAGS_QMASK) >> 1);
++	maxvec = pci_msi_vec_count(dev);
++	if (maxvec < 0)
++		return maxvec;
+ 	if (nvec > maxvec)
+ 		return maxvec;
+ 
+@@ -898,13 +923,13 @@ EXPORT_SYMBOL(pci_enable_msi_block);
+ int pci_enable_msi_block_auto(struct pci_dev *dev, int *maxvec)
+ {
+ 	int ret, nvec;
+-	u16 msgctl;
+ 
+-	if (!dev->msi_cap || dev->current_state != PCI_D0)
++	if (dev->current_state != PCI_D0)
+ 		return -EINVAL;
+ 
+-	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &msgctl);
+-	ret = 1 << ((msgctl & PCI_MSI_FLAGS_QMASK) >> 1);
++	ret = pci_msi_vec_count(dev);
++	if (ret < 0)
++		return ret;
+ 
+ 	if (maxvec)
+ 		*maxvec = ret;
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 4b7cf4c..0322af1 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1166,6 +1166,11 @@ struct msix_entry {
+ 
+ 
+ #ifndef CONFIG_PCI_MSI
++static inline int pci_msi_vec_count(struct pci_dev *dev)
++{
++	return -ENOSYS;
++}
++
+ static inline int pci_enable_msi_block(struct pci_dev *dev, int nvec)
+ {
+ 	return -ENOSYS;
+@@ -1207,6 +1212,7 @@ static inline int pci_msi_enabled(void)
+ 	return 0;
+ }
+ #else
++int pci_msi_vec_count(struct pci_dev *dev);
+ int pci_enable_msi_block(struct pci_dev *dev, int nvec);
+ int pci_enable_msi_block_auto(struct pci_dev *dev, int *maxvec);
+ void pci_msi_shutdown(struct pci_dev *dev);
+-- 
+1.7.7.6
 
-IMO this documentation should be in 
-Documentation/devicetree/bindings/phy and you could also use the 
-existing exynos file.
-> @@ -4,11 +4,20 @@ SATA PHY nodes are defined to describe on-chip SATA Physical layer controllers.
->   Each SATA PHY controller should have its own node.
->
->   Required properties:
-> -- compatible        : compatible list, contains "samsung,exynos5-sata-phy"
-> +- compatible        : compatible list, contains "samsung,exynos5250-sata-phy"
->   - reg               : <registers mapping>
->
->   Example:
-> -        sata@ffe07000 {
-> -                compatible = "samsung,exynos5-sata-phy";
-> -                reg = <0xffe07000 0x1000>;
-> -        };
-> +	sata_phy: sata-phy@12170000 {
-> +		compatible = "samsung,exynos5250-sata-phy";
-> +		reg = <0x12170000 0x1ff>;
-> +		clocks = <&clock 287>;
-> +		clock-names = "sata_phyctrl";
-> +		#phy-cells = <0>;
-> +		#address-cells = <1>;
-> +		#size-cells = <1>;
-> +		ranges;
-> +		sataphy-pmu {
-> +			reg = <0x10040724 0x4>;
-> +			};
-
-alignment problem..
-> +	};
-> diff --git a/Documentation/devicetree/bindings/ata/exynos-sata.txt b/Documentation/devicetree/bindings/ata/exynos-sata.txt
-> index 0849f10..918bff8 100644
-> --- a/Documentation/devicetree/bindings/ata/exynos-sata.txt
-> +++ b/Documentation/devicetree/bindings/ata/exynos-sata.txt
-> @@ -8,10 +8,17 @@ Required properties:
->   - interrupts        : <interrupt mapping for SATA IRQ>
->   - reg               : <registers mapping>
->   - samsung,sata-freq : <frequency in MHz>
-> +- phys              : as mentioned in phy-bindings.txt
-> +- phy-names         : as mentioned in phy-bindings.txt
-
-here too.. match it with existing properties..
->
->   Example:
-> -        sata@ffe08000 {
-> -                compatible = "samsung,exynos5-sata";
-> -                reg = <0xffe08000 0x1000>;
-> -                interrupts = <115>;
-> -        };
-> +	sata@122f0000 {
-> +		compatible = "snps,dwc-ahci";
-> +		samsung,sata-freq = <66>;
-> +		reg = <0x122f0000 0x1ff>;
-> +		interrupts = <0 115 0>;
-> +		clocks = <&clock 277>, <&clock 143>;
-> +		clock-names = "sata", "sclk_sata";
-> +		phys = <&sata_phy>;
-> +		phy-names = "sata-phy";
-> +	};
-> diff --git a/Documentation/devicetree/bindings/ata/exynos_sataphy_i2c.txt b/Documentation/devicetree/bindings/ata/exynos_sataphy_i2c.txt
-> new file mode 100644
-> index 0000000..deabba9
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/ata/exynos_sataphy_i2c.txt
-
-This should also be in /bindings/phy..
-
-Cheers
-Kishon
