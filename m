@@ -1,76 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291Ab3L3ViD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 16:38:03 -0500
-Received: from mail-yh0-f44.google.com ([209.85.213.44]:33791 "EHLO
-	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932222Ab3L3ViA (ORCPT
+	id S932324Ab3L3V5I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 16:57:08 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:50828 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932222Ab3L3V5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 16:38:00 -0500
-Date: Mon, 30 Dec 2013 13:37:54 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ingo Molnar <mingo@kernel.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>, peterz@infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>, linux@arm.linux.org.uk,
-        ralf@linux-mips.org, tglx@linutronix.de,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        arjan@linux.intel.com, james.hogan@imgtec.com,
-        Michal Marek <mmarek@suse.cz>, lethal@linux-sh.org,
-        shawn.guo@linaro.org, Kees Cook <keescook@chromium.org>,
-        sfr@canb.auug.org.au, linux-kbuild@vger.kernel.org,
-        linux-tip-commits@vger.kernel.org
-Subject: [patch core/stackprotector] stackprotector: Fix build when compiler
- lacks support
-In-Reply-To: <tip-8779657d29c0ebcc0c94ede4df2f497baf1b563f@git.kernel.org>
-Message-ID: <alpine.DEB.2.02.1312301331520.10482@chino.kir.corp.google.com>
-References: <1387481759-14535-3-git-send-email-keescook@chromium.org> <tip-8779657d29c0ebcc0c94ede4df2f497baf1b563f@git.kernel.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 30 Dec 2013 16:57:06 -0500
+X-Sasl-enc: 8RDuG8tR/qEYX+IO3xH5nKLfRxEGJYQzyVzkEIzAynRb 1388440624
+Date: Mon, 30 Dec 2013 19:57:01 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Julia Lawall <julia.lawall@lip6.fr>, kernel-janitors@vger.kernel.org,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/11]  use ether_addr_equal_64bits
+Message-ID: <20131230215701.GA4938@khazad-dum.debian.net>
+References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>
+ <1388427307-8691-5-git-send-email-Julia.Lawall@lip6.fr>
+ <1388429761.4410.1.camel@jlt4.sipsolutions.net>
+ <alpine.DEB.2.02.1312302057420.2209@localhost6.localdomain6>
+ <1388438724.4573.2.camel@jlt4.sipsolutions.net>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-1315487975-1388439477=:10482"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1388438724.4573.2.camel@jlt4.sipsolutions.net>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Mon, 30 Dec 2013, Johannes Berg wrote:
+> On Mon, 2013-12-30 at 20:58 +0100, Julia Lawall wrote:
+> > > Is there any way we could catch (sparse, or some other script?) that
+> > > struct reorganising won't break the condition needed ("within a
+> > > structure that contains at least two more bytes")?
+> > 
+> > What kind of reorganizing could happen?  Do you mean that the programmer 
+> > might do at some time in the future, or something the compiler might do?
+> 
+> I'm just thinking of a programmer, e.g. changing a struct like this:
+> 
+>  struct foo {
+>    u8 addr[ETH_ALEN];
+> -  u16 dummy;
+>  };
+> 
+> for example.
 
---531381512-1315487975-1388439477=:10482
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+That is easily resolved by:
 
-8779657d29c0 ("stackprotector: Introduce CONFIG_CC_STACKPROTECTOR_STRONG") 
-causes the build to break when the compiler doesn't support 
--fstack-protector-strong:
+struct foo {
+	u8 addr[ETH_ALEN];
+	u16 required_padding;	/* do not remove upon pain of death */
+};
 
-	cc1: error: unrecognized command line option ‘-fstack-protector-strong’
-	cc1: error: unrecognized command line option ‘-fstack-protector-strong’
+Preferably with a comment nearby explaining just why that padding is so
+important in the first place.
 
-with at least gcc 4.6.3.
+Unfortunately, we do have a lot of code with unexplained padding that one
+should never remove, and it is often nowhere nearly as obvious as stray
+elements with idiotic non-explanatory names in a structure.
 
-Instead of breaking the build, just warn of the failure and disable the 
-feature.
+One example is the via-rng hw_random driver, where the buffer used by the
+"xstore" via-specific instriction *MUST* be longer than what the "xstore"
+instruction is documented to require due to CPU errata (you ask it to write
+from 1 to 8 bytes, and it may end up writing 16 bytes).  The xstore buffer
+is an array that was made long enough to avoid the errata, but that fact is
+documented only in a git commit message.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- Makefile | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/Makefile b/Makefile
---- a/Makefile
-+++ b/Makefile
-@@ -603,10 +603,11 @@ ifdef CONFIG_CC_STACKPROTECTOR_REGULAR
- 	      -fstack-protector not supported by compiler))
-   endif
- else ifdef CONFIG_CC_STACKPROTECTOR_STRONG
--  stackp-flag := -fstack-protector-strong
--  ifeq ($(call cc-option, $(stackp-flag)),)
-+  ifeq ($(call cc-option, -fstack-protector-strong),)
-     $(warning Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: \
- 	      -fstack-protector-strong not supported by compiler)
-+  else
-+    stackp-flag := -fstack-protector-strong
-   endif
- else
-   # Force off for distro compilers that enable stack protector by default.
---531381512-1315487975-1388439477=:10482--
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
