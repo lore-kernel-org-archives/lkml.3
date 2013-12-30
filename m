@@ -1,105 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab3L3Q2L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 11:28:11 -0500
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:36842 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756058Ab3L3Q2K (ORCPT
+	id S1756113Ab3L3Qd6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 11:33:58 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:40395 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756010Ab3L3Qd5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 11:28:10 -0500
+	Mon, 30 Dec 2013 11:33:57 -0500
+Message-ID: <52C1A06B.4070605@oracle.com>
+Date: Mon, 30 Dec 2013 11:33:47 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <20131217110856.GA27791@gmail.com>
-References: <52af2f21.41590e0a.0251.ffffd94c@mx.google.com>
-	<20131217104534.GA27383@gmail.com>
-	<20131217110154.GA7602@mudshark.cambridge.arm.com>
-	<20131217110856.GA27791@gmail.com>
-Date: Mon, 30 Dec 2013 17:28:09 +0100
-Message-ID: <CAFrcx1nh7fHzuUOz3U4C_PZGa+c4VAk80645gNPQjq5_KTOV+Q@mail.gmail.com>
-Subject: Re: [PATCH 0/3] ARM64: add perf support
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Ingo Molnar <mingo@kernel.org>, Will Deacon <will.deacon@arm.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Arnaldo <acme@ghostprotocols.net>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Jiri Olsa <jolsa@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/2] mm: additional page lock debugging
+References: <1388281504-11453-1-git-send-email-sasha.levin@oracle.com> <20131230114317.GA8117@node.dhcp.inet.fi>
+In-Reply-To: <20131230114317.GA8117@node.dhcp.inet.fi>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will, Ingo,
-
-The series has been updated after the comments and re-submitted.
-
-Thanks!
-Jean
-
-On 17 December 2013 12:08, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Will Deacon <will.deacon@arm.com> wrote:
->
->> On Tue, Dec 17, 2013 at 10:45:34AM +0000, Ingo Molnar wrote:
->> > * jean.pihet@linaro.org <jean.pihet@linaro.org> wrote:
->> > > From: Jean Pihet <jean.pihet@linaro.org>
->> > >
->> > > Add perf support for the AARCH64 architecture. This includes the
->> > > support for:
->> > > - AARCH64 perf registers definition and hooks,
->> > > - compat mode registers use, i.e. profiling a 32-bit binary on
->> > >    a 64-bit system,
->> > > - unwinding using the dwarf information from the .debug_frame
->> > >    section of the ELF binary; only in 64-bit mode,
->> > > - unwinding using the frame pointer information; in 64-bit and
->> > >    compat modes.
->> > >
->> > > ToDo:
->> > > - add support for unwinding using the dwarf information in compat
->> > >    mode. This requires some changes to the libunwind code.
->> > >
->> > > Tested on ARMv7 and ARMv8 platforms. The compat mode has been tested
->> > > on ARMv8 using statically built 32-bit binaries.
->> > >
->> > >
->> > > Jean Pihet (3):
->> > >   ARM64: perf: add support for perf registers API
->> > >   ARM64: perf: wire up perf_regs and unwind support
->> > >   ARM64: perf: add support for frame pointer unwinding in compat mode
->> > >
->> > >  arch/arm64/Kconfig                        |  2 +
->> > >  arch/arm64/include/asm/ptrace.h           |  1 +
->> > >  arch/arm64/include/uapi/asm/Kbuild        |  1 +
->> > >  arch/arm64/include/uapi/asm/perf_regs.h   | 40 ++++++++++++++
->> > >  arch/arm64/kernel/Makefile                |  1 +
->> > >  arch/arm64/kernel/perf_event.c            | 75 +++++++++++++++++++++++---
->> > >  arch/arm64/kernel/perf_regs.c             | 46 ++++++++++++++++
->> > >  tools/perf/arch/arm64/Makefile            |  7 +++
->> > >  tools/perf/arch/arm64/include/perf_regs.h | 88 +++++++++++++++++++++++++++++++
->> > >  tools/perf/arch/arm64/util/dwarf-regs.c   | 81 ++++++++++++++++++++++++++++
->> > >  tools/perf/arch/arm64/util/unwind.c       | 82 ++++++++++++++++++++++++++++
->> > >  tools/perf/config/Makefile                |  8 ++-
->> > >  12 files changed, 423 insertions(+), 9 deletions(-)
->> > >  create mode 100644 arch/arm64/include/uapi/asm/perf_regs.h
->> > >  create mode 100644 arch/arm64/kernel/perf_regs.c
->> > >  create mode 100644 tools/perf/arch/arm64/Makefile
->> > >  create mode 100644 tools/perf/arch/arm64/include/perf_regs.h
->> > >  create mode 100644 tools/perf/arch/arm64/util/dwarf-regs.c
->> > >  create mode 100644 tools/perf/arch/arm64/util/unwind.c
->> >
->> > Arnaldo, AFAICS the main merging complexity will probably be on
->> > the perf tooling side, so if you are happy with these bits, mind
->> > picking them up into your tree?
+On 12/30/2013 06:43 AM, Kirill A. Shutemov wrote:
+> On Sat, Dec 28, 2013 at 08:45:03PM -0500, Sasha Levin wrote:
+>> We've recently stumbled on several issues with the page lock which
+>> triggered BUG_ON()s.
 >>
->> Hold your horses! I've got a few review comments on the series...
+>> While working on them, it was clear that due to the complexity of
+>> locking its pretty hard to figure out if something is supposed
+>> to be locked or not, and if we encountered a race it was quite a
+>> pain narrowing it down.
+>>
+>> This is an attempt at solving this situation. This patch adds simple
+>> asserts to catch cases where someone is trying to lock the page lock
+>> while it's already locked, and cases to catch someone unlocking the
+>> lock without it being held.
+>>
+>> My initial patch attempted to use lockdep to get further coverege,
+>> but that attempt uncovered the amount of issues triggered and made
+>> it impossible to debug the lockdep integration without clearing out
+>> a large portion of existing bugs.
+>>
+>> This patch adds a new option since it will horribly break any system
+>> booting with it due to the amount of issues that it uncovers. This is
+>> more of a "call for help" to other mm/ hackers to help clean it up.
+>>
+>> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+>> ---
+>>   include/linux/pagemap.h | 11 +++++++++++
+>>   lib/Kconfig.debug       |  9 +++++++++
+>>   mm/filemap.c            |  4 +++-
+>>   3 files changed, 23 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+>> index 1710d1b..da24939 100644
+>> --- a/include/linux/pagemap.h
+>> +++ b/include/linux/pagemap.h
+>> @@ -321,6 +321,14 @@ static inline pgoff_t linear_page_index(struct vm_area_struct *vma,
+>>   	return pgoff >> (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+>>   }
+>>
+>> +#ifdef CONFIG_DEBUG_VM_PAGE_LOCKS
+>> +#define VM_ASSERT_LOCKED(page) VM_BUG_ON_PAGE(!PageLocked(page), (page))
+>> +#define VM_ASSERT_UNLOCKED(page) VM_BUG_ON_PAGE(PageLocked(page), (page))
+>> +#else
+>> +#define VM_ASSERT_LOCKED(page) do { } while (0)
+>> +#define VM_ASSERT_UNLOCKED(page) do { } while (0)
+>> +#endif
+>> +
+>>   extern void __lock_page(struct page *page);
+>>   extern int __lock_page_killable(struct page *page);
+>>   extern int __lock_page_or_retry(struct page *page, struct mm_struct *mm,
+>> @@ -329,16 +337,19 @@ extern void unlock_page(struct page *page);
+>>
+>>   static inline void __set_page_locked(struct page *page)
+>>   {
+>> +	VM_ASSERT_UNLOCKED(page);
+>>   	__set_bit(PG_locked, &page->flags);
+>>   }
+>>
+>>   static inline void __clear_page_locked(struct page *page)
+>>   {
+>> +	VM_ASSERT_LOCKED(page);
+>>   	__clear_bit(PG_locked, &page->flags);
+>>   }
+>>
+>>   static inline int trylock_page(struct page *page)
+>>   {
+>> +	VM_ASSERT_UNLOCKED(page);
 >
-> Sure :-)
+> This is not correct. It's perfectly fine if the page is locked here: it's
+> why trylock needed.
 >
-> Thanks,
+> IIUC, what we want to catch is the case when the page has already locked
+> by the task.
+
+Frankly, we shouldn't have trylock_page() at all.
+
+Look at page_referenced() for example. Instead of assuming that it has to be
+called with page lock held, it's trying to acquire the lock and to free it only
+if it's the one that allocated it.
+
+Why isn't there a VM_BUG_ON() there to test whether the page is locked, and let
+the callers handle that?
+
 >
->         Ingo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> I don't think it's reasonable to re-implement this functionality. We
+> really need to hook up lockdep.
+
+The issue with adding lockdep straight away is that we need to deal with
+long held page locks somehow nicely. Unlike regular locks, these may be
+held for a rather long while, triggering really long locking chains which
+lockdep doesn't really like.
+
+Many places lock a long list of pages in bulk - we could allow that with
+nesting, but then you lose your ability to detect trivial deadlocks.
+
+
+Thanks,
+Sasha
