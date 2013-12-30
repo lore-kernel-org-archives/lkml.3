@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932349Ab3L3V6s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 16:58:48 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:60447 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932330Ab3L3V6q (ORCPT
+	id S932361Ab3L3WBa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 17:01:30 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:53998 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932263Ab3L3WB3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 16:58:46 -0500
-X-Sasl-enc: cbdyxi0yZgQjXntsphfnfx49ssKGqA/USceIQetTW2dL 1388440725
-Date: Mon, 30 Dec 2013 19:58:43 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Julian Andres Klode <jak@jak-linux.org>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "open list:THINKPAD ACPI EXT..." 
-	<ibm-acpi-devel@lists.sourceforge.net>,
-        "open list:THINKPAD ACPI EXT..." 
-	<platform-driver-x86@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] thinkpad_acpi: Add support for controlling charge
- thresholds
-Message-ID: <20131230215843.GB4938@khazad-dum.debian.net>
-References: <1384178195-12218-1-git-send-email-jak@jak-linux.org>
- <1384178195-12218-2-git-send-email-jak@jak-linux.org>
- <20131230132915.GB24241@jak-x230>
+	Mon, 30 Dec 2013 17:01:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131230132915.GB24241@jak-x230>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Mon, 30 Dec 2013 16:01:28 -0600
+Message-ID: <CAL_JsqK7p94eMnY10sjmgsADWe2VCBUY64xhhx6Aoin--VxZTQ@mail.gmail.com>
+Subject: [GIT PULL] Devicetree fixes for 3.13
+From: Rob Herring <robherring2@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Dec 2013, Julian Andres Klode wrote:
-> On Mon, Nov 11, 2013 at 02:56:30PM +0100, Julian Andres Klode wrote:
-> > Add support for battery charge thresholds in new Sandy Bridge and Ivy Bridge
-> > ThinkPads. Based on the unofficial documentation in tpacpi-bat.
-> > 
-> > The threshold files support the values '0' for the controller's default,
-> > and 1-99 as percentages. Values outside of that range are rejected. The
-> > behaviour of '0' might be confusing, especially for the stop case where
-> > it basically seems to mean '100'.
-> 
-> Thinking more about this, it might make more sense to simply accept a 100
-> value and not accept a 0 value in the stop case (I tried multiple times to
-> write 100 to a stop_charge_thresh file, because that feels more natural).
-> 
-> Having a 0 mean 100% is just odd. So stop_charge_thresh should simply
-> accepts integer values in the range [1, 100] (and start_charge_thresh
-> should continue accept [0, 99], as 0 really means 0 there).
+Linus,
 
-Indeed.  Just return EINVAL for a stop threshold of 0.
+Please pull a couple of DT fixes for 3.13.
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Rob
+
+The following changes since commit 413541dd66d51f791a0b169d9b9014e4f56be13c:
+
+  Linux 3.13-rc5 (2013-12-22 13:08:32 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/robh/linux.git
+tags/dt-fixes-for-3.13
+
+for you to fetch changes up to f0082e3cf70e19dce4e96494078ec3ddb89550d3:
+
+  Merge remote-tracking branch 'grant/devicetree/merge' into dt-fixes
+(2013-12-30 12:09:47 -0600)
+
+----------------------------------------------------------------
+
+- Fix 2 regressions found on PPC
+- Allow NULL ptr in unflatten_and_copy_device_tree
+- Update my email address
+
+----------------------------------------------------------------
+Cédric Le Goater (1):
+      of/irq: Fix device_node refcount in of_irq_parse_raw()
+
+Geert Uytterhoeven (1):
+      of/Kconfig: Spelling s/one/once/
+
+James Hogan (1):
+      of: Fix NULL dereference in unflatten_and_copy()
+
+Rob Herring (3):
+      Revert "of/address: Handle #address-cells > 2 specially"
+      MAINTAINERS: Update Rob Herring's email address
+      Merge remote-tracking branch 'grant/devicetree/merge' into dt-fixes
+
+ MAINTAINERS          |  6 +++---
+ drivers/of/Kconfig   |  2 +-
+ drivers/of/address.c |  8 --------
+ drivers/of/fdt.c     | 12 ++++++++++--
+ drivers/of/irq.c     |  5 +----
+ 5 files changed, 15 insertions(+), 18 deletions(-)
