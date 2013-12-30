@@ -1,216 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab3L3JnP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 04:43:15 -0500
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:60363 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751702Ab3L3JnM (ORCPT
+	id S1754859Ab3L3Jo1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 04:44:27 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:33139 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751960Ab3L3JoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 04:43:12 -0500
+	Mon, 30 Dec 2013 04:44:25 -0500
 MIME-Version: 1.0
-In-Reply-To: <52B9C83E.6070502@ti.com>
-References: <1383205544-32244-1-git-send-email-gautam.vivek@samsung.com>
-	<1383205544-32244-2-git-send-email-gautam.vivek@samsung.com>
-	<527744B2.4090303@ti.com>
-	<030d01ced946$d6e23490$84a69db0$%debski@samsung.com>
-	<52779D28.9000905@ti.com>
-	<CAFp+6iH7vQ-OtMFL4pyr4tFDRchH4oh1Z0753WNgrHiUzj+kzw@mail.gmail.com>
-	<00fe01ceda0a$941957a0$bc4c06e0$%debski@samsung.com>
-	<000001ceda17$f41c2030$dc546090$%han@samsung.com>
-	<000101ceda1f$04ca6f20$0e5f4d60$%han@samsung.com>
-	<CAFp+6iFAZab35F-MOOZHcHpzSEOL=51gWBK2KZbOJS+0731GJQ@mail.gmail.com>
-	<000301ceda84$1d648bf0$582da3d0$%han@samsung.com>
-	<5280BB65.5040305@ti.com>
-	<CAFp+6iGKpzOHjwnSMvSgTehzPLQMB8madoYqMk5JPSAZfSGSTg@mail.gmail.com>
-	<528C7B0E.3080401@ti.com>
-	<CAFp+6iF3UnV-w2pYQE2THQZBGma8xpp6pqSuwXzjUN3emJnftQ@mail.gmail.com>
-	<528CD8EC.9050403@ti.com>
-	<529F3C1C.2050509@ti.com>
-	<CAFp+6iF+N+eMOd=B-J3oS_u0TEse+5V2gHkcNxN0OS+YbV_Y9g@mail.gmail.com>
-	<52B9C83E.6070502@ti.com>
-Date: Mon, 30 Dec 2013 15:13:09 +0530
-Message-ID: <CAFp+6iGkNjCDHJSPd76V7SzOkma1q7CiOKg7oK7ws77Rh022Jg@mail.gmail.com>
-Subject: Re: [PATCH RFC 1/4] phy: Add new Exynos5 USB 3.0 PHY driver
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Jingoo Han <jg1.han@samsung.com>, Kamil Debski <k.debski@samsung.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-doc@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        Julius Werner <jwerner@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1388386511-32276-1-git-send-email-baozich@gmail.com>
+References: <1388386511-32276-1-git-send-email-baozich@gmail.com>
+From: Wei Liu <liuw@liuw.name>
+Date: Mon, 30 Dec 2013 09:43:54 +0000
+Message-ID: <CAOsiSVWe7zRL2qmExHL3D4ayYyHmzHU=PonQ+-Q625Vkji+J4A@mail.gmail.com>
+Subject: Re: [Xen-devel] [PATCH] arm64/xen: redefine xen_remap on arm64
+To: Chen Baozi <baozich@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        xen-devel <xen-devel@lists.xenproject.org>, catalin.marinas@arm.com,
+        msalter@redhat.com, linux-kernel@vger.kernel.org,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kishon,
+On Mon, Dec 30, 2013 at 6:55 AM, Chen Baozi <baozich@gmail.com> wrote:
+> xen_remap used to be defined as ioremap_cached on arm64. In commit
+> c04e8e2fe, a new ioremap_cache was implemented, and ioremap_cached
+> was deleted, while xen_remap stays the same. This would lead to
+> the failure when building with CONFIG_HVC_XEN. Redefined xen_remap
+> on arm64 as ioremap_cache on arm64 to fix it.
+>
+> Signed-off-by: Chen Baozi <baozich@gmail.com>
+> ---
+>  arch/arm/include/asm/xen/page.h | 4 ++++
+>  1 file changed, 4 insertions(+)
+>
+> diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
+> index 75579a9..b3368df 100644
+> --- a/arch/arm/include/asm/xen/page.h
+> +++ b/arch/arm/include/asm/xen/page.h
+> @@ -117,6 +117,10 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+>         return __set_phys_to_machine(pfn, mfn);
+>  }
+>
+> +#ifdef CONFIG_ARM64
+> +#define xen_remap(cookie, size) ioremap_cache((cookie), (size))
+> +#else
+>  #define xen_remap(cookie, size) ioremap_cached((cookie), (size));
 
+Looks like there's an redundant semicolon in the original implementation.
 
-On Tue, Dec 24, 2013 at 11:15 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
-> Hi,
->
->
-> On Thursday 05 December 2013 01:44 PM, Vivek Gautam wrote:
->>
->> Hi Kishon,
->>
->>
->> On Wed, Dec 4, 2013 at 7:58 PM, Kishon Vijay Abraham I <kishon@ti.com>
->> wrote:
->>>
->>> Hi Vivek,
->>>
->>> On Wednesday 20 November 2013 09:14 PM, Kishon Vijay Abraham I wrote:
->>>>
->>>> Hi,
->>>>
->>>> On Wednesday 20 November 2013 03:02 PM, Vivek Gautam wrote:
->>>>>
->>>>> On Wed, Nov 20, 2013 at 2:34 PM, Kishon Vijay Abraham I <kishon@ti.com>
->>>>> wrote:
->>>>>>
->>>>>> On Wednesday 20 November 2013 02:27 PM, Vivek Gautam wrote:
->>>>>>>
->>>>>>> Hi Kishon,
->>>>>>>
->>>>>>>
->>>>>>> On Mon, Nov 11, 2013 at 4:41 PM, Kishon Vijay Abraham I
->>>>>>> <kishon@ti.com> wrote:
->>>>>>>>
->>>>>>>> Hi,
->>>>>>>
->>>>>>> sorry for the delayed response.
->>>>>>>
->>>>>>>>
->>>>>>>> On Wednesday 06 November 2013 05:37 AM, Jingoo Han wrote:
->>>>>>>>>
->>>>>>>>> On Wednesday, November 06, 2013 2:58 AM, Vivek Gautam wrote:
->>>>>>>>>>
->>>>>>>>>> On Tue, Nov 5, 2013 at 5:33 PM, Jingoo Han <jg1.han@samsung.com>
->>>>>>>>>> wrote:
->>>>>>>>>
->>>>>>>>>
->>>>>>>>> [.....]
->>>>>>>>>
->>>>>>>>>>> USB3.0 PHY consists of two blocks such as 3.0 block and 2.0
->>>>>>>>>>> block.
->>>>>>>>>>> This USB3.0 PHY can support UTMI+ and PIPE3 interface for 3.0
->>>>>>>>>>> block
->>>>>>>>>>> and 2.0 block, respectively.
->>>>>>>>>>>
->>>>>>>>>>> Conclusion:
->>>>>>>>>>>
->>>>>>>>>>>     1) USB2.0 PHY: USB2.0 HOST, USB2.0 Device
->>>>>>>>>>>                         Base address: 0x1213 0000
->>>>>>>>>>>
->>>>>>>>>>>     2) USB3.0 PHY: USB3.0 DRD (3.0 HOST & 3.0 Device)
->>>>>>>>>>>                         Base address: 0x1210 0000
->>>>>>>>>>>                         2.0 block(UTMI+) & 3.0 block(PIPE3)
->>>>>>>>>>
->>>>>>>>>>
->>>>>>>>>> And this is of course the PHY used by DWC3 controller, which works
->>>>>>>>>> at
->>>>>>>>>> both High speed as well as Super Speed.
->>>>>>>>>> Right ?
->>>>>>>>>
->>>>>>>>>
->>>>>>>>> Right.
->>>>>>>>>
->>>>>>>>> While 3.0 block(PIPE3) can be used for Super Speed, 2.0
->>>>>>>>> block(UTMI+)
->>>>>>>>> can be used for High speed.
->>>>>>>>
->>>>>>>>
->>>>>>>> It should then come under *single IP muliple PHY* category similar
->>>>>>>> to what
->>>>>>>> Sylwester has done.
->>>>>>>
->>>>>>>
->>>>>>> Do you mean that i should be including PHY IDs for UTMI+ phy and
->>>>>>> PIPE3
->>>>>>> phy present in this PHY block ?
->>>>>>> AFAICS the two phys (UTMI+ and PIPE3) do not really have separate
->>>>>>> registers to program, and that's the reason
->>>>>>> we program the entire PHY in a shot.
->>>>>>
->>>>>>
->>>>>> you mean you program the same set of bits for UTMI+ and PIPE3?
->>>>>
->>>>>
->>>>> No, looking closely into PHY datasheet as well as Exynos5250 manual, i
->>>>> can see that UTMI+ and PIPE3
->>>>> phys have separate bit settings. So i think we should be able to
->>>>> segregate the two PHYs (UTMI+ and PIPE3).
->>>>> Pardon me for my earlier observations.
->>>>
->>>>
->>>> no problem..
->>>>>
->>>>> Let me clarify more with our h/w team also on this and then i will
->>>>> confirm with this.
->>>
->>>
->>> Did you get more information on this?
->>
->>
->> Yes, i have been in contact with our hardware team.
->> The functionality of setting up UTMI+ and PIPE3 phys separately, and
->> thereby using only one functionality of the two
->> at some point of time (either high speed or super speed) hasn't been
->> tested so far.
->
->
-> Irrespective of whether we are able to test the functionality separately or
-> not, we should model it as multiple PHYs since you have separate bit
-> settings for UTMI+ and PIPE3.
->
-> (I'll review your next patch version shortly).
+Wei.
 
-Thanks Kishon, i know i am disturbing you in the holiday season. :-)
-But there's one concern, on Exynos5 platforms we have only one bit to
-power control
-the entire PHY (irrespective of the two PHYs present in the USB 3.0
-PHY controller).
-So anyways we won't be able to save anything on the power front even
-if we program only
-one PHY (UTMI/PIPE3).
-Although there are PHY settings register bits which seem separate for
-the two phys.
-What do you suggest in that case ?
-May be i am not able to understand you properly on the front of multiple PHYs
-
+> +#endif
 >
-> Cheers
-> Kishon
+>  #endif /* _ASM_ARM_XEN_PAGE_H */
+> --
+> 1.8.4.3
 >
 >
->> So i will be looking into this and try to find out proper init
->> sequences for the two available PHYs
->> separately and as soon as i get a working solution for this, i will
->> update.
->>
->>>
->>> Thanks
->>> Kishon
->>
->>
->>
->>
->
-
-
-
--- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
