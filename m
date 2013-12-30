@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751452Ab3L3Gqx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 01:46:53 -0500
-Received: from alt-proxy31.mail.unifiedlayer.com ([74.220.221.129]:57381 "HELO
-	alt-proxy31.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751230Ab3L3Gqw (ORCPT
+	id S1751497Ab3L3Gtr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 01:49:47 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:61515 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab3L3Gtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 01:46:52 -0500
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Dec 2013 01:46:52 EST
-Message-ID: <1388385607.3988.14.camel@slavad-ubuntu>
-Subject: Re: [PATCH] fs/nilfs2: Integer overflow in nilfs_ioctl_wrap_copy()
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
-Reply-To: slava@dubeyko.com
-To: Wenliang Fan <fanwlexca@gmail.com>
-Cc: konishi.ryusuke@lab.ntt.co.jp, linux-nilfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 30 Dec 2013 10:40:07 +0400
-In-Reply-To: <1388197696-4648-1-git-send-email-fanwlexca@gmail.com>
-References: <1388197696-4648-1-git-send-email-fanwlexca@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 109.188.127.172 authed with slava@dubeyko.com}
+	Mon, 30 Dec 2013 01:49:46 -0500
+Date: Mon, 30 Dec 2013 14:48:42 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: jslaby@suse.cz, airlied@redhat.com, akpm@linux-foundation.org,
+        kilobyte@angband.pl, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fonts:Kconfig: fix default enable FONT_8x8 and FONT_8x16
+ at the same time
+Message-ID: <20131230064842.GA6592@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
+	Greg KH <gregkh@linuxfoundation.org>, jslaby@suse.cz,
+	airlied@redhat.com, akpm@linux-foundation.org, kilobyte@angband.pl,
+	linux-kernel@vger.kernel.org
+References: <20131230033745.GA5855@udknight>
+ <20131230053430.GA11990@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131230053430.GA11990@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Sat, 2013-12-28 at 10:28 +0800, Wenliang Fan wrote:
-> The local variable 'pos' comes from userspace. If a large number was
-> passed, there would be an integer overflow in the following line:
->         pos += n;
+On Sun, Dec 29, 2013 at 09:34:30PM -0800, Greg KH wrote:
+> On Mon, Dec 30, 2013 at 11:37:45AM +0800, Wang YanQing wrote:
+> > FONT_8x8 and FONT_8x16 have the same default value line:
+> > "default y if !SPARC && !FONTS"
+> > 
+> > I test run "make defconfig" for x86 will enable FONT_8x8 and FONT_8x16 at
+> > the same time.
+> > 
+> > This patch fix it, because FONT_AUTOSELECT choice FONT_8x16, so
+> > I decide to disable FONT_8x8, this patch will reduce size of kernel.
+> > 
+> > Signed-off-by: Wang YanQing <udknight@gmail.com>
+> > ---
+> >  lib/fonts/Kconfig | 1 -
+> >  1 file changed, 1 deletion(-)
 > 
-> Signed-off-by: Wenliang Fan <fanwlexca@gmail.com>
-> ---
->  fs/nilfs2/ioctl.c | 2 ++
->  1 file changed, 2 insertions(+)
+> I am not the maintainer of this file, sorry.  Also, I don't think it's
+> correct, if you want, you can always disable this option on your own.
 > 
-> diff --git a/fs/nilfs2/ioctl.c b/fs/nilfs2/ioctl.c
-> index b44bdb2..a260a98 100644
-> --- a/fs/nilfs2/ioctl.c
-> +++ b/fs/nilfs2/ioctl.c
-> @@ -65,6 +65,8 @@ static int nilfs_ioctl_wrap_copy(struct the_nilfs *nilfs,
->  	ret = 0;
->  	total = 0;
->  	pos = argv->v_index;
-> +	if (pos > ULONG_MAX - argv->v_nmembs)
-> +		return -EINVAL;
+Hi Greg KH.
 
-I am slightly confused. Does this patch means that you refused previous
-one? Or this patch is addition to the previous one?
+Sorry for confusion, the default behavior enable FONT_8x8 and FONT_8x16,
+FONT_8x8 eat ~50KB memory, but kernel never use it. I think this is not
+good default behavior.
 
-You need to prepare next version of the patch or to prepare patch set
-from two patches. And it makes sense to provide changelog of your work,
-I think.
-
-Thanks,
-Vyacheslav Dubeyko.
-
->  	for (i = 0; i < argv->v_nmembs; i += n) {
->  		n = (argv->v_nmembs - i < maxmembs) ?
->  			argv->v_nmembs - i : maxmembs;
-
-
+Thanks.
