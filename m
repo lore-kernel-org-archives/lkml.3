@@ -1,181 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932327Ab3L3SoX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 13:44:23 -0500
-Received: from mga01.intel.com ([192.55.52.88]:13102 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932104Ab3L3Skt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 13:40:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,575,1384329600"; 
-   d="scan'208";a="457777376"
-Subject: [PATCH 01/12] x86 Kconfig: create extended platforms menu
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, Dave Hansen <dave@sr71.net>
-From: Dave Hansen <dave@sr71.net>
-Date: Mon, 30 Dec 2013 10:40:47 -0800
-References: <20131230184046.F5E42919@viggo.jf.intel.com>
-In-Reply-To: <20131230184046.F5E42919@viggo.jf.intel.com>
-Message-Id: <20131230184047.59278144@viggo.jf.intel.com>
+	id S932134Ab3L3SxY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 13:53:24 -0500
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:50799 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932083Ab3L3SxW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Dec 2013 13:53:22 -0500
+MIME-Version: 1.0
+X-Originating-IP: [89.2.236.51]
+In-Reply-To: <mj+md-20131215.110132.29802.nikam@ucw.cz>
+References: <1378302428-19758-1-git-send-email-teg@jklm.no>
+ <mj+md-20130904.134928.12262.nikam@ucw.cz> <CAG-2HqWcnZ-z7EbDd0aAj6y_Ho6szfRZUiK0psEnmoz17Kw-xA@mail.gmail.com>
+ <mj+md-20131110.114139.9646.albireo@ucw.cz> <CAG-2HqXsEBB_nxUF4gza-eTsUjmysYR7iPEjJPUFyR1rC2KGMg@mail.gmail.com>
+ <CAPXgP12MLL_Z5gyrCndQLRT6SR_TJi9xHp1HkHMX1ahwnxx3yw@mail.gmail.com>
+ <mj+md-20131215.091609.28546.nikam@ucw.cz> <CAPXgP10+1WtX8_xN+QSHvKws01hbKhP3FN95sXk9EtezdSPtqg@mail.gmail.com>
+ <mj+md-20131215.110132.29802.nikam@ucw.cz>
+From: Tom Gundersen <teg@jklm.no>
+Date: Mon, 30 Dec 2013 19:53:01 +0100
+Message-ID: <CAG-2HqUGcBB1-YUvLZpqm1EZ69OSksa+iGcCEqVWxYsehDqx8Q@mail.gmail.com>
+Subject: Re: [PATCH RESEND][pciutils] libpci: pci_id_lookup - add udev/hwdb support
+To: Martin Mares <mj@ucw.cz>
+Cc: Kay Sievers <kay@vrfy.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Martin,
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+On Sun, Dec 15, 2013 at 12:33 PM, Martin Mares <mj@ucw.cz> wrote:
+> I see that a mechanism for fast lookup of hardware identification data
+> is needed. However, why should such a mechanism depend on udev, systemd,
+> or Linux in general?
+>
+> What I would really like to have is a universal library for HW lookup,
+> independent of anything else and widely portable. All the hardware data
+> would be provided by other packages -- pci.ids, usb.ids, kernel modules,
+> etc. -- and compiled to a binary format available for instant queries.
 
-This takes the relatively obscure (NUMA-Q anyone?) platforms
-(both 32 and 64-bit) and sticks them in their own menu.
-Virtually nobody needs to set these, and those that do know how
-to find them the hard way.
+I'd like to reach an agreement on this patch, so I'll resend it with
+the changes we agreed on so far. Please let me know if further changes
+are needed.
 
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
----
+If I understand correctly, you are ok with the functionality hwdb
+provides, but would have preferred an OS-agnostic solution. However,
+as no such solution currently exist, and the patch adding hwdb support
+is pretty minimal and self-contained, would you be happy taking that
+for now, and rather revisit the topic if and when a generic solution
+appears?
 
- linux.git-davehans/arch/x86/Kconfig |  103 ++++++++++++++++--------------------
- 1 file changed, 46 insertions(+), 57 deletions(-)
+FWIW, I made the analogous change to lsusb some time ago [0], so would
+be cool to get this all done.
 
-diff -puN arch/x86/Kconfig~x86-extended-platforms arch/x86/Kconfig
---- linux.git/arch/x86/Kconfig~x86-extended-platforms	2013-12-30 10:37:43.691164956 -0800
-+++ linux.git-davehans/arch/x86/Kconfig	2013-12-30 10:37:43.696165181 -0800
-@@ -331,8 +331,7 @@ config GOLDFISH
-        def_bool y
-        depends on X86_GOLDFISH
- 
--if X86_32
--config X86_EXTENDED_PLATFORM
-+menuconfig X86_EXTENDED_PLATFORM
- 	bool "Support for extended (non-PC) x86 platforms"
- 	default y
- 	---help---
-@@ -341,7 +340,12 @@ config X86_EXTENDED_PLATFORM
- 	  systems out there.)
- 
- 	  If you enable this option then you'll be able to select support
--	  for the following (non-PC) 32 bit x86 platforms:
-+	  for the following (non-PC) 64 bit x86 platforms:
-+		Numascale NumaChip
-+		ScaleMP vSMP
-+		SGI Ultraviolet
-+
-+	  and these (non-PC) 32 bit x86 platforms:
- 		Goldfish (Android emulator)
- 		AMD Elan
- 		NUMAQ (IBM/Sequent)
-@@ -354,26 +358,9 @@ config X86_EXTENDED_PLATFORM
- 
- 	  If you have one of these systems, or if you want to build a
- 	  generic distribution kernel, say Y here - otherwise say N.
--endif
--
--if X86_64
--config X86_EXTENDED_PLATFORM
--	bool "Support for extended (non-PC) x86 platforms"
--	default y
--	---help---
--	  If you disable this option then the kernel will only support
--	  standard PC platforms. (which covers the vast majority of
--	  systems out there.)
- 
--	  If you enable this option then you'll be able to select support
--	  for the following (non-PC) 64 bit x86 platforms:
--		Numascale NumaChip
--		ScaleMP vSMP
--		SGI Ultraviolet
-+if X86_EXTENDED_PLATFORM
- 
--	  If you have one of these systems, or if you want to build a
--	  generic distribution kernel, say Y here - otherwise say N.
--endif
- # This is an alphabetically sorted list of 64 bit extended platforms
- # Please maintain the alphabetic order if and when there are additions
- config X86_NUMACHIP
-@@ -447,6 +434,44 @@ config X86_WANT_INTEL_MID
- 	  systems which do not have the PCI legacy interfaces (Moorestown,
- 	  Medfield). If you are building for a PC class system say N here.
- 
-+config X86_RDC321X
-+	bool "RDC R-321x SoC"
-+	depends on X86_32
-+	depends on X86_EXTENDED_PLATFORM
-+	select M486
-+	select X86_REBOOTFIXUPS
-+	---help---
-+	  This option is needed for RDC R-321x system-on-chip, also known
-+	  as R-8610-(G).
-+	  If you don't have one of these chips, you should say N here.
-+
-+config X86_32_NON_STANDARD
-+	bool "Support non-standard 32-bit SMP architectures"
-+	depends on X86_32 && SMP
-+	depends on X86_EXTENDED_PLATFORM
-+	---help---
-+	  This option compiles in the NUMAQ, Summit, bigsmp, ES7000,
-+	  STA2X11, default subarchitectures.  It is intended for a generic
-+	  binary kernel. If you select them all, kernel will probe it
-+	  one by one and will fallback to default.
-+
-+# Alphabetically sorted list of Non standard 32 bit platforms
-+
-+config X86_NUMAQ
-+	bool "NUMAQ (IBM/Sequent)"
-+	depends on X86_32_NON_STANDARD
-+	depends on PCI
-+	select NUMA
-+	select X86_MPPARSE
-+	---help---
-+	  This option is used for getting Linux to run on a NUMAQ (IBM/Sequent)
-+	  NUMA multiquad box. This changes the way that processors are
-+	  bootstrapped, and uses Clustered Logical APIC addressing mode instead
-+	  of Flat Logical.  You will need a new lynxer.elf file to flash your
-+	  firmware with - send email to <Martin.Bligh@us.ibm.com>.
-+
-+endif # X86_EXTENDED_PLATFORM
-+
- if X86_WANT_INTEL_MID
- 
- config X86_INTEL_MID
-@@ -486,42 +511,6 @@ config X86_INTEL_LPSS
- 	  things like clock tree (common clock framework) and pincontrol
- 	  which are needed by the LPSS peripheral drivers.
- 
--config X86_RDC321X
--	bool "RDC R-321x SoC"
--	depends on X86_32
--	depends on X86_EXTENDED_PLATFORM
--	select M486
--	select X86_REBOOTFIXUPS
--	---help---
--	  This option is needed for RDC R-321x system-on-chip, also known
--	  as R-8610-(G).
--	  If you don't have one of these chips, you should say N here.
--
--config X86_32_NON_STANDARD
--	bool "Support non-standard 32-bit SMP architectures"
--	depends on X86_32 && SMP
--	depends on X86_EXTENDED_PLATFORM
--	---help---
--	  This option compiles in the NUMAQ, Summit, bigsmp, ES7000,
--	  STA2X11, default subarchitectures.  It is intended for a generic
--	  binary kernel. If you select them all, kernel will probe it
--	  one by one and will fallback to default.
--
--# Alphabetically sorted list of Non standard 32 bit platforms
--
--config X86_NUMAQ
--	bool "NUMAQ (IBM/Sequent)"
--	depends on X86_32_NON_STANDARD
--	depends on PCI
--	select NUMA
--	select X86_MPPARSE
--	---help---
--	  This option is used for getting Linux to run on a NUMAQ (IBM/Sequent)
--	  NUMA multiquad box. This changes the way that processors are
--	  bootstrapped, and uses Clustered Logical APIC addressing mode instead
--	  of Flat Logical.  You will need a new lynxer.elf file to flash your
--	  firmware with - send email to <Martin.Bligh@us.ibm.com>.
--
- config X86_SUPPORTS_MEMORY_FAILURE
- 	def_bool y
- 	# MCE code calls memory_failure():
-_
+Cheers,
+
+Tom
+
+[0]: <https://github.com/gregkh/usbutils/commit/c6282a7a0e20fbb9c56837f055843635a43ba8b4>
