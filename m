@@ -1,106 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756073Ab3L3P0e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 10:26:34 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:59297 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755946Ab3L3P03 (ORCPT
+	id S1756048Ab3L3PzP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 10:55:15 -0500
+Received: from ext190.halfdog.net ([88.116.147.190]:52585 "EHLO
+	mail.halfdog.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755946Ab3L3PzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 10:26:29 -0500
+	Mon, 30 Dec 2013 10:55:14 -0500
+Message-ID: <52C196C3.1040300@halfdog.net>
+Date: Mon, 30 Dec 2013 15:52:35 +0000
+From: halfdog <me@halfdog.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:27.0) Gecko/20100101 Firefox/27.0 SeaMonkey/2.24a1
 MIME-Version: 1.0
-X-Originating-IP: [118.200.54.207]
-Date: Mon, 30 Dec 2013 23:26:28 +0800
-Message-ID: <CAMVG2suW37XLkExi9A96Fqefo4wtvDbqwt_X3nFDUajepZKuxQ@mail.gmail.com>
-Subject: 3.13-rc5 USB oops
-From: Daniel J Blueman <daniel@quora.org>
-To: Linux USB <linux-usb-devel@lists.sourceforge.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Sanitize CPU-state when switching from virtual-8086 mode to other
+ task
+References: <52BF4A80.3010503@halfdog.net> <52BF8AEE.6020904@zytor.com> <52C089AC.4000401@halfdog.net> <52C0C9F4.50101@zytor.com>
+In-Reply-To: <52C0C9F4.50101@zytor.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When rsyncing data from a USB3 disk over a USB3-ethernet adapter to
-local server on 3.13-rc5 [1], I ran into fatal page-not-readable fault
-[2].
+H. Peter Anvin wrote:
+> On 12/29/2013 12:44 PM, halfdog wrote:
+>> H. Peter Anvin wrote:
+>>> On 12/28/2013 02:02 PM, halfdog wrote:
+>>>> It seems that missing CPU-state sanitation during task 
+>>>> switching triggers kernel-panic. This might be related to 
+>>>> unhandled FPU-errors. See [1] for POC and serial console log
+>>>> of OOPs. Due to missing real 32-bit x86-hardware it is not
+>>>> clear, if this issue might be related to subtle differences in 
+>>>> virtual-8086 mode handling when inside a virtualbox guest.
+>>>>
+>>
+>>> This oops happens inside the guest?  Either way, I would be 
+>>> *very* skeptical of Virtualbox in this case.
+>>
+>>> You can run a 32-bit kernel on 64-bit hardware, you know...
+>>
+>> I know, but hardware was occupied with long-running simulation.
+>>
+>> With the initial POC, there might be a timing issue involved, with
+>>  different process layout, exception does not occur in swith_to but
+>>  sometimes on other locations.
+>>
+>> I created a new random-code testcase [1] , which works around that
+>>  problem. When booted a Debian initrd and tried id, OOPSes are 
+>> fired like wild but at least system does not lock up immediately.
+>>
+> 
+> Still in VirtualBox?
 
-Full dmesg (before the disk was plugged in) is at
-http://quora.org/2013/dmesg.txt
+Yes, again: after comparing the results from initrd on real hardware
+with Vbox, I'm getting to understand the timing problem involved and why
+timing in VBox is different: The test program usually OOPSes when
+touching FPU multiple times, otherwise, when terminated before second
+FPU-interacation, it OOPSes on next invocation, stumbling over invalid
+CPU state from prior invocation. With improved code, I can rather
+reliably bring CPU into that state, so that next process invoked and
+touching FPU/MMX-state is OOPSed. Currently searching SUID-binaries and
+running UID=0 daemons, that might show interesting reaction on that
+event, but only on DOS level yet, e.g. after running V2 test program
+once and then connecting via SSH, this currently kills the ssh daemon
+nicely.
 
-I can test patches on the weekend if needed.
+It seems that machine lockup occurs when e.g. switch to idle task
+happens at exactly the right moment, which I currently cannot trigger on
+real hardware, but still working on that.
 
-Thanks and Happy New Year!
-  Daniel
-
---- [1]
-
-http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.13-rc5-trusty/linux-image-3.13.0-031300rc5-generic_3.13.0-031300rc5.201312221635_amd64.deb
-
---- [2] (apologies for any typos due to OCR)
-
-BUG: unable to handle kernel NULL pointer dereference at (null)
-IP: [<ffffffff813979f2>] sg_next+0x2/0x20
-PGD 2354c5067 PUD 1b25b1067 PMD 0
-Oops: 0000 [#1] SMP
-Modules linked in: usb_storage dm_crypt autofs4 snd_hda_codec_hdmi
-parport_pc ppdev tusb bluetooth snd_page_alloc ax88179_178e usbnet
-snd_seq_midi crctlOdif_pcImul vldepdev snd_sedird _ich apple_gmux
-apple_bl mac_hid nIs_iS08859_1 lp parport btrfs xor raid6_pq libcrc32c
-hid_generic
-CPU: 0 PID: 6395 Comm: pool Not tainted 3.13.0-031300rc5-generic #201312221635
-Hardware name: Apple Inc. MacBookFro10,1/Mac-C3EC7CD22292981F, BIOS
-M8P101.632.00EE.I
-task: ffff880178ec6000 ti: ffff880061914000 task.ti: ffff880061914000
-RIP: 0010:[<ffffffff813979f2>] kffffffff813979f2A sg_next+0x2/0x20
-RSP: 0018:ffff880061915740 EFLAGS: 00010046
-RAX: 0000000000000000 RBX: ff1f880036255000 RCX: 0000000000000003
-RDX: 0000000000000003 RSI: ffff880036255000 RDI: 0000000000000000
-R6P: ffff880061915798 R08: 0000000000000201 R09: 0000000000003578
-R10: ffffffff8163fa52 R11: 00000000000002c0 R12: ffff88025e5dfc00
-R13: ffff8802634f2098 R14: 0000000000000001 R15: ffffffff81c26c40
-FS: 00007fc7c4b37700(0000) OS:fff188026f200000(0000) knIGS:0000000000000000
-CS: 0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000000 CR3: 00000001e8b12000 CR4: 00000000001407f0
-Stack:
-ffffffff8156d8fe 0000000000000000 ffff880100000003 ffff88011c144e40
-00000003245ded00 ffff8801245ded00 ffff880036255000 ffff88025e5dfc00
-0000000000000020 0000000000000200 1fff88007a3e59fc ffff8800619157d8
-Call Trace:
-[<ffffffff8156d8fe>] ? usb_hcd_map_urb_for_dma+0x30e/0x4b0
-[<ffffffff8156e535>] usb_hcd_submit_urb+0x125/0x1b0
-[<ffffffff8156f93f>] usb_submit_urb.part.7+0x15f/0x430
-[<ffffffff814c79a9>] ? __pm_runtime_resume+0x69/0x90
-[<ffffffff8156fc45>1 usb_submit_urb+0x35/0x80
-[<ffffffffa05c8b55>] usbnet_stert_xmit+0x245/0x640 [usbnet]
-[<ffffffff8165248d>] dev_hard_start_xmit+0x54d/0x5f0
-[<ffffffff8165248d>] ? dev_hard_start_xmit+0x54d/0x5f0
-[<ffffffff81671710>] sch_direct_xmit+0x100/0x1d0
-[<ffffffff816526a2>] dev_queue_xmit+0x172/0x4b0
-[<ffffffff8168c8b0>] ip_finish_output+0x224/0x3f0
-[<ffffffffB168d3b8>] ip_output+0x58/0x90
-[<ffffffff8168cb29>] 1p_local_out+0x29/0x30
-[<ffffffff8168cc70>] ip_queue_xmit+0x140/0x3d0
-[<ffffffff816a495a>] tcp_transmit_skb+0x3ba/0x620
-[<ffffffff816a55cc>] tcp_write_xmit+0xlic/0x470
-[<ffffffff81685992>] __tcp_push_pend1ng_frames+0x32/0xd0
-[<ffffffff816968af>] tcp_sendmsg+0xl2f/0xd70
-[<ffffffff816c0961>] inet_sendmsg+0x61/0xb0
-[<ffffffff8108f460>] ? __remove_hrtimer+0x60/0xc0
-[<ffffffff816374a2>] do_sock_write.isra.16+0xc2/0xe0
-[<ffffffff81637508>] sock_aio_write+0x48/0x60
-[<ffffffff8108f8c2>] ? hrtimer_cance1+0x22/0x30
-[<ffffffff811c38f8>] do_sync_readv_writev+0x48/0x80
-[<ffffffff811c4d18>] do_readv_writev+0xc8/0x2a0
-[<ffffffff8109fc6d>] ? vtime_account_user+0x5d/0x70
-[<ffffffffelic4f27>] vfs_writev+0x37/0x50
-[<ffffffff811c50a2>] SyS_writev+0x52/0xc0
-[<ffffffff8176c73f>] tracesys+0xe1/0xe6
-Code: 5c 41 5d 41 5e 41 5f 5d c3 55 48 c7 c2 00 7e 39 81 be 80 00 00
-00 4S 89 eS e8 6b
-RIP [<ffffffffe13379f2>] sg_next+0x2/0x20
-RSP <ffff880061915740>
-CR2: 0000000000000000
-Kernel panic - not syncing: Fatal exception in interrupt
-drm_kms_helper: panic occurred, switching back to text console
 -- 
-Daniel J Blueman
+http://www.halfdog.net/
+PGP: 156A AE98 B91F 0114 FE88  2BD8 C459 9386 feed a bee
