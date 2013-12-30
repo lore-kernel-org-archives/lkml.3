@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600Ab3L3LCa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 06:02:30 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:44710 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755514Ab3L3LC2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 06:02:28 -0500
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-To: rjw@rjwysocki.net
-Cc: andre.przywara@linaro.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] ARM/cpuidle: remove __init tag from Calxeda cpuidle probe function
-Date: Mon, 30 Dec 2013 12:02:24 +0100
-Message-Id: <1388401344-14110-1-git-send-email-daniel.lezcano@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <52C15268.4050403@linaro.org>
-References: <52C15268.4050403@linaro.org>
+	id S1754976Ab3L3LQv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 06:16:51 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41518 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751791Ab3L3LQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Dec 2013 06:16:50 -0500
+Message-ID: <52C1635D.9070703@ti.com>
+Date: Mon, 30 Dec 2013 14:13:17 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: David Rientjes <rientjes@google.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: <akpm@linux-foundation.org>, <tj@kernel.org>, <linux-mm@kvack.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH] mm/memblock: use WARN_ONCE when MAX_NUMNODES passed as
+ input parameter
+References: <1387578536-18280-1-git-send-email-santosh.shilimkar@ti.com> <alpine.DEB.2.02.1312261542260.9342@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1312261542260.9342@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.75]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andre Przywara <andre.przywara@linaro.org>
+On 12/27/2013 01:45 AM, David Rientjes wrote:
+> On Fri, 20 Dec 2013, Santosh Shilimkar wrote:
+>
+>> diff --git a/mm/memblock.c b/mm/memblock.c
+>> index 71b11d9..6af873a 100644
+>> --- a/mm/memblock.c
+>> +++ b/mm/memblock.c
+>> @@ -707,11 +707,9 @@ void __init_memblock __next_free_mem_range(u64 *idx, int nid,
+>>   	struct memblock_type *rsv = &memblock.reserved;
+>>   	int mi = *idx & 0xffffffff;
+>>   	int ri = *idx >> 32;
+>> -	bool check_node = (nid != NUMA_NO_NODE) && (nid != MAX_NUMNODES);
+>>
+>> -	if (nid == MAX_NUMNODES)
+>> -		pr_warn_once("%s: Usage of MAX_NUMNODES is depricated. Use NUMA_NO_NODE instead\n",
+>> -			     __func__);
+>> +	if (WARN_ONCE(nid == MAX_NUMNODES, "Usage of MAX_NUMNODES is deprecated. Use NUMA_NO_NODE instead\n"))
+>> +		nid = NUMA_NO_NODE;
+>>
+>>   	for ( ; mi < mem->cnt; mi++) {
+>>   		struct memblock_region *m = &mem->regions[mi];
+>
+> Um, why do this at runtime?  This is only used for
+> for_each_free_mem_range(), which is used rarely in x86 and memblock-only
+> code.  I'm struggling to understand why we can't deterministically fix the
+> callers if this condition is possible.
+>
 
-Commit 60a66e370007e8535b7a561353b07b37deaf35ba changed the Calxeda
-cpuidle driver to a platform driver, copying the __init tag from the
-_init() to the newly used _probe() function. However, "probe should
-not be __init." (Rob said ;-)
-Remove the __init tag to fix a section mismatch in the Calxeda
-cpuidle driver.
 
-Signed-off-by: Andre Przywara <andre.przywara@linaro.org>
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
----
- drivers/cpuidle/cpuidle-calxeda.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Unfortunately, It's not so simple as from first look :(
+We've modified __next_free_mem_range_x() functions which are part of
+Memblock APIs (like memblock_alloc_xxx()) and Nobootmem APIs.
+These APIs are used as directly as indirectly (as part of callbacks from 
+other MM modules like Sparse), as result, it's not trivial to identify 
+all places where MAX_NUMNODES will be used as input parameter.
 
-diff --git a/drivers/cpuidle/cpuidle-calxeda.c b/drivers/cpuidle/cpuidle-calxeda.c
-index 3679563..6e51114 100644
---- a/drivers/cpuidle/cpuidle-calxeda.c
-+++ b/drivers/cpuidle/cpuidle-calxeda.c
-@@ -65,7 +65,7 @@ static struct cpuidle_driver calxeda_idle_driver = {
- 	.state_count = 2,
- };
- 
--static int __init calxeda_cpuidle_probe(struct platform_device *pdev)
-+static int calxeda_cpuidle_probe(struct platform_device *pdev)
- {
- 	return cpuidle_register(&calxeda_idle_driver, NULL);
- }
--- 
-1.7.9.5
+Same was discussed here in details:
+- [PATCH v2 08/23] mm/memblock: Add memblock memory allocation apis
+   https://lkml.org/lkml/2013/12/2/1075
+- Re: [PATCH 09/24] mm/memblock: Add memblock memory allocation apis
+   https://lkml.org/lkml/2013/12/2/907
+
+Regards,
+- grygorii
 
