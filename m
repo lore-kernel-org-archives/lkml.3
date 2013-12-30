@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500Ab3L3LBI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 06:01:08 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:42680 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754490Ab3L3LBD (ORCPT
+	id S1755600Ab3L3LCa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 06:02:30 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:44710 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755514Ab3L3LC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 06:01:03 -0500
-Message-ID: <52C15268.4050403@linaro.org>
-Date: Mon, 30 Dec 2013 12:00:56 +0100
+	Mon, 30 Dec 2013 06:02:28 -0500
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Andre Przywara <andre.przywara@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: [GIT PULL] ARM : cpuidle: 3.13 fix
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: rjw@rjwysocki.net
+Cc: andre.przywara@linaro.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] ARM/cpuidle: remove __init tag from Calxeda cpuidle probe function
+Date: Mon, 30 Dec 2013 12:02:24 +0100
+Message-Id: <1388401344-14110-1-git-send-email-daniel.lezcano@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <52C15268.4050403@linaro.org>
+References: <52C15268.4050403@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+From: Andre Przywara <andre.przywara@linaro.org>
 
-this pull request provides a single fix for the calxeda cpuidle driver. 
-It is based on v3.13-rc6.
+Commit 60a66e370007e8535b7a561353b07b37deaf35ba changed the Calxeda
+cpuidle driver to a platform driver, copying the __init tag from the
+_init() to the newly used _probe() function. However, "probe should
+not be __init." (Rob said ;-)
+Remove the __init tag to fix a section mismatch in the Calxeda
+cpuidle driver.
 
-* Andre Przywara fixed a compilation warning due to the driver probe 
-function prototype mismatch for the calxeda cpuidle driver
+Signed-off-by: Andre Przywara <andre.przywara@linaro.org>
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+---
+ drivers/cpuidle/cpuidle-calxeda.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks
-   -- Daniel
-
-The following changes since commit 802eee95bde72fd0cd0f3a5b2098375a487d1eda:
-
-   Linux 3.13-rc6 (2013-12-29 16:01:33 -0800)
-
-are available in the git repository at:
-
-   git://git.linaro.org/people/daniel.lezcano/linux.git cpuidle/3.13-fixes
-
-for you to fetch changes up to 5781532ebecd9e0b7b5fc25d78030bdec635f4ac:
-
-   ARM/cpuidle: remove __init tag from Calxeda cpuidle probe function 
-(2013-12-30 11:55:20 +0100)
-
-----------------------------------------------------------------
-Andre Przywara (1):
-       ARM/cpuidle: remove __init tag from Calxeda cpuidle probe function
-
-  drivers/cpuidle/cpuidle-calxeda.c |    2 +-
-  1 file changed, 1 insertion(+), 1 deletion(-)
-
+diff --git a/drivers/cpuidle/cpuidle-calxeda.c b/drivers/cpuidle/cpuidle-calxeda.c
+index 3679563..6e51114 100644
+--- a/drivers/cpuidle/cpuidle-calxeda.c
++++ b/drivers/cpuidle/cpuidle-calxeda.c
+@@ -65,7 +65,7 @@ static struct cpuidle_driver calxeda_idle_driver = {
+ 	.state_count = 2,
+ };
+ 
+-static int __init calxeda_cpuidle_probe(struct platform_device *pdev)
++static int calxeda_cpuidle_probe(struct platform_device *pdev)
+ {
+ 	return cpuidle_register(&calxeda_idle_driver, NULL);
+ }
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+1.7.9.5
 
