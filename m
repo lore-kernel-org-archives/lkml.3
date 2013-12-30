@@ -1,71 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab3L3JNq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 04:13:46 -0500
-Received: from mga09.intel.com ([134.134.136.24]:39007 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754521Ab3L3JNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 04:13:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,573,1384329600"; 
-   d="scan'208";a="431622881"
-Date: Mon, 30 Dec 2013 11:20:43 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Mike Lothian <mike@fireburn.co.uk>, madcatx@atlas.cz,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@linux.ie>,
-        Takashi Iwai <tiwai@suse.de>,
-        =?iso-8859-1?Q?Joaqu=EDn_Aramend=EDa?= <samsagax@gmail.com>
-Subject: Re: [PATCH][update] ACPIPHP / radeon / nouveau: Fix VGA switcheroo
- problem related to hotplug events
-Message-ID: <20131230092043.GB2494@intel.com>
-References: <10163453.2AxBLHI1XI@vostro.rjw.lan>
- <3135179.iXEx1Rk87m@vostro.rjw.lan>
+	id S1754371Ab3L3JUp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 04:20:45 -0500
+Received: from hiddenengine.co.uk ([82.71.36.240]:60818 "EHLO
+	www.hiddenengine.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564Ab3L3JUn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Dec 2013 04:20:43 -0500
+X-Greylist: delayed 329 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Dec 2013 04:20:43 EST
+From: <vt8231@hiddenengine.co.uk>
+To: "'Ben Hutchings'" <ben@decadent.org.uk>
+Cc: <akpm@linux-foundation.org>, "'Roger Lucas'" <vt8231@hiddenengine.co.uk>,
+        "'Dan Carpenter'" <dan.carpenter@oracle.com>,
+        "'Jean Delvare'" <khali@linux-fr.org>, <linux-kernel@vger.kernel.org>,
+        <stable@vger.kernel.org>
+References: <lsq.1388282923.751256928@decadent.org.uk> <lsq.1388282924.25256622@decadent.org.uk>
+In-Reply-To: <lsq.1388282924.25256622@decadent.org.uk>
+Subject: RE: [PATCH 3.2 140/185] hwmon: Prevent some divide by zeros in FAN_TO_REG()
+Date: Mon, 30 Dec 2013 09:15:09 -0000
+Message-ID: <C83890AC7B9B4C02AB263C79698F8F96@honeybadger>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <3135179.iXEx1Rk87m@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: Ac8EOyNePbxoqBKlRDegXiGFMT+7hQBA+/Zg
+X-MimeOLE: Produced By Microsoft MimeOLE V6.1.7601.17609
+x-antivirus: AVG for E-mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 29, 2013 at 10:36:56PM +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> The changes in the ACPI-based PCI hotplug (ACPIPHP) subsystem made
-> during the 3.12 development cycle uncovered a problem with VGA
-> switcheroo that on some systems, when the device-specific method
-> (ATPX in the radeon case, _DSM in the nouveau case) is used to turn
-> off the discrete graphics, the BIOS generates ACPI hotplug events for
-> that device and those events cause ACPIPHP to attempt to remove the
-> device from the system (they are events for a device that was present
-> previously and is not present any more, so that's what should be done
-> according to the spec).  Then, the system stops functioning correctly.
-> 
-> Since the hotplug events in question were simply silently ignored
-> previously, the least intrusive way to address that problem is to
-> make ACPIPHP ignore them again.  For this purpose, introduce a new
-> ACPI device flag, no_hotplug, and modify ACPIPHP to ignore hotplug
-> events for PCI devices whose ACPI companions have that flag set.
-> Next, make the radeon and nouveau switcheroo detection code set the
-> no_hotplug flag for the discrete graphics' ACPI companion.
-> 
-> Fixes: bbd34fcdd1b2 (ACPI / hotplug / PCI: Register all devices under the given bridge)
-> References: https://bugzilla.kernel.org/show_bug.cgi?id=61891
-> References: https://bugzilla.kernel.org/show_bug.cgi?id=64891
-> Reported-and-tested-by: Mike Lothian <mike@fireburn.co.uk>
-> Reported-and-tested-by: <madcatx@atlas.cz>
-> Reported-by: Joaquín Aramendía <samsagax@gmail.com>
-> Cc: Alex Deucher <alexdeucher@gmail.com>
-> Cc: Dave Airlie <airlied@linux.ie>
-> Cc: Takashi Iwai <tiwai@suse.de>
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Cc: 3.12+ <stable@vger.kernel.org> # 3.12+
+Hi Ben,
 
-FWIW, Thunderbolt hotplug still works fine after this patch is applied :)
+The VT8231 patch looks OK to me.  Thanks for your help.
+
+Best regards,
+
+Roger
+
+-----Original Message-----
+From: Ben Hutchings [mailto:ben@decadent.org.uk] 
+Sent: 29 December 2013 02:09
+To: linux-kernel@vger.kernel.org; stable@vger.kernel.org
+Cc: akpm@linux-foundation.org; Roger Lucas; Dan Carpenter; Jean Delvare
+Subject: [PATCH 3.2 140/185] hwmon: Prevent some divide by zeros in
+FAN_TO_REG()
+
+3.2.54-rc1 review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Dan Carpenter <dan.carpenter@oracle.com>
+
+commit 3806b45ba4655147a011df03242cc197ab986c43 upstream.
+
+The "rpm * div" operations can overflow here, so this patch adds an
+upper limit to rpm to prevent that.  Jean Delvare helped me with this
+patch.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Roger Lucas <vt8231@hiddenengine.co.uk>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/hwmon/lm78.c    | 2 ++
+ drivers/hwmon/sis5595.c | 2 ++
+ drivers/hwmon/vt8231.c  | 2 +-
+ 3 files changed, 5 insertions(+), 1 deletion(-)
+
+--- a/drivers/hwmon/lm78.c
++++ b/drivers/hwmon/lm78.c
+@@ -90,6 +90,8 @@ static inline u8 FAN_TO_REG(long rpm, in
+ {
+ 	if (rpm <= 0)
+ 		return 255;
++	if (rpm > 1350000)
++		return 1;
+ 	return SENSORS_LIMIT((1350000 + rpm * div / 2) / (rpm * div), 1,
+254);
+ }
+ 
+--- a/drivers/hwmon/sis5595.c
++++ b/drivers/hwmon/sis5595.c
+@@ -133,6 +133,8 @@ static inline u8 FAN_TO_REG(long rpm, in
+ {
+ 	if (rpm <= 0)
+ 		return 255;
++	if (rpm > 1350000)
++		return 1;
+ 	return SENSORS_LIMIT((1350000 + rpm * div / 2) / (rpm * div), 1,
+254);
+ }
+ 
+--- a/drivers/hwmon/vt8231.c
++++ b/drivers/hwmon/vt8231.c
+@@ -139,7 +139,7 @@ static const u8 regtempmin[] = { 0x3a, 0
+ */
+ static inline u8 FAN_TO_REG(long rpm, int div)
+ {
+-	if (rpm == 0)
++	if (rpm <= 0 || rpm > 1310720)
+ 		return 0;
+ 	return SENSORS_LIMIT(1310720 / (rpm * div), 1, 255);
+ }
+
+
