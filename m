@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756325Ab3L3RTb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 12:19:31 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:37279 "EHLO
+	id S1756305Ab3L3RTa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 12:19:30 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:37280 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756142Ab3L3RTF (ORCPT
+	by vger.kernel.org with ESMTP id S1756214Ab3L3RTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 12:19:05 -0500
+	Mon, 30 Dec 2013 12:19:08 -0500
 X-IronPort-AV: E=Sophos;i="4.95,574,1384297200"; 
-   d="scan'208";a="51019966"
+   d="scan'208";a="51019974"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Nick Kossifidis <mickflemm@gmail.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+To: QCA ath9k Development <ath9k-devel@qca.qualcomm.com>
+Cc: kernel-janitors@vger.kernel.org,
         "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, ath5k-devel@venema.h4ckr.net,
+        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/11] ath5k: use ether_addr_equal_64bits
-Date: Mon, 30 Dec 2013 19:14:58 +0100
-Message-Id: <1388427307-8691-3-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 8/11]  use ether_addr_equal_64bits
+Date: Mon, 30 Dec 2013 19:15:04 +0100
+Message-Id: <1388427307-8691-9-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -33,7 +32,7 @@ used when each argument is an array within a structure that contains at
 least two bytes of data beyond the array.
 
 The structures involved are:
-ieee80211_mgmt defined in include/linux/ieee80211.h and
+ieee80211_hdr defined in include/linux/ieee80211.h
 ath_common defined in drivers/net/wireless/ath/ath.h
 
 This was done using Coccinelle (http://coccinelle.lip6.fr/).
@@ -44,29 +43,34 @@ Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 The semantic patch used is rather long and can be found in message 0 of
 this patch series.
 
- drivers/net/wireless/ath/ath5k/base.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath9k/htc_drv_txrx.c |    2 +-
+ drivers/net/wireless/ath/ath9k/recv.c         |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath5k/base.c b/drivers/net/wireless/ath/ath5k/base.c
-index 69f58b0..6396ad4 100644
---- a/drivers/net/wireless/ath/ath5k/base.c
-+++ b/drivers/net/wireless/ath/ath5k/base.c
-@@ -1245,7 +1245,7 @@ ath5k_check_ibss_tsf(struct ath5k_hw *ah, struct sk_buff *skb,
+diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
+index c028df7..b41e008 100644
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
+@@ -1077,7 +1077,7 @@ static bool ath9k_rx_prepare(struct ath9k_htc_priv *priv,
  
- 	if (ieee80211_is_beacon(mgmt->frame_control) &&
- 	    le16_to_cpu(mgmt->u.beacon.capab_info) & WLAN_CAPABILITY_IBSS &&
--	    ether_addr_equal(mgmt->bssid, common->curbssid)) {
-+	    ether_addr_equal_64bits(mgmt->bssid, common->curbssid)) {
- 		/*
- 		 * Received an IBSS beacon with the same BSSID. Hardware *must*
- 		 * have updated the local TSF. We have to work around various
-@@ -1309,7 +1309,7 @@ ath5k_update_beacon_rssi(struct ath5k_hw *ah, struct sk_buff *skb, int rssi)
+ 	if (ieee80211_is_beacon(hdr->frame_control) &&
+ 	    !is_zero_ether_addr(common->curbssid) &&
+-	    ether_addr_equal(hdr->addr3, common->curbssid)) {
++	    ether_addr_equal_64bits(hdr->addr3, common->curbssid)) {
+ 		s8 rssi = rxbuf->rxstatus.rs_rssi;
  
- 	/* only beacons from our BSSID */
- 	if (!ieee80211_is_beacon(mgmt->frame_control) ||
--	    !ether_addr_equal(mgmt->bssid, common->curbssid))
-+	    !ether_addr_equal_64bits(mgmt->bssid, common->curbssid))
- 		return;
+ 		if (likely(last_rssi != ATH_RSSI_DUMMY_MARKER))
+diff --git a/drivers/net/wireless/ath/ath9k/recv.c b/drivers/net/wireless/ath/ath9k/recv.c
+index 3692b2a..0152318 100644
+--- a/drivers/net/wireless/ath/ath9k/recv.c
++++ b/drivers/net/wireless/ath/ath9k/recv.c
+@@ -982,7 +982,7 @@ static bool ath9k_is_mybeacon(struct ath_softc *sc, struct ieee80211_hdr *hdr)
+ 	if (ieee80211_is_beacon(hdr->frame_control)) {
+ 		RX_STAT_INC(rx_beacons);
+ 		if (!is_zero_ether_addr(common->curbssid) &&
+-		    ether_addr_equal(hdr->addr3, common->curbssid))
++		    ether_addr_equal_64bits(hdr->addr3, common->curbssid))
+ 			return true;
+ 	}
  
- 	ewma_add(&ah->ah_beacon_rssi_avg, rssi);
 
