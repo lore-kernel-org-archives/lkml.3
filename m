@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099Ab3L3SVa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 13:21:30 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36210 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755867Ab3L3SV3 (ORCPT
+	id S1756201Ab3L3SdH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 13:33:07 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36797 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755867Ab3L3SdF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 13:21:29 -0500
-Message-ID: <52C1B99C.7040404@infradead.org>
-Date: Mon, 30 Dec 2013 10:21:16 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 30 Dec 2013 13:33:05 -0500
+Date: Mon, 30 Dec 2013 19:33:03 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Joe Xue <lgxue@hotmail.com>
+Cc: cooloney@gmail.com, rpurdie@rpsys.net, rob@landley.net, milo.kim@ti.com,
+        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH] Add LED pattern trigger
+Message-ID: <20131230183302.GA28430@amd.pavel.ucw.cz>
+References: <1388362275-1618-1-git-send-email-lgxue@hotmail.com>
 MIME-Version: 1.0
-To: Wang YanQing <udknight@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
-        jslaby@suse.cz, airlied@redhat.com, akpm@linux-foundation.org,
-        kilobyte@angband.pl, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fonts:Kconfig: fix default enable FONT_8x8 and FONT_8x16
- at the same time
-References: <20131230033745.GA5855@udknight> <20131230053430.GA11990@kroah.com> <20131230064842.GA6592@udknight>
-In-Reply-To: <20131230064842.GA6592@udknight>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1388362275-1618-1-git-send-email-lgxue@hotmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/29/13 22:48, Wang YanQing wrote:
-> On Sun, Dec 29, 2013 at 09:34:30PM -0800, Greg KH wrote:
->> On Mon, Dec 30, 2013 at 11:37:45AM +0800, Wang YanQing wrote:
->>> FONT_8x8 and FONT_8x16 have the same default value line:
->>> "default y if !SPARC && !FONTS"
->>>
->>> I test run "make defconfig" for x86 will enable FONT_8x8 and FONT_8x16 at
->>> the same time.
->>>
->>> This patch fix it, because FONT_AUTOSELECT choice FONT_8x16, so
->>> I decide to disable FONT_8x8, this patch will reduce size of kernel.
->>>
->>> Signed-off-by: Wang YanQing <udknight@gmail.com>
->>> ---
->>>  lib/fonts/Kconfig | 1 -
->>>  1 file changed, 1 deletion(-)
->>
->> I am not the maintainer of this file, sorry.  Also, I don't think it's
->> correct, if you want, you can always disable this option on your own.
->>
-> Hi Greg KH.
+Hi!
+
+> The LED pattern trigger allows LEDs blink in user defined pattern.
 > 
-> Sorry for confusion, the default behavior enable FONT_8x8 and FONT_8x16,
-> FONT_8x8 eat ~50KB memory, but kernel never use it. I think this is not
-> good default behavior.
+> 	new file:   Documentation/leds/ledtrig-pattern.txt
+> 	modified:   drivers/leds/trigger/Kconfig
+> 	modified:   drivers/leds/trigger/Makefile
+> 	new file:   drivers/leds/trigger/ledtrig-pattern.c
+> 
+> Suggested-by: Pavel Machek <pavel@ucw.cz>
+> Signed-off-by: Joe Xue <lgxue@hotmail.com>
 
-If framebuffer console is enabled, then the user can select which compiled-in
-font to use by using
-  fbcon=font:<name>
-See Documentation/fb/fbcon.txt for more info.
+> +     echo pattern > trigger
+> +     echo "# ## /"
+> +
+> +     The behaviour is like below:
+> +
+> +     on(125ms)off(125ms)on(250ms)off
 
 
+> +static void pattern_timer_function(unsigned long data)
+> +{
+> +	struct led_classdev *led_cdev = (struct led_classdev *) data;
+> +	struct pattern_trig_data *pattern_data = led_cdev->trigger_data;
+> +
+> +	if (pattern_data->pattern[pattern_data->count] == '#') {
+> +		__led_set_brightness(led_cdev, pattern_data->brightness_on);
+> +		mod_timer(&pattern_data->timer,
+> +			jiffies + msecs_to_jiffies(pattern_data->delay_unit));
+> +	} else if (pattern_data->pattern[pattern_data->count] == ' ') {
+> +		__led_set_brightness(led_cdev, LED_OFF);
+> +		mod_timer(&pattern_data->timer,
+> +			jiffies + msecs_to_jiffies(pattern_data->delay_unit));
+> +	/* stop blinking */
+> +	} else if (pattern_data->pattern[pattern_data->count] == '/') {
+> +		return;
+> +	}
+
+What about something like this?
+
+Not shcheduling timer when nothing changed should save a bit of power/cpu...
+
+  	if (pattern_data->pattern[pattern_data->count] == '/') {
+		return;
+	}
+
+	this = pattern_data->pattern[pattern_data->count]
+	if (this == '#')
+		new_brigtness = pattern_data->brightness_on;
+	if (this == ' ')
+		new_brigtness = LED_OFF;
+	repeat = 1;
+	while (pattern_data->pattern[pattern_data->count + repeat] == this)
+	      repeat++;
+
+	mod_timer(&pattern_data->timer,
+		jiffies + msecs_to_jiffies(pattern_data->delay_unit * repeat));
+
+
+Thanks,
+									Pavel
 -- 
-~Randy
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
