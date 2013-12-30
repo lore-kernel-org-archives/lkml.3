@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859Ab3L3MZx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 07:25:53 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59867 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755637Ab3L3MZw (ORCPT
+	id S1755831Ab3L3Met (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 07:34:49 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:52628 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755681Ab3L3Mes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 07:25:52 -0500
-Date: Mon, 30 Dec 2013 13:25:49 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org development" 
-	<linux-bluetooth@vger.kernel.org>,
-        Ville Tervo <ville.tervo@nokia.com>, Sebastian Reichel <sre@ring0.de>
-Subject: Re: [PATCH v2] Bluetooth: Add hci_h4p driver
-Message-ID: <20131230122549.GA21519@amd.pavel.ucw.cz>
-References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com>
- <1727897.LBX8128hIo@izba>
- <C8D1F470-7964-4EAC-82E0-D53CF54DE086@holtmann.org>
- <20131230121350.GB31236@amd.pavel.ucw.cz>
+	Mon, 30 Dec 2013 07:34:48 -0500
+Date: Mon, 30 Dec 2013 12:34:40 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <20131230123440.GT31886@sirena.org.uk>
+References: <1387831563-13535-1-git-send-email-sboyd@codeaurora.org>
+ <1387831563-13535-6-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PUHnpEUN0SLOjcm5"
 Content-Disposition: inline
-In-Reply-To: <20131230121350.GB31236@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1387831563-13535-6-git-send-email-sboyd@codeaurora.org>
+X-Cookie: Go climb a gravity well!
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 5/7] mfd: pm8921: Use ssbi regmap
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
 
-> > > @@ -0,0 +1,1357 @@
-> > > +/*
-> > > + * This file is part of hci_h4p bluetooth driver
-> > > + *
-> > > + * Copyright (C) 2005-2008 Nokia Corporation.
-> > > + *
-> > > + * Contact: Ville Tervo <ville.tervo@nokia.com>
-> > 
-> > I think you can just remove the contact names since I think nobody of the original authors is still working at Nokia and I bet this emails addresses just do not work anymore.
-> > 
-> 
-> I sent him an email with question. I guess we should move Ville to
-> CREDITS?
+--PUHnpEUN0SLOjcm5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-You just won the bet :-).
+On Mon, Dec 23, 2013 at 12:46:01PM -0800, Stephen Boyd wrote:
+> Use a regmap so that the pm8xxx read/write APIs can be removed
+> once all consumer drivers are converted.
 
-<ville.tervo@nokia.com>: host mx1.nokia.com[147.243.142.136] said: 550
-5.1.1
-    <ville.tervo@nokia.com>... User unknown (in reply to RCPT TO
-    command)
+Reviewed-by: Mark Brown <broonie@linaro.org>
 
-(I'd bet that way, too, but I thought it should be checked).
+--PUHnpEUN0SLOjcm5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Anyway, time to catch some sunlight while it lasts...
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-									Pavel
+iQIcBAEBAgAGBQJSwWhdAAoJELSic+t+oim9qHcQAI51dJ/rFcDgMmqFHnZFINAV
+ypRgUe+2m72QY9KFEPvcxy80vr+bU4qlv7hwWB/c2FZvpH0ugzipCDK1cWnkmzoY
+n0w8rmqhvUrvv8FgKhnGqIsxiqr97aVgMU0U2+rYMi+/nvfPMSfQIR/Z56iWS/0W
+s003Zp0FZC9XByErg+BIeJiLgYeS82NMMVpKP2bneL/S7o1dGWHQIIGVhxUqlOdp
+nHWFk7mNv4oU2ueBZCbs8vvcDULHT8m9Pf/1Nn7MbC3sS+BwtRumbEbvW6Mzx3kn
+XVUBAkuhTrns597SKexdnPrX5x55BDlUoQQvMflv+Ug/Zas5SFz0lVysPrUN93W7
+uqqhA8WK7aqDfHi39bTK4eCYgs6zqWdWPWWaN7TsEuMlq2pSY9uWDNFWopxfPbnS
+x+BaFFaToCwKRsQ+LqTAodEaB9WOVHB+npOfkKxGgRnIuxybFz3W/M+LYpk4N+D9
+6va3L1uxZINgs8ReEnY9eLai9QCiKz2Iy3+CuxSt1hkhZHawawvG97ine+5H+oe9
+2fVFSsdFbnosC4pdg9KneorGnGi0S+5eaJy6863HzZfbpuwfl9sb8LGkxXVgu684
+Urxm3fhp9THnHZqGVNrLjyCZZjNMn3dLDlEx/GH68YENadSnjLJv/H3Os+5BNST8
+PfQaYcMZoKIrZQ45uhyw
+=aECT
+-----END PGP SIGNATURE-----
 
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+--PUHnpEUN0SLOjcm5--
