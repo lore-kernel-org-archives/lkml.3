@@ -1,117 +1,469 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab3L3Jtr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 04:49:47 -0500
-Received: from mo2.mail-out.ovh.net ([178.32.228.2]:40917 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751702Ab3L3Jtp (ORCPT
+	id S1754879Ab3L3JyB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 04:54:01 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:41808 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751960Ab3L3Jx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 04:49:45 -0500
-Message-ID: <52C14180.4080801@overkiz.com>
-Date: Mon, 30 Dec 2013 10:48:48 +0100
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 30 Dec 2013 04:53:58 -0500
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Landley <rob@landley.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Jiri Prchal <jiri.prchal@aksignal.cz>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        devicetree@vger.kernel.org, Pekon Gupta <pekon@ti.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
-Subject: Re: [RFC PATCH] gpio: add GPIO hogging mechanism
-References: <1387463671-1164-1-git-send-email-b.brezillon@overkiz.com> <1387463671-1164-2-git-send-email-b.brezillon@overkiz.com> <20131219164109.GB27409@kroah.com> <20131219164737.GA4536@saruman.home> <52B32A70.1080700@overkiz.com> <20131219182227.GB4536@saruman.home>
-In-Reply-To: <20131219182227.GB4536@saruman.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 4720053885459921093
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrudeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrudeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+In-Reply-To: <52C1166B.7090205@ti.com>
+References: <1386669911-17319-1-git-send-email-yuvaraj.cd@samsung.com>
+	<1386669911-17319-2-git-send-email-yuvaraj.cd@samsung.com>
+	<52C1166B.7090205@ti.com>
+Date: Mon, 30 Dec 2013 15:23:57 +0530
+Message-ID: <CAKuRcOJrVm4f12_AyeZhRZimOoB0MvJYKrAHQqKONVqWky=1Ng@mail.gmail.com>
+Subject: Re: [PATCH V3 1/2] Phy: Exynos: Add Exynos5250 sata phy driver
+From: Yuvaraj Kumar <yuvaraj.cd@gmail.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        linux-kernel@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-doc@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Mark Rutland <mark.rutland@arm.com>, sachin.kamat@linaro.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        sunil joshi <joshi@samsung.com>,
+        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>,
+        Girish K S <ks.giri@samsung.com>,
+        Vasanth Ananthan <vasanth.a@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Thanks for the review.
 
-On 19/12/2013 19:22, Felipe Balbi wrote:
-> On Thu, Dec 19, 2013 at 06:18:40PM +0100, boris brezillon wrote:
->> Hello Felipe,
->>
->> On 19/12/2013 17:47, Felipe Balbi wrote:
->>> On Thu, Dec 19, 2013 at 08:41:09AM -0800, Greg Kroah-Hartman wrote:
->>>> On Thu, Dec 19, 2013 at 03:34:31PM +0100, Boris BREZILLON wrote:
->>>>> GPIO hogging is a way to request and configure specific GPIO without
->>>>> explicitly requesting it in the device driver.
->>>>>
->>>>> The request and configuration procedure is handled in the core device
->>>>> driver code before the driver probe function is called.
->>>>>
->>>>> It allows specific GPIOs to be configured without any driver specific code.
->>>>>
->>>>> Particularly usefull when a external device is connected to a bus and the
->>>>> bus connections depends on an external switch controlled by a GPIO pin.
->>> for external switches, you probably need a pinctrl-gpio driver.
->> Do you mean using pinctrl pinconf to configure the PIN as output-high or
->> output-low ?
->>
->> This was my first proposal
->> (see https://www.mail-archive.com/devicetree@vger.kernel.org/msg05829.html).
-
-My mistake: this is not exactly what I proposed in my patch series.
-
-Actually, I was directly requesting the pin connected to the external 
-switch as
-OUTPUT + (OUTPUT-LEVEL) according the the device needs:
-- output high for MMC slot
-- output low for SPI device
-
-And, I guess this is why Linus asked me to find a better solution.
-
-IMHO your approach is, by far, much better. You expose the external switch
-as a PIN muxing device and the devices connected to through this PIN mux
-block just have to request the appropriate PIN states.
-
-In my specific case this would give the following:
-- MMC conf for mmc slot 0
-- SPI conf for the SPI device
-
-With your approach the HW representation is better: the different signals
-controlled by the external switch can be seen using debugfs, and device
-tree definition is closer to the real HW design.
-
-> that's quite a weird argument from Linus W, considering you _do_ have a
-> discrete mux on the board.
-
-> We have quite a few of such "crazy" scenarios here at TI and we were
-> going to send a pinctrl-gpio driver. If that's not acceptable, then I
-> suppose there is no way to boot from NAND on a board where NAND signals
-> go through a discrete mux where the select signal is a GPIO pin.
+On Mon, Dec 30, 2013 at 12:14 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+> Hi,
 >
-
-Please keep going with the submission process: I'm really interested in this
-driver (BTW could you add me in the CC list ?).
-
-Linus, tell me if I'm wrong, but I think, the pinctrl-gpio is the right 
-way to solve
-the at91rm9200ek board use case.
-
-This does not mean, the gpio hogs approach does not solve other issues (see
-https://lkml.org/lkml/2013/8/29/333 and
-https://www.mail-archive.com/linux-gpio@vger.kernel.org/msg01084.html), 
-but in
-my specific case, I'd rather use the pinctrl-gpio driver.
-
-Best Regards,
-
-Boris
+>
+> On Tuesday 10 December 2013 03:35 PM, Yuvaraj Kumar C D wrote:
+>>
+>> This patch adds the sata phy driver for Exynos5250.Exynos5250 sata
+>> phy comprises of CMU and TRSV blocks which are of I2C register Map.
+>> So this patch also adds a i2c client driver, which is used configure
+>> the CMU and TRSV block of exynos5250 SATA PHY.
+>>
+>> This patch incorporates the generic phy framework to deal with sata
+>> phy.
+>>
+>> This patch depends on the below patches
+>>         [1].drivers: phy: add generic PHY framework
+>>                 by Kishon Vijay Abraham I<kishon@ti.com>
+>>         [2].ata: ahci_platform: Manage SATA PHY
+>>                 by Roger Quadros <rogerq@ti.com>
+>>
+>> Changes from V2:
+>>         1.Removed of_match_table
+>>         2.Moved to syscon interface for PMU handling.
+>>
+>> Changes from V1:
+>>         1.Adapted to latest version of Generic PHY framework
+>>         2.Removed exynos_sata_i2c_remove function.
+>>
+>> Signed-off-by: Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
+>> Signed-off-by: Girish K S <ks.giri@samsung.com>
+>> Signed-off-by: Vasanth Ananthan <vasanth.a@samsung.com>
+>> ---
+>>   drivers/phy/Kconfig               |   11 ++
+>>   drivers/phy/Makefile              |    1 +
+>>   drivers/phy/exynos5250_phy_i2c.c  |   44 ++++++++
+>>   drivers/phy/sata_phy_exynos5250.c |  219
+>> +++++++++++++++++++++++++++++++++++++
+>>   drivers/phy/sata_phy_exynos5250.h |   35 ++++++
+>>   5 files changed, 310 insertions(+)
+>>   create mode 100644 drivers/phy/exynos5250_phy_i2c.c
+>>   create mode 100644 drivers/phy/sata_phy_exynos5250.c
+>>   create mode 100644 drivers/phy/sata_phy_exynos5250.h
+>>
+>> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+>> index a344f3d..54f9baf 100644
+>> --- a/drivers/phy/Kconfig
+>> +++ b/drivers/phy/Kconfig
+>> @@ -51,4 +51,15 @@ config PHY_EXYNOS_DP_VIDEO
+>>         help
+>>           Support for Display Port PHY found on Samsung EXYNOS SoCs.
+>>
+>> +config EXYNOS5250_SATA_PHY
+>> +       tristate "Exynos5250 Sata SerDes/PHY driver"
+>> +       depends on SOC_EXYNOS5250
+>> +       select GENERIC_PHY
+>> +       select MFD_SYSCON if ARCH_EXYNOS5
+>> +       help
+>> +         Enable this to support SATA SerDes/Phy found on Samsung's
+>> +         Exynos5250 based SoCs.This SerDes/Phy supports SATA 1.5 Gb/s,
+>> +         SATA 3.0 Gb/s, SATA 6.0 Gb/s speeds.It supports one SATA host
+>> +         port to accept one SATA device.
+>> +
+>>   endmenu
+>> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+>> index d0caae9..af98f32 100644
+>> --- a/drivers/phy/Makefile
+>> +++ b/drivers/phy/Makefile
+>> @@ -7,3 +7,4 @@ obj-$(CONFIG_PHY_EXYNOS_DP_VIDEO)       +=
+>> phy-exynos-dp-video.o
+>>   obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)   += phy-exynos-mipi-video.o
+>>   obj-$(CONFIG_OMAP_USB2)                       += phy-omap-usb2.o
+>>   obj-$(CONFIG_TWL4030_USB)             += phy-twl4030-usb.o
+>> +obj-$(CONFIG_EXYNOS5250_SATA_PHY)      += sata_phy_exynos5250.o
+>> exynos5250_phy_i2c.o
+>> diff --git a/drivers/phy/exynos5250_phy_i2c.c
+>> b/drivers/phy/exynos5250_phy_i2c.c
+>> new file mode 100644
+>> index 0000000..c0c1150
+>> --- /dev/null
+>> +++ b/drivers/phy/exynos5250_phy_i2c.c
+>> @@ -0,0 +1,44 @@
+>> +/*
+>> + * Copyright (C) 2013 Samsung Electronics Co.Ltd
+>> + * Author:
+>> + *     Yuvaraj C D <yuvaraj.cd@samsung.com>
+>> + *
+>> + * This program is free software; you can redistribute  it and/or modify
+>> it
+>> + * under  the terms of  the GNU General  Public License as published by
+>> the
+>> + * Free Software Foundation;  either version 2 of the  License, or (at
+>> your
+>> + * option) any later version.
+>> + *
+>> + */
+>> +
+>> +#include <linux/i2c.h>
+>> +#include <linux/kernel.h>
+>> +#include <linux/module.h>
+>> +#include "sata_phy_exynos5250.h"
+>> +
+>> +static int exynos_sata_i2c_probe(struct i2c_client *client,
+>> +               const struct i2c_device_id *i2c_id)
+>> +{
+>> +       int ret = 0;
+>> +       ret = sataphy_attach_i2c_client(client);
+>> +       if (ret < 0)
+>> +               return ret;
+>> +
+>> +       dev_info(&client->adapter->dev,
+>> +               "attached %s into sataphy i2c adapter successfully\n",
+>> +               client->name);
+>> +
+>> +       return ret;
+>> +}
+>> +
+>> +static const struct i2c_device_id sataphy_i2c_device_match[] = {
+>> +       { "exynos-sataphy-i2c", 0 },
+>> +};
+>> +
+>> +struct i2c_driver sataphy_i2c_driver = {
+>> +       .probe          = exynos_sata_i2c_probe,
+>> +       .id_table       = sataphy_i2c_device_match,
+>> +       .driver   = {
+>> +               .name = "exynos-sataphy-i2c",
+>> +               .owner = THIS_MODULE,
+>> +               },
+>> +};
+>> diff --git a/drivers/phy/sata_phy_exynos5250.c
+>> b/drivers/phy/sata_phy_exynos5250.c
+>> new file mode 100644
+>> index 0000000..b147119
+>> --- /dev/null
+>> +++ b/drivers/phy/sata_phy_exynos5250.c
+>> @@ -0,0 +1,219 @@
+>> +/*
+>> + * Samsung SATA SerDes(PHY) driver
+>> + *
+>> + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
+>> + * Authors: Girish K S <ks.giri@samsung.com>
+>> + *         Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + */
+>> +
+>> +#include <linux/clk.h>
+>> +#include <linux/delay.h>
+>> +#include <linux/io.h>
+>> +#include <linux/i2c.h>
+>> +#include <linux/kernel.h>
+>> +#include <linux/module.h>
+>> +#include <linux/of.h>
+>> +#include <linux/of_address.h>
+>> +#include <linux/phy/phy.h>
+>> +#include <linux/platform_device.h>
+>> +#include <linux/regmap.h>
+>> +#include <linux/spinlock.h>
+>> +#include <linux/mfd/syscon.h>
+>> +#include "sata_phy_exynos5250.h"
+>> +
+>> +static struct i2c_client *phy_i2c_client;
+>> +
+>> +struct exynos_sata_phy {
+>> +       struct phy *phy;
+>> +       struct clk *phyclk;
+>> +       void __iomem *regs;
+>> +       void __iomem *pmureg;
+>> +};
+>> +
+>> +static bool wait_for_reg_status(void __iomem *base, u32 reg, u32
+>> checkbit,
+>> +                               u32 status)
+>> +{
+>> +       unsigned long timeout = jiffies + usecs_to_jiffies(1000);
+>> +       while (time_before(jiffies, timeout)) {
+>> +               if ((readl(base + reg) & checkbit) == status)
+>> +                       return true;
+>> +       }
+>> +       return false;
+>> +}
+>> +
+>> +int sataphy_attach_i2c_client(struct i2c_client *sata_phy)
+>> +{
+>> +       if (!sata_phy)
+>> +               return -EPROBE_DEFER;
+>> +       else
+>> +               phy_i2c_client = sata_phy;
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static int exynos_sata_phy_power_on(struct phy *phy)
+>> +{
+>> +       struct exynos_sata_phy *sata_phy = phy_get_drvdata(phy);
+>> +
+>> +       if (sata_phy->pmureg)
+>> +               regmap_update_bits(sata_phy->pmureg,
+>> SATAPHY_CONTROL_OFFSET,
+>> +                       EXYNOS5_SATAPHY_PMU_ENABLE, EXYNOS_SATA_PHY_EN);
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static int exynos_sata_phy_power_off(struct phy *phy)
+>> +{
+>> +       struct exynos_sata_phy *sata_phy = phy_get_drvdata(phy);
+>> +
+>> +       if (sata_phy->pmureg)
+>> +               regmap_update_bits(sata_phy->pmureg,
+>> SATAPHY_CONTROL_OFFSET,
+>> +                       EXYNOS5_SATAPHY_PMU_ENABLE, ~EXYNOS_SATA_PHY_EN);
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static int exynos_sata_phy_init(struct phy *phy)
+>> +{
+>> +       u32 val = 0;
+>> +       int ret = 0;
+>> +       u8 buf[] = { 0x3A, 0x0B };
+>> +       struct exynos_sata_phy *sata_phy = phy_get_drvdata(phy);
+>> +
+>> +       if (sata_phy->pmureg)
+>> +               regmap_update_bits(sata_phy->pmureg,
+>> SATAPHY_CONTROL_OFFSET,
+>> +                       EXYNOS5_SATAPHY_PMU_ENABLE, EXYNOS_SATA_PHY_EN);
+>> +
+>> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
+>> +
+>> +       val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
+>> +       val |= 0xFF;
+>> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
+>> +
+>> +       val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
+>> +       val |= LINK_RESET;
+>> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
+>> +
+>> +       val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
+>> +       val |= RESET_CMN_RST_N;
+>> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
+>> +       val = readl(sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
+>> +       val &= ~PHCTRLM_REF_RATE;
+>> +       writel(val, sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
+>> +
+>> +       /* High speed enable for Gen3 */
+>> +       val = readl(sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
+>> +       val |= PHCTRLM_HIGH_SPEED;
+>> +       writel(val, sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
+>> +
+>> +       val |= CTRL0_P0_PHY_CALIBRATED_SEL | CTRL0_P0_PHY_CALIBRATED;
+>> +       writel(val, sata_phy->regs + EXYNOS5_SATA_CTRL0);
+>> +
+>> +       writel(0x2, sata_phy->regs + EXYNOS5_SATA_MODE0);
+>> +
+>> +       ret = i2c_master_send(phy_i2c_client, buf, sizeof(buf));
+>> +       if (ret < 0)
+>> +               return -ENXIO;
+>> +
+>> +       /* release cmu reset */
+>> +       val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
+>> +       val &= ~RESET_CMN_RST_N;
+>> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
+>> +
+>> +       val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
+>> +       val |= RESET_CMN_RST_N;
+>> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
+>> +
+>> +       return (wait_for_reg_status(sata_phy->regs,
+>> EXYNOS5_SATA_PHSATA_STATM,
+>> +               PHSTATM_PLL_LOCKED, 1)) ? 0 : -EINVAL;
+>> +
+>> +}
+>> +
+>> +static struct phy_ops exynos_sata_phy_ops = {
+>> +       .init           = exynos_sata_phy_init,
+>> +       .power_on       = exynos_sata_phy_power_on,
+>> +       .power_off      = exynos_sata_phy_power_off,
+>> +       .owner          = THIS_MODULE,
+>> +};
+>> +
+>> +static int exynos_sata_phy_probe(struct platform_device *pdev)
+>> +{
+>> +       struct exynos_sata_phy *sata;
+>> +       struct device *dev = &pdev->dev;
+>> +       struct resource *res;
+>> +       struct phy_provider *phy_provider;
+>> +       int ret = 0;
+>> +
+>> +       sata = devm_kzalloc(dev, sizeof(*sata), GFP_KERNEL);
+>> +       if (!sata)
+>> +               return -ENOMEM;
+>> +
+>> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +
+>> +       sata->regs = devm_ioremap_resource(dev, res);
+>> +       if (IS_ERR(sata->regs))
+>> +               return PTR_ERR(sata->regs);
+>> +
+>> +       sata->pmureg = syscon_regmap_lookup_by_phandle(dev->of_node,
+>> +                                       "samsung,syscon-phandle");
+>> +       if (!sata->pmureg) {
+>> +               dev_err(dev, "syscon regmap lookup failed.\n");
+>> +               return PTR_ERR(sata->pmureg);
+>> +       }
+>> +       dev_set_drvdata(dev, sata);
+>> +
+>> +       if (i2c_add_driver(&sataphy_i2c_driver)) {
+>> +               dev_err(dev, "failed to register sataphy i2c driver\n");
+>> +               return -ENOENT;
+>> +       }
+>> +
+>> +       sata->phyclk = devm_clk_get(dev, "sata_phyctrl");
+>> +       if (IS_ERR(sata->phyclk)) {
+>> +               dev_err(dev, "failed to get clk for PHY\n");
+>> +               return PTR_ERR(sata->phyclk);
+>> +       }
+>> +
+>> +       ret = clk_prepare_enable(sata->phyclk);
+>> +       if (ret < 0) {
+>> +               dev_err(dev, "failed to enable source clk\n");
+>> +               return ret;
+>> +       }
+>> +
+>> +       phy_provider = devm_of_phy_provider_register(dev,
+>> +                                       of_phy_simple_xlate);
+>> +       if (IS_ERR(phy_provider))
+>> +               return PTR_ERR(phy_provider);
+>> +
+>> +       sata->phy = devm_phy_create(dev, &exynos_sata_phy_ops, NULL);
+>> +       if (IS_ERR(sata->phy)) {
+>> +               dev_err(dev, "failed to create PHY\n");
+>> +               return PTR_ERR(sata->phy);
+>> +       }
+>
+>
+> Recently Felipe found a problem that might arise if phy_create is called
+> after phy_provider_register. Always do phy_provider_register as the last
+> step.
+Ok.
+>
+>> +       phy_set_drvdata(sata->phy, sata);
+>> +       return 0;
+>> +}
+>> +
+>> +static const struct of_device_id exynos_sata_phy_of_match[] = {
+>> +       { .compatible = "samsung,exynos5250-sata-phy" },
+>> +       { },
+>> +};
+>> +MODULE_DEVICE_TABLE(of, exynos_sata_phy_of_match);
+>> +
+>> +static struct platform_driver exynos_sata_phy_driver = {
+>> +       .probe  = exynos_sata_phy_probe,
+>> +       .driver = {
+>> +               .of_match_table = exynos_sata_phy_of_match,
+>> +               .name  = "samsung,sata-phy",
+>> +               .owner = THIS_MODULE,
+>> +       }
+>> +};
+>> +module_platform_driver(exynos_sata_phy_driver);
+>> +
+>> +MODULE_DESCRIPTION("Samsung SerDes PHY driver");
+>> +MODULE_LICENSE("GPL");
+>> +MODULE_AUTHOR("ks.giri <ks.giri@samsung.com>");
+>> +MODULE_AUTHOR("Yuvaraj C D <yuvaraj.cd@samsung.com>");
+>> diff --git a/drivers/phy/sata_phy_exynos5250.h
+>> b/drivers/phy/sata_phy_exynos5250.h
+>> new file mode 100644
+>> index 0000000..3e2089d
+>> --- /dev/null
+>> +++ b/drivers/phy/sata_phy_exynos5250.h
+>> @@ -0,0 +1,35 @@
+>> +/*
+>> + *
+>> + * Copyright (c) 2013 Samsung Electronics Co., Ltd.
+>> + * Author:
+>> + *     Yuvaraj Kumar C D<yuvaraj.cd@samsung.com>
+>> + *
+>> + * This program is free software; you can redistribute  it and/or modify
+>> it
+>> + * under  the terms of  the GNU General  Public License as published by
+>> the
+>> + * Free Software Foundation;  either version 2 of the  License, or (at
+>> your
+>> + * option) any later version.
+>> + */
+>> +
+>> +#define EXYNOS5_SATA_RESET             0x4
+>> +#define EXYNOS5_SATA_MODE0             0x10
+>> +#define EXYNOS5_SATA_CTRL0             0x14
+>> +#define EXYNOS5_SATA_STAT0             0x18
+>> +#define EXYNOS5_SATA_PHSATA_CTRLM      0xE0
+>> +#define EXYNOS5_SATA_PHSATA_CTRL0      0xE4
+>> +#define EXYNOS5_SATA_PHSATA_STATM      0xF0
+>> +#define EXYNOS5_SATA_PHSTAT0           0xF4
+>> +
+>> +#define RESET_CMN_RST_N                        (1 << 1)
+>> +#define LINK_RESET                     0xF0000
+>> +#define CTRL0_P0_PHY_CALIBRATED_SEL    (1 << 9)
+>> +#define CTRL0_P0_PHY_CALIBRATED                (1 << 8)
+>> +#define PHCTRLM_REF_RATE               (1 << 1)
+>> +#define PHCTRLM_HIGH_SPEED             (1 << 0)
+>> +#define PHSTATM_PLL_LOCKED             (1 << 0)
+>> +#define SATA_PHY_CON_RESET             (LINK_RESET | 3F)
+>> +#define EXYNOS_SATA_PHY_EN             (1 << 0)
+>> +#define SATAPHY_CONTROL_OFFSET         0x0724
+>> +#define EXYNOS5_SATAPHY_PMU_ENABLE     (1 << 0)
+>> +
+>> +int sataphy_attach_i2c_client(struct i2c_client *sata_phy);
+>> +extern struct i2c_driver sataphy_i2c_driver;
+>
+>
+> extern not needed here. Checkpatch should have shown a warning here no?
+No, Checkpatch didnt shown any warning.
+extern is needed here. struct sataphy_i2c_driver is declared in
+exynos5250_phy_i2c.c but used in
+sata_phy_exynos5250.c to register as an i2c driver.Without extern this
+wont compile.
+>
+> Apart from these two comments, I think this patch is ready to be merged.
+>
+> Cheers,
+> Kishon
+>>
+>>
+>
