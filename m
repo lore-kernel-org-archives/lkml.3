@@ -1,78 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664Ab3L3Cg4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 21:36:56 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:17195 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753680Ab3L3CfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 21:35:07 -0500
-X-IronPort-AV: E=Sophos;i="4.95,571,1384272000"; 
-   d="scan'208";a="9348176"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org, acme@redhat.com
-Cc: mingo@kernel.org, dsahern@gmail.com, artagnon@gmail.com,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH 7/8] perf tools: Fix bug when --raw-dump is not the first arguement for perf list.
-Date: Mon, 30 Dec 2013 10:26:42 -0500
-Message-Id: <688091ea7a75d338072085555bcb9b8b5ef83cbd.1388416837.git.yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <cover.1388416837.git.yangds.fnst@cn.fujitsu.com>
-References: <cover.1388416837.git.yangds.fnst@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/30 10:27:57,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/30 10:27:58,
-	Serialize complete at 2013/12/30 10:27:58
+	id S1754799Ab3L3Chv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 21:37:51 -0500
+Received: from gate.crashing.org ([63.228.1.57]:56109 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754561Ab3L3Cht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Dec 2013 21:37:49 -0500
+Message-ID: <1388371049.4373.22.camel@pasglop>
+Subject: Re: [PATCH] of/irq: Fix device_node refcount in of_irq_parse_raw()
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: =?ISO-8859-1?Q?C=E9dric?= Le Goater <clg@fr.ibm.com>
+Cc: grant.likely@linaro.org, devicetree@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Mon, 30 Dec 2013 13:37:29 +1100
+In-Reply-To: <1387301573-30502-1-git-send-email-clg@fr.ibm.com>
+References: <1387301573-30502-1-git-send-email-clg@fr.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As we use PARSE_OPT_STOP_AT_NON_OPTION option in parse_option(), if --raw-dump
-is not the first argument, it will be treat as an argument rather than option.
+On Tue, 2013-12-17 at 18:32 +0100, Cédric Le Goater wrote:
+> Commit 2361613206e6, "of/irq: Refactor interrupt-map parsing" changed
+> the refcount on the device_node causing an error in of_node_put():
 
-Example:
-	# ./perf list kvmmmu --raw-dump
-	  kvmmmu:kvm_mmu_pagetable_walk                      [Tracepoint event]
-	  kvmmmu:kvm_mmu_paging_element                      [Tracepoint event]
-	  kvmmmu:kvm_mmu_set_accessed_bit                    [Tracepoint event]
-	  kvmmmu:kvm_mmu_set_dirty_bit                       [Tracepoint event]
-	  kvmmmu:kvm_mmu_walker_error                        [Tracepoint event]
-	  kvmmmu:kvm_mmu_get_page                            [Tracepoint event]
-	  kvmmmu:kvm_mmu_sync_page                           [Tracepoint event]
-	  kvmmmu:kvm_mmu_unsync_page                         [Tracepoint event]
-	  kvmmmu:kvm_mmu_prepare_zap_page                    [Tracepoint event]
-	  kvmmmu:mark_mmio_spte                              [Tracepoint event]
-	  kvmmmu:handle_mmio_page_fault                      [Tracepoint event]
-	  kvmmmu:fast_page_fault                             [Tracepoint event]
+Grant, Thierry, this is a regression, please send to Linus ASAP...
 
-This patch replace PARSE_OPT_STOP_AT_NON_OPTION as 0, then we can parse it even if
-it is not the first argument.
+Cheers,
+Ben.
 
-Verification:
-	# ./perf list kvmmmu --raw-dump
-	kvmmmu:kvm_mmu_pagetable_walk kvmmmu:kvm_mmu_paging_element
-	 kvmmmu:kvm_mmu_set_accessed_bit kvmmmu:kvm_mmu_set_dirty_b
-	it kvmmmu:kvm_mmu_walker_error kvmmmu:kv
+> ERROR: Bad of_node_put() on /pci@800000020000000
+> CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.13.0-rc3-dirty #2
+> Call Trace:
+> [c00000003e403500] [c0000000000144fc] .show_stack+0x7c/0x1f0 (unreliable)
+> [c00000003e4035d0] [c00000000070f250] .dump_stack+0x88/0xb4
+> [c00000003e403650] [c0000000005e8768] .of_node_release+0xd8/0xf0
+> [c00000003e4036e0] [c0000000005eeafc] .of_irq_parse_one+0x10c/0x280
+> [c00000003e4037a0] [c0000000005efd4c] .of_irq_parse_pci+0x3c/0x1d0
+> [c00000003e403840] [c000000000038240] .pcibios_setup_device+0xa0/0x2e0
+> [c00000003e403910] [c0000000000398f0] .pcibios_setup_bus_devices+0x60/0xd0
+> [c00000003e403990] [c00000000003b3a4] .__of_scan_bus+0x1a4/0x2b0
+> [c00000003e403a80] [c00000000003a62c] .pcibios_scan_phb+0x30c/0x410
+> [c00000003e403b60] [c0000000009fe430] .pcibios_init+0x7c/0xd4
+> 
+> This patch adjusts the refcount in the walk of the interrupt tree.
+> When a match is found, there is no need to increase the refcount 
+> on 'out_irq->np' as 'newpar' is already holding a ref. The refcount
+> balance between 'ipar' and 'newpar' is maintained in the skiplevel:
+> goto label.
+> 
+> This patch also removes the usage of the device_node variable 'old' 
+> which seems useless after the latest changes.
+> 
+> Signed-off-by: Cédric Le Goater <clg@fr.ibm.com>
+> ---
+> 
+> This patch was tested on powerpc, pseries and powernv. This is a 
+> new area for me so I might have missed a path. Please take a look.
+> 
+> We could now introduce an helper routine to look for #address-cells in
+> of_irq_parse_raw(). This can be the subject of another patch.
+> 
+> Thanks,
+> 
+> C.
+> 
+>  drivers/of/irq.c |    5 +----
+>  1 file changed, 1 insertion(+), 4 deletions(-)
+> 
+> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
+> index 786b0b47fae4..27212402c532 100644
+> --- a/drivers/of/irq.c
+> +++ b/drivers/of/irq.c
+> @@ -165,7 +165,6 @@ int of_irq_parse_raw(const __be32 *addr, struct of_phandle_args *out_irq)
+>  		if (of_get_property(ipar, "interrupt-controller", NULL) !=
+>  				NULL) {
+>  			pr_debug(" -> got it !\n");
+> -			of_node_put(old);
+>  			return 0;
+>  		}
+>  
+> @@ -250,8 +249,7 @@ int of_irq_parse_raw(const __be32 *addr, struct of_phandle_args *out_irq)
+>  		 * Successfully parsed an interrrupt-map translation; copy new
+>  		 * interrupt specifier into the out_irq structure
+>  		 */
+> -		of_node_put(out_irq->np);
+> -		out_irq->np = of_node_get(newpar);
+> +		out_irq->np = newpar;
+>  
+>  		match_array = imap - newaddrsize - newintsize;
+>  		for (i = 0; i < newintsize; i++)
+> @@ -268,7 +266,6 @@ int of_irq_parse_raw(const __be32 *addr, struct of_phandle_args *out_irq)
+>  	}
+>   fail:
+>  	of_node_put(ipar);
+> -	of_node_put(out_irq->np);
+>  	of_node_put(newpar);
+>  
+>  	return -EINVAL;
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
----
- tools/perf/builtin-list.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
-index ec90d0a..9430666 100644
---- a/tools/perf/builtin-list.c
-+++ b/tools/perf/builtin-list.c
-@@ -30,8 +30,7 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
- 		NULL
- 	};
- 
--	argc = parse_options(argc, argv, list_options, list_usage,
--			     PARSE_OPT_STOP_AT_NON_OPTION);
-+	argc = parse_options(argc, argv, list_options, list_usage, 0);
- 
- 	setup_pager();
- 
--- 
-1.8.2.1
 
