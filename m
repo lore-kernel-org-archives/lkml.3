@@ -1,51 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104Ab3L3DZT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 22:25:19 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:42290 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753770Ab3L3DZQ (ORCPT
+	id S1753986Ab3L3DaU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 22:30:20 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:42935 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753183Ab3L3DaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 22:25:16 -0500
+	Sun, 29 Dec 2013 22:30:19 -0500
 MIME-Version: 1.0
-In-Reply-To: <1388250556-4594-3-git-send-email-mat.krawczuk@gmail.com>
-References: <1388250556-4594-1-git-send-email-mat.krawczuk@gmail.com>
-	<1388250556-4594-3-git-send-email-mat.krawczuk@gmail.com>
-Date: Mon, 30 Dec 2013 08:55:16 +0530
-Message-ID: <CAK9yfHwC950-+iJza=PG2XPn9LZLwwVGtNu_2UU1gHE2CJ+yTg@mail.gmail.com>
-Subject: Re: [PATCH v5 Resend 2/3] Cpufreq: s5pv210 cpufreq fixes for CCF
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Mateusz Krawczuk <mat.krawczuk@gmail.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Mike Turquette <mturquette@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+In-Reply-To: <37552283.kG1L4S8Daa@vostro.rjw.lan>
+References: <37552283.kG1L4S8Daa@vostro.rjw.lan>
+Date: Sun, 29 Dec 2013 19:30:18 -0800
+X-Google-Sender-Auth: J8CkByw3YdEK-vqWxCrCuWCWhe8
+Message-ID: <CAE9FiQXCzRNGbUpXDv3c9RDV4quV2b3gkrpjpPpxYzBH-p35jw@mail.gmail.com>
+Subject: Re: [PATCH][tentative] PCI / ACPI: Rework PCI host bridge removal to
+ avoid sysfs warnings
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Trimmed down the CC list)
-
-Hi Mateusz,
-
-On 28 December 2013 22:39, Mateusz Krawczuk <mat.krawczuk@gmail.com> wrote:
-> From: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+On Sat, Dec 28, 2013 at 3:20 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 >
-> Use common clock framework api to get clock.
+> The device_del(&host_bridge->dev) in pci_stop_root_bus() is
+> problematic, because it causes all sysfs directories below
+> the host bridge to be removed recursively and when
+> pci_remove_root_bus() attempts to remove devices on the root
+> bus (whose sysfs directories are gone now along with all their
+> subdirectories), it causes warnings similar to this one to be
+> printed:
+>
+> WARNING: CPU: 0 PID: 6 at fs/sysfs/group.c:214 sysfs_remove_group+0xc6/0xd0()
+> sysfs group ffffffff819ac5c0 not found for kobject '0001:ff:10.2'
+> Modules linked in: <irrelevant list>
+> CPU: 0 PID: 6 Comm: kworker/u512:0 Tainted: G        W    3.13.0-rc5+ #11
+> Hardware name:
+> Workqueue: kacpi_hotplug acpi_hotplug_work_fn
+>  0000000000000009 ffff8808738d3bd8 ffffffff815d84ea ffff8808738d3c20
+>  ffff8808738d3c10 ffffffff8106594d 0000000000000000 ffffffff819ac5c0
+>  ffff880871b9d0a8 ffff8a07d1895000 0000000000000103 ffff8808738d3c70
+> Call Trace:
+>  [<ffffffff815d84ea>] dump_stack+0x45/0x56
+>  [<ffffffff8106594d>] warn_slowpath_common+0x7d/0xa0
+>  [<ffffffff810659bc>] warn_slowpath_fmt+0x4c/0x50
+>  [<ffffffff8122b52e>] ? sysfs_get_dirent_ns+0x4e/0x70
+>  [<ffffffff8122c806>] sysfs_remove_group+0xc6/0xd0
+>  [<ffffffff813b83f3>] dpm_sysfs_remove+0x43/0x50
+>  [<ffffffff813ae105>] device_del+0x45/0x1c0
+>  [<ffffffff812e51f6>] pci_remove_bus_device+0x66/0xd0
+>  [<ffffffff812e5363>] pci_remove_root_bus+0x73/0x80
+>  [<ffffffff813276ab>] acpi_pci_root_remove+0x42/0x4f
+>  [<ffffffff81323070>] acpi_bus_trim+0x56/0x89
+>  [<ffffffff81323052>] acpi_bus_trim+0x38/0x89
+>  [<ffffffff813245df>] acpi_device_hotplug+0x137/0x33b
+>  [<ffffffff8131efba>] acpi_hotplug_work_fn+0x1c/0x27
+>  [<ffffffff81080f1b>] process_one_work+0x17b/0x460
+>  [<ffffffff81081ccb>] worker_thread+0x11b/0x400
+>  [<ffffffff81081bb0>] ? rescuer_thread+0x3e0/0x3e0
+>  [<ffffffff81088a12>] kthread+0xd2/0xf0
+>  [<ffffffff81088940>] ? kthread_create_on_node+0x180/0x180
+>  [<ffffffff815e823c>] ret_from_fork+0x7c/0xb0
+>  [<ffffffff81088940>] ? kthread_create_on_node+0x180/0x180
+>
+> To avoid that, the host bridge device has to be deleted after all of
+> its children, so merge pci_stop_root_bus() and pci_remove_root_bus()
+> into one function, pci_stop_and_remove_root_bus(), that first will
+> use pci_stop_and_remove_bus_device() to stop and remove all devices
+> on the root bus and then will delete the host bridge device, remove
+> its bus and drop the final reference to it.
+>
+> Reported-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>
+> Hi,
+>
+> I can't really test this patch, but I don't know how it can break anything.
+>
+> The only user of pci_stop_root_bus() and pci_remove_root_bus() is
+> acpi_pci_root_remove() and the code ordering there seems to be somewhat
+> arbitrary.  If you are aware of any reason why it may not work, please let
+> me know. :-)
+>
+> Thanks,
+> Rafael
+>
+> ---
+>  drivers/acpi/pci_root.c |    4 +---
+>  drivers/pci/remove.c    |   23 ++++-------------------
+>  include/linux/pci.h     |    3 +--
+>  3 files changed, 6 insertions(+), 24 deletions(-)
+>
+> Index: linux-pm/drivers/acpi/pci_root.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/pci_root.c
+> +++ linux-pm/drivers/acpi/pci_root.c
+> @@ -611,12 +611,10 @@ static void acpi_pci_root_remove(struct
+>  {
+>         struct acpi_pci_root *root = acpi_driver_data(device);
+>
+> -       pci_stop_root_bus(root->bus);
+> -
+>         device_set_run_wake(root->bus->bridge, false);
+>         pci_acpi_remove_bus_pm_notifier(device);
+>
+> -       pci_remove_root_bus(root->bus);
+> +       pci_stop_and_remove_root_bus(root->bus);
+>
+>         kfree(root);
+>  }
 
-The commit message looks a bit off. clk_get() is also a CCF API.
-Hence it makes more sense to mention the reason for replacing clk_get() with
-clk_get_sys(). Since the patch title says it is a fix, please also
-mention the issue
-this patch fixes.
 
--- 
-With warm regards,
-Sachin
+We have patches that need to stop ioapic and iommu between
+pci_stop_root_bus and pci_remove_root_bus.
+
+Please check if the problem still happen after
+
+http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/patch/?id=c4a0a5d964e90b93eb4101c3927b788e083e530f
+
+http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/patch/?id=e3b439e1d315aff59c1b4f0fc43c5cd2d82b4138
+
+or just try:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci/deletion
+
+Thanks
+
+Yinghai
