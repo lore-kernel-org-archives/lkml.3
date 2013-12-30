@@ -1,254 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932084Ab3L3NHt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 08:07:49 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:33037 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755964Ab3L3NHY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 08:07:24 -0500
-From: Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>
-To: kishon@ti.com, kgene.kim@samsung.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Cc: mark.rutland@arm.com, jg1.han@samsung.com, b.zolnierkie@samsung.com,
-        joshi@samsung.com, t.figa@samsung.com, swarren@wwwdotorg.org,
-        rob.herring@calxeda.com, grant.likely@linaro.org,
-        christoffer.dall@linaro.org,
-        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
-Subject: [PATCH V4 2/2] ARM: dts: Enable ahci sata and sata phy
-Date: Mon, 30 Dec 2013 18:37:03 +0530
-Message-Id: <1388408823-4963-3-git-send-email-yuvaraj.cd@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1388408823-4963-1-git-send-email-yuvaraj.cd@samsung.com>
-References: <1388408823-4963-1-git-send-email-yuvaraj.cd@samsung.com>
+	id S1755928Ab3L3NUa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 08:20:30 -0500
+Received: from ring0.de ([91.143.88.219]:50617 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755511Ab3L3NUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Dec 2013 08:20:12 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Mon, 30 Dec 2013 14:19:44 +0100
+From: Sebastian Reichel <sre@ring0.de>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org development" 
+	<linux-bluetooth@vger.kernel.org>,
+        Ville Tervo <ville.tervo@nokia.com>
+Subject: Re: [PATCH v2] Bluetooth: Add hci_h4p driver
+Message-ID: <20131230131942.GA13816@earth.universe>
+Mail-Followup-To: Pavel Machek <pavel@ucw.cz>,
+	Marcel Holtmann <marcel@holtmann.org>,
+	Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+	=?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= <freemangordon@abv.bg>,
+	"Gustavo F. Padovan" <gustavo@padovan.org>,
+	Johan Hedberg <johan.hedberg@gmail.com>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	"linux-bluetooth@vger.kernel.org development" <linux-bluetooth@vger.kernel.org>,
+	Ville Tervo <ville.tervo@nokia.com>
+References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com>
+ <1727897.LBX8128hIo@izba>
+ <C8D1F470-7964-4EAC-82E0-D53CF54DE086@holtmann.org>
+ <20131230121350.GB31236@amd.pavel.ucw.cz>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="vtzGhvizbBRQ85DL"
+Content-Disposition: inline
+In-Reply-To: <20131230121350.GB31236@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds dt entry for ahci sata controller and its
-corresponding phy controller.phy node has been added w.r.t
-new generic phy framework.
 
-Signed-off-by: Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
----
+--vtzGhvizbBRQ85DL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Changes since V3:
-	1.Moved the binding info to the /bindings/phy/
+Hi,
 
-Changes since V2:
-	1.Used syscon interface to PMU handling.
-	2.Changed "sata-phy-i2c" to "exynos-sataphy-i2c".
+On Mon, Dec 30, 2013 at 01:13:50PM +0100, Pavel Machek wrote:
+> [...]
+>
+> Well, I can rename config option, but renaming the module would break
+> existing userland, no?
 
-Changes since V1:
-	1.Minor changes to node name convention.
-	2.Updated binding document.
+Why is the userland depending on the module name?
 
- .../devicetree/bindings/ata/exynos-sata-phy.txt    |   14 -------
- .../devicetree/bindings/ata/exynos-sata.txt        |   25 +++++++-----
- .../devicetree/bindings/phy/samsung-phy.txt        |   40 ++++++++++++++++++++
- arch/arm/boot/dts/exynos5250-arndale.dts           |   11 ++++++
- arch/arm/boot/dts/exynos5250-smdk5250.dts          |    8 +---
- arch/arm/boot/dts/exynos5250.dtsi                  |   16 ++++++--
- 6 files changed, 81 insertions(+), 33 deletions(-)
- delete mode 100644 Documentation/devicetree/bindings/ata/exynos-sata-phy.txt
+> >  Can we also make this just depend on some device tree information
+> > and not on a specific architecture. I know that this driver is
+> > pretty much OMAP specific, but if we want this upstream, we should
+> > at least try to make it more generic.
+>=20
+> Nokia N900 is certainly moving towards device tree, but we are not
+> ready, yet...
 
-diff --git a/Documentation/devicetree/bindings/ata/exynos-sata-phy.txt b/Documentation/devicetree/bindings/ata/exynos-sata-phy.txt
-deleted file mode 100644
-index 37824fa..0000000
---- a/Documentation/devicetree/bindings/ata/exynos-sata-phy.txt
-+++ /dev/null
-@@ -1,14 +0,0 @@
--* Samsung SATA PHY Controller
--
--SATA PHY nodes are defined to describe on-chip SATA Physical layer controllers.
--Each SATA PHY controller should have its own node.
--
--Required properties:
--- compatible        : compatible list, contains "samsung,exynos5-sata-phy"
--- reg               : <registers mapping>
--
--Example:
--        sata@ffe07000 {
--                compatible = "samsung,exynos5-sata-phy";
--                reg = <0xffe07000 0x1000>;
--        };
-diff --git a/Documentation/devicetree/bindings/ata/exynos-sata.txt b/Documentation/devicetree/bindings/ata/exynos-sata.txt
-index 0849f10..b2adb1f 100644
---- a/Documentation/devicetree/bindings/ata/exynos-sata.txt
-+++ b/Documentation/devicetree/bindings/ata/exynos-sata.txt
-@@ -4,14 +4,21 @@ SATA nodes are defined to describe on-chip Serial ATA controllers.
- Each SATA controller should have its own node.
- 
- Required properties:
--- compatible        : compatible list, contains "samsung,exynos5-sata"
--- interrupts        : <interrupt mapping for SATA IRQ>
--- reg               : <registers mapping>
--- samsung,sata-freq : <frequency in MHz>
-+- compatible		: compatible list, contains "samsung,exynos5-sata"
-+- interrupts		: <interrupt mapping for SATA IRQ>
-+- reg			: <registers mapping>
-+- samsung,sata-freq	: <frequency in MHz>
-+- phys			: as mentioned in phy-bindings.txt
-+- phy-names		: as mentioned in phy-bindings.txt
- 
- Example:
--        sata@ffe08000 {
--                compatible = "samsung,exynos5-sata";
--                reg = <0xffe08000 0x1000>;
--                interrupts = <115>;
--        };
-+	sata@122f0000 {
-+		compatible = "snps,dwc-ahci";
-+		samsung,sata-freq = <66>;
-+		reg = <0x122f0000 0x1ff>;
-+		interrupts = <0 115 0>;
-+		clocks = <&clock 277>, <&clock 143>;
-+		clock-names = "sata", "sclk_sata";
-+		phys = <&sata_phy>;
-+		phy-names = "sata-phy";
-+	};
-diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
-index c0fccaa..876fe9b 100644
---- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
-+++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
-@@ -20,3 +20,43 @@ Required properties:
- - compatible : should be "samsung,exynos5250-dp-video-phy";
- - reg : offset and length of the Display Port PHY register set;
- - #phy-cells : from the generic PHY bindings, must be 0;
-+
-+Samsung SATA PHY Controller
-+---------------------------
-+
-+SATA PHY nodes are defined to describe on-chip SATA Physical layer controllers.
-+Each SATA PHY controller should have its own node.
-+
-+Required properties:
-+- compatible        : compatible list, contains "samsung,exynos5250-sata-phy"
-+- reg : offset and length of the SATA PHY register set;
-+- #phy-cells : from the generic phy bindings;
-+
-+Example:
-+	sata_phy: sata-phy@12170000 {
-+		compatible = "samsung,exynos5250-sata-phy";
-+		reg = <0x12170000 0x1ff>;
-+		clocks = <&clock 287>;
-+		clock-names = "sata_phyctrl";
-+		#phy-cells = <0>;
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+		sataphy-pmu {
-+			reg = <0x10040724 0x4>;
-+		};
-+	};
-+
-+Device-Tree bindings for sataphy i2c client driver
-+--------------------------------------------------
-+
-+Required properties:
-+compatible: Should be "samsung,exynos-sataphy-i2c"
-+- reg: I2C address of the sataphy i2c device.
-+
-+Example:
-+
-+	sata-phy@38 {
-+		compatible = "samsung,exynos-sataphy-i2c";
-+		reg = <0x38>;
-+	};
-diff --git a/arch/arm/boot/dts/exynos5250-arndale.dts b/arch/arm/boot/dts/exynos5250-arndale.dts
-index b42e658..25fe5a3 100644
---- a/arch/arm/boot/dts/exynos5250-arndale.dts
-+++ b/arch/arm/boot/dts/exynos5250-arndale.dts
-@@ -370,6 +370,17 @@
- 		};
- 	};
- 
-+	i2c@121D0000 {
-+		samsung,i2c-sda-delay = <100>;
-+		samsung,i2c-max-bus-freq = <40000>;
-+		samsung,i2c-slave-addr = <0x38>;
-+
-+		sata-phy@38 {
-+			compatible = "samsung,exynos-sataphy-i2c";
-+			reg = <0x38>;
-+		};
-+	};
-+
- 	mmc_0: mmc@12200000 {
- 		status = "okay";
- 		num-slots = <1>;
-diff --git a/arch/arm/boot/dts/exynos5250-smdk5250.dts b/arch/arm/boot/dts/exynos5250-smdk5250.dts
-index 3e69837..9e449e6 100644
---- a/arch/arm/boot/dts/exynos5250-smdk5250.dts
-+++ b/arch/arm/boot/dts/exynos5250-smdk5250.dts
-@@ -96,16 +96,12 @@
- 		samsung,i2c-slave-addr = <0x38>;
- 		status = "okay";
- 
--		sata-phy {
--			compatible = "samsung,sata-phy";
-+		sata-phy@38 {
-+			compatible = "samsung,exynos-sataphy-i2c";
- 			reg = <0x38>;
- 		};
- 	};
- 
--	sata@122F0000 {
--		samsung,sata-freq = <66>;
--	};
--
- 	i2c@12C80000 {
- 		samsung,i2c-sda-delay = <100>;
- 		samsung,i2c-max-bus-freq = <66000>;
-diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
-index dbb4a47..626a7d1 100644
---- a/arch/arm/boot/dts/exynos5250.dtsi
-+++ b/arch/arm/boot/dts/exynos5250.dtsi
-@@ -46,6 +46,7 @@
- 		i2c6 = &i2c_6;
- 		i2c7 = &i2c_7;
- 		i2c8 = &i2c_8;
-+		i2c9 = &i2c_9;
- 		pinctrl0 = &pinctrl_0;
- 		pinctrl1 = &pinctrl_1;
- 		pinctrl2 = &pinctrl_2;
-@@ -231,16 +232,23 @@
- 	};
- 
- 	sata@122F0000 {
--		compatible = "samsung,exynos5-sata-ahci";
-+		compatible = "snps,dwc-ahci";
-+		samsung,sata-freq = <66>;
- 		reg = <0x122F0000 0x1ff>;
- 		interrupts = <0 115 0>;
- 		clocks = <&clock 277>, <&clock 143>;
- 		clock-names = "sata", "sclk_sata";
-+		phys = <&sata_phy>;
-+		phy-names = "sata-phy";
- 	};
- 
--	sata-phy@12170000 {
--		compatible = "samsung,exynos5-sata-phy";
-+	sata_phy: sata-phy@12170000 {
-+		compatible = "samsung,exynos5250-sata-phy";
- 		reg = <0x12170000 0x1ff>;
-+		clocks = <&clock 287>;
-+		clock-names = "sata_phyctrl";
-+		#phy-cells = <0>;
-+		samsung,syscon-phandle = <&pmu_syscon>;
- 	};
- 
- 	i2c_0: i2c@12C60000 {
-@@ -358,7 +366,7 @@
- 		status = "disabled";
- 	};
- 
--	i2c@121D0000 {
-+	i2c_9: i2c@121D0000 {
-                 compatible = "samsung,exynos5-sata-phy-i2c";
-                 reg = <0x121D0000 0x100>;
-                 #address-cells = <1>;
--- 
-1.7.9.5
+Tony plans to remove OMAP3 boardcode (incl. omap3-rx51) in 3.14.
 
+> > > [...]
+> > >
+> > Please do not introduce public includes for a driver. This
+> > should be all confined to the driver itself or if it platform
+> > data, it should go into the place for platform data.
+>=20
+> (Could you insert newlines after 80 or so characters?)
+>=20
+> Where would you like platform_data definition to go? That indeed is
+> for platform data, and quick grep shows drivers normally do public
+> header files for that.
+
+Probably it can simply be removed, because it's not useful in 3.14?
+
+> [...]
+
+-- Sebastian
+
+--vtzGhvizbBRQ85DL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSwXLuAAoJENju1/PIO/qarfAQAJDXrQcdpTiJX9WaAKb9bnB/
+8iCCMk/+dgfBlu/vycLeJ/oNT2INZwVCE7BpOq8b9hJFbTcKTBLKUgBtJbit89D7
+PChXS3DUByEb6wxU6E5LxX/WW5BRzhhYA0GxiaJGA6gp743EEF7l6yU8w2kf97qF
+8cqw0ZNXMb0ewMZ9NHo6lU26hNKHT7mvzn3b6wL1F/aoyS4BX+HZrhLD/F4ki89x
+HXPDzYFnKC/7RYMSi1JsZMlSupB7jT16UXUHZXEM7wDnUJMTyrEA/t1CuRYJCHTZ
+dZTc+fNGrJJDkXjWHnEey/idt+qoRr8vB6h3Zmp+omUnBe//SF7cgvLq6CP20sFG
+j50Q81u9cTVUUwSI0jB4K9Ch3bTaIlevsVZszeg9VDosB6/8EGLJL/BuSamLxA7n
+2rm2wfAQJD4D/6a193SfCsAL270fYY0et5+HqcEsbywVxkrYKPiqgdN6QmHUoQfp
+fBKmiGSKYTVFUK1Bt6i9qf30LqOePXBfZJmRzYBrBT/+QqSzz+ONeFOTXiZ0bZ7s
+4XoE8bPzgZ+8GJmZ7CWhPjZJMPNfA6C3c+jHRb0ls+VGc6X2XuZhY7gldbUA8mZK
+wYj8fMC6y3tIlejUouvxKPM80/CzqCT2TRKijcy2NE+legGsIGVEq8dNWrqZ5FUi
+GFbCmlCLFte/1Y8iMtrc
+=5I6S
+-----END PGP SIGNATURE-----
+
+--vtzGhvizbBRQ85DL--
