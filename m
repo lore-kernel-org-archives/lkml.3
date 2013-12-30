@@ -1,81 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207Ab3L3EiE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 23:38:04 -0500
-Received: from gate.crashing.org ([63.228.1.57]:54148 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751540Ab3L3EiC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 23:38:02 -0500
-Message-ID: <1388378259.4373.30.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Mon, 30 Dec 2013 15:37:39 +1100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754229Ab3L3E4w (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 23:56:52 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:47352 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753947Ab3L3E4v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Dec 2013 23:56:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <1388376508.5345.23.camel@marge.simpson.net>
+References: <CALZhoST3oQnSOv0ZQ6CiHDgTC4D+t=Kd4Gp4oPqrnH__qMZ7Hw@mail.gmail.com>
+	<1388376508.5345.23.camel@marge.simpson.net>
+Date: Mon, 30 Dec 2013 12:56:49 +0800
+Message-ID: <CALZhoSS6HBTsXBW=Oj213psTZ1h4Wdgr8QCspGcbMNadWqQofw@mail.gmail.com>
+Subject: Re: [RFC] sched: update rq clock when only get preempt
+From: Lei Wen <adrian.wenl@gmail.com>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, leiwen@marvell.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+Hi Mike,
 
-Here are a few more powerpc fixes for 3.13. A bit more endian
-problems found during testing of 3.13 and a few other simple fixes
-and regressions fixes.
+On Mon, Dec 30, 2013 at 12:08 PM, Mike Galbraith <bitbucket@online.de> wrote:
+> On Mon, 2013-12-30 at 11:14 +0800, Lei Wen wrote:
+>> Since we would update rq clock at task enqueue/dequeue, or schedule
+>> tick. If we don't update the rq clock when our previous task get
+>> preempted, our new started task would get a relative stale rq clock
+>> which is updated during the previous task enqueue, or the last schedule
+>> clock update.
+>
+>> @@ -2555,6 +2556,8 @@ need_resched:
+>>                 idle_balance(cpu, rq);
+>>
+>>         put_prev_task(rq, prev);
+>> +       if (update)
+>> +               update_rq_clock(rq);
+>
+> If prev remained enqueued, the clock was updated by put_prev_task().
 
-Cheers,
-Ben.
+It indeed like that, sorry for the noise...
 
-The following changes since commit 803c2d2f84da9dc2619449994af34d27148ab20d:
-
-  powerpc/powernv: Fix OPAL LPC access in Little Endian (2013-12-13 15:55:15 +1100)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
-
-for you to fetch changes up to f991db1cf1bdca43675b5d2df0af991719727029:
-
-  Merge remote-tracking branch 'agust/merge' into merge (2013-12-30 14:48:27 +1100)
-
-----------------------------------------------------------------
-
-Anton Blanchard (1):
-      powerpc: Align p_end
-
-Brian W Hart (2):
-      powernv/eeh: Fix possible buffer overrun in ioda_eeh_phb_diag()
-      powernv/eeh: Add buffer for P7IOC hub error data
-
-Gerhard Sittig (1):
-      powerpc/512x: dts: remove misplaced IRQ spec from 'soc' node (5125)
-
-Matteo Facchinetti (1):
-      powerpc/512x: dts: disable MPC5125 usb module
-
-Michael Neuling (1):
-      powerpc: Fix bad stack check in exception entry
-
-Olof Johansson (1):
-      powerpc: Fix alignment of secondary cpu spin vars
-
-Paul E. McKenney (1):
-      powerpc: Make 64-bit non-VMX __copy_tofrom_user bi-endian
-
-Rajesh B Prathipati (1):
-      powerpc: Make unaligned accesses endian-safe for powerpc
-
- arch/powerpc/boot/dts/mpc5125twr.dts      |  6 +++-
- arch/powerpc/include/asm/exception-64s.h  |  2 +-
- arch/powerpc/include/asm/unaligned.h      |  7 +++-
- arch/powerpc/kernel/head_64.S             |  2 ++
- arch/powerpc/lib/copyuser_64.S            | 53 ++++++++++++++++++++++---------
- arch/powerpc/platforms/powernv/eeh-ioda.c | 20 +++---------
- arch/powerpc/platforms/powernv/pci.h      |  4 ++-
- 7 files changed, 60 insertions(+), 34 deletions(-)
-
-
+Thanks,
+Lei
