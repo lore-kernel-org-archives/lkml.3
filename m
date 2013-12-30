@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751377Ab3L3GTi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 01:19:38 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:43311 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751094Ab3L3GTh (ORCPT
+	id S1751400Ab3L3G2e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 01:28:34 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:52289 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155Ab3L3G2d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 01:19:37 -0500
-Message-ID: <52C11062.9040906@huawei.com>
-Date: Mon, 30 Dec 2013 14:19:14 +0800
-From: Ding Tianhong <dingtianhong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Ding Tianhong <dthxman@gmail.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH net-next v2 11/20] net: packetengines: slight optimization
- of addr
-References: <52BE6D0D.9050301@huawei.com>	 <52BED8ED.2040908@cogentembedded.com> <52BEEBD5.1040301@gmail.com>	 <1388251380.24123.15.camel@joe-AO722> <52C0DCF7.6040402@huawei.com> <1388383526.26796.21.camel@joe-AO722>
-In-Reply-To: <1388383526.26796.21.camel@joe-AO722>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.199]
-X-CFilter-Loop: Reflected
+	Mon, 30 Dec 2013 01:28:33 -0500
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, sachin.kamat@linaro.org, patches@linaro.org
+Subject: [PATCH] mfd: Cleanup mfd-mcp-sa11x0.h header
+Date: Mon, 30 Dec 2013 11:54:56 +0530
+Message-Id: <1388384696-24291-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/12/30 14:05, Joe Perches wrote:
-> On Mon, 2013-12-30 at 10:39 +0800, Ding Tianhong wrote:
->> I don't understand packetengine NIC anymore, But I think the change is clearly,
->> as your said, the broadcast check is enough here, did you mean that?
->>
->> 	!is_broadcast_ether_addr((u8 *)(le32_to_cpu(yp->rx_ring_dma) +
->> 						    entry * sizeof(struct yellowfin_desc)))
-> 
-> Not quite.  I meant this could be:
-> 
-> 		u8 *addr = (u8 *)(unsigned long)le32_to_cpu(yp->rx_ring_dma) +
-> 							    entry * sizeof(struct yellowfin_desc);
-> 
-> 		if (!ether_addr_equal(addr, dev->dev_addr) &&
-> 		    !is_broadcast_ether_addr(addr)) {
-> 			etc...
-> 
-> but again, I think thus hardly matters and could just as well
-> be left alone.
-> 
-> 
+Commit a1fd844c6e62 ("ARM: sa1100: move platform_data definitions")
+moved the file to the current location but forgot to remove the pointer
+to its previous location. Clean it up. While at it also change the header
+file protection macros appropriately.
 
-Ok, I will focus on ether_addr_equal in this patch, anymore will left alone. Thanks
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+---
+ include/linux/platform_data/mfd-mcp-sa11x0.h |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-Regards
-Ding
-
-> 
-> 
-
+diff --git a/include/linux/platform_data/mfd-mcp-sa11x0.h b/include/linux/platform_data/mfd-mcp-sa11x0.h
+index 4b2860ae3828..747cd6baf711 100644
+--- a/include/linux/platform_data/mfd-mcp-sa11x0.h
++++ b/include/linux/platform_data/mfd-mcp-sa11x0.h
+@@ -1,14 +1,12 @@
+ /*
+- *  arch/arm/mach-sa1100/include/mach/mcp.h
+- *
+  *  Copyright (C) 2005 Russell King.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+  * published by the Free Software Foundation.
+  */
+-#ifndef __ASM_ARM_ARCH_MCP_H
+-#define __ASM_ARM_ARCH_MCP_H
++#ifndef __MFD_MCP_SA11X0_H
++#define __MFD_MCP_SA11X0_H
+ 
+ #include <linux/types.h>
+ 
+-- 
+1.7.9.5
 
