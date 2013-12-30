@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab3L3KtE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 05:49:04 -0500
-Received: from mta-out.inet.fi ([195.156.147.13]:60963 "EHLO jenni1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751491Ab3L3KtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 05:49:01 -0500
-Date: Mon, 30 Dec 2013 12:48:54 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: dump page when hitting a VM_BUG_ON using
- VM_BUG_ON_PAGE fix
-Message-ID: <20131230104854.GA7647@node.dhcp.inet.fi>
-References: <1388184018-11396-1-git-send-email-sasha.levin@oracle.com>
+	id S1755500Ab3L3LBI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 06:01:08 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:42680 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754490Ab3L3LBD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Dec 2013 06:01:03 -0500
+Message-ID: <52C15268.4050403@linaro.org>
+Date: Mon, 30 Dec 2013 12:00:56 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Andre Przywara <andre.przywara@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: [GIT PULL] ARM : cpuidle: 3.13 fix
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1388184018-11396-1-git-send-email-sasha.levin@oracle.com>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 27, 2013 at 05:40:18PM -0500, Sasha Levin wrote:
-> I messed up and forgot to commit this fix before sending out the original
-> patch.
-> 
-> It fixes build issues in various files using VM_BUG_ON_PAGE.
+Hi Rafael,
 
-With the patch applied I see this:
+this pull request provides a single fix for the calxeda cpuidle driver. 
+It is based on v3.13-rc6.
 
-  CC      kernel/bounds.s
-In file included from /home/space/kas/git/public/linux-next/include/linux/page-flags.h:10:0,
-                 from /home/space/kas/git/public/linux-next/kernel/bounds.c:9:
-/home/space/kas/git/public/linux-next/include/linux/mmdebug.h:5:30: warning: ‘struct page’ declared inside parameter list [enabled by default]
- extern void dump_page(struct page *page);
-                              ^
-/home/space/kas/git/public/linux-next/include/linux/mmdebug.h:5:30: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
+* Andre Przywara fixed a compilation warning due to the driver probe 
+function prototype mismatch for the calxeda cpuidle driver
 
-We need to declare struct page here as well.
+Thanks
+   -- Daniel
 
-diff --git a/include/linux/mmdebug.h b/include/linux/mmdebug.h
-index 8bb64900da25..e8cec8bdda05 100644
---- a/include/linux/mmdebug.h
-+++ b/include/linux/mmdebug.h
-@@ -2,6 +2,7 @@
- #define LINUX_MM_DEBUG_H 1
- 
- #ifdef CONFIG_DEBUG_VM
-+struct page;
- extern void dump_page(struct page *page);
- #define VM_BUG_ON(cond) BUG_ON(cond)
- #define VM_BUG_ON_PAGE(cond, page) \
+The following changes since commit 802eee95bde72fd0cd0f3a5b2098375a487d1eda:
+
+   Linux 3.13-rc6 (2013-12-29 16:01:33 -0800)
+
+are available in the git repository at:
+
+   git://git.linaro.org/people/daniel.lezcano/linux.git cpuidle/3.13-fixes
+
+for you to fetch changes up to 5781532ebecd9e0b7b5fc25d78030bdec635f4ac:
+
+   ARM/cpuidle: remove __init tag from Calxeda cpuidle probe function 
+(2013-12-30 11:55:20 +0100)
+
+----------------------------------------------------------------
+Andre Przywara (1):
+       ARM/cpuidle: remove __init tag from Calxeda cpuidle probe function
+
+  drivers/cpuidle/cpuidle-calxeda.c |    2 +-
+  1 file changed, 1 insertion(+), 1 deletion(-)
+
 -- 
- Kirill A. Shutemov
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
