@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755731Ab3L3KT7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 05:19:59 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:54995 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755520Ab3L3KT4 (ORCPT
+	id S1755776Ab3L3KUE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 05:20:04 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:64670 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755520Ab3L3KUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 05:19:56 -0500
+	Mon, 30 Dec 2013 05:20:00 -0500
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: mingo@kernel.org, tglx@linutronix.de
 Cc: axel.lin@ingics.com, ezequiel.garcia@free-electrons.com,
@@ -14,9 +14,9 @@ Cc: axel.lin@ingics.com, ezequiel.garcia@free-electrons.com,
         linus.walleij@linaro.org, maxime.ripard@free-electrons.com,
         michael.opdenacker@free-electrons.com, sboyd@codeaurora.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 08/20] clocksource: arm_global_timer: Switch to sched_clock_register()
-Date: Mon, 30 Dec 2013 11:19:27 +0100
-Message-Id: <1388398779-11222-8-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 10/20] clocksource: sun4i: Switch to sched_clock_register()
+Date: Mon, 30 Dec 2013 11:19:29 +0100
+Message-Id: <1388398779-11222-10-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1388398779-11222-1-git-send-email-daniel.lezcano@linaro.org>
 References: <52C1479E.80808@linaro.org>
@@ -29,41 +29,39 @@ From: Stephen Boyd <sboyd@codeaurora.org>
 
 The 32 bit sched_clock interface now supports 64 bits. Upgrade to
 the 64 bit function to allow us to remove the 32 bit registration
-interface. While we're here increase the number of bits that
-sched_clock can handle to 64 to make full use of the counter.
+interface. While we're here, mark the sched_clock function as
+notrace to prevent ftrace recursion crashes.
 
-Cc: Stuart Menefy <stuart.menefy@st.com>
-Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Acked-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Acked-by: Stuart Menefy <stuart.menefy@st.com>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- drivers/clocksource/arm_global_timer.c |    4 ++--
+ drivers/clocksource/sun4i_timer.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/clocksource/arm_global_timer.c b/drivers/clocksource/arm_global_timer.c
-index c639b1a..0fc31d0 100644
---- a/drivers/clocksource/arm_global_timer.c
-+++ b/drivers/clocksource/arm_global_timer.c
-@@ -202,7 +202,7 @@ static struct clocksource gt_clocksource = {
+diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
+index d7a1a1a..1911874 100644
+--- a/drivers/clocksource/sun4i_timer.c
++++ b/drivers/clocksource/sun4i_timer.c
+@@ -138,7 +138,7 @@ static struct irqaction sun4i_timer_irq = {
+ 	.dev_id = &sun4i_clockevent,
  };
  
- #ifdef CONFIG_CLKSRC_ARM_GLOBAL_TIMER_SCHED_CLOCK
--static u32 notrace gt_sched_clock_read(void)
-+static u64 notrace gt_sched_clock_read(void)
+-static u32 sun4i_timer_sched_read(void)
++static u64 notrace sun4i_timer_sched_read(void)
  {
- 	return gt_counter_read();
+ 	return ~readl(timer_base + TIMER_CNTVAL_REG(1));
  }
-@@ -217,7 +217,7 @@ static void __init gt_clocksource_init(void)
- 	writel(GT_CONTROL_TIMER_ENABLE, gt_base + GT_CONTROL);
+@@ -170,7 +170,7 @@ static void __init sun4i_timer_init(struct device_node *node)
+ 	       TIMER_CTL_CLK_SRC(TIMER_CTL_CLK_SRC_OSC24M),
+ 	       timer_base + TIMER_CTL_REG(1));
  
- #ifdef CONFIG_CLKSRC_ARM_GLOBAL_TIMER_SCHED_CLOCK
--	setup_sched_clock(gt_sched_clock_read, 32, gt_clk_rate);
-+	sched_clock_register(gt_sched_clock_read, 64, gt_clk_rate);
- #endif
- 	clocksource_register_hz(&gt_clocksource, gt_clk_rate);
- }
+-	setup_sched_clock(sun4i_timer_sched_read, 32, rate);
++	sched_clock_register(sun4i_timer_sched_read, 32, rate);
+ 	clocksource_mmio_init(timer_base + TIMER_CNTVAL_REG(1), node->name,
+ 			      rate, 350, 32, clocksource_mmio_readl_down);
+ 
 -- 
 1.7.9.5
 
