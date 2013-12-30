@@ -1,176 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab3L3KPC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 05:15:02 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:63071 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752051Ab3L3KPA (ORCPT
+	id S1755523Ab3L3KSy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 05:18:54 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:49537 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754795Ab3L3KSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 05:15:00 -0500
-Message-ID: <52C1479E.80808@linaro.org>
-Date: Mon, 30 Dec 2013 11:14:54 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Mon, 30 Dec 2013 05:18:53 -0500
+Message-ID: <52C14889.7000700@gmail.com>
+Date: Mon, 30 Dec 2013 23:18:49 +1300
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-CC: Axel Lin <axel.lin@ingics.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: [GIT PULL] clockevents/clocksource : new material for 3.14
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: lkml <linux-kernel@vger.kernel.org>
+CC: mtk.manpages@gmail.com
+Subject: man-pages-3.55 is released
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Gidday,
 
-Hi Thomas and Ingo,
+I've released man-pages-3.55 - man pages for Linux.
 
-here is the new material for 3.14. I created a branch for Simon Horman 
-as requested [1] where he can pull from and merged it in the 
-clockevents/3.14 branch.	
+Tarball download:
+    http://www.kernel.org/doc/man-pages/download.html
+Git repository:
+    https://git.kernel.org/cgit/docs/man-pages/man-pages.git/
+Online changelog:
+    http://man7.org/linux/man-pages/changelog.html#release_3.55
 
-  * Axel Lin removed an unused structure defining the ids for the bcm 
-kona driver
+A short summary of the release is blogged at:
+http://linux-man-pages.blogspot.com/2013/12/man-pages-355-is-released.html
 
-  * Ezequiel Garcia enabled the timer divider only when the 25MHz timer 
-is not used for the armada 370 XP
+The current version of the pages is browsable at:
+http://man7.org/linux/man-pages/
 
-  * Jingoo Han removed a pointless platform data initialization for the 
-sh_mtu and sh_mtu2
+A few changes in this release that may be of interest to readers of
+this list are given below.
 
-  * Laurent Pinchart added the clk_prepare/clk_unprepare for sh_cmt
+Cheers,
 
-  * Linus Walleij added an useful warning in clk_of when no clocks are 
-found while the old behavior was to silently hang at boot time
+Michael
 
-  * Maxime Ripard added the high speed timer drivers for the Allwinner 
-SoCs (A10, A13, A20). He increased the rating, shared the irq across all 
-available cpus and fixed the clockevent's irq initialization for the sun4i
+==================== Changes in man-pages-3.55 ====================
 
-  * Michael Opdenacker removed the usage of the IRQF_DISABLED for the 
-all the timers driver located in drivers/clocksource
+Changes to individual pages
+---------------------------
 
-  * Stephen Boyd switched to sched_clock_register for the 
-arm_global_timer, cadence_ttc, sun4i and orion timers
+fallocate.2
+    Christoph Hellwig
+        Clarify the zeroing behavior
+            fallocate() zeroes only space that did not previously contain
+            data, but leaves existing data untouched.
 
+perf_event_open.2
+    Vince Weaver
+        Linux 3.12 rdpmc/mmap
+            It turns out that the perf_event mmap page rdpmc/time setting was
+            broken, dating back to the introduction of the feature.  Due
+            to a mistake with a bitfield, two different values mapped to
+            the same feature bit.
 
-Resolved conflicts:
+            A new somewhat backwards compatible interface was introduced
+            in Linux 3.12.  A much longer report on the issue can be found
+            here:
+               https://lwn.net/Articles/567894/
+    Vince Weaver
+        Linux 3.12 adds PERF_SAMPLE_IDENTIFIER
+            A new PERF_SAMPLE_IDENTIFIER sample type was added in Linux 3.12.
+    Vince Weaver
+        E2BIG documentation
+            The following documents the E2BIG error return for
+            perf_event_open().
 
-  * (31f8ad387) "sun7i: a20: Add support for the High Speed Timers" and 
-(428abbb8) "Enable the I2C controllers"
+            I actually ran into this error the hard way and it took me
+            half a day to figure out why my ->size value was changing.
+    Vince Weaver
+        Linux 3.12 adds PERF_EVENT_IOC_ID
+            A new perf_event related ioctl, PERF_EVENT_IOC_ID, was added
+            in Linux 3.12.
+    Vince Weaver
+        PERF_COUNT_SW_DUMMY support
+            Support for the PERF_COUNT_SW_DUMMY event type was added in
+            Linux 3.12.
+    Vince Weaver  [Andreas Sandberg]
+        PERF_EVENT_IOC_PERIOD update
+            The PERF_EVENT_IOC_PERIOD ioctl was broken until 2.6.36,
+            and it turns out that the ARM architecture has some
+            differing behavior too.
 
-  * (67905540) "clocksource: Add Allwinner SoCs HS timers driver" and 
-(b788beda) "Order Kconfig options alphabetically"
+stat.2
+    Michael Kerrisk
+        Note filesystem support for nanosecond timestamps
+            Add some detail on which native filesystems do and don't
+            support nanosecond timestamps.
+    Michael Kerrisk  [Yang Yang]
+        Update discussion of nanosecond timestamps
+            The existing text describes the timestamp fields as 'time_t'
+            and delegates discussion of nanosecond timestamps under NOTES.
+            Nanosecond timestamps have been around for a while now,
+            and are in POSIX.1-2008, so reverse the orientation of the
+            discussion, putting the nanosecond fields into DESCRIPTION
+            and detailing the historical situation under NOTES.
 
-Thanks and happy new year !
+tty_ioctl.4
+    Michael Kerrisk  [Liu Jiaming]
+        Note that 'arg' should be 0 in the usual case when using TIOCSCTTY
 
-   -- Daniel
-
-[1] http://www.spinics.net/lists/linux-sh/msg26645.html
-
--------------------------------------------------------------------------
-
-The following changes since commit 0e6601eee039893a3f6420596ae4588d90d13cbe:
-
-   Merge branch 'timers/posix-timers-for-tip-v2' of 
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks 
-into timers/core (2013-12-10 12:32:36 +0100)
-
-are available in the git repository at:
-
-
-   git://git.linaro.org/people/daniel.lezcano/linux.git clockevents/3.14
-
-for you to fetch changes up to 98aefbe72ec6015f90fe045ed16c5cf755da283d:
-
-   Merge branch 'clockevents/for-Simon-3.13-rc2' into clockevents/3.14 
-(2013-12-18 15:14:36 +0100)
-
-----------------------------------------------------------------
-
-Axel Lin (1):
-       clocksource: bcm_kona_timer: Remove unused bcm_timer_ids
-
-Daniel Lezcano (1):
-       Merge branch 'clockevents/for-Simon-3.13-rc2' into clockevents/3.14
-
-Ezequiel Garcia (1):
-       clocksource: armada-370-xp: Enable timer divider only when needed
-
-Jingoo Han (2):
-       clocksource: sh_tmu: Remove unnecessary platform_set_drvdata()
-       clocksource: sh_mtu2: Remove unnecessary platform_set_drvdata()
-
-Laurent Pinchart (1):
-       clocksource: sh_cmt: Add clk_prepare/unprepare support
-
-Linus Walleij (1):
-       clocksource: clksrc-of: Warn if no clock sources are found
-
-Maxime Ripard (7):
-       clockevent: sun4i: Fill the irq field in the clockevent structure
-       clocksource: sun4i: Change CPU mask to cpu_possible_mask
-       clocksource: sun4i: Increase a bit the clock event and sources rating
-       clocksource: Add Allwinner SoCs HS timers driver
-       ARM: sun5i: a10s: Add support for the High Speed Timers
-       ARM: sun5i: a13: Add support for the High Speed Timers
-       ARM: sun7i: a20: Add support for the High Speed Timers
-
-Michael Opdenacker (3):
-       clocksource: misc drivers: Remove deprecated IRQF_DISABLED
-       clocksource: tegra: Remove deprecated IRQF_DISABLED
-       clocksource: vt8500: Remove deprecated IRQF_DISABLED
-
-Stephen Boyd (4):
-       clocksource: arm_global_timer: Switch to sched_clock_register()
-       clocksource: cadence_ttc_timer: Switch to sched_clock_register()
-       clocksource: sun4i: Switch to sched_clock_register()
-       clocksource: orion: Switch to sched_clock_register()
-
-  .../bindings/timer/allwinner,sun5i-a13-hstimer.txt |   22 +++
-  arch/arm/boot/dts/sun5i-a10s.dtsi                  |    7 +
-  arch/arm/boot/dts/sun5i-a13.dtsi                   |    7 +
-  arch/arm/boot/dts/sun7i-a20.dtsi                   |   10 +
-  arch/arm/mach-sunxi/Kconfig                        |    1 +
-  drivers/clocksource/Kconfig                        |    4 +
-  drivers/clocksource/Makefile                       |    1 +
-  drivers/clocksource/arm_global_timer.c             |    4 +-
-  drivers/clocksource/bcm_kona_timer.c               |    6 -
-  drivers/clocksource/cadence_ttc_timer.c            |    7 +-
-  drivers/clocksource/clksrc-of.c                    |    4 +
-  drivers/clocksource/cs5535-clockevt.c              |    2 +-
-  drivers/clocksource/dw_apb_timer.c                 |    3 +-
-  drivers/clocksource/nomadik-mtu.c                  |    2 +-
-  drivers/clocksource/samsung_pwm_timer.c            |    2 +-
-  drivers/clocksource/sh_cmt.c                       |   23 ++-
-  drivers/clocksource/sh_mtu2.c                      |    4 +-
-  drivers/clocksource/sh_tmu.c                       |    4 +-
-  drivers/clocksource/sun4i_timer.c                  |   11 +-
-  drivers/clocksource/tegra20_timer.c                |    2 +-
-  drivers/clocksource/time-armada-370-xp.c           |   18 +-
-  drivers/clocksource/time-orion.c                   |    4 +-
-  drivers/clocksource/timer-sun5i.c                  |  192 
-++++++++++++++++++++
-  drivers/clocksource/vt8500_timer.c                 |    2 +-
-  24 files changed, 295 insertions(+), 47 deletions(-)
-  create mode 100644 
-Documentation/devicetree/bindings/timer/allwinner,sun5i-a13-hstimer.txt
-  create mode 100644 drivers/clocksource/timer-sun5i.c
-
+proc.5
+    Michael Kerrisk
+        Document /proc/sys/kernel/ngroups_max
 
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
