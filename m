@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab3L3O6t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 09:58:49 -0500
-Received: from mx-rz-2.rrze.uni-erlangen.de ([131.188.11.21]:41842 "EHLO
-	mx-rz-2.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756037Ab3L3O6q (ORCPT
+	id S1756059Ab3L3O6r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 09:58:47 -0500
+Received: from mx-rz-1.rrze.uni-erlangen.de ([131.188.11.20]:49026 "EHLO
+	mx-rz-1.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755870Ab3L3O6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Dec 2013 09:58:46 -0500
+X-Greylist: delayed 344 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Dec 2013 09:58:45 EST
 X-RRZE-Submit-IP: 131.188.42.195
 From: Michael Gunselmann <michael.gunselmann@studium.uni-erlangen.de>
 To: michael.gunselmann@studium.uni-erlangen.de
 Cc: martin.hofmann@studium.uni-erlangen.de, forest@alittletooquiet.net,
         gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, linux-kernel@i4.cs.fau.de
-Subject: [PATCH 5/7] vt6655: Fixed most of the checkpatch warnings in wpa
-Date: Mon, 30 Dec 2013 15:52:35 +0100
-Message-Id: <1388415157-17615-6-git-send-email-michael.gunselmann@studium.uni-erlangen.de>
+Subject: [PATCH 2/7] vt6655: Fix most of checkpatch.pl errors in wroute
+Date: Mon, 30 Dec 2013 15:52:32 +0100
+Message-Id: <1388415157-17615-3-git-send-email-michael.gunselmann@studium.uni-erlangen.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1388415157-17615-1-git-send-email-michael.gunselmann@studium.uni-erlangen.de>
 References: <1388415157-17615-1-git-send-email-michael.gunselmann@studium.uni-erlangen.de>
@@ -23,252 +24,194 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wpa.h: Checkpatch does no longer complain about anything.
-
-wpactl.c: Some long-line-warnings still remain but fixing them
-	  would deteriorate code readability.
+wroute.h: Fixed all line-over-80-character errors. No errors remain.
+wroute.c: Fixed line-over-80-character errors, bracing errors
+	  and C99-comments.
+	  Three warnings remain, fixing them would deteriorate readability.
+	  One warning on a memory barrier without comment in line 189
+	  will be fixed in a later commit because it's purpose is not
+	  yet known.
 
 Signed-off-by: Michael Gunselmann <michael.gunselmann@studium.uni-erlangen.de>
 Signed-off-by: Martin Hofmann <martin.hofmann@studium.uni-erlangen.de>
 ---
- drivers/staging/vt6655/wpa.c | 156 ++++++++++++++++++++++++++++---------------
- drivers/staging/vt6655/wpa.h |   2 +-
- 2 files changed, 102 insertions(+), 56 deletions(-)
+ drivers/staging/vt6655/wroute.c | 71 ++++++++++++++++++++++++-----------------
+ drivers/staging/vt6655/wroute.h |  3 +-
+ 2 files changed, 44 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/staging/vt6655/wpa.c b/drivers/staging/vt6655/wpa.c
-index 990ea0f..fdd2722 100644
---- a/drivers/staging/vt6655/wpa.c
-+++ b/drivers/staging/vt6655/wpa.c
-@@ -116,14 +116,17 @@ WPA_ParseRSN(
+diff --git a/drivers/staging/vt6655/wroute.c b/drivers/staging/vt6655/wroute.c
+index 85302c5..f8899b6 100644
+--- a/drivers/staging/vt6655/wroute.c
++++ b/drivers/staging/vt6655/wroute.c
+@@ -44,7 +44,7 @@
  
- 	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "WPA_ParseRSN: [%d]\n", pRSN->len);
+ /*---------------------  Static Variables  --------------------------*/
+ static int msglevel = MSG_LEVEL_INFO;
+-//static int          msglevel                =MSG_LEVEL_DEBUG;
++/* static int          msglevel                =MSG_LEVEL_DEBUG; */
+ /*---------------------  Static Functions  --------------------------*/
  
--	// information element header makes sense
--	if ((pRSN->len >= 6) // oui1(4)+ver(2)
--	    && (pRSN->byElementID == WLAN_EID_RSN_WPA) && !memcmp(pRSN->abyOUI, abyOUI01, 4)
-+	/* information element header makes sense */
-+	if ((pRSN->len >= 6) /* oui1(4)+ver(2) */
-+	    && (pRSN->byElementID == WLAN_EID_RSN_WPA)
-+	    && !memcmp(pRSN->abyOUI, abyOUI01, 4)
- 	    && (pRSN->wVersion == 1)) {
--		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Legal RSN\n");
--		// update each variable if pRSN is long enough to contain the variable
--		if (pRSN->len >= 10) //oui1(4)+ver(2)+GKSuite(4)
--		{
+ /*---------------------  Export Variables  --------------------------*/
+@@ -63,7 +63,8 @@ static int msglevel = MSG_LEVEL_INFO;
+  * Return Value: true if packet duplicate; otherwise false
+  *
+  */
+-bool ROUTEbRelay(PSDevice pDevice, unsigned char *pbySkbData, unsigned int uDataLen, unsigned int uNodeIndex)
++bool ROUTEbRelay(PSDevice pDevice, unsigned char *pbySkbData,
++		 unsigned int uDataLen, unsigned int uNodeIndex)
+ {
+ 	PSMgmtObject    pMgmt = pDevice->pMgmt;
+ 	PSTxDesc        pHeadTD, pLastTD;
+@@ -78,7 +79,8 @@ bool ROUTEbRelay(PSDevice pDevice, unsigned char *pbySkbData, unsigned int uData
+ 	unsigned char *pbyBSSID;
+ 
+ 	if (AVAIL_TD(pDevice, TYPE_AC0DMA) <= 0) {
+-		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Relay can't allocate TD1..\n");
 +		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
-+			"Legal RSN\n");
-+		/* update each variable if pRSN is
-+		 * long enough to contain the variable
-+		 */
-+		if (pRSN->len >= 10) { /* oui1(4)+ver(2)+GKSuite(4) */
- 			if (!memcmp(pRSN->abyMulticast, abyOUI01, 4))
- 				pBSSList->byGKType = WPA_WEP40;
- 			else if (!memcmp(pRSN->abyMulticast, abyOUI02, 4))
-@@ -135,80 +138,117 @@ WPA_ParseRSN(
- 			else if (!memcmp(pRSN->abyMulticast, abyOUI05, 4))
- 				pBSSList->byGKType = WPA_WEP104;
- 			else
--				// any vendor checks here
-+				/* any vendor checks here */
- 				pBSSList->byGKType = WPA_NONE;
- 
--			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "byGKType: %x\n", pBSSList->byGKType);
-+			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
-+				"byGKType: %x\n", pBSSList->byGKType);
- 		}
- 
--		if (pRSN->len >= 12) //oui1(4)+ver(2)+GKS(4)+PKSCnt(2)
--		{
-+		if (pRSN->len >= 12) { /* oui1(4)+ver(2)+GKS(4)+PKSCnt(2) */
- 			j = 0;
--			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "wPKCount: %d, sizeof(pBSSList->abyPKType): %zu\n", pRSN->wPKCount, sizeof(pBSSList->abyPKType));
--			for (i = 0; (i < pRSN->wPKCount) && (j < ARRAY_SIZE(pBSSList->abyPKType)); i++) {
--				if (pRSN->len >= 12+i*4+4) { //oui1(4)+ver(2)+GKS(4)+PKSCnt(2)+PKS(4*i)
--					if (!memcmp(pRSN->PKSList[i].abyOUI, abyOUI00, 4))
--						pBSSList->abyPKType[j++] = WPA_NONE;
--					else if (!memcmp(pRSN->PKSList[i].abyOUI, abyOUI02, 4))
--						pBSSList->abyPKType[j++] = WPA_TKIP;
--					else if (!memcmp(pRSN->PKSList[i].abyOUI, abyOUI03, 4))
--						pBSSList->abyPKType[j++] = WPA_AESWRAP;
--					else if (!memcmp(pRSN->PKSList[i].abyOUI, abyOUI04, 4))
--						pBSSList->abyPKType[j++] = WPA_AESCCMP;
-+			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
-+				"wPKCount: %d, sizeof(pBSSList->abyPKType): %zu\n",
-+				pRSN->wPKCount, sizeof(pBSSList->abyPKType));
-+			for (i = 0; (i < pRSN->wPKCount)
-+			     && (j < ARRAY_SIZE(pBSSList->abyPKType)); i++) {
-+				/* oui1(4)+ver(2)+GKS(4)+PKSCnt(2)+PKS(4*i) */
-+				if (pRSN->len >= 12+i*4+4) {
-+					if (!memcmp(pRSN->PKSList[i].abyOUI,
-+						    abyOUI00, 4))
-+						pBSSList->abyPKType[j++] =
-+							WPA_NONE;
-+					else if (!memcmp(pRSN->PKSList[i].abyOUI,
-+							 abyOUI02, 4))
-+						pBSSList->abyPKType[j++] =
-+							WPA_TKIP;
-+					else if (!memcmp(pRSN->PKSList[i].abyOUI,
-+							 abyOUI03, 4))
-+						pBSSList->abyPKType[j++] =
-+							WPA_AESWRAP;
-+					else if (!memcmp(pRSN->PKSList[i].abyOUI,
-+							 abyOUI04, 4))
-+						pBSSList->abyPKType[j++] =
-+							WPA_AESCCMP;
- 					else
--						// any vendor checks here
-+						/* any vendor checks here */
- 						;
- 				} else
- 					break;
--				//DBG_PRN_GRP14(("abyPKType[%d]: %X\n", j-1, pBSSList->abyPKType[j-1]));
--			} //for
-+				/* DBG_PRN_GRP14(("abyPKType[%d]: %X\n", j-1,
-+				 *		 pBSSList->abyPKType[j-1]));
-+				*/
-+			} /* for */
- 			pBSSList->wPKCount = (unsigned short)j;
--			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "wPKCount: %d\n", pBSSList->wPKCount);
-+			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
-+				"wPKCount: %d\n", pBSSList->wPKCount);
- 		}
- 
- 		m = pRSN->wPKCount;
- 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "m: %d\n", m);
- 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "14+m*4: %d\n", 14+m*4);
- 
--		if (pRSN->len >= 14+m*4) { //oui1(4)+ver(2)+GKS(4)+PKSCnt(2)+PKS(4*m)+AKC(2)
--			// overlay IE_RSN_Auth structure into correct place
--			pIE_RSN_Auth = (PWLAN_IE_RSN_AUTH) pRSN->PKSList[m].abyOUI;
-+		/* oui1(4)+ver(2)+GKS(4)+PKSCnt(2)+PKS(4*m)+AKC(2) */
-+		if (pRSN->len >= 14+m*4) {
-+			/* overlay IE_RSN_Auth structure into correct place */
-+			pIE_RSN_Auth =
-+				(PWLAN_IE_RSN_AUTH) pRSN->PKSList[m].abyOUI;
- 			j = 0;
--			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "wAuthCount: %d, sizeof(pBSSList->abyAuthType): %zu\n",
--				pIE_RSN_Auth->wAuthCount, sizeof(pBSSList->abyAuthType));
--			for (i = 0; (i < pIE_RSN_Auth->wAuthCount) && (j < ARRAY_SIZE(pBSSList->abyAuthType)); i++) {
--				if (pRSN->len >= 14+4+(m+i)*4) { //oui1(4)+ver(2)+GKS(4)+PKSCnt(2)+PKS(4*m)+AKC(2)+AKS(4*i)
--					if (!memcmp(pIE_RSN_Auth->AuthKSList[i].abyOUI, abyOUI01, 4))
--						pBSSList->abyAuthType[j++] = WPA_AUTH_IEEE802_1X;
--					else if (!memcmp(pIE_RSN_Auth->AuthKSList[i].abyOUI, abyOUI02, 4))
--						pBSSList->abyAuthType[j++] = WPA_AUTH_PSK;
-+			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
-+				"wAuthCount: %d, sizeof(pBSSList->abyAuthType): %zu\n",
-+				pIE_RSN_Auth->wAuthCount,
-+				sizeof(pBSSList->abyAuthType));
-+			for (i = 0; (i < pIE_RSN_Auth->wAuthCount)
-+			     && (j < ARRAY_SIZE(pBSSList->abyAuthType)); i++) {
-+				/* oui1(4)+ver(2)+GKS(4)+PKSCnt(2)+PKS(4*m)+AKC(2)+AKS(4*i) */
-+				if (pRSN->len >= 14+4+(m+i)*4) {
-+					if (!memcmp(pIE_RSN_Auth->AuthKSList[i].abyOUI,
-+						    abyOUI01, 4))
-+						pBSSList->abyAuthType[j++] =
-+							WPA_AUTH_IEEE802_1X;
-+					else if (!memcmp(pIE_RSN_Auth->AuthKSList[i].abyOUI,
-+							 abyOUI02, 4))
-+						pBSSList->abyAuthType[j++] =
-+							WPA_AUTH_PSK;
- 					else
--						// any vendor checks here
-+						/* any vendor checks here */
- 						;
- 				} else
- 					break;
--				//DBG_PRN_GRP14(("abyAuthType[%d]: %X\n", j-1, pBSSList->abyAuthType[j-1]));
-+				/* DBG_PRN_GRP14(("abyAuthType[%d]: %X\n",
-+				 *		 j-1,
-+				 *		 pBSSList->abyAuthType[j-1]));
-+				 */
- 			}
- 			if (j > 0)
- 				pBSSList->wAuthCount = (unsigned short)j;
--			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "wAuthCount: %d\n", pBSSList->wAuthCount);
-+			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
-+				"wAuthCount: %d\n", pBSSList->wAuthCount);
- 		}
- 
- 		if (pIE_RSN_Auth != NULL) {
- 			n = pIE_RSN_Auth->wAuthCount;
- 
- 			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "n: %d\n", n);
--			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "14+4+(m+n)*4: %d\n", 14+4+(m+n)*4);
-+			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
-+				"14+4+(m+n)*4: %d\n", 14+4+(m+n)*4);
- 
--			if (pRSN->len+2 >= 14+4+(m+n)*4) { //oui1(4)+ver(2)+GKS(4)+PKSCnt(2)+PKS(4*m)+AKC(2)+AKS(4*n)+Cap(2)
-+			/* oui1(4)+ver(2)+GKS(4)+PKSCnt(2)+PKS(4*m)+AKC(2)+AKS(4*n)+Cap(2) */
-+			if (pRSN->len+2 >= 14+4+(m+n)*4) {
- 				pbyCaps = (unsigned char *)pIE_RSN_Auth->AuthKSList[n].abyOUI;
--				pBSSList->byDefaultK_as_PK = (*pbyCaps) & WPA_GROUPFLAG;
--				pBSSList->byReplayIdx = 2 << ((*pbyCaps >> WPA_REPLAYBITSSHIFT) & WPA_REPLAYBITS);
-+				pBSSList->byDefaultK_as_PK =
-+					(*pbyCaps) & WPA_GROUPFLAG;
-+				pBSSList->byReplayIdx =
-+					2 << ((*pbyCaps >> WPA_REPLAYBITSSHIFT) & WPA_REPLAYBITS);
- 				pBSSList->sRSNCapObj.bRSNCapExist = true;
--				pBSSList->sRSNCapObj.wRSNCap = *(unsigned short *)pbyCaps;
--				//DBG_PRN_GRP14(("pbyCaps: %X\n", *pbyCaps));
--				//DBG_PRN_GRP14(("byDefaultK_as_PK: %X\n", pBSSList->byDefaultK_as_PK));
--				//DBG_PRN_GRP14(("byReplayIdx: %X\n", pBSSList->byReplayIdx));
-+				pBSSList->sRSNCapObj.wRSNCap =
-+					*(unsigned short *)pbyCaps;
-+				/* DBG_PRN_GRP14(("pbyCaps: %X\n", *pbyCaps));
-+				 * DBG_PRN_GRP14(("byDefaultK_as_PK: %X\n",
-+				 *		 pBSSList->byDefaultK_as_PK));
-+				 * DBG_PRN_GRP14(("byReplayIdx: %X\n",
-+				 *		 pBSSList->byReplayIdx));
-+				 */
- 			}
- 		}
- 		pBSSList->bWPAValid = true;
-@@ -254,11 +294,16 @@ WPA_SearchRSN(
- 			for (ii = 0; ii < pBSSList->wPKCount; ii++) {
- 				if (pBSSList->abyPKType[ii] == WPA_AESCCMP)
- 					byPKType = WPA_AESCCMP;
--				else if ((pBSSList->abyPKType[ii] == WPA_TKIP) && (byPKType != WPA_AESCCMP))
-+				else if ((pBSSList->abyPKType[ii] == WPA_TKIP)
-+					 && (byPKType != WPA_AESCCMP))
- 					byPKType = WPA_TKIP;
--				else if ((pBSSList->abyPKType[ii] == WPA_WEP40) && (byPKType != WPA_AESCCMP) && (byPKType != WPA_TKIP))
-+				else if ((pBSSList->abyPKType[ii] == WPA_WEP40)
-+					 && (byPKType != WPA_AESCCMP)
-+					 && (byPKType != WPA_TKIP))
- 					byPKType = WPA_WEP40;
--				else if ((pBSSList->abyPKType[ii] == WPA_WEP104) && (byPKType != WPA_AESCCMP) && (byPKType != WPA_TKIP))
-+				else if ((pBSSList->abyPKType[ii] == WPA_WEP104)
-+					 && (byPKType != WPA_AESCCMP)
-+					 && (byPKType != WPA_TKIP))
- 					byPKType = WPA_WEP104;
- 			}
- 			if (byEncrypt != byPKType)
-@@ -295,10 +340,11 @@ WPAb_Is_RSN(
- 	if (pRSN == NULL)
++			"Relay can't allocate TD1..\n");
  		return false;
+ 	}
  
--	if ((pRSN->len >= 6) && // oui1(4)+ver(2)
--	    (pRSN->byElementID == WLAN_EID_RSN_WPA) &&  !memcmp(pRSN->abyOUI, abyOUI01, 4) &&
--	    (pRSN->wVersion == 1)) {
-+	if ((pRSN->len >= 6) /* oui1(4)+ver(2) */
-+	    && (pRSN->byElementID == WLAN_EID_RSN_WPA)
-+	    && !memcmp(pRSN->abyOUI, abyOUI01, 4)
-+	    && (pRSN->wVersion == 1))
- 		return true;
--	} else
-+	else
+@@ -86,22 +88,25 @@ bool ROUTEbRelay(PSDevice pDevice, unsigned char *pbySkbData, unsigned int uData
+ 
+ 	pHeadTD->m_td1TD1.byTCR = (TCR_EDP | TCR_STP);
+ 
+-	memcpy(pDevice->sTxEthHeader.abyDstAddr, (unsigned char *)pbySkbData, ETH_HLEN);
++	memcpy(pDevice->sTxEthHeader.abyDstAddr,
++	       (unsigned char *)pbySkbData, ETH_HLEN);
+ 
+ 	cbFrameBodySize = uDataLen - ETH_HLEN;
+ 
+-	if (ntohs(pDevice->sTxEthHeader.wType) > ETH_DATA_LEN) {
++	if (ntohs(pDevice->sTxEthHeader.wType) > ETH_DATA_LEN)
+ 		cbFrameBodySize += 8;
+-	}
+ 
+ 	if (pDevice->bEncryptionEnable == true) {
+ 		bNeedEncryption = true;
+ 
+-		// get group key
++		/* get group key */
+ 		pbyBSSID = pDevice->abyBroadcastAddr;
+-		if (KeybGetTransmitKey(&(pDevice->sKey), pbyBSSID, GROUP_KEY, &pTransmitKey) == false) {
++		if (KeybGetTransmitKey(&(pDevice->sKey), pbyBSSID,
++				       GROUP_KEY, &pTransmitKey) == false) {
+ 			pTransmitKey = NULL;
+-			DBG_PRT(MSG_LEVEL_DEBUG, KERN_DEBUG "KEY is NULL. [%d]\n", pDevice->pMgmt->eCurrMode);
++			DBG_PRT(MSG_LEVEL_DEBUG, KERN_DEBUG
++				"KEY is NULL. [%d]\n",
++				pDevice->pMgmt->eCurrMode);
+ 		} else {
+ 			DBG_PRT(MSG_LEVEL_DEBUG, KERN_DEBUG "Get GTK.\n");
+ 		}
+@@ -110,11 +115,16 @@ bool ROUTEbRelay(PSDevice pDevice, unsigned char *pbySkbData, unsigned int uData
+ 	if (pDevice->bEnableHostWEP) {
+ 		if (uNodeIndex < MAX_NODE_NUM + 1) {
+ 			pTransmitKey = &STempKey;
+-			pTransmitKey->byCipherSuite = pMgmt->sNodeDBTable[uNodeIndex].byCipherSuite;
+-			pTransmitKey->dwKeyIndex = pMgmt->sNodeDBTable[uNodeIndex].dwKeyIndex;
+-			pTransmitKey->uKeyLength = pMgmt->sNodeDBTable[uNodeIndex].uWepKeyLength;
+-			pTransmitKey->dwTSC47_16 = pMgmt->sNodeDBTable[uNodeIndex].dwTSC47_16;
+-			pTransmitKey->wTSC15_0 = pMgmt->sNodeDBTable[uNodeIndex].wTSC15_0;
++			pTransmitKey->byCipherSuite =
++				pMgmt->sNodeDBTable[uNodeIndex].byCipherSuite;
++			pTransmitKey->dwKeyIndex =
++				pMgmt->sNodeDBTable[uNodeIndex].dwKeyIndex;
++			pTransmitKey->uKeyLength =
++				pMgmt->sNodeDBTable[uNodeIndex].uWepKeyLength;
++			pTransmitKey->dwTSC47_16 =
++				pMgmt->sNodeDBTable[uNodeIndex].dwTSC47_16;
++			pTransmitKey->wTSC15_0 =
++				pMgmt->sNodeDBTable[uNodeIndex].wTSC15_0;
+ 			memcpy(pTransmitKey->abyKey,
+ 			       &pMgmt->sNodeDBTable[uNodeIndex].abyWepKey[0],
+ 			       pTransmitKey->uKeyLength
+@@ -122,20 +132,21 @@ bool ROUTEbRelay(PSDevice pDevice, unsigned char *pbySkbData, unsigned int uData
+ 		}
+ 	}
+ 
+-	uMACfragNum = cbGetFragCount(pDevice, pTransmitKey, cbFrameBodySize, &pDevice->sTxEthHeader);
++	uMACfragNum = cbGetFragCount(pDevice, pTransmitKey,
++				     cbFrameBodySize,
++				     &pDevice->sTxEthHeader);
+ 
+-	if (uMACfragNum > AVAIL_TD(pDevice, TYPE_AC0DMA)) {
++	if (uMACfragNum > AVAIL_TD(pDevice, TYPE_AC0DMA))
  		return false;
- }
-diff --git a/drivers/staging/vt6655/wpa.h b/drivers/staging/vt6655/wpa.h
-index 1d1918a..d012cb9 100644
---- a/drivers/staging/vt6655/wpa.h
-+++ b/drivers/staging/vt6655/wpa.h
-@@ -80,4 +80,4 @@ WPAb_Is_RSN(
- 	PWLAN_IE_RSN_EXT pRSN
+-	}
+ 	byPktType = (unsigned char)pDevice->byPacketType;
+ 
+ 	if (pDevice->bFixRate) {
+ 		if (pDevice->eCurrentPHYType == PHY_TYPE_11B) {
+-			if (pDevice->uConnectionRate >= RATE_11M) {
++			if (pDevice->uConnectionRate >= RATE_11M)
+ 				pDevice->wCurrentRate = RATE_11M;
+-			} else {
+-				pDevice->wCurrentRate = (unsigned short)pDevice->uConnectionRate;
+-			}
++			else
++				pDevice->wCurrentRate =
++					(unsigned short)pDevice->uConnectionRate;
+ 		} else {
+ 			if ((pDevice->eCurrentPHYType == PHY_TYPE_11A) &&
+ 			    (pDevice->uConnectionRate <= RATE_6M)) {
+@@ -144,25 +155,27 @@ bool ROUTEbRelay(PSDevice pDevice, unsigned char *pbySkbData, unsigned int uData
+ 				if (pDevice->uConnectionRate >= RATE_54M)
+ 					pDevice->wCurrentRate = RATE_54M;
+ 				else
+-					pDevice->wCurrentRate = (unsigned short)pDevice->uConnectionRate;
++					pDevice->wCurrentRate =
++						(unsigned short)pDevice->uConnectionRate;
+ 			}
+ 		}
+ 	} else {
+-		pDevice->wCurrentRate = pDevice->pMgmt->sNodeDBTable[uNodeIndex].wTxDataRate;
++		pDevice->wCurrentRate =
++			pDevice->pMgmt->sNodeDBTable[uNodeIndex].wTxDataRate;
+ 	}
+ 
+ 	if (pDevice->wCurrentRate <= RATE_11M)
+ 		byPktType = PK_TYPE_11B;
+ 
+-	vGenerateFIFOHeader(pDevice, byPktType, pDevice->pbyTmpBuff, bNeedEncryption,
+-			    cbFrameBodySize, TYPE_AC0DMA, pHeadTD,
+-			    &pDevice->sTxEthHeader, pbySkbData, pTransmitKey, uNodeIndex,
+-			    &uMACfragNum,
++	vGenerateFIFOHeader(pDevice, byPktType, pDevice->pbyTmpBuff,
++			    bNeedEncryption, cbFrameBodySize, TYPE_AC0DMA,
++			    pHeadTD, &pDevice->sTxEthHeader, pbySkbData,
++			    pTransmitKey, uNodeIndex, &uMACfragNum,
+ 			    &cbHeaderSize
  );
  
--#endif // __WPA_H__
-+#endif /* __WPA_H__ */
+ 	if (MACbIsRegBitsOn(pDevice->PortOffset, MAC_REG_PSCTL, PSCTL_PS)) {
+-		// Disable PS
++		/* Disable PS */
+ 		MACbPSWakeup(pDevice->PortOffset);
+ 	}
+ 
+@@ -170,7 +183,7 @@ bool ROUTEbRelay(PSDevice pDevice, unsigned char *pbySkbData, unsigned int uData
+ 
+ 	pLastTD = pHeadTD;
+ 	for (ii = 0; ii < uMACfragNum; ii++) {
+-		// Poll Transmit the adapter
++		/* Poll Transmit the adapter */
+ 		wmb();
+ 		pHeadTD->m_td0TD0.f1Owner = OWNED_BY_NIC;
+ 		wmb();
+diff --git a/drivers/staging/vt6655/wroute.h b/drivers/staging/vt6655/wroute.h
+index 3abc1d3..b4faafe 100644
+--- a/drivers/staging/vt6655/wroute.h
++++ b/drivers/staging/vt6655/wroute.h
+@@ -39,6 +39,7 @@
+ 
+ /*---------------------  Export Functions  --------------------------*/
+ 
+-bool ROUTEbRelay(PSDevice pDevice, unsigned char *pbySkbData, unsigned int uDataLen, unsigned int uNodeIndex);
++bool ROUTEbRelay(PSDevice pDevice, unsigned char *pbySkbData,
++		 unsigned int uDataLen, unsigned int uNodeIndex);
+ 
+ #endif /* __WROUTE_H__ */
 -- 
 1.8.1.2
 
