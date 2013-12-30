@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985Ab3L3DOM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 22:14:12 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:54611 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183Ab3L3DOK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 22:14:10 -0500
-MIME-Version: 1.0
-Date: Mon, 30 Dec 2013 11:14:08 +0800
-Message-ID: <CALZhoST3oQnSOv0ZQ6CiHDgTC4D+t=Kd4Gp4oPqrnH__qMZ7Hw@mail.gmail.com>
-Subject: [RFC] sched: update rq clock when only get preempt
-From: Lei Wen <adrian.wenl@gmail.com>
-To: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, leiwen@marvell.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754128Ab3L3DOq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 22:14:46 -0500
+Received: from gate.crashing.org ([63.228.1.57]:50115 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753422Ab3L3DOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Dec 2013 22:14:45 -0500
+Message-ID: <1388373200.4373.25.camel@pasglop>
+Subject: Re: commit e38c0a1f breaks powerpc boards with uli1575 chip
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
+Cc: Rob Herring <robherring2@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Dmitry Krivoschekov <dkrivoschokov@dev.rtsoft.ru>,
+        Alexey Lugovskoy <lugovskoy@dev.rtsoft.ru>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        linuxppc-dev@lists.ozlabs.org
+Date: Mon, 30 Dec 2013 14:13:20 +1100
+In-Reply-To: <201312190842.02702@blacky.localdomain>
+References: <201312171135.38576@blacky.localdomain>
+	 <52B1EC15.5070606@gmail.com> <201312190842.02702@blacky.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we would update rq clock at task enqueue/dequeue, or schedule
-tick. If we don't update the rq clock when our previous task get
-preempted, our new started task would get a relative stale rq clock
-which is updated during the previous task enqueue, or the last schedule
-clock update.
+On Thu, 2013-12-19 at 08:42 +0400, Nikita Yushchenko wrote:
+> No, this does not help.
+> 
+> I've dumped the actual content of 'range' and 'addr' at the failure
+> point 
+> (i.e. ar point that returns error with e38c0a1f but passes without 
+> e38c0a1f ):
+> 
+> OF: default map, cp=0, s=10000, da=70
+> range:  01 00 00 00 00 00 00 00 00 00 00 00
+>  addr:  00 00 00 00 00 00 00 00 00 00 00 70
 
-If we want more precise account for the task start and duration time,
-we'd better ensure rq clock get updated when it begin to run.
+Something that has a #address-cells larger than 2, or more generally,
+an address field that contains more than a single number, must have
+a specific translation backend, like we have for PCI.
 
-Best regards,
-Lei
+This is a bit annoying but originates from the original OFW stuff on
+which this stuff is based where the bus node would provide the methods
+for translation.
 
-Signed-off-by: Lei Wen <leiwen@marvell.com>
----
- kernel/sched/core.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+Cheers,
+Ben.
+ 
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index a88f4a4..50e91b6 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2503,7 +2503,7 @@ static void __sched __schedule(void)
-        struct task_struct *prev, *next;
-        unsigned long *switch_count;
-        struct rq *rq;
--       int cpu;
-+       int cpu, update = 1;
-
- need_resched:
-        preempt_disable();
-@@ -2530,6 +2530,7 @@ need_resched:
-                if (unlikely(signal_pending_state(prev->state, prev))) {
-                        prev->state = TASK_RUNNING;
-                } else {
-+                       update = 0;
-                        deactivate_task(rq, prev, DEQUEUE_SLEEP);
-                        prev->on_rq = 0;
-
-@@ -2555,6 +2556,8 @@ need_resched:
-                idle_balance(cpu, rq);
-
-        put_prev_task(rq, prev);
-+       if (update)
-+               update_rq_clock(rq);
-        next = pick_next_task(rq);
-        clear_tsk_need_resched(prev);
-        clear_preempt_need_resched();
--- 
-1.8.3.2
