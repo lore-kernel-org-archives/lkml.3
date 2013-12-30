@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932376Ab3L3VUF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 16:20:05 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:40816 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755518Ab3L3VUC (ORCPT
+	id S932305Ab3L3VZd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 16:25:33 -0500
+Received: from s3.sipsolutions.net ([144.76.43.152]:43982 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756124Ab3L3VZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 16:20:02 -0500
-Message-ID: <52C1E380.4060307@codeaurora.org>
-Date: Mon, 30 Dec 2013 13:20:00 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: arm@kernel.org
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        David Brown <davidb@codeaurora.org>, Rob Clark <robdclark@gmail.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: Re: [PATCH v2 6/7] drm/msm: Drop unnecessary mach include
-References: <1388438133-431-1-git-send-email-sboyd@codeaurora.org> <1388438133-431-7-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1388438133-431-7-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 30 Dec 2013 16:25:32 -0500
+Message-ID: <1388438724.4573.2.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH 4/11]  use ether_addr_equal_64bits
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: kernel-janitors@vger.kernel.org,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 30 Dec 2013 22:25:24 +0100
+In-Reply-To: <alpine.DEB.2.02.1312302057420.2209@localhost6.localdomain6>
+References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>
+	  <1388427307-8691-5-git-send-email-Julia.Lawall@lip6.fr>
+	  (sfid-20131230_182319_112673_F481A1D3) <1388429761.4410.1.camel@jlt4.sipsolutions.net>
+	 <alpine.DEB.2.02.1312302057420.2209@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/30/13 13:15, Stephen Boyd wrote:
-> This file doesn't use the clk_reset() API that is exposed in
-> mach-msm's mach/clk.h file. Remove the include so that this
-> driver can be compiled as part of the multi-platform kernel.
->
-> Cc: Rob Clark <robdclark@gmail.com>
-> Cc: Dave Airlie <airlied@redhat.com>
+On Mon, 2013-12-30 at 20:58 +0100, Julia Lawall wrote:
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> > Is there any way we could catch (sparse, or some other script?) that
+> > struct reorganising won't break the condition needed ("within a
+> > structure that contains at least two more bytes")?
+> 
+> What kind of reorganizing could happen?  Do you mean that the programmer 
+> might do at some time in the future, or something the compiler might do?
 
-> ---
->  drivers/gpu/drm/msm/mdp4/mdp4_dtv_encoder.c | 2 --
->  1 file changed, 2 deletions(-)
->
-> diff --git a/drivers/gpu/drm/msm/mdp4/mdp4_dtv_encoder.c b/drivers/gpu/drm/msm/mdp4/mdp4_dtv_encoder.c
-> index 5e0dcae..3799ccc 100644
-> --- a/drivers/gpu/drm/msm/mdp4/mdp4_dtv_encoder.c
-> +++ b/drivers/gpu/drm/msm/mdp4/mdp4_dtv_encoder.c
-> @@ -15,8 +15,6 @@
->   * this program.  If not, see <http://www.gnu.org/licenses/>.
->   */
->  
-> -#include <mach/clk.h>
-> -
->  #include "mdp4_kms.h"
->  
->  #include "drm_crtc.h"
+I'm just thinking of a programmer, e.g. changing a struct like this:
 
+ struct foo {
+   u8 addr[ETH_ALEN];
+-  u16 dummy;
+ };
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+for example.
+
+johannes
 
