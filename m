@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756235Ab3L3SlB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 13:41:01 -0500
-Received: from mga01.intel.com ([192.55.52.88]:46372 "EHLO mga01.intel.com"
+	id S932224Ab3L3SlV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 13:41:21 -0500
+Received: from mga02.intel.com ([134.134.136.20]:59266 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756208Ab3L3Sk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 13:40:58 -0500
+	id S1756275Ab3L3SlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Dec 2013 13:41:13 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,575,1384329600"; 
-   d="scan'208";a="457777503"
-Subject: [PATCH 05/12] x86 Kconfig: processor drivers
+   d="scan'208";a="431815970"
+Subject: [PATCH 03/12] x86 Kconfig: move highmem
 To: linux-kernel@vger.kernel.org
 Cc: x86@kernel.org, Dave Hansen <dave@sr71.net>
 From: Dave Hansen <dave@sr71.net>
-Date: Mon, 30 Dec 2013 10:40:53 -0800
+Date: Mon, 30 Dec 2013 10:40:50 -0800
 References: <20131230184046.F5E42919@viggo.jf.intel.com>
 In-Reply-To: <20131230184046.F5E42919@viggo.jf.intel.com>
-Message-Id: <20131230184053.F1939546@viggo.jf.intel.com>
+Message-Id: <20131230184050.6102B6F2@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,199 +24,277 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Hansen <dave.hansen@linux.intel.com>
 
-These are both drivers to access very cpu and
-architecture-specific features.  However, they are probably not
-very commonly changed in the configuration.  Give them their own
-menu.
+This just continues to move things under the Memory and NUMA
+Options menu, breaking it up a bit to make the patches easier to
+audit.
 
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 ---
 
- linux.git-davehans/arch/x86/Kconfig |  169 ++++++++++++++++++------------------
- 1 file changed, 86 insertions(+), 83 deletions(-)
+ linux.git-davehans/arch/x86/Kconfig |  248 ++++++++++++++++++------------------
+ 1 file changed, 124 insertions(+), 124 deletions(-)
 
-diff -puN arch/x86/Kconfig~processor-drivers arch/x86/Kconfig
---- linux.git/arch/x86/Kconfig~processor-drivers	2013-12-30 10:37:44.825215930 -0800
-+++ linux.git-davehans/arch/x86/Kconfig	2013-12-30 10:37:44.830216154 -0800
-@@ -396,6 +396,92 @@ config X86_SMAP
+diff -puN arch/x86/Kconfig~x86-config-move-highmem arch/x86/Kconfig
+--- linux.git/arch/x86/Kconfig~x86-config-move-highmem	2013-12-30 10:37:44.258190443 -0800
++++ linux.git-davehans/arch/x86/Kconfig	2013-12-30 10:37:44.263190667 -0800
+@@ -687,6 +687,130 @@ config X86_SUPPORTS_MEMORY_FAILURE
+ 	depends on X86_64 || !SPARSEMEM
+ 	select ARCH_SUPPORTS_MEMORY_FAILURE
  
- 	  If unsure, say Y.
- 
-+comment "Processor Feature Drivers"
++choice
++	prompt "High Memory Support"
++	default HIGHMEM64G if X86_NUMAQ
++	default HIGHMEM4G
++	depends on X86_32
 +
-+config MICROCODE
-+	tristate "CPU microcode loading support"
-+	depends on CPU_SUP_AMD || CPU_SUP_INTEL
-+	select FW_LOADER
++config NOHIGHMEM
++	bool "off"
++	depends on !X86_NUMAQ
 +	---help---
++	  Linux can use up to 64 Gigabytes of physical memory on x86 systems.
++	  However, the address space of 32-bit x86 processors is only 4
++	  Gigabytes large. That means that, if you have a large amount of
++	  physical memory, not all of it can be "permanently mapped" by the
++	  kernel. The physical memory that's not permanently mapped is called
++	  "high memory".
 +
-+	  If you say Y here, you will be able to update the microcode on
-+	  certain Intel and AMD processors. The Intel support is for the
-+	  IA32 family, e.g. Pentium Pro, Pentium II, Pentium III, Pentium 4,
-+	  Xeon etc. The AMD support is for families 0x10 and later. You will
-+	  obviously need the actual microcode binary data itself which is not
-+	  shipped with the Linux kernel.
++	  If you are compiling a kernel which will never run on a machine with
++	  more than 1 Gigabyte total physical RAM, answer "off" here (default
++	  choice and suitable for most users). This will result in a "3GB/1GB"
++	  split: 3GB are mapped so that each process sees a 3GB virtual memory
++	  space and the remaining part of the 4GB virtual memory space is used
++	  by the kernel to permanently map as much physical memory as
++	  possible.
 +
-+	  This option selects the general module only, you need to select
-+	  at least one vendor specific module as well.
++	  If the machine has between 1 and 4 Gigabytes physical RAM, then
++	  answer "4GB" here.
 +
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called microcode.
++	  If more than 4 Gigabytes is used then answer "64GB" here. This
++	  selection turns Intel PAE (Physical Address Extension) mode on.
++	  PAE implements 3-level paging on IA32 processors. PAE is fully
++	  supported by Linux, PAE mode is implemented on all recent Intel
++	  processors (Pentium Pro and better). NOTE: If you say "64GB" here,
++	  then the kernel will not boot on CPUs that don't support PAE!
 +
-+config MICROCODE_INTEL
-+	bool "Intel microcode loading support"
-+	depends on MICROCODE
-+	default MICROCODE
-+	select FW_LOADER
++	  The actual amount of total physical memory will either be
++	  auto detected or can be forced by using a kernel command line option
++	  such as "mem=256M". (Try "man bootparam" or see the documentation of
++	  your boot loader (lilo or loadlin) about how to pass options to the
++	  kernel at boot time.)
++
++	  If unsure, say "off".
++
++config HIGHMEM4G
++	bool "4GB"
++	depends on !X86_NUMAQ
 +	---help---
-+	  This options enables microcode patch loading support for Intel
-+	  processors.
++	  Select this if you have a 32-bit processor and between 1 and 4
++	  gigabytes of physical RAM.
 +
-+	  For latest news and information on obtaining all the required
-+	  Intel ingredients for this driver, check:
-+	  <http://www.urbanmyth.org/microcode/>.
-+
-+config MICROCODE_AMD
-+	bool "AMD microcode loading support"
-+	depends on MICROCODE
-+	select FW_LOADER
++config HIGHMEM64G
++	bool "64GB"
++	depends on !M486
++	select X86_PAE
 +	---help---
-+	  If you select this option, microcode patch loading support for AMD
-+	  processors will be enabled.
++	  Select this if you have a 32-bit processor and more than 4
++	  gigabytes of physical RAM.
 +
-+config MICROCODE_OLD_INTERFACE
++endchoice
++
++choice
++	prompt "Memory split" if EXPERT
++	default VMSPLIT_3G
++	depends on X86_32
++	---help---
++	  Select the desired split between kernel and user memory.
++
++	  If the address range available to the kernel is less than the
++	  physical memory installed, the remaining memory will be available
++	  as "high memory". Accessing high memory is a little more costly
++	  than low memory, as it needs to be mapped into the kernel first.
++	  Note that increasing the kernel address space limits the range
++	  available to user programs, making the address space there
++	  tighter.  Selecting anything other than the default 3G/1G split
++	  will also likely make your kernel incompatible with binary-only
++	  kernel modules.
++
++	  If you are not absolutely sure what you are doing, leave this
++	  option alone!
++
++	config VMSPLIT_3G
++		bool "3G/1G user/kernel split"
++	config VMSPLIT_3G_OPT
++		depends on !X86_PAE
++		bool "3G/1G user/kernel split (for full 1G low memory)"
++	config VMSPLIT_2G
++		bool "2G/2G user/kernel split"
++	config VMSPLIT_2G_OPT
++		depends on !X86_PAE
++		bool "2G/2G user/kernel split (for full 2G low memory)"
++	config VMSPLIT_1G
++		bool "1G/3G user/kernel split"
++endchoice
++
++config PAGE_OFFSET
++	hex
++	default 0xB0000000 if VMSPLIT_3G_OPT
++	default 0x80000000 if VMSPLIT_2G
++	default 0x78000000 if VMSPLIT_2G_OPT
++	default 0x40000000 if VMSPLIT_1G
++	default 0xC0000000
++	depends on X86_32
++
++config HIGHMEM
 +	def_bool y
-+	depends on MICROCODE
++	depends on X86_32 && (HIGHMEM64G || HIGHMEM4G)
 +
-+config MICROCODE_INTEL_LIB
++config X86_PAE
++	bool "PAE (Physical Address Extension) Support"
++	depends on X86_32 && !HIGHMEM4G
++	---help---
++	  PAE is required for NX support, and furthermore enables
++	  larger swapspace support for non-overcommit purposes. It
++	  has the cost of more pagetable lookup overhead, and also
++	  consumes more pagetable space per process.
++
++config ARCH_PHYS_ADDR_T_64BIT
 +	def_bool y
-+	depends on MICROCODE_INTEL
++	depends on X86_64 || X86_PAE
 +
-+config MICROCODE_INTEL_EARLY
-+	def_bool n
++config ARCH_DMA_ADDR_T_64BIT
++	def_bool y
++	depends on X86_64 || HIGHMEM64G
 +
-+config MICROCODE_AMD_EARLY
-+	def_bool n
-+
-+config MICROCODE_EARLY
-+	bool "Early load microcode"
-+	depends on MICROCODE=y && BLK_DEV_INITRD
-+	select MICROCODE_INTEL_EARLY if MICROCODE_INTEL
-+	select MICROCODE_AMD_EARLY if MICROCODE_AMD
-+	default y
-+	help
-+	  This option provides functionality to read additional microcode data
-+	  at the beginning of initrd image. The data tells kernel to load
-+	  microcode to CPU's as early as possible. No functional change if no
-+	  microcode data is glued to the initrd, therefore it's safe to say Y.
-+
-+config X86_MSR
-+	tristate "/dev/cpu/*/msr - Model-specific register support"
-+	---help---
-+	  This device gives privileged processes access to the x86
-+	  Model-Specific Registers (MSRs).  It is a character device with
-+	  major 202 and minors 0 to 31 for /dev/cpu/0/msr to /dev/cpu/31/msr.
-+	  MSR accesses are directed to a specific CPU on multi-processor
-+	  systems.
-+
-+config X86_CPUID
-+	tristate "/dev/cpu/*/cpuid - CPU information support"
-+	---help---
-+	  This device gives processes access to the x86 CPUID instruction to
-+	  be executed on a specific processor.  It is a character device
-+	  with major 203 and minors 0 to 31 for /dev/cpu/0/cpuid to
-+	  /dev/cpu/31/cpuid.
-+
-+
- endmenu # Processor Options
+ endmenu # Memory and NUMA Options
  
- config X86_X2APIC
-@@ -1434,89 +1520,6 @@ config X86_REBOOTFIXUPS
- 	  enable this option even if you don't need it.
- 	  Say N otherwise.
+ if X86_WANT_INTEL_MID
+@@ -1315,130 +1439,6 @@ config X86_CPUID
+ 	  with major 203 and minors 0 to 31 for /dev/cpu/0/cpuid to
+ 	  /dev/cpu/31/cpuid.
  
--config MICROCODE
--	tristate "CPU microcode loading support"
--	depends on CPU_SUP_AMD || CPU_SUP_INTEL
--	select FW_LOADER
+-choice
+-	prompt "High Memory Support"
+-	default HIGHMEM64G if X86_NUMAQ
+-	default HIGHMEM4G
+-	depends on X86_32
+-
+-config NOHIGHMEM
+-	bool "off"
+-	depends on !X86_NUMAQ
 -	---help---
+-	  Linux can use up to 64 Gigabytes of physical memory on x86 systems.
+-	  However, the address space of 32-bit x86 processors is only 4
+-	  Gigabytes large. That means that, if you have a large amount of
+-	  physical memory, not all of it can be "permanently mapped" by the
+-	  kernel. The physical memory that's not permanently mapped is called
+-	  "high memory".
 -
--	  If you say Y here, you will be able to update the microcode on
--	  certain Intel and AMD processors. The Intel support is for the
--	  IA32 family, e.g. Pentium Pro, Pentium II, Pentium III, Pentium 4,
--	  Xeon etc. The AMD support is for families 0x10 and later. You will
--	  obviously need the actual microcode binary data itself which is not
--	  shipped with the Linux kernel.
+-	  If you are compiling a kernel which will never run on a machine with
+-	  more than 1 Gigabyte total physical RAM, answer "off" here (default
+-	  choice and suitable for most users). This will result in a "3GB/1GB"
+-	  split: 3GB are mapped so that each process sees a 3GB virtual memory
+-	  space and the remaining part of the 4GB virtual memory space is used
+-	  by the kernel to permanently map as much physical memory as
+-	  possible.
 -
--	  This option selects the general module only, you need to select
--	  at least one vendor specific module as well.
+-	  If the machine has between 1 and 4 Gigabytes physical RAM, then
+-	  answer "4GB" here.
 -
--	  To compile this driver as a module, choose M here: the module
--	  will be called microcode.
+-	  If more than 4 Gigabytes is used then answer "64GB" here. This
+-	  selection turns Intel PAE (Physical Address Extension) mode on.
+-	  PAE implements 3-level paging on IA32 processors. PAE is fully
+-	  supported by Linux, PAE mode is implemented on all recent Intel
+-	  processors (Pentium Pro and better). NOTE: If you say "64GB" here,
+-	  then the kernel will not boot on CPUs that don't support PAE!
 -
--config MICROCODE_INTEL
--	bool "Intel microcode loading support"
--	depends on MICROCODE
--	default MICROCODE
--	select FW_LOADER
+-	  The actual amount of total physical memory will either be
+-	  auto detected or can be forced by using a kernel command line option
+-	  such as "mem=256M". (Try "man bootparam" or see the documentation of
+-	  your boot loader (lilo or loadlin) about how to pass options to the
+-	  kernel at boot time.)
+-
+-	  If unsure, say "off".
+-
+-config HIGHMEM4G
+-	bool "4GB"
+-	depends on !X86_NUMAQ
 -	---help---
--	  This options enables microcode patch loading support for Intel
--	  processors.
+-	  Select this if you have a 32-bit processor and between 1 and 4
+-	  gigabytes of physical RAM.
 -
--	  For latest news and information on obtaining all the required
--	  Intel ingredients for this driver, check:
--	  <http://www.urbanmyth.org/microcode/>.
--
--config MICROCODE_AMD
--	bool "AMD microcode loading support"
--	depends on MICROCODE
--	select FW_LOADER
+-config HIGHMEM64G
+-	bool "64GB"
+-	depends on !M486
+-	select X86_PAE
 -	---help---
--	  If you select this option, microcode patch loading support for AMD
--	  processors will be enabled.
+-	  Select this if you have a 32-bit processor and more than 4
+-	  gigabytes of physical RAM.
 -
--config MICROCODE_OLD_INTERFACE
+-endchoice
+-
+-choice
+-	prompt "Memory split" if EXPERT
+-	default VMSPLIT_3G
+-	depends on X86_32
+-	---help---
+-	  Select the desired split between kernel and user memory.
+-
+-	  If the address range available to the kernel is less than the
+-	  physical memory installed, the remaining memory will be available
+-	  as "high memory". Accessing high memory is a little more costly
+-	  than low memory, as it needs to be mapped into the kernel first.
+-	  Note that increasing the kernel address space limits the range
+-	  available to user programs, making the address space there
+-	  tighter.  Selecting anything other than the default 3G/1G split
+-	  will also likely make your kernel incompatible with binary-only
+-	  kernel modules.
+-
+-	  If you are not absolutely sure what you are doing, leave this
+-	  option alone!
+-
+-	config VMSPLIT_3G
+-		bool "3G/1G user/kernel split"
+-	config VMSPLIT_3G_OPT
+-		depends on !X86_PAE
+-		bool "3G/1G user/kernel split (for full 1G low memory)"
+-	config VMSPLIT_2G
+-		bool "2G/2G user/kernel split"
+-	config VMSPLIT_2G_OPT
+-		depends on !X86_PAE
+-		bool "2G/2G user/kernel split (for full 2G low memory)"
+-	config VMSPLIT_1G
+-		bool "1G/3G user/kernel split"
+-endchoice
+-
+-config PAGE_OFFSET
+-	hex
+-	default 0xB0000000 if VMSPLIT_3G_OPT
+-	default 0x80000000 if VMSPLIT_2G
+-	default 0x78000000 if VMSPLIT_2G_OPT
+-	default 0x40000000 if VMSPLIT_1G
+-	default 0xC0000000
+-	depends on X86_32
+-
+-config HIGHMEM
 -	def_bool y
--	depends on MICROCODE
+-	depends on X86_32 && (HIGHMEM64G || HIGHMEM4G)
 -
--config MICROCODE_INTEL_LIB
+-config X86_PAE
+-	bool "PAE (Physical Address Extension) Support"
+-	depends on X86_32 && !HIGHMEM4G
+-	---help---
+-	  PAE is required for NX support, and furthermore enables
+-	  larger swapspace support for non-overcommit purposes. It
+-	  has the cost of more pagetable lookup overhead, and also
+-	  consumes more pagetable space per process.
+-
+-config ARCH_PHYS_ADDR_T_64BIT
 -	def_bool y
--	depends on MICROCODE_INTEL
+-	depends on X86_64 || X86_PAE
 -
--config MICROCODE_INTEL_EARLY
--	def_bool n
--
--config MICROCODE_AMD_EARLY
--	def_bool n
--
--config MICROCODE_EARLY
--	bool "Early load microcode"
--	depends on MICROCODE=y && BLK_DEV_INITRD
--	select MICROCODE_INTEL_EARLY if MICROCODE_INTEL
--	select MICROCODE_AMD_EARLY if MICROCODE_AMD
--	default y
--	help
--	  This option provides functionality to read additional microcode data
--	  at the beginning of initrd image. The data tells kernel to load
--	  microcode to CPU's as early as possible. No functional change if no
--	  microcode data is glued to the initrd, therefore it's safe to say Y.
--
--config X86_MSR
--	tristate "/dev/cpu/*/msr - Model-specific register support"
--	---help---
--	  This device gives privileged processes access to the x86
--	  Model-Specific Registers (MSRs).  It is a character device with
--	  major 202 and minors 0 to 31 for /dev/cpu/0/msr to /dev/cpu/31/msr.
--	  MSR accesses are directed to a specific CPU on multi-processor
--	  systems.
--
--config X86_CPUID
--	tristate "/dev/cpu/*/cpuid - CPU information support"
--	---help---
--	  This device gives processes access to the x86 CPUID instruction to
--	  be executed on a specific processor.  It is a character device
--	  with major 203 and minors 0 to 31 for /dev/cpu/0/cpuid to
--	  /dev/cpu/31/cpuid.
+-config ARCH_DMA_ADDR_T_64BIT
+-	def_bool y
+-	depends on X86_64 || HIGHMEM64G
 -
  config MATH_EMULATION
  	bool
