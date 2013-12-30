@@ -1,107 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754799Ab3L3Chv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 21:37:51 -0500
-Received: from gate.crashing.org ([63.228.1.57]:56109 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754561Ab3L3Cht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 21:37:49 -0500
-Message-ID: <1388371049.4373.22.camel@pasglop>
-Subject: Re: [PATCH] of/irq: Fix device_node refcount in of_irq_parse_raw()
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: =?ISO-8859-1?Q?C=E9dric?= Le Goater <clg@fr.ibm.com>
-Cc: grant.likely@linaro.org, devicetree@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Mon, 30 Dec 2013 13:37:29 +1100
-In-Reply-To: <1387301573-30502-1-git-send-email-clg@fr.ibm.com>
-References: <1387301573-30502-1-git-send-email-clg@fr.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1753922Ab3L3Cj7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 21:39:59 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:59652 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753308Ab3L3Cj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Dec 2013 21:39:58 -0500
+X-IronPort-AV: E=Sophos;i="4.95,571,1384272000"; 
+   d="scan'208";a="9348173"
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org, acme@redhat.com
+Cc: mingo@kernel.org, dsahern@gmail.com, artagnon@gmail.com,
+        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH 1/8] perf tools: Make the all print_xxx_event functions to return unsigned int.
+Date: Mon, 30 Dec 2013 10:26:36 -0500
+Message-Id: <55522abc937a454129343ae9e2315e8a3df9f810.1388416837.git.yangds.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <cover.1388416837.git.yangds.fnst@cn.fujitsu.com>
+References: <cover.1388416837.git.yangds.fnst@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/30 10:27:57,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/30 10:27:58,
+	Serialize complete at 2013/12/30 10:27:58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-17 at 18:32 +0100, Cédric Le Goater wrote:
-> Commit 2361613206e6, "of/irq: Refactor interrupt-map parsing" changed
-> the refcount on the device_node causing an error in of_node_put():
+Currently, the most of print_XXX_event() functions are returning void. Then we can
+not know whether the printing work is completed well.
 
-Grant, Thierry, this is a regression, please send to Linus ASAP...
+This patch change the return type to unsigned int, it means the count of events we
+have printed in print_XXX_event() function.
 
-Cheers,
-Ben.
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+---
+ tools/perf/util/parse-events.c | 76 ++++++++++++++++++++++++------------------
+ tools/perf/util/parse-events.h |  8 ++---
+ 2 files changed, 48 insertions(+), 36 deletions(-)
 
-> ERROR: Bad of_node_put() on /pci@800000020000000
-> CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.13.0-rc3-dirty #2
-> Call Trace:
-> [c00000003e403500] [c0000000000144fc] .show_stack+0x7c/0x1f0 (unreliable)
-> [c00000003e4035d0] [c00000000070f250] .dump_stack+0x88/0xb4
-> [c00000003e403650] [c0000000005e8768] .of_node_release+0xd8/0xf0
-> [c00000003e4036e0] [c0000000005eeafc] .of_irq_parse_one+0x10c/0x280
-> [c00000003e4037a0] [c0000000005efd4c] .of_irq_parse_pci+0x3c/0x1d0
-> [c00000003e403840] [c000000000038240] .pcibios_setup_device+0xa0/0x2e0
-> [c00000003e403910] [c0000000000398f0] .pcibios_setup_bus_devices+0x60/0xd0
-> [c00000003e403990] [c00000000003b3a4] .__of_scan_bus+0x1a4/0x2b0
-> [c00000003e403a80] [c00000000003a62c] .pcibios_scan_phb+0x30c/0x410
-> [c00000003e403b60] [c0000000009fe430] .pcibios_init+0x7c/0xd4
-> 
-> This patch adjusts the refcount in the walk of the interrupt tree.
-> When a match is found, there is no need to increase the refcount 
-> on 'out_irq->np' as 'newpar' is already holding a ref. The refcount
-> balance between 'ipar' and 'newpar' is maintained in the skiplevel:
-> goto label.
-> 
-> This patch also removes the usage of the device_node variable 'old' 
-> which seems useless after the latest changes.
-> 
-> Signed-off-by: Cédric Le Goater <clg@fr.ibm.com>
-> ---
-> 
-> This patch was tested on powerpc, pseries and powernv. This is a 
-> new area for me so I might have missed a path. Please take a look.
-> 
-> We could now introduce an helper routine to look for #address-cells in
-> of_irq_parse_raw(). This can be the subject of another patch.
-> 
-> Thanks,
-> 
-> C.
-> 
->  drivers/of/irq.c |    5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
-> 
-> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-> index 786b0b47fae4..27212402c532 100644
-> --- a/drivers/of/irq.c
-> +++ b/drivers/of/irq.c
-> @@ -165,7 +165,6 @@ int of_irq_parse_raw(const __be32 *addr, struct of_phandle_args *out_irq)
->  		if (of_get_property(ipar, "interrupt-controller", NULL) !=
->  				NULL) {
->  			pr_debug(" -> got it !\n");
-> -			of_node_put(old);
->  			return 0;
->  		}
->  
-> @@ -250,8 +249,7 @@ int of_irq_parse_raw(const __be32 *addr, struct of_phandle_args *out_irq)
->  		 * Successfully parsed an interrrupt-map translation; copy new
->  		 * interrupt specifier into the out_irq structure
->  		 */
-> -		of_node_put(out_irq->np);
-> -		out_irq->np = of_node_get(newpar);
-> +		out_irq->np = newpar;
->  
->  		match_array = imap - newaddrsize - newintsize;
->  		for (i = 0; i < newintsize; i++)
-> @@ -268,7 +266,6 @@ int of_irq_parse_raw(const __be32 *addr, struct of_phandle_args *out_irq)
->  	}
->   fail:
->  	of_node_put(ipar);
-> -	of_node_put(out_irq->np);
->  	of_node_put(newpar);
->  
->  	return -EINVAL;
-
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 0153435..e2a2066 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -1000,22 +1000,23 @@ static const char * const event_type_descriptors[] = {
+  * Print the events from <debugfs_mount_point>/tracing/events
+  */
+ 
+-void print_tracepoint_events(const char *subsys_glob, const char *event_glob,
+-			     bool name_only)
++unsigned int print_tracepoint_events(const char *subsys_glob, const char *event_glob,
++			             bool name_only)
+ {
+ 	DIR *sys_dir, *evt_dir;
+ 	struct dirent *sys_next, *evt_next, sys_dirent, evt_dirent;
+ 	char evt_path[MAXPATHLEN];
+ 	char dir_path[MAXPATHLEN];
++	unsigned int count = 0;
+ 
+ 	if (debugfs_valid_mountpoint(tracing_events_path)) {
+ 		printf("  [ Tracepoints not available: %s ]\n", strerror(errno));
+-		return;
++		return count;
+ 	}
+ 
+ 	sys_dir = opendir(tracing_events_path);
+ 	if (!sys_dir)
+-		return;
++		return count;
+ 
+ 	for_each_subsystem(sys_dir, sys_dirent, sys_next) {
+ 		if (subsys_glob != NULL && 
+@@ -1035,6 +1036,7 @@ void print_tracepoint_events(const char *subsys_glob, const char *event_glob,
+ 
+ 			if (name_only) {
+ 				printf("%s:%s ", sys_dirent.d_name, evt_dirent.d_name);
++				count++;
+ 				continue;
+ 			}
+ 
+@@ -1042,10 +1044,13 @@ void print_tracepoint_events(const char *subsys_glob, const char *event_glob,
+ 				 sys_dirent.d_name, evt_dirent.d_name);
+ 			printf("  %-50s [%s]\n", evt_path,
+ 				event_type_descriptors[PERF_TYPE_TRACEPOINT]);
++			count++;
+ 		}
+ 		closedir(evt_dir);
+ 	}
+ 	closedir(sys_dir);
++
++	return count;
+ }
+ 
+ /*
+@@ -1116,11 +1121,12 @@ static bool is_event_supported(u8 type, unsigned config)
+ 	return ret;
+ }
+ 
+-static void __print_events_type(u8 type, struct event_symbol *syms,
+-				unsigned max)
++static unsigned int __print_events_type(u8 type, struct event_symbol *syms,
++					unsigned max)
+ {
+ 	char name[64];
+ 	unsigned i;
++	unsigned int count = 0;
+ 
+ 	for (i = 0; i < max ; i++, syms++) {
+ 		if (!is_event_supported(type, i))
+@@ -1133,20 +1139,23 @@ static void __print_events_type(u8 type, struct event_symbol *syms,
+ 			snprintf(name, sizeof(name), "%s", syms->symbol);
+ 
+ 		printf("  %-50s [%s]\n", name, event_type_descriptors[type]);
++		count++;
+ 	}
++
++	return count;
+ }
+ 
+-void print_events_type(u8 type)
++unsigned int print_events_type(u8 type)
+ {
+ 	if (type == PERF_TYPE_SOFTWARE)
+-		__print_events_type(type, event_symbols_sw, PERF_COUNT_SW_MAX);
++		return __print_events_type(type, event_symbols_sw, PERF_COUNT_SW_MAX);
+ 	else
+-		__print_events_type(type, event_symbols_hw, PERF_COUNT_HW_MAX);
++		return __print_events_type(type, event_symbols_hw, PERF_COUNT_HW_MAX);
+ }
+ 
+-int print_hwcache_events(const char *event_glob, bool name_only)
++unsigned int print_hwcache_events(const char *event_glob, bool name_only)
+ {
+-	unsigned int type, op, i, printed = 0;
++	unsigned int type, op, i, count = 0;
+ 	char name[64];
+ 
+ 	for (type = 0; type < PERF_COUNT_HW_CACHE_MAX; type++) {
+@@ -1170,21 +1179,22 @@ int print_hwcache_events(const char *event_glob, bool name_only)
+ 				else
+ 					printf("  %-50s [%s]\n", name,
+ 					       event_type_descriptors[PERF_TYPE_HW_CACHE]);
+-				++printed;
++				count++;
+ 			}
+ 		}
+ 	}
+ 
+-	if (printed)
++	if (count)
+ 		printf("\n");
+-	return printed;
++	return count;
+ }
+ 
+-static void print_symbol_events(const char *event_glob, unsigned type,
+-				struct event_symbol *syms, unsigned max,
+-				bool name_only)
++static unsigned print_symbol_events(const char *event_glob, unsigned type,
++				    struct event_symbol *syms, unsigned max,
++				    bool name_only)
+ {
+-	unsigned i, printed = 0;
++	unsigned i;
++	unsigned int count = 0;
+ 	char name[MAX_NAME_LEN];
+ 
+ 	for (i = 0; i < max; i++, syms++) {
+@@ -1199,6 +1209,7 @@ static void print_symbol_events(const char *event_glob, unsigned type,
+ 
+ 		if (name_only) {
+ 			printf("%s ", syms->symbol);
++			count++;
+ 			continue;
+ 		}
+ 
+@@ -1209,35 +1220,35 @@ static void print_symbol_events(const char *event_glob, unsigned type,
+ 
+ 		printf("  %-50s [%s]\n", name, event_type_descriptors[type]);
+ 
+-		printed++;
++		count++;
+ 	}
+ 
+-	if (printed)
++	if (count)
+ 		printf("\n");
++	return count;
+ }
+ 
+ /*
+  * Print the help text for the event symbols:
+  */
+-void print_events(const char *event_glob, bool name_only)
++unsigned int print_events(const char *event_glob, bool name_only)
+ {
+-	if (!name_only) {
+-		printf("\n");
+-		printf("List of pre-defined events (to be used in -e):\n");
+-	}
++	unsigned int count = 0;
+ 
+-	print_symbol_events(event_glob, PERF_TYPE_HARDWARE,
+-			    event_symbols_hw, PERF_COUNT_HW_MAX, name_only);
++	count += print_symbol_events(event_glob, PERF_TYPE_HARDWARE,
++				     event_symbols_hw, PERF_COUNT_HW_MAX,
++				     name_only);
+ 
+-	print_symbol_events(event_glob, PERF_TYPE_SOFTWARE,
+-			    event_symbols_sw, PERF_COUNT_SW_MAX, name_only);
++	count += print_symbol_events(event_glob, PERF_TYPE_SOFTWARE,
++				     event_symbols_sw, PERF_COUNT_SW_MAX,
++				     name_only);
+ 
+-	print_hwcache_events(event_glob, name_only);
++	count += print_hwcache_events(event_glob, name_only);
+ 
+-	print_pmu_events(event_glob, name_only);
++	count += print_pmu_events(event_glob, name_only);
+ 
+ 	if (event_glob != NULL)
+-		return;
++		return count;
+ 
+ 	if (!name_only) {
+ 		printf("  %-50s [%s]\n",
+@@ -1256,6 +1267,7 @@ void print_events(const char *event_glob, bool name_only)
+ 	}
+ 
+ 	print_tracepoint_events(NULL, NULL, name_only);
++	return count;
+ }
+ 
+ int parse_events__is_hardcoded_term(struct parse_events_term *term)
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index f1cb4c4..bb7d674 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -101,11 +101,11 @@ void parse_events_update_lists(struct list_head *list_event,
+ 			       struct list_head *list_all);
+ void parse_events_error(void *data, void *scanner, char const *msg);
+ 
+-void print_events(const char *event_glob, bool name_only);
+-void print_events_type(u8 type);
+-void print_tracepoint_events(const char *subsys_glob, const char *event_glob,
++unsigned int print_events(const char *event_glob, bool name_only);
++unsigned int print_events_type(u8 type);
++unsigned int print_tracepoint_events(const char *subsys_glob, const char *event_glob,
+ 			     bool name_only);
+-int print_hwcache_events(const char *event_glob, bool name_only);
++unsigned int print_hwcache_events(const char *event_glob, bool name_only);
+ extern int is_valid_tracepoint(const char *event_string);
+ 
+ extern int valid_debugfs_mount(const char *debugfs);
+-- 
+1.8.2.1
 
