@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751497Ab3L3Gtr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 01:49:47 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:61515 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230Ab3L3Gtq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 01:49:46 -0500
-Date: Mon, 30 Dec 2013 14:48:42 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: jslaby@suse.cz, airlied@redhat.com, akpm@linux-foundation.org,
-        kilobyte@angband.pl, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fonts:Kconfig: fix default enable FONT_8x8 and FONT_8x16
- at the same time
-Message-ID: <20131230064842.GA6592@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	Greg KH <gregkh@linuxfoundation.org>, jslaby@suse.cz,
-	airlied@redhat.com, akpm@linux-foundation.org, kilobyte@angband.pl,
-	linux-kernel@vger.kernel.org
-References: <20131230033745.GA5855@udknight>
- <20131230053430.GA11990@kroah.com>
+	id S1751429Ab3L3G7C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 01:59:02 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:33912 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751270Ab3L3G67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Dec 2013 01:58:59 -0500
+Message-ID: <52C1197A.5010701@ti.com>
+Date: Mon, 30 Dec 2013 12:28:02 +0530
+From: Sricharan R <r.sricharan@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131230053430.GA11990@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sricharan R <r.sricharan@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
+        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
+        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
+        <mark.rutland@arm.com>, <robherring2@gmail.com>, <tglx@linutronix.de>,
+        <galak@codeaurora.org>, <rob.herring@calxeda.com>,
+        <santosh.shilimkar@ti.com>, <nm@ti.com>, <bcousson@baylibre.com>
+Subject: Re: [PATCH V4 0/3] ARM: DTS: DRA7: Updates for adding crossbar device
+References: <1384431928-2328-1-git-send-email-r.sricharan@ti.com>
+In-Reply-To: <1384431928-2328-1-git-send-email-r.sricharan@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 29, 2013 at 09:34:30PM -0800, Greg KH wrote:
-> On Mon, Dec 30, 2013 at 11:37:45AM +0800, Wang YanQing wrote:
-> > FONT_8x8 and FONT_8x16 have the same default value line:
-> > "default y if !SPARC && !FONTS"
-> > 
-> > I test run "make defconfig" for x86 will enable FONT_8x8 and FONT_8x16 at
-> > the same time.
-> > 
-> > This patch fix it, because FONT_AUTOSELECT choice FONT_8x16, so
-> > I decide to disable FONT_8x8, this patch will reduce size of kernel.
-> > 
-> > Signed-off-by: Wang YanQing <udknight@gmail.com>
-> > ---
-> >  lib/fonts/Kconfig | 1 -
-> >  1 file changed, 1 deletion(-)
-> 
-> I am not the maintainer of this file, sorry.  Also, I don't think it's
-> correct, if you want, you can always disable this option on your own.
-> 
-Hi Greg KH.
+Hi Benoit,
 
-Sorry for confusion, the default behavior enable FONT_8x8 and FONT_8x16,
-FONT_8x8 eat ~50KB memory, but kernel never use it. I think this is not
-good default behavior.
+On Thursday 14 November 2013 05:55 PM, Sricharan R wrote:
+> Some socs have a large number of interrupts requests to service
+> the needs of its many peripherals and subsystems. All of the interrupt
+> requests lines from the subsystems are not needed at the same
+> time, so they have to be muxed to the controllers appropriately.
+> In such places a interrupt controllers are preceded by an
+> IRQ CROSSBAR that provides flexibility in muxing the device interrupt
+> requests to the controller inputs.
+> 
+> The driver support for the same was added here.
+> 	http://marc.info/?l=linux-omap&m=138443167321614&w=2
+> 
+> The dts file update to support the crossbar device and convert
+> peripheral irq numbers to crossbar number are added here.
+> This series was originally a part of the series [1] and now split
+> to keep the DTS updates separately as per comments from
+> Santosh Shilimkar <santosh.shilimkar@ti.com>
+> 
+> Applied this series on top of
+>   git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git
+>   for_3.13/dts
+> 
+> [1] http://www.kernelhub.org/?msg=356470&p=2
+> 
+> Sricharan R (3):
+>   ARM: DTS: DRA: Add crossbar device binding
+>   ARM: DTS: DRA: Replace peripheral interrupt numbers with crossbar
+>     inputs
+>   ARM: DTS: DRA7: Add routable-irqs property for gic node
+> 
+>  arch/arm/boot/dts/dra7.dtsi |   95 +++++++++++++++++++++++--------------------
+>  1 file changed, 52 insertions(+), 43 deletions(-)
+> 
 
-Thanks.
+I have pushed a branch with this series here
+
+git://github.com/Sricharanti/sricharan.git
+branch: crossbar_dts
+
+This is on top of your for_3.14/dts branch
+
+This series has a dependency with crossbar driver functional changes, which is yet
+to be pulled
+
+https://lkml.org/lkml/2013/12/30/9
+
+Regards,
+ Sricharan
