@@ -1,104 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754717Ab3L3KHA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 05:07:00 -0500
-Received: from mga09.intel.com ([134.134.136.24]:42234 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751702Ab3L3KG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 05:06:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,573,1384329600"; 
-   d="scan'208";a="459339469"
-From: Jani Nikula <jani.nikula@intel.com>
-To: Alexander van Heukelum <heukelum@fastmail.fm>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>, Ben Widawsky <ben@bwidawsk.net>
-Cc: Alexander van Heukelum <heukelum@fastmail.fm>,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Dylan Borg <borgdylan@hotmail.com>
-Subject: Re: [PATCH] Revert "drm/i915: assume all GM45 Acer laptops use inverted backlight PWM"
-In-Reply-To: <1388260839-3873-2-git-send-email-heukelum@fastmail.fm>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <1388260839-3873-1-git-send-email-heukelum@fastmail.fm> <1388260839-3873-2-git-send-email-heukelum@fastmail.fm>
-User-Agent: Notmuch/0.17~rc2+18~gab1d8e867f4a (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 30 Dec 2013 12:09:47 +0200
-Message-ID: <87txdqk5uc.fsf@intel.com>
+	id S1754800Ab3L3KPC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 05:15:02 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:63071 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752051Ab3L3KPA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Dec 2013 05:15:00 -0500
+Message-ID: <52C1479E.80808@linaro.org>
+Date: Mon, 30 Dec 2013 11:14:54 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+CC: Axel Lin <axel.lin@ingics.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: [GIT PULL] clockevents/clocksource : new material for 3.14
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Ben, please pick this up for -fixes during Daniel's absense.
+Hi Thomas and Ingo,
 
-BR,
-Jani.
+here is the new material for 3.14. I created a branch for Simon Horman 
+as requested [1] where he can pull from and merged it in the 
+clockevents/3.14 branch.	
+
+  * Axel Lin removed an unused structure defining the ids for the bcm 
+kona driver
+
+  * Ezequiel Garcia enabled the timer divider only when the 25MHz timer 
+is not used for the armada 370 XP
+
+  * Jingoo Han removed a pointless platform data initialization for the 
+sh_mtu and sh_mtu2
+
+  * Laurent Pinchart added the clk_prepare/clk_unprepare for sh_cmt
+
+  * Linus Walleij added an useful warning in clk_of when no clocks are 
+found while the old behavior was to silently hang at boot time
+
+  * Maxime Ripard added the high speed timer drivers for the Allwinner 
+SoCs (A10, A13, A20). He increased the rating, shared the irq across all 
+available cpus and fixed the clockevent's irq initialization for the sun4i
+
+  * Michael Opdenacker removed the usage of the IRQF_DISABLED for the 
+all the timers driver located in drivers/clocksource
+
+  * Stephen Boyd switched to sched_clock_register for the 
+arm_global_timer, cadence_ttc, sun4i and orion timers
 
 
-On Sat, 28 Dec 2013, Alexander van Heukelum <heukelum@fastmail.fm> wrote:
-> My Acer 8510TZ stops displaying anything when X starts with Linus' current
-> tree. I bisected it down to commit ee1452d74584.
->
-> This patch reverts commit ee1452d74584.
+Resolved conflicts:
 
-commit ee1452d7458451a7508e0663553ce88d63958157
-Author: Jani Nikula <jani.nikula@intel.com>
-Date:   Fri Sep 20 15:05:30 2013 +0300
+  * (31f8ad387) "sun7i: a20: Add support for the High Speed Timers" and 
+(428abbb8) "Enable the I2C controllers"
 
-    drm/i915: assume all GM45 Acer laptops use inverted backlight PWM
+  * (67905540) "clocksource: Add Allwinner SoCs HS timers driver" and 
+(b788beda) "Order Kconfig options alphabetically"
 
-> After the revert, everything works as before.
+Thanks and happy new year !
 
-Also
+   -- Daniel
 
-Reported-by: Dylan Borg <borgdylan@hotmail.com>
+[1] http://www.spinics.net/lists/linux-sh/msg26645.html
 
-for Acer Extensa 5635Z.
+-------------------------------------------------------------------------
 
-> Signed-off-by: Alexander van Heukelum <heukelum@fastmail.fm>
+The following changes since commit 0e6601eee039893a3f6420596ae4588d90d13cbe:
 
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+   Merge branch 'timers/posix-timers-for-tip-v2' of 
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks 
+into timers/core (2013-12-10 12:32:36 +0100)
+
+are available in the git repository at:
 
 
->
-> ---
->  drivers/gpu/drm/i915/intel_display.c | 19 ++++++++++++++-----
->  1 file changed, 14 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-> index 54e82a8..769b864 100644
-> --- a/drivers/gpu/drm/i915/intel_display.c
-> +++ b/drivers/gpu/drm/i915/intel_display.c
-> @@ -10541,11 +10541,20 @@ static struct intel_quirk intel_quirks[] = {
->  	/* Sony Vaio Y cannot use SSC on LVDS */
->  	{ 0x0046, 0x104d, 0x9076, quirk_ssc_force_disable },
->  
-> -	/*
-> -	 * All GM45 Acer (and its brands eMachines and Packard Bell) laptops
-> -	 * seem to use inverted backlight PWM.
-> -	 */
-> -	{ 0x2a42, 0x1025, PCI_ANY_ID, quirk_invert_brightness },
-> +	/* Acer Aspire 5734Z must invert backlight brightness */
-> +	{ 0x2a42, 0x1025, 0x0459, quirk_invert_brightness },
-> +
-> +	/* Acer/eMachines G725 */
-> +	{ 0x2a42, 0x1025, 0x0210, quirk_invert_brightness },
-> +
-> +	/* Acer/eMachines e725 */
-> +	{ 0x2a42, 0x1025, 0x0212, quirk_invert_brightness },
-> +
-> +	/* Acer/Packard Bell NCL20 */
-> +	{ 0x2a42, 0x1025, 0x034b, quirk_invert_brightness },
-> +
-> +	/* Acer Aspire 4736Z */
-> +	{ 0x2a42, 0x1025, 0x0260, quirk_invert_brightness },
->  
->  	/* Dell XPS13 HD Sandy Bridge */
->  	{ 0x0116, 0x1028, 0x052e, quirk_no_pcm_pwm_enable },
-> -- 
-> 1.8.3.2
->
+   git://git.linaro.org/people/daniel.lezcano/linux.git clockevents/3.14
+
+for you to fetch changes up to 98aefbe72ec6015f90fe045ed16c5cf755da283d:
+
+   Merge branch 'clockevents/for-Simon-3.13-rc2' into clockevents/3.14 
+(2013-12-18 15:14:36 +0100)
+
+----------------------------------------------------------------
+
+Axel Lin (1):
+       clocksource: bcm_kona_timer: Remove unused bcm_timer_ids
+
+Daniel Lezcano (1):
+       Merge branch 'clockevents/for-Simon-3.13-rc2' into clockevents/3.14
+
+Ezequiel Garcia (1):
+       clocksource: armada-370-xp: Enable timer divider only when needed
+
+Jingoo Han (2):
+       clocksource: sh_tmu: Remove unnecessary platform_set_drvdata()
+       clocksource: sh_mtu2: Remove unnecessary platform_set_drvdata()
+
+Laurent Pinchart (1):
+       clocksource: sh_cmt: Add clk_prepare/unprepare support
+
+Linus Walleij (1):
+       clocksource: clksrc-of: Warn if no clock sources are found
+
+Maxime Ripard (7):
+       clockevent: sun4i: Fill the irq field in the clockevent structure
+       clocksource: sun4i: Change CPU mask to cpu_possible_mask
+       clocksource: sun4i: Increase a bit the clock event and sources rating
+       clocksource: Add Allwinner SoCs HS timers driver
+       ARM: sun5i: a10s: Add support for the High Speed Timers
+       ARM: sun5i: a13: Add support for the High Speed Timers
+       ARM: sun7i: a20: Add support for the High Speed Timers
+
+Michael Opdenacker (3):
+       clocksource: misc drivers: Remove deprecated IRQF_DISABLED
+       clocksource: tegra: Remove deprecated IRQF_DISABLED
+       clocksource: vt8500: Remove deprecated IRQF_DISABLED
+
+Stephen Boyd (4):
+       clocksource: arm_global_timer: Switch to sched_clock_register()
+       clocksource: cadence_ttc_timer: Switch to sched_clock_register()
+       clocksource: sun4i: Switch to sched_clock_register()
+       clocksource: orion: Switch to sched_clock_register()
+
+  .../bindings/timer/allwinner,sun5i-a13-hstimer.txt |   22 +++
+  arch/arm/boot/dts/sun5i-a10s.dtsi                  |    7 +
+  arch/arm/boot/dts/sun5i-a13.dtsi                   |    7 +
+  arch/arm/boot/dts/sun7i-a20.dtsi                   |   10 +
+  arch/arm/mach-sunxi/Kconfig                        |    1 +
+  drivers/clocksource/Kconfig                        |    4 +
+  drivers/clocksource/Makefile                       |    1 +
+  drivers/clocksource/arm_global_timer.c             |    4 +-
+  drivers/clocksource/bcm_kona_timer.c               |    6 -
+  drivers/clocksource/cadence_ttc_timer.c            |    7 +-
+  drivers/clocksource/clksrc-of.c                    |    4 +
+  drivers/clocksource/cs5535-clockevt.c              |    2 +-
+  drivers/clocksource/dw_apb_timer.c                 |    3 +-
+  drivers/clocksource/nomadik-mtu.c                  |    2 +-
+  drivers/clocksource/samsung_pwm_timer.c            |    2 +-
+  drivers/clocksource/sh_cmt.c                       |   23 ++-
+  drivers/clocksource/sh_mtu2.c                      |    4 +-
+  drivers/clocksource/sh_tmu.c                       |    4 +-
+  drivers/clocksource/sun4i_timer.c                  |   11 +-
+  drivers/clocksource/tegra20_timer.c                |    2 +-
+  drivers/clocksource/time-armada-370-xp.c           |   18 +-
+  drivers/clocksource/time-orion.c                   |    4 +-
+  drivers/clocksource/timer-sun5i.c                  |  192 
+++++++++++++++++++++
+  drivers/clocksource/vt8500_timer.c                 |    2 +-
+  24 files changed, 295 insertions(+), 47 deletions(-)
+  create mode 100644 
+Documentation/devicetree/bindings/timer/allwinner,sun5i-a13-hstimer.txt
+  create mode 100644 drivers/clocksource/timer-sun5i.c
+
 
 -- 
-Jani Nikula, Intel Open Source Technology Center
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
