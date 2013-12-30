@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932305Ab3L3VZd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 16:25:33 -0500
-Received: from s3.sipsolutions.net ([144.76.43.152]:43982 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756124Ab3L3VZc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 16:25:32 -0500
-Message-ID: <1388438724.4573.2.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH 4/11]  use ether_addr_equal_64bits
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 30 Dec 2013 22:25:24 +0100
-In-Reply-To: <alpine.DEB.2.02.1312302057420.2209@localhost6.localdomain6>
-References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>
-	  <1388427307-8691-5-git-send-email-Julia.Lawall@lip6.fr>
-	  (sfid-20131230_182319_112673_F481A1D3) <1388429761.4410.1.camel@jlt4.sipsolutions.net>
-	 <alpine.DEB.2.02.1312302057420.2209@localhost6.localdomain6>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
+	id S1756217Ab3L3Vdo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 16:33:44 -0500
+Received: from mga02.intel.com ([134.134.136.20]:4903 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755518Ab3L3Vdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Dec 2013 16:33:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,576,1384329600"; 
+   d="scan'208";a="431873657"
+Message-ID: <52C1E6B1.4010402@intel.com>
+Date: Mon, 30 Dec 2013 13:33:37 -0800
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Andreas Dilger <adilger@dilger.ca>
+CC: Li Wang <liwang@ubuntukylin.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>, Zefan Li <lizefan@huawei.com>,
+        Matthew Wilcox <matthew@wil.cx>
+Subject: Re: [PATCH 0/3] Fadvise: Directory level page cache cleaning support
+References: <cover.1388409686.git.liwang@ubuntukylin.com> <52C1C6F7.8010809@intel.com> <FFE7C704-791E-4B73-9251-EFB9135AB254@dilger.ca>
+In-Reply-To: <FFE7C704-791E-4B73-9251-EFB9135AB254@dilger.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-12-30 at 20:58 +0100, Julia Lawall wrote:
-
-> > Is there any way we could catch (sparse, or some other script?) that
-> > struct reorganising won't break the condition needed ("within a
-> > structure that contains at least two more bytes")?
+On 12/30/2013 11:40 AM, Andreas Dilger wrote:
+> On Dec 30, 2013, at 12:18, Dave Hansen <dave.hansen@intel.com> wrote:
+>> Why is this necessary to do in the kernel?  Why not leave it to
+>> userspace to walk the filesystem(s)?
 > 
-> What kind of reorganizing could happen?  Do you mean that the programmer 
-> might do at some time in the future, or something the compiler might do?
+> I would suspect that trying to do it in userspace would be quite bad. It would require traversing the whole directory tree to issue cache flushed for each subdirectory, but it doesn't know when to stop traversal. That would mean the "cache flush" would turn into "cache pollute" and cause a lot of disk IO for subdirectories not in cache to begin with. 
 
-I'm just thinking of a programmer, e.g. changing a struct like this:
+That makes sense for dentries at least and is a pretty good reason.
+Probably good enough to to include some text in the patch description.
+;)  Perhaps: "We need this interface because we have no way of
+determining what is in the dcache from userspace, and we do not want
+userspace to pollute the dcache going and looking for page cache to evict."
 
- struct foo {
-   u8 addr[ETH_ALEN];
--  u16 dummy;
- };
+One other thing that bothers me: POSIX_FADV_DONTNEED on a directory
+seems like it should do something with the _directory_.  It should undo
+the kernel's caching that happens as a result of readdir().
 
-for example.
-
-johannes
-
+Should this also be trying to drop the dentry/inode entries like "echo 2
+> .../drop_caches" does?
