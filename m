@@ -1,138 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932416Ab3L3XYx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 18:24:53 -0500
-Received: from blu0-omc3-s23.blu0.hotmail.com ([65.55.116.98]:51750 "EHLO
-	blu0-omc3-s23.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932359Ab3L3XYv convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 18:24:51 -0500
-X-TMN: [RwCtW5qOdVMiyfwiNYv/JH44GSDimlv1]
-X-Originating-Email: [lgxue@hotmail.com]
-Message-ID: <BLU172-W3543A0F3EFB217C99994F4ACCE0@phx.gbl>
-From: Joe Xue <lgxue@hotmail.com>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: "cooloney@gmail.com" <cooloney@gmail.com>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "rob@landley.net" <rob@landley.net>,
-        "milo.kim@ti.com" <milo.kim@ti.com>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: RE: [PATCH] Add LED pattern trigger
-Date: Mon, 30 Dec 2013 18:24:51 -0500
-Importance: Normal
-In-Reply-To: <20131230162158.7420e811@alan.etchedpixels.co.uk>
-References: <1388362275-1618-1-git-send-email-lgxue@hotmail.com>,<20131230162158.7420e811@alan.etchedpixels.co.uk>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S932355Ab3L3XmV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 18:42:21 -0500
+Received: from ring0.de ([91.143.88.219]:52528 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932222Ab3L3XmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Dec 2013 18:42:19 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
+	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
+	*      for more information.
+	*      [URIs: ccc.de]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Tue, 31 Dec 2013 00:42:14 +0100
+From: Sebastian Reichel <sre@ring0.de>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org development" 
+	<linux-bluetooth@vger.kernel.org>
+Subject: Re: [PATCH v2] Bluetooth: Add hci_h4p driver
+Message-ID: <20131230234212.GA9805@earth.universe>
+Mail-Followup-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+	Marcel Holtmann <marcel@holtmann.org>,
+	=?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= <freemangordon@abv.bg>,
+	"Gustavo F. Padovan" <gustavo@padovan.org>,
+	Johan Hedberg <johan.hedberg@gmail.com>,
+	Pavel Machek <pavel@ucw.cz>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	"linux-bluetooth@vger.kernel.org development" <linux-bluetooth@vger.kernel.org>
+References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com>
+ <1727897.LBX8128hIo@izba>
+ <C8D1F470-7964-4EAC-82E0-D53CF54DE086@holtmann.org>
+ <201312301531.29768@pali>
+ <20131230145250.GA16904@earth.universe>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 30 Dec 2013 23:24:51.0250 (UTC) FILETIME=[569F4920:01CF05B6]
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="ReaqsoxgOBHFXBhH"
+Content-Disposition: inline
+In-Reply-To: <20131230145250.GA16904@earth.universe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +#define MAX_PATTEN_LEN 255
->
-> Arbitary limits that are not needed if it was in userspace, and not it
-> seems a sensible one - why not use 256 ?
 
-The maximum memory is 256, we keep one for '\0'
+--ReaqsoxgOBHFXBhH
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> +static ssize_t pattern_delay_unit_store(struct device *dev,
->> + struct device_attribute *attr, const char *buf, size_t size)
->> +{
->> + struct led_classdev *led_cdev = dev_get_drvdata(dev);
->> + struct pattern_trig_data *pattern_data = led_cdev->trigger_data;
->> + unsigned long state;
->> + ssize_t ret = -EINVAL;
->> +
->> + ret = kstrtoul(buf, 10, &state);
->> + if (ret)
->> + return ret;
->> +
->> + pattern_data->delay_unit = state;
->
-> What happens if this is zero ?
+Hi again,
 
-Yes, we should not accept 0 here. Will fix it.
+On Mon, Dec 30, 2013 at 03:52:51PM +0100, Sebastian Reichel wrote:
+> On Mon, Dec 30, 2013 at 03:31:25PM +0100, Pali Roh=E1r wrote:
+> > [...] I think that correct commit message is not needed now.
 
->> +static ssize_t pattern_pattern_store(struct device *dev,
->> + struct device_attribute *attr, const char *buf, size_t size)
->> +{
->> + struct led_classdev *led_cdev = dev_get_drvdata(dev);
->> + struct pattern_trig_data *pattern_data = led_cdev->trigger_data;
->> + int i;
->> + ssize_t ret = -EINVAL;
->> +
->> + int len = (size> MAX_PATTEN_LEN) ? MAX_PATTEN_LEN : (size - 1);
->> +
->> + /* legality check */
->> + for (i = 0; i < len; i++) {
->> + if (buf[i] != ' ' && buf[i] != '#' && buf[i] != '/')
->> + return ret;
->> + }
->> +
->> + del_timer_sync(&pattern_data->timer);
->> +
->> + memcpy(pattern_data->pattern, buf, len);
->> + pattern_data->pattern[len] = '\0';
->> + pattern_data->pattern_len = len;
->> + pattern_data->count = 0;
->> +
->> + mod_timer(&pattern_data->timer, jiffies + 1);
->
-> What if the pattern isn't currently active ?
+> Wolfram Sang gave a talk about that at 30C3 yesterday. Official
+> recordings of his talk are not yet ready, but the live stream
+> has been recorded and uploaded to youtube: [...]
 
-Doesn't matter as per my test.
+The official recording is now available from here:
 
->> + return size;
->
-> You only consumed len bytes so you should return len here.
->
->> +}
->> +
->> +static DEVICE_ATTR(pattern, 0644, pattern_pattern_show, pattern_pattern_store);
->> +static DEVICE_ATTR(delay_unit, 0644,
->> + pattern_delay_unit_show, pattern_delay_unit_store);
->
-> Why are these world readable. If patterns tell you an action is due they
-> provide information that other processes shouldn't have access to.
->
->> + memset(tdata->pattern, 0, MAX_PATTEN_LEN + 1);
->
-> Why +1, you don't need a zero terminator you know the length
->
-> Why allocate a fixed 256 byte blob when you can make the data the end of
-> the struct (ie pattern[0] in the declaration) and not waste memory.
+http://media.ccc.de/browse/congress/2013/30C3_-_5446_-_en_-_saal_g_-_201312=
+282200_-_the_good_the_bad_and_the_ugly_-_linux_kernel_patches_-_wsa.html
 
-This just easy for patten_show.
+-- Sebastian
 
->> +static void pattern_trig_deactivate(struct led_classdev *led_cdev)
->> +{
->> + struct pattern_trig_data *pattern_data = led_cdev->trigger_data;
->> +
->> + if (led_cdev->activated) {
->> + del_timer_sync(&pattern_data->timer);
->> + device_remove_file(led_cdev->dev, &dev_attr_pattern);
->> + device_remove_file(led_cdev->dev, &dev_attr_delay_unit);
->
-> This doesn't as far as I can see do what you think. If I have the file
-> currently open then device_remove_file will not remove my existing access
-> to it, but you just released the pattern data so I now write to free
-> memory.
+--ReaqsoxgOBHFXBhH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-I believe kernel will handle this
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
 
->> + led_cdev->trigger_data = NULL;
->> + led_cdev->activated = false;
->> + kfree(pattern_data);
->> + }
->> + __led_set_brightness(led_cdev, LED_OFF);
->> +}
->> +
->> +static struct led_trigger pattern_trigger = {
->
-> const ?
+iQIcBAEBCAAGBQJSwgTTAAoJENju1/PIO/qaCQEP/1vVo4bT3D0gMhNCfRbcP59c
++r6dDHmnkzWNvbxeIsofNoAGkh3um/vpDAkhZM47GVLFc/d6VuCf0ieaTGnWhlhe
+CtadZ8nduSSWxIPheCobvdDsTVJ9KgsfXEYq4LBpwJVMsL/ph1l+mj4sNhbUWisB
+soflw2Unou1X7n2fBmpdhFAuAgT2oj3DJ+uZ3FbKGGS1WTyym7it0kqWJOz+W8Re
+ACoqQxIn97MV1Als5cvM2iF+SVzxBSv1O2pMqQ9LBS4iNOFzvWQ87JLwZP5DRTbW
+m1wO6mnk4xBFbPlX2Zv7C34Gw1iKoPQpLc9UFTVKCentE/uCvIBnu02eKZq8Z2j1
+0vF/XC+j+MhmYSK7wGUqRGQvNQYKHqtdvcUedFUvyqyxezBUSDRwaD5GGsE38RVe
+o810NOZActOW0Ps+e7NtA4/a//l0lCmxYxBivSZA504WxkUBUZ01kU45b0AH/EKJ
+IUsSwscO0rkAwQBe2Z/ljyxIky+v7xisaQNlhkTvPv3I6cYlgI+ppa9B1Oqp4uim
+fyEo3g1KiSRGjEBOoJ3mbIkDC8pFMNeYbdTW+65QiFtetR28lTcGWe56mYm4VkEz
+DejC4/V8Ipv95WkSzlqNgdeDP7EWQPot4fBtgq3rDZusC/qqM6yfk8dRf/jRi/Ci
+Zh6OWCpVaCn8dhM3j4j0
+=hXI6
+-----END PGP SIGNATURE-----
 
-? 		 	   		  
+--ReaqsoxgOBHFXBhH--
