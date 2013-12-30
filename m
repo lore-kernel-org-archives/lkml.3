@@ -1,71 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901Ab3L3KnW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 05:43:22 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:49796 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708Ab3L3KnV (ORCPT
+	id S1755582Ab3L3KoX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 05:44:23 -0500
+Received: from emea01-am1-ndr.ptr.protection.outlook.com ([157.56.116.105]:18604
+	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754602Ab3L3KoV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 05:43:21 -0500
-Message-ID: <52C14E45.5040403@linaro.org>
-Date: Mon, 30 Dec 2013 11:43:17 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Mon, 30 Dec 2013 05:44:21 -0500
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-CC: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: [GIT PULL] clockevents/clocksources: 3.13 fixes
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: RE:
+To: Recipients <st2@SANITCHRISFINANCIALHOM.onmicrosoft.com>
+From: <st2@SANITCHRISFINANCIALHOM.onmicrosoft.com>
+Date: Mon, 30 Dec 2013 11:43:57 +0100
+Reply-To: <stchrisfinanacialhome@admin.in.th>
+Message-ID: <9c1709e1-898a-4494-8af0-702485fa632a@AM3PR05MB452.eurprd05.prod.outlook.com>
+X-Originating-IP: [196.46.245.78]
+X-ClientProxiedBy: DBXPR03CA012.eurprd03.prod.outlook.com (10.141.8.140) To
+ AM3PR05MB452.eurprd05.prod.outlook.com (10.242.246.154)
+X-Forefront-PRVS: 0076F48C8A
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(10009001)(252514010)(189002)(199002)(1496004)(23756003)(90146001)(69226001)(53256004)(81816001)(77982001)(59766001)(10806001)(31686002)(79102001)(509001);DIR:OUT;SFP:1501;SCL:5;SRVR:AM3PR05MB452;H:[10.153.39.125];CLIP:196.46.245.78;FPR:;RD:InfoNoRecords;MX:1;A:0;UriScan:(64029127001);LANG:en;
+X-OriginatorOrg: SANITCHRISFINANCIALHOM.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Hi Thomas and Ingo,
-
-here is a pull request for a single fix for 3.13. It is based on the 
-latest timers/urgent update.
-
-  * Soren Brinkmann fixed the cadence_ttc driver where a call to 
-clk_get_rate happens in an interrupt context. More precisely in an IPI 
-when the broadcast timer is initialized for each cpu in the cpuidle driver
-
-Thanks
-   -- Daniel
-
-The following changes since commit b0031f227e47919797dc0e1c1990f3ef151ff0cc:
-
-   Merge tag 's2mps11-build' of 
-git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator 
-(2013-12-17 12:57:36 -0800)
-
-are available in the git repository at:
-
-
-   git://git.linaro.org/people/daniel.lezcano/linux.git 
-clockevents/3.13-fixes
-
-for you to fetch changes up to c1dcc927dae01dfd4904ee82ce2c00b50eab6dc3:
-
-   clocksource: cadence_ttc: Fix mutex taken inside interrupt context 
-(2013-12-30 11:32:24 +0100)
-
-----------------------------------------------------------------
-Soren Brinkmann (1):
-       clocksource: cadence_ttc: Fix mutex taken inside interrupt context
-
-  drivers/clocksource/cadence_ttc_timer.c |   21 +++++++++++++--------
-  1 file changed, 13 insertions(+), 8 deletions(-)
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Do you need personal or business loan?if yes Contact us via email:
+stchrisfinanacialhome@admin.in.th: for loan.. contact us now with these info below.
+Your names:
+country:
+state:
+Loan Amount:
+Duration:
+Occupation:
+Purpose of loan?
+Phone Number.
