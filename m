@@ -1,169 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932354Ab3L3W2s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 17:28:48 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47804 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932299Ab3L3W2r (ORCPT
+	id S932367Ab3L3Wku (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 17:40:50 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:45595 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932334Ab3L3Wks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 17:28:47 -0500
-Date: Mon, 30 Dec 2013 23:28:45 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org development" 
-	<linux-bluetooth@vger.kernel.org>,
-        Ville Tervo <ville.tervo@nokia.com>, Sebastian Reichel <sre@ring0.de>
-Subject: Re: [PATCH v2] Bluetooth: Add hci_h4p driver
-Message-ID: <20131230222844.GC32561@amd.pavel.ucw.cz>
-References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com>
- <1727897.LBX8128hIo@izba>
- <C8D1F470-7964-4EAC-82E0-D53CF54DE086@holtmann.org>
+	Mon, 30 Dec 2013 17:40:48 -0500
+X-Sasl-enc: N97RKi7izW5NqeJHV1c9EvArzB6qhcQhw+EffsO3xP5G 1388443247
+Date: Mon, 30 Dec 2013 20:40:45 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Julian Andres Klode <jak@jak-linux.org>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        "open list:THINKPAD ACPI EXT..." 
+	<ibm-acpi-devel@lists.sourceforge.net>,
+        "open list:THINKPAD ACPI EXT..." 
+	<platform-driver-x86@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] thinkpad_acpi: Add support for controlling charge
+ thresholds
+Message-ID: <20131230224045.GC4938@khazad-dum.debian.net>
+References: <1384178195-12218-1-git-send-email-jak@jak-linux.org>
+ <1384178195-12218-2-git-send-email-jak@jak-linux.org>
+ <20131230132915.GB24241@jak-x230>
+ <20131230215843.GB4938@khazad-dum.debian.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <C8D1F470-7964-4EAC-82E0-D53CF54DE086@holtmann.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131230215843.GB4938@khazad-dum.debian.net>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> > +++ b/drivers/bluetooth/hci_h4p/core.c
-> > @@ -0,0 +1,1357 @@
-> > +/*
-> > + * This file is part of hci_h4p bluetooth driver
-> > + *
-> > + * Copyright (C) 2005-2008 Nokia Corporation.
-> > + *
-> > + * Contact: Ville Tervo <ville.tervo@nokia.com>
+On Mon, 30 Dec 2013, Henrique de Moraes Holschuh wrote:
+> On Mon, 30 Dec 2013, Julian Andres Klode wrote:
+> > On Mon, Nov 11, 2013 at 02:56:30PM +0100, Julian Andres Klode wrote:
+> > > Add support for battery charge thresholds in new Sandy Bridge and Ivy Bridge
+> > > ThinkPads. Based on the unofficial documentation in tpacpi-bat.
+> > > 
+> > > The threshold files support the values '0' for the controller's default,
+> > > and 1-99 as percentages. Values outside of that range are rejected. The
+> > > behaviour of '0' might be confusing, especially for the stop case where
+> > > it basically seems to mean '100'.
+> > 
+> > Thinking more about this, it might make more sense to simply accept a 100
+> > value and not accept a 0 value in the stop case (I tried multiple times to
+> > write 100 to a stop_charge_thresh file, because that feels more natural).
+> > 
+> > Having a 0 mean 100% is just odd. So stop_charge_thresh should simply
+> > accepts integer values in the range [1, 100] (and start_charge_thresh
+> > should continue accept [0, 99], as 0 really means 0 there).
 > 
-> I think you can just remove the contact names since I think nobody of the original authors is still working at Nokia and I bet this emails addresses just do not work anymore.
-> 
+> Indeed.  Just return EINVAL for a stop threshold of 0.
 
-What about this?
+Actually, a stop threshold below the current start threshold is also invalid
+and what happens when you try that is implementation-specific.  And the
+kernel is not the only party who can change the thresholds, so you have to
+read them if you really need to know the current value.
 
-commit 3f18ca6cd02a13baf4be9beb89b1470ad1ce008c
-Author: Pavel <pavel@ucw.cz>
-Date:   Mon Dec 30 23:27:21 2013 +0100
+To correct myself, stop threshold being zero is also implementation-
+specific. on thinkpads it is not valid.
 
-    Update comments, remove no longer relevant contacts.
-
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
-
-diff --git a/drivers/bluetooth/nokia_core.c b/drivers/bluetooth/nokia_core.c
-index a91bd7b..6dbd3b7 100644
---- a/drivers/bluetooth/nokia_core.c
-+++ b/drivers/bluetooth/nokia_core.c
-@@ -1,10 +1,8 @@
- /*
-- * This file is part of hci_h4p bluetooth driver
-+ * This file is part of Nokia H4P bluetooth driver
-  *
-  * Copyright (C) 2005-2008 Nokia Corporation.
-  *
-- * Contact: Ville Tervo <ville.tervo@nokia.com>
-- *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-  * version 2 as published by the Free Software Foundation.
-@@ -19,6 +17,8 @@
-  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-  * 02110-1301 USA
-  *
-+ * Thanks to all the Nokia people that helped with this driver,
-+ * including Ville Tervo and Roger Quadros.
-  */
- 
- #include <linux/module.h>
-diff --git a/drivers/bluetooth/nokia_fw-bcm.c b/drivers/bluetooth/nokia_fw-bcm.c
-index 390d021..9c01a6a 100644
---- a/drivers/bluetooth/nokia_fw-bcm.c
-+++ b/drivers/bluetooth/nokia_fw-bcm.c
-@@ -1,10 +1,8 @@
- /*
-- * This file is part of hci_h4p bluetooth driver
-+ * This file is part of Nokia H4P bluetooth driver
-  *
-  * Copyright (C) 2005-2008 Nokia Corporation.
-  *
-- * Contact: Ville Tervo <ville.tervo@nokia.com>
-- *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-  * version 2 as published by the Free Software Foundation.
-diff --git a/drivers/bluetooth/nokia_fw-csr.c b/drivers/bluetooth/nokia_fw-csr.c
-index af880d9..23c5fc5 100644
---- a/drivers/bluetooth/nokia_fw-csr.c
-+++ b/drivers/bluetooth/nokia_fw-csr.c
-@@ -1,10 +1,8 @@
- /*
-- * This file is part of hci_h4p bluetooth driver
-+ * This file is part of Nokia H4P bluetooth driver
-  *
-  * Copyright (C) 2005-2008 Nokia Corporation.
-  *
-- * Contact: Ville Tervo <ville.tervo@nokia.com>
-- *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-  * version 2 as published by the Free Software Foundation.
-diff --git a/drivers/bluetooth/nokia_fw-ti1273.c b/drivers/bluetooth/nokia_fw-ti1273.c
-index 32e5fa0..2825504 100644
---- a/drivers/bluetooth/nokia_fw-ti1273.c
-+++ b/drivers/bluetooth/nokia_fw-ti1273.c
-@@ -1,10 +1,8 @@
- /*
-- * This file is part of hci_h4p bluetooth driver
-+ * This file is part of Nokia H4P bluetooth driver
-  *
-  * Copyright (C) 2009 Nokia Corporation.
-  *
-- * Contact: Ville Tervo <ville.tervo@nokia.com>
-- *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-  * version 2 as published by the Free Software Foundation.
-diff --git a/drivers/bluetooth/nokia_uart.c b/drivers/bluetooth/nokia_uart.c
-index 8e0a93c..fd94a98 100644
---- a/drivers/bluetooth/nokia_uart.c
-+++ b/drivers/bluetooth/nokia_uart.c
-@@ -1,10 +1,8 @@
- /*
-- * This file is part of hci_h4p bluetooth driver
-+ * This file is part of Nokia H4P bluetooth driver
-  *
-  * Copyright (C) 2005, 2006 Nokia Corporation.
-  *
-- * Contact: Ville Tervo <ville.tervo@nokia.com>
-- *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-  * version 2 as published by the Free Software Foundation.
-diff --git a/include/linux/bluetooth/hci_h4p.h b/include/linux/bluetooth/hci_h4p.h
-index daf83fc..30d169d 100644
---- a/include/linux/bluetooth/hci_h4p.h
-+++ b/include/linux/bluetooth/hci_h4p.h
-@@ -1,10 +1,8 @@
- /*
-- * This file is part of hci_h4p bluetooth driver
-+ * This file is part of Nokia H4P bluetooth driver
-  *
-  * Copyright (C) 2010 Nokia Corporation.
-  *
-- * Contact: Roger Quadros <roger.quadros@nokia.com>
-- *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-  * version 2 as published by the Free Software Foundation.
-
+For thinkpads, I believe the EC firmware changes the other threshold so that
+the boundary condition stop > start is always valid.  But I never tried it
+with a direct EC write to validate this.  If it becomes important, I can
+check -- but I'd still prefer to enforce sanity at the driver level just in
+case.  Don't tempt the gremilins, for they live at boundary conditions and
+their sleep is light indeed.
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
