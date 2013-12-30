@@ -1,111 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab3L3Lqi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 06:46:38 -0500
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:44245 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755855Ab3L3LqV (ORCPT
+	id S1755707Ab3L3Ltj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 06:49:39 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:46234 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755517Ab3L3Lti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 06:46:21 -0500
-From: Ralph Mueck <linux-kernel@rmueck.de>
-To: linux-kernel@rmueck.de
-Cc: ma.oefelein@arcor.de, linux-kernel@i4.cs.fau.de,
-        gregkh@linuxfoundation.org, lisa@xenapiadmin.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] beeceem: Replace C99-style comments with C89 pendants in InterfaceTx.c
-Date: Mon, 30 Dec 2013 12:44:24 +0100
-Message-Id: <1388403864-19990-5-git-send-email-linux-kernel@rmueck.de>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1388403864-19990-1-git-send-email-linux-kernel@rmueck.de>
-References: <1388403864-19990-1-git-send-email-linux-kernel@rmueck.de>
+	Mon, 30 Dec 2013 06:49:38 -0500
+Date: Mon, 30 Dec 2013 11:49:27 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Markus Pargmann <mpa@pengutronix.de>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20131230114927.GG31886@sirena.org.uk>
+References: <1388307620.15300.1.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MKyq+TZLpK62LzFe"
+Content-Disposition: inline
+In-Reply-To: <1388307620.15300.1.camel@phoenix>
+X-Cookie: Go climb a gravity well!
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2] regulator: tps65910: Simplify setting enable_mask for
+ regulators
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checkpatch complains about the use of //-comments, thus they are replaced by C89-style comments.
 
-Signed-off-by: Ralph Mueck <linux-kernel@rmueck.de>
-Signed-off-by: Matthias Oefelein <ma.oefelein@arcor.de>
+--MKyq+TZLpK62LzFe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
----
- drivers/staging/bcm/InterfaceTx.c |   20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+On Sun, Dec 29, 2013 at 05:00:20PM +0800, Axel Lin wrote:
+> BBCH_BBCHEN_MASK is equivalent to TPS65910_SUPPLY_STATE_ENABLED.
+> So all regulators have the same enable_mask setting.
 
-diff --git a/drivers/staging/bcm/InterfaceTx.c b/drivers/staging/bcm/InterfaceTx.c
-index 682dfa4..ea7707b 100644
---- a/drivers/staging/bcm/InterfaceTx.c
-+++ b/drivers/staging/bcm/InterfaceTx.c
-@@ -32,11 +32,11 @@ static void write_bulk_callback(struct urb *urb/*, struct pt_regs *regs*/)
- 		if (((pControlMsg->szData[0] == GO_TO_IDLE_MODE_PAYLOAD) &&
- 			(pControlMsg->szData[1] == TARGET_CAN_GO_TO_IDLE_MODE))) {
- 			bpowerDownMsg = TRUE;
--			//This covers the bus err while Idle Request msg sent down.
-+			/* This covers the bus err while Idle Request msg sent down. */
- 			if (urb->status != STATUS_SUCCESS) {
- 				psAdapter->bPreparingForLowPowerMode = false;
- 				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "Idle Mode Request msg failed to reach to Modem");
--				//Signalling the cntrl pkt path in Ioctl
-+				/* Signalling the cntrl pkt path in Ioctl */
- 				wake_up(&psAdapter->lowpower_mode_wait_queue);
- 				StartInterruptUrb(psIntfAdapter);
- 				goto err_exit;
-@@ -44,11 +44,11 @@ static void write_bulk_callback(struct urb *urb/*, struct pt_regs *regs*/)
- 
- 			if (psAdapter->bDoSuspend == false) {
- 				psAdapter->IdleMode = TRUE;
--				//since going in Idle mode completed hence making this var false;
-+				/* since going in Idle mode completed hence making this var false */
- 				psAdapter->bPreparingForLowPowerMode = false;
- 
- 				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "Host Entered in Idle Mode State...");
--				//Signalling the cntrl pkt path in Ioctl
-+				/* Signalling the cntrl pkt path in Ioctl*/
- 				wake_up(&psAdapter->lowpower_mode_wait_queue);
- 			}
- 
-@@ -56,11 +56,11 @@ static void write_bulk_callback(struct urb *urb/*, struct pt_regs *regs*/)
- 			(pControlMsg->szData[0] == LINK_UP_ACK) &&
- 			(pControlMsg->szData[1] == LINK_SHUTDOWN_REQ_FROM_FIRMWARE)  &&
- 			(pControlMsg->szData[2] == SHUTDOWN_ACK_FROM_DRIVER)) {
--			//This covers the bus err while shutdown Request msg sent down.
-+			/* This covers the bus err while shutdown Request msg sent down. */
- 			if (urb->status != STATUS_SUCCESS) {
- 				psAdapter->bPreparingForLowPowerMode = false;
- 				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "Shutdown Request Msg failed to reach to Modem");
--				//Signalling the cntrl pkt path in Ioctl
-+				/* Signalling the cntrl pkt path in Ioctl */
- 				wake_up(&psAdapter->lowpower_mode_wait_queue);
- 				StartInterruptUrb(psIntfAdapter);
- 				goto err_exit;
-@@ -69,16 +69,16 @@ static void write_bulk_callback(struct urb *urb/*, struct pt_regs *regs*/)
- 			bpowerDownMsg = TRUE;
- 			if (psAdapter->bDoSuspend == false) {
- 				psAdapter->bShutStatus = TRUE;
--				//since going in shutdown mode completed hence making this var false;
-+				/* since going in shutdown mode completed hence making this var false */
- 				psAdapter->bPreparingForLowPowerMode = false;
- 				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "Host Entered in shutdown Mode State...");
--				//Signalling the cntrl pkt path in Ioctl
-+				/* Signalling the cntrl pkt path in Ioctl */
- 				wake_up(&psAdapter->lowpower_mode_wait_queue);
- 			}
- 		}
- 
- 		if (psAdapter->bDoSuspend && bpowerDownMsg) {
--			//issuing bus suspend request
-+			/* issuing bus suspend request */
- 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "Issuing the Bus suspend request to USB stack");
- 			psIntfAdapter->bPreparingForBusSuspend = TRUE;
- 			schedule_work(&psIntfAdapter->usbSuspendWork);
-@@ -129,7 +129,7 @@ static int TransmitTcb(struct bcm_interface_adapter *psIntfAdapter, struct bcm_u
- 	urb->transfer_buffer_length = len;
- 
- 	BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "Sending Bulk out packet\n");
--	//For T3B,INT OUT end point will be used as bulk out end point
-+	/* For T3B,INT OUT end point will be used as bulk out end point */
- 	if ((psIntfAdapter->psAdapter->chip_id == T3B) && (psIntfAdapter->bHighSpeedDevice == TRUE)) {
- 		usb_fill_int_urb(urb, psIntfAdapter->udev,
- 			psIntfAdapter->sBulkOut.bulk_out_pipe,
--- 
-1.7.10.4
+Applied, thanks.
 
+--MKyq+TZLpK62LzFe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSwV3EAAoJELSic+t+oim9J4oP+wWkJncVI+XvC89L1eGSJiSG
+x3EvwFatb7Ok04kbs8OFqsV1uUji06Y3Fsor+ByypT4phB1Ip/SQWjEHTok0AHB3
+VidJdZIFmTAh1M4vhNR+RZIb8BRaF4zcwxwYAQ2ndPl58+5hzlR+BRhTi5AawG2d
+Vvkv/PVi7TEnCRnJ8MfLBnpHgBVMhNdSj8MhWTzwSCiD6ywkKr5+3DaKuI8KzNsl
+NhJ5EdVeKt8gIBwDP3q2269rappecIPvTpdA4AOextAFsZ3ra0hL2Pze/q1HXmWY
+qgHfJFtCL5VL5RI8dRBO/nIcixfUi8K23wjy9eCuo8cnJymz/X9398Kk3KAPiWz9
+eafKa3LETj5eOpZKl9u9GXiR5gYe6yMAkHB8seEJ/vqmwB3TgfweVGbNCmQs/RWQ
+PoBDV3yz8kvs85ozflypT/Mnw3I87KBgrX+Zd1kfnTmRf2NSXMbLzLA3Y1Icaxc3
+nOFlG68vhFhxsxkvOfbVzHnGE1XvRvZljKKQ20Xt0HY02I2ivKN7P8NZ9maNfa/E
+u2fNBTaUBHCmrUYVIuVv7s0sFfRQd7oFRdIHkXCBvrdfbBaHYoD5zwACy46XxIIP
+fDee5IBohSqEX/I7XmE5GlV3pRnN85idtpUhi8NMzjHjj4lQJwPb6RHRodldkkPT
+aprS5b/Vykj6tKby80FZ
+=9U3Q
+-----END PGP SIGNATURE-----
+
+--MKyq+TZLpK62LzFe--
