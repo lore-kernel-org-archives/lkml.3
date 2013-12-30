@@ -1,258 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922Ab3L3Cj7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 21:39:59 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:59652 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753308Ab3L3Cj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 21:39:58 -0500
-X-IronPort-AV: E=Sophos;i="4.95,571,1384272000"; 
-   d="scan'208";a="9348173"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org, acme@redhat.com
-Cc: mingo@kernel.org, dsahern@gmail.com, artagnon@gmail.com,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH 1/8] perf tools: Make the all print_xxx_event functions to return unsigned int.
-Date: Mon, 30 Dec 2013 10:26:36 -0500
-Message-Id: <55522abc937a454129343ae9e2315e8a3df9f810.1388416837.git.yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <cover.1388416837.git.yangds.fnst@cn.fujitsu.com>
-References: <cover.1388416837.git.yangds.fnst@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/30 10:27:57,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/30 10:27:58,
-	Serialize complete at 2013/12/30 10:27:58
+	id S1753242Ab3L3CkY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 21:40:24 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:11317 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753809Ab3L3CkW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Dec 2013 21:40:22 -0500
+Message-ID: <52C0DCF7.6040402@huawei.com>
+Date: Mon, 30 Dec 2013 10:39:51 +0800
+From: Ding Tianhong <dingtianhong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>, Ding Tianhong <dthxman@gmail.com>
+CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH net-next v2 11/20] net: packetengines: slight optimization
+ of addr
+References: <52BE6D0D.9050301@huawei.com>	 <52BED8ED.2040908@cogentembedded.com> <52BEEBD5.1040301@gmail.com> <1388251380.24123.15.camel@joe-AO722>
+In-Reply-To: <1388251380.24123.15.camel@joe-AO722>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.135.72.199]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the most of print_XXX_event() functions are returning void. Then we can
-not know whether the printing work is completed well.
+On 2013/12/29 1:23, Joe Perches wrote:
+> On Sat, 2013-12-28 at 23:18 +0800, Ding Tianhong wrote:
+>> 于 2013/12/28 21:58, Sergei Shtylyov 写道:
+>>> Hello.
+>>>
+>>> On 28-12-2013 10:17, Ding Tianhong wrote:
+>>>
+>>>> Use possibly more efficient ether_addr_equal
+>>>> to instead of memcmp.
+>>>
+>>>> Cc: "David S. Miller" <davem@davemloft.net>
+>>>> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+>>>> ---
+>>>>   drivers/net/ethernet/packetengines/yellowfin.c |   12 ++++++------
+>>>>   1 files changed, 6 insertions(+), 6 deletions(-)
+>>>
+>>>> diff --git a/drivers/net/ethernet/packetengines/yellowfin.c b/drivers/net/ethernet/packetengines/yellowfin.c
+>>>> index d28593b..b83ac0e 100644
+>>>> --- a/drivers/net/ethernet/packetengines/yellowfin.c
+>>>> +++ b/drivers/net/ethernet/packetengines/yellowfin.c
+>>>> @@ -1097,12 +1097,12 @@ static int yellowfin_rx(struct net_device *dev)
+>>>>               if (status2 & 0x80) dev->stats.rx_dropped++;
+>>>>   #ifdef YF_PROTOTYPE        /* Support for prototype hardware errata. */
+>>>>           } else if ((yp->flags & HasMACAddrBug)  &&
+>>>> -            memcmp(le32_to_cpu(yp->rx_ring_dma +
+>>>> -                entry*sizeof(struct yellowfin_desc)),
+>>>> -                dev->dev_addr, 6) != 0 &&
+>>>> -            memcmp(le32_to_cpu(yp->rx_ring_dma +
+>>>> -                entry*sizeof(struct yellowfin_desc)),
+>>>> -                "\377\377\377\377\377\377", 6) != 0) {
+>>>> +            !ether_addr_equal(le32_to_cpu(yp->rx_ring_dma +
+>>>> +                              entry * sizeof(struct yellowfin_desc)),
+>>>> +                              dev->dev_addr) &&
+>>>
+>>>    Previous line was aligned correctly, the above line should start under le32_to_cpu.
+>>>
+>>>> +            !ether_addr_equal(le32_to_cpu(yp->rx_ring_dma +
+>>>> +                              entry * sizeof(struct yellowfin_desc)),
+>>>
+>>>    Start the continuation lines under 'yp', please.
+>>>
+>>>> +                              "\377\377\377\377\377\377")) {
+>>>
+>>>    This line should start under le32_to_cpu.
+>>>
+>>> WBR, Sergei
+>>>
+>>
+>> Hi sergei:
+>> you mean this way?
+>> 	!ether_addr_equal(le32_to_cpu(yp->rx_ring_dma +
+>> 				      entry * sizeof(struct yellowfin_desc)),
+>> 			  dev->dev_addr) &&
+>>
+>> 	!ether_addr_equal(le32_to_cpu(yp->rx_ring_dma +
+>> 				      entry * sizeof(struct yellowfin_desc)),
+>> 			  "\377\377\377\377\377\377")) {
+> 
+> Does this really matter?
+> Does anyone have a packetengine NIC anymore?
+> 
+> \377 octal is 0xff, so this is matching a broadcast address.
+> is_broadcast_ether_addr(addr) would be appropriate.
+> 
+> So would using a temporary address.
+> 
+> u8 *addr = (u8 *)(unsigned long)le32_to_cpu(etc)
+> 
+> but the whole thing looks very suspect as an le32
+> value could not be added to correctly on a
+> big-endian arch anyway.
+> 
+> My guess is this was tested only on an x86 and
+> it should be:
+> 
+> 	u8 *addr = (u8 *)(unsigned long)(le32_to_cpu(yp->rx_ring_dma) +
+> 					 entry * sizeof(struct yellowfin_desc));
+> 
+> It maybe better just to leave these two alone.
+> 
 
-This patch change the return type to unsigned int, it means the count of events we
-have printed in print_XXX_event() function.
+Hi Joe:
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
----
- tools/perf/util/parse-events.c | 76 ++++++++++++++++++++++++------------------
- tools/perf/util/parse-events.h |  8 ++---
- 2 files changed, 48 insertions(+), 36 deletions(-)
+I don't understand packetengine NIC anymore, But I think the change is clearly,
+as your said, the broadcast check is enough here, did you mean that?
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 0153435..e2a2066 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -1000,22 +1000,23 @@ static const char * const event_type_descriptors[] = {
-  * Print the events from <debugfs_mount_point>/tracing/events
-  */
- 
--void print_tracepoint_events(const char *subsys_glob, const char *event_glob,
--			     bool name_only)
-+unsigned int print_tracepoint_events(const char *subsys_glob, const char *event_glob,
-+			             bool name_only)
- {
- 	DIR *sys_dir, *evt_dir;
- 	struct dirent *sys_next, *evt_next, sys_dirent, evt_dirent;
- 	char evt_path[MAXPATHLEN];
- 	char dir_path[MAXPATHLEN];
-+	unsigned int count = 0;
- 
- 	if (debugfs_valid_mountpoint(tracing_events_path)) {
- 		printf("  [ Tracepoints not available: %s ]\n", strerror(errno));
--		return;
-+		return count;
- 	}
- 
- 	sys_dir = opendir(tracing_events_path);
- 	if (!sys_dir)
--		return;
-+		return count;
- 
- 	for_each_subsystem(sys_dir, sys_dirent, sys_next) {
- 		if (subsys_glob != NULL && 
-@@ -1035,6 +1036,7 @@ void print_tracepoint_events(const char *subsys_glob, const char *event_glob,
- 
- 			if (name_only) {
- 				printf("%s:%s ", sys_dirent.d_name, evt_dirent.d_name);
-+				count++;
- 				continue;
- 			}
- 
-@@ -1042,10 +1044,13 @@ void print_tracepoint_events(const char *subsys_glob, const char *event_glob,
- 				 sys_dirent.d_name, evt_dirent.d_name);
- 			printf("  %-50s [%s]\n", evt_path,
- 				event_type_descriptors[PERF_TYPE_TRACEPOINT]);
-+			count++;
- 		}
- 		closedir(evt_dir);
- 	}
- 	closedir(sys_dir);
-+
-+	return count;
- }
- 
- /*
-@@ -1116,11 +1121,12 @@ static bool is_event_supported(u8 type, unsigned config)
- 	return ret;
- }
- 
--static void __print_events_type(u8 type, struct event_symbol *syms,
--				unsigned max)
-+static unsigned int __print_events_type(u8 type, struct event_symbol *syms,
-+					unsigned max)
- {
- 	char name[64];
- 	unsigned i;
-+	unsigned int count = 0;
- 
- 	for (i = 0; i < max ; i++, syms++) {
- 		if (!is_event_supported(type, i))
-@@ -1133,20 +1139,23 @@ static void __print_events_type(u8 type, struct event_symbol *syms,
- 			snprintf(name, sizeof(name), "%s", syms->symbol);
- 
- 		printf("  %-50s [%s]\n", name, event_type_descriptors[type]);
-+		count++;
- 	}
-+
-+	return count;
- }
- 
--void print_events_type(u8 type)
-+unsigned int print_events_type(u8 type)
- {
- 	if (type == PERF_TYPE_SOFTWARE)
--		__print_events_type(type, event_symbols_sw, PERF_COUNT_SW_MAX);
-+		return __print_events_type(type, event_symbols_sw, PERF_COUNT_SW_MAX);
- 	else
--		__print_events_type(type, event_symbols_hw, PERF_COUNT_HW_MAX);
-+		return __print_events_type(type, event_symbols_hw, PERF_COUNT_HW_MAX);
- }
- 
--int print_hwcache_events(const char *event_glob, bool name_only)
-+unsigned int print_hwcache_events(const char *event_glob, bool name_only)
- {
--	unsigned int type, op, i, printed = 0;
-+	unsigned int type, op, i, count = 0;
- 	char name[64];
- 
- 	for (type = 0; type < PERF_COUNT_HW_CACHE_MAX; type++) {
-@@ -1170,21 +1179,22 @@ int print_hwcache_events(const char *event_glob, bool name_only)
- 				else
- 					printf("  %-50s [%s]\n", name,
- 					       event_type_descriptors[PERF_TYPE_HW_CACHE]);
--				++printed;
-+				count++;
- 			}
- 		}
- 	}
- 
--	if (printed)
-+	if (count)
- 		printf("\n");
--	return printed;
-+	return count;
- }
- 
--static void print_symbol_events(const char *event_glob, unsigned type,
--				struct event_symbol *syms, unsigned max,
--				bool name_only)
-+static unsigned print_symbol_events(const char *event_glob, unsigned type,
-+				    struct event_symbol *syms, unsigned max,
-+				    bool name_only)
- {
--	unsigned i, printed = 0;
-+	unsigned i;
-+	unsigned int count = 0;
- 	char name[MAX_NAME_LEN];
- 
- 	for (i = 0; i < max; i++, syms++) {
-@@ -1199,6 +1209,7 @@ static void print_symbol_events(const char *event_glob, unsigned type,
- 
- 		if (name_only) {
- 			printf("%s ", syms->symbol);
-+			count++;
- 			continue;
- 		}
- 
-@@ -1209,35 +1220,35 @@ static void print_symbol_events(const char *event_glob, unsigned type,
- 
- 		printf("  %-50s [%s]\n", name, event_type_descriptors[type]);
- 
--		printed++;
-+		count++;
- 	}
- 
--	if (printed)
-+	if (count)
- 		printf("\n");
-+	return count;
- }
- 
- /*
-  * Print the help text for the event symbols:
-  */
--void print_events(const char *event_glob, bool name_only)
-+unsigned int print_events(const char *event_glob, bool name_only)
- {
--	if (!name_only) {
--		printf("\n");
--		printf("List of pre-defined events (to be used in -e):\n");
--	}
-+	unsigned int count = 0;
- 
--	print_symbol_events(event_glob, PERF_TYPE_HARDWARE,
--			    event_symbols_hw, PERF_COUNT_HW_MAX, name_only);
-+	count += print_symbol_events(event_glob, PERF_TYPE_HARDWARE,
-+				     event_symbols_hw, PERF_COUNT_HW_MAX,
-+				     name_only);
- 
--	print_symbol_events(event_glob, PERF_TYPE_SOFTWARE,
--			    event_symbols_sw, PERF_COUNT_SW_MAX, name_only);
-+	count += print_symbol_events(event_glob, PERF_TYPE_SOFTWARE,
-+				     event_symbols_sw, PERF_COUNT_SW_MAX,
-+				     name_only);
- 
--	print_hwcache_events(event_glob, name_only);
-+	count += print_hwcache_events(event_glob, name_only);
- 
--	print_pmu_events(event_glob, name_only);
-+	count += print_pmu_events(event_glob, name_only);
- 
- 	if (event_glob != NULL)
--		return;
-+		return count;
- 
- 	if (!name_only) {
- 		printf("  %-50s [%s]\n",
-@@ -1256,6 +1267,7 @@ void print_events(const char *event_glob, bool name_only)
- 	}
- 
- 	print_tracepoint_events(NULL, NULL, name_only);
-+	return count;
- }
- 
- int parse_events__is_hardcoded_term(struct parse_events_term *term)
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index f1cb4c4..bb7d674 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -101,11 +101,11 @@ void parse_events_update_lists(struct list_head *list_event,
- 			       struct list_head *list_all);
- void parse_events_error(void *data, void *scanner, char const *msg);
- 
--void print_events(const char *event_glob, bool name_only);
--void print_events_type(u8 type);
--void print_tracepoint_events(const char *subsys_glob, const char *event_glob,
-+unsigned int print_events(const char *event_glob, bool name_only);
-+unsigned int print_events_type(u8 type);
-+unsigned int print_tracepoint_events(const char *subsys_glob, const char *event_glob,
- 			     bool name_only);
--int print_hwcache_events(const char *event_glob, bool name_only);
-+unsigned int print_hwcache_events(const char *event_glob, bool name_only);
- extern int is_valid_tracepoint(const char *event_string);
- 
- extern int valid_debugfs_mount(const char *debugfs);
--- 
-1.8.2.1
+	!is_broadcast_ether_addr((u8 *)(le32_to_cpu(yp->rx_ring_dma) +
+						    entry * sizeof(struct yellowfin_desc)))
+
+Thanks
+
+Regards
+Ding
+
+> 
+> .
+> 
+
 
