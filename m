@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756263Ab3L3SlI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 13:41:08 -0500
+	id S1756235Ab3L3SlB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 13:41:01 -0500
 Received: from mga01.intel.com ([192.55.52.88]:46372 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756208Ab3L3SlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 13:41:04 -0500
+	id S1756208Ab3L3Sk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Dec 2013 13:40:58 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,575,1384329600"; 
-   d="scan'208";a="457777599"
-Subject: [PATCH 11/12] x86 Kconfig: move paravirt under virtualization
+   d="scan'208";a="457777503"
+Subject: [PATCH 05/12] x86 Kconfig: processor drivers
 To: linux-kernel@vger.kernel.org
 Cc: x86@kernel.org, Dave Hansen <dave@sr71.net>
 From: Dave Hansen <dave@sr71.net>
-Date: Mon, 30 Dec 2013 10:41:00 -0800
+Date: Mon, 30 Dec 2013 10:40:53 -0800
 References: <20131230184046.F5E42919@viggo.jf.intel.com>
 In-Reply-To: <20131230184046.F5E42919@viggo.jf.intel.com>
-Message-Id: <20131230184100.D99DCA7E@viggo.jf.intel.com>
+Message-Id: <20131230184053.F1939546@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,102 +24,201 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Hansen <dave.hansen@linux.intel.com>
 
-Right now, there is a "Enable paravirtualization code" option in
-the "Processor Features" menu, which means Xen.  There is also a
-group of paravirtualization options specific to KVM under the
-top-level "Virtualization" menu.
-
-This creates a new hypervisor-indemendent arch/x86/Kconfig.virt
-file, and moves the "Virtualization" menu to be defined in there.
-This also removes the very counterintuitive references to
-lguest/vhost code *from* kvm-specific code.
-
-This also removes the silly:
-
-	depends on HAVE_KVM || X86
-
-dependency.  It makes zero sense to have entried defined in
-arch/x86 depend on x86.
+These are both drivers to access very cpu and
+architecture-specific features.  However, they are probably not
+very commonly changed in the configuration.  Give them their own
+menu.
 
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Dmitry Torokhov <dtor@vmware.com>
-Cc: K. Y. Srinivasan <kys@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: Alexander Graf <agraf@suse.de>
-Cc: Gleb Natapov <gleb@redhat.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
 ---
 
- linux.git-davehans/arch/x86/Kconfig      |    2 +-
- linux.git-davehans/arch/x86/Kconfig.virt |   18 ++++++++++++++++++
- linux.git-davehans/arch/x86/kvm/Kconfig  |   19 -------------------
- 3 files changed, 19 insertions(+), 20 deletions(-)
+ linux.git-davehans/arch/x86/Kconfig |  169 ++++++++++++++++++------------------
+ 1 file changed, 86 insertions(+), 83 deletions(-)
 
-diff -puN arch/x86/Kconfig~x86-Kconfig-move-paravirt-under-virtualization arch/x86/Kconfig
---- linux.git/arch/x86/Kconfig~x86-Kconfig-move-paravirt-under-virtualization	2013-12-30 10:37:46.554293648 -0800
-+++ linux.git-davehans/arch/x86/Kconfig	2013-12-30 10:37:46.560293918 -0800
-@@ -2417,6 +2417,6 @@ source "security/Kconfig"
- 
- source "crypto/Kconfig"
- 
--source "arch/x86/kvm/Kconfig"
-+source "arch/x86/Kconfig.virt"
- 
- source "lib/Kconfig"
-diff -puN /dev/null arch/x86/Kconfig.virt
---- /dev/null	2013-11-27 17:20:18.337162396 -0800
-+++ linux.git-davehans/arch/x86/Kconfig.virt	2013-12-30 10:37:46.561293963 -0800
-@@ -0,0 +1,18 @@
-+
-+menuconfig VIRTUALIZATION
-+	bool "Virtualization"
-+	default y
-+	---help---
-+	  Say Y here to get to see options for using your Linux host to run other
-+	  operating systems inside virtual machines (guests).
-+	  This option alone does not add any kernel code.
-+
-+	  If you say N, all options in this submenu will be skipped and disabled.
-+
-+if VIRTUALIZATION
-+
-+source arch/x86/kvm/Kconfig
-+source drivers/vhost/Kconfig
-+source drivers/lguest/Kconfig
-+
-+endif # VIRTUALIZATION
-diff -puN arch/x86/kvm/Kconfig~x86-Kconfig-move-paravirt-under-virtualization arch/x86/kvm/Kconfig
---- linux.git/arch/x86/kvm/Kconfig~x86-Kconfig-move-paravirt-under-virtualization	2013-12-30 10:37:46.556293738 -0800
-+++ linux.git-davehans/arch/x86/kvm/Kconfig	2013-12-30 10:37:46.561293963 -0800
-@@ -4,19 +4,6 @@
- 
- source "virt/kvm/Kconfig"
- 
--menuconfig VIRTUALIZATION
--	bool "Virtualization"
--	depends on HAVE_KVM || X86
--	default y
--	---help---
--	  Say Y here to get to see options for using your Linux host to run other
--	  operating systems inside virtual machines (guests).
--	  This option alone does not add any kernel code.
--
--	  If you say N, all options in this submenu will be skipped and disabled.
--
--if VIRTUALIZATION
--
- config KVM
- 	tristate "Kernel-based Virtual Machine (KVM) support"
- 	depends on HAVE_KVM
-@@ -93,9 +80,3 @@ config KVM_DEVICE_ASSIGNMENT
+diff -puN arch/x86/Kconfig~processor-drivers arch/x86/Kconfig
+--- linux.git/arch/x86/Kconfig~processor-drivers	2013-12-30 10:37:44.825215930 -0800
++++ linux.git-davehans/arch/x86/Kconfig	2013-12-30 10:37:44.830216154 -0800
+@@ -396,6 +396,92 @@ config X86_SMAP
  
  	  If unsure, say Y.
  
--# OK, it's a little counter-intuitive to do this, but it puts it neatly under
--# the virtualization menu.
--source drivers/vhost/Kconfig
--source drivers/lguest/Kconfig
++comment "Processor Feature Drivers"
++
++config MICROCODE
++	tristate "CPU microcode loading support"
++	depends on CPU_SUP_AMD || CPU_SUP_INTEL
++	select FW_LOADER
++	---help---
++
++	  If you say Y here, you will be able to update the microcode on
++	  certain Intel and AMD processors. The Intel support is for the
++	  IA32 family, e.g. Pentium Pro, Pentium II, Pentium III, Pentium 4,
++	  Xeon etc. The AMD support is for families 0x10 and later. You will
++	  obviously need the actual microcode binary data itself which is not
++	  shipped with the Linux kernel.
++
++	  This option selects the general module only, you need to select
++	  at least one vendor specific module as well.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called microcode.
++
++config MICROCODE_INTEL
++	bool "Intel microcode loading support"
++	depends on MICROCODE
++	default MICROCODE
++	select FW_LOADER
++	---help---
++	  This options enables microcode patch loading support for Intel
++	  processors.
++
++	  For latest news and information on obtaining all the required
++	  Intel ingredients for this driver, check:
++	  <http://www.urbanmyth.org/microcode/>.
++
++config MICROCODE_AMD
++	bool "AMD microcode loading support"
++	depends on MICROCODE
++	select FW_LOADER
++	---help---
++	  If you select this option, microcode patch loading support for AMD
++	  processors will be enabled.
++
++config MICROCODE_OLD_INTERFACE
++	def_bool y
++	depends on MICROCODE
++
++config MICROCODE_INTEL_LIB
++	def_bool y
++	depends on MICROCODE_INTEL
++
++config MICROCODE_INTEL_EARLY
++	def_bool n
++
++config MICROCODE_AMD_EARLY
++	def_bool n
++
++config MICROCODE_EARLY
++	bool "Early load microcode"
++	depends on MICROCODE=y && BLK_DEV_INITRD
++	select MICROCODE_INTEL_EARLY if MICROCODE_INTEL
++	select MICROCODE_AMD_EARLY if MICROCODE_AMD
++	default y
++	help
++	  This option provides functionality to read additional microcode data
++	  at the beginning of initrd image. The data tells kernel to load
++	  microcode to CPU's as early as possible. No functional change if no
++	  microcode data is glued to the initrd, therefore it's safe to say Y.
++
++config X86_MSR
++	tristate "/dev/cpu/*/msr - Model-specific register support"
++	---help---
++	  This device gives privileged processes access to the x86
++	  Model-Specific Registers (MSRs).  It is a character device with
++	  major 202 and minors 0 to 31 for /dev/cpu/0/msr to /dev/cpu/31/msr.
++	  MSR accesses are directed to a specific CPU on multi-processor
++	  systems.
++
++config X86_CPUID
++	tristate "/dev/cpu/*/cpuid - CPU information support"
++	---help---
++	  This device gives processes access to the x86 CPUID instruction to
++	  be executed on a specific processor.  It is a character device
++	  with major 203 and minors 0 to 31 for /dev/cpu/0/cpuid to
++	  /dev/cpu/31/cpuid.
++
++
+ endmenu # Processor Options
+ 
+ config X86_X2APIC
+@@ -1434,89 +1520,6 @@ config X86_REBOOTFIXUPS
+ 	  enable this option even if you don't need it.
+ 	  Say N otherwise.
+ 
+-config MICROCODE
+-	tristate "CPU microcode loading support"
+-	depends on CPU_SUP_AMD || CPU_SUP_INTEL
+-	select FW_LOADER
+-	---help---
 -
--endif # VIRTUALIZATION
+-	  If you say Y here, you will be able to update the microcode on
+-	  certain Intel and AMD processors. The Intel support is for the
+-	  IA32 family, e.g. Pentium Pro, Pentium II, Pentium III, Pentium 4,
+-	  Xeon etc. The AMD support is for families 0x10 and later. You will
+-	  obviously need the actual microcode binary data itself which is not
+-	  shipped with the Linux kernel.
+-
+-	  This option selects the general module only, you need to select
+-	  at least one vendor specific module as well.
+-
+-	  To compile this driver as a module, choose M here: the module
+-	  will be called microcode.
+-
+-config MICROCODE_INTEL
+-	bool "Intel microcode loading support"
+-	depends on MICROCODE
+-	default MICROCODE
+-	select FW_LOADER
+-	---help---
+-	  This options enables microcode patch loading support for Intel
+-	  processors.
+-
+-	  For latest news and information on obtaining all the required
+-	  Intel ingredients for this driver, check:
+-	  <http://www.urbanmyth.org/microcode/>.
+-
+-config MICROCODE_AMD
+-	bool "AMD microcode loading support"
+-	depends on MICROCODE
+-	select FW_LOADER
+-	---help---
+-	  If you select this option, microcode patch loading support for AMD
+-	  processors will be enabled.
+-
+-config MICROCODE_OLD_INTERFACE
+-	def_bool y
+-	depends on MICROCODE
+-
+-config MICROCODE_INTEL_LIB
+-	def_bool y
+-	depends on MICROCODE_INTEL
+-
+-config MICROCODE_INTEL_EARLY
+-	def_bool n
+-
+-config MICROCODE_AMD_EARLY
+-	def_bool n
+-
+-config MICROCODE_EARLY
+-	bool "Early load microcode"
+-	depends on MICROCODE=y && BLK_DEV_INITRD
+-	select MICROCODE_INTEL_EARLY if MICROCODE_INTEL
+-	select MICROCODE_AMD_EARLY if MICROCODE_AMD
+-	default y
+-	help
+-	  This option provides functionality to read additional microcode data
+-	  at the beginning of initrd image. The data tells kernel to load
+-	  microcode to CPU's as early as possible. No functional change if no
+-	  microcode data is glued to the initrd, therefore it's safe to say Y.
+-
+-config X86_MSR
+-	tristate "/dev/cpu/*/msr - Model-specific register support"
+-	---help---
+-	  This device gives privileged processes access to the x86
+-	  Model-Specific Registers (MSRs).  It is a character device with
+-	  major 202 and minors 0 to 31 for /dev/cpu/0/msr to /dev/cpu/31/msr.
+-	  MSR accesses are directed to a specific CPU on multi-processor
+-	  systems.
+-
+-config X86_CPUID
+-	tristate "/dev/cpu/*/cpuid - CPU information support"
+-	---help---
+-	  This device gives processes access to the x86 CPUID instruction to
+-	  be executed on a specific processor.  It is a character device
+-	  with major 203 and minors 0 to 31 for /dev/cpu/0/cpuid to
+-	  /dev/cpu/31/cpuid.
+-
+ config MATH_EMULATION
+ 	bool
+ 	prompt "Math emulation" if X86_32
 _
