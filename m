@@ -1,358 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754438Ab3L3ECf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Dec 2013 23:02:35 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:50366 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753672Ab3L3ECc convert rfc822-to-8bit (ORCPT
+	id S1754616Ab3L3EDx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Dec 2013 23:03:53 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:64937 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754046Ab3L3EDv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Dec 2013 23:02:32 -0500
-Date: Sun, 29 Dec 2013 23:02:24 -0500 (EST)
-Message-Id: <20131229.230224.1652891996387193020.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Sun, 29 Dec 2013 20:02:32 -0800 (PST)
+	Sun, 29 Dec 2013 23:03:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131229221723.12054.40917@quantum>
+References: <1383202124-1775-1-git-send-email-tushar.behera@linaro.org>
+	<1388053141-30085-1-git-send-email-tushar.behera@linaro.org>
+	<1388053141-30085-2-git-send-email-tushar.behera@linaro.org>
+	<20131229221723.12054.40917@quantum>
+Date: Mon, 30 Dec 2013 09:33:50 +0530
+Message-ID: <CAHbNUh0tJHXv52bA9hBDZMH0Pi+x9uC=LojcvgS=ONnCgEmVTA@mail.gmail.com>
+Subject: Re: [PATCH RESEND 1/4] clk: clk-s2mps11: Refactor for including
+ support for other MFD clocks
+From: Tushar Behera <tushar.behera@linaro.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>, Kgene Kim <kgene.kim@samsung.com>,
+        Patch Tracking <patches@linaro.org>,
+        Mark Brown <mark.brown@linaro.org>
+Content-Type: multipart/mixed; boundary=047d7b33cad20e547d04eeb8883a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Some holiday bug fixes for 3.13... There is still one bug I'd like to get fixed
-before 3.13-final.
-
-The vlan code erroneously assignes the header ops of the underlying real device
-to the VLAN device above it when the real device can hardware offload VLAN
-handling.  That's completely bogus because header ops are tied to the device
-type, so they only expect to see a 'dev' argument compatible with their ops.
-
-The fix is the have the VLAN code use a special set of header ops that does
-the pass-thru correctly, by calling the underlying real device's header ops
-but _also_ passing in the real device instead of the VLAN device.
-
-That fix is currently waiting some testing.
-
-Anyways, of note here:
-
-1) Fix bitmap edge case in radiotap, from Johannes Berg.
-
-2) Fix oops on driver unload in rtlwifi, from Larry Finger.
-
-3) Bonding doesn't do locking correctly during speed/duplex/link changes,
-   from Ding Tianhong.
-
-4) Fix header parsing in GRE code, this bug has been around for a few
-   releases.  From Timo Teräs.
-
-5) SIT tunnel driver MTU check needs to take GSO into account, from
-   Eric Dumazet.
-
-6) Minor info leak in inet_diag, from Daniel Borkmann.
-
-7) Info leak in YAM hamradio driver, from Salva Peiró.
-
-8) Fix route expiration state handling in ipv6 routing code, from Li
-   RongQing.
-
-9) DCCP probe module does not check request_module()'s return value,
-   from Wang Weidong.
-
-10) cpsw driver passes NULL device names to request_irq(), from
-    Mugunthan V N.
-
-11) Prevent a NULL splat in RDS binding code, from Sasha Levin.
-
-12) Fix 4G overflow test in tg3 driver, from Nithin Sujir.
-
-13) Cure use after free in arc_emac and fec driver's software
-    timestamp handling, from Eric Dumazet.
-
-14) SIT driver can fail to release the route when
-    iptunnel_handle_offloads() throws an error.  From Li RongQing.
-
-15) Several batman-adv fixes from Simon Wunderlich and Antonio Quartulli.
-
-16) Fix deadlock during TIPC socket release, from Ying Xue.
-
-17) Fix regression in ROSE protocol recvmsg() msg_name handling, from
-    Florian Westphal.
-
-18) stmmac PTP support releases wrong spinlock, from Vince Bridgers.
-
-Please pull, thanks a lot!
-
-The following changes since commit 35eecf052250f663f07a4cded7d3503fd1b50729:
-
-  Merge branch 'drm-fixes' of git://people.freedesktop.org/~airlied/linux (2013-12-17 16:59:59 -0800)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-for you to fetch changes up to 7cd013992335b1c5156059248ee765fb3b14d154:
-
-  stmmac: Fix incorrect spinlock release and PTP cap detection. (2013-12-29 22:37:00 -0500)
-
-----------------------------------------------------------------
-Antonio Quartulli (4):
-      batman-adv: fix size of batadv_icmp_header
-      batman-adv: fix alignment for batadv_tvlv_tt_change
-      batman-adv: clean nf state when removing protocol header
-      batman-adv: fix vlan header access
-
-Betty Dall (1):
-      atl1c: Check return from pci_find_ext_capability() in atl1c_reset_pcie()
-
-Daniel Borkmann (2):
-      net: inet_diag: zero out uninitialized idiag_{src,dst} fields
-      netfilter: nft_exthdr: call ipv6_find_hdr() with explicitly initialized offset
-
-David Ertman (3):
-      e1000e: fix compiler warnings
-      e1000e: fix compiler warning (maybe-unitialized variable)
-      e1000e: Fix a compile flag mis-match for suspend/resume
-
-David Gibson (1):
-      netxen: Correct off-by-one errors in bounds checks
-
-David S. Miller (7):
-      Merge branch 'bond_locking'
-      Merge branch 'master' of git://git.kernel.org/.../jkirsher/net
-      Merge branch 'for-davem' of git://git.kernel.org/.../linville/wireless
-      Merge branch 'cxgb4'
-      net: Add some clarification to skb_tx_timestamp() comment.
-      Merge branch 'master' of git://git.kernel.org/.../pablo/nf
-      Merge tag 'batman-adv-fix-for-davem' of git://git.open-mesh.org/linux-merge
-
-Don Skidmore (1):
-      ixgbe: fix for unused variable warning with certain config
-
-Eric Dumazet (3):
-      ipv6: sit: update mtu check to take care of gso packets
-      net: fec: fix potential use after free
-      arc_emac: fix potential use after free
-
-Fabio Estevam (1):
-      fec: Do not assume that PHY reset is active low
-
-Florian Westphal (2):
-      macvlan: fix netdev feature propagation from lower device
-      net: rose: restore old recvmsg behavior
-
-Gao feng (1):
-      netfilter: nfnetlink_log: unset nf_loggers for netns when unloading module
-
-Haiyang Zhang (1):
-      hyperv: Fix race between probe and open calls
-
-Hannes Frederic Sowa (2):
-      ipv6: pmtudisc setting not respected with UFO/CORK
-      ipv4: consistent reporting of pmtu data in case of corking
-
-Helmut Schaa (1):
-      netfilter: nf_ct_timestamp: Fix BUG_ON after netns deletion
-
-Jamal Hadi Salim (1):
-      net_sched: act: Dont increment refcnt on replace
-
-Jesper Dangaard Brouer (2):
-      netfilter: WARN about wrong usage of sequence number adjustments
-      ipvs: correct usage/allocation of seqadj ext in ipvs
-
-Johannes Berg (1):
-      radiotap: fix bitmap-end-finding buffer overrun
-
-John Fastabend (1):
-      net: allow netdev_all_upper_get_next_dev_rcu with rtnl lock held
-
-John W. Linville (3):
-      Merge branch 'for-john' of git://git.kernel.org/.../jberg/mac80211
-      Merge branch 'for-upstream' of git://git.kernel.org/.../bluetooth/bluetooth
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
-
-Kumar Sanghvi (8):
-      cxgb4: Reserve stid 0 for T4/T5 adapters
-      cxgb4: Include TCP as protocol when creating server filters
-      cxgb4: Assign filter server TIDs properly
-      cxgb4: Account for stid entries properly in case of IPv6
-      cxgb4: Add API to correctly calculate tuple fields
-      RDMA/cxgb4: Calculate the filter server TID properly
-      RDMA/cxgb4: Server filters are supported only for IPv4
-      RDMA/cxgb4: Use cxgb4_select_ntuple to correctly calculate ntuple fields
-
-Larry Finger (1):
-      rtlwifi: pci: Fix oops on driver unload
-
-Leigh Brown (1):
-      net: mvmdio: fix interrupt timeout handling
-
-Li RongQing (2):
-      ipv6: always set the new created dst's from in ip6_rt_copy
-      ipv6: release dst properly in ipip6_tunnel_xmit
-
-Marcel Holtmann (1):
-      Bluetooth: Fix HCI User Channel permission check in hci_sock_sendmsg
-
-Marco Piazza (1):
-      Bluetooth: Add support for Toshiba Bluetooth device [0930:0220]
-
-Mathy Vanhoef (1):
-      ath9k_htc: properly set MAC address and BSSID mask
-
-Michal Schmidt (1):
-      bnx2x: downgrade "valid ME register value" message level
-
-Mugunthan V N (2):
-      drivers: net cpsw: Enable In Band mode in cpsw for 10 mbps
-      drivers: net : cpsw: pass proper device name while requesting irq
-
-Nithin Sujir (1):
-      tg3: Expand 4g_overflow_test workaround to skb fragments of any size.
-
-Pablo Neira Ayuso (3):
-      netfilter: nf_tables: fix dumping with large number of sets
-      netfilter: nf_tables: fix oops when updating table with user chains
-      netfilter: nf_tables: fix wrong datatype in nft_validate_data_load()
-
-Paul Durrant (1):
-      xen-netback: fix guest-receive-side array sizes
-
-Peter Korsgaard (4):
-      dm9601: add support for dm9621a based dongle
-      dm9601: fix reception of full size ethernet frames on dm9620/dm9621a
-      dm9601: make it clear that dm9620/dm9621a are also supported
-      dm9601: work around tx fifo sync issue on dm962x
-
-Salva Peiró (1):
-      hamradio/yam: fix info leak in ioctl
-
-Sasha Levin (1):
-      rds: prevent dereference of a NULL device
-
-Sergei Shtylyov (1):
-      phy: IRQ cannot be shared
-
-Simon Wunderlich (3):
-      batman-adv: fix alignment for batadv_coded_packet
-      batman-adv: fix header alignment by unrolling batadv_header
-      batman-adv: fix size of batadv_bla_claim_dst
-
-Sujith Manoharan (1):
-      ath9k: Fix interrupt handling for the AR9002 family
-
-Timo Teräs (1):
-      ip_gre: fix msg_name parsing for recvfrom/recvmsg
-
-Ujjal Roy (1):
-      cfg80211: fix WARN_ON for re-association to the expired BSS
-
-Vince Bridgers (1):
-      stmmac: Fix incorrect spinlock release and PTP cap detection.
-
-Wang Weidong (1):
-      dccp: catch failed request_module call in dccp_probe init
-
-Wei Yongjun (1):
-      xen-netback: fix some error return code
-
-Wenliang Fan (1):
-      drivers/net/hamradio: Integer overflow in hdlcdrv_ioctl()
-
-Ying Xue (1):
-      tipc: fix deadlock during socket release
-
-dingtianhong (3):
-      bonding: protect port for bond_3ad_adapter_speed_changed()
-      bonding: protect port for bond_3ad_adapter_duplex_changed()
-      bonding: protect port for bond_3ad_handle_link_change()
-
- drivers/bluetooth/ath3k.c                            |   2 +
- drivers/bluetooth/btusb.c                            |   1 +
- drivers/infiniband/hw/cxgb4/cm.c                     |  78 +++++++++-------------------------
- drivers/net/bonding/bond_3ad.c                       |  45 ++++++++++++++------
- drivers/net/ethernet/arc/emac_main.c                 |   4 +-
- drivers/net/ethernet/atheros/atl1c/atl1c_main.c      |   8 ++--
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_vfpf.c     |   2 +-
- drivers/net/ethernet/broadcom/tg3.c                  |   2 +-
- drivers/net/ethernet/chelsio/cxgb4/cxgb4.h           |  21 ++++++++++
- drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c      |  59 +++++++++++++++++---------
- drivers/net/ethernet/chelsio/cxgb4/cxgb4_uld.h       |   9 +++-
- drivers/net/ethernet/chelsio/cxgb4/l2t.c             |  35 ++++++++++++++++
- drivers/net/ethernet/chelsio/cxgb4/l2t.h             |   3 +-
- drivers/net/ethernet/chelsio/cxgb4/t4_hw.c           | 103 +++++++++++++++++++++++++++++++++++++++++++++
- drivers/net/ethernet/chelsio/cxgb4/t4_regs.h         |  73 ++++++++++++++++++++++++++++++++
- drivers/net/ethernet/freescale/fec_main.c            |  18 +++++---
- drivers/net/ethernet/intel/e1000e/80003es2lan.c      |   7 +++-
- drivers/net/ethernet/intel/e1000e/netdev.c           |   4 +-
- drivers/net/ethernet/intel/e1000e/phy.c              |  10 +++--
- drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c       |   2 +
- drivers/net/ethernet/marvell/mvmdio.c                |   6 +++
- drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c |   4 +-
- drivers/net/ethernet/stmicro/stmmac/stmmac_main.c    |  20 ++++-----
- drivers/net/ethernet/stmicro/stmmac/stmmac_ptp.c     |   4 +-
- drivers/net/ethernet/ti/cpsw.c                       |   4 +-
- drivers/net/hamradio/hdlcdrv.c                       |   2 +
- drivers/net/hamradio/yam.c                           |   1 +
- drivers/net/hyperv/netvsc_drv.c                      |  20 ++++-----
- drivers/net/macvlan.c                                |  16 +++++--
- drivers/net/phy/phy.c                                |   6 +--
- drivers/net/usb/Kconfig                              |   6 +--
- drivers/net/usb/dm9601.c                             |  44 ++++++++++++++------
- drivers/net/wireless/ath/ath9k/ar9002_mac.c          |  52 +++++++++++++++++++----
- drivers/net/wireless/ath/ath9k/htc_drv_main.c        |  25 +++++++----
- drivers/net/wireless/ath/ath9k/main.c                |   5 ++-
- drivers/net/wireless/rtlwifi/pci.c                   |   4 +-
- drivers/net/xen-netback/common.h                     |  19 ++++++---
- drivers/net/xen-netback/interface.c                  |  10 +++++
- drivers/net/xen-netback/netback.c                    |  18 +++++---
- include/linux/rtnetlink.h                            |   5 +++
- include/linux/skbuff.h                               |   9 ++++
- net/batman-adv/bat_iv_ogm.c                          |  36 ++++++++--------
- net/batman-adv/distributed-arp-table.c               |   6 +--
- net/batman-adv/fragmentation.c                       |   8 ++--
- net/batman-adv/icmp_socket.c                         |   6 +--
- net/batman-adv/main.c                                |  16 +++----
- net/batman-adv/network-coding.c                      |  22 +++++-----
- net/batman-adv/packet.h                              | 124 +++++++++++++++++++++++++++++++++++++++++--------------
- net/batman-adv/routing.c                             |  30 +++++++-------
- net/batman-adv/send.c                                |  10 ++---
- net/batman-adv/soft-interface.c                      |  18 +++++---
- net/batman-adv/translation-table.c                   |   6 ++-
- net/bluetooth/hci_sock.c                             |  26 +++++++-----
- net/core/dev.c                                       |   2 +-
- net/dccp/probe.c                                     |  19 ++++-----
- net/ipv4/inet_diag.c                                 |  16 +++++++
- net/ipv4/ip_gre.c                                    |   1 +
- net/ipv4/ip_output.c                                 |   5 ++-
- net/ipv6/ip6_output.c                                |  36 ++++++++++++----
- net/ipv6/route.c                                     |   4 +-
- net/ipv6/sit.c                                       |   6 ++-
- net/netfilter/ipvs/ip_vs_nfct.c                      |   6 +++
- net/netfilter/nf_conntrack_seqadj.c                  |   5 +++
- net/netfilter/nf_conntrack_timestamp.c               |   1 -
- net/netfilter/nf_tables_api.c                        |  26 +++++++++---
- net/netfilter/nfnetlink_log.c                        |   1 +
- net/netfilter/nft_exthdr.c                           |   2 +-
- net/rds/ib.c                                         |   3 +-
- net/rose/af_rose.c                                   |  16 ++-----
- net/sched/act_csum.c                                 |  10 ++---
- net/sched/act_gact.c                                 |   7 ++--
- net/sched/act_ipt.c                                  |   8 ++--
- net/sched/act_nat.c                                  |  10 ++---
- net/sched/act_pedit.c                                |   8 ++--
- net/sched/act_police.c                               |   4 +-
- net/sched/act_simple.c                               |   9 ++--
- net/sched/act_skbedit.c                              |   7 ++--
- net/tipc/port.c                                      |  45 +++++++-------------
- net/tipc/port.h                                      |   6 +--
- net/tipc/socket.c                                    |  46 ++++++++++++++-------
- net/wireless/radiotap.c                              |   4 ++
- net/wireless/sme.c                                   |  22 +++++-----
- 82 files changed, 967 insertions(+), 442 deletions(-)
+--047d7b33cad20e547d04eeb8883a
+Content-Type: text/plain; charset=UTF-8
+
+On 30 December 2013 03:47, Mike Turquette <mturquette@linaro.org> wrote:
+> Quoting Tushar Behera (2013-12-26 02:18:58)
+>> The clocks in S2MPS11 and S5M8767 are managed in the same way, baring
+>> a difference in the register offset. It would be better to update
+>> existing S2MPS11 driver to support the clocks in S5M8767, rather than
+>> creating an almost duplicate driver altogether.
+>
+> Can you rebase patches #1 & #2 onto clk-next? They do not apply cleanly
+> as-is.
+>
+> Regards,
+> Mike
+>
+
+Commit 1b1ccee1e821 "mfd: s2mps11: Fix build after regmap field rename
+in sec-core.c" is also touching this file, which is in Mark's tree
+right now. If I rebase
+this patch on top clk-next, I am getting conflicts when I merge that
+with linux-next.
+Let me know how you want to handle this.
+
+I am attaching the rebased patches for your reference.
+If you want, I will send them again through git-send-email.
+
+-- 
+Tushar Behera
+
+--047d7b33cad20e547d04eeb8883a
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0001-clk-clk-s2mps11-Refactor-for-including-support-for-o.patch"
+Content-Disposition: attachment; 
+	filename="0001-clk-clk-s2mps11-Refactor-for-including-support-for-o.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hpt65wyx0
+
+RnJvbSBmNGY3MzBkNGJlYTM4NDhkMjFlNDg3YWEwOGZmMDE5YzU4OGU2ZWNkIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBUdXNoYXIgQmVoZXJhIDx0dXNoYXIuYmVoZXJhQGxpbmFyby5v
+cmc+CkRhdGU6IFdlZCwgMzAgT2N0IDIwMTMgMTU6NTU6NDQgKzA1MzAKU3ViamVjdDogW1BBVENI
+IDEvNF0gY2xrOiBjbGstczJtcHMxMTogUmVmYWN0b3IgZm9yIGluY2x1ZGluZyBzdXBwb3J0IGZv
+cgogb3RoZXIgTUZEIGNsb2NrcwoKVGhlIGNsb2NrcyBpbiBTMk1QUzExIGFuZCBTNU04NzY3IGFy
+ZSBtYW5hZ2VkIGluIHRoZSBzYW1lIHdheSwgYmFyaW5nCmEgZGlmZmVyZW5jZSBpbiB0aGUgcmVn
+aXN0ZXIgb2Zmc2V0LiBJdCB3b3VsZCBiZSBiZXR0ZXIgdG8gdXBkYXRlCmV4aXN0aW5nIFMyTVBT
+MTEgZHJpdmVyIHRvIHN1cHBvcnQgdGhlIGNsb2NrcyBpbiBTNU04NzY3LCByYXRoZXIgdGhhbgp0
+byBjcmVhdGUgYW4gYWxtb3N0IGR1cGxpY2F0ZSBkcml2ZXIgYWx0b2dldGhlci4KClNpZ25lZC1v
+ZmYtYnk6IFR1c2hhciBCZWhlcmEgPHR1c2hhci5iZWhlcmFAbGluYXJvLm9yZz4KUmV2aWV3ZWQt
+Ynk6IFRvbWFzeiBGaWdhIDx0LmZpZ2FAc2Ftc3VuZy5jb20+Ci0tLQogZHJpdmVycy9jbGsvY2xr
+LXMybXBzMTEuYyB8ICAgMjAgKysrKysrKysrKysrKysrKy0tLS0KIDEgZmlsZSBjaGFuZ2VkLCAx
+NiBpbnNlcnRpb25zKCspLCA0IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvY2xr
+L2Nsay1zMm1wczExLmMgYi9kcml2ZXJzL2Nsay9jbGstczJtcHMxMS5jCmluZGV4IDdiZTQxZTYu
+LjQ5NGQxZGYgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvY2xrL2Nsay1zMm1wczExLmMKKysrIGIvZHJp
+dmVycy9jbGsvY2xrLXMybXBzMTEuYwpAQCAtNDgsNiArNDgsNyBAQCBzdHJ1Y3QgczJtcHMxMV9j
+bGsgewogCXN0cnVjdCBjbGtfbG9va3VwICpsb29rdXA7CiAJdTMyIG1hc2s7CiAJYm9vbCBlbmFi
+bGVkOworCXVuc2lnbmVkIGludCByZWc7CiB9OwogCiBzdGF0aWMgc3RydWN0IHMybXBzMTFfY2xr
+ICp0b19zMm1wczExX2NsayhzdHJ1Y3QgY2xrX2h3ICpodykKQEAgLTYxLDcgKzYyLDcgQEAgc3Rh
+dGljIGludCBzMm1wczExX2Nsa19wcmVwYXJlKHN0cnVjdCBjbGtfaHcgKmh3KQogCWludCByZXQ7
+CiAKIAlyZXQgPSByZWdtYXBfdXBkYXRlX2JpdHMoczJtcHMxMS0+aW9kZXYtPnJlZ21hcCwKLQkJ
+CQlTMk1QUzExX1JFR19SVENfQ1RSTCwKKwkJCQkgczJtcHMxMS0+cmVnLAogCQkJCSBzMm1wczEx
+LT5tYXNrLCBzMm1wczExLT5tYXNrKTsKIAlpZiAoIXJldCkKIAkJczJtcHMxMS0+ZW5hYmxlZCA9
+IHRydWU7CkBAIC03NCw3ICs3NSw3IEBAIHN0YXRpYyB2b2lkIHMybXBzMTFfY2xrX3VucHJlcGFy
+ZShzdHJ1Y3QgY2xrX2h3ICpodykKIAlzdHJ1Y3QgczJtcHMxMV9jbGsgKnMybXBzMTEgPSB0b19z
+Mm1wczExX2Nsayhodyk7CiAJaW50IHJldDsKIAotCXJldCA9IHJlZ21hcF91cGRhdGVfYml0cyhz
+Mm1wczExLT5pb2Rldi0+cmVnbWFwLCBTMk1QUzExX1JFR19SVENfQ1RSTCwKKwlyZXQgPSByZWdt
+YXBfdXBkYXRlX2JpdHMoczJtcHMxMS0+aW9kZXYtPnJlZ21hcCwgczJtcHMxMS0+cmVnLAogCQkJ
+ICAgczJtcHMxMS0+bWFzaywgfnMybXBzMTEtPm1hc2spOwogCiAJaWYgKCFyZXQpCkBAIC0xNTUs
+NiArMTU2LDcgQEAgc3RhdGljIGludCBzMm1wczExX2Nsa19wcm9iZShzdHJ1Y3QgcGxhdGZvcm1f
+ZGV2aWNlICpwZGV2KQogCXN0cnVjdCBzZWNfcG1pY19kZXYgKmlvZGV2ID0gZGV2X2dldF9kcnZk
+YXRhKHBkZXYtPmRldi5wYXJlbnQpOwogCXN0cnVjdCBzMm1wczExX2NsayAqczJtcHMxMV9jbGtz
+LCAqczJtcHMxMV9jbGs7CiAJc3RydWN0IGRldmljZV9ub2RlICpjbGtfbnAgPSBOVUxMOworCXVu
+c2lnbmVkIGludCBzMm1wczExX3JlZzsKIAlpbnQgaSwgcmV0ID0gMDsKIAl1MzIgdmFsOwogCkBA
+IC0xNjksMTMgKzE3MSwyMyBAQCBzdGF0aWMgaW50IHMybXBzMTFfY2xrX3Byb2JlKHN0cnVjdCBw
+bGF0Zm9ybV9kZXZpY2UgKnBkZXYpCiAJaWYgKElTX0VSUihjbGtfbnApKQogCQlyZXR1cm4gUFRS
+X0VSUihjbGtfbnApOwogCisJc3dpdGNoKHBsYXRmb3JtX2dldF9kZXZpY2VfaWQocGRldiktPmRy
+aXZlcl9kYXRhKSB7CisJY2FzZSBTMk1QUzExWDoKKwkJczJtcHMxMV9yZWcgPSBTMk1QUzExX1JF
+R19SVENfQ1RSTDsKKwkJYnJlYWs7CisJZGVmYXVsdDoKKwkJZGV2X2VycigmcGRldi0+ZGV2LCAi
+SW52YWxpZCBkZXZpY2UgdHlwZVxuIik7CisJCXJldHVybiAtRUlOVkFMOworCX07CisKIAlmb3Ig
+KGkgPSAwOyBpIDwgUzJNUFMxMV9DTEtTX05VTTsgaSsrLCBzMm1wczExX2NsaysrKSB7CiAJCXMy
+bXBzMTFfY2xrLT5pb2RldiA9IGlvZGV2OwogCQlzMm1wczExX2Nsay0+aHcuaW5pdCA9ICZzMm1w
+czExX2Nsa3NfaW5pdFtpXTsKIAkJczJtcHMxMV9jbGstPm1hc2sgPSAxIDw8IGk7CisJCXMybXBz
+MTFfY2xrLT5yZWcgPSBzMm1wczExX3JlZzsKIAogCQlyZXQgPSByZWdtYXBfcmVhZChzMm1wczEx
+X2Nsay0+aW9kZXYtPnJlZ21hcCwKLQkJCQkgIFMyTVBTMTFfUkVHX1JUQ19DVFJMLCAmdmFsKTsK
+KwkJCQkgIHMybXBzMTFfY2xrLT5yZWcsICZ2YWwpOwogCQlpZiAocmV0IDwgMCkKIAkJCWdvdG8g
+ZXJyX3JlZzsKIApAQCAtMjQxLDcgKzI1Myw3IEBAIHN0YXRpYyBpbnQgczJtcHMxMV9jbGtfcmVt
+b3ZlKHN0cnVjdCBwbGF0Zm9ybV9kZXZpY2UgKnBkZXYpCiB9CiAKIHN0YXRpYyBjb25zdCBzdHJ1
+Y3QgcGxhdGZvcm1fZGV2aWNlX2lkIHMybXBzMTFfY2xrX2lkW10gPSB7Ci0JeyAiczJtcHMxMS1j
+bGsiLCAwfSwKKwl7ICJzMm1wczExLWNsayIsIFMyTVBTMTFYfSwKIAl7IH0sCiB9OwogTU9EVUxF
+X0RFVklDRV9UQUJMRShwbGF0Zm9ybSwgczJtcHMxMV9jbGtfaWQpOwotLSAKMS43LjkuNQoK
+--047d7b33cad20e547d04eeb8883a
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0002-clk-clk-s2mps11-Add-support-for-clocks-in-S5M8767-MF.patch"
+Content-Disposition: attachment; 
+	filename="0002-clk-clk-s2mps11-Add-support-for-clocks-in-S5M8767-MF.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hpt65wza1
+
+RnJvbSA1ZjM4NDNkYTdiYzcxZDEyNmMwY2NlN2E4ZTg4YWFiMTg1MGM0YjljIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBUdXNoYXIgQmVoZXJhIDx0dXNoYXIuYmVoZXJhQGxpbmFyby5v
+cmc+CkRhdGU6IFdlZCwgMzAgT2N0IDIwMTMgMTU6NTY6MjcgKzA1MzAKU3ViamVjdDogW1BBVENI
+IDIvNF0gY2xrOiBjbGstczJtcHMxMTogQWRkIHN1cHBvcnQgZm9yIGNsb2NrcyBpbiBTNU04NzY3
+IE1GRAoKU2luY2UgY2xvY2sgb3BlcmF0aW9uIHdpdGhpbiBTMk1QUzExIGFuZCBTNU04NzY3IGFy
+ZSBzaW1pbGFyLCB3ZSBjYW4Kc3VwcG9ydCBib3RoIHRoZSBkZXZpY2VzIHdpdGhpbiBhIHNpbmds
+ZSBkcml2ZXIuCgpTaWduZWQtb2ZmLWJ5OiBUdXNoYXIgQmVoZXJhIDx0dXNoYXIuYmVoZXJhQGxp
+bmFyby5vcmc+ClJldmlld2VkLWJ5OiBUb21hc3ogRmlnYSA8dC5maWdhQHNhbXN1bmcuY29tPgot
+LS0KIGRyaXZlcnMvY2xrL0tjb25maWcgICAgICAgfCAgICA2ICsrKystLQogZHJpdmVycy9jbGsv
+Y2xrLXMybXBzMTEuYyB8ICAgIDUgKysrKysKIDIgZmlsZXMgY2hhbmdlZCwgOSBpbnNlcnRpb25z
+KCspLCAyIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvY2xrL0tjb25maWcgYi9k
+cml2ZXJzL2Nsay9LY29uZmlnCmluZGV4IDQwN2NmZmIuLjk5MzMyZGEgMTAwNjQ0Ci0tLSBhL2Ry
+aXZlcnMvY2xrL0tjb25maWcKKysrIGIvZHJpdmVycy9jbGsvS2NvbmZpZwpAQCAtNjUsMTAgKzY1
+LDEyIEBAIGNvbmZpZyBDT01NT05fQ0xLX1NJNTcwCiAJICBjbG9jayBnZW5lcmF0b3JzLgogCiBj
+b25maWcgQ09NTU9OX0NMS19TMk1QUzExCi0JdHJpc3RhdGUgIkNsb2NrIGRyaXZlciBmb3IgUzJN
+UFMxMSBNRkQiCisJdHJpc3RhdGUgIkNsb2NrIGRyaXZlciBmb3IgUzJNUFMxMS9TNU04NzY3IE1G
+RCIKIAlkZXBlbmRzIG9uIE1GRF9TRUNfQ09SRQogCS0tLWhlbHAtLS0KLQkgIFRoaXMgZHJpdmVy
+IHN1cHBvcnRzIFMyTVBTMTEgY3J5c3RhbCBvc2NpbGxhdG9yIGNsb2NrLgorCSAgVGhpcyBkcml2
+ZXIgc3VwcG9ydHMgUzJNUFMxMS9TNU04NzY3IGNyeXN0YWwgb3NjaWxsYXRvciBjbG9jay4gVGhl
+c2UKKwkgIG11bHRpLWZ1bmN0aW9uIGRldmljZXMgaGF2ZSAzIGZpeGVkLXJhdGUgb3NjaWxsYXRv
+cnMsIGNsb2NrZWQgYXQKKwkgIDMyS0h6IGVhY2guCiAKIGNvbmZpZyBDTEtfVFdMNjA0MAogCXRy
+aXN0YXRlICJFeHRlcm5hbCBNY1BETSBmdW5jdGlvbmFsIGNsb2NrIGZyb20gdHdsNjA0MCIKZGlm
+ZiAtLWdpdCBhL2RyaXZlcnMvY2xrL2Nsay1zMm1wczExLmMgYi9kcml2ZXJzL2Nsay9jbGstczJt
+cHMxMS5jCmluZGV4IDQ5NGQxZGYuLjM3ZTcyODUgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvY2xrL2Ns
+ay1zMm1wczExLmMKKysrIGIvZHJpdmVycy9jbGsvY2xrLXMybXBzMTEuYwpAQCAtMjcsNiArMjcs
+NyBAQAogI2luY2x1ZGUgPGxpbnV4L2Nsay1wcm92aWRlci5oPgogI2luY2x1ZGUgPGxpbnV4L3Bs
+YXRmb3JtX2RldmljZS5oPgogI2luY2x1ZGUgPGxpbnV4L21mZC9zYW1zdW5nL3MybXBzMTEuaD4K
+KyNpbmNsdWRlIDxsaW51eC9tZmQvc2Ftc3VuZy9zNW04NzY3Lmg+CiAjaW5jbHVkZSA8bGludXgv
+bWZkL3NhbXN1bmcvY29yZS5oPgogCiAjZGVmaW5lIHMybXBzMTFfbmFtZShhKSAoYS0+aHcuaW5p
+dC0+bmFtZSkKQEAgLTE3NSw2ICsxNzYsOSBAQCBzdGF0aWMgaW50IHMybXBzMTFfY2xrX3Byb2Jl
+KHN0cnVjdCBwbGF0Zm9ybV9kZXZpY2UgKnBkZXYpCiAJY2FzZSBTMk1QUzExWDoKIAkJczJtcHMx
+MV9yZWcgPSBTMk1QUzExX1JFR19SVENfQ1RSTDsKIAkJYnJlYWs7CisJY2FzZSBTNU04NzY3WDoK
+KwkJczJtcHMxMV9yZWcgPSBTNU04NzY3X1JFR19DVFJMMTsKKwkJYnJlYWs7CiAJZGVmYXVsdDoK
+IAkJZGV2X2VycigmcGRldi0+ZGV2LCAiSW52YWxpZCBkZXZpY2UgdHlwZVxuIik7CiAJCXJldHVy
+biAtRUlOVkFMOwpAQCAtMjU0LDYgKzI1OCw3IEBAIHN0YXRpYyBpbnQgczJtcHMxMV9jbGtfcmVt
+b3ZlKHN0cnVjdCBwbGF0Zm9ybV9kZXZpY2UgKnBkZXYpCiAKIHN0YXRpYyBjb25zdCBzdHJ1Y3Qg
+cGxhdGZvcm1fZGV2aWNlX2lkIHMybXBzMTFfY2xrX2lkW10gPSB7CiAJeyAiczJtcHMxMS1jbGsi
+LCBTMk1QUzExWH0sCisJeyAiczVtODc2Ny1jbGsiLCBTNU04NzY3WH0sCiAJeyB9LAogfTsKIE1P
+RFVMRV9ERVZJQ0VfVEFCTEUocGxhdGZvcm0sIHMybXBzMTFfY2xrX2lkKTsKLS0gCjEuNy45LjUK
+Cg==
+--047d7b33cad20e547d04eeb8883a--
