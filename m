@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177Ab3L3R6v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 12:58:51 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:54517 "EHLO SMTP.CITRIX.COM"
+	id S1756168Ab3L3SFo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 13:05:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10679 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755634Ab3L3R6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 12:58:50 -0500
-X-IronPort-AV: E=Sophos;i="4.95,575,1384300800"; 
-   d="scan'208";a="88626885"
-Message-ID: <52C1B457.90609@citrix.com>
-Date: Mon, 30 Dec 2013 17:58:47 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755634Ab3L3SFn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Dec 2013 13:05:43 -0500
+Date: Mon, 30 Dec 2013 19:06:00 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        John Johansen <john.johansen@canonical.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH 4/5] audit: anchor all pid references in the initial
+	pid namespace
+Message-ID: <20131230180600.GD2457@redhat.com>
+References: <cover.1387834776.git.rgb@redhat.com> <fec6d7e2e6d122393eab994c848f9e37639352c2.1387834776.git.rgb@redhat.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-Subject: Re: [Xen-devel] [PATCH net-next v2 2/9] xen-netback: Change TX path
- from grant copy to mapping
-References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com> <1386892097-15502-3-git-send-email-zoltan.kiss@citrix.com> <20131217214919.GC32553@phenom.dumpdata.com>
-In-Reply-To: <20131217214919.GC32553@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <fec6d7e2e6d122393eab994c848f9e37639352c2.1387834776.git.rgb@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/12/13 21:49, Konrad Rzeszutek Wilk wrote:
-> On Thu, Dec 12, 2013 at 11:48:10PM +0000, Zoltan Kiss wrote:
->> @@ -485,6 +520,22 @@ void xenvif_disconnect(struct xenvif *vif)
->>
->>   void xenvif_free(struct xenvif *vif)
->>   {
->> +	int i, unmap_timeout = 0;
->> +
->> +	for (i = 0; i < MAX_PENDING_REQS; ++i) {
->> +		if (vif->grant_tx_handle[i] != NETBACK_INVALID_HANDLE) {
->> +			i = 0;
->> +			unmap_timeout++;
->> +			msleep(1000);
+On 12/23, Richard Guy Briggs wrote:
 >
-> You don't want to use schedule() and a wakeup here to allow other threads
-> to do their work?
-Yep, schedule_timeout() would be nicer indeed
+> Store and log all PIDs with reference to the initial PID namespace and
+> use the access functions task_pid_nr() and task_tgid_nr() for task->pid
+> and task->tgid rather than access them directly.
 
->
->> +			if (unmap_timeout > 9 &&
->> +				net_ratelimit())
->> +				netdev_err(vif->dev,
->> +					"Page still granted! Index: %x\n", i);
->> +		}
->> +	}
->> +
->> +	free_xenballooned_pages(MAX_PENDING_REQS, vif->mmap_pages);
->
-> How about just stashing those pages on a 'I can't free them' list that will
-> keep them forever. And if that list gets truly large then switch back to
-> grant_copy?
-But then what would you answer to the guest? You can't shoot the shared 
-ring until there is an outstanding slot.
-On the other hand, doing a copy would just move the memory leak into the 
-backend, which could be problematic if a guest figures out how to make a 
-packet which can get stucked somewhere in the backend.
+At first glance this patch looks like a good cleanup, but...
 
-Zoli
+> @@ -429,6 +429,19 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
+>  			f->val = 0;
+>  		}
+>
+> +		if ((f->type == AUDIT_PID) || (f->type == AUDIT_PPID)) {
+> +			struct pid *pid;
+> +			rcu_read_lock();
+> +			pid = find_vpid(f->val);
+> +			if (!pid) {
+> +				rcu_read_unlock();
+> +				err = -ESRCH;
+> +				goto exit_free;
+> +			}
+> +			f->val = pid_nr(pid);
+> +			rcu_read_unlock();
+> +		}
+
+I do not really understand this change, but this doesn't matter, I do
+not understand audit.
+
+However, I think this deserves a separate patch with the changelog.
+
+> @@ -278,9 +278,12 @@ static void dump_common_audit_data(struct audit_buffer *ab,
+>  	}
+>  	case LSM_AUDIT_DATA_TASK:
+>  		tsk = a->u.tsk;
+> -		if (tsk && tsk->pid) {
+> -			audit_log_format(ab, " pid=%d comm=", tsk->pid);
+> -			audit_log_untrustedstring(ab, tsk->comm);
+> +		if (tsk) {
+> +			pid_t pid = task_pid_nr(tsk);
+> +			if (pid) {
+> +				audit_log_format(ab, " pid=%d comm=", pid);
+> +				audit_log_untrustedstring(ab, tsk->comm);
+
+Just curious, is it really possible that a->u.tsk is an idle thread?
+
+Oleg.
+
