@@ -1,68 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756360Ab3L3RYQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 12:24:16 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:25199 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756136Ab3L3RTE (ORCPT
+	id S1756139Ab3L3Rss (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 12:48:48 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35736 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755634Ab3L3Rsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 12:19:04 -0500
-X-IronPort-AV: E=Sophos;i="4.95,574,1384297200"; 
-   d="scan'208";a="51019965"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Ivo van Doorn <IvDoorn@gmail.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/11] rt2x00: use ether_addr_equal_64bits
-Date: Mon, 30 Dec 2013 19:14:57 +0100
-Message-Id: <1388427307-8691-2-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>
+	Mon, 30 Dec 2013 12:48:47 -0500
+Message-ID: <52C1B1FC.6030703@infradead.org>
+Date: Mon, 30 Dec 2013 09:48:44 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Hayato Suzuki <hytszk@gmail.com>, trivial@kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [trivial] treewide:Fix typo Kconfig
+References: <52BF72E1.9030207@infradead.org> <1388421772-3149-1-git-send-email-hytszk@gmail.com>
+In-Reply-To: <1388421772-3149-1-git-send-email-hytszk@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On 12/30/13 08:42, Hayato Suzuki wrote:
+> Correct spelling typo in Kconfig.
+> 
+> Signed-off-by: Hayato Suzuki <hytszk@gmail.com>
 
-Ether_addr_equal_64bits is more efficient than ether_addr_equal, and can be
-used when each argument is an array within a structure that contains at
-least two bytes of data beyond the array.
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
 
-The structures involved are:
-ieee80211_bar defined in include/linux/ieee80211.h and
-rt2x00_bar_list_entry defined in drivers/net/wireless/rt2x00/rt2x00.h.
+Thanks.
 
-This was done using Coccinelle (http://coccinelle.lip6.fr/).
+> ---
+>  arch/x86/crypto/aesni-intel_avx.S | 8 ++++----
+>  crypto/Kconfig                    | 2 +-
+>  init/Kconfig                      | 2 +-
+>  3 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/crypto/aesni-intel_avx.S b/arch/x86/crypto/aesni-intel_avx.S
+> index 522ab68..3f202c2 100644
+> --- a/arch/x86/crypto/aesni-intel_avx.S
+> +++ b/arch/x86/crypto/aesni-intel_avx.S
+> @@ -1282,7 +1282,7 @@ _zero_cipher_left\@:
+>  
+>          je      _multiple_of_16_bytes\@
+>  
+> -        # handle the last <16 Byte block seperately
+> +        # handle the last <16 Byte block separately
+>  
+>  
+>          vpaddd   ONE(%rip), %xmm9, %xmm9             # INCR CNT to get Yn
+> @@ -1308,7 +1308,7 @@ _only_less_than_16\@:
+>  
+>          je      _multiple_of_16_bytes\@
+>  
+> -        # handle the last <16 Byte block seperately
+> +        # handle the last <16 Byte block separately
+>  
+>  
+>          vpaddd  ONE(%rip), %xmm9, %xmm9              # INCR CNT to get Yn
+> @@ -2559,7 +2559,7 @@ _zero_cipher_left\@:
+>  
+>          je      _multiple_of_16_bytes\@
+>  
+> -        # handle the last <16 Byte block seperately
+> +        # handle the last <16 Byte block separately
+>  
+>  
+>          vpaddd   ONE(%rip), %xmm9, %xmm9             # INCR CNT to get Yn
+> @@ -2585,7 +2585,7 @@ _only_less_than_16\@:
+>  
+>          je      _multiple_of_16_bytes\@
+>  
+> -        # handle the last <16 Byte block seperately
+> +        # handle the last <16 Byte block separately
+>  
+>  
+>          vpaddd  ONE(%rip), %xmm9, %xmm9              # INCR CNT to get Yn
+> diff --git a/crypto/Kconfig b/crypto/Kconfig
+> index 7bcb70d..ceb085e 100644
+> --- a/crypto/Kconfig
+> +++ b/crypto/Kconfig
+> @@ -1120,7 +1120,7 @@ config CRYPTO_SERPENT_SSE2_X86_64
+>  	  Keys are allowed to be from 0 to 256 bits in length, in steps
+>  	  of 8 bits.
+>  
+> -	  This module provides Serpent cipher algorithm that processes eigth
+> +	  This module provides Serpent cipher algorithm that processes eight
+>  	  blocks parallel using SSE2 instruction set.
+>  
+>  	  See also:
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 8d402e3..46b5089 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -523,7 +523,7 @@ config CONTEXT_TRACKING_FORCE
+>  	  dynticks working.
+>  
+>  	  This option stands for testing when an arch implements the
+> -	  context tracking backend but doesn't yet fullfill all the
+> +	  context tracking backend but doesn't yet fulfill all the
+>  	  requirements to make the full dynticks feature working.
+>  	  Without the full dynticks, there is no way to test the support
+>  	  for context tracking and the subsystems that rely on it: RCU
+> 
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
----
-The semantic patch used is rather long and can be found in message 0 of
-this patch series.
-
- drivers/net/wireless/rt2x00/rt2x00dev.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless/rt2x00/rt2x00dev.c
-index 00c3fae..2bde672 100644
---- a/drivers/net/wireless/rt2x00/rt2x00dev.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
-@@ -565,10 +565,10 @@ static void rt2x00lib_rxdone_check_ba(struct rt2x00_dev *rt2x00dev,
- 
- #undef TID_CHECK
- 
--		if (!ether_addr_equal(ba->ra, entry->ta))
-+		if (!ether_addr_equal_64bits(ba->ra, entry->ta))
- 			continue;
- 
--		if (!ether_addr_equal(ba->ta, entry->ra))
-+		if (!ether_addr_equal_64bits(ba->ta, entry->ra))
- 			continue;
- 
- 		/* Mark BAR since we received the according BA */
-
+-- 
+~Randy
