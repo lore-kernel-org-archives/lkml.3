@@ -1,141 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751468Ab3L3G3T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 01:29:19 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:37450 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155Ab3L3G3Q (ORCPT
+	id S1751526Ab3L3G3n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 01:29:43 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:22816 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751155Ab3L3G3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 01:29:16 -0500
-Message-ID: <52C11284.2030500@ti.com>
-Date: Mon, 30 Dec 2013 11:58:20 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Mon, 30 Dec 2013 01:29:41 -0500
+Message-ID: <52C112CC.4040306@marvell.com>
+Date: Mon, 30 Dec 2013 14:29:32 +0800
+From: Jane Li <jiel@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: <tony@atomide.com>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linus.walleij@linaro.org>, <linux@arm.linux.org.uk>, <rnayak@ti.com>,
-        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
-        <mark.rutland@arm.com>, <robherring2@gmail.com>, <tglx@linutronix.de>,
-        <galak@codeaurora.org>, <rob.herring@calxeda.com>, <nm@ti.com>,
-        <bcousson@baylibre.com>
-Subject: Re: [PATCH V5 0/4] DRIVERS: IRQCHIP: Add support for crossbar IP
-References: <1386066445-28245-1-git-send-email-r.sricharan@ti.com> <52B168A5.4010202@ti.com> <52BBB614.5010707@ti.com> <52BC6B16.80507@ti.com> <52BD856E.7010609@ti.com>
-In-Reply-To: <52BD856E.7010609@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cpufreq: Fix timer/workqueue corruption by protecting
+ reading governor_enabled
+References: <1388136651-21883-1-git-send-email-jiel@marvell.com> <CAKohpokWMgXotgKWFmqOPzdoZME=frBQOjeU1uFJwQ778DHAKg@mail.gmail.com>
+In-Reply-To: <CAKohpokWMgXotgKWFmqOPzdoZME=frBQOjeU1uFJwQ778DHAKg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2013-12-29_04:2013-12-27,2013-12-29,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1312290279
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
 
-On Friday 27 December 2013 07:19 PM, Sricharan R wrote:
-> On Thursday 26 December 2013 11:14 PM, Santosh Shilimkar wrote:
->> Sricharan,
+On 12/27/2013 05:40 PM, Viresh Kumar wrote:
+> On 27 December 2013 15:00,  <jiel@marvell.com> wrote:
+>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+>> -static DEFINE_MUTEX(cpufreq_governor_lock);
+>> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+>> index dc196bb..4faafe7 100644
+>> --- a/include/linux/cpufreq.h
+>> +++ b/include/linux/cpufreq.h
+>> @@ -254,6 +254,7 @@ struct cpufreq_driver {
 >>
->> On Wednesday 25 December 2013 11:52 PM, Sricharan R wrote:
->>> Hi Thomas,
->>> On Wednesday 18 December 2013 02:49 PM, Sricharan R wrote:
->>>> Hi Thomas,
->>>>
->>>> On Tuesday 03 December 2013 03:57 PM, Sricharan R wrote:
->>>>> Some socs have a large number of interrupts requests to service
->>>>> the needs of its many peripherals and subsystems. All of the interrupt
->>>>> requests lines from the subsystems are not needed at the same
->>>>> time, so they have to be muxed to the controllers appropriately.
->>>>> In such places a interrupt controllers are preceded by an
->>>>> IRQ CROSSBAR that provides flexibility in muxing the device interrupt
->>>>> requests to the controller inputs.
->>>>>
->>>>> This series models the peripheral interrupts that can be routed through
->>>>> the crossbar to the GIC as 'routable-irqs'. The routable irqs are added
->>>>> in a separate linear domain inside the GIC. The registered routable domain's
->>>>> callback are invoked as a part of the GIC's callback, which in turn should
->>>>> allocate a free irq line and configure the IP accordingly. So every peripheral
->>>>> in the dts files mentions the fixed crossbar number as its interrupt. A free
->>>>> gic line for that gets allocated and configured when the peripheral interrupts
->>>>> are mapped.
->>>>>
->>>>> The minimal crossbar driver to track and allocate free GIC lines and configure the
->>>>> crossbar is added here, along with the DT bindings.
->>>>>
->>>>> V5:
->>>>>    Addressed a comment from Mark Rutland <mark.rutland@arm.com>,
->>>>>    updated tags and rebased on 3.13-rc2
->>>>>
->>>>> V4:
->>>>>    Addressed a couple of comments and split the DTS file updates in to
->>>>>    a separate series.
->>>>>
->>>>> V3:
->>>>>    Addressed few more comments from Thomas Gleixner <tglx@linutronix.de>
->>>>>
->>>>>    Rebased patches 3,4,5,7 which updates the DTS file on top of below branch
->>>>> 	   git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git
->>>>> 	   for_3.13/dts
->>>>>
->>>>>    Rebased patches 1,2,6 on top of 3.12 mainline
->>>>>    Updated Commit tags
->>>>>
->>>>> V2:
->>>>>    Addressed Thomas Gleixner <tglx@linutronix.de> comments and
->>>>>    Kumar Gala <galak@codeaurora.org>
->>>>>
->>>>>    Split updating the DRA7.dtsi file for adding the routable-irqs
->>>>>
->>>>> Previous discussions that led to this is at
->>>>> 	https://lkml.org/lkml/2013/9/18/540
->>>>>
->>>>> The V1,V2,V3,V4 post of these patches is at
->>>>>       [V1]  https://lkml.org/lkml/2013/9/30/283
->>>>>       [V2]  http://www.spinics.net/lists/linux-omap/msg99540.html
->>>>>       [V3]  http://www.kernelhub.org/?msg=356470&p=2
->>>>>       [V4]  http://www.spinics.net/lists/linux-doc/msg16726.html
->>>>>
->>>>> Sricharan R (4):
->>>>>   DRIVERS: IRQCHIP: IRQ-GIC: Add support for routable irqs
->>>>>   DRIVERS: IRQCHIP: CROSSBAR: Add support for Crossbar IP
->>>>>   ARM: OMAP4+: Correct Wakeup-gen code to use physical irq number
->>>>>   ARM: DRA: Enable Crossbar IP support for DRA7XX
->>>>>
->>>>>  Documentation/devicetree/bindings/arm/gic.txt      |    6 +
->>>>>  .../devicetree/bindings/arm/omap/crossbar.txt      |   27 +++
->>>>>  arch/arm/mach-omap2/Kconfig                        |    1 +
->>>>>  arch/arm/mach-omap2/omap-wakeupgen.c               |    4 +-
->>>>>  arch/arm/mach-omap2/omap4-common.c                 |    2 +
->>>>>  drivers/irqchip/Kconfig                            |    8 +
->>>>>  drivers/irqchip/Makefile                           |    1 +
->>>>>  drivers/irqchip/irq-crossbar.c                     |  208 ++++++++++++++++++++
->>>>>  drivers/irqchip/irq-gic.c                          |   81 +++++++-
->>>>>  include/linux/irqchip/arm-gic.h                    |    7 +-
->>>>>  include/linux/irqchip/irq-crossbar.h               |   11 ++
->>>>>  11 files changed, 343 insertions(+), 13 deletions(-)
->>>>>  create mode 100644 Documentation/devicetree/bindings/arm/omap/crossbar.txt
->>>>>  create mode 100644 drivers/irqchip/irq-crossbar.c
->>>>>  create mode 100644 include/linux/irqchip/irq-crossbar.h
->>>>>
->>>>
->>>> I have addressed all the comments on this series, can this be merged now ?
->>>>
->>>   Ping..
->>>
->> Thomas has already given his reviewed-by tag so the patches can be
->> taken via arm-soc tree considering OMAP and GIC changes. Can you
->> create a branch with all these patches applied and send it
->> to Tony ?
->>
-> Ok, i will send out a branch for this.
-> 
- 
- I have pushed the below branch
+>>   int cpufreq_register_driver(struct cpufreq_driver *driver_data);
+>>   int cpufreq_unregister_driver(struct cpufreq_driver *driver_data);
+>> +static DEFINE_MUTEX(cpufreq_governor_lock);
+> No way, this would never work. This would create separate locks
+> in each file that includes cpufreq.h. And so the locks you are talking
+> about wouldn't protect governor.
 
-git://github.com/Sricharanti/sricharan.git
-branch: crossbar
+I checked my code, and found I lost following part.
+My local code base is not exactly same as open source, and has included this.
 
-This is on top of Tony's linux-omap master branch
 
-Regards,
- Sricharan
+diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+index e6be635..c4d0ee6 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -19,6 +19,7 @@
+  #include <linux/export.h>
+  #include <linux/kernel_stat.h>
+  #include <linux/slab.h>
++#include <linux/cpufreq.h>
+
+  #include "cpufreq_governor.h"
+
+> Have you actually tested this code? If this fixes the breakage you
+> saw? If this fixes it then you need to do better investigation of your
+> problem.
+
+Yes, I test it. After adding cpufreq_governor_lock in gov_queue_work() and running same test, there is no debugobjects warning.
+
+> you actually need to remove the static keyword from cpufreq.c file.
+> Nothing else.
+
+Modify cpufreq_governor_lock definition. Do you think it is OK?
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 16d7b4a..185c9f5 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -39,7 +39,7 @@ static struct cpufreq_driver *cpufreq_driver;
+  static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data);
+  static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data_fallback);
+  static DEFINE_RWLOCK(cpufreq_driver_lock);
+-static DEFINE_MUTEX(cpufreq_governor_lock);
++DEFINE_MUTEX(cpufreq_governor_lock);
+  static LIST_HEAD(cpufreq_policy_list);
+
+  #ifdef CONFIG_HOTPLUG_CPU
+diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+index e6be635..485ee0d 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -22,6 +22,8 @@
+
+  #include "cpufreq_governor.h"
+
++extern struct mutex cpufreq_governor_lock;
++
+  static struct attribute_group *get_sysfs_attr(struct dbs_data *dbs_data)
+  {
+         if (have_governor_per_policy())
+
