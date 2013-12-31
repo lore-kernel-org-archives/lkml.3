@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756335Ab3LaQhN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 11:37:13 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:58516 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754719Ab3LaQhJ (ORCPT
+	id S1756381Ab3LaQi4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 11:38:56 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:49114 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753855Ab3LaQiy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 11:37:09 -0500
-From: jjhiblot@traphandler.com
-To: nicolas.ferre@atmel.com
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        jean-jacques hiblot <jean-jacques.hiblot@jdsu.com>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Subject: [PATCH] at91: ohci: fixed broken sanity check
-Date: Tue, 31 Dec 2013 17:33:44 +0100
-Message-Id: <1388507624-10636-1-git-send-email-jjhiblot@traphandler.com>
-X-Mailer: git-send-email 1.8.4.2
+	Tue, 31 Dec 2013 11:38:54 -0500
+Date: Tue, 31 Dec 2013 09:38:51 -0700
+From: Jens Axboe <axboe@kernel.dk>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH v1 1/5] block: blk-mq: avoid initializing request during
+ its completion
+Message-ID: <20131231163851.GJ21823@kernel.dk>
+References: <1388064698-27344-1-git-send-email-tom.leiming@gmail.com>
+ <1388064698-27344-2-git-send-email-tom.leiming@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1388064698-27344-2-git-send-email-tom.leiming@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: jean-jacques hiblot <jean-jacques.hiblot@jdsu.com>
+On Thu, Dec 26 2013, Ming Lei wrote:
+> One problem is that request->start_time/start_time_ns could be
+> set as wrong.
+> 
+> Also it is normal to intialize one data structure just after its
+> allocation.
+> 
+> So move the initialization out of its completion path.
 
-The test (pdev->resource[1].flags != IORESOURCE_IRQ) is broken because the flags
-value may contain not only the information IORESSOURCE_IRQ but also the IRQ type
-(IORESOURCE_IRQ_HIGHLEVEL for example).
+It's done that way because of presumed cache hotness on completion,
+since we just touched a lot of the members. Lets just fix the start time
+issue by itself.
 
-Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
----
- drivers/usb/host/ohci-at91.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
-index 418444e..df9c8a4 100644
---- a/drivers/usb/host/ohci-at91.c
-+++ b/drivers/usb/host/ohci-at91.c
-@@ -142,8 +142,8 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
- 		return -ENODEV;
- 	}
- 
--	if ((pdev->resource[0].flags != IORESOURCE_MEM)
--			|| (pdev->resource[1].flags != IORESOURCE_IRQ)) {
-+	if (!(pdev->resource[0].flags & IORESOURCE_MEM)
-+			|| !(pdev->resource[1].flags & IORESOURCE_IRQ)) {
- 		pr_debug("hcd probe: invalid resource type\n");
- 		return -ENODEV;
- 	}
 -- 
-1.8.4.2
+Jens Axboe
 
