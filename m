@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756639Ab3LaVZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 16:25:28 -0500
-Received: from [65.19.176.90] ([65.19.176.90]:36925 "EHLO srv.ahhyes.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756459Ab3LaVZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 16:25:27 -0500
+	id S1756510Ab3LaVkh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 16:40:37 -0500
+Received: from mail-gw6-out.broadcom.com ([216.31.217.47]:49561 "EHLO
+	mail-gw6-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756358Ab3LaVkR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Dec 2013 16:40:17 -0500
+X-Greylist: delayed 330 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 Dec 2013 16:40:17 EST
+X-IronPort-AV: E=Sophos;i="4.95,582,1384329600"; 
+   d="scan'208";a="273562"
+From: Markus Mayer <markus.mayer@linaro.org>
+To: Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>,
+        Christian Daudt <bcm@fixthebug.org>
+CC: Linaro Patches <patches@linaro.org>,
+        Linux Watchdog List <linux-watchdog@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Markus Mayer <markus.mayer@linaro.org>
+Subject: [PATCH 0/2] watchdog: bcm281xx: Debugfs support
+Date: Tue, 31 Dec 2013 13:22:12 -0800
+Message-ID: <1388524934-10563-1-git-send-email-markus.mayer@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Wed, 01 Jan 2014 08:24:08 +1100
-From: Alex <xor@xor.bz>
-To: <linux-kernel@vger.kernel.org>
-Subject: Re: TSC Problems (warp between CPUs)
-In-Reply-To: <e44ff95b0f7962a11cfcdb83da6c5595@xor.bz>
-References: <b65bbca027bb2a473f989e60871c2dd2@xor.bz>
- <fcade74fbf715ff965b5a1d3b21e2c21@xor.bz>
- <20131228143547.38d0a0b9@alan.etchedpixels.co.uk>
- <e44ff95b0f7962a11cfcdb83da6c5595@xor.bz>
-Message-ID: <5d63695a1ad08aea5673a833e5055c6b@xor.bz>
-User-Agent: Roundcube Webmail/0.8.4
-X-SA-Exim-Connect-IP: 127.0.0.1
-X-SA-Exim-Mail-From: xor@xor.bz
-X-SA-Exim-Scanned: No (on srv.ahhyes.net); SAEximRunCond expanded to false
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A Happy new year to all :)
+This series adds debugfs support to the bcm281xx watchdog driver. Most
+of the code submitted here was already included as part of v5 of the
+original driver submission. See
+http://www.spinics.net/lists/linux-watchdog/msg03328.html
 
-Just wondering whether anyone has any ideas on how I could force the 
-TSC to resync?
+However, the debugfs code has since been broken out of the original
+driver submission and the following changes have been made over what
+was submitted earlier:
 
-Starting to get a bit desperate. The motherboard manufacturers support 
-is useless.... They keep telling me to install Windows *groan*. I dont 
-think there is any easy way to expose what clock source the OS is using 
-even in windows.
+- The global variable busy_count is now, instead, part of struct
+  bcm_kona_wdt.
+- As a result secure_register_read() now needs to take a struct
+  bcm_kona_wdt * and a register offset as its arguments.
+- debugfs setup and teardown is now performed by
+  bcm_kona_wdt_debug_init() and bcm_kona_wdt_debug_exit() rather than
+  by using #ifdefs in bcm_kona_wdt_probe() and
+  bcm_kona_wdt_debug_exit().
 
-I even tried firing an email at the AmiBios guys. I think I have 
-exhausted every avenue of help as far as the hardware goes.
+This series is dependent on commit
+bd90ccd42c5d6317979c62919ba1c79fd34fa785 in linux-watchdog-next.
 
-Any suggestions?
+Markus Mayer (2):
+  watchdog: bcm281xx: Debugfs support
+  watchdog: bcm281xx: Turn on debugfs support for watchdog driver
 
-Kind regards,
-Alex
-
-On 2013-12-29 11:21, Alex wrote:
-> On 2013-12-29 01:35, One Thousand Gnomes wrote:
->>> not guaranteed to be precise. For example a SMI (System Management
->>> Interrupt) could interrupt the software flow that is attempting to 
->>> write
->>> the time-stamp counter immediately prior to the WRMSR. This could 
->>> mean
->>> the value written to the TSC could vary by thousands to millions of
->>> clocks.
->>
->> Yes SMI is a disaster area for any real time activity (and many 
->> other
->> things ;) ), but many systems actually make little use of it, 
->> especially
->> once the USB is owned by the OS.
->>
->> For synchronization you can retry the sync if it isn't within an
->> acceptable range. The odds of getting an SMI mid sync setup should 
->> be
->> very very low, so the odds of repeating the failure several times 
->> should
->> be negligible and after a few tries you could give up and assume the
->> hardware is buggered then fall back to HPET.
->
-> Hi Alan,
->
-> The sync retry sounds like an interesting strategy but is outside my 
-> knowledge
-> scope as a regular end user (I do have a reasonable understanding of
-> C and can patch+
-> recompile) but I lack the architecture knowledge to implement a patch
-> to do this.
->
-> Any suggestions?
+ arch/arm/configs/bcm_defconfig  |    1 +
+ drivers/watchdog/Kconfig        |   10 ++++
+ drivers/watchdog/bcm_kona_wdt.c |  116 +++++++++++++++++++++++++++++++++++++--
+ 3 files changed, 123 insertions(+), 4 deletions(-)
 
 -- 
-Kind Regards,
-Alex.
+1.7.9.5
+
