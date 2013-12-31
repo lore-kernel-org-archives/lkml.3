@@ -1,82 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab3LaRZq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 12:25:46 -0500
-Received: from 6.mo2.mail-out.ovh.net ([87.98.165.38]:40428 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753931Ab3LaRZp (ORCPT
+	id S1755189Ab3LaR27 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 12:28:59 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:47759 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753897Ab3LaR25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 12:25:45 -0500
-Message-ID: <52C2FE14.1020806@overkiz.com>
-Date: Tue, 31 Dec 2013 18:25:40 +0100
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 31 Dec 2013 12:28:57 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        "Simon Horman [Horms]" <horms@verge.net.au>
+Subject: Re: [PATCH 04/05 v2] pinctrl: sh-pfc: r7s72100 SCIF support
+Date: Tue, 31 Dec 2013 18:29:29 +0100
+Message-ID: <3543969.B4d78GADQA@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.10.17-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CANqRtoSJAik-QV9WFfgsVGPAVBCRasuQz9kOHOueDM562PwJMg@mail.gmail.com>
+References: <20131217023745.24573.3660.sendpatchset@w520> <1746928.Q6f1iPMsKL@avalon> <CANqRtoSJAik-QV9WFfgsVGPAVBCRasuQz9kOHOueDM562PwJMg@mail.gmail.com>
 MIME-Version: 1.0
-To: jjhiblot@traphandler.com, nicolas.ferre@atmel.com
-CC: jean-jacques hiblot <jean-jacques.hiblot@jdsu.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] at91: ohci: fixed broken sanity check
-References: <1388507624-10636-1-git-send-email-jjhiblot@traphandler.com>
-In-Reply-To: <1388507624-10636-1-git-send-email-jjhiblot@traphandler.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 18308821336953616473
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrvddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrvddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jean-Jacques,
+Hi Magnus,
 
-On 31/12/2013 17:33, jjhiblot@traphandler.com wrote:
-> From: jean-jacques hiblot <jean-jacques.hiblot@jdsu.com>
->
-> The test (pdev->resource[1].flags != IORESOURCE_IRQ) is broken because the flags
-> value may contain not only the information IORESSOURCE_IRQ but also the IRQ type
-> (IORESOURCE_IRQ_HIGHLEVEL for example).
->
+On Wednesday 18 December 2013 07:26:15 Magnus Damm wrote:
+> On Wed, Dec 18, 2013 at 1:08 AM, Laurent Pinchart wrote:
+> > On Tuesday 17 December 2013 11:38:23 Magnus Damm wrote:
+> >> From: Magnus Damm <damm@opensource.se>
+> >> 
+> >> Add support for SCIF functions SCK, TXD, RXD, CTS and RTS to the
+> >> r7s72100 PINCTRL code. There are two possible pins that can be used
+> >> for TXD (Port 3 Pin 0 Function 6 and Port 3 Pin 1 Function 4) and
+> >> because of that are pins broken out into separate functions.
+> >> 
+> >> Signed-off-by: Magnus Damm <damm@opensource.se>
+> >> ---
+> >> 
+> >>  drivers/pinctrl/sh-pfc/pfc-r7s72100.c |  158 +++++++++++++++++++++++++++
+> >>  1 file changed, 158 insertions(+)
+> >> 
+> >> --- 0006/drivers/pinctrl/sh-pfc/pfc-r7s72100.c
+> >> +++ work/drivers/pinctrl/sh-pfc/pfc-r7s72100.c        2013-12-17
+> > 
+> > 01:09:20.000000000
+> > 
+> >> +0900 @@ -117,12 +117,170 @@ static const unsigned int __RZ_STR(pfx,
+> >> 
+> >>  #define RZ_GROUPS(pfx, hw, bank, pin, fn) \
+> >>       __RZ_GROUPS(pfx##_##hw##_p##bank##_##pin),
+> >> 
+> >> +#define SCIF0(fn)                    \
+> >> +     fn(scif0, clk, 2, 13, 6)        \
+> >> +     fn(scif0, txd, 2, 14, 6)        \
+> >> +     fn(scif0, rxd, 2, 15, 6)        \
+> >> +     fn(scif0, clk, 4, 8, 7)         \
+> >> +     fn(scif0, txd, 4, 9, 7)         \
+> >> +     fn(scif0, rxd, 4, 10, 7)        \
+> >> +     fn(scif0, clk, 6, 8, 5)         \
+> >> +     fn(scif0, txd, 6, 9, 5)         \
+> >> +     fn(scif0, rxd, 6, 10, 5)
+> > 
+> > The SCIF0 SCK, TXD and RXD pins are grouped together with three options to
+> > choose from. Unlike the PFC devices we support so far, the driver allows
+> > picking pins individually. This allows greater flexibility, at the cost of
+> > a more verbose PFC DT node.
+> 
+> You need more detailed PFC data, yes, but I'm not sure if "Unlike the
+> PFC devices we support so far" is a correct statement. =)
+> 
+> > I assume that this is correct, but could you please confirm that the SoC
+> > really allows picking pins individually (for instance using P2.14 as SCIF0
+> > TXD together with P6.10 as SCIF0 RXD) ?
+> 
+> Your example would work just fine, yes. I don't have any hardware to
+> test that though. I suspect the same would be fine on all of our SoCs
+> actually, unless
+> 
+> > I also wonder whether other currently supported SoCs wouldn't happen to
+> > also support picking pins from different groups, even though they name
+> > the groups differently.
+> 
+> It seems to me that in general the hardware has much more flexibility
+> than what the PINCTRL groups actually expose today. In the end it
+> depends on the actual hardware, so its a case by case thing:
+> 
+> A) RZ series: Individual per-pin settings always available
+> 
+> B) R-Mobile series (PORTnCR + MSELnCR): Individual per-pin settings
+> usually available
+> 
+> C) R-Car series (IPSRnn + MOD_SEL): Shared to some degree, but often
+> still allows individual control.
+> 
+> So with the current PINCTRL interface it looks like we have introduced
+> some artificial limitation based on software grouping even though the
+> actual hardware often can handle per-pin settings.
 
-This is already fixed: we moved to platform_get_irq and
-platform_get_ressource instead of directly accessing platform
-resource table.
+That's probably true for some devices, yes. We've started by limiting the 
+possibilities on R-Car either rightfully (when IPSR would allow individidual 
+control but MODSEL would forbid it) or incorrectly, and have probably carried 
+that on to new SoCs. We should carefully review the pin groups in the future.
 
-See http://lists.openwall.net/linux-kernel/2013/12/08/128.
+-- 
+Regards,
 
-This solves both the problem you're reporting and another problem when
-resources are in a different order (nothing guarantees the resources
-order when using DT).
-
-Best Regards,
-
-Boris
-
-> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-> ---
->   drivers/usb/host/ohci-at91.c | 4 ++--
->   1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
-> index 418444e..df9c8a4 100644
-> --- a/drivers/usb/host/ohci-at91.c
-> +++ b/drivers/usb/host/ohci-at91.c
-> @@ -142,8 +142,8 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
->   		return -ENODEV;
->   	}
->
-> -	if ((pdev->resource[0].flags != IORESOURCE_MEM)
-> -			|| (pdev->resource[1].flags != IORESOURCE_IRQ)) {
-> +	if (!(pdev->resource[0].flags & IORESOURCE_MEM)
-> +			|| !(pdev->resource[1].flags & IORESOURCE_IRQ)) {
->   		pr_debug("hcd probe: invalid resource type\n");
->   		return -ENODEV;
->   	}
->
+Laurent Pinchart
 
