@@ -1,76 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752315Ab3LaI4a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 03:56:30 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:18661 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027Ab3LaI43 convert rfc822-to-8bit (ORCPT
+	id S1752436Ab3LaJFm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 04:05:42 -0500
+Received: from mail-db9lp0250.outbound.messaging.microsoft.com ([213.199.154.250]:12233
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752027Ab3LaJFi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 03:56:29 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 31 Dec 2013 00:57:33 -0800
-From: Manoj Chourasia <mchourasia@nvidia.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "stable@kernel.org" <stable@kernel.org>
-Date: Tue, 31 Dec 2013 14:26:41 +0530
-Subject: [PATCH] usb: hub: Avoid tight loop holding hdev lock
-Thread-Topic: [PATCH] usb: hub: Avoid tight loop holding hdev lock
-Thread-Index: Ac8GBiiEsarYrb5KSmC3nq+L5ejVYg==
-Message-ID: <F1F6C959961EA744BBD5B8EEF8B8FEA16DDFCA6A2E@BGMAIL02.nvidia.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Tue, 31 Dec 2013 04:05:38 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 5
+X-BigFish: VS5(zz78fbmzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <lgirdwood@gmail.com>, <perex@perex.cz>,
+        <tiwai@suse.de>
+CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH] ASoC: add snd_soc_of_parse_master_clkdir() for dt
+Date: Tue, 31 Dec 2013 16:10:44 +0800
+Message-ID: <1388477444-18745-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+This patch adds snd_soc_of_parse_master_clkdir() and supports below
+style on dt:
 
-I was facing an issue bad usb device which was affecting other system. Kernel was trying to enumerate the device but it was failing continuously. Unfortunately that device was on mounted onboard in the platform so I cannot remove it.
-The continuous re-enumeration of the device causing other application malfunctioning which were using libusb. I found that usb_find_devices() call was stuck in usb_open for very long time. It was stuck in getting device lock which was taken in hub_event thread.
-Solution was to add msleep in the loop to prevent is spinning tightly. 
+[prefix]master-clkdir;
 
----------------------------------------------------------------------------
-usb: hub: Avoid tight loop holding hdev lock
+If this property is absent 0 will be returned, 1 otherwise.
+0 : SND_SOC_CLOCK_IN
+1 : SND_SOC_CLOCK_OUT
 
-   Other system call(like usb_open) to root port device
-    starved in getting device lock when the while loop
-    in hub_event loops tightly because of misbehaving device.
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
 
-    Adding a small msleep provides chance to system calls to
-    schedule.
+I'm not very sure whether this patch is need for dt.
 
-    The issue was returning -EPROTO and re-enumerating with
-    continuous hub_events. That was makes the while loop in
-    hub_event to spin tightly.
+For the CPU and CODEC devices' sysclk directions maybe different of
+the same DAI link.
 
-    usb_find_devices call from libusb tries to open all devices
-    including root hub. The call to usb_open stuck for very
-    long time(sometimes forever) because the priority of
-    kernel thread is higher than that system call in this case.
 
-    Signed-off-by: Manoj Chourasia <mchourasia@nvidia.com>  
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index c5c3667..b968fd5 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -4899,6 +4899,9 @@ static void hub_events(void)
-                usb_unlock_device(hdev);
-                kref_put(&hub->kref, hub_release);
+ include/sound/soc.h  |  2 ++
+ sound/soc/soc-core.c | 19 +++++++++++++++++++
+ 2 files changed, 21 insertions(+)
 
-+               /* preventing tight loop holding hdev lock */
-+               msleep(20);
-+
-         } /* end while (1) */
+diff --git a/include/sound/soc.h b/include/sound/soc.h
+index 5a049d9..1d6396a 100644
+--- a/include/sound/soc.h
++++ b/include/sound/soc.h
+@@ -1170,6 +1170,8 @@ int snd_soc_of_parse_card_name(struct snd_soc_card *card,
+ 			       const char *propname);
+ int snd_soc_of_parse_audio_routing(struct snd_soc_card *card,
+ 				   const char *propname);
++unsigned int snd_soc_of_parse_master_clkdir(struct device_node *np,
++					    const char *prefix);
+ unsigned int snd_soc_of_parse_daifmt(struct device_node *np,
+ 				     const char *prefix);
+ int snd_soc_of_get_dai_name(struct device_node *of_node,
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index be88df5..faf102f 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -4472,6 +4472,25 @@ int snd_soc_of_parse_audio_routing(struct snd_soc_card *card,
  }
+ EXPORT_SYMBOL_GPL(snd_soc_of_parse_audio_routing);
+ 
++unsigned int snd_soc_of_parse_master_clkdir(struct device_node *np,
++					    const char *prefix)
++{
++	char prop[128];
++
++	if (!prefix)
++		prefix = "";
++
++	/*
++	 * check "[prefix]master-clkdir"
++	 * true means SND_SOC_CLOCK_OUT
++	 * false means SND_SOC_CLOCK_IN
++	 */
++	snprintf(prop, sizeof(prop), "%smaster-clkdir", prefix);
++
++	return !!of_property_read_bool(np, prop);
++}
++EXPORT_SYMBOL_GPL(snd_soc_of_parse_master_clkdir);
++
+ unsigned int snd_soc_of_parse_daifmt(struct device_node *np,
+ 				     const char *prefix)
+ {
+-- 
+1.8.4
 
--Regards
-Manoj
 
