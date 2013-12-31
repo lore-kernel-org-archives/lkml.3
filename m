@@ -1,96 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756244Ab3LaC6P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 21:58:15 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:40383 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559Ab3LaC6O (ORCPT
+	id S1751949Ab3LaDWt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 22:22:49 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:32716 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708Ab3LaDWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 21:58:14 -0500
+	Mon, 30 Dec 2013 22:22:48 -0500
+Message-ID: <52C2385A.8020608@oracle.com>
+Date: Mon, 30 Dec 2013 22:22:02 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <52C18C6B.8090802@redhat.com>
-References: <1387394945-5704-1-git-send-email-prarit@redhat.com>
-	<CA+8MBbKHZ0i0mEYLUrmWwaofvnRcxc7Dvm+w0CfZf2uQydjdjQ@mail.gmail.com>
-	<CA+8MBbLMFW5fnUdgNRFpPv9+U1DqB5AeoDOV44kZHozibxjqSg@mail.gmail.com>
-	<52B336D4.8010809@redhat.com>
-	<CANVTcTa2AiHYrLQt-P_=4GmER_mqbSCZwY13phOkSA4XxrzF=A@mail.gmail.com>
-	<52BF060E.7090905@redhat.com>
-	<CANVTcTbNqwzVBzqzGisbUJGtVCa9RtA6OuD4hVp0O39Nz_KDrQ@mail.gmail.com>
-	<52C18C6B.8090802@redhat.com>
-Date: Tue, 31 Dec 2013 10:58:13 +0800
-Message-ID: <CANVTcTbBf8RomFtuvOrkVyHM136ViXVJr2UEQ-i6OvFmRYCqZA@mail.gmail.com>
-Subject: Re: [PATCH] x86: Add check for number of available vectors before CPU
- down [v2]
-From: rui wang <ruiv.wang@gmail.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: Tony Luck <tony.luck@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, X86-ML <x86@kernel.org>,
-        Michel Lespinasse <walken@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Yang Zhang <yang.z.zhang@intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>, janet.morgan@intel.com,
-        "Yu, Fenghua" <fenghua.yu@intel.com>,
-        chen gong <gong.chen@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: akpm@linux-foundation.org, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFC 1/2] mm: additional page lock debugging
+References: <1388281504-11453-1-git-send-email-sasha.levin@oracle.com> <20131230114317.GA8117@node.dhcp.inet.fi> <52C1A06B.4070605@oracle.com> <20131230224808.GA11674@node.dhcp.inet.fi>
+In-Reply-To: <20131230224808.GA11674@node.dhcp.inet.fi>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/30/13, Prarit Bhargava <prarit@redhat.com> wrote:
+On 12/30/2013 05:48 PM, Kirill A. Shutemov wrote:
+> On Mon, Dec 30, 2013 at 11:33:47AM -0500, Sasha Levin wrote:
+>> On 12/30/2013 06:43 AM, Kirill A. Shutemov wrote:
+>>> On Sat, Dec 28, 2013 at 08:45:03PM -0500, Sasha Levin wrote:
+>>>> We've recently stumbled on several issues with the page lock which
+>>>> triggered BUG_ON()s.
+>>>>
+>>>> While working on them, it was clear that due to the complexity of
+>>>> locking its pretty hard to figure out if something is supposed
+>>>> to be locked or not, and if we encountered a race it was quite a
+>>>> pain narrowing it down.
+>>>>
+>>>> This is an attempt at solving this situation. This patch adds simple
+>>>> asserts to catch cases where someone is trying to lock the page lock
+>>>> while it's already locked, and cases to catch someone unlocking the
+>>>> lock without it being held.
+>>>>
+>>>> My initial patch attempted to use lockdep to get further coverege,
+>>>> but that attempt uncovered the amount of issues triggered and made
+>>>> it impossible to debug the lockdep integration without clearing out
+>>>> a large portion of existing bugs.
+>>>>
+>>>> This patch adds a new option since it will horribly break any system
+>>>> booting with it due to the amount of issues that it uncovers. This is
+>>>> more of a "call for help" to other mm/ hackers to help clean it up.
+>>>>
+>>>> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+>>>> ---
+>>>>   include/linux/pagemap.h | 11 +++++++++++
+>>>>   lib/Kconfig.debug       |  9 +++++++++
+>>>>   mm/filemap.c            |  4 +++-
+>>>>   3 files changed, 23 insertions(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+>>>> index 1710d1b..da24939 100644
+>>>> --- a/include/linux/pagemap.h
+>>>> +++ b/include/linux/pagemap.h
+>>>> @@ -321,6 +321,14 @@ static inline pgoff_t linear_page_index(struct vm_area_struct *vma,
+>>>>   	return pgoff >> (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+>>>>   }
+>>>>
+>>>> +#ifdef CONFIG_DEBUG_VM_PAGE_LOCKS
+>>>> +#define VM_ASSERT_LOCKED(page) VM_BUG_ON_PAGE(!PageLocked(page), (page))
+>>>> +#define VM_ASSERT_UNLOCKED(page) VM_BUG_ON_PAGE(PageLocked(page), (page))
+>>>> +#else
+>>>> +#define VM_ASSERT_LOCKED(page) do { } while (0)
+>>>> +#define VM_ASSERT_UNLOCKED(page) do { } while (0)
+>>>> +#endif
+>>>> +
+>>>>   extern void __lock_page(struct page *page);
+>>>>   extern int __lock_page_killable(struct page *page);
+>>>>   extern int __lock_page_or_retry(struct page *page, struct mm_struct *mm,
+>>>> @@ -329,16 +337,19 @@ extern void unlock_page(struct page *page);
+>>>>
+>>>>   static inline void __set_page_locked(struct page *page)
+>>>>   {
+>>>> +	VM_ASSERT_UNLOCKED(page);
+>>>>   	__set_bit(PG_locked, &page->flags);
+>>>>   }
+>>>>
+>>>>   static inline void __clear_page_locked(struct page *page)
+>>>>   {
+>>>> +	VM_ASSERT_LOCKED(page);
+>>>>   	__clear_bit(PG_locked, &page->flags);
+>>>>   }
+>>>>
+>>>>   static inline int trylock_page(struct page *page)
+>>>>   {
+>>>> +	VM_ASSERT_UNLOCKED(page);
+>>>
+>>> This is not correct. It's perfectly fine if the page is locked here: it's
+>>> why trylock needed.
+>>>
+>>> IIUC, what we want to catch is the case when the page has already locked
+>>> by the task.
+>>
+>> Frankly, we shouldn't have trylock_page() at all.
 >
->
-> On 12/30/2013 07:56 AM, rui wang wrote:
->
->> An irq can be mapped to only one vector number, but can have multiple
->> destination CPUs. i.e. the same irq/vector can appear on multiple
->> CPUs' vector_irq[]. So checking data->affinity is necessary I think.
->
-> That's true Rui -- but here's what I think the scenario actually is.
->
-> Suppose we have a 4-cpu system, and we have an IRQ that is mapped to
-> multiple
-> cpu's vector_irq[].  For example, we have IRQ 200 that is mapped to CPU 2
-> vector_irq[50], and CPU 3 vector_irq[60].
->
+> It has valid use cases: if you don't want to sleep on lock, just give up
+> right away. Like grab_cache_page_nowait().
 
-This should not happen. There's only one LSB to fill the vector number
-in IRTE. So either 50 or 60 but not both for an irq.
+Agreed. We should be checking if the same process is the one holding the lock in
+general. I'll address that in the next version.
 
-...
-> Okay, so the big issue is that we need to do the calculation without this cpu,
+[snip]
 
-Yes if it's done before calling cpu_disable_comm().
-
-> so I think this works (sorry for the cut-and-paste)
+>> Many places lock a long list of pages in bulk - we could allow that with
+>> nesting, but then you lose your ability to detect trivial deadlocks.
 >
-> int check_irq_vectors_for_cpu_disable(void)
-> {
->        int irq, cpu;
->        unsigned int vector, this_count, count;
->        struct irq_desc *desc;
->        struct irq_data *data;
->        struct cpumask online_new; /* cpu_online_mask - this_cpu */
->        struct cpumask affinity_new; /* affinity - this_cpu */
->
->        cpumask_copy(&online_new, cpu_online_mask);
->        cpu_clear(smp_processor_id(), online_new);
->
->        this_count = 0;
->        for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
->                irq = __this_cpu_read(vector_irq[vector]);
->                if (irq >= 0) {
->                        desc = irq_to_desc(irq);
->                        data = irq_desc_get_irq_data(desc);
->                        cpumask_copy(&affinity_new, data->affinity);
->                        cpu_clear(smp_processor_id(), affinity_new);
->                        if (irq_has_action(irq) && !irqd_is_per_cpu(data) &&
->                            !cpumask_subset(&affinity_new, &online_new) &&
->                            !cpumask_empty(&affinity_new))
+> I see. But we need something better then plain VM_BUG() to be able to
+> analyze what happened.
 
-If this cpu is the only target, then affinity_new becomes empty.
-Should we count it for migration?
+I really want to use lockdep here, but I'm not really sure how to handle locks which live
+for a rather long while instead of being locked and unlocked in the same function like
+most of the rest of the kernel. (Cc Ingo, PeterZ).
 
-Thanks
-Rui
+Thanks,
+Sasha
+
