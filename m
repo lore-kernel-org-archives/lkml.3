@@ -1,158 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab3LaMOo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 07:14:44 -0500
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:64532 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752823Ab3LaMOm convert rfc822-to-8bit (ORCPT
+	id S1753147Ab3LaMVJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 07:21:09 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:46281 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752796Ab3LaMVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 07:14:42 -0500
-MIME-Version: 1.0
-In-Reply-To: <71CF8D7F32C5C24C9CD1D0E02D52498A770B3733@NTXXIAMBX02.xacn.micron.com>
-References: <71CF8D7F32C5C24C9CD1D0E02D52498A770B3733@NTXXIAMBX02.xacn.micron.com>
-Date: Tue, 31 Dec 2013 13:14:41 +0100
-Message-ID: <CAFLxGvx8v2qQ83o9sdDxYYstKu+KAKa7BeXx2bjfWVn3SaSQLw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] MTD: UBI: try to avoid program data to NOR flash
- after erasure interrupted
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: =?UTF-8?B?UWkgV2FuZyDnjovotbcgKHFpd2FuZyk=?= <qiwang@micron.com>
-Cc: "dedekind1@gmail.com" <dedekind1@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Adrian Hunter <adrian.hunter@intel.com>,
+	Tue, 31 Dec 2013 07:21:06 -0500
+Date: Tue, 31 Dec 2013 12:20:36 +0000
+From: Mark Brown <broonie@kernel.org>
+To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+Cc: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "perex@perex.cz" <perex@perex.cz>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
+        "Fabio.Estevam@freescale.com" <Fabio.Estevam@freescale.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=Big5
-Content-Transfer-Encoding: 8BIT
+Message-ID: <20131231122036.GM31886@sirena.org.uk>
+References: <1388114078-24517-1-git-send-email-Li.Xiubo@freescale.com>
+ <20131230121113.GQ31886@sirena.org.uk>
+ <4c44077c52604d0b85c4babb59268eb7@BY2PR03MB505.namprd03.prod.outlook.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Wm6Et8bt556AKwYA"
+Content-Disposition: inline
+In-Reply-To: <4c44077c52604d0b85c4babb59268eb7@BY2PR03MB505.namprd03.prod.outlook.com>
+X-Cookie: Go climb a gravity well!
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: simple-card: cleanup asoc_simple_card_parse_of()
+ code
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 7, 2013 at 9:18 AM, Qi Wang ¤ý°_ (qiwang) <qiwang@micron.com> wrote:
-> Hi:
-> As we talked in mail before, please check my patch as below:
->
-> From: Qi Wang <qiwang@micron.com>
->
-> nor_erase_prepare() will be called before erase a NOR flash, it will program '0'
-> into a block to mark this block. But program data into a erasure interrupted block
-> can cause program timtout(several minutes at most) error, could impact other
-> operation on NOR flash. So UBIFS can read this block first to avoid unneeded
-> program operation.
->
-> This patch try to put read operation at head of write operation in
-> nor_erase_prepare(), read out the data.
-> If the data is already corrupt, then no need to program any data into this block,
-> just go to erase this block.
->
-> Signed-off-by: Qi Wang <qiwang@qiwang@micron.com>
 
-This email address is malformed.
+--Wm6Et8bt556AKwYA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> ---
-> diff --git a/drivers/mtd/ubi/io.c b/drivers/mtd/ubi/io.c
-> index bf79def..0a6343d 100644
-> --- a/drivers/mtd/ubi/io.c
-> +++ b/drivers/mtd/ubi/io.c
-> @@ -499,6 +499,7 @@ static int nor_erase_prepare(struct ubi_device *ubi, int pnum)
->         size_t written;
->         loff_t addr;
->         uint32_t data = 0;
-> +       struct ubi_ec_hdr ec_hdr;
->         /*
->          * Note, we cannot generally define VID header buffers on stack,
->          * because of the way we deal with these buffers (see the header
-> @@ -509,49 +510,38 @@ static int nor_erase_prepare(struct ubi_device *ubi, int pnum)
->         struct ubi_vid_hdr vid_hdr;
->
->         /*
-> +        * If VID or EC is valid, need to corrupt it before erase operation.
->          * It is important to first invalidate the EC header, and then the VID
->          * header. Otherwise a power cut may lead to valid EC header and
->          * invalid VID header, in which case UBI will treat this PEB as
->          * corrupted and will try to preserve it, and print scary warnings.
->          */
->         addr = (loff_t)pnum * ubi->peb_size;
-> -       err = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
-> -       if (!err) {
-> -               addr += ubi->vid_hdr_aloffset;
-> -               err = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
-> -               if (!err)
-> -                       return 0;
-> +       err = ubi_io_read_ec_hdr(ubi, pnum, &ec_hdr, 0);
-> +       if (err != UBI_IO_BAD_HDR_EBADMSG && err != UBI_IO_BAD_HDR &&
-> +           err != UBI_IO_FF){
-> +               err1 = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
-> +               if(err1)
-> +                       goto error;
->         }
->
-> -       /*
-> -        * We failed to write to the media. This was observed with Spansion
-> -        * S29GL512N NOR flash. Most probably the previously eraseblock erasure
-> -        * was interrupted at a very inappropriate moment, so it became
-> -        * unwritable. In this case we probably anyway have garbage in this
-> -        * PEB.
-> -        */
-> -       err1 = ubi_io_read_vid_hdr(ubi, pnum, &vid_hdr, 0);
-> -       if (err1 == UBI_IO_BAD_HDR_EBADMSG || err1 == UBI_IO_BAD_HDR ||
-> -           err1 == UBI_IO_FF) {
-> -               struct ubi_ec_hdr ec_hdr;
-> -
-> -               err1 = ubi_io_read_ec_hdr(ubi, pnum, &ec_hdr, 0);
-> -               if (err1 == UBI_IO_BAD_HDR_EBADMSG || err1 == UBI_IO_BAD_HDR ||
-> -                   err1 == UBI_IO_FF)
-> -                       /*
-> -                        * Both VID and EC headers are corrupted, so we can
-> -                        * safely erase this PEB and not afraid that it will be
-> -                        * treated as a valid PEB in case of an unclean reboot.
-> -                        */
-> -                       return 0;
-> +       err = ubi_io_read_vid_hdr(ubi, pnum, &vid_hdr, 0);
-> +       if (err != UBI_IO_BAD_HDR_EBADMSG && err != UBI_IO_BAD_HDR &&
-> +           err != UBI_IO_FF){
-> +               addr += ubi->vid_hdr_aloffset;
-> +               err1 = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
-> +               if (err1)
-> +                       goto error;
->         }
-> +       return 0;
->
-> +error:
->         /*
-> -        * The PEB contains a valid VID header, but we cannot invalidate it.
-> +        * The PEB contains a valid VID or EC header, but we cannot invalidate it.
->          * Supposedly the flash media or the driver is screwed up, so return an
->          * error.
->          */
-> -       ubi_err("cannot invalidate PEB %d, write returned %d read returned %d",
-> +       ubi_err("cannot invalidate PEB %d, read returned %d write returned %d",
->                 pnum, err, err1);
->         ubi_dump_flash(ubi, pnum, 0, ubi->peb_size);
->         return -EIO;
-> ---
->
-> I have tested this patch on Micron NOR flash, part number is¡GJS28F512M29EWHA.
+On Tue, Dec 31, 2013 at 03:27:53AM +0000, Li.Xiubo@freescale.com wrote:
 
-Please add this information to the commit message.
+> Also, for most of the devices of the same DAI link, they use the same DAI
+> formats, but I have found some drivers like : "sound/soc/pxa/magician.c"
+> and "sound/soc/s6000/s6105-ipcam.c", etc, may have different DAI format
+> settings for some reasons(maybe some formats are the CPU/Codec devices
+> default setting that it needn't set it here or others).
 
-> If have any questions, please let me know.
+The ipcam still has that?  It was supposed to have been fixed before it
+was merged since it was identified as a bug in the CPU DAI during review. =
+=20
+I don't know about magician since it was before my time but I suspect it
+suffers from the same issue or that there's something else in there that
+needs some other hardware more explicitly representing.
 
->From UBIs point of view the patch seems OK to me, but it is malformed,
-I was unable to apply it using git-am.
-Did you use MS Outlook? :)
-Please send it using git send-mail or any other sane mailer.
+> I think maybe this is also the reason why the simple-card has common DAI
+> format and CPU/CODEC private DAI formats at the same time.
 
-> Thank you
->
-> Best Regards,
-> Qi Wang ¤ý°_
-> ESG APAC AE
-> Tel: 86-021-38997158
-> Mobile: 86-15201958202
-> Email: qiwang@micron.com
-> Address: No 601 Fasai Rd, Pudong, Shanghai, China, 200131
+I'd really want to see a real use case that actually was a simple card.
 
+--Wm6Et8bt556AKwYA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
--- 
-Thanks,
-//richard
+iQIcBAEBAgAGBQJSwraRAAoJELSic+t+oim98F4P/icaQXNJIiARIwWF3E0JaXev
+kpiIwjWbTq7RX4icZTMfwVgWJMNBtQyP6+RM9aQZESUFdMljjV9tiKI/tOOefuka
+5lZDwgf48YwctZxfHvYepxmggQbyLEaPfUzFX3YqBB426MTcDYOSZk2SgZrz9aEL
+F5cl0qGDy/iF+456K+JOHGVjGZoz8nljdGuaSCrmCIa5EHH0I98hrwF+CijGV7Nc
+rET6aOkQJoJ6mfXewIg32xHr6vpMvP7kVc0dC910NHltW4RAptHYRYSJqfi/J+0Z
+fMLgTEPpNhBQ74qMl3YcYvo3BBjH+Nh6ZCZG+z0CCW5ik8Nao494kGkmSnmd8nAh
+FbKiwCjK+0F8fgXX/xDPZ07iEv8ipzcnqn4PThbSJAYSl3L0uShGy9EQ+INUvvbM
+byLLvCIMLShQu59FhM1oJWq5LBgoVZg//0hfuYt4QxaIYrFrKW8t8IAhnmXxHYJr
+X21pf2OZvsNpAZc1d1/yf6W6h911kZzyWUPUzObIsvmaBnAs5RMwE7WxbYOVDIt1
+7BUd5w4zOf4KuCVc41TBgMyXcy87ekQqKCjPXi5+onM0MN8G91xW/xtCDO6PnDvx
+KBoqL7wHWdCFg4yRroOnWtc1IdWFIirJhq+RMYc++03bWqtmkA++FpUm5wgbQZbk
+QGJHYqrwZWOBoZ4UvKnw
+=zn/2
+-----END PGP SIGNATURE-----
+
+--Wm6Et8bt556AKwYA--
