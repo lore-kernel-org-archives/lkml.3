@@ -1,72 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756593Ab3LaUGl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 15:06:41 -0500
-Received: from mailuogwhop.emc.com ([168.159.213.141]:23798 "EHLO
-	mailuogwhop.emc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755088Ab3LaUGh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 15:06:37 -0500
-X-Greylist: delayed 1446 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 Dec 2013 15:06:37 EST
-X-DKIM: OpenDKIM Filter v2.4.3 mailuogwprd03.lss.emc.com rBVJfrLO021828
-X-DKIM: OpenDKIM Filter v2.4.3 mailuogwprd03.lss.emc.com rBVJfrLO021828
-From: "berthiaume, wayne" <wayne.berthiaume@emc.com>
-To: "Martin K. Petersen" <mkp@mkp.net>
-CC: Jens Axboe <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Date: Tue, 31 Dec 2013 14:41:35 -0500
-Subject: RE: status of block-integrity
-Thread-Topic: status of block-integrity
-Thread-Index: Ac7/6BtNUuqhipU5TgGxPjh53rlTdAGd3/tQ
-Message-ID: <7B999F046DA9D54B825BD537939A3E2F023284EC69@MX23A.corp.emc.com>
-References: <20131222192128.GA28532@infradead.org>
- <yq11u134rmt.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq11u134rmt.fsf@sermon.lab.mkp.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756614Ab3LaUG6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 15:06:58 -0500
+Received: from www.sr71.net ([198.145.64.142]:41979 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755088Ab3LaUG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Dec 2013 15:06:57 -0500
+Message-ID: <52C323DA.4020203@sr71.net>
+Date: Tue, 31 Dec 2013 12:06:50 -0800
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-X-Sentrion-Hostname: mailusrhubprd52.lss.emc.com
-X-RSA-Classifications: public
+To: Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org
+CC: x86@kernel.org
+Subject: Re: [PATCH 09/12] x86 Kconfig: create mtrr menu
+References: <20131230184046.F5E42919@viggo.jf.intel.com> <20131230184058.0A59E033@viggo.jf.intel.com> <52C31A51.5000102@infradead.org>
+In-Reply-To: <52C31A51.5000102@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You can add there are SCSI targets out there employing this feature as well. =;^)
+On 12/31/2013 11:26 AM, Randy Dunlap wrote:
+> On 12/30/13 10:40, Dave Hansen wrote:
+>> From: Dave Hansen <dave.hansen@linux.intel.com>
+>> This removes another 4 lines from the default x86 menu.  Note
+>> that I slightly changed the MTRR prompt text since PAT is
+>> hidden under here.  This makes PAT easier to find since it
+>> "depends on MTRR" anyway.
+> 
+> I would have put MTRR/PAT in the new Processor Options and Features
+> menu.
 
------Original Message-----
-From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-owner@vger.kernel.org] On Behalf Of Martin K. Petersen
-Sent: Monday, December 23, 2013 8:35 AM
-To: Christoph Hellwig
-Cc: Jens Axboe; linux-kernel@vger.kernel.org; linux-scsi@vger.kernel.org
-Subject: Re: status of block-integrity
+Sounds good to me.  I'll move it.
 
->>>>> "Christoph" == Christoph Hellwig <hch@infradead.org> writes:
+> How do you decide what goes where?
 
-Christoph> We have the block integrity code to support DIF/DIX in the 
-Christoph> the tree for about 5 and a half years, and we still don't 
-Christoph> have a single consumer of it.
-
-What do you mean? If you have a DIX-capable HBA (lpfc, qla2xxx, zfcp) then integrity protection is active from the block layer down. The only code that's not currently being exercised are the tag interleaving functions.  I was hoping the FS people would use them for back pointers but nobody seemed to bite.
-
-
-Christoph> Given that we'll have a lot of work to do in this area with 
-Christoph> block multiqueue I think it's time to either kill it off for 
-Christoph> good or make sure we can actually use and test it.
-
-I don't understand why multiqueue would require a lot of work? It's just an extra scatterlist per request.
-
-And obviously, if there's anything that needs to be done in this area I'll be happy to do so...
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
-
---
-To unsubscribe from this list: send the line "unsubscribe linux-scsi" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+It's pretty arbitrary. :)  But, better than what we have now where
+almost *EVERYTHING* is hard to find in the noise.
