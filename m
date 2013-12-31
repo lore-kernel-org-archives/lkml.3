@@ -1,159 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792Ab3LaKRK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 05:17:10 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:5003 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752254Ab3LaKRH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 05:17:07 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 31 Dec 2013 02:18:11 -0800
-Message-ID: <52C299A8.4010108@nvidia.com>
-Date: Tue, 31 Dec 2013 18:17:12 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1752709Ab3LaKUg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 05:20:36 -0500
+Received: from know-smtprelay-omc-1.server.virginmedia.net ([80.0.253.65]:45778
+	"EHLO know-smtprelay-omc-1.server.virginmedia.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752254Ab3LaKUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Dec 2013 05:20:35 -0500
+X-Greylist: delayed 345 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 Dec 2013 05:20:34 EST
+X-Originating-IP: [82.36.39.136]
+X-Spam: 0
+X-Authority: v=2.1 cv=WI/xXxcR c=1 sm=1 tr=0 a=h3ZJzbuz6X3s3VlFudNWSw==:117
+ a=h3ZJzbuz6X3s3VlFudNWSw==:17 a=6vexxxhns_QA:10 a=T1TLPjPyWI4A:10
+ a=3NElcqgl2aoA:10 a=k1j_C7plYBUA:10 a=8nJEP1OIZ-IA:10 a=a5Gf7U6LAAAA:8
+ a=sa0oFtYSy7YA:10 a=aR16PxjQAAAA:8 a=RMvpqy4VbVQiR7yz-BgA:9 a=wPNLvfGTeEIA:10
+ a=TRaWWqdqQ4oA:10
+Message-ID: <52C29918.4060102@blueyonder.co.uk>
+Date: Tue, 31 Dec 2013 10:14:48 +0000
+From: Sid Boyce <sboyce@blueyonder.co.uk>
+Reply-To: sboyce@blueyonder.co.uk
+Organization: blueyonder.co.uk
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Eduardo Valentin <eduardo.valentin@ti.com>, <swarren@wwwdotorg.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
-        <linux@roeck-us.net>, <rui.zhang@intel.com>
-CC: <wni@nvidia.com>, <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
-        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv9 02/20] thermal: introduce device tree parser
-References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
- <1384285582-16933-3-git-send-email-eduardo.valentin@ti.com>
-In-Reply-To: <1384285582-16933-3-git-send-email-eduardo.valentin@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: LKML Mailing List <linux-kernel@vger.kernel.org>,
+        opensuse factory list <opensuse-factory@opensuse.org>
+Subject: Possible 3.13-rc nouveau regression with GT 560 Ti
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2013 03:46 AM, Eduardo Valentin wrote:
-> This patch introduces a device tree bindings for
-> describing the hardware thermal behavior and limits.
-> Also a parser to read and interpret the data and feed
-> it in the thermal framework is presented.
->
-> This patch introduces a thermal data parser for device
-> tree. The parsed data is used to build thermal zones
-> and thermal binding parameters. The output data
-> can then be used to deploy thermal policies.
->
-> This patch adds also documentation regarding this
-> API and how to define tree nodes to use
-> this infrastructure.
->
-> Note that, in order to be able to have control
-> on the sensor registration on the DT thermal zone,
-> it was required to allow changing the thermal zone
-> .get_temp callback. For this reason, this patch
-> also removes the 'const' modifier from the .ops
-> field of thermal zone devices.
->
-> ...
-> +
-> +static int of_thermal_get_trend(struct thermal_zone_device *tz, int trip,
-> +				enum thermal_trend *trend)
-> +{
-> +	struct __thermal_zone *data = tz->devdata;
-> +	long dev_trend;
-> +	int r;
-> +
-> +	if (!data->get_trend)
-> +		return -EINVAL;
-> +
-> +	r = data->get_trend(data->sensor_data, &dev_trend);
-I think the ->get_trend should be defined as:
-.get_trend(*dev, int, *long)
-so that the "trip" can be passed into it, otherwise the "trip" can't be
-used.
-And the dev_trend should be returned as THERMAL_TREND_XXX directly.
-because the THERM_TREND_xx is more than three states.
+System x86_64 with openSUSE 13.1.
+X.Org version: 1.14.99.905
 
-The code may be something like:
-r = data->get_trend(data->sensor_data, trip, &dev_trend);
-if (r)
-    return r;
-*trend = dev_trend;
-return 0;
-> +	if (r)
-> +		return r;
-> +
-> +	/* TODO: These intervals might have some thresholds, but in core code */
-> +	if (dev_trend > 0)
-> +		*trend = THERMAL_TREND_RAISING;
-> +	else if (dev_trend < 0)
-> +		*trend = THERMAL_TREND_DROPPING;
-> +	else
-> +		*trend = THERMAL_TREND_STABLE;
-> +
-> +	return 0;
-> +}
-> +
-> .....
-> +
-> +/***   sensor API   ***/
-> +
-> +static struct thermal_zone_device *
-> +thermal_zone_of_add_sensor(struct device_node *zone,
-> +			   struct device_node *sensor, void *data,
-> +			   int (*get_temp)(void *, long *),
-> +			   int (*get_trend)(void *, long *))
-> +{
-> +	struct thermal_zone_device *tzd;
-> +	struct __thermal_zone *tz;
-> +
-> +	tzd = thermal_zone_get_zone_by_name(zone->name);
-I think we could get the thermal zone by node,
-something like:
-thermal_zone_get_zone_by_node(zone);
-so that it can get unique zone.
+openSUSE 12.2 kernels boot successfully into a graphical screen, login 
+to KDE4, etc. all normal.
 
-I think we can add a member "struct device_node *np" in the
-thermal_zone_device,
-and set it after you call thermal_zone_device_register successfully.
-Then add following codes:
-thermal_zone_get_zone_by_node(struct device_node *node)
-{
-        struct thermal_zone_device *pos = NULL, *ref = ERR_PTR(-ENODEV);
-        bool found = false;
+3.13-rc kernels boot fully with X running but no graphical screen and it 
+freezes in VC with not all the startup messages displayed but I could 
+ssh in from another box to check dmesg and logs.
 
-        if (!node)
-                return ERR_PTR(-EINVAL);
+Xorg.0.log which I thought I had saved did not log an error.
 
-        mutex_lock(&thermal_list_lock);
-        list_for_each_entry(pos, &thermal_tz_list, node)
-                if (node == pos->np) {
-                        ref = pos;
-                        found = true;
-                        break;
-                }
-        mutex_unlock(&thermal_list_lock);
+dmesg said "nouveau Playlist update failed".
 
-        return ref;
-}
+Changed the GeForce GT 560 Ti for a GeForce 8600 GT and 3.13.0-rc6 is up 
+and running.
 
-Thanks.
-Wei.
-> +	if (IS_ERR(tzd))
-> +		return ERR_PTR(-EPROBE_DEFER);
-> +
-> +	tz = tzd->devdata;
-> +
-> +	mutex_lock(&tzd->lock);
-> +	tz->get_temp = get_temp;
-> +	tz->get_trend = get_trend;
-> +	tz->sensor_data = data;
-> +
-> +	tzd->ops->get_temp = of_thermal_get_temp;
-> +	tzd->ops->get_trend = of_thermal_get_trend;
-> +	mutex_unlock(&tzd->lock);
-> +
-> +	return tzd;
-> +}
-> +
->
+If necessary I can go back to the GT 560 Ti to gather dmesg and Xorg log 
+information.
+Regards
+Sid.
+
+-- 
+Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
+Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support
+Senior Staff Specialist, Cricket Coach
+Microsoft Windows Free Zone - Linux used for all Computing Tasks
 
