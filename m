@@ -1,102 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756507Ab3LaTW6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 14:22:58 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:56228 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756300Ab3LaTW5 (ORCPT
+	id S1756531Ab3LaT0N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 14:26:13 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50868 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756414Ab3LaT0M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 14:22:57 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: jjhiblot@traphandler.com, nicolas.ferre@atmel.com,
-        jean-jacques hiblot <jean-jacques.hiblot@jdsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] at91: dt: sam9261: Added DM9000 in the device tree
-Date: Tue, 31 Dec 2013 20:19:51 +0100
-Message-ID: <4526077.qASk8HSHKP@wuerfel>
-User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <1388507534-10570-7-git-send-email-jjhiblot@traphandler.com>
-References: <1388507534-10570-1-git-send-email-jjhiblot@traphandler.com> <1388507534-10570-7-git-send-email-jjhiblot@traphandler.com>
+	Tue, 31 Dec 2013 14:26:12 -0500
+Message-ID: <52C31A51.5000102@infradead.org>
+Date: Tue, 31 Dec 2013 11:26:09 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:U+taZpBlugsCjnNg6SdlvZ5rsSiTqCZWun/Ww8jOUtk
- RCQT1AYn5Q6uxXqBmwGYR7GtTEjxEZpgLXsMuD48zU7/s5AjHx
- Mtuvj7pfTrhRYbCBH1BcHawMlEhRM7t03KsIZ9SLd+9tXGSS7K
- QlU8QLsQ9ot9GG7FJUyEpGbHSbz2jkhhX/fs8B3tiQQxfBiE7L
- H/pZy/30EmB9Jdq6efdebvFDF7ejk/7pd95FyW/3PxFu+sDXDc
- R05f82+NfZlmTUBo2wRoEOO0xUx+pgHhGWQ70xSrFNAtnbrUIc
- pJEVOauFPP1jNH7QimPfMN2Gjk4fx7qGqGE1Ry9w8/3Z13g/oj
- gMW9FDHk6Iht/5CIIT1A=
+To: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org
+CC: x86@kernel.org
+Subject: Re: [PATCH 09/12] x86 Kconfig: create mtrr menu
+References: <20131230184046.F5E42919@viggo.jf.intel.com> <20131230184058.0A59E033@viggo.jf.intel.com>
+In-Reply-To: <20131230184058.0A59E033@viggo.jf.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 31 December 2013 17:32:14 jjhiblot@traphandler.com wrote:
+On 12/30/13 10:40, Dave Hansen wrote:
+> From: Dave Hansen <dave.hansen@linux.intel.com>
 > 
-> +                       ethernet@30000000 {
-> +                               compatible = "davicom,dm9000";
-> +                               reg = <0x30000000 0x2 0x30000004 0x2>;
-> +                               interrupt-parent = <&pioC>;
-> +                               interrupts = <11 IRQ_TYPE_EDGE_BOTH>;
-> +                               local-mac-address = [00 00 de ad be ef];
-> +                               davicom,no-eeprom;
-> +
-> +                               smc,cs = <2>;
-> +                               smc,ncs_read_setup = <0>;
-> +                               smc,nrd_setup = <2>;
-> +                               smc,ncs_write_setup = <0>;
-> +                               smc,nwe_setup = <2>;
-> +                               smc,ncs_read_pulse = <8>;
-> +                               smc,nrd_pulse = <4>;
-> +                               smc,ncs_write_pulse = <8>;
-> +                               smc,nwe_pulse = <4>;
-> +                               smc,read_cycle = <16>;
-> +                               smc,write_cycle = <16>;
-> +                               smc,tdf_cycles = <1>;
-> +                               smc,tdf_optimized = <0>;
-> +                               smc,page_size = <0>;
-> +                               smc,byte_access_type = <1>;
-> +                               smc,bus_width = <1>;
-> +                               smc,nwait_mode = <0>;
-> +                               smc,read_mode = <1>;
-> +                               smc,write_mode = <1>;
-> +                       };
+> This removes another 4 lines from the default x86 menu.  Note
+> that I slightly changed the MTRR prompt text since PAT is
+> hidden under here.  This makes PAT easier to find since it
+> "depends on MTRR" anyway.
 
-I don't like how this forces you to mix the properties
-of the ethernet device with the properties of the smc
-port. I would also like to see the address translation
-reflected in the DT nodes. This should probably just work
-out if you restructure the DT representation, and won't need
-changes in the driver.
+I would have put MTRR/PAT in the new Processor Options and Features
+menu.
 
-How about this:
+How do you decide what goes where?
 
-	smc: smc@ffffec00 {
-		#address-cells = <2>; /* cs, address */
-		#size-cells = <1>;
-		ranges = <2 0 0x30000000 0x10000000>
-			 <3 0 0x40000000 0x10000000>;
 
-		extbus@2.0 {
-			compatible = "simple-bus";
-			#address-cells = <1>;
-			#size-cells = <1>;
-			ranges = <0 2 0 0x10000000>;
-			smc,ncs_read_setup = <0>;
-			smc,nrd_setup = <2>;
-			smc,...
-
-			ethernet@0 {
-				compatible = "davicom,dm9000";
-				reg = <0x0 0x2> <0x4 0x2>;
-			};
-		};
-	};
-
-If each bus interface has a fixed range of registers, you can actually
-collapse the upper two nodes again and just have one device per
-chipselect.
-
-	Arnd
+-- 
+~Randy
