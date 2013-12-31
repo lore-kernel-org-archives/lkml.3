@@ -1,31 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab3LaMrm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 07:47:42 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:57820 "EHLO
+	id S1753375Ab3LaMtx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 07:49:53 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60760 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753001Ab3LaMrl (ORCPT
+	with ESMTP id S1751767Ab3LaMtv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 07:47:41 -0500
-Date: Tue, 31 Dec 2013 12:47:37 +0000
+	Tue, 31 Dec 2013 07:49:51 -0500
+Date: Tue, 31 Dec 2013 12:49:45 +0000
 From: Mark Brown <broonie@kernel.org>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Lars-Peter Clausen <lars@metafoo.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20131231124737.GT31886@sirena.org.uk>
-References: <20131231113138.102044cf@armhf>
- <20131231115927.GK31886@sirena.org.uk>
- <20131231133610.2d14bc29@armhf>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: lgirdwood@gmail.com, rob@landley.net, kuninori.morimoto.gx@renesas.com,
+        fabio.estevam@freescale.com, alsa-devel@alsa-project.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20131231124945.GU31886@sirena.org.uk>
+References: <1387776299-25418-1-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EzyTiZo8w1pFn3ee"
+	protocol="application/pgp-signature"; boundary="3e0+L7380OK+0MAI"
 Content-Disposition: inline
-In-Reply-To: <20131231133610.2d14bc29@armhf>
+In-Reply-To: <1387776299-25418-1-git-send-email-Li.Xiubo@freescale.com>
 X-Cookie: Go climb a gravity well!
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: generic: add generic compound card with DT support
+Subject: Re: [PATCH] ASoC: simple-card: Cleanup __asoc_simple_card_dai_init()
+ ret check
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,66 +33,37 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---EzyTiZo8w1pFn3ee
+--3e0+L7380OK+0MAI
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Tue, Dec 31, 2013 at 01:36:10PM +0100, Jean-Francois Moine wrote:
-> Mark Brown <broonie@kernel.org> wrote:
+On Mon, Dec 23, 2013 at 01:24:59PM +0800, Xiubo Li wrote:
+> The ret parameter is always equal to zero till here.
 
-> > It would have been useful to have provided that feedback at the time
-> > rather than waiting until after it had been merged - it was in review
-> > for long enough.  It would also be good to articulate the issues with
+Applied, thanks.  This is on the edge of what's a good cleanup - it's
+a taste thing if it's better to have every call be the same so the code
+looks more regular or if it's better to have the redundant test removed.
 
-> Sorry, I spent a lot of time on DPCM, and I was not yet ready to propose
-> something when you accepted Kuninori's patch.
-
-It'd still have been worthwhile to say that you weren't sure it'd work
-even if you didn't have an alternative; you could perhaps have worked on
-it together.
-
-> > These are Linux-internal concepts which shouldn't appear in a DT binding
-> > or at the very least need definition.  One thing to consider here is
-> > that these things are all about the internals of a SoC and you'd
-> > therefore expect that they would be defined separately from the card so
-> > as to avoid having to replicate information in every card using a given
-> > SoC.
-
-> Do you mean that, as DPCM cannot be in the DT, there should be a
-> specific driver for the Cubox audio card (Marvell Armada 510 + NXP HDMI
-> transmitter)?
-
-I'm not saying it can't be in the DT, I'm saying that this doesn't look
-like the right way to do things.  For example we could have a way of
-specifying parts of the card separately so the SoC can be referenced as
-a whole by the card, or we could have the internals behind the DAI
-hidden from the DT entirely so the DT just links the DAIs together and
-the SoC internals come from the implementation of the DAI devices.
-
-If you can't figure something out a more specific binding is fine, but
-if you're trying to do a generic binding for everything then these
-things need to be considered.
-
---EzyTiZo8w1pFn3ee
+--3e0+L7380OK+0MAI
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSwrzmAAoJELSic+t+oim9ekIP/2NFKTxQXIbe4FrUiL3x58r7
-Z/Awu4SJpxrCs7/6oRnNCPH54hT8S5cRZZX0aqzLOxwnFLGDzjD9hugGTZdYlvCd
-lKaVxLCFKwI/dxc/krkOi0Fmes+1itSMCmG3imBr6UWPozcHbo/gzLjb656SYtAR
-X58wA5hd/0EY3lA49JDZx2KZNnMLcubA+UgOlbWU1gr2FGdplIsknOhBvtU/WIp3
-KxWMbbJU/xbed02/HseOgv3CdCqx98ngt7CvwS2s5+ZZFKs4RZf+ZDW66nLRkZMC
-Fe/1p2mD81Y8HGwjJNliDXt+fyfOLCrN+pfYeob6Nqz/yyUsF5rZmK/wfBYdBLr6
-6eY3jHufRmw3QuoaKcoCB7UmSFZKyADX2DjKnSYOshlMEdpJf+J9SfMmI0ji60Mn
-LaUUySRYy03W/2eMmT+Q5wi0BEIPB8uLqLk4SbERPIm+0r09Lz+i1HfBQDhxrnQn
-7Dbf/k/uGrpDVCgdp92NsVXyiy8qrlEgjjgJlhAsCTJZl3AmI1gB2pE2yN2ksvqy
-FPCWc/hWjgSIanKQXAi8tk09vWvnjoDHo45cIFEWOD6WlGK668MiZLRCdHvc+UxZ
-MG/YLvSwBcyFJy9q1FRjh2znfHlXyhLbhW8CVD/sjotap4eLvWKAECKcN5kkt25P
-V7c4i6aU91UJpU+rGbX4
-=prZY
+iQIcBAEBAgAGBQJSwr1mAAoJELSic+t+oim94mwQAJ5EMf3L0wkX6idAIhmz3NyH
+xmtYTuePJUizh/ylrk4/2qLpEF2Q/YoCEtPBXHiNEqjmKn+BD1aegMt1U8OoAwbb
+20sOUnFvNcUl2xAWOymIzUh1I23rOeb9Sw8K9c4CuGGSyarjhLhS5q3qUyXK0nSM
+3E/PcxtIqhfzm2uDmFJXBlaAZFNmb+iuAsnP0/WkYNgcNIk5ei1vYsUFIs+7X2J4
+Rq8Y35Q7xMKrZ0sSS8Q58FwL8Z3GN1fCY0s+9ssYyu9d5RZ2WPwFvN3e4Iy8V8GD
+PaPtSDm7deM8WeAAJlB7dQNiurgcI5pZz7QwiiUtBESMj9iv2jflJxGW+dFDwLSX
+mSZzZpUyjmNK3X4lIbIc5bAmgLQVp3nbxF0VDEhkoi0IHU8I7LenI/TVOg7gFZY6
+nHQ0HNhA/ZAVbvFrkX+p8xXe+phARbcqD4tON7pc+cZYVMphzEg/EibZl1jsbSUi
+i/5AeOJZgf1bbr8V5VPC1dWKfAmANcd2N9HXuT97dBBT7f7pEVXIIZ96Ux8pUcQM
+HQaPC8m9CGcIk7K0/H7p0aMP1cl1SWNd9P54YjsEpFQhLSTMTJIU5o4sygWYU8ur
+24lFFuKV1vmCa/EvsPSGdGxFN1e6l9sckki8DtvPj7TW4r8rQrF8DH8dZUMZ5c+V
+JxwRvtPltKtGu7jkFUCe
+=TEwv
 -----END PGP SIGNATURE-----
 
---EzyTiZo8w1pFn3ee--
+--3e0+L7380OK+0MAI--
