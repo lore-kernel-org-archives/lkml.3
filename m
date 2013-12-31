@@ -1,86 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648Ab3LaVwj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 16:52:39 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52053 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756383Ab3LaVwi (ORCPT
+	id S1756674Ab3LaVyc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 16:54:32 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:36571 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756383Ab3LaVyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 16:52:38 -0500
-Date: Tue, 31 Dec 2013 22:52:37 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: kys@microsoft.com, haiyangz@microsoft.com, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: Trivial cleanups for drivers/hv/connection.c
-Message-ID: <20131231215236.GA18573@amd.pavel.ucw.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 31 Dec 2013 16:54:31 -0500
+Date: Tue, 31 Dec 2013 16:54:29 -0500 (EST)
+Message-Id: <20131231.165429.1269765488967765151.davem@davemloft.net>
+To: cascardo@linux.vnet.ibm.com
+Cc: netdev@vger.kernel.org, dm@chelsio.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cxgb4: allow large buffer size to have page size
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1387820069-13623-1-git-send-email-cascardo@linux.vnet.ibm.com>
+References: <1387820069-13623-1-git-send-email-cascardo@linux.vnet.ibm.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 31 Dec 2013 13:54:31 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__u32 is only useful for kernel-user interface, u32 should be enough
-for kernel. Formatting was very confusing around __get_free_pages().
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Date: Mon, 23 Dec 2013 15:34:29 -0200
 
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
+> Since commit 52367a763d8046190754ab43743e42638564a2d1
+> ("cxgb4/cxgb4vf: Code cleanup to enable T4 Configuration File support"),
+> we have failures like this during cxgb4 probe:
+> 
+> cxgb4 0000:01:00.4: bad SGE FL page buffer sizes [65536, 65536]
+> cxgb4: probe of 0000:01:00.4 failed with error -22
+> 
+> This happens whenever software parameters are used, without a
+> configuration file. That happens when the hardware was already
+> initialized (after kexec, or after csiostor is loaded).
+> 
+> It happens that these values are acceptable, rendering fl_pg_order equal
+> to 0, which is the case of a hard init when the page size is equal or
+> larger than 65536.
+> 
+> Accepting fl_large_pg equal to fl_small_pg solves the issue, and
+> shouldn't cause any trouble besides a possible performance reduction
+> when smaller pages are used. And that can be fixed by a configuration
+> file.
+> 
+> Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
 
-diff --git a/drivers/hv/connection.c b/drivers/hv/connection.c
-index 936093e..1387208 100644
---- a/drivers/hv/connection.c
-+++ b/drivers/hv/connection.c
-@@ -43,10 +43,10 @@ struct vmbus_connection vmbus_connection = {
- /*
-  * Negotiated protocol version with the host.
-  */
--__u32 vmbus_proto_version;
-+u32 vmbus_proto_version;
- EXPORT_SYMBOL_GPL(vmbus_proto_version);
- 
--static __u32 vmbus_get_next_version(__u32 current_version)
-+static u32 vmbus_get_next_version(u32 current_version)
- {
- 	switch (current_version) {
- 	case (VERSION_WIN7):
-@@ -62,7 +62,7 @@ static __u32 vmbus_get_next_version(__u32 current_version)
- }
- 
- static int vmbus_negotiate_version(struct vmbus_channel_msginfo *msginfo,
--					__u32 version)
-+					u32 version)
- {
- 	int ret = 0;
- 	struct vmbus_channel_initiate_contact *msg;
-@@ -133,7 +133,7 @@ int vmbus_connect(void)
- {
- 	int ret = 0;
- 	struct vmbus_channel_msginfo *msginfo = NULL;
--	__u32 version;
-+	u32 version;
- 
- 	/* Initialize the vmbus connection */
- 	vmbus_connection.conn_state = CONNECTING;
-@@ -154,7 +154,7 @@ int vmbus_connect(void)
- 	 * abstraction stuff
- 	 */
- 	vmbus_connection.int_page =
--	(void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO, 0);
-+		(void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO, 0);
- 	if (vmbus_connection.int_page == NULL) {
- 		ret = -ENOMEM;
- 		goto cleanup;
-@@ -170,7 +170,7 @@ int vmbus_connect(void)
- 	 * parent->child and the 2nd page for child->parent
- 	 */
- 	vmbus_connection.monitor_pages =
--	(void *)__get_free_pages((GFP_KERNEL|__GFP_ZERO), 1);
-+		(void *)__get_free_pages((GFP_KERNEL|__GFP_ZERO), 1);
- 	if (vmbus_connection.monitor_pages == NULL) {
- 		ret = -ENOMEM;
- 		goto cleanup;
+Can I get a review from one of the cxgb4 driver maintainers?
 
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Thanks.
