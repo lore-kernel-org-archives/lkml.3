@@ -1,147 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753959Ab3LaQxO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 11:53:14 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:38628 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753695Ab3LaQxN (ORCPT
+	id S1754723Ab3LaQzj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 11:55:39 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:41959 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754006Ab3LaQzi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 11:53:13 -0500
-Date: Tue, 31 Dec 2013 19:52:58 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Michael Gunselmann <michael.gunselmann@studium.uni-erlangen.de>
-Cc: devel@driverdev.osuosl.org, linux-kernel@i4.cs.fau.de,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        martin.hofmann@studium.uni-erlangen.de, forest@alittletooquiet.net
-Subject: Re: [PATCH 4/7] vt6655: Fixed most of the checkpatch warnings in wpa2
-Message-ID: <20131231165258.GU28413@mwanda>
-References: <1388415157-17615-1-git-send-email-michael.gunselmann@studium.uni-erlangen.de>
- <1388415157-17615-5-git-send-email-michael.gunselmann@studium.uni-erlangen.de>
+	Tue, 31 Dec 2013 11:55:38 -0500
+Date: Tue, 31 Dec 2013 16:55:33 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20131231165533.GK31886@sirena.org.uk>
+References: <20131212185917.7ed6b21f@armhf>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="QRMPWTMRwp+GIPe+"
 Content-Disposition: inline
-In-Reply-To: <1388415157-17615-5-git-send-email-michael.gunselmann@studium.uni-erlangen.de>
+In-Reply-To: <20131212185917.7ed6b21f@armhf>
+X-Cookie: Go climb a gravity well!
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: make snd_soc_dai_link more symmetrical
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 30, 2013 at 03:52:34PM +0100, Michael Gunselmann wrote:
-> wpa2.h: Checkpatch does no longer complain about anything
-> 
-> wpa2.c: Checkpatch complains about some lines that are longer than
-> 	80 characters. Breaking them would deteriorate the readability
-> 	so these lines were not touched.
-> 
-> vntwifi.c: Fixing style problems in wpa2.h made it necessary to adjust
-> 	   variable declarations that depended on typedefs in wpa2.h.
-> 	   The checkpatch cleanup of this file still remains.
-> 
 
-This patch changes too many things at once to review comfortably.  It
-random changes to several files all jumbled together.  Break it apart
-into logical chunks and resend.
+--QRMPWTMRwp+GIPe+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->  
-> -		if (pRSN->len >= 8) { // ver(2) + GK(4) + PK count(2)
-> -			pBSSNode->wCSSPKCount = *((unsigned short *)&(pRSN->abyRSN[4]));
-> +		if (pRSN->len >= 8) { /* ver(2) + GK(4) + PK count(2) */
-> +			pBSSNode->wCSSPKCount =
-> +				*((unsigned short *)&(pRSN->abyRSN[4]));
->  			j = 0;
->  			pbyOUI = &(pRSN->abyRSN[6]);
->  
-> -			for (i = 0; (i < pBSSNode->wCSSPKCount) && (j < sizeof(pBSSNode->abyCSSPK)/sizeof(unsigned char)); i++) {
-> -				if (pRSN->len >= 8+i*4+4) { // ver(2)+GK(4)+PKCnt(2)+PKS(4*i)
-> +			for (i = 0; (i < pBSSNode->wCSSPKCount)
-> +				     && (j < sizeof(pBSSNode->abyCSSPK)/sizeof(unsigned char));
-> +			     i++) {
+On Thu, Dec 12, 2013 at 06:59:17PM +0100, Jean-Francois Moine wrote:
 
+> This patch renders optional the CODEC name / OF node on sound card register,
+> as it is done for the CPU side, in the case the CODEC DAI name is unique.
 
-This for loop is a quite nasty.  It would be better to check "j"
-separately inside the loop.  There should be spaces around the divide
-operation but really the "j" condition should just be:
+> This simplifies the definition of CODECs with multiple DAIs, especially
+> in DTs, while keeping compatibility.
 
-	j < ARRAY_SIZE(pBSSNode->abyCSSPK)
+So, this is similar to one of the comments I made on the DT patch you
+sent today: you're saying that this makes things better but you're not
+saying why it makes things better.  I've been sitting on this partly
+because I've been wanting to sit down and try to work out what the
+benefit is.  This information should be readily avaiable and omiting it
+seems like it will make things more fragile.
 
-> +				/* ver(2)+GK(4)+PKCnt(2)+PKS(4*i) */
-> +				if (pRSN->len >= 8+i*4+4) {
->  					if (!memcmp(pbyOUI, abyOUIGK, 4)) {
-> -						pBSSNode->abyCSSPK[j++] = WLAN_11i_CSS_USE_GROUP;
-> +						pBSSNode->abyCSSPK[j++] =
-> +							WLAN_11i_CSS_USE_GROUP;
->  						bUseGK = true;
-> -					} else if (!memcmp(pbyOUI, abyOUIWEP40, 4)) {
-> -						// Invalid CSS, continue to parsing
-> -					} else if (!memcmp(pbyOUI, abyOUITKIP, 4)) {
-> -						if (pBSSNode->byCSSGK != WLAN_11i_CSS_CCMP)
-> -							pBSSNode->abyCSSPK[j++] = WLAN_11i_CSS_TKIP;
-> -						else
-> -							; // Invalid CSS, continue to parsing
-> -					} else if (!memcmp(pbyOUI, abyOUICCMP, 4)) {
-> -						pBSSNode->abyCSSPK[j++] = WLAN_11i_CSS_CCMP;
-> -					} else if (!memcmp(pbyOUI, abyOUIWEP104, 4)) {
-> -						// Invalid CSS, continue to parsing
-> -					} else {
-> -						// any vendor checks here
-> -						pBSSNode->abyCSSPK[j++] = WLAN_11i_CSS_UNKNOWN;
-> -					}
-> +					} else if (!memcmp(pbyOUI, abyOUIWEP40, 4))
-> +						; /* Invalid CSS, continue to parsing */
-> +					else if ((!memcmp(pbyOUI, abyOUITKIP, 4))
-> +						 && (pBSSNode->byCSSGK != WLAN_11i_CSS_CCMP))
-> +						pBSSNode->abyCSSPK[j++] =
-> +							WLAN_11i_CSS_TKIP;
-> +					else if (!memcmp(pbyOUI, abyOUICCMP, 4))
-> +						pBSSNode->abyCSSPK[j++] =
-> +							WLAN_11i_CSS_CCMP;
-> +					else if (!memcmp(pbyOUI, abyOUIWEP104, 4))
-> +						; /* Invalid CSS, continue to parsing */
-> +					else
-> +						/* any vendor checks here */
-> +						pBSSNode->abyCSSPK[j++] =
-> +							WLAN_11i_CSS_UNKNOWN;
->  					pbyOUI += 4;
+If anything I'd expect DT to want to move towards specifying things by
+CODEC plus optional DAI index rather than anything else, that's the more
+common pattern for DT based things (really phandle plus index) and it's
+what the current generic card is doing.
 
-You have changed the logic here without meaning to.  Can you spot the
-bug?
+It's possible there is a benefit I'm just not seeing but you'll need to
+tell me.
 
-I don't like the way the lines are broken at all.  This is a randomly
-indented text jumble.  *SPLATCH!*.
+--QRMPWTMRwp+GIPe+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-If you need to break up a compound condition put the "&&" at the end
-of the first line instead of at the start of the second line.
-Multi-line indents get curly braces for readability, even though they
-are not needed for syntax reasons.  So it would be:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-				} else {
-					/* any vendor checks here */
-					pBSSNode->abyCSSPK[j++] = WLAN_11i_CSS_UNKNOWN;
-				}
+iQIcBAEBAgAGBQJSwvcCAAoJELSic+t+oim9XPMP/RX538KEOYqY3kQDVf+jJs2Z
+cshNr+zpexjgcyjcvF6xuMJ4AqU13Ci4U8y99M2jDgvlX7MXUP4g5m1dNxwgMV7q
+pYJ8GlqvpcVc46Y59t15QTZx2kL9Sp++bM2vABl63RBFOf9tCfVYI0OTfzqpjRXI
+m2LJP6+G6N1LqSQOQYMWlf+GYnluZ/yKGI3MWqKeSZ8zFRcxfeaKHTk6Dn7FkBBI
+xwyZSzrRX/mW5EBbhMyfTrhYaZxtjcvphiIHwNKMUNPYxM3ZjW0I7+mgLfmQJKL5
+fKOMpStR+lbiNfp1383jWn+5u8IZN1jZZlMoNWW/vsXA7WmKCcOh55WKZ5r2r9gG
+rShNpGOE/MVn4sccGeQyJh7CmOpeTXqg2IgrLli4Z8xlkHprV8uSTtsOV9YRm693
+i9vn1X1VD2rpJ2fqjyJ5d/Lva7BYyRQiw50+GLt+59k7p/sV4/y3pMXaWoRAyT9N
+1IO8+b+HinAVTtc/3CBj6qnpPkuQTrBg0i1QsIWp5WiDTKIapi3ljrmrAgBOskis
+0Mr/PSwkl0Bu4N6Wx4llS03y6+3lbwjSKTM/ARnZNoLI+Sl7r0GlUewWI6clcqq0
+irgrSin+2EIIWIrMwdJJYTtdXJQkUaJ36V7hU0AZXYDI0pnoPX+fpjiJecD800fQ
+oF6rGAA2d1OO3ObiwJy6
+=EW/c
+-----END PGP SIGNATURE-----
 
-I know that is over the 80 character limit, so checkpatch.pl will
-complain but checkpatch.pl is a perl script and not the king of the
-world.  Don't make the code worse just to please a perl script.
-
-The real reason we are going past the end of the line here is because
-the code is indented 40 characters to begin with.  You could bring it in
-one indent level by reversing the break condition.
-
-			if (pRSN->len < 8 + i * 4 + 4)
-				break;
-
-> -					DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "abyCSSPK[%d]: %X\n", j-1, pBSSNode->abyCSSPK[j-1]);
-> +					DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
-> +						"abyCSSPK[%d]: %X\n", j-1,
-> +						pBSSNode->abyCSSPK[j-1]);
->  				} else
->  					break;
-> -			} //for
-> +			} /* for */
-                          ^^^^^^^^^
-Delete these nonsense comments.
-
-regards,
-dan carpenter
-
+--QRMPWTMRwp+GIPe+--
