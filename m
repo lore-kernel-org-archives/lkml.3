@@ -1,155 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752478Ab3LaJKf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 04:10:35 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:39299 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027Ab3LaJKc (ORCPT
+	id S1752553Ab3LaJOv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 04:14:51 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:6064 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752119Ab3LaJOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 04:10:32 -0500
-Date: Tue, 31 Dec 2013 17:09:32 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: jslaby@suse.cz, airlied@redhat.com, akpm@linux-foundation.org,
-        kilobyte@angband.pl, linux-kernel@vger.kernel.org
-Subject: [PATCH ]vt: use vc_allocate in con_init
-Message-ID: <20131231090932.GA3223@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	gregkh@linuxfoundation.org, jslaby@suse.cz, airlied@redhat.com,
-	akpm@linux-foundation.org, kilobyte@angband.pl,
-	linux-kernel@vger.kernel.org
+	Tue, 31 Dec 2013 04:14:47 -0500
+Message-ID: <52C28AAA.5060707@huawei.com>
+Date: Tue, 31 Dec 2013 17:13:14 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <riel@redhat.com>, <walken@google.com>
+CC: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Xishi Qiu <qiuxishi@huawei.com>, <wangnan0@huawei.com>
+Subject: [PATCH] mm: add ulimit API for user
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit a5f4f52e82114e85aa1a066bd1a450acc19a464d
-("vt: use kzalloc() instead of the bootmem allocator"),
-then we could use vc_allocate in con_init.
+Add ulimit API for users. When memory is not enough, 
+user's app will receive a signal, and it can do something
+in the handler.
 
-The benefit we get:
-1: reduce code duplication
-2: vc_allocate is more robust
+e.g.
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+void handler(int sig)
+{
+char *b = malloc(1000000000);
+memset(b, '\0', 1000000000);
+printf("catch the signal by wwy\n");
+exit(1);
+}
+int main ( int argc, char *argv[] )
+{
+struct rlimit r1 = { 3600000000, 3600000000};
+setrlimit(RLIMIT_AS, &r1);
+signal(47, &handler);
+char * a = malloc(3600000000);
+int fd=open("/home/wayne/qemu.tar.bz2", O_RDONLY);
+char abc[2000000] = {'\0'};
+mmap(NULL, 10000000, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd , 0);
+sleep(100);
+free(a);
+while(1){
+}
+}
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- drivers/tty/vt/vt.c       | 25 +++++++++++--------------
- drivers/tty/vt/vt_ioctl.c |  8 ++++----
- include/linux/vt_kern.h   |  2 +-
- 3 files changed, 16 insertions(+), 19 deletions(-)
+RTOS-x86_64 /tmp # ./a.out
+catch the signal by wwy
 
-diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-index 15aaa01..8723cb4 100644
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -748,7 +748,7 @@ static void visual_init(struct vc_data *vc, int num, int init)
- 	vc->vc_screenbuf_size = vc->vc_rows * vc->vc_size_row;
- }
+
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+diff --git a/mm/Makefile b/mm/Makefile
+index 9c60f76..a5dec90 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -18,6 +18,7 @@ obj-y += init-mm.o
+ ifdef CONFIG_OOM_EXTEND
+ obj-y += oom_extend.o pagecache_info.o
+ endif
++obj-y += ulimit-init.o
  
--int vc_allocate(unsigned int currcons)	/* return 0 on success */
-+int vc_allocate(unsigned int currcons, int early)	/* return 0 on success */
- {
- 	WARN_CONSOLE_UNLOCKED();
- 
-@@ -789,9 +789,11 @@ int vc_allocate(unsigned int currcons)	/* return 0 on success */
- 	    if (global_cursor_default == -1)
- 		    global_cursor_default = 1;
- 
--	    vc_init(vc, vc->vc_rows, vc->vc_cols, 1);
--	    vcs_make_sysfs(currcons);
--	    atomic_notifier_call_chain(&vt_notifier_list, VT_ALLOCATE, &param);
-+	    vc_init(vc, vc->vc_rows, vc->vc_cols, currcons == 0 ? !vc->vc_sw->con_save_screen : 1);
-+	    if (!early) {
-+		    vcs_make_sysfs(currcons);
-+		    atomic_notifier_call_chain(&vt_notifier_list, VT_ALLOCATE, &param);
-+	    }
- 	}
- 	return 0;
- }
-@@ -2765,7 +2767,7 @@ static int con_install(struct tty_driver *driver, struct tty_struct *tty)
- 	int ret;
- 
- 	console_lock();
--	ret = vc_allocate(currcons);
-+	ret = vc_allocate(currcons, 0);
- 	if (ret)
- 		goto unlock;
- 
-@@ -2901,15 +2903,10 @@ static int __init con_init(void)
- 		mod_timer(&console_timer, jiffies + (blankinterval * HZ));
- 	}
- 
--	for (currcons = 0; currcons < MIN_NR_CONSOLES; currcons++) {
--		vc_cons[currcons].d = vc = kzalloc(sizeof(struct vc_data), GFP_NOWAIT);
--		INIT_WORK(&vc_cons[currcons].SAK_work, vc_SAK);
--		tty_port_init(&vc->port);
--		visual_init(vc, currcons, 1);
--		vc->vc_screenbuf = kzalloc(vc->vc_screenbuf_size, GFP_NOWAIT);
--		vc_init(vc, vc->vc_rows, vc->vc_cols,
--			currcons || !vc->vc_sw->con_save_screen);
--	}
-+	for (currcons = 0; currcons < MIN_NR_CONSOLES; currcons++)
-+		if (vc_allocate(currcons, 1))
-+			panic("Can't initialize console %d!", currcons + 1);
+ obj-$(CONFIG_BOUNCE)	+= bounce.o
+ obj-$(CONFIG_SWAP)	+= page_io.o swap_state.o swapfile.o thrash.o
+
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 4ff7f52..a10155f 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2402,6 +2402,11 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
+  * Return true if the calling process may expand its vm space by the passed
+  * number of pages
+  */
 +
- 	currcons = fg_console = 0;
- 	master_display_fg = vc = vc_cons[currcons].d;
- 	set_origin(vc);
-diff --git a/drivers/tty/vt/vt_ioctl.c b/drivers/tty/vt/vt_ioctl.c
-index 2bd78e2..59667c1 100644
---- a/drivers/tty/vt/vt_ioctl.c
-+++ b/drivers/tty/vt/vt_ioctl.c
-@@ -680,7 +680,7 @@ int vt_ioctl(struct tty_struct *tty,
- 		else {
- 			arg--;
- 			console_lock();
--			ret = vc_allocate(arg);
-+			ret = vc_allocate(arg, 0);
- 			console_unlock();
- 			if (ret)
- 				break;
-@@ -705,7 +705,7 @@ int vt_ioctl(struct tty_struct *tty,
- 		else {
- 			vsa.console--;
- 			console_lock();
--			ret = vc_allocate(vsa.console);
-+			ret = vc_allocate(vsa.console, 0);
- 			if (ret == 0) {
- 				struct vc_data *nvc;
- 				/* This is safe providing we don't drop the
-@@ -778,7 +778,7 @@ int vt_ioctl(struct tty_struct *tty,
- 				int newvt;
- 				newvt = vc->vt_newvt;
- 				vc->vt_newvt = -1;
--				ret = vc_allocate(newvt);
-+				ret = vc_allocate(newvt, 0);
- 				if (ret) {
- 					console_unlock();
- 					break;
-@@ -1441,7 +1441,7 @@ int vt_move_to_console(unsigned int vt, int alloc)
++#ifdef CONFIG_ULIMIT_VM_SIG
++unsigned long vm_expand_signal_enable = 0;
++EXPORT_SYMBOL(vm_expand_signal_enable);
++#endif
++
+ int may_expand_vm(struct mm_struct *mm, unsigned long npages)
+ {
+ 	unsigned long cur = mm->total_vm;	/* pages */
+@@ -2410,7 +2415,9 @@ int may_expand_vm(struct mm_struct *mm, unsigned long npages)
+ 	lim = rlimit(RLIMIT_AS) >> PAGE_SHIFT;
+ 
+ 	if (cur + npages > lim){
+-		send_sig(SIGRTMIN+15, current, 1);
++#ifdef	CONFIG_ULIMIT_VM_SIG
++		if (vm_expand_signal_enable){
++			send_sig(SIGRTMIN+15, current, 1);
++		}
++#endif
+ 		return 0;
  	}
- 	prev = fg_console;
+ 	return 1;
+
+diff --git a/mm/ulimit-init.c b/mm/ulimit-init.c
+new file mode 100644
+index 0000000..d3b3a76
+--- /dev/null
++++ b/mm/ulimit-init.c
+@@ -0,0 +1,65 @@
++#include <linux/kobject.h>
++#include <linux/sysfs.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/errno.h>
++
++static struct kobject *ulimit_kobj;
++extern unsigned long vm_expand_signal_enable;
++
++static ssize_t show(struct kobject *kobj, struct kobj_attribut *attr, char* buf)
++{
++	return snprintf(buf, 10, "%lu\n", vm_expand_signal_enable);
++}
++
++static ssize_t store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	unsigned long enable;
++	if (0 != strict_strtoul(buf, 10, &enable))
++		return -EINVAL;
++	if (0 != enable && 1 != enable){
++		return -EINVAL;
++	}
++
++	vm_expand_signal_enable = enable;
++	return count;
++}
++
++static struct kobj_attribute ulimit_vm_attribute =
++__ATTR(vm_expand_signal_enable, 0644, show, store);
++
++static struct attribute *attrs[] = {
++        &ulimit_vm_attribute.attr,
++        NULL,   /* need to NULL terminate the list of attributes */
++};
++
++static struct attribute_group attr_group = {
++        .attrs = attrs,
++};
++
++
++static int ulimit_obj_init(void)
++{
++	int retval;
++
++	ulimit_kobj = kobject_create_and_add("ulimit", mm_kobj);
++
++	if (!ulimit_kobj)
++                return -ENOMEM;
++
++	retval = sysfs_create_group(ulimit_kobj, &attr_group);
++
++	return retval;
++}
++
++static int ulimit_obj_exit(void)
++{
++	sysfs_remove_group(ulimit_kobj, &attr_group);
++	kobject_put(ulimit_kobj);
++	return 0;
++}
++
++module_init(ulimit_obj_init);
++module_exit(ulimit_obj_exit);
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Wayne");
+
+diff --git a/mm/Kconfig b/mm/Kconfig
+index ef891af..dc9c881 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -295,3 +295,6 @@ config NOMMU_INITIAL_TRIM_EXCESS
+ 	  of 1 says that all excess pages should be trimmed.
  
--	if (alloc && vc_allocate(vt)) {
-+	if (alloc && vc_allocate(vt, 0)) {
- 		/* we can't have a free VC for now. Too bad,
- 		 * we don't want to mess the screen for now. */
- 		console_unlock();
-diff --git a/include/linux/vt_kern.h b/include/linux/vt_kern.h
-index 8d76342..96d8795 100644
---- a/include/linux/vt_kern.h
-+++ b/include/linux/vt_kern.h
-@@ -33,7 +33,7 @@ extern int fg_console, last_console, want_console;
- 
- /* console.c */
- 
--int vc_allocate(unsigned int console);
-+int vc_allocate(unsigned int console, int early);
- int vc_cons_allocated(unsigned int console);
- int vc_resize(struct vc_data *vc, unsigned int cols, unsigned int lines);
- struct vc_data *vc_deallocate(unsigned int console);
--- 
-1.8.3.4.8.g69490f3.dirty
+ 	  See Documentation/nommu-mmap.txt for more information.
++config ULIMIT_VM_SIG
++	bool "vm expand send SIG 47"
+
+diff --git a/mm/Makefile b/mm/Makefile
+index a5dec90..5c4d70f 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -18,8 +18,9 @@ obj-y += init-mm.o
+ ifdef CONFIG_OOM_EXTEND
+ obj-y += oom_extend.o pagecache_info.o
+ endif
++ifdef CONFIG_ULIMIT_VM_SIG
+ obj-y += ulimit-init.o
+-
++endif
+ obj-$(CONFIG_BOUNCE)	+= bounce.o
+ obj-$(CONFIG_SWAP)	+= page_io.o swap_state.o swapfile.o thrash.o
+ obj-$(CONFIG_HAS_DMA)	+= dmapool.o
+
+
