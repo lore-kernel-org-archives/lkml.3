@@ -1,74 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756504Ab3LaTDJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 14:03:09 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52751 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756319Ab3LaTDG (ORCPT
+	id S1756442Ab3LaTGX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 14:06:23 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:58667 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756128Ab3LaTGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 14:03:06 -0500
-Date: Tue, 31 Dec 2013 20:03:04 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: Joe Xue <lgxue@hotmail.com>, "cooloney@gmail.com" <cooloney@gmail.com>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "rob@landley.net" <rob@landley.net>,
-        "milo.kim@ti.com" <milo.kim@ti.com>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH] Add LED pattern trigger
-Message-ID: <20131231190304.GA15451@amd.pavel.ucw.cz>
-References: <1388362275-1618-1-git-send-email-lgxue@hotmail.com>
- <20131230183302.GA28430@amd.pavel.ucw.cz>
- <BLU172-W18A7B97F4E688F416C5DABACC90@phx.gbl>
- <20131231113352.GA4233@amd.pavel.ucw.cz>
- <CAFLxGvy31K9cgiuQKPmcbbr8QpMmj3vxmA1opNWT01qDUaLR0Q@mail.gmail.com>
+	Tue, 31 Dec 2013 14:06:21 -0500
+Date: Tue, 31 Dec 2013 11:06:18 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 3.13-rc6
+Message-ID: <20131231190618.GE6897@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="u3/rZRmxL6MmkK24"
 Content-Disposition: inline
-In-Reply-To: <CAFLxGvy31K9cgiuQKPmcbbr8QpMmj3vxmA1opNWT01qDUaLR0Q@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2013-12-31 13:29:21, Richard Weinberger wrote:
-> On Tue, Dec 31, 2013 at 12:33 PM, Pavel Machek <pavel@ucw.cz> wrote:
-> > On Tue 2013-12-31 00:00:39, Joe Xue wrote:
-> >> > What about something like this?
-> >> >
-> >> > Not shcheduling timer when nothing changed should save a bit of power/cpu...
-> >> >
-> >> > if (pattern_data->pattern[pattern_data->count] == '/') {
-> >> > return;
-> >> > }
-> >> >
-> >> > this = pattern_data->pattern[pattern_data->count]
-> >> > if (this == '#')
-> >> > new_brigtness = pattern_data->brightness_on;
-> >> > if (this == ' ')
-> >> > new_brigtness = LED_OFF;
-> >> > repeat = 1;
-> >> > while (pattern_data->pattern[pattern_data->count + repeat] == this)
-> >> > repeat++;
-> >> >
-> >> > mod_timer(&pattern_data->timer,
-> >> > jiffies + msecs_to_jiffies(pattern_data->delay_unit * repeat));
-> >> >
-> >> >
-> >> Working on it.
-> >>
-> >> Thanks for your help.
-> >
-> > You are welcome :-).
-> 
-> Why do we need this within the kernel?
-> Patterns can easily created using a simple user space program.
 
-Some machines (N900) can do blinking in hardware, and we want
-consistent kernel-user interface. See the mailing list.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+--u3/rZRmxL6MmkK24
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Linus,
+
+Happy New Year!
+
+Please pull from:
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+
+to receive updates for the input subsystem. You will get a fix for panic
+in gpio-keys driver when set up with absolute events, a fixup to the new
+zforce driver and a new keycode definition.
+
+Changelog:
+---------
+
+Dmitry Torokhov (1):
+      Input: allocate absinfo data when setting ABS capability
+
+Heiko St=C3=BCbner (1):
+      Input: zforce - fix possible driver hang during suspend
+
+Rafa=C5=82 Mi=C5=82ecki (1):
+      Input: define KEY_WWAN for Wireless WAN
+
+
+Diffstat:
+--------
+
+ drivers/input/input.c                 |  4 ++++
+ drivers/input/touchscreen/zforce_ts.c | 21 +++++++++++++++------
+ include/uapi/linux/input.h            |  3 ++-
+ 3 files changed, 21 insertions(+), 7 deletions(-)
+
+--=20
+Dmitry
+
+
+--u3/rZRmxL6MmkK24
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSwxWqAAoJEH70+W8r6ZYqXuQQAMFNGyxj063r1bGoWigx0ire
+dfpQNCJrmNIiTeDk6VCOJriDE0AVLP+zlh7aLM2jbS9Zp5i+iIOYmmJ2J4xd0Evc
+jLK7oPgb/HDDojeXN4/1aP2jXWqxwPjFE28u16HR22aXrDJRw8zKrgjmTKHki6f5
+SG7nQ/15RTU9ZO0aOIXNrEDXbFE7sKdnKFmHy8WWdaK2bujhOR61yqqENzMQV8/8
+HZ8x8IY5Ok6YxGJgCkUkRHjEpdXoZgEfLdRuXHN5/VguIjeevbpPOH+czwUF0aei
+pp/AOFFajzs/pPJdiwq9ClGJpVTpdz87TuHLlL1g8XTsThdaudUPZwqlxk1nAwXe
++ZYkvam+x6mZbZeSQzZnfgfNb6Ec6RBdAuUQCwOFC89rKQ9D1XzvPvSipdnoNvz2
+pPOwG1ENCRU8pMMEqknUmcAPdoTNnP3MWEVfH/SwmzvsPItMRx2Mw2iDUplk0+XN
+eJNiJUxWqyeNA45RjrtGUfVpaeekMQm2xoKC4SETMHvAy4ZOmKUztgiY4vBFujp9
+PNDs9k20CGDS9+deTJmZ6YWy3ilVHvjid1MCo84s+t3NBaaQl0nRF9MKhIJRJgLD
+6YkOloTFPOX7dzerZh5498YWyqbjHDRLXP7PMmOEuzxTiTiv9l3P1YSrKZaiuZyS
+L/8jA4s+Dt9bCHjNEBU5
+=srDb
+-----END PGP SIGNATURE-----
+
+--u3/rZRmxL6MmkK24--
