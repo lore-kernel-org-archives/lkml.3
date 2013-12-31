@@ -1,72 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754819Ab3LaRpb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 12:45:31 -0500
-Received: from smtp4-g21.free.fr ([212.27.42.4]:40584 "EHLO smtp4-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753897Ab3LaRpa convert rfc822-to-8bit (ORCPT
+	id S1756126Ab3LaRsj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 12:48:39 -0500
+Received: from mo2.mail-out.ovh.net ([178.32.228.2]:51523 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754843Ab3LaRsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 12:45:30 -0500
-Date: Tue, 31 Dec 2013 18:44:30 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: make snd_soc_dai_link more symmetrical
-Message-ID: <20131231184430.3a4c9414@armhf>
-In-Reply-To: <20131231165533.GK31886@sirena.org.uk>
-References: <20131212185917.7ed6b21f@armhf>
-	<20131231165533.GK31886@sirena.org.uk>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
+	Tue, 31 Dec 2013 12:48:38 -0500
+Message-ID: <52C3036D.50503@overkiz.com>
+Date: Tue, 31 Dec 2013 18:48:29 +0100
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: jjhiblot@traphandler.com, nicolas.ferre@atmel.com
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/6] Device Tree support for the at91sam9261ek
+References: <1388507534-10570-1-git-send-email-jjhiblot@traphandler.com>
+In-Reply-To: <1388507534-10570-1-git-send-email-jjhiblot@traphandler.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 247416505748191321
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: 0
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrvddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecu
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: 0
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrvddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Dec 2013 16:55:33 +0000
-Mark Brown <broonie@kernel.org> wrote:
+Hello Jean-Jacques
 
-> On Thu, Dec 12, 2013 at 06:59:17PM +0100, Jean-Francois Moine wrote:
-> 
-> > This patch renders optional the CODEC name / OF node on sound card register,
-> > as it is done for the CPU side, in the case the CODEC DAI name is unique.
-> 
-> > This simplifies the definition of CODECs with multiple DAIs, especially
-> > in DTs, while keeping compatibility.
-> 
-> So, this is similar to one of the comments I made on the DT patch you
-> sent today: you're saying that this makes things better but you're not
-> saying why it makes things better.  I've been sitting on this partly
-> because I've been wanting to sit down and try to work out what the
-> benefit is.  This information should be readily avaiable and omiting it
-> seems like it will make things more fragile.
-> 
-> If anything I'd expect DT to want to move towards specifying things by
-> CODEC plus optional DAI index rather than anything else, that's the more
-> common pattern for DT based things (really phandle plus index) and it's
-> what the current generic card is doing.
-> 
-> It's possible there is a benefit I'm just not seeing but you'll need to
-> tell me.
+On 31/12/2013 17:32, jjhiblot@traphandler.com wrote:
+> From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+>
+> Hi Nicolas,
+>
+> This patch set aims at bringing a basic device tree support for the sam9261.
+> It's mostly based on the sam9263 stuff.
+> The only new thing here is the smc bus driver. It's a very simple bus driver
+> used to configure the EBI from the DT. I haven't documented its DT bindings yet
+>
+> supported features:
+> * dbgu
+> * nand
+> * lcd
+> * ethernet
+> * leds
+>
 
-The first benefit I got was in the front-end definition: the codec side
-is the dummy codec, and this one has no phandle.
+Cool, one step forward to the removal of at91 board files ;).
 
-Then, finding the CODEC DAI from phandle asks for more code
-(of_xlate_dai_name in the CODEC drivers) and finding it from the CODEC
-name asks for a double loop in soc_bind_dai_link. On the other way, a
-simple loop without any more change may be used when the DAI is simply
-specified by its name. I would say that the DAI name is more meaningful
-than a DAI index and that it is less subject to internal changes of the
-CODEC driver.
+I'll try to review this series before the end of the week.
 
-Eventually, I don't think that, using only the name of the CODEC side
-DAI to identify it, is not more fragile than identifying the CPU side
-of the DAI link by its name.
+Best Regards,
 
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+Boris
+
+
+> Jean-Jacques
+>
+> jean-jacques hiblot (6):
+>    Basic Device Tree support for the at91sam9261
+>    at91: dt: sam9261: Added support for the lcd display
+>    At91: dt: Added smc bus driver
+>    at91: dt: sam9261: Pinmux DT entries for the SMC/EBI interface
+>    at91: dt: sam9261: Add an entry in the DT for the SMC/EBI bus driver.
+>    at91: dt: sam9261: Added DM9000 in the device tree
+>
+> jean-jacques hiblot (6):
+>    Basic Device Tree support for the at91sam9261
+>    at91: dt: sam9261: Added support for the lcd display
+>    At91: dt: Added smc bus driver
+>    at91: dt: sam9261: Pinmux DT entries for the SMC/EBI interface
+>    at91: dt: sam9261: Add an entry in the DT for the SMC/EBI bus driver.
+>    at91: dt: sam9261: Added DM9000 in the device tree
+>
+>   arch/arm/boot/dts/at91sam9261.dtsi       | 575 +++++++++++++++++++++++++++++++
+>   arch/arm/boot/dts/at91sam9261ek.dts      | 159 +++++++++
+>   arch/arm/mach-at91/at91sam9261.c         |  16 +
+>   arch/arm/mach-at91/at91sam9261_devices.c |  18 +
+>   drivers/bus/Kconfig                      |   9 +
+>   drivers/bus/Makefile                     |   1 +
+>   drivers/bus/atmel-smc.c                  | 182 ++++++++++
+>   7 files changed, 960 insertions(+)
+>   create mode 100644 arch/arm/boot/dts/at91sam9261.dtsi
+>   create mode 100644 arch/arm/boot/dts/at91sam9261ek.dts
+>   create mode 100644 drivers/bus/atmel-smc.c
+>
+
