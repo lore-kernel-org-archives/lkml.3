@@ -1,57 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619Ab3LaJg1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 04:36:27 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:60742 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752170Ab3LaJgZ (ORCPT
+	id S1752597Ab3LaJoR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 04:44:17 -0500
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:56880 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752261Ab3LaJoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 04:36:25 -0500
+	Tue, 31 Dec 2013 04:44:14 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: [PATCH v2 01/16] wl1251: fix scan behaviour while not associated
+Date: Tue, 31 Dec 2013 10:44:01 +0100
+User-Agent: KMail/1.13.7 (Linux/3.11.0-15-generic; KDE/4.12.0; x86_64; ; )
+Cc: Luciano Coelho <luca@coelho.fi>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
+        aaro.koskinen@iki.fi, sre@ring0.de, joni.lapilainen@gmail.com,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        David Gnedt <david.gnedt@davizone.at>
+References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com> <1386494714-21070-2-git-send-email-pali.rohar@gmail.com> <20131210092114.GB22756@amd.pavel.ucw.cz>
+In-Reply-To: <20131210092114.GB22756@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-In-Reply-To: <52C21CE3.3020402@lwfinger.net>
-References: <52C21CE3.3020402@lwfinger.net>
-Date: Tue, 31 Dec 2013 10:36:25 +0100
-X-Google-Sender-Auth: lKBpbXMccpx9Y4fGYw28Ox8CKMk
-Message-ID: <CAMuHMdVkLBBhz0Q7ae4TRww2k7foMeiff=fE1yruohQGr2u7-g@mail.gmail.com>
-Subject: Re: Question on compiler warning
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: linux-wireless <linux-wireless@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed;
+  boundary="nextPart1426400.629Fmge7eP";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312311044.09284@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 31, 2013 at 2:24 AM, Larry Finger <Larry.Finger@lwfinger.net> wrote:
-> In his regular article entitled Build regressions/improvements in v3.13-rc6"
-> (http://lkml.indiana.edu/hypermail/linux/kernel/1312.3/01550.html), Geert
-> Uytterhoeven reports the following warning regression:
->
-> + /scratch/kisskb/src/drivers/net/wireless/b43/phy_n.c: warning: 'val_addr'
-> may be used uninitialized in this function [-Wuninitialized]: => 178:21
->
-> This warning does not show up on any of my compilers, and it should not as
-> the initialization and usage of that variable both take place in conditional
-> branches that are testing exactly the same pointer.
+--nextPart1426400.629Fmge7eP
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-It depends on the compiler version. Some versions of gcc are not smart enough
-to notice all usage sites depends on the same condition.
+On Tuesday 10 December 2013 10:21:14 Pavel Machek wrote:
+> Hi!
+>=20
+> > diff --git a/drivers/net/wireless/ti/wl1251/cmd.c
+> > b/drivers/net/wireless/ti/wl1251/cmd.c index
+> > 6822b84..16b6479 100644
+> > --- a/drivers/net/wireless/ti/wl1251/cmd.c
+> > +++ b/drivers/net/wireless/ti/wl1251/cmd.c
+> > @@ -410,7 +411,10 @@ int wl1251_cmd_scan(struct wl1251 *wl,
+> > u8 *ssid, size_t ssid_len,
+> >=20
+> >  	struct wl1251_cmd_scan *cmd;
+> >  	int i, ret =3D 0;
+> >=20
+> > -	wl1251_debug(DEBUG_CMD, "cmd scan");
+> > +	wl1251_debug(DEBUG_CMD, "cmd scan channels %d ssid(%d)
+> > '%s'", +		     n_channels, (int)ssid_len, ssid);
+> > +
+> > +	WARN_ON(n_channels > SCAN_MAX_NUM_OF_CHANNELS);
+>=20
+> ssids can have \0s in them... and what is worse, they may not
+> be 0 terminated AFAICT.
+>=20
+> Potential solution is at
+> http://www.spinics.net/lists/linux-wireless/msg98640.html .
+>=20
+> Thanks,
+> 									Pavel
 
-> Despite the fact that the warning is bogus, should a patch be submitted to
-> clear it? I lean toward "no" as an answer because that would mask the
-> warning if there were some future change that screwed up the flow; however,
-> I wanted to check with the community.
+Ok. To prevent other problems in future, I removed printing ssid
+and len params from debug output. I think it is not needed...
 
-If it's clearly bogus, there's no reason to submit a patch.
+Here is updated patch:
 
-Gr{oetje,eeting}s,
+=46rom: =3D?UTF-8?q?Pali=3D20Roh=3DC3=3DA1r?=3D <pali.rohar@gmail.com>
+Subject: [PATCH v2 01/16] wl1251: fix scan behaviour while not associated
+Date: Sun,  8 Dec 2013 10:24:59 +0100
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset=3DUTF-8
+Content-Transfer-Encoding: 8bit
 
-                        Geert
+=46rom: David Gnedt <david.gnedt@davizone.at>
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+With a dissacociated card I often encoutered very long scan delays.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+My guess is that it has something to do with the cards DTIM handling and
+another firmware bug mentioned in the TI WLAN driver, which is described as
+the card may never end scanning if the channel is overloaded because it
+can't send probe requests. I think the firmware somehow also tries to
+receive DTIM messages when the BSSID is not set. Therefore most of the time
+it waits for DTIM messages and can't do scanning work.
+
+Anyway we can workaround this misbehaviour by setting the HIGH_PRIORITY
+bit for scans in disassociated state.
+
+Signed-off-by: David Gnedt <david.gnedt@davizone.at>
+Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+=2D--
+ drivers/net/wireless/ti/wl1251/cmd.c  |   13 ++++++++++++-
+ drivers/net/wireless/ti/wl1251/cmd.h  |    5 +++++
+ drivers/net/wireless/ti/wl1251/main.c |    1 +
+ 3 files changed, 18 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/ti/wl1251/cmd.c b/drivers/net/wireless/ti=
+/wl1251/cmd.c
+index 6822b84..16b6479 100644
+=2D-- a/drivers/net/wireless/ti/wl1251/cmd.c
++++ b/drivers/net/wireless/ti/wl1251/cmd.c
+@@ -3,6 +3,7 @@
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/crc7.h>
++#include <linux/etherdevice.h>
+=20
+ #include "wl1251.h"
+ #include "reg.h"
+@@ -410,7 +411,9 @@ int wl1251_cmd_scan(struct wl1251 *wl, u8 *ssid, size_t=
+ ssid_len,
+ 	struct wl1251_cmd_scan *cmd;
+ 	int i, ret =3D 0;
+=20
+=2D	wl1251_debug(DEBUG_CMD, "cmd scan");
++	wl1251_debug(DEBUG_CMD, "cmd scan channels %d", n_channels);
++
++	WARN_ON(n_channels > SCAN_MAX_NUM_OF_CHANNELS);
+=20
+ 	cmd =3D kzalloc(sizeof(*cmd), GFP_KERNEL);
+ 	if (!cmd)
+@@ -421,6 +425,13 @@ int wl1251_cmd_scan(struct wl1251 *wl, u8 *ssid, size_=
+t ssid_len,
+ 						    CFG_RX_MGMT_EN |
+ 						    CFG_RX_BCN_EN);
+ 	cmd->params.scan_options =3D 0;
++	/*
++	 * Use high priority scan when not associated to prevent fw issue
++	 * causing never-ending scans (sometimes 20+ minutes).
++	 * Note: This bug may be caused by the fw's DTIM handling.
++	 */
++	if (is_zero_ether_addr(wl->bssid))
++		cmd->params.scan_options |=3D WL1251_SCAN_OPT_PRIORITY_HIGH;
+ 	cmd->params.num_channels =3D n_channels;
+ 	cmd->params.num_probe_requests =3D n_probes;
+ 	cmd->params.tx_rate =3D cpu_to_le16(1 << 1); /* 2 Mbps */
+diff --git a/drivers/net/wireless/ti/wl1251/cmd.h b/drivers/net/wireless/ti=
+/wl1251/cmd.h
+index ee4f2b3..126f273 100644
+=2D-- a/drivers/net/wireless/ti/wl1251/cmd.h
++++ b/drivers/net/wireless/ti/wl1251/cmd.h
+@@ -167,6 +167,11 @@ struct cmd_read_write_memory {
+ #define CMDMBOX_HEADER_LEN 4
+ #define CMDMBOX_INFO_ELEM_HEADER_LEN 4
+=20
++#define WL1251_SCAN_OPT_PASSIVE		1
++#define WL1251_SCAN_OPT_5GHZ_BAND	2
++#define WL1251_SCAN_OPT_TRIGGERD_SCAN	4
++#define WL1251_SCAN_OPT_PRIORITY_HIGH	8
++
+ #define WL1251_SCAN_MIN_DURATION 30000
+ #define WL1251_SCAN_MAX_DURATION 60000
+=20
+diff --git a/drivers/net/wireless/ti/wl1251/main.c b/drivers/net/wireless/t=
+i/wl1251/main.c
+index 3291ffa..4d89ac8 100644
+=2D-- a/drivers/net/wireless/ti/wl1251/main.c
++++ b/drivers/net/wireless/ti/wl1251/main.c
+@@ -930,6 +930,7 @@ static int wl1251_op_hw_scan(struct ieee80211_hw *hw,
+ 	ret =3D wl1251_cmd_scan(wl, ssid, ssid_len, req->channels,
+ 			      req->n_channels, WL1251_SCAN_NUM_PROBES);
+ 	if (ret < 0) {
++		wl1251_debug(DEBUG_SCAN, "scan failed %d", ret);
+ 		wl->scanning =3D false;
+ 		goto out_idle;
+ 	}
+=2D-=20
+1.7.9.5
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+
+--nextPart1426400.629Fmge7eP
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlLCkeEACgkQi/DJPQPkQ1IdNACgpEL9XuHE+5aOkEeNNPR2gs6Y
+mSkAoLd4/X80A28E/ZEZnqdeu8e3EDl9
+=U7dr
+-----END PGP SIGNATURE-----
+
+--nextPart1426400.629Fmge7eP--
