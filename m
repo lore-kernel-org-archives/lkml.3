@@ -1,206 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553Ab3LaJOv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 04:14:51 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:6064 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119Ab3LaJOr (ORCPT
+	id S1752466Ab3LaJXk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 04:23:40 -0500
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:41315 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752027Ab3LaJXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 04:14:47 -0500
-Message-ID: <52C28AAA.5060707@huawei.com>
-Date: Tue, 31 Dec 2013 17:13:14 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 31 Dec 2013 04:23:38 -0500
+X-SENDER-IP: [85.230.168.69]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AoIiABiMwlJV5qhFPGdsb2JhbAANS4tRsXMBCYEsAwEBAQE4gloBAQEBAgF4AQULCyEMCg8JAwIBAgExFAYBDAEHAQGHeA2sA5psF48dBwqELAEDrVmBZyM
+X-IronPort-AV: E=Sophos;i="4.95,580,1384297200"; 
+   d="scan'208";a="525707759"
+Message-ID: <52C28DC7.9020003@euromail.se>
+Date: Tue, 31 Dec 2013 10:26:31 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: <riel@redhat.com>, <walken@google.com>
-CC: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Xishi Qiu <qiuxishi@huawei.com>, <wangnan0@huawei.com>
-Subject: [PATCH] mm: add ulimit API for user
-Content-Type: text/plain; charset="ISO-8859-1"
+To: "Felipe F. Tonello" <eu@felipetonello.com>, linux-input@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH 0/2] input: mt: Add helper function to send end events
+References: <1388455601-17033-1-git-send-email-eu@felipetonello.com>
+In-Reply-To: <1388455601-17033-1-git-send-email-eu@felipetonello.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.196]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add ulimit API for users. When memory is not enough, 
-user's app will receive a signal, and it can do something
-in the handler.
+Hi Felipe,
 
-e.g.
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-void handler(int sig)
-{
-char *b = malloc(1000000000);
-memset(b, '\0', 1000000000);
-printf("catch the signal by wwy\n");
-exit(1);
-}
-int main ( int argc, char *argv[] )
-{
-struct rlimit r1 = { 3600000000, 3600000000};
-setrlimit(RLIMIT_AS, &r1);
-signal(47, &handler);
-char * a = malloc(3600000000);
-int fd=open("/home/wayne/qemu.tar.bz2", O_RDONLY);
-char abc[2000000] = {'\0'};
-mmap(NULL, 10000000, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd , 0);
-sleep(100);
-free(a);
-while(1){
-}
-}
+> Adds a helper function to send end touch events for active tracking ids.
+> And also implements it in egalax driver.
 
-RTOS-x86_64 /tmp # ./a.out
-catch the signal by wwy
+What problematic scenario is this supposed to solve?
 
+The 'release on suspend' is only an approximation to the 'close laptop' scenario,
+it is certainly not correct in the coffee table case, for instance. Instead of
+hardcoding this in the kernel, userland can easily detect long intervals
+directly using the event time.
 
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-diff --git a/mm/Makefile b/mm/Makefile
-index 9c60f76..a5dec90 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -18,6 +18,7 @@ obj-y += init-mm.o
- ifdef CONFIG_OOM_EXTEND
- obj-y += oom_extend.o pagecache_info.o
- endif
-+obj-y += ulimit-init.o
- 
- obj-$(CONFIG_BOUNCE)	+= bounce.o
- obj-$(CONFIG_SWAP)	+= page_io.o swap_state.o swapfile.o thrash.o
+Unless there is already a reasonable mechanism in your user application which
+deals with cases like this but fails to account for your particular problem
+scenario, the patch will not be applied.
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 4ff7f52..a10155f 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2402,6 +2402,11 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
-  * Return true if the calling process may expand its vm space by the passed
-  * number of pages
-  */
-+
-+#ifdef CONFIG_ULIMIT_VM_SIG
-+unsigned long vm_expand_signal_enable = 0;
-+EXPORT_SYMBOL(vm_expand_signal_enable);
-+#endif
-+
- int may_expand_vm(struct mm_struct *mm, unsigned long npages)
- {
- 	unsigned long cur = mm->total_vm;	/* pages */
-@@ -2410,7 +2415,9 @@ int may_expand_vm(struct mm_struct *mm, unsigned long npages)
- 	lim = rlimit(RLIMIT_AS) >> PAGE_SHIFT;
- 
- 	if (cur + npages > lim){
--		send_sig(SIGRTMIN+15, current, 1);
-+#ifdef	CONFIG_ULIMIT_VM_SIG
-+		if (vm_expand_signal_enable){
-+			send_sig(SIGRTMIN+15, current, 1);
-+		}
-+#endif
- 		return 0;
- 	}
- 	return 1;
-
-diff --git a/mm/ulimit-init.c b/mm/ulimit-init.c
-new file mode 100644
-index 0000000..d3b3a76
---- /dev/null
-+++ b/mm/ulimit-init.c
-@@ -0,0 +1,65 @@
-+#include <linux/kobject.h>
-+#include <linux/sysfs.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/errno.h>
-+
-+static struct kobject *ulimit_kobj;
-+extern unsigned long vm_expand_signal_enable;
-+
-+static ssize_t show(struct kobject *kobj, struct kobj_attribut *attr, char* buf)
-+{
-+	return snprintf(buf, 10, "%lu\n", vm_expand_signal_enable);
-+}
-+
-+static ssize_t store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
-+{
-+	unsigned long enable;
-+	if (0 != strict_strtoul(buf, 10, &enable))
-+		return -EINVAL;
-+	if (0 != enable && 1 != enable){
-+		return -EINVAL;
-+	}
-+
-+	vm_expand_signal_enable = enable;
-+	return count;
-+}
-+
-+static struct kobj_attribute ulimit_vm_attribute =
-+__ATTR(vm_expand_signal_enable, 0644, show, store);
-+
-+static struct attribute *attrs[] = {
-+        &ulimit_vm_attribute.attr,
-+        NULL,   /* need to NULL terminate the list of attributes */
-+};
-+
-+static struct attribute_group attr_group = {
-+        .attrs = attrs,
-+};
-+
-+
-+static int ulimit_obj_init(void)
-+{
-+	int retval;
-+
-+	ulimit_kobj = kobject_create_and_add("ulimit", mm_kobj);
-+
-+	if (!ulimit_kobj)
-+                return -ENOMEM;
-+
-+	retval = sysfs_create_group(ulimit_kobj, &attr_group);
-+
-+	return retval;
-+}
-+
-+static int ulimit_obj_exit(void)
-+{
-+	sysfs_remove_group(ulimit_kobj, &attr_group);
-+	kobject_put(ulimit_kobj);
-+	return 0;
-+}
-+
-+module_init(ulimit_obj_init);
-+module_exit(ulimit_obj_exit);
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Wayne");
-
-diff --git a/mm/Kconfig b/mm/Kconfig
-index ef891af..dc9c881 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -295,3 +295,6 @@ config NOMMU_INITIAL_TRIM_EXCESS
- 	  of 1 says that all excess pages should be trimmed.
- 
- 	  See Documentation/nommu-mmap.txt for more information.
-+config ULIMIT_VM_SIG
-+	bool "vm expand send SIG 47"
-
-diff --git a/mm/Makefile b/mm/Makefile
-index a5dec90..5c4d70f 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -18,8 +18,9 @@ obj-y += init-mm.o
- ifdef CONFIG_OOM_EXTEND
- obj-y += oom_extend.o pagecache_info.o
- endif
-+ifdef CONFIG_ULIMIT_VM_SIG
- obj-y += ulimit-init.o
--
-+endif
- obj-$(CONFIG_BOUNCE)	+= bounce.o
- obj-$(CONFIG_SWAP)	+= page_io.o swap_state.o swapfile.o thrash.o
- obj-$(CONFIG_HAS_DMA)	+= dmapool.o
-
+Thanks,
+Henrik
 
