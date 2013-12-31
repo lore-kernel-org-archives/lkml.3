@@ -1,99 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756458Ab3LaTV0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 14:21:26 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:36526 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756343Ab3LaTVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 14:21:24 -0500
-Message-ID: <52C31927.40304@gentoo.org>
-Date: Tue, 31 Dec 2013 14:21:11 -0500
-From: Richard Yao <ryao@gentoo.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1756507Ab3LaTW6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 14:22:58 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:56228 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756300Ab3LaTW5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Dec 2013 14:22:57 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: jjhiblot@traphandler.com, nicolas.ferre@atmel.com,
+        jean-jacques hiblot <jean-jacques.hiblot@jdsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/6] at91: dt: sam9261: Added DM9000 in the device tree
+Date: Tue, 31 Dec 2013 20:19:51 +0100
+Message-ID: <4526077.qASk8HSHKP@wuerfel>
+User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <1388507534-10570-7-git-send-email-jjhiblot@traphandler.com>
+References: <1388507534-10570-1-git-send-email-jjhiblot@traphandler.com> <1388507534-10570-7-git-send-email-jjhiblot@traphandler.com>
 MIME-Version: 1.0
-To: Kernel development list <linux-kernel@vger.kernel.org>
-CC: linux-fsdevel@vger.kernel.org,
-        "v9fs-developer@lists.sourceforge.net" 
-	<v9fs-developer@lists.sourceforge.net>,
-        "kernel@gentoo.org" <kernel@gentoo.org>,
-        Eric Van Hensbergen <ericvh@gmail.com>,
-        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: v9fs does not honor open file handles on anonymous files
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="BBdWTWEPj4B4tu2t5HqqWnGl99VwrUxXP"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:U+taZpBlugsCjnNg6SdlvZ5rsSiTqCZWun/Ww8jOUtk
+ RCQT1AYn5Q6uxXqBmwGYR7GtTEjxEZpgLXsMuD48zU7/s5AjHx
+ Mtuvj7pfTrhRYbCBH1BcHawMlEhRM7t03KsIZ9SLd+9tXGSS7K
+ QlU8QLsQ9ot9GG7FJUyEpGbHSbz2jkhhX/fs8B3tiQQxfBiE7L
+ H/pZy/30EmB9Jdq6efdebvFDF7ejk/7pd95FyW/3PxFu+sDXDc
+ R05f82+NfZlmTUBo2wRoEOO0xUx+pgHhGWQ70xSrFNAtnbrUIc
+ pJEVOauFPP1jNH7QimPfMN2Gjk4fx7qGqGE1Ry9w8/3Z13g/oj
+ gMW9FDHk6Iht/5CIIT1A=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---BBdWTWEPj4B4tu2t5HqqWnGl99VwrUxXP
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Tuesday 31 December 2013 17:32:14 jjhiblot@traphandler.com wrote:
+> 
+> +                       ethernet@30000000 {
+> +                               compatible = "davicom,dm9000";
+> +                               reg = <0x30000000 0x2 0x30000004 0x2>;
+> +                               interrupt-parent = <&pioC>;
+> +                               interrupts = <11 IRQ_TYPE_EDGE_BOTH>;
+> +                               local-mac-address = [00 00 de ad be ef];
+> +                               davicom,no-eeprom;
+> +
+> +                               smc,cs = <2>;
+> +                               smc,ncs_read_setup = <0>;
+> +                               smc,nrd_setup = <2>;
+> +                               smc,ncs_write_setup = <0>;
+> +                               smc,nwe_setup = <2>;
+> +                               smc,ncs_read_pulse = <8>;
+> +                               smc,nrd_pulse = <4>;
+> +                               smc,ncs_write_pulse = <8>;
+> +                               smc,nwe_pulse = <4>;
+> +                               smc,read_cycle = <16>;
+> +                               smc,write_cycle = <16>;
+> +                               smc,tdf_cycles = <1>;
+> +                               smc,tdf_optimized = <0>;
+> +                               smc,page_size = <0>;
+> +                               smc,byte_access_type = <1>;
+> +                               smc,bus_width = <1>;
+> +                               smc,nwait_mode = <0>;
+> +                               smc,read_mode = <1>;
+> +                               smc,write_mode = <1>;
+> +                       };
 
-I have a small shell script:
+I don't like how this forces you to mix the properties
+of the ethernet device with the properties of the smc
+port. I would also like to see the address translation
+reflected in the DT nodes. This should probably just work
+out if you restructure the DT representation, and won't need
+changes in the driver.
 
-#!/bin/bash
-cat <<-EOF
-EOF
+How about this:
 
-Running this causes bash to fork via clone(), set fd=3D0 to point to an
-empty file in /tmp, unlink it and then execve cat. Specifically,
-something like this;
+	smc: smc@ffffec00 {
+		#address-cells = <2>; /* cs, address */
+		#size-cells = <1>;
+		ranges = <2 0 0x30000000 0x10000000>
+			 <3 0 0x40000000 0x10000000>;
 
-[pid  3699] open("/tmp/sh-thd-1388524249",
-O_WRONLY|O_CREAT|O_EXCL|O_TRUNC, 0600) =3D 3
-[pid  3699] open("/tmp/sh-thd-1388524249", O_RDONLY) =3D 4
-[pid  3699] close(3)                    =3D 0
-[pid  3699] unlink("/tmp/sh-thd-1388524249") =3D 0
-[pid  3699] dup2(4, 0)                  =3D 0
-[pid  3699] close(4)                    =3D 0
-[pid  3699] execve("/bin/cat", ["cat"], [/* 22 vars */]) =3D 0
+		extbus@2.0 {
+			compatible = "simple-bus";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0 2 0 0x10000000>;
+			smc,ncs_read_setup = <0>;
+			smc,nrd_setup = <2>;
+			smc,...
 
-One of the first things that cat does is fstat fd=3D0. This informs cat
-that the file is empty and it will quit. If /tmp is on other
-filesystems, cat will fstat fd=3D0, receive a return code of 0 from fstat=
-,
-print nothing and then quit normally. If /tmp is on 9pfs, cat will fstat
-fd=3D0, receive ENOENT from fstat, print `cat: -: No such file or
-directory` to stderr and die.
+			ethernet@0 {
+				compatible = "davicom,dm9000";
+				reg = <0x0 0x2> <0x4 0x2>;
+			};
+		};
+	};
 
-It seems that v9fs_vfs_unlink() is killing the file while we still have
-open file handles. I have confirmed that this behavior occurs on Linux
-3.13.0-rc6. This breaks several things when Gentoo is on a 9p rootfs
-(e.g. gcc-config, any emerge command that involves a C compiler,
-etcetera) inside QEMU. I have placed /tmp and /var/tmp/portage on a
-tmpfs as a hack-fix, but it would be better to get this fixed.
+If each bus interface has a fixed range of registers, you can actually
+collapse the upper two nodes again and just have one device per
+chipselect.
 
-I doubt that I will write a patch to fix this. I am sending the details
-to the list so the 9p maintainers or any other interested individual can
-fix it.
-
-
---BBdWTWEPj4B4tu2t5HqqWnGl99VwrUxXP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJSwxkrAAoJECDuEZm+6ExkBV8P/RmixO0bReOTy51PW/u3Q8GR
-iHs2o5tKyYlJpeafUn5U2ydoiIYkv/rLEDDDjgiHPdLlnPc61pqH42IE1EY9KU0G
-2CbuvwESvrgZhryTgxNkBbjHKxD0qBPKCW+oGPBephVz0bQ0zt4nM9oaYcOyVIaz
-NUArpgUfRfSOytN7DCnhoJMu70mUsV/2BScAO+LoxRUn7MJSABfGbhXvlOu0bWmk
-QQwKApGWm8aoG3CMOpTjHeaFCOEj9Wl0TBlXmhoF71ETjQtCOVFVfwTO76hOg/Ck
-UFE4J85BoMRJ755T1gvACiSK1v8CgusXeRqf7+JMAAcT9viVjt6vvVr7S6zOR085
-uLnfR6cio5+elSLISskyQ1AAS+ceeETQY3T0h5ZvF5P/H1iSNaYt+iut0EPx4hWS
-lWgOC59Hl0COEoH45ygNhyeKl/A7vhShhofD5oZz5R93FhOigBbwfoOEjink1yL1
-6gtFxGKo+mSyJxhSRj9ZcJnphTxRf5tNIGoYWSD6t9MkUVHmyAck/X/GHOBxNIvO
-4H3C3NBRwhh0PKaWVvCVUGHEcI9DeIao1LY1neMB+uujOMN8YcSxiro23c5pHtcK
-HPyBLwt9L1orecib1r1PFAbFT49CHHwDAUbTwyZVMT+3Peqg+E6jT0tmjCQstXrA
-jRxDgLmR+Ty8so4tyJE4
-=oP0x
------END PGP SIGNATURE-----
-
---BBdWTWEPj4B4tu2t5HqqWnGl99VwrUxXP--
+	Arnd
