@@ -1,136 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932444Ab3LaBfo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 20:35:44 -0500
-Received: from mail-by2lp0244.outbound.protection.outlook.com ([207.46.163.244]:53426
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932391Ab3LaBfm convert rfc822-to-8bit (ORCPT
+	id S932460Ab3LaBgt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 20:36:49 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:34799 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932391Ab3LaBgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 20:35:42 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "perex@perex.cz" <perex@perex.cz>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
-        "Fabio.Estevam@freescale.com" <Fabio.Estevam@freescale.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] ASoC: simple-card: cleanup asoc_simple_card_parse_of()
- code
-Thread-Topic: [PATCH] ASoC: simple-card: cleanup asoc_simple_card_parse_of()
- code
-Thread-Index: AQHPBViOX+iJOlN4DECU2ZJcLzz22JptdpAQ
-Date: Tue, 31 Dec 2013 01:35:39 +0000
-Message-ID: <73b462c3a3b14a47a95142694ed5c8cc@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1388114078-24517-1-git-send-email-Li.Xiubo@freescale.com>
- <20131230121113.GQ31886@sirena.org.uk>
-In-Reply-To: <20131230121113.GQ31886@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 00770C4423
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(189002)(164054003)(51704005)(199002)(24454002)(85306002)(87936001)(74316001)(80976001)(90146001)(56816005)(74502001)(77982001)(85852003)(79102001)(81686001)(76796001)(33646001)(83072002)(69226001)(31966008)(59766001)(74662001)(63696002)(76786001)(2656002)(81542001)(47446002)(56776001)(76576001)(53806001)(80022001)(51856001)(66066001)(74706001)(76482001)(54316002)(50986001)(46102001)(47736001)(81816001)(87266001)(47976001)(49866001)(4396001)(81342001)(74876001)(54356001)(19580395003)(65816001)(74366001)(83322001)(21314002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB254;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	Mon, 30 Dec 2013 20:36:48 -0500
+From: Rostislav Lisovy <lisovy@gmail.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Cc: pisa@cmp.felk.cvut.cz, Rostislav Lisovy <lisovy@gmail.com>
+Subject: [PATCH] comedi: Humusoft MF634 and MF624 DAQ cards driver
+Date: Tue, 31 Dec 2013 02:36:35 +0100
+Message-Id: <1388453796-17088-1-git-send-email-lisovy@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark and all,
+This patch adds Comedi driver for Humusoft MF634 (PCIe) and MF624 (PCI)
+data acquisition cards. The legacy card Humusoft MF614 is not supported.
+More info about the cards may be found at http://humusoft.cz/produkty/datacq/
+The driver was tested with both cards. Everything seems to work properly.
+Just the basic functionality of the card (DIO, ADC, DAC) is supported by
+this driver. I hope I will be able to add some more functionality soon.
 
-Merry Christmas.
+Rostislav Lisovy (1):
+  comedi: Humusoft MF634 and MF624 DAQ cards driver
 
+ drivers/staging/comedi/Kconfig          |   6 +
+ drivers/staging/comedi/drivers/Makefile |   1 +
+ drivers/staging/comedi/drivers/mf6x4.c  | 368 ++++++++++++++++++++++++++++++++
+ 3 files changed, 375 insertions(+)
+ create mode 100644 drivers/staging/comedi/drivers/mf6x4.c
 
-> Subject: Re: [PATCH] ASoC: simple-card: cleanup asoc_simple_card_parse_of()
-> code
-> 
-> On Fri, Dec 27, 2013 at 11:14:38AM +0800, Xiubo Li wrote:
-> > Since there is only one common format via "simple-audio-card,format"
-> > for simple card driver(CPU & CODEC DAI), there is no need to do the
-> > INV mask.
-> 
-> I don't understand this change, how is the fact that the CPU and CODEC
-> DAI share a common format related to using the inversion?  The inversion
-> specifies the format relative to the spec rather than relative to the
-> other end of the link and for any DAI link the two devices should be
-> using the same format.
-
-Sorry, sorry for confusion.
-
->From the "Documentation/devicetree/bindings/sound/simple-card.txt":
-------
- Optional properties:
- 
- - simple-audio-card,format     : CPU/CODEC common audio format.
-                                  "i2s", "right_j", "left_j" , "dsp_a"
-                                  "dsp_b", "ac97", "pdm", "msb", "lsb"
-------
-There is only one common daifmt properties in simple-card parent dt node, and
-its bits mask is SND_SOC_DAIFMT_FORMAT_MASK.
-
-And also in the same binding documents:
-------
-Optional CPU/CODEC subnodes properties:
-
-- format                  : CPU/CODEC specific audio format if needed.
-                            see simple-audio-card,format
-- frame-master            : bool property. add this if subnode is frame master
-- bitclock-master         : bool property. add this if subnode is bitclock master
-- bitclock-inversion      : bool property. add this if subnode has clock inversion
-- frame-inversion         : bool property. add this if subnode has frame inversion
-- clocks / system-clock-frequency
-			       : specify subnode's clock if needed.
-                            it can be specified via "clocks" if system has
-                            clock node (= common clock), or "system-clock-frequency"
-                            (if system doens't support common clock)
-------
-
-And in "sound/soc/generic/simple-card.c", function : asoc_simple_card_parse_of()
------
-	......
-
-        /* get CPU/CODEC common format via simple-audio-card,format */
-        info->daifmt = snd_soc_of_parse_daifmt(node, "simple-audio-card,") &
-                (SND_SOC_DAIFMT_FORMAT_MASK | SND_SOC_DAIFMT_INV_MASK);
-
-	......
-
-		ret = asoc_simple_card_sub_parse_of(cpu, ...);
-
-		...
-
-		ret = asoc_simple_card_sub_parse_of(codec, ...);
-
-	......
------
-The SND_SOC_DAIFMT_INV_MASK bits mask should be for "bitclock-master" and
-"frame-inversion" in subnodes' daifmt parsing if need, or why shouldn't
-SND_SOC_DAIFMT_CLOCK_MASK be here like SND_SOC_DAIFMT_INV_MASK ?
-
-IMO, the SND_SOC_DAIFMT_INV_MASK bits mask here maybe a little confused.
-
-Certainly, these two and other subnode properties can also be common properties
-like "[prefix]format" for other drivers.
-
-It's the limitation of snd_soc_of_parse_daifmt() that the simple-card driver must
-do the mask(except SND_SOC_DAIFMT_MASTER_MASK, because it default value is not zero)
-operation. 
-
-Or should we change "bitclock-master" and "frame-master" as one string property
-like "[prefix]master = XXX", and set the default value as zero like others. And then
-we can remove all the bits mask operations in simple-card and other drivers.
-If need, I will send this patch of this.
-         
-
-Thanks,
-
---
-Best Regards,
-Xiubo
+-- 
+1.8.3.2
 
