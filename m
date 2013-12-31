@@ -1,43 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567Ab3LaQ1A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 11:27:00 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48776 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753987Ab3LaQ05 (ORCPT
+	id S932123Ab3LaQ1Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 11:27:24 -0500
+Received: from mail.candelatech.com ([208.74.158.172]:56389 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754624Ab3LaQ1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 11:26:57 -0500
-Date: Tue, 31 Dec 2013 09:26:54 -0700
-From: Jens Axboe <axboe@kernel.dk>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH v1 4/5] block: null_blk: fix queue leak inside removing
- device
-Message-ID: <20131231162654.GI21823@kernel.dk>
-References: <1388064698-27344-1-git-send-email-tom.leiming@gmail.com>
- <1388064698-27344-5-git-send-email-tom.leiming@gmail.com>
+	Tue, 31 Dec 2013 11:27:22 -0500
+Message-ID: <52C2F056.1020005@candelatech.com>
+Date: Tue, 31 Dec 2013 08:27:02 -0800
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1388064698-27344-5-git-send-email-tom.leiming@gmail.com>
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: Joe Perches <joe@perches.com>, Johannes Berg <johannes@sipsolutions.net>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        kernel-janitors@vger.kernel.org,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/11]  use ether_addr_equal_64bits
+References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>  <1388427307-8691-5-git-send-email-Julia.Lawall@lip6.fr>  <1388429761.4410.1.camel@jlt4.sipsolutions.net>  <alpine.DEB.2.02.1312302057420.2209@localhost6.localdomain6>  <1388438724.4573.2.camel@jlt4.sipsolutions.net>  <20131230215701.GA4938@khazad-dum.debian.net>  <1388445188.18164.0.camel@jlt4.sipsolutions.net> <1388445422.26796.38.camel@joe-AO722> <alpine.DEB.2.02.1312310726540.1930@localhost6.localdomain6> <52C2E8BA.6000800@candelatech.com> <alpine.DEB.2.10.1312311704320.2074@hadrien>
+In-Reply-To: <alpine.DEB.2.10.1312311704320.2074@hadrien>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 26 2013, Ming Lei wrote:
-> When queue_mode is NULL_Q_MQ and null_blk is being removed,
-> blk_cleanup_queue() isn't called to cleanup queue, so the
-> queue allocated won't be freed.
-> 
-> This patch calls blk_cleanup_queue() for MQ to drain all
-> pending requests first and release the reference counter
-> of queue kobject, then blk_mq_free_queue() will be called
-> in queue kobject's release handler when queue kobject's
-> reference counter drops to zero.
+On 12/31/2013 08:09 AM, Julia Lawall wrote:
+>
+>
+> On Tue, 31 Dec 2013, Ben Greear wrote:
+>
+>> On 12/30/2013 10:32 PM, Julia Lawall wrote:
+>>>>>>> I'm just thinking of a programmer, e.g. changing a struct like this:
+>>>>>>>
+>>>>>>>    struct foo {
+>>>>>>>      u8 addr[ETH_ALEN];
+>>>>>>> -  u16 dummy;
+>>>>>>>    };
+>>>>
+>>>> I don't know of a way to catch that.
+>>>> Anyone else?
+>>>
+>>> Well, one could have a semantic patch that checks for that.  But the
+>>> problem is that it is very slow, and it only covers the cases that I can
+>>> transform automatically, which currently means no pointers, only explicit
+>>> arrays.
+>>>
+>>> On the other hand, I am finding the structure definition, so I can easily
+>>> update the structure definition with an appropriate comment.
+>>>
+>>> struct foo {
+>>>       u8 addr[ETH_ALEN]; /* must be followed by two bytes in the structure */
+>>>       u16 dummy;
+>>> };
+>>>
+>>> Unfortunately it is kind of verbose.  Could there be an attribute?  That
+>>> could even easily be checked.
+>>
+>> Can you not just add a build-time macro to check that sizeof(foo) >= 8
+>> for each of these struct foos?  Or, is it required that the dummy field
+>> be there and be not used by anything else?
+>
+> It doesn't matter what the field is used for.  The problem is that is it
+> necessary to ensure a property of the position of addr within the
+> structure.  It has to have at least 16 bytes after it.
 
-I have applied this to for-linus for 3.13, the other 4 will go into
-3.14.
+You mean 16 bits?
+
+>
+> But maybe something with sizeof(foo) and offset_of would do?
+>
+> Could the macro be put near the declaration of the structure somehow?
+
+I think that would work, but do not know all of the details of such
+macros, so it's possible there is some catch.
+
+If nothing else, then some run-time code that calculates the offset off
+and asserts if it is broken in module initialization or similar might
+be good enough.
+
+Thanks,
+Ben
 
 -- 
-Jens Axboe
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
 
