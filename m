@@ -1,118 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751902Ab3LaGJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 01:09:29 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:53797 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab3LaGJ2 (ORCPT
+	id S1751849Ab3LaG0v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 01:26:51 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:48396 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099Ab3LaG0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 01:09:28 -0500
-X-AuditID: cbfee61a-b7fb26d00000724f-a4-52c25f910863
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'Jaegeuk Kim'" <jaegeuk.kim@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-References: <1388116820-15038-1-git-send-email-jaegeuk.kim@samsung.com>
- <1388116820-15038-2-git-send-email-jaegeuk.kim@samsung.com>
-In-reply-to: <1388116820-15038-2-git-send-email-jaegeuk.kim@samsung.com>
-Subject: RE: [f2fs-dev] [PATCH 2/6] f2fs: convert inline_data for punch_hole
-Date: Tue, 31 Dec 2013 14:08:24 +0800
-Message-id: <000001cf05ee$d8bd8c90$8a38a5b0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQJ5cIHO6QcnOR0DoAizVAhm3+hYigFSE4MfmQ5owzA=
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9jQd2J8YeCDM5OF7G4vusvk8WlRe4W
-	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK+Nw307WggbRiil7
-	DzI2MC4U7GLk5JAQMJH4/ugLI4QtJnHh3nq2LkYuDiGB6YwSz+/PYIFwfjBKzD29iQ2kik1A
-	RWJ5x38mEFtEQFvi59xWdhCbWSBTYs7ryawQDa2MEn8XzwYr4hTwkFj6dTKQzcEhLOAjMeN6
-	NkiYRUBVomF1L9hMXgFLiTNH1rNA2IISPybfY4GYqSWxfudxJghbXmLzmrfMEJcqSOw4+5oR
-	ZKSIgJXE1sslECXiEhuP3GKZwCg0C8mkWUgmzUIyaRaSlgWMLKsYRVMLkguKk9JzDfWKE3OL
-	S/PS9ZLzczcxggP/mdQOxpUNFocYBTgYlXh4bxocChJiTSwrrsw9xCjBwawkwtt492CQEG9K
-	YmVValF+fFFpTmrxIUZpDhYlcd4DrdaBQgLpiSWp2ampBalFMFkmDk6pBkbXmS+CKhZH3ton
-	3LwttrWq8AvP4vZH5nnf/inKqxTG3Y7e0mz0Zm2J1wM54VMc7dfPrrllIPFnmuCWX2U8E2+1
-	H3jrteJsXNbxyTHzd7MH8fjOTdq6LTzVbFV05+qGRzX9j6I+l55b9OjU+clyz7dnfVdYGzVX
-	b7N8xqU6n7t82zZsZl2VLhSoxFKckWioxVxUnAgAwTxIIHgCAAA=
+	Tue, 31 Dec 2013 01:26:49 -0500
+MIME-Version: 1.0
+In-Reply-To: <1388445188.18164.0.camel@jlt4.sipsolutions.net>
+References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>
+	<1388427307-8691-5-git-send-email-Julia.Lawall@lip6.fr>
+	<1388429761.4410.1.camel@jlt4.sipsolutions.net>
+	<alpine.DEB.2.02.1312302057420.2209@localhost6.localdomain6>
+	<1388438724.4573.2.camel@jlt4.sipsolutions.net>
+	<20131230215701.GA4938@khazad-dum.debian.net>
+	<1388445188.18164.0.camel@jlt4.sipsolutions.net>
+Date: Tue, 31 Dec 2013 08:26:47 +0200
+Message-ID: <CANUX_P0PX1g8uHJUHYoB4UyMMgbtLas0_pf4TYrLTgND5V37rg@mail.gmail.com>
+Subject: Re: [PATCH 4/11] use ether_addr_equal_64bits
+From: Emmanuel Grumbach <egrumbach@gmail.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Julia Lawall <julia.lawall@lip6.fr>, kernel-janitors@vger.kernel.org,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Dec 31, 2013 at 1:13 AM, Johannes Berg
+<johannes@sipsolutions.net> wrote:
+>
+> On Mon, 2013-12-30 at 19:57 -0200, Henrique de Moraes Holschuh wrote:
+> > On Mon, 30 Dec 2013, Johannes Berg wrote:
+> > > On Mon, 2013-12-30 at 20:58 +0100, Julia Lawall wrote:
+> > > > > Is there any way we could catch (sparse, or some other script?) that
+> > > > > struct reorganising won't break the condition needed ("within a
+> > > > > structure that contains at least two more bytes")?
+> > > >
+> > > > What kind of reorganizing could happen?  Do you mean that the programmer
+> > > > might do at some time in the future, or something the compiler might do?
+> > >
+> > > I'm just thinking of a programmer, e.g. changing a struct like this:
+> > >
+> > >  struct foo {
+> > >    u8 addr[ETH_ALEN];
+> > > -  u16 dummy;
+> > >  };
+> > >
+> > > for example.
+> >
+> > That is easily resolved by:
+> >
+> > struct foo {
+> >       u8 addr[ETH_ALEN];
+> >       u16 required_padding;   /* do not remove upon pain of death */
+> > };
+>
+> That'd be a stupid waste of struct space. If anything, there should be
+> *only* a comment saying that at least two bytes are needed - I'd still
+> prefer an automated check.
+>
 
-One comment as following.
+Frankly I am not sure I like the patch. This flow is not a fast path
+at all. While I don't really care for the waste in iwlwifi (because
+there isn't), I don't see the real point is make the code more
+sensitive to changes to earn basically nothing.
 
-> -----Original Message-----
-> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
-> Sent: Friday, December 27, 2013 12:00 PM
-> Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net
-> Subject: [f2fs-dev] [PATCH 2/6] f2fs: convert inline_data for punch_hole
-> 
-> In the punch_hole(), let's convert inline_data all the time for simplicity and
-> to avoid potential deadlock conditions.
-> It is pretty much not a big deal to do this.
-> 
-> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-
-Reviewed-by: Chao Yu <chao2.yu@samsung.com>
-
-> ---
->  fs/f2fs/file.c | 22 +++-------------------
->  1 file changed, 3 insertions(+), 19 deletions(-)
-> 
-> diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-> index 7ef2d6a..f64a1c8 100644
-> --- a/fs/f2fs/file.c
-> +++ b/fs/f2fs/file.c
-> @@ -462,25 +462,9 @@ static int punch_hole(struct inode *inode, loff_t offset, loff_t len)
->  	loff_t off_start, off_end;
->  	int ret = 0;
-> 
-> -	if (f2fs_has_inline_data(inode)) {
-> -		struct page *page;
-> -		unsigned flags = AOP_FLAG_NOFS;
-> -		page = grab_cache_page_write_begin(inode->i_mapping, 0, flags);
-> -		if (IS_ERR(page))
-> -			return PTR_ERR(page);
-
-We use following code because grab_cache_page_write_begin only use
-NULL value as its error number.
-
-	if (!page)
-		return -ENOMEM;
-
-> -		if (offset + len > MAX_INLINE_DATA) {
-> -			ret = f2fs_convert_inline_data(inode, page, flags);
-> -			f2fs_put_page(page, 1);
-> -			if (ret)
-> -				return ret;
-> -		} else {
-> -			zero_user_segment(page, offset, offset + len);
-> -			SetPageUptodate(page);
-> -			set_page_dirty(page);
-> -			f2fs_put_page(page, 1);
-> -			return ret;
-> -		}
-> -	}
-> +	ret = f2fs_convert_inline_data(inode, NULL, AOP_FLAG_NOFS);
-> +	if (ret)
-> +		return ret;
-> 
->  	pg_start = ((unsigned long long) offset) >> PAGE_CACHE_SHIFT;
->  	pg_end = ((unsigned long long) offset + len) >> PAGE_CACHE_SHIFT;
-> --
-> 1.8.4.474.g128a96c
-> 
-> 
-> ------------------------------------------------------------------------------
-> Rapidly troubleshoot problems before they affect your business. Most IT
-> organizations don't have a clear picture of how application performance
-> affects their revenue. With AppDynamics, you get 100% visibility into your
-> Java,.NET, & PHP application. Start your 15-day FREE TRIAL of AppDynamics Pro!
-> http://pubads.g.doubleclick.net/gampad/clk?id=84349831&iu=/4140/ostg.clktrk
-> _______________________________________________
-> Linux-f2fs-devel mailing list
-> Linux-f2fs-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
-
+This flow happens only upon association which means a few times an hour maybe...
+The only advantage I see here is that people like me who don't always
+have a chance to read / write much code outside their little tiny
+boring driver get to know about this kind of things. So, from an
+educational point of view - this is cool.
+But education is one thing, and the code is another.
