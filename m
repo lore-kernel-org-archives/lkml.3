@@ -1,114 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755189Ab3LaR27 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 12:28:59 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:47759 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753897Ab3LaR25 (ORCPT
+	id S1754819Ab3LaRpb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 12:45:31 -0500
+Received: from smtp4-g21.free.fr ([212.27.42.4]:40584 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753897Ab3LaRpa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 12:28:57 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        "Simon Horman [Horms]" <horms@verge.net.au>
-Subject: Re: [PATCH 04/05 v2] pinctrl: sh-pfc: r7s72100 SCIF support
-Date: Tue, 31 Dec 2013 18:29:29 +0100
-Message-ID: <3543969.B4d78GADQA@avalon>
-User-Agent: KMail/4.10.5 (Linux/3.10.17-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CANqRtoSJAik-QV9WFfgsVGPAVBCRasuQz9kOHOueDM562PwJMg@mail.gmail.com>
-References: <20131217023745.24573.3660.sendpatchset@w520> <1746928.Q6f1iPMsKL@avalon> <CANqRtoSJAik-QV9WFfgsVGPAVBCRasuQz9kOHOueDM562PwJMg@mail.gmail.com>
+	Tue, 31 Dec 2013 12:45:30 -0500
+Date: Tue, 31 Dec 2013 18:44:30 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ASoC: make snd_soc_dai_link more symmetrical
+Message-ID: <20131231184430.3a4c9414@armhf>
+In-Reply-To: <20131231165533.GK31886@sirena.org.uk>
+References: <20131212185917.7ed6b21f@armhf>
+	<20131231165533.GK31886@sirena.org.uk>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus,
+On Tue, 31 Dec 2013 16:55:33 +0000
+Mark Brown <broonie@kernel.org> wrote:
 
-On Wednesday 18 December 2013 07:26:15 Magnus Damm wrote:
-> On Wed, Dec 18, 2013 at 1:08 AM, Laurent Pinchart wrote:
-> > On Tuesday 17 December 2013 11:38:23 Magnus Damm wrote:
-> >> From: Magnus Damm <damm@opensource.se>
-> >> 
-> >> Add support for SCIF functions SCK, TXD, RXD, CTS and RTS to the
-> >> r7s72100 PINCTRL code. There are two possible pins that can be used
-> >> for TXD (Port 3 Pin 0 Function 6 and Port 3 Pin 1 Function 4) and
-> >> because of that are pins broken out into separate functions.
-> >> 
-> >> Signed-off-by: Magnus Damm <damm@opensource.se>
-> >> ---
-> >> 
-> >>  drivers/pinctrl/sh-pfc/pfc-r7s72100.c |  158 +++++++++++++++++++++++++++
-> >>  1 file changed, 158 insertions(+)
-> >> 
-> >> --- 0006/drivers/pinctrl/sh-pfc/pfc-r7s72100.c
-> >> +++ work/drivers/pinctrl/sh-pfc/pfc-r7s72100.c        2013-12-17
-> > 
-> > 01:09:20.000000000
-> > 
-> >> +0900 @@ -117,12 +117,170 @@ static const unsigned int __RZ_STR(pfx,
-> >> 
-> >>  #define RZ_GROUPS(pfx, hw, bank, pin, fn) \
-> >>       __RZ_GROUPS(pfx##_##hw##_p##bank##_##pin),
-> >> 
-> >> +#define SCIF0(fn)                    \
-> >> +     fn(scif0, clk, 2, 13, 6)        \
-> >> +     fn(scif0, txd, 2, 14, 6)        \
-> >> +     fn(scif0, rxd, 2, 15, 6)        \
-> >> +     fn(scif0, clk, 4, 8, 7)         \
-> >> +     fn(scif0, txd, 4, 9, 7)         \
-> >> +     fn(scif0, rxd, 4, 10, 7)        \
-> >> +     fn(scif0, clk, 6, 8, 5)         \
-> >> +     fn(scif0, txd, 6, 9, 5)         \
-> >> +     fn(scif0, rxd, 6, 10, 5)
-> > 
-> > The SCIF0 SCK, TXD and RXD pins are grouped together with three options to
-> > choose from. Unlike the PFC devices we support so far, the driver allows
-> > picking pins individually. This allows greater flexibility, at the cost of
-> > a more verbose PFC DT node.
+> On Thu, Dec 12, 2013 at 06:59:17PM +0100, Jean-Francois Moine wrote:
 > 
-> You need more detailed PFC data, yes, but I'm not sure if "Unlike the
-> PFC devices we support so far" is a correct statement. =)
+> > This patch renders optional the CODEC name / OF node on sound card register,
+> > as it is done for the CPU side, in the case the CODEC DAI name is unique.
 > 
-> > I assume that this is correct, but could you please confirm that the SoC
-> > really allows picking pins individually (for instance using P2.14 as SCIF0
-> > TXD together with P6.10 as SCIF0 RXD) ?
+> > This simplifies the definition of CODECs with multiple DAIs, especially
+> > in DTs, while keeping compatibility.
 > 
-> Your example would work just fine, yes. I don't have any hardware to
-> test that though. I suspect the same would be fine on all of our SoCs
-> actually, unless
+> So, this is similar to one of the comments I made on the DT patch you
+> sent today: you're saying that this makes things better but you're not
+> saying why it makes things better.  I've been sitting on this partly
+> because I've been wanting to sit down and try to work out what the
+> benefit is.  This information should be readily avaiable and omiting it
+> seems like it will make things more fragile.
 > 
-> > I also wonder whether other currently supported SoCs wouldn't happen to
-> > also support picking pins from different groups, even though they name
-> > the groups differently.
+> If anything I'd expect DT to want to move towards specifying things by
+> CODEC plus optional DAI index rather than anything else, that's the more
+> common pattern for DT based things (really phandle plus index) and it's
+> what the current generic card is doing.
 > 
-> It seems to me that in general the hardware has much more flexibility
-> than what the PINCTRL groups actually expose today. In the end it
-> depends on the actual hardware, so its a case by case thing:
-> 
-> A) RZ series: Individual per-pin settings always available
-> 
-> B) R-Mobile series (PORTnCR + MSELnCR): Individual per-pin settings
-> usually available
-> 
-> C) R-Car series (IPSRnn + MOD_SEL): Shared to some degree, but often
-> still allows individual control.
-> 
-> So with the current PINCTRL interface it looks like we have introduced
-> some artificial limitation based on software grouping even though the
-> actual hardware often can handle per-pin settings.
+> It's possible there is a benefit I'm just not seeing but you'll need to
+> tell me.
 
-That's probably true for some devices, yes. We've started by limiting the 
-possibilities on R-Car either rightfully (when IPSR would allow individidual 
-control but MODSEL would forbid it) or incorrectly, and have probably carried 
-that on to new SoCs. We should carefully review the pin groups in the future.
+The first benefit I got was in the front-end definition: the codec side
+is the dummy codec, and this one has no phandle.
+
+Then, finding the CODEC DAI from phandle asks for more code
+(of_xlate_dai_name in the CODEC drivers) and finding it from the CODEC
+name asks for a double loop in soc_bind_dai_link. On the other way, a
+simple loop without any more change may be used when the DAI is simply
+specified by its name. I would say that the DAI name is more meaningful
+than a DAI index and that it is less subject to internal changes of the
+CODEC driver.
+
+Eventually, I don't think that, using only the name of the CODEC side
+DAI to identify it, is not more fragile than identifying the CPU side
+of the DAI link by its name.
 
 -- 
-Regards,
-
-Laurent Pinchart
-
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
