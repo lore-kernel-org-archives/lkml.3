@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab3LaMhN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 07:37:13 -0500
-Received: from smtp2-g21.free.fr ([212.27.42.2]:48232 "EHLO smtp2-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752929Ab3LaMhL convert rfc822-to-8bit (ORCPT
+	id S1753473Ab3LaMjY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 07:39:24 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:56689 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753081Ab3LaMjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 07:37:11 -0500
-Date: Tue, 31 Dec 2013 13:36:10 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Lars-Peter Clausen <lars@metafoo.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: generic: add generic compound card with DT
- support
-Message-ID: <20131231133610.2d14bc29@armhf>
-In-Reply-To: <20131231115927.GK31886@sirena.org.uk>
-References: <20131231113138.102044cf@armhf>
-	<20131231115927.GK31886@sirena.org.uk>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
+	Tue, 31 Dec 2013 07:39:22 -0500
+Date: Tue, 31 Dec 2013 12:38:57 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: lgirdwood@gmail.com, rob@landley.net, kuninori.morimoto.gx@renesas.com,
+        fabio.estevam@freescale.com, alsa-devel@alsa-project.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20131231123857.GS31886@sirena.org.uk>
+References: <1387774621-23968-1-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oaK9NA/DDdTag9m3"
+Content-Disposition: inline
+In-Reply-To: <1387774621-23968-1-git-send-email-Li.Xiubo@freescale.com>
+X-Cookie: Go climb a gravity well!
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: simple-card: Add DAPM routes parse from device tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Dec 2013 11:59:27 +0000
-Mark Brown <broonie@kernel.org> wrote:
 
-> > This code was first developped on the generic simple card, but its
-> > recent DT extension cannot be easily extended again to support compound
-> > cards as the one in the Cubox.  
-> 
-> It would have been useful to have provided that feedback at the time
-> rather than waiting until after it had been merged - it was in review
-> for long enough.  It would also be good to articulate the issues with
-> the binding rather than simply stating they exist, and to consider
-> adding a second binding to the existing generic card rather than adding
-> a totally new card.
+--oaK9NA/DDdTag9m3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Sorry, I spent a lot of time on DPCM, and I was not yet ready to propose
-something when you accepted Kuninori's patch.
+On Mon, Dec 23, 2013 at 12:57:01PM +0800, Xiubo Li wrote:
+> Parses a simple DAPM route table from device tree.
 
-> Please also remember that all DT patches need to be reviewed by the DT
-> people, you've not CCed either them or the list.
-> 
-> > +  - front-end or back-end: present if the DAI link describes resp.
-> > +		a front-end CPU DAI or a back-end CODEC DAI  
-> 
-> These are Linux-internal concepts which shouldn't appear in a DT binding
-> or at the very least need definition.  One thing to consider here is
-> that these things are all about the internals of a SoC and you'd
-> therefore expect that they would be defined separately from the card so
-> as to avoid having to replicate information in every card using a given
-> SoC.
+I've applied this on the basis that it's using a generic feature and
+won't do any harm but given that no off-CODEC widgets are defined I do
+have to wonder when it'll actually be useful.
 
-Do you mean that, as DPCM cannot be in the DT, there should be a
-specific driver for the Cubox audio card (Marvell Armada 510 + NXP HDMI
-transmitter)?
+--oaK9NA/DDdTag9m3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSwrreAAoJELSic+t+oim96zAP/2Rd5TlnLTCgfSk+Aa4T8Hlz
+vYom7mbtQsNgsVxZKqAcZ7sKBv8tqfhuTNPYBbAH7QGRIc8+b5yPQJzPAG/Nz7kk
+JKhQbiVRAkp7CXKEakYz3mXPFAIgj3gMoqefEXCez+2YpYOMKGQ3nXBhJ03rT9Jo
+AynqWX2+AB1eWDZIk1xJ/X6fYdV/fBeRxd9ECSaUafJEjm7bcgEp09nCZ47IbptF
+g1+AbMCTy41b6i2cF8uwRKwIlJ8m0B0toLm92xbP4IONXApjAx63bRMPtCQHrPHK
+Lw1yZtTiC9urWYP4QeX6r4AJPtVc9UiVbl8B0UWnnYOKWfkb5fnPKEgVMDIOa9Pi
+ytnMmvxwjDnBmlokO/TpYNMZ8SKeq5gOw0IJdP/tUfvRPHPRQUcY1u2LpCnXrnKH
+lHUXZ3qBF+Rt0WfkX8zD5X36mXXCx+1amLqUM/iMEWLeOqzACCsGNJb0f+YdSRIR
+lmb3CZnncSfCd53Jh5hjLlWWiEG6jNfELMoD+3NVL6x3qT6rqOTtYMscV6SRFJ9+
+PC688GZR+f5tsrJdFkTBZYSxpQQup0+JfDe+BrG1yC549+mrApNNBgOqcVpKhdQZ
+k/KGaLPwjNQUJVsKQwsbfQJ1ATRHnmpDyt4KBlnbW9lA352eP4T1uRu2u/BShsBX
+MOJ4Jilia7yLyhn+ys1x
+=bNO0
+-----END PGP SIGNATURE-----
+
+--oaK9NA/DDdTag9m3--
