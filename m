@@ -1,47 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756584Ab3LaT2l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 14:28:41 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:52914 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756347Ab3LaT2j (ORCPT
+	id S1756562Ab3LaTet (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 14:34:49 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:34544 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756438Ab3LaTer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 14:28:39 -0500
-Message-ID: <52C31AE4.1050501@lwfinger.net>
-Date: Tue, 31 Dec 2013 13:28:36 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 31 Dec 2013 14:34:47 -0500
+Date: Tue, 31 Dec 2013 11:34:44 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: linux-input@vger.kernel.org
+Cc: Simon Glass <sjg@chromium.org>, Vincent Palatin <vpalatin@chromium.org>,
+        Luigi Semenzato <semenzato@chromium.org>,
+        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH] Input: cros_ec_keyb - switch from using uint8_t to u8
+Message-ID: <20131231193442.GA25208@core.coreip.homeip.net>
 MIME-Version: 1.0
-To: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
-CC: linux-wireless <linux-wireless@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Question on compiler warning
-References: <52C21CE3.3020402@lwfinger.net> <52C2A2E5.3020100@ilande.co.uk>
-In-Reply-To: <52C2A2E5.3020100@ilande.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/31/2013 04:56 AM, Mark Cave-Ayland wrote:
-> Hi Larry,
->
-> Could it be that you don't see the issue the locally because you've got
-> different compiler optimisation settings? I've seen a similar bug recently on
-> another project where the "may be used uninitialized" warning appears with -O0
-> and -O1 but magically disappears with the default -O2 setting (presumably
-> because the optimiser performs some kind of inlining/reordering that makes the
-> issue go away).
+u8 is proper in-kernel type for unsigned byte data.
 
-Mark,
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/input/keyboard/cros_ec_keyb.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-It is possible. Certainly, a higher optimization level will force the compiler 
-to do a better job of flow analysis. I am using -O2, which is the standard in 
-the kernel makefile. I would expect that Geert is also using the same lever, but 
-perhaps not.
+diff --git a/drivers/input/keyboard/cros_ec_keyb.c b/drivers/input/keyboard/cros_ec_keyb.c
+index 4083796..d44c5d4 100644
+--- a/drivers/input/keyboard/cros_ec_keyb.c
++++ b/drivers/input/keyboard/cros_ec_keyb.c
+@@ -50,7 +50,7 @@ struct cros_ec_keyb {
+ 	int row_shift;
+ 	const struct matrix_keymap_data *keymap_data;
+ 	bool ghost_filter;
+-	uint8_t *old_kb_state;
++	u8 *old_kb_state;
+ 
+ 	struct device *dev;
+ 	struct input_dev *idev;
+@@ -60,7 +60,7 @@ struct cros_ec_keyb {
+ 
+ 
+ static bool cros_ec_keyb_row_has_ghosting(struct cros_ec_keyb *ckdev,
+-					  uint8_t *buf, int row)
++					  u8 *buf, int row)
+ {
+ 	int pressed_in_row = 0;
+ 	int row_has_teeth = 0;
+@@ -89,7 +89,7 @@ static bool cros_ec_keyb_row_has_ghosting(struct cros_ec_keyb *ckdev,
+  * Returns true when there is at least one combination of pressed keys that
+  * results in ghosting.
+  */
+-static bool cros_ec_keyb_has_ghosting(struct cros_ec_keyb *ckdev, uint8_t *buf)
++static bool cros_ec_keyb_has_ghosting(struct cros_ec_keyb *ckdev, u8 *buf)
+ {
+ 	int row;
+ 
+@@ -132,7 +132,7 @@ static bool cros_ec_keyb_has_ghosting(struct cros_ec_keyb *ckdev, uint8_t *buf)
+  * per column)
+  */
+ static void cros_ec_keyb_process(struct cros_ec_keyb *ckdev,
+-			 uint8_t *kb_state, int len)
++				 u8 *kb_state, int len)
+ {
+ 	struct input_dev *idev = ckdev->idev;
+ 	int col, row;
+@@ -189,19 +189,19 @@ static void cros_ec_keyb_close(struct input_dev *dev)
+ 					   &ckdev->notifier);
+ }
+ 
+-static int cros_ec_keyb_get_state(struct cros_ec_keyb *ckdev, uint8_t *kb_state)
++static int cros_ec_keyb_get_state(struct cros_ec_keyb *ckdev, u8 *kb_state)
+ {
+ 	return ckdev->ec->command_recv(ckdev->ec, EC_CMD_MKBP_STATE,
+ 					  kb_state, ckdev->cols);
+ }
+ 
+ static int cros_ec_keyb_work(struct notifier_block *nb,
+-		     unsigned long state, void *_notify)
++			     unsigned long state, void *_notify)
+ {
+ 	int ret;
+ 	struct cros_ec_keyb *ckdev = container_of(nb, struct cros_ec_keyb,
+ 						    notifier);
+-	uint8_t kb_state[ckdev->cols];
++	u8 kb_state[ckdev->cols];
+ 
+ 	ret = cros_ec_keyb_get_state(ckdev, kb_state);
+ 	if (ret >= 0)
+@@ -282,8 +282,8 @@ static int cros_ec_keyb_probe(struct platform_device *pdev)
+ /* Clear any keys in the buffer */
+ static void cros_ec_keyb_clear_keyboard(struct cros_ec_keyb *ckdev)
+ {
+-	uint8_t old_state[ckdev->cols];
+-	uint8_t new_state[ckdev->cols];
++	u8 old_state[ckdev->cols];
++	u8 new_state[ckdev->cols];
+ 	unsigned long duration;
+ 	int i, ret;
+ 
+-- 
+1.8.3.1
 
-Larry
 
-
+-- 
+Dmitry
