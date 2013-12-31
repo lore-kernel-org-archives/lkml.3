@@ -1,127 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949Ab3LaDWt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 22:22:49 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:32716 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab3LaDWs (ORCPT
+	id S1752507Ab3LaD2Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 22:28:16 -0500
+Received: from mail-bl2lp0210.outbound.protection.outlook.com ([207.46.163.210]:52845
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750708Ab3LaD2P convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 22:22:48 -0500
-Message-ID: <52C2385A.8020608@oracle.com>
-Date: Mon, 30 Dec 2013 22:22:02 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 30 Dec 2013 22:28:15 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "perex@perex.cz" <perex@perex.cz>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
+        "Fabio.Estevam@freescale.com" <Fabio.Estevam@freescale.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] ASoC: simple-card: cleanup asoc_simple_card_parse_of()
+ code
+Thread-Topic: [PATCH] ASoC: simple-card: cleanup asoc_simple_card_parse_of()
+ code
+Thread-Index: AQHPBViOX+iJOlN4DECU2ZJcLzz22Jptnx/g
+Date: Tue, 31 Dec 2013 03:27:53 +0000
+Message-ID: <4c44077c52604d0b85c4babb59268eb7@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1388114078-24517-1-git-send-email-Li.Xiubo@freescale.com>
+ <20131230121113.GQ31886@sirena.org.uk>
+In-Reply-To: <20131230121113.GQ31886@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 00770C4423
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(189002)(164054003)(51704005)(199002)(24454002)(85306002)(87936001)(74316001)(80976001)(56816005)(74502001)(77982001)(79102001)(85852003)(81686001)(76796001)(33646001)(83072002)(69226001)(31966008)(59766001)(74662001)(90146001)(63696002)(76786001)(2656002)(81542001)(47446002)(56776001)(76576001)(53806001)(80022001)(51856001)(66066001)(74706001)(76482001)(54316002)(50986001)(46102001)(47736001)(81816001)(87266001)(47976001)(49866001)(4396001)(81342001)(74876001)(54356001)(65816001)(74366001)(83322001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB254;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: akpm@linux-foundation.org, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [RFC 1/2] mm: additional page lock debugging
-References: <1388281504-11453-1-git-send-email-sasha.levin@oracle.com> <20131230114317.GA8117@node.dhcp.inet.fi> <52C1A06B.4070605@oracle.com> <20131230224808.GA11674@node.dhcp.inet.fi>
-In-Reply-To: <20131230224808.GA11674@node.dhcp.inet.fi>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/30/2013 05:48 PM, Kirill A. Shutemov wrote:
-> On Mon, Dec 30, 2013 at 11:33:47AM -0500, Sasha Levin wrote:
->> On 12/30/2013 06:43 AM, Kirill A. Shutemov wrote:
->>> On Sat, Dec 28, 2013 at 08:45:03PM -0500, Sasha Levin wrote:
->>>> We've recently stumbled on several issues with the page lock which
->>>> triggered BUG_ON()s.
->>>>
->>>> While working on them, it was clear that due to the complexity of
->>>> locking its pretty hard to figure out if something is supposed
->>>> to be locked or not, and if we encountered a race it was quite a
->>>> pain narrowing it down.
->>>>
->>>> This is an attempt at solving this situation. This patch adds simple
->>>> asserts to catch cases where someone is trying to lock the page lock
->>>> while it's already locked, and cases to catch someone unlocking the
->>>> lock without it being held.
->>>>
->>>> My initial patch attempted to use lockdep to get further coverege,
->>>> but that attempt uncovered the amount of issues triggered and made
->>>> it impossible to debug the lockdep integration without clearing out
->>>> a large portion of existing bugs.
->>>>
->>>> This patch adds a new option since it will horribly break any system
->>>> booting with it due to the amount of issues that it uncovers. This is
->>>> more of a "call for help" to other mm/ hackers to help clean it up.
->>>>
->>>> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
->>>> ---
->>>>   include/linux/pagemap.h | 11 +++++++++++
->>>>   lib/Kconfig.debug       |  9 +++++++++
->>>>   mm/filemap.c            |  4 +++-
->>>>   3 files changed, 23 insertions(+), 1 deletion(-)
->>>>
->>>> diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
->>>> index 1710d1b..da24939 100644
->>>> --- a/include/linux/pagemap.h
->>>> +++ b/include/linux/pagemap.h
->>>> @@ -321,6 +321,14 @@ static inline pgoff_t linear_page_index(struct vm_area_struct *vma,
->>>>   	return pgoff >> (PAGE_CACHE_SHIFT - PAGE_SHIFT);
->>>>   }
->>>>
->>>> +#ifdef CONFIG_DEBUG_VM_PAGE_LOCKS
->>>> +#define VM_ASSERT_LOCKED(page) VM_BUG_ON_PAGE(!PageLocked(page), (page))
->>>> +#define VM_ASSERT_UNLOCKED(page) VM_BUG_ON_PAGE(PageLocked(page), (page))
->>>> +#else
->>>> +#define VM_ASSERT_LOCKED(page) do { } while (0)
->>>> +#define VM_ASSERT_UNLOCKED(page) do { } while (0)
->>>> +#endif
->>>> +
->>>>   extern void __lock_page(struct page *page);
->>>>   extern int __lock_page_killable(struct page *page);
->>>>   extern int __lock_page_or_retry(struct page *page, struct mm_struct *mm,
->>>> @@ -329,16 +337,19 @@ extern void unlock_page(struct page *page);
->>>>
->>>>   static inline void __set_page_locked(struct page *page)
->>>>   {
->>>> +	VM_ASSERT_UNLOCKED(page);
->>>>   	__set_bit(PG_locked, &page->flags);
->>>>   }
->>>>
->>>>   static inline void __clear_page_locked(struct page *page)
->>>>   {
->>>> +	VM_ASSERT_LOCKED(page);
->>>>   	__clear_bit(PG_locked, &page->flags);
->>>>   }
->>>>
->>>>   static inline int trylock_page(struct page *page)
->>>>   {
->>>> +	VM_ASSERT_UNLOCKED(page);
->>>
->>> This is not correct. It's perfectly fine if the page is locked here: it's
->>> why trylock needed.
->>>
->>> IIUC, what we want to catch is the case when the page has already locked
->>> by the task.
->>
->> Frankly, we shouldn't have trylock_page() at all.
->
-> It has valid use cases: if you don't want to sleep on lock, just give up
-> right away. Like grab_cache_page_nowait().
 
-Agreed. We should be checking if the same process is the one holding the lock in
-general. I'll address that in the next version.
+> Subject: Re: [PATCH] ASoC: simple-card: cleanup asoc_simple_card_parse_of()
+> code
+> 
+> On Fri, Dec 27, 2013 at 11:14:38AM +0800, Xiubo Li wrote:
+> > Since there is only one common format via "simple-audio-card,format"
+> > for simple card driver(CPU & CODEC DAI), there is no need to do the
+> > INV mask.
+> 
+> I don't understand this change, how is the fact that the CPU and CODEC
+> DAI share a common format related to using the inversion?  The inversion
+> specifies the format relative to the spec rather than relative to the
+> other end of the link and for any DAI link the two devices should be
+> using the same format.
 
-[snip]
+Also, for most of the devices of the same DAI link, they use the same DAI
+formats, but I have found some drivers like : "sound/soc/pxa/magician.c"
+and "sound/soc/s6000/s6105-ipcam.c", etc, may have different DAI format
+settings for some reasons(maybe some formats are the CPU/Codec devices
+default setting that it needn't set it here or others).
 
->> Many places lock a long list of pages in bulk - we could allow that with
->> nesting, but then you lose your ability to detect trivial deadlocks.
->
-> I see. But we need something better then plain VM_BUG() to be able to
-> analyze what happened.
+I think maybe this is also the reason why the simple-card has common DAI
+format and CPU/CODEC private DAI formats at the same time.
 
-I really want to use lockdep here, but I'm not really sure how to handle locks which live
-for a rather long while instead of being locked and unlocked in the same function like
-most of the rest of the kernel. (Cc Ingo, PeterZ).
 
 Thanks,
-Sasha
 
+--
+Best Regards,
+Xiubo
