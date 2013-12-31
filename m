@@ -1,69 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638Ab3LaJ7u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 04:59:50 -0500
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:55904 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752254Ab3LaJ7t (ORCPT
+	id S1752639Ab3LaKHB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 05:07:01 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:38232 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752254Ab3LaKG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 04:59:49 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] afs: proc cells and rootcell are writeable
-Date: Tue, 31 Dec 2013 10:59:39 +0100
-User-Agent: KMail/1.13.7 (Linux/3.11.0-15-generic; KDE/4.12.0; x86_64; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-afs@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-References: <20131215230004.97d14ce7.akpm@linux-foundation.org> <201311201430.56135@pali> <20263.1387305065@warthog.procyon.org.uk>
-In-Reply-To: <20263.1387305065@warthog.procyon.org.uk>
+	Tue, 31 Dec 2013 05:06:59 -0500
+Date: Tue, 31 Dec 2013 17:58:27 +0800
+From: Shaohua Li <shli@kernel.org>
+To: linux-kernel@vger.kernel.org, dm-devel@redhat.com, axboe@kernel.dk,
+        agk@redhat.com, snitzer@redhat.com
+Subject: Re: [dm-devel] [PATCG]DM: dm-compression: a compressed DM target for
+ SSD
+Message-ID: <20131231095827.GA27868@kernel.org>
+References: <20131227062421.GA21053@kernel.org>
+ <20131228125725.GA16613@agk-dp.fab.redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2843209.Ed2boYq0IV";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312311059.43847@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131228125725.GA16613@agk-dp.fab.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2843209.Ed2boYq0IV
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Sat, Dec 28, 2013 at 12:57:25PM +0000, Alasdair G Kergon wrote:
+> I've not looked at this in any depth, but here are some first
+> impressions:
+> 
+> On Fri, Dec 27, 2013 at 02:24:21PM +0800, Shaohua Li wrote:
+> > This is a simple DM target supporting compression for SSD only.
+> 
+> Presumably there'll be other disk layouts and other types of compression
+> in future, so if you want to grab the generic name "compression" then
+> please make sure the interface to the code supports such extensions.
+> Use of the term "SSD" may also be too narrow as there could be other
+> technologies that are not labelled "SSD" that could benefit from the
+> target.  At best, we say "for example, ssd" leaving things open for
+> other uses.
+> 
+> IOW EITHER you should make it modular and supply a name to the ctr that
+> tells it to use this specific combination OR if you don't think there'll
+> need to be shared code with other compression types/disk layouts, rename
+> this particular one to something more specific.
+> 
+> For this naming, focus on the key feature of the code, which seems to me
+> to be the "in-place" or "in situ" nature of the so-called compression.
+> - If you don't have some form of thin provisioning underneath, why would
+> you use this?  
+>   => dm-compress-inplace / insitu
+>   => dm-compinsitu
+>   => dm-compress-thin  (sub-module loaded from dm-compress)
+>   => dm-compressthin   (standalone target)
+>      -lzo ?
 
-On Tuesday 17 December 2013 19:31:05 David Howells wrote:
-> Andrew Morton <akpm@linux-foundation.org> wrote:
-> > David ack?
->=20
-> I've signed it off and added here:
->=20
-> 	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs
-> .git/commit/?h=3Dafs&id=3D8de69dbba9012693d4f9e7a7e3c12a0b467f85f3
->=20
-> David
+Thanks for your time! I'll rename it.
+ 
+> To use this compression target above dm-thin (likely to prefer larger
+> block sizes), for example, could the block sizes be adapatable /
+> configurable?
 
-Can you propose this patch also for stable branches? Without this=20
-patch it is not possible to write to cells and rootcell files=20
-which means that it is not possible to add new servers to cells,=20
-so it is not possible to access afs disks and afs driver is=20
-unusable...
+block size (larger block size) is configurable, but currently I didn't
+implement yet.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+> Please use dm_ / DM_ prefixes - with underscore - and choose one prefix
+> to use consistently.  I see "cp" (makes me think "copy") as well as
+> "comp".
+> 
+> We don't label the fields in the STATUSTYPE_INFO output.
+> 
+> Do write Documentation/device-mapper/<target_name_without_leading_dm>.txt.
+> E.g. what you wrote in the patch header should be moved into that file
+> instead.  (Use a recent documentation file as a model for the format of
+> the file, such as verity or thin-provisioning.)
 
+ok
 
---nextPart2843209.Ed2boYq0IV
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+> And don't be afraid to include more comments in the code for the benefit
+> of people who are unfamiliar with the nuances of device-mapper
+> targets:)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Sure, I'll add more in next post.
 
-iEYEABECAAYFAlLClYsACgkQi/DJPQPkQ1Ks5ACfXCS6CzcC/gzSxawiwGWfWWLg
-xkwAoIoJuTMGbr1dGTXmJxd4TV3jfAgg
-=Gw4P
------END PGP SIGNATURE-----
-
---nextPart2843209.Ed2boYq0IV--
+Thanks,
+Shaohua
