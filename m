@@ -1,103 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756228Ab3LaSDk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 13:03:40 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:58144 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754106Ab3LaSDj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 13:03:39 -0500
+	id S1756237Ab3LaSFs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 13:05:48 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:55928 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753937Ab3LaSFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Dec 2013 13:05:47 -0500
+From: Gene Heskett <gheskett@wdtv.com>
+To: linux-kernel@vger.kernel.org
+Subject: Probably silly Q about bootable partitions
+Date: Tue, 31 Dec 2013 13:05:44 -0500
 MIME-Version: 1.0
-In-Reply-To: <20131228204039.GA19982@spo001.leaseweb.com>
-References: <1385160964-18578-1-git-send-email-markus.mayer@linaro.org>
-	<20131228204039.GA19982@spo001.leaseweb.com>
-Date: Tue, 31 Dec 2013 10:03:37 -0800
-Message-ID: <CAPdLdqkNtvPwETc+TK9xRSh-ru6q4VvUk7zfYEbjPb1TOESMaA@mail.gmail.com>
-Subject: Re: [PATCH v5 0/2] watchdog: bcm281xx: Watchdog Driver
-From: Markus Mayer <markus.mayer@linaro.org>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: Guenter Roeck <linux@roeck-us.net>, Christian Daudt <bcm@fixthebug.org>,
-        Linaro Patches <patches@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Linux Watchdog List <linux-watchdog@vger.kernel.org>,
-        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312311305.44859.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wim,
+Greetings;
 
-Thanks for your comments. I addressed them and will be sending out the
-resulting patches shortly.
+I can't build a bootable 3.12.6 kernel, it seems to die quite fast with a 
+trace blaming binfmt-some-hex-number.  Or fail well into the boot waiting 
+for / to come available.  But if I choose a shell at that failure, it 
+isn't / that is not shown in a blkid report, it is /boot, named "ububoot" 
+thats missing. "/", named uburoot, is fine.
 
-> Questions/remarks I still have:
-> 1) *debugfs is defined in the bcm_kona_wdt struct, but busy_count isn't.
->    Seems odd to me. What's the reason?
+Here is blkid output booted to 3.12.0.
 
-secure_register_read() only took a void __iomem * argument, but I
-changed that to struct bcm_kona_wdt * and offset. With that change,
-busy_count can be part of struct bcm_kona_wdt.
+gene@coyote:~/src/linux-3.12.6$ blkid
+/dev/sdc1: UUID="1321fc90-ba7a-4742-8176-f7b3a8284be5" TYPE="ext4" 
+/dev/sdc2: LABEL="amandatapes-1-T" UUID="b7657920-d9a2-4379-ae21-08a0651b65cc" SEC_TYPE="ext2" TYPE="ext3" 
+/dev/sda1: LABEL="ububoot" UUID="f54ba7af-1545-43f3-a86e-bfc0017b4526" SEC_TYPE="ext2" TYPE="ext3" 
+/dev/sda2: LABEL="uburoot" UUID="ec677e9c-6be6-4311-b97b-3889d42ce6ef" TYPE="ext4" 
+/dev/sda3: UUID="edc2880e-257d-4521-8220-0df5b57dcae4" TYPE="swap" 
+/dev/sdb1: UUID="80ab0463-d6fc-4f5b-af08-5aa43d55fdf8" SEC_TYPE="ext2" TYPE="ext3" 
+/dev/sdb5: UUID="b4841721-a040-48bc-80dc-e742164ad38a" TYPE="swap" 
+/dev/sdd1: LABEL="home2" UUID="7601432d-7a30-42a3-80b5-57f08ae71f2a" TYPE="ext4" 
+/dev/sdd2: LABEL="opt2" UUID="748b01e1-ae7b-4b17-b8e9-c88429bcefbf" TYPE="ext4" 
 
-> 2) I don't like the #ifdef pieces in the probe and remove functions.
->    The preferred method is to not have the #ifdefs there, but to have an
->    init and exit function that is defined in a similar way:
+Duplicating this 3.12.0's settings under "filesystems" for 3.12.6 is 
+apparently not the needed fix.
 
-I took care of those. However I opted to pass a struct platform_device
-* to the new functions bcm_kona_wdt_debug_init() and
-bcm_kona_wdt_debug_exit(). The reason being that bcm_kona_wdt_remove()
-didn't have a struct bcm_kona_wdt * outside the #ifdef that I was
-about to remove. For consistency, I then used struct platform_device *
-for bcm_kona_wdt_debug_init(), as well.
+Clues for the apparently clueless?
 
->         #ifdef CONFIG_BCM_KONA_WDT_DEBUG
->         ...
->         static void bcm_kona_wdt_debug_init(struct bcm_kona_wdt *wdt)
->         {
->                 wdt->debugfs = bcm_kona_wdt_debugfs_init(wdt, &bcm_kona_wdt_wdd);
->         }
->         ...
->         #else /* !CONFIG_BCM_KONA_WDT_DEBUG */
->         static void bcm_kona_wdt_debug_init(struct bcm_kona_wdt *wdt) {}
->         ...
->         #endif /* CONFIG_BCM_KONA_WDT_DEBUG */
+Thanks all.
 
-Now I have a question (or rather a comment) of my own. I noticed that
-you "squashed" my two original patches into a single patch before
-breaking out the debugfs related code. The side-effect of this was
-that two lines of my bcm_defconfig change (CONFIG_WATCHDOG=y and
-CONFIG_BCM_KONA_WDT=y) were included in the patch you took into
-linux-watchdog-next.
 
-If I understand correctly (and this is why I had broken out the
-bcm_defconfig change into a separate patch), a defconfig change would
-normally go through the platform maintainer's tree, in this case
-Christian, whereas the actual driver would go upstream through your
-tree.
-
-I don't think it makes too much of a difference with regards to this
-driver where the defconfig change goes. In fact, taking it all through
-one tree might even be slightly easier and reduce the chance of
-conflicts, but I still think Christian needs to at least be aware of
-this change going through the watchdog tree. He owns bcm_defconfig,
-after all.
-
-A loosely related comment: gitweb for linux-watchdog-next seems to be
-broken: http://www.linux-watchdog.org/cgi-bin/gitweb.cgi?p=linux-watchdog-next.git;a=summary.
-I stumbled upon this yesterday when I was trying to look at the
-current status of this tree.
-
-In case readers of this e-mail are interested in taking a quick peek
-at the parts of the Kona watchdog driver that were already accepted,
-without cloning the entire repo, I created a temporary watchdog mirror
-with the commit in question available for in-browser viewing at
-http://git.linaro.org/people/markus.mayer/watchdog-next-mirror.git/commit/bd90ccd42c5d6317979c62919ba1c79fd34fa785
-
-Regards,
--Markus
-
+Cheers, Gene
 -- 
-Markus Mayer
-Broadcom Landing Team
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Genes Web page <http://geneslinuxbox.net:6309/gene>
+
+There is no substitute for good manners, except, perhaps, fast reflexes.
+A pen in the hand of this president is far more
+dangerous than 200 million guns in the hands of
+         law-abiding citizens.
