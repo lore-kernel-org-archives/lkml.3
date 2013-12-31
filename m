@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756456Ab3LaTAE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 14:00:04 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:35415 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755608Ab3LaTAC (ORCPT
+	id S1756504Ab3LaTDJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 14:03:09 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52751 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756319Ab3LaTDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 14:00:02 -0500
-Date: Tue, 31 Dec 2013 14:00:00 -0500 (EST)
-Message-Id: <20131231.140000.463004971089550957.davem@davemloft.net>
-To: nhorman@tuxdriver.com
-Cc: linux-sctp@vger.kernel.org, vyasevich@gmail.com,
-        gregkh@linuxfoundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 0/2] sctp: Consolidate and ratelimit deprecation
- warnings
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1387805383-21500-1-git-send-email-nhorman@tuxdriver.com>
-References: <1387205049-22752-1-git-send-email-nhorman@tuxdriver.com>
-	<1387805383-21500-1-git-send-email-nhorman@tuxdriver.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 31 Dec 2013 11:00:01 -0800 (PST)
+	Tue, 31 Dec 2013 14:03:06 -0500
+Date: Tue, 31 Dec 2013 20:03:04 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: Joe Xue <lgxue@hotmail.com>, "cooloney@gmail.com" <cooloney@gmail.com>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "rob@landley.net" <rob@landley.net>,
+        "milo.kim@ti.com" <milo.kim@ti.com>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH] Add LED pattern trigger
+Message-ID: <20131231190304.GA15451@amd.pavel.ucw.cz>
+References: <1388362275-1618-1-git-send-email-lgxue@hotmail.com>
+ <20131230183302.GA28430@amd.pavel.ucw.cz>
+ <BLU172-W18A7B97F4E688F416C5DABACC90@phx.gbl>
+ <20131231113352.GA4233@amd.pavel.ucw.cz>
+ <CAFLxGvy31K9cgiuQKPmcbbr8QpMmj3vxmA1opNWT01qDUaLR0Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFLxGvy31K9cgiuQKPmcbbr8QpMmj3vxmA1opNWT01qDUaLR0Q@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Neil Horman <nhorman@tuxdriver.com>
-Date: Mon, 23 Dec 2013 08:29:41 -0500
-
-> The SCTP protocol has several deprecation warnings in its setsockopt path that
-> can be triggered by unprivlidged users.  Since these are not ratelimited, we can
-> spam the logs quite easily here.  Since these are all deprecation warnings, and
-> that type of warning isn't uncommon in the rest of the kernel, lets make a
-> common pr_warn_deprecated macro to produce somewhat generalized ratelimited
-> deprecation warnings easily
+On Tue 2013-12-31 13:29:21, Richard Weinberger wrote:
+> On Tue, Dec 31, 2013 at 12:33 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> > On Tue 2013-12-31 00:00:39, Joe Xue wrote:
+> >> > What about something like this?
+> >> >
+> >> > Not shcheduling timer when nothing changed should save a bit of power/cpu...
+> >> >
+> >> > if (pattern_data->pattern[pattern_data->count] == '/') {
+> >> > return;
+> >> > }
+> >> >
+> >> > this = pattern_data->pattern[pattern_data->count]
+> >> > if (this == '#')
+> >> > new_brigtness = pattern_data->brightness_on;
+> >> > if (this == ' ')
+> >> > new_brigtness = LED_OFF;
+> >> > repeat = 1;
+> >> > while (pattern_data->pattern[pattern_data->count + repeat] == this)
+> >> > repeat++;
+> >> >
+> >> > mod_timer(&pattern_data->timer,
+> >> > jiffies + msecs_to_jiffies(pattern_data->delay_unit * repeat));
+> >> >
+> >> >
+> >> Working on it.
+> >>
+> >> Thanks for your help.
+> >
+> > You are welcome :-).
 > 
-> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+> Why do we need this within the kernel?
+> Patterns can easily created using a simple user space program.
 
-Series applied, thanks Neil.
-
-Please consider Ben's suggestion to provide the offending command string
-in the log output.
+Some machines (N900) can do blinking in hardware, and we want
+consistent kernel-user interface. See the mailing list.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
