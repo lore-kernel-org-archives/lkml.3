@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab3LaOjT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 09:39:19 -0500
-Received: from mga03.intel.com ([143.182.124.21]:45005 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753532Ab3LaOjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 09:39:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,581,1384329600"; 
-   d="scan'208";a="331277184"
-Message-ID: <52C2D713.5050501@linux.intel.com>
-Date: Tue, 31 Dec 2013 06:39:15 -0800
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753619Ab3LaOvN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 09:51:13 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:37004 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753481Ab3LaOvL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Dec 2013 09:51:11 -0500
+Date: Tue, 31 Dec 2013 09:50:01 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        david.vrabel@citrix.com, boris.ostrovsky@oracle.com
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] allow xenfb initialization for hvm guests
+Message-ID: <20131231145001.GA3349@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1312171738550.8667@kaball.uk.xensource.com>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@kernel.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>, peterz@infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>, linux@arm.linux.org.uk,
-        ralf@linux-mips.org, tglx@linutronix.de,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        james.hogan@imgtec.com, Michal Marek <mmarek@suse.cz>,
-        lethal@linux-sh.org, shawn.guo@linaro.org,
-        Kees Cook <keescook@chromium.org>, sfr@canb.auug.org.au,
-        linux-kbuild@vger.kernel.org, linux-tip-commits@vger.kernel.org
-Subject: Re: [patch core/stackprotector] stackprotector: Fix build when compiler
- lacks support
-References: <1387481759-14535-3-git-send-email-keescook@chromium.org> <tip-8779657d29c0ebcc0c94ede4df2f497baf1b563f@git.kernel.org> <alpine.DEB.2.02.1312301331520.10482@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1312301331520.10482@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1312171738550.8667@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/30/2013 1:37 PM, David Rientjes wrote:
-> 8779657d29c0 ("stackprotector: Introduce CONFIG_CC_STACKPROTECTOR_STRONG")
-> causes the build to break when the compiler doesn't support
-> -fstack-protector-strong:
->
-> 	cc1: error: unrecognized command line option ‘-fstack-protector-strong’
-> 	cc1: error: unrecognized command line option ‘-fstack-protector-strong’
->
-> with at least gcc 4.6.3.
->
-> Instead of breaking the build, just warn of the failure and disable the
-> feature.
+On Tue, Dec 17, 2013 at 05:53:13PM +0000, Stefano Stabellini wrote:
+> There is no reasons why an HVM guest shouldn't be allowed to use xenfb.
+> As a matter of fact ARM guests, HVM from Linux POV, can use xenfb.
+> Given that no Xen toolstacks configure a xenfb backend for x86 HVM
+> guests, they are not affected.
 
-ideally it also falls back to the less strict one, rather than not using stack protector at all...
+Could you reference the upstream git commit that enables this.
 
+And also CC the maintainers of drivers/video/*
 
+And lastly lets CC also David and Boris on it.
+
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> 
+> diff --git a/drivers/video/xen-fbfront.c b/drivers/video/xen-fbfront.c
+> index cd005c2..02e1c01 100644
+> --- a/drivers/video/xen-fbfront.c
+> +++ b/drivers/video/xen-fbfront.c
+> @@ -692,7 +692,7 @@ static DEFINE_XENBUS_DRIVER(xenfb, ,
+>  
+>  static int __init xenfb_init(void)
+>  {
+> -	if (!xen_pv_domain())
+> +	if (!xen_domain())
+>  		return -ENODEV;
+>  
+>  	/* Nothing to do if running in dom0. */
