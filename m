@@ -1,477 +1,403 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab3LaOeq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 09:34:46 -0500
-Received: from smtpfb2-g21.free.fr ([212.27.42.10]:53678 "EHLO
-	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753230Ab3LaOeo (ORCPT
+	id S1753649Ab3LaOin (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 09:38:43 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:33381 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753230Ab3LaOij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 09:34:44 -0500
-From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
-To: driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-Cc: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>,
-        Lidza Louina <lidza.louina@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Scott H Kilau <Scott_Kilau@digi.com>, Eng.Linux@digi.com
-Subject: [PATCH linux-next 2/2] staging: dgap: fix checkpatch warnings
-Date: Tue, 31 Dec 2013 11:55:09 +0100
-Message-Id: <1388487309-22319-2-git-send-email-vincent.stehle@laposte.net>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1388487309-22319-1-git-send-email-vincent.stehle@laposte.net>
-References: <1388487309-22319-1-git-send-email-vincent.stehle@laposte.net>
+	Tue, 31 Dec 2013 09:38:39 -0500
+Date: Tue, 31 Dec 2013 09:32:58 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Fabio Fantoni <fabio.fantoni@m2r.biz>
+Cc: axboe@kernel.dk, stefano.stabellini@eu.citrix.com, ian.campbell@citrix.com,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        leosilva@linux.vnet.ibm.com, ashley@ashleylai.com, peterhuewe@gmx.de,
+        mail@srajiv.net, tpmdd@selhorst.net, dmitry.torokhov@gmail.com,
+        bhelgaas@google.com, plagnioj@jcrosoft.com, tomi.valkeinen@ti.com,
+        tpmdd-devel@lists.sourceforge.net, linux-input@vger.kernel.org,
+        netdev@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH v3 1/2] xen/pvhvm: If xen_platform_pci=0 is
+ set don't blow up (v3).
+Message-ID: <20131231143258.GA3018@phenom.dumpdata.com>
+References: <1387206250-13963-1-git-send-email-konrad.wilk@oracle.com>
+ <1387206250-13963-2-git-send-email-konrad.wilk@oracle.com>
+ <52B01F67.1030108@m2r.biz>
+ <20131217145150.GC4683@phenom.dumpdata.com>
+ <20131217212333.GA31966@phenom.dumpdata.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131217212333.GA31966@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove a few spaces at beginning and end of line. Remove single statement
-braces {}. Remove two FSF boilerplate paragraphs.
+> That is because 'disks' is incorrect. It should have been 'ide-disks'
+> 
+> [    0.000000] unrecognised option 'disks' in parameter 'xen_emul_unplug'
+> 
+> With the 'ide-disks' it should work. I will update the description to
+> mention 'ide-disks' instead of 'disks'. Thank you for finding this!
+> 
 
-Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
-Cc: Lidza Louina <lidza.louina@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Scott H Kilau <Scott_Kilau@digi.com>
-Cc: Eng.Linux@digi.com
+I've v4 with said update and will push it to Linus shortly.
+
+Thanks!
+
+P.S.
+Here is v4:
+
+>From 275a81e7496d3532e5b4752703c50a7c8355a6c7 Mon Sep 17 00:00:00 2001
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Tue, 26 Nov 2013 15:05:40 -0500
+Subject: [PATCH] xen/pvhvm: If xen_platform_pci=0 is set don't blow up (v4).
+
+The user has the option of disabling the platform driver:
+00:02.0 Unassigned class [ff80]: XenSource, Inc. Xen Platform Device (rev 01)
+
+which is used to unplug the emulated drivers (IDE, Realtek 8169, etc)
+and allow the PV drivers to take over. If the user wishes
+to disable that they can set:
+
+  xen_platform_pci=0
+  (in the guest config file)
+
+or
+  xen_emul_unplug=never
+  (on the Linux command line)
+
+except it does not work properly. The PV drivers still try to
+load and since the Xen platform driver is not run - and it
+has not initialized the grant tables, most of the PV drivers
+stumble upon:
+
+input: Xen Virtual Keyboard as /devices/virtual/input/input5
+input: Xen Virtual Pointer as /devices/virtual/input/input6M
+------------[ cut here ]------------
+kernel BUG at /home/konrad/ssd/konrad/linux/drivers/xen/grant-table.c:1206!
+invalid opcode: 0000 [#1] SMP
+Modules linked in: xen_kbdfront(+) xenfs xen_privcmd
+CPU: 6 PID: 1389 Comm: modprobe Not tainted 3.13.0-rc1upstream-00021-ga6c892b-dirty #1
+Hardware name: Xen HVM domU, BIOS 4.4-unstable 11/26/2013
+RIP: 0010:[<ffffffff813ddc40>]  [<ffffffff813ddc40>] get_free_entries+0x2e0/0x300
+Call Trace:
+ [<ffffffff8150d9a3>] ? evdev_connect+0x1e3/0x240
+ [<ffffffff813ddd0e>] gnttab_grant_foreign_access+0x2e/0x70
+ [<ffffffffa0010081>] xenkbd_connect_backend+0x41/0x290 [xen_kbdfront]
+ [<ffffffffa0010a12>] xenkbd_probe+0x2f2/0x324 [xen_kbdfront]
+ [<ffffffff813e5757>] xenbus_dev_probe+0x77/0x130
+ [<ffffffff813e7217>] xenbus_frontend_dev_probe+0x47/0x50
+ [<ffffffff8145e9a9>] driver_probe_device+0x89/0x230
+ [<ffffffff8145ebeb>] __driver_attach+0x9b/0xa0
+ [<ffffffff8145eb50>] ? driver_probe_device+0x230/0x230
+ [<ffffffff8145eb50>] ? driver_probe_device+0x230/0x230
+ [<ffffffff8145cf1c>] bus_for_each_dev+0x8c/0xb0
+ [<ffffffff8145e7d9>] driver_attach+0x19/0x20
+ [<ffffffff8145e260>] bus_add_driver+0x1a0/0x220
+ [<ffffffff8145f1ff>] driver_register+0x5f/0xf0
+ [<ffffffff813e55c5>] xenbus_register_driver_common+0x15/0x20
+ [<ffffffff813e76b3>] xenbus_register_frontend+0x23/0x40
+ [<ffffffffa0015000>] ? 0xffffffffa0014fff
+ [<ffffffffa001502b>] xenkbd_init+0x2b/0x1000 [xen_kbdfront]
+ [<ffffffff81002049>] do_one_initcall+0x49/0x170
+
+.. snip..
+
+which is hardly nice. This patch fixes this by having each
+PV driver check for:
+ - if running in PV, then it is fine to execute (as that is their
+   native environment).
+ - if running in HVM, check if user wanted 'xen_emul_unplug=never',
+   in which case bail out and don't load any PV drivers.
+ - if running in HVM, and if PCI device 5853:0001 (xen_platform_pci)
+   does not exist, then bail out and not load PV drivers.
+ - (v2) if running in HVM, and if the user wanted 'xen_emul_unplug=ide-disks',
+   then bail out for all PV devices _except_ the block one.
+   Ditto for the network one ('nics').
+ - (v2) if running in HVM, and if the user wanted 'xen_emul_unplug=unnecessary'
+   then load block PV driver, and also setup the legacy IDE paths.
+   In (v3) make it actually load PV drivers.
+
+Reported-by: Sander Eikelenboom <linux@eikelenboom.it
+Reported-by: Anthony PERARD <anthony.perard@citrix.com>
+Reported-and-Tested-by: Fabio Fantoni <fabio.fantoni@m2r.biz>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+[v2: Add extra logic to handle the myrid ways 'xen_emul_unplug'
+can be used per Ian and Stefano suggestion]
+[v3: Make the unnecessary case work properly]
+[v4: s/disks/ide-disks/ spotted by Fabio]
+Reviewed-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Acked-by: Bjorn Helgaas <bhelgaas@google.com> [for PCI parts]
 ---
+ arch/x86/xen/platform-pci-unplug.c         | 74 ++++++++++++++++++++++++++++++
+ drivers/block/xen-blkfront.c               |  4 +-
+ drivers/char/tpm/xen-tpmfront.c            |  4 ++
+ drivers/input/misc/xen-kbdfront.c          |  4 ++
+ drivers/net/xen-netfront.c                 |  2 +-
+ drivers/pci/xen-pcifront.c                 |  4 ++
+ drivers/video/xen-fbfront.c                |  4 ++
+ drivers/xen/xenbus/xenbus_probe_frontend.c |  2 +-
+ include/xen/platform_pci.h                 | 23 ++++++++++
+ 9 files changed, 117 insertions(+), 4 deletions(-)
 
-Hi,
-
-This can be seen with e.g. linux next-20131224 arm allmodconfig.
-
-One checkpatch warning remains after those cleanups about a >80 chars line. As
-this is about a printk format string, I hesitate to break it.
-
-Best regards,
-
-V.
-
- drivers/staging/dgap/dgap_fep5.c | 105 ++++++++++++++++++---------------------
- 1 file changed, 47 insertions(+), 58 deletions(-)
-
-diff --git a/drivers/staging/dgap/dgap_fep5.c b/drivers/staging/dgap/dgap_fep5.c
-index 7deea2a..f75831a 100644
---- a/drivers/staging/dgap/dgap_fep5.c
-+++ b/drivers/staging/dgap/dgap_fep5.c
-@@ -6,16 +6,6 @@
-  * it under the terms of the GNU General Public License as published by
-  * the Free Software Foundation; either version 2, or (at your option)
-  * any later version.
-- * 
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the 
-- * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-- * PURPOSE.  See the GNU General Public License for more details.
-- * 
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-- *
-  *
-  *	NOTE TO LINUX KERNEL HACKERS:  DO NOT REFORMAT THIS CODE!
-  *
-@@ -100,7 +90,7 @@ void dgap_do_config_load(uchar __user *uaddr, int len)
- 		to_addr += n;
- 		from_addr += n;
- 		n = U2BSIZE;
--        }
-+	}
- 
- 	dgap_config_buf[orig_len] = '\0';
- 
-@@ -167,9 +157,9 @@ static int dgap_usertoboard(struct board_t *brd, char *to_addr, char __user *fro
- 		/* increment counts */
- 		len -= n;
- 		to_addr += n;
--		from_addr += n;   
-+		from_addr += n;
- 		n = U2BSIZE;
--        }
-+	}
+diff --git a/arch/x86/xen/platform-pci-unplug.c b/arch/x86/xen/platform-pci-unplug.c
+index 0a78524..ab84ac1 100644
+--- a/arch/x86/xen/platform-pci-unplug.c
++++ b/arch/x86/xen/platform-pci-unplug.c
+@@ -69,6 +69,80 @@ static int check_platform_magic(void)
  	return 0;
  }
  
-@@ -196,7 +186,7 @@ void dgap_do_bios_load(struct board_t *brd, uchar __user *ubios, int len)
- 	 */
- 	for (i = 0; i < 16; i++)
- 		writeb(0, addr + POSTAREA + i);
--                                
-+
- 	/*
- 	 * Download bios
- 	 */
-@@ -365,7 +355,7 @@ static void dgap_do_reset_board(struct board_t *brd)
- 	int i = 0;
- 
- 	if (!brd || (brd->magic != DGAP_BOARD_MAGIC) || !brd->re_map_membase || !brd->re_map_port) {
--		DPR_INIT(("dgap_do_reset_board() start. bad values. brd: %p mem: %p io: %p\n", 
-+		DPR_INIT(("dgap_do_reset_board() start. bad values. brd: %p mem: %p io: %p\n",
- 			brd, brd ? brd->re_map_membase : 0, brd ? brd->re_map_port : 0));
- 		return;
- 	}
-@@ -471,7 +461,7 @@ static void dgap_get_vpd(struct board_t *brd)
- 
- 	/*
- 	 * To get to the OTPROM memory, we have to send the boards base
--         * address or'ed with 1 into the PCI Rom Address location.
-+	 * address or'ed with 1 into the PCI Rom Address location.
- 	 */
- 	magic = brd->membase | 0x01;
- 	pci_write_config_dword(brd->pdev, PCI_ROM_ADDRESS, magic);
-@@ -493,7 +483,7 @@ static void dgap_get_vpd(struct board_t *brd)
- 		 * for the VPD offset.
- 		 */
- 		while (base_offset <= EXPANSION_ROM_SIZE) {
--                
-+
- 			/*
- 			 * Lots of magic numbers here.
- 			 *
-@@ -552,7 +542,7 @@ static void dgap_get_vpd(struct board_t *brd)
-  */
- void dgap_poll_tasklet(unsigned long data)
- {
--        struct board_t *bd = (struct board_t *) data;
-+	struct board_t *bd = (struct board_t *) data;
- 	ulong  lock_flags;
- 	ulong  lock_flags2;
- 	char *vaddr;
-@@ -817,13 +807,13 @@ out:
-  *
-  *=======================================================================*/
- void dgap_cmdb(struct channel_t *ch, uchar cmd, uchar byte1, uchar byte2, uint ncmds)
--{                       
++bool xen_has_pv_devices()
 +{
- 	char		*vaddr = NULL;
- 	struct cm_t	*cm_addr = NULL;
- 	uint		count;
- 	uint		n;
- 	u16		head;
--        u16		tail;
-+	u16		tail;
- 
- 	if (!ch || ch->magic != DGAP_CHANNEL_MAGIC)
- 		return;
-@@ -834,7 +824,7 @@ void dgap_cmdb(struct channel_t *ch, uchar cmd, uchar byte1, uchar byte2, uint n
- 	if (ch->ch_bd->state == BOARD_FAILED) {
- 		DPR_CORE(("%s:%d board is in failed state.\n", __FILE__, __LINE__));
- 		return;
--        }               
-+	}
- 
- 	/*
- 	 * Make sure the pointers are in range before
-@@ -848,13 +838,13 @@ void dgap_cmdb(struct channel_t *ch, uchar cmd, uchar byte1, uchar byte2, uint n
- 	cm_addr = (struct cm_t *) (vaddr + CMDBUF);
- 	head = readw(&(cm_addr->cm_head));
- 
--	/* 
-+	/*
- 	 * Forget it if pointers out of range.
- 	 */
- 	if (head >= (CMDMAX - CMDSTART) || (head & 03)) {
- 		DPR_CORE(("%s:%d pointers out of range, failing board!\n", __FILE__, __LINE__));
- 		ch->ch_bd->state = BOARD_FAILED;
--		return; 
-+		return;
- 	}
- 
- 	/*
-@@ -870,7 +860,7 @@ void dgap_cmdb(struct channel_t *ch, uchar cmd, uchar byte1, uchar byte2, uint n
- 	writew(head, &(cm_addr->cm_head));
- 
- 	/*
--	 * Wait if necessary before updating the head  
-+	 * Wait if necessary before updating the head
- 	 * pointer to limit the number of outstanding
- 	 * commands to the FEP.   If the time spent waiting
- 	 * is outlandish, declare the FEP dead.
-@@ -891,14 +881,14 @@ void dgap_cmdb(struct channel_t *ch, uchar cmd, uchar byte1, uchar byte2, uint n
- 			return;
- 		}
- 		udelay(10);
--	}  
-+	}
- }
- 
- 
- /*=======================================================================
-  *
-  *      dgap_cmdw - Sends a 1 word command to the FEP.
-- *      
-+ *
-  *              ch      - Pointer to channel structure.
-  *              cmd     - Command to be sent.
-  *              word    - Integer containing word to be sent.
-@@ -937,7 +927,7 @@ void dgap_cmdw(struct channel_t *ch, uchar cmd, u16 word, uint ncmds)
- 	cm_addr = (struct cm_t *) (vaddr + CMDBUF);
- 	head = readw(&(cm_addr->cm_head));
- 
--	/* 
-+	/*
- 	 * Forget it if pointers out of range.
- 	 */
- 	if (head >= (CMDMAX - CMDSTART) || (head & 03)) {
-@@ -959,7 +949,7 @@ void dgap_cmdw(struct channel_t *ch, uchar cmd, u16 word, uint ncmds)
- 
- 	/*
- 	 * Wait if necessary before updating the head
--	 * pointer to limit the number of outstanding  
-+	 * pointer to limit the number of outstanding
- 	 * commands to the FEP.   If the time spent waiting
- 	 * is outlandish, declare the FEP dead.
- 	 */
-@@ -979,7 +969,7 @@ void dgap_cmdw(struct channel_t *ch, uchar cmd, u16 word, uint ncmds)
- 			return;
- 		}
- 		udelay(10);
--	}  
-+	}
- }
- 
- 
-@@ -987,7 +977,7 @@ void dgap_cmdw(struct channel_t *ch, uchar cmd, u16 word, uint ncmds)
- /*=======================================================================
-  *
-  *      dgap_cmdw_ext - Sends a extended word command to the FEP.
-- *      
-+ *
-  *              ch      - Pointer to channel structure.
-  *              cmd     - Command to be sent.
-  *              word    - Integer containing word to be sent.
-@@ -1026,7 +1016,7 @@ static void dgap_cmdw_ext(struct channel_t *ch, u16 cmd, u16 word, uint ncmds)
- 	cm_addr = (struct cm_t *) (vaddr + CMDBUF);
- 	head = readw(&(cm_addr->cm_head));
- 
--	/* 
-+	/*
- 	 * Forget it if pointers out of range.
- 	 */
- 	if (head >= (CMDMAX - CMDSTART) || (head & 03)) {
-@@ -1061,7 +1051,7 @@ static void dgap_cmdw_ext(struct channel_t *ch, u16 cmd, u16 word, uint ncmds)
- 
- 	/*
- 	 * Wait if necessary before updating the head
--	 * pointer to limit the number of outstanding  
-+	 * pointer to limit the number of outstanding
- 	 * commands to the FEP.   If the time spent waiting
- 	 * is outlandish, declare the FEP dead.
- 	 */
-@@ -1081,7 +1071,7 @@ static void dgap_cmdw_ext(struct channel_t *ch, u16 cmd, u16 word, uint ncmds)
- 			return;
- 		}
- 		udelay(10);
--	}  
-+	}
- }
- 
- 
-@@ -1103,7 +1093,7 @@ void dgap_wmove(struct channel_t *ch, char *buf, uint cnt)
- 
- 	if (!ch || ch->magic != DGAP_CHANNEL_MAGIC)
- 		return;
-- 
++	if (!xen_domain())
++		return false;
 +
- 	/*
- 	 * Check parameters.
- 	 */
-@@ -1173,9 +1163,9 @@ uint dgap_get_custom_baud(struct channel_t *ch)
- 
- 	/*
- 	 * Go get from fep mem, what the fep
--	 * believes the custom baud rate is. 
-+	 * believes the custom baud rate is.
- 	 */
--	offset = ((((*(unsigned short *)(vaddr + ECS_SEG)) << 4) +  
-+	offset = ((((*(unsigned short *)(vaddr + ECS_SEG)) << 4) +
- 		(ch->ch_portnum * 0x28) + LINE_SPEED));
- 
- 	value = readw(vaddr + offset);
-@@ -1211,7 +1201,7 @@ void dgap_firmware_reset_port(struct channel_t *ch)
- 
- 
- /*=======================================================================
-- *      
-+ *
-  *      dgap_param - Set Digi parameters.
-  *
-  *              struct tty_struct *     - TTY for port.
-@@ -1245,7 +1235,7 @@ int dgap_param(struct tty_struct *tty)
- 	if (!bd || bd->magic != DGAP_BOARD_MAGIC)
- 		return -ENXIO;
- 
--        bs = ch->ch_bs;
-+	bs = ch->ch_bs;
- 	if (!bs)
- 		return -ENXIO;
- 
-@@ -1285,13 +1275,13 @@ int dgap_param(struct tty_struct *tty)
- 
- 		/*
- 		 * Now go get from fep mem, what the fep
--		 * believes the custom baud rate is. 
-+		 * believes the custom baud rate is.
- 		 */
- 		ch->ch_baud_info = ch->ch_custom_speed = dgap_get_custom_baud(ch);
- 
- 		DPR_PARAM(("param: Got %d speed\n", ch->ch_custom_speed));
- 
--		/* Handle transition from B0 */   
-+		/* Handle transition from B0 */
- 		if (ch->ch_flags & CH_BAUD0) {
- 			ch->ch_flags &= ~(CH_BAUD0);
- 			ch->ch_mval |= (D_RTS(ch)|D_DTR(ch));
-@@ -1353,7 +1343,7 @@ int dgap_param(struct tty_struct *tty)
- 			baud = 0;
- 		}
- 
--		if (baud == 0)  
-+		if (baud == 0)
- 			baud = 9600;
- 
- 		ch->ch_baud_info = baud;
-@@ -1426,7 +1416,7 @@ int dgap_param(struct tty_struct *tty)
- 			dgap_cmdw(ch, SCFLAG, (u16) cflag, 0);
- 		}
- 
--		/* Handle transition from B0 */   
-+		/* Handle transition from B0 */
- 		if (ch->ch_flags & CH_BAUD0) {
- 			ch->ch_flags &= ~(CH_BAUD0);
- 			ch->ch_mval |= (D_RTS(ch)|D_DTR(ch));
-@@ -1476,7 +1466,7 @@ int dgap_param(struct tty_struct *tty)
- 	if (ch->ch_digi.digi_flags & RTSPACE)
- 		hflow |= D_RTS(ch);
- 	if (ch->ch_digi.digi_flags & DTRPACE)
--		hflow |= D_DTR(ch);  
-+		hflow |= D_DTR(ch);
- 	if (ch->ch_digi.digi_flags & CTSPACE)
- 		hflow |= D_CTS(ch);
- 	if (ch->ch_digi.digi_flags & DSRPACE)
-@@ -1489,7 +1479,7 @@ int dgap_param(struct tty_struct *tty)
- 
- 		/* Okay to have channel and board locks held calling this */
- 		dgap_cmdb(ch, SHFLOW, (uchar) hflow, 0xff, 0);
--        }
-+	}
- 
- 
- 	/*
-@@ -1508,7 +1498,7 @@ int dgap_param(struct tty_struct *tty)
- 	}
- 
- 	/*
--	 * Set modem control lines.  
-+	 * Set modem control lines.
- 	 */
- 
- 	mval ^= ch->ch_mforce & (mval ^ ch->ch_mval);
-@@ -1525,12 +1515,12 @@ int dgap_param(struct tty_struct *tty)
- 	}
- 
- 	/*
--	 * Read modem signals, and then call carrier function.             
-+	 * Read modem signals, and then call carrier function.
- 	 */
- 	ch->ch_mistat = readb(&(bs->m_stat));
- 	dgap_carrier(ch);
- 
--	/*      
-+	/*
- 	 * Set the start and stop characters.
- 	 */
- 	if (ch->ch_startc != ch->ch_fepstartc || ch->ch_stopc != ch->ch_fepstopc) {
-@@ -1543,7 +1533,7 @@ int dgap_param(struct tty_struct *tty)
- 
- 	/*
- 	 * Set the Auxiliary start and stop characters.
--	 */     
-+	 */
- 	if (ch->ch_astartc != ch->ch_fepastartc || ch->ch_astopc != ch->ch_fepastopc) {
- 		ch->ch_fepastartc = ch->ch_astartc;
- 		ch->ch_fepastopc = ch->ch_astopc;
-@@ -1610,7 +1600,7 @@ void dgap_parity_scan(struct channel_t *ch, unsigned char *cbuf, unsigned char *
- 			} else {
- 				/* save value examination in next state */
- 				ch->pscan_savechar = c;
--				ch->pscan_state = 2; 
-+				ch->pscan_state = 2;
- 			}
- 			break;
- 
-@@ -1638,7 +1628,7 @@ void dgap_parity_scan(struct channel_t *ch, unsigned char *cbuf, unsigned char *
- 
- 			count += 1;
- 			ch->pscan_state = 0;
--		}       
-+		}
- 	}
- 	*len = count;
- 	DPR_PSCAN(("dgap_parity_scan finish\n"));
-@@ -1722,9 +1712,8 @@ static int dgap_event(struct board_t *bd)
- 		/*
- 		 * Make sure the interrupt is valid.
- 		 */
--                if ( port >= bd->nasync) {
-+		if (port >= bd->nasync)
- 			goto next;
--		}
- 
- 		if (!(reason & (IFMODEM | IFBREAK | IFTLW | IFTEM | IFDATA))) {
- 			goto next;
-@@ -1780,7 +1769,7 @@ static int dgap_event(struct board_t *bd)
- 		}
- 
- 		/*
--		 * Process Modem change signals. 
-+		 * Process Modem change signals.
- 		 */
- 		if (reason & IFMODEM) {
- 			ch->ch_mistat = modem;
-@@ -1814,7 +1803,7 @@ static int dgap_event(struct board_t *bd)
- 				ch->ch_tun.un_flags &= ~UN_LOW;
- 
- 				if (ch->ch_tun.un_flags & UN_ISOPEN) {
--					if ((ch->ch_tun.un_tty->flags & 
-+					if ((ch->ch_tun.un_tty->flags &
- 					   (1 << TTY_DO_WRITE_WAKEUP)) &&
- #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,31)
- 						ch->ch_tun.un_tty->ldisc->ops->write_wakeup)
-@@ -1842,7 +1831,7 @@ static int dgap_event(struct board_t *bd)
- 			if (ch->ch_pun.un_flags & UN_LOW) {
- 				ch->ch_pun.un_flags &= ~UN_LOW;
- 				if (ch->ch_pun.un_flags & UN_ISOPEN) {
--					if ((ch->ch_pun.un_tty->flags & 
-+					if ((ch->ch_pun.un_tty->flags &
- 					   (1 << TTY_DO_WRITE_WAKEUP)) &&
- #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,31)
- 						ch->ch_pun.un_tty->ldisc->ops->write_wakeup)
-@@ -1880,7 +1869,7 @@ static int dgap_event(struct board_t *bd)
- 			if (ch->ch_tun.un_flags & UN_EMPTY) {
- 				ch->ch_tun.un_flags &= ~UN_EMPTY;
- 				if (ch->ch_tun.un_flags & UN_ISOPEN) {
--					if ((ch->ch_tun.un_tty->flags & 
-+					if ((ch->ch_tun.un_tty->flags &
- 					   (1 << TTY_DO_WRITE_WAKEUP)) &&
- #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,31)
- 						ch->ch_tun.un_tty->ldisc->ops->write_wakeup)
-@@ -1906,7 +1895,7 @@ static int dgap_event(struct board_t *bd)
- 			if (ch->ch_pun.un_flags & UN_EMPTY) {
- 				ch->ch_pun.un_flags &= ~UN_EMPTY;
- 				if (ch->ch_pun.un_flags & UN_ISOPEN) {
--					if ((ch->ch_pun.un_tty->flags & 
-+					if ((ch->ch_pun.un_tty->flags &
- 					   (1 << TTY_DO_WRITE_WAKEUP)) &&
- #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,31)
- 						ch->ch_pun.un_tty->ldisc->ops->write_wakeup)
-@@ -1946,4 +1935,4 @@ next:
- 	DGAP_UNLOCK(bd->bd_lock, lock_flags);
- 
- 	return 0;
--}               
++	/* PV domains always have them. */
++	if (xen_pv_domain())
++		return true;
++
++	/* And user has xen_platform_pci=0 set in guest config as
++	 * driver did not modify the value. */
++	if (xen_platform_pci_unplug == 0)
++		return false;
++
++	if (xen_platform_pci_unplug & XEN_UNPLUG_NEVER)
++		return false;
++
++	if (xen_platform_pci_unplug & XEN_UNPLUG_ALL)
++		return true;
++
++	/* This is an odd one - we are going to run legacy
++	 * and PV drivers at the same time. */
++	if (xen_platform_pci_unplug & XEN_UNPLUG_UNNECESSARY)
++		return true;
++
++	/* And the caller has to follow with xen_pv_{disk,nic}_devices
++	 * to be certain which driver can load. */
++	return false;
 +}
++EXPORT_SYMBOL_GPL(xen_has_pv_devices);
++
++static bool __xen_has_pv_device(int state)
++{
++	/* HVM domains might or might not */
++	if (xen_hvm_domain() && (xen_platform_pci_unplug & state))
++		return true;
++
++	return xen_has_pv_devices();
++}
++
++bool xen_has_pv_nic_devices(void)
++{
++	return __xen_has_pv_device(XEN_UNPLUG_ALL_NICS | XEN_UNPLUG_ALL);
++}
++EXPORT_SYMBOL_GPL(xen_has_pv_nic_devices);
++
++bool xen_has_pv_disk_devices(void)
++{
++	return __xen_has_pv_device(XEN_UNPLUG_ALL_IDE_DISKS |
++				   XEN_UNPLUG_AUX_IDE_DISKS | XEN_UNPLUG_ALL);
++}
++EXPORT_SYMBOL_GPL(xen_has_pv_disk_devices);
++
++/*
++ * This one is odd - it determines whether you want to run PV _and_
++ * legacy (IDE) drivers together. This combination is only possible
++ * under HVM.
++ */
++bool xen_has_pv_and_legacy_disk_devices(void)
++{
++	if (!xen_domain())
++		return false;
++
++	/* N.B. This is only ever used in HVM mode */
++	if (xen_pv_domain())
++		return false;
++
++	if (xen_platform_pci_unplug & XEN_UNPLUG_UNNECESSARY)
++		return true;
++
++	return false;
++}
++EXPORT_SYMBOL_GPL(xen_has_pv_and_legacy_disk_devices);
++
+ void xen_unplug_emulated_devices(void)
+ {
+ 	int r;
+diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+index a4660bb..ed88b3c 100644
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -1278,7 +1278,7 @@ static int blkfront_probe(struct xenbus_device *dev,
+ 		char *type;
+ 		int len;
+ 		/* no unplug has been done: do not hook devices != xen vbds */
+-		if (xen_platform_pci_unplug & XEN_UNPLUG_UNNECESSARY) {
++		if (xen_has_pv_and_legacy_disk_devices()) {
+ 			int major;
+ 
+ 			if (!VDEV_IS_EXTENDED(vdevice))
+@@ -2022,7 +2022,7 @@ static int __init xlblk_init(void)
+ 	if (!xen_domain())
+ 		return -ENODEV;
+ 
+-	if (xen_hvm_domain() && !xen_platform_pci_unplug)
++	if (!xen_has_pv_disk_devices())
+ 		return -ENODEV;
+ 
+ 	if (register_blkdev(XENVBD_MAJOR, DEV_NAME)) {
+diff --git a/drivers/char/tpm/xen-tpmfront.c b/drivers/char/tpm/xen-tpmfront.c
+index 06189e5..9c2cbd1 100644
+--- a/drivers/char/tpm/xen-tpmfront.c
++++ b/drivers/char/tpm/xen-tpmfront.c
+@@ -16,6 +16,7 @@
+ #include <xen/xenbus.h>
+ #include <xen/page.h>
+ #include "tpm.h"
++#include <xen/platform_pci.h>
+ 
+ struct tpm_private {
+ 	struct tpm_chip *chip;
+@@ -422,6 +423,9 @@ static int __init xen_tpmfront_init(void)
+ 	if (!xen_domain())
+ 		return -ENODEV;
+ 
++	if (!xen_has_pv_devices())
++		return -ENODEV;
++
+ 	return xenbus_register_frontend(&tpmfront_driver);
+ }
+ module_init(xen_tpmfront_init);
+diff --git a/drivers/input/misc/xen-kbdfront.c b/drivers/input/misc/xen-kbdfront.c
+index e21c181..fbfdc10 100644
+--- a/drivers/input/misc/xen-kbdfront.c
++++ b/drivers/input/misc/xen-kbdfront.c
+@@ -29,6 +29,7 @@
+ #include <xen/interface/io/fbif.h>
+ #include <xen/interface/io/kbdif.h>
+ #include <xen/xenbus.h>
++#include <xen/platform_pci.h>
+ 
+ struct xenkbd_info {
+ 	struct input_dev *kbd;
+@@ -380,6 +381,9 @@ static int __init xenkbd_init(void)
+ 	if (xen_initial_domain())
+ 		return -ENODEV;
+ 
++	if (!xen_has_pv_devices())
++		return -ENODEV;
++
+ 	return xenbus_register_frontend(&xenkbd_driver);
+ }
+ 
+diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
+index 36808bf..eea2392 100644
+--- a/drivers/net/xen-netfront.c
++++ b/drivers/net/xen-netfront.c
+@@ -2106,7 +2106,7 @@ static int __init netif_init(void)
+ 	if (!xen_domain())
+ 		return -ENODEV;
+ 
+-	if (xen_hvm_domain() && !xen_platform_pci_unplug)
++	if (!xen_has_pv_nic_devices())
+ 		return -ENODEV;
+ 
+ 	pr_info("Initialising Xen virtual ethernet driver\n");
+diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
+index f7197a7..eae7cd9 100644
+--- a/drivers/pci/xen-pcifront.c
++++ b/drivers/pci/xen-pcifront.c
+@@ -20,6 +20,7 @@
+ #include <linux/workqueue.h>
+ #include <linux/bitops.h>
+ #include <linux/time.h>
++#include <xen/platform_pci.h>
+ 
+ #include <asm/xen/swiotlb-xen.h>
+ #define INVALID_GRANT_REF (0)
+@@ -1138,6 +1139,9 @@ static int __init pcifront_init(void)
+ 	if (!xen_pv_domain() || xen_initial_domain())
+ 		return -ENODEV;
+ 
++	if (!xen_has_pv_devices())
++		return -ENODEV;
++
+ 	pci_frontend_registrar(1 /* enable */);
+ 
+ 	return xenbus_register_frontend(&xenpci_driver);
+diff --git a/drivers/video/xen-fbfront.c b/drivers/video/xen-fbfront.c
+index cd005c2..4b2d3ab 100644
+--- a/drivers/video/xen-fbfront.c
++++ b/drivers/video/xen-fbfront.c
+@@ -35,6 +35,7 @@
+ #include <xen/interface/io/fbif.h>
+ #include <xen/interface/io/protocols.h>
+ #include <xen/xenbus.h>
++#include <xen/platform_pci.h>
+ 
+ struct xenfb_info {
+ 	unsigned char		*fb;
+@@ -699,6 +700,9 @@ static int __init xenfb_init(void)
+ 	if (xen_initial_domain())
+ 		return -ENODEV;
+ 
++	if (!xen_has_pv_devices())
++		return -ENODEV;
++
+ 	return xenbus_register_frontend(&xenfb_driver);
+ }
+ 
+diff --git a/drivers/xen/xenbus/xenbus_probe_frontend.c b/drivers/xen/xenbus/xenbus_probe_frontend.c
+index 34b20bf..6244f9c 100644
+--- a/drivers/xen/xenbus/xenbus_probe_frontend.c
++++ b/drivers/xen/xenbus/xenbus_probe_frontend.c
+@@ -496,7 +496,7 @@ subsys_initcall(xenbus_probe_frontend_init);
+ #ifndef MODULE
+ static int __init boot_wait_for_devices(void)
+ {
+-	if (xen_hvm_domain() && !xen_platform_pci_unplug)
++	if (!xen_has_pv_devices())
+ 		return -ENODEV;
+ 
+ 	ready_to_wait_for_devices = 1;
+diff --git a/include/xen/platform_pci.h b/include/xen/platform_pci.h
+index 438c256..b49eeab 100644
+--- a/include/xen/platform_pci.h
++++ b/include/xen/platform_pci.h
+@@ -48,4 +48,27 @@ static inline int xen_must_unplug_disks(void) {
+ 
+ extern int xen_platform_pci_unplug;
+ 
++#if defined(CONFIG_XEN_PVHVM)
++extern bool xen_has_pv_devices(void);
++extern bool xen_has_pv_disk_devices(void);
++extern bool xen_has_pv_nic_devices(void);
++extern bool xen_has_pv_and_legacy_disk_devices(void);
++#else
++static inline bool xen_has_pv_devices(void)
++{
++	return IS_ENABLED(CONFIG_XEN);
++}
++static inline bool xen_has_pv_disk_devices(void)
++{
++	return IS_ENABLED(CONFIG_XEN);
++}
++static inline bool xen_has_pv_nic_devices(void)
++{
++	return IS_ENABLED(CONFIG_XEN);
++}
++static inline bool xen_has_pv_and_legacy_disk_devices(void)
++{
++	return false;
++}
++#endif
+ #endif /* _XEN_PLATFORM_PCI_H */
 -- 
-1.8.5.2
+1.8.3.1
 
