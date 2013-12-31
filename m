@@ -1,78 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756573Ab3LaWGZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 17:06:25 -0500
-Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:37387 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756443Ab3LaWGY (ORCPT
+	id S1756645Ab3LaWMH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 17:12:07 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55271 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756450Ab3LaWMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 17:06:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=message-id:date
-	:from:mime-version:to:cc:subject:references:in-reply-to
-	:content-type:content-transfer-encoding; q=dns; s=sasl; b=kpcai/
-	LelKlZHx9SCrKQzo+3FMhewm1OUJ5TAoXtgfunjCgdSMq27axh7V+uzPrdfa+D4a
-	g1buuwvlxYF7l6kpieLzqaKod2yweOWlWbbuXhSnEJg4jPVQXXv/0pZ53di+B49r
-	HmHDqPHVh9Bw1nIQSJoYeTJ8vfoqB79f0pM6o=
-Message-ID: <52C33FD8.5090102@pobox.com>
-Date: Tue, 31 Dec 2013 17:06:16 -0500
-From: Mark Lord <mlord@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Tue, 31 Dec 2013 17:12:05 -0500
+Date: Tue, 31 Dec 2013 23:12:02 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org development" 
+	<linux-bluetooth@vger.kernel.org>,
+        Ville Tervo <ville.tervo@nokia.com>, Sebastian Reichel <sre@ring0.de>
+Subject: Re: [PATCH v2] Bluetooth: Add hci_h4p driver
+Message-ID: <20131231221202.GB25336@amd.pavel.ucw.cz>
+References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com>
+ <1727897.LBX8128hIo@izba>
+ <C8D1F470-7964-4EAC-82E0-D53CF54DE086@holtmann.org>
 MIME-Version: 1.0
-To: walt <w41ter@gmail.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: stable@vger.kernel.org, David Laight <david.laight@aculab.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>, stable@vger.kernel.org
-Subject: Re: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
- a USB payload burst
-References: <20131218211219.461663463@linuxfoundation.org> <20131218211220.412278148@linuxfoundation.org> <52C32BB0.90600@gmail.com>
-In-Reply-To: <52C32BB0.90600@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Pobox-Relay-ID: C6006B50-7267-11E3-B4F7-873F0E5B5709-82205200!a-pb-sasl-quonix.pobox.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <C8D1F470-7964-4EAC-82E0-D53CF54DE086@holtmann.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-12-31 03:40 PM, walt wrote:
-> On 12/18/2013 01:11 PM, Greg Kroah-Hartman wrote:
->> 3.12-stable review patch.  If anyone has any objections, please let me know.
->>
->> ------------------
->>
->> From: David Laight <David.Laight@ACULAB.COM>
->>
->> commit 35773dac5f862cb1c82ea151eba3e2f6de51ec3e upstream.
->>
->> Section 4.11.7.1 of rev 1.0 of the xhci specification states that a link TRB
->> can only occur at a boundary between underlying USB frames (512 bytes for
->> high speed devices).
->>
->> If this isn't done the USB frames aren't formatted correctly and, for example,
->> the USB3 ethernet ax88179_178a card will stop sending...
-> 
-> 
-> Unfortunately this patch causes a regression when copying large files to my
-> outboard USB3 drive. (Nothing at all to do with networking.)
-> 
-> When I try to copy a large (20GB) file to the USB3 drive, the copy dies after
-> about 7GB, the ext4 journal aborts and the drive is remounted read-only.
-> 
-> This bug is 100% reproducible (always pretty close to 7GB) and reverting this
-> patch completely fixes the problem.
-> 
-> (Note to Sarah:  I recently emailed you about this problem, and I *wrongly*
-> said that reverting the patch doesn't help.  That was a mistake, sorry.)
-..
+Hi!
 
+> > +static struct task_struct *h4p_thread;
+> 
+> Can’t this be done using a work queue. You are looking at a 3.14
+> kernel the earliest. We have way better primitives these days.
 
-I have also had USB3 mass-storage issues with kernels since this patch.
-Dunno if the patch itself is the problem, but just too much to do with USB3
-is very flakey in the most recent 3.12.* kernels, as well as the 3.13-rc* ones.
-So I have gone back to running older kernels and patching them.
+I tried to convert it to work queue, but was not too
+succesfull. Workqueue is not really good match for what this is trying
+to do... Nokia code relies on sleeping, than timing those sleeps for
+signaling. I'm still trying to wrap my head around it.
 
-Cheers
+Ok, I guess I could convert it to one big workqueue task, and leave
+the logic alone. Was that what you wanted?
+
+In the meantime, while trying to untangle it:
+
+commit b02dc19d9269f22baa705d16d1019b86acf15758
+Author: Pavel <pavel@ucw.cz>
+Date:   Tue Dec 31 23:01:23 2013 +0100
+
+    De-obfuscate power management code. Someone please carefully review
+    this.
+    
+    Signed-off-by: Pavel Machek <pavel@ucw.cz>
+
+diff --git a/drivers/bluetooth/nokia_core.c b/drivers/bluetooth/nokia_core.c
+index 85dd106..07761a3 100644
+--- a/drivers/bluetooth/nokia_core.c
++++ b/drivers/bluetooth/nokia_core.c
+@@ -705,28 +705,22 @@ static irqreturn_t hci_h4p_wakeup_interrupt(int irq, void *dev_inst)
+ static inline void hci_h4p_set_pm_limits(struct hci_h4p_info *info, bool set)
+ {
+ 	struct hci_h4p_platform_data *bt_plat_data = info->dev->platform_data;
++	char *sset = set ? "set" : "clear";
+ 
+ 	if (unlikely(!bt_plat_data || !bt_plat_data->set_pm_limits))
+ 		return;
+ 
+-	if (set && !test_bit(H4P_ACTIVE_MODE, &info->pm_flags)) {
++	if (set != !!test_bit(H4P_ACTIVE_MODE, &info->pm_flags)) {
+ 		bt_plat_data->set_pm_limits(info->dev, set);
+-		set_bit(H4P_ACTIVE_MODE, &info->pm_flags);
+-		BT_DBG("Change pm constraints to: %s", set ?
+-				"set" : "clear");
++		if (set)
++			set_bit(H4P_ACTIVE_MODE, &info->pm_flags);
++		else
++			clear_bit(H4P_ACTIVE_MODE, &info->pm_flags);
++		BT_DBG("Change pm constraints to: %s", sset);
+ 		return;
+ 	}
+ 
+-	if (!set && test_bit(H4P_ACTIVE_MODE, &info->pm_flags)) {
+-		bt_plat_data->set_pm_limits(info->dev, set);
+-		clear_bit(H4P_ACTIVE_MODE, &info->pm_flags);
+-		BT_DBG("Change pm constraints to: %s",
+-				set ? "set" : "clear");
+-		return;
+-	}
+-
+-	BT_DBG("pm constraints remains: %s",
+-			set ? "set" : "clear");
++	BT_DBG("pm constraints remains: %s", sset);
+ }
+ 
+ static int h4p_run(void *data)
+@@ -762,16 +756,17 @@ static int h4p_run(void *data)
+ 		BT_DBG("Timeout before calculation = %u",
+ 				jiffies_to_msecs(timeout));
+ 
+-		/* Empiric analyzer  :-) */
+ 		if (elapsed < TIMEOUT_MIN) {
+ 			timeout <<= 1;
+-			timeout = (timeout > TIMEOUT_MAX) ?
+-				TIMEOUT_MAX : timeout;
+ 		} else {
+-			timeout = (elapsed > timeout - TIMEOUT_MIN) ?
+-				TIMEOUT_MIN : timeout - elapsed;
++			timeout -= elapsed;
+ 		}
+ 
++		if (timeout > TIMEOUT_MAX)
++			timeout = TIMEOUT_MAX;
++		if (timeout < TIMEOUT_MIN)
++			timeout = TIMEOUT_MIN;
++
+ 		BT_DBG("Timeout after calculation = %u",
+ 				jiffies_to_msecs(timeout));
+ 
+
 -- 
-Mark Lord
-Real-Time Remedies Inc.
-mlord@pobox.com
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
