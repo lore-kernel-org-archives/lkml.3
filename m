@@ -1,330 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322Ab3LaIe0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 03:34:26 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:37142 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751496Ab3LaIeZ (ORCPT
+	id S1752315Ab3LaI4a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 03:56:30 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:18661 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752027Ab3LaI43 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 03:34:25 -0500
-Message-ID: <52C2811C.4090907@huawei.com>
-Date: Tue, 31 Dec 2013 16:32:28 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 31 Dec 2013 03:56:29 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 31 Dec 2013 00:57:33 -0800
+From: Manoj Chourasia <mchourasia@nvidia.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "stable@kernel.org" <stable@kernel.org>
+Date: Tue, 31 Dec 2013 14:26:41 +0530
+Subject: [PATCH] usb: hub: Avoid tight loop holding hdev lock
+Thread-Topic: [PATCH] usb: hub: Avoid tight loop holding hdev lock
+Thread-Index: Ac8GBiiEsarYrb5KSmC3nq+L5ejVYg==
+Message-ID: <F1F6C959961EA744BBD5B8EEF8B8FEA16DDFCA6A2E@BGMAIL02.nvidia.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        <vegardno@ifi.uio.no>, Pekka Enberg <penberg@kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-CC: <wangnan0@huawei.com>, Xishi Qiu <qiuxishi@huawei.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
-Subject: [PATCH] mm: add a new command-line kmemcheck value
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.196]
-X-CFilter-Loop: Reflected
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new command-line kmemcheck value: kmemcheck=3 (disable the feature),
-this is the same effect as CONFIG_KMEMCHECK disabled.
-After doing this, we can enable/disable kmemcheck feature in one vmlinux.
+Hi All,
 
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
----
- arch/x86/mm/init.c                |   11 ++++++
- arch/x86/mm/kmemcheck/kmemcheck.c |   62 ++++++++++++++++++++++++++-----------
- arch/x86/mm/kmemcheck/shadow.c    |   13 +++++---
- include/linux/kmemcheck.h         |    2 +
- mm/kmemcheck.c                    |   12 +++++--
- mm/page_alloc.c                   |    2 +
- 6 files changed, 76 insertions(+), 26 deletions(-)
+I was facing an issue bad usb device which was affecting other system. Kernel was trying to enumerate the device but it was failing continuously. Unfortunately that device was on mounted onboard in the platform so I cannot remove it.
+The continuous re-enumeration of the device causing other application malfunctioning which were using libusb. I found that usb_find_devices() call was stuck in usb_open for very long time. It was stuck in getting device lock which was taken in hub_event thread.
+Solution was to add msleep in the loop to prevent is spinning tightly. 
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index f971306..cd7d75f 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -135,6 +135,15 @@ static void __init probe_page_size_mask(void)
- 		page_size_mask |= 1 << PG_LEVEL_2M;
- #endif
- 
-+#if defined(CONFIG_KMEMCHECK)
-+	if (!kmemcheck_on) {
-+		if (direct_gbpages)
-+			page_size_mask |= 1 << PG_LEVEL_1G;
-+		if (cpu_has_pse)
-+			page_size_mask |= 1 << PG_LEVEL_2M;
-+	}
-+#endif
-+
- 	/* Enable PSE if available */
- 	if (cpu_has_pse)
- 		set_in_cr4(X86_CR4_PSE);
-@@ -331,6 +340,8 @@ bool pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn)
- 	return false;
- }
- 
-+extern int kmemcheck_on;
-+
- /*
-  * Setup the direct mapping of the physical memory at PAGE_OFFSET.
-  * This runs before bootmem is initialized and gets pages directly from
-diff --git a/arch/x86/mm/kmemcheck/kmemcheck.c b/arch/x86/mm/kmemcheck/kmemcheck.c
-index d87dd6d..d686ee0 100644
---- a/arch/x86/mm/kmemcheck/kmemcheck.c
-+++ b/arch/x86/mm/kmemcheck/kmemcheck.c
-@@ -44,30 +44,35 @@
- #ifdef CONFIG_KMEMCHECK_ONESHOT_BY_DEFAULT
- #  define KMEMCHECK_ENABLED 2
- #endif
-+#define KMEMCHECK_CLOSED 3
- 
--int kmemcheck_enabled = KMEMCHECK_ENABLED;
-+int kmemcheck_enabled = KMEMCHECK_CLOSED;
-+int kmemcheck_on = 0;
- 
- int __init kmemcheck_init(void)
- {
-+	if (kmemcheck_on) {
- #ifdef CONFIG_SMP
--	/*
--	 * Limit SMP to use a single CPU. We rely on the fact that this code
--	 * runs before SMP is set up.
--	 */
--	if (setup_max_cpus > 1) {
--		printk(KERN_INFO
--			"kmemcheck: Limiting number of CPUs to 1.\n");
--		setup_max_cpus = 1;
--	}
-+		/*
-+		 * Limit SMP to use a single CPU. We rely on the fact that this code
-+		 * runs before SMP is set up.
-+		 */
-+		if (setup_max_cpus > 1) {
-+			printk(KERN_INFO
-+				"kmemcheck: Limiting number of CPUs to 1.\n");
-+			setup_max_cpus = 1;
-+		}
- #endif
- 
--	if (!kmemcheck_selftest()) {
--		printk(KERN_INFO "kmemcheck: self-tests failed; disabling\n");
--		kmemcheck_enabled = 0;
--		return -EINVAL;
-+		if (!kmemcheck_selftest()) {
-+			printk(KERN_INFO "kmemcheck: self-tests failed; disabling\n");
-+			kmemcheck_enabled = 0;
-+			return -EINVAL;
-+		}
-+
-+		printk(KERN_INFO "kmemcheck: Initialized\n");
- 	}
- 
--	printk(KERN_INFO "kmemcheck: Initialized\n");
- 	return 0;
- }
- 
-@@ -82,6 +87,12 @@ static int __init param_kmemcheck(char *str)
- 		return -EINVAL;
- 
- 	sscanf(str, "%d", &kmemcheck_enabled);
-+
-+	if ((kmemcheck_enabled >= KMEMCHECK_CLOSED) || (kmemcheck_enabled < 0))
-+		kmemcheck_on = 0;
-+	else
-+		kmemcheck_on = 1;
-+
- 	return 0;
- }
- 
-@@ -134,9 +145,12 @@ static DEFINE_PER_CPU(struct kmemcheck_context, kmemcheck_context);
- 
- bool kmemcheck_active(struct pt_regs *regs)
- {
--	struct kmemcheck_context *data = &__get_cpu_var(kmemcheck_context);
-+	if (kmemcheck_on) {
-+		struct kmemcheck_context *data = &__get_cpu_var(kmemcheck_context);
-+		return data->balance > 0;
-+	}
- 
--	return data->balance > 0;
-+	return false;
- }
- 
- /* Save an address that needs to be shown/hidden */
-@@ -223,6 +237,9 @@ void kmemcheck_hide(struct pt_regs *regs)
- 	struct kmemcheck_context *data = &__get_cpu_var(kmemcheck_context);
- 	int n;
- 
-+	if (!kmemcheck_on)
-+		return;
-+
- 	BUG_ON(!irqs_disabled());
- 
- 	if (unlikely(data->balance != 1)) {
-@@ -278,6 +295,9 @@ void kmemcheck_show_pages(struct page *p, unsigned int n)
- 
- bool kmemcheck_page_is_tracked(struct page *p)
- {
-+	if (!kmemcheck_on)
-+		return false;
-+
- 	/* This will also check the "hidden" flag of the PTE. */
- 	return kmemcheck_pte_lookup((unsigned long) page_address(p));
- }
-@@ -333,6 +353,9 @@ bool kmemcheck_is_obj_initialized(unsigned long addr, size_t size)
- 	enum kmemcheck_shadow status;
- 	void *shadow;
- 
-+	if (!kmemcheck_on)
-+		return true;
-+
- 	shadow = kmemcheck_shadow_lookup(addr);
- 	if (!shadow)
- 		return true;
-@@ -616,6 +639,9 @@ bool kmemcheck_fault(struct pt_regs *regs, unsigned long address,
- {
- 	pte_t *pte;
- 
-+	if (!kmemcheck_on)
-+		return false;
-+
- 	/*
- 	 * XXX: Is it safe to assume that memory accesses from virtual 86
- 	 * mode or non-kernel code segments will _never_ access kernel
-@@ -644,7 +670,7 @@ bool kmemcheck_fault(struct pt_regs *regs, unsigned long address,
- 
- bool kmemcheck_trap(struct pt_regs *regs)
- {
--	if (!kmemcheck_active(regs))
-+	if (!kmemcheck_on || !kmemcheck_active(regs))
- 		return false;
- 
- 	/* We're done. */
-diff --git a/arch/x86/mm/kmemcheck/shadow.c b/arch/x86/mm/kmemcheck/shadow.c
-index aec1242..26e461d 100644
---- a/arch/x86/mm/kmemcheck/shadow.c
-+++ b/arch/x86/mm/kmemcheck/shadow.c
-@@ -90,7 +90,8 @@ void kmemcheck_mark_uninitialized(void *address, unsigned int n)
-  */
- void kmemcheck_mark_initialized(void *address, unsigned int n)
- {
--	mark_shadow(address, n, KMEMCHECK_SHADOW_INITIALIZED);
-+	if (kmemcheck_on)
-+		mark_shadow(address, n, KMEMCHECK_SHADOW_INITIALIZED);
- }
- EXPORT_SYMBOL_GPL(kmemcheck_mark_initialized);
- 
-@@ -103,16 +104,18 @@ void kmemcheck_mark_unallocated_pages(struct page *p, unsigned int n)
- {
- 	unsigned int i;
- 
--	for (i = 0; i < n; ++i)
--		kmemcheck_mark_unallocated(page_address(&p[i]), PAGE_SIZE);
-+	if (kmemcheck_on)
-+		for (i = 0; i < n; ++i)
-+			kmemcheck_mark_unallocated(page_address(&p[i]), PAGE_SIZE);
- }
- 
- void kmemcheck_mark_uninitialized_pages(struct page *p, unsigned int n)
- {
- 	unsigned int i;
- 
--	for (i = 0; i < n; ++i)
--		kmemcheck_mark_uninitialized(page_address(&p[i]), PAGE_SIZE);
-+	if (kmemcheck_on)
-+		for (i = 0; i < n; ++i)
-+			kmemcheck_mark_uninitialized(page_address(&p[i]), PAGE_SIZE);
- }
- 
- void kmemcheck_mark_initialized_pages(struct page *p, unsigned int n)
-diff --git a/include/linux/kmemcheck.h b/include/linux/kmemcheck.h
-index 39f8453..13d15e1 100644
---- a/include/linux/kmemcheck.h
-+++ b/include/linux/kmemcheck.h
-@@ -6,6 +6,7 @@
- 
- #ifdef CONFIG_KMEMCHECK
- extern int kmemcheck_enabled;
-+extern int kmemcheck_on;
- 
- /* The slab-related functions. */
- void kmemcheck_alloc_shadow(struct page *page, int order, gfp_t flags, int node);
-@@ -88,6 +89,7 @@ bool kmemcheck_is_obj_initialized(unsigned long addr, size_t size);
- 
- #else
- #define kmemcheck_enabled 0
-+#define kmemcheck_on 0
- 
- static inline void
- kmemcheck_alloc_shadow(struct page *page, int order, gfp_t flags, int node)
-diff --git a/mm/kmemcheck.c b/mm/kmemcheck.c
-index fd814fd..fd89146 100644
---- a/mm/kmemcheck.c
-+++ b/mm/kmemcheck.c
-@@ -10,6 +10,9 @@ void kmemcheck_alloc_shadow(struct page *page, int order, gfp_t flags, int node)
- 	int pages;
- 	int i;
- 
-+	if (!kmemcheck_on)
-+		return;
-+
- 	pages = 1 << order;
- 
- 	/*
-@@ -41,6 +44,9 @@ void kmemcheck_free_shadow(struct page *page, int order)
- 	int pages;
- 	int i;
- 
-+	if (!kmemcheck_on)
-+		return;
-+
- 	if (!kmemcheck_page_is_tracked(page))
- 		return;
- 
-@@ -63,7 +69,7 @@ void kmemcheck_slab_alloc(struct kmem_cache *s, gfp_t gfpflags, void *object,
- 	 * Has already been memset(), which initializes the shadow for us
- 	 * as well.
- 	 */
--	if (gfpflags & __GFP_ZERO)
-+	if (!kmemcheck_on || gfpflags & __GFP_ZERO)
- 		return;
- 
- 	/* No need to initialize the shadow of a non-tracked slab. */
-@@ -92,7 +98,7 @@ void kmemcheck_slab_alloc(struct kmem_cache *s, gfp_t gfpflags, void *object,
- void kmemcheck_slab_free(struct kmem_cache *s, void *object, size_t size)
- {
- 	/* TODO: RCU freeing is unsupported for now; hide false positives. */
--	if (!s->ctor && !(s->flags & SLAB_DESTROY_BY_RCU))
-+	if (kmemcheck_on && !s->ctor && !(s->flags & SLAB_DESTROY_BY_RCU))
- 		kmemcheck_mark_freed(object, size);
- }
- 
-@@ -101,7 +107,7 @@ void kmemcheck_pagealloc_alloc(struct page *page, unsigned int order,
- {
- 	int pages;
- 
--	if (gfpflags & (__GFP_HIGHMEM | __GFP_NOTRACK))
-+	if (!kmemcheck_on || (gfpflags & (__GFP_HIGHMEM | __GFP_NOTRACK)))
- 		return;
- 
- 	pages = 1 << order;
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index f861d02..0b2bbf2 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2716,6 +2716,8 @@ retry_cpuset:
- 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
- 			zonelist, high_zoneidx, alloc_flags,
- 			preferred_zone, migratetype);
-+	if (kmemcheck_on && kmemcheck_enabled && page)
-+		kmemcheck_pagealloc_alloc(page, order, gfp_mask);
- 	if (unlikely(!page)) {
- 		/*
- 		 * Runtime PM, block IO and its error handling path
--- 
-1.7.1
+---------------------------------------------------------------------------
+usb: hub: Avoid tight loop holding hdev lock
 
+   Other system call(like usb_open) to root port device
+    starved in getting device lock when the while loop
+    in hub_event loops tightly because of misbehaving device.
 
+    Adding a small msleep provides chance to system calls to
+    schedule.
+
+    The issue was returning -EPROTO and re-enumerating with
+    continuous hub_events. That was makes the while loop in
+    hub_event to spin tightly.
+
+    usb_find_devices call from libusb tries to open all devices
+    including root hub. The call to usb_open stuck for very
+    long time(sometimes forever) because the priority of
+    kernel thread is higher than that system call in this case.
+
+    Signed-off-by: Manoj Chourasia <mchourasia@nvidia.com>  
+
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index c5c3667..b968fd5 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -4899,6 +4899,9 @@ static void hub_events(void)
+                usb_unlock_device(hdev);
+                kref_put(&hub->kref, hub_release);
+
++               /* preventing tight loop holding hdev lock */
++               msleep(20);
++
+         } /* end while (1) */
+ }
+
+-Regards
+Manoj
 
