@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755122Ab3LaQaK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 11:30:10 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:39917 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885Ab3LaQaJ (ORCPT
+	id S1754263Ab3LaQeB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 11:34:01 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:55731 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753776Ab3LaQd6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 11:30:09 -0500
-Date: Tue, 31 Dec 2013 16:30:01 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: perex@perex.cz, tiwai@suse.de, kuninori.morimoto.gx@renesas.com,
-        fabio.estevam@freescale.com, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20131231163001.GI31886@sirena.org.uk>
-References: <1387521591-15262-2-git-send-email-Li.Xiubo@freescale.com>
+	Tue, 31 Dec 2013 11:33:58 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4cXE7lVpOAUQvDc2"
-Content-Disposition: inline
-In-Reply-To: <1387521591-15262-2-git-send-email-Li.Xiubo@freescale.com>
-X-Cookie: Go climb a gravity well!
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: soc-core: Fix the DAI name getting.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <alpine.DEB.2.02.1312302209200.8869@utopia.booyaka.com>
+References: <20131123004334.GJ10023@atomide.com>
+	<20131123010850.GN10023@atomide.com>
+	<20131123015034.GP10023@atomide.com>
+	<20131124212757.7D224C402A3@trevor.secretlab.ca>
+	<alpine.DEB.2.02.1312100331460.32309@utopia.booyaka.com>
+	<alpine.DEB.2.02.1312302209200.8869@utopia.booyaka.com>
+Date: Tue, 31 Dec 2013 10:33:58 -0600
+Message-ID: <CAL_Jsq+X5G94DUn-zFKQkhEy91cdjCyeciny+kDjr=V6EiBHfQ@mail.gmail.com>
+Subject: Re: [PATCH] of/platform: Fix no irq domain found errors when
+ populating interrupts
+From: Rob Herring <robherring2@gmail.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 30, 2013 at 4:10 PM, Paul Walmsley <paul@pwsan.com> wrote:
+> Hi Grant, Rob,
+>
+> On Tue, 10 Dec 2013, Paul Walmsley wrote:
+>
+>> On Sun, 24 Nov 2013, Grant Likely wrote:
+>>
+>> > On Fri, 22 Nov 2013 17:50:35 -0800, Tony Lindgren <tony@atomide.com> wrote:
+>> > > * Tony Lindgren <tony@atomide.com> [131122 17:16]:
+>> > > > * Tony Lindgren <tony@atomide.com> [131122 17:09]:
+>> > > > > * Russell King - ARM Linux <linux@arm.linux.org.uk> [131122 16:56]:
+>> > > > > > On Fri, Nov 22, 2013 at 04:43:35PM -0800, Tony Lindgren wrote:
+>> > > > > > > +         /* See of_device_resource_notify for populating interrupts */
+>> > > > > > > +         for (i = 0; i < num_irq; i++, res++) {
+>> > > > > > > +                 res->flags = IORESOURCE_IRQ;
+>> > > > > > > +                 res->start = -EPROBE_DEFER;
+>> > > > > > > +                 res->end = -EPROBE_DEFER;
+>> > > > > >
+>> > > > > > NAK.  Definitely a bad idea to start introducing magic values other into
+>> > > > > > resources.  Please don't do this.
+>> > > > >
+>> > > > > Do you have any better ideas on how to sort out this issue then?
+>> > > >
+>> > > > I guess we could allocate all the resources lazily here, I'll take a look
+>> > > > at that.
+>> > >
+>> > > Here's a version that allocates the resources lazily with the notifier.
+>> > > Seems to boot, need to play with it a bit more though to make sure we're
+>> > > not overwriting resources for any legacy devices.
+>> >
+>> > Blurg. Using a notifier really feels like we don't have a good handle on
+>> > a reasonable solution yet. Basically it means we're hooking into the
+>> > driver core without /looking/ like we're hooking into the driver core. I
+>> > don't think this is any better, but I don't have a better suggestion at
+>> > the moment.   :-(
+>>
+>> Unfortunately this patch, or something that accomplishes the same results,
+>> is somewhat high-priority for us on OMAP.  OMAP37xx got prematurely
+>> converted to DT booting, and now dynamic power management is broken:
+>>
+>>     http://marc.info/?l=linux-arm-kernel&m=138658294830408&w=2
+>>
+>> Tony writes that this patch is one of the two patches needed to get things
+>> working again:
+>>
+>>     http://marc.info/?l=linux-arm-kernel&m=138660942506846&w=2
+>>
+>> Is it possible to get this patch, or something similar, merged for
+>> v3.13-rc?
+>>
+>> Once something like PM is broken, it's pretty easy for other broken
+>> patches to make it into the tree, since it becomes very difficult to test
+>> without turning into a maintainer denial-of-service attack.
+>
+> Ping.  Could you please provide some guidance here about what you'd need
+> to get this solved for v3.13-rc?
 
---4cXE7lVpOAUQvDc2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I agree with doing the platform_get_irq modification and feel free to
+add my ack. I'm going to be offline for the next week.
 
-On Fri, Dec 20, 2013 at 02:39:51PM +0800, Xiubo Li wrote:
-> From "ASoC: make snd_soc_dai_link more symmetrical", can we see that
-> the name of CPU DAI maybe omitted. If the DAI name is omitted, try to
-> use the component name instead.
-
-Applied, thanks.
-
---4cXE7lVpOAUQvDc2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSwvEGAAoJELSic+t+oim9eDIP/2whyUEEHZPryiJ8DMM/MPWH
-kz4nRphdoH/9biYL5Wo57VvswthxxgIcGSFciVXJnFVBUVSwcm0eoipuuRY8eMPD
-1rx2IEv1qfLV5hwyd2L1IuFSw0zFEP2GxUZDVbaEoaErAsA2izG7K7xedUHOrDl0
-ZUg9hmGqJQ+mK1nCMOpZ+WPofOlolxGyNusNsy4bASYcWqfxTWtGfT6G4Q+8ryq3
-g9RYHC9g1qOmsNI5wDW8+3YGKUSWKw8EpPSvH96luSCjSXYuQpESLyEnrQluBdky
-37faJUhxWLkol7ru+2dceHcoPTJiBXWjuLXxk5ehIkubeOoyGvcXQSOfyg+zBYMI
-tfLvHijLCg3WgbzOZ4iMpAbeKxRCTG84kALJOdPzGdcWROG8c4yxpOT2RpaJhJ8s
-fH15XUnaXb/mXJ2hrDcmSg6opbusiafkaG006aZPFNUVmsW7kLbmd2yjg9EReOdY
-SfuEy4jy5HKTRoi/CSCMbysGwuuvpo6G7nVyq2WDB9o+Tgj/hvHAjdpe8vRDU8oU
-kUlNIU8wv852GL9THAyNn9Wi+ohgcxlHa0+exzhJQB7U/piuFHx+3aek3s0EDc8B
-ZK7KcOwTp9+yRRuhqN1PPVorDO+mlDW5/M4M5c/M1F858Bq57p4q+A27MJvAExiv
-y/Iq/uG3/KaLhpB9/5o5
-=81ZA
------END PGP SIGNATURE-----
-
---4cXE7lVpOAUQvDc2--
+Rob
