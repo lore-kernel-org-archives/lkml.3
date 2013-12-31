@@ -1,425 +1,421 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665Ab3LaKck (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 05:32:40 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:34543 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752254Ab3LaKch convert rfc822-to-8bit (ORCPT
+	id S1752793Ab3LaKd0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 05:33:26 -0500
+Received: from 12.mo6.mail-out.ovh.net ([178.32.125.228]:47580 "EHLO
+	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752254Ab3LaKdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 05:32:37 -0500
-Date: Tue, 31 Dec 2013 11:31:38 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Liam Girdwood <lgirdwood@gmail.com>, Lars-Peter Clausen <lars@metafoo.de>
-Cc: alsa-devel@alsa-project.org, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ASoC: generic: add generic compound card with DT support
-Message-ID: <20131231113138.102044cf@armhf>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
+	Tue, 31 Dec 2013 05:33:23 -0500
+X-Greylist: delayed 1003 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 Dec 2013 05:33:23 EST
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CACh+v5NgwyAD5xy-feykUDXpzVUuF2yFxP35TsnGk3r+LFtRPA@mail.gmail.com>
+References: <1387239745-2890-1-git-send-email-jjhiblot@traphandler.com>
+	<52AFA5E0.7040707@hitachi.com>
+	<CACh+v5NgwyAD5xy-feykUDXpzVUuF2yFxP35TsnGk3r+LFtRPA@mail.gmail.com>
+Date: Tue, 31 Dec 2013 11:16:32 +0100
+Message-ID: <CACh+v5PY8sSk6iTvv7PCE97KrojhEsGJT4LH75hH4QFwcq8ckw@mail.gmail.com>
+Subject: Re: [PATCH] Tracing events with GPIOs
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-Ovh-Tracer-Id: 11185252625631893528
+X-Ovh-Remote: 209.85.160.53 (mail-pb0-f53.google.com)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -85
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrudekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenogetfedtuddqtdduucdludehmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -85
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrudekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenogetfedtuddqtdduucdludehmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some audio cards are built from different hardware components.
-When such compound cards don't need specific code, this driver creates
-them with the required DAI links and routes from a DT.
+2013/12/17 Jean-Jacques Hiblot <jjhiblot@traphandler.com>:
+> 2013/12/17 Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>:
+>> (2013/12/17 9:22), Jean-Jacques Hiblot wrote:
+>>> This patch implements a new tracing mechanism based on kprobes and using GPIO.
+>>> Debugging with GPIO is very common in the embedded world. At least for those of us
+>>> fortunate enough to have an oscilloscope or a logic analyzer on their bench...
+>>> This is especially true if the issue results of a hardware/sofware interaction.
+>>>
+>>> Typical use cases are :
+>>> * mixed software/hardware debugging. For example when the software detects a
+>>>   situation of interest (typically an error) it toggles a GPIO to trigger the
+>>>   oscilloscope acquisition.
+>>> * direct latency/duration measurements.
+>>
+>> Ah, it's interesting to me :)
+>>
+>> And I think this feature should be built on the event triggers which
+>> Tom is working on, instead of kprobes directly, because it allows
+>> you to take gpio actions on normal tracepoints, and uprobes too :)
+>>
+>
+> I'll make a version that uses this framework then. When it's ready
+> I'll make some measurements to check the overhead of both solutions.
 
-Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
----
-This code was first developped on the generic simple card, but its
-recent DT extension cannot be easily extended again to support compound
-cards as the one in the Cubox.
-Note also that the example relies on a proposed patch of mine aiming to
-render the codec name / OF node optional in DAI links
-(http://mailman.alsa-project.org/pipermail/alsa-devel/2013-December/070082.html).
----
- .../devicetree/bindings/sound/compound-card.txt |  95 ++++++++++++
- sound/soc/generic/Kconfig                       |   6 +
- sound/soc/generic/Makefile                      |   2 +
- sound/soc/generic/compound-card.c               | 247 +++++++++++++++++++++++++
- 4 file changed, 350 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/sound/compound-card.txt b/Documentation/devicetree/bindings/sound/compound-card.txt
-new file mode 100644
-index 0000000..554a796
---- /dev/null
-+++ b/Documentation/devicetree/bindings/sound/compound-card.txt
-@@ -0,0 +1,95 @@
-+Device-Tree bindings for compound audio card
-+
-+Compound audio card describes the links between the different parts
-+of an audio card built from different hardware components.
-+
-+Required properties:
-+  - compatible: should be "compound-audio-card"
-+  - audio-controller: phandle of the audio controller
-+
-+Optional properties:
-+  - routes: list of couple of strings (sink, source)
-+
-+Required subnodes:
-+  - link: DAI link subnode
-+	At least one link must be specified.
-+
-+Required link subnode properties:
-+  - link-name: names of the DAI link and of the stream
-+  - cpu-dai-name: name of the CPU or CODEC DAI
-+		An empty string indicates that the CPU DAI is
-+		the same as the audio controller.
-+  - codec-dai-name: name of the CODEC DAI
-+
-+Optional link subnode properties:
-+  - audio-codec or codec-name: phandle or name of the CODEC
-+		in case the codec-dai-name is not unique
-+  - format: DAI format. One of:
-+		"i2s", "right_j", "left_j" , "dsp_a"
-+		"dsp_b", "ac97", "pdm", "msb", "lsb"
-+  - front-end or back-end: present if the DAI link describes resp.
-+		a front-end CPU DAI or a back-end CODEC DAI
-+  - playback or capture: present if the DAI link is used for
-+		playback or capture only
-+
-+Example node:
-+
-+The audio subsystem found in the SolidRun Cubox is composed of:
-+
-+- an audio controller which outputs playback streams on either one or both
-+  of I2S and S/PDIF,
-+
-+- a HDMI transmitter which can get its input from either I2S or S/PDIF,
-+
-+- an optical S/PDIF connector.
-+
-+	sound {
-+		compatible = "compound-audio-card";
-+		audio-controller = <&audio1>;
-+		routes =
-+			"I2S Playback",   "System Playback",
-+			"SPDIF Playback", "System Playback",
-+			"hdmi-out",	"I2S Playback",
-+			"hdmi-out",	"SPDIF Playback",
-+			"spdif-out",	"SPDIF Playback";
-+		link@0 {
-+			link-name = "System audio";
-+			front-end;
-+			cpu-dai-name = "mvebu-audio";
-+			codec-dai-name = "snd-soc-dummy-dai";
-+			format = "i2s";
-+			playback;
-+		};
-+		link@1 {
-+			link-name = "hdmi-i2s";
-+			back-end;
-+			cpu-dai-name = "i2s";
-+			codec-dai-name = "i2s-hifi";
-+			playback;
-+		};
-+		link@2 {
-+			link-name = "hdmi-spdif";
-+			back-end;
-+			cpu-dai-name = "spdif";
-+			codec-dai-name = "spdif-hifi";
-+			playback;
-+		};
-+		link@3 {
-+			link-name = "spdif";
-+			back-end;
-+			cpu-dai-name = "spdif";
-+			codec-dai-name = "dit-hifi";
-+			playback;
-+		};
-+	};
-+
-+	hdmi_codec: hdmi-codec {
-+		compatible = "nxp,tda998x-codec";
-+		audio-ports = <0x03>, <0x04>;
-+	};
-+
-+	spdif_codec: spdif-codec {
-+		compatible = "linux,spdif-dit";
-+	};
-+
-+
-diff --git a/sound/soc/generic/Kconfig b/sound/soc/generic/Kconfig
-index 610f612..f2678ae 100644
---- a/sound/soc/generic/Kconfig
-+++ b/sound/soc/generic/Kconfig
-@@ -2,3 +2,9 @@ config SND_SIMPLE_CARD
- 	tristate "ASoC Simple sound card support"
- 	help
- 	  This option enables generic simple sound card support
-+
-+config SND_COMPOUND_CARD
-+	tristate "ASoC Compound sound card support"
-+	depends on OF
-+	help
-+	  This option enables the generic compound sound card support.
-diff --git a/sound/soc/generic/Makefile b/sound/soc/generic/Makefile
-index 9c3b246..434cb79 100644
---- a/sound/soc/generic/Makefile
-+++ b/sound/soc/generic/Makefile
-@@ -1,3 +1,5 @@
- snd-soc-simple-card-objs	:= simple-card.o
-+snd-soc-compound-card-objs	:= compound-card.o
- 
- obj-$(CONFIG_SND_SIMPLE_CARD)	+= snd-soc-simple-card.o
-+obj-$(CONFIG_SND_COMPOUND_CARD)	+= snd-soc-compound-card.o
-diff --git a/sound/soc/generic/compound-card.c b/sound/soc/generic/compound-card.c
-new file mode 100644
-index 0000000..f57e159
---- /dev/null
-+++ b/sound/soc/generic/compound-card.c
-@@ -0,0 +1,247 @@
-+/*
-+ * ASoC compound sound card support
-+ *
-+ * Copyright (C) 2013 Jean-Francois Moine <moinejf@free.fr>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/platform_device.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <sound/soc.h>
-+
-+// link types
-+#define LINK_FE 0	/* front-end */
-+#define LINK_BE 1	/* back-end */
-+#define LINK_CC 2	/* (controller or codec) to codec */
-+
-+struct compound_card_data {
-+	struct snd_soc_card snd_card;
-+	struct snd_soc_dai_link *snd_links;
-+};
-+
-+/* get a DAI link */
-+static int get_link(struct compound_card_data *priv,
-+			struct snd_soc_dai_link *link,
-+			struct device_node *ctrl_np,
-+			struct device_node *np)
-+{
-+	struct device_node *codec_np;
-+	const char *cpu_dai_name;
-+	int type, ret;
-+
-+	/* optional link-name */
-+	of_property_read_string(np, "link-name", &link->name);
-+	link->stream_name = link->name;
-+
-+	/* link type */
-+	if (of_property_read_bool(np, "front-end"))
-+		type = LINK_FE;
-+	else if (of_property_read_bool(np, "back-end"))
-+		type = LINK_BE;
-+	else
-+		type = LINK_CC;
-+
-+	/* cpu-dai-name */
-+	ret = of_property_read_string(np, "cpu-dai-name",
-+					&cpu_dai_name);
-+	if (ret) {
-+		dev_err(priv->snd_card.dev,
-+			"No valid cpu-dai-name found\n");
-+		return ret;
-+	}
-+
-+	/* an empty cpu-dai-name forces the audio-controller */
-+	if (cpu_dai_name[0] == '\0')
-+		link->cpu_of_node = ctrl_np;
-+	else
-+		link->cpu_dai_name = cpu_dai_name;
-+
-+	/* the codec may be omitted or specified by name or phandle */
-+	codec_np = of_parse_phandle(np, "audio-codec", 0);
-+	if (codec_np)
-+		link->codec_of_node = codec_np;
-+	else
-+		of_property_read_string(np, "codec-name",
-+					&link->codec_name);
-+
-+	/* codec-dai-name */
-+	ret = of_property_read_string(np, "codec-dai-name",
-+					&link->codec_dai_name);
-+	if (ret) {
-+		dev_err(priv->snd_card.dev,
-+			"Failed to parse codec-dai-name\n");
-+		return ret;
-+	}
-+
-+	if (type == LINK_BE) {
-+		link->no_pcm = 1;
-+		/* don't set the platform, otherwise, the platform functions
-+		 * are called many times */
-+	} else {
-+		link->platform_of_node = ctrl_np;
-+		if (type == LINK_FE)
-+			link->dynamic = 1;
-+	}
-+
-+	/* DAI format */
-+	link->dai_fmt = snd_soc_of_parse_daifmt(np, NULL) &
-+				SND_SOC_DAIFMT_FORMAT_MASK;
-+
-+	if (of_property_read_bool(np, "playback"))
-+		link->playback_only = 1;
-+	else if (of_property_read_bool(np, "capture"))
-+		link->capture_only = 1;
-+
-+	return 0;
-+}
-+
-+static int compound_card_dt_probe(struct platform_device *pdev,
-+		struct compound_card_data *priv)
-+{
-+	struct device_node *np, *ctrl_np, *link_np;
-+	struct snd_soc_dai_link *link;
-+	int ret, num_links;
-+
-+	np = pdev->dev.of_node;
-+
-+	ctrl_np = of_parse_phandle(np, "audio-controller", 0);
-+	if (!ctrl_np) {
-+		dev_err(&pdev->dev, "No valid audio-controller phandle found\n");
-+		return -EINVAL;
-+	}
-+
-+	/* get the optional routes */
-+	if (of_property_count_strings(np, "routes"))
-+		snd_soc_of_parse_audio_routing(&priv->snd_card, "routes");
-+
-+	priv->snd_card.name = "ASoC compound sound card";
-+
-+	/* check the number of links */
-+	num_links = 0;
-+	for_each_child_of_node(np, link_np)
-+		num_links++;
-+
-+	if (num_links == 0) {
-+		dev_err(&pdev->dev, "No DAI link\n");
-+		return -EINVAL;
-+	}
-+
-+	link = devm_kzalloc(&pdev->dev,
-+				sizeof(struct snd_soc_dai_link) * num_links,
-+				GFP_KERNEL);
-+	if (!link) {
-+		ret = -ENOMEM;
-+		goto err;
-+	}
-+	priv->snd_links = link;
-+	priv->snd_card.num_links = num_links;
-+	for_each_child_of_node(np, link_np) {
-+		ret = get_link(priv, link, ctrl_np, link_np);
-+		if (ret)
-+			goto err;
-+		link++;
-+	}
-+
-+	return 0;
-+
-+err:
-+	if (link_np)
-+		of_node_put(link_np);
-+	if (ctrl_np)
-+		of_node_put(ctrl_np);
-+	for (num_links = 0, link = priv->snd_links;
-+	     num_links < priv->snd_card.num_links;
-+	     num_links++, link++) {
-+		struct device_node *codec_np;
-+
-+		codec_np = (struct device_node *) link->codec_of_node;
-+		if (!codec_np)
-+			break;
-+		of_node_put(codec_np);
-+	}
-+	return ret;
-+}
-+
-+static int compound_card_dt_remove(struct platform_device *pdev,
-+		struct compound_card_data *priv)
-+{
-+	struct device_node *codec_np;
-+	struct snd_soc_dai_link *link;
-+	int num_links;
-+
-+	if (!priv->snd_links)
-+		return 0;
-+	if (priv->snd_links->platform_of_node)
-+		of_node_put((struct device_node *)
-+				priv->snd_links->platform_of_node);
-+	for (num_links = 0, link = priv->snd_links;
-+	     num_links < priv->snd_card.num_links;
-+	     num_links++, link++) {
-+		codec_np = (struct device_node *) link->codec_of_node;
-+		if (!codec_np)
-+			break;
-+		of_node_put(codec_np);
-+	}
-+	return 0;
-+}
-+
-+static int compound_card_probe(struct platform_device *pdev)
-+{
-+	struct compound_card_data *priv;
-+	int ret;
-+
-+	priv = devm_kzalloc(&pdev->dev, sizeof *priv, GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
-+
-+	priv->snd_card.owner = THIS_MODULE;
-+	priv->snd_card.dev = &pdev->dev;
-+
-+	ret = compound_card_dt_probe(pdev, priv);
-+
-+	if (ret)
-+		return ret;
-+
-+	priv->snd_card.dai_link = priv->snd_links;
-+
-+	dev_set_drvdata(&pdev->dev, priv);
-+
-+	return snd_soc_register_card(&priv->snd_card);
-+}
-+
-+static int compound_card_remove(struct platform_device *pdev)
-+{
-+	struct compound_card_data *priv = dev_get_drvdata(&pdev->dev);
-+ 
-+	snd_soc_unregister_card(&priv->snd_card);
-+
-+	compound_card_dt_remove(pdev, priv);
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id compound_card_of_dev_ids[] = {
-+	{ .compatible = "compound-audio-card", },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, compound_card_of_dev_ids);
-+
-+static struct platform_driver compound_card = {
-+	.driver = {
-+		.name	= "asoc-compound-card",
-+		.owner = THIS_MODULE,
-+		.of_match_table = compound_card_of_dev_ids,
-+	},
-+	.probe		= compound_card_probe,
-+	.remove		= compound_card_remove,
-+};
-+
-+module_platform_driver(compound_card);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("ASoC Compound Sound Card");
-+MODULE_AUTHOR("Jean-Francois Moine <moinejf@free.fr>");
+Here are the results. The test is run on an old ARM9 platform
+(at91sam9261ek) running at 200MHz
+The test consists in setting the GPIO when entering handle_IRQ() and
+clearing the GPIO when entering handle_fasteoi_irq(), and measuring
+the width of the pulse with an oscilloscope.
 
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+1) manual method (modification of the code to insert gpio_set_value()
+at the top of each probed function). This is our baseline
+min : 2.76 us
+mean : 3.22 us
+max : 6.80 us
+
+2) pure kprobe (patch v1)
+echo "" > /sys/kernel/debug/tracing/kprobe_events
+echo "p:b handle_IRQ gpioset@13" > /sys/kernel/debug/tracing/kprobe_events
+echo "p:a handle_fasteoi_irq gpioclear@13" >>
+/sys/kernel/debug/tracing/kprobe_events
+echo 1 > /sys/kernel/debug/tracing/events/kprobes/a/enable
+echo 1 > /sys/kernel/debug/tracing/events/kprobes/b/enable
+
+min : 18.2 us
+mean 19.2 us
+max : 34.0 us
+
+3) event trigger (patch v2)
+echo "" > /sys/kernel/debug/tracing/kprobe_events
+echo "p:b handle_IRQ" > /sys/kernel/debug/tracing/kprobe_events
+echo "p:a handle_fasteoi_irq" >> /sys/kernel/debug/tracing/kprobe_events
+echo 'gpio:clear:13' > /sys/kernel/debug/tracing/events/kprobes/a/trigger
+echo 'gpio:set:13' > /sys/kernel/debug/tracing/events/kprobes/b/trigger
+
+min : 7.36 us
+mean : 8.32 us
+max : 14.8 us
+
+>From those numbers we deduce the cost of an event triggered gpio probe
+: (8.32 - 3.22)/2 = 2.55 us (max 4 us).
+
+>
+> Tom,
+> is git://git.yoctoproject.org/linux-yocto-contrib
+> tzanussi/event-triggers-v11 the right starting point ?
+>
+> Thanks,
+>
+> Jean-Jacques
+>
+>> Thank you!
+>>
+>>>
+>>> examples:
+>>> To trig the oscilloscope whenever a mmc command error:
+>>>   echo "p:my_mmc_blk_error mmc_blk_cmd_error gpiopulse@13" > /sys/kernel/debug/tracing/kprobe_events
+>>>   echo 1 > /sys/kernel/debug/tracing/events/kprobes/my_mmc_blk_error/enable
+>>>
+>>> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+>>> ---
+>>>  kernel/trace/Kconfig        |  12 ++++
+>>>  kernel/trace/trace_kprobe.c | 167 +++++++++++++++++++++++++++++++++++++++++++-
+>>>  2 files changed, 177 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+>>> index 015f85a..4228768 100644
+>>> --- a/kernel/trace/Kconfig
+>>> +++ b/kernel/trace/Kconfig
+>>> @@ -420,6 +420,18 @@ config KPROBE_EVENT
+>>>         This option is also required by perf-probe subcommand of perf tools.
+>>>         If you want to use perf tools, this option is strongly recommended.
+>>>
+>>> +config KPROBE_EVENT_GPIO
+>>> +     depends on KPROBE_EVENT
+>>> +     depends on GPIOLIB
+>>> +     bool "Enable kprobes-based tracing of events via GPIO"
+>>> +     default n
+>>> +     help
+>>> +             This allows the user to use GPIOs as a tracing tool.The primary
+>>> +             purpose of this option is to allow the user to trigger an
+>>> +             oscilloscope on software events.
+>>> +             The GPIO can be set, cleared, toggled, or pulsed when the event
+>>> +             is hit.
+>>> +
+>>>  config UPROBE_EVENT
+>>>       bool "Enable uprobes-based dynamic events"
+>>>       depends on ARCH_SUPPORTS_UPROBES
+>>> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+>>> index dae9541..5d297f5 100644
+>>> --- a/kernel/trace/trace_kprobe.c
+>>> +++ b/kernel/trace/trace_kprobe.c
+>>> @@ -19,6 +19,7 @@
+>>>
+>>>  #include <linux/module.h>
+>>>  #include <linux/uaccess.h>
+>>> +#include <linux/gpio.h>
+>>>
+>>>  #include "trace_probe.h"
+>>>
+>>> @@ -27,6 +28,33 @@
+>>>  /**
+>>>   * Kprobe event core functions
+>>>   */
+>>> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+>>> +#define TP_GPIO_UNDEFINED      0
+>>> +#define TP_GPIO_CMD_SET                1
+>>> +#define TP_GPIO_CMD_CLEAR      2
+>>> +#define TP_GPIO_CMD_TOGGLE     3
+>>> +#define TP_GPIO_CMD_PULSE      4
+>>> +#define TP_GPIO_CMD_PULSE_HIGH 5
+>>> +#define TP_GPIO_CMD_PULSE_LOW  6
+>>> +
+>>> +static const struct {
+>>> +     const char *name;
+>>> +     int action;
+>>> +} gpio_actions[] = {
+>>> +     {"gpioset", TP_GPIO_CMD_SET},
+>>> +     {"gpioclear", TP_GPIO_CMD_CLEAR},
+>>> +     {"gpiotoggle", TP_GPIO_CMD_TOGGLE},
+>>> +     {"gpiopulse", TP_GPIO_CMD_PULSE},
+>>> +     {"gpiopulsehigh", TP_GPIO_CMD_PULSE_HIGH},
+>>> +     {"gpiopulselow", TP_GPIO_CMD_PULSE_LOW},
+>>> +};
+>>> +
+>>> +struct gpio_trace {
+>>> +     int gpio;
+>>> +     int action;
+>>> +};
+>>> +#endif
+>>> +
+>>>  struct trace_probe {
+>>>       struct list_head        list;
+>>>       struct kretprobe        rp;     /* Use rp.kp for kprobe use */
+>>> @@ -38,6 +66,9 @@ struct trace_probe {
+>>>       struct list_head        files;
+>>>       ssize_t                 size;           /* trace entry size */
+>>>       unsigned int            nr_args;
+>>> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+>>> +     struct gpio_trace               gpio_trace;
+>>> +#endif
+>>>       struct probe_arg        args[];
+>>>  };
+>>>
+>>> @@ -164,10 +195,24 @@ error:
+>>>       return ERR_PTR(ret);
+>>>  }
+>>>
+>>> +static struct trace_probe *find_gpio_probe(int gpio)
+>>> +{
+>>> +     struct trace_probe *tp;
+>>> +
+>>> +     list_for_each_entry(tp, &probe_list, list)
+>>> +     if ((tp->gpio_trace.action) && (tp->gpio_trace.gpio == gpio))
+>>> +             return tp;
+>>> +     return NULL;
+>>> +}
+>>> +
+>>>  static void free_trace_probe(struct trace_probe *tp)
+>>>  {
+>>>       int i;
+>>>
+>>> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+>>> +     if (tp->gpio_trace.action && !find_gpio_probe(tp->gpio_trace.gpio))
+>>> +             gpio_free(tp->gpio_trace.gpio);
+>>> +#endif
+>>>       for (i = 0; i < tp->nr_args; i++)
+>>>               traceprobe_free_probe_arg(&tp->args[i]);
+>>>
+>>> @@ -435,8 +480,14 @@ static int create_trace_probe(int argc, char **argv)
+>>>  {
+>>>       /*
+>>>        * Argument syntax:
+>>> -      *  - Add kprobe: p[:[GRP/]EVENT] [MOD:]KSYM[+OFFS]|KADDR [FETCHARGS]
+>>> -      *  - Add kretprobe: r[:[GRP/]EVENT] [MOD:]KSYM[+0] [FETCHARGS]
+>>> +      *  - Add kprobe: p[:[GRP/]EVENT] [MOD:]KSYM[+OFFS]|KADDR
+>>> +      *                [GPIOACTION@GPIONUM] [FETCHARGS]
+>>> +      *  - Add kretprobe: r[:[GRP/]EVENT] [MOD:]KSYM[+0]
+>>> +      *                   [GPIOACTION@GPIONUM] [FETCHARGS]
+>>> +      * Gpio tracing:
+>>> +      *   gpio action can be : gpioset, gpioclear, gpiotoggle, gpiopulse,
+>>> +      *                        gpiopulsehigh and gpiopulselow
+>>> +      *   gpionum is the id of the gpio
+>>>        * Fetch args:
+>>>        *  $retval     : fetch return value
+>>>        *  $stack      : fetch stack address
+>>> @@ -459,6 +510,9 @@ static int create_trace_probe(int argc, char **argv)
+>>>       unsigned long offset = 0;
+>>>       void *addr = NULL;
+>>>       char buf[MAX_EVENT_NAME_LEN];
+>>> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+>>> +     int len;
+>>> +#endif
+>>>
+>>>       /* argc must be >= 1 */
+>>>       if (argv[0][0] == 'p')
+>>> @@ -541,6 +595,7 @@ static int create_trace_probe(int argc, char **argv)
+>>>                       return -EINVAL;
+>>>               }
+>>>       }
+>>> +
+>>>       argc -= 2; argv += 2;
+>>>
+>>>       /* setup a probe */
+>>> @@ -562,6 +617,66 @@ static int create_trace_probe(int argc, char **argv)
+>>>               return PTR_ERR(tp);
+>>>       }
+>>>
+>>> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+>>> +     /* parse the optionnal gpio action argument */
+>>> +     for (i = 0; argc && (i < ARRAY_SIZE(gpio_actions)); i++) {
+>>> +             len = strlen(gpio_actions[i].name);
+>>> +             if (strncmp(argv[0], gpio_actions[i].name, len) == 0)
+>>> +                     break;
+>>> +     }
+>>> +
+>>> +     if (argc && (i < ARRAY_SIZE(gpio_actions))) {
+>>> +             int gpio;
+>>> +             unsigned long ul;
+>>> +             int gpio_requested = 0;
+>>> +             ret = -EINVAL;
+>>> +             if (argv[0][len] != '@') {
+>>> +                     pr_info("Syntax error. wrong gpio syntax\n");
+>>> +                     goto error;
+>>> +             }
+>>> +
+>>> +             if (kstrtoul(&argv[0][len+1], 0, &ul)) {
+>>> +                     pr_info("Failed to parse gpio number.\n");
+>>> +                     goto error;
+>>> +             }
+>>> +             gpio = ul;
+>>> +
+>>> +             if (!gpio_is_valid(gpio)) {
+>>> +                     pr_info("gpio %d is not valid.\n", gpio);
+>>> +                     goto error;
+>>> +             }
+>>> +
+>>> +             if (gpio_cansleep(gpio))
+>>> +                     pr_info("gpio %d can sleep. This may break your"
+>>> +                             "kernel!!!!!!\n", gpio);
+>>> +
+>>> +             if (!find_gpio_probe(gpio)) {
+>>> +                     ret = gpio_request(gpio, event);
+>>> +                     if (ret) {
+>>> +                             pr_info("can't request gpio %d.\n", gpio);
+>>> +                             goto error;
+>>> +                     }
+>>> +                     gpio_requested = 1;
+>>> +             }
+>>> +
+>>> +             if ((gpio_actions[i].action == TP_GPIO_CMD_CLEAR) ||
+>>> +                     (gpio_actions[i].action == TP_GPIO_CMD_PULSE_LOW))
+>>> +                     ret = gpio_direction_output(gpio, 1);
+>>> +             else
+>>> +                     ret = gpio_direction_output(gpio, 0);
+>>> +             if (ret) {
+>>> +                     pr_info("can't make gpio %d an output.\n", gpio);
+>>> +                     if (gpio_requested)
+>>> +                             gpio_free(gpio);
+>>> +                     goto error;
+>>> +             }
+>>> +
+>>> +             tp->gpio_trace.gpio = gpio;
+>>> +             tp->gpio_trace.action = gpio_actions[i].action;
+>>> +             argc -= 1; argv += 1;
+>>> +     }
+>>> +#endif
+>>> +
+>>>       /* parse arguments */
+>>>       ret = 0;
+>>>       for (i = 0; i < argc && i < MAX_TRACE_ARGS; i++) {
+>>> @@ -1145,12 +1260,54 @@ kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
+>>>  }
+>>>  #endif       /* CONFIG_PERF_EVENTS */
+>>>
+>>> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+>>> +static __kprobes void kprobe_gpio_take_action(int gpio, int action)
+>>> +{
+>>> +     int val;
+>>> +     switch (action) {
+>>> +     case TP_GPIO_CMD_PULSE_HIGH:
+>>> +             gpio_set_value(gpio, 1);
+>>> +             /* intentionnaly don't break here */
+>>> +     case TP_GPIO_CMD_CLEAR:
+>>> +             gpio_set_value(gpio, 0);
+>>> +     break;
+>>> +
+>>> +     case TP_GPIO_CMD_PULSE_LOW:
+>>> +             gpio_set_value(gpio, 0);
+>>> +             /* intentionnaly don't break here */
+>>> +     case TP_GPIO_CMD_SET:
+>>> +             gpio_set_value(gpio, 1);
+>>> +     break;
+>>> +
+>>> +     case TP_GPIO_CMD_TOGGLE:
+>>> +             val = gpio_get_value(gpio);
+>>> +             gpio_set_value(gpio, val ? 0 : 1);
+>>> +     break;
+>>> +
+>>> +     case TP_GPIO_CMD_PULSE:
+>>> +             val = gpio_get_value(gpio);
+>>> +             gpio_set_value(gpio, val ? 0 : 1);
+>>> +             gpio_set_value(gpio, val);
+>>> +     break;
+>>> +     }
+>>> +}
+>>> +
+>>>  /*
+>>>   * called by perf_trace_init() or __ftrace_set_clr_event() under event_mutex.
+>>>   *
+>>>   * kprobe_trace_self_tests_init() does enable_trace_probe/disable_trace_probe
+>>>   * lockless, but we can't race with this __init function.
+>>>   */
+>>> +/* Kprobe gpio handler */
+>>> +static inline __kprobes void kprobe_gpio_func(struct trace_probe *tp,
+>>> +                                           struct pt_regs *regs)
+>>> +{
+>>> +     if (tp->gpio_trace.action)
+>>> +             kprobe_gpio_take_action(tp->gpio_trace.gpio,
+>>> +                                     tp->gpio_trace.action);
+>>> +}
+>>> +#endif /* CONFIG_KPROBE_EVENT_GPIO */
+>>> +
+>>>  static __kprobes
+>>>  int kprobe_register(struct ftrace_event_call *event,
+>>>                   enum trace_reg type, void *data)
+>>> @@ -1186,6 +1343,9 @@ int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs)
+>>>
+>>>       tp->nhit++;
+>>>
+>>> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+>>> +     kprobe_gpio_func(tp, regs);
+>>> +#endif
+>>>       if (tp->flags & TP_FLAG_TRACE)
+>>>               kprobe_trace_func(tp, regs);
+>>>  #ifdef CONFIG_PERF_EVENTS
+>>> @@ -1202,6 +1362,9 @@ int kretprobe_dispatcher(struct kretprobe_instance *ri, struct pt_regs *regs)
+>>>
+>>>       tp->nhit++;
+>>>
+>>> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+>>> +     kprobe_gpio_func(tp, regs);
+>>> +#endif
+>>>       if (tp->flags & TP_FLAG_TRACE)
+>>>               kretprobe_trace_func(tp, ri, regs);
+>>>  #ifdef CONFIG_PERF_EVENTS
+>>>
+>>
+>>
+>> --
+>> Masami HIRAMATSU
+>> IT Management Research Dept. Linux Technology Center
+>> Hitachi, Ltd., Yokohama Research Laboratory
+>> E-mail: masami.hiramatsu.pt@hitachi.com
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-gpio" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
