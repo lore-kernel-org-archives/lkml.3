@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656Ab3LaD3I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 22:29:08 -0500
-Received: from mail-by2lp0236.outbound.protection.outlook.com ([207.46.163.236]:6187
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751361Ab3LaD3H convert rfc822-to-8bit (ORCPT
+	id S1752603Ab3LaDil (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 22:38:41 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:63985 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144Ab3LaDik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 22:29:07 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "timur@tabi.org" <timur@tabi.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] ASoC: fsl_sai: Fix one bug for hardware limitation.
-Thread-Topic: [PATCH] ASoC: fsl_sai: Fix one bug for hardware limitation.
-Thread-Index: AQHPAe2peeK/p0NkRUqA7v+Z1uebHJpsrcIAgADzyoA=
-Date: Tue, 31 Dec 2013 03:29:04 +0000
-Message-ID: <d2c60ec3b8a14500afef632e6163d57e@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1388026642-1464-1-git-send-email-Li.Xiubo@freescale.com>
- <20131230121520.GR31886@sirena.org.uk>
-In-Reply-To: <20131230121520.GR31886@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 00770C4423
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(24454002)(164054003)(199002)(189002)(51704005)(33646001)(74876001)(80976001)(76576001)(65816001)(74706001)(74316001)(79102001)(74366001)(76796001)(76786001)(47446002)(81686001)(31966008)(66066001)(80022001)(77982001)(63696002)(74662001)(81816001)(56776001)(54316002)(87266001)(85306002)(83072002)(85852003)(2656002)(56816005)(90146001)(87936001)(49866001)(47736001)(50986001)(47976001)(59766001)(83322001)(51856001)(4396001)(74502001)(81342001)(46102001)(76482001)(81542001)(54356001)(53806001)(69226001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB506;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 30 Dec 2013 22:38:40 -0500
+Date: Tue, 31 Dec 2013 11:38:27 +0800
+From: Shaohua Li <shli@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: axboe@kernel.dk, hch@infradead.org, kmo@daterainc.com
+Subject: [patch 1/2]percpu_ida: fix a live lock
+Message-ID: <20131231033827.GA31994@kernel.org>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
 
-> Subject: Re: [PATCH] ASoC: fsl_sai: Fix one bug for hardware limitation.
-> 
-> On Thu, Dec 26, 2013 at 10:57:22AM +0800, Xiubo Li wrote:
-> > This is maybe one bug or a limitation of the hardware that the {T,R}CR2's
-> > Synchronous Mode bits must be set as late as possible, or the SAI device
-> > maybe hanged up, and there has not any explaination about this limitation
-> > in the SAI Data Sheet.
-> 
-> If they really should be set as late as possible then I'd expect them to
-> be being set in the trigger function, that's what gets called as the
-> audio actually starts streaming.  This is moving it to the startup
-> function which is one of the first things that happens during audio
-> stream setup so presumably makes things worse.
-> 
+steal_tags only happens when free tags is more than half of the total tags.
+This is too restrict and can cause live lock. I found one cpu has free tags,
+but other cpu can't steal (thread is bound to specific cpus), threads which
+wants to allocate tags are always sleeping. I found this when I run next patch,
+but this could happen without it I think.
 
-Yes, it is.
+I did performance test too with null_blk. Two cases (each cpu has enough percpu
+tags, or total tags are limited) haven't performance changes.
 
-If everything is OK, I will send another new patch later.
-
-Thanks,
-
+Signed-off-by: Shaohua Li <shli@fusionio.com>
 ---
-Best Regards,
-Xiubo
+ lib/percpu_ida.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+Index: linux/lib/percpu_ida.c
+===================================================================
+--- linux.orig/lib/percpu_ida.c	2013-11-25 09:36:52.196626486 +0800
++++ linux/lib/percpu_ida.c	2013-12-31 11:20:03.205400612 +0800
+@@ -54,9 +54,7 @@ static inline void move_tags(unsigned *d
+ /*
+  * Try to steal tags from a remote cpu's percpu freelist.
+  *
+- * We first check how many percpu freelists have tags - we don't steal tags
+- * unless enough percpu freelists have tags on them that it's possible more than
+- * half the total tags could be stuck on remote percpu freelists.
++ * We first check how many percpu freelists have tags
+  *
+  * Then we iterate through the cpus until we find some tags - we don't attempt
+  * to find the "best" cpu to steal from, to keep cacheline bouncing to a
+@@ -69,8 +67,7 @@ static inline void steal_tags(struct per
+ 	struct percpu_ida_cpu *remote;
+ 
+ 	for (cpus_have_tags = cpumask_weight(&pool->cpus_have_tags);
+-	     cpus_have_tags * pool->percpu_max_size > pool->nr_tags / 2;
+-	     cpus_have_tags--) {
++	     cpus_have_tags; cpus_have_tags--) {
+ 		cpu = cpumask_next(cpu, &pool->cpus_have_tags);
+ 
+ 		if (cpu >= nr_cpu_ids) {
