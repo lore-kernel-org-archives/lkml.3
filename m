@@ -1,130 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645Ab3LaWMH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 17:12:07 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55271 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756450Ab3LaWMF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 17:12:05 -0500
-Date: Tue, 31 Dec 2013 23:12:02 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org development" 
-	<linux-bluetooth@vger.kernel.org>,
-        Ville Tervo <ville.tervo@nokia.com>, Sebastian Reichel <sre@ring0.de>
-Subject: Re: [PATCH v2] Bluetooth: Add hci_h4p driver
-Message-ID: <20131231221202.GB25336@amd.pavel.ucw.cz>
-References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com>
- <1727897.LBX8128hIo@izba>
- <C8D1F470-7964-4EAC-82E0-D53CF54DE086@holtmann.org>
+	id S1756677Ab3LaWM2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 17:12:28 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:47088 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756459Ab3LaWM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Dec 2013 17:12:27 -0500
+From: Gene Heskett <gheskett@wdtv.com>
+To: linux-kernel@vger.kernel.org
+Subject: Re: Probably silly Q about bootable partitions
+Date: Tue, 31 Dec 2013 17:12:04 -0500
+References: <201312311305.44859.gheskett@wdtv.com> <CAAMCDef+swz3c33HseP19KzApT_crQ1eOv-y30a9wRUX4tQ-2A@mail.gmail.com> <201312311415.52588.gheskett@wdtv.com>
+In-Reply-To: <201312311415.52588.gheskett@wdtv.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <C8D1F470-7964-4EAC-82E0-D53CF54DE086@holtmann.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="windows-1256"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312311712.04217.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Tuesday 31 December 2013, Gene Heskett wrote:
+>On Tuesday 31 December 2013, Roger Heflin wrote:
+>>rescue boot it, change the /boot mount line in /etc/fstab to add
+>>noauto (like noauto,defaults...or whatever else you already have) and
+>>change the last column to 0 to disable fsck on it.
+>>
+>>It should boot then, and you have the machine fully up were you can do
+>>better debugging.
+>
+>It did not, reports a runaway loop in modprobe binfmt-464c, then spits
+>out a panic report mentioning the kernel command line option of init= &
+>freezes with that report still on screen.
+>
+>In this install, grub does a preliminary modprobe ext2, but the /boot is
+>ext2-3.  And has been for several years.
+>
+>More clues?
+>
+>Thanks.
+>
+>>ie mount /boot may give you a useful error, or it may work...if it
+>>works that implies that in the initrd some piece needed to start /boot
+>>is not there (fs mayb?).
+>>
+>>/boot is only needed by the bios...it is not needed when the os is up
+>>except to update teh booting kernel to a new one...
+>>
+>>On Tue, Dec 31, 2013 at 12:05 PM, Gene Heskett <gheskett@wdtv.com> wrote:
+>>> Greetings;
+>>> 
+>>> I can't build a bootable 3.12.6 kernel, it seems to die quite fast
+>>> with a trace blaming binfmt-some-hex-number.  Or fail well into the
+>>> boot waiting for / to come available.  But if I choose a shell at
+>>> that failure, it isn't / that is not shown in a blkid report, it is
+>>> /boot, named "ububoot" thats missing. "/", named uburoot, is fine.
+>>> 
+>>> Here is blkid output booted to 3.12.0.
+>>> 
+>>> gene@coyote:~/src/linux-3.12.6$ blkid
+>>> /dev/sdc1: UUID="1321fc90-ba7a-4742-8176-f7b3a8284be5" TYPE="ext4"
+>>> /dev/sdc2: LABEL="amandatapes-1-T"
+>>> UUID="b7657920-d9a2-4379-ae21-08a0651b65cc" SEC_TYPE="ext2"
+>>> TYPE="ext3" /dev/sda1: LABEL="ububoot"
+>>> UUID="f54ba7af-1545-43f3-a86e-bfc0017b4526" SEC_TYPE="ext2"
+>>> TYPE="ext3" /dev/sda2: LABEL="uburoot"
+>>> UUID="ec677e9c-6be6-4311-b97b-3889d42ce6ef" TYPE="ext4" /dev/sda3:
+>>> UUID="edc2880e-257d-4521-8220-0df5b57dcae4" TYPE="swap" /dev/sdb1:
+>>> UUID="80ab0463-d6fc-4f5b-af08-5aa43d55fdf8" SEC_TYPE="ext2"
+>>> TYPE="ext3" /dev/sdb5: UUID="b4841721-a040-48bc-80dc-e742164ad38a"
+>>> TYPE="swap" /dev/sdd1: LABEL="home2"
+>>> UUID="7601432d-7a30-42a3-80b5-57f08ae71f2a" TYPE="ext4" /dev/sdd2:
+>>> LABEL="opt2" UUID="748b01e1-ae7b-4b17-b8e9-c88429bcefbf" TYPE="ext4"
+>>> 
+>>> Duplicating this 3.12.0's settings under "filesystems" for 3.12.6 is
+>>> apparently not the needed fix.
+>>> 
+>>> Clues for the apparently clueless?
 
-> > +static struct task_struct *h4p_thread;
-> 
-> Can’t this be done using a work queue. You are looking at a 3.14
-> kernel the earliest. We have way better primitives these days.
+NEW PS: As it turned out, 3.12.0 the version booted as I am working on 
+this, was not mounting it, so I was writing all my new boot file attempts 
+to the directory UNDER the mount point.  So I changed /etc/fstab to use the 
+partition LABEL to mount it, and I can mount and umount it at will with no 
+errors.  I've no clue, the UUID looked good, but it obviously wasn't 
+working, so now my script is trying to write another boot build, about the 
+20th over the last 2-3 days.
 
-I tried to convert it to work queue, but was not too
-succesfull. Workqueue is not really good match for what this is trying
-to do... Nokia code relies on sleeping, than timing those sleeps for
-signaling. I'm still trying to wrap my head around it.
+INMNSHO, if it fails to mount /boot as a separate partition, it should stop 
+and bitch about it in plain English (or whatever the locale setting is at 
+compile time) right then and there.
 
-Ok, I guess I could convert it to one big workqueue task, and leave
-the logic alone. Was that what you wanted?
+How do I go about doing an update to a clone of linux-stable?, I would like 
+to bisect that in a bit more detail, but linux-stable will not do a git 
+checkout v3.12.6, I assume because its now 3 or so days old a clone.
 
-In the meantime, while trying to untangle it:
+Or, should I switch to the Linus tree?
 
-commit b02dc19d9269f22baa705d16d1019b86acf15758
-Author: Pavel <pavel@ucw.cz>
-Date:   Tue Dec 31 23:01:23 2013 +0100
+There is also to possibility that my fstab fixes have fixed this, I'll know 
+in 15 minutes.
 
-    De-obfuscate power management code. Someone please carefully review
-    this.
-    
-    Signed-off-by: Pavel Machek <pavel@ucw.cz>
+Yes, the boot worked this time.  I even have audio, but the amp I bought 
+yesterday needs another 30 db of gain, its just a whisper.  Not a linux 
+problem, it also wasn't very loud when I tested it with a small cd player.
 
-diff --git a/drivers/bluetooth/nokia_core.c b/drivers/bluetooth/nokia_core.c
-index 85dd106..07761a3 100644
---- a/drivers/bluetooth/nokia_core.c
-+++ b/drivers/bluetooth/nokia_core.c
-@@ -705,28 +705,22 @@ static irqreturn_t hci_h4p_wakeup_interrupt(int irq, void *dev_inst)
- static inline void hci_h4p_set_pm_limits(struct hci_h4p_info *info, bool set)
- {
- 	struct hci_h4p_platform_data *bt_plat_data = info->dev->platform_data;
-+	char *sset = set ? "set" : "clear";
- 
- 	if (unlikely(!bt_plat_data || !bt_plat_data->set_pm_limits))
- 		return;
- 
--	if (set && !test_bit(H4P_ACTIVE_MODE, &info->pm_flags)) {
-+	if (set != !!test_bit(H4P_ACTIVE_MODE, &info->pm_flags)) {
- 		bt_plat_data->set_pm_limits(info->dev, set);
--		set_bit(H4P_ACTIVE_MODE, &info->pm_flags);
--		BT_DBG("Change pm constraints to: %s", set ?
--				"set" : "clear");
-+		if (set)
-+			set_bit(H4P_ACTIVE_MODE, &info->pm_flags);
-+		else
-+			clear_bit(H4P_ACTIVE_MODE, &info->pm_flags);
-+		BT_DBG("Change pm constraints to: %s", sset);
- 		return;
- 	}
- 
--	if (!set && test_bit(H4P_ACTIVE_MODE, &info->pm_flags)) {
--		bt_plat_data->set_pm_limits(info->dev, set);
--		clear_bit(H4P_ACTIVE_MODE, &info->pm_flags);
--		BT_DBG("Change pm constraints to: %s",
--				set ? "set" : "clear");
--		return;
--	}
--
--	BT_DBG("pm constraints remains: %s",
--			set ? "set" : "clear");
-+	BT_DBG("pm constraints remains: %s", sset);
- }
- 
- static int h4p_run(void *data)
-@@ -762,16 +756,17 @@ static int h4p_run(void *data)
- 		BT_DBG("Timeout before calculation = %u",
- 				jiffies_to_msecs(timeout));
- 
--		/* Empiric analyzer  :-) */
- 		if (elapsed < TIMEOUT_MIN) {
- 			timeout <<= 1;
--			timeout = (timeout > TIMEOUT_MAX) ?
--				TIMEOUT_MAX : timeout;
- 		} else {
--			timeout = (elapsed > timeout - TIMEOUT_MIN) ?
--				TIMEOUT_MIN : timeout - elapsed;
-+			timeout -= elapsed;
- 		}
- 
-+		if (timeout > TIMEOUT_MAX)
-+			timeout = TIMEOUT_MAX;
-+		if (timeout < TIMEOUT_MIN)
-+			timeout = TIMEOUT_MIN;
-+
- 		BT_DBG("Timeout after calculation = %u",
- 				jiffies_to_msecs(timeout));
- 
+Anyway, thanks for listening/reading this far.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Cheers, Gene
+
