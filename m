@@ -1,68 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752400Ab3LaI1o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 03:27:44 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:47724
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751496Ab3LaI1l (ORCPT
+	id S1752322Ab3LaIe0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 03:34:26 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:37142 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751496Ab3LaIeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 03:27:41 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <broonie@kernel.org>
-CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ASoC: fsl_sai: fix the endianess for SAI fifo data.
-Date: Tue, 31 Dec 2013 15:33:22 +0800
-Message-ID: <1388475202-24946-2-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1388475202-24946-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1388475202-24946-1-git-send-email-Li.Xiubo@freescale.com>
+	Tue, 31 Dec 2013 03:34:25 -0500
+Message-ID: <52C2811C.4090907@huawei.com>
+Date: Tue, 31 Dec 2013 16:32:28 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        <vegardno@ifi.uio.no>, Pekka Enberg <penberg@kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+CC: <wangnan0@huawei.com>, Xishi Qiu <qiuxishi@huawei.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
+Subject: [PATCH] mm: add a new command-line kmemcheck value
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Revert the SAI's endianess for fifo data to/from DMA engine.
+Add a new command-line kmemcheck value: kmemcheck=3 (disable the feature),
+this is the same effect as CONFIG_KMEMCHECK disabled.
+After doing this, we can enable/disable kmemcheck feature in one vmlinux.
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
 ---
- sound/soc/fsl/fsl_sai.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/mm/init.c                |   11 ++++++
+ arch/x86/mm/kmemcheck/kmemcheck.c |   62 ++++++++++++++++++++++++++-----------
+ arch/x86/mm/kmemcheck/shadow.c    |   13 +++++---
+ include/linux/kmemcheck.h         |    2 +
+ mm/kmemcheck.c                    |   12 +++++--
+ mm/page_alloc.c                   |    2 +
+ 6 files changed, 76 insertions(+), 26 deletions(-)
 
-diff --git a/sound/soc/fsl/fsl_sai.c b/sound/soc/fsl/fsl_sai.c
-index 2ece147..5d38a67 100644
---- a/sound/soc/fsl/fsl_sai.c
-+++ b/sound/soc/fsl/fsl_sai.c
-@@ -138,9 +138,9 @@ static int fsl_sai_set_dai_fmt_tr(struct snd_soc_dai *cpu_dai,
- 	val_cr4 = sai_readl(sai, sai->base + reg_cr4);
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index f971306..cd7d75f 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -135,6 +135,15 @@ static void __init probe_page_size_mask(void)
+ 		page_size_mask |= 1 << PG_LEVEL_2M;
+ #endif
  
- 	if (sai->big_endian_data)
--		val_cr4 |= FSL_SAI_CR4_MF;
--	else
- 		val_cr4 &= ~FSL_SAI_CR4_MF;
++#if defined(CONFIG_KMEMCHECK)
++	if (!kmemcheck_on) {
++		if (direct_gbpages)
++			page_size_mask |= 1 << PG_LEVEL_1G;
++		if (cpu_has_pse)
++			page_size_mask |= 1 << PG_LEVEL_2M;
++	}
++#endif
++
+ 	/* Enable PSE if available */
+ 	if (cpu_has_pse)
+ 		set_in_cr4(X86_CR4_PSE);
+@@ -331,6 +340,8 @@ bool pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn)
+ 	return false;
+ }
+ 
++extern int kmemcheck_on;
++
+ /*
+  * Setup the direct mapping of the physical memory at PAGE_OFFSET.
+  * This runs before bootmem is initialized and gets pages directly from
+diff --git a/arch/x86/mm/kmemcheck/kmemcheck.c b/arch/x86/mm/kmemcheck/kmemcheck.c
+index d87dd6d..d686ee0 100644
+--- a/arch/x86/mm/kmemcheck/kmemcheck.c
++++ b/arch/x86/mm/kmemcheck/kmemcheck.c
+@@ -44,30 +44,35 @@
+ #ifdef CONFIG_KMEMCHECK_ONESHOT_BY_DEFAULT
+ #  define KMEMCHECK_ENABLED 2
+ #endif
++#define KMEMCHECK_CLOSED 3
+ 
+-int kmemcheck_enabled = KMEMCHECK_ENABLED;
++int kmemcheck_enabled = KMEMCHECK_CLOSED;
++int kmemcheck_on = 0;
+ 
+ int __init kmemcheck_init(void)
+ {
++	if (kmemcheck_on) {
+ #ifdef CONFIG_SMP
+-	/*
+-	 * Limit SMP to use a single CPU. We rely on the fact that this code
+-	 * runs before SMP is set up.
+-	 */
+-	if (setup_max_cpus > 1) {
+-		printk(KERN_INFO
+-			"kmemcheck: Limiting number of CPUs to 1.\n");
+-		setup_max_cpus = 1;
+-	}
++		/*
++		 * Limit SMP to use a single CPU. We rely on the fact that this code
++		 * runs before SMP is set up.
++		 */
++		if (setup_max_cpus > 1) {
++			printk(KERN_INFO
++				"kmemcheck: Limiting number of CPUs to 1.\n");
++			setup_max_cpus = 1;
++		}
+ #endif
+ 
+-	if (!kmemcheck_selftest()) {
+-		printk(KERN_INFO "kmemcheck: self-tests failed; disabling\n");
+-		kmemcheck_enabled = 0;
+-		return -EINVAL;
++		if (!kmemcheck_selftest()) {
++			printk(KERN_INFO "kmemcheck: self-tests failed; disabling\n");
++			kmemcheck_enabled = 0;
++			return -EINVAL;
++		}
++
++		printk(KERN_INFO "kmemcheck: Initialized\n");
+ 	}
+ 
+-	printk(KERN_INFO "kmemcheck: Initialized\n");
+ 	return 0;
+ }
+ 
+@@ -82,6 +87,12 @@ static int __init param_kmemcheck(char *str)
+ 		return -EINVAL;
+ 
+ 	sscanf(str, "%d", &kmemcheck_enabled);
++
++	if ((kmemcheck_enabled >= KMEMCHECK_CLOSED) || (kmemcheck_enabled < 0))
++		kmemcheck_on = 0;
 +	else
-+		val_cr4 |= FSL_SAI_CR4_MF;
++		kmemcheck_on = 1;
++
+ 	return 0;
+ }
  
- 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
- 	case SND_SOC_DAIFMT_I2S:
-@@ -251,9 +251,9 @@ static int fsl_sai_hw_params(struct snd_pcm_substream *substream,
+@@ -134,9 +145,12 @@ static DEFINE_PER_CPU(struct kmemcheck_context, kmemcheck_context);
  
- 	val_cr5 &= ~FSL_SAI_CR5_FBT_MASK;
- 	if (sai->big_endian_data)
--		val_cr5 |= FSL_SAI_CR5_FBT(word_width - 1);
--	else
- 		val_cr5 |= FSL_SAI_CR5_FBT(0);
-+	else
-+		val_cr5 |= FSL_SAI_CR5_FBT(word_width - 1);
+ bool kmemcheck_active(struct pt_regs *regs)
+ {
+-	struct kmemcheck_context *data = &__get_cpu_var(kmemcheck_context);
++	if (kmemcheck_on) {
++		struct kmemcheck_context *data = &__get_cpu_var(kmemcheck_context);
++		return data->balance > 0;
++	}
  
- 	val_cr4 |= FSL_SAI_CR4_FRSZ(channels);
- 	val_mr = ~0UL - ((1 << channels) - 1);
+-	return data->balance > 0;
++	return false;
+ }
+ 
+ /* Save an address that needs to be shown/hidden */
+@@ -223,6 +237,9 @@ void kmemcheck_hide(struct pt_regs *regs)
+ 	struct kmemcheck_context *data = &__get_cpu_var(kmemcheck_context);
+ 	int n;
+ 
++	if (!kmemcheck_on)
++		return;
++
+ 	BUG_ON(!irqs_disabled());
+ 
+ 	if (unlikely(data->balance != 1)) {
+@@ -278,6 +295,9 @@ void kmemcheck_show_pages(struct page *p, unsigned int n)
+ 
+ bool kmemcheck_page_is_tracked(struct page *p)
+ {
++	if (!kmemcheck_on)
++		return false;
++
+ 	/* This will also check the "hidden" flag of the PTE. */
+ 	return kmemcheck_pte_lookup((unsigned long) page_address(p));
+ }
+@@ -333,6 +353,9 @@ bool kmemcheck_is_obj_initialized(unsigned long addr, size_t size)
+ 	enum kmemcheck_shadow status;
+ 	void *shadow;
+ 
++	if (!kmemcheck_on)
++		return true;
++
+ 	shadow = kmemcheck_shadow_lookup(addr);
+ 	if (!shadow)
+ 		return true;
+@@ -616,6 +639,9 @@ bool kmemcheck_fault(struct pt_regs *regs, unsigned long address,
+ {
+ 	pte_t *pte;
+ 
++	if (!kmemcheck_on)
++		return false;
++
+ 	/*
+ 	 * XXX: Is it safe to assume that memory accesses from virtual 86
+ 	 * mode or non-kernel code segments will _never_ access kernel
+@@ -644,7 +670,7 @@ bool kmemcheck_fault(struct pt_regs *regs, unsigned long address,
+ 
+ bool kmemcheck_trap(struct pt_regs *regs)
+ {
+-	if (!kmemcheck_active(regs))
++	if (!kmemcheck_on || !kmemcheck_active(regs))
+ 		return false;
+ 
+ 	/* We're done. */
+diff --git a/arch/x86/mm/kmemcheck/shadow.c b/arch/x86/mm/kmemcheck/shadow.c
+index aec1242..26e461d 100644
+--- a/arch/x86/mm/kmemcheck/shadow.c
++++ b/arch/x86/mm/kmemcheck/shadow.c
+@@ -90,7 +90,8 @@ void kmemcheck_mark_uninitialized(void *address, unsigned int n)
+  */
+ void kmemcheck_mark_initialized(void *address, unsigned int n)
+ {
+-	mark_shadow(address, n, KMEMCHECK_SHADOW_INITIALIZED);
++	if (kmemcheck_on)
++		mark_shadow(address, n, KMEMCHECK_SHADOW_INITIALIZED);
+ }
+ EXPORT_SYMBOL_GPL(kmemcheck_mark_initialized);
+ 
+@@ -103,16 +104,18 @@ void kmemcheck_mark_unallocated_pages(struct page *p, unsigned int n)
+ {
+ 	unsigned int i;
+ 
+-	for (i = 0; i < n; ++i)
+-		kmemcheck_mark_unallocated(page_address(&p[i]), PAGE_SIZE);
++	if (kmemcheck_on)
++		for (i = 0; i < n; ++i)
++			kmemcheck_mark_unallocated(page_address(&p[i]), PAGE_SIZE);
+ }
+ 
+ void kmemcheck_mark_uninitialized_pages(struct page *p, unsigned int n)
+ {
+ 	unsigned int i;
+ 
+-	for (i = 0; i < n; ++i)
+-		kmemcheck_mark_uninitialized(page_address(&p[i]), PAGE_SIZE);
++	if (kmemcheck_on)
++		for (i = 0; i < n; ++i)
++			kmemcheck_mark_uninitialized(page_address(&p[i]), PAGE_SIZE);
+ }
+ 
+ void kmemcheck_mark_initialized_pages(struct page *p, unsigned int n)
+diff --git a/include/linux/kmemcheck.h b/include/linux/kmemcheck.h
+index 39f8453..13d15e1 100644
+--- a/include/linux/kmemcheck.h
++++ b/include/linux/kmemcheck.h
+@@ -6,6 +6,7 @@
+ 
+ #ifdef CONFIG_KMEMCHECK
+ extern int kmemcheck_enabled;
++extern int kmemcheck_on;
+ 
+ /* The slab-related functions. */
+ void kmemcheck_alloc_shadow(struct page *page, int order, gfp_t flags, int node);
+@@ -88,6 +89,7 @@ bool kmemcheck_is_obj_initialized(unsigned long addr, size_t size);
+ 
+ #else
+ #define kmemcheck_enabled 0
++#define kmemcheck_on 0
+ 
+ static inline void
+ kmemcheck_alloc_shadow(struct page *page, int order, gfp_t flags, int node)
+diff --git a/mm/kmemcheck.c b/mm/kmemcheck.c
+index fd814fd..fd89146 100644
+--- a/mm/kmemcheck.c
++++ b/mm/kmemcheck.c
+@@ -10,6 +10,9 @@ void kmemcheck_alloc_shadow(struct page *page, int order, gfp_t flags, int node)
+ 	int pages;
+ 	int i;
+ 
++	if (!kmemcheck_on)
++		return;
++
+ 	pages = 1 << order;
+ 
+ 	/*
+@@ -41,6 +44,9 @@ void kmemcheck_free_shadow(struct page *page, int order)
+ 	int pages;
+ 	int i;
+ 
++	if (!kmemcheck_on)
++		return;
++
+ 	if (!kmemcheck_page_is_tracked(page))
+ 		return;
+ 
+@@ -63,7 +69,7 @@ void kmemcheck_slab_alloc(struct kmem_cache *s, gfp_t gfpflags, void *object,
+ 	 * Has already been memset(), which initializes the shadow for us
+ 	 * as well.
+ 	 */
+-	if (gfpflags & __GFP_ZERO)
++	if (!kmemcheck_on || gfpflags & __GFP_ZERO)
+ 		return;
+ 
+ 	/* No need to initialize the shadow of a non-tracked slab. */
+@@ -92,7 +98,7 @@ void kmemcheck_slab_alloc(struct kmem_cache *s, gfp_t gfpflags, void *object,
+ void kmemcheck_slab_free(struct kmem_cache *s, void *object, size_t size)
+ {
+ 	/* TODO: RCU freeing is unsupported for now; hide false positives. */
+-	if (!s->ctor && !(s->flags & SLAB_DESTROY_BY_RCU))
++	if (kmemcheck_on && !s->ctor && !(s->flags & SLAB_DESTROY_BY_RCU))
+ 		kmemcheck_mark_freed(object, size);
+ }
+ 
+@@ -101,7 +107,7 @@ void kmemcheck_pagealloc_alloc(struct page *page, unsigned int order,
+ {
+ 	int pages;
+ 
+-	if (gfpflags & (__GFP_HIGHMEM | __GFP_NOTRACK))
++	if (!kmemcheck_on || (gfpflags & (__GFP_HIGHMEM | __GFP_NOTRACK)))
+ 		return;
+ 
+ 	pages = 1 << order;
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index f861d02..0b2bbf2 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2716,6 +2716,8 @@ retry_cpuset:
+ 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
+ 			zonelist, high_zoneidx, alloc_flags,
+ 			preferred_zone, migratetype);
++	if (kmemcheck_on && kmemcheck_enabled && page)
++		kmemcheck_pagealloc_alloc(page, order, gfp_mask);
+ 	if (unlikely(!page)) {
+ 		/*
+ 		 * Runtime PM, block IO and its error handling path
 -- 
-1.8.4
+1.7.1
+
 
 
