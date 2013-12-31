@@ -1,107 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932427Ab3LaATF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Dec 2013 19:19:05 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58626 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932246Ab3LaATD (ORCPT
+	id S932407Ab3LaAps (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Dec 2013 19:45:48 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:48025 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932365Ab3LaApq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Dec 2013 19:19:03 -0500
-Date: Tue, 31 Dec 2013 00:18:40 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Joe Xue <lgxue@hotmail.com>
-Cc: "cooloney@gmail.com" <cooloney@gmail.com>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "rob@landley.net" <rob@landley.net>,
-        "milo.kim@ti.com" <milo.kim@ti.com>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH] Add LED pattern trigger
-Message-ID: <20131231001840.039a5a5c@alan.etchedpixels.co.uk>
-In-Reply-To: <BLU172-W3543A0F3EFB217C99994F4ACCE0@phx.gbl>
-References: <1388362275-1618-1-git-send-email-lgxue@hotmail.com>
-	<20131230162158.7420e811@alan.etchedpixels.co.uk>
-	<BLU172-W3543A0F3EFB217C99994F4ACCE0@phx.gbl>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 30 Dec 2013 19:45:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.02.1312301331520.10482@chino.kir.corp.google.com>
+References: <1387481759-14535-3-git-send-email-keescook@chromium.org>
+	<tip-8779657d29c0ebcc0c94ede4df2f497baf1b563f@git.kernel.org>
+	<alpine.DEB.2.02.1312301331520.10482@chino.kir.corp.google.com>
+Date: Mon, 30 Dec 2013 16:45:44 -0800
+X-Google-Sender-Auth: 2ZcPtLdYkrQZXlZePZo8fqtQAEc
+Message-ID: <CAGXu5jJxkD7rS0gFAS3mAhwxP05UMW8KNW00C_e2v=Keqj7k3Q@mail.gmail.com>
+Subject: Re: [patch core/stackprotector] stackprotector: Fix build when
+ compiler lacks support
+From: Kees Cook <keescook@chromium.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>, ralf@linux-mips.org,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        James Hogan <james.hogan@imgtec.com>, Michal Marek <mmarek@suse.cz>,
+        Paul Mundt <lethal@linux-sh.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Dec 2013 18:24:51 -0500
-Joe Xue <lgxue@hotmail.com> wrote:
+On Mon, Dec 30, 2013 at 1:37 PM, David Rientjes <rientjes@google.com> wrote:
+> 8779657d29c0 ("stackprotector: Introduce CONFIG_CC_STACKPROTECTOR_STRONG")
+> causes the build to break when the compiler doesn't support
+> -fstack-protector-strong:
+>
+>         cc1: error: unrecognized command line option ‘-fstack-protector-strong’
+>         cc1: error: unrecognized command line option ‘-fstack-protector-strong’
+>
+> with at least gcc 4.6.3.
+>
+> Instead of breaking the build, just warn of the failure and disable the
+> feature.
 
-> >> +#define MAX_PATTEN_LEN 255
-> >
-> > Arbitary limits that are not needed if it was in userspace, and not it
-> > seems a sensible one - why not use 256 ?
-> 
-> The maximum memory is 256, we keep one for '\0'
+NAK. If you have selected CONFIG_CC_STACKPROTECTOR_STRONG, the build
+the fail hard. Without this, it means you'll end up with kernels that
+build and show a stackprotector option in their config, which is
+false.
 
-Why - you have pattern_len already ?
+-Kees
 
-> >> + del_timer_sync(&pattern_data->timer);
-> >> +
-> >> + memcpy(pattern_data->pattern, buf, len);
-> >> + pattern_data->pattern[len] = '\0';
-> >> + pattern_data->pattern_len = len;
-> >> + pattern_data->count = 0;
-> >> +
-> >> + mod_timer(&pattern_data->timer, jiffies + 1);
-> >
-> > What if the pattern isn't currently active ?
-> 
-> Doesn't matter as per my test.
-
-What test - you've not explained why it doesn't blow up ?
-
-> > Why +1, you don't need a zero terminator you know the length
-> >
-> > Why allocate a fixed 256 byte blob when you can make the data the end of
-> > the struct (ie pattern[0] in the declaration) and not waste memory.
-> 
-> This just easy for patten_show.
-
-Even so the fixed 256 is broken - you can just allocate the proper size
-for the pattern when you set it up.
- 
-> >> +static void pattern_trig_deactivate(struct led_classdev *led_cdev)
-> >> +{
-> >> + struct pattern_trig_data *pattern_data = led_cdev->trigger_data;
-> >> +
-> >> + if (led_cdev->activated) {
-> >> + del_timer_sync(&pattern_data->timer);
-> >> + device_remove_file(led_cdev->dev, &dev_attr_pattern);
-> >> + device_remove_file(led_cdev->dev, &dev_attr_delay_unit);
-> >
-> > This doesn't as far as I can see do what you think. If I have the file
-> > currently open then device_remove_file will not remove my existing access
-> > to it, but you just released the pattern data so I now write to free
-> > memory.
-> 
-> I believe kernel will handle this
-
-I looked through the code paths and I see nothing to protect this at all ?
-
-> >> + led_cdev->trigger_data = NULL;
-> >> + led_cdev->activated = false;
-> >> + kfree(pattern_data);
-> >> + }
-> >> + __led_set_brightness(led_cdev, LED_OFF);
-> >> +}
-> >> +
-> >> +static struct led_trigger pattern_trigger = {
-> >
-> > const ?
-> 
-
-You don't want function pointers in objects that are not const, at least
-whenever possible. On processors that have suitable protection modes that
-helps prevent attacks based upon patching kernel function pointers.
+>
+> Signed-off-by: David Rientjes <rientjes@google.com>
+> ---
+>  Makefile | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/Makefile b/Makefile
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -603,10 +603,11 @@ ifdef CONFIG_CC_STACKPROTECTOR_REGULAR
+>               -fstack-protector not supported by compiler))
+>    endif
+>  else ifdef CONFIG_CC_STACKPROTECTOR_STRONG
+> -  stackp-flag := -fstack-protector-strong
+> -  ifeq ($(call cc-option, $(stackp-flag)),)
+> +  ifeq ($(call cc-option, -fstack-protector-strong),)
+>      $(warning Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: \
+>               -fstack-protector-strong not supported by compiler)
+> +  else
+> +    stackp-flag := -fstack-protector-strong
+>    endif
+>  else
+>    # Force off for distro compilers that enable stack protector by default.
 
 
-Alan
+
+-- 
+Kees Cook
+Chrome OS Security
