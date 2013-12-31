@@ -1,81 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039Ab3LaQJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 11:09:38 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:11345 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753639Ab3LaQJg (ORCPT
+	id S1754563Ab3LaQJm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 11:09:42 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49211 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753639Ab3LaQJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 11:09:36 -0500
-X-IronPort-AV: E=Sophos;i="4.95,581,1384297200"; 
-   d="scan'208";a="51218170"
-Date: Tue, 31 Dec 2013 17:09:20 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Ben Greear <greearb@candelatech.com>
-cc: Julia Lawall <julia.lawall@lip6.fr>, Joe Perches <joe@perches.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        kernel-janitors@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/11]  use ether_addr_equal_64bits
-In-Reply-To: <52C2E8BA.6000800@candelatech.com>
-Message-ID: <alpine.DEB.2.10.1312311704320.2074@hadrien>
-References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>  <1388427307-8691-5-git-send-email-Julia.Lawall@lip6.fr>  <1388429761.4410.1.camel@jlt4.sipsolutions.net>  <alpine.DEB.2.02.1312302057420.2209@localhost6.localdomain6> 
- <1388438724.4573.2.camel@jlt4.sipsolutions.net>  <20131230215701.GA4938@khazad-dum.debian.net>  <1388445188.18164.0.camel@jlt4.sipsolutions.net> <1388445422.26796.38.camel@joe-AO722> <alpine.DEB.2.02.1312310726540.1930@localhost6.localdomain6>
- <52C2E8BA.6000800@candelatech.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Tue, 31 Dec 2013 11:09:39 -0500
+Date: Tue, 31 Dec 2013 16:09:16 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>, Kgene Kim <kgene.kim@samsung.com>,
+        Patch Tracking <patches@linaro.org>
+Message-ID: <20131231160916.GG31886@sirena.org.uk>
+References: <1383202124-1775-1-git-send-email-tushar.behera@linaro.org>
+ <1388053141-30085-1-git-send-email-tushar.behera@linaro.org>
+ <1388053141-30085-2-git-send-email-tushar.behera@linaro.org>
+ <20131229221723.12054.40917@quantum>
+ <CAHbNUh0tJHXv52bA9hBDZMH0Pi+x9uC=LojcvgS=ONnCgEmVTA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="nkinyqrdwMuqz198"
+Content-Disposition: inline
+In-Reply-To: <CAHbNUh0tJHXv52bA9hBDZMH0Pi+x9uC=LojcvgS=ONnCgEmVTA@mail.gmail.com>
+X-Cookie: Go climb a gravity well!
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH RESEND 1/4] clk: clk-s2mps11: Refactor for including
+ support for other MFD clocks
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--nkinyqrdwMuqz198
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On Tue, 31 Dec 2013, Ben Greear wrote:
+On Mon, Dec 30, 2013 at 09:33:50AM +0530, Tushar Behera wrote:
 
-> On 12/30/2013 10:32 PM, Julia Lawall wrote:
-> > > > > > I'm just thinking of a programmer, e.g. changing a struct like this:
-> > > > > >
-> > > > > >   struct foo {
-> > > > > >     u8 addr[ETH_ALEN];
-> > > > > > -  u16 dummy;
-> > > > > >   };
-> > >
-> > > I don't know of a way to catch that.
-> > > Anyone else?
-> >
-> > Well, one could have a semantic patch that checks for that.  But the
-> > problem is that it is very slow, and it only covers the cases that I can
-> > transform automatically, which currently means no pointers, only explicit
-> > arrays.
-> >
-> > On the other hand, I am finding the structure definition, so I can easily
-> > update the structure definition with an appropriate comment.
-> >
-> > struct foo {
-> >      u8 addr[ETH_ALEN]; /* must be followed by two bytes in the structure */
-> >      u16 dummy;
-> > };
-> >
-> > Unfortunately it is kind of verbose.  Could there be an attribute?  That
-> > could even easily be checked.
->
-> Can you not just add a build-time macro to check that sizeof(foo) >= 8
-> for each of these struct foos?  Or, is it required that the dummy field
-> be there and be not used by anything else?
+> Commit 1b1ccee1e821 "mfd: s2mps11: Fix build after regmap field rename
+> in sec-core.c" is also touching this file, which is in Mark's tree
+> right now. If I rebase
 
-It doesn't matter what the field is used for.  The problem is that is it
-necessary to ensure a property of the position of addr within the
-structure.  It has to have at least 16 bytes after it.
+It's been in Linus' tree for a while now.
 
-But maybe something with sizeof(foo) and offset_of would do?
+--nkinyqrdwMuqz198
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Could the macro be put near the declaration of the structure somehow?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-julia
+iQIcBAEBAgAGBQJSwuwpAAoJELSic+t+oim9XuQQAInHRRJf0L8pTVXq5Oy8bIAt
+/ErX7ZJdqEH4pQASFZjYFg4RYR1zncbdzOLbto0f3OseBflj85R53EUWv/G0ERjD
+o6cAj+CdisQC4G6FxfczXE5rDznOxPXPl8VJkfmZfjNKFi29TVItLzS27LR7+h4S
+/lJ0+ZtR0Dzi8lx1hmnoY5DToUB/pC27OR8qXnsOc489fKG2V35TaK5slN6oSDd/
+7ZiFKDO5FlbYVcOxREIPuILpIu16sN9HJOpKlW6YdJhbR0SFbc4EAn2HIX0C4AzG
+vIVPDer9+vYUkj70tyM5lMEcC/T8WlgaIgJUYwjs1y1oRVHzT6PBIc5PIr3w3RZt
+MutN8BfxN21QORvL9VIMrBBdVEXjMobPnFwlvb/2sEDwa7kpbCbQXQiGN+NCb4yC
+WOE8sRY8HDDn2/gV32hIDqNJ+InZapFPu+bgc/lYIEZemjtkTmck6cpDJ52orrQQ
+CY2Qmk+AsYG6egyOA82Wd3pCRBkzZPGGIxGZT6Hvdh7VLh1YNgvAU4siTj+NsXgF
+1SQChOP551+FKEnloU+w6og1iiDrmqvhxaVfVs7XKVv286FpsWiXXu4Qk7dNvXQm
+ILTAiWp8PNK2K3muC+/k/6+/OcGx0UGysKdaFFt36D1MTyX+BnzN2TPpl2aTvNGZ
+xmXCnf6s3JdrFRZrNzWU
+=6ur0
+-----END PGP SIGNATURE-----
+
+--nkinyqrdwMuqz198--
