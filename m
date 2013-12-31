@@ -1,312 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab3LaKQh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 05:16:37 -0500
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:42481 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752254Ab3LaKQf (ORCPT
+	id S1752792Ab3LaKRK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 05:17:10 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:5003 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752254Ab3LaKRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 05:16:35 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Pavel Machek <pavel@ucw.cz>, Richard Purdie <rpurdie@rpsys.net>
-Subject: Re: [PATCH v4] input: Add LED support to Synaptics device
-Date: Tue, 31 Dec 2013 11:16:29 +0100
-User-Agent: KMail/1.13.7 (Linux/3.11.0-15-generic; KDE/4.12.0; x86_64; ; )
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <s5hy6ggxb91.wl%tiwai@suse.de> <201304202051.13656@pali>
-In-Reply-To: <201304202051.13656@pali>
+	Tue, 31 Dec 2013 05:17:07 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 31 Dec 2013 02:18:11 -0800
+Message-ID: <52C299A8.4010108@nvidia.com>
+Date: Tue, 31 Dec 2013 18:17:12 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart55543173.RulyKDBUrZ";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Eduardo Valentin <eduardo.valentin@ti.com>, <swarren@wwwdotorg.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
+        <linux@roeck-us.net>, <rui.zhang@intel.com>
+CC: <wni@nvidia.com>, <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
+        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv9 02/20] thermal: introduce device tree parser
+References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
+ <1384285582-16933-3-git-send-email-eduardo.valentin@ti.com>
+In-Reply-To: <1384285582-16933-3-git-send-email-eduardo.valentin@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201312311116.30062@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart55543173.RulyKDBUrZ
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On 11/13/2013 03:46 AM, Eduardo Valentin wrote:
+> This patch introduces a device tree bindings for
+> describing the hardware thermal behavior and limits.
+> Also a parser to read and interpret the data and feed
+> it in the thermal framework is presented.
+>
+> This patch introduces a thermal data parser for device
+> tree. The parsed data is used to build thermal zones
+> and thermal binding parameters. The output data
+> can then be used to deploy thermal policies.
+>
+> This patch adds also documentation regarding this
+> API and how to define tree nodes to use
+> this infrastructure.
+>
+> Note that, in order to be able to have control
+> on the sensor registration on the DT thermal zone,
+> it was required to allow changing the thermal zone
+> .get_temp callback. For this reason, this patch
+> also removes the 'const' modifier from the .ops
+> field of thermal zone devices.
+>
+> ...
+> +
+> +static int of_thermal_get_trend(struct thermal_zone_device *tz, int trip,
+> +				enum thermal_trend *trend)
+> +{
+> +	struct __thermal_zone *data = tz->devdata;
+> +	long dev_trend;
+> +	int r;
+> +
+> +	if (!data->get_trend)
+> +		return -EINVAL;
+> +
+> +	r = data->get_trend(data->sensor_data, &dev_trend);
+I think the ->get_trend should be defined as:
+.get_trend(*dev, int, *long)
+so that the "trip" can be passed into it, otherwise the "trip" can't be
+used.
+And the dev_trend should be returned as THERMAL_TREND_XXX directly.
+because the THERM_TREND_xx is more than three states.
 
-On Saturday 20 April 2013 20:51:13 Pali Roh=C3=A1r wrote:
-> On Thursday 22 April 2010 08:16:42 Takashi Iwai wrote:
-> > diff --git a/drivers/input/mouse/Kconfig
-> > b/drivers/input/mouse/Kconfig index c714ca2..91d3517 100644
-> > --- a/drivers/input/mouse/Kconfig
-> > +++ b/drivers/input/mouse/Kconfig
-> > @@ -19,6 +19,7 @@ config MOUSE_PS2
-> >=20
-> >  	select SERIO_LIBPS2
-> >  	select SERIO_I8042 if X86
-> >  	select SERIO_GSCPS2 if GSC
-> >=20
-> > +	select LEDS_CLASS if MOUSE_PS2_SYNAPICS_LED
-> >=20
-> >  	help
-> >  =09
-> >  	  Say Y here if you have a PS/2 mouse connected to your
-> >=20
-> > system. This includes the standard 2 or 3-button PS/2 mouse,
-> > as well as PS/2 @@ -67,6 +68,14 @@ config
-> > MOUSE_PS2_SYNAPTICS
-> >=20
-> >  	  If unsure, say Y.
-> >=20
-> > +config MOUSE_PS2_SYNAPTICS_LED
-> > +	bool "Support embedded LED on Synaptics devices"
-> > +	depends on MOUSE_PS2_SYNAPTICS
-> > +	select NEW_LEDS
-> > +	help
-> > +	  Say Y here if you have a Synaptics device with an
-> > embedded LED. +	  This will enable LED class driver to
-> > control the LED device. +
-> >=20
-> >  config MOUSE_PS2_LIFEBOOK
-> > =20
-> >  	bool "Fujitsu Lifebook PS/2 mouse protocol extension" if
-> >=20
-> > EMBEDDED default y
-> > diff --git a/drivers/input/mouse/synaptics.c
-> > b/drivers/input/mouse/synaptics.c index c7b5285..8dc1fb5
-> > 100644
-> > --- a/drivers/input/mouse/synaptics.c
-> > +++ b/drivers/input/mouse/synaptics.c
-> > @@ -28,6 +28,7 @@
-> >=20
-> >  #include <linux/input.h>
-> >  #include <linux/serio.h>
-> >  #include <linux/libps2.h>
-> >=20
-> > +#include <linux/leds.h>
-> >=20
-> >  #include <linux/slab.h>
-> >  #include "psmouse.h"
-> >  #include "synaptics.h"
-> >=20
-> > @@ -335,6 +336,110 @@ static void synaptics_pt_create(struct
-> > psmouse *psmouse) serio_register_port(serio);
-> >=20
-> >  }
-> >=20
-> > +#ifdef CONFIG_MOUSE_PS2_SYNAPTICS_LED
-> > +/*
-> > + * LED handling:
-> > + * Some Synaptics devices have an embeded LED at the
-> > top-left corner. + */
-> > +
-> > +struct synaptics_led {
-> > +	struct psmouse *psmouse;
-> > +	struct work_struct work;
-> > +	struct led_classdev cdev;
-> > +};
-> > +
-> > +static void synaptics_set_led(struct psmouse *psmouse, int
-> > on) +{
-> > +	int i;
-> > +	unsigned char cmd =3D on ? 0x88 : 0x10;
-> > +
-> > +	ps2_begin_command(&psmouse->ps2dev);
-> > +	if (__ps2_command(&psmouse->ps2dev, NULL,
-> > PSMOUSE_CMD_SETSCALE11)) +		goto out;
-> > +	for (i =3D 6; i >=3D 0; i -=3D 2) {
-> > +		unsigned char d =3D (cmd >> i) & 3;
-> > +		if (__ps2_command(&psmouse->ps2dev, &d,
-> > PSMOUSE_CMD_SETRES)) +			goto out;
-> > +	}
-> > +	cmd =3D 0x0a;
-> > +	__ps2_command(&psmouse->ps2dev, &cmd,
-> > PSMOUSE_CMD_SETRATE); + out:
-> > +	ps2_end_command(&psmouse->ps2dev);
-> > +}
-> > +
-> > +static void synaptics_led_work(struct work_struct *work)
-> > +{
-> > +	struct synaptics_led *led;
-> > +
-> > +	led =3D container_of(work, struct synaptics_led, work);
-> > +	synaptics_set_led(led->psmouse, led->cdev.brightness);
-> > +}
-> > +
-> > +static void synaptics_led_cdev_brightness_set(struct
-> > led_classdev *cdev, +					      enum led_brightness
->=20
-> value)
->=20
-> > +{
-> > +	struct synaptics_led *led;
-> > +
-> > +	led =3D container_of(cdev, struct synaptics_led, cdev);
-> > +	schedule_work(&led->work);
-> > +}
-> > +
-> > +static void synaptics_sync_led(struct psmouse *psmouse)
-> > +{
-> > +	struct synaptics_data *priv =3D psmouse->private;
-> > +
-> > +	if (priv->led)
-> > +		synaptics_set_led(psmouse, priv->led-
->cdev.brightness);
-> > +}
-> > +
-> > +static int synaptics_init_led(struct psmouse *psmouse)
-> > +{
-> > +	struct synaptics_data *priv =3D psmouse->private;
-> > +	struct synaptics_led *led;
-> > +	int err;
-> > +
-> > +	/* FIXME: LED is supposedly detectable in cap0c[1] 0x20,
-> > but it seems +	 * not working on real machines.
-> > +	 * So we check the product id to be sure.
-> > +	 */
-> > +	if (!priv->ext_cap_0c || SYN_CAP_PRODUCT_ID(priv-
->ext_cap)
-> > !=3D 0xe4) +		return 0;
-> > +
-> > +	printk(KERN_INFO "synaptics: support LED control\n");
-> > +	led =3D kzalloc(sizeof(struct synaptics_led), GFP_KERNEL);
-> > +	if (!led)
-> > +		return -ENOMEM;
-> > +	led->psmouse =3D psmouse;
-> > +	INIT_WORK(&led->work, synaptics_led_work);
-> > +	led->cdev.name =3D "psmouse::synaptics";
-> > +	led->cdev.brightness_set =3D
-> > synaptics_led_cdev_brightness_set; +	led->cdev.flags =3D
-> > LED_CORE_SUSPENDRESUME;
-> > +	err =3D led_classdev_register(NULL, &led->cdev);
-> > +	if (err < 0) {
-> > +		kfree(led);
-> > +		return err;
-> > +	}
-> > +	priv->led =3D led;
-> > +	return 0;
-> > +}
-> > +
-> > +static void synaptics_free_led(struct psmouse *psmouse)
-> > +{
-> > +	struct synaptics_data *priv =3D psmouse->private;
-> > +
-> > +	if (!priv->led)
-> > +		return;
-> > +	cancel_work_sync(&priv->led->work);
-> > +	synaptics_set_led(psmouse, 0);
-> > +	led_classdev_unregister(&priv->led->cdev);
-> > +	kfree(priv->led);
-> > +}
-> > +#else
-> > +#define synaptics_init_led(ps)	0
-> > +#define synaptics_free_led(ps)	do {} while (0)
-> > +#define synaptics_sync_led(ps)	do {} while (0)
-> > +#endif
-> > +
-> >=20
-> >  /**********************************************************
-> >  **
-> >=20
-> > ***************** *	Functions to interpret the absolute mode
-> > packets
-> >=20
-> > ************************************************************
-> > * ***************/ @@ -622,6 +727,7 @@ static void
-> > set_input_params(struct input_dev *dev, struct
-> > synaptics_data *priv)
-> >=20
-> >  static void synaptics_disconnect(struct psmouse *psmouse)
-> >  {
-> >=20
-> > +	synaptics_free_led(psmouse);
-> >=20
-> >  	synaptics_reset(psmouse);
-> >  	kfree(psmouse->private);
-> >  	psmouse->private =3D NULL;
-> >=20
-> > @@ -653,6 +759,8 @@ static int synaptics_reconnect(struct
-> > psmouse *psmouse) return -1;
-> >=20
-> >  	}
-> >=20
-> > +	synaptics_sync_led(psmouse);
-> > +
-> >=20
-> >  	return 0;
-> > =20
-> >  }
-> >=20
-> > @@ -727,6 +835,9 @@ int synaptics_init(struct psmouse
-> > *psmouse) SYN_ID_MAJOR(priv->identity),
-> > SYN_ID_MINOR(priv->identity), priv->model_id,
-> > priv->capabilities, priv->ext_cap, priv->ext_cap_0c);
-> >=20
-> > +	if (synaptics_init_led(psmouse) < 0)
-> > +		goto init_fail;
-> > +
-> >=20
-> >  	set_input_params(psmouse->dev, priv);
-> >  =09
-> >  	/*
-> >=20
-> > diff --git a/drivers/input/mouse/synaptics.h
-> > b/drivers/input/mouse/synaptics.h index ae37c5d..d5bb8f4
-> > 100644
-> > --- a/drivers/input/mouse/synaptics.h
-> > +++ b/drivers/input/mouse/synaptics.h
-> > @@ -94,6 +94,8 @@ struct synaptics_hw_state {
-> >=20
-> >  	signed char scroll;
-> > =20
-> >  };
-> >=20
-> > +struct synaptics_led;
-> > +
-> >=20
-> >  struct synaptics_data {
-> > =20
-> >  	/* Data read from the touchpad */
-> >  	unsigned long int model_id;		/* Model-ID */
-> >=20
-> > @@ -107,6 +109,7 @@ struct synaptics_data {
-> >=20
-> >  	unsigned char pkt_type;			/* packet type - old, new, etc
->=20
-> */
->=20
-> >  	unsigned char mode;			/* current mode byte */
-> >  	int scroll;
-> >=20
-> > +	struct synaptics_led *led;
-> >=20
-> >  };
-> > =20
-> >  void synaptics_module_init(void);
->=20
-> Hello,
->=20
-> what happened with this patch? There is no discussion about
-> v4: https://patchwork.kernel.org/patch/94026/
-> https://lkml.org/lkml/2010/4/22/35
->=20
-> Are there any problems with this patch?
+The code may be something like:
+r = data->get_trend(data->sensor_data, trip, &dev_trend);
+if (r)
+    return r;
+*trend = dev_trend;
+return 0;
+> +	if (r)
+> +		return r;
+> +
+> +	/* TODO: These intervals might have some thresholds, but in core code */
+> +	if (dev_trend > 0)
+> +		*trend = THERMAL_TREND_RAISING;
+> +	else if (dev_trend < 0)
+> +		*trend = THERMAL_TREND_DROPPING;
+> +	else
+> +		*trend = THERMAL_TREND_STABLE;
+> +
+> +	return 0;
+> +}
+> +
+> .....
+> +
+> +/***   sensor API   ***/
+> +
+> +static struct thermal_zone_device *
+> +thermal_zone_of_add_sensor(struct device_node *zone,
+> +			   struct device_node *sensor, void *data,
+> +			   int (*get_temp)(void *, long *),
+> +			   int (*get_trend)(void *, long *))
+> +{
+> +	struct thermal_zone_device *tzd;
+> +	struct __thermal_zone *tz;
+> +
+> +	tzd = thermal_zone_get_zone_by_name(zone->name);
+I think we could get the thermal zone by node,
+something like:
+thermal_zone_get_zone_by_node(zone);
+so that it can get unique zone.
 
-BUMP!
+I think we can add a member "struct device_node *np" in the
+thermal_zone_device,
+and set it after you call thermal_zone_device_register successfully.
+Then add following codes:
+thermal_zone_get_zone_by_node(struct device_node *node)
+{
+        struct thermal_zone_device *pos = NULL, *ref = ERR_PTR(-ENODEV);
+        bool found = false;
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+        if (!node)
+                return ERR_PTR(-EINVAL);
 
+        mutex_lock(&thermal_list_lock);
+        list_for_each_entry(pos, &thermal_tz_list, node)
+                if (node == pos->np) {
+                        ref = pos;
+                        found = true;
+                        break;
+                }
+        mutex_unlock(&thermal_list_lock);
 
---nextPart55543173.RulyKDBUrZ
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+        return ref;
+}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Thanks.
+Wei.
+> +	if (IS_ERR(tzd))
+> +		return ERR_PTR(-EPROBE_DEFER);
+> +
+> +	tz = tzd->devdata;
+> +
+> +	mutex_lock(&tzd->lock);
+> +	tz->get_temp = get_temp;
+> +	tz->get_trend = get_trend;
+> +	tz->sensor_data = data;
+> +
+> +	tzd->ops->get_temp = of_thermal_get_temp;
+> +	tzd->ops->get_trend = of_thermal_get_trend;
+> +	mutex_unlock(&tzd->lock);
+> +
+> +	return tzd;
+> +}
+> +
+>
 
-iEYEABECAAYFAlLCmX4ACgkQi/DJPQPkQ1IL8wCgi73hqRaVn3802qKlXG/zHVvF
-QKcAn0yxHA96BHHZ39I6u5txY4+lMS25
-=W4ep
------END PGP SIGNATURE-----
-
---nextPart55543173.RulyKDBUrZ--
