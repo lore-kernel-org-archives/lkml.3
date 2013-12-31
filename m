@@ -1,62 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012Ab3LaGcy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 01:32:54 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:10934 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750720Ab3LaGcw (ORCPT
+	id S1751789Ab3LaGy0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 01:54:26 -0500
+Received: from www262.sakura.ne.jp ([202.181.97.72]:60580 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab3LaGyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 01:32:52 -0500
-X-IronPort-AV: E=Sophos;i="4.95,579,1384297200"; 
-   d="scan'208";a="51146264"
-Date: Tue, 31 Dec 2013 07:32:46 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Joe Perches <joe@perches.com>
-cc: Johannes Berg <johannes@sipsolutions.net>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Julia Lawall <julia.lawall@lip6.fr>, kernel-janitors@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+	Tue, 31 Dec 2013 01:54:25 -0500
+X-Nat-Received: from [202.181.97.72]:58979 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1388472812.29927
+To: joe@perches.com
+Cc: akpm@linux-foundation.org, geert@linux-m68k.org, jkosina@suse.cz,
+        viro@zeniv.linux.org.uk, davem@davemloft.net, keescook@chromium.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/11]  use ether_addr_equal_64bits
-In-Reply-To: <1388445422.26796.38.camel@joe-AO722>
-Message-ID: <alpine.DEB.2.02.1312310726540.1930@localhost6.localdomain6>
-References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>  <1388427307-8691-5-git-send-email-Julia.Lawall@lip6.fr>  <1388429761.4410.1.camel@jlt4.sipsolutions.net>  <alpine.DEB.2.02.1312302057420.2209@localhost6.localdomain6> 
- <1388438724.4573.2.camel@jlt4.sipsolutions.net>  <20131230215701.GA4938@khazad-dum.debian.net>  <1388445188.18164.0.camel@jlt4.sipsolutions.net> <1388445422.26796.38.camel@joe-AO722>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Subject: Re: [PATCH] lib/vsprintf: add %pT[C012] format specifier
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <1388262293.24123.22.camel@joe-AO722>
+	<201312290932.GGH35442.JFVFFHSOMOQOtL@I-love.SAKURA.ne.jp>
+	<1388282837.24123.24.camel@joe-AO722>
+	<201312292113.FIJ60946.tFOVOJOHLQSFFM@I-love.SAKURA.ne.jp>
+	<1388422545.26796.36.camel@joe-AO722>
+In-Reply-To: <1388422545.26796.36.camel@joe-AO722>
+Message-Id: <201312311553.IGG09071.HLJtFVSQFFOOOM@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Tue, 31 Dec 2013 15:53:29 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 31122013 #7206063, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > I'm just thinking of a programmer, e.g. changing a struct like this:
-> > > > 
-> > > >  struct foo {
-> > > >    u8 addr[ETH_ALEN];
-> > > > -  u16 dummy;
-> > > >  };
+Joe Perches wrote:
+> I get:
 > 
-> I don't know of a way to catch that.
-> Anyone else?
+> $ grep-2.5.4 -rP --include=*.[ch] -oh \
+>   "\b(?:printk|[a-z_]+_(?:printk|emerg|alert|crit|err|warn|notice|info|debug|dbg))[^;]*\bcurrent->[\w_]+" * | \
+>   grep -P -oh "\bcurrent->[\w_]+"| sort | uniq -c | sort -rn
+>     380 current->pid
+>     267 current->comm
 
-Well, one could have a semantic patch that checks for that.  But the 
-problem is that it is very slow, and it only covers the cases that I can 
-transform automatically, which currently means no pointers, only explicit 
-arrays.
+We also have cases like
 
-On the other hand, I am finding the structure definition, so I can easily 
-update the structure definition with an appropriate comment.
+  struct task_struct *tsk = current;
+  printk("%s/%d", tsk->comm, tsk->pid);
+  printk("%d", task_pid_nr(tsk));
+  snprintf(buf, sizeof(buf), "%d", task_pid_nr(current));
 
-struct foo {
-    u8 addr[ETH_ALEN]; /* must be followed by two bytes in the structure */
-    u16 dummy;
-};
+which are not counted with your grep rule.
+But anyway, let's start with ->comm and ->pid .
 
-Unfortunately it is kind of verbose.  Could there be an attribute?  That 
-could even easily be checked.
+> Also I prefer using ASCII SUB (26 \x1a \032 ^z) or maybe
+> PU1 - 145 or PU2 - 146, as an initiator byte as it takes
+> up much less of the control word space instead of using
+> multiple values like \x80, \x81, \x82, etc.  Using an
+> initiator byte seems more extensible too.
 
-julia
+My format and rules are:
+
+  #define EMBED_FORMAT        "0x7F"
+  #define EMBED_CURRENT_COMM  "0x80"
+  #define EMBED_CURRENT_PID   "0x81"
+
+  We need to use EMBED_FORMAT prefix only when you want to specify one (or
+  more) of flags, field width and precision options. That is,
+
+    pr_info("%s(%d)\n", current->comm, current->pid);
+      => pr_info(EMBED_CURRENT_COMM "(" EMBED_CURRENT_PID ")\n");
+
+    pr_info("[%-6.6s]\n", current->comm);
+      => pr_info(EMBED_FORMAT "-6.6" EMBED_CURRENT_COMM "\n");
+
+But I can't imagine what your format and rules are because
+
+  #define CURRENT_SUB		"\032"
+  #define CURRENT_SUB_ASCII	'\032'
+
+are ' ' character which is also used within the format string.
+Also, if you assign one of ('0' to '9', '-', '.') for variable name like
+
+  #define CURRENT_ID		CURRENT_SUB "1"
+  #define CURRENT_COMM		CURRENT_SUB "2"
+
+you will need a separating byte in order to distinguish end of
+flags, field width and precision options.
+
+Please describe your format and rules (e.g. what byte starts a built-in token;
+what bytes are used for representing variable name, what separates flags, field
+width and precision options from variable name if these options are specified,
+what byte terminates a built-in token) using examples below.
+
+    pr_info("%s(%d)\n", current->comm, current->pid);
+
+    pr_info("[%-6.6s]\n", current->comm);
