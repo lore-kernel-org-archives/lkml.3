@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884Ab3LaQIL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 11:08:11 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:49189 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753510Ab3LaQII (ORCPT
+	id S1754039Ab3LaQJi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 11:09:38 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:11345 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753639Ab3LaQJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 11:08:08 -0500
-Date: Tue, 31 Dec 2013 16:07:59 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Tushar Behera <tushar.behera@linaro.org>,
-        linux-serial <linux-serial@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, jslaby <jslaby@suse.cz>,
-        Patch Tracking <patches@linaro.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        ben@simtec.co.uk, Thomas Abraham <thomas.abraham@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>, heiko <heiko@sntech.de>,
-        Kgene Kim <kgene.kim@samsung.com>
-Message-ID: <20131231160759.GF31886@sirena.org.uk>
-References: <1388120848-15879-1-git-send-email-tushar.behera@linaro.org>
- <20131227051843.GA840@kroah.com>
- <CAHbNUh27ZZ5UxuLMPvv6weNOSG4XKV9ZRrmTB9F0RvgQxufGDQ@mail.gmail.com>
- <20131227063843.GA3310@kroah.com>
- <CAHbNUh0NBVEBJbSG7UWgnHbORgbKCrA_74=jiArSvv5jaFk1SQ@mail.gmail.com>
- <20131227184424.GA4938@kroah.com>
+	Tue, 31 Dec 2013 11:09:36 -0500
+X-IronPort-AV: E=Sophos;i="4.95,581,1384297200"; 
+   d="scan'208";a="51218170"
+Date: Tue, 31 Dec 2013 17:09:20 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Ben Greear <greearb@candelatech.com>
+cc: Julia Lawall <julia.lawall@lip6.fr>, Joe Perches <joe@perches.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        kernel-janitors@vger.kernel.org,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/11]  use ether_addr_equal_64bits
+In-Reply-To: <52C2E8BA.6000800@candelatech.com>
+Message-ID: <alpine.DEB.2.10.1312311704320.2074@hadrien>
+References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>  <1388427307-8691-5-git-send-email-Julia.Lawall@lip6.fr>  <1388429761.4410.1.camel@jlt4.sipsolutions.net>  <alpine.DEB.2.02.1312302057420.2209@localhost6.localdomain6> 
+ <1388438724.4573.2.camel@jlt4.sipsolutions.net>  <20131230215701.GA4938@khazad-dum.debian.net>  <1388445188.18164.0.camel@jlt4.sipsolutions.net> <1388445422.26796.38.camel@joe-AO722> <alpine.DEB.2.02.1312310726540.1930@localhost6.localdomain6>
+ <52C2E8BA.6000800@candelatech.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VvwS7Fyc3fvERiQe"
-Content-Disposition: inline
-In-Reply-To: <20131227184424.GA4938@kroah.com>
-X-Cookie: Go climb a gravity well!
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] serial: samsung: Remove hard-coded major/minor numbers
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---VvwS7Fyc3fvERiQe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Fri, Dec 27, 2013 at 10:44:24AM -0800, Greg KH wrote:
+On Tue, 31 Dec 2013, Ben Greear wrote:
 
-> Please get approval for this patch from others within Linaro before
-> sending it out again.  Linaro has a process in place for this type of
-> thing, please use it, otherwise it makes people like me really grumpy
-> and upset and causes me to yell at people at their conferences.
+> On 12/30/2013 10:32 PM, Julia Lawall wrote:
+> > > > > > I'm just thinking of a programmer, e.g. changing a struct like this:
+> > > > > >
+> > > > > >   struct foo {
+> > > > > >     u8 addr[ETH_ALEN];
+> > > > > > -  u16 dummy;
+> > > > > >   };
+> > >
+> > > I don't know of a way to catch that.
+> > > Anyone else?
+> >
+> > Well, one could have a semantic patch that checks for that.  But the
+> > problem is that it is very slow, and it only covers the cases that I can
+> > transform automatically, which currently means no pointers, only explicit
+> > arrays.
+> >
+> > On the other hand, I am finding the structure definition, so I can easily
+> > update the structure definition with an appropriate comment.
+> >
+> > struct foo {
+> >      u8 addr[ETH_ALEN]; /* must be followed by two bytes in the structure */
+> >      u16 dummy;
+> > };
+> >
+> > Unfortunately it is kind of verbose.  Could there be an attribute?  That
+> > could even easily be checked.
+>
+> Can you not just add a build-time macro to check that sizeof(foo) >= 8
+> for each of these struct foos?  Or, is it required that the dummy field
+> be there and be not used by anything else?
 
-This isn't really anything to do with Linaro - it's a Samsung driver so
-it's their call.  A good proportion of the Samsung guys and their list
-are in the CCs so hopefully they'll chime in.
+It doesn't matter what the field is used for.  The problem is that is it
+necessary to ensure a property of the position of addr within the
+structure.  It has to have at least 16 bytes after it.
 
---VvwS7Fyc3fvERiQe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+But maybe something with sizeof(foo) and offset_of would do?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Could the macro be put near the declaration of the structure somehow?
 
-iQIcBAEBAgAGBQJSwuvcAAoJELSic+t+oim9SFMP/0bvb6TXdPlUztTjy/OMME6m
-MmJBcRUU0Aj09XUQf+9yqjqQxiuyLfxmn9G7x55wOlcV74yVMrF98xecj9V7kCND
-Evr61BG0923z2x/HUrsjmzgOvYp1J/1xZOEH1quzwmp6ILtbCokt/IwvawBZw7vf
-phOcZ9PvenVzOt2kIxXOGk2AtXKUJ/HXQ5U8dh7bGymIitiNkeZKbBg6p7jeU2wO
-9OVAYcKDEnZbei8LfdUGHP7+V3/urqe541KkYhsNK7FvocrTshV9AE6dF9KNM7Vl
-JD5gT0EA4R1ymQd5URMzAQTvlVYaO8+BQK11ZNIGNcDCwFQzHOnyx5jETsZdnaUT
-MHjEbiYrM3kS92fMQIsZbYbikyJ5EJCIT0hnEn+93IJyls7E9z2/9JKf7qfR1rtx
-Xv7YnbVPOAqKA+bApPMfG1XJd7X1WBIhrQ1p5wRyoN9JrqY7ATW4KLje3hjo3liA
-pnZuncOurrQkyBgRBySYHReOoJBTWimopiG6AwCKWK2MveONUEd2Qd8cFeeA43OG
-F0TWRYv0pc9UMvwomdlYWezqI8Wb+RchNq+XXCG/9ix25Z9kgAop4BL8gAw4A+1J
-QUNSe14GunnIM2rIER4Aiv36romnO+4fP34RcjmmFAfp7ttrCucio9hfziylVDRx
-oExYe+bWyYV7DE3LCyk+
-=jVf1
------END PGP SIGNATURE-----
-
---VvwS7Fyc3fvERiQe--
+julia
