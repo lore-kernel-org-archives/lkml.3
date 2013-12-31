@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753018Ab3LaJrz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Dec 2013 04:47:55 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:22605 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752503Ab3LaJrw (ORCPT
+	id S1752937Ab3LaJru (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Dec 2013 04:47:50 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:51643 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752503Ab3LaJrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 04:47:52 -0500
-Message-ID: <52C292B3.7080702@huawei.com>
-Date: Tue, 31 Dec 2013 17:47:31 +0800
+	Tue, 31 Dec 2013 04:47:46 -0500
+Message-ID: <52C292AC.90609@huawei.com>
+Date: Tue, 31 Dec 2013 17:47:24 +0800
 From: Ding Tianhong <dingtianhong@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
@@ -16,7 +16,7 @@ To: Jay Vosburgh <fubar@us.ibm.com>, Veaceslav Falico <vfalico@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Netdev <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH net-next 5/7] bonding: remove unwanted return value for bond_dev_queue_xmit()
+Subject: [PATCH net-next 3/7] bonding: slight optimization for bond_alb_xmit()
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.72.199]
@@ -25,50 +25,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The return value for bond_dev_queue_xmit() will not be used anymore,
-so remove the return value.
+The bond_alb_xmit will check the return value for
+bond_dev_queue_xmit() every time, but the bond_dev_queue_xmit()
+is always return 0, it is no need to check the value every time,
+so remove the unneed judgement for the xmit path.
 
 Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 ---
- drivers/net/bonding/bond_main.c | 4 +---
- drivers/net/bonding/bonding.h   | 2 +-
- 2 files changed, 2 insertions(+), 4 deletions(-)
+ drivers/net/bonding/bond_alb.c | 12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index f14e235..e4d5018 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -299,7 +299,7 @@ const char *bond_mode_name(int mode)
-  * @skb: hw accel VLAN tagged skb to transmit
-  * @slave_dev: slave that is supposed to xmit this skbuff
-  */
--int bond_dev_queue_xmit(struct bonding *bond, struct sk_buff *skb,
-+void bond_dev_queue_xmit(struct bonding *bond, struct sk_buff *skb,
- 			struct net_device *slave_dev)
- {
- 	skb->dev = slave_dev;
-@@ -312,8 +312,6 @@ int bond_dev_queue_xmit(struct bonding *bond, struct sk_buff *skb,
- 		bond_netpoll_send_skb(bond_get_slave_by_dev(bond, slave_dev), skb);
- 	else
- 		dev_queue_xmit(skb);
+diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
+index 759ddee..a2c4747 100644
+--- a/drivers/net/bonding/bond_alb.c
++++ b/drivers/net/bonding/bond_alb.c
+@@ -1371,7 +1371,6 @@ int bond_alb_xmit(struct sk_buff *skb, struct net_device *bond_dev)
+ 	int do_tx_balance = 1;
+ 	u32 hash_index = 0;
+ 	const u8 *hash_start = NULL;
+-	int res = 1;
+ 	struct ipv6hdr *ip6hdr;
+ 
+ 	skb_reset_mac_header(skb);
+@@ -1469,7 +1468,8 @@ int bond_alb_xmit(struct sk_buff *skb, struct net_device *bond_dev)
+ 			       ETH_ALEN);
+ 		}
+ 
+-		res = bond_dev_queue_xmit(bond, skb, tx_slave->dev);
++		bond_dev_queue_xmit(bond, skb, tx_slave->dev);
++		goto out;
+ 	} else {
+ 		if (tx_slave) {
+ 			_lock_tx_hashtbl(bond);
+@@ -1478,11 +1478,9 @@ int bond_alb_xmit(struct sk_buff *skb, struct net_device *bond_dev)
+ 		}
+ 	}
+ 
+-	if (res) {
+-		/* no suitable interface, frame not sent */
+-		kfree_skb(skb);
+-	}
 -
--	return 0;
++	/* no suitable interface, frame not sent */
++	kfree_skb(skb);
++out:
+ 	return NETDEV_TX_OK;
  }
  
- /*
-diff --git a/drivers/net/bonding/bonding.h b/drivers/net/bonding/bonding.h
-index 5886f07..0f3e270 100644
---- a/drivers/net/bonding/bonding.h
-+++ b/drivers/net/bonding/bonding.h
-@@ -416,7 +416,7 @@ static inline bool slave_can_tx(struct slave *slave)
- struct bond_net;
- 
- int bond_arp_rcv(const struct sk_buff *skb, struct bonding *bond, struct slave *slave);
--int bond_dev_queue_xmit(struct bonding *bond, struct sk_buff *skb, struct net_device *slave_dev);
-+void bond_dev_queue_xmit(struct bonding *bond, struct sk_buff *skb, struct net_device *slave_dev);
- void bond_xmit_slave_id(struct bonding *bond, struct sk_buff *skb, int slave_id);
- int bond_create(struct net *net, const char *name);
- int bond_create_sysfs(struct bond_net *net);
 -- 
 1.8.0
 
