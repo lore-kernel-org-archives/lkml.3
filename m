@@ -1,9 +1,9 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756929AbaAAEky (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Tue, 31 Dec 2013 23:40:54 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:19636 "EHLO
+	id S1756850AbaAAEkm (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Tue, 31 Dec 2013 23:40:42 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:19643 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190AbaAAEhE (ORCPT
+	with ESMTP id S1751276AbaAAEhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Dec 2013 23:37:04 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -11,100 +11,180 @@ To: linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
         boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
         stefano.stabellini@eu.citrix.com, mukesh.rathor@oracle.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v12 11/18] xen/pvh: Piggyback on PVHVM for event channels (v2)
-Date: Tue, 31 Dec 2013 23:35:38 -0500
-Message-Id: <1388550945-25499-12-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH v12 15/18] xen/pvh: Piggyback on PVHVM for grant driver (v2)
+Date: Tue, 31 Dec 2013 23:35:42 -0500
+Message-Id: <1388550945-25499-16-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com>
 References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
+In PVH the shared grant frame is the PFN and not MFN,
+hence its mapped via the same code path as HVM.
 
-PVH is a PV guest with a twist - there are certain things
-that work in it like HVM and some like PV. There is
-a similar mode - PVHVM where we run in HVM mode with
-PV code enabled - and this patch explores that.
+The allocation of the grant frame is done differently - we
+do not use the early platform-pci driver and have an
+ioremap area - instead we use balloon memory and stitch
+all of the non-contingous pages in a virtualized area.
 
-The most notable PV interfaces are the XenBus and event channels.
+That means when we call the hypervisor to replace the GMFN
+with a XENMAPSPACE_grant_table type, we need to lookup the
+old PFN for every iteration instead of assuming a flat
+contingous PFN allocation.
 
-We will piggyback on how the event channel mechanism is
-used in PVHVM - that is we want the normal native IRQ mechanism
-and we will install a vector (hvm callback) for which we
-will call the event channel mechanism.
+Lastly, we only use v1 for grants. This is because PVHVM
+is not able to use v2 due to no XENMEM_add_to_physmap
+calls on the error status page (see commit
+69e8f430e243d657c2053f097efebc2e2cd559f0
+ xen/granttable: Disable grant v2 for HVM domains.)
 
-This means that from a pvops perspective, we can use
-native_irq_ops instead of the Xen PV specific. Albeit in the
-future we could support pirq_eoi_map. But that is
-a feature request that can be shared with PVHVM.
+Until that is implemented this workaround has to
+be in place.
 
-Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+Also per suggestions by Stefano utilize the PVHVM paths
+as they share common functionality.
+
+v2 of this patch moves most of the PVH code out in the
+arch/x86/xen/grant-table driver and touches only minimally
+the generic driver.
+
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/irq.c   |  5 ++++-
- drivers/xen/events.c | 16 ++++++++++------
- 2 files changed, 14 insertions(+), 7 deletions(-)
+ arch/x86/xen/grant-table.c | 64 ++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/xen/gntdev.c       |  2 +-
+ drivers/xen/grant-table.c  | 13 ++++++----
+ 3 files changed, 73 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/xen/irq.c b/arch/x86/xen/irq.c
-index 0da7f86..76ca326 100644
---- a/arch/x86/xen/irq.c
-+++ b/arch/x86/xen/irq.c
-@@ -5,6 +5,7 @@
- #include <xen/interface/xen.h>
- #include <xen/interface/sched.h>
- #include <xen/interface/vcpu.h>
-+#include <xen/features.h>
- #include <xen/events.h>
- 
- #include <asm/xen/hypercall.h>
-@@ -128,6 +129,8 @@ static const struct pv_irq_ops xen_irq_ops __initconst = {
- 
- void __init xen_init_irq_ops(void)
- {
--	pv_irq_ops = xen_irq_ops;
-+	/* For PVH we use default pv_irq_ops settings. */
-+	if (!xen_feature(XENFEAT_hvm_callback_vector))
-+		pv_irq_ops = xen_irq_ops;
- 	x86_init.irqs.intr_init = xen_init_IRQ;
+diff --git a/arch/x86/xen/grant-table.c b/arch/x86/xen/grant-table.c
+index 3a5f55d..040e064 100644
+--- a/arch/x86/xen/grant-table.c
++++ b/arch/x86/xen/grant-table.c
+@@ -125,3 +125,67 @@ void arch_gnttab_unmap(void *shared, unsigned long nr_gframes)
+ 	apply_to_page_range(&init_mm, (unsigned long)shared,
+ 			    PAGE_SIZE * nr_gframes, unmap_pte_fn, NULL);
  }
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 4035e83..bf8fb29 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -1908,20 +1908,24 @@ void __init xen_init_IRQ(void)
- 	pirq_needs_eoi = pirq_needs_eoi_flag;
- 
- #ifdef CONFIG_X86
--	if (xen_hvm_domain()) {
-+	if (xen_pv_domain()) {
-+		irq_ctx_init(smp_processor_id());
-+		if (xen_initial_domain())
-+			pci_xen_initial_domain();
-+	}
-+	if (xen_feature(XENFEAT_hvm_callback_vector))
- 		xen_callback_vector();
++#ifdef CONFIG_XEN_PVHVM
++#include <xen/balloon.h>
++#include <linux/slab.h>
++static int __init xlated_setup_gnttab_pages(void)
++{
++	struct page **pages;
++	xen_pfn_t *pfns;
++	int rc, i;
++	unsigned long nr_grant_frames = gnttab_max_grant_frames();
 +
-+	if (xen_hvm_domain()) {
- 		native_init_IRQ();
- 		/* pci_xen_hvm_init must be called after native_init_IRQ so that
- 		 * __acpi_register_gsi can point at the right function */
- 		pci_xen_hvm_init();
--	} else {
-+	} else if (!xen_pvh_domain()) {
-+		/* TODO: No PVH support for PIRQ EOI */
- 		int rc;
- 		struct physdev_pirq_eoi_gmfn eoi_gmfn;
++	BUG_ON(nr_grant_frames == 0);
++	pages = kcalloc(nr_grant_frames, sizeof(pages[0]), GFP_KERNEL);
++	if (!pages)
++		return -ENOMEM;
++
++	pfns = kcalloc(nr_grant_frames, sizeof(pfns[0]), GFP_KERNEL);
++	if (!pfns) {
++		kfree(pages);
++		return -ENOMEM;
++	}
++	rc = alloc_xenballooned_pages(nr_grant_frames, pages, 0 /* lowmem */);
++	if (rc) {
++		pr_warn("%s Couldn't balloon alloc %ld pfns rc:%d\n", __func__,
++			nr_grant_frames, rc);
++		kfree(pages);
++		kfree(pfns);
++		return rc;
++	}
++	for (i = 0; i < nr_grant_frames; i++)
++		pfns[i] = page_to_pfn(pages[i]);
++
++	rc = arch_gnttab_map_shared(pfns, nr_grant_frames, nr_grant_frames,
++				    (void *)&xen_auto_xlat_grant_frames.vaddr);
++
++	kfree(pages);
++	if (rc) {
++		pr_warn("%s Couldn't map %ld pfns rc:%d\n", __func__,
++			nr_grant_frames, rc);
++		free_xenballooned_pages(nr_grant_frames, pages);
++		kfree(pfns);
++		return rc;
++	}
++
++	xen_auto_xlat_grant_frames.pfn = pfns;
++	xen_auto_xlat_grant_frames.count = nr_grant_frames;
++
++	return 0;
++}
++
++static int __init xen_pvh_gnttab_setup(void)
++{
++	if (!xen_domain())
++		return -ENODEV;
++
++	if (!xen_pv_domain())
++		return -ENODEV;
++
++	if (!xen_feature(XENFEAT_auto_translated_physmap))
++		return -ENODEV;
++
++	return xlated_setup_gnttab_pages();
++}
++core_initcall(xen_pvh_gnttab_setup); /* Call it _before_ __gnttab_init */
++#endif
+diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
+index e41c79c..073b4a1 100644
+--- a/drivers/xen/gntdev.c
++++ b/drivers/xen/gntdev.c
+@@ -846,7 +846,7 @@ static int __init gntdev_init(void)
+ 	if (!xen_domain())
+ 		return -ENODEV;
  
--		irq_ctx_init(smp_processor_id());
--		if (xen_initial_domain())
--			pci_xen_initial_domain();
--
- 		pirq_eoi_map = (void *)__get_free_page(GFP_KERNEL|__GFP_ZERO);
- 		eoi_gmfn.gmfn = virt_to_mfn(pirq_eoi_map);
- 		rc = HYPERVISOR_physdev_op(PHYSDEVOP_pirq_eoi_gmfn_v2, &eoi_gmfn);
+-	use_ptemod = xen_pv_domain();
++	use_ptemod = !xen_feature(XENFEAT_auto_translated_physmap);
+ 
+ 	err = misc_register(&gntdev_miscdev);
+ 	if (err != 0) {
+diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+index b117fd6..2fa3a4c 100644
+--- a/drivers/xen/grant-table.c
++++ b/drivers/xen/grant-table.c
+@@ -1098,7 +1098,7 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
+ 	unsigned int nr_gframes = end_idx + 1;
+ 	int rc;
+ 
+-	if (xen_hvm_domain()) {
++	if (xen_feature(XENFEAT_auto_translated_physmap)) {
+ 		struct xen_add_to_physmap xatp;
+ 		unsigned int i = end_idx;
+ 		rc = 0;
+@@ -1174,7 +1174,7 @@ static void gnttab_request_version(void)
+ 	int rc;
+ 	struct gnttab_set_version gsv;
+ 
+-	if (xen_hvm_domain())
++	if (xen_feature(XENFEAT_auto_translated_physmap))
+ 		gsv.version = 1;
+ 	else
+ 		gsv.version = 2;
+@@ -1210,8 +1210,11 @@ static int gnttab_setup(void)
+ 
+ 	if (xen_feature(XENFEAT_auto_translated_physmap) && gnttab_shared.addr == NULL)
+ 	{
+-		gnttab_shared.addr = xen_remap(xen_auto_xlat_grant_frames.vaddr,
+-					       PAGE_SIZE * max_nr_gframes);
++		if (xen_hvm_domain()) {
++			gnttab_shared.addr = xen_remap(xen_auto_xlat_grant_frames.vaddr,
++						       PAGE_SIZE * max_nr_gframes);
++		} else
++			gnttab_shared.addr = xen_auto_xlat_grant_frames.vaddr;
+ 		if (gnttab_shared.addr == NULL) {
+ 			pr_warn("Failed to ioremap gnttab share frames (addr=0x%08lx)!\n",
+ 					xen_auto_xlat_grant_frames.vaddr);
+@@ -1320,4 +1323,4 @@ static int __gnttab_init(void)
+ 	return gnttab_init();
+ }
+ 
+-core_initcall(__gnttab_init);
++core_initcall_sync(__gnttab_init);
 -- 
 1.8.3.1
 
