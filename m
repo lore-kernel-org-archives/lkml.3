@@ -1,77 +1,49 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720AbaAAAlv (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Tue, 31 Dec 2013 19:41:51 -0500
-Received: from know-smtprelay-omc-1.server.virginmedia.net ([80.0.253.65]:43291
-	"EHLO know-smtprelay-omc-1.server.virginmedia.net"
+	id S1756749AbaAAAna (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Tue, 31 Dec 2013 19:43:30 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46368 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753957AbaAAAlu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 19:41:50 -0500
-X-Originating-IP: [82.36.39.136]
-X-Spam: 0
-X-Authority: v=2.1 cv=WI/xXxcR c=1 sm=1 tr=0 a=h3ZJzbuz6X3s3VlFudNWSw==:117
- a=h3ZJzbuz6X3s3VlFudNWSw==:17 a=6vexxxhns_QA:10 a=fZX2ME0dHmMA:10
- a=3NElcqgl2aoA:10 a=k1j_C7plYBUA:10 a=8nJEP1OIZ-IA:10 a=a5Gf7U6LAAAA:8
- a=9wwvVaL5uFYA:10 a=aR16PxjQAAAA:8 a=ji368NuQkJQNv7umc58A:9 a=wPNLvfGTeEIA:10
- a=CiSHi91Bn78A:10 a=yHIqe9kG5mgA:10
-Message-ID: <52C3644C.9090809@blueyonder.co.uk>
-Date: Wed, 01 Jan 2014 00:41:48 +0000
-From: Sid Boyce <sboyce@blueyonder.co.uk>
-Reply-To: sboyce@blueyonder.co.uk
-Organization: blueyonder.co.uk
+	id S1753957AbaAAAn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Dec 2013 19:43:28 -0500
+Message-ID: <52C3647B.7000708@zytor.com>
+Date: Tue, 31 Dec 2013 16:42:35 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Ilia Mirkin <imirkin@alum.mit.edu>
-CC: LKML Mailing List <linux-kernel@vger.kernel.org>,
-        opensuse factory list <opensuse-factory@opensuse.org>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>
-Subject: Re: Possible 3.13-rc nouveau regression with GT 560 Ti
-References: <52C29918.4060102@blueyonder.co.uk> <CAKb7UvhBunpMC6mzjRg7Zb5gGPPYj99=2jd+Lgnr-qeXFs0w9A@mail.gmail.com>
-In-Reply-To: <CAKb7UvhBunpMC6mzjRg7Zb5gGPPYj99=2jd+Lgnr-qeXFs0w9A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: joeyli <jlee@suse.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
+        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
+        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
+        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        x86@kernel.org,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [RFC PATCH 04/14] ACPI: Add ACPI 5.0 Time and Alarm Device driver
+References: <1387439515-8926-1-git-send-email-jlee@suse.com>	 <1387439515-8926-5-git-send-email-jlee@suse.com>	 <52B30F43.1060306@zytor.com> <1387518099.3539.4453.camel@linux-s257.site>
+In-Reply-To: <1387518099.3539.4453.camel@linux-s257.site>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/12/13 10:36, Ilia Mirkin wrote:
-> On Tue, Dec 31, 2013 at 5:14 AM, Sid Boyce <sboyce@blueyonder.co.uk> wrote:
->> System x86_64 with openSUSE 13.1.
->> X.Org version: 1.14.99.905
+On 12/19/2013 09:41 PM, joeyli wrote:
 >>
->> openSUSE 12.2 kernels boot successfully into a graphical screen, login to
->> KDE4, etc. all normal.
+>> What platform do you have that has TAD support?  I am wondering how this
+>> was tested.
 >>
->> 3.13-rc kernels boot fully with X running but no graphical screen and it
->> freezes in VC with not all the startup messages displayed but I could ssh in
->> from another box to check dmesg and logs.
->>
->> Xorg.0.log which I thought I had saved did not log an error.
->>
->> dmesg said "nouveau Playlist update failed".
->>
->> Changed the GeForce GT 560 Ti for a GeForce 8600 GT and 3.13.0-rc6 is up and
->> running.
->>
->> If necessary I can go back to the GT 560 Ti to gather dmesg and Xorg log
->> information.
-> Having a dmesg would be nice. One thing I can think of off-hand is
-> that 3.13-rc has MSI turned on by default. You can turn it off by
-> adding "nouveau.config=NvMSI=0" to your kernel cmdline. If that
-> doesn't help, a bisect restricted to drivers/gpu/drm/nouveau should
-> show the offending commit fairly quickly.
->
->    -ilia
->
-Adding "nouveau.config=NvMSI=0" to the command line fixed the problem.
-So it looks like commit 049ffa8ab33a63b3bff672d1a0ee6a35ad253fe8 
-introduced it.
-Thanks Ilia,
-Regards
-Sid.
+> 
+> It's a testing platform that's only support get/set time functions of
+> ACPI TAD.
+> 
 
--- 
-Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
-Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support
-Senior Staff Specialist, Cricket Coach
-Microsoft Windows Free Zone - Linux used for all Computing Tasks
+It would be really, really good to get this into Qemu (either SeaBIOS or
+OVMF, or ideally both) so we can have anyone test.
+
+	-hpa
+
 
