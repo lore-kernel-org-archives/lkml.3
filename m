@@ -1,81 +1,148 @@
-Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752519AbaACR60 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 12:58:26 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:48599 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067AbaACR6Y (ORCPT
+	id S1751604AbaAAFEE (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Wed, 1 Jan 2014 00:04:04 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:58285 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750786AbaAAFEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 12:58:24 -0500
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
-To: linux-kernel@vger.kernel.org
-Subject: next-20131218 - BUG: spinlock wrong CPU on CPU#3, mount/563
-From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1387476045_3146P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	Wed, 1 Jan 2014 00:04:01 -0500
+Message-ID: <52C3A0F1.3040803@linux.vnet.ibm.com>
+Date: Wed, 01 Jan 2014 10:30:33 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: peterz@infradead.org, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        pjt@google.com, Morten.Rasmussen@arm.com, cmetcalf@tilera.com,
+        tony.luck@intel.com, alex.shi@linaro.org,
+        linaro-kernel@lists.linaro.org, rjw@sisk.pl,
+        paulmck@linux.vnet.ibm.com, corbet@lwn.net, tglx@linutronix.de,
+        len.brown@intel.com, arjan@linux.intel.com, amit.kucheria@linaro.org,
+        james.hogan@imgtec.com, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, Dietmar.Eggemann@arm.com
+Subject: Re: [RFC] sched: CPU topology try
+References: <20131105222752.GD16117@laptop.programming.kicks-ass.net> <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
+In-Reply-To: <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Date: Thu, 19 Dec 2013 13:00:45 -0500
-Message-ID: <6106.1387476045@turing-police.cc.vt.edu>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14010105-0928-0000-0000-000005373FF1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1387476045_3146P
-Content-Type: text/plain; charset=us-ascii
+Hi Vincent,
 
-Saw this while booting latest linux-next.  I've only triggered it once,
-so I suspect a race condition of some sort that I don't always hit.
+On 12/18/2013 06:43 PM, Vincent Guittot wrote:
+> This patch applies on top of the two patches [1][2] that have been proposed by
+> Peter for creating a new way to initialize sched_domain. It includes some minor
+> compilation fixes and a trial of using this new method on ARM platform.
+> [1] https://lkml.org/lkml/2013/11/5/239
+> [2] https://lkml.org/lkml/2013/11/5/449
+> 
+> Based on the results of this tests, my feeling about this new way to init the
+> sched_domain is a bit mitigated.
+> 
+> The good point is that I have been able to create the same sched_domain
+> topologies than before and even more complex ones (where a subset of the cores
+> in a cluster share their powergating capabilities). I have described various
+> topology results below.
+> 
+> I use a system that is made of a dual cluster of quad cores with hyperthreading
+> for my examples.
+> 
+> If one cluster (0-7) can powergate its cores independantly but not the other
+> cluster (8-15) we have the following topology, which is equal to what I had
+> previously:
+> 
+> CPU0:
+> domain 0: span 0-1 level: SMT
+>     flags: SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES | SD_SHARE_POWERDOMAIN
+>     groups: 0 1
+>   domain 1: span 0-7 level: MC
+>       flags: SD_SHARE_PKG_RESOURCES
+>       groups: 0-1 2-3 4-5 6-7
+>     domain 2: span 0-15 level: CPU
+>         flags:
+>         groups: 0-7 8-15
+> 
+> CPU8
+> domain 0: span 8-9 level: SMT
+>     flags: SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES | SD_SHARE_POWERDOMAIN
+>     groups: 8 9
+>   domain 1: span 8-15 level: MC
+>       flags: SD_SHARE_PKG_RESOURCES | SD_SHARE_POWERDOMAIN
+>       groups: 8-9 10-11 12-13 14-15
+>     domain 2: span 0-15 level CPU
+>         flags:
+>         groups: 8-15 0-7
+> 
+> We can even describe some more complex topologies if a susbset (2-7) of the
+> cluster can't powergate independatly:
+> 
+> CPU0:
+> domain 0: span 0-1 level: SMT
+>     flags: SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES | SD_SHARE_POWERDOMAIN
+>     groups: 0 1
+>   domain 1: span 0-7 level: MC
+>       flags: SD_SHARE_PKG_RESOURCES
+>       groups: 0-1 2-7
+>     domain 2: span 0-15 level: CPU
+>         flags:
+>         groups: 0-7 8-15
+> 
+> CPU2:
+> domain 0: span 2-3 level: SMT
+>     flags: SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES | SD_SHARE_POWERDOMAIN
+>     groups: 0 1
+>   domain 1: span 2-7 level: MC
+>       flags: SD_SHARE_PKG_RESOURCES | SD_SHARE_POWERDOMAIN
+>       groups: 2-7 4-5 6-7
+>     domain 2: span 0-7 level: MC
+>         flags: SD_SHARE_PKG_RESOURCES
+>         groups: 2-7 0-1
+>       domain 3: span 0-15 level: CPU
+>           flags:
+>           groups: 0-7 8-15
+> 
+> In this case, we have an aditionnal sched_domain MC level for this subset (2-7)
+> of cores so we can trigger some load balance in this subset before doing that
+> on the complete cluster (which is the last level of cache in my example)
+> 
+> We can add more levels that will describe other dependency/independency like
+> the frequency scaling dependency and as a result the final sched_domain
+> topology will have additional levels (if they have not been removed during
+> the degenerate sequence)
 
-[   18.248796] SELinux: initialized (dev autofs, type autofs), uses genfs_contexts
-[   18.267473] BUG: spinlock wrong CPU on CPU#3, mount/563
-[   18.267476]  lock: 0xffff880124c3c4a8, .magic: dead4ead, .owner: mount/563, .owner_cpu: 35
-[   18.267478] CPU: 3 PID: 563 Comm: mount Not tainted 3.13.0-rc4-next-20131218 #129
-[   18.267480] Hardware name: Dell Inc. Latitude E6530/07Y85M, BIOS A11 03/12/2013
-[   18.267484]  0000000000000000 ffff880124815cd8 ffffffff8164c74f ffff88012486e590
-[   18.267487]  ffff880124815cf8 ffffffff8107901b ffff880124c3c4a8 0000000000000001
-[   18.267491]  ffff880124815d18 ffffffff81079046 ffff880124c3c4a8 ffffffff81a9fb92
-[   18.267491] Call Trace:
-[   18.267497]  [<ffffffff8164c74f>] dump_stack+0x4f/0xa2
-[   18.267501]  [<ffffffff8107901b>] spin_dump+0x8c/0x91
-[   18.267504]  [<ffffffff81079046>] spin_bug+0x26/0x28
-[   18.267506]  [<ffffffff8107934d>] do_raw_spin_unlock+0xdc/0xf3
-[   18.267509]  [<ffffffff81656575>] _raw_spin_unlock_irqrestore+0x27/0x83
-[   18.267512]  [<ffffffff81070c0d>] __wake_up+0x3f/0x46
-[   18.267516]  [<ffffffff8115e334>] fsnotify_add_notify_event+0xba/0xdf
-[   18.267519]  [<ffffffff811612e9>] ? SyS_inotify_rm_watch+0xf3/0xf3
-[   18.267522]  [<ffffffff811614f6>] fanotify_handle_event+0x16f/0x256
-[   18.267525]  [<ffffffff816571e0>] ? retint_restore_args+0xe/0xe
-[   18.267528]  [<ffffffff8115dba9>] send_to_group.isra.1+0x114/0x123
-[   18.267531]  [<ffffffff8115deb7>] fsnotify+0x2dd/0x41d
-[   18.267533]  [<ffffffff8165650a>] ? _raw_spin_unlock+0x5b/0x67
-[   18.267537]  [<ffffffff811257b8>] do_sys_open+0x109/0x12e
-[   18.267540]  [<ffffffff811257f6>] SyS_open+0x19/0x1b
-[   18.267543]  [<ffffffff8165d722>] system_call_fastpath+0x16/0x1b
-[   18.371071] SELinux: initialized (dev tmpfs, type tmpfs), uses transition SIDs
-[   18.371564] SELinux: initialized (dev hugetlbfs, type hugetlbfs), uses transition SIDs
+The design looks good to me. In my opinion information like P-states and
+C-states dependency can be kept separate from the topology levels, it
+might get too complicated unless the information is tightly coupled to
+the topology.
 
+> 
+> My concern is about the configuration of the table that is used to create the
+> sched_domain. Some levels are "duplicated" with different flags configuration
 
---==_Exmh_1387476045_3146P
-Content-Type: application/pgp-signature
+I do not feel this is a problem since the levels are not duplicated,
+rather they have different properties within them which is best
+represented by flags like you have introduced in this patch.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+> which make the table not easily readable and we must also take care of the
+> order  because parents have to gather all cpus of its childs. So we must
+> choose which capabilities will be a subset of the other one. The order is
 
-iQIVAwUBUrM0TQdmEQWDXROgAQJu6A//aGdijeZGzMSxGhyQHkwIXz4QUfKV2/oJ
-IagLiMVK+iSOZnXL1ZyL8IyZNX5FxFfREVWlTOCgreZoxYccA1g1sTL3yEBHZzKT
-VU2B5TeRdWAzz9SYPuyOm5wxdguU4076EzEeUVtvax7sUJ9rV/w3fYU9DUUrYGiZ
-MFIzeUq0lhPrdWLCI/wrZi4TUIb6wi5Ofq1nrsdTPCpgLpYtgcayBJekdZTf2mE2
-+9awWzB8x0RwH5eJZPgXHajFuGQEhzXPM+FFv+WTMfRbJMPlhfETmKigxLV6gWz8
-g492p0cCPdXdIaoatGCmX6lK5zZO4vU13SZTFTviYKbH4KgOtbObe/ZER754t06t
-Tzi0CPMS6r1CD/+ZndCrjRwhPJRYp3cNxwSkSAFFmkNX9O3E5uDGHBf/CpGVKEe7
-A8WrZ33gowZbzbjv7Ykf9nEsxrxbEH8m2y9eRrLZ2GTiwyokb78IKGrpkdAzpkiU
-ZMhjYWQbJcV3BE6tybaiYI4gvvOzl8naQ8qFEvws4U4pHwmveFK+3Ag7/yNAg+Zf
-gcNvJQUAKoovWU+U20sg9A5ZH9s+VRVJvbmKmZGJclzl0BOy+ZExMw4Cft+tpJyV
-v2qTEz3TWIsvlI2aA/eQP67cxKREmSPvWPV2BPzjaqoDUsbA2oEYeaCp/Fd3uO7B
-9LzucoI9eIw=
-=g4pk
------END PGP SIGNATURE-----
+The sched domain levels which have SD_SHARE_POWERDOMAIN set is expected
+to have cpus which are a subset of the cpus that this domain would have
+included had this flag not been set. In addition to this every higher
+domain, irrespective of SD_SHARE_POWERDOMAIN being set, will include all
+cpus of the lower domains. As far as I see, this patch does not change
+these assumptions. Hence I am unable to imagine a scenario when the
+parent might not include all cpus of its children domain. Do you have
+such a scenario in mind which can arise due to this patch ?
 
---==_Exmh_1387476045_3146P--
+Thanks
+
+Regards
+Preeti U Murthy
+
