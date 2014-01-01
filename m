@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680AbaAATtl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jan 2014 14:49:41 -0500
-Received: from mail-qe0-f65.google.com ([209.85.128.65]:49102 "EHLO
-	mail-qe0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754556AbaAATtk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 14:49:40 -0500
+	id S1754697AbaAATvY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jan 2014 14:51:24 -0500
+Received: from mail-bn1hn0123.outbound.protection.outlook.com ([157.56.110.123]:10348
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753810AbaAATvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jan 2014 14:51:23 -0500
+Reply-To: <stacyrussel0000@yahoo.com>
+From: Mrs Stacy Russell <stacyrusse@gmail.com>
+Subject: Dear Good Friend
+Date: Thu, 2 Jan 2014 02:50:47 +0700
 MIME-Version: 1.0
-Reply-To: barratakazamani@gmail.com
-Date: Wed, 1 Jan 2014 20:49:39 +0100
-Message-ID: <CAF5GT8f219CHT4t4k+nnceR_gswQ+ngKNAyZ3-X7v9SVng=TKQ@mail.gmail.com>
-Subject: Attn: Sir/Madam
-From: "barratakazamani@gmail.com" <barratakazamani6@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-ID: <0d0998f3-2dbc-4c74-9c5a-1e6d7947c1dc@COSEXCH10.lsi.com>
+To: Undisclosed recipients:;
+X-EOPAttributedMessage: 0
+X-Matching-Connectors: 130330794796231487;(f081dce6-2920-4dfc-23e8-08d07091c5e3);()
+X-Forefront-Antispam-Report: CIP:192.19.220.100;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:SPM;SFS:(10019001)(189002)(199002)(80976001)(1671002)(56816005)(89996001)(90146001)(74366001)(46102001)(83072002)(85852003)(31686002)(33646001)(51856001)(54316002)(88136002)(79102001)(881003)(76796001)(50466002)(76786001)(74706001)(44716002)(47736001)(77982001)(59766001)(62236002)(49866001)(47976001)(73972005)(50986001)(65816001)(20776003)(47776003)(63696002)(82202001)(80022001)(76176001)(56776001)(4396001)(50226001)(23686002)(74876001)(74662001)(62966002)(47446002)(81342001)(74502001)(85306002)(81442001)(6806004)(69226001)(61296002)(87936001)(77156001)(87266001)(87286001)(43066001)(73392001)(77096001)(19580395003)(19580405001)(44976005)(81542001)(485004002);DIR:OUT;SFP:1501;SCL:6;SRVR:DM2PR07MB381;H:COSEXCH10.lsi.com;CLIP:192.19.220.100;FPR:;RD:cosexch10.lsi.com;MX:1;A:1;LANG:en;
+X-OriginatorOrg: lsicorp.onmicrosoft.com
+X-Forefront-PRVS: 007814487B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attn: Sir/Madam
+Dear Beloved,
 
-I am Barrister Evidriss the personal resident Attorney here in Burkina
-Faso to Late Mr. Muammar Abu Meniar El-Gaddafi from Libya.
+I am Mrs. Stacy Russell.I am writing you this email from my sick bed, I know my message will come to you as a surprise But don't worry. When I heard from the doctor that my condition has become so critical, I had to reach out to a Christian sister, who assisted me in searching for your contact in order to help me utilize this wealth the way I am going to instruct herein, and even the sister that helped me in this regard doesn't know the purpose for which I intend to use it I have prayed about it and it has been revealed to me that you can make judicious use of the resources for its intended purpose.
 
-Late Mr. Muammar Abu Meniar El-Gaddafi died along with his son who
-supposes to be his next of kin during his country political war.
+My husband earned these funds, (TEN MILLION EIGHT HUNDRED THOUSAND) but he died in a plane crash and left everything behind for me and I will join him soon due to my ill health. Due to my infertility resulting from medical problems I became barren. God has a reason for everything. I would want you to contact my lawyer; he will inform you on what to do. Reply to this email and email my Lawyer:
+SINA HOK CHAMBERS 
+PHNOM PENH
+Barrister Sina HOK
+Email: (llb.sina@sinahok.com)
 
-My client Mr. Muammar Abu Meniar El-Gaddafi was having a deposit sum
-of thirty million four Hundred thousand united state dollars ($30.4m
-USD) with African Development Bank Burkina Faso.
+Ensure to use a greater portion of the funds for its purpose in fulfillment of my last wish. Furthermore you will never have any problem with the law as far as my lawyer is in concern. The most major part you will use to bless Helpless and Needy Children all over the world
 
-With the above explanation’s I want us to transfer this money into
-your account as a deal if interested I advice you reply as soon as
-possible, please if interested reply to (honbarrevidr@hotmail.fr)
+May God Keep you alive and bless you as you help.
 
-Thanks,
- Hon Barrister Evidriss
+Mrs Stacy
