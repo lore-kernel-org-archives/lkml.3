@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753838AbaAAM00 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jan 2014 07:26:26 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52390 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753500AbaAAM0Z (ORCPT
+	id S1753979AbaAAMf6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jan 2014 07:35:58 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45917 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753575AbaAAMf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 07:26:25 -0500
-Date: Wed, 1 Jan 2014 12:25:54 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Xiubo Li <Li.Xiubo@freescale.com>, lgirdwood@gmail.com, perex@perex.cz,
-        tiwai@suse.de, fabio.estevam@freescale.com,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        kuninori.morimoto.gx@renesas.com
-Message-ID: <20140101122554.GN31886@sirena.org.uk>
-References: <1387783538-5318-1-git-send-email-Li.Xiubo@freescale.com>
- <52C405DD.1080006@metafoo.de>
+	Wed, 1 Jan 2014 07:35:56 -0500
+Message-ID: <52C40BAB.4060703@kernel.org>
+Date: Wed, 01 Jan 2014 12:35:55 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4aWqK7AGBdpHaKKF"
-Content-Disposition: inline
-In-Reply-To: <52C405DD.1080006@metafoo.de>
-X-Cookie: Go climb a gravity well!
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCH] ASoC: simple-card: Add device's module
- clock selection.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: kernel-janitors@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging:iio: correct error check
+References: <1388581641-26782-1-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1388581641-26782-1-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---4aWqK7AGBdpHaKKF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Wed, Jan 01, 2014 at 01:11:09PM +0100, Lars-Peter Clausen wrote:
-> On 12/23/2013 08:25 AM, Xiubo Li wrote:
-> > diff --git a/a.out b/a.out
-> > new file mode 100644
-> > index 0000000..e69de29
+On 01/01/14 13:07, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>
+> iio_kfifo_allocate returns NULL in case of error.
+>
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+>
+> // <smpl>
+> @@
+> expression *x;
+> identifier f;
+> statement S1,S2;
+> @@
+>
+> *x = f(...);
+>   if (x) { <+... when != if (...) S1 else S2
+>       -ENOMEM ...+> }
+> // </smpl>
+>
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Thanks. Certainly an 'interesting' bit of code :(
 
-> This patch did add a empty a.out file in the toplevel folder.
+Applied to the fixes-togreg branch of iio.git. Giving timing in the 
+current cycle and that it isn't a recent regression, this won't go
+in now until after 3.13 is released.
 
-Removed now.  This is one of several patches from Xiubo that have done
-this - Xiubo, please check this.
+I've marked it for stable as well
 
---4aWqK7AGBdpHaKKF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSxAlOAAoJELSic+t+oim96FsP/jKspI5xbfw4SeHn0CQng7xV
-+CkxyTIrXExMf8+RAgwx072GtDXvvDNd2CPm0tlz70FzMeEjxqTAe54pjrQNhrks
-KvHiiuUB6Eziqj63uZj5ODcPjhORTtFW5Lhg7aYI/IhXwCWh8+xe6YwRXk0/z7lk
-RNRS0a4fxnr6HRXnk/58Mz2WYuVMDSPC0nuqYZfMpjJIimNhkNg+ivSko5fhXxUq
-sjH/NBrDJmGvK1Fik8hmt/xad8D4w20mSxFY2F9O7LNlceuWeub10I+0cz6RPp3R
-GxrFocmG5GGYKEr9Yfp8xDT+shFn5vu4D5qdzuerFURoj8z+NrxjblqWV7aHPFV7
-JEZ2VilvXlOf5Bqy9dpmlDShHbBOAAaVZ7CP+vsGB0oQpDfBL2uY0YAwNpvXVrUN
-wj+X3m83hpamzwJRv8P1YfYt6M4QeiM0y9xeos8AQ1ZXlBym/XxVWBp0iwPv04O1
-pCD2KmVaoFovc4+58vfQgFVIWKgx8fiWMAXhcPlXgQVa/EG8CTcaf8GfJ0Ot1ySK
-UZnwFW05M3MXGnfbp9ceJ3IVnmOsmKE5RGXCLLUUyRDL+dALPBjaiwm5Djbe6Mly
-nx8n/pHy6LwgLAOLSOBsU6zvIGoOrH1vykw4DNxaVDWTaCBuMFM3yZ8RjXNE+s2C
-AUzt4YZPU5x4NOn3xUaW
-=gfTP
------END PGP SIGNATURE-----
-
---4aWqK7AGBdpHaKKF--
+Jonathan
+>
+> ---
+>   drivers/staging/iio/impedance-analyzer/ad5933.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/staging/iio/impedance-analyzer/ad5933.c b/drivers/staging/iio/impedance-analyzer/ad5933.c
+> index 0a4298b..2b96665 100644
+> --- a/drivers/staging/iio/impedance-analyzer/ad5933.c
+> +++ b/drivers/staging/iio/impedance-analyzer/ad5933.c
+> @@ -629,7 +629,7 @@ static int ad5933_register_ring_funcs_and_init(struct iio_dev *indio_dev)
+>   	struct iio_buffer *buffer;
+>
+>   	buffer = iio_kfifo_allocate(indio_dev);
+> -	if (buffer)
+> +	if (!buffer)
+>   		return -ENOMEM;
+>
+>   	iio_device_attach_buffer(indio_dev, buffer);
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
