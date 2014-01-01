@@ -1,108 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138AbaAATE4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jan 2014 14:04:56 -0500
-Received: from smtp-out-181.synserver.de ([212.40.185.181]:1032 "EHLO
-	smtp-out-079.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752978AbaAATEz (ORCPT
+	id S1754520AbaAATSp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jan 2014 14:18:45 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:43161 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752978AbaAATSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 14:04:55 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 21093
-Message-ID: <52C466E1.3030302@metafoo.de>
-Date: Wed, 01 Jan 2014 20:05:05 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Wed, 1 Jan 2014 14:18:43 -0500
+Date: Wed, 1 Jan 2014 11:18:39 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: "Felipe F. Tonello" <eu@felipetonello.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] input: mt: Add helper function to send end events
+Message-ID: <20140101191838.GA30798@core.coreip.homeip.net>
+References: <1388455601-17033-1-git-send-email-eu@felipetonello.com>
+ <52C28DC7.9020003@euromail.se>
+ <20131231185035.GD6897@core.coreip.homeip.net>
+ <52C43FFE.3010005@euromail.se>
 MIME-Version: 1.0
-To: Jean-Francois Moine <moinejf@free.fr>
-CC: Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH] ASoC: generic: add generic compound card
- with DT support
-References: <20131231113138.102044cf@armhf>
-In-Reply-To: <20131231113138.102044cf@armhf>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52C43FFE.3010005@euromail.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/31/2013 11:31 AM, Jean-Francois Moine wrote:
-> Some audio cards are built from different hardware components.
-> When such compound cards don't need specific code, this driver creates
-> them with the required DAI links and routes from a DT.
+On Wed, Jan 01, 2014 at 05:19:10PM +0100, Henrik Rydberg wrote:
+> Hi Dmitry,
 > 
-> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
-> ---
-> This code was first developped on the generic simple card, but its
-> recent DT extension cannot be easily extended again to support compound
-> cards as the one in the Cubox.
-> Note also that the example relies on a proposed patch of mine aiming to
-> render the codec name / OF node optional in DAI links
-> (http://mailman.alsa-project.org/pipermail/alsa-devel/2013-December/070082.html).
-> ---
->  .../devicetree/bindings/sound/compound-card.txt |  95 ++++++++++++
->  sound/soc/generic/Kconfig                       |   6 +
->  sound/soc/generic/Makefile                      |   2 +
->  sound/soc/generic/compound-card.c               | 247 +++++++++++++++++++++++++
->  4 file changed, 350 insertions(+)
+> >> What problematic scenario is this supposed to solve?
+> >>
+> >> The 'release on suspend' is only an approximation to the 'close
+> >> laptop' scenario, it is certainly not correct in the coffee table
+> >> case,
+> > 
+> > Why would it not be correct for coffee table? Do we expect the touches
+> > to remain valid while the device is asleep?
 > 
-> diff --git a/Documentation/devicetree/bindings/sound/compound-card.txt b/Documentation/devicetree/bindings/sound/compound-card.txt
-> new file mode 100644
-> index 0000000..554a796
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/sound/compound-card.txt
-> @@ -0,0 +1,95 @@
-> +Device-Tree bindings for compound audio card
-> +
-> +Compound audio card describes the links between the different parts
-> +of an audio card built from different hardware components.
-> +
-> +Required properties:
-> +  - compatible: should be "compound-audio-card"
-> +  - audio-controller: phandle of the audio controller
-> +
-> +Optional properties:
-> +  - routes: list of couple of strings (sink, source)
-> +
-> +Required subnodes:
-> +  - link: DAI link subnode
-> +	At least one link must be specified.
-> +
-> +Required link subnode properties:
-> +  - link-name: names of the DAI link and of the stream
-> +  - cpu-dai-name: name of the CPU or CODEC DAI
-> +		An empty string indicates that the CPU DAI is
-> +		the same as the audio controller.
-> +  - codec-dai-name: name of the CODEC DAI
-> +
-> +Optional link subnode properties:
-> +  - audio-codec or codec-name: phandle or name of the CODEC
-> +		in case the codec-dai-name is not unique
-> +  - format: DAI format. One of:
-> +		"i2s", "right_j", "left_j" , "dsp_a"
-> +		"dsp_b", "ac97", "pdm", "msb", "lsb"
-> +  - front-end or back-end: present if the DAI link describes resp.
-> +		a front-end CPU DAI or a back-end CODEC DAI
-> +  - playback or capture: present if the DAI link is used for
-> +		playback or capture only
+> In some scenarios with placed objects (like a cup or a marker), that would be
+> the case, yes.
+> 
+> >> for instance. Instead of
+> >> hardcoding this in the kernel, userland can easily detect long intervals
+> >> directly using the event time.
+> > 
+> > But with slots it is not only problem with old events being sent out
+> > later, it is that we have mix of old (pre-sleep) and new state.
+> 
+> The new state is not really a problem, it will look exactly the same regardless
+> of how 'old' releases are handled.
+> 
+> > We do that for keys (release them when we transition to system sleep)
+> > and I think it might be worthwhile to do the same for touch data.
+> 
+> I agree that keyboard applications seldom look at time intervals and hence are
+> well helped by such a strategy, even though it is not strictly 'correct'.
+> However, touch interfaces are quite dependent on time intervals, and it
+> therefore makes a lot of sense to resolve touch timeouts directly in the
+> application. It also puts less restrictions on what can be done.
+> 
+> Regarding notifications in general, perhaps it would be interesting to be able
+> to send a notification event via the input interface when a device comes back
+> from sleep. It could help resolve other complex issues, if there were any.
+> 
 
+OK, fair enough. If there is a demand we could send SYN_SYSTEM_RESUME
+event though the interfaces to allow clients "flush" the state or
+otherwise decide if new touch data is actually old touches that were
+there pre-suspend.
 
-As Mark also said, this binding definitely leaks way too much internals of
-the current ASoC implementation. In my opinion the way forward for ASoC is
-to stop to distinguish between different types of components. This is on one
-hand CODECS and CPU-DAIs and on the other hand also front-end and beck-end
-DAIs. The first steps in this direction have already been take by the start
-of the component-fication, but its still a long way to go. Exposing those
-concepts via the devicetree will only make it harder to get rid of them
-later. The bindings for a compound card should essentially describe which
-components are involved and how the fabric between and around them looks
-like. If the type of the component is needed in the ASoC implementation it
-should be possible to auto-discover it. Also I think we want to align the
-devicetree bindings with what the media people have been doing[1]. Audio and
-video are not that different in this regard and there will also be boards
-where the audio and video fabric will be intermingled  (e.g. like on your
-board with HDMI).
+Felipe, will that help in your case?
 
-- Lars
+Thanks.
+
+-- 
+Dmitry
