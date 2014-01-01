@@ -1,92 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754372AbaAAObf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jan 2014 09:31:35 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:47085 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754205AbaAAObe (ORCPT
+	id S1754363AbaAAOku (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jan 2014 09:40:50 -0500
+Received: from ni.piap.pl ([195.187.100.4]:36512 "EHLO ni.piap.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754272AbaAAOkt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 09:31:34 -0500
-Message-ID: <52C426C7.8090706@kernel.org>
-Date: Wed, 01 Jan 2014 14:31:35 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 1 Jan 2014 09:40:49 -0500
+From: khalasa@piap.pl (Krzysztof =?utf-8?Q?Ha=C5=82asa?=)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+References: <m38uv1uuzr.fsf@t19.piap.pl>
+	<20131231112301.GC16456@n2100.arm.linux.org.uk>
+Date: Wed, 01 Jan 2014 15:40:46 +0100
+In-Reply-To: <20131231112301.GC16456@n2100.arm.linux.org.uk> (Russell King's
+	message of "Tue, 31 Dec 2013 11:23:02 +0000")
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: lars@metafoo.de, Marek Vasut <marex@denx.de>, harald@ccbib.org,
-        hector.palacios@digi.com, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv5 RESEND 4/4] iio: mxs-lradc: convert is_divided to a
- bitmap
-References: <1387820884-28140-1-git-send-email-alexandre.belloni@free-electrons.com> <1387820884-28140-5-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1387820884-28140-5-git-send-email-alexandre.belloni@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Message-ID: <m3bnzvsr2p.fsf@t19.piap.pl>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+Subject: Re: Regression (ARM) arch/arm/mm/init.c doesn't build without CONFIG_ARM_PATCH_PHYS_VIRT.
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE,
+	 bases: 20131231 #7214915, check: 20140101 clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Russell King - ARM Linux <linux@arm.linux.org.uk> writes:
 
+> On Tue, Dec 31, 2013 at 12:20:56PM +0100, Krzysztof Hałasa wrote:
+>> arch/arm/mm/init.c: In function 'setup_dma_zone':
+>> arch/arm/mm/init.c:232:19: error: '__pv_phys_offset' undeclared (first use in this function)
+>> 
+>> Reverting the following commit fixes it:
+>
+> Already fixed long before Christmas.  Please use recent kernels.
 
-On 23/12/13 17:48, Alexandre Belloni wrote:
-> mxs_lradc.is_divided was an unsigned long array. Convert it to a bitmap to save
-> some memory.
->
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Hi Alexandre,
+Do you mean something other than Linus's tree? The problem I noted
+is present in his tree as of Dec 30 - on both 3.13-rc6 and (then tip)
+71ce176ee6ed1735b9a1160a5704a915d13849b1.
 
-I've applied this patch, but would have prefered that you post this one 
-in separate series. It is a perfectly valid cleanup, but introducing it
-late in a series leads to uneven reviewing.  Anyhow, as it's trivial and
-I doubt Marek will mind, I've applied it anyway in a new years burst of
-trying to clear the outstanding stuff in my in box ;)
+Or... do you mean the commit that added this regression?
+-- 
+Krzysztof Halasa
 
-Applied to the togreg branch of iio.git
-
-Thanks,
-
-Jonathan
-> ---
->   drivers/staging/iio/adc/mxs-lradc.c | 8 ++++----
->   1 file changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/staging/iio/adc/mxs-lradc.c b/drivers/staging/iio/adc/mxs-lradc.c
-> index a58c6aaa94d3..df71669bb60e 100644
-> --- a/drivers/staging/iio/adc/mxs-lradc.c
-> +++ b/drivers/staging/iio/adc/mxs-lradc.c
-> @@ -211,7 +211,7 @@ struct mxs_lradc {
->
->   	const uint32_t		*vref_mv;
->   	struct mxs_lradc_scale	scale_avail[LRADC_MAX_TOTAL_CHANS][2];
-> -	unsigned int		is_divided[LRADC_MAX_TOTAL_CHANS];
-> +	unsigned long		is_divided;
->
->   	/*
->   	 * Touchscreen LRADC channels receives a private slot in the CTRL4
-> @@ -920,7 +920,7 @@ static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
->
->   		*val = lradc->vref_mv[chan->channel];
->   		*val2 = chan->scan_type.realbits -
-> -			lradc->is_divided[chan->channel];
-> +			test_bit(chan->channel, &lradc->is_divided);
->   		return IIO_VAL_FRACTIONAL_LOG2;
->
->   	case IIO_CHAN_INFO_OFFSET:
-> @@ -965,14 +965,14 @@ static int mxs_lradc_write_raw(struct iio_dev *iio_dev,
->   			/* divider by two disabled */
->   			writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
->   			       lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_CLR);
-> -			lradc->is_divided[chan->channel] = 0;
-> +			clear_bit(chan->channel, &lradc->is_divided);
->   			ret = 0;
->   		} else if (val == scale_avail[MXS_LRADC_DIV_ENABLED].integer &&
->   			   val2 == scale_avail[MXS_LRADC_DIV_ENABLED].nano) {
->   			/* divider by two enabled */
->   			writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
->   			       lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_SET);
-> -			lradc->is_divided[chan->channel] = 1;
-> +			set_bit(chan->channel, &lradc->is_divided);
->   			ret = 0;
->   		}
->
->
+Research Institute for Automation and Measurements PIAP
+Al. Jerozolimskie 202, 02-486 Warsaw, Poland
