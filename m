@@ -1,55 +1,59 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720AbaAAAQG (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Tue, 31 Dec 2013 19:16:06 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:51147 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756701AbaAAAQE (ORCPT
+	id S1756729AbaAAA3o (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Tue, 31 Dec 2013 19:29:44 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:35642 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756702AbaAAA3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 19:16:04 -0500
+	Tue, 31 Dec 2013 19:29:43 -0500
+Date: Wed, 1 Jan 2014 08:29:35 +0800
+From: Han Pingtian <hanpt@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+Subject: [RFC] mm: show message when updating min_free_kbytes in thp
+Message-ID: <20140101002935.GA15683@localhost.localdomain>
+Mail-Followup-To: linux-kernel@vger.kernel.org,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Mel Gorman <mgorman@suse.de>,
+	Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jJxkD7rS0gFAS3mAhwxP05UMW8KNW00C_e2v=Keqj7k3Q@mail.gmail.com>
-References: <1387481759-14535-3-git-send-email-keescook@chromium.org>
-	<tip-8779657d29c0ebcc0c94ede4df2f497baf1b563f@git.kernel.org>
-	<alpine.DEB.2.02.1312301331520.10482@chino.kir.corp.google.com>
-	<CAGXu5jJxkD7rS0gFAS3mAhwxP05UMW8KNW00C_e2v=Keqj7k3Q@mail.gmail.com>
-Date: Tue, 31 Dec 2013 16:16:01 -0800
-X-Google-Sender-Auth: w1hVWA0guQq0p2qjhxxiWD731RU
-Message-ID: <CA+55aFy65HwuqjsZhhTDBy1GYyxig8De=3XZxn8ixnGN7xWMFQ@mail.gmail.com>
-Subject: Re: [patch core/stackprotector] stackprotector: Fix build when
- compiler lacks support
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        James Hogan <james.hogan@imgtec.com>, Michal Marek <mmarek@suse.cz>,
-        Paul Mundt <lethal@linux-sh.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14010100-9332-0000-0000-000002A23FF9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 30, 2013 at 4:45 PM, Kees Cook <keescook@chromium.org> wrote:
->
-> NAK. If you have selected CONFIG_CC_STACKPROTECTOR_STRONG, the build
-> the fail hard. Without this, it means you'll end up with kernels that
-> build and show a stackprotector option in their config, which is
-> false.
+min_free_kbytes may be updated during thp's initialization. Sometimes,
+this will change the value being set by user. Showing message will
+clarify this confusion.
 
-What we really really want to do is to have some way to add config
-options based on shell scripts and compiler support. That would also
-get rid of a lot of Makefile trickery etc.
+Signed-off-by: Han Pingtian <hanpt@linux.vnet.ibm.com>
+---
+ mm/huge_memory.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-Then we could just make CC_STACKPROTECTOR_STRONG depend on
-CC_SUPPORTS_STACKPROTECTOR_STRONG or whatever.
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 7de1bf8..46011c6 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -130,8 +130,11 @@ static int set_recommended_min_free_kbytes(void)
+ 			      (unsigned long) nr_free_buffer_pages() / 20);
+ 	recommended_min <<= (PAGE_SHIFT-10);
+ 
+-	if (recommended_min > min_free_kbytes)
++	if (recommended_min > min_free_kbytes) {
+ 		min_free_kbytes = recommended_min;
++		pr_info("min_free_kbytes is updated to %d by enabling transparent hugepage.\n",
++			min_free_kbytes);
++	}
+ 	setup_per_zone_wmarks();
+ 	return 0;
+ }
+-- 
+1.7.7.6
 
-                Linus
