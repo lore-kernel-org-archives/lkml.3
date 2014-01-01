@@ -1,9 +1,9 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756817AbaAAEi6 (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Tue, 31 Dec 2013 23:38:58 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:19640 "EHLO
+	id S1756835AbaAAEi7 (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Tue, 31 Dec 2013 23:38:59 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:19644 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751249AbaAAEhE (ORCPT
+	with ESMTP id S1751278AbaAAEhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Dec 2013 23:37:04 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -11,9 +11,9 @@ To: linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
         boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
         stefano.stabellini@eu.citrix.com, mukesh.rathor@oracle.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v12 03/18] xen/pvh: Early bootup changes in PV code (v2).
-Date: Tue, 31 Dec 2013 23:35:30 -0500
-Message-Id: <1388550945-25499-4-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH v12 16/18] xen/pvh: Piggyback on PVHVM XenBus.
+Date: Tue, 31 Dec 2013 23:35:43 -0500
+Message-Id: <1388550945-25499-17-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com>
 References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com>
@@ -24,184 +24,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mukesh Rathor <mukesh.rathor@oracle.com>
 
-In the bootup code for PVH we can trap cpuid via vmexit, so don't
-need to use emulated prefix call. We also check for vector callback
-early on, as it is a required feature. PVH also runs at default kernel
-IOPL.
-
-Finally, pure PV settings are moved to a separate function that are
-only called for pure PV, ie, pv with pvmmu. They are also #ifdef
-with CONFIG_XEN_PVMMU.
+PVH is a PV guest with a twist - there are certain things
+that work in it like HVM and some like PV. For the XenBus
+mechanism we want to use the PVHVM mechanism.
 
 Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/enlighten.c | 63 +++++++++++++++++++++++++++++++++---------------
- arch/x86/xen/setup.c     | 18 +++++++++-----
- 2 files changed, 56 insertions(+), 25 deletions(-)
+ drivers/xen/xenbus/xenbus_client.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index fa6ade7..755e5bb 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -46,6 +46,7 @@
- #include <xen/hvm.h>
- #include <xen/hvc-console.h>
- #include <xen/acpi.h>
+diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
+index ec097d6..7f7c454 100644
+--- a/drivers/xen/xenbus/xenbus_client.c
++++ b/drivers/xen/xenbus/xenbus_client.c
+@@ -45,6 +45,7 @@
+ #include <xen/grant_table.h>
+ #include <xen/xenbus.h>
+ #include <xen/xen.h>
 +#include <xen/features.h>
  
- #include <asm/paravirt.h>
- #include <asm/apic.h>
-@@ -262,8 +263,9 @@ static void __init xen_banner(void)
- 	struct xen_extraversion extra;
- 	HYPERVISOR_xen_version(XENVER_extraversion, &extra);
+ #include "xenbus_probe.h"
  
--	printk(KERN_INFO "Booting paravirtualized kernel on %s\n",
--	       pv_info.name);
-+	pr_info("Booting paravirtualized kernel %son %s\n",
-+		xen_feature(XENFEAT_auto_translated_physmap) ?
-+			"with PVH extensions " : "", pv_info.name);
- 	printk(KERN_INFO "Xen version: %d.%d%s%s\n",
- 	       version >> 16, version & 0xffff, extra.extraversion,
- 	       xen_feature(XENFEAT_mmu_pt_update_preserve_ad) ? " (preserve-AD)" : "");
-@@ -331,12 +333,15 @@ static void xen_cpuid(unsigned int *ax, unsigned int *bx,
- 		break;
- 	}
+@@ -743,7 +744,7 @@ static const struct xenbus_ring_ops ring_ops_hvm = {
  
--	asm(XEN_EMULATE_PREFIX "cpuid"
--		: "=a" (*ax),
--		  "=b" (*bx),
--		  "=c" (*cx),
--		  "=d" (*dx)
--		: "0" (*ax), "2" (*cx));
-+	if (xen_pvh_domain())
-+		native_cpuid(ax, bx, cx, dx);
-+	else
-+		asm(XEN_EMULATE_PREFIX "cpuid"
-+			: "=a" (*ax),
-+			"=b" (*bx),
-+			"=c" (*cx),
-+			"=d" (*dx)
-+			: "0" (*ax), "2" (*cx));
- 
- 	*bx &= maskebx;
- 	*cx &= maskecx;
-@@ -1420,6 +1425,19 @@ static void __init xen_setup_stackprotector(void)
- 	pv_cpu_ops.load_gdt = xen_load_gdt;
- }
- 
-+static void __init xen_pvh_early_guest_init(void)
-+{
-+	if (!xen_feature(XENFEAT_auto_translated_physmap))
-+		return;
-+
-+	if (xen_feature(XENFEAT_hvm_callback_vector))
-+		xen_have_vector_callback = 1;
-+
-+#ifdef CONFIG_X86_32
-+	BUG(); /* PVH: Implement proper support. */
-+#endif
-+}
-+
- /* First C function to be called on Xen boot */
- asmlinkage void __init xen_start_kernel(void)
+ void __init xenbus_ring_ops_init(void)
  {
-@@ -1431,13 +1449,18 @@ asmlinkage void __init xen_start_kernel(void)
- 
- 	xen_domain_type = XEN_PV_DOMAIN;
- 
-+	xen_setup_features();
-+	xen_pvh_early_guest_init();
- 	xen_setup_machphys_mapping();
- 
- 	/* Install Xen paravirt ops */
- 	pv_info = xen_info;
- 	pv_init_ops = xen_init_ops;
--	pv_cpu_ops = xen_cpu_ops;
- 	pv_apic_ops = xen_apic_ops;
-+	if (xen_pvh_domain())
-+		pv_cpu_ops.cpuid = xen_cpuid;
-+	else
-+		pv_cpu_ops = xen_cpu_ops;
- 
- 	x86_init.resources.memory_setup = xen_memory_setup;
- 	x86_init.oem.arch_setup = xen_arch_setup;
-@@ -1469,8 +1492,6 @@ asmlinkage void __init xen_start_kernel(void)
- 	/* Work out if we support NX */
- 	x86_configure_nx();
- 
--	xen_setup_features();
--
- 	/* Get mfn list */
- 	if (!xen_feature(XENFEAT_auto_translated_physmap))
- 		xen_build_dynamic_phys_to_machine();
-@@ -1548,14 +1569,18 @@ asmlinkage void __init xen_start_kernel(void)
- 	/* set the limit of our address space */
- 	xen_reserve_top();
- 
--	/* We used to do this in xen_arch_setup, but that is too late on AMD
--	 * were early_cpu_init (run before ->arch_setup()) calls early_amd_init
--	 * which pokes 0xcf8 port.
--	 */
--	set_iopl.iopl = 1;
--	rc = HYPERVISOR_physdev_op(PHYSDEVOP_set_iopl, &set_iopl);
--	if (rc != 0)
--		xen_raw_printk("physdev_op failed %d\n", rc);
-+	/* PVH: runs at default kernel iopl of 0 */
-+	if (!xen_pvh_domain()) {
-+		/*
-+		 * We used to do this in xen_arch_setup, but that is too late
-+		 * on AMD were early_cpu_init (run before ->arch_setup()) calls
-+		 * early_amd_init which pokes 0xcf8 port.
-+		 */
-+		set_iopl.iopl = 1;
-+		rc = HYPERVISOR_physdev_op(PHYSDEVOP_set_iopl, &set_iopl);
-+		if (rc != 0)
-+			xen_raw_printk("physdev_op failed %d\n", rc);
-+	}
- 
- #ifdef CONFIG_X86_32
- 	/* set up basic CPUID stuff */
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 68c054f..2137c51 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -563,16 +563,13 @@ void xen_enable_nmi(void)
- 		BUG();
- #endif
- }
--void __init xen_arch_setup(void)
-+void __init xen_pvmmu_arch_setup(void)
- {
--	xen_panic_handler_init();
--
- 	HYPERVISOR_vm_assist(VMASST_CMD_enable, VMASST_TYPE_4gb_segments);
- 	HYPERVISOR_vm_assist(VMASST_CMD_enable, VMASST_TYPE_writable_pagetables);
- 
--	if (!xen_feature(XENFEAT_auto_translated_physmap))
--		HYPERVISOR_vm_assist(VMASST_CMD_enable,
--				     VMASST_TYPE_pae_extended_cr3);
-+	HYPERVISOR_vm_assist(VMASST_CMD_enable,
-+			     VMASST_TYPE_pae_extended_cr3);
- 
- 	if (register_callback(CALLBACKTYPE_event, xen_hypervisor_callback) ||
- 	    register_callback(CALLBACKTYPE_failsafe, xen_failsafe_callback))
-@@ -581,6 +578,15 @@ void __init xen_arch_setup(void)
- 	xen_enable_sysenter();
- 	xen_enable_syscall();
- 	xen_enable_nmi();
-+}
-+
-+/* This function is not called for HVM domains */
-+void __init xen_arch_setup(void)
-+{
-+	xen_panic_handler_init();
-+	if (!xen_feature(XENFEAT_auto_translated_physmap))
-+		xen_pvmmu_arch_setup();
-+
- #ifdef CONFIG_ACPI
- 	if (!(xen_start_info->flags & SIF_INITDOMAIN)) {
- 		printk(KERN_INFO "ACPI in unprivileged domain disabled\n");
+-	if (xen_pv_domain())
++	if (xen_pv_domain() && !xen_feature(XENFEAT_auto_translated_physmap))
+ 		ring_ops = &ring_ops_pv;
+ 	else
+ 		ring_ops = &ring_ops_hvm;
 -- 
 1.8.3.1
 
