@@ -1,152 +1,55 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804AbaAAFfA (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Wed, 1 Jan 2014 00:35:00 -0500
-Received: from www262.sakura.ne.jp ([202.181.97.72]:50459 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752AbaAAFe7 (ORCPT
+	id S1751685AbaAAFtc (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Wed, 1 Jan 2014 00:49:32 -0500
+Received: from smtprelay0017.hostedemail.com ([216.40.44.17]:37318 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750970AbaAAFtb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 00:34:59 -0500
-X-Nat-Received: from [202.181.97.72]:55081 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1388554449.30138
-To: joe@perches.com
+	Wed, 1 Jan 2014 00:49:31 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2740:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3871:3872:3874:4321:4605:5007:7652:7903:10004:10400:10848:11026:11232:11658:11914:12295:12517:12519:12533:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: rings07_35bc0433c3656
+X-Filterd-Recvd-Size: 2020
+Message-ID: <1388555362.2259.38.camel@joe-AO722>
+Subject: Re: [PATCH] lib/vsprintf: add %pT[C012] format specifier
+From: Joe Perches <joe@perches.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 Cc: akpm@linux-foundation.org, geert@linux-m68k.org, jkosina@suse.cz,
         viro@zeniv.linux.org.uk, davem@davemloft.net, keescook@chromium.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lib/vsprintf: add %pT[C012] format specifier
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Tue, 31 Dec 2013 21:49:22 -0800
+In-Reply-To: <201401011434.GAF34360.FFQOVtFOHJSMLO@I-love.SAKURA.ne.jp>
 References: <1388282837.24123.24.camel@joe-AO722>
-	<201312292113.FIJ60946.tFOVOJOHLQSFFM@I-love.SAKURA.ne.jp>
-	<1388422545.26796.36.camel@joe-AO722>
-	<201312311553.IGG09071.HLJtFVSQFFOOOM@I-love.SAKURA.ne.jp>
-	<1388507067.2259.24.camel@joe-AO722>
-In-Reply-To: <1388507067.2259.24.camel@joe-AO722>
-Message-Id: <201401011434.GAF34360.FFQOVtFOHJSMLO@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Wed, 1 Jan 2014 14:34:03 +0900
+	 <201312292113.FIJ60946.tFOVOJOHLQSFFM@I-love.SAKURA.ne.jp>
+	 <1388422545.26796.36.camel@joe-AO722>
+	 <201312311553.IGG09071.HLJtFVSQFFOOOM@I-love.SAKURA.ne.jp>
+	 <1388507067.2259.24.camel@joe-AO722>
+	 <201401011434.GAF34360.FFQOVtFOHJSMLO@I-love.SAKURA.ne.jp>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 31122013 #7214915, status: clean
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches wrote:
-> > Please describe your format and rules (e.g. what byte starts a built-in token;
-> > what bytes are used for representing variable name, what separates flags, field
-> > width and precision options from variable name if these options are specified,
-> > what byte terminates a built-in token) using examples below.
-> > 
-> >     pr_info("%s(%d)\n", current->comm, current->pid);
+On Wed, 2014-01-01 at 14:34 +0900, Tetsuo Handa wrote:
+> I think we want formatting directive support because we have users shown below.
 > 
-> 	pr_info(CURRENT_COMM "(" CURRENT_PID ")\n");
-> 
-> >     pr_info("[%-6.6s]\n", current->comm);
-> 
-> I think using formatting controls for field widths and
-> such shouldn't be supported but if it is, then using yet
-> another macro form like below is possible
-> 
-> either:
-> #define CURRENT_COMM_FORMAT(fmt)		\
-> 	CURRENT_SUB fmt "2"
-> or
-> #define CURRENT_COMM_FORMATTED(fmt)		\
-> 	CURRENT_SUB __stringify(fmt) "2"
-> 
-> So maybe,
-> 	pr_info(CURRENT_COMM_FORMAT("-6.6") "\n");
-> or
-> 	pr_info(CURRENT_COMM_FORMATTED(-6.6) "\n");
-> 
-> depending on taste could work.
-> 
-> "2" would need changing to something like "t2" so any
-> leading format directives like field width and precision
-> could be done properly.
-> 
-> In other words: using a separating byte may be necessary if
-> some formatting directive support is required.
-> 
+>   fs/afs/internal.h:         printk("[%-6.6s] "FMT"\n", current->comm ,##__VA_ARGS__)
+>   fs/cachefiles/internal.h:  printk(KERN_DEBUG "[%-6.6s] "FMT"\n", current->comm, ##__VA_ARGS__)
+>   fs/fscache/internal.h:     printk(KERN_DEBUG "[%-6.6s] "FMT"\n", current->comm, ##__VA_ARGS__)
 
-I think we want formatting directive support because we have users shown below.
+Maybe, but I still think it's not particularly useful
+and should not be possible/isn't necessary.
 
-  fs/afs/internal.h:         printk("[%-6.6s] "FMT"\n", current->comm ,##__VA_ARGS__)
-  fs/cachefiles/internal.h:  printk(KERN_DEBUG "[%-6.6s] "FMT"\n", current->comm, ##__VA_ARGS__)
-  fs/fscache/internal.h:     printk(KERN_DEBUG "[%-6.6s] "FMT"\n", current->comm, ##__VA_ARGS__)
+> This choice (i.e. reserve only '\xFF') is more resource economy than my
+> previous choice (i.e. reserve '\x7F' to '\xFF') at the cost of wasting only
+> one byte compared to my previous choice.
 
-Though I think that
+I supposed that's better.
 
-> This wouldn't/couldn't work with formats where field length
-> is specified via "*" with a separate int.
-> 
-> Perhaps that's a good enough reason not to support using
-> format directives.
+Is there a particularly utility/reason to use 0xff
+vs ascii SUB/PU1/PU2?
 
-we don't need to support complete set like '*'.
 
-> The goal of a single leading char is simply resource
-> economy.  Using fewer chars from the available pool may be
-> better than using more.  Using a couple more bytes in the
-> format string doesn't seem an excessive overhead.
-
-Then, I think we can choose as
-
-  Byte for beginning of built-in token:
-
-    '\xFF'
-
-  Bytes for specifying flags, field width, precision options:
-
-    '0' to '9', '-' and '.'
-
-  Bytes for specifying built-in variable:
-
-    All but '\xFF', '0' to '9', '-', '.', '%' and '\x00'
-
-and define 241 built-in variables, while using only single leading char (i.e.
-'\xFF') from the available pool (all but '%' and '\x00').
-
-  #define EMBED_FORMAT        "\xFF"
-  #define EMBED_CURRENT_COMM  "\xFF" "\x80"
-  #define EMBED_CURRENT_PID   "\xFF" "\x81"
-
-  pr_info("%s(%d)\n", current->comm, current->pid);
-    => pr_info(EMBED_CURRENT_COMM "(" EMBED_CURRENT_PID ")\n");
-
-  pr_info("[%-6.6s]\n", current->comm);
-    => pr_info(EMBED_FORMAT "-6.6" EMBED_CURRENT_COMM "\n");
-
-Since I assume that 241 built-in variables are sufficient, I'm laying
-"Bytes for specifying built-in variable" under obligation of also acting as
-"Bytes for ending of built-in token".
-
-This choice works because once format_decode() encounters '\xFF' byte, it can
-continue reading until it encounters one of "Bytes for ending of built-in
-token", and split them into "Bytes for specifying flags, field width, precision
-options" and "Bytes for specifying built-in variable" without any fuzziness.
-
-  \xFF\x80(\xFF\x80)\n
-  ^   ^    ^   ^
-  |   |    |   +- Decoder interprets as variable name and understands that this
-  |   |    |      is a trailing byte.
-  |   |    +----- Decoder interprets as a leading byte because decoder sees
-  |   |           this byte for the first time.
-  |   +---------- Decoder interprets as variable name and understands that this
-  |               is a trailing byte.
-  +-------------- Decoder interprets as a leading byte because decoder sees
-                  this byte for the first time.
-
-  [\xFF-6.6\xFF\x80]\n
-   ^   ^   ^   ^
-   |   |   |   +- Decoder interprets as variable name and understands that
-   |   |   |      this is a trailing byte.
-   |   |   +----- Decoder ignores this byte because decoder already saw
-   |   |          this byte.
-   |   +--------- Decoder interprets as format specifier.
-   +------------- Decoder interprets as leading byte because decoder sees
-                  this byte for the first time.
-
-This choice (i.e. reserve only '\xFF') is more resource economy than my
-previous choice (i.e. reserve '\x7F' to '\xFF') at the cost of wasting only
-one byte compared to my previous choice.
