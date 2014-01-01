@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754501AbaAAQQJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jan 2014 11:16:09 -0500
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:46148 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752804AbaAAQQH (ORCPT
+	id S1754526AbaAAQVd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jan 2014 11:21:33 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:42303 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752804AbaAAQVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 11:16:07 -0500
-X-SENDER-IP: [85.230.168.69]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ak8dAA8+xFJV5qhFPGdsb2JhbAANS4tRsWSBKwMBAQEBOIJaAQEBAQIBeAEFCwshFg8JAwIBAgExFAYNAQcBAYd4DallmkkXjx0HhDYBA61ZgWcj
-X-IronPort-AV: E=Sophos;i="4.95,585,1384297200"; 
-   d="scan'208";a="451005588"
-Message-ID: <52C43FFE.3010005@euromail.se>
-Date: Wed, 01 Jan 2014 17:19:10 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: "Felipe F. Tonello" <eu@felipetonello.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] input: mt: Add helper function to send end events
-References: <1388455601-17033-1-git-send-email-eu@felipetonello.com> <52C28DC7.9020003@euromail.se> <20131231185035.GD6897@core.coreip.homeip.net>
-In-Reply-To: <20131231185035.GD6897@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Jan 2014 11:21:31 -0500
+From: Roman Pen <r.peniaev@gmail.com>
+Cc: Roman Peniaev <r.peniaev@gmail.com>, David Woodhouse <dwmw2@infradead.org>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] mtd: mtd_blkdevs: handle REQ_FLUSH request and do explicit flush of writeback buffer
+Date: Thu,  2 Jan 2014 01:21:21 +0900
+Message-Id: <1388593281-22613-1-git-send-email-r.peniaev@gmail.com>
+X-Mailer: git-send-email 1.8.5.2
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+From: Roman Peniaev <r.peniaev@gmail.com>
 
->> What problematic scenario is this supposed to solve?
->>
->> The 'release on suspend' is only an approximation to the 'close
->> laptop' scenario, it is certainly not correct in the coffee table
->> case,
-> 
-> Why would it not be correct for coffee table? Do we expect the touches
-> to remain valid while the device is asleep?
+mtd_blkdevs is device with volatile cache (writeback buffer), so it should support
+REQ_FLUSH to do explicit flush.
 
-In some scenarios with placed objects (like a cup or a marker), that would be
-the case, yes.
+Without this patch 'sync' does not guarantee that writeback buffer will be flushed
+on disk in case of power off, e.g.:
 
->> for instance. Instead of
->> hardcoding this in the kernel, userland can easily detect long intervals
->> directly using the event time.
-> 
-> But with slots it is not only problem with old events being sent out
-> later, it is that we have mix of old (pre-sleep) and new state.
+  $ cp some_file /mnt
+  $ sync
 
-The new state is not really a problem, it will look exactly the same regardless
-of how 'old' releases are handled.
+  ### POWER OFF
 
-> We do that for keys (release them when we transition to system sleep)
-> and I think it might be worthwhile to do the same for touch data.
+In case of this sequence writeback buffer will not be flushed on disk.
 
-I agree that keyboard applications seldom look at time intervals and hence are
-well helped by such a strategy, even though it is not strictly 'correct'.
-However, touch interfaces are quite dependent on time intervals, and it
-therefore makes a lot of sense to resolve touch timeouts directly in the
-application. It also puts less restrictions on what can be done.
+This patch fixes this behaviour and explicitly reports to block layer that flush
+requests are being supported.
 
-Regarding notifications in general, perhaps it would be interesting to be able
-to send a notification event via the input interface when a device comes back
-from sleep. It could help resolve other complex issues, if there were any.
+Signed-off-by: Roman Peniaev <r.peniaev@gmail.com>
+CC: David Woodhouse <dwmw2@infradead.org>
+CC: linux-mtd@lists.infradead.org
+CC: linux-kernel@vger.kernel.org
+---
+ drivers/mtd/mtd_blkdevs.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-Thanks,
-Henrik
+diff --git a/drivers/mtd/mtd_blkdevs.c b/drivers/mtd/mtd_blkdevs.c
+index 5073cbc..feafe5c 100644
+--- a/drivers/mtd/mtd_blkdevs.c
++++ b/drivers/mtd/mtd_blkdevs.c
+@@ -89,6 +89,12 @@ static int do_blktrans_request(struct mtd_blktrans_ops *tr,
+ 	if (req->cmd_type != REQ_TYPE_FS)
+ 		return -EIO;
+ 
++	if (req->cmd_flags & REQ_FLUSH) {
++		if (tr->flush)
++			return tr->flush(dev);
++		return 0;
++	}
++
+ 	if (blk_rq_pos(req) + blk_rq_cur_sectors(req) >
+ 	    get_capacity(req->rq_disk))
+ 		return -EIO;
+@@ -409,6 +415,8 @@ int add_mtd_blktrans_dev(struct mtd_blktrans_dev *new)
+ 	if (!new->rq)
+ 		goto error3;
+ 
++	blk_queue_flush(new->rq, REQ_FLUSH);
++
+ 	new->rq->queuedata = new;
+ 	blk_queue_logical_block_size(new->rq, tr->blksize);
+ 
+-- 
+1.8.5.2
 
