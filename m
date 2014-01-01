@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783AbaAAULI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jan 2014 15:11:08 -0500
-Received: from smtp-out-181.synserver.de ([212.40.185.181]:1034 "EHLO
-	smtp-out-079.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754132AbaAAULG (ORCPT
+	id S1755666AbaAAULP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jan 2014 15:11:15 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59890 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754132AbaAAULL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 15:11:06 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 26234
-Message-ID: <52C4766B.8080000@metafoo.de>
-Date: Wed, 01 Jan 2014 21:11:23 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
-MIME-Version: 1.0
-To: Jean-Francois Moine <moinejf@free.fr>
-CC: Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH] ASoC: generic: add generic compound card
- with DT support
-References: <20131231113138.102044cf@armhf> <52C466E1.3030302@metafoo.de> <20140101210814.31e3f3a9@armhf>
-In-Reply-To: <20140101210814.31e3f3a9@armhf>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 1 Jan 2014 15:11:11 -0500
+Date: Wed, 1 Jan 2014 20:10:53 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Joe Xue <lgxue@hotmail.com>
+Cc: "cooloney@gmail.com" <cooloney@gmail.com>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "rob@landley.net" <rob@landley.net>,
+        "milo.kim@ti.com" <milo.kim@ti.com>, "pavel@ucw.cz" <pavel@ucw.cz>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH] Add LED pattern trigger
+Message-ID: <20140101201053.12be7d27@alan.etchedpixels.co.uk>
+In-Reply-To: <BLU172-W451DF59115DB2B0A7F694AACC90@phx.gbl>
+References: <1388362275-1618-1-git-send-email-lgxue@hotmail.com>
+	<20131230162158.7420e811@alan.etchedpixels.co.uk>
+	<BLU172-W451DF59115DB2B0A7F694AACC90@phx.gbl>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/01/2014 09:08 PM, Jean-Francois Moine wrote:
-> On Wed, 01 Jan 2014 20:05:05 +0100
-> Lars-Peter Clausen <lars@metafoo.de> wrote:
-> 
->> As Mark also said, this binding definitely leaks way too much internals of
->> the current ASoC implementation. In my opinion the way forward for ASoC is
->> to stop to distinguish between different types of components. This is on one
->> hand CODECS and CPU-DAIs and on the other hand also front-end and beck-end
->> DAIs. The first steps in this direction have already been take by the start
->> of the component-fication, but its still a long way to go. Exposing those
->> concepts via the devicetree will only make it harder to get rid of them
->> later. The bindings for a compound card should essentially describe which
->> components are involved and how the fabric between and around them looks
->> like. If the type of the component is needed in the ASoC implementation it
->> should be possible to auto-discover it. Also I think we want to align the
->> devicetree bindings with what the media people have been doing[1].
-> 
-> (you forgot the [1] reference)
+On Tue, 31 Dec 2013 13:48:50 -0500
+Joe Xue <lgxue@hotmail.com> wrote:
 
-http://lxr.free-electrons.com/source/Documentation/devicetree/bindings/media/video-interfaces.txt
+> >> + * Based on Richard Purdie's ledtrig-timer.c and Atsushi Nemoto's
+> >> + * ledtrig-heartbeat.c and Shuah Khan's ledtrig-transient.c
+> >
+> > I stil think this belongs in user space except for platforms with hardware
+> > acceleration for it.
+> 
+> This can free the user space application from loop or thread.
+
+Which is not a good reason for putting it in the kernel. I could make the
+same argument for putting firefox in the kernel ...
+
+> > This doesn't as far as I can see do what you think. If I have the file
+> > currently open then device_remove_file will not remove my existing access
+> > to it, but you just released the pattern data so I now write to free
+> > memory.
+> 
+> will add the mutex lock to avoid that 		 	   		  
+
+Ok
