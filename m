@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753AbaAAVVM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jan 2014 16:21:12 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:37244 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754586AbaAAVVK (ORCPT
+	id S1754805AbaAAWVA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jan 2014 17:21:00 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:48154 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754747AbaAAWU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 16:21:10 -0500
-Message-ID: <52C486BC.50603@landley.net>
-Date: Wed, 01 Jan 2014 15:21:00 -0600
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 1 Jan 2014 17:20:58 -0500
+X-Auth-Info: O40L8dIcZd/yT6wdeKF9zwFBdjKbPYS5LY9wrA607QM=
+From: Marek Vasut <marex@denx.de>
+To: Jonathan Cameron <jic23@kernel.org>
+Subject: Re: [PATCHv5 RESEND 4/4] iio: mxs-lradc: convert is_divided to a bitmap
+Date: Wed, 1 Jan 2014 20:31:52 +0100
+User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.10.5; x86_64; ; )
+Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>, lars@metafoo.de,
+        harald@ccbib.org, hector.palacios@digi.com, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1387820884-28140-1-git-send-email-alexandre.belloni@free-electrons.com> <1387820884-28140-5-git-send-email-alexandre.belloni@free-electrons.com> <52C426C7.8090706@kernel.org>
+In-Reply-To: <52C426C7.8090706@kernel.org>
 MIME-Version: 1.0
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-CC: Oleg Nesterov <oleg@redhat.com>, mtk.manpages@gmail.com,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: Question about /proc/uptime
-References: <1388025009.1176.17@driftwood>	<20131227144504.GA17192@redhat.com>	<20131230095656.4c78dd98@mschwide>	<20131230151110.GA29636@redhat.com>	<20131230162617.1b013251@mschwide>	<52C396E3.5080000@landley.net> <20140101134121.79787caf@mschwide>
-In-Reply-To: <20140101134121.79787caf@mschwide>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201401012031.52593.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/01/14 06:41, Martin Schwidefsky wrote:
-> On Tue, 31 Dec 2013 22:17:39 -0600
-> Rob Landley <rob@landley.net> wrote:
->
->> On 12/30/13 09:26, Martin Schwidefsky wrote:
->>> On Mon, 30 Dec 2013 16:11:10 +0100
->>> Oleg Nesterov <oleg@redhat.com> wrote:
->>>> Not sure I understand... except that timekeeping_resume() does
->>>> __timekeeping_inject_sleeptime().
->>>
->>> Hmm, you are right. The sleeptime is added to the monotonic boottime.
->>> So the first value of /proc/uptime is the wall-time since boot.
->>> And the second value is combined idle time over all cpus.
->>
->> Is there an obvious way to query the non-suspend uptime from userspace?
->
-> clock_gettime with CLOCK_MONOTONIC gives you the uptime minus without the
-> suspend time.
+On Wednesday, January 01, 2014 at 03:31:35 PM, Jonathan Cameron wrote:
+> On 23/12/13 17:48, Alexandre Belloni wrote:
+> > mxs_lradc.is_divided was an unsigned long array. Convert it to a bitmap
+> > to save some memory.
+> > 
+> > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> 
+> Hi Alexandre,
+> 
+> I've applied this patch, but would have prefered that you post this one
+> in separate series. It is a perfectly valid cleanup, but introducing it
+> late in a series leads to uneven reviewing.  Anyhow, as it's trivial and
+> I doubt Marek will mind, I've applied it anyway in a new years burst of
+> trying to clear the outstanding stuff in my in box ;)
+> 
+> Applied to the togreg branch of iio.git
+> 
+> Thanks,
 
-Given that the clock_gettime man page says:
+I dont mind, thanks for geting these in. And happy new year to you guys :)
 
-   CLOCK_MONOTONIC
-     Clock that cannot be set and  represents  monotonic  time  since
-     some unspecified starting point.
-
-Can I rely on it _continuing_ to do so in future, and if so should the 
-man page be clarified?
-
-Rob
+Best regards,
+Marek Vasut
