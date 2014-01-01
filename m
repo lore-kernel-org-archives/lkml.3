@@ -1,24 +1,44 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751340Ab3L1VzB (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sat, 28 Dec 2013 16:55:01 -0500
-Received: from smtp.tjrn.jus.br ([186.209.102.50]:48701 "EHLO
-	z-cairo.tjrn.jus.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751047Ab3L1Vy7 convert rfc822-to-8bit (ORCPT
+	id S1752108Ab3LaHht (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Tue, 31 Dec 2013 02:37:49 -0500
+Received: from [213.186.176.85] ([213.186.176.85]:60629 "EHLO mail.inu.edu.jo"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751762Ab3LaHhr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Dec 2013 16:54:59 -0500
-X-Greylist: delayed 428 seconds by postgrey-1.27 at vger.kernel.org; Sat, 28 Dec 2013 16:54:59 EST
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 31 Dec 2013 02:37:47 -0500
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
+Content-Transfer-Encoding: 8BIT
 Content-Description: Mail message body
-Subject: Hello
-To: Recipients <info@hotmail.com>
-From: "LEUNG CHEUNG" <info@hotmail.com>
-Date: Sun, 29 Dec 2013 03:15:36 +0530
-Reply-To: mr.leungcheng25@hotmail.com
-Message-Id: <20131228214356.C551A1314345@z-saopaulo.tjrn.jus.br>
+Subject: Viimeinen ilmoitus
+To: Recipients <STALLION@vger.kernel.org>
+From: STALLION@vger.kernel.org, MEGA@vger.kernel.org
+Date: Tue, 31 Dec 2013 16:14:17 -0800
+Reply-To: infostallion@aol.com
+X-Antivirus: avast! (VPS 131230-1, 12/30/2013), Outbound message
+X-Antivirus-Status: Clean
+Message-ID: <MAILNHi9u5tojwl1uSf000014c1@mail.inu.edu.jo>
+X-OriginalArrivalTime: 31 Dec 2013 04:11:57.0093 (UTC) FILETIME=[72065550:01CF05DE]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I need your assistance to transfer $22,500,000.00 Dollars from Hong Kong
+Viimeinen ilmoitus
+Sähköpostiosoitteesi ID on voittanut (450,000.00 euroa) Espanjan "El Gordo"
+Kansainvälinen E-mail arpajaisvoittoluettelot oli onnekas numeroita 9/11/13/24/43 ja
+Ref: ES/9420X2/68.
+Suunnittelua ja hallintaa Yhteystiedot:
+STALLION MEGA KORVAUSVAATIMUKSEN AGENCY
+Juan Carlos
+ 
+E-mail infostallion@aol.com
+Tel :0034-632 361 467 (puhuu Englanti ja Espanja)
+Teidän koko nimi, osoite, ikä, ammatti, puhelinnumero,
+Lähetä replay tähän e-mail: infostallion@aol.com
+Onneksi olkoon.
+Ystävällisin terveisin,
+
+---
+This email is free from viruses and malware because avast! Antivirus protection is active.
+http://www.avast.com
+
