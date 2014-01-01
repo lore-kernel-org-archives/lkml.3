@@ -1,190 +1,55 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756850AbaAAEkm (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Tue, 31 Dec 2013 23:40:42 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:19643 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276AbaAAEhE (ORCPT
+	id S1752146AbaAAE5U (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Tue, 31 Dec 2013 23:57:20 -0500
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:62767 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916AbaAAE5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 23:37:04 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        stefano.stabellini@eu.citrix.com, mukesh.rathor@oracle.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v12 15/18] xen/pvh: Piggyback on PVHVM for grant driver (v2)
-Date: Tue, 31 Dec 2013 23:35:42 -0500
-Message-Id: <1388550945-25499-16-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com>
-References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Tue, 31 Dec 2013 23:57:19 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131231163851.GJ21823@kernel.dk>
+References: <1388064698-27344-1-git-send-email-tom.leiming@gmail.com>
+	<1388064698-27344-2-git-send-email-tom.leiming@gmail.com>
+	<20131231163851.GJ21823@kernel.dk>
+Date: Wed, 1 Jan 2014 12:57:18 +0800
+Message-ID: <CACVXFVO8XSZPLmkQ6JowEsJ41JcDsEdNCf5Qj5XpCL27NrOnPA@mail.gmail.com>
+Subject: Re: [PATCH v1 1/5] block: blk-mq: avoid initializing request during
+ its completion
+From: Ming Lei <tom.leiming@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In PVH the shared grant frame is the PFN and not MFN,
-hence its mapped via the same code path as HVM.
+Hi Jens,
 
-The allocation of the grant frame is done differently - we
-do not use the early platform-pci driver and have an
-ioremap area - instead we use balloon memory and stitch
-all of the non-contingous pages in a virtualized area.
+On Wed, Jan 1, 2014 at 12:38 AM, Jens Axboe <axboe@kernel.dk> wrote:
+> On Thu, Dec 26 2013, Ming Lei wrote:
+>> One problem is that request->start_time/start_time_ns could be
+>> set as wrong.
+>>
+>> Also it is normal to intialize one data structure just after its
+>> allocation.
+>>
+>> So move the initialization out of its completion path.
+>
+> It's done that way because of presumed cache hotness on completion,
+> since we just touched a lot of the members. Lets just fix the start time
+> issue by itself.
 
-That means when we call the hypervisor to replace the GMFN
-with a XENMAPSPACE_grant_table type, we need to lookup the
-old PFN for every iteration instead of assuming a flat
-contingous PFN allocation.
+But some members of request are already touched in allocation
+path(blk-mq core) too, and lots of members will be touched by
+driver for starting the transfer.
 
-Lastly, we only use v1 for grants. This is because PVHVM
-is not able to use v2 due to no XENMEM_add_to_physmap
-calls on the error status page (see commit
-69e8f430e243d657c2053f097efebc2e2cd559f0
- xen/granttable: Disable grant v2 for HVM domains.)
+Also I didn't observe obvious effect on L1 dcache load/store miss rate
+after applying the patch when reading/writing on null_blk device.
 
-Until that is implemented this workaround has to
-be in place.
+Considered the theoretic advantage of reinitializing in free path, I
+will just fix the start time issue by itself.
 
-Also per suggestions by Stefano utilize the PVHVM paths
-as they share common functionality.
-
-v2 of this patch moves most of the PVH code out in the
-arch/x86/xen/grant-table driver and touches only minimally
-the generic driver.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/grant-table.c | 64 ++++++++++++++++++++++++++++++++++++++++++++++
- drivers/xen/gntdev.c       |  2 +-
- drivers/xen/grant-table.c  | 13 ++++++----
- 3 files changed, 73 insertions(+), 6 deletions(-)
-
-diff --git a/arch/x86/xen/grant-table.c b/arch/x86/xen/grant-table.c
-index 3a5f55d..040e064 100644
---- a/arch/x86/xen/grant-table.c
-+++ b/arch/x86/xen/grant-table.c
-@@ -125,3 +125,67 @@ void arch_gnttab_unmap(void *shared, unsigned long nr_gframes)
- 	apply_to_page_range(&init_mm, (unsigned long)shared,
- 			    PAGE_SIZE * nr_gframes, unmap_pte_fn, NULL);
- }
-+#ifdef CONFIG_XEN_PVHVM
-+#include <xen/balloon.h>
-+#include <linux/slab.h>
-+static int __init xlated_setup_gnttab_pages(void)
-+{
-+	struct page **pages;
-+	xen_pfn_t *pfns;
-+	int rc, i;
-+	unsigned long nr_grant_frames = gnttab_max_grant_frames();
-+
-+	BUG_ON(nr_grant_frames == 0);
-+	pages = kcalloc(nr_grant_frames, sizeof(pages[0]), GFP_KERNEL);
-+	if (!pages)
-+		return -ENOMEM;
-+
-+	pfns = kcalloc(nr_grant_frames, sizeof(pfns[0]), GFP_KERNEL);
-+	if (!pfns) {
-+		kfree(pages);
-+		return -ENOMEM;
-+	}
-+	rc = alloc_xenballooned_pages(nr_grant_frames, pages, 0 /* lowmem */);
-+	if (rc) {
-+		pr_warn("%s Couldn't balloon alloc %ld pfns rc:%d\n", __func__,
-+			nr_grant_frames, rc);
-+		kfree(pages);
-+		kfree(pfns);
-+		return rc;
-+	}
-+	for (i = 0; i < nr_grant_frames; i++)
-+		pfns[i] = page_to_pfn(pages[i]);
-+
-+	rc = arch_gnttab_map_shared(pfns, nr_grant_frames, nr_grant_frames,
-+				    (void *)&xen_auto_xlat_grant_frames.vaddr);
-+
-+	kfree(pages);
-+	if (rc) {
-+		pr_warn("%s Couldn't map %ld pfns rc:%d\n", __func__,
-+			nr_grant_frames, rc);
-+		free_xenballooned_pages(nr_grant_frames, pages);
-+		kfree(pfns);
-+		return rc;
-+	}
-+
-+	xen_auto_xlat_grant_frames.pfn = pfns;
-+	xen_auto_xlat_grant_frames.count = nr_grant_frames;
-+
-+	return 0;
-+}
-+
-+static int __init xen_pvh_gnttab_setup(void)
-+{
-+	if (!xen_domain())
-+		return -ENODEV;
-+
-+	if (!xen_pv_domain())
-+		return -ENODEV;
-+
-+	if (!xen_feature(XENFEAT_auto_translated_physmap))
-+		return -ENODEV;
-+
-+	return xlated_setup_gnttab_pages();
-+}
-+core_initcall(xen_pvh_gnttab_setup); /* Call it _before_ __gnttab_init */
-+#endif
-diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
-index e41c79c..073b4a1 100644
---- a/drivers/xen/gntdev.c
-+++ b/drivers/xen/gntdev.c
-@@ -846,7 +846,7 @@ static int __init gntdev_init(void)
- 	if (!xen_domain())
- 		return -ENODEV;
- 
--	use_ptemod = xen_pv_domain();
-+	use_ptemod = !xen_feature(XENFEAT_auto_translated_physmap);
- 
- 	err = misc_register(&gntdev_miscdev);
- 	if (err != 0) {
-diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-index b117fd6..2fa3a4c 100644
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -1098,7 +1098,7 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
- 	unsigned int nr_gframes = end_idx + 1;
- 	int rc;
- 
--	if (xen_hvm_domain()) {
-+	if (xen_feature(XENFEAT_auto_translated_physmap)) {
- 		struct xen_add_to_physmap xatp;
- 		unsigned int i = end_idx;
- 		rc = 0;
-@@ -1174,7 +1174,7 @@ static void gnttab_request_version(void)
- 	int rc;
- 	struct gnttab_set_version gsv;
- 
--	if (xen_hvm_domain())
-+	if (xen_feature(XENFEAT_auto_translated_physmap))
- 		gsv.version = 1;
- 	else
- 		gsv.version = 2;
-@@ -1210,8 +1210,11 @@ static int gnttab_setup(void)
- 
- 	if (xen_feature(XENFEAT_auto_translated_physmap) && gnttab_shared.addr == NULL)
- 	{
--		gnttab_shared.addr = xen_remap(xen_auto_xlat_grant_frames.vaddr,
--					       PAGE_SIZE * max_nr_gframes);
-+		if (xen_hvm_domain()) {
-+			gnttab_shared.addr = xen_remap(xen_auto_xlat_grant_frames.vaddr,
-+						       PAGE_SIZE * max_nr_gframes);
-+		} else
-+			gnttab_shared.addr = xen_auto_xlat_grant_frames.vaddr;
- 		if (gnttab_shared.addr == NULL) {
- 			pr_warn("Failed to ioremap gnttab share frames (addr=0x%08lx)!\n",
- 					xen_auto_xlat_grant_frames.vaddr);
-@@ -1320,4 +1323,4 @@ static int __gnttab_init(void)
- 	return gnttab_init();
- }
- 
--core_initcall(__gnttab_init);
-+core_initcall_sync(__gnttab_init);
+Thanks,
 -- 
-1.8.3.1
-
+Ming Lei
