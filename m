@@ -1,40 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777AbaAAMK7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jan 2014 07:10:59 -0500
-Received: from smtp-out-180.synserver.de ([212.40.185.180]:1027 "EHLO
-	smtp-out-079.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753480AbaAAMK6 (ORCPT
+	id S1754026AbaAAMLU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jan 2014 07:11:20 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:29395
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753835AbaAAMLR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 07:10:58 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 5040
-Message-ID: <52C405DD.1080006@metafoo.de>
-Date: Wed, 01 Jan 2014 13:11:09 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
-MIME-Version: 1.0
-To: Xiubo Li <Li.Xiubo@freescale.com>
-CC: broonie@kernel.org, lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        fabio.estevam@freescale.com, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, kuninori.morimoto.gx@renesas.com
-Subject: Re: [alsa-devel] [PATCH] ASoC: simple-card: Add device's module clock
- selection.
-References: <1387783538-5318-1-git-send-email-Li.Xiubo@freescale.com>
-In-Reply-To: <1387783538-5318-1-git-send-email-Li.Xiubo@freescale.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Jan 2014 07:11:17 -0500
+X-IronPort-AV: E=Sophos;i="4.95,585,1384297200"; 
+   d="scan'208";a="43157648"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: kernel-janitors@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging:iio: correct error check
+Date: Wed,  1 Jan 2014 14:07:21 +0100
+Message-Id: <1388581641-26782-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/2013 08:25 AM, Xiubo Li wrote:
-> diff --git a/a.out b/a.out
-> new file mode 100644
-> index 0000000..e69de29
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-This patch did add a empty a.out file in the toplevel folder.
+iio_kfifo_allocate returns NULL in case of error.
 
-- Lars
+The semantic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
+
+// <smpl>
+@@
+expression *x;
+identifier f;
+statement S1,S2;
+@@
+
+*x = f(...);
+ if (x) { <+... when != if (...) S1 else S2
+     -ENOMEM ...+> }
+// </smpl>
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+ drivers/staging/iio/impedance-analyzer/ad5933.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/staging/iio/impedance-analyzer/ad5933.c b/drivers/staging/iio/impedance-analyzer/ad5933.c
+index 0a4298b..2b96665 100644
+--- a/drivers/staging/iio/impedance-analyzer/ad5933.c
++++ b/drivers/staging/iio/impedance-analyzer/ad5933.c
+@@ -629,7 +629,7 @@ static int ad5933_register_ring_funcs_and_init(struct iio_dev *indio_dev)
+ 	struct iio_buffer *buffer;
+ 
+ 	buffer = iio_kfifo_allocate(indio_dev);
+-	if (buffer)
++	if (!buffer)
+ 		return -ENOMEM;
+ 
+ 	iio_device_attach_buffer(indio_dev, buffer);
 
