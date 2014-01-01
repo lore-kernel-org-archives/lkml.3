@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520AbaAATSp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jan 2014 14:18:45 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:43161 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752978AbaAATSn (ORCPT
+	id S1754634AbaAATdm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jan 2014 14:33:42 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:53031 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752993AbaAATdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 14:18:43 -0500
-Date: Wed, 1 Jan 2014 11:18:39 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: "Felipe F. Tonello" <eu@felipetonello.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] input: mt: Add helper function to send end events
-Message-ID: <20140101191838.GA30798@core.coreip.homeip.net>
-References: <1388455601-17033-1-git-send-email-eu@felipetonello.com>
- <52C28DC7.9020003@euromail.se>
- <20131231185035.GD6897@core.coreip.homeip.net>
- <52C43FFE.3010005@euromail.se>
+	Wed, 1 Jan 2014 14:33:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52C43FFE.3010005@euromail.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140101114244.GB3372@free.fr>
+References: <1387481759-14535-3-git-send-email-keescook@chromium.org>
+	<tip-8779657d29c0ebcc0c94ede4df2f497baf1b563f@git.kernel.org>
+	<alpine.DEB.2.02.1312301331520.10482@chino.kir.corp.google.com>
+	<CAGXu5jJxkD7rS0gFAS3mAhwxP05UMW8KNW00C_e2v=Keqj7k3Q@mail.gmail.com>
+	<CA+55aFy65HwuqjsZhhTDBy1GYyxig8De=3XZxn8ixnGN7xWMFQ@mail.gmail.com>
+	<20140101114244.GB3372@free.fr>
+Date: Wed, 1 Jan 2014 11:33:38 -0800
+X-Google-Sender-Auth: KGBsK15o7NtsiLF5RwvXiahoqF0
+Message-ID: <CA+55aFzS2bTXSDabNhsZXhpVWP9toqtubB3jrNVWF-FaQrmz-w@mail.gmail.com>
+Subject: Re: [patch core/stackprotector] stackprotector: Fix build when
+ compiler lacks support
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: Kees Cook <keescook@chromium.org>, David Rientjes <rientjes@google.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        James Hogan <james.hogan@imgtec.com>, Michal Marek <mmarek@suse.cz>,
+        Paul Mundt <lethal@linux-sh.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 01, 2014 at 05:19:10PM +0100, Henrik Rydberg wrote:
-> Hi Dmitry,
-> 
-> >> What problematic scenario is this supposed to solve?
-> >>
-> >> The 'release on suspend' is only an approximation to the 'close
-> >> laptop' scenario, it is certainly not correct in the coffee table
-> >> case,
-> > 
-> > Why would it not be correct for coffee table? Do we expect the touches
-> > to remain valid while the device is asleep?
-> 
-> In some scenarios with placed objects (like a cup or a marker), that would be
-> the case, yes.
-> 
-> >> for instance. Instead of
-> >> hardcoding this in the kernel, userland can easily detect long intervals
-> >> directly using the event time.
-> > 
-> > But with slots it is not only problem with old events being sent out
-> > later, it is that we have mix of old (pre-sleep) and new state.
-> 
-> The new state is not really a problem, it will look exactly the same regardless
-> of how 'old' releases are handled.
-> 
-> > We do that for keys (release them when we transition to system sleep)
-> > and I think it might be worthwhile to do the same for touch data.
-> 
-> I agree that keyboard applications seldom look at time intervals and hence are
-> well helped by such a strategy, even though it is not strictly 'correct'.
-> However, touch interfaces are quite dependent on time intervals, and it
-> therefore makes a lot of sense to resolve touch timeouts directly in the
-> application. It also puts less restrictions on what can be done.
-> 
-> Regarding notifications in general, perhaps it would be interesting to be able
-> to send a notification event via the input interface when a device comes back
-> from sleep. It could help resolve other complex issues, if there were any.
-> 
+On Wed, Jan 1, 2014 at 3:42 AM, Yann E. MORIN <yann.morin.1998@free.fr> wrote:
+>
+> On 2013-12-31 16:16 -0800, Linus Torvalds spake thusly:
+>>
+>> What we really really want to do is to have some way to add config
+>> options based on shell scripts and compiler support. That would also
+>> get rid of a lot of Makefile trickery etc.
+>>
+>> Then we could just make CC_STACKPROTECTOR_STRONG depend on
+>> CC_SUPPORTS_STACKPROTECTOR_STRONG or whatever.
+>
+> Sam Ravnborg suggested somethink along those lines back in July:
+>     http://marc.info/?l=linux-kbuild&m=137399785206527&w=2
+> and a tentative implementation:
+>     http://marc.info/?l=linux-kbuild&m=137409581406434&w=2
 
-OK, fair enough. If there is a demand we could send SYN_SYSTEM_RESUME
-event though the interfaces to allow clients "flush" the state or
-otherwise decide if new touch data is actually old touches that were
-there pre-suspend.
+Ack. Looks good to me. I've wanted this for a long time for other
+reasons, we should finally just do it.
 
-Felipe, will that help in your case?
+That said, we should make sure that the shell execution thing gets
+access to $(CC) etc variables that we have in
 
-Thanks.
+> Basically, that would give something like:
+>
+>     config CC_SUPPORTS_STACKPROTECTOR_STRONG
+>         bool
+>         option exec="some/script/to/test-gcc -fstack-protector-strong"
 
--- 
-Dmitry
+For the compiler options, it would hopefully be sufficient to just do
+something like
+
+  config CC_SUPPORTS_STACKPROTECTOR_STRONG
+      bool
+      option exec="$CC -fstack-protector-strong -c empty.c"
+
+or something like that. No?
+
+              Linus
