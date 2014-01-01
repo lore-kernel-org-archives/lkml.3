@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697AbaAATvY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jan 2014 14:51:24 -0500
-Received: from mail-bn1hn0123.outbound.protection.outlook.com ([157.56.110.123]:10348
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753810AbaAATvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 14:51:23 -0500
-Reply-To: <stacyrussel0000@yahoo.com>
-From: Mrs Stacy Russell <stacyrusse@gmail.com>
-Subject: Dear Good Friend
-Date: Thu, 2 Jan 2014 02:50:47 +0700
+	id S1754706AbaAAT5p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jan 2014 14:57:45 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58215 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754556AbaAAT5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jan 2014 14:57:43 -0500
+Message-ID: <52C47170.9050702@zytor.com>
+Date: Wed, 01 Jan 2014 11:50:08 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="Windows-1251"
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>
+CC: Kees Cook <keescook@chromium.org>, David Rientjes <rientjes@google.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        James Hogan <james.hogan@imgtec.com>, Michal Marek <mmarek@suse.cz>,
+        Paul Mundt <lethal@linux-sh.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [patch core/stackprotector] stackprotector: Fix build when compiler
+ lacks support
+References: <1387481759-14535-3-git-send-email-keescook@chromium.org>	<tip-8779657d29c0ebcc0c94ede4df2f497baf1b563f@git.kernel.org>	<alpine.DEB.2.02.1312301331520.10482@chino.kir.corp.google.com>	<CAGXu5jJxkD7rS0gFAS3mAhwxP05UMW8KNW00C_e2v=Keqj7k3Q@mail.gmail.com>	<CA+55aFy65HwuqjsZhhTDBy1GYyxig8De=3XZxn8ixnGN7xWMFQ@mail.gmail.com>	<20140101114244.GB3372@free.fr> <CA+55aFzS2bTXSDabNhsZXhpVWP9toqtubB3jrNVWF-FaQrmz-w@mail.gmail.com>
+In-Reply-To: <CA+55aFzS2bTXSDabNhsZXhpVWP9toqtubB3jrNVWF-FaQrmz-w@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-ID: <0d0998f3-2dbc-4c74-9c5a-1e6d7947c1dc@COSEXCH10.lsi.com>
-To: Undisclosed recipients:;
-X-EOPAttributedMessage: 0
-X-Matching-Connectors: 130330794796231487;(f081dce6-2920-4dfc-23e8-08d07091c5e3);()
-X-Forefront-Antispam-Report: CIP:192.19.220.100;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:SPM;SFS:(10019001)(189002)(199002)(80976001)(1671002)(56816005)(89996001)(90146001)(74366001)(46102001)(83072002)(85852003)(31686002)(33646001)(51856001)(54316002)(88136002)(79102001)(881003)(76796001)(50466002)(76786001)(74706001)(44716002)(47736001)(77982001)(59766001)(62236002)(49866001)(47976001)(73972005)(50986001)(65816001)(20776003)(47776003)(63696002)(82202001)(80022001)(76176001)(56776001)(4396001)(50226001)(23686002)(74876001)(74662001)(62966002)(47446002)(81342001)(74502001)(85306002)(81442001)(6806004)(69226001)(61296002)(87936001)(77156001)(87266001)(87286001)(43066001)(73392001)(77096001)(19580395003)(19580405001)(44976005)(81542001)(485004002);DIR:OUT;SFP:1501;SCL:6;SRVR:DM2PR07MB381;H:COSEXCH10.lsi.com;CLIP:192.19.220.100;FPR:;RD:cosexch10.lsi.com;MX:1;A:1;LANG:en;
-X-OriginatorOrg: lsicorp.onmicrosoft.com
-X-Forefront-PRVS: 007814487B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Beloved,
+On 01/01/2014 11:33 AM, Linus Torvalds wrote:
+> 
+> Ack. Looks good to me. I've wanted this for a long time for other
+> reasons, we should finally just do it.
+> 
 
-I am Mrs. Stacy Russell.I am writing you this email from my sick bed, I know my message will come to you as a surprise But don't worry. When I heard from the doctor that my condition has become so critical, I had to reach out to a Christian sister, who assisted me in searching for your contact in order to help me utilize this wealth the way I am going to instruct herein, and even the sister that helped me in this regard doesn't know the purpose for which I intend to use it I have prayed about it and it has been revealed to me that you can make judicious use of the resources for its intended purpose.
+Yes, we keep avoiding doing this by layering hack upon hack, but
+really... it needs to be done.
 
-My husband earned these funds, (TEN MILLION EIGHT HUNDRED THOUSAND) but he died in a plane crash and left everything behind for me and I will join him soon due to my ill health. Due to my infertility resulting from medical problems I became barren. God has a reason for everything. I would want you to contact my lawyer; he will inform you on what to do. Reply to this email and email my Lawyer:
-SINA HOK CHAMBERS 
-PHNOM PENH
-Barrister Sina HOK
-Email: (llb.sina@sinahok.com)
+The chief objection I've heard is that it makes "make oldconfig"
+necessary after a compiler change, but that seems entirely reasonable.
 
-Ensure to use a greater portion of the funds for its purpose in fulfillment of my last wish. Furthermore you will never have any problem with the law as far as my lawyer is in concern. The most major part you will use to bless Helpless and Needy Children all over the world
+	-hpa
 
-May God Keep you alive and bless you as you help.
 
-Mrs Stacy
