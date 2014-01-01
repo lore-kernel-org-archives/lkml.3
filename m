@@ -1,55 +1,478 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751685AbaAAFtc (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Wed, 1 Jan 2014 00:49:32 -0500
-Received: from smtprelay0017.hostedemail.com ([216.40.44.17]:37318 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750970AbaAAFtb (ORCPT
+	id S1752488AbaAAFwj (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Wed, 1 Jan 2014 00:52:39 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:59747 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752122AbaAAFwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 00:49:31 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2740:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3871:3872:3874:4321:4605:5007:7652:7903:10004:10400:10848:11026:11232:11658:11914:12295:12517:12519:12533:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: rings07_35bc0433c3656
-X-Filterd-Recvd-Size: 2020
-Message-ID: <1388555362.2259.38.camel@joe-AO722>
-Subject: Re: [PATCH] lib/vsprintf: add %pT[C012] format specifier
-From: Joe Perches <joe@perches.com>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: akpm@linux-foundation.org, geert@linux-m68k.org, jkosina@suse.cz,
-        viro@zeniv.linux.org.uk, davem@davemloft.net, keescook@chromium.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 31 Dec 2013 21:49:22 -0800
-In-Reply-To: <201401011434.GAF34360.FFQOVtFOHJSMLO@I-love.SAKURA.ne.jp>
-References: <1388282837.24123.24.camel@joe-AO722>
-	 <201312292113.FIJ60946.tFOVOJOHLQSFFM@I-love.SAKURA.ne.jp>
-	 <1388422545.26796.36.camel@joe-AO722>
-	 <201312311553.IGG09071.HLJtFVSQFFOOOM@I-love.SAKURA.ne.jp>
-	 <1388507067.2259.24.camel@joe-AO722>
-	 <201401011434.GAF34360.FFQOVtFOHJSMLO@I-love.SAKURA.ne.jp>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	Wed, 1 Jan 2014 00:52:37 -0500
+Subject: [PATCH V2] time/cpuidle: Support in tick broadcast framework for
+ archs without external clock device
+To: peterz@infradead.org, fweisbec@gmail.com, paul.gortmaker@windriver.com,
+        paulus@samba.org, mingo@kernel.org, shangw@linux.vnet.ibm.com,
+        rafael.j.wysocki@intel.com, galak@kernel.crashing.org,
+        benh@kernel.crashing.org, paulmck@linux.vnet.ibm.com, arnd@arndb.de,
+        linux-pm@vger.kernel.org, rostedt@goodmis.org, michael@ellerman.id.au,
+        john.stultz@linaro.org, tglx@linutronix.de, chenhui.zhao@freescale.com,
+        deepthi@linux.vnet.ibm.com, r58472@freescale.com, geoff@infradead.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, svaidy@linux.vnet.ibm.com,
+        linuxppc-dev@lists.ozlabs.org
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Date: Wed, 01 Jan 2014 11:19:01 +0530
+Message-ID: <20140101054901.7716.24712.stgit@preeti.in.ibm.com>
+User-Agent: StGit/0.16-38-g167d
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14010105-0928-0000-0000-0000053763C1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-01-01 at 14:34 +0900, Tetsuo Handa wrote:
-> I think we want formatting directive support because we have users shown below.
-> 
->   fs/afs/internal.h:         printk("[%-6.6s] "FMT"\n", current->comm ,##__VA_ARGS__)
->   fs/cachefiles/internal.h:  printk(KERN_DEBUG "[%-6.6s] "FMT"\n", current->comm, ##__VA_ARGS__)
->   fs/fscache/internal.h:     printk(KERN_DEBUG "[%-6.6s] "FMT"\n", current->comm, ##__VA_ARGS__)
+On some architectures, in certain CPU deep idle states the local timers stop.
+An external clock device is used to wakeup these CPUs. The kernel support for the
+wakeup of these CPUs is provided by the tick broadcast framework by using the
+external clock device as the wakeup source.
 
-Maybe, but I still think it's not particularly useful
-and should not be possible/isn't necessary.
+However not all implementations of architectures provide such an external
+clock device such as some PowerPC ones. This patch includes support in the
+broadcast framework to handle the wakeup of the CPUs in deep idle states on such
+systems by queuing a hrtimer on one of the CPUs, meant to handle the wakeup of
+CPUs in deep idle states. This CPU is identified as the bc_cpu.
 
-> This choice (i.e. reserve only '\xFF') is more resource economy than my
-> previous choice (i.e. reserve '\x7F' to '\xFF') at the cost of wasting only
-> one byte compared to my previous choice.
+Each time the hrtimer expires, it is reprogrammed for the next wakeup of the
+CPUs in deep idle state after handling broadcast. However when a CPU is about
+to enter  deep idle state with its wakeup time earlier than the time at which
+the hrtimer is currently programmed, it *becomes the new bc_cpu* and restarts
+the hrtimer on itself. This way the job of doing broadcast is handed around to
+the CPUs that ask for the earliest wakeup just before entering deep idle
+state. This is consistent with what happens in cases where an external clock
+device is present. The smp affinity of this clock device is set to the CPU
+with the earliest wakeup.
 
-I supposed that's better.
+The important point here is that the bc_cpu cannot enter deep idle state
+since it has a hrtimer queued to wakeup the other CPUs in deep idle. Hence it
+cannot have its local timer stopped. Therefore for such a CPU, the
+BROADCAST_ENTER notification has to fail implying that it cannot enter deep
+idle state. On architectures where an external clock device is present, all
+CPUs can enter deep idle.
 
-Is there a particularly utility/reason to use 0xff
-vs ascii SUB/PU1/PU2?
+During hotplug of the bc_cpu, the job of doing a broadcast is assigned to the
+first cpu in the broadcast mask. This newly nominated bc_cpu is woken up by
+an IPI so as to queue the above mentioned hrtimer on itself.
 
+Changes from V1:https://lkml.org/lkml/2013/12/12/687
+
+If idle states exist when the local timers of CPUs stop and
+there is no external clock device to handle their wakeups the kernel switches
+the tick mode to periodic so as to prevent the CPUs from entering such idle
+states altogether. Therefore include an additional check consistent
+with this patch, where if an external clock device does not exist, queue a
+hrtimer to handle wakeups. If this also fails, only then switch the tick mode to
+periodic.
+
+Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+---
+
+ include/linux/clockchips.h   |    4 -
+ kernel/time/clockevents.c    |    8 +-
+ kernel/time/tick-broadcast.c |  180 ++++++++++++++++++++++++++++++++++++++----
+ kernel/time/tick-internal.h  |    8 +-
+ 4 files changed, 173 insertions(+), 27 deletions(-)
+
+diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
+index 493aa02..bbda37b 100644
+--- a/include/linux/clockchips.h
++++ b/include/linux/clockchips.h
+@@ -186,9 +186,9 @@ static inline int tick_check_broadcast_expired(void) { return 0; }
+ #endif
+ 
+ #ifdef CONFIG_GENERIC_CLOCKEVENTS
+-extern void clockevents_notify(unsigned long reason, void *arg);
++extern int clockevents_notify(unsigned long reason, void *arg);
+ #else
+-static inline void clockevents_notify(unsigned long reason, void *arg) {}
++static inline int clockevents_notify(unsigned long reason, void *arg) {}
+ #endif
+ 
+ #else /* CONFIG_GENERIC_CLOCKEVENTS_BUILD */
+diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+index 086ad60..bbbd671 100644
+--- a/kernel/time/clockevents.c
++++ b/kernel/time/clockevents.c
+@@ -525,11 +525,11 @@ void clockevents_resume(void)
+ /**
+  * clockevents_notify - notification about relevant events
+  */
+-void clockevents_notify(unsigned long reason, void *arg)
++int clockevents_notify(unsigned long reason, void *arg)
+ {
+ 	struct clock_event_device *dev, *tmp;
+ 	unsigned long flags;
+-	int cpu;
++	int cpu, ret = 0;
+ 
+ 	raw_spin_lock_irqsave(&clockevents_lock, flags);
+ 
+@@ -542,11 +542,12 @@ void clockevents_notify(unsigned long reason, void *arg)
+ 
+ 	case CLOCK_EVT_NOTIFY_BROADCAST_ENTER:
+ 	case CLOCK_EVT_NOTIFY_BROADCAST_EXIT:
+-		tick_broadcast_oneshot_control(reason);
++		ret = tick_broadcast_oneshot_control(reason);
+ 		break;
+ 
+ 	case CLOCK_EVT_NOTIFY_CPU_DYING:
+ 		tick_handover_do_timer(arg);
++		tick_handover_bc_cpu(arg);
+ 		break;
+ 
+ 	case CLOCK_EVT_NOTIFY_SUSPEND:
+@@ -585,6 +586,7 @@ void clockevents_notify(unsigned long reason, void *arg)
+ 		break;
+ 	}
+ 	raw_spin_unlock_irqrestore(&clockevents_lock, flags);
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(clockevents_notify);
+ 
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index 9532690..1755984 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -20,6 +20,7 @@
+ #include <linux/sched.h>
+ #include <linux/smp.h>
+ #include <linux/module.h>
++#include <linux/slab.h>
+ 
+ #include "tick-internal.h"
+ 
+@@ -35,6 +36,11 @@ static cpumask_var_t tmpmask;
+ static DEFINE_RAW_SPINLOCK(tick_broadcast_lock);
+ static int tick_broadcast_force;
+ 
++static struct hrtimer *bc_hrtimer;
++static int bc_cpu = -1;
++static ktime_t bc_next_wakeup;
++static int hrtimer_initialized = 0;
++
+ #ifdef CONFIG_TICK_ONESHOT
+ static void tick_broadcast_clear_oneshot(int cpu);
+ #else
+@@ -528,6 +534,20 @@ static int tick_broadcast_set_event(struct clock_event_device *bc, int cpu,
+ 	return ret;
+ }
+ 
++static void tick_broadcast_set_next_wakeup(int cpu, ktime_t expires, int force)
++{
++	struct clock_event_device *bc;
++
++	bc = tick_broadcast_device.evtdev;
++
++	if (bc) {
++		tick_broadcast_set_event(bc, cpu, expires, force);
++	} else {
++		hrtimer_start(bc_hrtimer, expires, HRTIMER_MODE_ABS_PINNED);
++		bc_cpu = cpu;
++	}
++}
++
+ int tick_resume_broadcast_oneshot(struct clock_event_device *bc)
+ {
+ 	clockevents_set_mode(bc, CLOCK_EVT_MODE_ONESHOT);
+@@ -558,15 +578,13 @@ void tick_check_oneshot_broadcast(int cpu)
+ /*
+  * Handle oneshot mode broadcasting
+  */
+-static void tick_handle_oneshot_broadcast(struct clock_event_device *dev)
++static int tick_oneshot_broadcast(void)
+ {
+ 	struct tick_device *td;
+ 	ktime_t now, next_event;
+ 	int cpu, next_cpu = 0;
+ 
+-	raw_spin_lock(&tick_broadcast_lock);
+-again:
+-	dev->next_event.tv64 = KTIME_MAX;
++	bc_next_wakeup.tv64 = KTIME_MAX;
+ 	next_event.tv64 = KTIME_MAX;
+ 	cpumask_clear(tmpmask);
+ 	now = ktime_get();
+@@ -620,34 +638,89 @@ again:
+ 	 * in the event mask
+ 	 */
+ 	if (next_event.tv64 != KTIME_MAX) {
+-		/*
+-		 * Rearm the broadcast device. If event expired,
+-		 * repeat the above
+-		 */
+-		if (tick_broadcast_set_event(dev, next_cpu, next_event, 0))
++		bc_next_wakeup = next_event;
++	}
++
++	return next_cpu;
++}
++
++/*
++ * Handler in oneshot mode for the external clock device
++ */
++static void tick_handle_oneshot_broadcast(struct clock_event_device *dev)
++{
++	int next_cpu;
++
++	raw_spin_lock(&tick_broadcast_lock);
++
++again:	next_cpu = tick_oneshot_broadcast();
++	/*
++	 * Rearm the broadcast device. If event expired,
++	 * repeat the above
++	 */
++	if (bc_next_wakeup.tv64 != KTIME_MAX)
++		if (tick_broadcast_set_event(dev, next_cpu, bc_next_wakeup, 0))
+ 			goto again;
++
++	raw_spin_unlock(&tick_broadcast_lock);
++}
++
++/*
++ * Handler in oneshot mode for the hrtimer queued when there is no external
++ * clock device.
++ */
++static enum hrtimer_restart handle_broadcast(struct hrtimer *hrtmr)
++{
++	ktime_t now, interval;
++
++	raw_spin_lock(&tick_broadcast_lock);
++	tick_oneshot_broadcast();
++
++	now = ktime_get();
++
++	if (bc_next_wakeup.tv64 != KTIME_MAX) {
++		interval = ktime_sub(bc_next_wakeup, now);
++		hrtimer_forward_now(bc_hrtimer, interval);
++		raw_spin_unlock(&tick_broadcast_lock);
++		return HRTIMER_RESTART;
+ 	}
+ 	raw_spin_unlock(&tick_broadcast_lock);
++	return HRTIMER_NORESTART;
++}
++
++/* The CPU could be asked to take over from the previous bc_cpu,
++ * if it is being hotplugged out.
++ */
++static void tick_broadcast_exit_check(int cpu)
++{
++	if (cpu == bc_cpu)
++		hrtimer_start(bc_hrtimer, bc_next_wakeup,
++				HRTIMER_MODE_ABS_PINNED);
++}
++
++static int can_enter_broadcast(int cpu)
++{
++	return cpu != bc_cpu;
+ }
+ 
+ /*
+  * Powerstate information: The system enters/leaves a state, where
+  * affected devices might stop
+  */
+-void tick_broadcast_oneshot_control(unsigned long reason)
++int tick_broadcast_oneshot_control(unsigned long reason)
+ {
+-	struct clock_event_device *bc, *dev;
++	struct clock_event_device *dev;
+ 	struct tick_device *td;
+ 	unsigned long flags;
+ 	ktime_t now;
+-	int cpu;
++	int cpu, ret = 0;
+ 
+ 	/*
+ 	 * Periodic mode does not care about the enter/exit of power
+ 	 * states
+ 	 */
+ 	if (tick_broadcast_device.mode == TICKDEV_MODE_PERIODIC)
+-		return;
++		return ret;
+ 
+ 	/*
+ 	 * We are called with preemtion disabled from the depth of the
+@@ -658,9 +731,8 @@ void tick_broadcast_oneshot_control(unsigned long reason)
+ 	dev = td->evtdev;
+ 
+ 	if (!(dev->features & CLOCK_EVT_FEAT_C3STOP))
+-		return;
++		return ret;
+ 
+-	bc = tick_broadcast_device.evtdev;
+ 
+ 	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
+ 	if (reason == CLOCK_EVT_NOTIFY_BROADCAST_ENTER) {
+@@ -676,12 +748,22 @@ void tick_broadcast_oneshot_control(unsigned long reason)
+ 			 * woken by the IPI right away.
+ 			 */
+ 			if (!cpumask_test_cpu(cpu, tick_broadcast_force_mask) &&
+-			    dev->next_event.tv64 < bc->next_event.tv64)
+-				tick_broadcast_set_event(bc, cpu, dev->next_event, 1);
++			    dev->next_event.tv64 < bc_next_wakeup.tv64) {
++				bc_next_wakeup = dev->next_event;
++				tick_broadcast_set_next_wakeup(cpu, dev->next_event, 1);
++			}
++
++			if (!can_enter_broadcast(cpu)) {
++				cpumask_test_and_clear_cpu(cpu, tick_broadcast_oneshot_mask);
++				clockevents_set_mode(dev, CLOCK_EVT_MODE_ONESHOT);
++				ret = 1;
++			}
+ 		}
+ 	} else {
+ 		if (cpumask_test_and_clear_cpu(cpu, tick_broadcast_oneshot_mask)) {
+ 			clockevents_set_mode(dev, CLOCK_EVT_MODE_ONESHOT);
++
++			tick_broadcast_exit_check(cpu);
+ 			/*
+ 			 * The cpu which was handling the broadcast
+ 			 * timer marked this cpu in the broadcast
+@@ -746,6 +828,7 @@ void tick_broadcast_oneshot_control(unsigned long reason)
+ 	}
+ out:
+ 	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
++	return ret;
+ }
+ 
+ /*
+@@ -821,18 +904,56 @@ void tick_broadcast_switch_to_oneshot(void)
+ {
+ 	struct clock_event_device *bc;
+ 	unsigned long flags;
++	int cpu = smp_processor_id();
+ 
+ 	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
+ 
++	bc_next_wakeup.tv64 = KTIME_MAX;
++
+ 	tick_broadcast_device.mode = TICKDEV_MODE_ONESHOT;
+ 	bc = tick_broadcast_device.evtdev;
+-	if (bc)
++	if (bc) {
+ 		tick_broadcast_setup_oneshot(bc);
++		bc_next_wakeup = bc->next_event;
++	} else if (hrtimer_initialized){
++
++		/*
++		 * There may be CPUs waiting for periodic broadcast. We need
++		 * to set the oneshot bits for those and program the hrtimer
++		 * to fire at the next tick period.
++ 		 */
++		cpumask_copy(tmpmask, tick_broadcast_mask);
++		cpumask_clear_cpu(cpu, tmpmask);
++		cpumask_or(tick_broadcast_oneshot_mask,
++			   tick_broadcast_oneshot_mask, tmpmask);
++
++		if (!cpumask_empty(tmpmask)) {
++			tick_broadcast_init_next_event(tmpmask,
++						       tick_next_period);
++			hrtimer_start(bc_hrtimer, tick_next_period, HRTIMER_MODE_ABS_PINNED);
++			bc_next_wakeup = tick_next_period;
++		}
++	}
+ 
+ 	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
+ }
+ 
+ 
++void tick_handover_bc_cpu(int *cpup)
++{
++	struct tick_device *td;
++
++	if (*cpup == bc_cpu) {
++		int cpu = cpumask_first(tick_broadcast_oneshot_mask);
++
++		bc_cpu = (cpu < nr_cpu_ids) ? cpu : -1;
++		if (bc_cpu != -1) {
++			td = &per_cpu(tick_cpu_device, bc_cpu);
++			td->evtdev->broadcast(cpumask_of(bc_cpu));
++		}
++	}
++}
++
+ /*
+  * Remove a dead CPU from broadcasting
+  */
+@@ -868,8 +989,29 @@ int tick_broadcast_oneshot_active(void)
+ bool tick_broadcast_oneshot_available(void)
+ {
+ 	struct clock_event_device *bc = tick_broadcast_device.evtdev;
++	bool ret = true;
++	unsigned long flags;
+ 
+-	return bc ? bc->features & CLOCK_EVT_FEAT_ONESHOT : false;
++	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
++
++	if (bc) {
++		ret = bc->features & CLOCK_EVT_FEAT_ONESHOT;
++	} else if (!hrtimer_initialized) {
++		/* An alternative to tick_broadcast_device on archs which do not have
++		 * an external device
++		 */
++		bc_hrtimer = kmalloc(sizeof(*bc_hrtimer), GFP_NOWAIT);
++		if (!bc_hrtimer) {
++			ret = false;
++			goto out;
++		}
++		hrtimer_init(bc_hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_ABS_PINNED);
++		bc_hrtimer->function = handle_broadcast;
++		hrtimer_initialized = 1;
++	}
++
++out:	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
++	return ret;
+ }
+ 
+ #endif
+diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
+index 18e71f7..1f73032 100644
+--- a/kernel/time/tick-internal.h
++++ b/kernel/time/tick-internal.h
+@@ -46,23 +46,25 @@ extern int tick_switch_to_oneshot(void (*handler)(struct clock_event_device *));
+ extern void tick_resume_oneshot(void);
+ # ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
+ extern void tick_broadcast_setup_oneshot(struct clock_event_device *bc);
+-extern void tick_broadcast_oneshot_control(unsigned long reason);
++extern int tick_broadcast_oneshot_control(unsigned long reason);
+ extern void tick_broadcast_switch_to_oneshot(void);
+ extern void tick_shutdown_broadcast_oneshot(unsigned int *cpup);
+ extern int tick_resume_broadcast_oneshot(struct clock_event_device *bc);
+ extern int tick_broadcast_oneshot_active(void);
+ extern void tick_check_oneshot_broadcast(int cpu);
++extern void tick_handover_bc_cpu(int *cpup);
+ bool tick_broadcast_oneshot_available(void);
+ # else /* BROADCAST */
+ static inline void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
+ {
+ 	BUG();
+ }
+-static inline void tick_broadcast_oneshot_control(unsigned long reason) { }
++static inline int tick_broadcast_oneshot_control(unsigned long reason) { }
+ static inline void tick_broadcast_switch_to_oneshot(void) { }
+ static inline void tick_shutdown_broadcast_oneshot(unsigned int *cpup) { }
+ static inline int tick_broadcast_oneshot_active(void) { return 0; }
+ static inline void tick_check_oneshot_broadcast(int cpu) { }
++static inline void tick_handover_bc_cpu(int *cpup) {}
+ static inline bool tick_broadcast_oneshot_available(void) { return true; }
+ # endif /* !BROADCAST */
+ 
+@@ -87,7 +89,7 @@ static inline void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
+ {
+ 	BUG();
+ }
+-static inline void tick_broadcast_oneshot_control(unsigned long reason) { }
++static inline int tick_broadcast_oneshot_control(unsigned long reason) { }
+ static inline void tick_shutdown_broadcast_oneshot(unsigned int *cpup) { }
+ static inline int tick_resume_broadcast_oneshot(struct clock_event_device *bc)
+ {
 
