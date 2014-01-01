@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697AbaAAL4E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jan 2014 06:56:04 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:47392 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753434AbaAAL4B (ORCPT
+	id S1753777AbaAAMK7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jan 2014 07:10:59 -0500
+Received: from smtp-out-180.synserver.de ([212.40.185.180]:1027 "EHLO
+	smtp-out-079.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753480AbaAAMK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 06:56:01 -0500
-From: Alexander Holler <holler@ahsoftware.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-doc@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Alexander Holler <holler@ahsoftware.de>
-Subject: [PATCH] Documentation: correct typo in dynamic-debug-howto.txt (echo -c -> echo -n)
-Date: Wed,  1 Jan 2014 12:54:54 +0100
-Message-Id: <1388577294-5587-1-git-send-email-holler@ahsoftware.de>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <52BD71D7.9060709@landley.net>
-References: <52BD71D7.9060709@landley.net>
+	Wed, 1 Jan 2014 07:10:58 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 5040
+Message-ID: <52C405DD.1080006@metafoo.de>
+Date: Wed, 01 Jan 2014 13:11:09 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+MIME-Version: 1.0
+To: Xiubo Li <Li.Xiubo@freescale.com>
+CC: broonie@kernel.org, lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
+        fabio.estevam@freescale.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, kuninori.morimoto.gx@renesas.com
+Subject: Re: [alsa-devel] [PATCH] ASoC: simple-card: Add device's module clock
+ selection.
+References: <1387783538-5318-1-git-send-email-Li.Xiubo@freescale.com>
+In-Reply-To: <1387783538-5318-1-git-send-email-Li.Xiubo@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As nobody could answer what the parameter -c for echo should be, I assume
-it's a typo. Normally I don't care much about those, but this one might make
-people search for the meaning of the parameter -c.
+On 12/23/2013 08:25 AM, Xiubo Li wrote:
+> diff --git a/a.out b/a.out
+> new file mode 100644
+> index 0000000..e69de29
 
-Signed-off-by: Alexander Holler <holler@ahsoftware.de>
----
- Documentation/dynamic-debug-howto.txt | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+This patch did add a empty a.out file in the toplevel folder.
 
-diff --git a/Documentation/dynamic-debug-howto.txt b/Documentation/dynamic-debug-howto.txt
-index 1bbdcfc..abb7dfe 100644
---- a/Documentation/dynamic-debug-howto.txt
-+++ b/Documentation/dynamic-debug-howto.txt
-@@ -91,9 +91,9 @@ Command Language Reference
- At the lexical level, a command comprises a sequence of words separated
- by spaces or tabs.  So these are all equivalent:
- 
--nullarbor:~ # echo -c 'file svcsock.c line 1603 +p' >
-+nullarbor:~ # echo -n 'file svcsock.c line 1603 +p' >
- 				<debugfs>/dynamic_debug/control
--nullarbor:~ # echo -c '  file   svcsock.c     line  1603 +p  ' >
-+nullarbor:~ # echo -n '  file   svcsock.c     line  1603 +p  ' >
- 				<debugfs>/dynamic_debug/control
- nullarbor:~ # echo -n 'file svcsock.c line 1603 +p' >
- 				<debugfs>/dynamic_debug/control
--- 
-1.8.1.4
+- Lars
 
