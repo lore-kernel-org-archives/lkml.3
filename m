@@ -1,53 +1,55 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756663Ab3LaXXu (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Tue, 31 Dec 2013 18:23:50 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:53647 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756499Ab3LaXXt convert rfc822-to-8bit (ORCPT
+	id S1756720AbaAAAQG (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Tue, 31 Dec 2013 19:16:06 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:51147 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756701AbaAAAQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Dec 2013 18:23:49 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [PATCH v2] Bluetooth: Add hci_h4p driver
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <20131231221202.GB25336@amd.pavel.ucw.cz>
-Date: Tue, 31 Dec 2013 15:23:36 -0800
-Cc: =?windows-1252?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org development" 
-	<linux-bluetooth@vger.kernel.org>,
-        Ville Tervo <ville.tervo@nokia.com>, Sebastian Reichel <sre@ring0.de>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <E7C15C38-8E0E-4D49-9E93-5E3DAF77E252@holtmann.org>
-References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com> <1727897.LBX8128hIo@izba> <C8D1F470-7964-4EAC-82E0-D53CF54DE086@holtmann.org> <20131231221202.GB25336@amd.pavel.ucw.cz>
-To: Pavel Machek <pavel@ucw.cz>
-X-Mailer: Apple Mail (2.1827)
+	Tue, 31 Dec 2013 19:16:04 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAGXu5jJxkD7rS0gFAS3mAhwxP05UMW8KNW00C_e2v=Keqj7k3Q@mail.gmail.com>
+References: <1387481759-14535-3-git-send-email-keescook@chromium.org>
+	<tip-8779657d29c0ebcc0c94ede4df2f497baf1b563f@git.kernel.org>
+	<alpine.DEB.2.02.1312301331520.10482@chino.kir.corp.google.com>
+	<CAGXu5jJxkD7rS0gFAS3mAhwxP05UMW8KNW00C_e2v=Keqj7k3Q@mail.gmail.com>
+Date: Tue, 31 Dec 2013 16:16:01 -0800
+X-Google-Sender-Auth: w1hVWA0guQq0p2qjhxxiWD731RU
+Message-ID: <CA+55aFy65HwuqjsZhhTDBy1GYyxig8De=3XZxn8ixnGN7xWMFQ@mail.gmail.com>
+Subject: Re: [patch core/stackprotector] stackprotector: Fix build when
+ compiler lacks support
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        James Hogan <james.hogan@imgtec.com>, Michal Marek <mmarek@suse.cz>,
+        Paul Mundt <lethal@linux-sh.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
+On Mon, Dec 30, 2013 at 4:45 PM, Kees Cook <keescook@chromium.org> wrote:
+>
+> NAK. If you have selected CONFIG_CC_STACKPROTECTOR_STRONG, the build
+> the fail hard. Without this, it means you'll end up with kernels that
+> build and show a stackprotector option in their config, which is
+> false.
 
->>> +static struct task_struct *h4p_thread;
->> 
->> Can’t this be done using a work queue. You are looking at a 3.14
->> kernel the earliest. We have way better primitives these days.
-> 
-> I tried to convert it to work queue, but was not too
-> succesfull. Workqueue is not really good match for what this is trying
-> to do... Nokia code relies on sleeping, than timing those sleeps for
-> signaling. I'm still trying to wrap my head around it.
-> 
-> Ok, I guess I could convert it to one big workqueue task, and leave
-> the logic alone. Was that what you wanted?
+What we really really want to do is to have some way to add config
+options based on shell scripts and compiler support. That would also
+get rid of a lot of Makefile trickery etc.
 
-the Bluetooth subsystem moved away from tasklets and uses workqueues for everything. So this should be just fine for this driver as well. I do not know about what timings are required, but they should only matter during initial device setup. The HCI traffic is actually driven by the Bluetooth core.
+Then we could just make CC_STACKPROTECTOR_STRONG depend on
+CC_SUPPORTS_STACKPROTECTOR_STRONG or whatever.
 
-Regards
-
-Marcel
-
+                Linus
