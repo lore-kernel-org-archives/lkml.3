@@ -1,105 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141AbaAANAI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jan 2014 08:00:08 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52471 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753588AbaAANAG (ORCPT
+	id S1754279AbaAANGn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jan 2014 08:06:43 -0500
+Received: from mailout.micron.com ([137.201.242.129]:54375 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753769AbaAANGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 08:00:06 -0500
-Date: Wed, 1 Jan 2014 12:59:47 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140101125947.GO31886@sirena.org.uk>
-References: <20131212185917.7ed6b21f@armhf>
- <20131231165533.GK31886@sirena.org.uk>
- <20131231184430.3a4c9414@armhf>
+	Wed, 1 Jan 2014 08:06:41 -0500
+From: =?gb2312?B?UWkgV2FuZyDN9cbwIChxaXdhbmcp?= <qiwang@micron.com>
+To: =?gb2312?B?UWkgV2FuZyDN9cbwIChxaXdhbmcp?= <qiwang@micron.com>,
+        "dedekind1@gmail.com" <dedekind1@gmail.com>
+CC: Adrian Hunter <adrian.hunter@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
+Subject: [PATCH 1/1]  MTD: UBI:  avoid program operation on  NOR flash after
+ erasure interrupted
+Thread-Topic: [PATCH 1/1]  MTD: UBI:  avoid program operation on  NOR flash
+ after erasure interrupted
+Thread-Index: AQHPBvI9R7Ql4kYjCUG7syxWj0KNGg==
+Date: Wed, 1 Jan 2014 13:06:11 +0000
+Message-ID: <71CF8D7F32C5C24C9CD1D0E02D52498A770BA389@NTXXIAMBX02.xacn.micron.com>
+References: <71CF8D7F32C5C24C9CD1D0E02D52498A770B54B1@NTXXIAMBX02.xacn.micron.com>
+ <71CF8D7F32C5C24C9CD1D0E02D52498A770B68A8@NTXXIAMBX02.xacn.micron.com>
+ <71CF8D7F32C5C24C9CD1D0E02D52498A770B6F77@NTXXIAMBX02.xacn.micron.com>
+  <71CF8D7F32C5C24C9CD1D0E02D52498A770B79C8@NTXXIAMBX02.xacn.micron.com>
+ <71CF8D7F32C5C24C9CD1D0E02D52498A770B8611@NTXXIAMBX02.xacn.micron.com> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.84.5]
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20398.007
+X-TM-AS-Result: No--23.620100-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="m9EESf0ERqvzovaD"
-Content-Disposition: inline
-In-Reply-To: <20131231184430.3a4c9414@armhf>
-X-Cookie: Go climb a gravity well!
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: make snd_soc_dai_link more symmetrical
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s01D6seh013447
 
+Hi Artem:
+As we talked in mail before, please check my patch as below:
 
---m9EESf0ERqvzovaD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Qi Wang <qiwang@micron.com>
 
-On Tue, Dec 31, 2013 at 06:44:30PM +0100, Jean-Francois Moine wrote:
-> Mark Brown <broonie@kernel.org> wrote:
+nor_erase_prepare() will be called before erase a NOR flash, it will program '0'
+into a block to mark this block. But program data into a erasure interrupted block
+can cause program timtout(several minutes at most) error, could impact other 
+operation on NOR flash. So UBIFS can read this block first to avoid unneeded 
+program operation. 
 
-> > It's possible there is a benefit I'm just not seeing but you'll need to
-> > tell me.
+This patch try to put read operation at head of write operation in 
+nor_erase_prepare(), read out the data. 
+If the data is already corrupt, then no need to program any data into this block, 
+just go to erase this block.
 
-> The first benefit I got was in the front-end definition: the codec side
-> is the dummy codec, and this one has no phandle.
+This patch is validated on Micron NOR flash, part number is£∫JS28F512M29EWHA
 
-That's a sign that you're putting Linux implementation details into your
-DT - remember, DT is supposed to be implementation neutral.
+Signed-off-by: Qi Wang <qiwang@micron.com>
+---
+diff --git a/drivers/mtd/ubi/io.c b/drivers/mtd/ubi/io.c
+index bf79def..0a6343d 100644
+--- a/drivers/mtd/ubi/io.c
++++ b/drivers/mtd/ubi/io.c
+@@ -499,6 +499,7 @@ static int nor_erase_prepare(struct ubi_device *ubi, int pnum)
+ 	size_t written;
+ 	loff_t addr;
+ 	uint32_t data = 0;
++	struct ubi_ec_hdr ec_hdr;
+ 	/*
+ 	 * Note, we cannot generally define VID header buffers on stack,
+ 	 * because of the way we deal with these buffers (see the header
+@@ -509,49 +510,38 @@ static int nor_erase_prepare(struct ubi_device *ubi, int pnum)
+ 	struct ubi_vid_hdr vid_hdr;
+ 
+ 	/*
++	 * If VID or EC is valid, need to corrupt it before erase operation.  
+ 	 * It is important to first invalidate the EC header, and then the VID
+ 	 * header. Otherwise a power cut may lead to valid EC header and
+ 	 * invalid VID header, in which case UBI will treat this PEB as
+ 	 * corrupted and will try to preserve it, and print scary warnings.
+ 	 */
+ 	addr = (loff_t)pnum * ubi->peb_size;
+-	err = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
+-	if (!err) {
+-		addr += ubi->vid_hdr_aloffset;
+-		err = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
+-		if (!err)
+-			return 0;
++	err = ubi_io_read_ec_hdr(ubi, pnum, &ec_hdr, 0);
++	if (err != UBI_IO_BAD_HDR_EBADMSG && err != UBI_IO_BAD_HDR &&
++	    err != UBI_IO_FF){
++		err1 = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
++		if(err1)
++			goto error;
+ 	}
+ 
+-	/*
+-	 * We failed to write to the media. This was observed with Spansion
+-	 * S29GL512N NOR flash. Most probably the previously eraseblock erasure
+-	 * was interrupted at a very inappropriate moment, so it became
+-	 * unwritable. In this case we probably anyway have garbage in this
+-	 * PEB.
+-	 */
+-	err1 = ubi_io_read_vid_hdr(ubi, pnum, &vid_hdr, 0);
+-	if (err1 == UBI_IO_BAD_HDR_EBADMSG || err1 == UBI_IO_BAD_HDR ||
+-	    err1 == UBI_IO_FF) {
+-		struct ubi_ec_hdr ec_hdr;
+-
+-		err1 = ubi_io_read_ec_hdr(ubi, pnum, &ec_hdr, 0);
+-		if (err1 == UBI_IO_BAD_HDR_EBADMSG || err1 == UBI_IO_BAD_HDR ||
+-		    err1 == UBI_IO_FF)
+-			/*
+-			 * Both VID and EC headers are corrupted, so we can
+-			 * safely erase this PEB and not afraid that it will be
+-			 * treated as a valid PEB in case of an unclean reboot.
+-			 */
+-			return 0;
++	err = ubi_io_read_vid_hdr(ubi, pnum, &vid_hdr, 0);
++	if (err != UBI_IO_BAD_HDR_EBADMSG && err != UBI_IO_BAD_HDR &&
++	    err != UBI_IO_FF){
++	    	addr += ubi->vid_hdr_aloffset;
++		err1 = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
++		if (err1)
++			goto error;	
+ 	}
++	return 0;
+ 
++error:
+ 	/*
+-	 * The PEB contains a valid VID header, but we cannot invalidate it.
++	 * The PEB contains a valid VID or EC header, but we cannot invalidate it.
+ 	 * Supposedly the flash media or the driver is screwed up, so return an
+ 	 * error.
+ 	 */
+-	ubi_err("cannot invalidate PEB %d, write returned %d read returned %d",
++	ubi_err("cannot invalidate PEB %d, read returned %d write returned %d",
+ 		pnum, err, err1);
+ 	ubi_dump_flash(ubi, pnum, 0, ubi->peb_size);
+ 	return -EIO;
+---
 
-> Then, finding the CODEC DAI from phandle asks for more code
-> (of_xlate_dai_name in the CODEC drivers) and finding it from the CODEC
+If have any questions, please let me know. 
+Thank you
 
-They should be able to use a default there; I'd expect that just to be
-making the IDs the same as the index into the array or the ID field.
-
-> name asks for a double loop in soc_bind_dai_link. On the other way, a
-> simple loop without any more change may be used when the DAI is simply
-> specified by its name. I would say that the DAI name is more meaningful
-
-Then as soon as anything else starts using the same name for some reason
-the binding stops being useful.
-
-> than a DAI index and that it is less subject to internal changes of the
-> CODEC driver.
-
-Obviously the numbers that get assigned become a part of the ABI and
-can't be changed.  Now that we have preprocessor support for DT the
-plain text can be done with that, though for a lot of devices that won't
-be needed as the devices are just numbered anyway.
-
-> Eventually, I don't think that, using only the name of the CODEC side
-> DAI to identify it, is not more fragile than identifying the CPU side
-> of the DAI link by its name.
-
-This doesn't mean it's a good idea to do it - as you will remember I
-said I expected things to want to go more towards using phandle plus ID=20
-for everything. =20
-
---m9EESf0ERqvzovaD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSxBFAAAoJELSic+t+oim9l5QP/AmzGDqPf/V4zxev6avOOqmZ
-l199Sm6lTBqJnHLBxJVzEtg9Y/3El247Kr+h6oCeHgmTcFdV6qWVYZFF1dR730Lt
-vIT65lMZaNMEB1v1+G+zBiuYz1cbbTc12xssjglEDMe17gn42Uf+pBUiRZ/NIS7K
-orykzeM2Wz11ALbtXTPVnloUEucZJayZx/B25HSLwhZO7IIlgz9680p7fIt+x9qm
-2Qp9zBWUOwbVA5bwbghBdvYuonLoe8OVC6vLHBZOc/15/Pi4h78kCT/V3q0civSG
-WVdj7AVPebouMue/w1JZhlW0MfxT0vtelRkX+1at1nM6TA/ZM8V5C+Fi2VfOEiPx
-S98ACWVbFyQsBUqEs5+zm4wo58ZmvP6XoSIoJGGw2VpkQDSw9PkeifKOxjiAwOyV
-OK0/fX8l1LsUtBzs9GQhcUAgBPw5rnjVVUCwyR0VfAOyXQuB2J4rdpgcM5U1Qddd
-GqvUFojdTIApQcKIIricqRuSvDdiTB4Olkg41ZtUKdTqlM/4cYxRZhijXLvkEuTO
-Ti+/W2GIEnLhIWodbmUB6HkUTOF4xuelphQyK4cAyqcY0M2eVjmhLOuQdTH4x/W2
-5FWL0x0TOQiJxXctgbXWQvb3m0edUQsD/C5cXe2I06gQtITvLQvpbebC9vXF6awh
-PF9miUG7pHcLTaPklZJd
-=7Kuk
------END PGP SIGNATURE-----
-
---m9EESf0ERqvzovaD--
+Best Regards, 
+Qi Wang Õı∆
+ESG APAC AE 
+Tel: 86-021-38997158
+Mobile: 86-15201958202
+Email: qiwang@micron.com
+Address: No 601 Fasai Rd, Pudong, Shanghai, China, 200131
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
