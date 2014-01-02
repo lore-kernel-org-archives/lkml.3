@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752270AbaABRxs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:53:48 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:46239 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075AbaABRxq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:53:46 -0500
-Message-ID: <52C5A7A7.7020903@lwfinger.net>
-Date: Thu, 02 Jan 2014 11:53:43 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752148AbaABSDa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 13:03:30 -0500
+Received: from p3plex2out03.prod.phx3.secureserver.net ([184.168.131.16]:33139
+	"EHLO p3plex2out03.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751349AbaABSD3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 13:03:29 -0500
+X-Greylist: delayed 331 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Jan 2014 13:03:29 EST
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Chase Southwood <chase.southwood@yahoo.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
+Subject: RE: [PATCH][Resend] Staging: comedi: replace printk() calls with
+ dev_dbg() in pcmmio.c
+Thread-Topic: [PATCH][Resend] Staging: comedi: replace printk() calls with
+ dev_dbg() in pcmmio.c
+Thread-Index: AQHPB12sggnzuG9llkGE7V/GfQppi5pxuLtA
+Date: Thu, 2 Jan 2014 17:57:56 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8817E5C5F9@P3PWEX4MB008.ex4.secureserver.net>
+References: <1388627702-7471-1-git-send-email-chase.southwood@yahoo.com>
+In-Reply-To: <1388627702-7471-1-git-send-email-chase.southwood@yahoo.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Tim Jester-Pfadt <t.jp@gmx.de>, gregkh@linuxfoundation.org
-CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: rtl8188eu: Fixed coding style issues
-References: <20140102170356.GA29980@archlinux>
-In-Reply-To: <20140102170356.GA29980@archlinux>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2014 11:03 AM, Tim Jester-Pfadt wrote:
-> Fixed indentation coding style issues on rtw_io.c
+On Wednesday, January 01, 2014 6:55 PM, Chase Southwood wrote:
 >
-> Signed-off-by: Tim Jester-Pfadt <t.jp@gmx.de>
+> This is a patch for pcmmio.c that changes several printk() calls to dev_dbg() or dev_err() to > fix checkpatch.pl warnings.  Patched from 3.13-rc6.
+>
+> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
 > ---
->   drivers/staging/rtl8188eu/core/rtw_io.c | 4 ++--
->   1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/staging/rtl8188eu/core/rtw_io.c b/drivers/staging/rtl8188eu/core/rtw_io.c
-> index 10c9c65..69b408e 100644
-> --- a/drivers/staging/rtl8188eu/core/rtw_io.c
-> +++ b/drivers/staging/rtl8188eu/core/rtw_io.c
-> @@ -205,7 +205,7 @@ void _rtw_read_mem(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem)
->
->   	_func_enter_;
->   	if (adapter->bDriverStopped || adapter->bSurpriseRemoved) {
-> -	     RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
-> +		RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
->   		      ("rtw_read_mem:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
->   		      adapter->bDriverStopped, adapter->bSurpriseRemoved));
->   	     return;
-> @@ -239,7 +239,7 @@ void _rtw_read_port(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem)
->   	_func_enter_;
->
->   	if (adapter->bDriverStopped || adapter->bSurpriseRemoved) {
-> -	     RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
-> +		RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
->   		      ("rtw_read_port:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
->   		      adapter->bDriverStopped, adapter->bSurpriseRemoved));
->   	     return;
+>  drivers/staging/comedi/drivers/pcmmio.c | 23 +++++++++++++----------
+>  1 file changed, 13 insertions(+), 10 deletions(-)
 
-Did you run checkpatch.pl on this patch? You fixed the indents on the RT_TRACE 
-statements, but the alignment of the continuing statements is wrong. That part 
-was correct before.
+Hello Chase,
 
-Larry
+This was already fixed, and merged into linux-next, by
 
+commit 4bb82d647dad7be06341ffdb9f07a56a387e213f
+Author: H Hartley Sweeten <hsweeten@visionengravers.com>
+Date:   Tue Nov 26 10:21:23 2013 -0700
+
+    staging: comedi: pcmmio: remove DAMMIT_ITS_BROKEN debug
+
+Please base any comedi patches on linux-next.
+
+Regards,
+Hartley
 
