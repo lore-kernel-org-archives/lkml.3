@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752500AbaABUjs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 15:39:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31341 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750782AbaABUjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 15:39:47 -0500
-Date: Thu, 2 Jan 2014 15:39:12 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Torsten Duwe <duwe@lst.de>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <greg@kroah.com>,
-        LKML <linux-kernel@vger.kernel.org>, kexec@lists.infradead.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Peter Jones <pjones@redhat.com>
-Subject: Re: [PATCH 4/6] kexec: A new system call, kexec_file_load, for in
- kernel kexec
-Message-ID: <20140102203912.GB22822@redhat.com>
-References: <20131121191907.GA26366@srcf.ucam.org>
- <20131122185706.GK4046@redhat.com>
- <87vbzju6ql.fsf@xmission.com>
- <20131125163920.GC23094@redhat.com>
- <87fvqj2vxz.fsf@xmission.com>
- <20131126142759.GA5473@redhat.com>
- <20131219125439.GA6379@lst.de>
- <20131220141917.GB27063@redhat.com>
- <87a9fvqfs4.fsf@xmission.com>
- <CAGXu5jKJ88J-++nvkPVvghkXbN+_mB=T1siSDF7yoXQ-d-ONxg@mail.gmail.com>
+	id S1752742AbaABUmg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 15:42:36 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:56640 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752682AbaABUme (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 15:42:34 -0500
+Message-ID: <52C5CF38.1010704@codeaurora.org>
+Date: Thu, 02 Jan 2014 12:42:32 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jKJ88J-++nvkPVvghkXbN+_mB=T1siSDF7yoXQ-d-ONxg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: John Stultz <john.stultz@linaro.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        =?UTF-8?B?S3J6eXN6dG9mIEhhxYJhc2E=?= <khalasa@piap.pl>
+CC: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Willy Tarreau <w@1wt.eu>, lkml <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: v3.13-rc6+ regression (ARM board)
+References: <m3mwjhux0e.fsf@t19.piap.pl>	<20131231104511.GA9688@1wt.eu>	<m3txdmu2ez.fsf@t19.piap.pl>	<20140102101455.GG10158@pengutronix.de>	<m3ppoatwn1.fsf@t19.piap.pl> <CA+55aFyZ0EXYkHd-BhQo6K++qKJVPdGeDbFTVTs3pAPCHFUpOA@mail.gmail.com> <52C5C5F6.70803@linaro.org> <52C5CC54.4050602@linaro.org>
+In-Reply-To: <52C5CC54.4050602@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 20, 2013 at 03:20:16PM -0800, Kees Cook wrote:
-> On Fri, Dec 20, 2013 at 3:11 PM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
-> > Vivek Goyal <vgoyal@redhat.com> writes:
-> >
-> >> On Thu, Dec 19, 2013 at 01:54:39PM +0100, Torsten Duwe wrote:
-> >>> On Tue, Nov 26, 2013 at 09:27:59AM -0500, Vivek Goyal wrote:
-> >
-> >>> IMO it's up to user land to search lists of certificates, and present
-> >>> only the final chain of trust to the kernel for checking.
-> >>>
-> >>> ELF is the preferred format for most sane OSes and firmware, and a detached
-> >>> signature would probably be simplest to check. If we have the choice,
-> >>> without restrictions from braindead boot loaders, ELF should be first.
-> >>> And if the pesigning isn't usable and another sig is needed anyway,
-> >>> why not apply that to vmlinux(.gz) ?
-> >>
-> >> I have yet to look deeper into it that if we can sign elf images and
-> >> just use elf loader. And can use space extract the elf image out of
-> >> a bzImage and pass it to kernel.
-> >>
-> >> Even if it is doable, one disadvantage seemed to be that extracted
-> >> elf images will have to be written to a file so thta it's file descriptor
-> >> can be passed to kernel. And that assumed writable root and we chrome
-> >> folks seems to have setups where root is not writable.
-> >
-> > In that case the chrome folks would simply have to use an ELF format
-> > kernel and not a bzImage.
-> 
-> If we're doing fd origin verification (not signatures), can't we
-> continue to use a regular bzImage?
+On 01/02/14 12:30, John Stultz wrote:
+> On 01/02/2014 12:03 PM, John Stultz wrote:
+>> On 01/02/2014 11:38 AM, Linus Torvalds wrote:
+>>> On Thu, Jan 2, 2014 at 4:07 AM, Krzysztof Hałasa <khalasa@piap.pl> wrote:
+>>>> This means these two commits don't like each other:
+>>>>
+>>>>     seqcount: Add lockdep functionality to seqcount/seqlock structures
+>>>>     sched_clock: Use seqcount instead of rolling our own
+>>> Does something like this fix it for you?
+>>>
+>>>   --- a/kernel/time/sched_clock.c
+>>>   +++ b/kernel/time/sched_clock.c
+>>>   @@ -36,6 +36,7 @@ core_param(irqtime, irqtime, int, 0400);
+>>>
+>>>    static struct clock_data cd = {
+>>>           .mult   = NSEC_PER_SEC / HZ,
+>>>   +       .seq = SEQCNT_ZERO(cd.seq),
+>>>    };
+>>>
+>>>    static u64 __read_mostly sched_clock_mask;
+>>>
+>>> (The above is not even compile-tested, because x86 doesn't use
+>>> GENERIC_SCHED_CLOCK. So I did the patch blindly, but I think you get
+>>> the idea..)
+>> Sheesh. Just finishing up holiday email backlog and Linus already has a
+>> fix. :)
+>>
+>> This looks like it should fix the issue, and does build for me.
+>>
+>> Assuming it works for Krzysztof,
+> So something else may be at play. Even with Linus' patch I reproduced a
+> similar hang here.
+>
+> Still chasing it down, but it looks like a seqlock deadlock where we're
+> calling read while holding the lock.
+>
 
-If secureboot is enabled, it enforces module signature verification. I 
-think similar will happen for kexec too. How would kernel know that on
-a secureboot platform fd original verification will happen and it is
-sufficient.
+Do you have tracing enabled? When I moved this code over to use
+seqcounts it relied on the fact that the compiler wouldn't be generating
+any function calls to the tracing code. Before seqcounts got lockdep
+support it all collapsed down into sched_clock() due to the use of
+inline on the seqlock API.
 
-I personally want to support bzImage as well (apart from ELF) because
-distributions has been shipping bzImage for a long time and I don't
-want to enforce a change there because of secureboot. It is not necessary.
-Right now I am thinking more about storing detached bzImage signatures
-and passing those signatures to kexec system call.
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-Thanks
-Vivek
