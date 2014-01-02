@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752487AbaABUUS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 15:20:18 -0500
-Received: from mga03.intel.com ([143.182.124.21]:18970 "EHLO mga03.intel.com"
+	id S1752656AbaABUUv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 15:20:51 -0500
+Received: from mga02.intel.com ([134.134.136.20]:1863 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751136AbaABUUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 15:20:16 -0500
+	id S1752310AbaABUUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 15:20:18 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,592,1384329600"; 
-   d="scan'208";a="452909196"
-Subject: [PATCH 1/3] kconfig: consolidate arch-specific seccomp options
+   d="scan'208";a="460871145"
+Subject: [PATCH 3/3] Kconfig: organize memory-related config options
 To: linux-kernel@vger.kernel.org
-Cc: Dave Hansen <dave@sr71.net>, linux-security-module@vger.kernel.org,
-        linux-arch@vger.kernel.org
+Cc: Dave Hansen <dave@sr71.net>, linux-mm@kvack.org
 From: Dave Hansen <dave@sr71.net>
-Date: Thu, 02 Jan 2014 12:20:14 -0800
-Message-Id: <20140102202014.CA206E9B@viggo.jf.intel.com>
+Date: Thu, 02 Jan 2014 12:20:17 -0800
+References: <20140102202014.CA206E9B@viggo.jf.intel.com>
+In-Reply-To: <20140102202014.CA206E9B@viggo.jf.intel.com>
+Message-Id: <20140102202017.9D167747@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,337 +24,323 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Hansen <dave.hansen@linux.intel.com>
 
-There are 7 architecures with "config SECCOMP".  They all have
-virtually the same help text except for those referencing the
-/proc interface which was removed in 2007.
+This continues in a series of patches to clean up the
+configuration menus.  I believe they've become really hard to
+navigate and there are some simple things we can do to make
+things easier to find.
 
-There is *NOTHING* architecture-specific about SECCOMP except
-that the syscalls have per-architecture definitions, like every
-other syscall.  It is absurd to have the option in the
-arch-specific menus.
+This creates a "Memory Options" menu and moves some things like
+swap and slab configuration under them.  It also moves SLUB_DEBUG
+to the debugging menu.
 
-Move it to the security menu, consolidate the 7 down to one,
-and remove the embarassingly-ancient references to the /proc
-interface.
+After this patch, the menu has the following options:
+
+  [ ] Memory placement aware NUMA scheduler
+  [*] Enable VM event counters for /proc/vmstat
+  [ ] Disable heap randomization
+  [*] Support for paging of anonymous memory (swap)
+      Choose SLAB allocator (SLUB (Unqueued Allocator))
+  [*] SLUB per cpu partial cache
+  [*] SLUB: attempt to use double-cmpxchg operations
 
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: linux-security-module@vger.kernel.org
-Cc: linux-arch@vger.kernel.org
+Cc: linux-mm@kvack.org
 ---
 
- linux.git-davehans/arch/arm/Kconfig        |   15 +--------------
- linux.git-davehans/arch/microblaze/Kconfig |   18 +-----------------
- linux.git-davehans/arch/mips/Kconfig       |   18 +-----------------
- linux.git-davehans/arch/powerpc/Kconfig    |   18 +-----------------
- linux.git-davehans/arch/s390/Kconfig       |   18 +-----------------
- linux.git-davehans/arch/sh/Kconfig         |   17 +----------------
- linux.git-davehans/arch/sparc/Kconfig      |   18 +-----------------
- linux.git-davehans/arch/x86/Kconfig        |   17 +----------------
- linux.git-davehans/security/Kconfig        |   21 ++++++++++++++++++++-
- 9 files changed, 28 insertions(+), 132 deletions(-)
+ linux.git-davehans/init/Kconfig     |  243 ++++++++++++++++++------------------
+ linux.git-davehans/mm/Kconfig.debug |   11 +
+ 2 files changed, 135 insertions(+), 119 deletions(-)
 
-diff -puN arch/arm/Kconfig~consolidate-seccomp-options arch/arm/Kconfig
---- linux.git/arch/arm/Kconfig~consolidate-seccomp-options	2014-01-02 11:23:58.590785275 -0800
-+++ linux.git-davehans/arch/arm/Kconfig	2014-01-02 11:23:58.609786130 -0800
-@@ -26,6 +26,7 @@ config ARM
- 	select HAVE_ARCH_JUMP_LABEL if !XIP_KERNEL
- 	select HAVE_ARCH_KGDB
- 	select HAVE_ARCH_SECCOMP_FILTER if (AEABI && !OABI_COMPAT)
-+	select HAVE_ARCH_SECCOMP
- 	select HAVE_ARCH_TRACEHOOK
- 	select HAVE_BPF_JIT
- 	select HAVE_CONTEXT_TRACKING
-@@ -1842,20 +1843,6 @@ config UACCESS_WITH_MEMCPY
- 	  However, if the CPU data cache is using a write-allocate mode,
- 	  this option is unlikely to provide any performance gain.
+diff -puN init/Kconfig~organize-memory-config-options init/Kconfig
+--- linux.git/init/Kconfig~organize-memory-config-options	2014-01-02 11:24:20.925790194 -0800
++++ linux.git-davehans/init/Kconfig	2014-01-02 11:24:20.931790464 -0800
+@@ -208,16 +208,6 @@ config DEFAULT_HOSTNAME
+ 	  but you may wish to use a different default here to make a minimal
+ 	  system more usable with less configuration.
  
--config SECCOMP
--	bool
--	prompt "Enable seccomp to safely compute untrusted bytecode"
--	---help---
--	  This kernel feature is useful for number crunching applications
--	  that may need to compute untrusted bytecode during their
--	  execution. By using pipes or other transports made available to
--	  the process as file descriptors supporting the read/write
--	  syscalls, it's possible to isolate those applications in
--	  their own address space using seccomp. Once seccomp is
--	  enabled via prctl(PR_SET_SECCOMP), it cannot be disabled
--	  and the task is only allowed to execute a few safe syscalls
--	  defined by each seccomp mode.
--
- config CC_STACKPROTECTOR
- 	bool "Enable -fstack-protector buffer overflow detection (EXPERIMENTAL)"
- 	help
-diff -puN arch/microblaze/Kconfig~consolidate-seccomp-options arch/microblaze/Kconfig
---- linux.git/arch/microblaze/Kconfig~consolidate-seccomp-options	2014-01-02 11:23:58.592785365 -0800
-+++ linux.git-davehans/arch/microblaze/Kconfig	2014-01-02 11:23:58.609786130 -0800
-@@ -11,6 +11,7 @@ config MICROBLAZE
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select HAVE_OPROFILE
- 	select HAVE_ARCH_KGDB
-+	select HAVE_ARCH_SECCOMP
- 	select HAVE_DMA_ATTRS
- 	select HAVE_DMA_API_DEBUG
- 	select TRACING_SUPPORT
-@@ -106,23 +107,6 @@ config CMDLINE_FORCE
- 	  Set this to have arguments from the default kernel command string
- 	  override those passed by the boot loader.
- 
--config SECCOMP
--	bool "Enable seccomp to safely compute untrusted bytecode"
--	depends on PROC_FS
+-config SWAP
+-	bool "Support for paging of anonymous memory (swap)"
+-	depends on MMU && BLOCK
 -	default y
 -	help
--	  This kernel feature is useful for number crunching applications
--	  that may need to compute untrusted bytecode during their
--	  execution. By using pipes or other transports made available to
--	  the process as file descriptors supporting the read/write
--	  syscalls, it's possible to isolate those applications in
--	  their own address space using seccomp. Once seccomp is
--	  enabled via /proc/<pid>/seccomp, it cannot be disabled
--	  and the task is only allowed to execute a few safe syscalls
--	  defined by each seccomp mode.
+-	  This option allows you to choose whether you want to have support
+-	  for so called swap devices or swap files in your kernel that are
+-	  used to provide more virtual memory than the actual RAM present
+-	  in your computer.  If unsure say Y.
 -
--	  If unsure, say Y. Only embedded should say N here.
--
- endmenu
- 
- menu "Advanced setup"
-diff -puN arch/mips/Kconfig~consolidate-seccomp-options arch/mips/Kconfig
---- linux.git/arch/mips/Kconfig~consolidate-seccomp-options	2014-01-02 11:23:58.594785455 -0800
-+++ linux.git-davehans/arch/mips/Kconfig	2014-01-02 11:23:58.610786175 -0800
-@@ -10,6 +10,7 @@ config MIPS
- 	select PERF_USE_VMALLOC
- 	select HAVE_ARCH_KGDB
- 	select HAVE_ARCH_TRACEHOOK
-+	select HAVE_ARCH_SECCOMP
- 	select ARCH_HAVE_CUSTOM_GPIO_H
- 	select HAVE_FUNCTION_TRACER
- 	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
-@@ -2305,23 +2306,6 @@ config PHYSICAL_START
- 	  specified in the "crashkernel=YM@XM" command line boot parameter
- 	  passed to the panic-ed kernel).
- 
--config SECCOMP
--	bool "Enable seccomp to safely compute untrusted bytecode"
--	depends on PROC_FS
--	default y
--	help
--	  This kernel feature is useful for number crunching applications
--	  that may need to compute untrusted bytecode during their
--	  execution. By using pipes or other transports made available to
--	  the process as file descriptors supporting the read/write
--	  syscalls, it's possible to isolate those applications in
--	  their own address space using seccomp. Once seccomp is
--	  enabled via /proc/<pid>/seccomp, it cannot be disabled
--	  and the task is only allowed to execute a few safe syscalls
--	  defined by each seccomp mode.
--
--	  If unsure, say Y. Only embedded should say N here.
--
- config CC_STACKPROTECTOR
- 	bool "Enable -fstack-protector buffer overflow detection (EXPERIMENTAL)"
- 	help
-diff -puN arch/powerpc/Kconfig~consolidate-seccomp-options arch/powerpc/Kconfig
---- linux.git/arch/powerpc/Kconfig~consolidate-seccomp-options	2014-01-02 11:23:58.596785545 -0800
-+++ linux.git-davehans/arch/powerpc/Kconfig	2014-01-02 11:23:58.611786220 -0800
-@@ -101,6 +101,7 @@ config PPC
- 	select HAVE_EFFICIENT_UNALIGNED_ACCESS if !CPU_LITTLE_ENDIAN
- 	select HAVE_KPROBES
- 	select HAVE_ARCH_KGDB
-+	select HAVE_ARCH_SECCOMP
- 	select HAVE_KRETPROBES
- 	select HAVE_ARCH_TRACEHOOK
- 	select HAVE_MEMBLOCK
-@@ -626,23 +627,6 @@ config ARCH_WANTS_FREEZER_CONTROL
- 
- source kernel/power/Kconfig
- 
--config SECCOMP
--	bool "Enable seccomp to safely compute untrusted bytecode"
--	depends on PROC_FS
--	default y
--	help
--	  This kernel feature is useful for number crunching applications
--	  that may need to compute untrusted bytecode during their
--	  execution. By using pipes or other transports made available to
--	  the process as file descriptors supporting the read/write
--	  syscalls, it's possible to isolate those applications in
--	  their own address space using seccomp. Once seccomp is
--	  enabled via /proc/<pid>/seccomp, it cannot be disabled
--	  and the task is only allowed to execute a few safe syscalls
--	  defined by each seccomp mode.
--
--	  If unsure, say Y. Only embedded should say N here.
--
- endmenu
- 
- config ISA_DMA_API
-diff -puN arch/s390/Kconfig~consolidate-seccomp-options arch/s390/Kconfig
---- linux.git/arch/s390/Kconfig~consolidate-seccomp-options	2014-01-02 11:23:58.597785590 -0800
-+++ linux.git-davehans/arch/s390/Kconfig	2014-01-02 11:23:58.611786220 -0800
-@@ -105,6 +105,7 @@ config S390
- 	select HAVE_ALIGNED_STRUCT_PAGE if SLUB
- 	select HAVE_ARCH_JUMP_LABEL if !MARCH_G5
- 	select HAVE_ARCH_SECCOMP_FILTER
-+	select HAVE_ARCH_SECCOMP
- 	select HAVE_ARCH_TRACEHOOK
- 	select HAVE_ARCH_TRANSPARENT_HUGEPAGE if 64BIT
- 	select HAVE_BPF_JIT if 64BIT && PACK_STACK
-@@ -608,23 +609,6 @@ menu "Executable file formats / Emulatio
- 
- source "fs/Kconfig.binfmt"
- 
--config SECCOMP
--	def_bool y
--	prompt "Enable seccomp to safely compute untrusted bytecode"
--	depends on PROC_FS
--	help
--	  This kernel feature is useful for number crunching applications
--	  that may need to compute untrusted bytecode during their
--	  execution. By using pipes or other transports made available to
--	  the process as file descriptors supporting the read/write
--	  syscalls, it's possible to isolate those applications in
--	  their own address space using seccomp. Once seccomp is
--	  enabled via /proc/<pid>/seccomp, it cannot be disabled
--	  and the task is only allowed to execute a few safe syscalls
--	  defined by each seccomp mode.
--
--	  If unsure, say Y.
--
- endmenu
- 
- menu "Power Management"
-diff -puN arch/sh/Kconfig~consolidate-seccomp-options arch/sh/Kconfig
---- linux.git/arch/sh/Kconfig~consolidate-seccomp-options	2014-01-02 11:23:58.599785680 -0800
-+++ linux.git-davehans/arch/sh/Kconfig	2014-01-02 11:23:58.612786265 -0800
-@@ -10,6 +10,7 @@ config SUPERH
- 	select HAVE_OPROFILE
- 	select HAVE_GENERIC_DMA_COHERENT
- 	select HAVE_ARCH_TRACEHOOK
-+	select HAVE_ARCH_SECCOMP
- 	select HAVE_DMA_API_DEBUG
- 	select HAVE_DMA_ATTRS
- 	select HAVE_PERF_EVENTS
-@@ -679,22 +680,6 @@ config PHYSICAL_START
- 	  where the fail safe kernel needs to run at a different address
- 	  than the panic-ed kernel.
- 
--config SECCOMP
--	bool "Enable seccomp to safely compute untrusted bytecode"
--	depends on PROC_FS
--	help
--	  This kernel feature is useful for number crunching applications
--	  that may need to compute untrusted bytecode during their
--	  execution. By using pipes or other transports made available to
--	  the process as file descriptors supporting the read/write
--	  syscalls, it's possible to isolate those applications in
--	  their own address space using seccomp. Once seccomp is
--	  enabled via prctl, it cannot be disabled and the task is only
--	  allowed to execute a few safe syscalls defined by each seccomp
--	  mode.
--
--	  If unsure, say N.
--
- config CC_STACKPROTECTOR
- 	bool "Enable -fstack-protector buffer overflow detection (EXPERIMENTAL)"
- 	depends on SUPERH32
-diff -puN arch/sparc/Kconfig~consolidate-seccomp-options arch/sparc/Kconfig
---- linux.git/arch/sparc/Kconfig~consolidate-seccomp-options	2014-01-02 11:23:58.601785770 -0800
-+++ linux.git-davehans/arch/sparc/Kconfig	2014-01-02 11:23:58.612786265 -0800
-@@ -66,6 +66,7 @@ config SPARC64
- 	select HAVE_SYSCALL_TRACEPOINTS
- 	select HAVE_CONTEXT_TRACKING
- 	select HAVE_DEBUG_KMEMLEAK
-+	select HAVE_ARCH_SECCOMP if PROC_FS
- 	select RTC_DRV_CMOS
- 	select RTC_DRV_BQ4802
- 	select RTC_DRV_SUN4V
-@@ -222,23 +223,6 @@ config EARLYFB
- 	help
- 	  Say Y here to enable a faster early framebuffer boot console.
- 
--config SECCOMP
--	bool "Enable seccomp to safely compute untrusted bytecode"
--	depends on SPARC64 && PROC_FS
--	default y
--	help
--	  This kernel feature is useful for number crunching applications
--	  that may need to compute untrusted bytecode during their
--	  execution. By using pipes or other transports made available to
--	  the process as file descriptors supporting the read/write
--	  syscalls, it's possible to isolate those applications in
--	  their own address space using seccomp. Once seccomp is
--	  enabled via /proc/<pid>/seccomp, it cannot be disabled
--	  and the task is only allowed to execute a few safe syscalls
--	  defined by each seccomp mode.
--
--	  If unsure, say Y. Only embedded should say N here.
--
- config HOTPLUG_CPU
- 	bool "Support for hot-pluggable CPUs"
- 	depends on SPARC64 && SMP
-diff -puN arch/x86/Kconfig~consolidate-seccomp-options arch/x86/Kconfig
---- linux.git/arch/x86/Kconfig~consolidate-seccomp-options	2014-01-02 11:23:58.603785860 -0800
-+++ linux.git-davehans/arch/x86/Kconfig	2014-01-02 11:23:58.614786355 -0800
-@@ -101,6 +101,7 @@ config X86
- 	select GENERIC_SMP_IDLE_THREAD
- 	select ARCH_WANT_IPC_PARSE_VERSION if X86_32
- 	select HAVE_ARCH_SECCOMP_FILTER
-+	select HAVE_ARCH_SECCOMP
- 	select BUILDTIME_EXTABLE_SORT
- 	select GENERIC_CMOS_UPDATE
- 	select HAVE_ARCH_SOFT_DIRTY
-@@ -1601,22 +1602,6 @@ config EFI_STUB
- 
- 	  See Documentation/efi-stub.txt for more information.
- 
--config SECCOMP
--	def_bool y
--	prompt "Enable seccomp to safely compute untrusted bytecode"
--	---help---
--	  This kernel feature is useful for number crunching applications
--	  that may need to compute untrusted bytecode during their
--	  execution. By using pipes or other transports made available to
--	  the process as file descriptors supporting the read/write
--	  syscalls, it's possible to isolate those applications in
--	  their own address space using seccomp. Once seccomp is
--	  enabled via prctl(PR_SET_SECCOMP), it cannot be disabled
--	  and the task is only allowed to execute a few safe syscalls
--	  defined by each seccomp mode.
--
--	  If unsure, say Y. Only embedded should say N here.
--
- config CC_STACKPROTECTOR
- 	bool "Enable -fstack-protector buffer overflow detection"
+ config SYSVIPC
+ 	bool "System V IPC"
  	---help---
-diff -puN security/Kconfig~consolidate-seccomp-options security/Kconfig
---- linux.git/security/Kconfig~consolidate-seccomp-options	2014-01-02 11:23:58.604785905 -0800
-+++ linux.git-davehans/security/Kconfig	2014-01-02 11:23:58.614786355 -0800
-@@ -167,5 +167,24 @@ config DEFAULT_SECURITY
- 	default "yama" if DEFAULT_SECURITY_YAMA
- 	default "" if DEFAULT_SECURITY_DAC
+@@ -760,6 +750,130 @@ endchoice
  
--endmenu
-+config HAVE_ARCH_SECCOMP
-+	bool
+ endmenu # "RCU Subsystem"
+ 
++menu "Memory Options"
 +
-+config SECCOMP
-+	bool
++config NUMA_BALANCING
++	bool "Memory placement aware NUMA scheduler"
++	depends on ARCH_SUPPORTS_NUMA_BALANCING
++	depends on !ARCH_WANT_NUMA_VARIABLE_LOCALITY
++	depends on SMP && NUMA && MIGRATION
++	help
++	  This option adds support for automatic NUMA aware memory/task placement.
++	  The mechanism is quite primitive and is based on migrating memory when
++	  it has references to the node the task is running on.
++
++	  This system will be inactive on UMA systems.
++
++config VM_EVENT_COUNTERS
 +	default y
-+	prompt "Enable seccomp to safely compute untrusted bytecode"
-+	---help---
-+	  This kernel feature is useful for number crunching applications
-+	  that may need to compute untrusted bytecode during their
-+	  execution. By using pipes or other transports made available to
-+	  the process as file descriptors supporting the read/write
-+	  syscalls, it's possible to isolate those applications in
-+	  their own address space using seccomp. Once seccomp is
-+	  enabled via prctl(PR_SET_SECCOMP), it cannot be disabled
-+	  and the task is only allowed to execute a few safe syscalls
-+	  defined by each seccomp mode.
- 
-+	  If unsure, say Y. Only embedded should say N here.
++	bool "Enable VM event counters for /proc/vmstat" if EXPERT
++	help
++	  VM event counters are needed for event counts to be shown.
++	  This option allows the disabling of the VM event counters
++	  on EXPERT systems.  /proc/vmstat will only show page counts
++	  if VM event counters are disabled.
 +
-+endmenu
++config COMPAT_BRK
++	bool "Disable heap randomization"
++	default y
++	help
++	  Randomizing heap placement makes heap exploits harder, but it
++	  also breaks ancient binaries (including anything libc5 based).
++	  This option changes the bootup default to heap randomization
++	  disabled, and can be overridden at runtime by setting
++	  /proc/sys/kernel/randomize_va_space to 2.
++
++	  On non-ancient distros (post-2000 ones) N is usually a safe choice.
++
++config SWAP
++	bool "Support for paging of anonymous memory (swap)"
++	depends on MMU && BLOCK
++	default y
++	help
++	  This option allows you to choose whether you want to have support
++	  for so called swap devices or swap files in your kernel that are
++	  used to provide more virtual memory than the actual RAM present
++	  in your computer.  If unsure say Y.
++
++choice
++	prompt "Choose SLAB allocator"
++	default SLUB
++	help
++	   This option allows to select a slab allocator.
++
++config SLAB
++	bool "SLAB"
++	help
++	  The regular slab allocator that is established and known to work
++	  well in all environments. It organizes cache hot objects in
++	  per cpu and per node queues.
++
++config SLUB
++	bool "SLUB (Unqueued Allocator)"
++	help
++	   SLUB is a slab allocator that minimizes cache line usage
++	   instead of managing queues of cached objects (SLAB approach).
++	   Per cpu caching is realized using slabs of objects instead
++	   of queues of objects. SLUB can use memory efficiently
++	   and has enhanced diagnostics. SLUB is the default choice for
++	   a slab allocator.
++
++config SLOB
++	depends on EXPERT
++	bool "SLOB (Simple Allocator)"
++	help
++	   SLOB replaces the stock allocator with a drastically simpler
++	   allocator. SLOB is generally more space efficient but
++	   does not perform as well on large systems.
++
++endchoice
++
++config SLUB_CPU_PARTIAL
++	default y
++	depends on SLUB && SMP
++	bool "SLUB per cpu partial cache"
++	help
++	  Per cpu partial caches accellerate objects allocation and freeing
++	  that is local to a processor at the price of more indeterminism
++	  in the latency of the free. On overflow these caches will be cleared
++	  which requires the taking of locks that may cause latency spikes.
++	  Typically one would choose no for a realtime system.
++
++config SLUB_ATTEMPT_CMPXCHG_DOUBLE
++	default y
++	depends on SLUB && HAVE_CMPXCHG_DOUBLE
++	bool "SLUB: attempt to use double-cmpxchg operations"
++	help
++	  Some CPUs support instructions that let you do a large double-word
++	  atomic cmpxchg operation.  This keeps the SLUB fastpath from
++	  needing to disable interrupts.
++
++	  If you are unsure, say y.
++
++config MMAP_ALLOW_UNINITIALIZED
++	bool "Allow mmapped anonymous memory to be uninitialized"
++	depends on EXPERT && !MMU
++	default n
++	help
++	  Normally, and according to the Linux spec, anonymous memory obtained
++	  from mmap() has it's contents cleared before it is passed to
++	  userspace.  Enabling this config option allows you to request that
++	  mmap() skip that if it is given an MAP_UNINITIALIZED flag, thus
++	  providing a huge performance boost.  If this option is not enabled,
++	  then the flag will be ignored.
++
++	  This is taken advantage of by uClibc's malloc(), and also by
++	  ELF-FDPIC binfmt's brk and stack allocator.
++
++	  Because of the obvious security issues, this option should only be
++	  enabled on embedded devices where you control what is run in
++	  userspace.  Since that isn't generally a problem on no-MMU systems,
++	  it is normally safe to say Y here.
++
++	  See Documentation/nommu-mmap.txt for more information.
++
++endmenu # "Memory Optionse
++
+ config IKCONFIG
+ 	tristate "Kernel .config support"
+ 	---help---
+@@ -840,18 +954,6 @@ config NUMA_BALANCING_DEFAULT_ENABLED
+ 	  If set, automatic NUMA balancing will be enabled if running on a NUMA
+ 	  machine.
+ 
+-config NUMA_BALANCING
+-	bool "Memory placement aware NUMA scheduler"
+-	depends on ARCH_SUPPORTS_NUMA_BALANCING
+-	depends on !ARCH_WANT_NUMA_VARIABLE_LOCALITY
+-	depends on SMP && NUMA && MIGRATION
+-	help
+-	  This option adds support for automatic NUMA aware memory/task placement.
+-	  The mechanism is quite primitive and is based on migrating memory when
+-	  it has references to the node the task is running on.
+-
+-	  This system will be inactive on UMA systems.
+-
+ menuconfig CGROUPS
+ 	boolean "Control Group support"
+ 	depends on EVENTFD
+@@ -1529,103 +1631,6 @@ config DEBUG_PERF_USE_VMALLOC
+ 
+ endmenu
+ 
+-config VM_EVENT_COUNTERS
+-	default y
+-	bool "Enable VM event counters for /proc/vmstat" if EXPERT
+-	help
+-	  VM event counters are needed for event counts to be shown.
+-	  This option allows the disabling of the VM event counters
+-	  on EXPERT systems.  /proc/vmstat will only show page counts
+-	  if VM event counters are disabled.
+-
+-config SLUB_DEBUG
+-	default y
+-	bool "Enable SLUB debugging support" if EXPERT
+-	depends on SLUB && SYSFS
+-	help
+-	  SLUB has extensive debug support features. Disabling these can
+-	  result in significant savings in code size. This also disables
+-	  SLUB sysfs support. /sys/slab will not exist and there will be
+-	  no support for cache validation etc.
+-
+-config COMPAT_BRK
+-	bool "Disable heap randomization"
+-	default y
+-	help
+-	  Randomizing heap placement makes heap exploits harder, but it
+-	  also breaks ancient binaries (including anything libc5 based).
+-	  This option changes the bootup default to heap randomization
+-	  disabled, and can be overridden at runtime by setting
+-	  /proc/sys/kernel/randomize_va_space to 2.
+-
+-	  On non-ancient distros (post-2000 ones) N is usually a safe choice.
+-
+-choice
+-	prompt "Choose SLAB allocator"
+-	default SLUB
+-	help
+-	   This option allows to select a slab allocator.
+-
+-config SLAB
+-	bool "SLAB"
+-	help
+-	  The regular slab allocator that is established and known to work
+-	  well in all environments. It organizes cache hot objects in
+-	  per cpu and per node queues.
+-
+-config SLUB
+-	bool "SLUB (Unqueued Allocator)"
+-	help
+-	   SLUB is a slab allocator that minimizes cache line usage
+-	   instead of managing queues of cached objects (SLAB approach).
+-	   Per cpu caching is realized using slabs of objects instead
+-	   of queues of objects. SLUB can use memory efficiently
+-	   and has enhanced diagnostics. SLUB is the default choice for
+-	   a slab allocator.
+-
+-config SLOB
+-	depends on EXPERT
+-	bool "SLOB (Simple Allocator)"
+-	help
+-	   SLOB replaces the stock allocator with a drastically simpler
+-	   allocator. SLOB is generally more space efficient but
+-	   does not perform as well on large systems.
+-
+-endchoice
+-
+-config SLUB_CPU_PARTIAL
+-	default y
+-	depends on SLUB && SMP
+-	bool "SLUB per cpu partial cache"
+-	help
+-	  Per cpu partial caches accellerate objects allocation and freeing
+-	  that is local to a processor at the price of more indeterminism
+-	  in the latency of the free. On overflow these caches will be cleared
+-	  which requires the taking of locks that may cause latency spikes.
+-	  Typically one would choose no for a realtime system.
+-
+-config MMAP_ALLOW_UNINITIALIZED
+-	bool "Allow mmapped anonymous memory to be uninitialized"
+-	depends on EXPERT && !MMU
+-	default n
+-	help
+-	  Normally, and according to the Linux spec, anonymous memory obtained
+-	  from mmap() has it's contents cleared before it is passed to
+-	  userspace.  Enabling this config option allows you to request that
+-	  mmap() skip that if it is given an MAP_UNINITIALIZED flag, thus
+-	  providing a huge performance boost.  If this option is not enabled,
+-	  then the flag will be ignored.
+-
+-	  This is taken advantage of by uClibc's malloc(), and also by
+-	  ELF-FDPIC binfmt's brk and stack allocator.
+-
+-	  Because of the obvious security issues, this option should only be
+-	  enabled on embedded devices where you control what is run in
+-	  userspace.  Since that isn't generally a problem on no-MMU systems,
+-	  it is normally safe to say Y here.
+-
+-	  See Documentation/nommu-mmap.txt for more information.
+-
+ config PROFILING
+ 	bool "Profiling support"
+ 	help
+diff -puN mm/Kconfig.debug~organize-memory-config-options mm/Kconfig.debug
+--- linux.git/mm/Kconfig.debug~organize-memory-config-options	2014-01-02 11:24:20.927790284 -0800
++++ linux.git-davehans/mm/Kconfig.debug	2014-01-02 11:24:20.931790464 -0800
+@@ -27,3 +27,14 @@ config PAGE_POISONING
+ config PAGE_GUARD
+ 	bool
+ 	select WANT_PAGE_DEBUG_FLAGS
++
++config SLUB_DEBUG
++	default y
++	bool "Enable SLUB debugging support" if EXPERT
++	depends on SLUB && SYSFS
++	help
++	  SLUB has extensive debug support features. Disabling these can
++	  result in significant savings in code size. This also disables
++	  SLUB sysfs support. /sys/slab will not exist and there will be
++	  no support for cache validation etc.
++
 _
