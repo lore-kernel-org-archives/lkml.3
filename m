@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751637AbaABHOI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 02:14:08 -0500
+	id S1751561AbaABHOB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 02:14:01 -0500
 Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43662 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434AbaABHNQ (ORCPT
+	with ESMTP id S1751387AbaABHNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 02:13:16 -0500
-X-AuditID: 9c930197-b7c4aae000003d84-59-52c5118b9ea9
+	Thu, 2 Jan 2014 02:13:15 -0500
+X-AuditID: 9c930197-b7c4aae000003d84-1e-52c511874a78
 From: Minchan Kim <minchan@kernel.org>
 To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
@@ -30,9 +30,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
         Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
         Rob Clark <robdclark@gmail.com>, Jason Evans <je@fb.com>,
         Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v10 14/16] vrange: Change purged with hint
-Date: Thu,  2 Jan 2014 16:12:22 +0900
-Message-Id: <1388646744-15608-15-git-send-email-minchan@kernel.org>
+Subject: [PATCH v10 10/16] vrange: Purging vrange-anon pages from shrinker
+Date: Thu,  2 Jan 2014 16:12:18 +0900
+Message-Id: <1388646744-15608-11-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1388646744-15608-1-git-send-email-minchan@kernel.org>
 References: <1388646744-15608-1-git-send-email-minchan@kernel.org>
@@ -41,12 +41,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct vrange has a purged field which is just flag to express
-the range was purged or not so what we need is just a bit.
-It means it's too bloated.
-
-This patch changes the name with hint so upcoming patch will use
-other extra bitfield for other purpose.
+This patch provides the logic to discard anonymous vranges by
+generating the page list for the volatile ranges setting the ptes
+volatile, and discarding the pages.
 
 Cc: Mel Gorman <mel@csn.ul.ie>
 Cc: Hugh Dickins <hughd@google.com>
@@ -55,139 +52,226 @@ Cc: Rik van Riel <riel@redhat.com>
 Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
 Cc: Michel Lespinasse <walken@google.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: John Stultz <john.stultz@linaro.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+[jstultz: Code tweaks and commit log rewording]
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- include/linux/vrange_types.h |    3 ++-
- mm/vrange.c                  |   39 ++++++++++++++++++++++++++++++---------
- 2 files changed, 32 insertions(+), 10 deletions(-)
+ mm/vrange.c |  184 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 183 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/vrange_types.h b/include/linux/vrange_types.h
-index c4ef8b69a0a1..d42b0e7d7343 100644
---- a/include/linux/vrange_types.h
-+++ b/include/linux/vrange_types.h
-@@ -20,7 +20,8 @@ struct vrange_root {
- struct vrange {
- 	struct interval_tree_node node;
- 	struct vrange_root *owner;
--	int purged;
-+	/* purged */
-+	unsigned long hint;
- 	struct list_head lru;
- 	atomic_t refcount;
- };
 diff --git a/mm/vrange.c b/mm/vrange.c
-index 4e0775b722af..df01c6b084bf 100644
+index 4a52b7a05f9a..0fa669c56ab8 100644
 --- a/mm/vrange.c
 +++ b/mm/vrange.c
-@@ -29,6 +29,24 @@ struct vrange_walker {
- 	struct list_head *pagelist;
- };
+@@ -11,6 +11,8 @@
+ #include <linux/hugetlb.h>
+ #include "internal.h"
+ #include <linux/mmu_notifier.h>
++#include <linux/mm_inline.h>
++#include <linux/migrate.h>
  
-+#define VRANGE_PURGED_MARK	0
-+
-+void mark_purge(struct vrange *range)
-+{
-+	range->hint |= (1 << VRANGE_PURGED_MARK);
-+}
-+
-+void clear_purge(struct vrange *range)
-+{
-+	range->hint &= ~(1 << VRANGE_PURGED_MARK);
-+}
-+
-+bool vrange_purged(struct vrange *range)
-+{
-+	bool purged = range->hint & (1 << VRANGE_PURGED_MARK);
-+	return purged;
-+}
+ static struct kmem_cache *vrange_cachep;
+ 
+@@ -19,6 +21,11 @@ static struct vrange_list {
+ 	spinlock_t lock;
+ } vrange_list;
+ 
++struct vrange_walker {
++	struct vm_area_struct *vma;
++	struct list_head *pagelist;
++};
 +
  static inline unsigned long vrange_size(struct vrange *range)
  {
  	return range->node.last + 1 - range->node.start;
-@@ -217,7 +235,7 @@ static struct vrange *__vrange_alloc(gfp_t flags)
- 		return vrange;
- 
- 	vrange->owner = NULL;
--	vrange->purged = 0;
-+	vrange->hint = 0;
- 	INIT_LIST_HEAD(&vrange->lru);
- 	atomic_set(&vrange->refcount, 1);
- 
-@@ -288,14 +306,17 @@ static inline void __vrange_set(struct vrange *range,
- {
- 	range->node.start = start_idx;
- 	range->node.last = end_idx;
--	range->purged = purged;
-+	if (purged)
-+		mark_purge(range);
-+	else
-+		clear_purge(range);
+@@ -682,11 +689,186 @@ static struct vrange *vrange_isolate(void)
+ 	return vrange;
  }
  
- static inline void __vrange_resize(struct vrange *range,
- 		unsigned long start_idx, unsigned long end_idx)
+-static int discard_vrange(struct vrange *vrange, unsigned long *nr_discard)
++static unsigned long discard_vrange_pagelist(struct list_head *page_list)
++{
++	struct page *page;
++	unsigned int nr_discard = 0;
++	LIST_HEAD(ret_pages);
++	LIST_HEAD(free_pages);
++
++	while (!list_empty(page_list)) {
++		int err;
++		page = list_entry(page_list->prev, struct page, lru);
++		list_del(&page->lru);
++		if (!trylock_page(page)) {
++			list_add(&page->lru, &ret_pages);
++			continue;
++		}
++
++		/*
++		 * discard_vpage returns unlocked page if it
++		 * is successful
++		 */
++		err = discard_vpage(page);
++		if (err) {
++			unlock_page(page);
++			list_add(&page->lru, &ret_pages);
++			continue;
++		}
++
++		ClearPageActive(page);
++		list_add(&page->lru, &free_pages);
++		dec_zone_page_state(page, NR_ISOLATED_ANON);
++		nr_discard++;
++	}
++
++	free_hot_cold_page_list(&free_pages, 1);
++	list_splice(&ret_pages, page_list);
++	return nr_discard;
++}
++
++static void vrange_pte_entry(pte_t pteval, unsigned long address,
++		unsigned ptent_size, struct mm_walk *walk)
  {
- 	struct vrange_root *vroot = range->owner;
--	bool purged = range->purged;
-+	bool purged = vrange_purged(range);
- 
- 	__vrange_remove(range);
- 	__vrange_lru_del(range);
-@@ -341,7 +362,7 @@ static int vrange_add(struct vrange_root *vroot,
- 
- 		start_idx = min_t(unsigned long, start_idx, node->start);
- 		end_idx = max_t(unsigned long, end_idx, node->last);
--		purged |= range->purged;
-+		purged |= vrange_purged(range);
- 
- 		__vrange_remove(range);
- 		__vrange_put(range);
-@@ -383,7 +404,7 @@ static int vrange_remove(struct vrange_root *vroot,
- 		next = interval_tree_iter_next(node, start_idx, end_idx);
- 		range = vrange_from_node(node);
- 
--		*purged |= range->purged;
-+		*purged |= vrange_purged(range);
- 
- 		if (start_idx <= node->start && end_idx >= node->last) {
- 			/* argumented range covers the range fully */
-@@ -409,7 +430,7 @@ static int vrange_remove(struct vrange_root *vroot,
- 			used_new = true;
- 			__vrange_resize(range, node->start, start_idx - 1);
- 			__vrange_set(new_range, end_idx + 1, last,
--					range->purged);
-+					vrange_purged(range));
- 			__vrange_add(new_range, vroot);
- 			break;
- 		}
-@@ -492,7 +513,7 @@ int vrange_fork(struct mm_struct *new_mm, struct mm_struct *old_mm)
- 		if (!new_range)
- 			goto fail;
- 		__vrange_set(new_range, range->node.start,
--					range->node.last, range->purged);
-+				range->node.last, vrange_purged(range));
- 		__vrange_add(new_range, new);
- 
- 	}
-@@ -736,7 +757,7 @@ bool vrange_addr_purged(struct vm_area_struct *vma, unsigned long addr)
- 
- 	vrange_lock(vroot);
- 	range = __vrange_find(vroot, vstart_idx, vstart_idx);
--	if (range && range->purged)
-+	if (range && vrange_purged(range))
- 		ret = true;
- 
- 	vrange_unlock(vroot);
-@@ -753,7 +774,7 @@ static void do_purge(struct vrange_root *vroot,
- 	node = interval_tree_iter_first(&vroot->v_rb, start_idx, end_idx);
- 	while (node) {
- 		range = container_of(node, struct vrange, node);
--		range->purged = true;
-+		mark_purge(range);
- 		node = interval_tree_iter_next(node, start_idx, end_idx);
- 	}
++	struct page *page;
++	struct vrange_walker *vw = walk->private;
++	struct vm_area_struct *vma = vw->vma;
++	struct list_head *pagelist = vw->pagelist;
++
++	if (pte_none(pteval))
++		return;
++
++	if (!pte_present(pteval))
++		return;
++
++	page = vm_normal_page(vma, address, pteval);
++	if (unlikely(!page))
++		return;
++
++	if (!PageLRU(page) || PageLocked(page))
++		return;
++
++	BUG_ON(PageCompound(page));
++
++	if (isolate_lru_page(page))
++		return;
++
++	list_add(&page->lru, pagelist);
++
++	VM_BUG_ON(page_is_file_cache(page));
++	inc_zone_page_state(page, NR_ISOLATED_ANON);
++}
++
++static int vrange_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
++		struct mm_walk *walk)
++{
++	struct vrange_walker *vw = walk->private;
++	struct vm_area_struct *uninitialized_var(vma);
++	pte_t *pte;
++	spinlock_t *ptl;
++
++	vma = vw->vma;
++	split_huge_page_pmd(vma, addr, pmd);
++	if (pmd_trans_unstable(pmd))
++		return 0;
++
++	pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
++	for (; addr != end; pte++, addr += PAGE_SIZE)
++		vrange_pte_entry(*pte, addr, PAGE_SIZE, walk);
++	pte_unmap_unlock(pte - 1, ptl);
++	cond_resched();
++
+ 	return 0;
  }
+ 
++static unsigned long discard_vma_pages(struct mm_struct *mm,
++		struct vm_area_struct *vma, unsigned long start,
++		unsigned long end)
++{
++	unsigned long ret = 0;
++	LIST_HEAD(pagelist);
++	struct vrange_walker vw;
++	struct mm_walk vrange_walk = {
++		.pmd_entry = vrange_pte_range,
++		.mm = vma->vm_mm,
++		.private = &vw,
++	};
++
++	vw.pagelist = &pagelist;
++	vw.vma = vma;
++
++	walk_page_range(start, end, &vrange_walk);
++
++	if (!list_empty(&pagelist))
++		ret = discard_vrange_pagelist(&pagelist);
++
++	putback_lru_pages(&pagelist);
++	return ret;
++}
++
++/*
++ * vrange->owner isn't stable because caller doesn't hold vrange_lock
++ * so avoid touching vrange->owner.
++ */
++static int __discard_vrange_anon(struct mm_struct *mm, struct vrange *vrange,
++		unsigned long *ret_discard)
++{
++	struct vm_area_struct *vma;
++	unsigned long nr_discard = 0;
++	unsigned long start = vrange->node.start;
++	unsigned long end = vrange->node.last + 1;
++	int ret = 0;
++
++	/* It prevent to destroy vma when the process exist */
++	if (!atomic_inc_not_zero(&mm->mm_users))
++		return ret;
++
++	if (!down_read_trylock(&mm->mmap_sem)) {
++		mmput(mm);
++		ret = -EAGAIN;
++		goto out; /* this vrange could be retried */
++	}
++
++	vma = find_vma(mm, start);
++	if (!vma || (vma->vm_start >= end))
++		goto out_unlock;
++
++	for (; vma; vma = vma->vm_next) {
++		if (vma->vm_start >= end)
++			break;
++		BUG_ON(vma->vm_flags & (VM_SPECIAL|VM_LOCKED|VM_MIXEDMAP|
++					VM_HUGETLB));
++		cond_resched();
++		nr_discard += discard_vma_pages(mm, vma,
++				max_t(unsigned long, start, vma->vm_start),
++				min_t(unsigned long, end, vma->vm_end));
++	}
++out_unlock:
++	up_read(&mm->mmap_sem);
++	mmput(mm);
++	*ret_discard = nr_discard;
++out:
++	return ret;
++}
++
++static int discard_vrange(struct vrange *vrange, unsigned long *nr_discard)
++{
++	int ret = 0;
++	struct mm_struct *mm;
++	struct vrange_root *vroot;
++	vroot = vrange->owner;
++
++	/* TODO : handle VRANGE_FILE */
++	if (vroot->type != VRANGE_MM)
++		goto out;
++
++	mm = vroot->object;
++	ret = __discard_vrange_anon(mm, vrange, nr_discard);
++out:
++	return ret;
++}
++
++
+ #define VRANGE_SCAN_THRESHOLD	(4 << 20)
+ 
+ unsigned long shrink_vrange(enum lru_list lru, struct lruvec *lruvec,
 -- 
 1.7.9.5
 
