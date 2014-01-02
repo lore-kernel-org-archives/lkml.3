@@ -1,87 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726AbaABOaS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 09:30:18 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:24370 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740AbaABOaQ (ORCPT
+	id S1751823AbaABObu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 09:31:50 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:42294 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172AbaABObs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 09:30:16 -0500
-Date: Thu, 2 Jan 2014 17:29:54 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Sebastian Rachuj <sebastian.rachuj@studium.uni-erlangen.de>
-Cc: linux@rationality.eu, devel@driverdev.osuosl.org,
-        linux-kernel@i4.cs.fau.de, tvboxspy@gmail.com,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        forest@alittletooquiet.net, more.andres@gmail.com
-Subject: Re: [PATCH 10/11] Staging: vt6656: Combined nested conditions
-Message-ID: <20140102142953.GE28413@mwanda>
-References: <1388084140-21562-1-git-send-email-sebastian.rachuj@studium.uni-erlangen.de>
- <1388084140-21562-11-git-send-email-sebastian.rachuj@studium.uni-erlangen.de>
+	Thu, 2 Jan 2014 09:31:48 -0500
+Date: Thu, 2 Jan 2014 09:31:35 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: David Miller <davem@davemloft.net>
+Cc: linux-sctp@vger.kernel.org, vyasevich@gmail.com,
+        gregkh@linuxfoundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 0/2] sctp: Consolidate and ratelimit deprecation
+ warnings
+Message-ID: <20140102143135.GA7526@hmsreliant.think-freely.org>
+References: <1387205049-22752-1-git-send-email-nhorman@tuxdriver.com>
+ <1387805383-21500-1-git-send-email-nhorman@tuxdriver.com>
+ <20131231.140000.463004971089550957.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1388084140-21562-11-git-send-email-sebastian.rachuj@studium.uni-erlangen.de>
+In-Reply-To: <20131231.140000.463004971089550957.davem@davemloft.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 26, 2013 at 07:55:39PM +0100, Sebastian Rachuj wrote:
-> -	if (pbyDesireSSID != NULL) {
-> -		if (((PWLAN_IE_SSID) pbyDesireSSID)->len != 0)
-> -			pSSID = (PWLAN_IE_SSID) pbyDesireSSID;
-> -	}
-> +	if ((pbyDesireSSID != NULL) &&
-> +	    (((PWLAN_IE_SSID) pbyDesireSSID)->len != 0))
-> +		pSSID = (PWLAN_IE_SSID) pbyDesireSSID;
-
-That's a lot of extra parentheses!
-
-This patch is fine, but for future reference, adding a double negative
-" != NULL" almost never doesn't makes the code less readable.  If we
-remove it then this fits on one line.
-
-	if (pbyDesireSSID && ((PWLAN_IE_SSID) pbyDesireSSID)->len != 0)
-		pSSID = (PWLAN_IE_SSID) pbyDesireSSID;
-
-The casting is horrible and this is garbage staging code.  If the types
-were cleaned up then it would look like:
-
-	if (pbyDesireSSID && pbyDesireSSID->len != 0)
-		pSSID = pbyDesireSSID;
-
-The naming is also totally bogus, of course.  What does "pby" mean?  I
-think "Desire" is clear but I don't think it's native English.  The "p"
-in "pSSID" probably stands for pointer???  It's as if someone
-deliberately made every single character of this code as terrible as can
-be.
-
-	if (new_ssid && new_ssid->len != 0)
-		ssid = new_ssid;
-
-Technically " != 0" is the same as " != NULL" but " != 0" tells a story
-and makes the code more readable.
-
-
-> +				} else if ((pMgmt->eConfigMode == WMAC_CONFIG_AUTO) ||
-> +					((pMgmt->eConfigMode == WMAC_CONFIG_IBSS_STA) && WLAN_GET_CAP_INFO_IBSS(pCurrBSS->wCapInfo)) ||
-> +					((pMgmt->eConfigMode == WMAC_CONFIG_ESS_STA) && WLAN_GET_CAP_INFO_ESS(pCurrBSS->wCapInfo))) {
-
-Adding all these extra parentheses makes it harder to tell which are
-needed and which are noise.
-
-				} else if (pMgmt->eConfigMode == WMAC_CONFIG_AUTO ||
-					   (pMgmt->eConfigMode == WMAC_CONFIG_IBSS_STA &&
-					    WLAN_GET_CAP_INFO_IBSS(pCurrBSS->wCapInfo)) ||
-					   (pMgmt->eConfigMode == WMAC_CONFIG_ESS_STA &&
-					    WLAN_GET_CAP_INFO_ESS(pCurrBSS->wCapInfo)) {
-
-In this case, the extra parentheses were there in the original code but
-there are other times where this patch adds a number of pretty bogus
-parens.
-
-regards,
-dan carpenter
+On Tue, Dec 31, 2013 at 02:00:00PM -0500, David Miller wrote:
+> From: Neil Horman <nhorman@tuxdriver.com>
+> Date: Mon, 23 Dec 2013 08:29:41 -0500
+> 
+> > The SCTP protocol has several deprecation warnings in its setsockopt path that
+> > can be triggered by unprivlidged users.  Since these are not ratelimited, we can
+> > spam the logs quite easily here.  Since these are all deprecation warnings, and
+> > that type of warning isn't uncommon in the rest of the kernel, lets make a
+> > common pr_warn_deprecated macro to produce somewhat generalized ratelimited
+> > deprecation warnings easily
+> > 
+> > Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+> 
+> Series applied, thanks Neil.
+> 
+> Please consider Ben's suggestion to provide the offending command string
+> in the log output.
+> 
+Of course, I'll take care of it this week after I dig through all the holiday
+email.
+Neil
 
