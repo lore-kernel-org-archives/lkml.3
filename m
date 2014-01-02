@@ -1,206 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039AbaABMcF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 07:32:05 -0500
-Received: from canardo.mork.no ([148.122.252.1]:43286 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750782AbaABMcB convert rfc822-to-8bit (ORCPT
+	id S1751643AbaABMcw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 07:32:52 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:53662 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782AbaABMcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 07:32:01 -0500
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] cpufreq: try to resume policies which failed on last resume
-Organization: m
-References: <f9d7b0d5424e4443597d2ed39bec3fedd2b10d1e.1387848958.git.viresh.kumar@linaro.org>
-	<5562479.pVWRuDL0y6@vostro.rjw.lan>
-Date: Thu, 02 Jan 2014 13:15:10 +0100
-In-Reply-To: <5562479.pVWRuDL0y6@vostro.rjw.lan> (Rafael J. Wysocki's message
-	of "Thu, 26 Dec 2013 02:05:50 +0100")
-Message-ID: <87zjne7f75.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+	Thu, 2 Jan 2014 07:32:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1387309071-22382-12-git-send-email-ynvich@gmail.com>
+References: <1386901645-28895-1-git-send-email-ynvich@gmail.com>
+	<1387309071-22382-1-git-send-email-ynvich@gmail.com>
+	<1387309071-22382-12-git-send-email-ynvich@gmail.com>
+Date: Thu, 2 Jan 2014 13:32:49 +0100
+Message-ID: <CACRpkdaY7xpoeeUqBBqUS2swe6Y5gKt67VYNvNRrsbFhyU=ATw@mail.gmail.com>
+Subject: Re: [PATCH v3 11/21] ARM: pxa: support ICP DAS LP-8x4x FPGA irq
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sergei Ianovich <ynvich@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@rjwysocki.net> writes:
+On Tue, Dec 17, 2013 at 8:37 PM, Sergei Ianovich <ynvich@gmail.com> wrote:
 
-> On Tuesday, December 24, 2013 07:11:00 AM Viresh Kumar wrote:
->> __cpufreq_add_dev() can fail sometimes while we are resuming our system.
->> Currently we are clearing all sysfs nodes for cpufreq's failed policy as that
->> could make userspace unstable. But if we suspend/resume again, we should atleast
->> try to bring back those policies.
->> 
->> This patch fixes this issue by clearing fallback data on failure and trying to
->> allocate a new struct cpufreq_policy on second resume.
->> 
->> Reported-and-tested-by: Bjørn Mork <bjorn@mork.no>
->> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ICP DAS LP-8x4x contains FPGA chip. The chip functions as a interrupt
+> source providing 16 additional interrupts among other things. The
+> interrupt lines are muxed to a GPIO pin. GPIO pins are in turn muxed
+> to a CPU interrupt line.
 >
-> Well, while I appreciate the work done here, I don't like the changelog,
-> I don't really like the way the code is written and I don't like the comments.
-> Sorry about that.
+> Until pxa is completely converted to device tree, it is impossible
+> to use IRQCHIP_DECLARE() and the irqdomain needs to added manually.
 >
-> Bjorn, can you please test the patch below instead along with the [2/2]
-> from this series (on top of linux-pm.git/pm-cpufreq)?
+> Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
+> CC: Arnd Bergmann <arnd@arndb.de>
+> CC: Linus Walleij <linus.walleij@linaro.org>
 
-I tested this series with your modified 1/2 today, but on top of a
-current mainline (commit 9a0bb2966ef) instead of linux-pm.git/pm-cpufreq.
-Shouldn't make much difference since Linus already has pulled your
-'pm+acpi-3.13-rc6' tag, which included that pm-cpufreq branch.
+(...)
+> +++ b/drivers/irqchip/irq-lp8x4x.c
 
-This series fixes the reported bug for me.
+Usually combined GPIO+IRQ controllers are put into drivers/gpio but
+this is a bit special as it seems to handle also non-GPIO-related IRQs
+so let's get some input on this.
 
+> +static unsigned char irq_sys_enabled;
+> +static unsigned char irq_high_enabled;
+> +static void *base;
+> +static int irq_base;
+> +static int num_irq = 16;
 
-But I observed this, most likely unrelated, splat during the test:
+Please use the state container design pattern and get rid of these
+global variables.
 
-ACPI Exception: AE_BAD_PARAMETER, Returned by Handler for [EmbeddedControl] (20131115/evregion-282)
-ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPC_.EC__.LPMD] (Node ffff880232499c18), AE_BAD_PARAMETER (20131115/psparse-536)
-ACPI Error: Method parse/execution failed [\_PR_.CPU0._PPC] (Node ffff8802326f93d0), AE_BAD_PARAMETER (20131115/psparse-536)
-ACPI Error: Method parse/execution failed [\_PR_.CPU1._PPC] (Node ffff8802326f9268), AE_BAD_PARAMETER (20131115/psparse-536)
-ACPI Exception: AE_BAD_PARAMETER, Evaluating _PPC (20131115/processor_perflib-140)
+This documentation patch describes this pattern and has been
+merged for v3.14, so please read this:
+http://marc.info/?l=linux-kernel&m=138615980524966&w=2
 
-======================================================
-[ INFO: possible circular locking dependency detected ]
-3.13.0-rc6+ #181 Not tainted
--------------------------------------------------------
-s2disk/5651 is trying to acquire lock:
- (s_active#170){++++.+}, at: [<ffffffff8118b9d7>] sysfs_addrm_finish+0x28/0x46
+> +static void lp8x4x_mask_irq(struct irq_data *d)
+> +{
+> +       unsigned mask;
+> +       int irq = d->irq - irq_base;
 
-but task is already holding lock:
- (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff81039ff5>] cpu_hotplug_begin+0x28/0x50
+Don't calculate hardware IRQ numbers from offsets. Use
+irqdomain, which is done for exactly this purpose.
 
-which lock already depends on the new lock.
+> +       if (irq < 8) {
+> +               irq_high_enabled &= ~(1 << irq);
 
+I usually use the BIT() macro for this, like:
 
-the existing dependency chain (in reverse order) is:
+#include <linux/bitops.h>
 
--> #1 (cpu_hotplug.lock){+.+.+.}:
-       [<ffffffff81075027>] lock_acquire+0xfb/0x144
-       [<ffffffff8139d4d2>] mutex_lock_nested+0x6c/0x397
-       [<ffffffff81039f4a>] get_online_cpus+0x3c/0x50
-       [<ffffffff812a6974>] store+0x20/0xad
-       [<ffffffff8118a9a1>] sysfs_write_file+0x138/0x18b
-       [<ffffffff8112a428>] vfs_write+0x9c/0x102
-       [<ffffffff8112a716>] SyS_write+0x50/0x85
-       [<ffffffff813a57a2>] system_call_fastpath+0x16/0x1b
+irq_high_enabled &= ~BIT(irq);
 
--> #0 (s_active#170){++++.+}:
-       [<ffffffff81074760>] __lock_acquire+0xae3/0xe68
-       [<ffffffff81075027>] lock_acquire+0xfb/0x144
-       [<ffffffff8118b027>] sysfs_deactivate+0xa5/0x108
-       [<ffffffff8118b9d7>] sysfs_addrm_finish+0x28/0x46
-       [<ffffffff8118bd3f>] sysfs_remove+0x2a/0x31
-       [<ffffffff8118be2f>] sysfs_remove_dir+0x66/0x6b
-       [<ffffffff811d5d11>] kobject_del+0x18/0x42
-       [<ffffffff811d5e1c>] kobject_cleanup+0xe1/0x14f
-       [<ffffffff811d5ede>] kobject_put+0x45/0x49
-       [<ffffffff812a6e85>] cpufreq_policy_put_kobj+0x37/0x83
-       [<ffffffff812a8bab>] __cpufreq_add_dev.isra.18+0x75e/0x78c
-       [<ffffffff812a8c39>] cpufreq_cpu_callback+0x53/0x88
-       [<ffffffff813a314c>] notifier_call_chain+0x67/0x92
-       [<ffffffff8105bce4>] __raw_notifier_call_chain+0x9/0xb
-       [<ffffffff81039e7c>] __cpu_notify+0x1b/0x32
-       [<ffffffff81039ea1>] cpu_notify+0xe/0x10
-       [<ffffffff8103a12b>] _cpu_up+0xf1/0x124
-       [<ffffffff8138ee7d>] enable_nonboot_cpus+0x52/0xbf
-       [<ffffffff8107a2a3>] hibernation_snapshot+0x1be/0x2ed
-       [<ffffffff8107eb84>] snapshot_ioctl+0x1e5/0x431
-       [<ffffffff81139080>] do_vfs_ioctl+0x45e/0x4a8
-       [<ffffffff8113911c>] SyS_ioctl+0x52/0x82
-       [<ffffffff813a57a2>] system_call_fastpath+0x16/0x1b
+> +static struct irq_chip lp8x4x_irq_chip = {
+> +       .name                   = "FPGA",
+> +       .irq_ack                = lp8x4x_mask_irq,
+> +       .irq_mask               = lp8x4x_mask_irq,
+> +       .irq_mask_ack           = lp8x4x_mask_irq,
+> +       .irq_unmask             = lp8x4x_unmask_irq,
+> +};
 
-other info that might help us debug this:
+After you have added your state container you will have
+a handle to your struct gpio_chip in the cookie passed to
+as irqdata.
 
- Possible unsafe locking scenario:
+Then you need to mark the GPIO lines used for IRQs by
+doing something similar to this patch in your startup()
+and shutdown() callbacks:
+http://marc.info/?l=linux-gpio&m=138547223832167&w=2
 
-       CPU0                    CPU1
-       ----                    ----
-  lock(cpu_hotplug.lock);
-                               lock(s_active#170);
-                               lock(cpu_hotplug.lock);
-  lock(s_active#170);
+> +static void lp8x4x_irq_handler(unsigned int irq, struct irq_desc *desc)
+> +{> +static void lp8x4x_unmask_irq(struct irq_data *d)
+> +{
+> +       unsigned mask;
+> +       int irq = d->irq - irq_base;
 
- *** DEADLOCK ***
+Use the irqdomain.
 
-7 locks held by s2disk/5651:
- #0:  (pm_mutex){+.+.+.}, at: [<ffffffff8107e9ea>] snapshot_ioctl+0x4b/0x431
- #1:  (device_hotplug_lock){+.+.+.}, at: [<ffffffff81283730>] lock_device_hotplug+0x12/0x14
- #2:  (acpi_scan_lock){+.+.+.}, at: [<ffffffff8122c657>] acpi_scan_lock_acquire+0x12/0x14
- #3:  (console_lock){+.+.+.}, at: [<ffffffff810817f2>] suspend_console+0x20/0x38
- #4:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff81039fb9>] cpu_maps_update_begin+0x12/0x14
- #5:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff81039ff5>] cpu_hotplug_begin+0x28/0x50
- #6:  (cpufreq_rwsem){.+.+.+}, at: [<ffffffff812a84cc>] __cpufreq_add_dev.isra.18+0x7f/0x78c
+> +       int loop, n;
+> +       unsigned long mask;
+> +       struct irq_chip *chip = irq_desc_get_chip(desc);
+> +
+> +       chained_irq_enter(chip, desc);
+> +
+> +       do {
+> +               loop = 0;
+> +               mask = ioread8(base + CLRHILVINT) & 0xff;
+> +               mask |= (ioread8(base + SECOINT) & 0x1f) << 8;
+> +               mask |= (ioread8(base + PRIMINT) & 0xe0) << 8;
 
-stack backtrace:
-CPU: 0 PID: 5651 Comm: s2disk Not tainted 3.13.0-rc6+ #181
-Hardware name: LENOVO 2776LEG/2776LEG, BIOS 6EET55WW (3.15 ) 12/19/2011
- ffffffff81d3edf0 ffff8802174898f8 ffffffff81399cac 0000000000004549
- ffffffff81d3edf0 ffff880217489948 ffffffff81397dc5 ffff880217489928
- ffff88023198ea50 0000000000000006 ffff88023198f1d8 0000000000000006
-Call Trace:
- [<ffffffff81399cac>] dump_stack+0x4e/0x68
- [<ffffffff81397dc5>] print_circular_bug+0x1f8/0x209
- [<ffffffff81074760>] __lock_acquire+0xae3/0xe68
- [<ffffffff8107565d>] ? debug_check_no_locks_freed+0x12c/0x143
- [<ffffffff81075027>] lock_acquire+0xfb/0x144
- [<ffffffff8118b9d7>] ? sysfs_addrm_finish+0x28/0x46
- [<ffffffff81072201>] ? lockdep_init_map+0x14e/0x160
- [<ffffffff8118b027>] sysfs_deactivate+0xa5/0x108
- [<ffffffff8118b9d7>] ? sysfs_addrm_finish+0x28/0x46
- [<ffffffff8118b9d7>] sysfs_addrm_finish+0x28/0x46
- [<ffffffff8118bd3f>] sysfs_remove+0x2a/0x31
- [<ffffffff8118be2f>] sysfs_remove_dir+0x66/0x6b
- [<ffffffff811d5d11>] kobject_del+0x18/0x42
- [<ffffffff811d5e1c>] kobject_cleanup+0xe1/0x14f
- [<ffffffff811d5ede>] kobject_put+0x45/0x49
- [<ffffffff812a6e85>] cpufreq_policy_put_kobj+0x37/0x83
- [<ffffffff812a8bab>] __cpufreq_add_dev.isra.18+0x75e/0x78c
- [<ffffffff81071b04>] ? __lock_is_held+0x32/0x54
- [<ffffffff812a8c39>] cpufreq_cpu_callback+0x53/0x88
- [<ffffffff813a314c>] notifier_call_chain+0x67/0x92
- [<ffffffff8105bce4>] __raw_notifier_call_chain+0x9/0xb
- [<ffffffff81039e7c>] __cpu_notify+0x1b/0x32
- [<ffffffff81039ea1>] cpu_notify+0xe/0x10
- [<ffffffff8103a12b>] _cpu_up+0xf1/0x124
- [<ffffffff8138ee7d>] enable_nonboot_cpus+0x52/0xbf
- [<ffffffff8107a2a3>] hibernation_snapshot+0x1be/0x2ed
- [<ffffffff8107eb84>] snapshot_ioctl+0x1e5/0x431
- [<ffffffff81139080>] do_vfs_ioctl+0x45e/0x4a8
- [<ffffffff811414c8>] ? fcheck_files+0xa1/0xe4
- [<ffffffff81141a67>] ? fget_light+0x33/0x9a
- [<ffffffff8113911c>] SyS_ioctl+0x52/0x82
- [<ffffffff811df4ce>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff813a57a2>] system_call_fastpath+0x16/0x1b
-CPU1 is up
-ACPI: Waking up from system sleep state S4
-PM: noirq thaw of devices complete after 2.727 msecs
-PM: early thaw of devices complete after 1.137 msecs
+#define these magic constants so we know what they mean.
+0x1f, 0xe0...
 
+> +               mask &= (irq_high_enabled | (irq_sys_enabled << 8));
+> +               for_each_set_bit(n, &mask, BITS_PER_LONG) {
+> +                       loop = 1;
+> +
+> +                       generic_handle_irq(irq_base + n);
+> +               }
+> +       } while (loop);
 
+If you're going to do it like this then have "loop" be a bool variable.
 
-This warning appeared when I tried cancelling hibernation, which is
-known to fail when using the acpi-cpufreq driver.  The point of the test
-was to verify that such failures still produce the expected result:
+However I don't quite like this construction, an eternal for() loop
+with a break; statement works too, but try to just use the mask and
+get rid of the "loop" helper variable.
 
- - all stale sysfs files are cleaned up and removed
- - later suspend/resume actions will restore (or actually reinitiate)
-   the cpufreq driver for the non-boot CPUs
+> +       iowrite8(0, base + EOI);
 
-Which was successful, except that it produced the above lockdep warning.
+This looks dangerous, what are you doing here?
 
-I have not verified that this is a new warning (which means that it most
-likely is not).  And I expect the whole acpi-cpufreq problem, including
-that warning, to go away when you eventually push
-http://www.spinics.net/lists/cpufreq/msg08714.html with your improved
-changelog (thanks for doing that BTW).  So I don't worry too much about
-it.  Just wanted to let you know.
+> +static int lp8x4x_irq_probe(struct platform_device *pdev)
+> +{
+> +       struct resource *rm, *ri;
 
+Explain these names. Usually we call them "res" or something
+simple like this.
 
+> +       irq_base = irq_alloc_descs(-1, 0, num_irq, 0);
+> +       if (irq_base < 0) {
+> +               dev_err(&pdev->dev, "Failed to allocate IRQ numbers\n");
+> +               return irq_base;
+> +       }
 
-Bjørn
+Instead of doing this, create the descriptors by calling
+irq_create_mapping() on all the hardware lines after adding
+the irq domain.
+
+> +       domain = irq_domain_add_legacy(np, num_irq, irq_base, 0,
+> +                                      &lp8x4x_irq_domain_ops, NULL);
+> +       if (!domain) {
+> +               dev_err(&pdev->dev, "Failed to add IRQ domain\n");
+> +               return -ENOMEM;
+> +       }
+
+Why are you using a legacy irqdomain? You're not dependent
+on any specific base so use a linear domain.
+
+> +       iowrite8(0, base + CLRRISEINT);
+> +       iowrite8(0, base + ENRISEINT);
+> +       iowrite8(0, base + CLRFALLINT);
+> +       iowrite8(0, base + ENFALLINT);
+> +       iowrite8(0, base + CLRHILVINT);
+> +       iowrite8(0, base + ENHILVINT);
+> +       iowrite8(0, base + ENSYSINT);
+> +       iowrite8(0, base + SECOINT);
+
+Add a comment explaining what you're doing here.
+
+> +static int __init lp8x4x_irq_init(void)
+> +{
+> +       return platform_driver_register(&lp8x4x_irq_driver);
+> +}
+> +postcore_initcall(lp8x4x_irq_init);
+
+Do you *have* to do it this early? I guess if it's used for
+the UARTs then yes, but make a case for it...
+
+Yours,
+Linus Walleij
