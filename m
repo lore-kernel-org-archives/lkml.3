@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071AbaABRMj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:12:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40593 "EHLO
+	id S1754084AbaABRNT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:13:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40579 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753908AbaABRK2 (ORCPT
+	with ESMTP id S1752444AbaABRKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:10:28 -0500
+	Thu, 2 Jan 2014 12:10:19 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        James Bottomley <JBottomley@Parallels.com>,
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, "H. J. Lu" <hjl.tools@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 81/91] [SCSI] hpsa: do not discard scsi status on aborted commands
-Date: Thu,  2 Jan 2014 09:04:56 -0800
-Message-Id: <1388682306-30859-82-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 90/91] x86-64, build: Always pass in -mno-sse
+Date: Thu,  2 Jan 2014 09:05:05 -0800
+Message-Id: <1388682306-30859-91-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -28,35 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 2e311fbabdc23b7eaec77313dc3b9a151a5407b5 upstream.
+commit 5551a34e5aeab868f8d37f70d8754868921b4ee5 upstream.
 
-We inadvertantly discarded the scsi status for aborted commands.
-For some commands (e.g. reads from tape drives) these can't be retried,
-and if we discarded the scsi status, the scsi mid layer couldn't notice
-anything was wrong and the error was not reported.
+Always pass in the -mno-sse argument, regardless if
+-preferred-stack-boundary is supported.  We never want to generate SSE
+instructions in the kernel unless we *really* know what we're doing.
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+According to H. J. Lu, any version of gcc new enough that we support
+it at all should handle the -mno-sse option, so just add it
+unconditionally.
+
+Reported-by: Kevin B. Smith <kevin.b.smith@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: H. J. Lu <hjl.tools@gmail.com>
+Link: http://lkml.kernel.org/n/tip-j21wzqv790q834n7yc6g80j1@git.kernel.org
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/scsi/hpsa.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/Makefile | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index cae15d2..0b5f9df 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -1259,7 +1259,7 @@ static void complete_scsi_command(struct CommandList *cp)
- 					"has check condition: aborted command: "
- 					"ASC: 0x%x, ASCQ: 0x%x\n",
- 					cp, asc, ascq);
--				cmd->result = DID_SOFT_ERROR << 16;
-+				cmd->result |= DID_SOFT_ERROR << 16;
- 				break;
- 			}
- 			/* Must be some other type of check condition */
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index e71fc42..8c2ad4e 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -27,6 +27,9 @@ ifeq ($(CONFIG_X86_32),y)
+ 
+         KBUILD_CFLAGS += -msoft-float -mregparm=3 -freg-struct-return
+ 
++        # Don't autogenerate SSE instructions
++	KBUILD_CFLAGS += -mno-sse
++
+         # Never want PIC in a 32-bit kernel, prevent breakage with GCC built
+         # with nonstandard options
+         KBUILD_CFLAGS += -fno-pic
+@@ -53,8 +56,11 @@ else
+         KBUILD_AFLAGS += -m64
+         KBUILD_CFLAGS += -m64
+ 
++        # Don't autogenerate SSE instructions
++	KBUILD_CFLAGS += -mno-sse
++
+ 	# Use -mpreferred-stack-boundary=3 if supported.
+-	KBUILD_CFLAGS += $(call cc-option,-mno-sse -mpreferred-stack-boundary=3)
++	KBUILD_CFLAGS += $(call cc-option,-mpreferred-stack-boundary=3)
+ 
+         # FIXME - should be integrated in Makefile.cpu (Makefile_32.cpu)
+         cflags-$(CONFIG_MK8) += $(call cc-option,-march=k8)
 -- 
 1.8.3.2
 
