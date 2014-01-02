@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647AbaABRG0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:06:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40243 "EHLO
+	id S1752682AbaABRGi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:06:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40250 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599AbaABRGU (ORCPT
+	with ESMTP id S1752627AbaABRG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:06:20 -0500
+	Thu, 2 Jan 2014 12:06:26 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ding Tianhong <dingtianhong@huawei.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Willem de Bruijn <willemb@google.com>, Phil Sutter <phil@nwl.cc>,
+        Eric Dumazet <edumazet@google.com>,
+        Veaceslav Falico <vfalico@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 29/91] bridge: flush br's address entry in fdb when remove the bridge dev
-Date: Thu,  2 Jan 2014 09:04:04 -0800
-Message-Id: <1388682306-30859-30-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 31/91] af_packet: block BH in prb_shutdown_retire_blk_timer()
+Date: Thu,  2 Jan 2014 09:04:06 -0800
+Message-Id: <1388682306-30859-32-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -28,70 +31,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ding Tianhong <dingtianhong@huawei.com>
+From: Veaceslav Falico <vfalico@redhat.com>
 
-[ Upstream commit f873042093c0b418d2351fe142222b625c740149 ]
+[ Upstream commit ec6f809ff6f19fafba3212f6aff0dda71dfac8e8 ]
 
-When the following commands are executed:
+Currently we're using plain spin_lock() in prb_shutdown_retire_blk_timer(),
+however the timer might fire right in the middle and thus try to re-aquire
+the same spinlock, leaving us in a endless loop.
 
-brctl addbr br0
-ifconfig br0 hw ether <addr>
-rmmod bridge
+To fix that, use the spin_lock_bh() to block it.
 
-The calltrace will occur:
-
-[  563.312114] device eth1 left promiscuous mode
-[  563.312188] br0: port 1(eth1) entered disabled state
-[  563.468190] kmem_cache_destroy bridge_fdb_cache: Slab cache still has objects
-[  563.468197] CPU: 6 PID: 6982 Comm: rmmod Tainted: G           O 3.12.0-0.7-default+ #9
-[  563.468199] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-[  563.468200]  0000000000000880 ffff88010f111e98 ffffffff814d1c92 ffff88010f111eb8
-[  563.468204]  ffffffff81148efd ffff88010f111eb8 0000000000000000 ffff88010f111ec8
-[  563.468206]  ffffffffa062a270 ffff88010f111ed8 ffffffffa063ac76 ffff88010f111f78
-[  563.468209] Call Trace:
-[  563.468218]  [<ffffffff814d1c92>] dump_stack+0x6a/0x78
-[  563.468234]  [<ffffffff81148efd>] kmem_cache_destroy+0xfd/0x100
-[  563.468242]  [<ffffffffa062a270>] br_fdb_fini+0x10/0x20 [bridge]
-[  563.468247]  [<ffffffffa063ac76>] br_deinit+0x4e/0x50 [bridge]
-[  563.468254]  [<ffffffff810c7dc9>] SyS_delete_module+0x199/0x2b0
-[  563.468259]  [<ffffffff814e0922>] system_call_fastpath+0x16/0x1b
-[  570.377958] Bridge firewalling registered
-
---------------------------- cut here -------------------------------
-
-The reason is that when the bridge dev's address is changed, the
-br_fdb_change_mac_address() will add new address in fdb, but when
-the bridge was removed, the address entry in the fdb did not free,
-the bridge_fdb_cache still has objects when destroy the cache, Fix
-this by flushing the bridge address entry when removing the bridge.
-
-v2: according to the Toshiaki Makita and Vlad's suggestion, I only
-    delete the vlan0 entry, it still have a leak here if the vlan id
-    is other number, so I need to call fdb_delete_by_port(br, NULL, 1)
-    to flush all entries whose dst is NULL for the bridge.
-
-Suggested-by: Toshiaki Makita <toshiaki.makita1@gmail.com>
-Suggested-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+Fixes: f6fb8f100b80 ("af-packet: TPACKET_V3 flexible buffer implementation.")
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Daniel Borkmann <dborkman@redhat.com>
+CC: Willem de Bruijn <willemb@google.com>
+CC: Phil Sutter <phil@nwl.cc>
+CC: Eric Dumazet <edumazet@google.com>
+Reported-by: Jan Stancek <jstancek@redhat.com>
+Tested-by: Jan Stancek <jstancek@redhat.com>
+Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/bridge/br_if.c | 2 ++
- 1 file changed, 2 insertions(+)
+ net/packet/af_packet.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/bridge/br_if.c b/net/bridge/br_if.c
-index 37fe693..d3f4f79 100644
---- a/net/bridge/br_if.c
-+++ b/net/bridge/br_if.c
-@@ -170,6 +170,8 @@ void br_dev_delete(struct net_device *dev, struct list_head *head)
- 		del_nbp(p);
- 	}
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index 2d5b24a..90c1a21 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -390,9 +390,9 @@ static void prb_shutdown_retire_blk_timer(struct packet_sock *po,
  
-+	br_fdb_delete_by_port(br, NULL, 1);
-+
- 	del_timer_sync(&br->gc_timer);
+ 	pkc = tx_ring ? &po->tx_ring.prb_bdqc : &po->rx_ring.prb_bdqc;
  
- 	br_sysfs_delbr(br->dev);
+-	spin_lock(&rb_queue->lock);
++	spin_lock_bh(&rb_queue->lock);
+ 	pkc->delete_blk_timer = 1;
+-	spin_unlock(&rb_queue->lock);
++	spin_unlock_bh(&rb_queue->lock);
+ 
+ 	prb_del_retire_blk_timer(pkc);
+ }
 -- 
 1.8.3.2
 
