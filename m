@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281AbaABRIx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:08:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40372 "EHLO
+	id S1753369AbaABRJE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:09:04 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40391 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751988AbaABRIu (ORCPT
+	with ESMTP id S1751988AbaABRJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:08:50 -0500
+	Thu, 2 Jan 2014 12:09:01 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Frederik Himpe <fhimpe@telenet.be>,
-        Luis Henriques <luis.henriques@canonical.com>,
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 56/91] [media] cxd2820r_core: fix sparse warnings
-Date: Thu,  2 Jan 2014 09:04:31 -0800
-Message-Id: <1388682306-30859-57-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 79/91] ARM: fix booting low-vectors machines
+Date: Thu,  2 Jan 2014 09:04:54 -0800
+Message-Id: <1388682306-30859-80-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -30,47 +27,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans Verkuil <hans.verkuil@cisco.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 0db3fa2741ad8371c21b3a6785416a4afc0cc1d4 upstream.
+commit d8aa712c30148ba26fd89a5dc14de95d4c375184 upstream.
 
-drivers/media/dvb-frontends/cxd2820r_core.c:34:32: error: cannot size expression
-drivers/media/dvb-frontends/cxd2820r_core.c:68:32: error: cannot size expression
+Commit f6f91b0d9fd9 (ARM: allow kuser helpers to be removed from the
+vector page) required two pages for the vectors code.  Although the
+code setting up the initial page tables was updated, the code which
+allocates page tables for new processes wasn't, neither was the code
+which tears down the mappings.  Fix this.
 
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Acked-by: Antti Palosaari <crope@iki.fi>
-Reviewed-by: Antti Palosaari <crope@iki.fi>
-Reviewed-by: Michael Krufky <mkrufky@linuxtv.org>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Frederik Himpe <fhimpe@telenet.be>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Fixes: f6f91b0d9fd9 ("ARM: allow kuser helpers to be removed from the vector page")
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/media/dvb-frontends/cxd2820r_core.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/include/asm/pgtable.h | 2 +-
+ arch/arm/mm/mmap.c             | 2 +-
+ arch/arm/mm/pgd.c              | 3 ++-
+ 3 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/media/dvb-frontends/cxd2820r_core.c b/drivers/media/dvb-frontends/cxd2820r_core.c
-index 9b658c1..52323de 100644
---- a/drivers/media/dvb-frontends/cxd2820r_core.c
-+++ b/drivers/media/dvb-frontends/cxd2820r_core.c
-@@ -31,7 +31,7 @@ static int cxd2820r_wr_regs_i2c(struct cxd2820r_priv *priv, u8 i2c, u8 reg,
- 		{
- 			.addr = i2c,
- 			.flags = 0,
--			.len = sizeof(buf),
-+			.len = len + 1,
- 			.buf = buf,
- 		}
- 	};
-@@ -65,7 +65,7 @@ static int cxd2820r_rd_regs_i2c(struct cxd2820r_priv *priv, u8 i2c, u8 reg,
- 		}, {
- 			.addr = i2c,
- 			.flags = I2C_M_RD,
--			.len = sizeof(buf),
-+			.len = len,
- 			.buf = buf,
- 		}
- 	};
+diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
+index 26e9ce4..bb81002 100644
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -58,7 +58,7 @@ extern void __pgd_error(const char *file, int line, pgd_t);
+  * mapping to be mapped at.  This is particularly important for
+  * non-high vector CPUs.
+  */
+-#define FIRST_USER_ADDRESS	PAGE_SIZE
++#define FIRST_USER_ADDRESS	(PAGE_SIZE * 2)
+ 
+ /*
+  * Use TASK_SIZE as the ceiling argument for free_pgtables() and
+diff --git a/arch/arm/mm/mmap.c b/arch/arm/mm/mmap.c
+index 10062ce..f0ef2f7 100644
+--- a/arch/arm/mm/mmap.c
++++ b/arch/arm/mm/mmap.c
+@@ -146,7 +146,7 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
+ 
+ 	info.flags = VM_UNMAPPED_AREA_TOPDOWN;
+ 	info.length = len;
+-	info.low_limit = PAGE_SIZE;
++	info.low_limit = FIRST_USER_ADDRESS;
+ 	info.high_limit = mm->mmap_base;
+ 	info.align_mask = do_align ? (PAGE_MASK & (SHMLBA - 1)) : 0;
+ 	info.align_offset = pgoff << PAGE_SHIFT;
+diff --git a/arch/arm/mm/pgd.c b/arch/arm/mm/pgd.c
+index 0acb089..1046b37 100644
+--- a/arch/arm/mm/pgd.c
++++ b/arch/arm/mm/pgd.c
+@@ -87,7 +87,8 @@ pgd_t *pgd_alloc(struct mm_struct *mm)
+ 		init_pud = pud_offset(init_pgd, 0);
+ 		init_pmd = pmd_offset(init_pud, 0);
+ 		init_pte = pte_offset_map(init_pmd, 0);
+-		set_pte_ext(new_pte, *init_pte, 0);
++		set_pte_ext(new_pte + 0, init_pte[0], 0);
++		set_pte_ext(new_pte + 1, init_pte[1], 0);
+ 		pte_unmap(init_pte);
+ 		pte_unmap(new_pte);
+ 	}
 -- 
 1.8.3.2
 
