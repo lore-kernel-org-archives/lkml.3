@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661AbaABXd5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 18:33:57 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:34898 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067AbaABXd4 (ORCPT
+	id S1752888AbaABXgu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 18:36:50 -0500
+Received: from mail-yh0-f42.google.com ([209.85.213.42]:62784 "EHLO
+	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751845AbaABXgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 18:33:56 -0500
-Message-ID: <52C5F760.20302@lwfinger.net>
-Date: Thu, 02 Jan 2014 17:33:52 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 2 Jan 2014 18:36:49 -0500
+Date: Thu, 2 Jan 2014 15:36:45 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Hansen <dave.hansen@intel.com>
+cc: linux-kernel@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Michal Hocko <mhocko@suse.cz>
+Subject: Re: [RFC] mm: show message when updating min_free_kbytes in thp
+In-Reply-To: <52C5E3C2.6020205@intel.com>
+Message-ID: <alpine.DEB.2.02.1401021534320.492@chino.kir.corp.google.com>
+References: <20140101002935.GA15683@localhost.localdomain> <52C5AA61.8060701@intel.com> <alpine.DEB.2.02.1401021357360.21537@chino.kir.corp.google.com> <52C5E3C2.6020205@intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Tim Jester-Pfadt <t.jp@gmx.de>, gregkh@linuxfoundation.org
-CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] Staging: rtl8188eu: Fixed coding style issues
-References: <20140102204640.GA1149@archlinux> <20140102232259.GA4112@archlinux>
-In-Reply-To: <20140102232259.GA4112@archlinux>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2014 05:22 PM, Tim Jester-Pfadt wrote:
-> Fixed indentation coding style issues on rtw_io.c
->
-> Signed-off-by: Tim Jester-Pfadt <t.jp@gmx.de>
-> ---
->   drivers/staging/rtl8188eu/core/rtw_io.c | 12 ++++++------
->   1 file changed, 6 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/staging/rtl8188eu/core/rtw_io.c b/drivers/staging/rtl8188eu/core/rtw_io.c
-> index 10c9c65..f1b8dfe 100644
-> --- a/drivers/staging/rtl8188eu/core/rtw_io.c
-> +++ b/drivers/staging/rtl8188eu/core/rtw_io.c
-> @@ -205,9 +205,9 @@ void _rtw_read_mem(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem)
->
->   	_func_enter_;
->   	if (adapter->bDriverStopped || adapter->bSurpriseRemoved) {
-> -	     RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
-> -		      ("rtw_read_mem:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
-> -		      adapter->bDriverStopped, adapter->bSurpriseRemoved));
-> +		RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
-> +			 ("rtw_read_mem:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
-> +			 adapter->bDriverStopped, adapter->bSurpriseRemoved));
->   	     return;
->   	}
->   	_read_mem = pintfhdl->io_ops._read_mem;
-> @@ -239,9 +239,9 @@ void _rtw_read_port(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem)
->   	_func_enter_;
->
->   	if (adapter->bDriverStopped || adapter->bSurpriseRemoved) {
-> -	     RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
-> -		      ("rtw_read_port:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
-> -		      adapter->bDriverStopped, adapter->bSurpriseRemoved));
-> +		RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
-> +			 ("rtw_read_port:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
-> +			 adapter->bDriverStopped, adapter->bSurpriseRemoved));
->   	     return;
->   	}
+On Thu, 2 Jan 2014, Dave Hansen wrote:
 
-Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
+> > The default value of min_free_kbytes depends on the implementation of the 
+> > VM regardless of any config options that you may have enabled.  We don't 
+> > specify what the non-thp default is in the kernel log, so why do we need 
+> > to specify what the thp default is?
+> 
+> Let's say enabling THP made my system behave badly.  How do I get it
+> back to the state before I enabled THP?  The user has to have gone and
+> recorded what their min_free_kbytes was before turning THP on in order
+> to get it back to where it was.  Folks also have to either plan in
+> advance (archiving *ALL* the sysctl settings), somehow *know* somehow
+> that THP can affect min_free_kbytes, or just plain be clairvoyant.
+> 
 
-Thanks,
-
-Larry
-
-
+How is this different from some initscript changing the value?  We should 
+either specify that min_free_kbytes changed from its default, which may 
+change from kernel version to kernel version itself, in all cases or just 
+leave it as it currently is.  There's no reason to special-case thp in 
+this way if there are other ways to change the value.
