@@ -1,86 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573AbaABUxB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 15:53:01 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:62926 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915AbaABUxA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 15:53:00 -0500
-Message-ID: <52C5D1A8.8070706@linaro.org>
-Date: Thu, 02 Jan 2014 12:52:56 -0800
-From: John Stultz <john.stultz@linaro.org>
+	id S1752529AbaABU5x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 15:57:53 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44990 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751943AbaABU5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 15:57:52 -0500
+Message-ID: <52C5D28F.6030008@zytor.com>
+Date: Thu, 02 Jan 2014 12:56:47 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        =?UTF-8?B?S3J6eXN6dG9mIEhhxYJhc2E=?= <khalasa@piap.pl>
-CC: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Willy Tarreau <w@1wt.eu>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: v3.13-rc6+ regression (ARM board)
-References: <m3mwjhux0e.fsf@t19.piap.pl>	<20131231104511.GA9688@1wt.eu>	<m3txdmu2ez.fsf@t19.piap.pl>	<20140102101455.GG10158@pengutronix.de>	<m3ppoatwn1.fsf@t19.piap.pl> <CA+55aFyZ0EXYkHd-BhQo6K++qKJVPdGeDbFTVTs3pAPCHFUpOA@mail.gmail.com> <52C5C5F6.70803@linaro.org> <52C5CC54.4050602@linaro.org> <52C5CF38.1010704@codeaurora.org>
-In-Reply-To: <52C5CF38.1010704@codeaurora.org>
+To: Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>, Torsten Duwe <duwe@lst.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <greg@kroah.com>,
+        LKML <linux-kernel@vger.kernel.org>, kexec@lists.infradead.org,
+        Peter Jones <pjones@redhat.com>
+Subject: Re: [PATCH 4/6] kexec: A new system call, kexec_file_load, for in
+ kernel kexec
+References: <20131121191907.GA26366@srcf.ucam.org> <20131122185706.GK4046@redhat.com> <87vbzju6ql.fsf@xmission.com> <20131125163920.GC23094@redhat.com> <87fvqj2vxz.fsf@xmission.com> <20131126142759.GA5473@redhat.com> <20131219125439.GA6379@lst.de> <20131220141917.GB27063@redhat.com> <87a9fvqfs4.fsf@xmission.com> <CAGXu5jKJ88J-++nvkPVvghkXbN+_mB=T1siSDF7yoXQ-d-ONxg@mail.gmail.com> <20140102203912.GB22822@redhat.com>
+In-Reply-To: <20140102203912.GB22822@redhat.com>
 X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2014 12:42 PM, Stephen Boyd wrote:
-> On 01/02/14 12:30, John Stultz wrote:
->> On 01/02/2014 12:03 PM, John Stultz wrote:
->>> On 01/02/2014 11:38 AM, Linus Torvalds wrote:
->>>> On Thu, Jan 2, 2014 at 4:07 AM, Krzysztof Hałasa <khalasa@piap.pl> wrote:
->>>>> This means these two commits don't like each other:
->>>>>
->>>>>     seqcount: Add lockdep functionality to seqcount/seqlock structures
->>>>>     sched_clock: Use seqcount instead of rolling our own
->>>> Does something like this fix it for you?
->>>>
->>>>   --- a/kernel/time/sched_clock.c
->>>>   +++ b/kernel/time/sched_clock.c
->>>>   @@ -36,6 +36,7 @@ core_param(irqtime, irqtime, int, 0400);
->>>>
->>>>    static struct clock_data cd = {
->>>>           .mult   = NSEC_PER_SEC / HZ,
->>>>   +       .seq = SEQCNT_ZERO(cd.seq),
->>>>    };
->>>>
->>>>    static u64 __read_mostly sched_clock_mask;
->>>>
->>>> (The above is not even compile-tested, because x86 doesn't use
->>>> GENERIC_SCHED_CLOCK. So I did the patch blindly, but I think you get
->>>> the idea..)
->>> Sheesh. Just finishing up holiday email backlog and Linus already has a
->>> fix. :)
->>>
->>> This looks like it should fix the issue, and does build for me.
->>>
->>> Assuming it works for Krzysztof,
->> So something else may be at play. Even with Linus' patch I reproduced a
->> similar hang here.
->>
->> Still chasing it down, but it looks like a seqlock deadlock where we're
->> calling read while holding the lock.
->>
-> Do you have tracing enabled? When I moved this code over to use
-> seqcounts it relied on the fact that the compiler wouldn't be generating
-> any function calls to the tracing code. Before seqcounts got lockdep
-> support it all collapsed down into sched_clock() due to the use of
-> inline on the seqlock API.
+On 01/02/2014 12:39 PM, Vivek Goyal wrote:
+> 
+> If secureboot is enabled, it enforces module signature verification. I 
+> think similar will happen for kexec too. How would kernel know that on
+> a secureboot platform fd original verification will happen and it is
+> sufficient.
+> 
+> I personally want to support bzImage as well (apart from ELF) because
+> distributions has been shipping bzImage for a long time and I don't
+> want to enforce a change there because of secureboot. It is not necessary.
+> Right now I am thinking more about storing detached bzImage signatures
+> and passing those signatures to kexec system call.
+> 
 
-Hrm. I have tracing compiled in, I'll see if disabling it avoids the issue.
+Since the secureboot scenario probably means people will be signing
+those kernels, and those kernels are going to be EFI images, that in
+order to have "one kernel, one signature" there will be a desire to
+support signed PE images.  Yes, PE is ugly but it shouldn't be too bad.
+ However, it is probably one of those things that can be dealt with one
+bit at a time.
 
-If this is the problem, I'm guessing we may need to change it to use
-read_seqcount_begin_no_lockdep() then.
+	-hpa
 
-But I still don't have a clear sense of exactly whats happening yet.
-
-thanks
--john
 
