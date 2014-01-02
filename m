@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752454AbaABRFj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:05:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40167 "EHLO
+	id S1752418AbaABRFh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:05:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40171 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752257AbaABRF3 (ORCPT
+	with ESMTP id S1752262AbaABRFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:05:29 -0500
+	Thu, 2 Jan 2014 12:05:30 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andreas Henriksson <andreas@fatal.se>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 03/91] net: Fix "ip rule delete table 256"
-Date: Thu,  2 Jan 2014 09:03:38 -0800
-Message-Id: <1388682306-30859-4-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 21/91] net: clamp ->msg_namelen instead of returning an error
+Date: Thu,  2 Jan 2014 09:03:56 -0800
+Message-Id: <1388682306-30859-22-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -28,44 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Henriksson <andreas@fatal.se>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit 13eb2ab2d33c57ebddc57437a7d341995fc9138c ]
+[ Upstream commit db31c55a6fb245fdbb752a2ca4aefec89afabb06 ]
 
-When trying to delete a table >= 256 using iproute2 the local table
-will be deleted.
-The table id is specified as a netlink attribute when it needs more then
-8 bits and iproute2 then sets the table field to RT_TABLE_UNSPEC (0).
-Preconditions to matching the table id in the rule delete code
-doesn't seem to take the "table id in netlink attribute" into condition
-so the frh_get_table helper function never gets to do its job when
-matching against current rule.
-Use the helper function twice instead of peaking at the table value directly.
+If kmsg->msg_namelen > sizeof(struct sockaddr_storage) then in the
+original code that would lead to memory corruption in the kernel if you
+had audit configured.  If you didn't have audit configured it was
+harmless.
 
-Originally reported at: http://bugs.debian.org/724783
+There are some programs such as beta versions of Ruby which use too
+large of a buffer and returning an error code breaks them.  We should
+clamp the ->msg_namelen value instead.
 
-Reported-by: Nicolas HICHER <nhicher@avencall.com>
-Signed-off-by: Andreas Henriksson <andreas@fatal.se>
+Fixes: 1661bf364ae9 ("net: heap overflow in __audit_sockaddr()")
+Reported-by: Eric Wong <normalperson@yhbt.net>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Tested-by: Eric Wong <normalperson@yhbt.net>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/core/fib_rules.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/compat.c | 2 +-
+ net/socket.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/core/fib_rules.c b/net/core/fib_rules.c
-index 58a4ba2..8c9b04b 100644
---- a/net/core/fib_rules.c
-+++ b/net/core/fib_rules.c
-@@ -445,7 +445,8 @@ static int fib_nl_delrule(struct sk_buff *skb, struct nlmsghdr* nlh, void *arg)
- 		if (frh->action && (frh->action != rule->action))
- 			continue;
+diff --git a/net/compat.c b/net/compat.c
+index 618c6a8..dd32e34 100644
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -72,7 +72,7 @@ int get_compat_msghdr(struct msghdr *kmsg, struct compat_msghdr __user *umsg)
+ 	    __get_user(kmsg->msg_flags, &umsg->msg_flags))
+ 		return -EFAULT;
+ 	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
+-		return -EINVAL;
++		kmsg->msg_namelen = sizeof(struct sockaddr_storage);
+ 	kmsg->msg_name = compat_ptr(tmp1);
+ 	kmsg->msg_iov = compat_ptr(tmp2);
+ 	kmsg->msg_control = compat_ptr(tmp3);
+diff --git a/net/socket.c b/net/socket.c
+index f7129f3..57d7a85 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -1989,7 +1989,7 @@ static int copy_msghdr_from_user(struct msghdr *kmsg,
+ 	if (copy_from_user(kmsg, umsg, sizeof(struct msghdr)))
+ 		return -EFAULT;
+ 	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
+-		return -EINVAL;
++		kmsg->msg_namelen = sizeof(struct sockaddr_storage);
+ 	return 0;
+ }
  
--		if (frh->table && (frh_get_table(frh, tb) != rule->table))
-+		if (frh_get_table(frh, tb) &&
-+		    (frh_get_table(frh, tb) != rule->table))
- 			continue;
- 
- 		if (tb[FRA_PRIORITY] &&
 -- 
 1.8.3.2
 
