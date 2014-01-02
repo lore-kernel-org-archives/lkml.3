@@ -1,22 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753116AbaABRHz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:07:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40333 "EHLO
+	id S1753166AbaABRIB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:08:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40342 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753018AbaABRHw (ORCPT
+	with ESMTP id S1753082AbaABRH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:07:52 -0500
+	Thu, 2 Jan 2014 12:07:58 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>,
+Cc: Omar Ramirez Luna <omar.ramirez@copitl.com>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        "Kanigeri, Hari" <h-kanigeri2@ti.com>,
+        Ameya Palande <ameya.palande@nokia.com>,
+        "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
+        "Hebbar, Shivananda" <x0hebbar@ti.com>,
+        "Ramos Falcon, Ernesto" <ernesto@ti.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        "Anna, Suman" <s-anna@ti.com>, "Gupta, Ramesh" <grgupta@ti.com>,
+        "Gomez Castellanos, Ivan" <ivan.gomez@ti.com>,
+        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
+        Armando Uribe De Leon <x0095078@ti.com>,
+        Deepak Chitriki <deepak.chitriki@ti.com>,
+        "Menon, Nishanth" <nm@ti.com>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 63/91] ARM: mvebu: use the virtual CPU registers to access coherency registers
-Date: Thu,  2 Jan 2014 09:04:38 -0800
-Message-Id: <1388682306-30859-64-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 47/91] Staging: tidspbridge: disable driver
+Date: Thu,  2 Jan 2014 09:04:22 -0800
+Message-Id: <1388682306-30859-48-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -29,49 +43,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit b6dda00cddcc71d2030668bc0cc0fed758c411c2 upstream.
+commit 930ba4a374b96560ef9fde2145cdc454a164ddcc upstream.
 
-The Armada XP provides a mechanism called "virtual CPU registers" or
-"per-CPU register banking", to access the per-CPU registers of the
-current CPU, without having to worry about finding on which CPU we're
-running. CPU0 has its registers at 0x21800, CPU1 at 0x21900, CPU2 at
-0x21A00 and CPU3 at 0x21B00. The virtual registers accessing the
-current CPU registers are at 0x21000.
+There seems to be no active maintainer for the driver, and there is an
+unfixed security bug, so disable the driver for now.
 
-However, in the Device Tree node that provides the register addresses
-for the coherency unit (which is responsible for ensuring coherency
-between processors, and I/O coherency between processors and the
-DMA-capable devices), a mistake was made: the CPU0-specific registers
-were specified instead of the virtual CPU registers. This means that
-the coherency barrier needed for I/O coherency was not behaving
-properly when executed from a CPU different from CPU0. This patch
-fixes that by using the virtual CPU registers.
+Hopefully someone steps up to be the maintainer, and works to get this
+out of staging, otherwise it will be deleted soon.
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Fixes: e60304f8cb7bb5 "arm: mvebu: Add hardware I/O Coherency support"
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Omar Ramirez Luna <omar.ramirez@copitl.com>
+Cc: Omar Ramirez Luna <omar.ramirez@ti.com>
+Cc: Kanigeri, Hari <h-kanigeri2@ti.com>
+Cc: Ameya Palande <ameya.palande@nokia.com>
+Cc: Guzman Lugo, Fernando <fernando.lugo@ti.com>
+Cc: Hebbar, Shivananda <x0hebbar@ti.com>
+Cc: Ramos Falcon, Ernesto <ernesto@ti.com>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Anna, Suman <s-anna@ti.com>
+Cc: Gupta, Ramesh <grgupta@ti.com>
+Cc: Gomez Castellanos, Ivan <ivan.gomez@ti.com>
+Cc: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Cc: Armando Uribe De Leon <x0095078@ti.com>
+Cc: Deepak Chitriki <deepak.chitriki@ti.com>
+Cc: Menon, Nishanth <nm@ti.com>
+Cc: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 [ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/boot/dts/armada-370-xp.dtsi | 2 +-
+ drivers/staging/tidspbridge/Kconfig | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
-index 4c0abe8..269b6b0 100644
---- a/arch/arm/boot/dts/armada-370-xp.dtsi
-+++ b/arch/arm/boot/dts/armada-370-xp.dtsi
-@@ -39,7 +39,7 @@
- 	coherency-fabric@d0020200 {
- 		compatible = "marvell,coherency-fabric";
- 		reg = <0xd0020200 0xb0>,
--		      <0xd0021810 0x1c>;
-+		      <0xd0021010 0x1c>;
- 	};
+diff --git a/drivers/staging/tidspbridge/Kconfig b/drivers/staging/tidspbridge/Kconfig
+index 0dd479f..f67c78e 100644
+--- a/drivers/staging/tidspbridge/Kconfig
++++ b/drivers/staging/tidspbridge/Kconfig
+@@ -4,7 +4,7 @@
  
- 	soc {
+ menuconfig TIDSPBRIDGE
+ 	tristate "DSP Bridge driver"
+-	depends on ARCH_OMAP3
++	depends on ARCH_OMAP3 && BROKEN
+ 	select OMAP_MBOX_FWK
+ 	help
+ 	  DSP/BIOS Bridge is designed for platforms that contain a GPP and
 -- 
 1.8.3.2
 
