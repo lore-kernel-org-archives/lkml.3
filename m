@@ -1,71 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754949AbaAAXwl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jan 2014 18:52:41 -0500
-Received: from mail.lang.hm ([64.81.33.126]:34111 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754766AbaAAXwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 18:52:39 -0500
-Date: Wed, 1 Jan 2014 15:51:32 -0800 (PST)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-cc: Joe Xue <lgxue@hotmail.com>, "cooloney@gmail.com" <cooloney@gmail.com>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "rob@landley.net" <rob@landley.net>,
-        "milo.kim@ti.com" <milo.kim@ti.com>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH] Add LED pattern trigger
-In-Reply-To: <20140101230135.48f6f781@alan.etchedpixels.co.uk>
-Message-ID: <alpine.DEB.2.02.1401011547340.27645@nftneq.ynat.uz>
-References: <1388362275-1618-1-git-send-email-lgxue@hotmail.com> <20131230162158.7420e811@alan.etchedpixels.co.uk> <BLU172-W451DF59115DB2B0A7F694AACC90@phx.gbl> <20140101201053.12be7d27@alan.etchedpixels.co.uk> <alpine.DEB.2.02.1401011423180.27645@nftneq.ynat.uz>
- <20140101230135.48f6f781@alan.etchedpixels.co.uk>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754941AbaABANN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jan 2014 19:13:13 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:56612 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754781AbaABANJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jan 2014 19:13:09 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Florian Vaussard <florian.vaussard@epfl.ch>
+Cc: Joerg Roedel <joro@8bytes.org>, Tony Lindgren <tony@atomide.com>,
+        =?ISO-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, iommu@lists.linux-foundation.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/7] iommu/omap: Convert to devicetree
+Date: Thu, 02 Jan 2014 01:13:42 +0100
+Message-ID: <1764051.JiGg1d3s1L@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.10.17-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1387284818-28739-4-git-send-email-florian.vaussard@epfl.ch>
+References: <1387284818-28739-1-git-send-email-florian.vaussard@epfl.ch> <1387284818-28739-4-git-send-email-florian.vaussard@epfl.ch>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Jan 2014, One Thousand Gnomes wrote:
+Hi Florian,
 
->> whatever mechanism is created for toggling LEDs should be able to toggle
->> arbitrary GPIO pins, and there is a problem with the speed of the standard
->> access mechanisms in /sysfs. see this post on hackaday for an example
->>
->> http://hackaday.com/2013/12/07/speeding-up-beaglebone-black-gpio-a-thousand-times/
->
-> The usage described is short human speed flashing patterns for things like
-> "my brain fell out" from devices, not trying to do 1KHz PWM dimming.
-> Dimming might actually be one case you want the kernel interface,
-> although it'll kill your power management.
+Thank you for the patch.
 
-any high speed signalling would probably also need the kernel interface.
+On Tuesday 17 December 2013 13:53:34 Florian Vaussard wrote:
+> As OMAP2+ is moving to a full DT boot for 3.14, commit 7ce93f3
+> "ARM: OMAP2+: Fix more missing data for omap3.dtsi file" adds
+> basic DT bits. But the driver is not yet converted, so this will
+> not work and driver will not be probed. Convert it!
+> 
+> Apart from standard bindings, this patch uses 'dma-window' (already
+> used by Tegra SMMU) and adds a custom 'ti,#tlb-entries' binding.
+> 
+> Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
+> ---
+>  .../devicetree/bindings/iommu/ti,omap-iommu.txt    | 19 ++++++++++++
+>  arch/arm/mach-omap2/omap-iommu.c                   |  5 +++
+>  drivers/iommu/omap-iommu.c                         | 36 ++++++++++++++++---
+>  3 files changed, 55 insertions(+), 5 deletions(-)
+>  create mode 100644
+> Documentation/devicetree/bindings/iommu/ti,omap-iommu.txt
 
->> Also, since there are a number of cases where this is hardware accelerated, it
->> seems like there should be an abstration that userspace can use that doesn't
->> care if or how it's accelerated, setup the output and tell the system to do it
->> without worrying about the specific hardware details. Isn't that a large part of
->> what the kernel is supposed to be doing?
->
-> Not usually. The kernel is supposed to be providing a consistent interface
-> to hardware, not emulating bits you don't have. Now and then it does (Eg
-> FPU emulation) but in general the job it does is "make all the network
-> cards look the same" not "make pretend network cards out of string and
-> cups". It's not a hard and fast rule in either direction. There are cases
-> the kernel doesn't try and create a common interface for the hardware
-> because the abstraction that can be done at kernel level would be
-> nonsensical.
+[snip]
 
-fair enough, would it make sense to redirect the discussion to focus on what a 
-good interface would be for the cases where there is special hardware 
-assistance? Then the discussion of if the same interface could/should be used to 
-emulate harsdware when it isn't there can be a seprate discussion.
+> diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
+> index 385bf5e..51efcc4 100644
+> --- a/drivers/iommu/omap-iommu.c
+> +++ b/drivers/iommu/omap-iommu.c
 
-And while this use case the original developer had in mind was the 'I've lost my 
-mind' notification to a human, I think it makes sense to consider other uses for 
-repeating pattern toggling of GPIO ports.
+[snip]
 
-David Lang
+> @@ -1260,11 +1277,20 @@ static int omap_iommu_remove(struct platform_device
+> *pdev) return 0;
+>  }
+> 
+> +#if defined(CONFIG_OF)
+> +static struct of_device_id omap_iommu_of_match[] = {
+> +	{ .compatible = "ti,omap3-mmu-isp" },
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, omap_iommu_of_match);
+> +#endif
+> +
+>  static struct platform_driver omap_iommu_driver = {
+>  	.probe	= omap_iommu_probe,
+>  	.remove	= omap_iommu_remove,
+>  	.driver	= {
+>  		.name	= "omap-iommu",
+> +		.of_match_table = omap_iommu_of_match,
+
+If CONFIG_OF isn't defined (pretty unlikely I agree, but a possibility you 
+seem to be prepared for nonetheless given the above #if), this will fail to 
+compile.
+
+>  	},
+>  };
+
+-- 
+Regards,
+
+Laurent Pinchart
+
