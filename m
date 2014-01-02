@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417AbaABRJK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:09:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40411 "EHLO
+	id S1753452AbaABRJN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:09:13 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40425 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751988AbaABRJG (ORCPT
+	with ESMTP id S1751988AbaABRJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:09:06 -0500
+	Thu, 2 Jan 2014 12:09:11 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Joel Fernandes <joelf@ti.com>, Tony Lindgren <tony@atomide.com>,
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, <ian.campbell@citrix.com>,
+        <rjw@rjwysocki.net>, <len.brown@intel.com>,
+        <gregkh@linuxfoundation.org>, Thomas Gleixner <tglx@linutronix.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 69/91] ARM: OMAP2+: Disable POSTED mode for errata i103 and i767
-Date: Thu,  2 Jan 2014 09:04:44 -0800
-Message-Id: <1388682306-30859-70-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 66/91] irq: Enable all irqs unconditionally in irq_resume
+Date: Thu,  2 Jan 2014 09:04:41 -0800
+Message-Id: <1388682306-30859-67-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -28,49 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joel Fernandes <joelf@ti.com>
+From: Laxman Dewangan <ldewangan@nvidia.com>
 
-commit 912e663127c5f700da6805ce21635dce703cb2cc upstream.
+commit ac01810c9d2814238f08a227062e66a35a0e1ea2 upstream.
 
-Enabling of Posted mode is seen to cause problems on dmtimer modules on AM33xx
-(much like other OMAPs).  Reference discussions on forums [1] [2]. Earlier
-patch solving this on other OMAPs [3].
+When the system enters suspend, it disables all interrupts in
+suspend_device_irqs(), including the interrupts marked EARLY_RESUME.
 
-For OMAP SoCs with this errata, the fix has been to not enable Posted mode.
-However, on some SoCs (atleast AM33xx) which carry this errata, Posted mode
-is enabled on reset. So we not only need to ignore enabling of the POSTED bit
-when the timer is requested, but also disable Posted mode if errata is present.
+On the resume side things are different. The EARLY_RESUME interrupts
+are reenabled in sys_core_ops->resume and the non EARLY_RESUME
+interrupts are reenabled in the normal system resume path.
 
-[1] http://e2e.ti.com/support/arm/sitara_arm/f/791/t/285744.aspx
-[2] http://e2e.ti.com/support/arm/sitara_arm/f/791/t/270632.aspx
-[3] http://www.spinics.net/lists/linux-omap/msg81770.html
+When suspend_noirq() failed or suspend is aborted for any other
+reason, we might omit the resume side call to sys_core_ops->resume()
+and therefor the interrupts marked EARLY_RESUME are not reenabled and
+stay disabled forever.
 
-Reported-by: Russ Dill <russ.dill@ti.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Joel Fernandes <joelf@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+To solve this, enable all irqs unconditionally in irq_resume()
+regardless whether interrupts marked EARLY_RESUMEhave been already
+enabled or not.
+
+This might try to reenable already enabled interrupts in the non
+failure case, but the only affected platform is XEN and it has been
+confirmed that it does not cause any side effects.
+
+[ tglx: Massaged changelog. ]
+
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Acked-by-and-tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Heiko Stuebner <heiko@sntech.de>
+Reviewed-by: Pavel Machek <pavel@ucw.cz>
+Cc: <ian.campbell@citrix.com>
+Cc: <rjw@rjwysocki.net>
+Cc: <len.brown@intel.com>
+Cc: <gregkh@linuxfoundation.org>
+Link: http://lkml.kernel.org/r/1385388587-16442-1-git-send-email-ldewangan@nvidia.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/plat-omap/include/plat/dmtimer.h | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ kernel/irq/pm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/plat-omap/include/plat/dmtimer.h b/arch/arm/plat-omap/include/plat/dmtimer.h
-index a3fbc48..31e1715d 100644
---- a/arch/arm/plat-omap/include/plat/dmtimer.h
-+++ b/arch/arm/plat-omap/include/plat/dmtimer.h
-@@ -335,8 +335,11 @@ static inline void __omap_dm_timer_enable_posted(struct omap_dm_timer *timer)
- 	if (timer->posted)
- 		return;
+diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
+index cb228bf..abcd6ca 100644
+--- a/kernel/irq/pm.c
++++ b/kernel/irq/pm.c
+@@ -50,7 +50,7 @@ static void resume_irqs(bool want_early)
+ 		bool is_early = desc->action &&
+ 			desc->action->flags & IRQF_EARLY_RESUME;
  
--	if (timer->errata & OMAP_TIMER_ERRATA_I103_I767)
-+	if (timer->errata & OMAP_TIMER_ERRATA_I103_I767) {
-+		timer->posted = OMAP_TIMER_NONPOSTED;
-+		__omap_dm_timer_write(timer, OMAP_TIMER_IF_CTRL_REG, 0, 0);
- 		return;
-+	}
+-		if (is_early != want_early)
++		if (!is_early && want_early)
+ 			continue;
  
- 	__omap_dm_timer_write(timer, OMAP_TIMER_IF_CTRL_REG,
- 			      OMAP_TIMER_CTRL_POSTED, 0);
+ 		raw_spin_lock_irqsave(&desc->lock, flags);
 -- 
 1.8.3.2
 
