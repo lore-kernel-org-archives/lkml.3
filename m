@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750942AbaABLYy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 06:24:54 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:34629 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750746AbaABLYx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 06:24:53 -0500
-X-IronPort-AV: E=Sophos;i="4.95,590,1384300800"; 
-   d="scan'208";a="89191456"
-Message-ID: <52C54C82.5010802@citrix.com>
-Date: Thu, 2 Jan 2014 11:24:50 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
-        <boris.ostrovsky@oracle.com>, <stefano.stabellini@eu.citrix.com>,
-        <mukesh.rathor@oracle.com>
-Subject: Re: [PATCH v12 06/18] xen/pvh: MMU changes for PVH (v2)
-References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com> <1388550945-25499-7-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1388550945-25499-7-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+	id S1751265AbaABL0H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 06:26:07 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:40115 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746AbaABL0F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 06:26:05 -0500
+From: SeongJae Park <sj38.park@gmail.com>
+To: mgorman@suse.de, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        SeongJae Park <sj38.park@gmail.com>
+Subject: [PATCH] mm: page_alloc: use enum instead of number for migratetype
+Date: Thu,  2 Jan 2014 20:25:22 +0900
+Message-Id: <1388661922-10957-1-git-send-email-sj38.park@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
-> From: Mukesh Rathor <mukesh.rathor@oracle.com>
-> 
-> .. which are surprinsingly small compared to the amount for PV code.
-> 
-> PVH uses mostly native mmu ops, we leave the generic (native_*) for
-> the majority and just overwrite the baremetal with the ones we need.
-> 
-> We also optimize one - the TLB flush. The native operation would
-> needlessly IPI offline VCPUs causing extra wakeups. Using the
-> Xen one avoids that and lets the hypervisor determine which
-> VCPU needs the TLB flush.
+Using enum instead of number for migratetype everywhere would be better
+for reading and understanding.
 
-This TLB flush optimization should be a separate patch.
+Signed-off-by: SeongJae Park <sj38.park@gmail.com>
+---
+ mm/page_alloc.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-David
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 5bcbca5..08f6ed7 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -646,7 +646,7 @@ static inline int free_pages_check(struct page *page)
+ static void free_pcppages_bulk(struct zone *zone, int count,
+ 					struct per_cpu_pages *pcp)
+ {
+-	int migratetype = 0;
++	int migratetype = MIGRATE_UNMOVABLE;
+ 	int batch_free = 0;
+ 	int to_free = count;
+ 
+@@ -667,7 +667,7 @@ static void free_pcppages_bulk(struct zone *zone, int count,
+ 		do {
+ 			batch_free++;
+ 			if (++migratetype == MIGRATE_PCPTYPES)
+-				migratetype = 0;
++				migratetype = MIGRATE_UNMOVABLE;
+ 			list = &pcp->lists[migratetype];
+ 		} while (list_empty(list));
+ 
+@@ -4158,7 +4158,9 @@ static void pageset_init(struct per_cpu_pageset *p)
+ 
+ 	pcp = &p->pcp;
+ 	pcp->count = 0;
+-	for (migratetype = 0; migratetype < MIGRATE_PCPTYPES; migratetype++)
++
++	for (migratetype = MIGRATE_UNMOVABLE; migratetype < MIGRATE_PCPTYPES;
++						migratetype++)
+ 		INIT_LIST_HEAD(&pcp->lists[migratetype]);
+ }
+ 
+-- 
+1.8.1.2
+
