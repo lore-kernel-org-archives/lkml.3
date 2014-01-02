@@ -1,65 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528AbaABNxN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 08:53:13 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:61328 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740AbaABNxM (ORCPT
+	id S1751693AbaABOZk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 09:25:40 -0500
+Received: from canardo.mork.no ([148.122.252.1]:44766 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750942AbaABOZh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 08:53:12 -0500
-X-IronPort-AV: E=Sophos;i="4.95,590,1384300800"; 
-   d="scan'208";a="87034223"
-Message-ID: <52C56F43.6030804@citrix.com>
-Date: Thu, 2 Jan 2014 13:53:07 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	Thu, 2 Jan 2014 09:25:37 -0500
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Hayes Wang <hayeswang@realtek.com>
+Cc: <oliver@neukum.org>, <netdev@vger.kernel.org>, <nic_swsd@realtek.com>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH net-next v2 6/6] r8152: support RTL8153
+Organization: m
+References: <1388632963-1341-1-git-send-email-hayeswang@realtek.com>
+	<1388633110-1435-1-git-send-email-hayeswang@realtek.com>
+Date: Thu, 02 Jan 2014 15:25:13 +0100
+In-Reply-To: <1388633110-1435-1-git-send-email-hayeswang@realtek.com> (Hayes
+	Wang's message of "Thu, 2 Jan 2014 11:25:10 +0800")
+Message-ID: <877gai8nqu.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-To: Levente Kurusa <levex@linux.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        <xen-devel@lists.xenproject.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: Re: [Xen-devel] [PATCH 26/38] xen: xenbus: add missing put_device
- call
-References: <1387465429-3568-2-git-send-email-levex@linux.com> <1387465429-3568-27-git-send-email-levex@linux.com>
-In-Reply-To: <1387465429-3568-27-git-send-email-levex@linux.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/12/13 15:03, Levente Kurusa wrote:
-> This is required so that we give up the last reference to the device.
-> 
-> Signed-off-by: Levente Kurusa <levex@linux.com>
+Hayes Wang <hayeswang@realtek.com> writes:
+
+> Support new chip RTL8153 which is the USB 3.0 giga ethernet adapter.
+>
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 > ---
->  drivers/xen/xenbus/xenbus_probe.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
-> index 3c0a74b..4abb9ee 100644
-> --- a/drivers/xen/xenbus/xenbus_probe.c
-> +++ b/drivers/xen/xenbus/xenbus_probe.c
-> @@ -465,8 +465,10 @@ int xenbus_probe_node(struct xen_bus_type *bus,
+>  drivers/net/usb/cdc_ether.c |  10 +
+>  drivers/net/usb/r8152.c     | 615 +++++++++++++++++++++++++++++++++++++++++++-
+>  drivers/net/usb/r815x.c     |   2 +-
+>  3 files changed, 621 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/net/usb/cdc_ether.c b/drivers/net/usb/cdc_ether.c
+> index 4b1c0f3..640406a 100644
+> --- a/drivers/net/usb/cdc_ether.c
+> +++ b/drivers/net/usb/cdc_ether.c
+> @@ -486,6 +486,7 @@ static const struct driver_info wwan_info = {
+>  #define ZTE_VENDOR_ID		0x19D2
+>  #define DELL_VENDOR_ID		0x413C
+>  #define REALTEK_VENDOR_ID	0x0bda
+> +#define SAMSUNG_VENDOR_ID	0x04e8
 >  
->  	/* Register with generic device framework. */
->  	err = device_register(&xendev->dev);
-> -	if (err)
-> +	if (err) {
-> +		put_device(&xendev->dev);
->  		goto fail;
-> +	}
+>  static const struct usb_device_id	products[] = {
+>  /* BLACKLIST !!
+> @@ -652,6 +653,15 @@ static const struct usb_device_id	products[] = {
+>  	.driver_info = 0,
+>  },
 >  
->  	return 0;
->  fail:
+> +#if defined(CONFIG_USB_RTL8152) || defined(CONFIG_USB_RTL8152_MODULE)
+> +/* Samsung USB Ethernet Adapters */
+> +{
+> +	USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, 0xa101, USB_CLASS_COMM,
+> +			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
+> +	.driver_info = 0,
+> +},
+> +#endif
 
-There is a kfree(xendev) here so this introduces a double-free.
 
-David
+We don't play the if-other-driver-is-enabled for any other of the
+blacklisted devices, including other devices supported by the RTL8152
+driver.  Why do we need it here?
 
+
+
+> diff --git a/drivers/net/usb/r815x.c b/drivers/net/usb/r815x.c
+> index 2df2f4f..5fd2ca6 100644
+> --- a/drivers/net/usb/r815x.c
+> +++ b/drivers/net/usb/r815x.c
+> @@ -226,7 +226,7 @@ static const struct usb_device_id products[] = {
+>  {
+>  	USB_DEVICE_AND_INTERFACE_INFO(REALTEK_VENDOR_ID, 0x8153, USB_CLASS_COMM,
+>  			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
+> -#if defined(CONFIG_USB_RTL8153) || defined(CONFIG_USB_RTL8153_MODULE)
+> +#if defined(CONFIG_USB_RTL8152) || defined(CONFIG_USB_RTL8152_MODULE)
+>  	.driver_info = 0,
+>  #else
+>  	.driver_info = (unsigned long) &r8153_info,
+
+This hunk seems like a completely unrelated bugfix?  This should have
+been a separate patch.
+
+
+Bjørn
