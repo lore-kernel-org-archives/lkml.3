@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396AbaABWqG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 17:46:06 -0500
-Received: from erley.org ([97.107.129.9]:52445 "EHLO remote.erley.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752070AbaABWqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 17:46:04 -0500
-X-Greylist: delayed 351 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Jan 2014 17:46:04 EST
-Message-ID: <52C5EAB7.9030003@erley.org>
-Date: Thu, 02 Jan 2014 16:39:51 -0600
-From: Pat Erley <pat-lkml@erley.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753422AbaABWrH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 17:47:07 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:58780 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372AbaABWrF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 17:47:05 -0500
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: linux-next@vger.kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Possible regression from "fs/exec.c: call arch_pick_mmap_layout()
- only once"
-References: <52C5DD07.40208@erley.org> <2300703.z3jyM3yTZv@sandpuppy>
-In-Reply-To: <2300703.z3jyM3yTZv@sandpuppy>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <6023795.zgEUjY5fWb@vostro.rjw.lan>
+References: <37552283.kG1L4S8Daa@vostro.rjw.lan>
+	<31566676.sHXhScpSQ6@vostro.rjw.lan>
+	<CAE9FiQVEqnWm1j0GckuNsD_FTPxWahZpCnF79sNgKN-JnCDT+w@mail.gmail.com>
+	<6023795.zgEUjY5fWb@vostro.rjw.lan>
+Date: Thu, 2 Jan 2014 14:47:04 -0800
+X-Google-Sender-Auth: NX2G5NjuuWIbobhWP3ty36icO14
+Message-ID: <CAE9FiQXQuX5EOE1jbXfK+G1mf9q=4-fpw1jNs38sza9tcPtqMg@mail.gmail.com>
+Subject: Re: [PATCH][tentative] PCI / ACPI: Rework PCI host bridge removal to
+ avoid sysfs warnings
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2014 04:24 PM, Richard Weinberger wrote:
-> Am Donnerstag, 2. Januar 2014, 15:41:27 schrieb Pat Erley:
->> On my 64bit kernel, commit 283fe963095b38a6ab75dda1436ee66b9e45c7c2
->> seems to have broken 32bit compatibility.  I've run the bisection twice,
->> and verified that reverting this on HEAD fixes the problem.  I've
->> uploaded my .config to pastebin at http://pastebin.com/kVcr9H65
+On Tue, Dec 31, 2013 at 1:03 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Tuesday, December 31, 2013 10:45:46 AM Yinghai Lu wrote:
+>> On Mon, Dec 30, 2013 at 5:15 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>> > On Monday, December 30, 2013 01:51:28 PM Rafael J. Wysocki wrote:
+>> >> > We have patches that need to stop ioapic and iommu between
+>> >> > pci_stop_root_bus and pci_remove_root_bus.
+>> >
+>> > BTW, what *exactly* do they need to be stopped between?  After these two patches:
 >>
->> Even this simple program:
+>> need to stop regular pci drivers before stop "driver" for ioapic/dmar.
 >>
->> main(){puts("HELLO");}
+>> >
+>> >> > Please check if the problem still happen after
+>> >> >
+>> >> > http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/patch/?id=c4a0a5d964e90b93eb4101c3927b788e083e530f
+>> >> >
+>> >> > http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/patch/?id=e3b439e1d315aff59c1b4f0fc43c5cd2d82b4138
+>> >
+>> > pci_stop_root_bus() is just a walk over devices on the root bus stopping
+>> > them and pci_remove_root_bus() starts with the removal of those devices.
+>> >
+>> > Surely, those two list walks can be combined into one?
 >>
->> compiled with:
->>
->> gcc -m32 test.c
->>
->> Will crash with a segfault.  Stracing shows that it's failing to
->> allocate memory.
+>> maybe ok, but we have to problem to make sure stop pci drivers before
+>> "driver" for ioapic/dmar.
 >
-> Good catch!
+> That's fine, but ioapic/dmar stopping need not happen between the stopping of
+> drivers and removing of devices on the root bus I suppose?
 >
-> flush_old_exec() is called before setup_new_exec() and I've removed
-> arch_pick_mmap_layout() from the second call site.
-> Which turned out to be wrong.
->
-> It is wrong because between both callers current->personality is changed.
-> So, we have to remove the first call to arch_pick_mmap_layout() and keep the
-> latter because only then the correct personality is set up.
->
-> Can you please test your config with the following patch applied and having
-> 283fe96 reverted?
->
-> If it works out for you I'd send an updated patch to Andrew.
-> In the meanwhile I'll double check all call sites...
->
-> Thanks,
-> //richard
->
-> ---
-> diff --git a/fs/exec.c b/fs/exec.c
-> index 7ea097f..a733599 100644
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -843,7 +843,6 @@ static int exec_mmap(struct mm_struct *mm)
->   	tsk->active_mm = mm;
->   	activate_mm(active_mm, mm);
->   	task_unlock(tsk);
-> -	arch_pick_mmap_layout(mm);
->   	if (old_mm) {
->   		up_read(&old_mm->mmap_sem);
->   		BUG_ON(active_mm != old_mm);
->
+> Actually, I think that the ioapic/dmar stopping should be carried out after
+> removing all of the root bus devices, or it can be racy with respect to a
+> driver reload.  Isn't that the case?
 
-Compiling right now.  Will test later tonight and let you know.
+No. It should be before removing all root bus devices.
+as they need to access the pci devices during stop ioapic and dmar.
 
-Pat
+Also ioapic itself could one one pci device.
 
+Yinghai
