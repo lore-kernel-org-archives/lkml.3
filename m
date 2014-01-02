@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751943AbaABTi6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 14:38:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14335 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750917AbaABTi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 14:38:57 -0500
-Date: Thu, 2 Jan 2014 14:38:47 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: Peter Hurley <peter@hurleysoftware.com>, Jiri Slaby <jslaby@suse.cz>,
-        linux-kernel@vger.kernel.org, Karl Dahlke <eklhad@comcast.net>
-Subject: Re: [PATCH 3.12 v2] Broken terminal due to echo bufferring
-In-Reply-To: <20131218235310.GC14527@kroah.com>
-Message-ID: <alpine.LRH.2.02.1401021438310.832@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1312091004110.19590@file01.intranet.prod.int.rdu2.redhat.com> <20131218235310.GC14527@kroah.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1752103AbaABUBY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 15:01:24 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:51036 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172AbaABUBX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 15:01:23 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>, nicolas.ferre@atmel.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/6] at91: dt: sam9261: Added DM9000 in the device tree
+Date: Thu, 02 Jan 2014 21:00:57 +0100
+Message-ID: <1460399.vQDGWoVpz2@wuerfel>
+User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <CACh+v5PptkrXERAqBUOv-DSaRDQ5NzJAc919Ne3iN9iVszRP+A@mail.gmail.com>
+References: <1388507534-10570-1-git-send-email-jjhiblot@traphandler.com> <4526077.qASk8HSHKP@wuerfel> <CACh+v5PptkrXERAqBUOv-DSaRDQ5NzJAc919Ne3iN9iVszRP+A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:tqxZDcaEwFxciQTDxIFBmxw0DvkD+aJVBmU4Hry05lr
+ osjfaquptmqY4Q22ahM1tegLlBqm9n9XAcVWe2PxWmhmim9UB7
+ XdHaGR7FfhpMmMh+n/iwIbSWt22aFSMFZHs2zgH9NU+hAkxX1Y
+ xhr1NX1CbaMGJAzfAD4WVTTcWFKsq3Ub+s0TzkDlqwrJVPaHX7
+ rW81qfX5l/Y+w02SObQLmn8hLAipiAMhjZNEmEdvM8A3Q6IFNV
+ lmd1reI53p1G5D22F9ZAj1qFQMWSm8njF6BmbjSWc+g2kf+pYP
+ 8xCMryTG+JW4WCcq1m8yPVxmDtOLcBe+UxcURdOlulHa3Fp3wt
+ IfqzPXcIAixt21gsLP9g=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday 02 January 2014 20:31:00 Jean-Jacques Hiblot wrote:
+> > If each bus interface has a fixed range of registers, you can actually
+> > collapse the upper two nodes again and just have one device per
+> > chipselect.
+> This is indeed the case, but I'd rather keep the top node to highlight
+> the fact that all the devices are physically tied to the same bus.
 
+How about using a top-level "simple-bus" node with the complex ranges
+property but making the driver match the sub-devices with the smaller
+register range then?
 
-On Wed, 18 Dec 2013, Greg Kroah-Hartman wrote:
-
-> On Mon, Dec 09, 2013 at 10:10:50AM -0500, Mikulas Patocka wrote:
-> > Hi
-> > 
-> > Here I'm sending another version of the patch that removes some unneeded 
-> > code for echo bufferring - 41 lines are removed.
-> 
-> This should now all be resolved in Linus's tree, and this patch is not
-> needed, right?
-
-You don't need this patch if you backported 
-1075a6e2dc7e2a96efc417b98dd98f57fdae985d.
-
-Mikulas
-
-> thanks,
-> 
-> greg k-h
-> 
+	Arnd
