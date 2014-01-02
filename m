@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452AbaABRJN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:09:13 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40425 "EHLO
+	id S1753487AbaABRJR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:09:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40434 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751988AbaABRJL (ORCPT
+	with ESMTP id S1753454AbaABRJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:09:11 -0500
+	Thu, 2 Jan 2014 12:09:14 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, <ian.campbell@citrix.com>,
-        <rjw@rjwysocki.net>, <len.brown@intel.com>,
-        <gregkh@linuxfoundation.org>, Thomas Gleixner <tglx@linutronix.de>,
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 66/91] irq: Enable all irqs unconditionally in irq_resume
-Date: Thu,  2 Jan 2014 09:04:41 -0800
-Message-Id: <1388682306-30859-67-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 70/91] [SCSI] libsas: fix usage of ata_tf_to_fis
+Date: Thu,  2 Jan 2014 09:04:45 -0800
+Message-Id: <1388682306-30859-71-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -29,60 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laxman Dewangan <ldewangan@nvidia.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit ac01810c9d2814238f08a227062e66a35a0e1ea2 upstream.
+commit ae5fbae0ccd982dfca0ce363036ed92f5b13f150 upstream.
 
-When the system enters suspend, it disables all interrupts in
-suspend_device_irqs(), including the interrupts marked EARLY_RESUME.
+Since commit 110dd8f19df5 "[SCSI] libsas: fix scr_read/write users and
+update the libata documentation" we have been passing pmp=1 and is_cmd=0
+to ata_tf_to_fis().  Praveen reports that eSATA attached drives do not
+discover correctly.  His investigation found that the BIOS was passing
+pmp=0 while Linux was passing pmp=1 and failing to discover the drives.
+Update libsas to follow the libata example of pulling the pmp setting
+from the ata_link and correct is_cmd to be 1 since all tf's submitted
+through ->qc_issue are commands.  Presumably libsas lldds do not care
+about is_cmd as they have sideband mechanisms to perform link
+management.
 
-On the resume side things are different. The EARLY_RESUME interrupts
-are reenabled in sys_core_ops->resume and the non EARLY_RESUME
-interrupts are reenabled in the normal system resume path.
+http://marc.info/?l=linux-scsi&m=138179681726990
 
-When suspend_noirq() failed or suspend is aborted for any other
-reason, we might omit the resume side call to sys_core_ops->resume()
-and therefor the interrupts marked EARLY_RESUME are not reenabled and
-stay disabled forever.
-
-To solve this, enable all irqs unconditionally in irq_resume()
-regardless whether interrupts marked EARLY_RESUMEhave been already
-enabled or not.
-
-This might try to reenable already enabled interrupts in the non
-failure case, but the only affected platform is XEN and it has been
-confirmed that it does not cause any side effects.
-
-[ tglx: Massaged changelog. ]
-
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Acked-by-and-tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Acked-by: Heiko Stuebner <heiko@sntech.de>
-Reviewed-by: Pavel Machek <pavel@ucw.cz>
-Cc: <ian.campbell@citrix.com>
-Cc: <rjw@rjwysocki.net>
-Cc: <len.brown@intel.com>
-Cc: <gregkh@linuxfoundation.org>
-Link: http://lkml.kernel.org/r/1385388587-16442-1-git-send-email-ldewangan@nvidia.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[jejb: checkpatch fix]
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Reported-by: Praveen Murali <pmurali@logicube.com>
+Tested-by: Praveen Murali <pmurali@logicube.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/irq/pm.c | 2 +-
+ drivers/scsi/libsas/sas_ata.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
-index cb228bf..abcd6ca 100644
---- a/kernel/irq/pm.c
-+++ b/kernel/irq/pm.c
-@@ -50,7 +50,7 @@ static void resume_irqs(bool want_early)
- 		bool is_early = desc->action &&
- 			desc->action->flags & IRQF_EARLY_RESUME;
+diff --git a/drivers/scsi/libsas/sas_ata.c b/drivers/scsi/libsas/sas_ata.c
+index bdb81cd..0cc7886 100644
+--- a/drivers/scsi/libsas/sas_ata.c
++++ b/drivers/scsi/libsas/sas_ata.c
+@@ -211,7 +211,7 @@ static unsigned int sas_ata_qc_issue(struct ata_queued_cmd *qc)
+ 		qc->tf.nsect = 0;
+ 	}
  
--		if (is_early != want_early)
-+		if (!is_early && want_early)
- 			continue;
- 
- 		raw_spin_lock_irqsave(&desc->lock, flags);
+-	ata_tf_to_fis(&qc->tf, 1, 0, (u8*)&task->ata_task.fis);
++	ata_tf_to_fis(&qc->tf, qc->dev->link->pmp, 1, (u8 *)&task->ata_task.fis);
+ 	task->uldd_task = qc;
+ 	if (ata_is_atapi(qc->tf.protocol)) {
+ 		memcpy(task->ata_task.atapi_packet, qc->cdb, qc->dev->cdb_len);
 -- 
 1.8.3.2
 
