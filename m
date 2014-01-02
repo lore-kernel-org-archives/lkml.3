@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093AbaABROD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:14:03 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40563 "EHLO
+	id S1753772AbaABRJx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:09:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40520 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752437AbaABRKJ (ORCPT
+	with ESMTP id S1753528AbaABRJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:10:09 -0500
+	Thu, 2 Jan 2014 12:09:43 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Andy Adamson <andros@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 80/91] ARM: footbridge: fix VGA initialisation
-Date: Thu,  2 Jan 2014 09:04:55 -0800
-Message-Id: <1388682306-30859-81-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 50/91] NFSv4 wait on recovery for async session errors
+Date: Thu,  2 Jan 2014 09:04:25 -0800
+Message-Id: <1388682306-30859-51-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -27,81 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Andy Adamson <andros@netapp.com>
 
-commit 43659222e7a0113912ed02f6b2231550b3e471ac upstream.
+commit 4a82fd7c4e78a1b7a224f9ae8bb7e1fd95f670e0 upstream.
 
-It's no good setting vga_base after the VGA console has been
-initialised, because if we do that we get this:
+When the state manager is processing the NFS4CLNT_DELEGRETURN flag, session
+draining is off, but DELEGRETURN can still get a session error.
+The async handler calls nfs4_schedule_session_recovery returns -EAGAIN, and
+the DELEGRETURN done then restarts the RPC task in the prepare state.
+With the state manager still processing the NFS4CLNT_DELEGRETURN flag with
+session draining off, these DELEGRETURNs will cycle with errors filling up the
+session slots.
 
-Unable to handle kernel paging request at virtual address 000b8000
-pgd = c0004000
-[000b8000] *pgd=07ffc831, *pte=00000000, *ppte=00000000
-0Internal error: Oops: 5017 [#1] ARM
-Modules linked in:
-CPU: 0 PID: 0 Comm: swapper Not tainted 3.12.0+ #49
-task: c03e2974 ti: c03d8000 task.ti: c03d8000
-PC is at vgacon_startup+0x258/0x39c
-LR is at request_resource+0x10/0x1c
-pc : [<c01725d0>]    lr : [<c0022b50>]    psr: 60000053
-sp : c03d9f68  ip : 000b8000  fp : c03d9f8c
-r10: 000055aa  r9 : 4401a103  r8 : ffffaa55
-r7 : c03e357c  r6 : c051b460  r5 : 000000ff  r4 : 000c0000
-r3 : 000b8000  r2 : c03e0514  r1 : 00000000  r0 : c0304971
-Flags: nZCv  IRQs on  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
+This prevents OPEN reclaims (from nfs_delegation_claim_opens) required by the
+NFS4CLNT_DELEGRETURN state manager processing from completing, hanging the
+state manager in the __rpc_wait_for_completion_task in nfs4_run_open_task
+as seen in this kernel thread dump:
 
-which is an access to the 0xb8000 without the PCI offset required to
-make it work.
+kernel: 4.12.32.53-ma D 0000000000000000     0  3393      2 0x00000000
+kernel: ffff88013995fb60 0000000000000046 ffff880138cc5400 ffff88013a9df140
+kernel: ffff8800000265c0 ffffffff8116eef0 ffff88013fc10080 0000000300000001
+kernel: ffff88013a4ad058 ffff88013995ffd8 000000000000fbc8 ffff88013a4ad058
+kernel: Call Trace:
+kernel: [<ffffffff8116eef0>] ? cache_alloc_refill+0x1c0/0x240
+kernel: [<ffffffffa0358110>] ? rpc_wait_bit_killable+0x0/0xa0 [sunrpc]
+kernel: [<ffffffffa0358152>] rpc_wait_bit_killable+0x42/0xa0 [sunrpc]
+kernel: [<ffffffff8152914f>] __wait_on_bit+0x5f/0x90
+kernel: [<ffffffffa0358110>] ? rpc_wait_bit_killable+0x0/0xa0 [sunrpc]
+kernel: [<ffffffff815291f8>] out_of_line_wait_on_bit+0x78/0x90
+kernel: [<ffffffff8109b520>] ? wake_bit_function+0x0/0x50
+kernel: [<ffffffffa035810d>] __rpc_wait_for_completion_task+0x2d/0x30 [sunrpc]
+kernel: [<ffffffffa040d44c>] nfs4_run_open_task+0x11c/0x160 [nfs]
+kernel: [<ffffffffa04114e7>] nfs4_open_recover_helper+0x87/0x120 [nfs]
+kernel: [<ffffffffa0411646>] nfs4_open_recover+0xc6/0x150 [nfs]
+kernel: [<ffffffffa040cc6f>] ? nfs4_open_recoverdata_alloc+0x2f/0x60 [nfs]
+kernel: [<ffffffffa0414e1a>] nfs4_open_delegation_recall+0x6a/0xa0 [nfs]
+kernel: [<ffffffffa0424020>] nfs_end_delegation_return+0x120/0x2e0 [nfs]
+kernel: [<ffffffff8109580f>] ? queue_work+0x1f/0x30
+kernel: [<ffffffffa0424347>] nfs_client_return_marked_delegations+0xd7/0x110 [nfs]
+kernel: [<ffffffffa04225d8>] nfs4_run_state_manager+0x548/0x620 [nfs]
+kernel: [<ffffffffa0422090>] ? nfs4_run_state_manager+0x0/0x620 [nfs]
+kernel: [<ffffffff8109b0f6>] kthread+0x96/0xa0
+kernel: [<ffffffff8100c20a>] child_rip+0xa/0x20
+kernel: [<ffffffff8109b060>] ? kthread+0x0/0xa0
+kernel: [<ffffffff8100c200>] ? child_rip+0x0/0x20
 
-Fixes: cc22b4c18540 ("ARM: set vga memory base at run-time")
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+The state manager can not therefore process the DELEGRETURN session errors.
+Change the async handler to wait for recovery on session errors.
+
+Signed-off-by: Andy Adamson <andros@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+[ Andy Adamson: backport to <=3.12 ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/mach-footbridge/common.c  | 3 +++
- arch/arm/mach-footbridge/dc21285.c | 2 --
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ fs/nfs/nfs4proc.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-footbridge/common.c b/arch/arm/mach-footbridge/common.c
-index a42b369..95d0b6e 100644
---- a/arch/arm/mach-footbridge/common.c
-+++ b/arch/arm/mach-footbridge/common.c
-@@ -15,6 +15,7 @@
- #include <linux/init.h>
- #include <linux/io.h>
- #include <linux/spinlock.h>
-+#include <video/vga.h>
- 
- #include <asm/pgtable.h>
- #include <asm/page.h>
-@@ -196,6 +197,8 @@ void __init footbridge_map_io(void)
- 		iotable_init(ebsa285_host_io_desc, ARRAY_SIZE(ebsa285_host_io_desc));
- 		pci_map_io_early(__phys_to_pfn(DC21285_PCI_IO));
- 	}
-+
-+	vga_base = PCIMEM_BASE;
- }
- 
- void footbridge_restart(char mode, const char *cmd)
-diff --git a/arch/arm/mach-footbridge/dc21285.c b/arch/arm/mach-footbridge/dc21285.c
-index 3490a24..7c2fdae 100644
---- a/arch/arm/mach-footbridge/dc21285.c
-+++ b/arch/arm/mach-footbridge/dc21285.c
-@@ -18,7 +18,6 @@
- #include <linux/irq.h>
- #include <linux/io.h>
- #include <linux/spinlock.h>
--#include <video/vga.h>
- 
- #include <asm/irq.h>
- #include <asm/mach/pci.h>
-@@ -291,7 +290,6 @@ void __init dc21285_preinit(void)
- 	int cfn_mode;
- 
- 	pcibios_min_mem = 0x81000000;
--	vga_base = PCIMEM_BASE;
- 
- 	mem_size = (unsigned int)high_memory - PAGE_OFFSET;
- 	for (mem_mask = 0x00100000; mem_mask < 0x10000000; mem_mask <<= 1)
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index ef31b6b..4568c7a 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -3975,8 +3975,7 @@ nfs4_async_handle_error(struct rpc_task *task, const struct nfs_server *server,
+ 			dprintk("%s ERROR %d, Reset session\n", __func__,
+ 				task->tk_status);
+ 			nfs4_schedule_session_recovery(clp->cl_session, task->tk_status);
+-			task->tk_status = 0;
+-			return -EAGAIN;
++			goto wait_on_recovery;
+ #endif /* CONFIG_NFS_V4_1 */
+ 		case -NFS4ERR_DELAY:
+ 			nfs_inc_server_stats(server, NFSIOS_DELAY);
 -- 
 1.8.3.2
 
