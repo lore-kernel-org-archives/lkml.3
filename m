@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220AbaABRF1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:05:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40102 "EHLO
+	id S1752454AbaABRFj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:05:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40167 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833AbaABRFW (ORCPT
+	with ESMTP id S1752257AbaABRF3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:05:22 -0500
+	Thu, 2 Jan 2014 12:05:29 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dwight Engen <dwight.engen@oracle.com>, Ben Myers <bpm@sgi.com>,
-        Kees Cook <keescook@google.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 01/91] xfs: add capability check to free eofblocks ioctl
-Date: Thu,  2 Jan 2014 09:03:36 -0800
-Message-Id: <1388682306-30859-2-git-send-email-kamal@canonical.com>
+Cc: Andreas Henriksson <andreas@fatal.se>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 03/91] net: Fix "ip rule delete table 256"
+Date: Thu,  2 Jan 2014 09:03:38 -0800
+Message-Id: <1388682306-30859-4-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -27,47 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dwight Engen <dwight.engen@oracle.com>
+From: Andreas Henriksson <andreas@fatal.se>
 
-commit 8c567a7fab6e086a0284eee2db82348521e7120c upstream.
+[ Upstream commit 13eb2ab2d33c57ebddc57437a7d341995fc9138c ]
 
-Check for CAP_SYS_ADMIN since the caller can truncate preallocated
-blocks from files they do not own nor have write access to. A more
-fine grained access check was considered: require the caller to
-specify their own uid/gid and to use inode_permission to check for
-write, but this would not catch the case of an inode not reachable
-via path traversal from the callers mount namespace.
+When trying to delete a table >= 256 using iproute2 the local table
+will be deleted.
+The table id is specified as a netlink attribute when it needs more then
+8 bits and iproute2 then sets the table field to RT_TABLE_UNSPEC (0).
+Preconditions to matching the table id in the rule delete code
+doesn't seem to take the "table id in netlink attribute" into condition
+so the frh_get_table helper function never gets to do its job when
+matching against current rule.
+Use the helper function twice instead of peaking at the table value directly.
 
-Add check for read-only filesystem to free eofblocks ioctl.
+Originally reported at: http://bugs.debian.org/724783
 
-Reviewed-by: Brian Foster <bfoster@redhat.com>
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Gao feng <gaofeng@cn.fujitsu.com>
-Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
-Cc: Kees Cook <keescook@google.com>
+Reported-by: Nicolas HICHER <nhicher@avencall.com>
+Signed-off-by: Andreas Henriksson <andreas@fatal.se>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/xfs/xfs_ioctl.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ net/core/fib_rules.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/fs/xfs/xfs_ioctl.c b/fs/xfs/xfs_ioctl.c
-index c1c3ef8..2fe3eb3 100644
---- a/fs/xfs/xfs_ioctl.c
-+++ b/fs/xfs/xfs_ioctl.c
-@@ -1606,6 +1606,12 @@ xfs_file_ioctl(
- 	case XFS_IOC_FREE_EOFBLOCKS: {
- 		struct xfs_eofblocks eofb;
+diff --git a/net/core/fib_rules.c b/net/core/fib_rules.c
+index 58a4ba2..8c9b04b 100644
+--- a/net/core/fib_rules.c
++++ b/net/core/fib_rules.c
+@@ -445,7 +445,8 @@ static int fib_nl_delrule(struct sk_buff *skb, struct nlmsghdr* nlh, void *arg)
+ 		if (frh->action && (frh->action != rule->action))
+ 			continue;
  
-+		if (!capable(CAP_SYS_ADMIN))
-+			return -EPERM;
-+
-+		if (mp->m_flags & XFS_MOUNT_RDONLY)
-+			return -XFS_ERROR(EROFS);
-+
- 		if (copy_from_user(&eofb, arg, sizeof(eofb)))
- 			return -XFS_ERROR(EFAULT);
+-		if (frh->table && (frh_get_table(frh, tb) != rule->table))
++		if (frh_get_table(frh, tb) &&
++		    (frh_get_table(frh, tb) != rule->table))
+ 			continue;
  
+ 		if (tb[FRA_PRIORITY] &&
 -- 
 1.8.3.2
 
