@@ -1,91 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356AbaABRfN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:35:13 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:3199 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899AbaABRfL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:35:11 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 02 Jan 2014 09:35:36 -0800
-Message-ID: <52C5A344.2060908@nvidia.com>
-Date: Thu, 2 Jan 2014 09:35:00 -0800
-From: Matthew Longnecker <mlongnecker@nvidia.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752804AbaABRia (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:38:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7977 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751812AbaABRi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 12:38:27 -0500
+Date: Thu, 2 Jan 2014 12:38:08 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Viresh Kumar <viresh.kumar@linaro.org>
+cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] powernow-k6: disable cache when changing frequency
+In-Reply-To: <CAKohpo=_0i43EDSoOAm2ROwEmu9__p+MyoObcLPoZWxUB5XmDA@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1401021233280.16351@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1312111751180.9686@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1312111937570.23022@file01.intranet.prod.int.rdu2.redhat.com> <CAKohpo=_0i43EDSoOAm2ROwEmu9__p+MyoObcLPoZWxUB5XmDA@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Newsgroups: gmane.linux.power-management.general,gmane.linux.drivers.devicetree,gmane.linux.drivers.sensors,gmane.linux.kernel
-To: Eduardo Valentin <eduardo.valentin@ti.com>, <swarren@wwwdotorg.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
-        <linux@roeck-us.net>, <rui.zhang@intel.com>
-CC: <wni@nvidia.com>, <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
-        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv9 02/20] thermal: introduce device tree parser
-References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com> <1384285582-16933-3-git-send-email-eduardo.valentin@ti.com>
-In-Reply-To: <1384285582-16933-3-git-send-email-eduardo.valentin@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eduardo,
-
-For the most part, this binding is really well thought out. It makes a 
-lot of sense to me (as someone who has been working with thermal 
-management in Linux/Android-based mobile devices for a few years).
-
-However, I have one substantive criticism.
-
-On 11/12/2013 11:46 AM, Eduardo Valentin wrote:
-> +* Thermal zone nodes
-> +
-> +The thermal zone node is the node containing all the required info
-> +for describing a thermal zone, including its cooling device bindings. The
-> +thermal zone node must contain, apart from its own properties, one sub-node
-> +containing trip nodes and one sub-node containing all the zone cooling maps.
-> +
-> +Required properties:
-...
-> +- thermal-sensors:	A list of thermal sensor phandles and sensor specifier
-> +  Type: list of 	used while monitoring the thermal zone.
-> +  phandles + sensor
-> +  specifier
-...
-> +Optional property:
-> +- coefficients:		An array of integers (one signed cell) containing
-> +  Type: array		coefficients to compose a linear relation between
-> +  Elem size: one cell	the sensors listed in the thermal-sensors property.
-> +  Elem type: signed	Coefficients defaults to 1, in case this property
-> +			is not specified. A simple linear polynomial is used:
-> +			Z = c0 * x0 + c1 + x1 + ... + c(n-1) * x(n-1) + cn.
-> +
-> +			The coefficients are ordered and they match with sensors
-> +			by means of sensor ID. Additional coefficients are
-> +			interpreted as constant offset.
 
 
-"coefficients" is a problematic way of describing the relationship 
-between temperatures at various sensors and temperature at some other 
-location. It would make sense if heat flowed infinitely quickly. 
-However, in practice thermal capacitance means that we need to take into 
-account the _history_ of temperature at sensors in order to predict heat 
-coupled into a distant point.
+On Tue, 17 Dec 2013, Viresh Kumar wrote:
 
-For example, assuming that handset enclosure starts at ~25C, the CPU 
-could burst to 100C for many minutes before the handset enclosure 
-reaches ~40C. However, at steady-state, the CPU might only be able to 
-sustain 65C without pushing the enclosure above 40C.
+> On 12 December 2013 06:08, Mikulas Patocka <mpatocka@redhat.com> wrote:
+> > During frequency transition the processor is in "EPM Stop Grant" state.
+> > The documentation says that the processor doesn't respond to inquiry
+> > requests in this state. Consequently, coherency of processor caches and
+> > bus master devices is not maintained, causing the system instability.
+> >
+> > This patch flushes the cache during frequency transition. It fixes the
+> > instability.
+> 
+> I don't have much idea of these systems but wouldn't this affect performance
+> badly?
 
-I wouldn't be complaining except that you're proposing this as a DT 
-definition. In this case, the binding you've proposed is poor 
-abstraction of the hardware.
+Flushing the cache and changing frequency takes approximatelly 500us. The 
+patch increases policy->cpuinfo.transition_latency to that value.
 
-thanks,
-Matt Longnecker
+I suppose that the governors should be smart enough to not do frequency 
+transitions so often so that majority of time is spent doing the 
+transition.
 
-p.s. I apologize for chiming in without having read the entire history 
-of the patch set. Engineers on my team will be trying this out for Tegra 
-within the next few weeks.
+Mikulas
