@@ -1,53 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529AbaABU5x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 15:57:53 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44990 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751943AbaABU5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 15:57:52 -0500
-Message-ID: <52C5D28F.6030008@zytor.com>
-Date: Thu, 02 Jan 2014 12:56:47 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>, Torsten Duwe <duwe@lst.de>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <greg@kroah.com>,
-        LKML <linux-kernel@vger.kernel.org>, kexec@lists.infradead.org,
-        Peter Jones <pjones@redhat.com>
-Subject: Re: [PATCH 4/6] kexec: A new system call, kexec_file_load, for in
- kernel kexec
-References: <20131121191907.GA26366@srcf.ucam.org> <20131122185706.GK4046@redhat.com> <87vbzju6ql.fsf@xmission.com> <20131125163920.GC23094@redhat.com> <87fvqj2vxz.fsf@xmission.com> <20131126142759.GA5473@redhat.com> <20131219125439.GA6379@lst.de> <20131220141917.GB27063@redhat.com> <87a9fvqfs4.fsf@xmission.com> <CAGXu5jKJ88J-++nvkPVvghkXbN+_mB=T1siSDF7yoXQ-d-ONxg@mail.gmail.com> <20140102203912.GB22822@redhat.com>
-In-Reply-To: <20140102203912.GB22822@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752691AbaABU6f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 15:58:35 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:55348 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751788AbaABU6e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 15:58:34 -0500
+Date: Thu, 2 Jan 2014 15:58:27 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 15/17] tracing/uprobes: Add support for full argument
+ access methods
+Message-ID: <20140102155827.21b552e0@gandalf.local.home>
+In-Reply-To: <1387168336-13213-16-git-send-email-namhyung@kernel.org>
+References: <1387168336-13213-1-git-send-email-namhyung@kernel.org>
+	<1387168336-13213-16-git-send-email-namhyung@kernel.org>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2014 12:39 PM, Vivek Goyal wrote:
-> 
-> If secureboot is enabled, it enforces module signature verification. I 
-> think similar will happen for kexec too. How would kernel know that on
-> a secureboot platform fd original verification will happen and it is
-> sufficient.
-> 
-> I personally want to support bzImage as well (apart from ELF) because
-> distributions has been shipping bzImage for a long time and I don't
-> want to enforce a change there because of secureboot. It is not necessary.
-> Right now I am thinking more about storing detached bzImage signatures
-> and passing those signatures to kexec system call.
-> 
+On Mon, 16 Dec 2013 13:32:14 +0900
+Namhyung Kim <namhyung@kernel.org> wrote:
 
-Since the secureboot scenario probably means people will be signing
-those kernels, and those kernels are going to be EFI images, that in
-order to have "one kernel, one signature" there will be a desire to
-support signed PE images.  Yes, PE is ugly but it shouldn't be too bad.
- However, it is probably one of those things that can be dealt with one
-bit at a time.
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> Enable to fetch other types of argument for the uprobes.  IOW, we can
+> access stack, memory, deref, bitfield and retval from uprobes now.
+> 
+> The format for the argument types are same as kprobes (but @SYMBOL
+> type is not supported for uprobes), i.e:
+> 
+>   @ADDR   : Fetch memory at ADDR
+>   $stackN : Fetch Nth entry of stack (N >= 0)
+>   $stack  : Fetch stack address
+>   $retval : Fetch return value
+>   +|-offs(FETCHARG) : Fetch memory at FETCHARG +|- offs address
+> 
+> Note that the retval only can be used with uretprobes.
+> 
+> Original-patch-by: Hyeoncheol Lee <cheol.lee@lge.com>
 
-	-hpa
+Where was the original patch posted? And can we get Hyeoncheol's SOB for
+this?
 
+Thanks!
+
+-- Steve
+
+> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  Documentation/trace/uprobetracer.txt | 25 +++++++++++++++++++++++++
+>  kernel/trace/trace_probe.c           | 34 ++++++++++++++++++++++------------
+>  2 files changed, 47 insertions(+), 12 deletions(-)
+> 
+> diff --git a/Documentation/trace/uprobetracer.txt b/Documentation/trace/uprobetracer.txt
+> index 8f1a8b8956fc..6e5cff263e2b 100644
+> --- a/Documentation/trace/uprobetracer.txt
+> +++ b/Documentation/trace/uprobetracer.txt
+> @@ -31,6 +31,31 @@ Synopsis of uprobe_tracer
+>  
+>    FETCHARGS     : Arguments. Each probe can have up to 128 args.
+>     %REG         : Fetch register REG
+> +   @ADDR	: Fetch memory at ADDR (ADDR should be in userspace)
+> +   $stackN	: Fetch Nth entry of stack (N >= 0)
+> +   $stack	: Fetch stack address.
+> +   $retval	: Fetch return value.(*)
+> +   +|-offs(FETCHARG) : Fetch memory at FETCHARG +|- offs address.(**)
+> +   NAME=FETCHARG     : Set NAME as the argument name of FETCHARG.
+> +   FETCHARG:TYPE     : Set TYPE as the type of FETCHARG. Currently, basic types
+> +		       (u8/u16/u32/u64/s8/s16/s32/s64), "string" and bitfield
+> +		       are supported.
+> +
+> +  (*) only for return probe.
+> +  (**) this is useful for fetching a field of data structures.
+> +
+> +Types
+> +-----
+> +Several types are supported for fetch-args. Uprobe tracer will access memory
+> +by given type. Prefix 's' and 'u' means those types are signed and unsigned
+> +respectively. Traced arguments are shown in decimal (signed) or hex (unsigned).
+> +String type is a special type, which fetches a "null-terminated" string from
+> +user space.
+> +Bitfield is another special type, which takes 3 parameters, bit-width, bit-
+> +offset, and container-size (usually 32). The syntax is;
+> +
+> + b<bit-width>@<bit-offset>/<container-size>
+> +
+>  
+>  Event Profiling
+>  ---------------
+> diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+> index 8f7a2b6d389d..a130d612e705 100644
+> --- a/kernel/trace/trace_probe.c
+> +++ b/kernel/trace/trace_probe.c
+> @@ -255,12 +255,18 @@ fail:
+>  }
+>  
+>  /* Special function : only accept unsigned long */
+> -static __kprobes void fetch_stack_address(struct pt_regs *regs,
+> -					void *dummy, void *dest)
+> +static __kprobes void fetch_kernel_stack_address(struct pt_regs *regs,
+> +						 void *dummy, void *dest)
+>  {
+>  	*(unsigned long *)dest = kernel_stack_pointer(regs);
+>  }
+>  
+> +static __kprobes void fetch_user_stack_address(struct pt_regs *regs,
+> +					       void *dummy, void *dest)
+> +{
+> +	*(unsigned long *)dest = user_stack_pointer(regs);
+> +}
+> +
+>  static fetch_func_t get_fetch_size_function(const struct fetch_type *type,
+>  					    fetch_func_t orig_fn,
+>  					    const struct fetch_type *ftbl)
+> @@ -305,7 +311,8 @@ int traceprobe_split_symbol_offset(char *symbol, unsigned long *offset)
+>  #define PARAM_MAX_STACK (THREAD_SIZE / sizeof(unsigned long))
+>  
+>  static int parse_probe_vars(char *arg, const struct fetch_type *t,
+> -			    struct fetch_param *f, bool is_return)
+> +			    struct fetch_param *f, bool is_return,
+> +			    bool is_kprobe)
+>  {
+>  	int ret = 0;
+>  	unsigned long param;
+> @@ -317,13 +324,16 @@ static int parse_probe_vars(char *arg, const struct fetch_type *t,
+>  			ret = -EINVAL;
+>  	} else if (strncmp(arg, "stack", 5) == 0) {
+>  		if (arg[5] == '\0') {
+> -			if (strcmp(t->name, DEFAULT_FETCH_TYPE_STR) == 0)
+> -				f->fn = fetch_stack_address;
+> +			if (strcmp(t->name, DEFAULT_FETCH_TYPE_STR))
+> +				return -EINVAL;
+> +
+> +			if (is_kprobe)
+> +				f->fn = fetch_kernel_stack_address;
+>  			else
+> -				ret = -EINVAL;
+> +				f->fn = fetch_user_stack_address;
+>  		} else if (isdigit(arg[5])) {
+>  			ret = kstrtoul(arg + 5, 10, &param);
+> -			if (ret || param > PARAM_MAX_STACK)
+> +			if (ret || (is_kprobe && param > PARAM_MAX_STACK))
+>  				ret = -EINVAL;
+>  			else {
+>  				f->fn = t->fetch[FETCH_MTD_stack];
+> @@ -350,13 +360,9 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+>  	ftbl = is_kprobe ? kprobes_fetch_type_table : uprobes_fetch_type_table;
+>  	BUG_ON(ftbl == NULL);
+>  
+> -	/* Until uprobe_events supports only reg arguments */
+> -	if (!is_kprobe && arg[0] != '%')
+> -		return -EINVAL;
+> -
+>  	switch (arg[0]) {
+>  	case '$':
+> -		ret = parse_probe_vars(arg + 1, t, f, is_return);
+> +		ret = parse_probe_vars(arg + 1, t, f, is_return, is_kprobe);
+>  		break;
+>  
+>  	case '%':	/* named register */
+> @@ -377,6 +383,10 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+>  			f->fn = t->fetch[FETCH_MTD_memory];
+>  			f->data = (void *)param;
+>  		} else {
+> +			/* uprobes don't support symbols */
+> +			if (!is_kprobe)
+> +				return -EINVAL;
+> +
+>  			ret = traceprobe_split_symbol_offset(arg + 1, &offset);
+>  			if (ret)
+>  				break;
 
