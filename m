@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750853AbaABCQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jan 2014 21:16:56 -0500
-Received: from [65.55.88.15] ([65.55.88.15]:4289 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1750732AbaABCQy (ORCPT
+	id S1751055AbaABCY7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jan 2014 21:24:59 -0500
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:55799 "EHLO
+	homiemail-a82.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750763AbaABCY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 21:16:54 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI936eI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Thu, 2 Jan 2014 10:16:03 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Zhang Rui <rui.zhang@intel.com>
-CC: Anson Huang <b20788@freescale.com>, <eduardo.valentin@ti.com>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] thermal: imx: correct suspend/resume flow
-Message-ID: <20140102021601.GA15104@S2101-09.ap.freescale.net>
-References: <1387896204-31754-1-git-send-email-b20788@freescale.com>
- <1388628111.3739.68.camel@rzhang1-mobl4>
+	Wed, 1 Jan 2014 21:24:58 -0500
+X-Greylist: delayed 40401 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Jan 2014 21:24:58 EST
+Message-ID: <52C4CDF8.5000508@shealevy.com>
+Date: Wed, 01 Jan 2014 21:24:56 -0500
+From: Shea Levy <shea@shealevy.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131228 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1388628111.3739.68.camel@rzhang1-mobl4>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+To: Austin S Hemmelgarn <ahferroin7@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Build and Source Tree Requirements for Out-of-tree Modules
+References: <52C43027.7010702@shealevy.com> <52C474CB.8000300@gmail.com>
+In-Reply-To: <52C474CB.8000300@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 02, 2014 at 10:01:51AM +0800, Zhang Rui wrote:
-> On Tue, 2013-12-24 at 09:43 -0500, Anson Huang wrote:
-> > Fixes regression introduced by:
-> > 
-> > commit 37713a1e8e4c1a1067ad4c99296f78d3c82ed9c4
-> > Author: Philipp Zabel <p.zabel@pengutronix.de>
-> > Date:   Thu Aug 1 18:33:12 2013 +0200
-> > 
-> >     thermal: imx: implement thermal alarm interrupt handling
-> > 
-> > The commit 37713a1e8e4 makes imx thermal sensor always powered up as alarm
-> > function is enabled, but the suspend callback of imx thermal returns
-> > success only if thermal sensor is powered down, so it will always returns
-> > fail hence break system's suspend, this patch disables imx thermal sensor
-> > before suspend and re-enable it after resume.
-> > 
-> > Signed-off-by: Anson Huang <b20788@freescale.com>
-> 
-> applied. BTW, this should also be a stable material for 3.12, right?
+Hi,
 
-Right.  That would be great.  Thanks.
+On 01/01/2014 03:04 PM, Austin S Hemmelgarn wrote:
+> On 01/01/2014 10:11 AM, Shea Levy wrote:
+>> Hi all,
+>>
+>> I am a package maintainer for the kernel for the NixOS
+>> distribution. We support users building out-of-tree modules and
+>> other packages that might depend on the kernel source or build
+>> trees, but make modules_install copies the entire source and build
+>> trees (we build with $(O) set) to $(INSTALL_PATH), and those are
+>> some big paths to keep around. Is there any documentation on which
+>> of those files should actually be needed by any out-of-tree tools?
+>> For example I'm guessing the intermediate object files in the build
+>> tree or the .c files in the source tree are not necessary, but it
+>> would be nice if there were a definitive list of what could be
+>> removed to save space.
+> Running 'make modules_prepare' in a clean source tree should set up
+> the sources with everything needed for out of tree modules, it largely
+> amounts to the .config file, a few scripts, and a couple of specific
+> other files.
+>
+Thanks so much! It looks like this can replace the build tree, so now 
+all I need to figure out is how much of the source tree I can get rid 
+of. The Makefile in the modules_prepare directory just basically 
+re-calls make with -C /path/to/source/tree, so I need at least the 
+Makefile...
 
-Shawn
-
+~Shea Levy
