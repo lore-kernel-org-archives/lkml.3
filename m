@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751386AbaABJSU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 04:18:20 -0500
-Received: from hofr.at ([212.69.189.236]:56321 "EHLO mail.hofr.at"
+	id S1751476AbaABJSp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 04:18:45 -0500
+Received: from hofr.at ([212.69.189.236]:56337 "EHLO mail.hofr.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750743AbaABJSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 04:18:18 -0500
-Date: Thu, 2 Jan 2014 10:18:15 +0100
+	id S1751114AbaABJSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 04:18:43 -0500
+Date: Thu, 2 Jan 2014 10:18:42 +0100
 From: Nicholas Mc Guire <der.herr@hofr.at>
 To: linux-rt-users@vger.kernel.org
 Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
@@ -14,8 +14,8 @@ Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Thomas Gleixner <tglx@linutronix.de>,
         Steven Rostedt <rostedt@goodmis.org>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH RT 0/2] migrate_disable pushdown in read/write_*lock*
-Message-ID: <20140102091815.GA1757@opentech.at>
+Subject: [PATCH RT 1/2] write_lock migrate_disable pushdown to rt_write_lock
+Message-ID: <20140102091842.GB1757@opentech.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,96 +24,156 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi !
 
-Background to the migration_disable pushdown in read_*lock* and write_*lock*
+pushdown of migrate_disable/enable from write_*lock* to the rt_write_*lock* 
+api level
 
-locks and managing migration:
+general mapping of write_*lock* to mutexes:
+
+write_*lock*
+  `-> rt_write_*lock*
+          `-> __spin_lock (the sleeping __spin_lock)
+                 `-> rt_mutex
+
+write_*lock*s are non-recursive so we have two lock chains to consider
+ - write_trylock*/write_unlock
+ - write_lock*/wirte_unlock
+for both paths the migration_disable/enable must be balanced.
+
+
+write_trylock* mapping:
+
+write_trylock_irqsave
+                `-> rt_write_trylock_irqsave 
+write_trylock             \
+          `-------->  rt_write_trylock 
+                       ret = rt_mutex_trylock
+                              rt_mutex_fasttrylock
+                               rt_mutex_cmpxchg
+                       if (ret) 
+                            migrate_disable 
+
+
+write_lock* mapping:
+
+                  write_lock_irqsave
+                                `-> rt_write_lock_irqsave
+write_lock_irq -> write_lock ----.     \
+                  write_lock_bh -+      \
+                                 `-> rt_write_lock
+                                      __rt_spin_lock()
+                                       rt_spin_lock_fastlock()
+                                        rt_mutex_cmpxchg()
+                                     migrate_disable()
+                     
+write_unlock* mapping:
+
+                    write_unlock_irqrestore.
+                    write_unlock_bh -------+
+write_unlock_irq -> write_unlock ----------+
+                                           `-> rt_write_unlock()
+                                                __rt_spin_unlock()
+                                                 rt_spin_lock_fastunlock()
+                                                  rt_mutex_cmpxchg()
+                                               migrate_enable()
+
+So calls to migrate_disable/enable() are better placed at the rt_write_* 
+level of lock/trylock/unlock as all of the write_*lock* API has this as a 
+common path.
+
+This approach to write_*_bh also eliminates the concerns raised with 
+regards to api inbalances (write_lock_bh -> write_unlock+local_bh_enable)
+
+this is on top of 3.12.6-rt9 with
+timers-do-not-raise-softirq-unconditionally.patch removed
+
+No change of functional behavior
+
+Tested-by: Carsten Emde <C.Emde@osadl.org>
+Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+---
+ include/linux/rwlock_rt.h |    6 ------
+ kernel/rt.c               |    4 ++--
+ 2 files changed, 2 insertions(+), 8 deletions(-)
+
+diff --git a/include/linux/rwlock_rt.h b/include/linux/rwlock_rt.h
+index 853ee36..a276fae 100644
+--- a/include/linux/rwlock_rt.h
++++ b/include/linux/rwlock_rt.h
+@@ -40,7 +40,6 @@ extern void __rt_rwlock_init(rwlock_t *rwlock, char *name, struct lock_class_key
+ #define write_lock_irqsave(lock, flags)			\
+ 	do {						\
+ 		typecheck(unsigned long, flags);	\
+-		migrate_disable();			\
+ 		flags = rt_write_lock_irqsave(lock);	\
+ 	} while (0)
  
-  As long as access to an object is globally visible in a system we have pure 
- concurrency issues to handle. With growing physical system sizes and the 
- distributed nature of resources, problem partitioning becomes a necessity 
- to cope with complexity. Constraining the visibility of data objects to a 
- subset of computing resources on the other hand is not related to concurrent
- access - actually one can view topologically constraint objects like per_cpu
- as minimizing concurrency issues as the probability of local contention is 
- simply smaller than of global contention. Migration with held locks on 
- globally referenced objects is perfectly fine so in this sense it also 
- makes little sense for concurrency management primitives in general 
- to disable migration.
-
-  Currently though the locks do not differenciate between topologically
- constraint access since migrate_disable/enable is still RT specific even 
- though non-RT would also benefit by reduced contention. To make the 
- locks that become preemptible in -rt safe for possible use with per_cpu
- objects they must ensure referencial consistency during preemption and 
- therefor all of the preemptible rt locks must migrate_disable. The question
- is where must/can the migrate_disable be placed ?
-
-  The problem of locking and migration is actually orthogonal and needs 
- independent treatment - and maybe more important - independent consideration
- during design of code. 
-
-  To show in what way they are orthogonal lets consider a concurrent access
- to a localized data object:
-
-  1 case)
-
-                access
-       |     |  per_cpu  |    |
-     lock   pin        unpin unlock
-
-  would be safe - the properties required are
-   * references are valid (by pinning)
-   * access is consistent/exclusive (by locking)
-  a concurrent access is blocked by the lock and once any thread acquired the 
-  lock it would enter the migrate disable section exclusively - so both
-  properties hold.
-
- 2 case)
-
-                access 
-       |     |  per_cpu  |    |
-      pin  lock       unlock unpin
-   
-  would also be safe - 
-   * access is consistent/exclusive 
-   * references are valid
-  as the task is pinned during the exclusive (lock protected) access the 
-  data is guaranteed to be consistent.
-  3 case)
-             
-               access 
-      |     |  per_cpu  |    |
-     lock  pin       unlock unpin
-
-  still safe ! though strange. access between pin and unlock provides both 
-  required properties. A concurrent access would pin the task and block in the 
-  lock, after the first task releases the lock the unblocked task would get
-  consistent access until it unpins which is longer than the time the lock
-  is held - so again consistent and exclusive. 
-  
-  4 case)  
-             
-               access 
-      |     |  per_cpu  |    |
-     pin  lock        unpin unlock
-
-  safe (and strange) as well !  
+@@ -61,14 +60,12 @@ extern void __rt_rwlock_init(rwlock_t *rwlock, char *name, struct lock_class_key
  
-  so locking and migration protection are orthogonal as claimed.
-  That said - it may not make sense to allow every combination for 
-  readability - just like it is convention to unlock locks in reverse 
-  order from taking them even though technically unlocking may happen in any 
-  (random) order without jeopardizing the lock correctness.
+ #define write_lock(lock)				\
+ 	do {						\
+-		migrate_disable();			\
+ 		rt_write_lock(lock);			\
+ 	} while (0)
+ 
+ #define write_lock_bh(lock)				\
+ 	do {						\
+ 		local_bh_disable();			\
+-		migrate_disable();			\
+ 		rt_write_lock(lock);			\
+ 	} while (0)
+ 
+@@ -92,13 +89,11 @@ extern void __rt_rwlock_init(rwlock_t *rwlock, char *name, struct lock_class_key
+ #define write_unlock(lock)				\
+ 	do {						\
+ 		rt_write_unlock(lock);			\
+-		migrate_enable();			\
+ 	} while (0)
+ 
+ #define write_unlock_bh(lock)				\
+ 	do {						\
+ 		rt_write_unlock(lock);			\
+-		migrate_enable();			\
+ 		local_bh_enable();			\
+ 	} while (0)
+ 
+@@ -117,7 +112,6 @@ extern void __rt_rwlock_init(rwlock_t *rwlock, char *name, struct lock_class_key
+ 		typecheck(unsigned long, flags);	\
+ 		(void) flags;				\
+ 		rt_write_unlock(lock);			\
+-		migrate_enable();			\
+ 	} while (0)
+ 
+ #endif
+diff --git a/kernel/rt.c b/kernel/rt.c
+index 29771e2..c43c923 100644
+--- a/kernel/rt.c
++++ b/kernel/rt.c
+@@ -197,8 +197,6 @@ int __lockfunc rt_write_trylock_irqsave(rwlock_t *rwlock, unsigned long *flags)
+ 
+ 	*flags = 0;
+ 	ret = rt_write_trylock(rwlock);
+-	if (ret)
+-		migrate_disable();
+ 	return ret;
+ }
+ EXPORT_SYMBOL(rt_write_trylock_irqsave);
+@@ -234,6 +232,7 @@ EXPORT_SYMBOL(rt_read_trylock);
+ void __lockfunc rt_write_lock(rwlock_t *rwlock)
+ {
+ 	rwlock_acquire(&rwlock->dep_map, 0, 0, _RET_IP_);
++	migrate_disable();
+ 	__rt_spin_lock(&rwlock->lock);
+ }
+ EXPORT_SYMBOL(rt_write_lock);
+@@ -259,6 +258,7 @@ void __lockfunc rt_write_unlock(rwlock_t *rwlock)
+ 	/* NOTE: we always pass in '1' for nested, for simplicity */
+ 	rwlock_release(&rwlock->dep_map, 1, _RET_IP_);
+ 	__rt_spin_unlock(&rwlock->lock);
++	migrate_enable();
+ }
+ EXPORT_SYMBOL(rt_write_unlock);
+ 
+-- 
+1.7.2.5
 
- Further there were concerns that there might be some situations where the
-migrate_disable in the upper API layers would be necessary to ensure 
-correctness of the call chain. My assumption here is that this only could
-be the case if the call tree of the read/write_*lock* would be accessing some 
-per_cpu object after the original point of migrate_disable and the pushed down
-point of migrate_disable. As the call path analysis showed there are no
-per_cpu objects in use between the old and new location so the pushdown
-should be as safe as it was before.
-
-Link: http://www.spinics.net/lists/linux-rt-users/msg10897.html
