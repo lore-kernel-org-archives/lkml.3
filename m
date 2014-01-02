@@ -1,69 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752018AbaABMJq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 07:09:46 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:49981 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751803AbaABMIh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751864AbaABMIh (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 2 Jan 2014 07:08:37 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:53010 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751803AbaABMIa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 07:08:30 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Chas Williams <chas@cmf.nrl.navy.mil>,
-        linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org
-Subject: [PATCH, RFC 18/30] atm: firestream: fix interruptible_sleep_on race
-Date: Thu,  2 Jan 2014 13:07:42 +0100
-Message-Id: <1388664474-1710039-19-git-send-email-arnd@arndb.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Jesper Nilsson <jesper.nilsson@axis.com>,
+        Mikael Starvik <starvik@axis.com>, linux-cris-kernel@axis.com
+Subject: [PATCH, RFC 13/30] cris: sync_serial: remove interruptible_sleep_on
+Date: Thu,  2 Jan 2014 13:07:37 +0100
+Message-Id: <1388664474-1710039-14-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388664474-1710039-1-git-send-email-arnd@arndb.de>
 References: <1388664474-1710039-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:osBHNfXL/PXZlWTrOynGOXMP10GVlAR32jD38t/CXfD
- rfh1TUHvZM6nSkvCPa+sUHSaJmz1xo9ZLLKMjYuWjFdfKbVbMg
- c3GOsrlxZc4HQsgHaDPT+lqTZCH87+hCUDWvEMofN5qIv2TuTn
- qsckG2v7E7PMAGAF4R5qWSLE//19WruULUKNmyPnTMuSS+mnTG
- KYaTqdM4JMuY6059FXrciTFSysn5cdTHv8DrdVwacNztCZgYdZ
- e+p/Cch6Qs3oYQ2nqV4rOLzIurBHCVzsigpmyBFkuwrgv+nZwo
- GZ358mp0GKiHTDCMNvM0mLV6YYDmEznMD28mkPAYKuDMfEZzrC
- v1y+zTiydsxSp5qgb1NAFSFP0VL6YNilx0D2QzVoO
+X-Provags-ID: V02:K0:AtAyhA7wInDN2im4+Tm4aMWrQLjh1pNxVM0Mq06PvO8
+ QoPt0131g7VAjEZiyRlUXtFTjmINn6SR79ohicL3/Mw1+TtBOY
+ UxY8A+W8l8JajyqSzR8pYfyvUKTgSreIEWMIueJ/a9wRHF+YLF
+ WW19uekD1yYYSAtD88EHCojH3j/0fq31emJFGIg+8TVgzUTImG
+ cnl2DA8Q1NvJS17pFsSlH7yG3fwDTbiCu9d59HbELVePHFey1Q
+ 9roaWyl8/EvHvtVMPOsF8aAKp/CKMjX0tRYcCOi/pqWGMxp4jy
+ vmIU1AVGGCq445McIht/uX7OHfcBe8eCoBSR501knCd2r05ZCO
+ XrncxoD7ISM2B4fEuXB2XpYRVPdx0fmcg4IYIsZjZ
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-interruptible_sleep_on is racy and going away. This replaces the one use
-in the firestream driver with the appropriate wait_event_interruptible
-variant.
+sleep_on and its variants are racy and going away. This replaces
+the two uses in the cris sync_serial drivers with the equivalent
+but race-free wait_event_interruptible.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Chas Williams <chas@cmf.nrl.navy.mil>
-Cc: linux-atm-general@lists.sourceforge.net
-Cc: netdev@vger.kernel.org
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: Mikael Starvik <starvik@axis.com>
+Cc: linux-cris-kernel@axis.com
 ---
- drivers/atm/firestream.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/cris/arch-v10/drivers/sync_serial.c | 4 +++-
+ arch/cris/arch-v32/drivers/sync_serial.c | 4 +++-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/atm/firestream.c b/drivers/atm/firestream.c
-index b41c948..f43e1c1 100644
---- a/drivers/atm/firestream.c
-+++ b/drivers/atm/firestream.c
-@@ -736,8 +736,8 @@ static void process_txdone_queue (struct fs_dev *dev, struct queue *q)
-       
- 			skb = td->skb;
- 			if (skb == FS_VCC (ATM_SKB(skb)->vcc)->last_skb) {
--				wake_up_interruptible (& FS_VCC (ATM_SKB(skb)->vcc)->close_wait);
- 				FS_VCC (ATM_SKB(skb)->vcc)->last_skb = NULL;
-+				wake_up_interruptible (& FS_VCC (ATM_SKB(skb)->vcc)->close_wait);
- 			}
- 			td->dev->ntxpckts--;
+diff --git a/arch/cris/arch-v10/drivers/sync_serial.c b/arch/cris/arch-v10/drivers/sync_serial.c
+index a1c498d..485f2bb 100644
+--- a/arch/cris/arch-v10/drivers/sync_serial.c
++++ b/arch/cris/arch-v10/drivers/sync_serial.c
+@@ -22,6 +22,7 @@
+ #include <linux/init.h>
+ #include <linux/mutex.h>
+ #include <linux/timer.h>
++#include <linux/wait.h>
+ #include <asm/irq.h>
+ #include <asm/dma.h>
+ #include <asm/io.h>
+@@ -1136,7 +1137,8 @@ static ssize_t sync_serial_read(struct file *file, char *buf,
+ 		if (file->f_flags & O_NONBLOCK)
+ 			return -EAGAIN;
  
-@@ -1123,7 +1123,7 @@ static void fs_close(struct atm_vcc *atm_vcc)
- 		   this sleep_on, we'll lose any reference to these packets. Memory leak!
- 		   On the other hand, it's awfully convenient that we can abort a "close" that
- 		   is taking too long. Maybe just use non-interruptible sleep on? -- REW */
--		interruptible_sleep_on (& vcc->close_wait);
-+		wait_event_interruptible(vcc->close_wait, !vcc->last_skb);
- 	}
+-		interruptible_sleep_on(&port->in_wait_q);
++		wait_event_interruptible(port->in_wait_q,
++					 !(start == end && !port->full));
+ 		if (signal_pending(current))
+ 			return -EINTR;
  
- 	txtp = &atm_vcc->qos.txtp;
+diff --git a/arch/cris/arch-v32/drivers/sync_serial.c b/arch/cris/arch-v32/drivers/sync_serial.c
+index 219f704..bbb806b 100644
+--- a/arch/cris/arch-v32/drivers/sync_serial.c
++++ b/arch/cris/arch-v32/drivers/sync_serial.c
+@@ -19,6 +19,7 @@
+ #include <linux/init.h>
+ #include <linux/timer.h>
+ #include <linux/spinlock.h>
++#include <linux/wait.h>
+ 
+ #include <asm/io.h>
+ #include <dma.h>
+@@ -1144,7 +1145,8 @@ static ssize_t sync_serial_read(struct file * file, char * buf,
+ 		if (file->f_flags & O_NONBLOCK)
+ 			return -EAGAIN;
+ 
+-		interruptible_sleep_on(&port->in_wait_q);
++		wait_event_interruptible(port->in_wait_q,
++					 !(start == end && !port->full));
+ 		if (signal_pending(current))
+ 			return -EINTR;
+ 
 -- 
 1.8.3.2
 
