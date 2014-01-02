@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470AbaABWZo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 17:25:44 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:44897 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751452AbaABWXh (ORCPT
+	id S1753514AbaABW0M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 17:26:12 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:60303 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752250AbaABWXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 17:23:37 -0500
+	Thu, 2 Jan 2014 17:23:35 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, Sasha Levin <sasha.levin@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 4/9] tick/timekeeping: Call update_wall_time outside the jiffies lock
-Date: Thu,  2 Jan 2014 14:23:22 -0800
-Message-Id: <1388701407-5029-4-git-send-email-john.stultz@linaro.org>
+        Richard Cochran <richardcochran@gmail.com>, <xen-devel@lists.xen.org>,
+        stable <stable@vger.kernel.org>
+Subject: [PATCH 2/9] timekeeping: Fix potential lost pv notification of time change
+Date: Thu,  2 Jan 2014 14:23:20 -0800
+Message-Id: <1388701407-5029-2-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388701407-5029-1-git-send-email-john.stultz@linaro.org>
 References: <52C5E6A0.7010507@linaro.org>
@@ -25,112 +27,121 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the xtime lock was split into the timekeeping lock and
-the jiffies lock, we no longer need to call update_wall_time()
-while holding the jiffies lock.
+In 780427f0e11 (Indicate that clock was set in the pvclock
+gtod notifier), logic was added to pass a CLOCK_WAS_SET
+notification to the pvclock notifier chain.
 
-Thus, this patch splits update_wall_time() out from do_timer().
+While that patch added a action flag returned from
+accumulate_nsecs_to_secs(), it only uses the returned value
+in one location, and not in the logarithmic accumulation.
 
-This allows us to get away from calling clock_was_set_delayed()
-in update_wall_time() and instead use the standard clock_was_set()
-call that previously would deadlock, as it causes the jiffies lock
-to be acquired.
+This means if a leap second triggered during the logarithmic
+accumulation (which is most likely where it would happen),
+the notification that the clock was set would not make it to
+the pv notifiers.
+
+This patch extends the logarithmic_accumulation pass down
+that action flag so proper notification will occur.
+
+This patch also changes the varialbe action -> clock_set
+per Ingo's suggestion.
 
 Cc: Sasha Levin <sasha.levin@oracle.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: David Vrabel <david.vrabel@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Prarit Bhargava <prarit@redhat.com>
 Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: <xen-devel@lists.xen.org>
+Cc: stable <stable@vger.kernel.org> #3.11+
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- kernel/time/tick-common.c   |  1 +
- kernel/time/tick-internal.h |  1 +
- kernel/time/tick-sched.c    |  1 +
- kernel/time/timekeeping.c   | 19 ++++---------------
- 4 files changed, 7 insertions(+), 15 deletions(-)
+ kernel/time/timekeeping.c | 20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
 
-diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-index 64522ec..91c5f27 100644
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -70,6 +70,7 @@ static void tick_periodic(int cpu)
- 
- 		do_timer(1);
- 		write_sequnlock(&jiffies_lock);
-+		update_wall_time();
- 	}
- 
- 	update_process_times(user_mode(get_irq_regs()));
-diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
-index e2bced5..8329669 100644
---- a/kernel/time/tick-internal.h
-+++ b/kernel/time/tick-internal.h
-@@ -155,3 +155,4 @@ static inline int tick_device_is_functional(struct clock_event_device *dev)
- #endif
- 
- extern void do_timer(unsigned long ticks);
-+extern void update_wall_time(void);
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 2afd43f..c58b03d 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -86,6 +86,7 @@ static void tick_do_update_jiffies64(ktime_t now)
- 		tick_next_period = ktime_add(last_jiffies_update, tick_period);
- 	}
- 	write_sequnlock(&jiffies_lock);
-+	update_wall_time();
- }
- 
- /*
 diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index d62682b..44b7e6b 100644
+index 7488f0b..051855f 100644
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -1360,7 +1360,7 @@ static inline void old_vsyscall_fixup(struct timekeeper *tk)
-  * update_wall_time - Uses the current clocksource to increment the wall time
-  *
-  */
--static void update_wall_time(void)
-+void update_wall_time(void)
+@@ -1256,7 +1256,7 @@ out_adjust:
+ static inline unsigned int accumulate_nsecs_to_secs(struct timekeeper *tk)
  {
- 	struct clocksource *clock;
- 	struct timekeeper *real_tk = &timekeeper;
-@@ -1441,19 +1441,8 @@ static void update_wall_time(void)
- 	write_seqcount_end(&timekeeper_seq);
- out:
- 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
--	if (clock_was_set) {
--		/*
--		 * XXX -  I'd rather we just call clock_was_set(), but
--		 * since we're currently holding the jiffies lock, calling
--		 * clock_was_set would trigger an ipi which would then grab
--		 * the jiffies lock and we'd deadlock. :(
--		 * The right solution should probably be droping
--		 * the jiffies lock before calling update_wall_time
--		 * but that requires some rework of the tick sched
--		 * code.
--		 */
--		clock_was_set_delayed();
--	}
-+	if (clock_set)
-+		clock_was_set();
+ 	u64 nsecps = (u64)NSEC_PER_SEC << tk->shift;
+-	unsigned int action = 0;
++	unsigned int clock_set = 0;
+ 
+ 	while (tk->xtime_nsec >= nsecps) {
+ 		int leap;
+@@ -1279,10 +1279,10 @@ static inline unsigned int accumulate_nsecs_to_secs(struct timekeeper *tk)
+ 			__timekeeping_set_tai_offset(tk, tk->tai_offset - leap);
+ 
+ 			clock_was_set_delayed();
+-			action = TK_CLOCK_WAS_SET;
++			clock_set = TK_CLOCK_WAS_SET;
+ 		}
+ 	}
+-	return action;
++	return clock_set;
  }
  
  /**
-@@ -1598,7 +1587,6 @@ struct timespec get_monotonic_coarse(void)
- void do_timer(unsigned long ticks)
+@@ -1295,7 +1295,8 @@ static inline unsigned int accumulate_nsecs_to_secs(struct timekeeper *tk)
+  * Returns the unconsumed cycles.
+  */
+ static cycle_t logarithmic_accumulation(struct timekeeper *tk, cycle_t offset,
+-						u32 shift)
++						u32 shift,
++						unsigned int *clock_set)
  {
- 	jiffies_64 += ticks;
--	update_wall_time();
- 	calc_global_load(ticks);
- }
+ 	cycle_t interval = tk->cycle_interval << shift;
+ 	u64 raw_nsecs;
+@@ -1309,7 +1310,7 @@ static cycle_t logarithmic_accumulation(struct timekeeper *tk, cycle_t offset,
+ 	tk->cycle_last += interval;
  
-@@ -1756,4 +1744,5 @@ void xtime_update(unsigned long ticks)
- 	write_seqlock(&jiffies_lock);
- 	do_timer(ticks);
- 	write_sequnlock(&jiffies_lock);
-+	update_wall_time();
- }
+ 	tk->xtime_nsec += tk->xtime_interval << shift;
+-	accumulate_nsecs_to_secs(tk);
++	*clock_set |= accumulate_nsecs_to_secs(tk);
+ 
+ 	/* Accumulate raw time */
+ 	raw_nsecs = (u64)tk->raw_interval << shift;
+@@ -1367,7 +1368,7 @@ static void update_wall_time(void)
+ 	struct timekeeper *tk = &shadow_timekeeper;
+ 	cycle_t offset;
+ 	int shift = 0, maxshift;
+-	unsigned int action;
++	unsigned int clock_set = 0;
+ 	unsigned long flags;
+ 
+ 	raw_spin_lock_irqsave(&timekeeper_lock, flags);
+@@ -1402,7 +1403,8 @@ static void update_wall_time(void)
+ 	maxshift = (64 - (ilog2(ntp_tick_length())+1)) - 1;
+ 	shift = min(shift, maxshift);
+ 	while (offset >= tk->cycle_interval) {
+-		offset = logarithmic_accumulation(tk, offset, shift);
++		offset = logarithmic_accumulation(tk, offset, shift,
++							&clock_set);
+ 		if (offset < tk->cycle_interval<<shift)
+ 			shift--;
+ 	}
+@@ -1420,7 +1422,7 @@ static void update_wall_time(void)
+ 	 * Finally, make sure that after the rounding
+ 	 * xtime_nsec isn't larger than NSEC_PER_SEC
+ 	 */
+-	action = accumulate_nsecs_to_secs(tk);
++	clock_set |= accumulate_nsecs_to_secs(tk);
+ 
+ 	write_seqcount_begin(&timekeeper_seq);
+ 	/* Update clock->cycle_last with the new value */
+@@ -1436,7 +1438,7 @@ static void update_wall_time(void)
+ 	 * updating.
+ 	 */
+ 	memcpy(real_tk, tk, sizeof(*tk));
+-	timekeeping_update(real_tk, action);
++	timekeeping_update(real_tk, clock_set);
+ 	write_seqcount_end(&timekeeper_seq);
+ out:
+ 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
 -- 
 1.8.3.2
 
