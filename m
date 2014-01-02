@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750AbaABUny (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 15:43:54 -0500
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:42842 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136AbaABUnx (ORCPT
+	id S1752379AbaABUrP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 15:47:15 -0500
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:43484 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740AbaABUrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 15:43:53 -0500
+	Thu, 2 Jan 2014 15:47:14 -0500
+Date: Thu, 2 Jan 2014 21:46:40 +0100
+From: Tim Jester-Pfadt <t.jp@gmx.de>
+To: gregkh@linuxfoundation.org
+Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] Staging: rtl8188eu: Fixed coding style issues
+Message-ID: <20140102204640.GA1149@archlinux>
 MIME-Version: 1.0
-In-Reply-To: <52C5CC54.4050602@linaro.org>
-References: <m3mwjhux0e.fsf@t19.piap.pl>
-	<20131231104511.GA9688@1wt.eu>
-	<m3txdmu2ez.fsf@t19.piap.pl>
-	<20140102101455.GG10158@pengutronix.de>
-	<m3ppoatwn1.fsf@t19.piap.pl>
-	<CA+55aFyZ0EXYkHd-BhQo6K++qKJVPdGeDbFTVTs3pAPCHFUpOA@mail.gmail.com>
-	<52C5C5F6.70803@linaro.org>
-	<52C5CC54.4050602@linaro.org>
-Date: Thu, 2 Jan 2014 12:43:52 -0800
-X-Google-Sender-Auth: b0WXlHKh5cTrIUQK2PngymOYA-U
-Message-ID: <CA+55aFz2dKw5HXy7DV1Aymoscg0MW7Zz28apan8dugUeqTd1QA@mail.gmail.com>
-Subject: Re: v3.13-rc6+ regression (ARM board)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: =?UTF-8?Q?Krzysztof_Ha=C5=82asa?= <khalasa@piap.pl>,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Willy Tarreau <w@1wt.eu>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Stephen Boyd <sboyd@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 2, 2014 at 12:30 PM, John Stultz <john.stultz@linaro.org> wrote:
->
-> So something else may be at play. Even with Linus' patch I reproduced a
-> similar hang here.
->
-> Still chasing it down, but it looks like a seqlock deadlock where we're
-> calling read while holding the lock.
+Fixed indentation coding style issues on rtw_io.c
 
-Hmm. Only with lockdep, right?
+Signed-off-by: Tim Jester-Pfadt <t.jp@gmx.de>
+---
+ drivers/staging/rtl8188eu/core/rtw_io.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-Does lockdep perhaps read the scheduler clock? Afaik, we have
-lockstat_clock(), which uses local_clock(), which in turn translates
-to sched_clock_cpu(smp_processor_id())..
+diff --git a/drivers/staging/rtl8188eu/core/rtw_io.c b/drivers/staging/rtl8188eu/core/rtw_io.c
+index 10c9c65..6be6c50 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_io.c
++++ b/drivers/staging/rtl8188eu/core/rtw_io.c
+@@ -205,9 +205,9 @@ void _rtw_read_mem(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem)
+ 
+ 	_func_enter_;
+ 	if (adapter->bDriverStopped || adapter->bSurpriseRemoved) {
+-	     RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
+-		      ("rtw_read_mem:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
+-		      adapter->bDriverStopped, adapter->bSurpriseRemoved));
++		RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
++			("rtw_read_mem:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
++			adapter->bDriverStopped, adapter->bSurpriseRemoved));
+ 	     return;
+ 	}
+ 	_read_mem = pintfhdl->io_ops._read_mem;
+@@ -239,9 +239,9 @@ void _rtw_read_port(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem)
+ 	_func_enter_;
+ 
+ 	if (adapter->bDriverStopped || adapter->bSurpriseRemoved) {
+-	     RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
+-		      ("rtw_read_port:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
+-		      adapter->bDriverStopped, adapter->bSurpriseRemoved));
++		RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
++			("rtw_read_port:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
++			adapter->bDriverStopped, adapter->bSurpriseRemoved));
+ 	     return;
+ 	}
+ 
+-- 
+1.8.5.2
 
-So if that code now tries to read the scheduler clock when
-update_sched_clock() is doing a update and has done a
-write_seqcount_begin()...
-
-    Linus
