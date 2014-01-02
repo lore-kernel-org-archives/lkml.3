@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751276AbaABILF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 03:11:05 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:55352 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762AbaABILD (ORCPT
+	id S1751188AbaABIWP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 03:22:15 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:31594 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800AbaABIWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 03:11:03 -0500
+	Thu, 2 Jan 2014 03:22:13 -0500
+Message-ID: <52C52180.2030707@huawei.com>
+Date: Thu, 2 Jan 2014 16:21:20 +0800
+From: Ding Tianhong <dingtianhong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-In-Reply-To: <2681fd21a9ee014ffe77c0ec7304157be7209b6f.1388649430.git.baruch@tkos.co.il>
-References: <2681fd21a9ee014ffe77c0ec7304157be7209b6f.1388649430.git.baruch@tkos.co.il>
-Date: Thu, 2 Jan 2014 12:11:02 +0400
-Message-ID: <CAMo8BfLokJ7uBi=G=pVCK+-FwVANa2nJiE+pBnPzv2APxYUpkw@mail.gmail.com>
-Subject: Re: [Linux-Xtensa] [PATCH v2] perf: add support for the xtensa architecture
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: Baruch Siach <baruch@tkos.co.il>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: Joe Perches <joe@perches.com>, Jay Vosburgh <fubar@us.ibm.com>,
+        Veaceslav Falico <vfalico@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND net-next 1/7] bonding: use ether_addr_equal_unaligned
+ for bond addr compare
+References: <52C4BD16.5010702@huawei.com> <alpine.DEB.2.02.1401020839000.2182@localhost6.localdomain6>
+In-Reply-To: <alpine.DEB.2.02.1401020839000.2182@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.135.72.199]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 2, 2014 at 11:57 AM, Baruch Siach <baruch@tkos.co.il> wrote:
-> Signed-off-by: Baruch Siach <baruch@tkos.co.il>
-> ---
-> v2: use the "core ID" field from /proc/cpuinfo (Max Filippov)
-> ---
->  tools/perf/perf.h | 7 +++++++
->  1 file changed, 7 insertions(+)
+On 2014/1/2 15:39, Julia Lawall wrote:
+> Are the casts needed
 
-Acked-by: Max Filippov <jcmvbkbc@gmail.com>
 
-> diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-> index b079304bd53d..e441864dbe03 100644
-> --- a/tools/perf/perf.h
-> +++ b/tools/perf/perf.h
-> @@ -132,6 +132,13 @@
->  #define CPUINFO_PROC   "CPU"
->  #endif
->
-> +#ifdef __xtensa__
-> +#define mb()           asm volatile("memw" ::: "memory")
-> +#define wmb()          asm volatile("memw" ::: "memory")
-> +#define rmb()          asm volatile("" ::: "memory")
-> +#define CPUINFO_PROC   "core ID"
-> +#endif
-> +
->  #define barrier() asm volatile ("" ::: "memory")
->
->  #ifndef cpu_relax
-> --
-> 1.8.5.2
+Yes, otherwise the warming will report:
 
--- 
-Thanks.
--- Max
+/net-next/drivers/net/bonding/bond_3ad.c:427: warning: passing argument 1 of ‘ether_addr_equal_64bits’ from incompatible pointer type
+
+Regards
+Ding
+
