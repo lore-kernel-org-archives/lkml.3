@@ -1,27 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956AbaABRVd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:21:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40419 "EHLO
+	id S1754429AbaABRVs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:21:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40401 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751928AbaABRJI (ORCPT
+	with ESMTP id S1753355AbaABRJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:09:08 -0500
+	Thu, 2 Jan 2014 12:09:03 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tony Luck <tony.luck@intel.com>, Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andy Lutomirski <luto@amacapital.net>, Paul Turner <pjt@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 61/91] time: Fix 1ns/tick drift w/ GENERIC_TIME_VSYSCALL_OLD
-Date: Thu,  2 Jan 2014 09:04:36 -0800
-Message-Id: <1388682306-30859-62-git-send-email-kamal@canonical.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 77/91] ALSA: hda - Fix silent output on ASUS W7J laptop
+Date: Thu,  2 Jan 2014 09:04:52 -0800
+Message-Id: <1388682306-30859-78-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -34,66 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 4be77398ac9d948773116b6be4a3c91b3d6ea18c upstream.
+commit 6ddf0fd1c462a418a3cbb8b0653820dc48ffbd98 upstream.
 
-Since commit 1e75fa8be9f (time: Condense timekeeper.xtime
-into xtime_sec - merged in v3.6), there has been an problem
-with the error accounting in the timekeeping code, such that
-when truncating to nanoseconds, we round up to the next nsec,
-but the balancing adjustment to the ntp_error value was dropped.
+The recent kernels got regressions on ASUS W7J with ALC660 codec where
+no sound comes out.  After a long debugging session, we found out that
+setting the pin control on the unused NID 0x10 is mandatory for the
+outputs.  And, it was found out that another magic of NID 0x0f that is
+required for other ASUS laptops isn't needed on this machine.
 
-This causes 1ns per tick drift forward of the clock.
-
-In 3.7, this logic was isolated to only GENERIC_TIME_VSYSCALL_OLD
-architectures (s390, ia64, powerpc).
-
-The fix is simply to balance the accounting and to subtract the
-added nanosecond from ntp_error. This allows the internal long-term
-clock steering to keep the clock accurate.
-
-While this fix removes the regression added in 1e75fa8be9f, the
-ideal solution is to move away from GENERIC_TIME_VSYSCALL_OLD
-and use the new VSYSCALL method, which avoids entirely the
-nanosecond granular rounding, and the resulting short-term clock
-adjustment oscillation needed to keep long term accurate time.
-
-[ jstultz: Many thanks to Martin for his efforts identifying this
-  	   subtle bug, and providing the fix. ]
-
-Originally-from: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Cc: Paul Turner <pjt@google.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/1385149491-20307-1-git-send-email-john.stultz@linaro.org
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66081
+Reported-and-tested-by: Andrey Lipaev <lipaev@mail.ru>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/time/timekeeping.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index cbc6acb..16c444d 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1127,7 +1127,7 @@ static inline void old_vsyscall_fixup(struct timekeeper *tk)
- 	tk->xtime_nsec -= remainder;
- 	tk->xtime_nsec += 1ULL << tk->shift;
- 	tk->ntp_error += remainder << tk->ntp_error_shift;
--
-+	tk->ntp_error -= (1ULL << tk->shift) << tk->ntp_error_shift;
- }
- #else
- #define old_vsyscall_fixup(tk)
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 8a4764a..a67e6e2 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6578,6 +6578,7 @@ enum {
+ 	ALC861_FIXUP_AMP_VREF_0F,
+ 	ALC861_FIXUP_NO_JACK_DETECT,
+ 	ALC861_FIXUP_ASUS_A6RP,
++	ALC660_FIXUP_ASUS_W7J,
+ };
+ 
+ /* On some laptops, VREF of pin 0x0f is abused for controlling the main amp */
+@@ -6628,10 +6629,21 @@ static const struct alc_fixup alc861_fixups[] = {
+ 		.v.func = alc861_fixup_asus_amp_vref_0f,
+ 		.chained = true,
+ 		.chain_id = ALC861_FIXUP_NO_JACK_DETECT,
++	},
++	[ALC660_FIXUP_ASUS_W7J] = {
++		.type = HDA_FIXUP_VERBS,
++		.v.verbs = (const struct hda_verb[]) {
++			/* ASUS W7J needs a magic pin setup on unused NID 0x10
++			 * for enabling outputs
++			 */
++			{0x10, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x24},
++			{ }
++		},
+ 	}
+ };
+ 
+ static const struct snd_pci_quirk alc861_fixup_tbl[] = {
++	SND_PCI_QUIRK(0x1043, 0x1253, "ASUS W7J", ALC660_FIXUP_ASUS_W7J),
+ 	SND_PCI_QUIRK(0x1043, 0x1393, "ASUS A6Rp", ALC861_FIXUP_ASUS_A6RP),
+ 	SND_PCI_QUIRK_VENDOR(0x1043, "ASUS laptop", ALC861_FIXUP_AMP_VREF_0F),
+ 	SND_PCI_QUIRK(0x1462, 0x7254, "HP DX2200", ALC861_FIXUP_NO_JACK_DETECT),
 -- 
 1.8.3.2
 
