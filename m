@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751762AbaABHOO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 02:14:14 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43662 "EHLO
+	id S1751733AbaABHON (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 02:14:13 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61829 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444AbaABHNR (ORCPT
+	with ESMTP id S1751441AbaABHNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 2 Jan 2014 02:13:17 -0500
-X-AuditID: 9c930197-b7c4aae000003d84-70-52c5118cf6a4
+X-AuditID: 9c930197-b7c4aae000003d84-6c-52c5118bbaaf
 From: Minchan Kim <minchan@kernel.org>
 To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
@@ -30,9 +30,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
         Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
         Rob Clark <robdclark@gmail.com>, Jason Evans <je@fb.com>,
         Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v10 16/16] vrange: Add vmstat counter about purged page
-Date: Thu,  2 Jan 2014 16:12:24 +0900
-Message-Id: <1388646744-15608-17-git-send-email-minchan@kernel.org>
+Subject: [PATCH v10 15/16] vrange: Prevent unnecessary scanning
+Date: Thu,  2 Jan 2014 16:12:23 +0900
+Message-Id: <1388646744-15608-16-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1388646744-15608-1-git-send-email-minchan@kernel.org>
 References: <1388646744-15608-1-git-send-email-minchan@kernel.org>
@@ -41,20 +41,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds some vmstat for analysise vrange working.
+Now, we scan and discard volatile pages per vrange size but vrange
+size is virtual address so we couldn't imagine how many of rss be
+there. It could make too excessive scanning in reclaim path if
+the range is too big but doesn't have rss so that CPU burns out.
 
-[PGDISCARD|PGVSCAN]_[KSWAPD|DIRECT] means purged page/scanning
-so we could see effectiveness of vrange.
+Another problem is we always start from vrange's starting address
+everytime although many of pages are already purged in previous
+iteration so that it ends up CPU buring, too.
 
-PGDISCARD_RESCUED means how many of pages we are missing in
-core discarding logic of vrange so if it is big in no big memory
-pressure, it may have a problem in scanning logic.
-
-PGDISCARD_SAVE_RECLAIM means how many time we avoid reclaim via
-discarding volatile pages but not sure how it is exact because
-sc->nr_to_reclaim is very high if it were sc->prioirty is low(ie,
-high memory pressure) so it it hard to meet the condition.
-Maybe I would change the check via zone_watermark_ok.
+This patch keeps previous scan address in vrange's hint variable
+so that we could avoid unnecessary scanning in next round.
+Even, if we purge all of pages in the range, we could skip the
+vrange.
 
 Cc: Mel Gorman <mel@csn.ul.ie>
 Cc: Hugh Dickins <hughd@google.com>
@@ -66,106 +65,246 @@ Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- include/linux/vm_event_item.h |    6 ++++++
- mm/vmscan.c                   |    8 ++++++--
- mm/vmstat.c                   |    6 ++++++
- mm/vrange.c                   |   14 ++++++++++++++
- 4 files changed, 32 insertions(+), 2 deletions(-)
+ mm/vrange.c |  107 ++++++++++++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 91 insertions(+), 16 deletions(-)
 
-diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
-index 1855f0a22add..df0d8e9e0540 100644
---- a/include/linux/vm_event_item.h
-+++ b/include/linux/vm_event_item.h
-@@ -25,6 +25,12 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
- 		FOR_ALL_ZONES(PGALLOC),
- 		PGFREE, PGACTIVATE, PGDEACTIVATE,
- 		PGFAULT, PGMAJFAULT,
-+		PGVSCAN_KSWAPD,
-+		PGVSCAN_DIRECT,
-+		PGDISCARD_KSWAPD,
-+		PGDISCARD_DIRECT,
-+		PGDISCARD_RESCUED, /* rescued from shrink_page_list */
-+		PGDISCARD_SAVE_RECLAIM, /* how many save reclaim */
- 		FOR_ALL_ZONES(PGREFILL),
- 		FOR_ALL_ZONES(PGSTEAL_KSWAPD),
- 		FOR_ALL_ZONES(PGSTEAL_DIRECT),
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index d8f45af1ab84..c88e48be010b 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -886,8 +886,10 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 		 * because page->mapping could be NULL if it's purged.
- 		 */
- 		case PAGEREF_DISCARD:
--			if (may_enter_fs && discard_vpage(page) == 0)
-+			if (may_enter_fs && discard_vpage(page) == 0) {
-+				count_vm_event(PGDISCARD_RESCUED);
- 				goto free_it;
-+			}
- 		case PAGEREF_KEEP:
- 			goto keep_locked;
- 		case PAGEREF_RECLAIM:
-@@ -1768,8 +1770,10 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
- 	unsigned long nr_reclaimed;
- 
- 	nr_reclaimed = shrink_vrange(lru, lruvec, sc);
--	if (nr_reclaimed >= sc->nr_to_reclaim)
-+	if (nr_reclaimed >= sc->nr_to_reclaim) {
-+		count_vm_event(PGDISCARD_SAVE_RECLAIM);
- 		return nr_reclaimed;
-+	}
- 
- 	if (is_active_lru(lru)) {
- 		if (inactive_list_is_low(lruvec, lru))
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 9bb314577911..fa4eea4c5499 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -789,6 +789,12 @@ const char * const vmstat_text[] = {
- 
- 	"pgfault",
- 	"pgmajfault",
-+	"pgvscan_kswapd",
-+	"pgvscan_direct",
-+	"pgdiscard_kswapd",
-+	"pgdiscard_direct",
-+	"pgdiscard_rescued",
-+	"pgdiscard_save_reclaim",
- 
- 	TEXTS_FOR_ZONES("pgrefill")
- 	TEXTS_FOR_ZONES("pgsteal_kswapd")
 diff --git a/mm/vrange.c b/mm/vrange.c
-index 6cdbf6feed26..16de0a085453 100644
+index df01c6b084bf..6cdbf6feed26 100644
 --- a/mm/vrange.c
 +++ b/mm/vrange.c
-@@ -1223,6 +1223,7 @@ static int discard_vrange(struct vrange *vrange, unsigned long *nr_discard,
+@@ -31,6 +31,11 @@ struct vrange_walker {
+ 
+ #define VRANGE_PURGED_MARK	0
+ 
++/*
++ * [mark|clear]_purge could invalidate cached address but it's rare
++ * and at the worst case, some address range would be rescan or skip
++ * so it isn't critical for integrity point of view.
++ */
+ void mark_purge(struct vrange *range)
+ {
+ 	range->hint |= (1 << VRANGE_PURGED_MARK);
+@@ -47,9 +52,36 @@ bool vrange_purged(struct vrange *range)
+ 	return purged;
+ }
+ 
+-static inline unsigned long vrange_size(struct vrange *range)
++void record_scan_addr(struct vrange *range, unsigned long addr)
+ {
+-	return range->node.last + 1 - range->node.start;
++	unsigned long old, new, ret;
++
++	BUG_ON(addr & ~PAGE_MASK);
++
++	/*
++	 * hint variable is shared by cache address and purged flag.
++	 * purged flag is modified while we hold vrange_lock but
++	 * cache address is modified without any lock so that it
++	 * could invalidate purged flag by racing do_purge, which
++	 * is critical. The cmpxchg should prevent it.
++	 */
++	do {
++		old = range->hint;
++		new = old | addr;
++		ret = cmpxchg(&range->hint, old, new);
++	} while (ret != old);
++
++	BUG_ON(addr && addr > range->node.last + 1);
++	BUG_ON(addr && addr < range->node.start);
++}
++
++unsigned long load_scan_addr(struct vrange *range)
++{
++	unsigned long cached_addr = range->hint & PAGE_MASK;
++	BUG_ON(cached_addr && cached_addr > range->node.last + 1);
++	BUG_ON(cached_addr && cached_addr < range->node.start);
++
++	return cached_addr;
+ }
+ 
+ static void vroot_ctor(void *data)
+@@ -259,6 +291,14 @@ static inline void __vrange_lru_add(struct vrange *range)
+ 	spin_unlock(&vrange_list.lock);
+ }
+ 
++static inline void __vrange_lru_add_tail(struct vrange *range)
++{
++	spin_lock(&vrange_list.lock);
++	WARN_ON(!list_empty(&range->lru));
++	list_add_tail(&range->lru, &vrange_list.list);
++	spin_unlock(&vrange_list.lock);
++}
++
+ static inline void __vrange_lru_del(struct vrange *range)
+ {
+ 	spin_lock(&vrange_list.lock);
+@@ -306,6 +346,9 @@ static inline void __vrange_set(struct vrange *range,
+ {
+ 	range->node.start = start_idx;
+ 	range->node.last = end_idx;
++
++	/* If resize happens, invalidate cache addr */
++	range->hint = 0;
+ 	if (purged)
+ 		mark_purge(range);
+ 	else
+@@ -1069,12 +1112,13 @@ static unsigned long discard_vma_pages(struct mm_struct *mm,
+  * so avoid touching vrange->owner.
+  */
+ static int __discard_vrange_anon(struct mm_struct *mm, struct vrange *vrange,
+-		unsigned long *ret_discard)
++			unsigned long *ret_discard, unsigned long *scan)
+ {
+ 	struct vm_area_struct *vma;
+ 	unsigned long nr_discard = 0;
+ 	unsigned long start = vrange->node.start;
+ 	unsigned long end = vrange->node.last + 1;
++	unsigned long cached_addr;
+ 	int ret = 0;
+ 
+ 	/* It prevent to destroy vma when the process exist */
+@@ -1087,6 +1131,10 @@ static int __discard_vrange_anon(struct mm_struct *mm, struct vrange *vrange,
+ 		goto out; /* this vrange could be retried */
+ 	}
+ 
++	cached_addr = load_scan_addr(vrange);
++	if (cached_addr)
++		start = cached_addr;
++
+ 	vma = find_vma(mm, start);
+ 	if (!vma || (vma->vm_start >= end))
+ 		goto out_unlock;
+@@ -1097,10 +1145,18 @@ static int __discard_vrange_anon(struct mm_struct *mm, struct vrange *vrange,
+ 		BUG_ON(vma->vm_flags & (VM_SPECIAL|VM_LOCKED|VM_MIXEDMAP|
+ 					VM_HUGETLB));
+ 		cond_resched();
+-		nr_discard += discard_vma_pages(mm, vma,
+-				max_t(unsigned long, start, vma->vm_start),
+-				min_t(unsigned long, end, vma->vm_end));
++
++		start = max(start, vma->vm_start);
++		end = min(end, vma->vm_end);
++		end = min(start + *scan, end);
++
++		nr_discard += discard_vma_pages(mm, vma, start, end);
++		*scan -= (end - start);
++		if (!*scan)
++			break;
+ 	}
++
++	record_scan_addr(vrange, end);
+ out_unlock:
+ 	up_read(&mm->mmap_sem);
+ 	mmput(mm);
+@@ -1110,18 +1166,27 @@ out:
+ }
+ 
+ static int __discard_vrange_file(struct address_space *mapping,
+-			struct vrange *vrange, unsigned long *ret_discard)
++		struct vrange *vrange, unsigned long *ret_discard,
++		unsigned long *scan)
+ {
+ 	struct pagevec pvec;
+ 	pgoff_t index;
+ 	int i, ret = 0;
++	unsigned long cached_addr;
+ 	unsigned long nr_discard = 0;
+ 	unsigned long start_idx = vrange->node.start;
+ 	unsigned long end_idx = vrange->node.last;
+ 	const pgoff_t start = start_idx >> PAGE_CACHE_SHIFT;
+-	pgoff_t end = end_idx >> PAGE_CACHE_SHIFT;
++	pgoff_t end;
+ 	LIST_HEAD(pagelist);
+ 
++	cached_addr = load_scan_addr(vrange);
++	if (cached_addr)
++		start_idx = cached_addr;
++
++	end_idx = min(start_idx + *scan, end_idx);
++	end = end_idx >> PAGE_CACHE_SHIFT;
++
+ 	pagevec_init(&pvec, 0);
+ 	index = start;
+ 	while (index <= end && pagevec_lookup(&pvec, mapping, index,
+@@ -1141,16 +1206,20 @@ static int __discard_vrange_file(struct address_space *mapping,
+ 		index++;
+ 	}
+ 
++	*scan -= (end_idx + 1 - start_idx);
++
+ 	if (!list_empty(&pagelist))
+ 		nr_discard = discard_vrange_pagelist(&pagelist);
+ 
++	record_scan_addr(vrange, end_idx + 1);
+ 	*ret_discard = nr_discard;
+ 	putback_lru_pages(&pagelist);
+ 
+ 	return ret;
+ }
+ 
+-static int discard_vrange(struct vrange *vrange, unsigned long *nr_discard)
++static int discard_vrange(struct vrange *vrange, unsigned long *nr_discard,
++				unsigned long *scan)
  {
  	int ret = 0;
  	struct vrange_root *vroot;
-+	unsigned long total_scan = *scan;
- 	vroot = vrange->owner;
+@@ -1169,10 +1238,10 @@ static int discard_vrange(struct vrange *vrange, unsigned long *nr_discard)
  
- 	vroot = vrange_get_vroot(vrange);
-@@ -1244,6 +1245,19 @@ static int discard_vrange(struct vrange *vrange, unsigned long *nr_discard,
- 		ret = __discard_vrange_file(mapping, vrange, nr_discard, scan);
+ 	if (vroot->type == VRANGE_MM) {
+ 		struct mm_struct *mm = vroot->object;
+-		ret = __discard_vrange_anon(mm, vrange, nr_discard);
++		ret = __discard_vrange_anon(mm, vrange, nr_discard, scan);
+ 	} else if (vroot->type == VRANGE_FILE) {
+ 		struct address_space *mapping = vroot->object;
+-		ret = __discard_vrange_file(mapping, vrange, nr_discard);
++		ret = __discard_vrange_file(mapping, vrange, nr_discard, scan);
  	}
  
-+	if (!ret) {
-+		if (current_is_kswapd())
-+			count_vm_events(PGDISCARD_KSWAPD, *nr_discard);
-+		else
-+			count_vm_events(PGDISCARD_DIRECT, *nr_discard);
-+	}
-+
-+	if (current_is_kswapd())
-+		count_vm_events(PGVSCAN_KSWAPD,
-+				(total_scan - *scan) >> PAGE_SHIFT);
-+	else
-+		count_vm_events(PGVSCAN_DIRECT,
-+				(total_scan - *scan) >> PAGE_SHIFT);
  out:
- 	__vroot_put(vroot);
- 	return ret;
+@@ -1188,7 +1257,7 @@ unsigned long shrink_vrange(enum lru_list lru, struct lruvec *lruvec,
+ 	int retry = 10;
+ 	struct vrange *range;
+ 	unsigned long nr_to_reclaim, total_reclaimed = 0;
+-	unsigned long long scan_threshold = VRANGE_SCAN_THRESHOLD;
++	unsigned long remained_scan = VRANGE_SCAN_THRESHOLD;
+ 
+ 	if (!(sc->gfp_mask & __GFP_IO))
+ 		return 0;
+@@ -1209,7 +1278,7 @@ unsigned long shrink_vrange(enum lru_list lru, struct lruvec *lruvec,
+ 
+ 	nr_to_reclaim = sc->nr_to_reclaim;
+ 
+-	while (nr_to_reclaim > 0 && scan_threshold > 0 && retry) {
++	while (nr_to_reclaim > 0 && remained_scan > 0 && retry) {
+ 		unsigned long nr_reclaimed = 0;
+ 		int ret;
+ 
+@@ -1224,9 +1293,7 @@ unsigned long shrink_vrange(enum lru_list lru, struct lruvec *lruvec,
+ 			continue;
+ 		}
+ 
+-		ret = discard_vrange(range, &nr_reclaimed);
+-		scan_threshold -= vrange_size(range);
+-
++		ret = discard_vrange(range, &nr_reclaimed, &remained_scan);
+ 		/* If it's EAGAIN, retry it after a little */
+ 		if (ret == -EAGAIN) {
+ 			retry--;
+@@ -1235,6 +1302,14 @@ unsigned long shrink_vrange(enum lru_list lru, struct lruvec *lruvec,
+ 			continue;
+ 		}
+ 
++		if (load_scan_addr(range) < range->node.last) {
++			/*
++			 * We like full range purging of a range rather than
++			 * partial range purging of all ranges for fairness.
++			 */
++			__vrange_lru_add_tail(range);
++		}
++
+ 		__vrange_put(range);
+ 		retry = 10;
+ 
 -- 
 1.7.9.5
 
