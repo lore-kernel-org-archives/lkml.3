@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751802AbaABPFm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 10:05:42 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:39969 "EHLO
+	id S1751906AbaABPFp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 10:05:45 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:40000 "EHLO
 	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750914AbaABPFl (ORCPT
+	with ESMTP id S1750914AbaABPFn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 10:05:41 -0500
+	Thu, 2 Jan 2014 10:05:43 -0500
 From: Davidlohr Bueso <davidlohr@hp.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, dvhart@linux.intel.com, peterz@infradead.org,
@@ -14,151 +14,199 @@ Cc: mingo@kernel.org, dvhart@linux.intel.com, peterz@infradead.org,
         jeffm@suse.com, torvalds@linux-foundation.org, jason.low2@hp.com,
         Waiman.Long@hp.com, tom.vaden@hp.com, scott.norton@hp.com,
         aswin@hp.com, davidlohr@hp.com
-Subject: [PATCH v5 0/4] futex: Wakeup optimizations
-Date: Thu,  2 Jan 2014 07:05:16 -0800
-Message-Id: <1388675120-8017-1-git-send-email-davidlohr@hp.com>
+Subject: [PATCH v5 1/4] futex: Misc cleanups
+Date: Thu,  2 Jan 2014 07:05:17 -0800
+Message-Id: <1388675120-8017-2-git-send-email-davidlohr@hp.com>
 X-Mailer: git-send-email 1.8.1.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1388675120-8017-1-git-send-email-davidlohr@hp.com>
+References: <1388675120-8017-1-git-send-email-davidlohr@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes from v3/v4 [http://lkml.org/lkml/2013/12/19/627]:
- - Almost completely redid patch 4, based on suggestions
-   by Linus. Instead of adding an atomic counter to keep
-   track of the plist size, couple the list's head empty
-   call with a check to see if the hb lock is locked.
-   This solves the race that motivated the use of the new
-   atomic field.
+From: Jason Low <jason.low2@hp.com>
 
- - Fix grammar in patch 3
+- Remove unnecessary head variables.
+- Delete unused parameter in queue_unlock().
 
- - Fix SOB tags.
+Cc: Ingo Molnar <mingo@kernel.org>
+Reviewed-by: Darren Hart <dvhart@linux.intel.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Jeff Mahoney <jeffm@suse.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Scott Norton <scott.norton@hp.com>
+Cc: Tom Vaden <tom.vaden@hp.com>
+Cc: Aswin Chandramouleeswaran <aswin@hp.com>
+Cc: Waiman Long <Waiman.Long@hp.com>
+Signed-off-by: Jason Low <jason.low2@hp.com>
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+---
+ kernel/futex.c | 39 ++++++++++++---------------------------
+ 1 file changed, 12 insertions(+), 27 deletions(-)
 
-Changes from v2 [http://lwn.net/Articles/575449/]:
- - Reordered SOB tags to reflect me as primary author.
-
- - Improved ordering guarantee comments for patch 4.
-
- - Rebased patch 4 against Linus' tree (this patch didn't
-   apply after the recent futex changes/fixes).
-
-Changes from v1 [https://lkml.org/lkml/2013/11/22/525]:
- - Removed patch "futex: Check for pi futex_q only once".
-
- - Cleaned up ifdefs for larger hash table.
-
- - Added a doc patch from tglx that describes the futex 
-   ordering guarantees.
-
- - Improved the lockless plist check for the wake calls.
-   Based on the community feedback, the necessary abstractions
-   and barriers are added to maintain ordering guarantees.
-   Code documentation is also updated.
-
- - Removed patch "sched,futex: Provide delayed wakeup list".
-   Based on feedback from PeterZ, I will look into this as
-   a separate issue once the other patches are settled.
-
-We have been dealing with a customer database workload on large
-12Tb, 240 core 16 socket NUMA system that exhibits high amounts 
-of contention on some of the locks that serialize internal futex 
-data structures. This workload specially suffers in the wakeup 
-paths, where waiting on the corresponding hb->lock can account for 
-up to ~60% of the time. The result of such calls can mostly be 
-classified as (i) nothing to wake up and (ii) wakeup large amount 
-of tasks.
-
-Before these patches are applied, we can see this pathological behavior:
-
- 37.12%  826174  xxx  [kernel.kallsyms] [k] _raw_spin_lock
-            --- _raw_spin_lock
-             |
-             |--97.14%-- futex_wake
-             |          do_futex
-             |          sys_futex
-             |          system_call_fastpath
-             |          |
-             |          |--99.70%-- 0x7f383fbdea1f
-             |          |           yyy
-
- 43.71%  762296  xxx  [kernel.kallsyms] [k] _raw_spin_lock
-            --- _raw_spin_lock
-             |
-             |--53.74%-- futex_wake
-             |          do_futex
-             |          sys_futex
-             |          system_call_fastpath
-             |          |
-             |          |--99.40%-- 0x7fe7d44a4c05
-             |          |           zzz
-             |--45.90%-- futex_wait_setup
-             |          futex_wait
-             |          do_futex
-             |          sys_futex
-             |          system_call_fastpath
-             |          0x7fe7ba315789
-             |          syscall
-
-
-With these patches, contention is practically non existent:
-
- 0.10%     49   xxx  [kernel.kallsyms]   [k] _raw_spin_lock
-               --- _raw_spin_lock
-                |
-                |--76.06%-- futex_wait_setup
-                |          futex_wait
-                |          do_futex
-                |          sys_futex
-                |          system_call_fastpath
-                |          |
-                |          |--99.90%-- 0x7f3165e63789
-                |          |          syscall|
-                           ...
-                |--6.27%-- futex_wake
-                |          do_futex
-                |          sys_futex
-                |          system_call_fastpath
-                |          |
-                |          |--54.56%-- 0x7f317fff2c05
-                ...
-
-Patch 1 is a cleanup.
-
-Patch 2 addresses the well known issue of the global hash table.
-By creating a larger and NUMA aware table, we can reduce the false
-sharing and collisions, thus reducing the chance of different futexes 
-using hb->lock.
-
-Patch 3 documents the futex ordering guarantees.
-
-Patch 4 reduces contention on the corresponding hb->lock by not trying to
-acquire it if there are no blocked tasks in the waitqueue.
-This particularly deals with point (i) above, where we see that it is not
-uncommon for up to 90% of wakeup calls end up returning 0, indicating that no
-tasks were woken.
-
-This patchset has also been tested on smaller systems for a variety of
-benchmarks, including java workloads, kernel builds and custom bang-the-hell-out-of
-hb locks programs. So far, no functional or performance regressions have been seen.
-Furthermore, no issues were found when running the different tests in the futextest 
-suite: http://git.kernel.org/cgit/linux/kernel/git/dvhart/futextest.git/
-
-This patchset applies on top of Linus' tree as of v3.13-rc6 (9a0bb296)
-
-Special thanks to Scott Norton, Tom Vanden, Mark Ray and Aswin Chandramouleeswaran
-for help presenting, debugging and analyzing the data.
-
-  futex: Misc cleanups
-  futex: Larger hash table
-  futex: Document ordering guarantees
-  futex: Avoid taking hb lock if nothing to wakeup
-
- kernel/futex.c | 197 ++++++++++++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 159 insertions(+), 38 deletions(-)
-
+diff --git a/kernel/futex.c b/kernel/futex.c
+index f6ff019..085f5fa 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -598,13 +598,10 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+ {
+ 	struct futex_pi_state *pi_state = NULL;
+ 	struct futex_q *this, *next;
+-	struct plist_head *head;
+ 	struct task_struct *p;
+ 	pid_t pid = uval & FUTEX_TID_MASK;
+ 
+-	head = &hb->chain;
+-
+-	plist_for_each_entry_safe(this, next, head, list) {
++	plist_for_each_entry_safe(this, next, &hb->chain, list) {
+ 		if (match_futex(&this->key, key)) {
+ 			/*
+ 			 * Another waiter already exists - bump up
+@@ -986,7 +983,6 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
+ {
+ 	struct futex_hash_bucket *hb;
+ 	struct futex_q *this, *next;
+-	struct plist_head *head;
+ 	union futex_key key = FUTEX_KEY_INIT;
+ 	int ret;
+ 
+@@ -999,9 +995,8 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
+ 
+ 	hb = hash_futex(&key);
+ 	spin_lock(&hb->lock);
+-	head = &hb->chain;
+ 
+-	plist_for_each_entry_safe(this, next, head, list) {
++	plist_for_each_entry_safe(this, next, &hb->chain, list) {
+ 		if (match_futex (&this->key, &key)) {
+ 			if (this->pi_state || this->rt_waiter) {
+ 				ret = -EINVAL;
+@@ -1034,7 +1029,6 @@ futex_wake_op(u32 __user *uaddr1, unsigned int flags, u32 __user *uaddr2,
+ {
+ 	union futex_key key1 = FUTEX_KEY_INIT, key2 = FUTEX_KEY_INIT;
+ 	struct futex_hash_bucket *hb1, *hb2;
+-	struct plist_head *head;
+ 	struct futex_q *this, *next;
+ 	int ret, op_ret;
+ 
+@@ -1082,9 +1076,7 @@ retry_private:
+ 		goto retry;
+ 	}
+ 
+-	head = &hb1->chain;
+-
+-	plist_for_each_entry_safe(this, next, head, list) {
++	plist_for_each_entry_safe(this, next, &hb1->chain, list) {
+ 		if (match_futex (&this->key, &key1)) {
+ 			if (this->pi_state || this->rt_waiter) {
+ 				ret = -EINVAL;
+@@ -1097,10 +1089,8 @@ retry_private:
+ 	}
+ 
+ 	if (op_ret > 0) {
+-		head = &hb2->chain;
+-
+ 		op_ret = 0;
+-		plist_for_each_entry_safe(this, next, head, list) {
++		plist_for_each_entry_safe(this, next, &hb2->chain, list) {
+ 			if (match_futex (&this->key, &key2)) {
+ 				if (this->pi_state || this->rt_waiter) {
+ 					ret = -EINVAL;
+@@ -1270,7 +1260,6 @@ static int futex_requeue(u32 __user *uaddr1, unsigned int flags,
+ 	int drop_count = 0, task_count = 0, ret;
+ 	struct futex_pi_state *pi_state = NULL;
+ 	struct futex_hash_bucket *hb1, *hb2;
+-	struct plist_head *head1;
+ 	struct futex_q *this, *next;
+ 	u32 curval2;
+ 
+@@ -1393,8 +1382,7 @@ retry_private:
+ 		}
+ 	}
+ 
+-	head1 = &hb1->chain;
+-	plist_for_each_entry_safe(this, next, head1, list) {
++	plist_for_each_entry_safe(this, next, &hb1->chain, list) {
+ 		if (task_count - nr_wake >= nr_requeue)
+ 			break;
+ 
+@@ -1494,7 +1482,7 @@ static inline struct futex_hash_bucket *queue_lock(struct futex_q *q)
+ }
+ 
+ static inline void
+-queue_unlock(struct futex_q *q, struct futex_hash_bucket *hb)
++queue_unlock(struct futex_hash_bucket *hb)
+ 	__releases(&hb->lock)
+ {
+ 	spin_unlock(&hb->lock);
+@@ -1867,7 +1855,7 @@ retry_private:
+ 	ret = get_futex_value_locked(&uval, uaddr);
+ 
+ 	if (ret) {
+-		queue_unlock(q, *hb);
++		queue_unlock(*hb);
+ 
+ 		ret = get_user(uval, uaddr);
+ 		if (ret)
+@@ -1881,7 +1869,7 @@ retry_private:
+ 	}
+ 
+ 	if (uval != val) {
+-		queue_unlock(q, *hb);
++		queue_unlock(*hb);
+ 		ret = -EWOULDBLOCK;
+ 	}
+ 
+@@ -2029,7 +2017,7 @@ retry_private:
+ 			 * Task is exiting and we just wait for the
+ 			 * exit to complete.
+ 			 */
+-			queue_unlock(&q, hb);
++			queue_unlock(hb);
+ 			put_futex_key(&q.key);
+ 			cond_resched();
+ 			goto retry;
+@@ -2081,7 +2069,7 @@ retry_private:
+ 	goto out_put_key;
+ 
+ out_unlock_put_key:
+-	queue_unlock(&q, hb);
++	queue_unlock(hb);
+ 
+ out_put_key:
+ 	put_futex_key(&q.key);
+@@ -2091,7 +2079,7 @@ out:
+ 	return ret != -EINTR ? ret : -ERESTARTNOINTR;
+ 
+ uaddr_faulted:
+-	queue_unlock(&q, hb);
++	queue_unlock(hb);
+ 
+ 	ret = fault_in_user_writeable(uaddr);
+ 	if (ret)
+@@ -2113,7 +2101,6 @@ static int futex_unlock_pi(u32 __user *uaddr, unsigned int flags)
+ {
+ 	struct futex_hash_bucket *hb;
+ 	struct futex_q *this, *next;
+-	struct plist_head *head;
+ 	union futex_key key = FUTEX_KEY_INIT;
+ 	u32 uval, vpid = task_pid_vnr(current);
+ 	int ret;
+@@ -2153,9 +2140,7 @@ retry:
+ 	 * Ok, other tasks may need to be woken up - check waiters
+ 	 * and do the wakeup if necessary:
+ 	 */
+-	head = &hb->chain;
+-
+-	plist_for_each_entry_safe(this, next, head, list) {
++	plist_for_each_entry_safe(this, next, &hb->chain, list) {
+ 		if (!match_futex (&this->key, &key))
+ 			continue;
+ 		ret = wake_futex_pi(uaddr, uval, this);
 -- 
 1.8.1.4
 
