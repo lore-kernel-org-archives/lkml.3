@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750787AbaABKCs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 05:02:48 -0500
-Received: from ni.piap.pl ([195.187.100.4]:51151 "EHLO ni.piap.pl"
+	id S1750830AbaABKIt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 05:08:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7084 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750711AbaABKCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 05:02:46 -0500
-From: khalasa@piap.pl (Krzysztof =?utf-8?Q?Ha=C5=82asa?=)
-To: Willy Tarreau <w@1wt.eu>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, John Stultz <john.stultz@linaro.org>
-References: <m3mwjhux0e.fsf@t19.piap.pl> <20131231104511.GA9688@1wt.eu>
-Date: Thu, 02 Jan 2014 11:02:44 +0100
-In-Reply-To: <20131231104511.GA9688@1wt.eu> (Willy Tarreau's message of "Tue,
-	31 Dec 2013 11:45:11 +0100")
-MIME-Version: 1.0
-Message-ID: <m3txdmu2ez.fsf@t19.piap.pl>
-Content-Type: text/plain
-Subject: Re: v3.13-rc6+ regression (ARM board)
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE,
-	 bases: 20140102 #7222383, check: 20140102 clean
+	id S1750711AbaABKIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 05:08:48 -0500
+Subject: Re: [PATCH] GFS2: Fix unsafe dereference in dump_holder()
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: rpeterso@redhat.com, linux-kernel@vger.kernel.org
+In-Reply-To: <201312242051.ECA46103.MFFVFOtHSJOLQO@I-love.SAKURA.ne.jp>
+References: <201312242051.ECA46103.MFFVFOtHSJOLQO@I-love.SAKURA.ne.jp>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Thu, 02 Jan 2014 10:08:31 +0000
+Message-ID: <1388657311.2746.10.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> There seems to be a regression in v3.13-rc6+ (up to current tip =
->> 71ce176ee6ed1735b9a1160a5704a915d13849b1).
->>
->> Board is Gateworks Cambria, CPU Intel IXP435 ARM big endian, gcc 4.7.3.
->> The board boots correctly and works (shell mostly, and SSHD) for about
->> 50 seconds. After 52-54 seconds, it frozes dead without any console
->> (UART) output.
->>
->> Bisecting shows 5e30025a319910695f5010dc0fb53a23299da14d as the first
->> bad commit. Interestingly it's a merge:
+Hi,
 
-Reverting 1ca7d67cf5d5a2aef26a8d9afd789006fa098347 on top of current tip
-(9a0bb2966efbf30a71c128c3af63307d8b5f5fc0) fixes my issue.
+On Tue, 2013-12-24 at 20:51 +0900, Tetsuo Handa wrote:
+> >From efee681e4ca6152d9549a50e93ca932b00f03014 Mon Sep 17 00:00:00 2001
+> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Date: Tue, 24 Dec 2013 18:04:43 +0900
+> Subject: [PATCH] GFS2: Fix unsafe dereference in dump_holder()
+> 
+> Since we are not in RCU nor tasklist_lock held, we need to grab a reference on
+> the returned task_struct. Use get_pid_task()/get_task_comm() to safely read the
+> target task's comm name.
+> 
+> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> ---
 
-What now?
+Well this is not entirely true... for 99.9% of calls to this function we
+do have the rcu read lock held (when called from the seq file code). So
+the only issue is when called from the GLOCK_BUG_ON() macro.
 
-1ca7d67cf5d5a2aef26a8d9afd789006fa098347:
-    seqcount: Add lockdep functionality to seqcount/seqlock structures
+Since it appears that rcu_read_lock() will nest, then we could
+presumably just add that around dump_holder or even around
+gfs2_dump_glock ?
 
-    Currently seqlocks and seqcounts don't support lockdep.
+I think that is a neater solution than taking extra ref counts and
+copying the string around,
 
-    After running across a seqcount related deadlock in the timekeeping
-    code, I used a less-refined and more focused variant of this patch
-    to narrow down the cause of the issue.
+Steve.
 
-    This is a first-pass attempt to properly enable lockdep functionality
-    on seqlocks and seqcounts.
+>  fs/gfs2/glock.c |   11 +++++++++--
+>  1 files changed, 9 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
+> index c8420f7..7bda965 100644
+> --- a/fs/gfs2/glock.c
+> +++ b/fs/gfs2/glock.c
+> @@ -1654,15 +1654,22 @@ static int dump_holder(struct seq_file *seq, const struct gfs2_holder *gh)
+>  {
+>  	struct task_struct *gh_owner = NULL;
+>  	char flags_buf[32];
+> +	char name[TASK_COMM_LEN];
+>  
+>  	if (gh->gh_owner_pid)
+> -		gh_owner = pid_task(gh->gh_owner_pid, PIDTYPE_PID);
+> +		gh_owner = get_pid_task(gh->gh_owner_pid, PIDTYPE_PID);
+> +	if (gh_owner) {
+> +		get_task_comm(name, gh_owner);
+> +		put_task_struct(gh_owner);
+> +	} else {
+> +		strlcpy(name, "(ended)", sizeof(name));
+> +	}
+>  	gfs2_print_dbg(seq, " H: s:%s f:%s e:%d p:%ld [%s] %pS\n",
+>  		       state2str(gh->gh_state),
+>  		       hflags2str(flags_buf, gh->gh_flags, gh->gh_iflags),
+>  		       gh->gh_error,
+>  		       gh->gh_owner_pid ? (long)pid_nr(gh->gh_owner_pid) : -1,
+> -		       gh_owner ? gh_owner->comm : "(ended)",
+> +		       name,
+>  		       (void *)gh->gh_ip);
+>  	return 0;
+>  }
 
-    Since seqcounts are used in the vdso gettimeofday code, I've provided
-    non-lockdep accessors for those needs.
 
-    I've also handled one case where there were nested seqlock writers
-    and there may be more edge cases.
-
-    Comments and feedback would be appreciated!
--- 
-Krzysztof Halasa
-
-Research Institute for Automation and Measurements PIAP
-Al. Jerozolimskie 202, 02-486 Warsaw, Poland
