@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682AbaABRGi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:06:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40250 "EHLO
+	id S1752720AbaABRGr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:06:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40259 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752627AbaABRG0 (ORCPT
+	with ESMTP id S1752627AbaABRGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:06:26 -0500
+	Thu, 2 Jan 2014 12:06:45 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Willem de Bruijn <willemb@google.com>, Phil Sutter <phil@nwl.cc>,
-        Eric Dumazet <edumazet@google.com>,
-        Veaceslav Falico <vfalico@redhat.com>,
+Cc: Fan Du <fan.du@windriver.com>, "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 31/91] af_packet: block BH in prb_shutdown_retire_blk_timer()
-Date: Thu,  2 Jan 2014 09:04:06 -0800
-Message-Id: <1388682306-30859-32-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 24/91] xfrm: Release dst if this dst is improper for vti tunnel
+Date: Thu,  2 Jan 2014 09:03:59 -0800
+Message-Id: <1388682306-30859-25-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -31,48 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Veaceslav Falico <vfalico@redhat.com>
+From: "fan.du" <fan.du@windriver.com>
 
-[ Upstream commit ec6f809ff6f19fafba3212f6aff0dda71dfac8e8 ]
+[ Upstream commit 236c9f84868534c718b6889aa624de64763281f9 ]
 
-Currently we're using plain spin_lock() in prb_shutdown_retire_blk_timer(),
-however the timer might fire right in the middle and thus try to re-aquire
-the same spinlock, leaving us in a endless loop.
+After searching rt by the vti tunnel dst/src parameter,
+if this rt has neither attached to any transformation
+nor the transformation is not tunnel oriented, this rt
+should be released back to ip layer.
 
-To fix that, use the spin_lock_bh() to block it.
+otherwise causing dst memory leakage.
 
-Fixes: f6fb8f100b80 ("af-packet: TPACKET_V3 flexible buffer implementation.")
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Daniel Borkmann <dborkman@redhat.com>
-CC: Willem de Bruijn <willemb@google.com>
-CC: Phil Sutter <phil@nwl.cc>
-CC: Eric Dumazet <edumazet@google.com>
-Reported-by: Jan Stancek <jstancek@redhat.com>
-Tested-by: Jan Stancek <jstancek@redhat.com>
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Fan Du <fan.du@windriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/packet/af_packet.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/ipv4/ip_vti.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index 2d5b24a..90c1a21 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -390,9 +390,9 @@ static void prb_shutdown_retire_blk_timer(struct packet_sock *po,
- 
- 	pkc = tx_ring ? &po->tx_ring.prb_bdqc : &po->rx_ring.prb_bdqc;
- 
--	spin_lock(&rb_queue->lock);
-+	spin_lock_bh(&rb_queue->lock);
- 	pkc->delete_blk_timer = 1;
--	spin_unlock(&rb_queue->lock);
-+	spin_unlock_bh(&rb_queue->lock);
- 
- 	prb_del_retire_blk_timer(pkc);
- }
+diff --git a/net/ipv4/ip_vti.c b/net/ipv4/ip_vti.c
+index d011525..331a075 100644
+--- a/net/ipv4/ip_vti.c
++++ b/net/ipv4/ip_vti.c
+@@ -388,6 +388,7 @@ static netdev_tx_t vti_tunnel_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	if (!rt->dst.xfrm ||
+ 	    rt->dst.xfrm->props.mode != XFRM_MODE_TUNNEL) {
+ 		dev->stats.tx_carrier_errors++;
++		ip_rt_put(rt);
+ 		goto tx_error_icmp;
+ 	}
+ 	tdev = rt->dst.dev;
 -- 
 1.8.3.2
 
