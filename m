@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550AbaABUUT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 15:20:19 -0500
-Received: from mga01.intel.com ([192.55.52.88]:7784 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751841AbaABUUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 15:20:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,592,1384329600"; 
-   d="scan'208";a="459244513"
-Subject: [PATCH 2/3] Kconfig: collapse initrd in to own menu
-To: linux-kernel@vger.kernel.org
-Cc: Dave Hansen <dave@sr71.net>
-From: Dave Hansen <dave@sr71.net>
-Date: Thu, 02 Jan 2014 12:20:16 -0800
-References: <20140102202014.CA206E9B@viggo.jf.intel.com>
-In-Reply-To: <20140102202014.CA206E9B@viggo.jf.intel.com>
-Message-Id: <20140102202016.7A057719@viggo.jf.intel.com>
+	id S1752603AbaABUU2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 15:20:28 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:55238 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751841AbaABUUX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 15:20:23 -0500
+Message-ID: <52C5CA05.5080803@codeaurora.org>
+Date: Thu, 02 Jan 2014 12:20:21 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+CC: arm@kernel.org, linux-arm-msm@vger.kernel.org,
+        David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/7] tty: serial: Limit msm_serial_hs driver to platforms
+ that use it
+References: <1388438133-431-1-git-send-email-sboyd@codeaurora.org> <1388438133-431-4-git-send-email-sboyd@codeaurora.org> <201401021910.22651.arnd@arndb.de>
+In-Reply-To: <201401021910.22651.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/02/14 10:10, Arnd Bergmann wrote:
+> On Monday 30 December 2013, Stephen Boyd wrote:
+>> The msm_serial_hs driver uses mach specific dma APIs. This is not
+>> compatible with the multi-platform ARM effort. Let's only compile
+>> this driver on MSM devices that are prepared to support it;
+>> allowing the DT based MSM devices to enter the multi-platform ARM
+>> build.
+>>
+>> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> Do you have a plan to deal with this in the future? Aren't you going
+> to need it in the future on modern SoCs?
+>
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+Yes, we plan to add the code for dma based serial devices into the
+msm_serial.c driver. In the process we'll use the linux DMA apis instead
+of using mach specific ones.
 
-Initrd support takes up 8 lines of space in the general menu,
-pushing down options like OProfile or the VM event counters.
-Stick it in its own menu to trim it down.
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
----
-
- linux.git-davehans/init/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff -puN init/Kconfig~kconfig-initrd-collapse-in-to-menu init/Kconfig
---- linux.git/init/Kconfig~kconfig-initrd-collapse-in-to-menu	2014-01-02 11:23:59.008804083 -0800
-+++ linux.git-davehans/init/Kconfig	2014-01-02 11:23:59.011804218 -0800
-@@ -1223,7 +1223,7 @@ config RELAY
- 
- 	  If unsure, say N.
- 
--config BLK_DEV_INITRD
-+menuconfig BLK_DEV_INITRD
- 	bool "Initial RAM filesystem and RAM disk (initramfs/initrd) support"
- 	depends on BROKEN || !FRV
- 	help
-_
