@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603AbaABWA7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 17:00:59 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:59677 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814AbaABWA6 (ORCPT
+	id S1751915AbaABWD6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 17:03:58 -0500
+Received: from mail-gg0-f180.google.com ([209.85.161.180]:39645 "EHLO
+	mail-gg0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740AbaABWD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 17:00:58 -0500
-Message-ID: <52C5EFAA.2070403@cogentembedded.com>
-Date: Fri, 03 Jan 2014 02:00:58 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 2 Jan 2014 17:03:57 -0500
+Date: Thu, 2 Jan 2014 14:03:53 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, akpm@linux-foundation.org,
+        tj@kernel.org, linux-mm@kvack.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH] mm/memblock: use WARN_ONCE when MAX_NUMNODES passed as
+ input parameter
+In-Reply-To: <52C1635D.9070703@ti.com>
+Message-ID: <alpine.DEB.2.02.1401021400160.21537@chino.kir.corp.google.com>
+References: <1387578536-18280-1-git-send-email-santosh.shilimkar@ti.com> <alpine.DEB.2.02.1312261542260.9342@chino.kir.corp.google.com> <52C1635D.9070703@ti.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-kernel@vger.kernel.org, Karsten Keil <isdn@linux-pingi.de>,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH, RFC 21/30] isdn: divert, hysdn: fix interruptible_sleep_on
- race
-References: <1388664474-1710039-1-git-send-email-arnd@arndb.de> <1388664474-1710039-22-git-send-email-arnd@arndb.de> <52C57F3B.9070509@cogentembedded.com> <3610183.tucaANtxQk@wuerfel>
-In-Reply-To: <3610183.tucaANtxQk@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Mon, 30 Dec 2013, Grygorii Strashko wrote:
 
-On 01/02/2014 07:48 PM, Arnd Bergmann wrote:
+> > > diff --git a/mm/memblock.c b/mm/memblock.c
+> > > index 71b11d9..6af873a 100644
+> > > --- a/mm/memblock.c
+> > > +++ b/mm/memblock.c
+> > > @@ -707,11 +707,9 @@ void __init_memblock __next_free_mem_range(u64 *idx,
+> > > int nid,
+> > >   	struct memblock_type *rsv = &memblock.reserved;
+> > >   	int mi = *idx & 0xffffffff;
+> > >   	int ri = *idx >> 32;
+> > > -	bool check_node = (nid != NUMA_NO_NODE) && (nid != MAX_NUMNODES);
+> > > 
+> > > -	if (nid == MAX_NUMNODES)
+> > > -		pr_warn_once("%s: Usage of MAX_NUMNODES is depricated. Use
+> > > NUMA_NO_NODE instead\n",
+> > > -			     __func__);
+> > > +	if (WARN_ONCE(nid == MAX_NUMNODES, "Usage of MAX_NUMNODES is
+> > > deprecated. Use NUMA_NO_NODE instead\n"))
+> > > +		nid = NUMA_NO_NODE;
+> > > 
+> > >   	for ( ; mi < mem->cnt; mi++) {
+> > >   		struct memblock_region *m = &mem->regions[mi];
+> > 
+> > Um, why do this at runtime?  This is only used for
+> > for_each_free_mem_range(), which is used rarely in x86 and memblock-only
+> > code.  I'm struggling to understand why we can't deterministically fix the
+> > callers if this condition is possible.
+> > 
+> 
+> 
+> Unfortunately, It's not so simple as from first look :(
+> We've modified __next_free_mem_range_x() functions which are part of
+> Memblock APIs (like memblock_alloc_xxx()) and Nobootmem APIs.
+> These APIs are used as directly as indirectly (as part of callbacks from other
+> MM modules like Sparse), as result, it's not trivial to identify all places
+> where MAX_NUMNODES will be used as input parameter.
+> 
 
->>> diff --git a/drivers/isdn/divert/divert_procfs.c b/drivers/isdn/divert/divert_procfs.c
->>> index fb4f1ba..1c5dc34 100644
->>> --- a/drivers/isdn/divert/divert_procfs.c
->>> +++ b/drivers/isdn/divert/divert_procfs.c
->>> @@ -86,12 +86,13 @@ isdn_divert_read(struct file *file, char __user *buf, size_t count, loff_t *off)
->>>        struct divert_info *inf;
->>>        int len;
->>>
->>> -     if (!*((struct divert_info **) file->private_data)) {
->>> +     if (!(inf = *((struct divert_info **) file->private_data))) {
+These functions are only used for for_each_free_mem_range() and 
+for_each_free_mem_range_reverse().  I can very easily find which callers 
+are passing MAX_NUMNODES deterministically.
 
->>      checkpatch.pl shouldn't approve assignment inside *if*. Though you're
->> moving it from the existing code, it wouldn't hurt to fix it.
-
-> I tried to touch as little as possible, and while I wouldn't use that
-> style myself, it is applied consistently in this driver, including the
-> wait_event line I'm adding, where I feel it actually makes sense.
-
-    I wasn't feeling sure about that one. It seems to me now that it doesn't 
-make much sense -- we could do the assignment beforehand.
-
->>>                if (file->f_flags & O_NONBLOCK)
->>>                        return -EAGAIN;
->>> -             interruptible_sleep_on(&(rd_queue));
->>> +             wait_event_interruptible(rd_queue, (inf =
->>> +                     *((struct divert_info **) file->private_data)));
-
->>      Parens around assignment are hardly useful.
-
-> We get a gcc warning without them:
-
-> drivers/isdn/divert/divert_procfs.c:95:14: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
->      *((struct divert_info **) file->private_data));
-
-    Ah...
-
-> I can still change the first one (in both files) if you think it's important,
-
-    I always prefer checkpatch.pl-clean patches, though some people do argue 
-when they are just moving the badly styled code around.
-
-> but I'd rather not spend too much energy at coding style changes.
-
-    Let's wait for the maintainer's opinion on this.
-
-> 	Arnd
-
-WBR, Sergei
-
+NACK to doing this at runtime.
