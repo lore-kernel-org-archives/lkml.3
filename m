@@ -1,65 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750849AbaABBgW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jan 2014 20:36:22 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:1832 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704AbaABBgV (ORCPT
+	id S1750899AbaABBiH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jan 2014 20:38:07 -0500
+Received: from smtprelay0007.hostedemail.com ([216.40.44.7]:49043 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750704AbaABBiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 20:36:21 -0500
-Message-ID: <52C4C216.3070607@huawei.com>
-Date: Thu, 2 Jan 2014 09:34:14 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Vegard Nossum <vegard.nossum@gmail.com>
-CC: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Vegard Nossum" <vegardno@ifi.uio.no>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        <wangnan0@huawei.com>, the arch/x86 maintainers <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: add a new command-line kmemcheck value
-References: <52C2811C.4090907@huawei.com> <CAOMGZ=GOR_i9ixvHeHwfDN1wwwSQzFNFGa4qLZMhWWNzx0p8mw@mail.gmail.com>
-In-Reply-To: <CAOMGZ=GOR_i9ixvHeHwfDN1wwwSQzFNFGa4qLZMhWWNzx0p8mw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+	Wed, 1 Jan 2014 20:38:06 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:960:968:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1536:1560:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3866:3868:5007:7652:10004:10400:10848:11658:11914:12517:12519:12533:12679:13069:13138:13231:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: dad86_63546a8a4b418
+X-Filterd-Recvd-Size: 1360
+Message-ID: <1388626680.2259.58.camel@joe-AO722>
+Subject: Re: [PATCH] lib/vsprintf: add %pT[C012] format specifier
+From: Joe Perches <joe@perches.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: akpm@linux-foundation.org, geert@linux-m68k.org, jkosina@suse.cz,
+        viro@zeniv.linux.org.uk, davem@davemloft.net, keescook@chromium.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 01 Jan 2014 17:38:00 -0800
+In-Reply-To: <201401011902.JEF43770.FSOVFFOHOtQLJM@I-love.SAKURA.ne.jp>
+References: <1388422545.26796.36.camel@joe-AO722>
+	 <201312311553.IGG09071.HLJtFVSQFFOOOM@I-love.SAKURA.ne.jp>
+	 <1388507067.2259.24.camel@joe-AO722>
+	 <201401011434.GAF34360.FFQOVtFOHJSMLO@I-love.SAKURA.ne.jp>
+	 <1388555362.2259.38.camel@joe-AO722>
+	 <201401011902.JEF43770.FSOVFFOHOtQLJM@I-love.SAKURA.ne.jp>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.196]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/12/31 18:12, Vegard Nossum wrote:
-
-> (Oops, resend to restore Cc.)
-> 
-> Hi,
-> 
-> On 31 December 2013 09:32, Xishi Qiu <qiuxishi@huawei.com> wrote:
->> Add a new command-line kmemcheck value: kmemcheck=3 (disable the feature),
->> this is the same effect as CONFIG_KMEMCHECK disabled.
->> After doing this, we can enable/disable kmemcheck feature in one vmlinux.
-> 
-> Could you please explain what exactly the difference is between the
-> existing kmemcheck=0 parameter and the new kmemcheck=3?
-> 
-> Thanks,
-> 
-> 
-> Vegard
-> 
-
-Hi Vegard,
-
-kmemcheck=0: enable kmemcheck feature, but don't check the memory.
-	and the OS use only one cpu.(setup_max_cpus = 1)
-kmemcheck=3: disable kmemcheck feature.
-	this is the same effect as CONFIG_KMEMCHECK disabled.
-	OS will use cpus as many as possible.
-
-Thanks,
-Xishi Qiu
-
-
-
+btw: Those -6.6 field width uses really are just for debugging
+and I think should be removed.  I didn't notice any other uses of
+field widths and current-><value>.  Are there any?
 
