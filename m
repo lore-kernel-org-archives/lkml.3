@@ -1,90 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751125AbaABJ05 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 04:26:57 -0500
-Received: from mail-bn1blp0181.outbound.protection.outlook.com ([207.46.163.181]:28667
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750711AbaABJ04 convert rfc822-to-8bit (ORCPT
+	id S1751436AbaABJ1r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 04:27:47 -0500
+Received: from smtp4-g21.free.fr ([212.27.42.4]:41665 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751091AbaABJ1o convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 04:26:56 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "perex@perex.cz" <perex@perex.cz>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
-        "Fabio.Estevam@freescale.com" <Fabio.Estevam@freescale.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] ASoC: simple-card: cleanup asoc_simple_card_parse_of()
- code
-Thread-Topic: [PATCH] ASoC: simple-card: cleanup asoc_simple_card_parse_of()
- code
-Thread-Index: AQHPBViOX+iJOlN4DECU2ZJcLzz22Jptnx/ggACbmgCAAukgYA==
-Date: Thu, 2 Jan 2014 09:26:50 +0000
-Message-ID: <f91162146c844cf79694b1b3880fd926@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1388114078-24517-1-git-send-email-Li.Xiubo@freescale.com>
- <20131230121113.GQ31886@sirena.org.uk>
- <4c44077c52604d0b85c4babb59268eb7@BY2PR03MB505.namprd03.prod.outlook.com>
- <20131231122036.GM31886@sirena.org.uk>
-In-Reply-To: <20131231122036.GM31886@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 0079056367
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(164054003)(199002)(189002)(51704005)(24454002)(77982001)(54316002)(50986001)(74876001)(47736001)(47976001)(33646001)(87266001)(81816001)(87936001)(2656002)(81686001)(63696002)(76796001)(76786001)(66066001)(79102001)(80022001)(76576001)(31966008)(47446002)(74662001)(56776001)(4396001)(74502001)(65816001)(85306002)(49866001)(74706001)(76482001)(59766001)(56816005)(19580405001)(83322001)(85852003)(53806001)(69226001)(83072002)(51856001)(90146001)(74366001)(46102001)(19580395003)(54356001)(80976001)(81342001)(74316001)(81542001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB256;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 2 Jan 2014 04:27:44 -0500
+Date: Thu, 2 Jan 2014 10:26:47 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH] ASoC: generic: add generic compound card
+ with DT support
+Message-ID: <20140102102647.6efec89d@armhf>
+In-Reply-To: <52C4766B.8080000@metafoo.de>
+References: <20131231113138.102044cf@armhf>
+	<52C466E1.3030302@metafoo.de>
+	<20140101210814.31e3f3a9@armhf>
+	<52C4766B.8080000@metafoo.de>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 01 Jan 2014 21:11:23 +0100
+Lars-Peter Clausen <lars@metafoo.de> wrote:
 
-> Subject: Re: [PATCH] ASoC: simple-card: cleanup asoc_simple_card_parse_of()
-> code
+> On 01/01/2014 09:08 PM, Jean-Francois Moine wrote:
+> > On Wed, 01 Jan 2014 20:05:05 +0100
+> > Lars-Peter Clausen <lars@metafoo.de> wrote:
+> > 
+> >> As Mark also said, this binding definitely leaks way too much internals of
+> >> the current ASoC implementation. In my opinion the way forward for ASoC is
+> >> to stop to distinguish between different types of components. This is on one
+> >> hand CODECS and CPU-DAIs and on the other hand also front-end and beck-end
+> >> DAIs. The first steps in this direction have already been take by the start
+> >> of the component-fication, but its still a long way to go. Exposing those
+> >> concepts via the devicetree will only make it harder to get rid of them
+> >> later. The bindings for a compound card should essentially describe which
+> >> components are involved and how the fabric between and around them looks
+> >> like. If the type of the component is needed in the ASoC implementation it
+> >> should be possible to auto-discover it. Also I think we want to align the
+> >> devicetree bindings with what the media people have been doing[1].
+> > 
+> > (you forgot the [1] reference)
 > 
-> On Tue, Dec 31, 2013 at 03:27:53AM +0000, Li.Xiubo@freescale.com wrote:
-> 
-> > Also, for most of the devices of the same DAI link, they use the same DAI
-> > formats, but I have found some drivers like : "sound/soc/pxa/magician.c"
-> > and "sound/soc/s6000/s6105-ipcam.c", etc, may have different DAI format
-> > settings for some reasons(maybe some formats are the CPU/Codec devices
-> > default setting that it needn't set it here or others).
-> 
-> The ipcam still has that?  
+> http://lxr.free-electrons.com/source/Documentation/devicetree/bindings/media/video-interfaces.txt
 
-	-----------
-        /* set codec DAI configuration */
-        ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S |
-                                             SND_SOC_DAIFMT_CBM_CFM);
-        if (ret < 0)
-                return ret;
+I see the idea. So here is a proposal of DT for the Cubox (audio + video)
+which should work without too many difficulties.
 
-        /* set cpu DAI configuration */
-        ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_CBM_CFM |
-                                           SND_SOC_DAIFMT_NB_NF);
-        if (ret < 0)
-                return ret;
-	----------
+/* video / audio transmitter */
 
- ... ?
+	tda998x: hdmi-encoder {
+		compatible = "nxp,tda998x";
+		...
 
-> 
-> > I think maybe this is also the reason why the simple-card has common DAI
-> > format and CPU/CODEC private DAI formats at the same time.
-> 
-> I'd really want to see a real use case that actually was a simple card.
+		/* video */
+		port@0 {
+			tda998x_0: endpoint {
+				reg = <0x230145>;
+				remote-endpoint = <&lcd0_0>;
+			};
+		};
 
-I'm also still trying.
+		/* audio */
+		port@1 {
+			hdmi_i2s_audio: endpoint@0 {
+				reg = <0x03>;
+				remote-endpoint = <&audio_hdmi_i2s>;
+			};
+			hdmi_spdif_audio: endpoint@1 {
+				reg = <0x04>;
+				remote-endpoint = <&audio_hdmi_spdif>;
+			};
+		};
+	};
 
+	toslink: spdif {
+		compatible = "linux,spdif-dit";
+		port {
+			spdif_audio: endpoint {
+				remote-endpoint = <&audio_spdif>;
+			};
+		};
+	};
 
-Thanks,
+/* video */
 
---
-Best Regards,
-Xiubo
+	lcd0: video-controller {
+		compatible = "marvell,dove-lcd";
+		...
+		port {
+			lcd0_0: endpoint {
+				remote-endpoint = <&tda998x_0>;
+			};
+		};
+	};
+
+	video {
+		compatible = "media-video";
+		video-controller = <&lcd0>;
+	};
+
+/* audio */
+
+	audio1: audio-controller {
+		compatible = "marvell,dove-audio";
+		...
+		port@0 {
+			audio_hdmi_i2s: endpoint {
+				remote-endpoint = <&hdmi_i2s_audio>;
+			};
+		};
+
+		port@1 {
+			audio_hdmi_spdif: endpoint@0 {
+				remote-endpoint = <&hdmi_spdif_audio>;
+			};
+			audio_spdif: endpoint@1 {
+				remote-endpoint = <&spdif_audio>;
+			};
+		};
+	};
+
+	sound {
+		compatible = "media-audio";
+		audio-controller = <&audio1>;
+	};
+
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
