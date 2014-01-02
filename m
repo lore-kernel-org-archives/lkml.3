@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638AbaABUaR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 15:30:17 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:41578 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782AbaABUaP (ORCPT
+	id S1752531AbaABUdl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 15:33:41 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:58770 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751841AbaABUdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 15:30:15 -0500
-Message-ID: <52C5CC54.4050602@linaro.org>
-Date: Thu, 02 Jan 2014 12:30:12 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 2 Jan 2014 15:33:40 -0500
+Date: Thu, 2 Jan 2014 12:33:20 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Cc: cl@linux-foundation.org, penberg@kernel.org, mpm@selenic.com
+Subject: Memory allocator semantics
+Message-ID: <20140102203320.GA27615@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        =?UTF-8?B?S3J6eXN6dG9m?= =?UTF-8?B?IEhhxYJhc2E=?= 
-	<khalasa@piap.pl>
-CC: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Willy Tarreau <w@1wt.eu>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: v3.13-rc6+ regression (ARM board)
-References: <m3mwjhux0e.fsf@t19.piap.pl>	<20131231104511.GA9688@1wt.eu>	<m3txdmu2ez.fsf@t19.piap.pl>	<20140102101455.GG10158@pengutronix.de>	<m3ppoatwn1.fsf@t19.piap.pl> <CA+55aFyZ0EXYkHd-BhQo6K++qKJVPdGeDbFTVTs3pAPCHFUpOA@mail.gmail.com> <52C5C5F6.70803@linaro.org>
-In-Reply-To: <52C5C5F6.70803@linaro.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14010220-7164-0000-0000-000004C6FE58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2014 12:03 PM, John Stultz wrote:
-> On 01/02/2014 11:38 AM, Linus Torvalds wrote:
->> On Thu, Jan 2, 2014 at 4:07 AM, Krzysztof Hałasa <khalasa@piap.pl> wrote:
->>> This means these two commits don't like each other:
->>>
->>>     seqcount: Add lockdep functionality to seqcount/seqlock structures
->>>     sched_clock: Use seqcount instead of rolling our own
->> Does something like this fix it for you?
->>
->>   --- a/kernel/time/sched_clock.c
->>   +++ b/kernel/time/sched_clock.c
->>   @@ -36,6 +36,7 @@ core_param(irqtime, irqtime, int, 0400);
->>
->>    static struct clock_data cd = {
->>           .mult   = NSEC_PER_SEC / HZ,
->>   +       .seq = SEQCNT_ZERO(cd.seq),
->>    };
->>
->>    static u64 __read_mostly sched_clock_mask;
->>
->> (The above is not even compile-tested, because x86 doesn't use
->> GENERIC_SCHED_CLOCK. So I did the patch blindly, but I think you get
->> the idea..)
-> Sheesh. Just finishing up holiday email backlog and Linus already has a
-> fix. :)
->
-> This looks like it should fix the issue, and does build for me.
->
-> Assuming it works for Krzysztof,
+Hello!
 
-So something else may be at play. Even with Linus' patch I reproduced a
-similar hang here.
+>From what I can see, the Linux-kernel's SLAB, SLOB, and SLUB memory
+allocators would deal with the following sort of race:
 
-Still chasing it down, but it looks like a seqlock deadlock where we're
-calling read while holding the lock.
+A.	CPU 0: r1 = kmalloc(...); ACCESS_ONCE(gp) = r1;
 
-thanks
--john
+	CPU 1: r2 = ACCESS_ONCE(gp); if (r2) kfree(r2);
 
+However, my guess is that this should be considered an accident of the
+current implementation rather than a feature.  The reason for this is
+that I cannot see how you would usefully do (A) above without also allowing
+(B) and (C) below, both of which look to me to be quite destructive:
 
+B.	CPU 0: r1 = kmalloc(...);  ACCESS_ONCE(shared_x) = r1;
+
+        CPU 1: r2 = ACCESS_ONCE(shared_x); if (r2) kfree(r2);
+
+	CPU 2: r3 = ACCESS_ONCE(shared_x); if (r3) kfree(r3);
+
+	This results in the memory being on two different freelists.
+
+C.      CPU 0: r1 = kmalloc(...);  ACCESS_ONCE(shared_x) = r1;
+
+	CPU 1: r2 = ACCESS_ONCE(shared_x); r2->a = 1; r2->b = 2;
+
+	CPU 2: r3 = ACCESS_ONCE(shared_x); if (r3) kfree(r3);
+
+	CPU 3: r4 = kmalloc(...);  r4->s = 3; r4->t = 4;
+
+	This results in the memory being used by two different CPUs,
+	each of which believe that they have sole access.
+
+But I thought I should ask the experts.
+
+So, am I correct that kernel hackers are required to avoid "drive-by"
+kfree()s of kmalloc()ed memory?
+
+							Thanx, Paul
+
+PS.  To the question "Why would anyone care about (A)?", then answer
+     is "Inquiring programming-language memory-model designers want
+     to know."
 
