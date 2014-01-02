@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319AbaABRJA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:09:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40382 "EHLO
+	id S1754448AbaABRWa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:22:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40387 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751988AbaABRIz (ORCPT
+	with ESMTP id S1751372AbaABRI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:08:55 -0500
+	Thu, 2 Jan 2014 12:08:57 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tom Lendacky <thomas.lendacky@amd.com>,
+Cc: Gerald Schaefer <gerald.schaefer@de.ibm.com>,
         Herbert Xu <herbert@gondor.apana.org.au>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 71/91] crypto: authenc - Find proper IV address in ablkcipher callback
-Date: Thu,  2 Jan 2014 09:04:46 -0800
-Message-Id: <1388682306-30859-72-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 73/91] crypto: s390 - Fix aes-xts parameter corruption
+Date: Thu,  2 Jan 2014 09:04:48 -0800
+Message-Id: <1388682306-30859-74-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -28,43 +28,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tom Lendacky <thomas.lendacky@amd.com>
+From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
 
-commit fc019c7122dfcd69c50142b57a735539aec5da95 upstream.
+commit 9dda2769af4f3f3093434648c409bb351120d9e8 upstream.
 
-When performing an asynchronous ablkcipher operation the authenc
-completion callback routine is invoked, but it does not locate and use
-the proper IV.
+Some s390 crypto algorithms incorrectly use the crypto_tfm structure to
+store private data. As the tfm can be shared among multiple threads, this
+can result in data corruption.
 
-The callback routine, crypto_authenc_encrypt_done, is updated to use
-the same method of calculating the address of the IV as is done in
-crypto_authenc_encrypt function which sets up the callback.
+This patch fixes aes-xts by moving the xts and pcc parameter blocks from
+the tfm onto the stack (48 + 96 bytes).
 
-Signed-off-by: Tom Lendacky <thomas.lendacky@amd.com>
+Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
 Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- crypto/authenc.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ arch/s390/crypto/aes_s390.c | 31 +++++++++++++++++--------------
+ 1 file changed, 17 insertions(+), 14 deletions(-)
 
-diff --git a/crypto/authenc.c b/crypto/authenc.c
-index d0583a4..a8aaae6 100644
---- a/crypto/authenc.c
-+++ b/crypto/authenc.c
-@@ -368,9 +368,10 @@ static void crypto_authenc_encrypt_done(struct crypto_async_request *req,
- 	if (!err) {
- 		struct crypto_aead *authenc = crypto_aead_reqtfm(areq);
- 		struct crypto_authenc_ctx *ctx = crypto_aead_ctx(authenc);
--		struct ablkcipher_request *abreq = aead_request_ctx(areq);
--		u8 *iv = (u8 *)(abreq + 1) +
--			 crypto_ablkcipher_reqsize(ctx->enc);
-+		struct authenc_request_ctx *areq_ctx = aead_request_ctx(areq);
-+		struct ablkcipher_request *abreq = (void *)(areq_ctx->tail
-+							    + ctx->reqoff);
-+		u8 *iv = (u8 *)abreq - crypto_ablkcipher_ivsize(ctx->enc);
+diff --git a/arch/s390/crypto/aes_s390.c b/arch/s390/crypto/aes_s390.c
+index 2e4b5be..94e20dd 100644
+--- a/arch/s390/crypto/aes_s390.c
++++ b/arch/s390/crypto/aes_s390.c
+@@ -55,8 +55,7 @@ struct pcc_param {
  
- 		err = crypto_authenc_genicv(areq, iv, 0);
- 	}
+ struct s390_xts_ctx {
+ 	u8 key[32];
+-	u8 xts_param[16];
+-	struct pcc_param pcc;
++	u8 pcc_key[32];
+ 	long enc;
+ 	long dec;
+ 	int key_len;
+@@ -591,7 +590,7 @@ static int xts_aes_set_key(struct crypto_tfm *tfm, const u8 *in_key,
+ 		xts_ctx->enc = KM_XTS_128_ENCRYPT;
+ 		xts_ctx->dec = KM_XTS_128_DECRYPT;
+ 		memcpy(xts_ctx->key + 16, in_key, 16);
+-		memcpy(xts_ctx->pcc.key + 16, in_key + 16, 16);
++		memcpy(xts_ctx->pcc_key + 16, in_key + 16, 16);
+ 		break;
+ 	case 48:
+ 		xts_ctx->enc = 0;
+@@ -602,7 +601,7 @@ static int xts_aes_set_key(struct crypto_tfm *tfm, const u8 *in_key,
+ 		xts_ctx->enc = KM_XTS_256_ENCRYPT;
+ 		xts_ctx->dec = KM_XTS_256_DECRYPT;
+ 		memcpy(xts_ctx->key, in_key, 32);
+-		memcpy(xts_ctx->pcc.key, in_key + 32, 32);
++		memcpy(xts_ctx->pcc_key, in_key + 32, 32);
+ 		break;
+ 	default:
+ 		*flags |= CRYPTO_TFM_RES_BAD_KEY_LEN;
+@@ -621,29 +620,33 @@ static int xts_aes_crypt(struct blkcipher_desc *desc, long func,
+ 	unsigned int nbytes = walk->nbytes;
+ 	unsigned int n;
+ 	u8 *in, *out;
+-	void *param;
++	struct pcc_param pcc_param;
++	struct {
++		u8 key[32];
++		u8 init[16];
++	} xts_param;
+ 
+ 	if (!nbytes)
+ 		goto out;
+ 
+-	memset(xts_ctx->pcc.block, 0, sizeof(xts_ctx->pcc.block));
+-	memset(xts_ctx->pcc.bit, 0, sizeof(xts_ctx->pcc.bit));
+-	memset(xts_ctx->pcc.xts, 0, sizeof(xts_ctx->pcc.xts));
+-	memcpy(xts_ctx->pcc.tweak, walk->iv, sizeof(xts_ctx->pcc.tweak));
+-	param = xts_ctx->pcc.key + offset;
+-	ret = crypt_s390_pcc(func, param);
++	memset(pcc_param.block, 0, sizeof(pcc_param.block));
++	memset(pcc_param.bit, 0, sizeof(pcc_param.bit));
++	memset(pcc_param.xts, 0, sizeof(pcc_param.xts));
++	memcpy(pcc_param.tweak, walk->iv, sizeof(pcc_param.tweak));
++	memcpy(pcc_param.key, xts_ctx->pcc_key, 32);
++	ret = crypt_s390_pcc(func, &pcc_param.key[offset]);
+ 	if (ret < 0)
+ 		return -EIO;
+ 
+-	memcpy(xts_ctx->xts_param, xts_ctx->pcc.xts, 16);
+-	param = xts_ctx->key + offset;
++	memcpy(xts_param.key, xts_ctx->key, 32);
++	memcpy(xts_param.init, pcc_param.xts, 16);
+ 	do {
+ 		/* only use complete blocks */
+ 		n = nbytes & ~(AES_BLOCK_SIZE - 1);
+ 		out = walk->dst.virt.addr;
+ 		in = walk->src.virt.addr;
+ 
+-		ret = crypt_s390_km(func, param, out, in, n);
++		ret = crypt_s390_km(func, &xts_param.key[offset], out, in, n);
+ 		if (ret < 0 || ret != n)
+ 			return -EIO;
+ 
 -- 
 1.8.3.2
 
