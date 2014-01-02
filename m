@@ -1,152 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508AbaABD0U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jan 2014 22:26:20 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:49856 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735AbaABDX7 (ORCPT
+	id S1750807AbaABDpE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jan 2014 22:45:04 -0500
+Received: from mail-db9lp0251.outbound.messaging.microsoft.com ([213.199.154.251]:49528
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750708AbaABDpB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 22:23:59 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s023NusQ003540, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next v2 3/6] r8152: change some definitions
-Date: Thu, 2 Jan 2014 11:22:41 +0800
-Message-ID: <1388632963-1341-4-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1388632963-1341-1-git-send-email-hayeswang@realtek.com>
-References: <1388111649-1014-1-git-send-email-hayeswang@realtek.com>
- <1388632963-1341-1-git-send-email-hayeswang@realtek.com>
+	Wed, 1 Jan 2014 22:45:01 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 5
+X-BigFish: VS5(zz78fbmzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <lgirdwood@gmail.com>
+CC: <perex@perex.cz>, <tiwai@suse.de>, <alsa-devel@alsa-project.org>,
+        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH v2] ASoC: soc-core: add snd_soc_of_parse_master_clkdir() for dt
+Date: Thu, 2 Jan 2014 10:48:25 +0800
+Message-ID: <1388630905-1321-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace RX_BUF_THR with RX_THR_HIGH.
-Replace RWSUME_INDICATE with RESUME_INDICATE.
-Add CRC_SIZE, TX_ALIGN, and RX_ALIGN.
+This patch adds snd_soc_of_parse_master_clkdir() and supports below
+style on dt:
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+master-clkdir-out;
+
+If this property is absent 0 will be returned, 1 otherwise.
+0 : SND_SOC_CLOCK_IN
+1 : SND_SOC_CLOCK_OUT
+
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 ---
- drivers/net/usb/r8152.c | 27 ++++++++++++++++-----------
- 1 file changed, 16 insertions(+), 11 deletions(-)
+ include/sound/soc.h  |  1 +
+ sound/soc/soc-core.c | 11 +++++++++++
+ 2 files changed, 12 insertions(+)
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index b8bc3eb..85862a8 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -209,7 +209,7 @@
- #define TX_AGG_MAX_THRESHOLD	0x03
+diff --git a/include/sound/soc.h b/include/sound/soc.h
+index 5a049d9..690f4f6 100644
+--- a/include/sound/soc.h
++++ b/include/sound/soc.h
+@@ -1170,6 +1170,7 @@ int snd_soc_of_parse_card_name(struct snd_soc_card *card,
+ 			       const char *propname);
+ int snd_soc_of_parse_audio_routing(struct snd_soc_card *card,
+ 				   const char *propname);
++unsigned int snd_soc_of_parse_master_clkdir(struct device_node *np);
+ unsigned int snd_soc_of_parse_daifmt(struct device_node *np,
+ 				     const char *prefix);
+ int snd_soc_of_get_dai_name(struct device_node *of_node,
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index be88df5..f155207 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -4472,6 +4472,17 @@ int snd_soc_of_parse_audio_routing(struct snd_soc_card *card,
+ }
+ EXPORT_SYMBOL_GPL(snd_soc_of_parse_audio_routing);
  
- /* USB_RX_BUF_TH */
--#define RX_BUF_THR		0x7a120180
-+#define RX_THR_HIGH		0x7a120180
- 
- /* USB_TX_DMA */
- #define TEST_MODE_DISABLE	0x00000001
-@@ -219,7 +219,7 @@
- #define POWER_CUT		0x0100
- 
- /* USB_PM_CTRL_STATUS */
--#define RWSUME_INDICATE		0x0001
-+#define RESUME_INDICATE		0x0001
- 
- /* USB_USB_CTRL */
- #define RX_AGG_DISABLE		0x0010
-@@ -274,6 +274,9 @@ enum rtl_register_content {
- #define RTL8152_MAX_TX		10
- #define RTL8152_MAX_RX		10
- #define INTBUFSIZE		2
-+#define CRC_SIZE		4
-+#define TX_ALIGN		4
-+#define RX_ALIGN		8
- 
- #define INTR_LINK		0x0004
- 
-@@ -916,12 +919,12 @@ resubmit:
- 
- static inline void *rx_agg_align(void *data)
++unsigned int snd_soc_of_parse_master_clkdir(struct device_node *np)
++{
++	/*
++	 * check "master-clkdir-out"
++	 * false means SND_SOC_CLOCK_IN
++	 * true means SND_SOC_CLOCK_OUT
++	 */
++	return !!of_property_read_bool(np, "master-clkdir-out");
++}
++EXPORT_SYMBOL_GPL(snd_soc_of_parse_master_clkdir);
++
+ unsigned int snd_soc_of_parse_daifmt(struct device_node *np,
+ 				     const char *prefix)
  {
--	return (void *)ALIGN((uintptr_t)data, 8);
-+	return (void *)ALIGN((uintptr_t)data, RX_ALIGN);
- }
- 
- static inline void *tx_agg_align(void *data)
- {
--	return (void *)ALIGN((uintptr_t)data, 4);
-+	return (void *)ALIGN((uintptr_t)data, TX_ALIGN);
- }
- 
- static void free_all_mem(struct r8152 *tp)
-@@ -990,7 +993,8 @@ static int alloc_all_mem(struct r8152 *tp)
- 
- 		if (buf != rx_agg_align(buf)) {
- 			kfree(buf);
--			buf = kmalloc_node(rx_buf_sz + 8, GFP_KERNEL, node);
-+			buf = kmalloc_node(rx_buf_sz + RX_ALIGN, GFP_KERNEL,
-+					   node);
- 			if (!buf)
- 				goto err1;
- 		}
-@@ -1015,7 +1019,8 @@ static int alloc_all_mem(struct r8152 *tp)
- 
- 		if (buf != tx_agg_align(buf)) {
- 			kfree(buf);
--			buf = kmalloc_node(rx_buf_sz + 4, GFP_KERNEL, node);
-+			buf = kmalloc_node(rx_buf_sz + TX_ALIGN, GFP_KERNEL,
-+					   node);
- 			if (!buf)
- 				goto err1;
- 		}
-@@ -1215,7 +1220,7 @@ static void rx_bottom(struct r8152 *tp)
- 
- 			stats = rtl8152_get_stats(netdev);
- 
--			pkt_len -= 4; /* CRC */
-+			pkt_len -= CRC_SIZE;
- 			rx_data += sizeof(struct rx_desc);
- 
- 			skb = netdev_alloc_skb_ip_align(netdev, pkt_len);
-@@ -1230,7 +1235,7 @@ static void rx_bottom(struct r8152 *tp)
- 			stats->rx_packets++;
- 			stats->rx_bytes += pkt_len;
- 
--			rx_data = rx_agg_align(rx_data + pkt_len + 4);
-+			rx_data = rx_agg_align(rx_data + pkt_len + CRC_SIZE);
- 			rx_desc = (struct rx_desc *)rx_data;
- 			len_used = (int)(rx_data - (u8 *)agg->head);
- 			len_used += sizeof(struct rx_desc);
-@@ -1580,7 +1585,7 @@ static void r8152b_exit_oob(struct r8152 *tp)
- 	ocp_write_dword(tp, MCU_TYPE_PLA, PLA_TXFIFO_CTRL, TXFIFO_THR_NORMAL);
- 
- 	ocp_write_byte(tp, MCU_TYPE_USB, USB_TX_AGG, TX_AGG_MAX_THRESHOLD);
--	ocp_write_dword(tp, MCU_TYPE_USB, USB_RX_BUF_TH, RX_BUF_THR);
-+	ocp_write_dword(tp, MCU_TYPE_USB, USB_RX_BUF_TH, RX_THR_HIGH);
- 	ocp_write_dword(tp, MCU_TYPE_USB, USB_TX_DMA,
- 			TEST_MODE_DISABLE | TX_SIZE_ADJUST1);
- 
-@@ -1893,7 +1898,7 @@ static void r8152b_init(struct r8152 *tp)
- 	ocp_write_word(tp, MCU_TYPE_USB, USB_UPS_CTRL, ocp_data);
- 
- 	ocp_data = ocp_read_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS);
--	ocp_data &= ~RWSUME_INDICATE;
-+	ocp_data &= ~RESUME_INDICATE;
- 	ocp_write_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS, ocp_data);
- 
- 	r8152b_exit_oob(tp);
-@@ -2074,7 +2079,7 @@ static void rtl8152_unload(struct r8152 *tp)
- 	}
- 
- 	ocp_data = ocp_read_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS);
--	ocp_data &= ~RWSUME_INDICATE;
-+	ocp_data &= ~RESUME_INDICATE;
- 	ocp_write_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS, ocp_data);
- }
- 
 -- 
-1.8.3.1
+1.8.4
+
 
