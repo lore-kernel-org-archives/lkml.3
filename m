@@ -1,90 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751245AbaABETF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jan 2014 23:19:05 -0500
-Received: from rcdn-iport-7.cisco.com ([173.37.86.78]:49793 "EHLO
-	rcdn-iport-7.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739AbaABETD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 23:19:03 -0500
-X-Greylist: delayed 566 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Jan 2014 23:19:02 EST
-X-IronPort-AV: E=Sophos;i="4.95,588,1384300800"; 
-   d="scan'208";a="294773337"
-From: "Sujith Sankar (ssujith)" <ssujith@cisco.com>
-To: "Govindarajulu Varadarajan (gvaradar)" <gvaradar@cisco.com>,
-        Ding Tianhong <dingtianhong@huawei.com>
-CC: "Christian Benvenuti (benve)" <benve@cisco.com>,
-        Govindarajulu Varadarajan <govindarajulu90@gmail.com>,
-        "Neel Patel (neepatel)" <neepatel@cisco.com>,
-        Nishank Trivedi <nistrive@cisco.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH net-next v3 04/19] net: enic: slight optimization of
- addr compare
-Thread-Topic: [PATCH net-next v3 04/19] net: enic: slight optimization of
- addr compare
-Thread-Index: AQHPBTQV2Kn9kc2K1kuUwWhoAwLyhZpsx+MAgATO0IA=
-Date: Thu, 2 Jan 2014 04:09:34 +0000
-Message-ID: <CEEAE3A2.F048%ssujith@cisco.com>
-In-Reply-To: <alpine.LNX.2.03.1312301341050.2286@cisco.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.3.4.130416
-x-originating-ip: [10.65.65.188]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <E3F34113E20C68468652600BA841AB95@emea.cisco.com>
-Content-Transfer-Encoding: 8BIT
+	id S1751432AbaABEph (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jan 2014 23:45:37 -0500
+Received: from know-smtprelay-omc-8.server.virginmedia.net ([80.0.253.72]:48852
+	"EHLO know-smtprelay-omc-8.server.virginmedia.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751364AbaABEpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jan 2014 23:45:36 -0500
+X-Originating-IP: [81.106.150.188]
+X-Spam: 0
+X-Authority: v=2.1 cv=Rs1LLUWK c=1 sm=1 tr=0 a=DGj713NdaxKrsjjgQne7PA==:117
+ a=DGj713NdaxKrsjjgQne7PA==:17 a=LcaDllckn3IA:10 a=Rttt9Z-za7sA:10
+ a=uObrxnre4hsA:10 a=IkcTkHD0fZMA:10 a=NLZqzBF-AAAA:8 a=-PkhLDywX0wA:10
+ a=85rfUPFjUj--iJOqae4A:9 a=SoHLJID-3jSoz0Zf:21 a=nBdCCjdwJPSwhqQr:21
+ a=QEXdDO2ut3YA:10
+Date: Thu, 2 Jan 2014 04:45:34 +0000
+From: Ken Moffat <zarniwhoop@ntlworld.com>
+To: Gene Heskett <gheskett@wdtv.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org
+Subject: Re: AMD microcode fails to update with v3.8.3 and newer, bisect
+ failed
+Message-ID: <20140102044534.GA26440@milliways>
+References: <201401011752.00267.gheskett@wdtv.com>
+ <20140102001900.GC19878@titan.lakedaemon.net>
+ <201401012125.55522.gheskett@wdtv.com>
+ <20140102040815.GA25619@milliways>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140102040815.GA25619@milliways>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks good.
+On Thu, Jan 02, 2014 at 04:08:15AM +0000, Ken Moffat wrote:
+> 
+>  Anyway, best of luck and I hope you get it sorted.
+> 
+ One further suggestion, since you appear to be at the "running
+round in circles" stage -
 
-Acked by: Sujith Sankar <ssujith@cisco.com>
+1. Start with a good kernel.  In this case, I suppose 3.8.2 is the
+right place to begin.
 
+2. But then change the .config to -
 
-On 30/12/13 1:42 PM, "Govindarajulu Varadarajan (gvaradar)"
-<gvaradar@cisco.com> wrote:
+2.1 ensure that your disk filesystems are built in - e.g. all of
+ext2, ext3, ext4 and anything else you know you are using.
+Normally, only the fs for '/' needs to be built in, but you seem to
+have seen other issues so I would just build in everything you need.
 
->On Mon, 30 Dec 2013, Ding Tianhong wrote:
->
->> Use possibly more efficient ether_addr_equal
->> to instead of memcmp.
->>
->> Cc: Christian Benvenuti <benve@cisco.com>
->> Cc: Sujith Sankar <ssujith@cisco.com>
->> Cc: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
->> Cc: Neel Patel <neepatel@cisco.com>
->> Cc: Nishank Trivedi <nistrive@cisco.com>
->> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
->> ---
->> drivers/net/ethernet/cisco/enic/enic_pp.c | 2 +-
->> 1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/net/ethernet/cisco/enic/enic_pp.c
->>b/drivers/net/ethernet/cisco/enic/enic_pp.c
->> index 43464f0..e6a8319 100644
->> --- a/drivers/net/ethernet/cisco/enic/enic_pp.c
->> +++ b/drivers/net/ethernet/cisco/enic/enic_pp.c
->> @@ -162,7 +162,7 @@ static int enic_are_pp_different(struct
->>enic_port_profile *pp1,
->> 	return strcmp(pp1->name, pp2->name) | !!memcmp(pp1->instance_uuid,
->> 		pp2->instance_uuid, PORT_UUID_MAX) |
->> 		!!memcmp(pp1->host_uuid, pp2->host_uuid, PORT_UUID_MAX) |
->> -		!!memcmp(pp1->mac_addr, pp2->mac_addr, ETH_ALEN);
->> +		!ether_addr_equal(pp1->mac_addr, pp2->mac_addr);
->> }
->>
->> static int enic_pp_preassociate(struct enic *enic, int vf,
->> -- 
->> 1.8.0
->>
->
->looks good for me
->
->Acked-by: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
+2.2 build in everything else you need to boot (normally, the disk
+controller(s) ) so that you don't need an initrd.
 
+2.3 drop the things you don't need - this is merely to reduce the
+time it takes to build a kernel.  Distros normally build
+_everything_ as a module.  Provided you can boot without an initrd,
+reducing the number of modules only makes it quicker to build a new
+kernel - but if you are starting from something which looks like
+"allmodconfig" it can save a lot of time.
+
+2.4 for your convenience, ensure that you have enabled the config to
+be stored in /proc/config.gz - once you are building your own
+slimmed-down kernels, you probably won't want to mess about with
+distro "install" scripts so just copying the bzimage to
+/boot/vmlinuz-x.y.z, make modules_install, and editing
+/boot/grub/grub.cfg (yes, really!) will save a lot of time.
+
+2.5 Add your own version, e.g. for 3.8.2 change EXTRAVERSION to 2-A
+so that the kernel will be 3.8.2-A (this stops it overwriting
+existing existing 3.8.2 modules, in case the first attempt doesn't
+do what you want).
+
+3.  That might take two or three attempts to get to a good config,
+but after that you should be able to use the slimmer config (from
+zcat /proc/config.gz) to create .config for any newer version you
+want to test or bisect, and then just run make oldconfig before you
+build.
+
+ Also, when you get back to bisecting, the version in the kernel
+Makefile might not be what you expect.  If in doubt, you can change
+it to something which doesn't overwrite any existing modules, e.g.
+3.8.bisect-1 etc.
+
+ HTH
+
+ĸen
+-- 
+das eine Mal als Tragödie, dieses Mal als Farce
