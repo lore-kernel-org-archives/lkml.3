@@ -1,103 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750830AbaABLbQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 06:31:16 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:53654 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738AbaABLbP (ORCPT
+	id S1751172AbaABLdU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 06:33:20 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:48658 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832AbaABLdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 06:31:15 -0500
-X-IronPort-AV: E=Sophos;i="4.95,590,1384300800"; 
-   d="scan'208";a="87003144"
-Message-ID: <52C54E00.7010508@citrix.com>
-Date: Thu, 2 Jan 2014 11:31:12 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	Thu, 2 Jan 2014 06:33:19 -0500
+Message-ID: <52C54E7A.3030303@linaro.org>
+Date: Thu, 02 Jan 2014 12:33:14 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
-        <boris.ostrovsky@oracle.com>, <stefano.stabellini@eu.citrix.com>,
-        <mukesh.rathor@oracle.com>
-Subject: Re: [PATCH v12 08/18] xen/pvh: Load GDT/GS in early PV bootup code
- for BSP.
-References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com> <1388550945-25499-9-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1388550945-25499-9-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
+To: Linux PM mailing list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: very slow IO after resume
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
-> From: Mukesh Rathor <mukesh.rathor@oracle.com>
-> 
-> During early bootup we start life using the Xen provided
-> GDT, which means that we are running with %cs segment set
-> to FLAT_KERNEL_CS (FLAT_RING3_CS64 0xe033, GDT index 261).
-> 
-> But for PVH we want to be use HVM type mechanism for
-> segment operations. As such we need to switch to the HVM
-> one and also reload ourselves with the __KERNEL_CS:eip
-> to run in the proper GDT and segment.
-> 
-> For HVM this is usually done in 'secondary_startup_64' in
-> (head_64.S) but since we are not taking that bootup
-> path (we start in PV - xen_start_kernel) we need to do
-> that in the early PV bootup paths.
-> 
-> For good measure we also zero out the %fs, %ds, and %es
-> (not strictly needed as Xen has already cleared them
-> for us). The %gs is loaded by 'switch_to_new_gdt'.
-[...]
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -1414,8 +1414,43 @@ static void __init xen_boot_params_init_edd(void)
->   * we do this, we have to be careful not to call any stack-protected
->   * function, which is most of the kernel.
->   */
-> -static void __init xen_setup_stackprotector(void)
-> +static void __init xen_setup_gdt(void)
->  {
-> +	if (xen_feature(XENFEAT_auto_translated_physmap)) {
-> +#ifdef CONFIG_X86_64
-> +		unsigned long dummy;
-> +
-> +		switch_to_new_gdt(0); /* GDT and GS set */
-> +
-> +		/* We are switching of the Xen provided GDT to our HVM mode
-> +		 * GDT. The new GDT has  __KERNEL_CS with CS.L = 1
-> +		 * and we are jumping to reload it.
-> +		 */
-> +		asm volatile ("pushq %0\n"
-> +			      "leaq 1f(%%rip),%0\n"
-> +			      "pushq %0\n"
-> +			      "lretq\n"
-> +			      "1:\n"
-> +			      : "=&r" (dummy) : "0" (__KERNEL_CS));
-> +
-> +		/*
-> +		 * While not needed, we also set the %es, %ds, and %fs
-> +		 * to zero. We don't care about %ss as it is NULL.
-> +		 * Strictly speaking this is not needed as Xen zeros those
-> +		 * out (and also MSR_FS_BASE, MSR_GS_BASE, MSR_KERNEL_GS_BASE)
-> +		 *
-> +		 * Linux zeros them in cpu_init() and in secondary_startup_64
-> +		 * (for BSP).
-> +		 */
-> +		loadsegment(es, 0);
-> +		loadsegment(ds, 0);
-> +		loadsegment(fs, 0);
-> +#else
-> +		/* PVH: TODO Implement. */
-> +		BUG();
-> +#endif
-> +		return;
-> +	}
->  	pv_cpu_ops.write_gdt_entry = xen_write_gdt_entry_boot;
->  	pv_cpu_ops.load_gdt = xen_load_gdt_boot;
 
-If PVH uses native GDT why are these (and possibly other?) GDT ops needed?
+Hi All,
 
-David
+I noticed an issue on the IOs after resuming my laptop.
+
+My mailer thunderbird or the compilations are very slow, often blocked 
+in 'D' state. The 'top' shows 81% on wait.
+
+The processes stack are always in when blocked:
+
+[<c164f8ab>] balance_dirty_pages.isra.18+0x3f5/0x4b4
+[<c112a2ce>] balance_dirty_pages_ratelimited+0xde/0x100
+[<c1120d81>] generic_perform_write+0x141/0x1c0
+[<c1120e50>] generic_file_buffered_write+0x50/0x80
+[<c1122a4a>] __generic_file_aio_write+0x22a/0x490
+[<c1122d13>] generic_file_aio_write+0x63/0xd0
+[<c11f5162>] ext4_file_write+0xb2/0x100
+[<c117318a>] do_sync_write+0x6a/0xa0
+[<c1173dc5>] vfs_write+0xa5/0x1d0
+[<c1174277>] SyS_write+0x57/0xa0
+[<c1661b37>] syscall_call+0x7/0xb
+
+The kernel is 3.11.0-031100-generic based on ubuntu, I noticed this 
+issue on some previous version (since 3.5 AFAIR).
+My laptop is a Lenovo X230, SSD 250GB (6Gb/s) and 16GB of RAM.
+
+Is it a known issue ?
+
+Thanks
+-- Daniel
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
