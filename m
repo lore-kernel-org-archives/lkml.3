@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574AbaABS3y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 13:29:54 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:55511 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752018AbaABS3x (ORCPT
+	id S1752623AbaABSb0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 13:31:26 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:27945 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751870AbaABSbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 13:29:53 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 01/17] ARM: spear: Remove deprecated IRQF_DISABLED flag
-Date: Thu, 2 Jan 2014 19:29:46 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, olof@lixom.net,
-        khilman@linaro.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-References: <1388419771-30075-1-git-send-email-daniel.lezcano@linaro.org>
-In-Reply-To: <1388419771-30075-1-git-send-email-daniel.lezcano@linaro.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201401021929.46581.arnd@arndb.de>
-X-Provags-ID: V02:K0:swJLU1/2vwTFw7e/TotZmO8xwcjq36AIa/OfJIDENor
- Y1uZKwh+A8TBFCr2FCVAs5BiZ2IPIox4xQRMJF/La0BMpKQlRD
- js7iMX2z6d5oJHfIR+GxpbdJqcpzyu+vclCiY7RrpLSzyQp18l
- amRdLkqIu06YTk9aBpxd+QByqy0r55h1TIpQwibBVBksS6COBC
- gFKg6KjjTEemfrkrxwf41jEyaPaqxMRtmk2dwUEmU4DO5S8C+L
- fzO01VyHPeIqHazNpZ+DtTt2h6Id2Yr10WJ/PPRM3dldE2sw8P
- ntwWMjtv+HcJCg5c/m08WoL9821HnrPH3fYOCy1yafAUzooXZJ
- lNNOM1Cgd4qcBUm8AhwE=
+	Thu, 2 Jan 2014 13:31:24 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-94-52c5b0798191
+From: Alexey Perevalov <a.perevalov@samsung.com>
+To: linux-kernel@vger.kernel.org, john.stultz@linaro.org
+Cc: Alexey Perevalov <a.perevalov@samsung.com>, anton@enomsg.org,
+        kyungmin.park@samsung.com, akpm@linux-foundation.org
+Subject: [PATCH 0/3] Deferrable timers support for timerfd API
+Date: Thu, 02 Jan 2014 22:30:45 +0400
+Message-id: <1388687448-12987-1-git-send-email-a.perevalov@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCJMWRmVeSWpSXmKPExsVy+t/xq7pVG44GGSxit5h79zyLxZz1a9gs
+	Dm7VtDjzW9fibNMbdovLu+awObB5TOj/xOhx59oeNo8TM36zePRtWcXo8XmTXABrFJdNSmpO
+	Zllqkb5dAlfGmZlHGQvOcFX8fvKBrYFxG0cXIyeHhICJxOnTU5ghbDGJC/fWs3UxcnEICSxl
+	lFi5aBYrhDODSeLEooXsXYwcHGwCBhL77tmCNIgIWEjcefWfFcRmFqiQeNi8nwnEFhawk1je
+	+ZcRxGYRUJV4NH02mM0r4C7xf+dhFpAxEgIKEnMm2Uxg5F7AyLCKUTS1NLmgOCk910ivODG3
+	uDQvXS85P3cTIyQkvu5gXHrM6hCjAAejEg/vh7qjQUKsiWXFlbmHGCU4mJVEePVnAoV4UxIr
+	q1KL8uOLSnNSiw8xMnFwSjUwaq7zW3Lsp17DCse1T7VfR2b/sAltk3209kUIR4rzPdXsicpO
+	VzRSuKQfNrAklzncvhIaPzv3i97/JzqTE3e37Ds5++qPotf14txP1qVbm5umRnIu/uu9zHV/
+	C8+RinUC535tSl006YjX2/NZOzcIbswwfMNS83zf/AsWn0Uy7yw8yfJmZrAlkxJLcUaioRZz
+	UXEiAMIhlDPnAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 30 December 2013, Daniel Lezcano wrote:
-> This flag is a NOOP and scheduled to be removed
-> 
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Hello dear community.
 
-Thanks for sending this series. I think the patches are duplicates of stuff that
-Michael Opdenacker has sent before (actually multiple times). I have no problem
-applying either version into arm-soc, but I think it would be better to attribute
-them to Michael, since he came first. Can you two please coordinate and send a
-single pull request for the arm-soc related patches that haven't made it into
-linux-next yet?
+This is reworked patch set of original Anton's Vorontsov
+proposal regarding unified deferrable timers in user space.
+http://lwn.net/Articles/514707/
 
-	Arnd
+
+I decided to resubmit it due we found it usefull for us too.
+
+timerfd was modified since Anton's commit, Alarm support was added.
+This isn't only rebase. Anton's previous version used deferrable timer
+in couple with hrtimer. This version uses only deferrable timer. It
+mean the behaviour of overrun number is different.
+e.g. if you don't poll one second timer for a 10 seconds - you'll get
+10 overruns with hrtimer, but in deferrable only version you'll get
+only one overrun.
+
+This version introduces new clockid (CLOCK_DEFERRABLE) , for timerfd_create, instead of
+new flag (TFD_TIMER_DEFERRABLE) for timerfd_settime introduced in previous version.
+
+
+Anton Vorontsov (3):
+  kernel/time: Add new helpers to convert ktime to/from jiffies
+  timerfd: Factor out timer-type unspecific timerfd_expire()
+  timerfd: Add support for deferrable timers
+
+ fs/timerfd.c              |   97 ++++++++++++++++++++++++++++++++++-----------
+ include/linux/jiffies.h   |    4 +-
+ include/linux/ktime.h     |    3 +-
+ include/uapi/linux/time.h |    1 +
+ kernel/time.c             |   23 +++++++++++
+ 5 files changed, 102 insertions(+), 26 deletions(-)
+
+-- 
+1.7.9.5
+
