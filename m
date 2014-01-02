@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273AbaABUDI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 15:03:08 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:47522 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172AbaABUDG (ORCPT
+	id S1752190AbaABUP3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 15:15:29 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:58611 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210AbaABUP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 15:03:06 -0500
-Message-ID: <52C5C5F6.70803@linaro.org>
-Date: Thu, 02 Jan 2014 12:03:02 -0800
-From: John Stultz <john.stultz@linaro.org>
+	Thu, 2 Jan 2014 15:15:28 -0500
+Message-ID: <52C5C8B0.9080505@kernel.dk>
+Date: Thu, 02 Jan 2014 13:14:40 -0700
+From: Jens Axboe <axboe@kernel.dk>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        =?UTF-8?B?S3J6eXN6dG9m?= =?UTF-8?B?IEhhxYJhc2E=?= 
-	<khalasa@piap.pl>
-CC: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Willy Tarreau <w@1wt.eu>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: v3.13-rc6+ regression (ARM board)
-References: <m3mwjhux0e.fsf@t19.piap.pl>	<20131231104511.GA9688@1wt.eu>	<m3txdmu2ez.fsf@t19.piap.pl>	<20140102101455.GG10158@pengutronix.de>	<m3ppoatwn1.fsf@t19.piap.pl> <CA+55aFyZ0EXYkHd-BhQo6K++qKJVPdGeDbFTVTs3pAPCHFUpOA@mail.gmail.com>
-In-Reply-To: <CA+55aFyZ0EXYkHd-BhQo6K++qKJVPdGeDbFTVTs3pAPCHFUpOA@mail.gmail.com>
-X-Enigmail-Version: 1.6
+To: Geoff Levand <geoff@infradead.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Jim Paris <jim@jtan.com>, linuxppc-dev@lists.ozlabs.org,
+        cbe-oss-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block/ps3: Remove obsolete reference to MTD
+References: <1388394463-25798-1-git-send-email-geert@linux-m68k.org> <1388688375.32559.9.camel@smoke>
+In-Reply-To: <1388688375.32559.9.camel@smoke>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2014 11:38 AM, Linus Torvalds wrote:
-> On Thu, Jan 2, 2014 at 4:07 AM, Krzysztof Hałasa <khalasa@piap.pl> wrote:
->> This means these two commits don't like each other:
+On 01/02/2014 11:46 AM, Geoff Levand wrote:
+> On Mon, 2013-12-30 at 10:07 +0100, Geert Uytterhoeven wrote:
+>> The ps3vram driver is a plain block device driver since commit
+>> f507cd22035fdadd5dbb476dd05e9e7ee21c3b84 ("ps3/block: Replace mtd/ps3vram
+>> by block/ps3vram").
 >>
->>     seqcount: Add lockdep functionality to seqcount/seqlock structures
->>     sched_clock: Use seqcount instead of rolling our own
-> Does something like this fix it for you?
->
->   --- a/kernel/time/sched_clock.c
->   +++ b/kernel/time/sched_clock.c
->   @@ -36,6 +36,7 @@ core_param(irqtime, irqtime, int, 0400);
->
->    static struct clock_data cd = {
->           .mult   = NSEC_PER_SEC / HZ,
->   +       .seq = SEQCNT_ZERO(cd.seq),
->    };
->
->    static u64 __read_mostly sched_clock_mask;
->
-> (The above is not even compile-tested, because x86 doesn't use
-> GENERIC_SCHED_CLOCK. So I did the patch blindly, but I think you get
-> the idea..)
+>> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>> ---
+>>  drivers/block/ps3vram.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/block/ps3vram.c b/drivers/block/ps3vram.c
+>> index 06a2e53e5f37..313ee641ea10 100644
+>> --- a/drivers/block/ps3vram.c
+>> +++ b/drivers/block/ps3vram.c
+>> @@ -1,5 +1,5 @@
+>>  /*
+>> - * ps3vram - Use extra PS3 video ram as MTD block device.
+>> + * ps3vram - Use extra PS3 video ram as block device.
+>>   *
+>>   * Copyright 2009 Sony Corporation
+>>   *
+> 
+> Looks good.
+> 
+> Jens, could you please apply.
+> 
+> Acked-by: Geoff Levand <geoff@infradead.org>
 
-Sheesh. Just finishing up holiday email backlog and Linus already has a
-fix. :)
+Yup will do, thanks.
 
-This looks like it should fix the issue, and does build for me.
-
-Assuming it works for Krzysztof,
-
-Acked-by: John Stultz <john.stultz@linaro.org>
-
-I'll do another grep pass through -rc6 to make sure no other new
-uninitialized seqlock usage was added.
-
-thanks
--john
+-- 
+Jens Axboe
 
