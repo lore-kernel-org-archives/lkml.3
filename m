@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751785AbaABQsf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 11:48:35 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:36635 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917AbaABQsc (ORCPT
+	id S1752000AbaABQs7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 11:48:59 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:65024 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751845AbaABQsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 11:48:32 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-dd-52c5985e2c96
-From: Tomasz Figa <t.figa@samsung.com>
-To: Dongjin Kim <tobetter@gmail.com>
-Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: dts: add clock provider for mshc in Exynos4412
-Date: Thu, 02 Jan 2014 17:48:28 +0100
-Message-id: <27795108.u6MRg8vUSW@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.12 (Linux/3.11.5-gentoo; KDE/4.12.0; x86_64; ; )
-In-reply-to: <1388679706-29265-1-git-send-email-tobetter@gmail.com>
-References: <1388679706-29265-1-git-send-email-tobetter@gmail.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsVy+t/xa7pxM44GGTRtYreYtO4Ak8X8I+dY
-	LfrfLGS1OPdqJaNF74KrbBabHl9jtbi8aw6bxYzz+5gsbl/mtVh6/SKTxYTpa1ksDq8A6tr3
-	eA2zA6/HmnlrGD1amnvYPBZ8vsLucbmvl8nj76oXzB47Z91l91i5/Aubx+Yl9R59W1Yxenze
-	JBfAFcVlk5Kak1mWWqRvl8CV8WvBXbaCR4wVz1++Y29g3MjYxcjJISFgIvHz8BNmCFtM4sK9
-	9WxdjFwcQgJLGSV2Nm5igXC6mCQ+tZxgAaliE1CT+NzwiA3EFhFQkeg6+pQJpIhZYDezxLnL
-	38CKhAU8JE7PnMQKYrMIqEr8/LEKqIiDg1dAS+LZjhqQML+AusS7bSC9nByiAi4Sx1oWgbVy
-	CjhL/Nz1H8wWEnCSuDX9MjuIzSsgKPFj8j2wOLOAvMS+/VNZIWwtifU7jzNNYBSchaRsFpKy
-	WUjKFjAyr2IUTS1NLihOSs811CtOzC0uzUvXS87P3cQIibQvOxgXH7M6xCjAwajEw/uh7miQ
-	EGtiWXFl7iFGCQ5mJRHeuGKgEG9KYmVValF+fFFpTmrxIUYmDk6pBsaIkomrzdnMi9yVzH/Z
-	v1rIsN1zeznzCvekY3ftk5yLJLcn7OZ7w69t/+ZN8iXWneU9VgZZOub60+XcPYNat23K/Xae
-	7a3Fyyshss8VP8s67FreevLtph/XLoQpf/r6YsHt2PJk6YVa9ufY9NsdNLijuDTmL/X+v+xU
-	0t8lhs0GcRP8St/KnFNiKc5INNRiLipOBAANwYG2kgIAAA==
+	Thu, 2 Jan 2014 11:48:50 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: linux-kernel@vger.kernel.org, Karsten Keil <isdn@linux-pingi.de>,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH, RFC 21/30] isdn: divert, hysdn: fix interruptible_sleep_on race
+Date: Thu, 02 Jan 2014 17:48:47 +0100
+Message-ID: <3610183.tucaANtxQk@wuerfel>
+User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <52C57F3B.9070509@cogentembedded.com>
+References: <1388664474-1710039-1-git-send-email-arnd@arndb.de> <1388664474-1710039-22-git-send-email-arnd@arndb.de> <52C57F3B.9070509@cogentembedded.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:EjE6kYlwm6pHc8rKx7zr0z7IPdV/1/q+K7iLU3Pg5d6
+ B3kJglBb1EJmDJ0d3DIzchXi0gyhJIts37+KPG1d4R7SBcxE8b
+ MQE6/VXn+0gk29ulD8RrGpAEJC7qhoLEmmWeFCQ0h2uTdcRyPj
+ KG6lOWXhkqJubtEPZjZaZr3JoPAW1kaXwfBwmoYBmtzjhafazA
+ KAASVSZksLpEukmDeWtwVY/qqETzqN38oq2N23HmK2FQCb58iq
+ GImE5GxfePQ6M4wSKm6xqylh8w30GsKD8ZbxZYmpcRXtFVY2rx
+ 51DiKZ3kqLCIBfy0m3AQjppWr+nJ/iwCpzOtFU2aCgPa+yeZn4
+ iQdt/z/0kzqcEFPkitFI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dongjin,
+On Thursday 02 January 2014 19:01:15 Sergei Shtylyov wrote:
+> > diff --git a/drivers/isdn/divert/divert_procfs.c b/drivers/isdn/divert/divert_procfs.c
+> > index fb4f1ba..1c5dc34 100644
+> > --- a/drivers/isdn/divert/divert_procfs.c
+> > +++ b/drivers/isdn/divert/divert_procfs.c
+> > @@ -86,12 +86,13 @@ isdn_divert_read(struct file *file, char __user *buf, size_t count, loff_t *off)
+> >       struct divert_info *inf;
+> >       int len;
+> >
+> > -     if (!*((struct divert_info **) file->private_data)) {
+> > +     if (!(inf = *((struct divert_info **) file->private_data))) {
+> 
+>     checkpatch.pl shouldn't approve assignment inside *if*. Though you're 
+> moving it from the existing code, it wouldn't hurt to fix it.
 
-On Friday 03 of January 2014 01:21:46 Dongjin Kim wrote:
-> Add clock lookup information for mshc in Exynos4412.
+I tried to touch as little as possible, and while I wouldn't use that
+style myself, it is applied consistently in this driver, including the
+wait_event line I'm adding, where I feel it actually makes sense.
 
-Thanks for the patch. However this is already fixed in linux-next.
+> >               if (file->f_flags & O_NONBLOCK)
+> >                       return -EAGAIN;
+> > -             interruptible_sleep_on(&(rd_queue));
+> > +             wait_event_interruptible(rd_queue, (inf =
+> > +                     *((struct divert_info **) file->private_data)));
+> 
+>     Parens around assignment are hardly useful.
 
-Best regards,
-Tomasz
+We get a gcc warning without them:
 
+drivers/isdn/divert/divert_procfs.c:95:14: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+    *((struct divert_info **) file->private_data));
+
+
+I can still change the first one (in both files) if you think it's important,
+but I'd rather not spend too much energy at coding style changes.
+
+Thanks for taking a look.
+
+	Arnd
