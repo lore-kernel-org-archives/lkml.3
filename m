@@ -1,102 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750832AbaABBCV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jan 2014 20:02:21 -0500
-Received: from ring0.de ([91.143.88.219]:59013 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750706AbaABBCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 20:02:18 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Thu, 2 Jan 2014 02:01:52 +0100
-From: Sebastian Reichel <sre@ring0.de>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Florian Vaussard <florian.vaussard@epfl.ch>,
-        Joerg Roedel <joro@8bytes.org>, Tony Lindgren <tony@atomide.com>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, iommu@lists.linux-foundation.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/7] iommu/omap: Convert to devicetree
-Message-ID: <20140102010150.GA9933@earth.universe>
-Mail-Followup-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-	Florian Vaussard <florian.vaussard@epfl.ch>,
-	Joerg Roedel <joro@8bytes.org>, Tony Lindgren <tony@atomide.com>,
-	=?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-	Rob Herring <rob.herring@calxeda.com>,
-	Pawel Moll <pawel.moll@arm.com>,
-	Mark Rutland <mark.rutland@arm.com>,
-	Ian Campbell <ijc+devicetree@hellion.org.uk>,
-	Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-	Grant Likely <grant.likely@linaro.org>,
-	Hiroshi Doyu <hdoyu@nvidia.com>, iommu@lists.linux-foundation.org,
-	devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-	linux-arm-kernel@lists.infradead.org
-References: <1387284818-28739-1-git-send-email-florian.vaussard@epfl.ch>
- <1387284818-28739-4-git-send-email-florian.vaussard@epfl.ch>
- <1764051.JiGg1d3s1L@avalon>
+	id S1750870AbaABBNX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jan 2014 20:13:23 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:25010 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735AbaABBNW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jan 2014 20:13:22 -0500
+Message-ID: <52C4BD1E.8020008@huawei.com>
+Date: Thu, 2 Jan 2014 09:13:02 +0800
+From: Ding Tianhong <dingtianhong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="GvXjxJ+pjyke8COw"
-Content-Disposition: inline
-In-Reply-To: <1764051.JiGg1d3s1L@avalon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jay Vosburgh <fubar@us.ibm.com>, Veaceslav Falico <vfalico@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH RESEND net-next 3/7] bonding: slight optimization for bond_alb_xmit()
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.199]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The bond_alb_xmit will check the return value for
+bond_dev_queue_xmit() every time, but the bond_dev_queue_xmit()
+is always return 0, it is no need to check the value every time,
+so remove the unneed judgement for the xmit path.
 
---GvXjxJ+pjyke8COw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+---
+ drivers/net/bonding/bond_alb.c | 12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
-Hi,
+diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
+index 759ddee..a2c4747 100644
+--- a/drivers/net/bonding/bond_alb.c
++++ b/drivers/net/bonding/bond_alb.c
+@@ -1371,7 +1371,6 @@ int bond_alb_xmit(struct sk_buff *skb, struct net_device *bond_dev)
+ 	int do_tx_balance = 1;
+ 	u32 hash_index = 0;
+ 	const u8 *hash_start = NULL;
+-	int res = 1;
+ 	struct ipv6hdr *ip6hdr;
+ 
+ 	skb_reset_mac_header(skb);
+@@ -1469,7 +1468,8 @@ int bond_alb_xmit(struct sk_buff *skb, struct net_device *bond_dev)
+ 			       ETH_ALEN);
+ 		}
+ 
+-		res = bond_dev_queue_xmit(bond, skb, tx_slave->dev);
++		bond_dev_queue_xmit(bond, skb, tx_slave->dev);
++		goto out;
+ 	} else {
+ 		if (tx_slave) {
+ 			_lock_tx_hashtbl(bond);
+@@ -1478,11 +1478,9 @@ int bond_alb_xmit(struct sk_buff *skb, struct net_device *bond_dev)
+ 		}
+ 	}
+ 
+-	if (res) {
+-		/* no suitable interface, frame not sent */
+-		kfree_skb(skb);
+-	}
+-
++	/* no suitable interface, frame not sent */
++	kfree_skb(skb);
++out:
+ 	return NETDEV_TX_OK;
+ }
+ 
+-- 
+1.8.0
 
-On Thu, Jan 02, 2014 at 01:13:42AM +0100, Laurent Pinchart wrote:
-> > +		.of_match_table =3D omap_iommu_of_match,
->=20
-> If CONFIG_OF isn't defined (pretty unlikely I agree, but a possibility yo=
-u=20
-> seem to be prepared for nonetheless given the above #if), this will fail =
-to=20
-> compile.
 
-FYI: This is avoided in other drivers by using
-of_match_ptr(omap_iommu_of_match), which is replaced with NULL by
-the preprocessor if CONFIG_OF is not defined.
-
--- Sebastian
-
---GvXjxJ+pjyke8COw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSxLp9AAoJENju1/PIO/qa8TMQAJyNOJApiYO7fM7mlYaWa7hZ
-YQOdv3vPoDfgOBakYlaDcVomeAHfl/LvFYCH5aWpR26EE25v9+NvNzFv8uQJdkkI
-ZSjrbGprU6Tdv174XkuQNYSZm4APOHbdke8fQjB0nw5UlHGefqkh3Sen1EQHmsHC
-NH8f4ssoXGgMuHxMPRwo29XV28Ms+BsPBBwYZ5An0caAQaI3O9DSaWbyBfI8Bz2T
-St2kRa0kcxeARR7sAO1hd45wCulnPXN/X9vR7Tb8n70UIq04RMw9xrJzoEGTtW+L
-8H4aazq0cNjpSs/pTmcjRVbA1ezta2peoh7cpRMcwjwCLYeN3VS46vRJzpJAfRVC
-oath3JxYOzwwpdtXYWR+53x6Enu4r61DP6hgIBtTek/n+svsIC0PNVvusjnNbrle
-lGzDS3/wV/qhYZnd6YT3xUlHcXoFfo1P10uahNNc286eCA5OSb141KYPLturuSw0
-lMkHTIuYyomb+FqiR0zuAKytcF6hte49N09I6rKvQWEwZPnfLmiiYZLz//BGfLbE
-iJ8vDCcEZ9sJ6d56NDMUg0Od/NQz0H6IdwrLQczSpLo4Aw+dNY/jdK8yMBv8Ploj
-ebMGJV/YxmMizy5Vn+45spNw4cS742+FuzM7INkI0+rmrEqsE0hb9ytdEeT3l760
-jWBNdGZBqgbiPBrbZS1X
-=/DGs
------END PGP SIGNATURE-----
-
---GvXjxJ+pjyke8COw--
