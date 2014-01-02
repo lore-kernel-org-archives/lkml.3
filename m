@@ -1,36 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166AbaABRIB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:08:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40342 "EHLO
+	id S1753062AbaABRHw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:07:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40324 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753082AbaABRH6 (ORCPT
+	with ESMTP id S1753018AbaABRHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:07:58 -0500
+	Thu, 2 Jan 2014 12:07:49 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Omar Ramirez Luna <omar.ramirez@copitl.com>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>,
-        "Kanigeri, Hari" <h-kanigeri2@ti.com>,
-        Ameya Palande <ameya.palande@nokia.com>,
-        "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
-        "Hebbar, Shivananda" <x0hebbar@ti.com>,
-        "Ramos Falcon, Ernesto" <ernesto@ti.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        "Anna, Suman" <s-anna@ti.com>, "Gupta, Ramesh" <grgupta@ti.com>,
-        "Gomez Castellanos, Ivan" <ivan.gomez@ti.com>,
-        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
-        Armando Uribe De Leon <x0095078@ti.com>,
-        Deepak Chitriki <deepak.chitriki@ti.com>,
-        "Menon, Nishanth" <nm@ti.com>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Jianguo Wu <wujianguo@huawei.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Mel Gorman <mgorman@suse.de>, qiuxishi <qiuxishi@huawei.com>,
+        Hanjun Guo <guohanjun@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 47/91] Staging: tidspbridge: disable driver
-Date: Thu,  2 Jan 2014 09:04:22 -0800
-Message-Id: <1388682306-30859-48-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 58/91] mm/hugetlb: check for pte NULL pointer in __page_check_address()
+Date: Thu,  2 Jan 2014 09:04:33 -0800
+Message-Id: <1388682306-30859-59-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -43,55 +32,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Jianguo Wu <wujianguo@huawei.com>
 
-commit 930ba4a374b96560ef9fde2145cdc454a164ddcc upstream.
+commit 98398c32f6687ee1e1f3ae084effb4b75adb0747 upstream.
 
-There seems to be no active maintainer for the driver, and there is an
-unfixed security bug, so disable the driver for now.
+In __page_check_address(), if address's pud is not present,
+huge_pte_offset() will return NULL, we should check the return value.
 
-Hopefully someone steps up to be the maintainer, and works to get this
-out of staging, otherwise it will be deleted soon.
-
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Omar Ramirez Luna <omar.ramirez@copitl.com>
-Cc: Omar Ramirez Luna <omar.ramirez@ti.com>
-Cc: Kanigeri, Hari <h-kanigeri2@ti.com>
-Cc: Ameya Palande <ameya.palande@nokia.com>
-Cc: Guzman Lugo, Fernando <fernando.lugo@ti.com>
-Cc: Hebbar, Shivananda <x0hebbar@ti.com>
-Cc: Ramos Falcon, Ernesto <ernesto@ti.com>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Anna, Suman <s-anna@ti.com>
-Cc: Gupta, Ramesh <grgupta@ti.com>
-Cc: Gomez Castellanos, Ivan <ivan.gomez@ti.com>
-Cc: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
-Cc: Armando Uribe De Leon <x0095078@ti.com>
-Cc: Deepak Chitriki <deepak.chitriki@ti.com>
-Cc: Menon, Nishanth <nm@ti.com>
-Cc: Phil Carmody <ext-phil.2.carmody@nokia.com>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ kamal: backport to 3.8 (context) ]
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: qiuxishi <qiuxishi@huawei.com>
+Cc: Hanjun Guo <guohanjun@huawei.com>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/staging/tidspbridge/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/rmap.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/staging/tidspbridge/Kconfig b/drivers/staging/tidspbridge/Kconfig
-index 0dd479f..f67c78e 100644
---- a/drivers/staging/tidspbridge/Kconfig
-+++ b/drivers/staging/tidspbridge/Kconfig
-@@ -4,7 +4,7 @@
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 92b4529..c208837 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -600,7 +600,11 @@ pte_t *__page_check_address(struct page *page, struct mm_struct *mm,
+ 	spinlock_t *ptl;
  
- menuconfig TIDSPBRIDGE
- 	tristate "DSP Bridge driver"
--	depends on ARCH_OMAP3
-+	depends on ARCH_OMAP3 && BROKEN
- 	select OMAP_MBOX_FWK
- 	help
- 	  DSP/BIOS Bridge is designed for platforms that contain a GPP and
+ 	if (unlikely(PageHuge(page))) {
++		/* when pud is not present, pte will be NULL */
+ 		pte = huge_pte_offset(mm, address);
++		if (!pte)
++			return NULL;
++
+ 		ptl = &mm->page_table_lock;
+ 		goto check;
+ 	}
 -- 
 1.8.3.2
 
