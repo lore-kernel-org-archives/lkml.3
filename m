@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696AbaABRJr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:09:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40524 "EHLO
+	id S1753803AbaABRJz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:09:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40551 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753669AbaABRJn (ORCPT
+	with ESMTP id S1753751AbaABRJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:09:43 -0500
+	Thu, 2 Jan 2014 12:09:52 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 46/91] tracing: Allow events to have NULL strings
-Date: Thu,  2 Jan 2014 09:04:21 -0800
-Message-Id: <1388682306-30859-47-git-send-email-kamal@canonical.com>
+Cc: Olav Haugan <ohaugan@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 43/91] staging: zsmalloc: Ensure handle is never 0 on success
+Date: Thu,  2 Jan 2014 09:04:18 -0800
+Message-Id: <1388682306-30859-44-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -26,91 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Olav Haugan <ohaugan@codeaurora.org>
 
-commit 4e58e54754dc1fec21c3a9e824bc108b05fdf46e upstream.
+commit 67296874eb1cc80317bf2a8fba22b494e21eb29b upstream.
 
-If an TRACE_EVENT() uses __assign_str() or __get_str on a NULL pointer
-then the following oops will happen:
+zsmalloc encodes a handle using the pfn and an object
+index. On hardware platforms with physical memory starting
+at 0x0 the pfn can be 0. This causes the encoded handle to be
+0 and is incorrectly interpreted as an allocation failure.
 
-BUG: unable to handle kernel NULL pointer dereference at   (null)
-IP: [<c127a17b>] strlen+0x10/0x1a
-*pde = 00000000 ^M
-Oops: 0000 [#1] PREEMPT SMP
-Modules linked in:
-CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.13.0-rc1-test+ #2
-Hardware name:                  /DG965MQ, BIOS MQ96510J.86A.0372.2006.0605.1717 06/05/2006^M
-task: f5cde9f0 ti: f5e5e000 task.ti: f5e5e000
-EIP: 0060:[<c127a17b>] EFLAGS: 00210046 CPU: 1
-EIP is at strlen+0x10/0x1a
-EAX: 00000000 EBX: c2472da8 ECX: ffffffff EDX: c2472da8
-ESI: c1c5e5fc EDI: 00000000 EBP: f5e5fe84 ESP: f5e5fe80
- DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-CR0: 8005003b CR2: 00000000 CR3: 01f32000 CR4: 000007d0
-Stack:
- f5f18b90 f5e5feb8 c10687a8 0759004f 00000005 00000005 00000005 00200046
- 00000002 00000000 c1082a93 f56c7e28 c2472da8 c1082a93 f5e5fee4 c106bc61^M
- 00000000 c1082a93 00000000 00000000 00000001 00200046 00200082 00000000
-Call Trace:
- [<c10687a8>] ftrace_raw_event_lock+0x39/0xc0
- [<c1082a93>] ? ktime_get+0x29/0x69
- [<c1082a93>] ? ktime_get+0x29/0x69
- [<c106bc61>] lock_release+0x57/0x1a5
- [<c1082a93>] ? ktime_get+0x29/0x69
- [<c10824dd>] read_seqcount_begin.constprop.7+0x4d/0x75
- [<c1082a93>] ? ktime_get+0x29/0x69^M
- [<c1082a93>] ktime_get+0x29/0x69
- [<c108a46a>] __tick_nohz_idle_enter+0x1e/0x426
- [<c10690e8>] ? lock_release_holdtime.part.19+0x48/0x4d
- [<c10bc184>] ? time_hardirqs_off+0xe/0x28
- [<c1068c82>] ? trace_hardirqs_off_caller+0x3f/0xaf
- [<c108a8cb>] tick_nohz_idle_enter+0x59/0x62
- [<c1079242>] cpu_startup_entry+0x64/0x192
- [<c102299c>] start_secondary+0x277/0x27c
-Code: 90 89 c6 89 d0 88 c4 ac 38 e0 74 09 84 c0 75 f7 be 01 00 00 00 89 f0 48 5e 5d c3 55 89 e5 57 66 66 66 66 90 83 c9 ff 89 c7 31 c0 <f2> ae f7 d1 8d 41 ff 5f 5d c3 55 89 e5 57 66 66 66 66 90 31 ff
-EIP: [<c127a17b>] strlen+0x10/0x1a SS:ESP 0068:f5e5fe80
-CR2: 0000000000000000
----[ end trace 01bc47bf519ec1b2 ]---
+This issue affects all current and future SoCs with physical
+memory starting at 0x0. All MSM8974 SoCs which includes
+Google Nexus 5 devices are affected.
 
-New tracepoints have been added that have allowed for NULL pointers
-being assigned to strings. To fix this, change the TRACE_EVENT() code
-to check for NULL and if it is, it will assign "(null)" to it instead
-(similar to what glibc printf does).
+To prevent this false error we ensure that the encoded handle
+will not be 0 when allocation succeeds.
 
-Reported-by: Shuah Khan <shuah.kh@samsung.com>
-Reported-by: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-Link: http://lkml.kernel.org/r/CAGdX0WFeEuy+DtpsJzyzn0343qEEjLX97+o1VREFkUEhndC+5Q@mail.gmail.com
-Link: http://lkml.kernel.org/r/528D6972.9010702@samsung.com
-Fixes: 9cbf117662e2 ("tracing/events: provide string with undefined size support")
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Olav Haugan <ohaugan@codeaurora.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/trace/ftrace.h | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/staging/zsmalloc/zsmalloc-main.c | 17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
 
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 40dc5e8..17e6221 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -379,7 +379,8 @@ ftrace_define_fields_##call(struct ftrace_event_call *event_call)	\
- 	__data_size += (len) * sizeof(type);
+diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+index 851a2ff..60f77ff 100644
+--- a/drivers/staging/zsmalloc/zsmalloc-main.c
++++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+@@ -431,7 +431,12 @@ static struct page *get_next_page(struct page *page)
+ 	return next;
+ }
  
- #undef __string
--#define __string(item, src) __dynamic_array(char, item, strlen(src) + 1)
-+#define __string(item, src) __dynamic_array(char, item,			\
-+		    strlen((src) ? (const char *)(src) : "(null)") + 1)
+-/* Encode <page, obj_idx> as a single handle value */
++/*
++ * Encode <page, obj_idx> as a single handle value.
++ * On hardware platforms with physical memory starting at 0x0 the pfn
++ * could be 0 so we ensure that the handle will never be 0 by adjusting the
++ * encoded obj_idx value before encoding.
++ */
+ static void *obj_location_to_handle(struct page *page, unsigned long obj_idx)
+ {
+ 	unsigned long handle;
+@@ -442,17 +447,21 @@ static void *obj_location_to_handle(struct page *page, unsigned long obj_idx)
+ 	}
  
- #undef DECLARE_EVENT_CLASS
- #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
-@@ -504,7 +505,7 @@ static inline notrace int ftrace_get_offsets_##call(			\
+ 	handle = page_to_pfn(page) << OBJ_INDEX_BITS;
+-	handle |= (obj_idx & OBJ_INDEX_MASK);
++	handle |= ((obj_idx + 1) & OBJ_INDEX_MASK);
  
- #undef __assign_str
- #define __assign_str(dst, src)						\
--	strcpy(__get_str(dst), src);
-+	strcpy(__get_str(dst), (src) ? (const char *)(src) : "(null)");
+ 	return (void *)handle;
+ }
  
- #undef TP_fast_assign
- #define TP_fast_assign(args...) args
+-/* Decode <page, obj_idx> pair from the given object handle */
++/*
++ * Decode <page, obj_idx> pair from the given object handle. We adjust the
++ * decoded obj_idx back to its original value since it was adjusted in
++ * obj_location_to_handle().
++ */
+ static void obj_handle_to_location(unsigned long handle, struct page **page,
+ 				unsigned long *obj_idx)
+ {
+ 	*page = pfn_to_page(handle >> OBJ_INDEX_BITS);
+-	*obj_idx = handle & OBJ_INDEX_MASK;
++	*obj_idx = (handle & OBJ_INDEX_MASK) - 1;
+ }
+ 
+ static unsigned long obj_idx_to_offset(struct page *page,
 -- 
 1.8.3.2
 
