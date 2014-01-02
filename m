@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760AbaABRcM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:32:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40119 "EHLO
+	id S1754744AbaABRcK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:32:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40140 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833AbaABRF2 (ORCPT
+	with ESMTP id S1752232AbaABRF3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:05:28 -0500
+	Thu, 2 Jan 2014 12:05:29 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Malcolm Priestley <tvboxspy@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 02/91] staging: vt6656: [BUG] Fix for TX USB resets from vendors driver.
-Date: Thu,  2 Jan 2014 09:03:37 -0800
-Message-Id: <1388682306-30859-3-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 16/91] ipv4: fix possible seqlock deadlock
+Date: Thu,  2 Jan 2014 09:03:51 -0800
+Message-Id: <1388682306-30859-17-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -28,89 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 9df682927c2e3a92f43803d6b52095992e3b2ab8 upstream.
+[ Upstream commit c9e9042994d37cbc1ee538c500e9da1bb9d1bcdf ]
 
-This fixes resets on heavy TX data traffic.
+ip4_datagram_connect() being called from process context,
+it should use IP_INC_STATS() instead of IP_INC_STATS_BH()
+otherwise we can deadlock on 32bit arches, or get corruptions of
+SNMP counters.
 
-Vendor driver
-VT6656_Linux_src_v1.21.03_x86_11.04.zip
-http://www.viaembedded.com/servlet/downloadSvl?id=1890&download_file_id=14704
-This is GPL-licensed code.
-
-original code
-BBbVT3184Init
-...
-//2007-0725, RobertChang add, Enable Squelch detect reset option(SQ_RST_Opt), USB (register4, bit1)
-CONTROLnsRequestIn(pDevice,
-                                 MESSAGE_TYPE_READ,
-                                 (WORD)0x600+4,     // USB's Reg4's bit1
-                                 MESSAGE_REQUEST_MEM,
-                                 1,
-                                 (PBYTE) &byData);
-byData = byData|2 ;
-CONTROLnsRequestOut(pDevice,
-                              MESSAGE_TYPE_WRITE,
-                              (WORD)0x600+4,     // USB's Reg4's bit1
-                              MESSAGE_REQUEST_MEM,
-                              1,
-                              (PBYTE) &byData);
-
-return TRUE;//ntStatus;
-....
-
-A back port patch is needed for kernels less than 3.10.
-
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ Malcolm Priestley: backport to 3.8-stable ]
+Fixes: 584bdf8cbdf6 ("[IPV4]: Fix "ipOutNoRoutes" counter error for TCP and UDP")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/staging/vt6656/baseband.c | 11 +++++++++++
- drivers/staging/vt6656/rndis.h    |  1 +
- 2 files changed, 12 insertions(+)
+ net/ipv4/datagram.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/vt6656/baseband.c b/drivers/staging/vt6656/baseband.c
-index 3855015..65503b9 100644
---- a/drivers/staging/vt6656/baseband.c
-+++ b/drivers/staging/vt6656/baseband.c
-@@ -976,6 +976,7 @@ BOOL BBbVT3184Init(PSDevice pDevice)
-     PBYTE                   pbyAgc;
-     WORD                    wLengthAgc;
-     BYTE                    abyArray[256];
-+	u8 data;
- 
-     ntStatus = CONTROLnsRequestIn(pDevice,
-                                   MESSAGE_TYPE_READ,
-@@ -1144,6 +1145,16 @@ else {
-     ControlvWriteByte(pDevice,MESSAGE_REQUEST_BBREG,0x0D,0x01);
- 
-     RFbRFTableDownload(pDevice);
-+
-+	/* Fix for TX USB resets from vendors driver */
-+	CONTROLnsRequestIn(pDevice, MESSAGE_TYPE_READ, USB_REG4,
-+		MESSAGE_REQUEST_MEM, sizeof(data), &data);
-+
-+	data |= 0x2;
-+
-+	CONTROLnsRequestOut(pDevice, MESSAGE_TYPE_WRITE, USB_REG4,
-+		MESSAGE_REQUEST_MEM, sizeof(data), &data);
-+
-     return TRUE;//ntStatus;
- }
- 
-diff --git a/drivers/staging/vt6656/rndis.h b/drivers/staging/vt6656/rndis.h
-index fccf7e9..dcf7bf5 100644
---- a/drivers/staging/vt6656/rndis.h
-+++ b/drivers/staging/vt6656/rndis.h
-@@ -69,6 +69,7 @@
- 
- #define VIAUSB20_PACKET_HEADER          0x04
- 
-+#define USB_REG4	0x604
- 
- /*---------------------  Export Classes  ----------------------------*/
+diff --git a/net/ipv4/datagram.c b/net/ipv4/datagram.c
+index b28e863..19e3637 100644
+--- a/net/ipv4/datagram.c
++++ b/net/ipv4/datagram.c
+@@ -57,7 +57,7 @@ int ip4_datagram_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
+ 	if (IS_ERR(rt)) {
+ 		err = PTR_ERR(rt);
+ 		if (err == -ENETUNREACH)
+-			IP_INC_STATS_BH(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
++			IP_INC_STATS(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
+ 		goto out;
+ 	}
  
 -- 
 1.8.3.2
