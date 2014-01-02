@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524AbaABRJY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:09:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40450 "EHLO
+	id S1753581AbaABRJb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:09:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40483 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753454AbaABRJT (ORCPT
+	with ESMTP id S1753554AbaABRJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:09:19 -0500
+	Thu, 2 Jan 2014 12:09:27 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        James Bottomley <JBottomley@Parallels.com>,
+Cc: mpb <mpb.mail@gmail.com>, "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 75/91] [SCSI] Disable WRITE SAME for RAID and virtual host adapter drivers
-Date: Thu,  2 Jan 2014 09:04:50 -0800
-Message-Id: <1388682306-30859-76-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 20/91] inet: fix addr_len/msg->msg_namelen assignment in recv_error and rxpmtu functions
+Date: Thu,  2 Jan 2014 09:03:55 -0800
+Message-Id: <1388682306-30859-21-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -28,301 +29,220 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-commit 54b2b50c20a61b51199bedb6e5d2f8ec2568fb43 upstream.
+[ Upstream commit 85fbaa75037d0b6b786ff18658ddf0b4014ce2a4 ]
 
-Some host adapters do not pass commands through to the target disk
-directly. Instead they provide an emulated target which may or may not
-accurately report its capabilities. In some cases the physical device
-characteristics are reported even when the host adapter is processing
-commands on the device's behalf. This can lead to adapter firmware hangs
-or excessive I/O errors.
+Commit bceaa90240b6019ed73b49965eac7d167610be69 ("inet: prevent leakage
+of uninitialized memory to user in recv syscalls") conditionally updated
+addr_len if the msg_name is written to. The recv_error and rxpmtu
+functions relied on the recvmsg functions to set up addr_len before.
 
-This patch disables WRITE SAME for devices connected to host adapters
-that provide an emulated target. Driver writers can disable WRITE SAME
-by setting the no_write_same flag in the host adapter template.
+As this does not happen any more we have to pass addr_len to those
+functions as well and set it to the size of the corresponding sockaddr
+length.
 
-[jejb: fix up rejections due to eh_deadline patch]
-Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-[ kamal: backport to 3.8 (context: eh_deadline) ]
+This broke traceroute and such.
+
+Fixes: bceaa90240b6 ("inet: prevent leakage of uninitialized memory to user in recv syscalls")
+Reported-by: Brad Spengler <spender@grsecurity.net>
+Reported-by: Tom Labanowski
+Cc: mpb <mpb.mail@gmail.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ kamal: backport to 3.8 ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/ata/libata-scsi.c                 | 1 +
- drivers/firewire/sbp2.c                   | 1 +
- drivers/scsi/3w-9xxx.c                    | 3 ++-
- drivers/scsi/3w-sas.c                     | 3 ++-
- drivers/scsi/3w-xxxx.c                    | 3 ++-
- drivers/scsi/aacraid/linit.c              | 1 +
- drivers/scsi/arcmsr/arcmsr_hba.c          | 1 +
- drivers/scsi/gdth.c                       | 1 +
- drivers/scsi/hosts.c                      | 1 +
- drivers/scsi/hpsa.c                       | 1 +
- drivers/scsi/ipr.c                        | 3 ++-
- drivers/scsi/ips.c                        | 1 +
- drivers/scsi/megaraid.c                   | 1 +
- drivers/scsi/megaraid/megaraid_mbox.c     | 1 +
- drivers/scsi/megaraid/megaraid_sas_base.c | 1 +
- drivers/scsi/pmcraid.c                    | 1 +
- drivers/scsi/sd.c                         | 6 ++++++
- drivers/scsi/storvsc_drv.c                | 1 +
- include/scsi/scsi_host.h                  | 6 ++++++
- 19 files changed, 33 insertions(+), 4 deletions(-)
+ include/net/ip.h       | 2 +-
+ include/net/ipv6.h     | 6 ++++--
+ net/ipv4/ip_sockglue.c | 3 ++-
+ net/ipv4/ping.c        | 2 +-
+ net/ipv4/raw.c         | 2 +-
+ net/ipv4/udp.c         | 2 +-
+ net/ipv6/datagram.c    | 7 +++++--
+ net/ipv6/raw.c         | 4 ++--
+ net/ipv6/udp.c         | 4 ++--
+ net/l2tp/l2tp_ip6.c    | 2 +-
+ 10 files changed, 20 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index 7c337e7..f677e94 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -3604,6 +3604,7 @@ int ata_scsi_add_hosts(struct ata_host *host, struct scsi_host_template *sht)
- 		shost->max_lun = 1;
- 		shost->max_channel = 1;
- 		shost->max_cmd_len = 16;
-+		shost->no_write_same = 1;
+diff --git a/include/net/ip.h b/include/net/ip.h
+index edfa591..788f1d8 100644
+--- a/include/net/ip.h
++++ b/include/net/ip.h
+@@ -454,7 +454,7 @@ extern int	compat_ip_getsockopt(struct sock *sk, int level,
+ 			int optname, char __user *optval, int __user *optlen);
+ extern int	ip_ra_control(struct sock *sk, unsigned char on, void (*destructor)(struct sock *));
  
- 		/* Schedule policy is determined by ->qc_defer()
- 		 * callback and it needs to see every deferred qc.
-diff --git a/drivers/firewire/sbp2.c b/drivers/firewire/sbp2.c
-index 1162d6b..4882873 100644
---- a/drivers/firewire/sbp2.c
-+++ b/drivers/firewire/sbp2.c
-@@ -1628,6 +1628,7 @@ static struct scsi_host_template scsi_driver_template = {
- 	.cmd_per_lun		= 1,
- 	.can_queue		= 1,
- 	.sdev_attrs		= sbp2_scsi_sysfs_attrs,
-+	.no_write_same		= 1,
- };
+-extern int 	ip_recv_error(struct sock *sk, struct msghdr *msg, int len);
++extern int 	ip_recv_error(struct sock *sk, struct msghdr *msg, int len, int *addr_len);
+ extern void	ip_icmp_error(struct sock *sk, struct sk_buff *skb, int err, 
+ 			      __be16 port, u32 info, u8 *payload);
+ extern void	ip_local_error(struct sock *sk, int err, __be32 daddr, __be16 dport,
+diff --git a/include/net/ipv6.h b/include/net/ipv6.h
+index 5a67919..b09c053 100644
+--- a/include/net/ipv6.h
++++ b/include/net/ipv6.h
+@@ -693,8 +693,10 @@ extern int			compat_ipv6_getsockopt(struct sock *sk,
+ extern int			ip6_datagram_connect(struct sock *sk, 
+ 						     struct sockaddr *addr, int addr_len);
  
- MODULE_AUTHOR("Kristian Hoegsberg <krh@bitplanet.net>");
-diff --git a/drivers/scsi/3w-9xxx.c b/drivers/scsi/3w-9xxx.c
-index d1f0120..fc255e1 100644
---- a/drivers/scsi/3w-9xxx.c
-+++ b/drivers/scsi/3w-9xxx.c
-@@ -2025,7 +2025,8 @@ static struct scsi_host_template driver_template = {
- 	.cmd_per_lun		= TW_MAX_CMDS_PER_LUN,
- 	.use_clustering		= ENABLE_CLUSTERING,
- 	.shost_attrs		= twa_host_attrs,
--	.emulated		= 1
-+	.emulated		= 1,
-+	.no_write_same		= 1,
- };
- 
- /* This function will probe and initialize a card */
-diff --git a/drivers/scsi/3w-sas.c b/drivers/scsi/3w-sas.c
-index 52a2f058..6830595 100644
---- a/drivers/scsi/3w-sas.c
-+++ b/drivers/scsi/3w-sas.c
-@@ -1600,7 +1600,8 @@ static struct scsi_host_template driver_template = {
- 	.cmd_per_lun		= TW_MAX_CMDS_PER_LUN,
- 	.use_clustering		= ENABLE_CLUSTERING,
- 	.shost_attrs		= twl_host_attrs,
--	.emulated		= 1
-+	.emulated		= 1,
-+	.no_write_same		= 1,
- };
- 
- /* This function will probe and initialize a card */
-diff --git a/drivers/scsi/3w-xxxx.c b/drivers/scsi/3w-xxxx.c
-index 62071d2..5bf49f8 100644
---- a/drivers/scsi/3w-xxxx.c
-+++ b/drivers/scsi/3w-xxxx.c
-@@ -2277,7 +2277,8 @@ static struct scsi_host_template driver_template = {
- 	.cmd_per_lun		= TW_MAX_CMDS_PER_LUN,	
- 	.use_clustering		= ENABLE_CLUSTERING,
- 	.shost_attrs		= tw_host_attrs,
--	.emulated		= 1
-+	.emulated		= 1,
-+	.no_write_same		= 1,
- };
- 
- /* This function will probe and initialize a card */
-diff --git a/drivers/scsi/aacraid/linit.c b/drivers/scsi/aacraid/linit.c
-index f0d432c..4921ed1 100644
---- a/drivers/scsi/aacraid/linit.c
-+++ b/drivers/scsi/aacraid/linit.c
-@@ -1081,6 +1081,7 @@ static struct scsi_host_template aac_driver_template = {
- #endif
- 	.use_clustering			= ENABLE_CLUSTERING,
- 	.emulated			= 1,
-+	.no_write_same			= 1,
- };
- 
- static void __aac_shutdown(struct aac_dev * aac)
-diff --git a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
-index 33c52bc..278c9fa 100644
---- a/drivers/scsi/arcmsr/arcmsr_hba.c
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c
-@@ -137,6 +137,7 @@ static struct scsi_host_template arcmsr_scsi_host_template = {
- 	.cmd_per_lun		= ARCMSR_MAX_CMD_PERLUN,
- 	.use_clustering		= ENABLE_CLUSTERING,
- 	.shost_attrs		= arcmsr_host_attrs,
-+	.no_write_same		= 1,
- };
- static struct pci_device_id arcmsr_device_id_table[] = {
- 	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1110)},
-diff --git a/drivers/scsi/gdth.c b/drivers/scsi/gdth.c
-index 599790e..faa92a2 100644
---- a/drivers/scsi/gdth.c
-+++ b/drivers/scsi/gdth.c
-@@ -4691,6 +4691,7 @@ static struct scsi_host_template gdth_template = {
-         .cmd_per_lun            = GDTH_MAXC_P_L,
-         .unchecked_isa_dma      = 1,
-         .use_clustering         = ENABLE_CLUSTERING,
-+	.no_write_same		= 1,
- };
- 
- #ifdef CONFIG_ISA
-diff --git a/drivers/scsi/hosts.c b/drivers/scsi/hosts.c
-index 593085a..b471b86 100644
---- a/drivers/scsi/hosts.c
-+++ b/drivers/scsi/hosts.c
-@@ -388,6 +388,7 @@ struct Scsi_Host *scsi_host_alloc(struct scsi_host_template *sht, int privsize)
- 	shost->unchecked_isa_dma = sht->unchecked_isa_dma;
- 	shost->use_clustering = sht->use_clustering;
- 	shost->ordered_tag = sht->ordered_tag;
-+	shost->no_write_same = sht->no_write_same;
- 
- 	if (sht->supported_mode == MODE_UNKNOWN)
- 		/* means we didn't set it ... default to INITIATOR */
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 4f33806..cae15d2 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -538,6 +538,7 @@ static struct scsi_host_template hpsa_driver_template = {
- 	.sdev_attrs = hpsa_sdev_attrs,
- 	.shost_attrs = hpsa_shost_attrs,
- 	.max_sectors = 8192,
-+	.no_write_same = 1,
- };
- 
- 
-diff --git a/drivers/scsi/ipr.c b/drivers/scsi/ipr.c
-index 1d7da3f..a3b8692 100644
---- a/drivers/scsi/ipr.c
-+++ b/drivers/scsi/ipr.c
-@@ -6016,7 +6016,8 @@ static struct scsi_host_template driver_template = {
- 	.use_clustering = ENABLE_CLUSTERING,
- 	.shost_attrs = ipr_ioa_attrs,
- 	.sdev_attrs = ipr_dev_attrs,
--	.proc_name = IPR_NAME
-+	.proc_name = IPR_NAME,
-+	.no_write_same = 1,
- };
- 
- /**
-diff --git a/drivers/scsi/ips.c b/drivers/scsi/ips.c
-index 9aa86a3..8fc61d7 100644
---- a/drivers/scsi/ips.c
-+++ b/drivers/scsi/ips.c
-@@ -374,6 +374,7 @@ static struct scsi_host_template ips_driver_template = {
- 	.sg_tablesize		= IPS_MAX_SG,
- 	.cmd_per_lun		= 3,
- 	.use_clustering		= ENABLE_CLUSTERING,
-+	.no_write_same		= 1,
- };
- 
- 
-diff --git a/drivers/scsi/megaraid.c b/drivers/scsi/megaraid.c
-index 9504ec0..d61eb15 100644
---- a/drivers/scsi/megaraid.c
-+++ b/drivers/scsi/megaraid.c
-@@ -4520,6 +4520,7 @@ static struct scsi_host_template megaraid_template = {
- 	.eh_device_reset_handler	= megaraid_reset,
- 	.eh_bus_reset_handler		= megaraid_reset,
- 	.eh_host_reset_handler		= megaraid_reset,
-+	.no_write_same			= 1,
- };
- 
- static int
-diff --git a/drivers/scsi/megaraid/megaraid_mbox.c b/drivers/scsi/megaraid/megaraid_mbox.c
-index e6a1e0b..3316d80 100644
---- a/drivers/scsi/megaraid/megaraid_mbox.c
-+++ b/drivers/scsi/megaraid/megaraid_mbox.c
-@@ -367,6 +367,7 @@ static struct scsi_host_template megaraid_template_g = {
- 	.eh_host_reset_handler		= megaraid_reset_handler,
- 	.change_queue_depth		= megaraid_change_queue_depth,
- 	.use_clustering			= ENABLE_CLUSTERING,
-+	.no_write_same			= 1,
- 	.sdev_attrs			= megaraid_sdev_attrs,
- 	.shost_attrs			= megaraid_shost_attrs,
- };
-diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
-index 3433e07..39e6f84 100644
---- a/drivers/scsi/megaraid/megaraid_sas_base.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-@@ -2099,6 +2099,7 @@ static struct scsi_host_template megasas_template = {
- 	.bios_param = megasas_bios_param,
- 	.use_clustering = ENABLE_CLUSTERING,
- 	.change_queue_depth = megasas_change_queue_depth,
-+	.no_write_same = 1,
- };
- 
- /**
-diff --git a/drivers/scsi/pmcraid.c b/drivers/scsi/pmcraid.c
-index b46f5e9..ad5cbed 100644
---- a/drivers/scsi/pmcraid.c
-+++ b/drivers/scsi/pmcraid.c
-@@ -4328,6 +4328,7 @@ static struct scsi_host_template pmcraid_host_template = {
- 	.this_id = -1,
- 	.sg_tablesize = PMCRAID_MAX_IOADLS,
- 	.max_sectors = PMCRAID_IOA_MAX_SECTORS,
-+	.no_write_same = 1,
- 	.cmd_per_lun = PMCRAID_MAX_CMD_PER_LUN,
- 	.use_clustering = ENABLE_CLUSTERING,
- 	.shost_attrs = pmcraid_host_attrs,
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index a4dc067..f6dffc3 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -2639,6 +2639,12 @@ static void sd_read_write_same(struct scsi_disk *sdkp, unsigned char *buffer)
+-extern int 			ipv6_recv_error(struct sock *sk, struct msghdr *msg, int len);
+-extern int 			ipv6_recv_rxpmtu(struct sock *sk, struct msghdr *msg, int len);
++extern int 			ipv6_recv_error(struct sock *sk, struct msghdr *msg, int len,
++						int *addr_len);
++extern int 			ipv6_recv_rxpmtu(struct sock *sk, struct msghdr *msg, int len,
++						 int *addr_len);
+ extern void			ipv6_icmp_error(struct sock *sk, struct sk_buff *skb, int err, __be16 port,
+ 						u32 info, u8 *payload);
+ extern void			ipv6_local_error(struct sock *sk, int err, struct flowi6 *fl6, u32 info);
+diff --git a/net/ipv4/ip_sockglue.c b/net/ipv4/ip_sockglue.c
+index d9c4f11..23e6ab0 100644
+--- a/net/ipv4/ip_sockglue.c
++++ b/net/ipv4/ip_sockglue.c
+@@ -368,7 +368,7 @@ void ip_local_error(struct sock *sk, int err, __be32 daddr, __be16 port, u32 inf
+ /*
+  *	Handle MSG_ERRQUEUE
+  */
+-int ip_recv_error(struct sock *sk, struct msghdr *msg, int len)
++int ip_recv_error(struct sock *sk, struct msghdr *msg, int len, int *addr_len)
  {
- 	struct scsi_device *sdev = sdkp->device;
+ 	struct sock_exterr_skb *serr;
+ 	struct sk_buff *skb, *skb2;
+@@ -405,6 +405,7 @@ int ip_recv_error(struct sock *sk, struct msghdr *msg, int len)
+ 						   serr->addr_offset);
+ 		sin->sin_port = serr->port;
+ 		memset(&sin->sin_zero, 0, sizeof(sin->sin_zero));
++		*addr_len = sizeof(*sin);
+ 	}
  
-+	if (sdev->host->no_write_same) {
-+		sdev->no_write_same = 1;
-+
-+		return;
-+	}
-+
- 	if (scsi_report_opcode(sdev, buffer, SD_BUF_SIZE, INQUIRY) < 0) {
- 		/* too large values might cause issues with arcmsr */
- 		int vpd_buf_len = 64;
-diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-index 9f4e560..0374eee 100644
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -1402,6 +1402,7 @@ static struct scsi_host_template scsi_driver = {
- 	.use_clustering =	DISABLE_CLUSTERING,
- 	/* Make sure we dont get a sg segment crosses a page boundary */
- 	.dma_boundary =		PAGE_SIZE-1,
-+	.no_write_same =	1,
- };
+ 	memcpy(&errhdr.ee, &serr->ee, sizeof(struct sock_extended_err));
+diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
+index a690121..eeaf513 100644
+--- a/net/ipv4/ping.c
++++ b/net/ipv4/ping.c
+@@ -637,7 +637,7 @@ static int ping_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 		goto out;
  
- enum {
-diff --git a/include/scsi/scsi_host.h b/include/scsi/scsi_host.h
-index 4908480..f798718 100644
---- a/include/scsi/scsi_host.h
-+++ b/include/scsi/scsi_host.h
-@@ -473,6 +473,9 @@ struct scsi_host_template {
- 	 */
- 	unsigned ordered_tag:1;
+ 	if (flags & MSG_ERRQUEUE)
+-		return ip_recv_error(sk, msg, len);
++		return ip_recv_error(sk, msg, len, addr_len);
  
-+	/* True if the controller does not support WRITE SAME */
-+	unsigned no_write_same:1;
-+
- 	/*
- 	 * Countdown for host blocking with no commands outstanding.
- 	 */
-@@ -672,6 +675,9 @@ struct Scsi_Host {
- 	/* Don't resume host in EH */
- 	unsigned eh_noresume:1;
+ 	skb = skb_recv_datagram(sk, flags, noblock, &err);
+ 	if (!skb)
+diff --git a/net/ipv4/raw.c b/net/ipv4/raw.c
+index 5f42d6d..4af3fc1 100644
+--- a/net/ipv4/raw.c
++++ b/net/ipv4/raw.c
+@@ -695,7 +695,7 @@ static int raw_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 		goto out;
  
-+	/* The controller does not support WRITE SAME */
-+	unsigned no_write_same:1;
-+
- 	/*
- 	 * Optional work queue to be utilized by the transport
- 	 */
+ 	if (flags & MSG_ERRQUEUE) {
+-		err = ip_recv_error(sk, msg, len);
++		err = ip_recv_error(sk, msg, len, addr_len);
+ 		goto out;
+ 	}
+ 
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index 83e3273..c8cf2f1 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1181,7 +1181,7 @@ int udp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 	bool slow;
+ 
+ 	if (flags & MSG_ERRQUEUE)
+-		return ip_recv_error(sk, msg, len);
++		return ip_recv_error(sk, msg, len, addr_len);
+ 
+ try_again:
+ 	skb = __skb_recv_datagram(sk, flags | (noblock ? MSG_DONTWAIT : 0),
+diff --git a/net/ipv6/datagram.c b/net/ipv6/datagram.c
+index 7a778b9..6aaf0b9 100644
+--- a/net/ipv6/datagram.c
++++ b/net/ipv6/datagram.c
+@@ -317,7 +317,7 @@ void ipv6_local_rxpmtu(struct sock *sk, struct flowi6 *fl6, u32 mtu)
+ /*
+  *	Handle MSG_ERRQUEUE
+  */
+-int ipv6_recv_error(struct sock *sk, struct msghdr *msg, int len)
++int ipv6_recv_error(struct sock *sk, struct msghdr *msg, int len, int *addr_len)
+ {
+ 	struct ipv6_pinfo *np = inet6_sk(sk);
+ 	struct sock_exterr_skb *serr;
+@@ -368,6 +368,7 @@ int ipv6_recv_error(struct sock *sk, struct msghdr *msg, int len)
+ 			ipv6_addr_set_v4mapped(*(__be32 *)(nh + serr->addr_offset),
+ 					       &sin->sin6_addr);
+ 		}
++		*addr_len = sizeof(*sin);
+ 	}
+ 
+ 	memcpy(&errhdr.ee, &serr->ee, sizeof(struct sock_extended_err));
+@@ -421,7 +422,8 @@ EXPORT_SYMBOL_GPL(ipv6_recv_error);
+ /*
+  *	Handle IPV6_RECVPATHMTU
+  */
+-int ipv6_recv_rxpmtu(struct sock *sk, struct msghdr *msg, int len)
++int ipv6_recv_rxpmtu(struct sock *sk, struct msghdr *msg, int len,
++		     int *addr_len)
+ {
+ 	struct ipv6_pinfo *np = inet6_sk(sk);
+ 	struct sk_buff *skb;
+@@ -455,6 +457,7 @@ int ipv6_recv_rxpmtu(struct sock *sk, struct msghdr *msg, int len)
+ 		sin->sin6_port = 0;
+ 		sin->sin6_scope_id = mtu_info.ip6m_addr.sin6_scope_id;
+ 		sin->sin6_addr = mtu_info.ip6m_addr.sin6_addr;
++		*addr_len = sizeof(*sin);
+ 	}
+ 
+ 	put_cmsg(msg, SOL_IPV6, IPV6_PATHMTU, sizeof(mtu_info), &mtu_info);
+diff --git a/net/ipv6/raw.c b/net/ipv6/raw.c
+index 276faf6..5ce77ee 100644
+--- a/net/ipv6/raw.c
++++ b/net/ipv6/raw.c
+@@ -461,10 +461,10 @@ static int rawv6_recvmsg(struct kiocb *iocb, struct sock *sk,
+ 		return -EOPNOTSUPP;
+ 
+ 	if (flags & MSG_ERRQUEUE)
+-		return ipv6_recv_error(sk, msg, len);
++		return ipv6_recv_error(sk, msg, len, addr_len);
+ 
+ 	if (np->rxpmtu && np->rxopt.bits.rxpmtu)
+-		return ipv6_recv_rxpmtu(sk, msg, len);
++		return ipv6_recv_rxpmtu(sk, msg, len, addr_len);
+ 
+ 	skb = skb_recv_datagram(sk, flags, noblock, &err);
+ 	if (!skb)
+diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
+index f8236a3..97cb164 100644
+--- a/net/ipv6/udp.c
++++ b/net/ipv6/udp.c
+@@ -350,10 +350,10 @@ int udpv6_recvmsg(struct kiocb *iocb, struct sock *sk,
+ 	bool slow;
+ 
+ 	if (flags & MSG_ERRQUEUE)
+-		return ipv6_recv_error(sk, msg, len);
++		return ipv6_recv_error(sk, msg, len, addr_len);
+ 
+ 	if (np->rxpmtu && np->rxopt.bits.rxpmtu)
+-		return ipv6_recv_rxpmtu(sk, msg, len);
++		return ipv6_recv_rxpmtu(sk, msg, len, addr_len);
+ 
+ try_again:
+ 	skb = __skb_recv_datagram(sk, flags | (noblock ? MSG_DONTWAIT : 0),
+diff --git a/net/l2tp/l2tp_ip6.c b/net/l2tp/l2tp_ip6.c
+index 9e1822e..388b4dc 100644
+--- a/net/l2tp/l2tp_ip6.c
++++ b/net/l2tp/l2tp_ip6.c
+@@ -659,7 +659,7 @@ static int l2tp_ip6_recvmsg(struct kiocb *iocb, struct sock *sk,
+ 		*addr_len = sizeof(*lsa);
+ 
+ 	if (flags & MSG_ERRQUEUE)
+-		return ipv6_recv_error(sk, msg, len);
++		return ipv6_recv_error(sk, msg, len, addr_len);
+ 
+ 	skb = skb_recv_datagram(sk, flags, noblock, &err);
+ 	if (!skb)
 -- 
 1.8.3.2
 
