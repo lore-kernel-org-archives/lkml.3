@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833AbaABVd7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 16:33:59 -0500
-Received: from mga02.intel.com ([134.134.136.20]:47790 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750832AbaABVd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 16:33:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,593,1384329600"; 
-   d="scan'208";a="460898914"
-Date: Thu, 2 Jan 2014 13:33:52 -0800
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Mark Lord <mlord@pobox.com>
-Cc: walt <w41ter@gmail.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        David Laight <david.laight@aculab.com>, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org,
-        Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-Subject: Re: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within a
- USB payload burst
-Message-ID: <20140102213352.GB9621@xanatos>
-References: <20131218211219.461663463@linuxfoundation.org>
- <20131218211220.412278148@linuxfoundation.org>
- <52C32BB0.90600@gmail.com>
- <20140102191510.GA9621@xanatos>
- <52C5D3A9.60708@pobox.com>
+	id S1752070AbaABVeY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 16:34:24 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:48091 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751886AbaABVeW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 16:34:22 -0500
+Message-ID: <52C5DB5B.9050604@linaro.org>
+Date: Thu, 02 Jan 2014 13:34:19 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52C5D3A9.60708@pobox.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: =?UTF-8?B?S3J6eXN6dG9mIEhhxYJhc2E=?= <khalasa@piap.pl>,
+        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Willy Tarreau <w@1wt.eu>, lkml <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: v3.13-rc6+ regression (ARM board)
+References: <m3mwjhux0e.fsf@t19.piap.pl>	<20131231104511.GA9688@1wt.eu>	<m3txdmu2ez.fsf@t19.piap.pl>	<20140102101455.GG10158@pengutronix.de>	<m3ppoatwn1.fsf@t19.piap.pl>	<CA+55aFyZ0EXYkHd-BhQo6K++qKJVPdGeDbFTVTs3pAPCHFUpOA@mail.gmail.com>	<52C5C5F6.70803@linaro.org>	<52C5CC54.4050602@linaro.org> <CA+55aFz2dKw5HXy7DV1Aymoscg0MW7Zz28apan8dugUeqTd1QA@mail.gmail.com>
+In-Reply-To: <CA+55aFz2dKw5HXy7DV1Aymoscg0MW7Zz28apan8dugUeqTd1QA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 02, 2014 at 04:01:29PM -0500, Mark Lord wrote:
-> On 14-01-02 02:15 PM, Sarah Sharp wrote:
-> > On Tue, Dec 31, 2013 at 12:40:16PM -0800, walt wrote:
-> ..
-> >> Unfortunately this patch causes a regression when copying large files to my
-> >> outboard USB3 drive. (Nothing at all to do with networking.)
-> >>
-> >> When I try to copy a large (20GB) file to the USB3 drive, the copy dies after
-> >> about 7GB, the ext4 journal aborts and the drive is remounted read-only.
-> >>
-> >> This bug is 100% reproducible (always pretty close to 7GB) and reverting this
-> >> patch completely fixes the problem.
-> > 
-> > Ok, I had feared that would be a consequence of this patch.  I think the
-> > problem is that the usb-storage driver submitted an URB with more
-> > scatter-gather entries than would fit on the ring segment, the xHCI
-> > driver rejected the URB with -ENOMEM, and the SCSI core eventually gave
-> > up on the SCSI command.
-> 
-> Is there not a block layer / scheduler tunable for max sg entries or something?
+On 01/02/2014 12:43 PM, Linus Torvalds wrote:
+> On Thu, Jan 2, 2014 at 12:30 PM, John Stultz <john.stultz@linaro.org> wrote:
+>> So something else may be at play. Even with Linus' patch I reproduced a
+>> similar hang here.
+>>
+>> Still chasing it down, but it looks like a seqlock deadlock where we're
+>> calling read while holding the lock.
+> Hmm. Only with lockdep, right?
 
-There is a USB host controller tunable for max number of sg entries
-that's passed up to the SCSI or block layer.  We discussed changing it,
-but there wasn't a good consensus on what to change it to:
+Yep.
 
-http://marc.info/?l=linux-usb&m=138496358223904&w=2
-http://marc.info/?l=linux-netdev&m=138496706007262&w=2
+> Does lockdep perhaps read the scheduler clock? Afaik, we have
+> lockstat_clock(), which uses local_clock(), which in turn translates
+> to sched_clock_cpu(smp_processor_id())..
+>
+> So if that code now tries to read the scheduler clock when
+> update_sched_clock() is doing a update and has done a
+> write_seqcount_begin()...
 
-In the end, we thought we didn't need to limit the sglist size because
-Paul thought usb-storage limits the overall transfer size to 120K, which
-should fit in 31 TRBs:
+Sigh. Deadlock by deadlock detection code.
 
-http://marc.info/?l=linux-usb&m=138498190419312&w=2
+So yea, it looks like this is the case.. though I've not been able to
+get a backtrace during the hang to totally validate it (I'm just using
+qemu's info registers and looking at the pc and lr).
 
-Walt, could you see if limiting the sglist size helps, by setting
-hcd->self.sg_tablesize in xhci.c to 31?
 
-Sarah Sharp
+So I'm guessing we'll just have to disable the lockdep logic here, which
+is a little sad, since I'm a little nervous about the generic
+sched_clock's locking (ie: works ok for ARM, but its not NMI safe), and
+having some better debugging tools there would be helpful.
+
+
+Anyway, I'll send out a patch to disable the lockdep usage here shortly.
+
+thanks
+-john
+
+
+
+
+
+
+
+
