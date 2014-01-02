@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751745AbaABMoX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 07:44:23 -0500
-Received: from m59-178.qiye.163.com ([123.58.178.59]:46378 "EHLO
-	m59-178.qiye.163.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678AbaABMoV (ORCPT
+	id S1751807AbaABMpe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 07:45:34 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:47883 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750942AbaABMpc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 07:44:21 -0500
-Message-ID: <52C55F12.4050406@ubuntukylin.com>
-Date: Thu, 02 Jan 2014 20:44:02 +0800
-From: Li Wang <liwang@ubuntukylin.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Thu, 2 Jan 2014 07:45:32 -0500
+Date: Thu, 2 Jan 2014 13:44:37 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Mark Brown <broonie@kernel.org>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Liam Girdwood <lgirdwood@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH] ASoC: generic: add generic compound card
+ with DT support
+Message-ID: <20140102134437.1e39da55@armhf>
+In-Reply-To: <20140102115618.GW31886@sirena.org.uk>
+References: <20131231113138.102044cf@armhf>
+	<52C466E1.3030302@metafoo.de>
+	<20140101210814.31e3f3a9@armhf>
+	<52C4766B.8080000@metafoo.de>
+	<20140102102647.6efec89d@armhf>
+	<20140102111056.GT31886@sirena.org.uk>
+	<20140102124331.2bcfc172@armhf>
+	<20140102115618.GW31886@sirena.org.uk>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
-To: Dave Hansen <dave.hansen@intel.com>, Andreas Dilger <adilger@dilger.ca>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>, Zefan Li <lizefan@huawei.com>,
-        Matthew Wilcox <matthew@wil.cx>
-Subject: Re: [PATCH 0/3] Fadvise: Directory level page cache cleaning support
-References: <cover.1388409686.git.liwang@ubuntukylin.com> <52C1C6F7.8010809@intel.com> <FFE7C704-791E-4B73-9251-EFB9135AB254@dilger.ca> <52C1E6B1.4010402@intel.com>
-In-Reply-To: <52C1E6B1.4010402@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-HM-Spam-Status: e1koWUFPN1dZCBgUCR5ZQUpIVU5OQkJCQk9NTkJPSUhDSFdZCQ4XHghZQV
-	koKz0kKzooKCQyNSQzPjo*PilBS1VLQDYjJCI#KCQyNSQzPjo*PilBS1VLQCsvKSQiPigkMjUkMz
-	46Pz4pQUtVS0A4NC41LykiJDg1QUtVS0ApPjwyNDUkOigyOkFLVUtAKyk0LTI1OD4kMy41OjVBS1
-	VLQD8iNTo2MjgkMiskNTQkMjUkMz46Pz4pQUtVS0ApPjo3JDIrJDI1JCk5NyQyNSQzPjo*PilBSk
-	lVS0A2LjcvMiQpOCsvJD8yPT0#KT41LyQyNSQzPjo*PilBSVVLQDIrJC80PzoiJDg1LyRLJEpLS0
-	FLVUtAMiskTiQ2MjUuLz4kODUvJEskSktBS1VLQDIrJEokNjI1Li8#JDg1LyRLJEpLQUtVS0AyKy
-	RKJDM0LikkODUvJEskSktLQUtVS0AyKyRISyQ2MjUuLz4kODUvJEskTktBS1VLQD01JDY6IiRPSk
-	IkMzcxJEokS0NLSEtPQUtVSEhAPSskKT4kPSwkMzcxJEtDS0hLTUFWTFVOQCguOSQ#QUpVTk5APT
-	UkKC45JD41LDQpPygkMzcxJEpLS0lLSkFLVUlDQD01JDkyL0wkMzcxJEtMSklLSUFIVUpOQD01JD
-	0pPj4kMzcxJEtMS05LT0FKVUxOWQY+
-X-HM-Sender-Digest: e1kSHx4VD1lBWUc6MQg6Cjo4LDo4EDorKjhIOj4qOkMwCjFVSlVKSEND
-	TU1NTU5MSk9DVTMWGhIXVRcSDBoVHDsOGQ4VDw4QAhcSFVUYFBZFWVdZDB4ZWUEdGhcIHldZCAFZ
-	QUhDSEk3V1kSC1lBWU1KVUpDTFVOT1VCWQY+
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do we really need clean dcache/icache at the current stage?
-That will introduce more code work, so far, iput() will put
-those unreferenced inodes into superblock lru list. To free
-the inodes inside a specific directory, it seems we do not
-have a handy API to use, and need
-modify iput() to recognize our situation, and collect those
-inodes into our list rather than superblock lru list. Maybe
-we stay at current stage now, since it is simple and could
-gain the major benefits, leave the dcache/icache cleaning
-to do in the future?
+On Thu, 2 Jan 2014 11:56:18 +0000
+Mark Brown <broonie@kernel.org> wrote:
 
-On 2013/12/31 5:33, Dave Hansen wrote:
-> On 12/30/2013 11:40 AM, Andreas Dilger wrote:
->> On Dec 30, 2013, at 12:18, Dave Hansen <dave.hansen@intel.com> wrote:
->>> Why is this necessary to do in the kernel?  Why not leave it to
->>> userspace to walk the filesystem(s)?
->>
->> I would suspect that trying to do it in userspace would be quite bad. It would require traversing the whole directory tree to issue cache flushed for each subdirectory, but it doesn't know when to stop traversal. That would mean the "cache flush" would turn into "cache pollute" and cause a lot of disk IO for subdirectories not in cache to begin with.
->
-> That makes sense for dentries at least and is a pretty good reason.
-> Probably good enough to to include some text in the patch description.
-> ;)  Perhaps: "We need this interface because we have no way of
-> determining what is in the dcache from userspace, and we do not want
-> userspace to pollute the dcache going and looking for page cache to evict."
->
-> One other thing that bothers me: POSIX_FADV_DONTNEED on a directory
-> seems like it should do something with the _directory_.  It should undo
-> the kernel's caching that happens as a result of readdir().
->
-> Should this also be trying to drop the dentry/inode entries like "echo 2
->> .../drop_caches" does?
+> On Thu, Jan 02, 2014 at 12:43:31PM +0100, Jean-Francois Moine wrote:
+> > Mark Brown <broonie@kernel.org> wrote:
+> 
+> > > I think we want an explicit object in the card representing the DAIs.
+> > > This will both be useful for making it easy to find the configuration
+> > > for the link and will be more extensible for the cases where multiple
+> > > devices are connected, you can't just assume there's just two.
+> 
+> > I don't see the problem: the 'port' is the DAI. The associated
+> > endpoints give the DAI links and the routing information.
+> 
+> > As the DT definition has been done for video, some properties may be
+> > added at will for audio.
+> 
+> > What kind of object were you thinking of?
+> 
+> Like I say multiple devices on the same link - if you're just listing a
+> single remote device there can't be more than one.
+
+I still don't understand. There is already such cases in the Cubox:
+the S/PDIF output from the kirkwood audio controller is connected to
+both the HDMI transmitter and the S/PDIF TOSLINK. So, in the audio
+controller, the port @1 defines the S/PDIF DAI and the endpoints @0 and
+@1 point to the remote DAIs, creating 2 snd DAI links:
+
+	port@1 {
+		audio_hdmi_spdif: endpoint@0 {
+			remote-endpoint = <&hdmi_spdif_audio>;
+		};
+		audio_spdif: endpoint@1 {
+			remote-endpoint = <&spdif_audio>;
+		};
+	};
+
+in the snd card:
+
+	- DAI link 1 = 'audio controller spdif out' <=> 'hdmi spdif'
+	- DAI link 2 = 'audio controller spdif out' <=> 'spdif'
+
+If I am wrong, may you give us an example for which such a DT would not
+work?
+
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
