@@ -1,166 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751386AbaABHtY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 02:49:24 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:51993 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721AbaABHtX (ORCPT
+	id S1751031AbaABHze (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 02:55:34 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:7093 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750728AbaABHzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 02:49:23 -0500
-Date: Thu, 2 Jan 2014 15:48:12 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: jslaby@suse.cz, airlied@redhat.com, akpm@linux-foundation.org,
-        kilobyte@angband.pl, peter@hurleysoftware.com, rosslagerwall@gmail.com,
-        tiwai@suse.de, linux-kernel@vger.kernel.org
-Subject: [PATCH v3]vt: use vc_allocate in con_init
-Message-ID: <20140102074812.GA4713@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	gregkh@linuxfoundation.org, jslaby@suse.cz, airlied@redhat.com,
-	akpm@linux-foundation.org, kilobyte@angband.pl,
-	peter@hurleysoftware.com, rosslagerwall@gmail.com, tiwai@suse.de,
-	linux-kernel@vger.kernel.org
+	Thu, 2 Jan 2014 02:55:32 -0500
+Message-ID: <52C51B3C.6090200@huawei.com>
+Date: Thu, 2 Jan 2014 15:54:36 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <linux-kernel@vger.kernel.org>, genghui 00204690 <hui.geng@huawei.com>
+Subject: ARM: Whether a bank must be fully contained by a section?
+References: <20140102074314.GB24225@kernel-host>
+In-Reply-To: <20140102074314.GB24225@kernel-host>
+X-Forwarded-Message-Id: <20140102074314.GB24225@kernel-host>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.90]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After a5f4f52e82114e85aa1a066bd1a450acc19a464d
-("vt: use kzalloc() instead of the bootmem allocator"),
-con_init began to use kzalloc to initialize vc_data, 
-this patch convert con_init to use vc_allocate.
+Hi Russell,
 
-The benefit we get:
-1: reduce code duplication
-2: vc_allocate is more robust
-3: use kmalloc instead of kzalloc for vc_screenbuf
+By reading the code of show_mem(), I found that there is an assumption
+that the page structs must be continuous for each bank:
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
+	for_each_bank (i, mi) {
+		...
+		page = pfn_to_page(pfn1);
+		end  = pfn_to_page(pfn2 - 1) + 1;
+	
+		do {
+			...
+			page++;  <-- pageframe must be continuous
+			...
+		} while (page < end);
+		...
+	}
+
+Therefore, a bank must be fully contained in a section in sparse memory
+mode, because page frames are allocated section by section (in
+sparse_init()).
+
+However, I didn't find other code which enforces this assumption.
+Instead, in arm_memory_present (arch/arm/mm/init.c), it seems that a
+bank may contain more than one section:
+
+arm_memory_present:
+	...
+	for_each_memblock(memory, reg)
+		memory_present(0, memblock_region_memory_base_pfn(reg),
+			       memblock_region_memory_end_pfn(reg));
+	...
+
+memory_present:
+	...
+	for (pfn = start; pfn < end; pfn += PAGES_PER_SECTION) {
+		...
+	}
+	...
+
+
+Therefore, would you please consider the following patch, which removes
+the assumption that a bank must be fully contained in one section?
+
+
+===========================
+
+
+>From b2c4bb5807c755d92274e11bb00cc548fea62242 Mon Sep 17 00:00:00 2001
+From: Wang Nan <wangnan0@huawei.com>
+Date: Thu, 2 Jan 2014 13:20:02 +0800
+Subject: [PATCH] use pfn_to_page in show_mem
+
+If a bank spans into different sections, the page structures of the bank
+may not continous.
+
+This patch uses pfn_to_page to recompute the address of struct page in show_mem
+from pfn, makes it to collect correct information even if a bank spans into
+different sections.
+
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
 ---
- Changes v2-v3:
- 1: fix warnings reported by checkpatch.pl 
- 2: clarify changelog
+ arch/arm/mm/init.c | 16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
 
- drivers/tty/vt/vt.c       | 28 ++++++++++++++--------------
- drivers/tty/vt/vt_ioctl.c |  8 ++++----
- include/linux/vt_kern.h   |  2 +-
- 3 files changed, 19 insertions(+), 19 deletions(-)
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index 1f7b19a..3078e5a 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -97,16 +97,14 @@ void show_mem(unsigned int filter)
 
-diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-index 15aaa01..720a8f9 100644
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -748,7 +748,8 @@ static void visual_init(struct vc_data *vc, int num, int init)
- 	vc->vc_screenbuf_size = vc->vc_rows * vc->vc_size_row;
- }
- 
--int vc_allocate(unsigned int currcons)	/* return 0 on success */
-+/* return 0 on success */
-+int vc_allocate(unsigned int currcons, int early)
- {
- 	WARN_CONSOLE_UNLOCKED();
- 
-@@ -789,9 +790,13 @@ int vc_allocate(unsigned int currcons)	/* return 0 on success */
- 	    if (global_cursor_default == -1)
- 		    global_cursor_default = 1;
- 
--	    vc_init(vc, vc->vc_rows, vc->vc_cols, 1);
--	    vcs_make_sysfs(currcons);
--	    atomic_notifier_call_chain(&vt_notifier_list, VT_ALLOCATE, &param);
-+	    vc_init(vc, vc->vc_rows, vc->vc_cols,
-+		    currcons == 0 ? !vc->vc_sw->con_save_screen : 1);
-+	    if (!early) {
-+		vcs_make_sysfs(currcons);
-+		atomic_notifier_call_chain(&vt_notifier_list, VT_ALLOCATE,
-+					   &param);
-+	    }
+ 	for_each_bank (i, mi) {
+ 		struct membank *bank = &mi->bank[i];
+-		unsigned int pfn1, pfn2;
+-		struct page *page, *end;
++		unsigned int pfn, pfn_end;
++		struct page *page;
+
+-		pfn1 = bank_pfn_start(bank);
+-		pfn2 = bank_pfn_end(bank);
+-
+-		page = pfn_to_page(pfn1);
+-		end  = pfn_to_page(pfn2 - 1) + 1;
++		pfn = bank_pfn_start(bank);
++		pfn_end = bank_pfn_end(bank);
+
+ 		do {
++			page = pfn_to_page(pfn);
+ 			total++;
+ 			if (PageReserved(page))
+ 				reserved++;
+@@ -118,8 +116,8 @@ void show_mem(unsigned int filter)
+ 				free++;
+ 			else
+ 				shared += page_count(page) - 1;
+-			page++;
+-		} while (page < end);
++			pfn++;
++		} while (pfn < pfn_end);
  	}
- 	return 0;
- }
-@@ -2765,7 +2770,7 @@ static int con_install(struct tty_driver *driver, struct tty_struct *tty)
- 	int ret;
- 
- 	console_lock();
--	ret = vc_allocate(currcons);
-+	ret = vc_allocate(currcons, 0);
- 	if (ret)
- 		goto unlock;
- 
-@@ -2901,15 +2906,10 @@ static int __init con_init(void)
- 		mod_timer(&console_timer, jiffies + (blankinterval * HZ));
- 	}
- 
--	for (currcons = 0; currcons < MIN_NR_CONSOLES; currcons++) {
--		vc_cons[currcons].d = vc = kzalloc(sizeof(struct vc_data), GFP_NOWAIT);
--		INIT_WORK(&vc_cons[currcons].SAK_work, vc_SAK);
--		tty_port_init(&vc->port);
--		visual_init(vc, currcons, 1);
--		vc->vc_screenbuf = kzalloc(vc->vc_screenbuf_size, GFP_NOWAIT);
--		vc_init(vc, vc->vc_rows, vc->vc_cols,
--			currcons || !vc->vc_sw->con_save_screen);
--	}
-+	for (currcons = 0; currcons < MIN_NR_CONSOLES; currcons++)
-+		if (vc_allocate(currcons, 1))
-+			panic("Can't initialize console %d!", currcons + 1);
-+
- 	currcons = fg_console = 0;
- 	master_display_fg = vc = vc_cons[currcons].d;
- 	set_origin(vc);
-diff --git a/drivers/tty/vt/vt_ioctl.c b/drivers/tty/vt/vt_ioctl.c
-index 2bd78e2..59667c1 100644
---- a/drivers/tty/vt/vt_ioctl.c
-+++ b/drivers/tty/vt/vt_ioctl.c
-@@ -680,7 +680,7 @@ int vt_ioctl(struct tty_struct *tty,
- 		else {
- 			arg--;
- 			console_lock();
--			ret = vc_allocate(arg);
-+			ret = vc_allocate(arg, 0);
- 			console_unlock();
- 			if (ret)
- 				break;
-@@ -705,7 +705,7 @@ int vt_ioctl(struct tty_struct *tty,
- 		else {
- 			vsa.console--;
- 			console_lock();
--			ret = vc_allocate(vsa.console);
-+			ret = vc_allocate(vsa.console, 0);
- 			if (ret == 0) {
- 				struct vc_data *nvc;
- 				/* This is safe providing we don't drop the
-@@ -778,7 +778,7 @@ int vt_ioctl(struct tty_struct *tty,
- 				int newvt;
- 				newvt = vc->vt_newvt;
- 				vc->vt_newvt = -1;
--				ret = vc_allocate(newvt);
-+				ret = vc_allocate(newvt, 0);
- 				if (ret) {
- 					console_unlock();
- 					break;
-@@ -1441,7 +1441,7 @@ int vt_move_to_console(unsigned int vt, int alloc)
- 	}
- 	prev = fg_console;
- 
--	if (alloc && vc_allocate(vt)) {
-+	if (alloc && vc_allocate(vt, 0)) {
- 		/* we can't have a free VC for now. Too bad,
- 		 * we don't want to mess the screen for now. */
- 		console_unlock();
-diff --git a/include/linux/vt_kern.h b/include/linux/vt_kern.h
-index 8d76342..96d8795 100644
---- a/include/linux/vt_kern.h
-+++ b/include/linux/vt_kern.h
-@@ -33,7 +33,7 @@ extern int fg_console, last_console, want_console;
- 
- /* console.c */
- 
--int vc_allocate(unsigned int console);
-+int vc_allocate(unsigned int console, int early);
- int vc_cons_allocated(unsigned int console);
- int vc_resize(struct vc_data *vc, unsigned int cols, unsigned int lines);
- struct vc_data *vc_deallocate(unsigned int console);
+
+ 	printk("%d pages of RAM\n", total);
 -- 
-1.8.3.4.8.g69490f3.dirty
+1.8.4
+
+
+
+
+
