@@ -1,183 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623AbaABXML (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 18:12:11 -0500
-Received: from mail.wdtv.com ([66.118.69.84]:34973 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751886AbaABXMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 18:12:09 -0500
-From: Gene Heskett <gheskett@wdtv.com>
-To: Ken Moffat <zarniwhoop@ntlworld.com>
-Subject: Re: AMD microcode fails to update with v3.8.3 and newer, bisect failed
-Date: Thu, 2 Jan 2014 18:12:05 -0500
-Cc: Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org
-References: <201401011752.00267.gheskett@wdtv.com> <201401020024.56566.gheskett@wdtv.com> <20140102181513.GA9391@milliways>
-In-Reply-To: <20140102181513.GA9391@milliways>
+	id S1752709AbaABXOy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 18:14:54 -0500
+Received: from 12.mo3.mail-out.ovh.net ([188.165.41.191]:52318 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750814AbaABXOx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 18:14:53 -0500
+X-Greylist: delayed 4199 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Jan 2014 18:14:52 EST
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1256"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201401021812.05431.gheskett@wdtv.com>
+In-Reply-To: <4526077.qASk8HSHKP@wuerfel>
+References: <1388507534-10570-1-git-send-email-jjhiblot@traphandler.com>
+	<1388507534-10570-7-git-send-email-jjhiblot@traphandler.com>
+	<4526077.qASk8HSHKP@wuerfel>
+Date: Thu, 2 Jan 2014 20:31:00 +0100
+Message-ID: <CACh+v5PptkrXERAqBUOv-DSaRDQ5NzJAc919Ne3iN9iVszRP+A@mail.gmail.com>
+Subject: Re: [PATCH 6/6] at91: dt: sam9261: Added DM9000 in the device tree
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, nicolas.ferre@atmel.com,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-Ovh-Tracer-Id: 13723875441099954200
+X-Ovh-Remote: 209.85.192.171 (mail-pd0-f171.google.com)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrvdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrvdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 02 January 2014, Ken Moffat wrote:
->On Thu, Jan 02, 2014 at 12:24:56AM -0500, Gene Heskett wrote:
->> On Wednesday 01 January 2014, Ken Moffat wrote:
->> >On Thu, Jan 02, 2014 at 04:08:15AM +0000, Ken Moffat wrote:
->> >>  Anyway, best of luck and I hope you get it sorted.
->> > 
->> > One further suggestion, since you appear to be at the "running
->> >
->> >round in circles" stage -
->> >
->> >1. Start with a good kernel.  In this case, I suppose 3.8.2 is the
->> >right place to begin.
->> 
->> That has since died, won't boot, don't recall changing a thing in the
->> .config either.
+2013/12/31 Arnd Bergmann <arnd@arndb.de>:
+> On Tuesday 31 December 2013 17:32:14 jjhiblot@traphandler.com wrote:
+>>
+>> +                       ethernet@30000000 {
+>> +                               compatible = "davicom,dm9000";
+>> +                               reg = <0x30000000 0x2 0x30000004 0x2>;
+>> +                               interrupt-parent = <&pioC>;
+>> +                               interrupts = <11 IRQ_TYPE_EDGE_BOTH>;
+>> +                               local-mac-address = [00 00 de ad be ef];
+>> +                               davicom,no-eeprom;
+>> +
+>> +                               smc,cs = <2>;
+>> +                               smc,ncs_read_setup = <0>;
+>> +                               smc,nrd_setup = <2>;
+>> +                               smc,ncs_write_setup = <0>;
+>> +                               smc,nwe_setup = <2>;
+>> +                               smc,ncs_read_pulse = <8>;
+>> +                               smc,nrd_pulse = <4>;
+>> +                               smc,ncs_write_pulse = <8>;
+>> +                               smc,nwe_pulse = <4>;
+>> +                               smc,read_cycle = <16>;
+>> +                               smc,write_cycle = <16>;
+>> +                               smc,tdf_cycles = <1>;
+>> +                               smc,tdf_optimized = <0>;
+>> +                               smc,page_size = <0>;
+>> +                               smc,byte_access_type = <1>;
+>> +                               smc,bus_width = <1>;
+>> +                               smc,nwait_mode = <0>;
+>> +                               smc,read_mode = <1>;
+>> +                               smc,write_mode = <1>;
+>> +                       };
 >
-> That makes things harder.  Do you have any backups from when it
->booted ? (kernel, modules, and grub.cfg might all have been
->accidentally overwritten).
+> I don't like how this forces you to mix the properties
+> of the ethernet device with the properties of the smc
+> port. I would also like to see the address translation
+> reflected in the DT nodes. This should probably just work
+> out if you restructure the DT representation, and won't need
+> changes in the driver.
 >
-> To reply to your earlier post about a lack of local tarballs : try
->installing wget (if you don't already have it), or use a firefox
->variant on a desktop machine and then transfer it to the phenom.
+> How about this:
 >
-> For convenience, I always download the 3.x.0 kernel as a tarball,
->and then 3.x.{1..n} as patches.  And I usually rename the directory
->as linux-3.x-stable so that I can remember what it is, and also so
->that it doesn't get overwritten if I untar a fresh copy for other
->reasons.  So, first I use 'head Makefile' to confirm the current
->version.  I then remove any stable patch using 'xzcat | patch -R
->-p1' so that I'm back to 3.x.0 and then apply the patch for the next
->version I want to test.
+>         smc: smc@ffffec00 {
+>                 #address-cells = <2>; /* cs, address */
+>                 #size-cells = <1>;
+>                 ranges = <2 0 0x30000000 0x10000000>
+>                          <3 0 0x40000000 0x10000000>;
 >
-> Lots of possible variations on this exist, particularly when I'm
->bisecting.  The important thing is to have a process which works for
->you - for stable kernels, some people will prefer to use a fresh
->3.x.y tarball each time.
+>                 extbus@2.0 {
+>                         compatible = "simple-bus";
+>                         #address-cells = <1>;
+>                         #size-cells = <1>;
+>                         ranges = <0 2 0 0x10000000>;
+>                         smc,ncs_read_setup = <0>;
+>                         smc,nrd_setup = <2>;
+>                         smc,...
 >
->> >2. But then change the .config to -
->> >
->> >2.1 ensure that your disk filesystems are built in - e.g. all of
->> >ext2, ext3, ext4 and anything else you know you are using.
->> 
->> Should I edit in the /etc/grub.d to remove the modprobe ext2, or will
->> it more or less silently shake its head and go on.
+>                         ethernet@0 {
+>                                 compatible = "davicom,dm9000";
+>                                 reg = <0x0 0x2> <0x4 0x2>;
+>                         };
+>                 };
+>         };
+I'm okay with this. I'll do something along those lines in the next
+round of the patch set.
 >
-> I think the modprobe instructions in the grub files are used to
->ensure that grub can load its own modules before it tries to read
->the specified kernel.  So no, I would not change that.  The kernel's
->own modules (specifically ext2/3/4) are something else - without an
->initrd, the kernel needs the filesystem used for '/' to be built in.
->
-> So : if the kernel starts to boot, the grub part is ok.
->
->> >Normally, only the fs for '/' needs to be built in, but you seem to
->> >have seen other issues so I would just build in everything you need.
->> >
->> >2.2 build in everything else you need to boot (normally, the disk
->> >controller(s) ) so that you don't need an initrd.
->> 
->> That would be forcedeath, nouveau, v4l1 and 2 and hda_audio for
->> starters.
->
-> Nouveau and forcedeath will probably be convenient, but the rest
->ought to be ok as modules.  In this context, I mean whatever you need
->for the kernel to get to a position where it can load modules.  So,
->it needs the disk driver(s) and the root filesystem (where
->/lib/modules lives).
->
->> Since this kernel isn't near new enough for the config tricks
->> mentioned, maybe I'll see if the linux-stable I have can do a 3.11.0
->> checkout.
->> 
->> >2.4 for your convenience, ensure that you have enabled the config to
->> >be stored in /proc/config.gz - once you are building your own
->> >slimmed-down kernels, you probably won't want to mess about with
->> >distro "install" scripts so just copying the bzimage to
->> >/boot/vmlinuz-x.y.z, make modules_install, and editing
->> >/boot/grub/grub.cfg (yes, really!) will save a lot of time.
->> 
->> My present script does everything but edit grub.cfg.
->
->[...]
->
->> >3.  That might take two or three attempts to get to a good config,
->> >but after that you should be able to use the slimmer config (from
->> >zcat /proc/config.gz) to create .config for any newer version you
->> >want to test or bisect, and then just run make oldconfig before you
->> >build.
->> >
->> > Also, when you get back to bisecting, the version in the kernel
->> >
->> >Makefile might not be what you expect.  If in doubt, you can change
->> >it to something which doesn't overwrite any existing modules, e.g.
->> >3.8.bisect-1 etc.
->> 
->> Presently it uses a + sign for in between versions.
->
-> I'm more familiar with bisecting in -rc versions : for those, the
->Makefile version will jump back to what it was when the code was
->developed.  Very confusing if you weren't expecting it.
->
->> > HTH
->> 
->> It will, if I don't lose my place...
->> 
->> >ؤ¸en
->> 
->> My "makeit" script does cd's here and there, so its vital that the
->> Makefile version matches the makeit version.  I've thought of that,
->> and fixed it in the copy I use to make a linux-stable install, but I
->> haven't moved that line of script into the tarball builds yet.
->
-> I haven't bothered to script my own kernel builds/installs for many
->years - as you say, make sure everything matches.
->
->> Having an automatic increment, I could eventually fill up the /boot
->> partition too. ;-)
->
-> Been there (when /boot was small and used by several available test
->systems).  For me, clearing out the old stuff by hand works well
->enough.  For scripts, I guess that you already check $?.
->
->> I take it that /proc/config.gz only keeps the lsmod output?  That would
->> be sweet!  Great idea.
->
-> No, it has everything from .config - but gzipped.  Provided the
->kernel boots, it will tell you how it was configured.  If it doesn't
->boot, the problematic config is in the source tree.  Also saves
->space in wherever a distro stores the config.
->
->> Thanks Ken & Cheers, Gene
->
->ĸen
+> If each bus interface has a fixed range of registers, you can actually
+> collapse the upper two nodes again and just have one device per
+> chipselect.
+This is indeed the case, but I'd rather keep the top node to highlight
+the fact that all the devices are physically tied to the same bus.
 
-My "makeit" script actually stores the .config as a config-$VER.gz in the 
-boot, renaming an existing one to gz.old if its found.  But that was 
-apparently overwritten more than twice while attempting the bisect.
+Jean-Jacques
 
-No progress today, I've been out playing small town broadcast engineer, the 
-local AM'ers daytime transmitter put out about 1 kilgram of smoke at turn 
-on this morning.  A gassy 807 took out a 10 henry choke in the power supply 
-about 10kg, but now nice and toasty overdone.  Parts on order, but are up 
-in PA, and this current snowstorm has PA in just about in a total lockdown.  
-Might have it by Monday.
-
-Cheers, Gene
--- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Genes Web page <http://geneslinuxbox.net:6309/gene>
-
-Old men are fond of giving good advice to console themselves for their
-inability to set a bad example.
-		-- La Rochefoucauld, "Maxims"
-A pen in the hand of this president is far more
-dangerous than 200 million guns in the hands of
-         law-abiding citizens.
+>
+>         Arnd
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
