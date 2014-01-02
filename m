@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039AbaABPYR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 10:24:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44367 "EHLO mx2.suse.de"
+	id S1751933AbaABPaP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 10:30:15 -0500
+Received: from catholic.ebb.org ([67.207.139.67]:58870 "EHLO catholic.ebb.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751769AbaABPYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 10:24:16 -0500
-Date: Thu, 2 Jan 2014 16:24:14 +0100
-From: David Sterba <dsterba@suse.cz>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: fdmanana@gmail.com, Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] btrfs: remove dead code
-Message-ID: <20140102152414.GK6498@twin.jikos.cz>
-Reply-To: dsterba@suse.cz
-Mail-Followup-To: dsterba@suse.cz, Michal Nazarewicz <mina86@mina86.com>,
-	fdmanana@gmail.com, Chris Mason <clm@fb.com>,
-	Josef Bacik <jbacik@fb.com>,
-	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-	linux-kernel@vger.kernel.org
-References: <1388553589-26778-1-git-send-email-mina86@mina86.com>
- <CAL3q7H6ftrPyGK56i2EQ8fZaHa+RvaiFPR9SdJ4C9QrpFGPe=A@mail.gmail.com>
- <xa1tiou3d64l.fsf@mina86.com>
+	id S1750832AbaABPaN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 10:30:13 -0500
+X-Greylist: delayed 592 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Jan 2014 10:30:13 EST
+From: "Bradley M. Kuhn" <bkuhn@sfconservancy.org>
+To: <linux-kernel@vger.kernel.org>
+Cc: Eric Appleman <erappleman@gmail.com>
+Subject: Re: An example of prideful GPL violators who do their violating out in the open
+In-Reply-To: <fa.amnYcw96YXPCJ5iHp+/ZK6pJJGk@ifi.uio.no>
+Organization: Software Freedom Conservancy
+References: <fa.amnYcw96YXPCJ5iHp+/ZK6pJJGk@ifi.uio.no>
+Date: Thu, 02 Jan 2014 10:10:16 -0500
+Message-ID: <87ha9mqv1j.fsf@ebb.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <xa1tiou3d64l.fsf@mina86.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 01, 2014 at 05:22:18PM +0100, Michal Nazarewicz wrote:
-> > On Wed, Jan 1, 2014 at 5:19 AM, Michal Nazarewicz <mina86@mina86.com> wrote:
-> >> [commit 8185554d: fix incorrect inode acl reset] introduced a dead
-> >> code by adding a condition which can never be true to an else
-> >> branch.  The condition can never be true because it is already
-> >> checked by a previous if statement which causes function to return.
-> 
-> On Wed, Jan 01 2014, Filipe David Manana wrote:
-> > Josef already added this patch to btrfs-next weeks ago:
-> >
-> > http://git.kernel.org/cgit/linux/kernel/git/josef/btrfs-next.git/commit/?id=c4a886e433dce2b902324a54ef2d13691a760312
-> 
-> Ah, sorry for the spam then.
-> 
-> The original thread did not mention it and this commit was not included
-> in linux-next's master branch.
+Eric Appleman wrote a few days ago:
+> https://plus.google.com/115556873499158641618/posts/KwG8uhU5DGk
+> https://plus.google.com/102371604344319409727/posts/CSNGXqxzxf4
+> https://plus.google.com/115556873499158641618/posts/ZegjCZ3FyDE
 
-FYI, the patches get merged to btrfs-next without confirmations to the
-mailiglist, the linux-next tree does not merge the development branches,
-only when Chris publishes a branch named 'next'.
-(http://linux.f-seidel.de/linux-next/pmwiki/pmwiki.php?n=Linux-next.IncludedTrees)
+> I bet you've never seen such open hostility towards the GPL and its
+> enforcement.
 
-david
+Actually, in my nearly 15 years of GPL enforcement, I've seen much worse
+said about the GPL and its enforcement from much more eloquent and
+knowledgeable folks.  In the whole vast configuration of things,
+Goodman's attacks on GPL are quite juvenile.
+
+There are currently thousands of ongoing GPL violations impacting
+millions of users.  How many users are being impacted by Goodman's
+violation?  It can't be more than hundreds, and probably not more than
+dozens.  As a triage matter, my analysis of this hasn't changed since
+the last time we discussed it, but I'm open-minded to reconsider if any
+Linux copyright holders would like the GPL Compliance Project for Linux
+Developers to do prioritize this violation.  They know how to reach me.
+-- 
+Bradley M. Kuhn, Executive Director, Software Freedom Conservancy
+   (home of BusyBox, Samba, and the GPL Compliance Project for Linux Developers)
