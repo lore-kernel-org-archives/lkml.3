@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579AbaABRGS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:06:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40233 "EHLO
+	id S1753454AbaABR1P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:27:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40238 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752486AbaABRGQ (ORCPT
+	with ESMTP id S1752554AbaABRGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:06:16 -0500
+	Thu, 2 Jan 2014 12:06:18 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexei Starovoitov <ast@plumgrid.com>,
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 27/91] ipv4: fix race in concurrent ip_route_input_slow()
-Date: Thu,  2 Jan 2014 09:04:02 -0800
-Message-Id: <1388682306-30859-28-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 22/91] ipv6: fix leaking uninitialized port number of offender sockaddr
+Date: Thu,  2 Jan 2014 09:03:57 -0800
+Message-Id: <1388682306-30859-23-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -28,52 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexei Starovoitov <ast@plumgrid.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit dcdfdf56b4a6c9437fc37dbc9cee94a788f9b0c4 ]
+[ Upstream commit 1fa4c710b6fe7b0aac9907240291b6fe6aafc3b8 ]
 
-CPUs can ask for local route via ip_route_input_noref() concurrently.
-if nh_rth_input is not cached yet, CPUs will proceed to allocate
-equivalent DSTs on 'lo' and then will try to cache them in nh_rth_input
-via rt_cache_route()
-Most of the time they succeed, but on occasion the following two lines:
-	orig = *p;
-	prev = cmpxchg(p, orig, rt);
-in rt_cache_route() do race and one of the cpus fails to complete cmpxchg.
-But ip_route_input_slow() doesn't check the return code of rt_cache_route(),
-so dst is leaking. dst_destroy() is never called and 'lo' device
-refcnt doesn't go to zero, which can be seen in the logs as:
-	unregister_netdevice: waiting for lo to become free. Usage count = 1
-Adding mdelay() between above two lines makes it easily reproducible.
-Fix it similar to nh_pcpu_rth_output case.
+Offenders don't have port numbers, so set it to 0.
 
-Fixes: d2d68ba9fe8b ("ipv4: Cache input routes in fib_info nexthops.")
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/route.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ net/ipv6/datagram.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index 0bf88e4..c219f8b 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -1724,8 +1724,12 @@ local_input:
- 		rth->dst.error= -err;
- 		rth->rt_flags 	&= ~RTCF_LOCAL;
- 	}
--	if (do_cache)
--		rt_cache_route(&FIB_RES_NH(res), rth);
-+	if (do_cache) {
-+		if (unlikely(!rt_cache_route(&FIB_RES_NH(res), rth))) {
-+			rth->dst.flags |= DST_NOCACHE;
-+			rt_add_uncached_list(rth);
-+		}
-+	}
- 	skb_dst_set(skb, &rth->dst);
- 	err = 0;
- 	goto out;
+diff --git a/net/ipv6/datagram.c b/net/ipv6/datagram.c
+index 6aaf0b9..2877b16 100644
+--- a/net/ipv6/datagram.c
++++ b/net/ipv6/datagram.c
+@@ -377,6 +377,7 @@ int ipv6_recv_error(struct sock *sk, struct msghdr *msg, int len, int *addr_len)
+ 	if (serr->ee.ee_origin != SO_EE_ORIGIN_LOCAL) {
+ 		sin->sin6_family = AF_INET6;
+ 		sin->sin6_flowinfo = 0;
++		sin->sin6_port = 0;
+ 		sin->sin6_scope_id = 0;
+ 		if (skb->protocol == htons(ETH_P_IPV6)) {
+ 			sin->sin6_addr = ipv6_hdr(skb)->saddr;
 -- 
 1.8.3.2
 
