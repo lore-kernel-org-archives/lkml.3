@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661AbaABRbJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:31:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40163 "EHLO
+	id S1754352AbaABRbH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:31:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40165 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752247AbaABRF3 (ORCPT
+	with ESMTP id S1752250AbaABRF3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 2 Jan 2014 12:05:29 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Pirko <jiri@resnulli.us>, "David S. Miller" <davem@davemloft.net>,
+Cc: Jukka Rissanen <jukka.rissanen@linux.intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 23/91] ip6_output: fragment outgoing reassembled skb properly
-Date: Thu,  2 Jan 2014 09:03:58 -0800
-Message-Id: <1388682306-30859-24-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 08/91] 6lowpan: Uncompression of traffic class field was incorrect
+Date: Thu,  2 Jan 2014 09:03:43 -0800
+Message-Id: <1388682306-30859-9-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -27,39 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Pirko <jiri@resnulli.us>
+From: Jukka Rissanen <jukka.rissanen@linux.intel.com>
 
-[ Upstream commit 9037c3579a277f3a23ba476664629fda8c35f7c4 ]
+[ Upstream commit 1188f05497e7bd2f2614b99c54adfbe7413d5749 ]
 
-If reassembled packet would fit into outdev MTU, it is not fragmented
-according the original frag size and it is send as single big packet.
+If priority/traffic class field in IPv6 header is set (seen when
+using ssh), the uncompression sets the TC and Flow fields incorrectly.
 
-The second case is if skb is gso. In that case fragmentation does not happen
-according to the original frag size.
+Example:
 
-This patch fixes these.
+This is IPv6 header of a sent packet. Note the priority/TC (=1) in
+the first byte.
 
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+00000000: 61 00 00 00 00 2c 06 40 fe 80 00 00 00 00 00 00
+00000010: 02 02 72 ff fe c6 42 10 fe 80 00 00 00 00 00 00
+00000020: 02 1e ab ff fe 4c 52 57
+
+This gets compressed like this in the sending side
+
+00000000: 72 31 04 06 02 1e ab ff fe 4c 52 57 ec c2 00 16
+00000010: aa 2d fe 92 86 4e be c6 ....
+
+In the receiving end, the packet gets uncompressed to this
+IPv6 header
+
+00000000: 60 06 06 02 00 2a 1e 40 fe 80 00 00 00 00 00 00
+00000010: 02 02 72 ff fe c6 42 10 fe 80 00 00 00 00 00 00
+00000020: ab ff fe 4c 52 57 ec c2
+
+First four bytes are set incorrectly and we have also lost
+two bytes from destination address.
+
+The fix is to switch the case values in switch statement
+when checking the TC field.
+
+Signed-off-by: Jukka Rissanen <jukka.rissanen@linux.intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv6/ip6_output.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/ieee802154/6lowpan.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index f477a89..ac9f072 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -137,7 +137,8 @@ static int ip6_finish_output2(struct sk_buff *skb)
- static int ip6_finish_output(struct sk_buff *skb)
- {
- 	if ((skb->len > ip6_skb_dst_mtu(skb) && !skb_is_gso(skb)) ||
--	    dst_allfrag(skb_dst(skb)))
-+	    dst_allfrag(skb_dst(skb)) ||
-+	    (IP6CB(skb)->frag_max_size && skb->len > IP6CB(skb)->frag_max_size))
- 		return ip6_fragment(skb, ip6_finish_output2);
- 	else
- 		return ip6_finish_output2(skb);
+diff --git a/net/ieee802154/6lowpan.c b/net/ieee802154/6lowpan.c
+index 76c3d0a..f227061 100644
+--- a/net/ieee802154/6lowpan.c
++++ b/net/ieee802154/6lowpan.c
+@@ -822,7 +822,7 @@ lowpan_process_data(struct sk_buff *skb)
+ 	 * Traffic class carried in-line
+ 	 * ECN + DSCP (1 byte), Flow Label is elided
+ 	 */
+-	case 1: /* 10b */
++	case 2: /* 10b */
+ 		if (lowpan_fetch_skb_u8(skb, &tmp))
+ 			goto drop;
+ 
+@@ -835,7 +835,7 @@ lowpan_process_data(struct sk_buff *skb)
+ 	 * Flow Label carried in-line
+ 	 * ECN + 2-bit Pad + Flow Label (3 bytes), DSCP is elided
+ 	 */
+-	case 2: /* 01b */
++	case 1: /* 01b */
+ 		if (lowpan_fetch_skb_u8(skb, &tmp))
+ 			goto drop;
+ 
 -- 
 1.8.3.2
 
