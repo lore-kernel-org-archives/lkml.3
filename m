@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822AbaABRKM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:10:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40556 "EHLO
+	id S1753896AbaABRKU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:10:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40574 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753777AbaABRJy (ORCPT
+	with ESMTP id S1750987AbaABRKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:09:54 -0500
+	Thu, 2 Jan 2014 12:10:17 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bo Shen <voice.shen@atmel.com>, Mark Brown <broonie@linaro.org>,
+Cc: Liu Gang <Gang.Liu@freescale.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 88/91] ASoC: wm8731: fix dsp mode configuration
-Date: Thu,  2 Jan 2014 09:05:03 -0800
-Message-Id: <1388682306-30859-89-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 86/91] powerpc/gpio: Fix the wrong GPIO input data on MPC8572/MPC8536
+Date: Thu,  2 Jan 2014 09:05:01 -0800
+Message-Id: <1388682306-30859-87-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -27,39 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bo Shen <voice.shen@atmel.com>
+From: Liu Gang <Gang.Liu@freescale.com>
 
-commit b4af6ef99a60c5b56df137d7accd81ba1ee1254e upstream.
+commit 1aeef303b5d9e243c41d5b80f8bb059366514a10 upstream.
 
-According to WM8731 "PD, Rev 4.9 October 2012" datasheet, when it
-works in DSP mode A, LRP = 1, while works in DSP mode B, LRP = 0.
-So, fix LRP for DSP mode as the datesheet specification.
+For MPC8572/MPC8536, the status of GPIOs defined as output
+cannot be determined by reading GPDAT register, so the code
+use shadow data register instead. But the code may give the
+wrong status of GPIOs defined as input under some scenarios:
 
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
-Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+1. If some pins were configured as inputs and were asserted
+high before booting the kernel, the shadow data has been
+initialized with those pin values.
+2. Some pins have been configured as output first and have
+been set to the high value, then reconfigured as input.
+
+The above cases will make the shadow data for those input
+pins to be set to high. Then reading the pin status will
+always return high even if the actual pin status is low.
+
+The code should eliminate the effects of the shadow data to
+the input pins, and the status of those pins should be
+read directly from GPDAT.
+
+Acked-by: Scott Wood <scottwood@freescale.com>
+Acked-by: Anatolij Gustschin <agust@denx.de>
+Signed-off-by: Liu Gang <Gang.Liu@freescale.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/soc/codecs/wm8731.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpio/gpio-mpc8xxx.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/sound/soc/codecs/wm8731.c b/sound/soc/codecs/wm8731.c
-index 5276062..10d492b 100644
---- a/sound/soc/codecs/wm8731.c
-+++ b/sound/soc/codecs/wm8731.c
-@@ -407,10 +407,10 @@ static int wm8731_set_dai_fmt(struct snd_soc_dai *codec_dai,
- 		iface |= 0x0001;
- 		break;
- 	case SND_SOC_DAIFMT_DSP_A:
--		iface |= 0x0003;
-+		iface |= 0x0013;
- 		break;
- 	case SND_SOC_DAIFMT_DSP_B:
--		iface |= 0x0013;
-+		iface |= 0x0003;
- 		break;
- 	default:
- 		return -EINVAL;
+diff --git a/drivers/gpio/gpio-mpc8xxx.c b/drivers/gpio/gpio-mpc8xxx.c
+index 9ae29cc..06cf5c0 100644
+--- a/drivers/gpio/gpio-mpc8xxx.c
++++ b/drivers/gpio/gpio-mpc8xxx.c
+@@ -69,10 +69,14 @@ static int mpc8572_gpio_get(struct gpio_chip *gc, unsigned int gpio)
+ 	u32 val;
+ 	struct of_mm_gpio_chip *mm = to_of_mm_gpio_chip(gc);
+ 	struct mpc8xxx_gpio_chip *mpc8xxx_gc = to_mpc8xxx_gpio_chip(mm);
++	u32 out_mask, out_shadow;
+ 
+-	val = in_be32(mm->regs + GPIO_DAT) & ~in_be32(mm->regs + GPIO_DIR);
++	out_mask = in_be32(mm->regs + GPIO_DIR);
+ 
+-	return (val | mpc8xxx_gc->data) & mpc8xxx_gpio2mask(gpio);
++	val = in_be32(mm->regs + GPIO_DAT) & ~out_mask;
++	out_shadow = mpc8xxx_gc->data & out_mask;
++
++	return (val | out_shadow) & mpc8xxx_gpio2mask(gpio);
+ }
+ 
+ static int mpc8xxx_gpio_get(struct gpio_chip *gc, unsigned int gpio)
 -- 
 1.8.3.2
 
