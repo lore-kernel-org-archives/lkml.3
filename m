@@ -1,85 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667AbaABXUQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 18:20:16 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:44727 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301AbaABXUO (ORCPT
+	id S1752505AbaABXXf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 18:23:35 -0500
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:39452 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301AbaABXXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 18:20:14 -0500
-Message-ID: <52C5F42A.6010803@felipetonello.com>
-Date: Thu, 02 Jan 2014 15:20:10 -0800
-From: Felipe Ferreri Tonello <eu@felipetonello.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 2 Jan 2014 18:23:34 -0500
+Date: Fri, 3 Jan 2014 00:22:59 +0100
+From: Tim Jester-Pfadt <t.jp@gmx.de>
+To: gregkh@linuxfoundation.org
+Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3] Staging: rtl8188eu: Fixed coding style issues
+Message-ID: <20140102232259.GA4112@archlinux>
+References: <20140102204640.GA1149@archlinux>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>
-CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] input: mt: Add helper function to send end events
-References: <1388455601-17033-1-git-send-email-eu@felipetonello.com> <52C28DC7.9020003@euromail.se> <20131231185035.GD6897@core.coreip.homeip.net> <52C43FFE.3010005@euromail.se> <20140101191838.GA30798@core.coreip.homeip.net>
-In-Reply-To: <20140101191838.GA30798@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140102204640.GA1149@archlinux>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry and Henrik,
+Fixed indentation coding style issues on rtw_io.c
 
-On 01/01/2014 11:18 AM, Dmitry Torokhov wrote:
-> On Wed, Jan 01, 2014 at 05:19:10PM +0100, Henrik Rydberg wrote:
->> Hi Dmitry,
->>
->>>> What problematic scenario is this supposed to solve?
->>>>
->>>> The 'release on suspend' is only an approximation to the 'close
->>>> laptop' scenario, it is certainly not correct in the coffee table
->>>> case,
->>>
->>> Why would it not be correct for coffee table? Do we expect the touches
->>> to remain valid while the device is asleep?
->>
->> In some scenarios with placed objects (like a cup or a marker), that would be
->> the case, yes.
->>
->>>> for instance. Instead of
->>>> hardcoding this in the kernel, userland can easily detect long intervals
->>>> directly using the event time.
->>>
->>> But with slots it is not only problem with old events being sent out
->>> later, it is that we have mix of old (pre-sleep) and new state.
->>
->> The new state is not really a problem, it will look exactly the same regardless
->> of how 'old' releases are handled.
->>
->>> We do that for keys (release them when we transition to system sleep)
->>> and I think it might be worthwhile to do the same for touch data.
->>
->> I agree that keyboard applications seldom look at time intervals and hence are
->> well helped by such a strategy, even though it is not strictly 'correct'.
->> However, touch interfaces are quite dependent on time intervals, and it
->> therefore makes a lot of sense to resolve touch timeouts directly in the
->> application. It also puts less restrictions on what can be done.
->>
->> Regarding notifications in general, perhaps it would be interesting to be able
->> to send a notification event via the input interface when a device comes back
->> from sleep. It could help resolve other complex issues, if there were any.
->>
->
-> OK, fair enough. If there is a demand we could send SYN_SYSTEM_RESUME
-> event though the interfaces to allow clients "flush" the state or
-> otherwise decide if new touch data is actually old touches that were
-> there pre-suspend.
->
-> Felipe, will that help in your case?
+Signed-off-by: Tim Jester-Pfadt <t.jp@gmx.de>
+---
+ drivers/staging/rtl8188eu/core/rtw_io.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-Yes, I guess. But why notificate only when it comes back from sleep?
+diff --git a/drivers/staging/rtl8188eu/core/rtw_io.c b/drivers/staging/rtl8188eu/core/rtw_io.c
+index 10c9c65..f1b8dfe 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_io.c
++++ b/drivers/staging/rtl8188eu/core/rtw_io.c
+@@ -205,9 +205,9 @@ void _rtw_read_mem(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem)
+ 
+ 	_func_enter_;
+ 	if (adapter->bDriverStopped || adapter->bSurpriseRemoved) {
+-	     RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
+-		      ("rtw_read_mem:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
+-		      adapter->bDriverStopped, adapter->bSurpriseRemoved));
++		RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
++			 ("rtw_read_mem:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
++			 adapter->bDriverStopped, adapter->bSurpriseRemoved));
+ 	     return;
+ 	}
+ 	_read_mem = pintfhdl->io_ops._read_mem;
+@@ -239,9 +239,9 @@ void _rtw_read_port(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem)
+ 	_func_enter_;
+ 
+ 	if (adapter->bDriverStopped || adapter->bSurpriseRemoved) {
+-	     RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
+-		      ("rtw_read_port:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
+-		      adapter->bDriverStopped, adapter->bSurpriseRemoved));
++		RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
++			 ("rtw_read_port:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
++			 adapter->bDriverStopped, adapter->bSurpriseRemoved));
+ 	     return;
+ 	}
+ 
+-- 
+1.8.5.2
 
-Because the way it is today, if a user touches a device and suddenly the 
-device sleeps, the user-space will not know that that device went sleep. 
-Then when the device wakes up (resumes) the end touch event will never 
-be sent even if the user releases his finger from it (because the actual 
-hardware is in "sleep" mode or something), thus the user-space will 
-continue to think the finger was not released from the touch screen.
-
-Felipe
