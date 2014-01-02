@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633AbaABVxp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 16:53:45 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:33117 "EHLO
+	id S1753177AbaABVzw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 16:55:52 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:33187 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752438AbaABVxl (ORCPT
+	with ESMTP id S1752515AbaABVxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 16:53:41 -0500
+	Thu, 2 Jan 2014 16:53:44 -0500
 From: Laura Abbott <lauraa@codeaurora.org>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Kyungmin Park <kmpark@infradead.org>, Dave Hansen <dave@sr71.net>,
-        linux-mm@kvack.org, Alasdair Kergon <agk@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com
-Cc: linux-kernel@vger.kernel.org, Laura Abbott <lauraa@codeaurora.org>,
-        Neil Brown <neilb@suse.de>, linux-raid@vger.kernel.org
-Subject: [RFC PATCHv3 04/11] dm: Use VMALLOC_TOTAL instead of VMALLCO_END - VMALLOC_START
-Date: Thu,  2 Jan 2014 13:53:22 -0800
-Message-Id: <1388699609-18214-5-git-send-email-lauraa@codeaurora.org>
+        linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Laura Abbott <lauraa@codeaurora.org>
+Subject: [RFC PATCHv3 11/11] fs/proc/kcore.c: Use for_each_potential_vmalloc_area
+Date: Thu,  2 Jan 2014 13:53:29 -0800
+Message-Id: <1388699609-18214-12-git-send-email-lauraa@codeaurora.org>
 X-Mailer: git-send-email 1.7.8.3
 In-Reply-To: <1388699609-18214-1-git-send-email-lauraa@codeaurora.org>
 References: <1388699609-18214-1-git-send-email-lauraa@codeaurora.org>
@@ -24,43 +22,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vmalloc already provides a macro to calculat the total vmalloc size,
-VMALLOC_TOTAL. Use it.
+With CONFIG_INTERMIX_VMALLOC, we can no longer assume all vmalloc
+is contained between VMALLOC_START and VMALLOC_END. For code that
+relies on operating on the vmalloc space, use
+for_each_potential_vmalloc_area to track each area separately.
 
 Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
 ---
- drivers/md/dm-bufio.c |    4 ++--
- drivers/md/dm-stats.c |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ fs/proc/kcore.c |   20 +++++++++++++++-----
+ 1 files changed, 15 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
-index 54bdd923..cd677f2 100644
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -1736,8 +1736,8 @@ static int __init dm_bufio_init(void)
- 	 * Get the size of vmalloc space the same way as VMALLOC_TOTAL
- 	 * in fs/proc/internal.h
- 	 */
--	if (mem > (VMALLOC_END - VMALLOC_START) * DM_BUFIO_VMALLOC_PERCENT / 100)
--		mem = (VMALLOC_END - VMALLOC_START) * DM_BUFIO_VMALLOC_PERCENT / 100;
-+	if (mem > VMALLOC_TOTAL * DM_BUFIO_VMALLOC_PERCENT / 100)
-+		mem = VMALLOC_TOTAL * DM_BUFIO_VMALLOC_PERCENT / 100;
- #endif
+diff --git a/fs/proc/kcore.c b/fs/proc/kcore.c
+index 5ed0e52..9be81a8 100644
+--- a/fs/proc/kcore.c
++++ b/fs/proc/kcore.c
+@@ -585,8 +585,6 @@ static struct notifier_block kcore_callback_nb __meminitdata = {
+ 	.priority = 0,
+ };
  
- 	dm_bufio_default_cache_size = mem;
-diff --git a/drivers/md/dm-stats.c b/drivers/md/dm-stats.c
-index 28a9012..378ffb6 100644
---- a/drivers/md/dm-stats.c
-+++ b/drivers/md/dm-stats.c
-@@ -80,7 +80,7 @@ static bool __check_shared_memory(size_t alloc_size)
- 	if (a >> PAGE_SHIFT > totalram_pages / DM_STATS_MEMORY_FACTOR)
- 		return false;
- #ifdef CONFIG_MMU
--	if (a > (VMALLOC_END - VMALLOC_START) / DM_STATS_VMALLOC_FACTOR)
-+	if (a > VMALLOC_TOTAL / DM_STATS_VMALLOC_FACTOR)
- 		return false;
- #endif
- 	return true;
+-static struct kcore_list kcore_vmalloc;
+-
+ #ifdef CONFIG_ARCH_PROC_KCORE_TEXT
+ static struct kcore_list kcore_text;
+ /*
+@@ -621,6 +619,11 @@ static void __init add_modules_range(void)
+ 
+ static int __init proc_kcore_init(void)
+ {
++	struct kcore_list *kcore_vmalloc;
++	unsigned long vstart;
++	unsigned long vend;
++	int i;
++
+ 	proc_root_kcore = proc_create("kcore", S_IRUSR, NULL,
+ 				      &proc_kcore_operations);
+ 	if (!proc_root_kcore) {
+@@ -629,9 +632,16 @@ static int __init proc_kcore_init(void)
+ 	}
+ 	/* Store text area if it's special */
+ 	proc_kcore_text_init();
+-	/* Store vmalloc area */
+-	kclist_add(&kcore_vmalloc, (void *)VMALLOC_START,
+-		VMALLOC_END - VMALLOC_START, KCORE_VMALLOC);
++	for_each_potential_vmalloc_area(&vstart, &vend, &i) {
++		kcore_vmalloc = kzalloc(sizeof(*kcore_vmalloc), GFP_KERNEL);
++		if (!kcore_vmalloc)
++			return 0;
++
++		/* Store vmalloc area */
++		kclist_add(kcore_vmalloc, (void *)vstart,
++				vend - vstart, KCORE_VMALLOC);
++	}
++
+ 	add_modules_range();
+ 	/* Store direct-map area from physical memory map */
+ 	kcore_update_ram();
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
