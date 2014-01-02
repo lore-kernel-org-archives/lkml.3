@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990AbaABRKy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:10:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40621 "EHLO
+	id S1753965AbaABRKs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:10:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40601 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987AbaABRKt (ORCPT
+	with ESMTP id S1750987AbaABRKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:10:49 -0500
+	Thu, 2 Jan 2014 12:10:40 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Vijaya Mohan Guvva <vmohan@brocade.com>,
+        James Bottomley <JBottomley@Parallels.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 82/91] ARM: footbridge: fix EBSA285 LEDs
-Date: Thu,  2 Jan 2014 09:04:57 -0800
-Message-Id: <1388682306-30859-83-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 87/91] [SCSI] bfa: Fix crash when symb name set for offline vport
+Date: Thu,  2 Jan 2014 09:05:02 -0800
+Message-Id: <1388682306-30859-88-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -27,79 +28,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Vijaya Mohan Guvva <vmohan@brocade.com>
 
-commit 67130c5464f50428aea0b4526a6729d61f9a1d53 upstream.
+commit 22a08538dca5c0630226f1c0c58dccd12e463d22 upstream.
 
-- The LEDs register is write-only: it can't be read-modify-written.
-- The LEDs are write-1-for-off not 0.
-- The check for the platform was inverted.
+This patch fixes a crash when tried setting symbolic name for an offline
+vport through sysfs. Crash is due to uninitialized pointer lport->ns,
+which gets initialized only on linkup (port online).
 
-Fixes: cf6856d693dd ("ARM: mach-footbridge: retire custom LED code")
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Vijaya Mohan Guvva <vmohan@brocade.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/mach-footbridge/ebsa285.c | 22 +++++++++++++---------
- 1 file changed, 13 insertions(+), 9 deletions(-)
+ drivers/scsi/bfa/bfa_fcs.h       |  1 +
+ drivers/scsi/bfa/bfa_fcs_lport.c | 14 +++++++++++---
+ drivers/scsi/bfa/bfad_attr.c     |  7 ++-----
+ 3 files changed, 14 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/mach-footbridge/ebsa285.c b/arch/arm/mach-footbridge/ebsa285.c
-index b09551e..87574a6 100644
---- a/arch/arm/mach-footbridge/ebsa285.c
-+++ b/arch/arm/mach-footbridge/ebsa285.c
-@@ -30,21 +30,24 @@ static const struct {
- 	const char *name;
- 	const char *trigger;
- } ebsa285_leds[] = {
--	{ "ebsa285:amber", "heartbeat", },
--	{ "ebsa285:green", "cpu0", },
-+	{ "ebsa285:amber", "cpu0", },
-+	{ "ebsa285:green", "heartbeat", },
- 	{ "ebsa285:red",},
- };
+diff --git a/drivers/scsi/bfa/bfa_fcs.h b/drivers/scsi/bfa/bfa_fcs.h
+index a449706..6c6c7c3 100644
+--- a/drivers/scsi/bfa/bfa_fcs.h
++++ b/drivers/scsi/bfa/bfa_fcs.h
+@@ -299,6 +299,7 @@ wwn_t bfa_fcs_lport_get_rport(struct bfa_fcs_lport_s *port, wwn_t wwn,
+ struct bfa_fcs_lport_s *bfa_fcs_lookup_port(struct bfa_fcs_s *fcs,
+ 					    u16 vf_id, wwn_t lpwwn);
  
-+static unsigned char hw_led_state;
++void bfa_fcs_lport_set_symname(struct bfa_fcs_lport_s *port, char *symname);
+ void bfa_fcs_lport_get_info(struct bfa_fcs_lport_s *port,
+ 			    struct bfa_lport_info_s *port_info);
+ void bfa_fcs_lport_get_attr(struct bfa_fcs_lport_s *port,
+diff --git a/drivers/scsi/bfa/bfa_fcs_lport.c b/drivers/scsi/bfa/bfa_fcs_lport.c
+index 1224d04..2826961 100644
+--- a/drivers/scsi/bfa/bfa_fcs_lport.c
++++ b/drivers/scsi/bfa/bfa_fcs_lport.c
+@@ -1097,6 +1097,17 @@ bfa_fcs_lport_init(struct bfa_fcs_lport_s *lport,
+ 	bfa_sm_send_event(lport, BFA_FCS_PORT_SM_CREATE);
+ }
+ 
++void
++bfa_fcs_lport_set_symname(struct bfa_fcs_lport_s *port,
++				char *symname)
++{
++	strcpy(port->port_cfg.sym_name.symname, symname);
 +
- static void ebsa285_led_set(struct led_classdev *cdev,
- 		enum led_brightness b)
- {
- 	struct ebsa285_led *led = container_of(cdev,
- 			struct ebsa285_led, cdev);
++	if (bfa_sm_cmp_state(port, bfa_fcs_lport_sm_online))
++		bfa_fcs_lport_ns_util_send_rspn_id(
++			BFA_FCS_GET_NS_FROM_PORT(port), NULL);
++}
++
+ /*
+  *  fcs_lport_api
+  */
+@@ -4950,9 +4961,6 @@ bfa_fcs_lport_ns_util_send_rspn_id(void *cbarg, struct bfa_fcxp_s *fcxp_alloced)
+ 	u8 *psymbl = &symbl[0];
+ 	int len;
  
--	if (b != LED_OFF)
--		*XBUS_LEDS |= led->mask;
-+	if (b == LED_OFF)
-+		hw_led_state |= led->mask;
- 	else
--		*XBUS_LEDS &= ~led->mask;
-+		hw_led_state &= ~led->mask;
-+	*XBUS_LEDS = hw_led_state;
+-	if (!bfa_sm_cmp_state(port, bfa_fcs_lport_sm_online))
+-		return;
+-
+ 	/* Avoid sending RSPN in the following states. */
+ 	if (bfa_sm_cmp_state(ns, bfa_fcs_lport_ns_sm_offline) ||
+ 	    bfa_sm_cmp_state(ns, bfa_fcs_lport_ns_sm_plogi_sending) ||
+diff --git a/drivers/scsi/bfa/bfad_attr.c b/drivers/scsi/bfa/bfad_attr.c
+index 72f5dc3..58eeca2 100644
+--- a/drivers/scsi/bfa/bfad_attr.c
++++ b/drivers/scsi/bfa/bfad_attr.c
+@@ -610,11 +610,8 @@ bfad_im_vport_set_symbolic_name(struct fc_vport *fc_vport)
+ 		return;
+ 
+ 	spin_lock_irqsave(&bfad->bfad_lock, flags);
+-	if (strlen(sym_name) > 0) {
+-		strcpy(fcs_vport->lport.port_cfg.sym_name.symname, sym_name);
+-		bfa_fcs_lport_ns_util_send_rspn_id(
+-			BFA_FCS_GET_NS_FROM_PORT((&fcs_vport->lport)), NULL);
+-	}
++	if (strlen(sym_name) > 0)
++		bfa_fcs_lport_set_symname(&fcs_vport->lport, sym_name);
+ 	spin_unlock_irqrestore(&bfad->bfad_lock, flags);
  }
  
- static enum led_brightness ebsa285_led_get(struct led_classdev *cdev)
-@@ -52,18 +55,19 @@ static enum led_brightness ebsa285_led_get(struct led_classdev *cdev)
- 	struct ebsa285_led *led = container_of(cdev,
- 			struct ebsa285_led, cdev);
- 
--	return (*XBUS_LEDS & led->mask) ? LED_FULL : LED_OFF;
-+	return hw_led_state & led->mask ? LED_OFF : LED_FULL;
- }
- 
- static int __init ebsa285_leds_init(void)
- {
- 	int i;
- 
--	if (machine_is_ebsa285())
-+	if (!machine_is_ebsa285())
- 		return -ENODEV;
- 
--	/* 3 LEDS All ON */
--	*XBUS_LEDS |= XBUS_LED_AMBER | XBUS_LED_GREEN | XBUS_LED_RED;
-+	/* 3 LEDS all off */
-+	hw_led_state = XBUS_LED_AMBER | XBUS_LED_GREEN | XBUS_LED_RED;
-+	*XBUS_LEDS = hw_led_state;
- 
- 	for (i = 0; i < ARRAY_SIZE(ebsa285_leds); i++) {
- 		struct ebsa285_led *led;
 -- 
 1.8.3.2
 
