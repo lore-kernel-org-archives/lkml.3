@@ -1,170 +1,354 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051AbaABPJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 10:09:59 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:7787 "EHLO SMTP.CITRIX.COM"
+	id S1752064AbaABPLK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 10:11:10 -0500
+Received: from mga02.intel.com ([134.134.136.20]:34820 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751136AbaABPJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 10:09:57 -0500
-X-IronPort-AV: E=Sophos;i="4.95,591,1384300800"; 
-   d="scan'208";a="89246025"
-Message-ID: <52C58138.1030301@citrix.com>
-Date: Thu, 2 Jan 2014 15:09:44 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Fabio Fantoni <fabio.fantoni@m2r.biz>, <axboe@kernel.dk>,
-        <leosilva@linux.vnet.ibm.com>, <linux-fbdev@vger.kernel.org>,
-        <dmitry.torokhov@gmail.com>, <ian.campbell@citrix.com>,
-        <stefano.stabellini@eu.citrix.com>, <linux-pci@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <ashley@ashleylai.com>, <tpmdd@selhorst.net>,
-        <linux-kernel@vger.kernel.org>, <mail@srajiv.net>,
-        <tpmdd-devel@lists.sourceforge.net>, <tomi.valkeinen@ti.com>,
-        <david.vrabel@citrix.com>, <linux-input@vger.kernel.org>,
-        <bhelgaas@google.com>, <xen-devel@lists.xenproject.org>,
-        <boris.ostrovsky@oracle.com>, <plagnioj@jcrosoft.com>,
-        <peterhuewe@gmx.de>
-Subject: Re: [Xen-devel] [PATCH v3 1/2] xen/pvhvm: If xen_platform_pci=0 is
- set don't blow up (v3).
-References: <1387206250-13963-1-git-send-email-konrad.wilk@oracle.com>	<1387206250-13963-2-git-send-email-konrad.wilk@oracle.com>	<52B01F67.1030108@m2r.biz>	<20131217145150.GC4683@phenom.dumpdata.com>	<20131217212333.GA31966@phenom.dumpdata.com> <20131231143258.GA3018@phenom.dumpdata.com>
-In-Reply-To: <20131231143258.GA3018@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+	id S1751136AbaABPLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 10:11:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,591,1384329600"; 
+   d="scan'208,223";a="460735395"
+Message-ID: <1388675460.25123.90.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 1/1]  MTD: UBI:  avoid program operation on  NOR flash
+ after erasure interrupted
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Qi Wang =?UTF-8?Q?=E7=8E=8B=E8=B5=B7?= "(qiwang)" 
+	<qiwang@micron.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
+Date: Thu, 02 Jan 2014 17:11:00 +0200
+In-Reply-To: <71CF8D7F32C5C24C9CD1D0E02D52498A770BA389@NTXXIAMBX02.xacn.micron.com>
+References: <71CF8D7F32C5C24C9CD1D0E02D52498A770B54B1@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770B68A8@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770B6F77@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770B79C8@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770B8611@NTXXIAMBX02.xacn.micron.com>
+	  <71CF8D7F32C5C24C9CD1D0E02D52498A770BA389@NTXXIAMBX02.xacn.micron.com>
+Content-Type: multipart/mixed; boundary="=-NTpQnfZz3sOJQqZP5qVc"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/12/13 14:32, Konrad Rzeszutek Wilk wrote:
->> That is because 'disks' is incorrect. It should have been 'ide-disks'
->>
->> [    0.000000] unrecognised option 'disks' in parameter 'xen_emul_unplug'
->>
->> With the 'ide-disks' it should work. I will update the description to
->> mention 'ide-disks' instead of 'disks'. Thank you for finding this!
->>
-> 
-> I've v4 with said update and will push it to Linus shortly.
-> 
-> Thanks!
-> 
-> P.S.
-> Here is v4:
-> 
->>From 275a81e7496d3532e5b4752703c50a7c8355a6c7 Mon Sep 17 00:00:00 2001
-> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Date: Tue, 26 Nov 2013 15:05:40 -0500
-> Subject: [PATCH] xen/pvhvm: If xen_platform_pci=0 is set don't blow up (v4).
-> 
-> The user has the option of disabling the platform driver:
-> 00:02.0 Unassigned class [ff80]: XenSource, Inc. Xen Platform Device (rev 01)
-> 
-> which is used to unplug the emulated drivers (IDE, Realtek 8169, etc)
-> and allow the PV drivers to take over. If the user wishes
-> to disable that they can set:
-> 
->   xen_platform_pci=0
->   (in the guest config file)
-> 
-> or
->   xen_emul_unplug=never
->   (on the Linux command line)
-> 
-> except it does not work properly. The PV drivers still try to
-> load and since the Xen platform driver is not run - and it
-> has not initialized the grant tables, most of the PV drivers
-> stumble upon:
-> 
-> input: Xen Virtual Keyboard as /devices/virtual/input/input5
-> input: Xen Virtual Pointer as /devices/virtual/input/input6M
-> ------------[ cut here ]------------
-> kernel BUG at /home/konrad/ssd/konrad/linux/drivers/xen/grant-table.c:1206!
-> invalid opcode: 0000 [#1] SMP
-> Modules linked in: xen_kbdfront(+) xenfs xen_privcmd
-> CPU: 6 PID: 1389 Comm: modprobe Not tainted 3.13.0-rc1upstream-00021-ga6c892b-dirty #1
-> Hardware name: Xen HVM domU, BIOS 4.4-unstable 11/26/2013
-> RIP: 0010:[<ffffffff813ddc40>]  [<ffffffff813ddc40>] get_free_entries+0x2e0/0x300
-> Call Trace:
->  [<ffffffff8150d9a3>] ? evdev_connect+0x1e3/0x240
->  [<ffffffff813ddd0e>] gnttab_grant_foreign_access+0x2e/0x70
->  [<ffffffffa0010081>] xenkbd_connect_backend+0x41/0x290 [xen_kbdfront]
->  [<ffffffffa0010a12>] xenkbd_probe+0x2f2/0x324 [xen_kbdfront]
->  [<ffffffff813e5757>] xenbus_dev_probe+0x77/0x130
->  [<ffffffff813e7217>] xenbus_frontend_dev_probe+0x47/0x50
->  [<ffffffff8145e9a9>] driver_probe_device+0x89/0x230
->  [<ffffffff8145ebeb>] __driver_attach+0x9b/0xa0
->  [<ffffffff8145eb50>] ? driver_probe_device+0x230/0x230
->  [<ffffffff8145eb50>] ? driver_probe_device+0x230/0x230
->  [<ffffffff8145cf1c>] bus_for_each_dev+0x8c/0xb0
->  [<ffffffff8145e7d9>] driver_attach+0x19/0x20
->  [<ffffffff8145e260>] bus_add_driver+0x1a0/0x220
->  [<ffffffff8145f1ff>] driver_register+0x5f/0xf0
->  [<ffffffff813e55c5>] xenbus_register_driver_common+0x15/0x20
->  [<ffffffff813e76b3>] xenbus_register_frontend+0x23/0x40
->  [<ffffffffa0015000>] ? 0xffffffffa0014fff
->  [<ffffffffa001502b>] xenkbd_init+0x2b/0x1000 [xen_kbdfront]
->  [<ffffffff81002049>] do_one_initcall+0x49/0x170
-> 
-> .. snip..
-> 
-> which is hardly nice. This patch fixes this by having each
-> PV driver check for:
->  - if running in PV, then it is fine to execute (as that is their
->    native environment).
->  - if running in HVM, check if user wanted 'xen_emul_unplug=never',
->    in which case bail out and don't load any PV drivers.
->  - if running in HVM, and if PCI device 5853:0001 (xen_platform_pci)
->    does not exist, then bail out and not load PV drivers.
->  - (v2) if running in HVM, and if the user wanted 'xen_emul_unplug=ide-disks',
->    then bail out for all PV devices _except_ the block one.
->    Ditto for the network one ('nics').
->  - (v2) if running in HVM, and if the user wanted 'xen_emul_unplug=unnecessary'
->    then load block PV driver, and also setup the legacy IDE paths.
->    In (v3) make it actually load PV drivers.
-[...]
-> --- a/arch/x86/xen/platform-pci-unplug.c
-> +++ b/arch/x86/xen/platform-pci-unplug.c
-> @@ -69,6 +69,80 @@ static int check_platform_magic(void)
->  	return 0;
->  }
->  
-> +bool xen_has_pv_devices()
-> +{
-> +	if (!xen_domain())
-> +		return false;
-> +
-> +	/* PV domains always have them. */
-> +	if (xen_pv_domain())
-> +		return true;
-> +
-> +	/* And user has xen_platform_pci=0 set in guest config as
-> +	 * driver did not modify the value. */
-> +	if (xen_platform_pci_unplug == 0)
-> +		return false;
-> +
-> +	if (xen_platform_pci_unplug & XEN_UNPLUG_NEVER)
-> +		return false;
-> +
-> +	if (xen_platform_pci_unplug & XEN_UNPLUG_ALL)
-> +		return true;
-> +
-> +	/* This is an odd one - we are going to run legacy
-> +	 * and PV drivers at the same time. */
-> +	if (xen_platform_pci_unplug & XEN_UNPLUG_UNNECESSARY)
-> +		return true;
-> +
-> +	/* And the caller has to follow with xen_pv_{disk,nic}_devices
-> +	 * to be certain which driver can load. */
-> +	return false;
 
-This may result in:
+--=-NTpQnfZz3sOJQqZP5qVc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 
-xen_has_pv_devices() == false
-xen_has_pv_disk_devices() == true
+On Wed, 2014-01-01 at 13:06 +0000, Qi Wang 王起 (qiwang) wrote:
+> Hi Artem:
+> As we talked in mail before, please check my patch as below:
 
-which looks odd to me.  Surely xen_has_pv_*_devices() is a subset of
-xen_has_pv_devices()?
+Note, because you wrote the above
 
-David
+> From: Qi Wang <qiwang@micron.com>
+
+"git am" will put all the above to the commit message. If you want to
+change your "From:", it should be in the first line.
+
+Few other things.
+
+1. If I save your e-mail as "qi.mbox" and then use "git am", I get this:
+
+$ git am ~/tmp/qi.mbox
+Applying: MTD: UBI: avoid program operation on NOR flash after erasure interrupted
+/home/dedekind/git/linux-ubifs/.git/rebase-apply/patch:18: trailing whitespace.
+         * If VID or EC is valid, need to corrupt it before erase operation.  
+/home/dedekind/git/linux-ubifs/.git/rebase-apply/patch:63: space before tab in indent.
+                addr += ubi->vid_hdr_aloffset;
+/home/dedekind/git/linux-ubifs/.git/rebase-apply/patch:66: trailing whitespace.
+                        goto error;
+warning: 3 lines add whitespace errors.
+
+Note, I have this in my ~/.gitconfig to notice things like that:
+
+[core]
+        whitespace = trailing-space,space-before-tab
+
+
+> diff --git a/drivers/mtd/ubi/io.c b/drivers/mtd/ubi/io.c
+
+...
+
+> -	 * The PEB contains a valid VID header, but we cannot invalidate it.
+> +	 * The PEB contains a valid VID or EC header, but we cannot invalidate it.
+
+82 characters :-)
+
+> -	ubi_err("cannot invalidate PEB %d, write returned %d read returned %d",
+> +	ubi_err("cannot invalidate PEB %d, read returned %d write returned %d",
+
+Why? The error actually happened in mtd_write. No read errors lead to
+this path.
+
+>  		pnum, err, err1);
+
+I guess it is better to kill the err1 variable and use just 'err'
+everywhere.
+
+Anyway, I did not respond for long time, so I decided to do all these
+modifications myself. Could you please review and test the below patch,
+which is also attached. I did not compile it even. If there are issues,
+just fix-it up and send the the fix or the fixed version. If it is OK,
+give me your "Tested-by:" please. Thanks!
+
+
+From: =?UTF-8?q?Qi=20Wang=20=E7=8E=8B=E8=B5=B7=20=28qiwang=29?=
+ <qiwang@micron.com>
+Date: Wed, 1 Jan 2014 13:06:11 +0000
+Subject: [PATCH] MTD: UBI: avoid program operation on NOR flash after erasure
+ interrupted
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+nor_erase_prepare() will be called before erase a NOR flash, it will program '0'
+into a block to mark this block. But program data into a erasure interrupted block
+can cause program timtout(several minutes at most) error, could impact other
+operation on NOR flash. So UBIFS can read this block first to avoid unneeded
+program operation.
+
+This patch try to put read operation at head of write operation in
+nor_erase_prepare(), read out the data.
+If the data is already corrupt, then no need to program any data into this block,
+just go to erase this block.
+
+This patch is validated on Micron NOR flash, part number is：JS28F512M29EWHA
+
+Signed-off-by: Qi Wang <qiwang@micron.com>
+---
+ drivers/mtd/ubi/io.c | 55 ++++++++++++++++++++++------------------------------
+ 1 file changed, 23 insertions(+), 32 deletions(-)
+
+diff --git a/drivers/mtd/ubi/io.c b/drivers/mtd/ubi/io.c
+index bf79def..ae9e5ca 100644
+--- a/drivers/mtd/ubi/io.c
++++ b/drivers/mtd/ubi/io.c
+@@ -495,10 +495,12 @@ out:
+  */
+ static int nor_erase_prepare(struct ubi_device *ubi, int pnum)
+ {
+-	int err, err1;
++	int err;
+ 	size_t written;
+ 	loff_t addr;
+ 	uint32_t data = 0;
++	struct ubi_ec_hdr ec_hdr;
++
+ 	/*
+ 	 * Note, we cannot generally define VID header buffers on stack,
+ 	 * because of the way we deal with these buffers (see the header
+@@ -509,50 +511,39 @@ static int nor_erase_prepare(struct ubi_device *ubi, int pnum)
+ 	struct ubi_vid_hdr vid_hdr;
+ 
+ 	/*
++	 * If VID or EC is valid, we have to corrupt them before erasing.
+ 	 * It is important to first invalidate the EC header, and then the VID
+ 	 * header. Otherwise a power cut may lead to valid EC header and
+ 	 * invalid VID header, in which case UBI will treat this PEB as
+ 	 * corrupted and will try to preserve it, and print scary warnings.
+ 	 */
+ 	addr = (loff_t)pnum * ubi->peb_size;
+-	err = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
+-	if (!err) {
+-		addr += ubi->vid_hdr_aloffset;
++	err = ubi_io_read_ec_hdr(ubi, pnum, &ec_hdr, 0);
++	if (err != UBI_IO_BAD_HDR_EBADMSG && err != UBI_IO_BAD_HDR &&
++	    err != UBI_IO_FF){
+ 		err = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
+-		if (!err)
+-			return 0;
++		if(err)
++			goto error;
+ 	}
+ 
+-	/*
+-	 * We failed to write to the media. This was observed with Spansion
+-	 * S29GL512N NOR flash. Most probably the previously eraseblock erasure
+-	 * was interrupted at a very inappropriate moment, so it became
+-	 * unwritable. In this case we probably anyway have garbage in this
+-	 * PEB.
+-	 */
+-	err1 = ubi_io_read_vid_hdr(ubi, pnum, &vid_hdr, 0);
+-	if (err1 == UBI_IO_BAD_HDR_EBADMSG || err1 == UBI_IO_BAD_HDR ||
+-	    err1 == UBI_IO_FF) {
+-		struct ubi_ec_hdr ec_hdr;
+-
+-		err1 = ubi_io_read_ec_hdr(ubi, pnum, &ec_hdr, 0);
+-		if (err1 == UBI_IO_BAD_HDR_EBADMSG || err1 == UBI_IO_BAD_HDR ||
+-		    err1 == UBI_IO_FF)
+-			/*
+-			 * Both VID and EC headers are corrupted, so we can
+-			 * safely erase this PEB and not afraid that it will be
+-			 * treated as a valid PEB in case of an unclean reboot.
+-			 */
+-			return 0;
++	err = ubi_io_read_vid_hdr(ubi, pnum, &vid_hdr, 0);
++	if (err != UBI_IO_BAD_HDR_EBADMSG && err != UBI_IO_BAD_HDR &&
++	    err != UBI_IO_FF){
++		addr += ubi->vid_hdr_aloffset;
++		err = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
++		if (err)
++			goto error;
+ 	}
++	return 0;
+ 
++error:
+ 	/*
+-	 * The PEB contains a valid VID header, but we cannot invalidate it.
+-	 * Supposedly the flash media or the driver is screwed up, so return an
+-	 * error.
++	 * The PEB contains a valid VID or EC header, but we cannot invalidate
++	 * it. Supposedly the flash media or the driver is screwed up, so
++	 * return an error.
+ 	 */
+-	ubi_err("cannot invalidate PEB %d, write returned %d read returned %d",
+-		pnum, err, err1);
++	ubi_err("cannot invalidate PEB %d, write returned %d write returned %d",
++		pnum, err, err);
+ 	ubi_dump_flash(ubi, pnum, 0, ubi->peb_size);
+ 	return -EIO;
+ }
+-- 
+1.8.5.2
+
+-- 
+Best Regards,
+Artem Bityutskiy
+
+--=-NTpQnfZz3sOJQqZP5qVc
+Content-Disposition: attachment;
+	filename*0=0001-MTD-UBI-avoid-program-operation-on-NOR-flash-after-e.pat;
+	filename*1=ch
+Content-Type: text/x-patch;
+	name="0001-MTD-UBI-avoid-program-operation-on-NOR-flash-after-e.patch";
+	charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+
+>From 56b63ee94a82f0d813a0997fa7545b4e9ce94456 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Qi=20Wang=20=E7=8E=8B=E8=B5=B7=20=28qiwang=29?=
+ <qiwang@micron.com>
+Date: Wed, 1 Jan 2014 13:06:11 +0000
+Subject: [PATCH] MTD: UBI: avoid program operation on NOR flash after erasure
+ interrupted
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+nor_erase_prepare() will be called before erase a NOR flash, it will program '0'
+into a block to mark this block. But program data into a erasure interrupted block
+can cause program timtout(several minutes at most) error, could impact other
+operation on NOR flash. So UBIFS can read this block first to avoid unneeded
+program operation.
+
+This patch try to put read operation at head of write operation in
+nor_erase_prepare(), read out the data.
+If the data is already corrupt, then no need to program any data into this block,
+just go to erase this block.
+
+This patch is validated on Micron NOR flash, part number is：JS28F512M29EWHA
+
+Signed-off-by: Qi Wang <qiwang@micron.com>
+---
+ drivers/mtd/ubi/io.c | 55 ++++++++++++++++++++++------------------------------
+ 1 file changed, 23 insertions(+), 32 deletions(-)
+
+diff --git a/drivers/mtd/ubi/io.c b/drivers/mtd/ubi/io.c
+index bf79def..ae9e5ca 100644
+--- a/drivers/mtd/ubi/io.c
++++ b/drivers/mtd/ubi/io.c
+@@ -495,10 +495,12 @@ out:
+  */
+ static int nor_erase_prepare(struct ubi_device *ubi, int pnum)
+ {
+-	int err, err1;
++	int err;
+ 	size_t written;
+ 	loff_t addr;
+ 	uint32_t data = 0;
++	struct ubi_ec_hdr ec_hdr;
++
+ 	/*
+ 	 * Note, we cannot generally define VID header buffers on stack,
+ 	 * because of the way we deal with these buffers (see the header
+@@ -509,50 +511,39 @@ static int nor_erase_prepare(struct ubi_device *ubi, int pnum)
+ 	struct ubi_vid_hdr vid_hdr;
+ 
+ 	/*
++	 * If VID or EC is valid, we have to corrupt them before erasing.
+ 	 * It is important to first invalidate the EC header, and then the VID
+ 	 * header. Otherwise a power cut may lead to valid EC header and
+ 	 * invalid VID header, in which case UBI will treat this PEB as
+ 	 * corrupted and will try to preserve it, and print scary warnings.
+ 	 */
+ 	addr = (loff_t)pnum * ubi->peb_size;
+-	err = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
+-	if (!err) {
+-		addr += ubi->vid_hdr_aloffset;
++	err = ubi_io_read_ec_hdr(ubi, pnum, &ec_hdr, 0);
++	if (err != UBI_IO_BAD_HDR_EBADMSG && err != UBI_IO_BAD_HDR &&
++	    err != UBI_IO_FF){
+ 		err = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
+-		if (!err)
+-			return 0;
++		if(err)
++			goto error;
+ 	}
+ 
+-	/*
+-	 * We failed to write to the media. This was observed with Spansion
+-	 * S29GL512N NOR flash. Most probably the previously eraseblock erasure
+-	 * was interrupted at a very inappropriate moment, so it became
+-	 * unwritable. In this case we probably anyway have garbage in this
+-	 * PEB.
+-	 */
+-	err1 = ubi_io_read_vid_hdr(ubi, pnum, &vid_hdr, 0);
+-	if (err1 == UBI_IO_BAD_HDR_EBADMSG || err1 == UBI_IO_BAD_HDR ||
+-	    err1 == UBI_IO_FF) {
+-		struct ubi_ec_hdr ec_hdr;
+-
+-		err1 = ubi_io_read_ec_hdr(ubi, pnum, &ec_hdr, 0);
+-		if (err1 == UBI_IO_BAD_HDR_EBADMSG || err1 == UBI_IO_BAD_HDR ||
+-		    err1 == UBI_IO_FF)
+-			/*
+-			 * Both VID and EC headers are corrupted, so we can
+-			 * safely erase this PEB and not afraid that it will be
+-			 * treated as a valid PEB in case of an unclean reboot.
+-			 */
+-			return 0;
++	err = ubi_io_read_vid_hdr(ubi, pnum, &vid_hdr, 0);
++	if (err != UBI_IO_BAD_HDR_EBADMSG && err != UBI_IO_BAD_HDR &&
++	    err != UBI_IO_FF){
++		addr += ubi->vid_hdr_aloffset;
++		err = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
++		if (err)
++			goto error;
+ 	}
++	return 0;
+ 
++error:
+ 	/*
+-	 * The PEB contains a valid VID header, but we cannot invalidate it.
+-	 * Supposedly the flash media or the driver is screwed up, so return an
+-	 * error.
++	 * The PEB contains a valid VID or EC header, but we cannot invalidate
++	 * it. Supposedly the flash media or the driver is screwed up, so
++	 * return an error.
+ 	 */
+-	ubi_err("cannot invalidate PEB %d, write returned %d read returned %d",
+-		pnum, err, err1);
++	ubi_err("cannot invalidate PEB %d, write returned %d write returned %d",
++		pnum, err, err);
+ 	ubi_dump_flash(ubi, pnum, 0, ubi->peb_size);
+ 	return -EIO;
+ }
+-- 
+1.8.5.2
+
+
+--=-NTpQnfZz3sOJQqZP5qVc--
+
