@@ -1,152 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751943AbaABMJH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 07:09:07 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:56674 "EHLO
+	id S1751983AbaABMJS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 07:09:18 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:60636 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751125AbaABMJC (ORCPT
+	with ESMTP id S1751950AbaABMJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 07:09:02 -0500
+	Thu, 2 Jan 2014 07:09:15 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH, RFC 30/30] sched: remove sleep_on() and friends
-Date: Thu,  2 Jan 2014 13:07:54 +0100
-Message-Id: <1388664474-1710039-31-git-send-email-arnd@arndb.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, "David S. Miller" <davem@davemloft.net>,
+        Chas Williams <chas@cmf.nrl.navy.mil>,
+        linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org
+Subject: [PATCH, RFC 17/30] atm: nicstar: remove interruptible_sleep_on_timeout
+Date: Thu,  2 Jan 2014 13:07:41 +0100
+Message-Id: <1388664474-1710039-18-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388664474-1710039-1-git-send-email-arnd@arndb.de>
 References: <1388664474-1710039-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:Y1JcMBndiFFjWcuxCsh14Ui1E4GGcVzTwXxqD8xPNuc
- nXCvqbqioQ5KzNpdvXH2A3LaSY0sQf2RUuIRREE52mnLTyKJr0
- CHna8Y4su4UV91bRuSJ2rzQUzXb3erths/ETMtbMpJdz9JXSQZ
- yCKF3fxvsWiAcx78CrnYdh+1Dvb2UaUbOu0O53CMEo//21aL5s
- P8g+VpWezbWKQxjw/bIYXXwO/qg1bHUFSOsCpQ51BCO/US+LVF
- V0MGM9DNYOfFXp3iNYP0fzi0DqpRpkDsIGYkFw/WWo8P9KQaAX
- 13efvYaormKEnJY/z8Ds6xFGtili4K2oxtXrAbjfE0z9wZ6Xoo
- YKxXqRkaTKVHb/BbLg1d4aq/DMiR5dZA1adIe8UU+
+X-Provags-ID: V02:K0:SSqHKrnsw9oVhEmwVmLPd6G1Shs20Hfl/tY0X4dpvpQ
+ GDMC0hP9Xdxj+Q2a4EIflrMO0gzS/j1gl+2LXiPIwWUklJc3n8
+ haP35hTt8EWZgwhOdt+yt+24leomAXjQB/dVsMSVuTDTeOkg0i
+ 1A6LSdsFjKqBXaYKqOkElrNgQ3un7zcusavT5r026u0Og4aBjm
+ /Np332FXHWyR6lCXH95ZwYGMzPU3G/4TmCUpCTAigt+Vy2RCBS
+ xLDGqoxyBT7d/BkGl9nUKO5dkIHBGLhxwW5NUZQgyMZOyxZ1B9
+ zrAJoqw3sYEZm+xAut32JRggVa89Ikkr0ew6RuVywTrLpo1/Af
+ G4iD42twq2DFnhRxpr7twBcRM9IJs2M1oemB8wXd+
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We probably should have done this 15 years ago. I have created patches
-for every remaining user of the four sleep_on variants that are all
-broken, and this patch should get applied as soon as all of the other
-patches are merged.
-
-If you are reading this changeset because you are looking for the
-functions I removed, please convert your code to use wait_event,
-wait_for_completion or an open-coded prepare_to_wait loop.
+We are trying to finally kill off interruptible_sleep_on_timeout.
+the two uses in the nicstar driver can be trivially replaced
+with wait_event_interruptible_lock_irq_timeout, which prevents the
+wake-up race and is able to check the buffer state with scq->lock
+held.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Chas Williams <chas@cmf.nrl.navy.mil>
+Cc: linux-atm-general@lists.sourceforge.net
+Cc: netdev@vger.kernel.org
 ---
- Documentation/DocBook/kernel-hacking.tmpl | 10 -------
- include/linux/wait.h                      | 11 --------
- kernel/sched/core.c                       | 46 -------------------------------
- 3 files changed, 67 deletions(-)
+ drivers/atm/nicstar.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/Documentation/DocBook/kernel-hacking.tmpl b/Documentation/DocBook/kernel-hacking.tmpl
-index d0758b24..bd9015d 100644
---- a/Documentation/DocBook/kernel-hacking.tmpl
-+++ b/Documentation/DocBook/kernel-hacking.tmpl
-@@ -850,16 +850,6 @@ printk(KERN_INFO "my ip: %pI4\n", &amp;ipaddress);
-     <returnvalue>-ERESTARTSYS</returnvalue> if a signal is received.
-     The <function>wait_event()</function> version ignores signals.
-    </para>
--   <para>
--   Do not use the <function>sleep_on()</function> function family -
--   it is very easy to accidentally introduce races; almost certainly
--   one of the <function>wait_event()</function> family will do, or a
--   loop around <function>schedule_timeout()</function>. If you choose
--   to loop around <function>schedule_timeout()</function> remember
--   you must set the task state (with 
--   <function>set_current_state()</function>) on each iteration to avoid
--   busy-looping.
--   </para>
-  
-   </sect1>
+diff --git a/drivers/atm/nicstar.c b/drivers/atm/nicstar.c
+index 5aca5f4..3c079eb 100644
+--- a/drivers/atm/nicstar.c
++++ b/drivers/atm/nicstar.c
+@@ -1739,10 +1739,9 @@ static int push_scqe(ns_dev * card, vc_map * vc, scq_info * scq, ns_scqe * tbd,
+ 		}
  
-diff --git a/include/linux/wait.h b/include/linux/wait.h
-index eaa00b1..02c5a31 100644
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@ -803,17 +803,6 @@ do {									\
- 	__ret;								\
- })
+ 		scq->full = 1;
+-		spin_unlock_irqrestore(&scq->lock, flags);
+-		interruptible_sleep_on_timeout(&scq->scqfull_waitq,
+-					       SCQFULL_TIMEOUT);
+-		spin_lock_irqsave(&scq->lock, flags);
++		wait_event_interruptible_lock_irq_timeout(scq->scqfull_waitq,
++				scq->tail != scq->next, scq->lock,
++				SCQFULL_TIMEOUT);
  
--
--/*
-- * These are the old interfaces to sleep waiting for an event.
-- * They are racy.  DO NOT use them, use the wait_event* interfaces above.
-- * We plan to remove these interfaces.
-- */
--extern void sleep_on(wait_queue_head_t *q);
--extern long sleep_on_timeout(wait_queue_head_t *q, signed long timeout);
--extern void interruptible_sleep_on(wait_queue_head_t *q);
--extern long interruptible_sleep_on_timeout(wait_queue_head_t *q, signed long timeout);
--
- /*
-  * Waitqueues which are removed from the waitqueue_head at wakeup time
-  */
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index a88f4a4..6272dee 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2701,52 +2701,6 @@ int default_wake_function(wait_queue_t *curr, unsigned mode, int wake_flags,
- }
- EXPORT_SYMBOL(default_wake_function);
+ 		if (scq->full) {
+ 			spin_unlock_irqrestore(&scq->lock, flags);
+@@ -1789,10 +1788,10 @@ static int push_scqe(ns_dev * card, vc_map * vc, scq_info * scq, ns_scqe * tbd,
+ 			scq->full = 1;
+ 			if (has_run++)
+ 				break;
+-			spin_unlock_irqrestore(&scq->lock, flags);
+-			interruptible_sleep_on_timeout(&scq->scqfull_waitq,
++			wait_event_interruptible_lock_irq_timeout(scq->scqfull_waitq,
++						       scq->tail != scq->next,
++						       scq->lock,
+ 						       SCQFULL_TIMEOUT);
+-			spin_lock_irqsave(&scq->lock, flags);
+ 		}
  
--static long __sched
--sleep_on_common(wait_queue_head_t *q, int state, long timeout)
--{
--	unsigned long flags;
--	wait_queue_t wait;
--
--	init_waitqueue_entry(&wait, current);
--
--	__set_current_state(state);
--
--	spin_lock_irqsave(&q->lock, flags);
--	__add_wait_queue(q, &wait);
--	spin_unlock(&q->lock);
--	timeout = schedule_timeout(timeout);
--	spin_lock_irq(&q->lock);
--	__remove_wait_queue(q, &wait);
--	spin_unlock_irqrestore(&q->lock, flags);
--
--	return timeout;
--}
--
--void __sched interruptible_sleep_on(wait_queue_head_t *q)
--{
--	sleep_on_common(q, TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
--}
--EXPORT_SYMBOL(interruptible_sleep_on);
--
--long __sched
--interruptible_sleep_on_timeout(wait_queue_head_t *q, long timeout)
--{
--	return sleep_on_common(q, TASK_INTERRUPTIBLE, timeout);
--}
--EXPORT_SYMBOL(interruptible_sleep_on_timeout);
--
--void __sched sleep_on(wait_queue_head_t *q)
--{
--	sleep_on_common(q, TASK_UNINTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
--}
--EXPORT_SYMBOL(sleep_on);
--
--long __sched sleep_on_timeout(wait_queue_head_t *q, long timeout)
--{
--	return sleep_on_common(q, TASK_UNINTERRUPTIBLE, timeout);
--}
--EXPORT_SYMBOL(sleep_on_timeout);
--
- #ifdef CONFIG_RT_MUTEXES
- 
- /*
+ 		if (!scq->full) {
 -- 
 1.8.3.2
 
