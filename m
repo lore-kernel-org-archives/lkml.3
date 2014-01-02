@@ -1,284 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751384AbaABC7R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jan 2014 21:59:17 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:15566 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750958AbaABC7P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 21:59:15 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 01 Jan 2014 18:59:42 -0800
-Message-ID: <52C4D612.2090808@nvidia.com>
-Date: Thu, 2 Jan 2014 10:59:30 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1751417AbaABC7v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jan 2014 21:59:51 -0500
+Received: from know-smtprelay-omc-1.server.virginmedia.net ([80.0.253.65]:44674
+	"EHLO know-smtprelay-omc-1.server.virginmedia.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750958AbaABC7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jan 2014 21:59:50 -0500
+X-Originating-IP: [82.36.39.136]
+X-Spam: 0
+X-Authority: v=2.1 cv=WI/xXxcR c=1 sm=1 tr=0 a=h3ZJzbuz6X3s3VlFudNWSw==:117
+ a=h3ZJzbuz6X3s3VlFudNWSw==:17 a=6vexxxhns_QA:10 a=fZX2ME0dHmMA:10
+ a=3NElcqgl2aoA:10 a=k1j_C7plYBUA:10 a=a5Gf7U6LAAAA:8 a=9wwvVaL5uFYA:10
+ a=r77TgQKjGQsHNAKrUKIA:9 a=9iDbn-4jx3cA:10 a=cKsnjEOsciEA:10 a=fxJcL_dCAAAA:8
+ a=WopfDZA9rRnAQH3ykPEA:9 a=K5qBcZl_ZuOU7H0W:21 a=wrzn9Y3MpMMpmrCM:21
+ a=wPNLvfGTeEIA:10 a=yHIqe9kG5mgA:10 a=bEv_II62f2XnE6TLohsA:9
+Message-ID: <52C4D624.6030602@blueyonder.co.uk>
+Date: Thu, 02 Jan 2014 02:59:48 +0000
+From: Sid Boyce <sboyce@blueyonder.co.uk>
+Reply-To: sboyce@blueyonder.co.uk
+Organization: blueyonder.co.uk
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Eduardo Valentin <eduardo.valentin@ti.com>, <swarren@wwwdotorg.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
-        <linux@roeck-us.net>, <rui.zhang@intel.com>
-CC: <wni@nvidia.com>, <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
-        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv9 02/20] thermal: introduce device tree parser
-References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
- <1384285582-16933-3-git-send-email-eduardo.valentin@ti.com>
-In-Reply-To: <1384285582-16933-3-git-send-email-eduardo.valentin@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+To: Ilia Mirkin <imirkin@alum.mit.edu>
+CC: LKML Mailing List <linux-kernel@vger.kernel.org>,
+        opensuse factory list <opensuse-factory@opensuse.org>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>
+Subject: Re: Possible 3.13-rc nouveau regression with GT 560 Ti
+References: <52C29918.4060102@blueyonder.co.uk>	<CAKb7UvhBunpMC6mzjRg7Zb5gGPPYj99=2jd+Lgnr-qeXFs0w9A@mail.gmail.com>	<52C3644C.9090809@blueyonder.co.uk>	<CAKb7UviLpfZMtZM9X1R0Eaj=5ww2k=T+7x01dZH3ns2Ew1HuFw@mail.gmail.com>	<52C42079.6060604@blueyonder.co.uk>	<CAKb7Uvj97SgHp1b11_MMt1UR-NUpQ_2LuGhwjyk_a7_VLqN+KQ@mail.gmail.com>	<52C4D099.9040507@blueyonder.co.uk> <CAKb7UvgiYn9Wy=EsrHWsoGH7Zj2=-8n=qunyzHTLKnSW3RL=iQ@mail.gmail.com>
+In-Reply-To: <CAKb7UvgiYn9Wy=EsrHWsoGH7Zj2=-8n=qunyzHTLKnSW3RL=iQ@mail.gmail.com>
+Content-Type: multipart/mixed;
+ boundary="------------040100060603000101000709"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2013 03:46 AM, Eduardo Valentin wrote:
-> ...
-> +
-> +/**
-> + * of_parse_thermal_zones - parse device tree thermal data
-> + *
-> + * Initialization function that can be called by machine initialization
-> + * code to parse thermal data and populate the thermal framework
-> + * with hardware thermal zones info. This function only parses thermal zones.
-> + * Cooling devices and sensor devices nodes are supposed to be parsed
-> + * by their respective drivers.
-> + *
-> + * Return: 0 on success, proper error code otherwise
-> + *
-> + */
-> +int __init of_parse_thermal_zones(void)
-> +{
-> +	struct device_node *np, *child;
-> +	struct __thermal_zone *tz;
-> +	struct thermal_zone_device_ops *ops;
-> +
-> +	np = of_find_node_by_name(NULL, "thermal-zones");
-> +	if (!np) {
-> +		pr_debug("unable to find thermal zones\n");
-> +		return 0; /* Run successfully on systems without thermal DT */
-> +	}
-> +
-> +	for_each_child_of_node(np, child) {
-> +		struct thermal_zone_device *zone;
-> +		struct thermal_zone_params *tzp;
-> +
-> +		tz = thermal_of_build_thermal_zone(child);
-> +		if (IS_ERR(tz)) {
-> +			pr_err("failed to build thermal zone %s: %ld\n",
-> +			       child->name,
-> +			       PTR_ERR(tz));
-> +			continue;
-> +		}
-> +
-> +		ops = kmemdup(&of_thermal_ops, sizeof(*ops), GFP_KERNEL);
-> +		if (!ops)
-> +			goto exit_free;
-> +
-> +		tzp = kzalloc(sizeof(*tzp), GFP_KERNEL);
-> +		if (!tzp) {
-> +			kfree(ops);
-> +			goto exit_free;
-> +		}
-> +
-> +		/* No hwmon because there might be hwmon drivers registering */
-> +		tzp->no_hwmon = true;
-I think the platform driver may set governor for the thermal zone,
-so how about to add a property named as "governor",
-and parse it to tzp->governor_name,
-something like:
-                ret = of_property_read_string(child, "governor", &str);
-                if (ret == 0)
-                        if (strlen(str) < THERMAL_NAME_LENGTH)
-                                strcpy(tzp->governor_name, str);
+This is a multi-part message in MIME format.
+--------------040100060603000101000709
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Thanks.
-Wei.
-> +
-> +		zone = thermal_zone_device_register(child->name, tz->ntrips,
-> +						    0, tz,
-> +						    ops, tzp,
-> +						    tz->passive_delay,
-> +						    tz->polling_delay);
-> +		if (IS_ERR(zone)) {
-> +			pr_err("Failed to build %s zone %ld\n", child->name,
-> +			       PTR_ERR(zone));
-> +			kfree(tzp);
-> +			kfree(ops);
-> +			of_thermal_free_zone(tz);
-> +			/* attempting to build remaining zones still */
-> +		}
-> +	}
-> +
-> +	return 0;
-> +
-> +exit_free:
-> +	of_thermal_free_zone(tz);
-> +
-> +	/* no memory available, so free what we have built */
-> +	of_thermal_destroy_zones();
-> +
-> +	return -ENOMEM;
-> +}
-> +
-> +/**
-> + * of_thermal_destroy_zones - remove all zones parsed and allocated resources
-> + *
-> + * Finds all zones parsed and added to the thermal framework and remove them
-> + * from the system, together with their resources.
-> + *
-> + */
-> +void __exit of_thermal_destroy_zones(void)
-> +{
-> +	struct device_node *np, *child;
-> +
-> +	np = of_find_node_by_name(NULL, "thermal-zones");
-> +	if (!np) {
-> +		pr_err("unable to find thermal zones\n");
-> +		return;
-> +	}
-> +
-> +	for_each_child_of_node(np, child) {
-> +		struct thermal_zone_device *zone;
-> +
-> +		zone = thermal_zone_get_zone_by_name(child->name);
-> +		if (IS_ERR(zone))
-> +			continue;
-> +
-> +		thermal_zone_device_unregister(zone);
-> +		kfree(zone->tzp);
-> +		kfree(zone->ops);
-> +		of_thermal_free_zone(zone->devdata);
-> +	}
-> +}
-> diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-> index f4c9021..aba68dc 100644
-> --- a/drivers/thermal/thermal_core.c
-> +++ b/drivers/thermal/thermal_core.c
-> @@ -1373,7 +1373,7 @@ static void remove_trip_attrs(struct thermal_zone_device *tz)
->   */
->  struct thermal_zone_device *thermal_zone_device_register(const char *type,
->  	int trips, int mask, void *devdata,
-> -	const struct thermal_zone_device_ops *ops,
-> +	struct thermal_zone_device_ops *ops,
->  	const struct thermal_zone_params *tzp,
->  	int passive_delay, int polling_delay)
->  {
-> @@ -1753,8 +1753,14 @@ static int __init thermal_init(void)
->  	if (result)
->  		goto unregister_class;
->  
-> +	result = of_parse_thermal_zones();
-> +	if (result)
-> +		goto exit_netlink;
-> +
->  	return 0;
->  
-> +exit_netlink:
-> +	genetlink_exit();
->  unregister_governors:
->  	thermal_unregister_governors();
->  unregister_class:
-> @@ -1770,6 +1776,7 @@ error:
->  
->  static void __exit thermal_exit(void)
->  {
-> +	of_thermal_destroy_zones();
->  	genetlink_exit();
->  	class_unregister(&thermal_class);
->  	thermal_unregister_governors();
-> diff --git a/drivers/thermal/thermal_core.h b/drivers/thermal/thermal_core.h
-> index 7cf2f66..3db339f 100644
-> --- a/drivers/thermal/thermal_core.h
-> +++ b/drivers/thermal/thermal_core.h
-> @@ -77,4 +77,13 @@ static inline int thermal_gov_user_space_register(void) { return 0; }
->  static inline void thermal_gov_user_space_unregister(void) {}
->  #endif /* CONFIG_THERMAL_GOV_USER_SPACE */
->  
-> +/* device tree support */
-> +#ifdef CONFIG_THERMAL_OF
-> +int of_parse_thermal_zones(void);
-> +void of_thermal_destroy_zones(void);
-> +#else
-> +static inline int of_parse_thermal_zones(void) { return 0; }
-> +static inline void of_thermal_destroy_zones(void) { }
-> +#endif
-> +
->  #endif /* __THERMAL_CORE_H__ */
-> diff --git a/include/dt-bindings/thermal/thermal.h b/include/dt-bindings/thermal/thermal.h
-> new file mode 100644
-> index 0000000..59822a9
-> --- /dev/null
-> +++ b/include/dt-bindings/thermal/thermal.h
-> @@ -0,0 +1,17 @@
-> +/*
-> + * This header provides constants for most thermal bindings.
-> + *
-> + * Copyright (C) 2013 Texas Instruments
-> + *	Eduardo Valentin <eduardo.valentin@ti.com>
-> + *
-> + * GPLv2 only
-> + */
-> +
-> +#ifndef _DT_BINDINGS_THERMAL_THERMAL_H
-> +#define _DT_BINDINGS_THERMAL_THERMAL_H
-> +
-> +/* On cooling devices upper and lower limits */
-> +#define THERMAL_NO_LIMIT		(-1UL)
-> +
-> +#endif
-> +
-> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> index b268d3c..b780c5b 100644
-> --- a/include/linux/thermal.h
-> +++ b/include/linux/thermal.h
-> @@ -143,6 +143,7 @@ struct thermal_cooling_device {
->  	int id;
->  	char type[THERMAL_NAME_LENGTH];
->  	struct device device;
-> +	struct device_node *np;
->  	void *devdata;
->  	const struct thermal_cooling_device_ops *ops;
->  	bool updated; /* true if the cooling device does not need update */
-> @@ -172,7 +173,7 @@ struct thermal_zone_device {
->  	int emul_temperature;
->  	int passive;
->  	unsigned int forced_passive;
-> -	const struct thermal_zone_device_ops *ops;
-> +	struct thermal_zone_device_ops *ops;
->  	const struct thermal_zone_params *tzp;
->  	struct thermal_governor *governor;
->  	struct list_head thermal_instances;
-> @@ -242,8 +243,31 @@ struct thermal_genl_event {
->  };
->  
->  /* Function declarations */
-> +#ifdef CONFIG_THERMAL_OF
-> +struct thermal_zone_device *
-> +thermal_zone_of_sensor_register(struct device *dev, int id,
-> +				void *data, int (*get_temp)(void *, long *),
-> +				int (*get_trend)(void *, long *));
-> +void thermal_zone_of_sensor_unregister(struct device *dev,
-> +				       struct thermal_zone_device *tz);
-> +#else
-> +static inline struct thermal_zone_device *
-> +thermal_zone_of_sensor_register(struct device *dev, int id,
-> +				void *data, int (*get_temp)(void *, long *),
-> +				int (*get_trend)(void *, long *))
-> +{
-> +	return NULL;
-> +}
-> +
-> +static inline
-> +void thermal_zone_of_sensor_unregister(struct device *dev,
-> +				       struct thermal_zone_device *tz)
-> +{
-> +}
-> +
-> +#endif
->  struct thermal_zone_device *thermal_zone_device_register(const char *, int, int,
-> -		void *, const struct thermal_zone_device_ops *,
-> +		void *, struct thermal_zone_device_ops *,
->  		const struct thermal_zone_params *, int, int);
->  void thermal_zone_device_unregister(struct thermal_zone_device *);
->  
+On 02/01/14 02:40, Ilia Mirkin wrote:
+> On Wed, Jan 1, 2014 at 9:36 PM, Sid Boyce <sboyce@blueyonder.co.uk> wrote:
+>> On 01/01/14 18:46, Ilia Mirkin wrote:
+>>> On Wed, Jan 1, 2014 at 9:04 AM, Sid Boyce <sboyce@blueyonder.co.uk> wrote:
+>>>> On 01/01/14 00:55, Ilia Mirkin wrote:
+>>>>> On Tue, Dec 31, 2013 at 7:41 PM, Sid Boyce <sboyce@blueyonder.co.uk>
+>>>>> wrote:
+>>>>>> On 31/12/13 10:36, Ilia Mirkin wrote:
+>>>>>>> Having a dmesg would be nice. One thing I can think of off-hand is
+>>>>>>> that 3.13-rc has MSI turned on by default. You can turn it off by
+>>>>>>> adding "nouveau.config=NvMSI=0" to your kernel cmdline. If that
+>>>>>>> doesn't help, a bisect restricted to drivers/gpu/drm/nouveau should
+>>>>>>> show the offending commit fairly quickly.
+>>>>>>>
+>>>>>>>       -ilia
+>>>>>>>
+>>>>>> Adding "nouveau.config=NvMSI=0" to the command line fixed the problem.
+>>>>>> So it looks like commit 049ffa8ab33a63b3bff672d1a0ee6a35ad253fe8
+>>>>>> introduced
+>>>>>> it.
+>>>>> Any chance you might mmiotrace the blob (version 325 or later) to see
+>>>>> which registers it fiddles with? Or alternatively, if you have a NVCE
+>>>>> card (you never did end up providing the logs which would have made
+>>>>> that apparent), could you try replacing nvc3_mc_oclass with
+>>>>> nvc0_mc_oclass for the 0xce case in
+>>>>> drivers/gpu/drm/nouveau/core/engine/device/nvc0.c? (and boot without
+>>>>> the MSI disabling.) The switch has already been made for NVC8 in
+>>>>> 0bae1d61c75 -- perhaps there are more "odd" ones.
+>>>>>
+>>>>>      -ilia
+>>>>>
+>>>> Fails exactly the same.
+>>>>           case 0xc3:
+>>>>                   device->cname = "GF106";
+>>>>
+>>>>                   device->oclass[NVDEV_SUBDEV_VBIOS  ] =
+>>>> &nouveau_bios_oclass;
+>>>>                   device->oclass[NVDEV_SUBDEV_GPIO   ] =
+>>>> &nv50_gpio_oclass;
+>>>>                   device->oclass[NVDEV_SUBDEV_I2C    ] = &nv94_i2c_oclass;
+>>>>                   device->oclass[NVDEV_SUBDEV_CLOCK  ] =
+>>>> &nvc0_clock_oclass;
+>>>>                   device->oclass[NVDEV_SUBDEV_THERM  ] =
+>>>> &nva3_therm_oclass;
+>>>>                   device->oclass[NVDEV_SUBDEV_MXM    ] = &nv50_mxm_oclass;
+>>>>                   device->oclass[NVDEV_SUBDEV_DEVINIT] =
+>>>> &nvc0_devinit_oclass;
+>>>>                   device->oclass[NVDEV_SUBDEV_MC     ] = nvc0_mc_oclass;
+>>>> <<<<<====
+>>>>                   device->oclass[NVDEV_SUBDEV_BUS    ] = nvc0_bus_oclass;
+>>>>                   device->oclass[NVDEV_SUBDEV_TIMER  ] =
+>>>> &nv04_timer_oclass;
+>>> That's the 0xc3 case... you have a nvce card, not nvc3 -- you would
+>>> need to change the NVDEV_SUBDEV_MC line to nvc0_mc_oclass for the 0xce
+>>> case.
+>>>
+>>>> The dmesg and Xorg.0.log with the problem captured across a ssh link.
+>>>>
+>>>> # ps fax|grep X
+>>>>    5633 pts/0    S+     0:00          \_ grep --color=auto X
+>>>>    5160 tty7     Ss+    0:08  \_ /usr/bin/Xorg -br :0 vt7 -nolisten tcp
+>>>> -auth
+>>>> /var/lib/kdm/AuthFiles/A:0-yqspza
+>>>>
+>>>> Also
+>>>> # echo mmiotrace > /sys/kernel/debug/tracing/current_tracer
+>>>> -bash: echo: write error: Invalid argument.
+>>> Take a look at https://wiki.ubuntu.com/X/MMIOTracing
+>>>
+>>>     -ilia
+>>>
+>> Of course it's a GF114.
+>> Made the change and it boots without the command line change.
+> Great! Care to send a patch?
+>
+>    -ilia
+>
+Here it is.
+Regards
+Sid.
 
+-- 
+Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
+Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support
+Senior Staff Specialist, Cricket Coach
+Microsoft Windows Free Zone - Linux used for all Computing Tasks
+
+
+--------------040100060603000101000709
+Content-Type: text/x-patch;
+ name="GF114.diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="GF114.diff"
+
+--- /usr/src/linux-3.13.0-rc6/drivers/gpu/drm/nouveau/core/engine/device/nvc0.c	2013-11-23 13:03:23.797604441 +0000
++++ /usr/src/linux-3.13.0-rc61/drivers/gpu/drm/nouveau/core/engine/device/nvc0.c	2014-01-02 02:13:32.445643092 +0000
+@@ -161,7 +161,7 @@
+ 		device->oclass[NVDEV_SUBDEV_THERM  ] = &nva3_therm_oclass;
+ 		device->oclass[NVDEV_SUBDEV_MXM    ] = &nv50_mxm_oclass;
+ 		device->oclass[NVDEV_SUBDEV_DEVINIT] = &nvc0_devinit_oclass;
+-		device->oclass[NVDEV_SUBDEV_MC     ] =  nvc3_mc_oclass;
++		device->oclass[NVDEV_SUBDEV_MC     ] =  nvc0_mc_oclass;
+ 		device->oclass[NVDEV_SUBDEV_BUS    ] =  nvc0_bus_oclass;
+ 		device->oclass[NVDEV_SUBDEV_TIMER  ] = &nv04_timer_oclass;
+ 		device->oclass[NVDEV_SUBDEV_FB     ] =  nvc0_fb_oclass;
+
+--------------040100060603000101000709--
