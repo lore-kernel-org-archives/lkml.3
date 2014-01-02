@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751188AbaABIWP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 03:22:15 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:31594 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800AbaABIWN (ORCPT
+	id S1751356AbaABIYf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 03:24:35 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:5467 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233AbaABIYd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 03:22:13 -0500
-Message-ID: <52C52180.2030707@huawei.com>
-Date: Thu, 2 Jan 2014 16:21:20 +0800
-From: Ding Tianhong <dingtianhong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Thu, 2 Jan 2014 03:24:33 -0500
+From: Yijing Wang <wangyijing@huawei.com>
+To: "Venkatesh Pallipadi (Venki)" <venki@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+CC: <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Yijing Wang <wangyijing@huawei.com>, Hanjun Guo <guohanjun@huawei.com>
+Subject: [PATCH] x86, hpet: fix memleak when hpet enable fail
+Date: Thu, 2 Jan 2014 16:22:12 +0800
+Message-ID: <1388650932-5168-1-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
 MIME-Version: 1.0
-To: Julia Lawall <julia.lawall@lip6.fr>
-CC: Joe Perches <joe@perches.com>, Jay Vosburgh <fubar@us.ibm.com>,
-        Veaceslav Falico <vfalico@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND net-next 1/7] bonding: use ether_addr_equal_unaligned
- for bond addr compare
-References: <52C4BD16.5010702@huawei.com> <alpine.DEB.2.02.1401020839000.2182@localhost6.localdomain6>
-In-Reply-To: <alpine.DEB.2.02.1401020839000.2182@localhost6.localdomain6>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.135.72.199]
+Content-Type: text/plain
+X-Originating-IP: [10.177.27.212]
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/1/2 15:39, Julia Lawall wrote:
-> Are the casts needed
+We should free hpet_boot_cfg if hpet enable fail.
 
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+---
+ arch/x86/kernel/hpet.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Yes, otherwise the warming will report:
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index da85a8e..0ed00cc 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -900,6 +900,7 @@ int __init hpet_enable(void)
+ 	return 0;
+ 
+ out_nohpet:
++	kfree(hpet_boot_cfg);
+ 	hpet_clear_mapping();
+ 	hpet_address = 0;
+ 	return 0;
+-- 
+1.7.1
 
-/net-next/drivers/net/bonding/bond_3ad.c:427: warning: passing argument 1 of ‘ether_addr_equal_64bits’ from incompatible pointer type
-
-Regards
-Ding
 
