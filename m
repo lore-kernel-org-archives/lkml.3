@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174AbaABTjA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 14:39:00 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:57822 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740AbaABTi5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751943AbaABTi6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 14:38:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14335 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750917AbaABTi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 2 Jan 2014 14:38:57 -0500
+Date: Thu, 2 Jan 2014 14:38:47 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: Peter Hurley <peter@hurleysoftware.com>, Jiri Slaby <jslaby@suse.cz>,
+        linux-kernel@vger.kernel.org, Karl Dahlke <eklhad@comcast.net>
+Subject: Re: [PATCH 3.12 v2] Broken terminal due to echo bufferring
+In-Reply-To: <20131218235310.GC14527@kroah.com>
+Message-ID: <alpine.LRH.2.02.1401021438310.832@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1312091004110.19590@file01.intranet.prod.int.rdu2.redhat.com> <20131218235310.GC14527@kroah.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <m3ppoatwn1.fsf@t19.piap.pl>
-References: <m3mwjhux0e.fsf@t19.piap.pl>
-	<20131231104511.GA9688@1wt.eu>
-	<m3txdmu2ez.fsf@t19.piap.pl>
-	<20140102101455.GG10158@pengutronix.de>
-	<m3ppoatwn1.fsf@t19.piap.pl>
-Date: Thu, 2 Jan 2014 11:38:56 -0800
-X-Google-Sender-Auth: OJL4w7IgSV_nFGMdc_bjxCufVgY
-Message-ID: <CA+55aFyZ0EXYkHd-BhQo6K++qKJVPdGeDbFTVTs3pAPCHFUpOA@mail.gmail.com>
-Subject: Re: v3.13-rc6+ regression (ARM board)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: =?UTF-8?Q?Krzysztof_Ha=C5=82asa?= <khalasa@piap.pl>
-Cc: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Willy Tarreau <w@1wt.eu>, John Stultz <john.stultz@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Stephen Boyd <sboyd@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 2, 2014 at 4:07 AM, Krzysztof Hałasa <khalasa@piap.pl> wrote:
->
-> This means these two commits don't like each other:
->
->     seqcount: Add lockdep functionality to seqcount/seqlock structures
->     sched_clock: Use seqcount instead of rolling our own
 
-Does something like this fix it for you?
 
-  --- a/kernel/time/sched_clock.c
-  +++ b/kernel/time/sched_clock.c
-  @@ -36,6 +36,7 @@ core_param(irqtime, irqtime, int, 0400);
+On Wed, 18 Dec 2013, Greg Kroah-Hartman wrote:
 
-   static struct clock_data cd = {
-          .mult   = NSEC_PER_SEC / HZ,
-  +       .seq = SEQCNT_ZERO(cd.seq),
-   };
+> On Mon, Dec 09, 2013 at 10:10:50AM -0500, Mikulas Patocka wrote:
+> > Hi
+> > 
+> > Here I'm sending another version of the patch that removes some unneeded 
+> > code for echo bufferring - 41 lines are removed.
+> 
+> This should now all be resolved in Linus's tree, and this patch is not
+> needed, right?
 
-   static u64 __read_mostly sched_clock_mask;
+You don't need this patch if you backported 
+1075a6e2dc7e2a96efc417b98dd98f57fdae985d.
 
-(The above is not even compile-tested, because x86 doesn't use
-GENERIC_SCHED_CLOCK. So I did the patch blindly, but I think you get
-the idea..)
+Mikulas
 
-            Linus
+> thanks,
+> 
+> greg k-h
+> 
