@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062AbaABRHw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:07:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40324 "EHLO
+	id S1753171AbaABRIT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:08:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40350 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753018AbaABRHt (ORCPT
+	with ESMTP id S1750945AbaABRIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:07:49 -0500
+	Thu, 2 Jan 2014 12:08:15 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jianguo Wu <wujianguo@huawei.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Mel Gorman <mgorman@suse.de>, qiuxishi <qiuxishi@huawei.com>,
-        Hanjun Guo <guohanjun@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Ben Segall <bsegall@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        pjt@google.com, Ingo Molnar <mingo@kernel.org>,
+        Chris J Arges <chris.j.arges@ubuntu.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 58/91] mm/hugetlb: check for pte NULL pointer in __page_check_address()
-Date: Thu,  2 Jan 2014 09:04:33 -0800
-Message-Id: <1388682306-30859-59-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 51/91] sched: Avoid throttle_cfs_rq() racing with period_timer stopping
+Date: Thu,  2 Jan 2014 09:04:26 -0800
+Message-Id: <1388682306-30859-52-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -32,42 +29,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jianguo Wu <wujianguo@huawei.com>
+From: Ben Segall <bsegall@google.com>
 
-commit 98398c32f6687ee1e1f3ae084effb4b75adb0747 upstream.
+commit f9f9ffc237dd924f048204e8799da74f9ecf40cf upstream.
 
-In __page_check_address(), if address's pud is not present,
-huge_pte_offset() will return NULL, we should check the return value.
+throttle_cfs_rq() doesn't check to make sure that period_timer is running,
+and while update_curr/assign_cfs_runtime does, a concurrently running
+period_timer on another cpu could cancel itself between this cpu's
+update_curr and throttle_cfs_rq(). If there are no other cfs_rqs running
+in the tg to restart the timer, this causes the cfs_rq to be stranded
+forever.
 
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: qiuxishi <qiuxishi@huawei.com>
-Cc: Hanjun Guo <guohanjun@huawei.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fix this by calling __start_cfs_bandwidth() in throttle if the timer is
+inactive.
+
+(Also add some sched_debug lines for cfs_bandwidth.)
+
+Tested: make a run/sleep task in a cgroup, loop switching the cgroup
+between 1ms/100ms quota and unlimited, checking for timer_active=0 and
+throttled=1 as a failure. With the throttle_cfs_rq() change commented out
+this fails, with the full patch it passes.
+
+Signed-off-by: Ben Segall <bsegall@google.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: pjt@google.com
+Link: http://lkml.kernel.org/r/20131016181632.22647.84174.stgit@sword-of-the-dawn.mtv.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Chris J Arges <chris.j.arges@ubuntu.com>
+[ Chris J Arges: backport to 3.8 ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/rmap.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ kernel/sched/debug.c | 10 ++++++++++
+ kernel/sched/fair.c  |  2 ++
+ 2 files changed, 12 insertions(+)
 
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 92b4529..c208837 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -600,7 +600,11 @@ pte_t *__page_check_address(struct page *page, struct mm_struct *mm,
- 	spinlock_t *ptl;
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 7ae4c4c..3539029 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -231,7 +231,17 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+ 	SEQ_printf(m, "  .%-30s: %d\n", "tg->runnable_avg",
+ 			atomic_read(&cfs_rq->tg->runnable_avg));
+ #endif
++#endif
++#ifdef CONFIG_CFS_BANDWIDTH
++	SEQ_printf(m, "  .%-30s: %d\n", "tg->cfs_bandwidth.timer_active",
++			cfs_rq->tg->cfs_bandwidth.timer_active);
++	SEQ_printf(m, "  .%-30s: %d\n", "throttled",
++			cfs_rq->throttled);
++	SEQ_printf(m, "  .%-30s: %d\n", "throttle_count",
++			cfs_rq->throttle_count);
++#endif
  
- 	if (unlikely(PageHuge(page))) {
-+		/* when pud is not present, pte will be NULL */
- 		pte = huge_pte_offset(mm, address);
-+		if (!pte)
-+			return NULL;
-+
- 		ptl = &mm->page_table_lock;
- 		goto check;
- 	}
++#ifdef CONFIG_FAIR_GROUP_SCHED
+ 	print_cfs_group_stats(m, cpu, cfs_rq->tg);
+ #endif
+ }
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index e9ab160..6c8930e 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2268,6 +2268,8 @@ static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
+ 	cfs_rq->throttled_clock = rq->clock;
+ 	raw_spin_lock(&cfs_b->lock);
+ 	list_add_tail_rcu(&cfs_rq->throttled_list, &cfs_b->throttled_cfs_rq);
++	if (!cfs_b->timer_active)
++		__start_cfs_bandwidth(cfs_b);
+ 	raw_spin_unlock(&cfs_b->lock);
+ }
+ 
 -- 
 1.8.3.2
 
