@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297AbaABWpM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 17:45:12 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:28538 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751920AbaABWo1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 17:44:27 -0500
-X-IronPort-AV: E=Sophos;i="4.95,593,1384297200"; 
-   d="scan'208";a="51446860"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: kernel-janitors@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+	id S1753396AbaABWqG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 17:46:06 -0500
+Received: from erley.org ([97.107.129.9]:52445 "EHLO remote.erley.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752070AbaABWqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 17:46:04 -0500
+X-Greylist: delayed 351 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Jan 2014 17:46:04 EST
+Message-ID: <52C5EAB7.9030003@erley.org>
+Date: Thu, 02 Jan 2014 16:39:51 -0600
+From: Pat Erley <pat-lkml@erley.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Richard Weinberger <richard@nod.at>
+CC: linux-next@vger.kernel.org, akpm@linux-foundation.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] mfd: sta2x11-mfd: use named constants for pci_power_t values
-Date: Fri,  3 Jan 2014 00:40:29 +0100
-Message-Id: <1388706031-22180-2-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1388706031-22180-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1388706031-22180-1-git-send-email-Julia.Lawall@lip6.fr>
+Subject: Re: Possible regression from "fs/exec.c: call arch_pick_mmap_layout()
+ only once"
+References: <52C5DD07.40208@erley.org> <2300703.z3jyM3yTZv@sandpuppy>
+In-Reply-To: <2300703.z3jyM3yTZv@sandpuppy>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On 01/02/2014 04:24 PM, Richard Weinberger wrote:
+> Am Donnerstag, 2. Januar 2014, 15:41:27 schrieb Pat Erley:
+>> On my 64bit kernel, commit 283fe963095b38a6ab75dda1436ee66b9e45c7c2
+>> seems to have broken 32bit compatibility.  I've run the bisection twice,
+>> and verified that reverting this on HEAD fixes the problem.  I've
+>> uploaded my .config to pastebin at http://pastebin.com/kVcr9H65
+>>
+>> Even this simple program:
+>>
+>> main(){puts("HELLO");}
+>>
+>> compiled with:
+>>
+>> gcc -m32 test.c
+>>
+>> Will crash with a segfault.  Stracing shows that it's failing to
+>> allocate memory.
+>
+> Good catch!
+>
+> flush_old_exec() is called before setup_new_exec() and I've removed
+> arch_pick_mmap_layout() from the second call site.
+> Which turned out to be wrong.
+>
+> It is wrong because between both callers current->personality is changed.
+> So, we have to remove the first call to arch_pick_mmap_layout() and keep the
+> latter because only then the correct personality is set up.
+>
+> Can you please test your config with the following patch applied and having
+> 283fe96 reverted?
+>
+> If it works out for you I'd send an updated patch to Andrew.
+> In the meanwhile I'll double check all call sites...
+>
+> Thanks,
+> //richard
+>
+> ---
+> diff --git a/fs/exec.c b/fs/exec.c
+> index 7ea097f..a733599 100644
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -843,7 +843,6 @@ static int exec_mmap(struct mm_struct *mm)
+>   	tsk->active_mm = mm;
+>   	activate_mm(active_mm, mm);
+>   	task_unlock(tsk);
+> -	arch_pick_mmap_layout(mm);
+>   	if (old_mm) {
+>   		up_read(&old_mm->mmap_sem);
+>   		BUG_ON(active_mm != old_mm);
+>
 
-The semantic patch that makes this change is as follows:
-(http://coccinelle.lip6.fr/)
+Compiling right now.  Will test later tonight and let you know.
 
-// <smpl>
-@@
-expression pdev;
-@@
-
-pci_set_power_state(pdev,
-- 0
-+ PCI_D0
- )
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
- drivers/mfd/sta2x11-mfd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/mfd/sta2x11-mfd.c b/drivers/mfd/sta2x11-mfd.c
-index 0d42e40..5b72db0 100644
---- a/drivers/mfd/sta2x11-mfd.c
-+++ b/drivers/mfd/sta2x11-mfd.c
-@@ -529,7 +529,7 @@ static int sta2x11_mfd_resume(struct pci_dev *pdev)
- {
- 	int err;
- 
--	pci_set_power_state(pdev, 0);
-+	pci_set_power_state(pdev, PCI_D0);
- 	err = pci_enable_device(pdev);
- 	if (err)
- 		return err;
+Pat
 
