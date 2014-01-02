@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265AbaABR26 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:28:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40202 "EHLO
+	id S1754157AbaABR24 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:28:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40204 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752274AbaABRFb (ORCPT
+	with ESMTP id S1752277AbaABRFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 2 Jan 2014 12:05:31 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stephen Hemminger <stephen@networkplumber.org>,
-        Florian Weimer <fweimer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+Cc: Eric Dumazet <edumazet@google.com>, Felix Fietkau <nbd@openwrt.org>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 05/91] random32: fix off-by-one in seeding requirement
-Date: Thu,  2 Jan 2014 09:03:40 -0800
-Message-Id: <1388682306-30859-6-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 11/91] tcp: tsq: restore minimal amount of queueing
+Date: Thu,  2 Jan 2014 09:03:46 -0800
+Message-Id: <1388682306-30859-12-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -31,101 +28,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 51c37a70aaa3f95773af560e6db3073520513912 ]
+[ Upstream commit 98e09386c0ef4dfd48af7ba60ff908f0d525cdee ]
 
-For properly initialising the Tausworthe generator [1], we have
-a strict seeding requirement, that is, s1 > 1, s2 > 7, s3 > 15.
+After commit c9eeec26e32e ("tcp: TSQ can use a dynamic limit"), several
+users reported throughput regressions, notably on mvneta and wifi
+adapters.
 
-Commit 697f8d0348 ("random32: seeding improvement") introduced
-a __seed() function that imposes boundary checks proposed by the
-errata paper [2] to properly ensure above conditions.
+802.11 AMPDU requires a fair amount of queueing to be effective.
 
-However, we're off by one, as the function is implemented as:
-"return (x < m) ? x + m : x;", and called with __seed(X, 1),
-__seed(X, 7), __seed(X, 15). Thus, an unwanted seed of 1, 7, 15
-would be possible, whereas the lower boundary should actually
-be of at least 2, 8, 16, just as GSL does. Fix this, as otherwise
-an initialization with an unwanted seed could have the effect
-that Tausworthe's PRNG properties cannot not be ensured.
+This patch partially reverts the change done in tcp_write_xmit()
+so that the minimal amount is sysctl_tcp_limit_output_bytes.
 
-Note that this PRNG is *not* used for cryptography in the kernel.
+It also remove the use of this sysctl while building skb stored
+in write queue, as TSO autosizing does the right thing anyway.
 
- [1] http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme.ps
- [2] http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme2.ps
+Users with well behaving NICS and correct qdisc (like sch_fq),
+can then lower the default sysctl_tcp_limit_output_bytes value from
+128KB to 8KB.
 
-Joint work with Hannes Frederic Sowa.
+This new usage of sysctl_tcp_limit_output_bytes permits each driver
+authors to check how their driver performs when/if the value is set
+to a minimum of 4KB.
 
-Fixes: 697f8d0348a6 ("random32: seeding improvement")
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Cc: Florian Weimer <fweimer@redhat.com>
-Cc: Theodore Ts'o <tytso@mit.edu>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Normally, line rate for a single TCP flow should be possible,
+but some drivers rely on timers to perform TX completion and
+too long TX completion delays prevent reaching full throughput.
+
+Fixes: c9eeec26e32e ("tcp: TSQ can use a dynamic limit")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Sujith Manoharan <sujith@msujith.org>
+Reported-by: Arnaud Ebalard <arno@natisbad.org>
+Tested-by: Sujith Manoharan <sujith@msujith.org>
+Cc: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/random.h |  6 +++---
- lib/random32.c         | 14 +++++++-------
- 2 files changed, 10 insertions(+), 10 deletions(-)
+ Documentation/networking/ip-sysctl.txt | 3 ---
+ net/ipv4/tcp.c                         | 6 ------
+ net/ipv4/tcp_output.c                  | 6 +++++-
+ 3 files changed, 5 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/random.h b/include/linux/random.h
-index 6069225..d024cc6 100644
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -57,9 +57,9 @@ static inline void prandom_seed_state(struct rnd_state *state, u64 seed)
- {
- 	u32 i = (seed >> 32) ^ (seed << 10) ^ seed;
+diff --git a/Documentation/networking/ip-sysctl.txt b/Documentation/networking/ip-sysctl.txt
+index 62b9a61..2c9ddb1 100644
+--- a/Documentation/networking/ip-sysctl.txt
++++ b/Documentation/networking/ip-sysctl.txt
+@@ -603,9 +603,6 @@ tcp_limit_output_bytes - INTEGER
+ 	typical pfifo_fast qdiscs.
+ 	tcp_limit_output_bytes limits the number of bytes on qdisc
+ 	or device to reduce artificial RTT/cwnd and reduce bufferbloat.
+-	Note: For GSO/TSO enabled flows, we try to have at least two
+-	packets in flight. Reducing tcp_limit_output_bytes might also
+-	reduce the size of individual GSO packet (64KB being the max)
+ 	Default: 131072
  
--	state->s1 = __seed(i, 1);
--	state->s2 = __seed(i, 7);
--	state->s3 = __seed(i, 15);
-+	state->s1 = __seed(i, 2);
-+	state->s2 = __seed(i, 8);
-+	state->s3 = __seed(i, 16);
- }
+ tcp_challenge_ack_limit - INTEGER
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index c2aaeab..8cfdf2b 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -814,12 +814,6 @@ static unsigned int tcp_xmit_size_goal(struct sock *sk, u32 mss_now,
+ 		xmit_size_goal = min_t(u32, gso_size,
+ 				       sk->sk_gso_max_size - 1 - hlen);
  
- #ifdef CONFIG_ARCH_RANDOM
-diff --git a/lib/random32.c b/lib/random32.c
-index 52280d5..01e8890 100644
---- a/lib/random32.c
-+++ b/lib/random32.c
-@@ -141,7 +141,7 @@ void prandom_seed(u32 entropy)
- 	 */
- 	for_each_possible_cpu (i) {
- 		struct rnd_state *state = &per_cpu(net_rand_state, i);
--		state->s1 = __seed(state->s1 ^ entropy, 1);
-+		state->s1 = __seed(state->s1 ^ entropy, 2);
- 	}
- }
- EXPORT_SYMBOL(prandom_seed);
-@@ -158,9 +158,9 @@ static int __init prandom_init(void)
- 		struct rnd_state *state = &per_cpu(net_rand_state,i);
+-		/* TSQ : try to have at least two segments in flight
+-		 * (one in NIC TX ring, another in Qdisc)
+-		 */
+-		xmit_size_goal = min_t(u32, xmit_size_goal,
+-				       sysctl_tcp_limit_output_bytes >> 1);
+-
+ 		xmit_size_goal = tcp_bound_to_half_wnd(tp, xmit_size_goal);
  
- #define LCG(x)	((x) * 69069)	/* super-duper LCG */
--		state->s1 = __seed(LCG(i + jiffies), 1);
--		state->s2 = __seed(LCG(state->s1), 7);
--		state->s3 = __seed(LCG(state->s2), 15);
-+		state->s1 = __seed(LCG(i + jiffies), 2);
-+		state->s2 = __seed(LCG(state->s1), 8);
-+		state->s3 = __seed(LCG(state->s2), 16);
+ 		/* We try hard to avoid divides here */
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index 0eaef9a..168a0d0 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -2019,8 +2019,12 @@ static bool tcp_write_xmit(struct sock *sk, unsigned int mss_now, int nonagle,
+ 		 *  - better RTT estimation and ACK scheduling
+ 		 *  - faster recovery
+ 		 *  - high rates
++		 * Alas, some drivers / subsystems require a fair amount
++		 * of queued bytes to ensure line rate.
++		 * One example is wifi aggregation (802.11 AMPDU)
+ 		 */
+-		limit = max(skb->truesize, sk->sk_pacing_rate >> 10);
++		limit = max_t(unsigned int, sysctl_tcp_limit_output_bytes,
++			      sk->sk_pacing_rate >> 10);
  
- 		/* "warm it up" */
- 		prandom_u32_state(state);
-@@ -187,9 +187,9 @@ static int __init prandom_reseed(void)
- 		u32 seeds[3];
- 
- 		get_random_bytes(&seeds, sizeof(seeds));
--		state->s1 = __seed(seeds[0], 1);
--		state->s2 = __seed(seeds[1], 7);
--		state->s3 = __seed(seeds[2], 15);
-+		state->s1 = __seed(seeds[0], 2);
-+		state->s2 = __seed(seeds[1], 8);
-+		state->s3 = __seed(seeds[2], 16);
- 
- 		/* mix it in */
- 		prandom_u32_state(state);
+ 		if (atomic_read(&sk->sk_wmem_alloc) > limit) {
+ 			set_bit(TSQ_THROTTLED, &tp->tsq_flags);
 -- 
 1.8.3.2
 
