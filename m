@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751420AbaABHNP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 02:13:15 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63522 "EHLO
+	id S1751596AbaABHOF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 02:14:05 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61829 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861AbaABHNL (ORCPT
+	with ESMTP id S1751432AbaABHNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 02:13:11 -0500
-X-AuditID: 9c930197-b7c4aae000003d84-fb-52c511830e7f
+	Thu, 2 Jan 2014 02:13:16 -0500
+X-AuditID: 9c930197-b7c4aae000003d84-3c-52c51189fe2f
 From: Minchan Kim <minchan@kernel.org>
 To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
@@ -30,9 +30,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
         Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
         Rob Clark <robdclark@gmail.com>, Jason Evans <je@fb.com>,
         Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v10 02/16] vrange: Clear volatility on new mmaps
-Date: Thu,  2 Jan 2014 16:12:10 +0900
-Message-Id: <1388646744-15608-3-git-send-email-minchan@kernel.org>
+Subject: [PATCH v10 12/16] vrange: Support background purging for vrange-file
+Date: Thu,  2 Jan 2014 16:12:20 +0900
+Message-Id: <1388646744-15608-13-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1388646744-15608-1-git-send-email-minchan@kernel.org>
 References: <1388646744-15608-1-git-send-email-minchan@kernel.org>
@@ -41,33 +41,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John Stultz <john.stultz@linaro.org>
+Add support to purge vrange file pages.
 
-At lsf-mm, the issue was brought up that there is a precedence with
-interfaces like mlock, such that new mappings in a pre-existing range
-do no inherit the mlock state.
-
-This is mostly because mlock only modifies the existing vmas, and so
-any new mmaps create new vmas, which won't be mlocked.
-
-Since volatility is not stored in the vma (for good cause, specifically
-as we'd have to have manage file volatility differently from anonymous
-and we're likely to manage volatility on small chunks of memory, which
-would cause lots of vma splitting and churn), this patch clears volitility
-on new mappings, to ensure that we don't inherit volatility if memory in
-an existing volatile range is unmapped and then re-mapped with something
-else.
-
-Thus, this patch forces any volatility to be cleared on mmap.
-
-XXX: We expect this patch to be not well loved by mm folks, and are open
-to alternative methods here. Its more of a place holder to address
-the issue from lsf-mm and hopefully will spur some further discussion.
-
-Minchan does have an alternative solution[1], but I'm not a big fan of it
-yet, so this simpler approach is a placeholder for now.
-
-[1] https://git.kernel.org/cgit/linux/kernel/git/minchan/linux.git/commit/?h=vrange-working&id=821f58333b381fd88ee7f37fd9c472949756c74e
+This is useful, since some filesystems like shmem/tmpfs use anonymous
+pages, which won't be aged off the page LRU if swap is disabled.
 
 Cc: Mel Gorman <mel@csn.ul.ie>
 Cc: Hugh Dickins <hughd@google.com>
@@ -76,70 +53,98 @@ Cc: Rik van Riel <riel@redhat.com>
 Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
 Cc: Michel Lespinasse <walken@google.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
-[minchan: add link alternative solution]
-Signed-off-by: Minchan Kim <minchan@kernel.org>
+[jstultz: Commit message tweaks]
 Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- include/linux/vrange.h |    2 ++
- mm/mmap.c              |    5 +++++
- mm/vrange.c            |    8 ++++++++
- 3 files changed, 15 insertions(+)
+ mm/vrange.c |   57 +++++++++++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 49 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/vrange.h b/include/linux/vrange.h
-index 2b96ee1ee75b..ef153c8a88d1 100644
---- a/include/linux/vrange.h
-+++ b/include/linux/vrange.h
-@@ -36,6 +36,8 @@ static inline int vrange_type(struct vrange *vrange)
- 	return vrange->owner->type;
- }
- 
-+extern int vrange_clear(struct vrange_root *vroot,
-+				unsigned long start, unsigned long end);
- extern void vrange_root_cleanup(struct vrange_root *vroot);
- extern int vrange_fork(struct mm_struct *new,
- 					struct mm_struct *old);
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 9d548512ff8a..b8e2c1e57336 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -36,6 +36,7 @@
- #include <linux/sched/sysctl.h>
- #include <linux/notifier.h>
- #include <linux/memory.h>
-+#include <linux/vrange.h>
- 
- #include <asm/uaccess.h>
- #include <asm/cacheflush.h>
-@@ -1503,6 +1504,10 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
- 	/* Clear old maps */
- 	error = -ENOMEM;
- munmap_back:
-+
-+	/* zap any volatile ranges */
-+	vrange_clear(&mm->vroot, addr, addr + len);
-+
- 	if (find_vma_links(mm, addr, addr + len, &prev, &rb_link, &rb_parent)) {
- 		if (do_munmap(mm, addr, len))
- 			return -ENOMEM;
 diff --git a/mm/vrange.c b/mm/vrange.c
-index 57dad4d72b04..444da8794dbf 100644
+index ed89835bcff4..51875f256592 100644
 --- a/mm/vrange.c
 +++ b/mm/vrange.c
-@@ -167,6 +167,14 @@ static int vrange_remove(struct vrange_root *vroot,
- 	return 0;
+@@ -13,6 +13,7 @@
+ #include <linux/mmu_notifier.h>
+ #include <linux/mm_inline.h>
+ #include <linux/migrate.h>
++#include <linux/pagevec.h>
+ #include <linux/shmem_fs.h>
+ 
+ static struct kmem_cache *vrange_cachep;
+@@ -853,24 +854,64 @@ out:
+ 	return ret;
  }
  
-+int vrange_clear(struct vrange_root *vroot,
-+					unsigned long start, unsigned long end)
++static int __discard_vrange_file(struct address_space *mapping,
++			struct vrange *vrange, unsigned long *ret_discard)
 +{
-+	int purged;
++	struct pagevec pvec;
++	pgoff_t index;
++	int i, ret = 0;
++	unsigned long nr_discard = 0;
++	unsigned long start_idx = vrange->node.start;
++	unsigned long end_idx = vrange->node.last;
++	const pgoff_t start = start_idx >> PAGE_CACHE_SHIFT;
++	pgoff_t end = end_idx >> PAGE_CACHE_SHIFT;
++	LIST_HEAD(pagelist);
 +
-+	return vrange_remove(vroot, start, end - 1, &purged);
++	pagevec_init(&pvec, 0);
++	index = start;
++	while (index <= end && pagevec_lookup(&pvec, mapping, index,
++			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1)) {
++		for (i = 0; i < pagevec_count(&pvec); i++) {
++			struct page *page = pvec.pages[i];
++			index = page->index;
++			if (index > end)
++				break;
++			if (isolate_lru_page(page))
++				continue;
++			list_add(&page->lru, &pagelist);
++			inc_zone_page_state(page, NR_ISOLATED_ANON);
++		}
++		pagevec_release(&pvec);
++		cond_resched();
++		index++;
++	}
++
++	if (!list_empty(&pagelist))
++		nr_discard = discard_vrange_pagelist(&pagelist);
++
++	*ret_discard = nr_discard;
++	putback_lru_pages(&pagelist);
++
++	return ret;
 +}
 +
- void vrange_root_cleanup(struct vrange_root *vroot)
+ static int discard_vrange(struct vrange *vrange, unsigned long *nr_discard)
  {
- 	struct vrange *range;
+ 	int ret = 0;
+-	struct mm_struct *mm;
+ 	struct vrange_root *vroot;
+ 	vroot = vrange->owner;
+ 
+-	/* TODO : handle VRANGE_FILE */
+-	if (vroot->type != VRANGE_MM)
+-		goto out;
++	if (vroot->type == VRANGE_MM) {
++		struct mm_struct *mm = vroot->object;
++		ret = __discard_vrange_anon(mm, vrange, nr_discard);
++	} else if (vroot->type == VRANGE_FILE) {
++		struct address_space *mapping = vroot->object;
++		ret = __discard_vrange_file(mapping, vrange, nr_discard);
++	}
+ 
+-	mm = vroot->object;
+-	ret = __discard_vrange_anon(mm, vrange, nr_discard);
+-out:
+ 	return ret;
+ }
+ 
+-
+ #define VRANGE_SCAN_THRESHOLD	(4 << 20)
+ 
+ unsigned long shrink_vrange(enum lru_list lru, struct lruvec *lruvec,
 -- 
 1.7.9.5
 
