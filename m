@@ -1,197 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751493AbaABJTS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 04:19:18 -0500
-Received: from hofr.at ([212.69.189.236]:56355 "EHLO mail.hofr.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750945AbaABJTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 04:19:16 -0500
-Date: Thu, 2 Jan 2014 10:19:15 +0100
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: linux-rt-users@vger.kernel.org
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, Carsten Emde <C.Emde@osadl.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH RT 2/2] read_lock migrate_disable pushdown to rt_read_lock
-Message-ID: <20140102091915.GC1757@opentech.at>
+	id S1751125AbaABJ05 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 04:26:57 -0500
+Received: from mail-bn1blp0181.outbound.protection.outlook.com ([207.46.163.181]:28667
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750711AbaABJ04 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 04:26:56 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "perex@perex.cz" <perex@perex.cz>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
+        "Fabio.Estevam@freescale.com" <Fabio.Estevam@freescale.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] ASoC: simple-card: cleanup asoc_simple_card_parse_of()
+ code
+Thread-Topic: [PATCH] ASoC: simple-card: cleanup asoc_simple_card_parse_of()
+ code
+Thread-Index: AQHPBViOX+iJOlN4DECU2ZJcLzz22Jptnx/ggACbmgCAAukgYA==
+Date: Thu, 2 Jan 2014 09:26:50 +0000
+Message-ID: <f91162146c844cf79694b1b3880fd926@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1388114078-24517-1-git-send-email-Li.Xiubo@freescale.com>
+ <20131230121113.GQ31886@sirena.org.uk>
+ <4c44077c52604d0b85c4babb59268eb7@BY2PR03MB505.namprd03.prod.outlook.com>
+ <20131231122036.GM31886@sirena.org.uk>
+In-Reply-To: <20131231122036.GM31886@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 0079056367
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(164054003)(199002)(189002)(51704005)(24454002)(77982001)(54316002)(50986001)(74876001)(47736001)(47976001)(33646001)(87266001)(81816001)(87936001)(2656002)(81686001)(63696002)(76796001)(76786001)(66066001)(79102001)(80022001)(76576001)(31966008)(47446002)(74662001)(56776001)(4396001)(74502001)(65816001)(85306002)(49866001)(74706001)(76482001)(59766001)(56816005)(19580405001)(83322001)(85852003)(53806001)(69226001)(83072002)(51856001)(90146001)(74366001)(46102001)(19580395003)(54356001)(80976001)(81342001)(74316001)(81542001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB256;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+> Subject: Re: [PATCH] ASoC: simple-card: cleanup asoc_simple_card_parse_of()
+> code
+> 
+> On Tue, Dec 31, 2013 at 03:27:53AM +0000, Li.Xiubo@freescale.com wrote:
+> 
+> > Also, for most of the devices of the same DAI link, they use the same DAI
+> > formats, but I have found some drivers like : "sound/soc/pxa/magician.c"
+> > and "sound/soc/s6000/s6105-ipcam.c", etc, may have different DAI format
+> > settings for some reasons(maybe some formats are the CPU/Codec devices
+> > default setting that it needn't set it here or others).
+> 
+> The ipcam still has that?  
 
-pushdown of migrate_disable/enable from read_*lock* to the rt_read_*lock*
-api level
+	-----------
+        /* set codec DAI configuration */
+        ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S |
+                                             SND_SOC_DAIFMT_CBM_CFM);
+        if (ret < 0)
+                return ret;
 
-general mapping to mutexes:
+        /* set cpu DAI configuration */
+        ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_CBM_CFM |
+                                           SND_SOC_DAIFMT_NB_NF);
+        if (ret < 0)
+                return ret;
+	----------
 
-read_*lock* 
-  `-> rt_read_*lock* 
-          `-> __spin_lock (the sleeping spin locks)
-                 `-> rt_mutex 
+ ... ?
 
-The real read_lock* mapping:
+> 
+> > I think maybe this is also the reason why the simple-card has common DAI
+> > format and CPU/CODEC private DAI formats at the same time.
+> 
+> I'd really want to see a real use case that actually was a simple card.
 
-          read_lock_irqsave -.
-read_lock_irq                `-> rt_read_lock_irqsave()  
-       `->read_lock ---------.       \
-          read_lock_bh ------+        \ 
-                             `--> rt_read_lock() 
-                                   if (rt_mutex_owner(lock) != current){
-                                           `-> __rt_spin_lock()
-                                                rt_spin_lock_fastlock()
-                                                       `->rt_mutex_cmpxchg()
-                                    migrate_disable()
-                                   }
-                                   rwlock->read_depth++;
-read_trylock mapping:
+I'm also still trying.
 
-read_trylock 
-          `-> rt_read_trylock 
-               if (rt_mutex_owner(lock) != current){
-                                              `-> rt_mutex_trylock()
-                                                   rt_mutex_fasttrylock()
-                                                    rt_mutex_cmpxchg()
-                migrate_disable()
-               }
-               rwlock->read_depth++;
 
-read_unlock* mapping:
+Thanks,
 
-read_unlock_bh --------+
-read_unlock_irq -------+
-read_unlock_irqrestore +
-read_unlock -----------+
-                       `-> rt_read_unlock() 
-                            if(--rwlock->read_depth==0){
-                                      `-> __rt_spin_unlock()
-                                           rt_spin_lock_fastunlock()
-                                                        `-> rt_mutex_cmpxchg()
-                             migrate_disable()
-                            }
-
-So calls to migrate_disable/enable() are better placed at the rt_read_*
-level of lock/trylock/unlock as all of the read_*lock* API has this as a
-common path. In the rt_read* API of lock/trylock/unlock the nesting level
-is already being recorded in rwlock->read_depth, so we can push down the
-migrate disable/enable to that level and condition it on the read_depth 
-going from 0 to 1 -> migrate_disable and 1 to 0 -> migrate_enable. This 
-eliminates the recursive calls that were needed when migrate_disable/enable
-was done at the read_*lock* level.
-
-The approach to read_*_bh also eliminates the concerns raised with the 
-regards to api inbalances (read_lock_bh -> read_unlock+local_bh_enable) 
-
-this is on top of 3.12.6-rt9 with 
-timers-do-not-raise-softirq-unconditionally.patch removed
-
-No change of functional behavior 
-
-Tested-by: Carsten Emde <C.Emde@osadl.org>
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
----
- include/linux/rwlock_rt.h |    6 ------
- kernel/rt.c               |    9 +++++----
- 2 files changed, 5 insertions(+), 10 deletions(-)
-
-diff --git a/include/linux/rwlock_rt.h b/include/linux/rwlock_rt.h
-index a276fae..e85a5df 100644
---- a/include/linux/rwlock_rt.h
-+++ b/include/linux/rwlock_rt.h
-@@ -33,7 +33,6 @@ extern void __rt_rwlock_init(rwlock_t *rwlock, char *name, struct lock_class_key
- #define read_lock_irqsave(lock, flags)			\
- 	do {						\
- 		typecheck(unsigned long, flags);	\
--		migrate_disable();			\
- 		flags = rt_read_lock_irqsave(lock);	\
- 	} while (0)
- 
-@@ -45,14 +44,12 @@ extern void __rt_rwlock_init(rwlock_t *rwlock, char *name, struct lock_class_key
- 
- #define read_lock(lock)					\
- 	do {						\
--		migrate_disable();			\
- 		rt_read_lock(lock);			\
- 	} while (0)
- 
- #define read_lock_bh(lock)				\
- 	do {						\
- 		local_bh_disable();			\
--		migrate_disable();			\
- 		rt_read_lock(lock);			\
- 	} while (0)
- 
-@@ -74,13 +71,11 @@ extern void __rt_rwlock_init(rwlock_t *rwlock, char *name, struct lock_class_key
- #define read_unlock(lock)				\
- 	do {						\
- 		rt_read_unlock(lock);			\
--		migrate_enable();			\
- 	} while (0)
- 
- #define read_unlock_bh(lock)				\
- 	do {						\
- 		rt_read_unlock(lock);			\
--		migrate_enable();			\
- 		local_bh_enable();			\
- 	} while (0)
- 
-@@ -104,7 +99,6 @@ extern void __rt_rwlock_init(rwlock_t *rwlock, char *name, struct lock_class_key
- 		typecheck(unsigned long, flags);	\
- 		(void) flags;				\
- 		rt_read_unlock(lock);			\
--		migrate_enable();			\
- 	} while (0)
- 
- #define write_unlock_irqrestore(lock, flags) \
-diff --git a/kernel/rt.c b/kernel/rt.c
-index c43c923..5d17727 100644
---- a/kernel/rt.c
-+++ b/kernel/rt.c
-@@ -211,19 +211,18 @@ int __lockfunc rt_read_trylock(rwlock_t *rwlock)
- 	 * but not when read_depth == 0 which means that the lock is
- 	 * write locked.
- 	 */
--	migrate_disable();
- 	if (rt_mutex_owner(lock) != current) {
- 		ret = rt_mutex_trylock(lock);
--		if (ret)
-+		if (ret) {
- 			rwlock_acquire(&rwlock->dep_map, 0, 1, _RET_IP_);
-+			migrate_disable();
-+		}
- 	} else if (!rwlock->read_depth) {
- 		ret = 0;
- 	}
- 
- 	if (ret)
- 		rwlock->read_depth++;
--	else
--		migrate_enable();
- 
- 	return ret;
- }
-@@ -247,6 +246,7 @@ void __lockfunc rt_read_lock(rwlock_t *rwlock)
- 	if (rt_mutex_owner(lock) != current) {
- 		rwlock_acquire(&rwlock->dep_map, 0, 0, _RET_IP_);
- 		__rt_spin_lock(lock);
-+		migrate_disable();
- 	}
- 	rwlock->read_depth++;
- }
-@@ -268,6 +268,7 @@ void __lockfunc rt_read_unlock(rwlock_t *rwlock)
- 	if (--rwlock->read_depth == 0) {
- 		rwlock_release(&rwlock->dep_map, 1, _RET_IP_);
- 		__rt_spin_unlock(&rwlock->lock);
-+		migrate_enable();
- 	}
- }
- EXPORT_SYMBOL(rt_read_unlock);
--- 
-1.7.2.5
-
+--
+Best Regards,
+Xiubo
