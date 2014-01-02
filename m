@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751420AbaABLM5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 06:12:57 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:55870 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744AbaABLM4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 06:12:56 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Xiubo Li <Li.Xiubo@freescale.com>, thierry.reding@gmail.com,
-        shawn.guo@linaro.org, linux-pwm@vger.kernel.org,
-        linux-doc@vger.kernel.org, Alison Wang <b18965@freescale.com>,
-        linux-kernel@vger.kernel.org, Jingchang Lu <b35083@freescale.com>
-Subject: Re: [PATCHv8 1/4] pwm: Add Freescale FTM PWM driver support
-Date: Thu, 02 Jan 2014 12:12:50 +0100
-Message-ID: <3716216.GQHQhxMFvx@wuerfel>
-User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <1388656624-26570-2-git-send-email-Li.Xiubo@freescale.com>
-References: <1388656624-26570-1-git-send-email-Li.Xiubo@freescale.com> <1388656624-26570-2-git-send-email-Li.Xiubo@freescale.com>
+	id S1751458AbaABLN5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 06:13:57 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:2934 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750797AbaABLN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 06:13:56 -0500
+X-IronPort-AV: E=Sophos;i="4.95,590,1384300800"; 
+   d="scan'208";a="87000073"
+Message-ID: <52C549F1.8070005@citrix.com>
+Date: Thu, 2 Jan 2014 11:13:53 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:1YRYQ4En3go5DimOZZ/HCWKb8Rr1Pm0h8rNTpU9Tov4
- S5vpWqpc7Rp0mV7usBWPrMQKnkXS6Jnqqkj+NJNmlmOvXFLGyn
- 2ErQ8t1Y8QmU6KIQntmK7gFrwGPfdUzZdEiY+LHazNk0lLfMPQ
- 8glaIbI3dcm5Q7SISMWRT+UIbo9qU64j6yYtal/nsblLRRyNC2
- vVtHSQdnhUwRtnKE9HU9DQC+r1+OJ/sYS2lFOC1Ea5h2yrCmy9
- 3fJuPtQS3RjRFn6hyImUThaXi+vIioTcOvFd4ic7kxruLb8ZhM
- CyDejiOLxanjLraDOaT3DaCNNhvNlZl0lYn9p3t7drCXfFCuhG
- HaZwVxOTmtq8DA5aV38s=
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
+        <boris.ostrovsky@oracle.com>, <stefano.stabellini@eu.citrix.com>,
+        <mukesh.rathor@oracle.com>
+Subject: Re: [PATCH v12 02/18] xen/pvh/x86: Define what an PVH guest is (v2).
+References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com> <1388550945-25499-3-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1388550945-25499-3-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 02 January 2014 17:57:01 Xiubo Li wrote:
-> +static inline u32 ftm_readl(bool big_endian, const void __iomem *addr)
-> +{
-> +       u32 val;
-> +
-> +       val = __raw_readl(addr);
-> +
-> +       if (likely(big_endian))
-> +               val = be32_to_cpu((__force __be32)val);
-> +       else
-> +               val = le32_to_cpu((__force __le32)val);
-> +       rmb();
-> +
-> +       return val;
-> +}
-> +
-> +static inline void ftm_writel(bool big_endian, u32 val, void __iomem *addr)
-> +{
-> +       wmb();
-> +       if (likely(big_endian))
-> +               val = (__force u32)cpu_to_be32(val);
-> +       else
-> +               val = (__force u32)cpu_to_le32(val);
-> +
-> +       __raw_writel(val, addr);
+On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
+> From: Mukesh Rathor <mukesh.rathor@oracle.com>
+> 
+> Which is a PV guest with auto page translation enabled
+> and with vector callback. It is a cross between PVHVM and PV.
+> 
+> The Xen side defines PVH as (from docs/misc/pvh-readme.txt,
+> with modifications):
+> 
+> "* the guest uses auto translate:
+>  - p2m is managed by Xen
+>  - pagetables are owned by the guest
+>  - mmu_update hypercall not available
+> * it uses event callback and not vlapic emulation,
+> * IDT is native, so set_trap_table hcall is also N/A for a PVH guest.
+> 
+> For a full list of hcalls supported for PVH, see pvh_hypercall64_table
+> in arch/x86/hvm/hvm.c in xen.  From the ABI prespective, it's mostly a
+> PV guest with auto translate, although it does use hvm_op for setting
+> callback vector."
+> 
+> We don't have yet a Kconfig entry setup as we do not
+> have all the parts ready for it - so we piggyback
+> on the PVHVM config option. This scaffolding will
+> be removed later.
+> 
+> Note that on ARM the concept of PVH is non-existent. As Ian
+> put it: "an ARM guest is neither PV nor HVM nor PVHVM.
+> It's a bit like PVH but is different also (it's further towards
+> the H end of the spectrum than even PVH).". As such these
+> options (PVHVM, PVH) are never enabled nor seen on ARM
+> compilations.
+[...]
+> --- a/include/xen/xen.h
+> +++ b/include/xen/xen.h
+> @@ -29,4 +29,20 @@ extern enum xen_domain_type xen_domain_type;
+>  #define xen_initial_domain()	(0)
+>  #endif	/* CONFIG_XEN_DOM0 */
+>  
+> +#ifdef CONFIG_XEN_PVHVM
+> +/* Temporarily under XEN_PVHVM, but will be under CONFIG_XEN_PVH */
 
-These functions definitely need some comments regarding why this is necessary.
-I assume that after 8 rounds of review (that I did not read) this has been
-discussed already, so please explain above the functions why you don't just
-use ioread32be/ioread32 and iowrite32be/iowrite32 here.
+This is a bit confusing.  I think it would be better to add the
+CONFIG_XEN_PVH option with this patch but make it default n and not
+possible to enable.
 
-Also all callers seem to be of the style
-
-       val = ftm_readl(fpc->big_endian, fpc->base + FTM_SC);
-
-so I wonder why you don't just pass the fpc pointer to the function
-and make it
-
-static inline void ftm_readl(struct fsl_pwm_chip *fpc, unsigned long reg, u32 val)
-{
-	if (fpc->big_endian)
-		iowrite32be(val, fpc->base + reg);
-	else
-		iowrite32(val, fpc->base + reg);
-}
-
-	Arnd
+David
