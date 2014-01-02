@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603AbaABMQk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 07:16:40 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:45698 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832AbaABMQh (ORCPT
+	id S1752647AbaABMRB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 07:17:01 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:58879 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568AbaABMIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 07:16:37 -0500
-Date: Thu, 2 Jan 2014 15:16:26 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Chase Southwood <chase.southwood@yahoo.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, abbotti@mev.co.uk
-Subject: Re: [PATCH] Staging: comedi: replace printk() calls with dev_dbg()
- in pcmmio.c
-Message-ID: <20140102121626.GB28413@mwanda>
-References: <1388222032-3691-1-git-send-email-chase.southwood@yahoo.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1388222032-3691-1-git-send-email-chase.southwood@yahoo.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Thu, 2 Jan 2014 07:08:07 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH, RFC 04/30] swim3: fix interruptible_sleep_on race
+Date: Thu,  2 Jan 2014 13:07:28 +0100
+Message-Id: <1388664474-1710039-5-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1388664474-1710039-1-git-send-email-arnd@arndb.de>
+References: <1388664474-1710039-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:aHw5RgM1BHIKCO+N/US3nDvq0zLw9YxKXZ6/cXeC4yk
+ WgpxXd3VryLRfFDc4S9AcQfipaIfmI97ON8rCnlKqGMoDktyEQ
+ 4xnki6RVHfAhr8s1YN6tmVq7Y7xUKFGfqJAUT7TAW0uWNTON5Y
+ Jvei8FSmmnb6LIrFfcyByNFNl4JrOi3NKFqfGfz1f3tKqx72vi
+ rxUwpgMSPhNXTT2MAUnh8CcOwJwxn9ziRPUIBFCYOZO3c9CVrh
+ P0yVtUipOJLQpi1LYdP3vR+i1EEFEDbYUlycZEoIkN/YTuYSas
+ b0yPIIqwGTdJ45PM4zXo8OGi+ILhaSeFBwrgJgsdnFGv/xIj9Q
+ OyhHSTvqP8CWT9N2UgglwUuZrlK33AhZ/gF09kDM0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 28, 2013 at 03:13:52AM -0600, Chase Southwood wrote:
-> From: Chase Southwood <chase.southwood@yahoo.com>
+interruptible_sleep_on is racy and going away. This replaces the one
+caller in the swim3 driver with the equivalent race-free
+wait_event_interruptible call. Since we're here already, this
+also fixes the case where we get interrupted from atomic context,
+which used to just spin in the loop.
 
-We get this from your email.  It's not needed unless you are forwarding
-a patch from someone else.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Jens Axboe <axboe@kernel.dk>
+---
+ drivers/block/swim3.c | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
-> 
-> This is a patch for pcmmio.c that changes several printk() calls to dev_dbg() or dev_err() to fix checkpatch.pl warnings.  Patched from 3.13-rc5.
-
-Line wrap the description at 72 characters.
-
-Don't put "Patched from 3.13-rc5." in the patch description because we
-don't want it to be a part of the permanent change description.  Also
-you should be doing these against linux-next anyway.
-
-> 
-> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
-> ---
->  drivers/staging/comedi/drivers/pcmmio.c | 23 +++++++++++++----------
->  1 file changed, 13 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/staging/comedi/drivers/pcmmio.c b/drivers/staging/comedi/drivers/pcmmio.c
-> index 14cee3a..8a567c9 100644
-> --- a/drivers/staging/comedi/drivers/pcmmio.c
-> +++ b/drivers/staging/comedi/drivers/pcmmio.c
-> @@ -252,7 +252,8 @@ static int pcmmio_dio_insn_bits(struct comedi_device *dev,
->  
->  #ifdef DAMMIT_ITS_BROKEN
->  	/* DEBUG */
-> -	printk(KERN_DEBUG "write mask: %08x  data: %08x\n", data[0], data[1]);
-> +	dev_dbg(dev->class_dev, "write mask: %08x  data: %08x\n",
-> +			data[0], data[1]);
-
-Just delete everything to do with DAMMIT_ITS_BROKEN.
-
-regards,
-dan carpenter
+diff --git a/drivers/block/swim3.c b/drivers/block/swim3.c
+index 20e061c..c74f7b5 100644
+--- a/drivers/block/swim3.c
++++ b/drivers/block/swim3.c
+@@ -30,6 +30,7 @@
+ #include <linux/mutex.h>
+ #include <linux/module.h>
+ #include <linux/spinlock.h>
++#include <linux/wait.h>
+ #include <asm/io.h>
+ #include <asm/dbdma.h>
+ #include <asm/prom.h>
+@@ -840,14 +841,17 @@ static int grab_drive(struct floppy_state *fs, enum swim_state state,
+ 	spin_lock_irqsave(&swim3_lock, flags);
+ 	if (fs->state != idle && fs->state != available) {
+ 		++fs->wanted;
+-		while (fs->state != available) {
++		/* this will enable irqs in order to sleep */
++		if (!interruptible)
++			wait_event_lock_irq(fs->wait,
++                                        fs->state == available,
++                                        swim3_lock);
++		else if (wait_event_interruptible_lock_irq(fs->wait,
++					fs->state == available,
++					swim3_lock)) {
++			--fs->wanted;
+ 			spin_unlock_irqrestore(&swim3_lock, flags);
+-			if (interruptible && signal_pending(current)) {
+-				--fs->wanted;
+-				return -EINTR;
+-			}
+-			interruptible_sleep_on(&fs->wait);
+-			spin_lock_irqsave(&swim3_lock, flags);
++			return -EINTR;
+ 		}
+ 		--fs->wanted;
+ 	}
+-- 
+1.8.3.2
 
