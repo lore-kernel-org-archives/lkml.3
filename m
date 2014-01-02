@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751265AbaABL0H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 06:26:07 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:40115 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746AbaABL0F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 06:26:05 -0500
-From: SeongJae Park <sj38.park@gmail.com>
-To: mgorman@suse.de, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        SeongJae Park <sj38.park@gmail.com>
-Subject: [PATCH] mm: page_alloc: use enum instead of number for migratetype
-Date: Thu,  2 Jan 2014 20:25:22 +0900
-Message-Id: <1388661922-10957-1-git-send-email-sj38.park@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1751443AbaABL2A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 06:28:00 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:45402 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750748AbaABL17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 06:27:59 -0500
+X-IronPort-AV: E=Sophos;i="4.95,590,1384300800"; 
+   d="scan'208";a="89191828"
+Message-ID: <52C54D3C.4050101@citrix.com>
+Date: Thu, 2 Jan 2014 11:27:56 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
+        <boris.ostrovsky@oracle.com>, <stefano.stabellini@eu.citrix.com>,
+        <mukesh.rathor@oracle.com>
+Subject: Re: [PATCH v12 07/18] xen/pvh: Setup up shared_info.
+References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com> <1388550945-25499-8-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1388550945-25499-8-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using enum instead of number for migratetype everywhere would be better
-for reading and understanding.
+On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
+> From: Mukesh Rathor <mukesh.rathor@oracle.com>
+> 
+> For PVHVM the shared_info structure is provided via the same way
+> as for normal PV guests (see include/xen/interface/xen.h).
+> 
+> That is during bootup we get 'xen_start_info' via the %esi register
+> in startup_xen. Then later we extract the 'shared_info' from said
+> structure (in xen_setup_shared_info) and start using it.
+> 
+> The 'xen_setup_shared_info' is all setup to work with auto-xlat
+> guests, but there are two functions which it calls that are not:
+> xen_setup_mfn_list_list and xen_setup_vcpu_info_placement.
+> This patch modifies those to work in auto-xlat mode.
+[...]
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1147,8 +1147,9 @@ void xen_setup_vcpu_info_placement(void)
+>  		xen_vcpu_setup(cpu);
+>  
+>  	/* xen_vcpu_setup managed to place the vcpu_info within the
+> -	   percpu area for all cpus, so make use of it */
+> -	if (have_vcpu_info_placement) {
+> +	 * percpu area for all cpus, so make use of it. Note that for
+> +	 * PVH we want to use native IRQ mechanism. */
+> +	if (have_vcpu_info_placement && !xen_pvh_domain()) {
+>  		pv_irq_ops.save_fl = __PV_IS_CALLEE_SAVE(xen_save_fl_direct);
+>  		pv_irq_ops.restore_fl = __PV_IS_CALLEE_SAVE(xen_restore_fl_direct);
+>  		pv_irq_ops.irq_disable = __PV_IS_CALLEE_SAVE(xen_irq_disable_direct);
 
-Signed-off-by: SeongJae Park <sj38.park@gmail.com>
----
- mm/page_alloc.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+Should this be in a separate patch: "xen/pvh: use native irq ops"?
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 5bcbca5..08f6ed7 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -646,7 +646,7 @@ static inline int free_pages_check(struct page *page)
- static void free_pcppages_bulk(struct zone *zone, int count,
- 					struct per_cpu_pages *pcp)
- {
--	int migratetype = 0;
-+	int migratetype = MIGRATE_UNMOVABLE;
- 	int batch_free = 0;
- 	int to_free = count;
- 
-@@ -667,7 +667,7 @@ static void free_pcppages_bulk(struct zone *zone, int count,
- 		do {
- 			batch_free++;
- 			if (++migratetype == MIGRATE_PCPTYPES)
--				migratetype = 0;
-+				migratetype = MIGRATE_UNMOVABLE;
- 			list = &pcp->lists[migratetype];
- 		} while (list_empty(list));
- 
-@@ -4158,7 +4158,9 @@ static void pageset_init(struct per_cpu_pageset *p)
- 
- 	pcp = &p->pcp;
- 	pcp->count = 0;
--	for (migratetype = 0; migratetype < MIGRATE_PCPTYPES; migratetype++)
-+
-+	for (migratetype = MIGRATE_UNMOVABLE; migratetype < MIGRATE_PCPTYPES;
-+						migratetype++)
- 		INIT_LIST_HEAD(&pcp->lists[migratetype]);
- }
- 
--- 
-1.8.1.2
-
+David
