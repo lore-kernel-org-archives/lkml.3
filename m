@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751445AbaABIiQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 03:38:16 -0500
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:61649
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750711AbaABIiP (ORCPT
+	id S1751541AbaABIip (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 03:38:45 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:44900 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751294AbaABIio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 03:38:15 -0500
-X-IronPort-AV: E=Sophos;i="4.95,589,1384297200"; 
-   d="scan'208";a="43218525"
-Date: Thu, 2 Jan 2014 09:38:12 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Ding Tianhong <dingtianhong@huawei.com>
-cc: Julia Lawall <julia.lawall@lip6.fr>, Joe Perches <joe@perches.com>,
-        Jay Vosburgh <fubar@us.ibm.com>, Veaceslav Falico <vfalico@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND net-next 1/7] bonding: use ether_addr_equal_unaligned
- for bond addr compare
-In-Reply-To: <52C52180.2030707@huawei.com>
-Message-ID: <alpine.DEB.2.02.1401020937490.2182@localhost6.localdomain6>
-References: <52C4BD16.5010702@huawei.com> <alpine.DEB.2.02.1401020839000.2182@localhost6.localdomain6> <52C52180.2030707@huawei.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 2 Jan 2014 03:38:44 -0500
+Message-ID: <52C52592.1020101@free-electrons.com>
+Date: Thu, 02 Jan 2014 09:38:42 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Organization: Free Electrons
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1867944953-1388651893=:2182"
+To: Marek Vasut <marex@denx.de>, Jonathan Cameron <jic23@kernel.org>
+CC: lars@metafoo.de, harald@ccbib.org, hector.palacios@digi.com,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv5 RESEND 4/4] iio: mxs-lradc: convert is_divided to a
+ bitmap
+References: <1387820884-28140-1-git-send-email-alexandre.belloni@free-electrons.com> <1387820884-28140-5-git-send-email-alexandre.belloni@free-electrons.com> <52C426C7.8090706@kernel.org> <201401012031.52593.marex@denx.de>
+In-Reply-To: <201401012031.52593.marex@denx.de>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323328-1867944953-1388651893=:2182
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-
-On Thu, 2 Jan 2014, Ding Tianhong wrote:
-
-> On 2014/1/2 15:39, Julia Lawall wrote:
-> > Are the casts needed
+On 01/01/2014 20:31, Marek Vasut wrote:
+> On Wednesday, January 01, 2014 at 03:31:35 PM, Jonathan Cameron wrote:
+>> On 23/12/13 17:48, Alexandre Belloni wrote:
+>>> mxs_lradc.is_divided was an unsigned long array. Convert it to a bitmap
+>>> to save some memory.
+>>>
+>>> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+>>
+>> Hi Alexandre,
+>>
+>> I've applied this patch, but would have prefered that you post this one
+>> in separate series. It is a perfectly valid cleanup, but introducing it
+>> late in a series leads to uneven reviewing.  Anyhow, as it's trivial and
+>> I doubt Marek will mind, I've applied it anyway in a new years burst of
+>> trying to clear the outstanding stuff in my in box ;)
+>>
+>> Applied to the togreg branch of iio.git
+>>
+>> Thanks,
 > 
-> 
-> Yes, otherwise the warming will report:
-> 
-> /net-next/drivers/net/bonding/bond_3ad.c:427: warning: passing argument 1 of ‘ether_addr_equal_64bits’ from incompatible pointer type
+> I dont mind, thanks for geting these in. And happy new year to you guys :)
 
-Is it necessary for this driver to use a different type from everyone 
-else?
+Thanks Jonathan !
 
-julia
---8323328-1867944953-1388651893=:2182--
+I wish everyone the best for this new year !
+
+
+
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
