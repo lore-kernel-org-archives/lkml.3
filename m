@@ -1,389 +1,466 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751552AbaABNnh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 08:43:37 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:51690 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993AbaABNne (ORCPT
+	id S1751606AbaABNqq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 08:46:46 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:38199 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740AbaABNqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 08:43:34 -0500
+	Thu, 2 Jan 2014 08:46:44 -0500
+Date: Thu, 2 Jan 2014 16:46:35 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Ivaylo DImitrov <ivo.g.dimitrov.75@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Ivaylo Dimitrov <freemangordon@abv.bg>,
+        pavel@ucw.cz, pali.rohar@gmail.com
+Subject: Re: [PATCH] Staging: tidspbridge: Use hashtable implementation
+Message-ID: <20140102134635.GD28413@mwanda>
+References: <1387992592-3208-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <52C2A113.507@ti.com>
-References: <1388408823-4963-1-git-send-email-yuvaraj.cd@samsung.com>
-	<1388408823-4963-2-git-send-email-yuvaraj.cd@samsung.com>
-	<52C2A113.507@ti.com>
-Date: Thu, 2 Jan 2014 19:13:31 +0530
-Message-ID: <CAKuRcOLm0paFVs=O_U3ebQ4MgZ14Mhf9Eus3y3Xs+Rc0J-r__A@mail.gmail.com>
-Subject: Re: [PATCH V4 1/2] Phy: Exynos: Add Exynos5250 sata phy driver
-From: Yuvaraj Kumar <yuvaraj.cd@gmail.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        linux-kernel@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        sunil joshi <joshi@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>,
-        Girish K S <ks.giri@samsung.com>,
-        Vasanth Ananthan <vasanth.a@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387992592-3208-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 31, 2013 at 4:18 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
-> Hi Yuvaraj,
->
->
-> On Monday 30 December 2013 06:37 PM, Yuvaraj Kumar C D wrote:
->>
->> This patch adds the sata phy driver for Exynos5250.Exynos5250 sata
->> phy comprises of CMU and TRSV blocks which are of I2C register Map.
->> So this patch also adds a i2c client driver, which is used configure
->> the CMU and TRSV block of exynos5250 SATA PHY.
->>
->> This patch incorporates the generic phy framework to deal with sata
->> phy.
->>
->> This patch depends on the below patches
->>         [1].drivers: phy: add generic PHY framework
->>                 by Kishon Vijay Abraham I<kishon@ti.com>
->>         [2].ata: ahci_platform: Manage SATA PHY
->>                 by Roger Quadros <rogerq@ti.com>
->>
->> Signed-off-by: Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
->> Signed-off-by: Girish K S <ks.giri@samsung.com>
->> Signed-off-by: Vasanth Ananthan <vasanth.a@samsung.com>
->> ---
->> Changes from V3:
->>         1.Moved devm_phy_create before to devm_phy_provider_register.
->>
->> Changes from V2:
->>         1.Removed of_match_table
->>         2.Moved to syscon interface for PMU handling.
->>
->> Changes from V1:
->>         1.Adapted to latest version of Generic PHY framework
->>         2.Removed exynos_sata_i2c_remove function.
->>
->>
->>   drivers/phy/Kconfig               |   11 ++
->>   drivers/phy/Makefile              |    1 +
->>   drivers/phy/exynos5250_phy_i2c.c  |   44 ++++++++
->>   drivers/phy/sata_phy_exynos5250.c |  220
->> +++++++++++++++++++++++++++++++++++++
->>   drivers/phy/sata_phy_exynos5250.h |   35 ++++++
->>   5 files changed, 311 insertions(+)
->>   create mode 100644 drivers/phy/exynos5250_phy_i2c.c
->>   create mode 100644 drivers/phy/sata_phy_exynos5250.c
->>   create mode 100644 drivers/phy/sata_phy_exynos5250.h
->>
->> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
->> index d0611b8..6ea124d 100644
->> --- a/drivers/phy/Kconfig
->> +++ b/drivers/phy/Kconfig
->> @@ -57,4 +57,15 @@ config PHY_EXYNOS_DP_VIDEO
->>         help
->>           Support for Display Port PHY found on Samsung EXYNOS SoCs.
->>
->> +config EXYNOS5250_SATA_PHY
->> +       tristate "Exynos5250 Sata SerDes/PHY driver"
->> +       depends on SOC_EXYNOS5250
->> +       select GENERIC_PHY
->> +       select MFD_SYSCON if ARCH_EXYNOS5
->> +       help
->> +         Enable this to support SATA SerDes/Phy found on Samsung's
->> +         Exynos5250 based SoCs.This SerDes/Phy supports SATA 1.5 Gb/s,
->> +         SATA 3.0 Gb/s, SATA 6.0 Gb/s speeds.It supports one SATA host
->> +         port to accept one SATA device.
->> +
->>   endmenu
->> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
->> index 4e4adc9..b73eb73 100644
->> --- a/drivers/phy/Makefile
->> +++ b/drivers/phy/Makefile
->> @@ -8,3 +8,4 @@ obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)     +=
->> phy-exynos-mipi-video.o
->>   obj-$(CONFIG_PHY_MVEBU_SATA)          += phy-mvebu-sata.o
->>   obj-$(CONFIG_OMAP_USB2)                       += phy-omap-usb2.o
->>   obj-$(CONFIG_TWL4030_USB)             += phy-twl4030-usb.o
->> +obj-$(CONFIG_EXYNOS5250_SATA_PHY)      += sata_phy_exynos5250.o
->> exynos5250_phy_i2c.o
->> diff --git a/drivers/phy/exynos5250_phy_i2c.c
->> b/drivers/phy/exynos5250_phy_i2c.c
->> new file mode 100644
->> index 0000000..c0c1150
->> --- /dev/null
->> +++ b/drivers/phy/exynos5250_phy_i2c.c
->> @@ -0,0 +1,44 @@
->> +/*
->> + * Copyright (C) 2013 Samsung Electronics Co.Ltd
->> + * Author:
->> + *     Yuvaraj C D <yuvaraj.cd@samsung.com>
->> + *
->> + * This program is free software; you can redistribute  it and/or modify
->> it
->> + * under  the terms of  the GNU General  Public License as published by
->> the
->> + * Free Software Foundation;  either version 2 of the  License, or (at
->> your
->> + * option) any later version.
->> + *
->> + */
->> +
->> +#include <linux/i2c.h>
->> +#include <linux/kernel.h>
->> +#include <linux/module.h>
->> +#include "sata_phy_exynos5250.h"
->> +
->> +static int exynos_sata_i2c_probe(struct i2c_client *client,
->> +               const struct i2c_device_id *i2c_id)
->> +{
->> +       int ret = 0;
->> +       ret = sataphy_attach_i2c_client(client);
->> +       if (ret < 0)
->> +               return ret;
->> +
->> +       dev_info(&client->adapter->dev,
->> +               "attached %s into sataphy i2c adapter successfully\n",
->> +               client->name);
->> +
->> +       return ret;
->> +}
->> +
->> +static const struct i2c_device_id sataphy_i2c_device_match[] = {
->> +       { "exynos-sataphy-i2c", 0 },
->> +};
->> +
->> +struct i2c_driver sataphy_i2c_driver = {
->> +       .probe          = exynos_sata_i2c_probe,
->> +       .id_table       = sataphy_i2c_device_match,
->> +       .driver   = {
->> +               .name = "exynos-sataphy-i2c",
->> +               .owner = THIS_MODULE,
->> +               },
->> +};
->> diff --git a/drivers/phy/sata_phy_exynos5250.c
->> b/drivers/phy/sata_phy_exynos5250.c
->> new file mode 100644
->> index 0000000..0765863
->> --- /dev/null
->> +++ b/drivers/phy/sata_phy_exynos5250.c
->> @@ -0,0 +1,220 @@
->> +/*
->> + * Samsung SATA SerDes(PHY) driver
->> + *
->> + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
->> + * Authors: Girish K S <ks.giri@samsung.com>
->> + *         Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->> +
->> +#include <linux/clk.h>
->> +#include <linux/delay.h>
->> +#include <linux/io.h>
->> +#include <linux/i2c.h>
->> +#include <linux/kernel.h>
->> +#include <linux/module.h>
->> +#include <linux/of.h>
->> +#include <linux/of_address.h>
->> +#include <linux/phy/phy.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/regmap.h>
->> +#include <linux/spinlock.h>
->> +#include <linux/mfd/syscon.h>
->> +#include "sata_phy_exynos5250.h"
->> +
->> +static struct i2c_client *phy_i2c_client;
->> +
->> +struct exynos_sata_phy {
->> +       struct phy *phy;
->> +       struct clk *phyclk;
->> +       void __iomem *regs;
->> +       void __iomem *pmureg;
->> +};
->> +
->> +static bool wait_for_reg_status(void __iomem *base, u32 reg, u32
->> checkbit,
->> +                               u32 status)
->> +{
->> +       unsigned long timeout = jiffies + usecs_to_jiffies(1000);
->> +       while (time_before(jiffies, timeout)) {
->> +               if ((readl(base + reg) & checkbit) == status)
->> +                       return true;
->> +       }
->> +       return false;
->> +}
->> +
->> +int sataphy_attach_i2c_client(struct i2c_client *sata_phy)
->> +{
->> +       if (!sata_phy)
->> +               return -EPROBE_DEFER;
->> +       else
->> +               phy_i2c_client = sata_phy;
->> +
->> +       return 0;
->> +}
->> +
->> +static int exynos_sata_phy_power_on(struct phy *phy)
->> +{
->> +       struct exynos_sata_phy *sata_phy = phy_get_drvdata(phy);
->> +
->> +       if (sata_phy->pmureg)
->> +               regmap_update_bits(sata_phy->pmureg,
->> SATAPHY_CONTROL_OFFSET,
->> +                       EXYNOS5_SATAPHY_PMU_ENABLE, EXYNOS_SATA_PHY_EN);
->> +
->> +       return 0;
->> +}
->> +
->> +static int exynos_sata_phy_power_off(struct phy *phy)
->> +{
->> +       struct exynos_sata_phy *sata_phy = phy_get_drvdata(phy);
->> +
->> +       if (sata_phy->pmureg)
->> +               regmap_update_bits(sata_phy->pmureg,
->> SATAPHY_CONTROL_OFFSET,
->> +                       EXYNOS5_SATAPHY_PMU_ENABLE, ~EXYNOS_SATA_PHY_EN);
->> +
->> +       return 0;
->> +}
->> +
->> +static int exynos_sata_phy_init(struct phy *phy)
->> +{
->> +       u32 val = 0;
->> +       int ret = 0;
->> +       u8 buf[] = { 0x3A, 0x0B };
->> +       struct exynos_sata_phy *sata_phy = phy_get_drvdata(phy);
->> +
->> +       if (sata_phy->pmureg)
->> +               regmap_update_bits(sata_phy->pmureg,
->> SATAPHY_CONTROL_OFFSET,
->> +                       EXYNOS5_SATAPHY_PMU_ENABLE, EXYNOS_SATA_PHY_EN);
->> +
->> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
->> +
->> +       val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
->> +       val |= 0xFF;
->> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
->> +
->> +       val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
->> +       val |= LINK_RESET;
->> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
->> +
->> +       val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
->> +       val |= RESET_CMN_RST_N;
->> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
->> +       val = readl(sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
->> +       val &= ~PHCTRLM_REF_RATE;
->> +       writel(val, sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
->> +
->> +       /* High speed enable for Gen3 */
->> +       val = readl(sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
->> +       val |= PHCTRLM_HIGH_SPEED;
->> +       writel(val, sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
->> +
->> +       val |= CTRL0_P0_PHY_CALIBRATED_SEL | CTRL0_P0_PHY_CALIBRATED;
->> +       writel(val, sata_phy->regs + EXYNOS5_SATA_CTRL0);
->> +
->> +       writel(0x2, sata_phy->regs + EXYNOS5_SATA_MODE0);
->> +
->> +       ret = i2c_master_send(phy_i2c_client, buf, sizeof(buf));
->> +       if (ret < 0)
->> +               return -ENXIO;
->> +
->> +       /* release cmu reset */
->> +       val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
->> +       val &= ~RESET_CMN_RST_N;
->> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
->> +
->> +       val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
->> +       val |= RESET_CMN_RST_N;
->> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
->> +
->> +       return (wait_for_reg_status(sata_phy->regs,
->> EXYNOS5_SATA_PHSATA_STATM,
->> +               PHSTATM_PLL_LOCKED, 1)) ? 0 : -EINVAL;
->> +
->> +}
->> +
->> +static struct phy_ops exynos_sata_phy_ops = {
->> +       .init           = exynos_sata_phy_init,
->> +       .power_on       = exynos_sata_phy_power_on,
->> +       .power_off      = exynos_sata_phy_power_off,
->> +       .owner          = THIS_MODULE,
->> +};
->> +
->> +static int exynos_sata_phy_probe(struct platform_device *pdev)
->> +{
->> +       struct exynos_sata_phy *sata;
->> +       struct device *dev = &pdev->dev;
->> +       struct resource *res;
->> +       struct phy_provider *phy_provider;
->> +       int ret = 0;
->> +
->> +       sata = devm_kzalloc(dev, sizeof(*sata), GFP_KERNEL);
->> +       if (!sata)
->> +               return -ENOMEM;
->> +
->> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> +
->> +       sata->regs = devm_ioremap_resource(dev, res);
->> +       if (IS_ERR(sata->regs))
->> +               return PTR_ERR(sata->regs);
->> +
->> +       sata->pmureg = syscon_regmap_lookup_by_phandle(dev->of_node,
->> +                                       "samsung,syscon-phandle");
->> +       if (!sata->pmureg) {
->> +               dev_err(dev, "syscon regmap lookup failed.\n");
->> +               return PTR_ERR(sata->pmureg);
->> +       }
->> +       dev_set_drvdata(dev, sata);
->> +
->> +       if (i2c_add_driver(&sataphy_i2c_driver)) {
->> +               dev_err(dev, "failed to register sataphy i2c driver\n");
->> +               return -ENOENT;
->> +       }
->> +
->> +       sata->phyclk = devm_clk_get(dev, "sata_phyctrl");
->> +       if (IS_ERR(sata->phyclk)) {
->> +               dev_err(dev, "failed to get clk for PHY\n");
->> +               return PTR_ERR(sata->phyclk);
->> +       }
->> +
->> +       ret = clk_prepare_enable(sata->phyclk);
->> +       if (ret < 0) {
->> +               dev_err(dev, "failed to enable source clk\n");
->> +               return ret;
->> +       }
->> +
->> +       sata->phy = devm_phy_create(dev, &exynos_sata_phy_ops, NULL);
->> +       if (IS_ERR(sata->phy)) {
->> +               dev_err(dev, "failed to create PHY\n");
->> +               return PTR_ERR(sata->phy);
->> +       }
->> +
->> +       phy_provider = devm_of_phy_provider_register(dev,
->> +                                       of_phy_simple_xlate);
->> +       if (IS_ERR(phy_provider))
->> +               return PTR_ERR(phy_provider);
->> +
->> +       phy_set_drvdata(sata->phy, sata);
->
->
-> huh.. phy_provider_register should be after phy_set_drvdata.
-Sorry, I misunderstood.I will address this with the Bartlomiej
-Zolnierkiewicz comments in the next version.
->
-> Cheers
-> Kishon
+Minor nits.  Nothing major.
+
+On Wed, Dec 25, 2013 at 07:29:52PM +0200, Ivaylo DImitrov wrote:
+> From: Ivaylo Dimitrov <freemangordon@abv.bg>
+> 
+> Use upstream hashtable implementation instead of generic code
+> 
+> Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
+
+Send from the same email you are using to Sign so we can at least
+verify that small thing.
+
+> ---
+>  drivers/staging/tidspbridge/gen/gh.c               |  141 +++++++-------------
+>  drivers/staging/tidspbridge/include/dspbridge/gh.h |    6 +-
+>  drivers/staging/tidspbridge/pmgr/dbll.c            |   47 ++++---
+>  3 files changed, 78 insertions(+), 116 deletions(-)
+> 
+> diff --git a/drivers/staging/tidspbridge/gen/gh.c b/drivers/staging/tidspbridge/gen/gh.c
+> index 25eaef7..41a0a4f 100644
+> --- a/drivers/staging/tidspbridge/gen/gh.c
+> +++ b/drivers/staging/tidspbridge/gen/gh.c
+> @@ -14,56 +14,46 @@
+>   * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+>   */
+>  
+> -#include <linux/types.h>
+> +#include <linux/err.h>
+> +#include <linux/hashtable.h>
+> +#include <linux/slab.h>
+>  
+> -#include <dspbridge/host_os.h>
+> -#include <dspbridge/gh.h>
+> -
+> -struct element {
+> -	struct element *next;
+> +struct gh_node {
+> +	struct hlist_node hl;
+>  	u8 data[1];
+
+Use a zero size array here so that you can remove the " - 1" from
+"sizeof(struct gh_node) - 1 + hash_tab->val_size".  (Fix in later
+patches).
+
+>  };
+>  
+> +#define GH_HASH_ORDER 8
+> +
+>  struct gh_t_hash_tab {
+> -	u16 max_bucket;
+> -	u16 val_size;
+> -	struct element **buckets;
+> -	 u16(*hash) (void *, u16);
+> -	 bool(*match) (void *, void *);
+> -	void (*delete) (void *);
+> +	u32 val_size;
+> +	DECLARE_HASHTABLE(hash_table, GH_HASH_ORDER);
+> +	u32 (*hash)(void *);
+> +	bool (*match)(void *, void *);
+> +	void (*delete)(void *);
+>  };
+>  
+> -static void noop(void *p);
+> -
+>  /*
+>   *  ======== gh_create ========
+>   */
+>  
+> -struct gh_t_hash_tab *gh_create(u16 max_bucket, u16 val_size,
+> -				u16(*hash) (void *, u16), bool(*match) (void *,
+> -									void *),
+> -				void (*delete) (void *))
+> +struct gh_t_hash_tab *gh_create(u32 val_size,u32 (*hash)(void *),
+> +				bool (*match)(void *, void *),
+> +				void (*delete)(void *))
+>  {
+>  	struct gh_t_hash_tab *hash_tab;
+> -	u16 i;
+> +
+>  	hash_tab = kzalloc(sizeof(struct gh_t_hash_tab), GFP_KERNEL);
+> -	if (hash_tab == NULL)
+> -		return NULL;
+> -	hash_tab->max_bucket = max_bucket;
+> +
+
+Don't put a blank line here between the call and the error handling.
+
+> +	if (!hash_tab)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	hash_init(hash_tab->hash_table);
+> +
+>  	hash_tab->val_size = val_size;
+>  	hash_tab->hash = hash;
+>  	hash_tab->match = match;
+> -	hash_tab->delete = delete == NULL ? noop : delete;
+> -
+> -	hash_tab->buckets =
+> -	    kzalloc(sizeof(struct element *) * max_bucket, GFP_KERNEL);
+> -	if (hash_tab->buckets == NULL) {
+> -		gh_delete(hash_tab);
+> -		return NULL;
+> -	}
+> -
+> -	for (i = 0; i < max_bucket; i++)
+> -		hash_tab->buckets[i] = NULL;
+> +	hash_tab->delete = delete;
+>  
+>  	return hash_tab;
+>  }
+> @@ -73,21 +63,16 @@ struct gh_t_hash_tab *gh_create(u16 max_bucket, u16 val_size,
+>   */
+>  void gh_delete(struct gh_t_hash_tab *hash_tab)
+>  {
+> -	struct element *elem, *next;
+> -	u16 i;
+> -
+> -	if (hash_tab != NULL) {
+> -		if (hash_tab->buckets != NULL) {
+> -			for (i = 0; i < hash_tab->max_bucket; i++) {
+> -				for (elem = hash_tab->buckets[i]; elem != NULL;
+> -				     elem = next) {
+> -					next = elem->next;
+> -					(*hash_tab->delete) (elem->data);
+> -					kfree(elem);
+> -				}
+> -			}
+> -
+> -			kfree(hash_tab->buckets);
+> +	struct gh_node *n;
+> +	struct hlist_node *tmp;
+> +	u32 i;
+> +
+> +	if (hash_tab) {
+> +		hash_for_each_safe(hash_tab->hash_table, i, tmp, n, hl) {
+> +			hash_del(&n->hl);
+> +			if(hash_tab->delete)
+
+Use checkpatch.pl.
+
+> +				hash_tab->delete(n->data);
+> +			kfree(n);
+>  		}
+>  
+>  		kfree(hash_tab);
+> @@ -100,16 +85,14 @@ void gh_delete(struct gh_t_hash_tab *hash_tab)
+>  
+>  void *gh_find(struct gh_t_hash_tab *hash_tab, void *key)
+>  {
+> -	struct element *elem;
+> -
+> -	elem = hash_tab->buckets[(*hash_tab->hash) (key, hash_tab->max_bucket)];
+> +	struct gh_node *n;
+> +	u32 key_hash = hash_tab->hash(key);
+>  
+> -	for (; elem; elem = elem->next) {
+> -		if ((*hash_tab->match) (key, elem->data))
+> -			return elem->data;
+> -	}
+> +	hash_for_each_possible(hash_tab->hash_table, n, hl, key_hash)
+> +		if (hash_tab->match(key, n->data))
+> +			return n->data;
+
+Multi-line indents get curly braces for readability.
+
+>  
+> -	return NULL;
+> +	return ERR_PTR(-ENODATA);
+>  }
+>  
+>  /*
+> @@ -118,36 +101,19 @@ void *gh_find(struct gh_t_hash_tab *hash_tab, void *key)
+>  
+>  void *gh_insert(struct gh_t_hash_tab *hash_tab, void *key, void *value)
+>  {
+> -	struct element *elem;
+> -	u16 i;
+> -	char *src, *dst;
+> +	struct gh_node *n;
+>  
+> -	elem = kzalloc(sizeof(struct element) - 1 + hash_tab->val_size,
+> +	n = kmalloc(sizeof(struct gh_node) - 1 + hash_tab->val_size,
+>  			GFP_KERNEL);
+> -	if (elem != NULL) {
+>  
+> -		dst = (char *)elem->data;
+> -		src = (char *)value;
+> -		for (i = 0; i < hash_tab->val_size; i++)
+> -			*dst++ = *src++;
+> +	if(!n)
+> +		return ERR_PTR(-ENOMEM);
+>  
+> -		i = (*hash_tab->hash) (key, hash_tab->max_bucket);
+> -		elem->next = hash_tab->buckets[i];
+> -		hash_tab->buckets[i] = elem;
+> +	INIT_HLIST_NODE(&n->hl);
+> +	hash_add(hash_tab->hash_table, &n->hl, hash_tab->hash(key));
+> +	memcpy(n->data, value, hash_tab->val_size);
+>  
+> -		return elem->data;
+> -	}
+> -
+> -	return NULL;
+> -}
+> -
+> -/*
+> - *  ======== noop ========
+> - */
+> -/* ARGSUSED */
+> -static void noop(void *p)
+> -{
+> -	p = p;			/* stifle compiler warning */
+> +	return n->data;
+>  }
+>  
+>  #ifdef CONFIG_TIDSPBRIDGE_BACKTRACE
+> @@ -162,16 +128,11 @@ static void noop(void *p)
+>  void gh_iterate(struct gh_t_hash_tab *hash_tab,
+>  		void (*callback)(void *, void *), void *user_data)
+>  {
+> -	struct element *elem;
+> +	struct gh_node *n;
+>  	u32 i;
+>  
+> -	if (hash_tab && hash_tab->buckets)
+> -		for (i = 0; i < hash_tab->max_bucket; i++) {
+> -			elem = hash_tab->buckets[i];
+> -			while (elem) {
+> -				callback(&elem->data, user_data);
+> -				elem = elem->next;
+> -			}
+> -		}
+> +	if (hash_tab)
+> +		hash_for_each(hash_tab->hash_table, i, n, hl)
+> +			callback(&n->data, user_data);
+
+Multi-line indents get curly braces.  But it would be better to reverse
+this anyway.
+
+	if (!hash_tab)
+		return;
+
+	hash_for_each(hash_tab->hash_table, i, n, hl)
+		callback(&n->data, user_data);
+
+>  }
+>  #endif
+> diff --git a/drivers/staging/tidspbridge/include/dspbridge/gh.h b/drivers/staging/tidspbridge/include/dspbridge/gh.h
+> index da85079..6ce69f4 100644
+> --- a/drivers/staging/tidspbridge/include/dspbridge/gh.h
+> +++ b/drivers/staging/tidspbridge/include/dspbridge/gh.h
+> @@ -18,9 +18,9 @@
+>  #define GH_
+>  #include <dspbridge/host_os.h>
+>  
+> -extern struct gh_t_hash_tab *gh_create(u16 max_bucket, u16 val_size,
+> -				       u16(*hash) (void *, u16),
+> -				       bool(*match) (void *, void *),
+> +extern struct gh_t_hash_tab *gh_create(u32 val_size,
+> +				       u32 (*hash)(void *),
+> +				       bool (*match)(void *, void *),
+>  				       void (*delete) (void *));
+>  extern void gh_delete(struct gh_t_hash_tab *hash_tab);
+>  extern void *gh_find(struct gh_t_hash_tab *hash_tab, void *key);
+> diff --git a/drivers/staging/tidspbridge/pmgr/dbll.c b/drivers/staging/tidspbridge/pmgr/dbll.c
+> index 41e88ab..234a433 100644
+> --- a/drivers/staging/tidspbridge/pmgr/dbll.c
+> +++ b/drivers/staging/tidspbridge/pmgr/dbll.c
+> @@ -33,9 +33,6 @@
+>  #include <dspbridge/dbll.h>
+>  #include <dspbridge/rmm.h>
+>  
+> -/* Number of buckets for symbol hash table */
+> -#define MAXBUCKETS 211
+> -
+>  /* Max buffer length */
+>  #define MAXEXPR 128
+>  
+> @@ -183,7 +180,7 @@ static int execute(struct dynamic_loader_initialize *this, ldr_addr start);
+>  static void release(struct dynamic_loader_initialize *this);
+>  
+>  /* symbol table hash functions */
+> -static u16 name_hash(void *key, u16 max_bucket);
+> +static u32 name_hash(void *key);
+>  static bool name_match(void *key, void *sp);
+>  static void sym_delete(void *value);
+>  
+> @@ -280,7 +277,7 @@ bool dbll_get_addr(struct dbll_library_obj *zl_lib, char *name,
+>  	bool status = false;
+>  
+>  	sym = (struct dbll_symbol *)gh_find(zl_lib->sym_tab, name);
+
+Remove the unneeded casts...  (in later patches).
+
+> -	if (sym != NULL) {
+> +	if (!IS_ERR(sym)) {
+>  		*sym_val = &sym->value;
+>  		status = true;
+>  	}
+
+When ever I see a !IS_ERR() then it weirds me out.  In this case my
+intuition is correct and this function is super uglier than necessary
+because of all the stupid debug code.  It should just be:
+
+bool dbll_get_addr(struct dbll_library_obj *zl_lib, char *name,
+		   struct dbll_sym_val **sym_val)
+{
+	struct dbll_symbol *sym;
+
+	sym = gh_find(zl_lib->sym_tab, name);
+	if (IS_ERR(sym))
+		return false;
+
+	*sym_val = &sym->value;
+	return true;
+}
+
+> @@ -322,7 +319,7 @@ bool dbll_get_c_addr(struct dbll_library_obj *zl_lib, char *name,
+>  	/* Check for C name, if not found */
+>  	sym = (struct dbll_symbol *)gh_find(zl_lib->sym_tab, cname);
+>  
+> -	if (sym != NULL) {
+> +	if (!IS_ERR(sym)) {
+>  		*sym_val = &sym->value;
+>  		status = true;
+>  	}
+> @@ -416,12 +413,13 @@ int dbll_load(struct dbll_library_obj *lib, dbll_flags flags,
+>  		/* Create a hash table for symbols if not already created */
+>  		if (zl_lib->sym_tab == NULL) {
+>  			got_symbols = false;
+> -			zl_lib->sym_tab = gh_create(MAXBUCKETS,
+> -						    sizeof(struct dbll_symbol),
+> +			zl_lib->sym_tab = gh_create(sizeof(struct dbll_symbol),
+>  						    name_hash,
+>  						    name_match, sym_delete);
+> -			if (zl_lib->sym_tab == NULL)
+> -				status = -ENOMEM;
+> +			if (IS_ERR(zl_lib->sym_tab)) {
+> +				status = PTR_ERR(zl_lib->sym_tab);
+> +				zl_lib->sym_tab = NULL;
+> +			}
+>  
+>  		}
+>  		/*
+> @@ -593,10 +591,11 @@ int dbll_open(struct dbll_tar_obj *target, char *file, dbll_flags flags,
+>  		goto func_cont;
+>  
+>  	zl_lib->sym_tab =
+> -	    gh_create(MAXBUCKETS, sizeof(struct dbll_symbol), name_hash,
+> -		      name_match, sym_delete);
+> -	if (zl_lib->sym_tab == NULL) {
+> -		status = -ENOMEM;
+> +	    gh_create(sizeof(struct dbll_symbol), name_hash, name_match,
+> +		      sym_delete);
+> +	if (IS_ERR(zl_lib->sym_tab)) {
+> +		status = PTR_ERR(zl_lib->sym_tab);
+> +		zl_lib->sym_tab = NULL;
+>  	} else {
+>  		/* Do a fake load to get symbols - set write func to no_op */
+>  		zl_lib->init.dl_init.writemem = no_op;
+> @@ -793,10 +792,9 @@ static int dof_open(struct dbll_library_obj *zl_lib)
+>  /*
+>   *  ======== name_hash ========
+>   */
+> -static u16 name_hash(void *key, u16 max_bucket)
+> +static u32 name_hash(void *key)
+>  {
+> -	u16 ret;
+> -	u16 hash;
+> +	u32 hash;
+>  	char *name = (char *)key;
+>  
+>  	hash = 0;
+> @@ -806,9 +804,7 @@ static u16 name_hash(void *key, u16 max_bucket)
+>  		hash ^= *name++;
+>  	}
+>  
+> -	ret = hash % max_bucket;
+> -
+> -	return ret;
+> +	return hash;
+>  }
+>  
+>  /*
+> @@ -937,7 +933,7 @@ static struct dynload_symbol *find_in_symbol_table(struct dynamic_loader_sym
+>  						   *this, const char *name,
+>  						   unsigned moduleid)
+>  {
+> -	struct dynload_symbol *ret_sym;
+> +	struct dynload_symbol *ret_sym = NULL;
+>  	struct ldr_symbol *ldr_sym = (struct ldr_symbol *)this;
+>  	struct dbll_library_obj *lib;
+>  	struct dbll_symbol *sym;
+> @@ -945,7 +941,9 @@ static struct dynload_symbol *find_in_symbol_table(struct dynamic_loader_sym
+>  	lib = ldr_sym->lib;
+>  	sym = (struct dbll_symbol *)gh_find(lib->sym_tab, (char *)name);
+>  
+
+Don't put a blank line between the function and the error handling.  (In
+this case it's actually "success handling", I suppose.  :P).
+
+> -	ret_sym = (struct dynload_symbol *)&sym->value;
+> +	if (!IS_ERR(sym))
+> +		ret_sym = (struct dynload_symbol *)&sym->value;
+> +
+>  	return ret_sym;
+
+Again, reverse the IS_ERR() check and return directly.  Use the struct
+pointer instead of the address of the first member.
+
+	sym = gh_find(lib->sym_tab, (char *)name);
+	if (IS_ERR(sym))
+		return NULL;
+
+	return (struct dbll_symbol *)sym;
+
+That way is easier to read.  gh_find() should accept const pointers btw,
+we shouldn't have to cast away the const in each of the callers.
+
+>  }
+>  
+> @@ -991,8 +989,11 @@ static struct dynload_symbol *dbll_add_to_symbol_table(struct dynamic_loader_sym
+>  		sym_ptr =
+>  		    (struct dbll_symbol *)gh_insert(lib->sym_tab, (void *)name,
+>  						    (void *)&symbol);
+> -		if (sym_ptr == NULL)
+> +		if (IS_ERR(sym_ptr))
+> +		{
+>  			kfree(symbol.name);
+> +			sym_ptr = NULL;
+> +		}
+
+Checkpatch.  Same issues as before for a later patch series.
+
+regards,
+dan carpenter
+
+
