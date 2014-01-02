@@ -1,241 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711AbaABRcI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:32:08 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40146 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752241AbaABRF3 (ORCPT
+	id S1753356AbaABRfN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:35:13 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:3199 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899AbaABRfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:05:29 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 17/91] inet: prevent leakage of uninitialized memory to user in recv syscalls
-Date: Thu,  2 Jan 2014 09:03:52 -0800
-Message-Id: <1388682306-30859-18-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
-References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Thu, 2 Jan 2014 12:35:11 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 02 Jan 2014 09:35:36 -0800
+Message-ID: <52C5A344.2060908@nvidia.com>
+Date: Thu, 2 Jan 2014 09:35:00 -0800
+From: Matthew Longnecker <mlongnecker@nvidia.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+Newsgroups: gmane.linux.power-management.general,gmane.linux.drivers.devicetree,gmane.linux.drivers.sensors,gmane.linux.kernel
+To: Eduardo Valentin <eduardo.valentin@ti.com>, <swarren@wwwdotorg.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
+        <linux@roeck-us.net>, <rui.zhang@intel.com>
+CC: <wni@nvidia.com>, <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
+        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv9 02/20] thermal: introduce device tree parser
+References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com> <1384285582-16933-3-git-send-email-eduardo.valentin@ti.com>
+In-Reply-To: <1384285582-16933-3-git-send-email-eduardo.valentin@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.15 -stable review patch.  If anyone has any objections, please let me know.
+Eduardo,
 
-------------------
+For the most part, this binding is really well thought out. It makes a 
+lot of sense to me (as someone who has been working with thermal 
+management in Linux/Android-based mobile devices for a few years).
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+However, I have one substantive criticism.
 
-[ Upstream commit bceaa90240b6019ed73b49965eac7d167610be69 ]
+On 11/12/2013 11:46 AM, Eduardo Valentin wrote:
+> +* Thermal zone nodes
+> +
+> +The thermal zone node is the node containing all the required info
+> +for describing a thermal zone, including its cooling device bindings. The
+> +thermal zone node must contain, apart from its own properties, one sub-node
+> +containing trip nodes and one sub-node containing all the zone cooling maps.
+> +
+> +Required properties:
+...
+> +- thermal-sensors:	A list of thermal sensor phandles and sensor specifier
+> +  Type: list of 	used while monitoring the thermal zone.
+> +  phandles + sensor
+> +  specifier
+...
+> +Optional property:
+> +- coefficients:		An array of integers (one signed cell) containing
+> +  Type: array		coefficients to compose a linear relation between
+> +  Elem size: one cell	the sensors listed in the thermal-sensors property.
+> +  Elem type: signed	Coefficients defaults to 1, in case this property
+> +			is not specified. A simple linear polynomial is used:
+> +			Z = c0 * x0 + c1 + x1 + ... + c(n-1) * x(n-1) + cn.
+> +
+> +			The coefficients are ordered and they match with sensors
+> +			by means of sensor ID. Additional coefficients are
+> +			interpreted as constant offset.
 
-Only update *addr_len when we actually fill in sockaddr, otherwise we
-can return uninitialized memory from the stack to the caller in the
-recvfrom, recvmmsg and recvmsg syscalls. Drop the the (addr_len == NULL)
-checks because we only get called with a valid addr_len pointer either
-from sock_common_recvmsg or inet_recvmsg.
 
-If a blocking read waits on a socket which is concurrently shut down we
-now return zero and set msg_msgnamelen to 0.
+"coefficients" is a problematic way of describing the relationship 
+between temperatures at various sensors and temperature at some other 
+location. It would make sense if heat flowed infinitely quickly. 
+However, in practice thermal capacitance means that we need to take into 
+account the _history_ of temperature at sensors in order to predict heat 
+coupled into a distant point.
 
-Reported-by: mpb <mpb.mail@gmail.com>
-Suggested-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ kamal: backport to 3.8 (context) ]
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- net/ipv4/ping.c       | 9 ++++-----
- net/ipv4/raw.c        | 4 +---
- net/ipv4/udp.c        | 7 +------
- net/ipv6/raw.c        | 4 +---
- net/ipv6/udp.c        | 5 +----
- net/l2tp/l2tp_ip.c    | 4 +---
- net/phonet/datagram.c | 9 ++++-----
- 7 files changed, 13 insertions(+), 29 deletions(-)
+For example, assuming that handset enclosure starts at ~25C, the CPU 
+could burst to 100C for many minutes before the handset enclosure 
+reaches ~40C. However, at steady-state, the CPU might only be able to 
+sustain 65C without pushing the enclosure above 40C.
 
-diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
-index dc454cc..a690121 100644
---- a/net/ipv4/ping.c
-+++ b/net/ipv4/ping.c
-@@ -627,7 +627,6 @@ static int ping_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 			size_t len, int noblock, int flags, int *addr_len)
- {
- 	struct inet_sock *isk = inet_sk(sk);
--	struct sockaddr_in *sin = (struct sockaddr_in *)msg->msg_name;
- 	struct sk_buff *skb;
- 	int copied, err;
- 
-@@ -637,9 +636,6 @@ static int ping_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 	if (flags & MSG_OOB)
- 		goto out;
- 
--	if (addr_len)
--		*addr_len = sizeof(*sin);
--
- 	if (flags & MSG_ERRQUEUE)
- 		return ip_recv_error(sk, msg, len);
- 
-@@ -661,11 +657,14 @@ static int ping_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 	sock_recv_timestamp(msg, sk, skb);
- 
- 	/* Copy the address. */
--	if (sin) {
-+	if (msg->msg_name) {
-+		struct sockaddr_in *sin = (struct sockaddr_in *)msg->msg_name;
-+
- 		sin->sin_family = AF_INET;
- 		sin->sin_port = 0 /* skb->h.uh->source */;
- 		sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
- 		memset(sin->sin_zero, 0, sizeof(sin->sin_zero));
-+		*addr_len = sizeof(*sin);
- 	}
- 	if (isk->cmsg_flags)
- 		ip_cmsg_recv(msg, skb);
-diff --git a/net/ipv4/raw.c b/net/ipv4/raw.c
-index a9b4ef3..5f42d6d 100644
---- a/net/ipv4/raw.c
-+++ b/net/ipv4/raw.c
-@@ -694,9 +694,6 @@ static int raw_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 	if (flags & MSG_OOB)
- 		goto out;
- 
--	if (addr_len)
--		*addr_len = sizeof(*sin);
--
- 	if (flags & MSG_ERRQUEUE) {
- 		err = ip_recv_error(sk, msg, len);
- 		goto out;
-@@ -724,6 +721,7 @@ static int raw_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 		sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
- 		sin->sin_port = 0;
- 		memset(&sin->sin_zero, 0, sizeof(sin->sin_zero));
-+		*addr_len = sizeof(*sin);
- 	}
- 	if (inet->cmsg_flags)
- 		ip_cmsg_recv(msg, skb);
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index 21e1eec..83e3273 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -1180,12 +1180,6 @@ int udp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 	int is_udplite = IS_UDPLITE(sk);
- 	bool slow;
- 
--	/*
--	 *	Check any passed addresses
--	 */
--	if (addr_len)
--		*addr_len = sizeof(*sin);
--
- 	if (flags & MSG_ERRQUEUE)
- 		return ip_recv_error(sk, msg, len);
- 
-@@ -1247,6 +1241,7 @@ try_again:
- 		sin->sin_port = udp_hdr(skb)->source;
- 		sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
- 		memset(sin->sin_zero, 0, sizeof(sin->sin_zero));
-+		*addr_len = sizeof(*sin);
- 	}
- 	if (inet->cmsg_flags)
- 		ip_cmsg_recv(msg, skb);
-diff --git a/net/ipv6/raw.c b/net/ipv6/raw.c
-index 70fa814..276faf6 100644
---- a/net/ipv6/raw.c
-+++ b/net/ipv6/raw.c
-@@ -460,9 +460,6 @@ static int rawv6_recvmsg(struct kiocb *iocb, struct sock *sk,
- 	if (flags & MSG_OOB)
- 		return -EOPNOTSUPP;
- 
--	if (addr_len)
--		*addr_len=sizeof(*sin6);
--
- 	if (flags & MSG_ERRQUEUE)
- 		return ipv6_recv_error(sk, msg, len);
- 
-@@ -502,6 +499,7 @@ static int rawv6_recvmsg(struct kiocb *iocb, struct sock *sk,
- 		sin6->sin6_scope_id = 0;
- 		if (ipv6_addr_type(&sin6->sin6_addr) & IPV6_ADDR_LINKLOCAL)
- 			sin6->sin6_scope_id = IP6CB(skb)->iif;
-+		*addr_len = sizeof(*sin6);
- 	}
- 
- 	sock_recv_ts_and_drops(msg, sk, skb);
-diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
-index 4ca80fc..f8236a3 100644
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -349,9 +349,6 @@ int udpv6_recvmsg(struct kiocb *iocb, struct sock *sk,
- 	int is_udp4;
- 	bool slow;
- 
--	if (addr_len)
--		*addr_len = sizeof(struct sockaddr_in6);
--
- 	if (flags & MSG_ERRQUEUE)
- 		return ipv6_recv_error(sk, msg, len);
- 
-@@ -436,7 +433,7 @@ try_again:
- 			if (ipv6_addr_type(&sin6->sin6_addr) & IPV6_ADDR_LINKLOCAL)
- 				sin6->sin6_scope_id = IP6CB(skb)->iif;
- 		}
--
-+		*addr_len = sizeof(*sin6);
- 	}
- 	if (is_udp4) {
- 		if (inet->cmsg_flags)
-diff --git a/net/l2tp/l2tp_ip.c b/net/l2tp/l2tp_ip.c
-index 61d8b75..2bc35bc 100644
---- a/net/l2tp/l2tp_ip.c
-+++ b/net/l2tp/l2tp_ip.c
-@@ -510,9 +510,6 @@ static int l2tp_ip_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *m
- 	if (flags & MSG_OOB)
- 		goto out;
- 
--	if (addr_len)
--		*addr_len = sizeof(*sin);
--
- 	skb = skb_recv_datagram(sk, flags, noblock, &err);
- 	if (!skb)
- 		goto out;
-@@ -535,6 +532,7 @@ static int l2tp_ip_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *m
- 		sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
- 		sin->sin_port = 0;
- 		memset(&sin->sin_zero, 0, sizeof(sin->sin_zero));
-+		*addr_len = sizeof(*sin);
- 	}
- 	if (inet->cmsg_flags)
- 		ip_cmsg_recv(msg, skb);
-diff --git a/net/phonet/datagram.c b/net/phonet/datagram.c
-index 12c30f3..38946b2 100644
---- a/net/phonet/datagram.c
-+++ b/net/phonet/datagram.c
-@@ -139,9 +139,6 @@ static int pn_recvmsg(struct kiocb *iocb, struct sock *sk,
- 			MSG_CMSG_COMPAT))
- 		goto out_nofree;
- 
--	if (addr_len)
--		*addr_len = sizeof(sa);
--
- 	skb = skb_recv_datagram(sk, flags, noblock, &rval);
- 	if (skb == NULL)
- 		goto out_nofree;
-@@ -162,8 +159,10 @@ static int pn_recvmsg(struct kiocb *iocb, struct sock *sk,
- 
- 	rval = (flags & MSG_TRUNC) ? skb->len : copylen;
- 
--	if (msg->msg_name != NULL)
--		memcpy(msg->msg_name, &sa, sizeof(struct sockaddr_pn));
-+	if (msg->msg_name != NULL) {
-+		memcpy(msg->msg_name, &sa, sizeof(sa));
-+		*addr_len = sizeof(sa);
-+	}
- 
- out:
- 	skb_free_datagram(sk, skb);
--- 
-1.8.3.2
+I wouldn't be complaining except that you're proposing this as a DT 
+definition. In this case, the binding you've proposed is poor 
+abstraction of the hardware.
 
+thanks,
+Matt Longnecker
+
+p.s. I apologize for chiming in without having read the entire history 
+of the patch set. Engineers on my team will be trying this out for Tegra 
+within the next few weeks.
