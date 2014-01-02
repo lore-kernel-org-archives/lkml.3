@@ -1,65 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751260AbaABD7n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jan 2014 22:59:43 -0500
-Received: from mail-bn1blp0185.outbound.protection.outlook.com ([207.46.163.185]:46395
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750739AbaABD7l convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 22:59:41 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
-        "Fabio.Estevam@freescale.com" <Fabio.Estevam@freescale.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] ASoC: simple-card: Add DAPM routes parse from device
- tree
-Thread-Topic: [PATCH] ASoC: simple-card: Add DAPM routes parse from device
- tree
-Thread-Index: AQHPBiWWuTIMPp81c0S+kmyiU4vo4ppwzkfQ
-Date: Thu, 2 Jan 2014 03:59:35 +0000
-Message-ID: <a899f6babcfe4d6eaf559ba9b4ba8a81@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1387774621-23968-1-git-send-email-Li.Xiubo@freescale.com>
- <20131231123857.GS31886@sirena.org.uk>
-In-Reply-To: <20131231123857.GS31886@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 0079056367
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(164054003)(189002)(199002)(51704005)(24454002)(77982001)(54316002)(50986001)(74876001)(47736001)(47976001)(33646001)(87266001)(81816001)(87936001)(2656002)(81686001)(76786001)(76796001)(66066001)(79102001)(80022001)(63696002)(31966008)(47446002)(74662001)(56776001)(4396001)(74502001)(65816001)(85306002)(49866001)(74706001)(76482001)(76576001)(56816005)(59766001)(83322001)(69226001)(83072002)(85852003)(51856001)(90146001)(74366001)(53806001)(46102001)(54356001)(80976001)(81342001)(74316001)(81542001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB256;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1751343AbaABECr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jan 2014 23:02:47 -0500
+Received: from mga02.intel.com ([134.134.136.20]:20759 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750735AbaABECp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jan 2014 23:02:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,588,1384329600"; 
+   d="scan'208";a="432823635"
+Message-ID: <1388635350.3739.79.camel@rzhang1-mobl4>
+Subject: Re: [PATCH 1/1] thermal: fix cpu_cooling max_level behavior
+From: Zhang Rui <rui.zhang@intel.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 02 Jan 2014 12:02:30 +0800
+In-Reply-To: <52A1D697.5030601@ti.com>
+References: <1384366269-1655-1-git-send-email-eduardo.valentin@ti.com>
+	 <52A1D697.5030601@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> Subject: Re: [PATCH] ASoC: simple-card: Add DAPM routes parse from device tree
+On Fri, 2013-12-06 at 09:52 -0400, Eduardo Valentin wrote:
+> On 13-11-2013 14:11, Eduardo Valentin wrote:
+> > As per Documentation/thermal/sysfs-api.txt, max_level
+> > is an index, not a counter. Thus, in case a CPU has
+> > 3 valid frequencies, max_level is expected to be 2, for instance.
+> > 
+> > The current code makes max_level == number of valid frequencies,
+> > which is bogus. This patch fix the cpu_cooling device by
+> > ranging max_level properly.
+> > 
+good catch.
+> > Reported-by: Carlos Hernandez <ceh@ti.com>
+> > Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 > 
-> On Mon, Dec 23, 2013 at 12:57:01PM +0800, Xiubo Li wrote:
-> > Parses a simple DAPM route table from device tree.
+> Rui,
 > 
-> I've applied this on the basis that it's using a generic feature and
-> won't do any harm but given that no off-CODEC widgets are defined I do
-> have to wonder when it'll actually be useful.
+> Can you please consider pushing this fix?
+> 
+applied.
 
-Yes, it will be useful for the Vybird and LS-1 boards and also many others.
+> > ---
+> >  drivers/thermal/cpu_cooling.c | 6 ++++--
+> >  1 file changed, 4 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+> > index d179028..d0f8f8b5 100644
+> > --- a/drivers/thermal/cpu_cooling.c
+> > +++ b/drivers/thermal/cpu_cooling.c
+> > @@ -173,6 +173,8 @@ static int get_property(unsigned int cpu, unsigned long input,
+> >  		freq = table[i].frequency;
+> >  		max_level++;
+> >  	}
+> > +	/* max_level is an index, not a counter */
+> > +	max_level--;
+> >
+I think we should check the max_level first, like the patch I attached
+below.
 
-And for the simple-card there still needs the off-CODEC widgets registering,
-I'll send the followed patches later.
+thanks,
+rui
+
+>From a116776f7b6052599df0c67db29c30ea9d69d7ee Mon Sep 17 00:00:00 2001
+From: Zhang Rui <rui.zhang@intel.com>
+Date: Thu, 2 Jan 2014 11:57:48 +0800
+Subject: [PATCH] Thermal cpu cooling: return error if no valid cpu frequency
+ entry
+
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+---
+ drivers/thermal/cpu_cooling.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+index cc556a8..bb486b4 100644
+--- a/drivers/thermal/cpu_cooling.c
++++ b/drivers/thermal/cpu_cooling.c
+@@ -173,6 +173,11 @@ static int get_property(unsigned int cpu, unsigned long input,
+ 		freq = table[i].frequency;
+ 		max_level++;
+ 	}
++
++	/* No valid cpu frequency entry */
++	if (max_level == 0)
++		return -EINVAL;
++
+ 	/* max_level is an index, not a counter */
+ 	max_level--;
+ 
+-- 
+1.7.9.5
 
 
-Thanks,
 
---
-Best Regards,
-Xiubo
