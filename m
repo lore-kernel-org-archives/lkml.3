@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751154AbaABCe6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jan 2014 21:34:58 -0500
-Received: from mail-bl2lp0204.outbound.protection.outlook.com ([207.46.163.204]:39256
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750708AbaABCe5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 21:34:57 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: "broonie@kernel.org" <broonie@kernel.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        "Fabio.Estevam@freescale.com" <Fabio.Estevam@freescale.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>
-Subject: RE: [alsa-devel] [PATCH] ASoC: simple-card: Add device's module
- clock selection.
-Thread-Topic: [alsa-devel] [PATCH] ASoC: simple-card: Add device's module
- clock selection.
-Thread-Index: AQHO/7eRht/joVhyQkmusSJ033yrN5pv1ayAgADw6KA=
-Date: Thu, 2 Jan 2014 02:34:36 +0000
-Message-ID: <f605f6aeace742c8b0ed69c565649a8d@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1387783538-5318-1-git-send-email-Li.Xiubo@freescale.com>
- <52C405DD.1080006@metafoo.de>
-In-Reply-To: <52C405DD.1080006@metafoo.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 0079056367
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(51704005)(479174003)(377454003)(24454002)(189002)(199002)(76786001)(85306002)(74662001)(69226001)(54316002)(81686001)(33646001)(87936001)(2656002)(63696002)(76796001)(81816001)(66066001)(80022001)(80976001)(65816001)(87266001)(74316001)(47736001)(81342001)(47446002)(90146001)(79102001)(76576001)(49866001)(47976001)(31966008)(51856001)(54356001)(76482001)(74502001)(85852003)(53806001)(4396001)(83072002)(81542001)(77982001)(50986001)(74366001)(46102001)(59766001)(56816005)(74706001)(74876001)(56776001)(83322001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB255;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1751245AbaABCfL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jan 2014 21:35:11 -0500
+Received: from mga11.intel.com ([192.55.52.93]:9702 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751164AbaABCfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jan 2014 21:35:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,588,1384329600"; 
+   d="scan'208";a="452533521"
+Message-ID: <1388630103.3739.71.camel@rzhang1-mobl4>
+Subject: Re: [PATCH] drivers: thermal: Mark function as static in
+ x86_pkg_temp_thermal.c
+From: Zhang Rui <rui.zhang@intel.com>
+To: josh@joshtriplett.org
+Cc: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org,
+        Eduardo Valentin <eduardo.valentin@ti.com>, linux-pm@vger.kernel.org
+Date: Thu, 02 Jan 2014 10:35:03 +0800
+In-Reply-To: <20131218184014.GD24229@cloud>
+References: <20131218174602.GA27918@rashika> <20131218184014.GD24229@cloud>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> Subject: Re: [alsa-devel] [PATCH] ASoC: simple-card: Add device's module clock
-> selection.
+On Wed, 2013-12-18 at 10:40 -0800, josh@joshtriplett.org wrote:
+> On Wed, Dec 18, 2013 at 11:16:02PM +0530, Rashika Kheria wrote:
+> > Mark function sys_set_trip_temp() as static in x86_pkg_temp_thermal.c
+> > because it is not used outside this file.
+> > 
+> > This eliminates the following warning in x86_pkg_temp_thermal.c:
+> > drivers/thermal/x86_pkg_temp_thermal.c:218:5: warning: no previous prototype for ‘sys_set_trip_temp’ [-Wmissing-prototypes]
+> > 
+> > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 > 
-> On 12/23/2013 08:25 AM, Xiubo Li wrote:
-> > diff --git a/a.out b/a.out
-> > new file mode 100644
-> > index 0000000..e69de29
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 > 
-> This patch did add a empty a.out file in the toplevel folder.
-> 
-> - Lars
-> 
+applied.
 
-Yes, sorry, my mistake.
+thanks,
+rui
+> >  drivers/thermal/x86_pkg_temp_thermal.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/thermal/x86_pkg_temp_thermal.c b/drivers/thermal/x86_pkg_temp_thermal.c
+> > index 7722cb9..972e1c7 100644
+> > --- a/drivers/thermal/x86_pkg_temp_thermal.c
+> > +++ b/drivers/thermal/x86_pkg_temp_thermal.c
+> > @@ -215,7 +215,7 @@ static int sys_get_trip_temp(struct thermal_zone_device *tzd,
+> >  	return 0;
+> >  }
+> >  
+> > -int sys_set_trip_temp(struct thermal_zone_device *tzd, int trip,
+> > +static int sys_set_trip_temp(struct thermal_zone_device *tzd, int trip,
+> >  							unsigned long temp)
+> >  {
+> >  	u32 l, h;
+> > -- 
+> > 1.7.9.5
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Thanks very much
-
---
-Best regards,
-Xiubo
- 
 
