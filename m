@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896AbaABRKU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:10:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40574 "EHLO
+	id S1753943AbaABRKa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:10:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40588 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987AbaABRKR (ORCPT
+	with ESMTP id S1750987AbaABRKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:10:17 -0500
+	Thu, 2 Jan 2014 12:10:25 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Liu Gang <Gang.Liu@freescale.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
+Cc: James Bottomley <JBottomley@Parallels.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 86/91] powerpc/gpio: Fix the wrong GPIO input data on MPC8572/MPC8536
-Date: Thu,  2 Jan 2014 09:05:01 -0800
-Message-Id: <1388682306-30859-87-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 85/91] [SCSI] enclosure: fix WARN_ON in dual path device removing
+Date: Thu,  2 Jan 2014 09:05:00 -0800
+Message-Id: <1388682306-30859-86-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -28,59 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liu Gang <Gang.Liu@freescale.com>
+From: James Bottomley <JBottomley@Parallels.com>
 
-commit 1aeef303b5d9e243c41d5b80f8bb059366514a10 upstream.
+commit a1470c7bf3a4676e62e4c0fb204e339399eb5c59 upstream.
 
-For MPC8572/MPC8536, the status of GPIOs defined as output
-cannot be determined by reading GPDAT register, so the code
-use shadow data register instead. But the code may give the
-wrong status of GPIOs defined as input under some scenarios:
+Bug report from: wenxiong@linux.vnet.ibm.com
 
-1. If some pins were configured as inputs and were asserted
-high before booting the kernel, the shadow data has been
-initialized with those pin values.
-2. Some pins have been configured as output first and have
-been set to the high value, then reconfigured as input.
+The issue is happened in dual controller configuration. We got the
+sysfs warnings when rmmod the ipr module.
 
-The above cases will make the shadow data for those input
-pins to be set to high. Then reading the pin status will
-always return high even if the actual pin status is low.
+enclosure_unregister() in drivers/msic/enclosure.c, call device_unregister()
+for each componment deivce, device_unregister() ->device_del()->kobject_del()
+->sysfs_remove_dir(). In sysfs_remove_dir(), set kobj->sd = NULL.
 
-The code should eliminate the effects of the shadow data to
-the input pins, and the status of those pins should be
-read directly from GPDAT.
+For each componment device,
+enclosure_component_release()->enclosure_remove_links()->sysfs_remove_link()
+in which checking kobj->sd again, it has been set as NULL when doing
+device_unregister. So we saw all these sysfs WARNING.
 
-Acked-by: Scott Wood <scottwood@freescale.com>
-Acked-by: Anatolij Gustschin <agust@denx.de>
-Signed-off-by: Liu Gang <Gang.Liu@freescale.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Tested-by: wenxiong@linux.vnet.ibm.com
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpio/gpio-mpc8xxx.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/misc/enclosure.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/gpio/gpio-mpc8xxx.c b/drivers/gpio/gpio-mpc8xxx.c
-index 9ae29cc..06cf5c0 100644
---- a/drivers/gpio/gpio-mpc8xxx.c
-+++ b/drivers/gpio/gpio-mpc8xxx.c
-@@ -69,10 +69,14 @@ static int mpc8572_gpio_get(struct gpio_chip *gc, unsigned int gpio)
- 	u32 val;
- 	struct of_mm_gpio_chip *mm = to_of_mm_gpio_chip(gc);
- 	struct mpc8xxx_gpio_chip *mpc8xxx_gc = to_mpc8xxx_gpio_chip(mm);
-+	u32 out_mask, out_shadow;
+diff --git a/drivers/misc/enclosure.c b/drivers/misc/enclosure.c
+index 00e5fcac8..cbee842 100644
+--- a/drivers/misc/enclosure.c
++++ b/drivers/misc/enclosure.c
+@@ -198,6 +198,13 @@ static void enclosure_remove_links(struct enclosure_component *cdev)
+ {
+ 	char name[ENCLOSURE_NAME_SIZE];
  
--	val = in_be32(mm->regs + GPIO_DAT) & ~in_be32(mm->regs + GPIO_DIR);
-+	out_mask = in_be32(mm->regs + GPIO_DIR);
- 
--	return (val | mpc8xxx_gc->data) & mpc8xxx_gpio2mask(gpio);
-+	val = in_be32(mm->regs + GPIO_DAT) & ~out_mask;
-+	out_shadow = mpc8xxx_gc->data & out_mask;
++	/*
++	 * In odd circumstances, like multipath devices, something else may
++	 * already have removed the links, so check for this condition first.
++	 */
++	if (!cdev->dev->kobj.sd)
++		return;
 +
-+	return (val | out_shadow) & mpc8xxx_gpio2mask(gpio);
- }
- 
- static int mpc8xxx_gpio_get(struct gpio_chip *gc, unsigned int gpio)
+ 	enclosure_link_name(cdev, name);
+ 	sysfs_remove_link(&cdev->dev->kobj, name);
+ 	sysfs_remove_link(&cdev->cdev.kobj, "device");
 -- 
 1.8.3.2
 
