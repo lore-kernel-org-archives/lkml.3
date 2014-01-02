@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751515AbaABLvl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 06:51:41 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34382 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913AbaABLvk (ORCPT
+	id S1751498AbaABL4U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 06:56:20 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:39108 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765AbaABL4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 06:51:40 -0500
-Date: Thu, 2 Jan 2014 12:51:37 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Jiri Kosina <jkosina@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] lib/vsprintf: add %pT[C012] format specifier
-Message-ID: <20140102115137.GA10982@amd.pavel.ucw.cz>
-References: <201312252137.IDC43215.OLtJQFHOFMVFSO@I-love.SAKURA.ne.jp>
- <20131227150211.61328c02d61722cb212649e9@linux-foundation.org>
- <201312281243.CCB82366.tMHFVQFSOOFJOL@I-love.SAKURA.ne.jp>
- <CAMuHMdXVrL-9Fq3ixCZvh1TubGg7HFc0HKPbq-YYu+Q1zxWcEA@mail.gmail.com>
- <20131228112509.8a62548c.akpm@linux-foundation.org>
- <CAMuHMdWfi4mSQLA01_fYrs1ybQ5YysO2EF4q1EBNy+7nbKXN6g@mail.gmail.com>
- <1388260405.24123.18.camel@joe-AO722>
- <20131228120815.31f7d378.akpm@linux-foundation.org>
+	Thu, 2 Jan 2014 06:56:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131228120815.31f7d378.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <52C54E7A.3030303@linaro.org>
+References: <52C54E7A.3030303@linaro.org>
+Date: Thu, 2 Jan 2014 19:56:17 +0800
+Message-ID: <CACVXFVNdwFsa75cmsUiuua1pOfbJC71MtE0ttc2tFrHpz9hzxg@mail.gmail.com>
+Subject: Re: very slow IO after resume
+From: Ming Lei <tom.leiming@gmail.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Linux PM mailing list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Thu, Jan 2, 2014 at 7:33 PM, Daniel Lezcano
+<daniel.lezcano@linaro.org> wrote:
+>
+> Hi All,
+>
+> I noticed an issue on the IOs after resuming my laptop.
+>
+> My mailer thunderbird or the compilations are very slow, often blocked in
+> 'D' state. The 'top' shows 81% on wait.
+>
+> The processes stack are always in when blocked:
+>
+> [<c164f8ab>] balance_dirty_pages.isra.18+0x3f5/0x4b4
+> [<c112a2ce>] balance_dirty_pages_ratelimited+0xde/0x100
+> [<c1120d81>] generic_perform_write+0x141/0x1c0
+> [<c1120e50>] generic_file_buffered_write+0x50/0x80
+> [<c1122a4a>] __generic_file_aio_write+0x22a/0x490
+> [<c1122d13>] generic_file_aio_write+0x63/0xd0
+> [<c11f5162>] ext4_file_write+0xb2/0x100
+> [<c117318a>] do_sync_write+0x6a/0xa0
+> [<c1173dc5>] vfs_write+0xa5/0x1d0
+> [<c1174277>] SyS_write+0x57/0xa0
+> [<c1661b37>] syscall_call+0x7/0xb
+>
+> The kernel is 3.11.0-031100-generic based on ubuntu, I noticed this issue on
+> some previous version (since 3.5 AFAIR).
+> My laptop is a Lenovo X230, SSD 250GB (6Gb/s) and 16GB of RAM.
+>
+> Is it a known issue ?
 
-> > > > #define PRINTK_PID      "\002"
-> > > > #define PRINTK_TASK_ID  "\003"  /* "comm:pid" */
-> > > >
-> > > >         printk(PRINTK_TASK_ID ": hair on fire\n");
-> > > >
-> > > > It's certainly compact.  I doubt if there's any existing code which
-> > > > deliberately prints control chars?
-> > > 
-> > > But the rest looks OK to me.
-> > 
-> > Tell me again, what's wrong with using p or current?
-> > 
-> > printk("%pt", current);
-> 
-> Nothing much.  It's just that all these callsites are generating the
-> code to pass an argument which the callee already has access to. 
-> Optimizing that will reduce text size a bit.
+We met write regressions before, see
 
-Can we do "printk("%pt", 0)", then? Or just pass current and live with
-few bytes of penalty. There are probably less ugly ways to make kernel
-smaller. Inventing another escape character for printk is extremely
-ugly.
-									Pavel
+  https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1242812
+
+But it wasn't related with system sleep, and you may check if the
+patches land in your kernel.
+
+Thanks,
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Ming Lei
