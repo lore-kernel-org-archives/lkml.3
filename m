@@ -1,87 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751162AbaABKi7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 05:38:59 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:65277 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738AbaABKi6 (ORCPT
+	id S1751210AbaABKl6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 05:41:58 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:45268 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750748AbaABKl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 05:38:58 -0500
-Message-ID: <52C541A9.8060002@huawei.com>
-Date: Thu, 2 Jan 2014 18:38:33 +0800
-From: Ding Tianhong <dingtianhong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Julia Lawall <julia.lawall@lip6.fr>
-CC: Joe Perches <joe@perches.com>, Jay Vosburgh <fubar@us.ibm.com>,
-        Veaceslav Falico <vfalico@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND net-next 1/7] bonding: use ether_addr_equal_unaligned
- for bond addr compare
-References: <52C4BD16.5010702@huawei.com> <alpine.DEB.2.02.1401020839000.2182@localhost6.localdomain6> <52C52180.2030707@huawei.com> <alpine.DEB.2.02.1401020937490.2182@localhost6.localdomain6> <52C52AAD.8040603@huawei.com> <alpine.DEB.2.02.1401021011400.2182@localhost6.localdomain6> <52C53EC6.30902@huawei.com>
-In-Reply-To: <52C53EC6.30902@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.135.72.199]
-X-CFilter-Loop: Reflected
+	Thu, 2 Jan 2014 05:41:57 -0500
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, linux-pci@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Subject: [PATCH] PCI: mvebu: Remove redundant code
+Date: Thu,  2 Jan 2014 11:41:36 +0100
+Message-Id: <1388659296-21569-1-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/1/2 18:26, Ding Tianhong wrote:
-> On 2014/1/2 17:14, Julia Lawall wrote:
->> On Thu, 2 Jan 2014, Ding Tianhong wrote:
->>
->>> On 2014/1/2 16:38, Julia Lawall wrote:
->>>> On Thu, 2 Jan 2014, Ding Tianhong wrote:
->>>>
->>>>> On 2014/1/2 15:39, Julia Lawall wrote:
->>>>>> Are the casts needed
->>>>>
->>>>>
->>>>> Yes, otherwise the warming will report:
->>>>>
->>>>> /net-next/drivers/net/bonding/bond_3ad.c:427: warning: passing argument 1 of ‘ether_addr_equal_64bits’ from incompatible pointer type
->>>>
->>>> Is it necessary for this driver to use a different type from everyone 
->>>> else?
->>>>
->>>> julia
->>>>
->>> Did you mean the MAC_ADDRESS_EQUAL is excess?
->>> I did not remove it because the codes no need to be changed more and it looks that didn't take any negative effect.
->>
->> No, I was wondering about the mac_addr type, defined in bond_3ad.h.  Other 
->> code just has the array inlined into the containing structure.
->>
->> julia
->>
+In the commit b42285f66f871a989, Sebastian moved clock enable before
+register access, but during the merge of the commit
+9f352f0e6c0fa2dc608812df "PCI: mvebu: Dynamically detect if the PEX
+link is up to enable hot plug", the moved part was added back.
 
-I reviewed the struct mac_addr again, and feel that even it looks not comfortable, but
-make the lacp struct more meaning for 3ad, what do you think about it, I think no need
-to revert them to u8.
+This patch fixes this by removing the redundant code.
 
-Regards
-Ding
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+---
+ drivers/pci/host/pci-mvebu.c | 8 --------
+ 1 file changed, 8 deletions(-)
 
-> 
-> Oh, sorry for mismatch.:)
-> The code for bond_3ad mode is too old and the use for mac addr is not so comfortable.
-> 
-> I think I need to send a patch to fix the unusual mac addr and make it more reasonable.
-> 
-> Thanks for your opinion.
-> 
-> Regards
-> Ding 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
-
+diff --git a/drivers/pci/host/pci-mvebu.c b/drivers/pci/host/pci-mvebu.c
+index 2aa7b77c7c88..0b4b99fa1fb5 100644
+--- a/drivers/pci/host/pci-mvebu.c
++++ b/drivers/pci/host/pci-mvebu.c
+@@ -954,14 +954,6 @@ static int mvebu_pcie_probe(struct platform_device *pdev)
+ 
+ 		mvebu_pcie_set_local_dev_nr(port, 1);
+ 
+-		port->clk = of_clk_get_by_name(child, NULL);
+-		if (IS_ERR(port->clk)) {
+-			dev_err(&pdev->dev, "PCIe%d.%d: cannot get clock\n",
+-			       port->port, port->lane);
+-			iounmap(port->base);
+-			continue;
+-		}
+-
+ 		port->dn = child;
+ 		spin_lock_init(&port->conf_lock);
+ 		mvebu_sw_pci_bridge_init(port);
+-- 
+1.8.1.2
 
