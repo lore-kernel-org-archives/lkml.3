@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791AbaABSdH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 13:33:07 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:50781 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752294AbaABSdF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 13:33:05 -0500
-Date: Thu, 2 Jan 2014 10:31:00 -0800
-From: Olof Johansson <olof@lixom.net>
-To: David Brown <davidb@codeaurora.org>
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/7] MSM patches for 3.14
-Message-ID: <20140102183100.GA8684@quad.lixom.net>
-References: <1387566560-23948-1-git-send-email-davidb@codeaurora.org>
+	id S1752834AbaABSdQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 13:33:16 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:39004 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752294AbaABSdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 13:33:13 -0500
+Date: Thu, 2 Jan 2014 19:33:11 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Gerhard Sittig <gsi@denx.de>,
+        Christian Hohnstaedt <chohnstaedt@innominate.com>,
+        Krzysztof =?utf-8?Q?Ha=C5=82asa?= <khalasa@piap.pl>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: Re: About Mail-Followup-To and Mutt [Was: Re: [ARM] Fix kernel
+ compile error: drivers/crypto/ixp4xx_crypto.c]
+Message-ID: <20140102183311.GC8772@nazgul.tnic>
+References: <m3d2kduwd7.fsf@t19.piap.pl>
+ <20131231134820.GS8064@book.gsilab.sittig.org>
+ <20131231181427.GE16456@n2100.arm.linux.org.uk>
+ <20140101121822.GA20094@book.gsilab.sittig.org>
+ <20140102084252.GF10158@pengutronix.de>
+ <20140102103522.GH16456@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1387566560-23948-1-git-send-email-davidb@codeaurora.org>
+In-Reply-To: <20140102103522.GH16456@n2100.arm.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 20, 2013 at 11:09:13AM -0800, David Brown wrote:
-> The following series contains a warning fix, a bit of cleanup, adds a
-> few more boards.  There are still numerous patches floating with
-> issues, but things seem to be moving in the right direction.
+On Thu, Jan 02, 2014 at 10:35:22AM +0000, Russell King - ARM Linux wrote:
+> And how does that stop the problem when someone *else* replies to the
+> message with a Mail-Followup-To?  FYI, I was hounded off LKML for having
+> that header set.
 > 
-> These have all been sent previously to the lists, and received reviews
-> and necessary acks.
+> When people have this header set, and people reply to such a message, all
+> recipients get moved into the To: header.  This makes it impossible on
+> high traffic lists for people to prioritise their reading of messages
+> according to whether they're in the To: header or just in the Cc: header.
 > 
+> Being in the To: header means that someone is directing the message *AT*
+> you and wanting *YOU* to do something with it.  Being in the Cc: is more
+> "for information" and so takes a lower priority.
 
-Hi,
+Totally agreed.
 
-I've applied these across the various branches, i.e I split the series up
-into fixes, soc, dt and board changes.
+That MFT thing might've been a good idea at the time but in reality
+it causes more problems than it solves, with our usage patterns. I've
+started ignoring it and would suggest people simply drop all those
+"lists/subsribe" directives in their .muttrc.
 
-I chose to split the Dragonboard patch up into two patches instead of one:
-One that adds SoC support, and a second that adds the board support. I
-rephrased commit messages accordingly but the contents was untouched
-(just split up).
-
-I hope the clock stuff can be sorted out real quick so we get working support
-for more useful IP on the SoC in time for 3.14.
-
-
--Olof
+Thanks.
