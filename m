@@ -1,61 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751172AbaABLdU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 06:33:20 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:48658 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832AbaABLdT (ORCPT
+	id S1751349AbaABLhS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 06:37:18 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:11800 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738AbaABLhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 06:33:19 -0500
-Message-ID: <52C54E7A.3030303@linaro.org>
-Date: Thu, 02 Jan 2014 12:33:14 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Linux PM mailing list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: very slow IO after resume
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Thu, 2 Jan 2014 06:37:16 -0500
+Message-ID: <1388662629.2817.6.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v3 4/4] futex: Avoid taking hb lock if nothing to wakeup
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>, Jeff Mahoney <jeffm@suse.com>,
+        Jason Low <jason.low2@hp.com>, Tom Vaden <tom.vaden@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Ingo Molnar <mingo@kernel.org>
+Date: Thu, 02 Jan 2014 03:37:09 -0800
+In-Reply-To: <52BA4D4C.6070709@hp.com>
+References: <1387478746-5436-1-git-send-email-davidlohr@hp.com>
+	  <1387478746-5436-5-git-send-email-davidlohr@hp.com>
+	  <CA+55aFxY_sMes2=0tz0qTKH5-fpAaLji_xd9CdU-u2JxxNN6pA@mail.gmail.com>
+	 <1387589770.3119.2.camel@buesod1.americas.hpqcorp.net>
+	 <52BA4D4C.6070709@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2013-12-24 at 22:13 -0500, Waiman Long wrote:
+> On 12/20/2013 08:36 PM, Davidlohr Bueso wrote:
+> > On Thu, 2013-12-19 at 15:14 -0800, Linus Torvalds wrote:
+> >> On Thu, Dec 19, 2013 at 10:45 AM, Davidlohr Bueso<davidlohr@hp.com>  wrote:
+> >>> - increment the counter at queue_lock() as we always end up calling
+> >>>    queue_me() which adds the element to the list. Upon any error,
+> >>>    queue_unlock() is called for housekeeping, for which we decrement
+> >>>    to mach the increment done in queue_lock().
+> >>>
+> >>> - decrement the counter at __unqueue_me() to reflect when an element is
+> >>>    removed from the queue for wakeup related purposes.
+> >> I still hate this whole separate counter thing. It seems really annoying.
+> >>
+> >> If re-ordering things didn't work out, then why can't just the counter
+> >> we *already* have in the spinlock itself work as the counter? Your
+> >> counter update logic seems to basically match when you take the
+> >> spinlock anyway.
+> > So the following has passed all testing, just like the atomics variant.
+> > Thoughts?
+> >
+> > Thanks,
+> > Davidlohr
+> >
+> > diff --git a/kernel/futex.c b/kernel/futex.c
+> > index fcc6850..c8c7ce5 100644
+> > --- a/kernel/futex.c
+> > +++ b/kernel/futex.c
+> > @@ -73,19 +73,22 @@
+> >    * Basic futex operation and ordering guarantees:
+> >    *
+> >    * The waiter reads the futex value in user space and calls
+> > - * futex_wait(). This function computes the hash bucket and acquires
+> > - * the hash bucket lock. After that it reads the futex user space value
+> > - * again and verifies that the data has not changed. If it has not
+> > - * changed it enqueues itself into the hash bucket, releases the hash
+> > + * futex_wait(). It computes the hash bucket and acquires the hash
+> > + * bucket lock. After that it reads the futex user space value again
+> > + * and verifies that the data has not changed. If it has not changed
+> > + * it enqueues itself into the hash bucket, releases the hash
+> >    * bucket lock and schedules.
+> >    *
+> >    * The waker side modifies the user space value of the futex and calls
+> > - * futex_wake(). This functions computes the hash bucket and acquires
+> > - * the hash bucket lock. Then it looks for waiters on that futex in the
+> > - * hash bucket and wakes them.
+> > + * futex_wake(). It computes the hash bucket and acquires the hash
+> > + * bucket lock. Then it looks for waiters on that futex in the hash
+> > + * bucket and wakes them.
+> >    *
+> > - * Note that the spin_lock serializes waiters and wakers, so that the
+> > - * following scenario is avoided:
+> > + * In scenarios where wakeups are called and no tasks are blocked on a futex,
+> > + * taking the hb spinlock can be avoided and simply return. In order for this
+> > + * optimization to work, ordering guarantees must exist so that the waiter
+> > + * being added to the list is acknowledged when the list is concurrently being
+> > + * checked by the waker, avoiding scenarios like the following:
+> >    *
+> >    * CPU 0                               CPU 1
+> >    * val = *futex;
+> > @@ -106,24 +109,50 @@
+> >    * This would cause the waiter on CPU 0 to wait forever because it
+> >    * missed the transition of the user space value from val to newval
+> >    * and the waker did not find the waiter in the hash bucket queue.
+> > - * The spinlock serializes that:
+> > + *
+> > + * The correct serialization ensures that a waiter either observes
+> > + * the changed user space value before blocking or is woken by a
+> > + * concurrent waker:
+> >    *
+> >    * CPU 0                               CPU 1
+> >    * val = *futex;
+> >    * sys_futex(WAIT, futex, val);
+> >    *   futex_wait(futex, val);
+> > - *   lock(hash_bucket(futex));
+> > - *   uval = *futex;
+> > - *                                     *futex = newval;
+> > - *                                     sys_futex(WAKE, futex);
+> > - *                                       futex_wake(futex);
+> > - *                                       lock(hash_bucket(futex));
+> > + *
+> > + *   waiters++;
+> > + *   mb(); (A)<-- paired with -.
+> > + *                              |
+> > + *   lock(hash_bucket(futex));  |
+> > + *                              |
+> > + *   uval = *futex;             |
+> > + *                              |        *futex = newval;
+> > + *                              |        sys_futex(WAKE, futex);
+> > + *                              |          futex_wake(futex);
+> > + *                              |
+> > + *                              `------->    mb(); (B)
+> 
+> Checking the state of the spinlock counter isn't the same as 
+> incrementing a waiter count. So your pseudo code here is misleading. See 
+> further explanation below.
 
-Hi All,
+Since the spinlock check is mostly done for corner cases where the plist
+check alone isn't enough, I'd like to leave this comment as is and fix
+the comment for hb_waiters_pending().
 
-I noticed an issue on the IOs after resuming my laptop.
+> 
+> >    *   if (uval == val)
+> > - *      queue();
+> > + *     queue();
+> >    *     unlock(hash_bucket(futex));
+> > - *     schedule();                       if (!queue_empty())
+> > - *                                         wake_waiters(futex);
+> > - *                                       unlock(hash_bucket(futex));
+> > + *     schedule();                         if (waiters)
+> > + *                                           lock(hash_bucket(futex));
+> > + *                                           wake_waiters(futex);
+> > + *                                           unlock(hash_bucket(futex));
+> > + *
+> > + * Where (A) orders the waiters increment and the futex value read -- this
+> > + * is guaranteed by the head counter in the hb spinlock; and where (B)
+> > + * orders the write to futex and the waiters read.
+> > + *
+> > + * This yields the following case (where X:=waiters, Y:=futex):
+> > + *
+> > + *	X = Y = 0
+> > + *
+> > + *	w[X]=1		w[Y]=1
+> > + *	MB		MB
+> > + *	r[Y]=y		r[X]=x
+> > + *
+> > + * Which guarantees that x==0&&  y==0 is impossible; which translates back into
+> > + * the guarantee that we cannot both miss the futex variable change and the
+> > + * enqueue.
+> >    */
+> >
+> >   int __read_mostly futex_cmpxchg_enabled;
+> > @@ -211,6 +240,35 @@ static unsigned long __read_mostly futex_hashsize;
+> >
+> >   static struct futex_hash_bucket *futex_queues;
+> >
+> > +static inline void futex_get_mm(union futex_key *key)
+> > +{
+> > +	atomic_inc(&key->private.mm->mm_count);
+> > +#ifdef CONFIG_SMP
+> > +	/*
+> > +	 * Ensure futex_get_mm() implies a full barrier such that
+> > +	 * get_futex_key() implies a full barrier. This is relied upon
+> > +	 * as full barrier (B), see the ordering comment above.
+> > +	 */
+> > +	smp_mb__after_atomic_inc();
+> > +#endif
+> > +}
+> > +
+> > +static inline bool hb_waiters_pending(struct futex_hash_bucket *hb)
+> > +{
+> > +#ifdef CONFIG_SMP
+> > +	/*
+> > +	 * If the hash bucket is locked then we know the ticket counter
+> > +	 * is non-zero and thus there is at least one waiter in the queue.
+> > +	 */
+> > +	if (spin_is_locked(&hb->lock))
+> > +		return true;
+> > +	smp_rmb(); /* Make sure we check the lock state first */
+> > +	return !plist_head_empty(&hb->chain);
+> > +#else
+> > +	return true;
+> > +#endif
+> > +}
+> 
+> The ticket spinlock counter is a cyclic counter that can cycle through 0 
+> periodically. So the zero-ness of the counter has no relation to whether 
+> it is locked or not.  Your comment above is not correct. What 
+> spin_is_locked() can tell you is whether one or more tasks are trying to 
+> get into the critical section which can be a waiter (most likely) or a 
+> waker. Coupled with checking if the list is empty, that could be a 
+> cheaper alternative to using a separate atomic counter, but it is also 
+> slightly less reliable and has a higher chance of false positive.
 
-My mailer thunderbird or the compilations are very slow, often blocked 
-in 'D' state. The 'top' shows 81% on wait.
+Yeah, that was more or less what I was trying to say, but obviously
+wasn't clear enough. I'll rephrase and send a proper new version for
+this patchset.
 
-The processes stack are always in when blocked:
-
-[<c164f8ab>] balance_dirty_pages.isra.18+0x3f5/0x4b4
-[<c112a2ce>] balance_dirty_pages_ratelimited+0xde/0x100
-[<c1120d81>] generic_perform_write+0x141/0x1c0
-[<c1120e50>] generic_file_buffered_write+0x50/0x80
-[<c1122a4a>] __generic_file_aio_write+0x22a/0x490
-[<c1122d13>] generic_file_aio_write+0x63/0xd0
-[<c11f5162>] ext4_file_write+0xb2/0x100
-[<c117318a>] do_sync_write+0x6a/0xa0
-[<c1173dc5>] vfs_write+0xa5/0x1d0
-[<c1174277>] SyS_write+0x57/0xa0
-[<c1661b37>] syscall_call+0x7/0xb
-
-The kernel is 3.11.0-031100-generic based on ubuntu, I noticed this 
-issue on some previous version (since 3.5 AFAIR).
-My laptop is a Lenovo X230, SSD 250GB (6Gb/s) and 16GB of RAM.
-
-Is it a known issue ?
-
-Thanks
--- Daniel
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+Thanks,
+Davidlohr
 
