@@ -1,93 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124AbaABRwI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:52:08 -0500
-Received: from smtpfb1-g21.free.fr ([212.27.42.9]:41059 "EHLO
-	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210AbaABRwE convert rfc822-to-8bit (ORCPT
+	id S1752205AbaABRwQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:52:16 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49090 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210AbaABRwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:52:04 -0500
-Date: Thu, 2 Jan 2014 18:50:55 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Mark Brown <broonie@kernel.org>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Liam Girdwood <lgirdwood@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH] ASoC: generic: add generic compound card
- with DT support
-Message-ID: <20140102185055.76eb576e@armhf>
-In-Reply-To: <20140102131045.GZ31886@sirena.org.uk>
-References: <20131231113138.102044cf@armhf>
-	<52C466E1.3030302@metafoo.de>
-	<20140101210814.31e3f3a9@armhf>
-	<52C4766B.8080000@metafoo.de>
-	<20140102102647.6efec89d@armhf>
-	<20140102111056.GT31886@sirena.org.uk>
-	<20140102124331.2bcfc172@armhf>
-	<20140102115618.GW31886@sirena.org.uk>
-	<20140102134437.1e39da55@armhf>
-	<20140102131045.GZ31886@sirena.org.uk>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
+	Thu, 2 Jan 2014 12:52:12 -0500
+Date: Thu, 2 Jan 2014 17:51:34 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Gerhard Sittig <gsi@denx.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Krzysztof =?utf-8?Q?Ha=C5=82asa?= <khalasa@piap.pl>,
+        Christian Hohnstaedt <chohnstaedt@innominate.com>,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <20140102175134.GE31886@sirena.org.uk>
+References: <m3d2kduwd7.fsf@t19.piap.pl>
+ <20131231134820.GS8064@book.gsilab.sittig.org>
+ <20131231181427.GE16456@n2100.arm.linux.org.uk>
+ <20140101121822.GA20094@book.gsilab.sittig.org>
+ <20140102084252.GF10158@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1TlZXgau9qP5MFoa"
+Content-Disposition: inline
+In-Reply-To: <20140102084252.GF10158@pengutronix.de>
+X-Cookie: Go climb a gravity well!
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: About Mail-Followup-To and Mutt [Was: Re: [ARM] Fix kernel
+ compile error: drivers/crypto/ixp4xx_crypto.c]
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Jan 2014 13:10:45 +0000
-Mark Brown <broonie@kernel.org> wrote:
 
-> On Thu, Jan 02, 2014 at 01:44:37PM +0100, Jean-Francois Moine wrote:
-> 
-> > I still don't understand. There is already such cases in the Cubox:
-> > the S/PDIF output from the kirkwood audio controller is connected to
-> > both the HDMI transmitter and the S/PDIF TOSLINK. So, in the audio
-> > controller, the port @1 defines the S/PDIF DAI and the endpoints @0 and
-> > @1 point to the remote DAIs, creating 2 snd DAI links:
-> 
-> > 	port@1 {
-> > 		audio_hdmi_spdif: endpoint@0 {
-> > 			remote-endpoint = <&hdmi_spdif_audio>;
-> > 		};
-> > 		audio_spdif: endpoint@1 {
-> > 			remote-endpoint = <&spdif_audio>;
-> > 		};
-> > 	};
-> 
-> Oh, so the endpoints are virtual and that's supposed to be three things
-> wired together rather than a single device with multiple links?  That's
-> really not very clear from reading the above and seems cumbersome -
-> every device will want to explicitly identify every other device on the
-> link and any configuration is going to either need to be replicated on
-> every device or we'll need to check lots of places for the configuation.
-> It seems like this will be hard to work with.
+--1TlZXgau9qP5MFoa
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-No, the 'endpoint' <=> 'remote-endpoint' is a point to point relation.
-Even if the sources and sinks are not explicitly defined, the way
-the stream flows is easy to find: the main source is always in the
-'audio-controller' node
+On Thu, Jan 02, 2014 at 09:42:52AM +0100, Uwe Kleine-K=F6nig wrote:
 
-	sound {
-		compatible = "media-audio";
-		audio-controller = <&audio1>;
-	};
+> (using the lists and subscribe commands). And note that there are lists
+> that consider using MFT to be good, ISTR that it applies to
+> *@lists.debian.org, but cannot currently find a reference to support
+> that claim. The problem is that using MFT only works if all recipents
+> are using and respecting it.
 
-and, then, the controller ports are sources (CPU DAIs) and the
-associated remote ports are sinks (CODEC DAIs).
+No, Debian specifically wants replies to be sent to the list only but
+it's not really related to Mail-Followup-To - I don't think there's a
+general feeling on that within Debian but ICBW.  The thing about reply
+to list predates the invention of MFT.
 
-With many levels, once the remote (sink) ports are identified, in the
-devices where such sinks exist, the remaining ports are sources.
+--1TlZXgau9qP5MFoa
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Usually, the devices don't have to know to which other device they are
-connected, and, yes, the reverse pointer sink to source is not useful.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-But the way (link) the audio stream comes from may be important to
-know. This is the case for the HDMI CODEC which must tell the HDMI
-transmitter from which hardware port(s) ('reg') it may get the audio
-stream. That's why, the HDMI encoder has two endpoints in its audio
-port, each endpoint being a different CODEC DAI.
+iQIcBAEBAgAGBQJSxacjAAoJELSic+t+oim9YFcP/3Fmx4duPd/KNesPYxoHhLHE
+747P6yCYavw6vAkYhf4Gvrvh7sZEX00oXTgNrm0n68mgfqXaGJlOllwQn1ic8Ndy
+jxH9exrr3ReFLChIsUVPl1c/5gFK+JJFPh5aHRrruwLdqHpvaIc7yHKcdeTUvJCm
+CQ53yVOO6HYrOKs6bmMAKdWjXwCmrqQqwQDKBX0gu4PF/9j/v7Jb6LPtJMwl8L6V
+0vrRgsml5+PQjxO/wn1DSEhknwQ0XSOJFaI9KOdb+ZSIGtxBWXYQYddtLtRpOkcU
+ha6dZLQKPzhRsoUO/x7mGCYdVFY7+iI9eMs+i3id+x6+btv90qMT2O347N3vpnqo
+93iVxktbuigqaZW9D6j25BVpKjR31K4vT1ccwxC5mBEW4kbdVt8wDzcNpaiwZANg
+Qy9PinV8ixxbBtutHDMJ/cQqnGZQ0aNSDm1kkZxPaUkeohtVR4vxQ4qr9Id61McJ
+3vPlRUeo+MKNdA1vLvPtsJN/oarEBG+oot84kCXztS2pH+UiS/zUenxP3ct5jg+U
+7294N8Xu0FA5Yruo0+Kd8PKVbl/Mch0dObSd1J+0eFUSKwgDpJgzCYT7alrtGCke
+Vuqb2kj1ZeC6YvZTMSsKHBW+l3SqiCWK3BUNeCuHJfo7sw57X49tznqmKCgVrbkm
+wqJZWk2xX06eAxissGRa
+=dIfj
+-----END PGP SIGNATURE-----
 
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+--1TlZXgau9qP5MFoa--
