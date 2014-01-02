@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752254AbaABQeb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 11:34:31 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:42498 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823AbaABQea convert rfc822-to-8bit (ORCPT
+	id S1751785AbaABQsf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 11:48:35 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:36635 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917AbaABQsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 11:34:30 -0500
-Content-Type: text/plain; charset=iso-8859-1
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [PATCH v3] Bluetooth: Add hci_h4p driver
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <20140102161824.GA8204@amd.pavel.ucw.cz>
-Date: Thu, 2 Jan 2014 08:34:19 -0800
-Cc: =?iso-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org development" 
-	<linux-bluetooth@vger.kernel.org>,
-        Ville Tervo <ville.tervo@nokia.com>, Sebastian Reichel <sre@ring0.de>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <A5B72277-42D4-4A24-8A29-9BE18762E8C4@holtmann.org>
-References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com> <1727897.LBX8128hIo@izba> <20140102161824.GA8204@amd.pavel.ucw.cz>
-To: Pavel Machek <pavel@ucw.cz>
-X-Mailer: Apple Mail (2.1827)
+	Thu, 2 Jan 2014 11:48:32 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-dd-52c5985e2c96
+From: Tomasz Figa <t.figa@samsung.com>
+To: Dongjin Kim <tobetter@gmail.com>
+Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: dts: add clock provider for mshc in Exynos4412
+Date: Thu, 02 Jan 2014 17:48:28 +0100
+Message-id: <27795108.u6MRg8vUSW@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.12 (Linux/3.11.5-gentoo; KDE/4.12.0; x86_64; ; )
+In-reply-to: <1388679706-29265-1-git-send-email-tobetter@gmail.com>
+References: <1388679706-29265-1-git-send-email-tobetter@gmail.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsVy+t/xa7pxM44GGTRtYreYtO4Ak8X8I+dY
+	LfrfLGS1OPdqJaNF74KrbBabHl9jtbi8aw6bxYzz+5gsbl/mtVh6/SKTxYTpa1ksDq8A6tr3
+	eA2zA6/HmnlrGD1amnvYPBZ8vsLucbmvl8nj76oXzB47Z91l91i5/Aubx+Yl9R59W1Yxenze
+	JBfAFcVlk5Kak1mWWqRvl8CV8WvBXbaCR4wVz1++Y29g3MjYxcjJISFgIvHz8BNmCFtM4sK9
+	9WxdjFwcQgJLGSV2Nm5igXC6mCQ+tZxgAaliE1CT+NzwiA3EFhFQkeg6+pQJpIhZYDezxLnL
+	38CKhAU8JE7PnMQKYrMIqEr8/LEKqIiDg1dAS+LZjhqQML+AusS7bSC9nByiAi4Sx1oWgbVy
+	CjhL/Nz1H8wWEnCSuDX9MjuIzSsgKPFj8j2wOLOAvMS+/VNZIWwtifU7jzNNYBSchaRsFpKy
+	WUjKFjAyr2IUTS1NLihOSs811CtOzC0uzUvXS87P3cQIibQvOxgXH7M6xCjAwajEw/uh7miQ
+	EGtiWXFl7iFGCQ5mJRHeuGKgEG9KYmVValF+fFFpTmrxIUYmDk6pBsaIkomrzdnMi9yVzH/Z
+	v1rIsN1zeznzCvekY3ftk5yLJLcn7OZ7w69t/+ZN8iXWneU9VgZZOub60+XcPYNat23K/Xae
+	7a3Fyyshss8VP8s67FreevLtph/XLoQpf/r6YsHt2PJk6YVa9ufY9NsdNLijuDTmL/X+v+xU
+	0t8lhs0GcRP8St/KnFNiKc5INNRiLipOBAANwYG2kgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
+Hi Dongjin,
 
-> Add hci_h4p bluetooth driver to 3.12. This device is used for example
-> on Nokia N900 cell phone.
+On Friday 03 of January 2014 01:21:46 Dongjin Kim wrote:
+> Add clock lookup information for mshc in Exynos4412.
 
-I only care about patches against bluetooth-next btw.
+Thanks for the patch. However this is already fixed in linux-next.
 
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> Signed-off-by: Pavel Machek <pavel@ucw.cz>
-> 
-> ---
-> 
-> Changes from v2: Cleanups as suggested by Marcel. Platform data are
-> still used to communicate with board code; N900 is not quite ready
-> for device tree just yet. Power management thread was removed.
-
-And platform data goes into include/linux/platform_data/ as I mentioned before.
-
-Regards
-
-Marcel
+Best regards,
+Tomasz
 
