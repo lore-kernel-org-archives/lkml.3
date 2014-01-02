@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943AbaABRKa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:10:30 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40588 "EHLO
+	id S1754013AbaABRK4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:10:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40617 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987AbaABRKZ (ORCPT
+	with ESMTP id S1753963AbaABRKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:10:25 -0500
+	Thu, 2 Jan 2014 12:10:48 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: James Bottomley <JBottomley@Parallels.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 85/91] [SCSI] enclosure: fix WARN_ON in dual path device removing
-Date: Thu,  2 Jan 2014 09:05:00 -0800
-Message-Id: <1388682306-30859-86-git-send-email-kamal@canonical.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 84/91] ALSA: hda - Another fixup for ASUS laptop with ALC660 codec
+Date: Thu,  2 Jan 2014 09:04:59 -0800
+Message-Id: <1388682306-30859-85-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -27,49 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <JBottomley@Parallels.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit a1470c7bf3a4676e62e4c0fb204e339399eb5c59 upstream.
+commit e7ca237bfcf6a288702cb95e94ab94f642ccad88 upstream.
 
-Bug report from: wenxiong@linux.vnet.ibm.com
+ASUS Z35HL laptop also needs the very same fix as the previous one
+that was applied to ASUS W7J.
 
-The issue is happened in dual controller configuration. We got the
-sysfs warnings when rmmod the ipr module.
-
-enclosure_unregister() in drivers/msic/enclosure.c, call device_unregister()
-for each componment deivce, device_unregister() ->device_del()->kobject_del()
-->sysfs_remove_dir(). In sysfs_remove_dir(), set kobj->sd = NULL.
-
-For each componment device,
-enclosure_component_release()->enclosure_remove_links()->sysfs_remove_link()
-in which checking kobj->sd again, it has been set as NULL when doing
-device_unregister. So we saw all these sysfs WARNING.
-
-Tested-by: wenxiong@linux.vnet.ibm.com
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66231
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/misc/enclosure.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ sound/pci/hda/patch_realtek.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/misc/enclosure.c b/drivers/misc/enclosure.c
-index 00e5fcac8..cbee842 100644
---- a/drivers/misc/enclosure.c
-+++ b/drivers/misc/enclosure.c
-@@ -198,6 +198,13 @@ static void enclosure_remove_links(struct enclosure_component *cdev)
- {
- 	char name[ENCLOSURE_NAME_SIZE];
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index a67e6e2..cab561b 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6644,6 +6644,7 @@ static const struct alc_fixup alc861_fixups[] = {
  
-+	/*
-+	 * In odd circumstances, like multipath devices, something else may
-+	 * already have removed the links, so check for this condition first.
-+	 */
-+	if (!cdev->dev->kobj.sd)
-+		return;
-+
- 	enclosure_link_name(cdev, name);
- 	sysfs_remove_link(&cdev->dev->kobj, name);
- 	sysfs_remove_link(&cdev->cdev.kobj, "device");
+ static const struct snd_pci_quirk alc861_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x1043, 0x1253, "ASUS W7J", ALC660_FIXUP_ASUS_W7J),
++	SND_PCI_QUIRK(0x1043, 0x1263, "ASUS Z35HL", ALC660_FIXUP_ASUS_W7J),
+ 	SND_PCI_QUIRK(0x1043, 0x1393, "ASUS A6Rp", ALC861_FIXUP_ASUS_A6RP),
+ 	SND_PCI_QUIRK_VENDOR(0x1043, "ASUS laptop", ALC861_FIXUP_AMP_VREF_0F),
+ 	SND_PCI_QUIRK(0x1462, 0x7254, "HP DX2200", ALC861_FIXUP_NO_JACK_DETECT),
 -- 
 1.8.3.2
 
