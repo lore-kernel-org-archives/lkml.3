@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798AbaABU7Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 15:59:24 -0500
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:11555 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752701AbaABU7X (ORCPT
+	id S1752834AbaABVBj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 16:01:39 -0500
+Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:64307 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136AbaABVBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 15:59:23 -0500
-Message-ID: <1388696357.11119.10.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v5 4/4] futex: Avoid taking hb lock if nothing to wakeup
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, Jeff Mahoney <jeffm@suse.com>,
-        Jason Low <jason.low2@hp.com>, Waiman Long <Waiman.Long@hp.com>,
-        Tom Vaden <tom.vaden@hp.com>, "Norton, Scott J" <scott.norton@hp.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>
-Date: Thu, 02 Jan 2014 12:59:17 -0800
-In-Reply-To: <CA+55aFwNPgzORGyKaziqBGqY9Uubuuo0w=rGQvcHS-Ftz4HQ9g@mail.gmail.com>
-References: <1388675120-8017-1-git-send-email-davidlohr@hp.com>
-	 <1388675120-8017-5-git-send-email-davidlohr@hp.com>
-	 <CA+55aFwNPgzORGyKaziqBGqY9Uubuuo0w=rGQvcHS-Ftz4HQ9g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Thu, 2 Jan 2014 16:01:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=sasl; b=SI6Xm9
+	KTkku1I1CSsk7kbgY59NsD8n8BpYM3QORQmCpSkkFQF+uYZk4r6G9BZQy9isyrGJ
+	xMARdW6P5AjVaJqeDjE0XdWnWtvKapvOabyScjYiho/jk7Js19DI2ug/8ZjCSYef
+	RKbnNq3Uf8b274qusFYBnxhFj0a+TvIBXZ5Dc=
+Message-ID: <52C5D3A9.60708@pobox.com>
+Date: Thu, 02 Jan 2014 16:01:29 -0500
+From: Mark Lord <mlord@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>, walt <w41ter@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        David Laight <david.laight@aculab.com>, linux-usb@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
+ a USB payload burst
+References: <20131218211219.461663463@linuxfoundation.org> <20131218211220.412278148@linuxfoundation.org> <52C32BB0.90600@gmail.com> <20140102191510.GA9621@xanatos>
+In-Reply-To: <20140102191510.GA9621@xanatos>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Pobox-Relay-ID: 0DCB443E-73F1-11E3-A8A9-873F0E5B5709-82205200!a-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-02 at 11:23 -0800, Linus Torvalds wrote:
-> On Thu, Jan 2, 2014 at 7:05 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> >
-> > In futex_wake() there is clearly no point in taking the hb->lock if we know
-> > beforehand that there are no tasks to be woken.
+On 14-01-02 02:15 PM, Sarah Sharp wrote:
+> On Tue, Dec 31, 2013 at 12:40:16PM -0800, walt wrote:
+..
+>> Unfortunately this patch causes a regression when copying large files to my
+>> outboard USB3 drive. (Nothing at all to do with networking.)
+>>
+>> When I try to copy a large (20GB) file to the USB3 drive, the copy dies after
+>> about 7GB, the ext4 journal aborts and the drive is remounted read-only.
+>>
+>> This bug is 100% reproducible (always pretty close to 7GB) and reverting this
+>> patch completely fixes the problem.
 > 
-> Btw, I think we could optimize this a bit further for the wakeup case.
-> 
-> wake_futex() does a get_task_struct(p)/put_task_struct(p) around its
-> actual waking logic, and I don't think that's necessary. The task
-> structures are RCU-delayed, and the task cannot go away until the
-> "q->lock_ptr = NULL" afaik, so you could replace that atomic inc/dec
-> with just a RCU read region.
-
-I had originally explored making the whole plist thing more rcu aware
-but never got to anything worth sharing. What you say does make a lot of
-sense, however, I haven't been able to see any actual improvements. It
-doesn't hurt however, so I'd have no problem adding such patch to the
-lot.
-
-> 
-> Maybe it's not a big deal ("wake_up_state()" ends up getting the task
-> struct pi_lock anyway, so it's not like we can avoid toucing the task
-> structure), but I'm getting the feeling that we're doing a lot of
-> unnecessary work here.
-
-I passed this idea through my wakeup measuring program and didn't notice
-hardly any difference, just noise, even for large amounts of futexes.
-I believe that peterz's idea of lockless batch wakeups is the next step
-worth looking into for futexes -- even though the spurious wakeup
-problem can become a real pain.
-
-Thanks,
-Davidlohr
+> Ok, I had feared that would be a consequence of this patch.  I think the
+> problem is that the usb-storage driver submitted an URB with more
+> scatter-gather entries than would fit on the ring segment, the xHCI
+> driver rejected the URB with -ENOMEM, and the SCSI core eventually gave
+> up on the SCSI command.
 
 
+Is there not a block layer / scheduler tunable for max sg entries or something?
+-- 
+Mark Lord
+Real-Time Remedies Inc.
+mlord@pobox.com
