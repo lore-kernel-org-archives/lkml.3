@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834AbaABVBj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 16:01:39 -0500
-Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:64307 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136AbaABVBh (ORCPT
+	id S1752862AbaABVCW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 16:02:22 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:6270 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751172AbaABVCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 16:01:37 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=message-id:date
-	:from:mime-version:to:cc:subject:references:in-reply-to
-	:content-type:content-transfer-encoding; q=dns; s=sasl; b=SI6Xm9
-	KTkku1I1CSsk7kbgY59NsD8n8BpYM3QORQmCpSkkFQF+uYZk4r6G9BZQy9isyrGJ
-	xMARdW6P5AjVaJqeDjE0XdWnWtvKapvOabyScjYiho/jk7Js19DI2ug/8ZjCSYef
-	RKbnNq3Uf8b274qusFYBnxhFj0a+TvIBXZ5Dc=
-Message-ID: <52C5D3A9.60708@pobox.com>
-Date: Thu, 02 Jan 2014 16:01:29 -0500
-From: Mark Lord <mlord@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>, walt <w41ter@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        David Laight <david.laight@aculab.com>, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
- a USB payload burst
-References: <20131218211219.461663463@linuxfoundation.org> <20131218211220.412278148@linuxfoundation.org> <52C32BB0.90600@gmail.com> <20140102191510.GA9621@xanatos>
-In-Reply-To: <20140102191510.GA9621@xanatos>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+	Thu, 2 Jan 2014 16:02:20 -0500
+Date: Thu, 2 Jan 2014 16:02:18 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Namhyung Kim <namhyung@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 15/17] tracing/uprobes: Add support for full argument
+ access methods
+Message-ID: <20140102160218.6e9ee4a4@gandalf.local.home>
+In-Reply-To: <20140102155827.21b552e0@gandalf.local.home>
+References: <1387168336-13213-1-git-send-email-namhyung@kernel.org>
+	<1387168336-13213-16-git-send-email-namhyung@kernel.org>
+	<20140102155827.21b552e0@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Pobox-Relay-ID: 0DCB443E-73F1-11E3-A8A9-873F0E5B5709-82205200!a-pb-sasl-quonix.pobox.com
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-01-02 02:15 PM, Sarah Sharp wrote:
-> On Tue, Dec 31, 2013 at 12:40:16PM -0800, walt wrote:
-..
->> Unfortunately this patch causes a regression when copying large files to my
->> outboard USB3 drive. (Nothing at all to do with networking.)
->>
->> When I try to copy a large (20GB) file to the USB3 drive, the copy dies after
->> about 7GB, the ext4 journal aborts and the drive is remounted read-only.
->>
->> This bug is 100% reproducible (always pretty close to 7GB) and reverting this
->> patch completely fixes the problem.
+On Thu, 2 Jan 2014 15:58:27 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
+
+> On Mon, 16 Dec 2013 13:32:14 +0900
+> Namhyung Kim <namhyung@kernel.org> wrote:
 > 
-> Ok, I had feared that would be a consequence of this patch.  I think the
-> problem is that the usb-storage driver submitted an URB with more
-> scatter-gather entries than would fit on the ring segment, the xHCI
-> driver rejected the URB with -ENOMEM, and the SCSI core eventually gave
-> up on the SCSI command.
+> > From: Namhyung Kim <namhyung.kim@lge.com>
+> > 
+> > Enable to fetch other types of argument for the uprobes.  IOW, we can
+> > access stack, memory, deref, bitfield and retval from uprobes now.
+> > 
+> > The format for the argument types are same as kprobes (but @SYMBOL
+> > type is not supported for uprobes), i.e:
+> > 
+> >   @ADDR   : Fetch memory at ADDR
+> >   $stackN : Fetch Nth entry of stack (N >= 0)
+> >   $stack  : Fetch stack address
+> >   $retval : Fetch return value
+> >   +|-offs(FETCHARG) : Fetch memory at FETCHARG +|- offs address
+> > 
+> > Note that the retval only can be used with uretprobes.
+> > 
+> > Original-patch-by: Hyeoncheol Lee <cheol.lee@lge.com>
+> 
+> Where was the original patch posted? And can we get Hyeoncheol's SOB for
+> this?
+> 
 
+Was this the other part of patch 11? Still should have Hyeoncheol's
+signed-off-by. If you already had it on the original (before the split)
+then we can add it here too, as he already signed off on the code that
+this was based on.
 
-Is there not a block layer / scheduler tunable for max sg entries or something?
--- 
-Mark Lord
-Real-Time Remedies Inc.
-mlord@pobox.com
+-- Steve
