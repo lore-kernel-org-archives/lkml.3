@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508AbaABRYs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:24:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40311 "EHLO
+	id S1752871AbaABRHd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:07:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40290 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752925AbaABRHi (ORCPT
+	with ESMTP id S1752823AbaABRH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:07:38 -0500
+	Thu, 2 Jan 2014 12:07:29 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        David Miller <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>,
+Cc: Ying Xue <ying.xue@windriver.com>, "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 52/91] ip6tnl: fix use after free of fb_tnl_dev
-Date: Thu,  2 Jan 2014 09:04:27 -0800
-Message-Id: <1388682306-30859-53-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 25/91] atm: idt77252: fix dev refcnt leak
+Date: Thu,  2 Jan 2014 09:04:00 -0800
+Message-Id: <1388682306-30859-26-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -29,42 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: Ying Xue <ying.xue@windriver.com>
 
-The upstream commit bb8140947a24 ("ip6tnl: allow to use rtnl ops on fb tunnel")
-(backported into linux-3.10.y) left a bug which was fixed upstream by commit
-1e9f3d6f1c40 ("ip6tnl: fix use after free of fb_tnl_dev").
+[ Upstream commit b5de4a22f157ca345cdb3575207bf46402414bc1 ]
 
-The problem is a bit different in linux-3.10.y, because there is no x-netns
-support (upstream commit 0bd8762824e7 ("ip6tnl: add x-netns support")).
-When ip6_tunnel.ko is unloaded, FB device is deleted by rtnl_link_unregister()
-and then we try to delete it again in ip6_tnl_destroy_tunnels().
+init_card() calls dev_get_by_name() to get a network deceive. But it
+doesn't decrease network device reference count after the device is
+used.
 
-This patch removes the second deletion.
-
-Reported-by: Steven Rostedt <rostedt@goodmis.org>
-Suggested-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Cc: David Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Ying Xue <ying.xue@windriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv6/ip6_tunnel.c | 2 --
- 1 file changed, 2 deletions(-)
+ drivers/atm/idt77252.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ipv6/ip6_tunnel.c b/net/ipv6/ip6_tunnel.c
-index a953bfb..fa3fe70 100644
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -1725,8 +1725,6 @@ static void __net_exit ip6_tnl_destroy_tunnels(struct ip6_tnl_net *ip6n)
- 		}
+diff --git a/drivers/atm/idt77252.c b/drivers/atm/idt77252.c
+index 272f009..1bdf104 100644
+--- a/drivers/atm/idt77252.c
++++ b/drivers/atm/idt77252.c
+@@ -3511,7 +3511,7 @@ static int init_card(struct atm_dev *dev)
+ 	tmp = dev_get_by_name(&init_net, tname);	/* jhs: was "tmp = dev_get(tname);" */
+ 	if (tmp) {
+ 		memcpy(card->atmdev->esi, tmp->dev_addr, 6);
+-
++		dev_put(tmp);
+ 		printk("%s: ESI %pM\n", card->name, card->atmdev->esi);
  	}
- 
--	t = rtnl_dereference(ip6n->tnls_wc[0]);
--	unregister_netdevice_queue(t->dev, &list);
- 	unregister_netdevice_many(&list);
- }
- 
+ 	/*
 -- 
 1.8.3.2
 
