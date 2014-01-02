@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751503AbaABKxf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 05:53:35 -0500
-Received: from [213.199.154.186] ([213.199.154.186]:37640 "EHLO
-	db8outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750914AbaABKxb (ORCPT
+	id S1751136AbaABK6X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 05:58:23 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:37224 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748AbaABK6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 05:53:31 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z551bizzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <thierry.reding@gmail.com>, <shawn.guo@linaro.org>,
-        <linux-pwm@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCHv8 2/4] ARM: dts: Add Freescale FTM PWM node for VF610.
-Date: Thu, 2 Jan 2014 17:57:02 +0800
-Message-ID: <1388656624-26570-3-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1388656624-26570-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1388656624-26570-1-git-send-email-Li.Xiubo@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+	Thu, 2 Jan 2014 05:58:22 -0500
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 0/5] perf tools: get --list-cmds for subcommands
+Date: Thu,  2 Jan 2014 16:28:45 +0530
+Message-Id: <1388660330-16781-1-git-send-email-artagnon@gmail.com>
+X-Mailer: git-send-email 1.8.5.2.227.g53f3478
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds devicetree node for VF610, and there are 8 channels
-supported.
+Hi Arnaldo et al,
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-Reviewed-by: Sascha Hauer <s.hauer@pengutronix.de>
----
- arch/arm/boot/dts/vf610.dtsi | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+In <20131216131628.GA2368@infradead.org>, Arnaldo Carvalho de Melo wrote:
+> Don't do all those things open coded, introduce functions to print,
+> concat, etc.
+>
+> The best thing tho, since we have all those sub sub commands in things
+> like 'perf kvm', 'perf bench', etc, we could have some
+> parse_options_subcmd, and make the parse options machinery aware of
+> this, so that it could receive an array of subcmds and when asked for
+> --list-cmds, would print that sublist, etc, i.e. make sub cmds a first
+> class citizen.
+>
+> So I'd suggest that you first introduce functions for doing the concat
+> to pass to the current infrastructure, so that we have what your patch
+> provides, but prettified, then, as follow on patches, you could work on
+> making the options parsing machinery aware of sub cmds.
+>
+> Ah, and try not using fixed sized arrays, or at least verify that space
+> is available, i.e. never use strcat, use strncat, better, take a look at
+> tools/perf/util/strbuf.h, I guess you can use it to build the string for
+> you in a safe way and expanding the buffer as needed, etc.
 
-diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
-index d31ce1b..6cce861 100644
---- a/arch/arm/boot/dts/vf610.dtsi
-+++ b/arch/arm/boot/dts/vf610.dtsi
-@@ -152,6 +152,19 @@
- 				clock-names = "pit";
- 			};
- 
-+			pwm0: pwm@40038000 {
-+				compatible = "fsl,vf610-ftm-pwm";
-+				#pwm-cells = <3>;
-+				reg = <0x40038000 0x1000>;
-+				clock-names = "ftm_sys", "ftm_ext",
-+					      "ftm_fix", "ftm_cnt_clk_en";
-+				clocks = <&clks VF610_CLK_FTM0>,
-+					<&clks VF610_CLK_FTM0_EXT_SEL>,
-+					<&clks VF610_CLK_FTM0_FIX_SEL>,
-+					<&clks VF610_CLK_FTM0_EXT_FIX_EN>;
-+				status = "disabled";
-+			};
-+
- 			wdog@4003e000 {
- 				compatible = "fsl,vf610-wdt", "fsl,imx21-wdt";
- 				reg = <0x4003e000 0x1000>;
+Okay, so here's a first cut. util.c/ util.h might not have been the
+best place to put the functions, but I couldn't think of a better
+place at the moment. The series isn't ideal, but I think it's getting
+close.
+
+Thoughts?
+
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+Ramkumar Ramachandra (5):
+  perf kvm: introduce --list-cmds for use by scripts
+  perf kmem: introduce --list-cmds
+  perf lock: introduce --list-cmds
+  perf mem: introduce --list-cmds
+  perf sched: introduce --list-cmds
+
+ tools/perf/builtin-kmem.c     | 15 +++++++++++----
+ tools/perf/builtin-kvm.c      | 16 +++++++++++-----
+ tools/perf/builtin-lock.c     | 14 ++++++++++----
+ tools/perf/builtin-mem.c      | 15 ++++++++++-----
+ tools/perf/builtin-sched.c    | 15 +++++++++++----
+ tools/perf/perf-completion.sh |  6 +++---
+ tools/perf/util/util.c        | 24 ++++++++++++++++++++++++
+ tools/perf/util/util.h        |  4 ++++
+ 8 files changed, 84 insertions(+), 25 deletions(-)
+
 -- 
-1.8.4
-
+1.8.5.2.227.g53f3478
 
