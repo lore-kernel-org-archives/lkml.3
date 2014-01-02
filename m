@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751782AbaABM3N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 07:29:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26548 "EHLO mx1.redhat.com"
+	id S1751740AbaABM3L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 07:29:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54718 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751365AbaABM2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 07:28:44 -0500
+	id S1751265AbaABM2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 07:28:40 -0500
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 4/6] GFS2: Fix incorrect invalidation for DIO/buffered I/O
-Date: Thu,  2 Jan 2014 12:28:12 +0000
-Message-Id: <1388665694-1639-5-git-send-email-swhiteho@redhat.com>
+Cc: Bob Peterson <rpeterso@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 2/6] GFS2: Fix use-after-free race when calling gfs2_remove_from_ail
+Date: Thu,  2 Jan 2014 12:28:10 +0000
+Message-Id: <1388665694-1639-3-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1388665694-1639-1-git-send-email-swhiteho@redhat.com>
 References: <1388665694-1639-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In patch 209806aba9d540dde3db0a5ce72307f85f33468f we allowed
-local deferred locks to be granted against a cached exclusive
-lock. That opened up a corner case which this patch now
-fixes.
+From: Bob Peterson <rpeterso@redhat.com>
 
-The solution to the problem is to check whether we have cached
-pages each time we do direct I/O and if so to unmap, flush
-and invalidate those pages. Since the glock state machine
-normally does that for us, mostly the code will be a no-op.
+Function gfs2_remove_from_ail drops the reference on the bh via
+brelse. This patch fixes a race condition whereby bh is deferenced
+after the brelse when setting bd->bd_blkno = bh->b_blocknr;
+Under certain rare circumstances, bh might be gone or reused,
+and bd->bd_blkno is set to whatever that memory happens to be,
+which is often 0. Later, in gfs2_trans_add_unrevoke, that bd fails
+the test "bd->bd_blkno >= blkno" which causes it to never be freed.
+The end result is that the bd is never freed from the bufdata cache,
+which results in this error:
+slab error in kmem_cache_destroy(): cache `gfs2_bufdata': Can't free all objects
 
+Signed-off-by: Bob Peterson <rpeterso@redhat.com>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
-diff --git a/fs/gfs2/aops.c b/fs/gfs2/aops.c
-index b7fc035..73f3e4e 100644
---- a/fs/gfs2/aops.c
-+++ b/fs/gfs2/aops.c
-@@ -986,6 +986,7 @@ static ssize_t gfs2_direct_IO(int rw, struct kiocb *iocb,
- {
- 	struct file *file = iocb->ki_filp;
- 	struct inode *inode = file->f_mapping->host;
-+	struct address_space *mapping = inode->i_mapping;
- 	struct gfs2_inode *ip = GFS2_I(inode);
- 	struct gfs2_holder gh;
- 	int rv;
-@@ -1006,6 +1007,35 @@ static ssize_t gfs2_direct_IO(int rw, struct kiocb *iocb,
- 	if (rv != 1)
- 		goto out; /* dio not valid, fall back to buffered i/o */
+diff --git a/fs/gfs2/log.c b/fs/gfs2/log.c
+index 610613f..9dcb977 100644
+--- a/fs/gfs2/log.c
++++ b/fs/gfs2/log.c
+@@ -551,10 +551,10 @@ void gfs2_add_revoke(struct gfs2_sbd *sdp, struct gfs2_bufdata *bd)
+ 	struct buffer_head *bh = bd->bd_bh;
+ 	struct gfs2_glock *gl = bd->bd_gl;
  
-+	/*
-+	 * Now since we are holding a deferred (CW) lock at this point, you
-+	 * might be wondering why this is ever needed. There is a case however
-+	 * where we've granted a deferred local lock against a cached exclusive
-+	 * glock. That is ok provided all granted local locks are deferred, but
-+	 * it also means that it is possible to encounter pages which are
-+	 * cached and possibly also mapped. So here we check for that and sort
-+	 * them out ahead of the dio. The glock state machine will take care of
-+	 * everything else.
-+	 *
-+	 * If in fact the cached glock state (gl->gl_state) is deferred (CW) in
-+	 * the first place, mapping->nr_pages will always be zero.
-+	 */
-+	if (mapping->nrpages) {
-+		loff_t lstart = offset & (PAGE_CACHE_SIZE - 1);
-+		loff_t len = iov_length(iov, nr_segs);
-+		loff_t end = PAGE_ALIGN(offset + len) - 1;
-+
-+		rv = 0;
-+		if (len == 0)
-+			goto out;
-+		if (test_and_clear_bit(GIF_SW_PAGED, &ip->i_flags))
-+			unmap_shared_mapping_range(ip->i_inode.i_mapping, offset, len);
-+		rv = filemap_write_and_wait_range(mapping, lstart, end);
-+		if (rv)
-+			return rv;
-+		truncate_inode_pages_range(mapping, lstart, end);
-+	}
-+
- 	rv = __blockdev_direct_IO(rw, iocb, inode, inode->i_sb->s_bdev, iov,
- 				  offset, nr_segs, gfs2_get_block_direct,
- 				  NULL, NULL, 0);
+-	gfs2_remove_from_ail(bd);
+-	bd->bd_bh = NULL;
+ 	bh->b_private = NULL;
+ 	bd->bd_blkno = bh->b_blocknr;
++	gfs2_remove_from_ail(bd); /* drops ref on bh */
++	bd->bd_bh = NULL;
+ 	bd->bd_ops = &gfs2_revoke_lops;
+ 	sdp->sd_log_num_revoke++;
+ 	atomic_inc(&gl->gl_revokes);
 -- 
 1.8.3.1
 
