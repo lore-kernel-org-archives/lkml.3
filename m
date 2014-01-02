@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443AbaABL2A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 06:28:00 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:45402 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750748AbaABL17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 06:27:59 -0500
+	id S1750830AbaABLbQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 06:31:16 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:53654 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738AbaABLbP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 06:31:15 -0500
 X-IronPort-AV: E=Sophos;i="4.95,590,1384300800"; 
-   d="scan'208";a="89191828"
-Message-ID: <52C54D3C.4050101@citrix.com>
-Date: Thu, 2 Jan 2014 11:27:56 +0000
+   d="scan'208";a="87003144"
+Message-ID: <52C54E00.7010508@citrix.com>
+Date: Thu, 2 Jan 2014 11:31:12 +0000
 From: David Vrabel <david.vrabel@citrix.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
@@ -17,13 +18,14 @@ To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
         <boris.ostrovsky@oracle.com>, <stefano.stabellini@eu.citrix.com>,
         <mukesh.rathor@oracle.com>
-Subject: Re: [PATCH v12 07/18] xen/pvh: Setup up shared_info.
-References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com> <1388550945-25499-8-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1388550945-25499-8-git-send-email-konrad.wilk@oracle.com>
+Subject: Re: [PATCH v12 08/18] xen/pvh: Load GDT/GS in early PV bootup code
+ for BSP.
+References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com> <1388550945-25499-9-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1388550945-25499-9-git-send-email-konrad.wilk@oracle.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,33 +33,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
 > From: Mukesh Rathor <mukesh.rathor@oracle.com>
 > 
-> For PVHVM the shared_info structure is provided via the same way
-> as for normal PV guests (see include/xen/interface/xen.h).
+> During early bootup we start life using the Xen provided
+> GDT, which means that we are running with %cs segment set
+> to FLAT_KERNEL_CS (FLAT_RING3_CS64 0xe033, GDT index 261).
 > 
-> That is during bootup we get 'xen_start_info' via the %esi register
-> in startup_xen. Then later we extract the 'shared_info' from said
-> structure (in xen_setup_shared_info) and start using it.
+> But for PVH we want to be use HVM type mechanism for
+> segment operations. As such we need to switch to the HVM
+> one and also reload ourselves with the __KERNEL_CS:eip
+> to run in the proper GDT and segment.
 > 
-> The 'xen_setup_shared_info' is all setup to work with auto-xlat
-> guests, but there are two functions which it calls that are not:
-> xen_setup_mfn_list_list and xen_setup_vcpu_info_placement.
-> This patch modifies those to work in auto-xlat mode.
+> For HVM this is usually done in 'secondary_startup_64' in
+> (head_64.S) but since we are not taking that bootup
+> path (we start in PV - xen_start_kernel) we need to do
+> that in the early PV bootup paths.
+> 
+> For good measure we also zero out the %fs, %ds, and %es
+> (not strictly needed as Xen has already cleared them
+> for us). The %gs is loaded by 'switch_to_new_gdt'.
 [...]
 > --- a/arch/x86/xen/enlighten.c
 > +++ b/arch/x86/xen/enlighten.c
-> @@ -1147,8 +1147,9 @@ void xen_setup_vcpu_info_placement(void)
->  		xen_vcpu_setup(cpu);
->  
->  	/* xen_vcpu_setup managed to place the vcpu_info within the
-> -	   percpu area for all cpus, so make use of it */
-> -	if (have_vcpu_info_placement) {
-> +	 * percpu area for all cpus, so make use of it. Note that for
-> +	 * PVH we want to use native IRQ mechanism. */
-> +	if (have_vcpu_info_placement && !xen_pvh_domain()) {
->  		pv_irq_ops.save_fl = __PV_IS_CALLEE_SAVE(xen_save_fl_direct);
->  		pv_irq_ops.restore_fl = __PV_IS_CALLEE_SAVE(xen_restore_fl_direct);
->  		pv_irq_ops.irq_disable = __PV_IS_CALLEE_SAVE(xen_irq_disable_direct);
+> @@ -1414,8 +1414,43 @@ static void __init xen_boot_params_init_edd(void)
+>   * we do this, we have to be careful not to call any stack-protected
+>   * function, which is most of the kernel.
+>   */
+> -static void __init xen_setup_stackprotector(void)
+> +static void __init xen_setup_gdt(void)
+>  {
+> +	if (xen_feature(XENFEAT_auto_translated_physmap)) {
+> +#ifdef CONFIG_X86_64
+> +		unsigned long dummy;
+> +
+> +		switch_to_new_gdt(0); /* GDT and GS set */
+> +
+> +		/* We are switching of the Xen provided GDT to our HVM mode
+> +		 * GDT. The new GDT has  __KERNEL_CS with CS.L = 1
+> +		 * and we are jumping to reload it.
+> +		 */
+> +		asm volatile ("pushq %0\n"
+> +			      "leaq 1f(%%rip),%0\n"
+> +			      "pushq %0\n"
+> +			      "lretq\n"
+> +			      "1:\n"
+> +			      : "=&r" (dummy) : "0" (__KERNEL_CS));
+> +
+> +		/*
+> +		 * While not needed, we also set the %es, %ds, and %fs
+> +		 * to zero. We don't care about %ss as it is NULL.
+> +		 * Strictly speaking this is not needed as Xen zeros those
+> +		 * out (and also MSR_FS_BASE, MSR_GS_BASE, MSR_KERNEL_GS_BASE)
+> +		 *
+> +		 * Linux zeros them in cpu_init() and in secondary_startup_64
+> +		 * (for BSP).
+> +		 */
+> +		loadsegment(es, 0);
+> +		loadsegment(ds, 0);
+> +		loadsegment(fs, 0);
+> +#else
+> +		/* PVH: TODO Implement. */
+> +		BUG();
+> +#endif
+> +		return;
+> +	}
+>  	pv_cpu_ops.write_gdt_entry = xen_write_gdt_entry_boot;
+>  	pv_cpu_ops.load_gdt = xen_load_gdt_boot;
 
-Should this be in a separate patch: "xen/pvh: use native irq ops"?
+If PVH uses native GDT why are these (and possibly other?) GDT ops needed?
 
 David
