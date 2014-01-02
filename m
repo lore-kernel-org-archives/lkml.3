@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337AbaABWOi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 17:14:38 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:57811 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574AbaABWOg (ORCPT
+	id S1752529AbaABWPM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 17:15:12 -0500
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:60492 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765AbaABWPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 17:14:36 -0500
-Message-ID: <52C5E4C9.7030500@lwfinger.net>
-Date: Thu, 02 Jan 2014 16:14:33 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 2 Jan 2014 17:15:10 -0500
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Question on compiler warning
-References: <52C21CE3.3020402@lwfinger.net> <alpine.DEB.2.02.1401021354400.21537@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1401021354400.21537@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1388699686-4834-1-git-send-email-john.stultz@linaro.org>
+References: <52C5DB5B.9050604@linaro.org>
+	<1388699686-4834-1-git-send-email-john.stultz@linaro.org>
+Date: Thu, 2 Jan 2014 14:15:08 -0800
+X-Google-Sender-Auth: Rq5-qTOne9wrZCiJJwtglpyRI7k
+Message-ID: <CA+55aFxGQkChbFj=GMWAANmbJ512S5KAcFNvKoQJsQCiMfvxqA@mail.gmail.com>
+Subject: Re: [PATCH] sched_clock: Disable seqlock lockdep usage in sched_clock
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        =?UTF-8?Q?Krzysztof_Ha=C5=82asa?= <khalasa@piap.pl>,
+        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Willy Tarreau <w@1wt.eu>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2014 03:56 PM, David Rientjes wrote:
-> On Mon, 30 Dec 2013, Larry Finger wrote:
+On Thu, Jan 2, 2014 at 1:54 PM, John Stultz <john.stultz@linaro.org> wrote:
+> Unforunately the seqlock lockdep enablmenet can't be used
+> in sched_clock, since the lockdep infrastructure eventually
+> calls into sched_clock, which causes a deadlock.
 >
->> + /scratch/kisskb/src/drivers/net/wireless/b43/phy_n.c: warning: 'val_addr'
->> may be used uninitialized in this function [-Wuninitialized]: => 178:21
->>
->> This warning does not show up on any of my compilers, and it should not as the
->> initialization and usage of that variable both take place in conditional
->> branches that are testing exactly the same pointer.
->>
->
-> You may not be compiling this file depending on your .config or you may
-> have a different setting for CONFIG_CC_OPTIMIZE_FOR_SIZE.
+> Thus, this patch adds _no_lockdep() seqlock methods for the
+> writer side, and changes all generic sched_clock usage to use
+> the _no_lockdep methods.
 
-I am definitely building this driver in my configuration. Variable 
-CONFIG_CC_OPTIMIZE_FOR_SIZE was not set, but changing it to "y" did not change 
-the result.
+Ugh.
 
-Thanks,
+On the x86 vclock_gettime() side, we only do this for the reader. Why
+did you make the generic version do it for the writer too, adding the
+necessity for those new operations? It's only the reader side that
+doesn't want it.
 
-Larry
+Talking about the new operations, that "*_no_lockdep()" naming annoys
+me. It doesn't match the spinlock naming, which is to just use
+"raw_*()" instead. Wouldn't it be nice to make the naming be
+consistent too? Especially when it's paired with raw_local_irq_save()
+that shares that "raw_" model for non-checking stuff.
 
-
+             Linus
