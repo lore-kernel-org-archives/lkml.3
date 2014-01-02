@@ -1,150 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751417AbaABC7v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jan 2014 21:59:51 -0500
-Received: from know-smtprelay-omc-1.server.virginmedia.net ([80.0.253.65]:44674
-	"EHLO know-smtprelay-omc-1.server.virginmedia.net"
+	id S1751460AbaABDAp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jan 2014 22:00:45 -0500
+Received: from mga02.intel.com ([134.134.136.20]:59951 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750958AbaABC7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jan 2014 21:59:50 -0500
-X-Originating-IP: [82.36.39.136]
-X-Spam: 0
-X-Authority: v=2.1 cv=WI/xXxcR c=1 sm=1 tr=0 a=h3ZJzbuz6X3s3VlFudNWSw==:117
- a=h3ZJzbuz6X3s3VlFudNWSw==:17 a=6vexxxhns_QA:10 a=fZX2ME0dHmMA:10
- a=3NElcqgl2aoA:10 a=k1j_C7plYBUA:10 a=a5Gf7U6LAAAA:8 a=9wwvVaL5uFYA:10
- a=r77TgQKjGQsHNAKrUKIA:9 a=9iDbn-4jx3cA:10 a=cKsnjEOsciEA:10 a=fxJcL_dCAAAA:8
- a=WopfDZA9rRnAQH3ykPEA:9 a=K5qBcZl_ZuOU7H0W:21 a=wrzn9Y3MpMMpmrCM:21
- a=wPNLvfGTeEIA:10 a=yHIqe9kG5mgA:10 a=bEv_II62f2XnE6TLohsA:9
-Message-ID: <52C4D624.6030602@blueyonder.co.uk>
-Date: Thu, 02 Jan 2014 02:59:48 +0000
-From: Sid Boyce <sboyce@blueyonder.co.uk>
-Reply-To: sboyce@blueyonder.co.uk
-Organization: blueyonder.co.uk
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1750958AbaABDAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jan 2014 22:00:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,588,1384329600"; 
+   d="asc'?scan'208";a="452540756"
+Date: Wed, 1 Jan 2014 21:41:38 -0500
+From: "Chen, Gong" <gong.chen@linux.intel.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: rui wang <ruiv.wang@gmail.com>, Tony Luck <tony.luck@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, X86-ML <x86@kernel.org>,
+        Michel Lespinasse <walken@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Yang Zhang <yang.z.zhang@intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>, janet.morgan@intel.com,
+        "Yu, Fenghua" <fenghua.yu@intel.com>
+Subject: Re: [PATCH] x86: Add check for number of available vectors before
+ CPU down [v2]
+Message-ID: <20140102024138.GA28000@gchen.bj.intel.com>
+Mail-Followup-To: Prarit Bhargava <prarit@redhat.com>,
+	rui wang <ruiv.wang@gmail.com>, Tony Luck <tony.luck@gmail.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	X86-ML <x86@kernel.org>, Michel Lespinasse <walken@google.com>,
+	Andi Kleen <ak@linux.intel.com>,
+	Seiji Aguchi <seiji.aguchi@hds.com>,
+	Yang Zhang <yang.z.zhang@intel.com>,
+	Paul Gortmaker <paul.gortmaker@windriver.com>,
+	janet.morgan@intel.com, "Yu, Fenghua" <fenghua.yu@intel.com>
+References: <1387394945-5704-1-git-send-email-prarit@redhat.com>
+ <CA+8MBbKHZ0i0mEYLUrmWwaofvnRcxc7Dvm+w0CfZf2uQydjdjQ@mail.gmail.com>
+ <CA+8MBbLMFW5fnUdgNRFpPv9+U1DqB5AeoDOV44kZHozibxjqSg@mail.gmail.com>
+ <52B336D4.8010809@redhat.com>
+ <CANVTcTa2AiHYrLQt-P_=4GmER_mqbSCZwY13phOkSA4XxrzF=A@mail.gmail.com>
+ <52BF060E.7090905@redhat.com>
+ <CANVTcTbNqwzVBzqzGisbUJGtVCa9RtA6OuD4hVp0O39Nz_KDrQ@mail.gmail.com>
+ <52C18C6B.8090802@redhat.com>
+ <CANVTcTbBf8RomFtuvOrkVyHM136ViXVJr2UEQ-i6OvFmRYCqZA@mail.gmail.com>
+ <52C33581.1030204@redhat.com>
 MIME-Version: 1.0
-To: Ilia Mirkin <imirkin@alum.mit.edu>
-CC: LKML Mailing List <linux-kernel@vger.kernel.org>,
-        opensuse factory list <opensuse-factory@opensuse.org>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>
-Subject: Re: Possible 3.13-rc nouveau regression with GT 560 Ti
-References: <52C29918.4060102@blueyonder.co.uk>	<CAKb7UvhBunpMC6mzjRg7Zb5gGPPYj99=2jd+Lgnr-qeXFs0w9A@mail.gmail.com>	<52C3644C.9090809@blueyonder.co.uk>	<CAKb7UviLpfZMtZM9X1R0Eaj=5ww2k=T+7x01dZH3ns2Ew1HuFw@mail.gmail.com>	<52C42079.6060604@blueyonder.co.uk>	<CAKb7Uvj97SgHp1b11_MMt1UR-NUpQ_2LuGhwjyk_a7_VLqN+KQ@mail.gmail.com>	<52C4D099.9040507@blueyonder.co.uk> <CAKb7UvgiYn9Wy=EsrHWsoGH7Zj2=-8n=qunyzHTLKnSW3RL=iQ@mail.gmail.com>
-In-Reply-To: <CAKb7UvgiYn9Wy=EsrHWsoGH7Zj2=-8n=qunyzHTLKnSW3RL=iQ@mail.gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------040100060603000101000709"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ibTvN161/egqYuK8"
+Content-Disposition: inline
+In-Reply-To: <52C33581.1030204@redhat.com>
+X-PGP-Key-ID: A43922C7
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------040100060603000101000709
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 
-On 02/01/14 02:40, Ilia Mirkin wrote:
-> On Wed, Jan 1, 2014 at 9:36 PM, Sid Boyce <sboyce@blueyonder.co.uk> wrote:
->> On 01/01/14 18:46, Ilia Mirkin wrote:
->>> On Wed, Jan 1, 2014 at 9:04 AM, Sid Boyce <sboyce@blueyonder.co.uk> wrote:
->>>> On 01/01/14 00:55, Ilia Mirkin wrote:
->>>>> On Tue, Dec 31, 2013 at 7:41 PM, Sid Boyce <sboyce@blueyonder.co.uk>
->>>>> wrote:
->>>>>> On 31/12/13 10:36, Ilia Mirkin wrote:
->>>>>>> Having a dmesg would be nice. One thing I can think of off-hand is
->>>>>>> that 3.13-rc has MSI turned on by default. You can turn it off by
->>>>>>> adding "nouveau.config=NvMSI=0" to your kernel cmdline. If that
->>>>>>> doesn't help, a bisect restricted to drivers/gpu/drm/nouveau should
->>>>>>> show the offending commit fairly quickly.
->>>>>>>
->>>>>>>       -ilia
->>>>>>>
->>>>>> Adding "nouveau.config=NvMSI=0" to the command line fixed the problem.
->>>>>> So it looks like commit 049ffa8ab33a63b3bff672d1a0ee6a35ad253fe8
->>>>>> introduced
->>>>>> it.
->>>>> Any chance you might mmiotrace the blob (version 325 or later) to see
->>>>> which registers it fiddles with? Or alternatively, if you have a NVCE
->>>>> card (you never did end up providing the logs which would have made
->>>>> that apparent), could you try replacing nvc3_mc_oclass with
->>>>> nvc0_mc_oclass for the 0xce case in
->>>>> drivers/gpu/drm/nouveau/core/engine/device/nvc0.c? (and boot without
->>>>> the MSI disabling.) The switch has already been made for NVC8 in
->>>>> 0bae1d61c75 -- perhaps there are more "odd" ones.
->>>>>
->>>>>      -ilia
->>>>>
->>>> Fails exactly the same.
->>>>           case 0xc3:
->>>>                   device->cname = "GF106";
->>>>
->>>>                   device->oclass[NVDEV_SUBDEV_VBIOS  ] =
->>>> &nouveau_bios_oclass;
->>>>                   device->oclass[NVDEV_SUBDEV_GPIO   ] =
->>>> &nv50_gpio_oclass;
->>>>                   device->oclass[NVDEV_SUBDEV_I2C    ] = &nv94_i2c_oclass;
->>>>                   device->oclass[NVDEV_SUBDEV_CLOCK  ] =
->>>> &nvc0_clock_oclass;
->>>>                   device->oclass[NVDEV_SUBDEV_THERM  ] =
->>>> &nva3_therm_oclass;
->>>>                   device->oclass[NVDEV_SUBDEV_MXM    ] = &nv50_mxm_oclass;
->>>>                   device->oclass[NVDEV_SUBDEV_DEVINIT] =
->>>> &nvc0_devinit_oclass;
->>>>                   device->oclass[NVDEV_SUBDEV_MC     ] = nvc0_mc_oclass;
->>>> <<<<<====
->>>>                   device->oclass[NVDEV_SUBDEV_BUS    ] = nvc0_bus_oclass;
->>>>                   device->oclass[NVDEV_SUBDEV_TIMER  ] =
->>>> &nv04_timer_oclass;
->>> That's the 0xc3 case... you have a nvce card, not nvc3 -- you would
->>> need to change the NVDEV_SUBDEV_MC line to nvc0_mc_oclass for the 0xce
->>> case.
->>>
->>>> The dmesg and Xorg.0.log with the problem captured across a ssh link.
->>>>
->>>> # ps fax|grep X
->>>>    5633 pts/0    S+     0:00          \_ grep --color=auto X
->>>>    5160 tty7     Ss+    0:08  \_ /usr/bin/Xorg -br :0 vt7 -nolisten tcp
->>>> -auth
->>>> /var/lib/kdm/AuthFiles/A:0-yqspza
->>>>
->>>> Also
->>>> # echo mmiotrace > /sys/kernel/debug/tracing/current_tracer
->>>> -bash: echo: write error: Invalid argument.
->>> Take a look at https://wiki.ubuntu.com/X/MMIOTracing
->>>
->>>     -ilia
->>>
->> Of course it's a GF114.
->> Made the change and it boots without the command line change.
-> Great! Care to send a patch?
->
->    -ilia
->
-Here it is.
-Regards
-Sid.
+--ibTvN161/egqYuK8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
-Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
-Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support
-Senior Staff Specialist, Cricket Coach
-Microsoft Windows Free Zone - Linux used for all Computing Tasks
+On Tue, Dec 31, 2013 at 04:22:09PM -0500, Prarit Bhargava wrote:
+> Okay, how about,
+>                         if (irq_has_action(irq) && !irqd_is_per_cpu(data)=
+ &&
+>                             ((!cpumask_empty(&affinity_new)) &&
+>                               !cpumask_subset(&affinity_new, &online_new)=
+) ||
+>                              cpumask_empty(&affinity_new))
+>                                 this_count++;
+>=20
+I think it is good but a little bit complicated. How about this:
 
+        if (irq_has_action(irq) && !irqd_is_per_cpu(data) &&
+            /* add some commments to emphysize the importance of turn */
+            (cpumask_empty(&affinity_new) ||
+            !cpumask_subset(&affinity_new, &online_new)))
 
---------------040100060603000101000709
-Content-Type: text/x-patch;
- name="GF114.diff"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="GF114.diff"
+> I tried this with the following examples and AFAICT I get the correct res=
+ult:
+>=20
+> 1) affinity mask =3D online mask =3D 0xf.  CPU 3 (1000b) is down'd.
+>=20
+> this_count is not incremented.
+>=20
+> 2) affinity mask is a non-zero subset of the online mask (which IMO is
+> the "typical" case).  For example, affinity_mask =3D 0x9, online mask =3D=
+ 0xf.  CPU
+> 3 is again down'd.
+>=20
+> this_count is not incremented.
+>=20
+> 3) affinity_mask =3D 0x1, online mask =3D 0x3. (this is your example).  C=
+PU
+> 1 is going down.
+>=20
+> this_count is incremented, as the resulting affinity mask will be 0.
+>=20
+> 4) affinity_mask =3D 0x0, online mask =3D 0x7.  CPU 1 is going down.
+>=20
+> this_count is incremented, as the affinity mask is 0.
+>=20
+The 4th scenario is very tricky. If you try to set affinity from user space,
+it will return failure because before kernel tried to change the affinity it
+will verify it:
+int __ioapic_set_affinity(...)
+{
+=2E..
+        if (!cpumask_intersects(mask, cpu_online_mask))
+                return -EINVAL;
+=2E..
+}
 
---- /usr/src/linux-3.13.0-rc6/drivers/gpu/drm/nouveau/core/engine/device/nvc0.c	2013-11-23 13:03:23.797604441 +0000
-+++ /usr/src/linux-3.13.0-rc61/drivers/gpu/drm/nouveau/core/engine/device/nvc0.c	2014-01-02 02:13:32.445643092 +0000
-@@ -161,7 +161,7 @@
- 		device->oclass[NVDEV_SUBDEV_THERM  ] = &nva3_therm_oclass;
- 		device->oclass[NVDEV_SUBDEV_MXM    ] = &nv50_mxm_oclass;
- 		device->oclass[NVDEV_SUBDEV_DEVINIT] = &nvc0_devinit_oclass;
--		device->oclass[NVDEV_SUBDEV_MC     ] =  nvc3_mc_oclass;
-+		device->oclass[NVDEV_SUBDEV_MC     ] =  nvc0_mc_oclass;
- 		device->oclass[NVDEV_SUBDEV_BUS    ] =  nvc0_bus_oclass;
- 		device->oclass[NVDEV_SUBDEV_TIMER  ] = &nv04_timer_oclass;
- 		device->oclass[NVDEV_SUBDEV_FB     ] =  nvc0_fb_oclass;
+So from this point of view, affinity can't be 0. But your patch is very
+special because you change it by hand:
+        cpu_clear(smp_processor_id(), affinity_new);
 
---------------040100060603000101000709--
+so it is reasonable. It makes me thinking a little bit more. In fixup_irqs
+we have similar logic but we don't protect it. Maybe it is because currently
+the scenario 4 can't happen because we stop it in advance. But who knows
+if one day we use it in other situation we will hit this subtle issue
+probably.
+
+So, Prarit, I suggest you writing another patch to fix this potential issue
+for fixup_irqs. How would you think?
+
+--ibTvN161/egqYuK8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSxNHiAAoJEI01n1+kOSLHFIsP/i9xiYNIkih3Y7fvb9o3Q1nm
+Q/ymvo7dC2b3+9SiK0a8WJgy9ikM6/XshBSxv33cFsV4P9ajvF/uBqGpCedFlJoi
+QsvMikRu+qg7WlRB2MnObpqfyd+NBXLj3zcDI3sWJlJVzyI2TNBckTp+0iq/doKn
+rCya+g1pEx82TjCghCtjFXTU6qSSe3b0XR6QPWX4j1K7/2J0yMbFSYe4lJKEh6ea
+PxhkSc20Fdj1xGr5pzINQXQWIE6mbvPdmsl9kyXqjaAZwKOi10Mf0TqFojxO4S11
+ktYQcz9z9tNktV/77o4vI/JgfuVG1luzH7LC2lVUIRfUxhw4TIf58i42C1vEbaSu
+cr8sHMP7aD3tbxOLOg8PjFrmozFpJZNmJXhMh9bsEABRQjnn3ZJuLx4oEOaVC381
+ZVmqTigMEsCoTIaAklTBOsjgKFen2XpeqsT5CUDk8BSZjOdoQ3dhqzpGpUBV/6qz
+giw+WBcRKf+mmQCMcqNWbEIxCUSM//QRjvqakCwRNop1boIAec5eWQL/4L4QSNYA
+T64DhBVczAR2h719UQR0mNyE/SzHNOlpMtyNoRXeAW7b+hGBrV11CHJiYBwmmsiQ
+vZw5682YmsyttCHn6VGzAFyfea6+34BxgnVZBvH6o1aCSqUqY8YK+E8CIwisfpXL
+H/UDHSLS288iKgENUD2c
+=FH5O
+-----END PGP SIGNATURE-----
+
+--ibTvN161/egqYuK8--
