@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375AbaABRFg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:05:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40164 "EHLO
+	id S1752510AbaABRGI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:06:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40218 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752265AbaABRFa (ORCPT
+	with ESMTP id S1752485AbaABRGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:05:30 -0500
+	Thu, 2 Jan 2014 12:06:05 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Tom Lendacky <thomas.lendacky@amd.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 14/91] isdnloop: use strlcpy() instead of strcpy()
-Date: Thu,  2 Jan 2014 09:03:49 -0800
-Message-Id: <1388682306-30859-15-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 91/91] crypto: scatterwalk - Use sg_chain_ptr on chain entries
+Date: Thu,  2 Jan 2014 09:05:06 -0800
+Message-Id: <1388682306-30859-92-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -28,46 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Tom Lendacky <thomas.lendacky@amd.com>
 
-[ Upstream commit f9a23c84486ed350cce7bb1b2828abd1f6658796 ]
+commit 389a5390583a18e45bc4abd4439291abec5e7a63 upstream.
 
-These strings come from a copy_from_user() and there is no way to be
-sure they are NUL terminated.
+Now that scatterwalk_sg_chain sets the chain pointer bit the sg_page
+call in scatterwalk_sg_next hits a BUG_ON when CONFIG_DEBUG_SG is
+enabled. Use sg_chain_ptr instead of sg_page on a chain entry.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tom Lendacky <thomas.lendacky@amd.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/isdn/isdnloop/isdnloop.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ include/crypto/scatterwalk.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/isdn/isdnloop/isdnloop.c b/drivers/isdn/isdnloop/isdnloop.c
-index baf2686..02125e6 100644
---- a/drivers/isdn/isdnloop/isdnloop.c
-+++ b/drivers/isdn/isdnloop/isdnloop.c
-@@ -1083,8 +1083,10 @@ isdnloop_start(isdnloop_card *card, isdnloop_sdef *sdefp)
- 			spin_unlock_irqrestore(&card->isdnloop_lock, flags);
- 			return -ENOMEM;
- 		}
--		for (i = 0; i < 3; i++)
--			strcpy(card->s0num[i], sdef.num[i]);
-+		for (i = 0; i < 3; i++) {
-+			strlcpy(card->s0num[i], sdef.num[i],
-+				sizeof(card->s0num[0]));
-+		}
- 		break;
- 	case ISDN_PTYPE_1TR6:
- 		if (isdnloop_fake(card, "DRV1.04TC-1TR6-CAPI-CNS-BASIS-29.11.95",
-@@ -1097,7 +1099,7 @@ isdnloop_start(isdnloop_card *card, isdnloop_sdef *sdefp)
- 			spin_unlock_irqrestore(&card->isdnloop_lock, flags);
- 			return -ENOMEM;
- 		}
--		strcpy(card->s0num[0], sdef.num[0]);
-+		strlcpy(card->s0num[0], sdef.num[0], sizeof(card->s0num[0]));
- 		card->s0num[1][0] = '\0';
- 		card->s0num[2][0] = '\0';
- 		break;
+diff --git a/include/crypto/scatterwalk.h b/include/crypto/scatterwalk.h
+index 09ef1a0..2cddd2b 100644
+--- a/include/crypto/scatterwalk.h
++++ b/include/crypto/scatterwalk.h
+@@ -44,7 +44,7 @@ static inline struct scatterlist *scatterwalk_sg_next(struct scatterlist *sg)
+ 	if (sg_is_last(sg))
+ 		return NULL;
+ 
+-	return (++sg)->length ? sg : (void *)sg_page(sg);
++	return (++sg)->length ? sg : sg_chain_ptr(sg);
+ }
+ 
+ static inline void scatterwalk_crypto_chain(struct scatterlist *head,
 -- 
 1.8.3.2
 
