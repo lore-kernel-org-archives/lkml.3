@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611AbaABRGU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:06:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40228 "EHLO
+	id S1752543AbaABRGL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:06:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40223 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752379AbaABRGN (ORCPT
+	with ESMTP id S1752515AbaABRGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:06:13 -0500
+	Thu, 2 Jan 2014 12:06:09 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Yang Yingliang <yangyingliang@huawei.com>,
+Cc: Vlad Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 33/91] net: 8139cp: fix a BUG_ON triggered by wrong bytes_compl
-Date: Thu,  2 Jan 2014 09:04:08 -0800
-Message-Id: <1388682306-30859-34-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 28/91] net: core: Always propagate flag changes to interfaces
+Date: Thu,  2 Jan 2014 09:04:03 -0800
+Message-Id: <1388682306-30859-29-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -28,109 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yang Yingliang <yangyingliang@huawei.com>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-[ Upstream commit 7fe0ee099ad5e3dea88d4ee1b6f20246b1ca57c3 ]
+[ Upstream commit d2615bf450694c1302d86b9cc8a8958edfe4c3a4 ]
 
-Using iperf to send packets(GSO mode is on), a bug is triggered:
+The following commit:
+    b6c40d68ff6498b7f63ddf97cf0aa818d748dee7
+    net: only invoke dev->change_rx_flags when device is UP
 
-[  212.672781] kernel BUG at lib/dynamic_queue_limits.c:26!
-[  212.673396] invalid opcode: 0000 [#1] SMP
-[  212.673882] Modules linked in: 8139cp(O) nls_utf8 edd fuse loop dm_mod ipv6 i2c_piix4 8139too i2c_core intel_agp joydev pcspkr hid_generic intel_gtt floppy sr_mod mii button sg cdrom ext3 jbd mbcache usbhid hid uhci_hcd ehci_hcd usbcore sd_mod usb_common crc_t10dif crct10dif_common processor thermal_sys hwmon scsi_dh_emc scsi_dh_rdac scsi_dh_hp_sw scsi_dh ata_generic ata_piix libata scsi_mod [last unloaded: 8139cp]
-[  212.676084] CPU: 0 PID: 4124 Comm: iperf Tainted: G           O 3.12.0-0.7-default+ #16
-[  212.676084] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-[  212.676084] task: ffff8800d83966c0 ti: ffff8800db4c8000 task.ti: ffff8800db4c8000
-[  212.676084] RIP: 0010:[<ffffffff8122e23f>]  [<ffffffff8122e23f>] dql_completed+0x17f/0x190
-[  212.676084] RSP: 0018:ffff880116e03e30  EFLAGS: 00010083
-[  212.676084] RAX: 00000000000005ea RBX: 0000000000000f7c RCX: 0000000000000002
-[  212.676084] RDX: ffff880111dd0dc0 RSI: 0000000000000bd4 RDI: ffff8800db6ffcc0
-[  212.676084] RBP: ffff880116e03e48 R08: 0000000000000992 R09: 0000000000000000
-[  212.676084] R10: ffffffff8181e400 R11: 0000000000000004 R12: 000000000000000f
-[  212.676084] R13: ffff8800d94ec840 R14: ffff8800db440c80 R15: 000000000000000e
-[  212.676084] FS:  00007f6685a3c700(0000) GS:ffff880116e00000(0000) knlGS:0000000000000000
-[  212.676084] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  212.676084] CR2: 00007f6685ad6460 CR3: 00000000db714000 CR4: 00000000000006f0
-[  212.676084] Stack:
-[  212.676084]  ffff8800db6ffc00 000000000000000f ffff8800d94ec840 ffff880116e03eb8
-[  212.676084]  ffffffffa041509f ffff880116e03e88 0000000f16e03e88 ffff8800d94ec000
-[  212.676084]  00000bd400059858 000000050000000f ffffffff81094c36 ffff880116e03eb8
-[  212.676084] Call Trace:
-[  212.676084]  <IRQ>
-[  212.676084]  [<ffffffffa041509f>] cp_interrupt+0x4ef/0x590 [8139cp]
-[  212.676084]  [<ffffffff81094c36>] ? ktime_get+0x56/0xd0
-[  212.676084]  [<ffffffff8108cf73>] handle_irq_event_percpu+0x53/0x170
-[  212.676084]  [<ffffffff8108d0cc>] handle_irq_event+0x3c/0x60
-[  212.676084]  [<ffffffff8108fdb5>] handle_fasteoi_irq+0x55/0xf0
-[  212.676084]  [<ffffffff810045df>] handle_irq+0x1f/0x30
-[  212.676084]  [<ffffffff81003c8b>] do_IRQ+0x5b/0xe0
-[  212.676084]  [<ffffffff8142beaa>] common_interrupt+0x6a/0x6a
-[  212.676084]  <EOI>
-[  212.676084]  [<ffffffffa0416a21>] ? cp_start_xmit+0x621/0x97c [8139cp]
-[  212.676084]  [<ffffffffa0416a09>] ? cp_start_xmit+0x609/0x97c [8139cp]
-[  212.676084]  [<ffffffff81378ed9>] dev_hard_start_xmit+0x2c9/0x550
-[  212.676084]  [<ffffffff813960a9>] sch_direct_xmit+0x179/0x1d0
-[  212.676084]  [<ffffffff813793f3>] dev_queue_xmit+0x293/0x440
-[  212.676084]  [<ffffffff813b0e46>] ip_finish_output+0x236/0x450
-[  212.676084]  [<ffffffff810e59e7>] ? __alloc_pages_nodemask+0x187/0xb10
-[  212.676084]  [<ffffffff813b10e8>] ip_output+0x88/0x90
-[  212.676084]  [<ffffffff813afa64>] ip_local_out+0x24/0x30
-[  212.676084]  [<ffffffff813aff0d>] ip_queue_xmit+0x14d/0x3e0
-[  212.676084]  [<ffffffff813c6fd1>] tcp_transmit_skb+0x501/0x840
-[  212.676084]  [<ffffffff813c8323>] tcp_write_xmit+0x1e3/0xb20
-[  212.676084]  [<ffffffff81363237>] ? skb_page_frag_refill+0x87/0xd0
-[  212.676084]  [<ffffffff813c8c8b>] tcp_push_one+0x2b/0x40
-[  212.676084]  [<ffffffff813bb7e6>] tcp_sendmsg+0x926/0xc90
-[  212.676084]  [<ffffffff813e1d21>] inet_sendmsg+0x61/0xc0
-[  212.676084]  [<ffffffff8135e861>] sock_aio_write+0x101/0x120
-[  212.676084]  [<ffffffff81107cf1>] ? vma_adjust+0x2e1/0x5d0
-[  212.676084]  [<ffffffff812163e0>] ? timerqueue_add+0x60/0xb0
-[  212.676084]  [<ffffffff81130b60>] do_sync_write+0x60/0x90
-[  212.676084]  [<ffffffff81130d44>] ? rw_verify_area+0x54/0xf0
-[  212.676084]  [<ffffffff81130f66>] vfs_write+0x186/0x190
-[  212.676084]  [<ffffffff811317fd>] SyS_write+0x5d/0xa0
-[  212.676084]  [<ffffffff814321e2>] system_call_fastpath+0x16/0x1b
-[  212.676084] Code: ca 41 89 dc 41 29 cc 45 31 db 29 c2 41 89 c5 89 d0 45 29 c5 f7 d0 c1 e8 1f e9 43 ff ff ff 66 0f 1f 44 00 00 31 c0 e9 7b ff ff ff <0f> 0b eb fe 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 c7 47 40 00
-[  212.676084] RIP  [<ffffffff8122e23f>] dql_completed+0x17f/0x190
-------------[ cut here ]------------
+tried to fix a problem with VLAN devices and promiscuouse flag setting.
+The issue was that VLAN device was setting a flag on an interface that
+was down, thus resulting in bad promiscuity count.
+This commit blocked flag propagation to any device that is currently
+down.
 
-When a skb has frags, bytes_compl plus skb->len nr_frags times in cp_tx().
-It's not the correct value(actually, it should plus skb->len once) and it
-will trigger the BUG_ON(bytes_compl > num_queued - dql->num_completed).
-So only increase bytes_compl when finish sending all frags. pkts_compl also
-has a wrong value, fix it too.
+A later commit:
+    deede2fabe24e00bd7e246eb81cd5767dc6fcfc7
+    vlan: Don't propagate flag changes on down interfaces
 
-It's introduced by commit 871f0d4c ("8139cp: enable bql").
+fixed VLAN code to only propagate flags when the VLAN interface is up,
+thus fixing the same issue as above, only localized to VLAN.
 
-Suggested-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Yang Yingliang <yangyingliang@huawei.com>
+The problem we have now is that if we have create a complex stack
+involving multiple software devices like bridges, bonds, and vlans,
+then it is possible that the flags would not propagate properly to
+the physical devices.  A simple examle of the scenario is the
+following:
+
+  eth0----> bond0 ----> bridge0 ---> vlan50
+
+If bond0 or eth0 happen to be down at the time bond0 is added to
+the bridge, then eth0 will never have promisc mode set which is
+currently required for operation as part of the bridge.  As a
+result, packets with vlan50 will be dropped by the interface.
+
+The only 2 devices that implement the special flag handling are
+VLAN and DSA and they both have required code to prevent incorrect
+flag propagation.  As a result we can remove the generic solution
+introduced in b6c40d68ff6498b7f63ddf97cf0aa818d748dee7 and leave
+it to the individual devices to decide whether they will block
+flag propagation or not.
+
+Reported-by: Stefan Priebe <s.priebe@profihost.ag>
+Suggested-by: Veaceslav Falico <vfalico@redhat.com>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/realtek/8139cp.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ net/core/dev.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/realtek/8139cp.c b/drivers/net/ethernet/realtek/8139cp.c
-index 35014cf..200b6be 100644
---- a/drivers/net/ethernet/realtek/8139cp.c
-+++ b/drivers/net/ethernet/realtek/8139cp.c
-@@ -678,9 +678,6 @@ static void cp_tx (struct cp_private *cp)
- 				 le32_to_cpu(txd->opts1) & 0xffff,
- 				 PCI_DMA_TODEVICE);
+diff --git a/net/core/dev.c b/net/core/dev.c
+index e55fb91..4fe7689 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -4673,7 +4673,7 @@ static void dev_change_rx_flags(struct net_device *dev, int flags)
+ {
+ 	const struct net_device_ops *ops = dev->netdev_ops;
  
--		bytes_compl += skb->len;
--		pkts_compl++;
--
- 		if (status & LastFrag) {
- 			if (status & (TxError | TxFIFOUnder)) {
- 				netif_dbg(cp, tx_err, cp->dev,
-@@ -702,6 +699,8 @@ static void cp_tx (struct cp_private *cp)
- 				netif_dbg(cp, tx_done, cp->dev,
- 					  "tx done, slot %d\n", tx_tail);
- 			}
-+			bytes_compl += skb->len;
-+			pkts_compl++;
- 			dev_kfree_skb_irq(skb);
- 		}
+-	if ((dev->flags & IFF_UP) && ops->ndo_change_rx_flags)
++	if (ops->ndo_change_rx_flags)
+ 		ops->ndo_change_rx_flags(dev, flags);
+ }
  
 -- 
 1.8.3.2
