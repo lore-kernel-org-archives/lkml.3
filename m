@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751541AbaABIip (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 03:38:45 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:44900 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751294AbaABIio (ORCPT
+	id S1751304AbaABInI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 03:43:08 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58724 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750711AbaABInG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 03:38:44 -0500
-Message-ID: <52C52592.1020101@free-electrons.com>
-Date: Thu, 02 Jan 2014 09:38:42 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 2 Jan 2014 03:43:06 -0500
+Date: Thu, 2 Jan 2014 09:42:52 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Gerhard Sittig <gsi@denx.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Christian Hohnstaedt <chohnstaedt@innominate.com>,
+        Krzysztof =?utf-8?Q?Ha=C5=82asa?= <khalasa@piap.pl>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: Re: About Mail-Followup-To and Mutt [Was: Re: [ARM] Fix kernel
+ compile error: drivers/crypto/ixp4xx_crypto.c]
+Message-ID: <20140102084252.GF10158@pengutronix.de>
+References: <m3d2kduwd7.fsf@t19.piap.pl>
+ <20131231134820.GS8064@book.gsilab.sittig.org>
+ <20131231181427.GE16456@n2100.arm.linux.org.uk>
+ <20140101121822.GA20094@book.gsilab.sittig.org>
 MIME-Version: 1.0
-To: Marek Vasut <marex@denx.de>, Jonathan Cameron <jic23@kernel.org>
-CC: lars@metafoo.de, harald@ccbib.org, hector.palacios@digi.com,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv5 RESEND 4/4] iio: mxs-lradc: convert is_divided to a
- bitmap
-References: <1387820884-28140-1-git-send-email-alexandre.belloni@free-electrons.com> <1387820884-28140-5-git-send-email-alexandre.belloni@free-electrons.com> <52C426C7.8090706@kernel.org> <201401012031.52593.marex@denx.de>
-In-Reply-To: <201401012031.52593.marex@denx.de>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140101121822.GA20094@book.gsilab.sittig.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/01/2014 20:31, Marek Vasut wrote:
-> On Wednesday, January 01, 2014 at 03:31:35 PM, Jonathan Cameron wrote:
->> On 23/12/13 17:48, Alexandre Belloni wrote:
->>> mxs_lradc.is_divided was an unsigned long array. Convert it to a bitmap
->>> to save some memory.
->>>
->>> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
->>
->> Hi Alexandre,
->>
->> I've applied this patch, but would have prefered that you post this one
->> in separate series. It is a perfectly valid cleanup, but introducing it
->> late in a series leads to uneven reviewing.  Anyhow, as it's trivial and
->> I doubt Marek will mind, I've applied it anyway in a new years burst of
->> trying to clear the outstanding stuff in my in box ;)
->>
->> Applied to the togreg branch of iio.git
->>
->> Thanks,
+On Wed, Jan 01, 2014 at 01:18:22PM +0100, Gerhard Sittig wrote:
+> On Tue, Dec 31, 2013 at 18:14 +0000, Russell King - ARM Linux wrote:
+> > 
+> > Please get rid of your Mail-Followup-To: header:
+> > 
+> > Mail-Followup-To: Krzysztof Hałasa <khalasa@piap.pl>,                           
+> >         lkml <linux-kernel@vger.kernel.org>,                                    
+> >         linux-arm-kernel@lists.infradead.org,                                   
+> >         Russell King <rmk+kernel@arm.linux.org.uk>,                             
+> >         Christian Hohnstaedt <chohnstaedt@innominate.com>,                      
+> >         Herbert Xu <herbert@gondor.apana.org.au>                                
+> > User-Agent: Mutt/1.5.21 (2010-09-15)                                            
+> > 
+> > It causes all recipients following the thread to be moved into the To:
+> > header when someone replies to one of your messages, which is deemed to
+> > be anti-social.  You can kill this header by adding:
+> > 
+> > 	set followup_to=no
+> > 
+> > to your .muttrc file.
 > 
-> I dont mind, thanks for geting these in. And happy new year to you guys :)
+> Thank you for telling me, I was not aware.  Had no MFT related
+> setting in my config, learned from the manual that $followup_to
+> defaults to yes, have turned it off now.  Other mutt users may
+> want to check as well.  Happy new year! :)
+I have
 
-Thanks Jonathan !
+	# set followup_to = yes
 
-I wish everyone the best for this new year !
+in my .mutt/muttrc---so I'm using the default---but I'm still
+unaffected. I think this is because I don't have any lists specified
+(using the lists and subscribe commands). And note that there are lists
+that consider using MFT to be good, ISTR that it applies to
+*@lists.debian.org, but cannot currently find a reference to support
+that claim. The problem is that using MFT only works if all recipents
+are using and respecting it.
 
-
+If Russell is annoyed in general by MFT, he could unset
+honor_followup_to.
+ 
+Best regards
+Uwe
 
 -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
