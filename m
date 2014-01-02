@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754373AbaABRTm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:19:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40456 "EHLO
+	id S1753819AbaABRUB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:20:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40445 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136AbaABRJV (ORCPT
+	with ESMTP id S1753469AbaABRJQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:09:21 -0500
+	Thu, 2 Jan 2014 12:09:16 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Madper Xie <cxie@redhat.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        Matt Fleming <matt.fleming@intel.com>,
+Cc: Oliver Hartkopp <socketcan@hartkopp.net>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 76/91] efi-pstore: Make efi-pstore return a unique id
-Date: Thu,  2 Jan 2014 09:04:51 -0800
-Message-Id: <1388682306-30859-77-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 64/91] can: sja1000: fix {pre,post}_irq() handling and IRQ handler return value
+Date: Thu,  2 Jan 2014 09:04:39 -0800
+Message-Id: <1388682306-30859-65-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -28,71 +28,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Madper Xie <cxie@redhat.com>
+From: Oliver Hartkopp <socketcan@hartkopp.net>
 
-commit fdeadb43fdf1e7d5698c027b555c389174548e5a upstream.
+commit 2fea6cd303c0d0cd9067da31d873b6a6d5bd75e7 upstream.
 
-Pstore fs expects that backends provide a unique id which could avoid
-pstore making entries as duplication or denominating entries the same
-name. So I combine the timestamp, part and count into id.
+This patch fixes the issue that the sja1000_interrupt() function may have
+returned IRQ_NONE without processing the optional pre_irq() and post_irq()
+function before. Further the irq processing counter 'n' is moved to the end of
+the while statement to return correct IRQ_[NONE|HANDLED] values at error
+conditions.
 
-Signed-off-by: Madper Xie <cxie@redhat.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-[ kamal: backport to 3.8 ]
+Reported-by: Wolfgang Grandegger <wg@grandegger.com>
+Acked-by: Wolfgang Grandegger <wg@grandegger.com>
+Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+[ kamal: backport to 3.8 (renamed constant) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/firmware/efivars.c | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ drivers/net/can/sja1000/sja1000.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index e3e95dd..e2d4c7a 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -1314,6 +1314,12 @@ static int efi_pstore_close(struct pstore_info *psi)
- 	return 0;
- }
+diff --git a/drivers/net/can/sja1000/sja1000.c b/drivers/net/can/sja1000/sja1000.c
+index 43921f9..8eb5a32 100644
+--- a/drivers/net/can/sja1000/sja1000.c
++++ b/drivers/net/can/sja1000/sja1000.c
+@@ -490,19 +490,19 @@ irqreturn_t sja1000_interrupt(int irq, void *dev_id)
+ 	uint8_t isrc, status;
+ 	int n = 0;
  
-+static inline u64 generic_id(unsigned long timestamp,
-+			     unsigned int part, int count)
-+{
-+	return (timestamp * 100 + part) * 1000 + count;
-+}
++	if (priv->pre_irq)
++		priv->pre_irq(priv);
 +
- static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
- 			       int *count, struct timespec *timespec,
- 			       char **buf, struct pstore_info *psi)
-@@ -1334,7 +1340,7 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
+ 	/* Shared interrupts and IRQ off? */
+ 	if (priv->read_reg(priv, REG_IER) == IRQ_OFF)
+ 		return IRQ_NONE;
+ 
+-	if (priv->pre_irq)
+-		priv->pre_irq(priv);
+-
+ 	while ((isrc = priv->read_reg(priv, REG_IR)) && (n < SJA1000_MAX_IRQ)) {
+-		n++;
++
+ 		status = priv->read_reg(priv, SJA1000_REG_SR);
+ 		/* check for absent controller due to hw unplug */
+ 		if (status == 0xFF && sja1000_is_absent(priv))
+-			return IRQ_NONE;
++			goto out;
+ 
+ 		if (isrc & IRQ_WUI)
+ 			netdev_warn(dev, "wakeup interrupt\n");
+@@ -529,7 +529,7 @@ irqreturn_t sja1000_interrupt(int irq, void *dev_id)
+ 				status = priv->read_reg(priv, SJA1000_REG_SR);
+ 				/* check for absent controller */
+ 				if (status == 0xFF && sja1000_is_absent(priv))
+-					return IRQ_NONE;
++					goto out;
  			}
- 			if (sscanf(name, "dump-type%u-%u-%d-%lu",
- 				   type, &part, &cnt, &time) == 4) {
--				*id = part;
-+				*id = generic_id(time, part, cnt);
- 				*count = cnt;
- 				timespec->tv_sec = time;
- 				timespec->tv_nsec = 0;
-@@ -1345,7 +1351,7 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
- 				 * which doesn't support holding
- 				 * multiple logs, remains.
- 				 */
--				*id = part;
-+				*id = generic_id(time, part, cnt);
- 				*count = 0;
- 				timespec->tv_sec = time;
- 				timespec->tv_nsec = 0;
-@@ -1436,9 +1442,11 @@ static int efi_pstore_erase(enum pstore_type_id type, u64 id, int count,
- 	struct efivars *efivars = psi->data;
- 	struct efivar_entry *entry, *found = NULL;
- 	int i;
-+	unsigned int part;
- 
--	sprintf(name, "dump-type%u-%u-%d-%lu", type, (unsigned int)id, count,
--		time.tv_sec);
-+	do_div(id, 1000);
-+	part = do_div(id, 100);
-+	sprintf(name, "dump-type%u-%u-%d-%lu", type, part, count, time.tv_sec);
- 
- 	spin_lock_irq(&efivars->lock);
+ 		}
+ 		if (isrc & (IRQ_DOI | IRQ_EI | IRQ_BEI | IRQ_EPI | IRQ_ALI)) {
+@@ -537,8 +537,9 @@ irqreturn_t sja1000_interrupt(int irq, void *dev_id)
+ 			if (sja1000_err(dev, isrc, status))
+ 				break;
+ 		}
++		n++;
+ 	}
+-
++out:
+ 	if (priv->post_irq)
+ 		priv->post_irq(priv);
  
 -- 
 1.8.3.2
