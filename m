@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772AbaABRJx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:09:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40520 "EHLO
+	id S1753755AbaABRJv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:09:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40516 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753528AbaABRJn (ORCPT
+	with ESMTP id S1753629AbaABRJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:09:43 -0500
+	Thu, 2 Jan 2014 12:09:41 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andy Adamson <andros@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 50/91] NFSv4 wait on recovery for async session errors
-Date: Thu,  2 Jan 2014 09:04:25 -0800
-Message-Id: <1388682306-30859-51-git-send-email-kamal@canonical.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 49/91] ALSA: hda - Initialize missing bass speaker pin for ASUS AIO ET2700
+Date: Thu,  2 Jan 2014 09:04:24 -0800
+Message-Id: <1388682306-30859-50-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -28,76 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Adamson <andros@netapp.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 4a82fd7c4e78a1b7a224f9ae8bb7e1fd95f670e0 upstream.
+commit 1f0bbf03cb829162ec8e6d03c98aaaed88c6f534 upstream.
 
-When the state manager is processing the NFS4CLNT_DELEGRETURN flag, session
-draining is off, but DELEGRETURN can still get a session error.
-The async handler calls nfs4_schedule_session_recovery returns -EAGAIN, and
-the DELEGRETURN done then restarts the RPC task in the prepare state.
-With the state manager still processing the NFS4CLNT_DELEGRETURN flag with
-session draining off, these DELEGRETURNs will cycle with errors filling up the
-session slots.
+Add a fixup entry for the missing bass speaker pin 0x16 on ASUS ET2700
+AiO desktop.  The channel map will be added in the next patch, so that
+this can be backported easily to stable kernels.
 
-This prevents OPEN reclaims (from nfs_delegation_claim_opens) required by the
-NFS4CLNT_DELEGRETURN state manager processing from completing, hanging the
-state manager in the __rpc_wait_for_completion_task in nfs4_run_open_task
-as seen in this kernel thread dump:
-
-kernel: 4.12.32.53-ma D 0000000000000000     0  3393      2 0x00000000
-kernel: ffff88013995fb60 0000000000000046 ffff880138cc5400 ffff88013a9df140
-kernel: ffff8800000265c0 ffffffff8116eef0 ffff88013fc10080 0000000300000001
-kernel: ffff88013a4ad058 ffff88013995ffd8 000000000000fbc8 ffff88013a4ad058
-kernel: Call Trace:
-kernel: [<ffffffff8116eef0>] ? cache_alloc_refill+0x1c0/0x240
-kernel: [<ffffffffa0358110>] ? rpc_wait_bit_killable+0x0/0xa0 [sunrpc]
-kernel: [<ffffffffa0358152>] rpc_wait_bit_killable+0x42/0xa0 [sunrpc]
-kernel: [<ffffffff8152914f>] __wait_on_bit+0x5f/0x90
-kernel: [<ffffffffa0358110>] ? rpc_wait_bit_killable+0x0/0xa0 [sunrpc]
-kernel: [<ffffffff815291f8>] out_of_line_wait_on_bit+0x78/0x90
-kernel: [<ffffffff8109b520>] ? wake_bit_function+0x0/0x50
-kernel: [<ffffffffa035810d>] __rpc_wait_for_completion_task+0x2d/0x30 [sunrpc]
-kernel: [<ffffffffa040d44c>] nfs4_run_open_task+0x11c/0x160 [nfs]
-kernel: [<ffffffffa04114e7>] nfs4_open_recover_helper+0x87/0x120 [nfs]
-kernel: [<ffffffffa0411646>] nfs4_open_recover+0xc6/0x150 [nfs]
-kernel: [<ffffffffa040cc6f>] ? nfs4_open_recoverdata_alloc+0x2f/0x60 [nfs]
-kernel: [<ffffffffa0414e1a>] nfs4_open_delegation_recall+0x6a/0xa0 [nfs]
-kernel: [<ffffffffa0424020>] nfs_end_delegation_return+0x120/0x2e0 [nfs]
-kernel: [<ffffffff8109580f>] ? queue_work+0x1f/0x30
-kernel: [<ffffffffa0424347>] nfs_client_return_marked_delegations+0xd7/0x110 [nfs]
-kernel: [<ffffffffa04225d8>] nfs4_run_state_manager+0x548/0x620 [nfs]
-kernel: [<ffffffffa0422090>] ? nfs4_run_state_manager+0x0/0x620 [nfs]
-kernel: [<ffffffff8109b0f6>] kthread+0x96/0xa0
-kernel: [<ffffffff8100c20a>] child_rip+0xa/0x20
-kernel: [<ffffffff8109b060>] ? kthread+0x0/0xa0
-kernel: [<ffffffff8100c200>] ? child_rip+0x0/0x20
-
-The state manager can not therefore process the DELEGRETURN session errors.
-Change the async handler to wait for recovery on session errors.
-
-Signed-off-by: Andy Adamson <andros@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-[ Andy Adamson: backport to <=3.12 ]
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=65961
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nfs/nfs4proc.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ sound/pci/hda/patch_realtek.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index ef31b6b..4568c7a 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -3975,8 +3975,7 @@ nfs4_async_handle_error(struct rpc_task *task, const struct nfs_server *server,
- 			dprintk("%s ERROR %d, Reset session\n", __func__,
- 				task->tk_status);
- 			nfs4_schedule_session_recovery(clp->cl_session, task->tk_status);
--			task->tk_status = 0;
--			return -EAGAIN;
-+			goto wait_on_recovery;
- #endif /* CONFIG_NFS_V4_1 */
- 		case -NFS4ERR_DELAY:
- 			nfs_inc_server_stats(server, NFSIOS_DELAY);
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 62de6f1..8a4764a 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -5080,6 +5080,7 @@ enum {
+ 	ALC889_FIXUP_IMAC91_VREF,
+ 	ALC882_FIXUP_INV_DMIC,
+ 	ALC882_FIXUP_NO_PRIMARY_HP,
++	ALC887_FIXUP_ASUS_BASS,
+ };
+ 
+ static void alc889_fixup_coef(struct hda_codec *codec,
+@@ -5402,6 +5403,13 @@ static const struct alc_fixup alc882_fixups[] = {
+ 		.type = ALC_FIXUP_FUNC,
+ 		.v.func = alc882_fixup_no_primary_hp,
+ 	},
++	[ALC887_FIXUP_ASUS_BASS] = {
++		.type = HDA_FIXUP_PINS,
++		.v.pins = (const struct hda_pintbl[]) {
++			{0x16, 0x99130130}, /* bass speaker */
++			{}
++		},
++	},
+ };
+ 
+ static const struct snd_pci_quirk alc882_fixup_tbl[] = {
+@@ -5435,6 +5443,7 @@ static const struct snd_pci_quirk alc882_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x1043, 0x1873, "ASUS W90V", ALC882_FIXUP_ASUS_W90V),
+ 	SND_PCI_QUIRK(0x1043, 0x1971, "Asus W2JC", ALC882_FIXUP_ASUS_W2JC),
+ 	SND_PCI_QUIRK(0x1043, 0x835f, "Asus Eee 1601", ALC888_FIXUP_EEE1601),
++	SND_PCI_QUIRK(0x1043, 0x84bc, "ASUS ET2700", ALC887_FIXUP_ASUS_BASS),
+ 	SND_PCI_QUIRK(0x104d, 0x9047, "Sony Vaio TT", ALC889_FIXUP_VAIO_TT),
+ 	SND_PCI_QUIRK(0x104d, 0x905a, "Sony Vaio Z", ALC882_FIXUP_NO_PRIMARY_HP),
+ 	SND_PCI_QUIRK(0x104d, 0x9043, "Sony Vaio VGC-LN51JGB", ALC882_FIXUP_NO_PRIMARY_HP),
 -- 
 1.8.3.2
 
