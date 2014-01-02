@@ -1,117 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751754AbaABMMe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 07:12:34 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:62420 "EHLO
+	id S1751750AbaABMIL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 07:08:11 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:50868 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751819AbaABMId (ORCPT
+	with ESMTP id S1751136AbaABMIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 07:08:33 -0500
+	Thu, 2 Jan 2014 07:08:06 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH, RFC 16/30] tty: synclink: avoid sleep_on race
-Date: Thu,  2 Jan 2014 13:07:40 +0100
-Message-Id: <1388664474-1710039-17-git-send-email-arnd@arndb.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Hans Verkuil <hverkuil@xs4all.nl>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org
+Subject: [PATCH, RFC 07/30] [media] radio-cadet: avoid interruptible_sleep_on race
+Date: Thu,  2 Jan 2014 13:07:31 +0100
+Message-Id: <1388664474-1710039-8-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388664474-1710039-1-git-send-email-arnd@arndb.de>
 References: <1388664474-1710039-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:DmqbBdHHFcDid4D39VTLHpUweiUTUpx2pelxLh5YGr6
- uTnhq5ygeUbw3Ps2WrtCtLDD3Nn2wjCd+Z/kHYBo/Hq8HahE3l
- +m8SEUv/dzSPQUAkVVEzkj/3tp5Vpgl0AQp5UrpXud2tlC6PcF
- L/JP8q/LsSnd6hcLwJYzufqa9eZ2odka5wOhVN7zkKYCiGBKrR
- OblNJ3hHQevp517lEK/i1+AKcRbiKZI42ykwP5HVQq9JyLZQo/
- zhReRGWZPkWzTe3pZoGifY+NIN8xPDRXsIKNgfuq+nIKXWwDla
- qhrVOfYFcnt8Fo8uQCpESg+l0FbcaYCjr3kGY7ErJzWc9uEcXF
- 9HUDANhxXGI2zxmChd6632Vu6qruiT+UbHbGGBzcs
+X-Provags-ID: V02:K0:ujd1vRKUL97Pusqi1P7A0A9VGBnLzDUZv38AwII1cxD
+ s+IDndcWhPF7SbwHQ3lpmD/BJ4joaWZVILEtlkhgW+0/VSiDxT
+ cONjxuv7CnRWe/fqwelNYeZnxlwrVfiF6A6Zo/NE4zNWRmJ/Tv
+ gBnEqMN2cnFgfLux/NI12WOYCoEDkG3VEuviizb5NgVvG0g05R
+ OBo6i89vzY30rhnqMmowZwzinapuYiRbr/QU+75r6BkfHn2CZo
+ QX89eHKIK4TdOAudPoAgB+045yeY6dUuFhOnH8IjoT+NXgiRYz
+ cqpy4vPzo0ol/i2r4GMbWQcDYl1VPKuDIqARAIjuvIfGpXRf8f
+ laiS55B2FepHN9bDx/QgT38e2aOtiwkwTM/wc/bQS
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The four variants of the synclink driver use the same code in their
-open() callback to wait for a port in process of being closed,
-using interruptible_sleep_on, which is racy and going away soon.
-
-Making things worse, these functions hold the BTM while doing so,
-which means that if we ever enter this code path, we cannot actually
-continue since the other thread that is in process of closing the
-port can no longer get the BTM.
-
-This addresses both issues by using wait_event_interruptible_tty()
-instead.
+interruptible_sleep_on is racy and going away. This replaces
+one use in the radio-cadet driver with an open-coded
+wait loop that lets us check the condition under the mutex
+but sleep without it.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: linux-media@vger.kernel.org
 ---
- drivers/char/pcmcia/synclink_cs.c | 4 ++--
- drivers/tty/synclink.c            | 4 ++--
- drivers/tty/synclink_gt.c         | 4 ++--
- drivers/tty/synclinkmp.c          | 4 ++--
- 4 files changed, 8 insertions(+), 8 deletions(-)
+ drivers/media/radio/radio-cadet.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/char/pcmcia/synclink_cs.c b/drivers/char/pcmcia/synclink_cs.c
-index d39cca6..8320abd 100644
---- a/drivers/char/pcmcia/synclink_cs.c
-+++ b/drivers/char/pcmcia/synclink_cs.c
-@@ -2511,8 +2511,8 @@ static int mgslpc_open(struct tty_struct *tty, struct file * filp)
+diff --git a/drivers/media/radio/radio-cadet.c b/drivers/media/radio/radio-cadet.c
+index 545c04c..67b5bbf 100644
+--- a/drivers/media/radio/radio-cadet.c
++++ b/drivers/media/radio/radio-cadet.c
+@@ -39,6 +39,7 @@
+ #include <linux/pnp.h>
+ #include <linux/sched.h>
+ #include <linux/io.h>		/* outb, outb_p			*/
++#include <linux/wait.h>
+ #include <media/v4l2-device.h>
+ #include <media/v4l2-ioctl.h>
+ #include <media/v4l2-ctrls.h>
+@@ -323,25 +324,32 @@ static ssize_t cadet_read(struct file *file, char __user *data, size_t count, lo
+ 	struct cadet *dev = video_drvdata(file);
+ 	unsigned char readbuf[RDS_BUFFER];
+ 	int i = 0;
++	DEFINE_WAIT(wait);
  
- 	/* If port is closing, signal caller to try again */
- 	if (tty_hung_up_p(filp) || port->flags & ASYNC_CLOSING){
--		if (port->flags & ASYNC_CLOSING)
--			interruptible_sleep_on(&port->close_wait);
-+		wait_event_interruptible_tty(tty, port->close_wait,
-+					     !(port->flags & ASYNC_CLOSING));
- 		retval = ((port->flags & ASYNC_HUP_NOTIFY) ?
- 			-EAGAIN : -ERESTARTSYS);
- 		goto cleanup;
-diff --git a/drivers/tty/synclink.c b/drivers/tty/synclink.c
-index e1ce141..5ae14b4 100644
---- a/drivers/tty/synclink.c
-+++ b/drivers/tty/synclink.c
-@@ -3404,8 +3404,8 @@ static int mgsl_open(struct tty_struct *tty, struct file * filp)
+ 	mutex_lock(&dev->lock);
+ 	if (dev->rdsstat == 0)
+ 		cadet_start_rds(dev);
+-	if (dev->rdsin == dev->rdsout) {
++	while (1) {
++		prepare_to_wait(&dev->read_queue, &wait, TASK_INTERRUPTIBLE);
++		if (dev->rdsin != dev->rdsout)
++			break;
++
+ 		if (file->f_flags & O_NONBLOCK) {
+ 			i = -EWOULDBLOCK;
+ 			goto unlock;
+ 		}
+ 		mutex_unlock(&dev->lock);
+-		interruptible_sleep_on(&dev->read_queue);
++		schedule();
+ 		mutex_lock(&dev->lock);
+ 	}
++
+ 	while (i < count && dev->rdsin != dev->rdsout)
+ 		readbuf[i++] = dev->rdsbuf[dev->rdsout++];
  
- 	/* If port is closing, signal caller to try again */
- 	if (tty_hung_up_p(filp) || info->port.flags & ASYNC_CLOSING){
--		if (info->port.flags & ASYNC_CLOSING)
--			interruptible_sleep_on(&info->port.close_wait);
-+		wait_event_interruptible_tty(tty, info->port.close_wait,
-+				     !(info->port.flags & ASYNC_CLOSING));
- 		retval = ((info->port.flags & ASYNC_HUP_NOTIFY) ?
- 			-EAGAIN : -ERESTARTSYS);
- 		goto cleanup;
-diff --git a/drivers/tty/synclink_gt.c b/drivers/tty/synclink_gt.c
-index 1abf946..c359a91 100644
---- a/drivers/tty/synclink_gt.c
-+++ b/drivers/tty/synclink_gt.c
-@@ -674,8 +674,8 @@ static int open(struct tty_struct *tty, struct file *filp)
- 
- 	/* If port is closing, signal caller to try again */
- 	if (tty_hung_up_p(filp) || info->port.flags & ASYNC_CLOSING){
--		if (info->port.flags & ASYNC_CLOSING)
--			interruptible_sleep_on(&info->port.close_wait);
-+		wait_event_interruptible_tty(tty, info->port.close_wait,
-+					     !(info->port.flags & ASYNC_CLOSING));
- 		retval = ((info->port.flags & ASYNC_HUP_NOTIFY) ?
- 			-EAGAIN : -ERESTARTSYS);
- 		goto cleanup;
-diff --git a/drivers/tty/synclinkmp.c b/drivers/tty/synclinkmp.c
-index dc6e969..144202e 100644
---- a/drivers/tty/synclinkmp.c
-+++ b/drivers/tty/synclinkmp.c
-@@ -754,8 +754,8 @@ static int open(struct tty_struct *tty, struct file *filp)
- 
- 	/* If port is closing, signal caller to try again */
- 	if (tty_hung_up_p(filp) || info->port.flags & ASYNC_CLOSING){
--		if (info->port.flags & ASYNC_CLOSING)
--			interruptible_sleep_on(&info->port.close_wait);
-+		wait_event_interruptible_tty(tty, info->port.close_wait,
-+					     !(info->port.flags & ASYNC_CLOSING));
- 		retval = ((info->port.flags & ASYNC_HUP_NOTIFY) ?
- 			-EAGAIN : -ERESTARTSYS);
- 		goto cleanup;
+ 	if (i && copy_to_user(data, readbuf, i))
+ 		i = -EFAULT;
+ unlock:
++	finish_wait(&dev->read_queue, &wait);
+ 	mutex_unlock(&dev->lock);
+ 	return i;
+ }
 -- 
 1.8.3.2
 
