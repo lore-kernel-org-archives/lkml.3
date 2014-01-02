@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751561AbaABHOB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 02:14:01 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43662 "EHLO
+	id S1751528AbaABHN7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 02:13:59 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63522 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387AbaABHNP (ORCPT
+	with ESMTP id S1751391AbaABHNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 2 Jan 2014 02:13:15 -0500
-X-AuditID: 9c930197-b7c4aae000003d84-1e-52c511874a78
+X-AuditID: 9c930197-b7c4aae000003d84-29-52c511880fb8
 From: Minchan Kim <minchan@kernel.org>
 To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
@@ -30,9 +30,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
         Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
         Rob Clark <robdclark@gmail.com>, Jason Evans <je@fb.com>,
         Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v10 10/16] vrange: Purging vrange-anon pages from shrinker
-Date: Thu,  2 Jan 2014 16:12:18 +0900
-Message-Id: <1388646744-15608-11-git-send-email-minchan@kernel.org>
+Subject: [PATCH v10 11/16] vrange: support shmem_purge_page
+Date: Thu,  2 Jan 2014 16:12:19 +0900
+Message-Id: <1388646744-15608-12-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1388646744-15608-1-git-send-email-minchan@kernel.org>
 References: <1388646744-15608-1-git-send-email-minchan@kernel.org>
@@ -41,9 +41,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides the logic to discard anonymous vranges by
-generating the page list for the volatile ranges setting the ptes
-volatile, and discarding the pages.
+If VM discards volatile page of shmem/tmpfs, it should remove
+exceptional swap entry from radix tree as well as page itself.
+
+For it, this patch introduces shmem_purge_page and free_swap_and_
+cache_locked which is needed because I don't want to add more
+overhead in hot path(ex, zap_pte).
+
+A later patch will use it.
 
 Cc: Mel Gorman <mel@csn.ul.ie>
 Cc: Hugh Dickins <hughd@google.com>
@@ -52,226 +57,165 @@ Cc: Rik van Riel <riel@redhat.com>
 Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
 Cc: Michel Lespinasse <walken@google.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-[jstultz: Code tweaks and commit log rewording]
+Cc: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- mm/vrange.c |  184 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 183 insertions(+), 1 deletion(-)
+ include/linux/shmem_fs.h |    1 +
+ include/linux/swap.h     |    1 +
+ mm/shmem.c               |   46 ++++++++++++++++++++++++++++++++++++++++++++++
+ mm/swapfile.c            |   37 +++++++++++++++++++++++++++++++++++++
+ mm/vrange.c              |    2 ++
+ 5 files changed, 87 insertions(+)
 
+diff --git a/include/linux/shmem_fs.h b/include/linux/shmem_fs.h
+index 30aa0dc60d75..3df94fe5dfb9 100644
+--- a/include/linux/shmem_fs.h
++++ b/include/linux/shmem_fs.h
+@@ -53,6 +53,7 @@ extern void shmem_unlock_mapping(struct address_space *mapping);
+ extern struct page *shmem_read_mapping_page_gfp(struct address_space *mapping,
+ 					pgoff_t index, gfp_t gfp_mask);
+ extern void shmem_truncate_range(struct inode *inode, loff_t start, loff_t end);
++extern void shmem_purge_page(struct inode *inode, struct page *page);
+ extern int shmem_unuse(swp_entry_t entry, struct page *page);
+ 
+ static inline struct page *shmem_read_mapping_page(
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 197a7799b59c..fb9f6d1daf89 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -469,6 +469,7 @@ extern int swap_duplicate(swp_entry_t);
+ extern int swapcache_prepare(swp_entry_t);
+ extern void swap_free(swp_entry_t);
+ extern void swapcache_free(swp_entry_t, struct page *page);
++extern int free_swap_and_cache_locked(swp_entry_t);
+ extern int free_swap_and_cache(swp_entry_t);
+ extern int swap_type_of(dev_t, sector_t, struct block_device **);
+ extern unsigned int count_swap_pages(int, int);
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 8297623fcaed..e3626f969e0f 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -441,6 +441,52 @@ void shmem_unlock_mapping(struct address_space *mapping)
+ 	}
+ }
+ 
++void shmem_purge_page(struct inode *inode, struct page *page)
++{
++	struct page *ret_page;
++	struct address_space *mapping = inode->i_mapping;
++	struct shmem_inode_info *info = SHMEM_I(inode);
++	pgoff_t indices;
++	long nr_swaps_freed = 0;
++	pgoff_t index = page->index;
++
++	VM_BUG_ON(page_mapped(page));
++	VM_BUG_ON(!PageLocked(page));
++
++	if (!shmem_find_get_pages_and_swap(mapping, index,
++				1, &ret_page, &indices))
++		return;
++
++	index = indices;
++	mem_cgroup_uncharge_start();
++	if (radix_tree_exceptional_entry(ret_page)) {
++		int error;
++		spin_lock_irq(&mapping->tree_lock);
++		error = shmem_radix_tree_replace(mapping, index,
++						ret_page, NULL);
++		spin_unlock_irq(&mapping->tree_lock);
++		if (!error) {
++			swp_entry_t swap = radix_to_swp_entry(ret_page);
++			free_swap_and_cache_locked(swap);
++		}
++	} else {
++		if (page->mapping == mapping)
++			truncate_inode_page(mapping, ret_page);
++		put_page(ret_page);
++	}
++
++	mem_cgroup_uncharge_end();
++
++	spin_lock(&info->lock);
++	info->swapped -= nr_swaps_freed;
++	shmem_recalc_inode(inode);
++	spin_unlock(&info->lock);
++
++	/* Question: We should update? */
++	inode->i_ctime = inode->i_mtime = CURRENT_TIME;
++}
++EXPORT_SYMBOL_GPL(shmem_purge_page);
++
+ /*
+  * Remove range of pages and swap entries from radix tree, and free them.
+  * If !unfalloc, truncate or punch hole; if unfalloc, undo failed fallocate.
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index de7c904e52e5..5b1cb7461e52 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -998,6 +998,43 @@ int free_swap_and_cache(swp_entry_t entry)
+ 	return p != NULL;
+ }
+ 
++/*
++ * Same with free_swap_cache but user know in advance that page found
++ * from swapper_spaces is already locked so that we could remove the page
++ * from page cache safely.
++ */
++int free_swap_and_cache_locked(swp_entry_t entry)
++{
++	struct swap_info_struct *p;
++	struct page *page = NULL;
++
++	if (non_swap_entry(entry))
++		return 1;
++
++	p = swap_info_get(entry);
++	if (p) {
++		if (swap_entry_free(p, entry, 1) == SWAP_HAS_CACHE) {
++			page = find_get_page(swap_address_space(entry),
++						entry.val);
++		}
++		spin_unlock(&p->lock);
++	}
++
++	if (page) {
++		/*
++		 * Not mapped elsewhere, or swap space full? Free it!
++		 * Also recheck PageSwapCache now page is locked (above).
++		 */
++		if (PageSwapCache(page) && !PageWriteback(page) &&
++				(!page_mapped(page) || vm_swap_full())) {
++			delete_from_swap_cache(page);
++			SetPageDirty(page);
++		}
++		page_cache_release(page);
++	}
++	return p != NULL;
++}
++
+ #ifdef CONFIG_HIBERNATION
+ /*
+  * Find the swap type that corresponds to given device (if any).
 diff --git a/mm/vrange.c b/mm/vrange.c
-index 4a52b7a05f9a..0fa669c56ab8 100644
+index 0fa669c56ab8..ed89835bcff4 100644
 --- a/mm/vrange.c
 +++ b/mm/vrange.c
-@@ -11,6 +11,8 @@
- #include <linux/hugetlb.h>
- #include "internal.h"
+@@ -13,6 +13,7 @@
  #include <linux/mmu_notifier.h>
-+#include <linux/mm_inline.h>
-+#include <linux/migrate.h>
+ #include <linux/mm_inline.h>
+ #include <linux/migrate.h>
++#include <linux/shmem_fs.h>
  
  static struct kmem_cache *vrange_cachep;
  
-@@ -19,6 +21,11 @@ static struct vrange_list {
- 	spinlock_t lock;
- } vrange_list;
+@@ -638,6 +639,7 @@ static int try_to_discard_file_vpage(struct page *page)
+ 	}
  
-+struct vrange_walker {
-+	struct vm_area_struct *vma;
-+	struct list_head *pagelist;
-+};
-+
- static inline unsigned long vrange_size(struct vrange *range)
- {
- 	return range->node.last + 1 - range->node.start;
-@@ -682,11 +689,186 @@ static struct vrange *vrange_isolate(void)
- 	return vrange;
- }
- 
--static int discard_vrange(struct vrange *vrange, unsigned long *nr_discard)
-+static unsigned long discard_vrange_pagelist(struct list_head *page_list)
-+{
-+	struct page *page;
-+	unsigned int nr_discard = 0;
-+	LIST_HEAD(ret_pages);
-+	LIST_HEAD(free_pages);
-+
-+	while (!list_empty(page_list)) {
-+		int err;
-+		page = list_entry(page_list->prev, struct page, lru);
-+		list_del(&page->lru);
-+		if (!trylock_page(page)) {
-+			list_add(&page->lru, &ret_pages);
-+			continue;
-+		}
-+
-+		/*
-+		 * discard_vpage returns unlocked page if it
-+		 * is successful
-+		 */
-+		err = discard_vpage(page);
-+		if (err) {
-+			unlock_page(page);
-+			list_add(&page->lru, &ret_pages);
-+			continue;
-+		}
-+
-+		ClearPageActive(page);
-+		list_add(&page->lru, &free_pages);
-+		dec_zone_page_state(page, NR_ISOLATED_ANON);
-+		nr_discard++;
-+	}
-+
-+	free_hot_cold_page_list(&free_pages, 1);
-+	list_splice(&ret_pages, page_list);
-+	return nr_discard;
-+}
-+
-+static void vrange_pte_entry(pte_t pteval, unsigned long address,
-+		unsigned ptent_size, struct mm_walk *walk)
- {
-+	struct page *page;
-+	struct vrange_walker *vw = walk->private;
-+	struct vm_area_struct *vma = vw->vma;
-+	struct list_head *pagelist = vw->pagelist;
-+
-+	if (pte_none(pteval))
-+		return;
-+
-+	if (!pte_present(pteval))
-+		return;
-+
-+	page = vm_normal_page(vma, address, pteval);
-+	if (unlikely(!page))
-+		return;
-+
-+	if (!PageLRU(page) || PageLocked(page))
-+		return;
-+
-+	BUG_ON(PageCompound(page));
-+
-+	if (isolate_lru_page(page))
-+		return;
-+
-+	list_add(&page->lru, pagelist);
-+
-+	VM_BUG_ON(page_is_file_cache(page));
-+	inc_zone_page_state(page, NR_ISOLATED_ANON);
-+}
-+
-+static int vrange_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
-+		struct mm_walk *walk)
-+{
-+	struct vrange_walker *vw = walk->private;
-+	struct vm_area_struct *uninitialized_var(vma);
-+	pte_t *pte;
-+	spinlock_t *ptl;
-+
-+	vma = vw->vma;
-+	split_huge_page_pmd(vma, addr, pmd);
-+	if (pmd_trans_unstable(pmd))
-+		return 0;
-+
-+	pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
-+	for (; addr != end; pte++, addr += PAGE_SIZE)
-+		vrange_pte_entry(*pte, addr, PAGE_SIZE, walk);
-+	pte_unmap_unlock(pte - 1, ptl);
-+	cond_resched();
-+
- 	return 0;
- }
- 
-+static unsigned long discard_vma_pages(struct mm_struct *mm,
-+		struct vm_area_struct *vma, unsigned long start,
-+		unsigned long end)
-+{
-+	unsigned long ret = 0;
-+	LIST_HEAD(pagelist);
-+	struct vrange_walker vw;
-+	struct mm_walk vrange_walk = {
-+		.pmd_entry = vrange_pte_range,
-+		.mm = vma->vm_mm,
-+		.private = &vw,
-+	};
-+
-+	vw.pagelist = &pagelist;
-+	vw.vma = vma;
-+
-+	walk_page_range(start, end, &vrange_walk);
-+
-+	if (!list_empty(&pagelist))
-+		ret = discard_vrange_pagelist(&pagelist);
-+
-+	putback_lru_pages(&pagelist);
-+	return ret;
-+}
-+
-+/*
-+ * vrange->owner isn't stable because caller doesn't hold vrange_lock
-+ * so avoid touching vrange->owner.
-+ */
-+static int __discard_vrange_anon(struct mm_struct *mm, struct vrange *vrange,
-+		unsigned long *ret_discard)
-+{
-+	struct vm_area_struct *vma;
-+	unsigned long nr_discard = 0;
-+	unsigned long start = vrange->node.start;
-+	unsigned long end = vrange->node.last + 1;
-+	int ret = 0;
-+
-+	/* It prevent to destroy vma when the process exist */
-+	if (!atomic_inc_not_zero(&mm->mm_users))
-+		return ret;
-+
-+	if (!down_read_trylock(&mm->mmap_sem)) {
-+		mmput(mm);
-+		ret = -EAGAIN;
-+		goto out; /* this vrange could be retried */
-+	}
-+
-+	vma = find_vma(mm, start);
-+	if (!vma || (vma->vm_start >= end))
-+		goto out_unlock;
-+
-+	for (; vma; vma = vma->vm_next) {
-+		if (vma->vm_start >= end)
-+			break;
-+		BUG_ON(vma->vm_flags & (VM_SPECIAL|VM_LOCKED|VM_MIXEDMAP|
-+					VM_HUGETLB));
-+		cond_resched();
-+		nr_discard += discard_vma_pages(mm, vma,
-+				max_t(unsigned long, start, vma->vm_start),
-+				min_t(unsigned long, end, vma->vm_end));
-+	}
-+out_unlock:
-+	up_read(&mm->mmap_sem);
-+	mmput(mm);
-+	*ret_discard = nr_discard;
-+out:
-+	return ret;
-+}
-+
-+static int discard_vrange(struct vrange *vrange, unsigned long *nr_discard)
-+{
-+	int ret = 0;
-+	struct mm_struct *mm;
-+	struct vrange_root *vroot;
-+	vroot = vrange->owner;
-+
-+	/* TODO : handle VRANGE_FILE */
-+	if (vroot->type != VRANGE_MM)
-+		goto out;
-+
-+	mm = vroot->object;
-+	ret = __discard_vrange_anon(mm, vrange, nr_discard);
-+out:
-+	return ret;
-+}
-+
-+
- #define VRANGE_SCAN_THRESHOLD	(4 << 20)
- 
- unsigned long shrink_vrange(enum lru_list lru, struct lruvec *lruvec,
+ 	VM_BUG_ON(page_mapped(page));
++	shmem_purge_page(mapping->host, page);
+ 	ret = 0;
+ out:
+ 	vrange_unlock(vroot);
 -- 
 1.7.9.5
 
