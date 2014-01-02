@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865AbaABRKQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:10:16 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40568 "EHLO
+	id S1754093AbaABROD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:14:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40563 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752444AbaABRKN (ORCPT
+	with ESMTP id S1752437AbaABRKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:10:13 -0500
+	Thu, 2 Jan 2014 12:10:09 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        James Bottomley <JBottomley@Parallels.com>,
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 83/91] [SCSI] hpsa: return 0 from driver probe function on success, not 1
-Date: Thu,  2 Jan 2014 09:04:58 -0800
-Message-Id: <1388682306-30859-84-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 80/91] ARM: footbridge: fix VGA initialisation
+Date: Thu,  2 Jan 2014 09:04:55 -0800
+Message-Id: <1388682306-30859-81-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -28,52 +27,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 88bf6d62db4393fa03a58bada9d746312d5b496f upstream.
+commit 43659222e7a0113912ed02f6b2231550b3e471ac upstream.
 
-A return value of 1 is interpreted as an error.  See pci_driver.
-in local_pci_probe().  If you're wondering how this ever could
-have worked, it's because it used to be the case that only return
-values less than zero were interpreted as failure.  But even in
-the current kernel if the driver registers its various entry
-points with the kernel, and then returns a value which is
-interpreted as failure, those registrations aren't undone, so
-the driver still mostly works.  However, the driver's remove
-function wouldn't be called on rmmod, and pci power management
-functions wouldn't work.  In the case of Smart Array, since it
-has a battery backed cache (or else no cache) even if the driver
-is not shut down properly as long as there is no outstanding
-i/o, nothing too bad happens, which is why it took so long to
-notice.
+It's no good setting vga_base after the VGA console has been
+initialised, because if we do that we get this:
 
-Requesting backport to stable because the change to pci-driver.c
-which requires driver probe functions to return 0 occurred between
-2.6.35 and 2.6.36 (the pci power management breakage) and again
-between 3.7 and 3.8 (pci_dev->driver getting set to NULL in
-local_pci_probe() preventing driver remove function from being
-called on rmmod.)
+Unable to handle kernel paging request at virtual address 000b8000
+pgd = c0004000
+[000b8000] *pgd=07ffc831, *pte=00000000, *ppte=00000000
+0Internal error: Oops: 5017 [#1] ARM
+Modules linked in:
+CPU: 0 PID: 0 Comm: swapper Not tainted 3.12.0+ #49
+task: c03e2974 ti: c03d8000 task.ti: c03d8000
+PC is at vgacon_startup+0x258/0x39c
+LR is at request_resource+0x10/0x1c
+pc : [<c01725d0>]    lr : [<c0022b50>]    psr: 60000053
+sp : c03d9f68  ip : 000b8000  fp : c03d9f8c
+r10: 000055aa  r9 : 4401a103  r8 : ffffaa55
+r7 : c03e357c  r6 : c051b460  r5 : 000000ff  r4 : 000c0000
+r3 : 000b8000  r2 : c03e0514  r1 : 00000000  r0 : c0304971
+Flags: nZCv  IRQs on  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+which is an access to the 0xb8000 without the PCI offset required to
+make it work.
+
+Fixes: cc22b4c18540 ("ARM: set vga memory base at run-time")
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/scsi/hpsa.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-footbridge/common.c  | 3 +++
+ arch/arm/mach-footbridge/dc21285.c | 2 --
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 0b5f9df..4884df9 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -4857,7 +4857,7 @@ reinit_after_soft_reset:
- 	hpsa_hba_inquiry(h);
- 	hpsa_register_scsi(h);	/* hook ourselves into SCSI subsystem */
- 	start_controller_lockup_detector(h);
--	return 1;
-+	return 0;
+diff --git a/arch/arm/mach-footbridge/common.c b/arch/arm/mach-footbridge/common.c
+index a42b369..95d0b6e 100644
+--- a/arch/arm/mach-footbridge/common.c
++++ b/arch/arm/mach-footbridge/common.c
+@@ -15,6 +15,7 @@
+ #include <linux/init.h>
+ #include <linux/io.h>
+ #include <linux/spinlock.h>
++#include <video/vga.h>
  
- clean4:
- 	hpsa_free_sg_chain_blocks(h);
+ #include <asm/pgtable.h>
+ #include <asm/page.h>
+@@ -196,6 +197,8 @@ void __init footbridge_map_io(void)
+ 		iotable_init(ebsa285_host_io_desc, ARRAY_SIZE(ebsa285_host_io_desc));
+ 		pci_map_io_early(__phys_to_pfn(DC21285_PCI_IO));
+ 	}
++
++	vga_base = PCIMEM_BASE;
+ }
+ 
+ void footbridge_restart(char mode, const char *cmd)
+diff --git a/arch/arm/mach-footbridge/dc21285.c b/arch/arm/mach-footbridge/dc21285.c
+index 3490a24..7c2fdae 100644
+--- a/arch/arm/mach-footbridge/dc21285.c
++++ b/arch/arm/mach-footbridge/dc21285.c
+@@ -18,7 +18,6 @@
+ #include <linux/irq.h>
+ #include <linux/io.h>
+ #include <linux/spinlock.h>
+-#include <video/vga.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/mach/pci.h>
+@@ -291,7 +290,6 @@ void __init dc21285_preinit(void)
+ 	int cfn_mode;
+ 
+ 	pcibios_min_mem = 0x81000000;
+-	vga_base = PCIMEM_BASE;
+ 
+ 	mem_size = (unsigned int)high_memory - PAGE_OFFSET;
+ 	for (mem_mask = 0x00100000; mem_mask < 0x10000000; mem_mask <<= 1)
 -- 
 1.8.3.2
 
