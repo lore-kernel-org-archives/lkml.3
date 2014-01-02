@@ -1,97 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788AbaABW7c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 17:59:32 -0500
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:25083 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782AbaABW7b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 17:59:31 -0500
-X-AuditID: cbfec37b-b7f216d000006a8d-e3-52c5ef5229af
-Message-id: <52C5EF46.1010806@samsung.com>
-Date: Thu, 02 Jan 2014 15:59:18 -0700
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.2.0
-MIME-version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: gregkh@linuxfoundation.org, shuahkhan@gmail.com,
-        linux-kernel@vger.kernel.org, shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH 3/3] driver: Add Legacy PM OPS usage check and warning to
- driver_register()
-References: <cover.1383868060.git.shuah.kh@samsung.com>
- <b33c1967bdaed9a36fa5a6d7855310c84cb9b910.1383868060.git.shuah.kh@samsung.com>
- <1868309.7dxduFC77U@vostro.rjw.lan>
-In-reply-to: <1868309.7dxduFC77U@vostro.rjw.lan>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.21.63]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t9hX92g90eDDObN57JoXryezeLyrjls
-	FmdOX2K1+PrTwYHFY+esu+we++euYffYcrWdxePzJrkAligum5TUnMyy1CJ9uwSujIPt99kK
-	5vBVrHr2kbWBcRN3FyMnh4SAicSqcwdYIWwxiQv31rN1MXJxCAksY5Q4vX8LO4TTyyQxqekl
-	I4SzkVHi3pyLYC28AloST/b8ZQOxWQRUJR7972ICsdkE1CU+v97BDmILCchJNC1ZzQxiiwpE
-	SLw6O5EFoldQ4sfke2C2iIC2xNyeU2A1zAJlEgvuXwGaycEhLJAosWp+NsTedYwSR+ZNAdvL
-	KWAgsfRHKztEvZnEo5Z1UL3yEpvXvGWG2Kss8efyKSaQORICihLbV1tNYBSZhWTzLCTds5B0
-	L2BkXsUoVlqcXFCclJ5aYaRXnJhbXJqXrpecn7uJERIf1TsY7361OcQowMGoxMPr0Xg0SIg1
-	say4MvcQowQHs5IIb+JjoBBvSmJlVWpRfnxRaU5q8SFGJg5OqQZGpSs5fVKfdKqfn2P4Ffbu
-	essx/rR7Wws8Ji4557pmVXcTd+3UbfL/JJQFiirral+4JD8Ta72iIib8gOV9zrGcFPbbUtun
-	RNpteMGw+Xu+2eyC1F1bT0yIVZW7/s9TlL3IftcMh9mT/zErNOSaSTr/WvXn77ovWutfV503
-	9o2bIn3WxNNDIPmAEktxRqKhFnNRcSIAMRDTHm0CAAA=
+	id S1752293AbaABXDF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 18:03:05 -0500
+Received: from mail-bn1hn0122.outbound.protection.outlook.com ([157.56.110.122]:38125
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750814AbaABXDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 18:03:03 -0500
+Reply-To: <tomhook230@yahoo.com>
+From: "Mr. Tom Hook" <tomhook230@outlook.com>
+Subject: Good day
+Date: Fri, 3 Jan 2014 05:47:33 +0700
+MIME-Version: 1.0
+Content-Type: text/plain; charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-ID: <d74b1352-afdf-45c3-88c1-4b99409c3fb0@COSEXCH10.lsi.com>
+To: Undisclosed recipients:;
+X-EOPAttributedMessage: 0
+X-Matching-Connectors: 130331764745831632;(f081dce6-2920-4dfc-23e8-08d07091c5e3);()
+X-Forefront-Antispam-Report: CIP:192.19.220.100;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:SPM;SFS:(10019001)(189002)(199002)(54316002)(79102001)(85306002)(43066001)(6806004)(87266001)(23686002)(65816001)(881003)(221733001)(59766001)(69226001)(87936001)(74706001)(80022001)(44976005)(77982001)(50986001)(31686002)(50466002)(76176001)(50226001)(87286001)(47976001)(62236002)(46102001)(74876001)(49866001)(74662001)(44716002)(83322001)(47736001)(62966002)(81542001)(61296002)(74366001)(88136002)(74502001)(51856001)(47446002)(56776001)(81342001)(551934002)(90146001)(56816005)(76786001)(77096001)(77156001)(89996001)(76796001)(83072002)(85852003)(80976001)(47776003)(20776003)(4396001)(33646001)(19580395003)(76482001)(563864002)(1671002)(63696002)(555904002)(175304002);DIR:OUT;SFP:1501;SCL:6;SRVR:BN1PR07MB117;H:COSEXCH10.lsi.com;CLIP:192.19.220.100;FPR:;RD:cosexch10.lsi.com;MX:1;A:1;LANG:en;
+X-OriginatorOrg: lsicorp.onmicrosoft.com
+X-Forefront-PRVS: 0079056367
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/2013 05:51 PM, Rafael J. Wysocki wrote:
-> On Thursday, November 07, 2013 05:03:50 PM Shuah Khan wrote:
->> Add Legacy PM OPS usage checks to driver_register() function. If Legacy PM OPS
->> usage is found, print warning message to indicate the driver code needs
->> updating to use Dev PM OPS interfaces. This will help serve as a way to track
->> drivers that still use Legacy PM OPS and fix them.
->>
->> The Legacy PM OPS check looks for suspend(struct device *, pm_message_t) or
->> resume(struct device *) struct device_driver interfaces.
->>
->> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
->> ---
->>   drivers/base/driver.c | 4 ++++
->>   1 file changed, 4 insertions(+)
->>
->> diff --git a/drivers/base/driver.c b/drivers/base/driver.c
->> index 9e29943..10ff280 100644
->> --- a/drivers/base/driver.c
->> +++ b/drivers/base/driver.c
->> @@ -157,6 +157,10 @@ int driver_register(struct device_driver *drv)
->>   		printk(KERN_WARNING "Driver '%s' needs updating - please use "
->>   			"bus_type methods\n", drv->name);
->>
->> +	if (drv->suspend || drv->resume)
->> +		pr_warn("Please update driver '%s' to use dev pm ops.\n",
->> +			drv->name);
->
-> What about the following message instead:
->
-> 		pr_warn("Driver '%s' needs updating - please use the pm pointer.\n",
-> 			drv->name);
-
-I thought pm ops would be more informative for driver developers. That 
-said, I will change the message and re-send the patch.
-
->
-> And analogously for bus types and classes?
->
->> +
->>   	other = driver_find(drv->name, drv->bus);
->>   	if (other) {
->>   		printk(KERN_ERR "Error: Driver '%s' is already registered, "
->>
->
-> Thanks!
->
-
-
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+Can we invest in your country.My name is Mr.Tom Hook a banker here; there is an unfinished business transaction in my branch. This is a business that will profit both of us, if you are interested get back to me for more details please because the money needs to invest outside my country. I wait for your quick response
+Mr. Tom Hook
