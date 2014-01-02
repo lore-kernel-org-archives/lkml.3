@@ -1,33 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752293AbaABXDF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 18:03:05 -0500
-Received: from mail-bn1hn0122.outbound.protection.outlook.com ([157.56.110.122]:38125
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750814AbaABXDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 18:03:03 -0500
-Reply-To: <tomhook230@yahoo.com>
-From: "Mr. Tom Hook" <tomhook230@outlook.com>
-Subject: Good day
-Date: Fri, 3 Jan 2014 05:47:33 +0700
+	id S1752271AbaABXL0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 18:11:26 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:60798 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136AbaABXLU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 18:11:20 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        =?UTF-8?q?Krzysztof=20Ha=C5=82asa?= <khalasa@piap.pl>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Willy Tarreau <w@1wt.eu>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 2/2] sched_clock: Disable seqlock lockdep usage in sched_clock
+Date: Thu,  2 Jan 2014 15:11:14 -0800
+Message-Id: <1388704274-5278-2-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1388704274-5278-1-git-send-email-john.stultz@linaro.org>
+References: <52C5E675.80701@linaro.org>
+ <1388704274-5278-1-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-ID: <d74b1352-afdf-45c3-88c1-4b99409c3fb0@COSEXCH10.lsi.com>
-To: Undisclosed recipients:;
-X-EOPAttributedMessage: 0
-X-Matching-Connectors: 130331764745831632;(f081dce6-2920-4dfc-23e8-08d07091c5e3);()
-X-Forefront-Antispam-Report: CIP:192.19.220.100;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:SPM;SFS:(10019001)(189002)(199002)(54316002)(79102001)(85306002)(43066001)(6806004)(87266001)(23686002)(65816001)(881003)(221733001)(59766001)(69226001)(87936001)(74706001)(80022001)(44976005)(77982001)(50986001)(31686002)(50466002)(76176001)(50226001)(87286001)(47976001)(62236002)(46102001)(74876001)(49866001)(74662001)(44716002)(83322001)(47736001)(62966002)(81542001)(61296002)(74366001)(88136002)(74502001)(51856001)(47446002)(56776001)(81342001)(551934002)(90146001)(56816005)(76786001)(77096001)(77156001)(89996001)(76796001)(83072002)(85852003)(80976001)(47776003)(20776003)(4396001)(33646001)(19580395003)(76482001)(563864002)(1671002)(63696002)(555904002)(175304002);DIR:OUT;SFP:1501;SCL:6;SRVR:BN1PR07MB117;H:COSEXCH10.lsi.com;CLIP:192.19.220.100;FPR:;RD:cosexch10.lsi.com;MX:1;A:1;LANG:en;
-X-OriginatorOrg: lsicorp.onmicrosoft.com
-X-Forefront-PRVS: 0079056367
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can we invest in your country.My name is Mr.Tom Hook a banker here; there is an unfinished business transaction in my branch. This is a business that will profit both of us, if you are interested get back to me for more details please because the money needs to invest outside my country. I wait for your quick response
-Mr. Tom Hook
+Unforunately the seqlock lockdep enablmenet can't be used
+in sched_clock, since the lockdep infrastructure eventually
+calls into sched_clock, which causes a deadlock.
+
+Thus, this patch changes all generic sched_clock usage
+to use the raw_* methods.
+
+Cc: Krzysztof Hałasa <khalasa@piap.pl>
+Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Cc: Willy Tarreau <w@1wt.eu>
+Cc: Ingo Molnar <mingo@kernel.org>,
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-arm-kernel@lists.infradead.org
+Reported-by: Krzysztof Hałasa <khalasa@piap.pl>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ kernel/time/sched_clock.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/time/sched_clock.c b/kernel/time/sched_clock.c
+index 68b7993..0abb364 100644
+--- a/kernel/time/sched_clock.c
++++ b/kernel/time/sched_clock.c
+@@ -74,7 +74,7 @@ unsigned long long notrace sched_clock(void)
+ 		return cd.epoch_ns;
+ 
+ 	do {
+-		seq = read_seqcount_begin(&cd.seq);
++		seq = raw_read_seqcount_begin(&cd.seq);
+ 		epoch_cyc = cd.epoch_cyc;
+ 		epoch_ns = cd.epoch_ns;
+ 	} while (read_seqcount_retry(&cd.seq, seq));
+@@ -99,10 +99,10 @@ static void notrace update_sched_clock(void)
+ 			  cd.mult, cd.shift);
+ 
+ 	raw_local_irq_save(flags);
+-	write_seqcount_begin(&cd.seq);
++	raw_write_seqcount_begin(&cd.seq);
+ 	cd.epoch_ns = ns;
+ 	cd.epoch_cyc = cyc;
+-	write_seqcount_end(&cd.seq);
++	raw_write_seqcount_end(&cd.seq);
+ 	raw_local_irq_restore(flags);
+ }
+ 
+-- 
+1.8.3.2
+
