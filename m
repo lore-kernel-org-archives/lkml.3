@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276AbaACAIQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 19:08:16 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:22087 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754198AbaACAIL (ORCPT
+	id S1754645AbaACAJz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 19:09:55 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:33587 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753097AbaACAID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 19:08:11 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        x86 <x86@kernel.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>, Joerg Roedel <joro@8bytes.org>,
-        Donald Dutile <ddutile@redhat.com>
-Subject: [PATCH v2 06/10] IOMMU: Separate free_dmar_iommu from free_iommu
-Date: Thu,  2 Jan 2014 16:08:13 -0800
-Message-Id: <1388707697-16800-7-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1388707697-16800-1-git-send-email-yinghai@kernel.org>
-References: <1388707697-16800-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 2 Jan 2014 19:08:03 -0500
+Date: Thu, 2 Jan 2014 15:26:38 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: jiel@marvell.com
+Cc: rjw@rjwysocki.net, viresh.kumar@linaro.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] cpufreq: Fix timer/workqueue corruption by protecting
+ reading governor_enabled
+Message-ID: <20140102232638.GA21548@core.coreip.homeip.net>
+References: <1388632482-16921-1-git-send-email-jiel@marvell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1388632482-16921-1-git-send-email-jiel@marvell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We will need separate two calling later for iommu_remove.
+Hi Jane:
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Donald Dutile <ddutile@redhat.com>
----
- drivers/iommu/dmar.c        | 2 --
- drivers/iommu/intel-iommu.c | 1 +
- 2 files changed, 1 insertion(+), 2 deletions(-)
+On Thu, Jan 02, 2014 at 11:14:42AM +0800, jiel@marvell.com wrote:
+> @@ -119,8 +121,11 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
+>  {
+>  	int i;
+>  
+> -	if (!policy->governor_enabled)
+> +	mutex_lock(&cpufreq_governor_lock);
+> +	if (!policy->governor_enabled) {
+> +		mutex_unlock(&cpufreq_governor_lock);
+>  		return;
+> +	}
+>  
+>  	if (!all_cpus) {
+>  		/*
+> @@ -135,6 +140,7 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
+>  		for_each_cpu(i, policy->cpus)
+>  			__gov_queue_work(i, dbs_data, delay);
+>  	}
+> +	mutex_unlock(&cpufreq_governor_lock);
 
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index f5e0718..20e5727 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -876,8 +876,6 @@ void free_iommu(struct intel_iommu *iommu)
- 	if (!iommu)
- 		return;
- 
--	free_dmar_iommu(iommu);
--
- 	if (iommu->reg)
- 		unmap_iommu(iommu);
- 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 9751ee7..c60d4ed 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -2668,6 +2668,7 @@ error:
- 		if (drhd->ignored)
- 			continue;
- 		iommu = drhd->iommu;
-+		free_dmar_iommu(iommu);
- 		free_iommu(iommu);
- 	}
- 	kfree(g_iommus);
+Unlocking in different branches is not the best practice IMO, I'd
+recommend doing:
+
+	mutex_lock(&cpufreq_governor_lock);
+
+	if (!policy->governor_enabled)
+		goto out_unlock;
+
+	...
+
+out_unlock:
+	mutex_unlock(&cpufreq_governor_lock);
+
+Thanks!
+
 -- 
-1.8.4
-
+Dmitry
