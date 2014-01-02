@@ -1,168 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862AbaABXLY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 18:11:24 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:49017 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814AbaABXLT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 18:11:19 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        =?UTF-8?q?Krzysztof=20Ha=C5=82asa?= <khalasa@piap.pl>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Willy Tarreau <w@1wt.eu>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 1/2] seqlock: Use raw_ prefix instead of _no_lockdep
-Date: Thu,  2 Jan 2014 15:11:13 -0800
-Message-Id: <1388704274-5278-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <52C5E675.80701@linaro.org>
-References: <52C5E675.80701@linaro.org>
+	id S1752623AbaABXML (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 18:12:11 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:34973 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751886AbaABXMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 18:12:09 -0500
+From: Gene Heskett <gheskett@wdtv.com>
+To: Ken Moffat <zarniwhoop@ntlworld.com>
+Subject: Re: AMD microcode fails to update with v3.8.3 and newer, bisect failed
+Date: Thu, 2 Jan 2014 18:12:05 -0500
+Cc: Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org
+References: <201401011752.00267.gheskett@wdtv.com> <201401020024.56566.gheskett@wdtv.com> <20140102181513.GA9391@milliways>
+In-Reply-To: <20140102181513.GA9391@milliways>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="windows-1256"
 Content-Transfer-Encoding: 8bit
+Message-Id: <201401021812.05431.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus disliked the _no_lockdep() naming, so instead
-use the more-consistent raw_* prefix to the non-lockdep
-enabled seqcount methods.
+On Thursday 02 January 2014, Ken Moffat wrote:
+>On Thu, Jan 02, 2014 at 12:24:56AM -0500, Gene Heskett wrote:
+>> On Wednesday 01 January 2014, Ken Moffat wrote:
+>> >On Thu, Jan 02, 2014 at 04:08:15AM +0000, Ken Moffat wrote:
+>> >>  Anyway, best of luck and I hope you get it sorted.
+>> > 
+>> > One further suggestion, since you appear to be at the "running
+>> >
+>> >round in circles" stage -
+>> >
+>> >1. Start with a good kernel.  In this case, I suppose 3.8.2 is the
+>> >right place to begin.
+>> 
+>> That has since died, won't boot, don't recall changing a thing in the
+>> .config either.
+>
+> That makes things harder.  Do you have any backups from when it
+>booted ? (kernel, modules, and grub.cfg might all have been
+>accidentally overwritten).
+>
+> To reply to your earlier post about a lack of local tarballs : try
+>installing wget (if you don't already have it), or use a firefox
+>variant on a desktop machine and then transfer it to the phenom.
+>
+> For convenience, I always download the 3.x.0 kernel as a tarball,
+>and then 3.x.{1..n} as patches.  And I usually rename the directory
+>as linux-3.x-stable so that I can remember what it is, and also so
+>that it doesn't get overwritten if I untar a fresh copy for other
+>reasons.  So, first I use 'head Makefile' to confirm the current
+>version.  I then remove any stable patch using 'xzcat | patch -R
+>-p1' so that I'm back to 3.x.0 and then apply the patch for the next
+>version I want to test.
+>
+> Lots of possible variations on this exist, particularly when I'm
+>bisecting.  The important thing is to have a process which works for
+>you - for stable kernels, some people will prefer to use a fresh
+>3.x.y tarball each time.
+>
+>> >2. But then change the .config to -
+>> >
+>> >2.1 ensure that your disk filesystems are built in - e.g. all of
+>> >ext2, ext3, ext4 and anything else you know you are using.
+>> 
+>> Should I edit in the /etc/grub.d to remove the modprobe ext2, or will
+>> it more or less silently shake its head and go on.
+>
+> I think the modprobe instructions in the grub files are used to
+>ensure that grub can load its own modules before it tries to read
+>the specified kernel.  So no, I would not change that.  The kernel's
+>own modules (specifically ext2/3/4) are something else - without an
+>initrd, the kernel needs the filesystem used for '/' to be built in.
+>
+> So : if the kernel starts to boot, the grub part is ok.
+>
+>> >Normally, only the fs for '/' needs to be built in, but you seem to
+>> >have seen other issues so I would just build in everything you need.
+>> >
+>> >2.2 build in everything else you need to boot (normally, the disk
+>> >controller(s) ) so that you don't need an initrd.
+>> 
+>> That would be forcedeath, nouveau, v4l1 and 2 and hda_audio for
+>> starters.
+>
+> Nouveau and forcedeath will probably be convenient, but the rest
+>ought to be ok as modules.  In this context, I mean whatever you need
+>for the kernel to get to a position where it can load modules.  So,
+>it needs the disk driver(s) and the root filesystem (where
+>/lib/modules lives).
+>
+>> Since this kernel isn't near new enough for the config tricks
+>> mentioned, maybe I'll see if the linux-stable I have can do a 3.11.0
+>> checkout.
+>> 
+>> >2.4 for your convenience, ensure that you have enabled the config to
+>> >be stored in /proc/config.gz - once you are building your own
+>> >slimmed-down kernels, you probably won't want to mess about with
+>> >distro "install" scripts so just copying the bzimage to
+>> >/boot/vmlinuz-x.y.z, make modules_install, and editing
+>> >/boot/grub/grub.cfg (yes, really!) will save a lot of time.
+>> 
+>> My present script does everything but edit grub.cfg.
+>
+>[...]
+>
+>> >3.  That might take two or three attempts to get to a good config,
+>> >but after that you should be able to use the slimmer config (from
+>> >zcat /proc/config.gz) to create .config for any newer version you
+>> >want to test or bisect, and then just run make oldconfig before you
+>> >build.
+>> >
+>> > Also, when you get back to bisecting, the version in the kernel
+>> >
+>> >Makefile might not be what you expect.  If in doubt, you can change
+>> >it to something which doesn't overwrite any existing modules, e.g.
+>> >3.8.bisect-1 etc.
+>> 
+>> Presently it uses a + sign for in between versions.
+>
+> I'm more familiar with bisecting in -rc versions : for those, the
+>Makefile version will jump back to what it was when the code was
+>developed.  Very confusing if you weren't expecting it.
+>
+>> > HTH
+>> 
+>> It will, if I don't lose my place...
+>> 
+>> >ؤ¸en
+>> 
+>> My "makeit" script does cd's here and there, so its vital that the
+>> Makefile version matches the makeit version.  I've thought of that,
+>> and fixed it in the copy I use to make a linux-stable install, but I
+>> haven't moved that line of script into the tarball builds yet.
+>
+> I haven't bothered to script my own kernel builds/installs for many
+>years - as you say, make sure everything matches.
+>
+>> Having an automatic increment, I could eventually fill up the /boot
+>> partition too. ;-)
+>
+> Been there (when /boot was small and used by several available test
+>systems).  For me, clearing out the old stuff by hand works well
+>enough.  For scripts, I guess that you already check $?.
+>
+>> I take it that /proc/config.gz only keeps the lsmod output?  That would
+>> be sweet!  Great idea.
+>
+> No, it has everything from .config - but gzipped.  Provided the
+>kernel boots, it will tell you how it was configured.  If it doesn't
+>boot, the problematic config is in the source tree.  Also saves
+>space in wherever a distro stores the config.
+>
+>> Thanks Ken & Cheers, Gene
+>
+>ĸen
 
-This also adds raw_ methods for the write operations
-as well, which will be utilized in a following patch.
+My "makeit" script actually stores the .config as a config-$VER.gz in the 
+boot, renaming an existing one to gz.old if its found.  But that was 
+apparently overwritten more than twice while attempting the bisect.
 
-Cc: Krzysztof Hałasa <khalasa@piap.pl>
-Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Cc: Willy Tarreau <w@1wt.eu>
-Cc: Ingo Molnar <mingo@kernel.org>,
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-arm-kernel@lists.infradead.org
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- arch/x86/vdso/vclock_gettime.c |  8 ++++----
- include/linux/seqlock.h        | 27 +++++++++++++++++++--------
- 2 files changed, 23 insertions(+), 12 deletions(-)
+No progress today, I've been out playing small town broadcast engineer, the 
+local AM'ers daytime transmitter put out about 1 kilgram of smoke at turn 
+on this morning.  A gassy 807 took out a 10 henry choke in the power supply 
+about 10kg, but now nice and toasty overdone.  Parts on order, but are up 
+in PA, and this current snowstorm has PA in just about in a total lockdown.  
+Might have it by Monday.
 
-diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index 2ada505..eb5d7a5 100644
---- a/arch/x86/vdso/vclock_gettime.c
-+++ b/arch/x86/vdso/vclock_gettime.c
-@@ -178,7 +178,7 @@ notrace static int __always_inline do_realtime(struct timespec *ts)
- 
- 	ts->tv_nsec = 0;
- 	do {
--		seq = read_seqcount_begin_no_lockdep(&gtod->seq);
-+		seq = raw_read_seqcount_begin(&gtod->seq);
- 		mode = gtod->clock.vclock_mode;
- 		ts->tv_sec = gtod->wall_time_sec;
- 		ns = gtod->wall_time_snsec;
-@@ -198,7 +198,7 @@ notrace static int do_monotonic(struct timespec *ts)
- 
- 	ts->tv_nsec = 0;
- 	do {
--		seq = read_seqcount_begin_no_lockdep(&gtod->seq);
-+		seq = raw_read_seqcount_begin(&gtod->seq);
- 		mode = gtod->clock.vclock_mode;
- 		ts->tv_sec = gtod->monotonic_time_sec;
- 		ns = gtod->monotonic_time_snsec;
-@@ -214,7 +214,7 @@ notrace static int do_realtime_coarse(struct timespec *ts)
- {
- 	unsigned long seq;
- 	do {
--		seq = read_seqcount_begin_no_lockdep(&gtod->seq);
-+		seq = raw_read_seqcount_begin(&gtod->seq);
- 		ts->tv_sec = gtod->wall_time_coarse.tv_sec;
- 		ts->tv_nsec = gtod->wall_time_coarse.tv_nsec;
- 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
-@@ -225,7 +225,7 @@ notrace static int do_monotonic_coarse(struct timespec *ts)
- {
- 	unsigned long seq;
- 	do {
--		seq = read_seqcount_begin_no_lockdep(&gtod->seq);
-+		seq = raw_read_seqcount_begin(&gtod->seq);
- 		ts->tv_sec = gtod->monotonic_time_coarse.tv_sec;
- 		ts->tv_nsec = gtod->monotonic_time_coarse.tv_nsec;
- 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
-diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
-index cf87a24..535f158 100644
---- a/include/linux/seqlock.h
-+++ b/include/linux/seqlock.h
-@@ -117,15 +117,15 @@ repeat:
- }
- 
- /**
-- * read_seqcount_begin_no_lockdep - start seq-read critical section w/o lockdep
-+ * raw_read_seqcount_begin - start seq-read critical section w/o lockdep
-  * @s: pointer to seqcount_t
-  * Returns: count to be passed to read_seqcount_retry
-  *
-- * read_seqcount_begin_no_lockdep opens a read critical section of the given
-+ * raw_read_seqcount_begin opens a read critical section of the given
-  * seqcount, but without any lockdep checking. Validity of the critical
-  * section is tested by checking read_seqcount_retry function.
-  */
--static inline unsigned read_seqcount_begin_no_lockdep(const seqcount_t *s)
-+static inline unsigned raw_read_seqcount_begin(const seqcount_t *s)
- {
- 	unsigned ret = __read_seqcount_begin(s);
- 	smp_rmb();
-@@ -144,7 +144,7 @@ static inline unsigned read_seqcount_begin_no_lockdep(const seqcount_t *s)
- static inline unsigned read_seqcount_begin(const seqcount_t *s)
- {
- 	seqcount_lockdep_reader_access(s);
--	return read_seqcount_begin_no_lockdep(s);
-+	return raw_read_seqcount_begin(s);
- }
- 
- /**
-@@ -206,14 +206,26 @@ static inline int read_seqcount_retry(const seqcount_t *s, unsigned start)
- }
- 
- 
-+
-+static inline void raw_write_seqcount_begin(seqcount_t *s)
-+{
-+	s->sequence++;
-+	smp_wmb();
-+}
-+
-+static inline void raw_write_seqcount_end(seqcount_t *s)
-+{
-+	smp_wmb();
-+	s->sequence++;
-+}
-+
- /*
-  * Sequence counter only version assumes that callers are using their
-  * own mutexing.
-  */
- static inline void write_seqcount_begin_nested(seqcount_t *s, int subclass)
- {
--	s->sequence++;
--	smp_wmb();
-+	raw_write_seqcount_begin(s);
- 	seqcount_acquire(&s->dep_map, subclass, 0, _RET_IP_);
- }
- 
-@@ -225,8 +237,7 @@ static inline void write_seqcount_begin(seqcount_t *s)
- static inline void write_seqcount_end(seqcount_t *s)
- {
- 	seqcount_release(&s->dep_map, 1, _RET_IP_);
--	smp_wmb();
--	s->sequence++;
-+	raw_write_seqcount_end(s);
- }
- 
- /**
+Cheers, Gene
 -- 
-1.8.3.2
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Genes Web page <http://geneslinuxbox.net:6309/gene>
 
+Old men are fond of giving good advice to console themselves for their
+inability to set a bad example.
+		-- La Rochefoucauld, "Maxims"
+A pen in the hand of this president is far more
+dangerous than 200 million guns in the hands of
+         law-abiding citizens.
