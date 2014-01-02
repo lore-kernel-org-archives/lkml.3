@@ -1,59 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598AbaABVhR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 16:37:17 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:42037 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752446AbaABVhP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 16:37:15 -0500
-Message-ID: <52C5DC08.6030508@lwfinger.net>
-Date: Thu, 02 Jan 2014 15:37:12 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752207AbaABVxO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 16:53:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47069 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750740AbaABVxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 16:53:13 -0500
+Date: Thu, 2 Jan 2014 19:52:26 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [GIT PULL] KVM fixes for 3.13-rc6
+Message-ID: <20140102215225.GA21472@amt.cnet>
 MIME-Version: 1.0
-To: Tim Jester-Pfadt <t.jp@gmx.de>, gregkh@linuxfoundation.org
-CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Staging: rtl8188eu: Fixed coding style issues
-References: <20140102204640.GA1149@archlinux>
-In-Reply-To: <20140102204640.GA1149@archlinux>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: ~/inbox/sent-mutt-Aug-2012
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2014 02:46 PM, Tim Jester-Pfadt wrote:
-> Fixed indentation coding style issues on rtw_io.c
->
-> Signed-off-by: Tim Jester-Pfadt <t.jp@gmx.de>
-> ---
->   drivers/staging/rtl8188eu/core/rtw_io.c | 12 ++++++------
->   1 file changed, 6 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/staging/rtl8188eu/core/rtw_io.c b/drivers/staging/rtl8188eu/core/rtw_io.c
-> index 10c9c65..6be6c50 100644
-> --- a/drivers/staging/rtl8188eu/core/rtw_io.c
-> +++ b/drivers/staging/rtl8188eu/core/rtw_io.c
-> @@ -205,9 +205,9 @@ void _rtw_read_mem(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem)
->
->   	_func_enter_;
->   	if (adapter->bDriverStopped || adapter->bSurpriseRemoved) {
-> -	     RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
-> -		      ("rtw_read_mem:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
-> -		      adapter->bDriverStopped, adapter->bSurpriseRemoved));
-> +		RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
-> +			("rtw_read_mem:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
-> +			adapter->bDriverStopped, adapter->bSurpriseRemoved));
 
-The latest version of checkpatch.pl lists the following:
+Linus,
 
-CHECK: Alignment should match open parenthesis
-#87: FILE: drivers/staging/rtl8188eu/core/rtw_io.c:207:
-+               RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
-+                       ("rtw_read_mem:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
+Please pull from
 
-The continuing lines should be indented one more space.
+git://git.kernel.org/pub/scm/virt/kvm/kvm.git master
 
-Larry
+To receive the following KVM bug fixes
 
+
+Jan Kiszka (2):
+      KVM: x86: Fix APIC map calculation after re-enabling
+      KVM: nVMX: Unconditionally uninit the MMU on nested vmexit
+
+ arch/x86/kvm/lapic.c |    8 ++++----
+ arch/x86/kvm/vmx.c   |    3 +--
+ 2 files changed, 5 insertions(+), 6 deletions(-)
