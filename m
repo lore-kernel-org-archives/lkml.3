@@ -1,64 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807AbaABTOF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 14:14:05 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:38748 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782AbaABTOD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 14:14:03 -0500
-Date: Thu, 2 Jan 2014 14:12:51 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        stefano.stabellini@eu.citrix.com, mukesh.rathor@oracle.com
-Subject: Re: [PATCH v12] Linux Xen PVH support.
-Message-ID: <20140102191250.GI3021@pegasus.dumpdata.com>
-References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com>
- <52C5B266.1090009@zytor.com>
+	id S1751987AbaABTPN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 14:15:13 -0500
+Received: from mga09.intel.com ([134.134.136.24]:46531 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751755AbaABTPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 14:15:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,592,1384329600"; 
+   d="scan'208";a="433127108"
+Date: Thu, 2 Jan 2014 11:15:10 -0800
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: walt <w41ter@gmail.com>, Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        David Laight <david.laight@aculab.com>, Mark Lord <mlord@pobox.com>,
+        linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within a
+ USB payload burst
+Message-ID: <20140102191510.GA9621@xanatos>
+References: <20131218211219.461663463@linuxfoundation.org>
+ <20131218211220.412278148@linuxfoundation.org>
+ <52C32BB0.90600@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52C5B266.1090009@zytor.com>
+In-Reply-To: <52C32BB0.90600@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 02, 2014 at 10:39:34AM -0800, H. Peter Anvin wrote:
-> On 12/31/2013 08:35 PM, Konrad Rzeszutek Wilk wrote:
-> > The patches, also available at
-> > git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git devel/pvh.v12
+On Tue, Dec 31, 2013 at 12:40:16PM -0800, walt wrote:
+> On 12/18/2013 01:11 PM, Greg Kroah-Hartman wrote:
+> > 3.12-stable review patch.  If anyone has any objections, please let me know.
 > > 
-> > implements the neccessary functionality to boot a PV guest in PVH mode.
+> > ------------------
 > > 
-> 
-> As x86 maintainer I would like to see a list of what pvops are necessary
-> in PVH mode.  Obviously the hope is that the really invasive ones will
-
-This patchset uses these
-+               pv_mmu_ops.flush_tlb_others = xen_flush_tlb_others;
-+               pv_cpu_ops.cpuid = xen_cpuid;
-
-These are still in the code:
-
- 	pv_info = xen_info;
-        pv_init_ops = xen_init_ops;
-	pv_apic_ops = xen_apic_ops;
-	pv_time_ops = xen_time_ops;
-
-And the x86_init,apic, and smp_ops ops are still in force.
-
-This is just the first step so there might be some other ones
-that are needed that I failed to enumerate.
-
-We are at the infancy period.
-
-> not be necessary (and there are good reasons to believe that is within
-> reach.)
-> 
-> 	-hpa
+> > From: David Laight <David.Laight@ACULAB.COM>
+> > 
+> > commit 35773dac5f862cb1c82ea151eba3e2f6de51ec3e upstream.
+> > 
+> > Section 4.11.7.1 of rev 1.0 of the xhci specification states that a link TRB
+> > can only occur at a boundary between underlying USB frames (512 bytes for
+> > high speed devices).
+> > 
+> > If this isn't done the USB frames aren't formatted correctly and, for example,
+> > the USB3 ethernet ax88179_178a card will stop sending...
 > 
 > 
+> Unfortunately this patch causes a regression when copying large files to my
+> outboard USB3 drive. (Nothing at all to do with networking.)
+> 
+> When I try to copy a large (20GB) file to the USB3 drive, the copy dies after
+> about 7GB, the ext4 journal aborts and the drive is remounted read-only.
+> 
+> This bug is 100% reproducible (always pretty close to 7GB) and reverting this
+> patch completely fixes the problem.
+
+Ok, I had feared that would be a consequence of this patch.  I think the
+problem is that the usb-storage driver submitted an URB with more
+scatter-gather entries than would fit on the ring segment, the xHCI
+driver rejected the URB with -ENOMEM, and the SCSI core eventually gave
+up on the SCSI command.
+
+Do you have CONFIG_USB_DEBUG turned on for 3.13?  If so, you should see
+dmesg output from this statement shortly before your drive fails:
+
+if (num_trbs >= TRBS_PER_SEGMENT) {
+	xhci_err(xhci, "Too many fragments %d, max %d\n",
+		num_trbs, TRBS_PER_SEGMENT - 1);
+	return -ENOMEM;
+}
+
+> (Note to Sarah:  I recently emailed you about this problem, and I *wrongly*
+> said that reverting the patch doesn't help.  That was a mistake, sorry.)
+> 
+> I'm happy to try any debugging suggestions/tricks.
+
+Unfortunately a real fix for this is going to take a bit.  I have a
+couple different solutions to the bug the patch solved, but they're much
+more invasive than the original patch and will take a couple weeks to
+implement and thoroughly test.
+
+If David's patch is just reverted, USB ethernet on 3.12 and later breaks
+under xHCI.  The networking folks added scatter-gather support in 3.12.
+Those patches could be reverted, but I suspect David Miller will not be
+happy with that solution, since the real problem is the xHCI driver
+itself, and EHCI scatter-gather works fine.
+
+I think the short term solution is to simply turn off scatter-gather all
+together under xHCI until this gets fixed.  It could mean a big
+performance hit for USB storage devices, but that means we get correct
+behavior for both USB ethernet and USB storage.
+
+> BTW, please tell me if I've cc'd too many people.
+
+Nope, you're fine.  I've Cc'ed the USB and SCSI mailing lists as well.
+
+Sarah Sharp
