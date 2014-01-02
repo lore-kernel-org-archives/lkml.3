@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754269AbaABRbG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:31:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40169 "EHLO
+	id S1754760AbaABRcM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:32:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40119 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252AbaABRF3 (ORCPT
+	with ESMTP id S1751833AbaABRF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:05:29 -0500
+	Thu, 2 Jan 2014 12:05:28 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Malcolm Priestley <tvboxspy@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 19/91] net: add BUG_ON if kernel advertises msg_namelen > sizeof(struct sockaddr_storage)
-Date: Thu,  2 Jan 2014 09:03:54 -0800
-Message-Id: <1388682306-30859-20-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 02/91] staging: vt6656: [BUG] Fix for TX USB resets from vendors driver.
+Date: Thu,  2 Jan 2014 09:03:37 -0800
+Message-Id: <1388682306-30859-3-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -28,43 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-[ Upstream commit 68c6beb373955da0886d8f4f5995b3922ceda4be ]
+commit 9df682927c2e3a92f43803d6b52095992e3b2ab8 upstream.
 
-In that case it is probable that kernel code overwrote part of the
-stack. So we should bail out loudly here.
+This fixes resets on heavy TX data traffic.
 
-The BUG_ON may be removed in future if we are sure all protocols are
-conformant.
+Vendor driver
+VT6656_Linux_src_v1.21.03_x86_11.04.zip
+http://www.viaembedded.com/servlet/downloadSvl?id=1890&download_file_id=14704
+This is GPL-licensed code.
 
-Suggested-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+original code
+BBbVT3184Init
+...
+//2007-0725, RobertChang add, Enable Squelch detect reset option(SQ_RST_Opt), USB (register4, bit1)
+CONTROLnsRequestIn(pDevice,
+                                 MESSAGE_TYPE_READ,
+                                 (WORD)0x600+4,     // USB's Reg4's bit1
+                                 MESSAGE_REQUEST_MEM,
+                                 1,
+                                 (PBYTE) &byData);
+byData = byData|2 ;
+CONTROLnsRequestOut(pDevice,
+                              MESSAGE_TYPE_WRITE,
+                              (WORD)0x600+4,     // USB's Reg4's bit1
+                              MESSAGE_REQUEST_MEM,
+                              1,
+                              (PBYTE) &byData);
+
+return TRUE;//ntStatus;
+....
+
+A back port patch is needed for kernels less than 3.10.
+
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ Malcolm Priestley: backport to 3.8-stable ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/socket.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/staging/vt6656/baseband.c | 11 +++++++++++
+ drivers/staging/vt6656/rndis.h    |  1 +
+ 2 files changed, 12 insertions(+)
 
-diff --git a/net/socket.c b/net/socket.c
-index 5b1b9bd..f7129f3 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -216,12 +216,13 @@ static int move_addr_to_user(struct sockaddr_storage *kaddr, int klen,
- 	int err;
- 	int len;
+diff --git a/drivers/staging/vt6656/baseband.c b/drivers/staging/vt6656/baseband.c
+index 3855015..65503b9 100644
+--- a/drivers/staging/vt6656/baseband.c
++++ b/drivers/staging/vt6656/baseband.c
+@@ -976,6 +976,7 @@ BOOL BBbVT3184Init(PSDevice pDevice)
+     PBYTE                   pbyAgc;
+     WORD                    wLengthAgc;
+     BYTE                    abyArray[256];
++	u8 data;
  
-+	BUG_ON(klen > sizeof(struct sockaddr_storage));
- 	err = get_user(len, ulen);
- 	if (err)
- 		return err;
- 	if (len > klen)
- 		len = klen;
--	if (len < 0 || len > sizeof(struct sockaddr_storage))
-+	if (len < 0)
- 		return -EINVAL;
- 	if (len) {
- 		if (audit_sockaddr(klen, kaddr))
+     ntStatus = CONTROLnsRequestIn(pDevice,
+                                   MESSAGE_TYPE_READ,
+@@ -1144,6 +1145,16 @@ else {
+     ControlvWriteByte(pDevice,MESSAGE_REQUEST_BBREG,0x0D,0x01);
+ 
+     RFbRFTableDownload(pDevice);
++
++	/* Fix for TX USB resets from vendors driver */
++	CONTROLnsRequestIn(pDevice, MESSAGE_TYPE_READ, USB_REG4,
++		MESSAGE_REQUEST_MEM, sizeof(data), &data);
++
++	data |= 0x2;
++
++	CONTROLnsRequestOut(pDevice, MESSAGE_TYPE_WRITE, USB_REG4,
++		MESSAGE_REQUEST_MEM, sizeof(data), &data);
++
+     return TRUE;//ntStatus;
+ }
+ 
+diff --git a/drivers/staging/vt6656/rndis.h b/drivers/staging/vt6656/rndis.h
+index fccf7e9..dcf7bf5 100644
+--- a/drivers/staging/vt6656/rndis.h
++++ b/drivers/staging/vt6656/rndis.h
+@@ -69,6 +69,7 @@
+ 
+ #define VIAUSB20_PACKET_HEADER          0x04
+ 
++#define USB_REG4	0x604
+ 
+ /*---------------------  Export Classes  ----------------------------*/
+ 
 -- 
 1.8.3.2
 
