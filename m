@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356AbaABWYr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 17:24:47 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:61735 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896AbaABWXj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 17:23:39 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Sasha Levin <sasha.levin@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, stable <stable@vger.kernel.org>
-Subject: [PATCH 5/9] timekeeping: Fix CLOCK_TAI timer/nanosleep delays
-Date: Thu,  2 Jan 2014 14:23:23 -0800
-Message-Id: <1388701407-5029-5-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1388701407-5029-1-git-send-email-john.stultz@linaro.org>
-References: <52C5E6A0.7010507@linaro.org>
- <1388701407-5029-1-git-send-email-john.stultz@linaro.org>
+	id S1753430AbaABWZG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 17:25:06 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753281AbaABWYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 17:24:45 -0500
+From: Richard Weinberger <richard@nod.at>
+To: Pat Erley <pat-lkml@erley.org>
+Cc: linux-next@vger.kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Possible regression from "fs/exec.c: call arch_pick_mmap_layout() only once"
+Date: Thu, 02 Jan 2014 23:24:39 +0100
+Message-ID: <2300703.z3jyM3yTZv@sandpuppy>
+User-Agent: KMail/4.11.2 (Linux/3.12.0-34.ge8fa6b4-desktop; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <52C5DD07.40208@erley.org>
+References: <52C5DD07.40208@erley.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A think-o in the calculation of the monotonic -> tai time offset
-results in CLOCK_TAI timers and nanosleeps to expire late (the
-latency is ~2x the tai offset).
+Am Donnerstag, 2. Januar 2014, 15:41:27 schrieb Pat Erley:
+> On my 64bit kernel, commit 283fe963095b38a6ab75dda1436ee66b9e45c7c2
+> seems to have broken 32bit compatibility.  I've run the bisection twice,
+> and verified that reverting this on HEAD fixes the problem.  I've
+> uploaded my .config to pastebin at http://pastebin.com/kVcr9H65
+> 
+> Even this simple program:
+> 
+> main(){puts("HELLO");}
+> 
+> compiled with:
+> 
+> gcc -m32 test.c
+> 
+> Will crash with a segfault.  Stracing shows that it's failing to
+> allocate memory.
 
-Fix this by adding the tai offset from the realtime offset instead
-of subtracting.
+Good catch!
 
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: stable <stable@vger.kernel.org> #3.10+
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+flush_old_exec() is called before setup_new_exec() and I've removed
+arch_pick_mmap_layout() from the second call site.
+Which turned out to be wrong.
+
+It is wrong because between both callers current->personality is changed.
+So, we have to remove the first call to arch_pick_mmap_layout() and keep the 
+latter because only then the correct personality is set up.
+
+Can you please test your config with the following patch applied and having
+283fe96 reverted?
+
+If it works out for you I'd send an updated patch to Andrew.
+In the meanwhile I'll double check all call sites...
+
+Thanks,
+//richard
+
 ---
- kernel/time/timekeeping.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 44b7e6b..3f6a827 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -77,7 +77,7 @@ static void tk_set_wall_to_mono(struct timekeeper *tk, struct timespec wtm)
- 	tk->wall_to_monotonic = wtm;
- 	set_normalized_timespec(&tmp, -wtm.tv_sec, -wtm.tv_nsec);
- 	tk->offs_real = timespec_to_ktime(tmp);
--	tk->offs_tai = ktime_sub(tk->offs_real, ktime_set(tk->tai_offset, 0));
-+	tk->offs_tai = ktime_add(tk->offs_real, ktime_set(tk->tai_offset, 0));
- }
- 
- static void tk_set_sleep_time(struct timekeeper *tk, struct timespec t)
-@@ -595,7 +595,7 @@ s32 timekeeping_get_tai_offset(void)
- static void __timekeeping_set_tai_offset(struct timekeeper *tk, s32 tai_offset)
- {
- 	tk->tai_offset = tai_offset;
--	tk->offs_tai = ktime_sub(tk->offs_real, ktime_set(tai_offset, 0));
-+	tk->offs_tai = ktime_add(tk->offs_real, ktime_set(tai_offset, 0));
- }
- 
- /**
--- 
-1.8.3.2
+diff --git a/fs/exec.c b/fs/exec.c
+index 7ea097f..a733599 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -843,7 +843,6 @@ static int exec_mmap(struct mm_struct *mm)
+ 	tsk->active_mm = mm;
+ 	activate_mm(active_mm, mm);
+ 	task_unlock(tsk);
+-	arch_pick_mmap_layout(mm);
+ 	if (old_mm) {
+ 		up_read(&old_mm->mmap_sem);
+ 		BUG_ON(active_mm != old_mm);
 
