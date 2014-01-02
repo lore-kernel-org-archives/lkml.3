@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122AbaABRYI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:24:08 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40328 "EHLO
+	id S1754508AbaABRYs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:24:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40311 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753026AbaABRHv (ORCPT
+	with ESMTP id S1752925AbaABRHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:07:51 -0500
+	Thu, 2 Jan 2014 12:07:38 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ian Abbott <abbotti@mev.co.uk>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 54/91] staging: comedi: amplc_pc263: correct insn_bits result
-Date: Thu,  2 Jan 2014 09:04:29 -0800
-Message-Id: <1388682306-30859-55-git-send-email-kamal@canonical.com>
+Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        David Miller <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 52/91] ip6tnl: fix use after free of fb_tnl_dev
+Date: Thu,  2 Jan 2014 09:04:27 -0800
+Message-Id: <1388682306-30859-53-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -26,34 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-commit 97f4289ad08cffe55de06d4ac4f89ac540450aee upstream.
+The upstream commit bb8140947a24 ("ip6tnl: allow to use rtnl ops on fb tunnel")
+(backported into linux-3.10.y) left a bug which was fixed upstream by commit
+1e9f3d6f1c40 ("ip6tnl: fix use after free of fb_tnl_dev").
 
-[Split from original patch subject: "staging: comedi: drivers: use
-comedi_dio_update_state() for simple cases"]
+The problem is a bit different in linux-3.10.y, because there is no x-netns
+support (upstream commit 0bd8762824e7 ("ip6tnl: add x-netns support")).
+When ip6_tunnel.ko is unloaded, FB device is deleted by rtnl_link_unregister()
+and then we try to delete it again in ip6_tnl_destroy_tunnels().
 
-Also, fix a bug in the amplc_pc263 and amplc_pci263 drivers where the
-current state is not returned in data[1].
+This patch removes the second deletion.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Suggested-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Cc: David Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/staging/comedi/drivers/amplc_pc263.c | 3 +++
- 1 file changed, 3 insertions(+)
+ net/ipv6/ip6_tunnel.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/amplc_pc263.c b/drivers/staging/comedi/drivers/amplc_pc263.c
-index dfbff77..53b2ad9 100644
---- a/drivers/staging/comedi/drivers/amplc_pc263.c
-+++ b/drivers/staging/comedi/drivers/amplc_pc263.c
-@@ -192,6 +192,9 @@ static int pc263_do_insn_bits(struct comedi_device *dev,
- 		outb(s->state & 0xFF, dev->iobase);
- 		outb(s->state >> 8, dev->iobase + 1);
+diff --git a/net/ipv6/ip6_tunnel.c b/net/ipv6/ip6_tunnel.c
+index a953bfb..fa3fe70 100644
+--- a/net/ipv6/ip6_tunnel.c
++++ b/net/ipv6/ip6_tunnel.c
+@@ -1725,8 +1725,6 @@ static void __net_exit ip6_tnl_destroy_tunnels(struct ip6_tnl_net *ip6n)
+ 		}
  	}
-+
-+	data[1] = s->state;
-+
- 	return insn->n;
+ 
+-	t = rtnl_dereference(ip6n->tnls_wc[0]);
+-	unregister_netdevice_queue(t->dev, &list);
+ 	unregister_netdevice_many(&list);
  }
  
 -- 
