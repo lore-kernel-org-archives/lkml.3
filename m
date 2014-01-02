@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007AbaABWXn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 17:23:43 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:34707 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752930AbaABWXl (ORCPT
+	id S1753153AbaABWXv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 17:23:51 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:47290 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753026AbaABWXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 17:23:41 -0500
+	Thu, 2 Jan 2014 17:23:44 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Sasha Levin <sasha.levin@oracle.com>,
+Cc: Borislav Petkov <bp@alien8.de>, Brecht Machiels <brecht@mos6581.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, stable <stable@vger.kernel.org>
-Subject: [PATCH 6/9] timekeeping: Fix missing timekeeping_update in suspend path
-Date: Thu,  2 Jan 2014 14:23:24 -0800
-Message-Id: <1388701407-5029-6-git-send-email-john.stultz@linaro.org>
+        John Stultz <john.stultz@linaro.org>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        stable <stable@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: [PATCH 8/9] rtc-cmos: Add an alarm disable quirk
+Date: Thu,  2 Jan 2014 14:23:26 -0800
+Message-Id: <1388701407-5029-8-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388701407-5029-1-git-send-email-john.stultz@linaro.org>
 References: <52C5E6A0.7010507@linaro.org>
@@ -25,43 +25,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since 48cdc135d4840 (Implement a shadow timekeeper), we have to
-call timekeeping_update() after any adjustment to the timekeeping
-structure in order to make sure that any adjustments to the structure
-persist.
+From: Borislav Petkov <bp@alien8.de>
 
-In the timekeeping suspend path, we udpate the timekeeper
-structure, so we should be sure to update the shadow-timekeeper
-before releasing the timekeeping locks. Currently this isn't done.
+41c7f7424259f ("rtc: Disable the alarm in the hardware (v2)") added the
+functionality to disable the RTC wake alarm when shutting down the box.
 
-In most cases, the next time related code to run would be
-timekeeping_resume, which does update the shadow-timekeeper, but
-in an abundence of caution, this patch adds the call to
-timekeeping_update() in the suspend path.
+However, there are at least two b0rked BIOSes we know about:
 
-Cc: Sasha Levin <sasha.levin@oracle.com>
+https://bugzilla.novell.com/show_bug.cgi?id=812592
+https://bugzilla.novell.com/show_bug.cgi?id=805740
+
+where, when wakeup alarm is enabled in the BIOS, the machine reboots
+automatically right after shutdown, regardless of what wakeup time is
+programmed.
+
+Bisecting the issue lead to this patch so disable its functionality with
+a DMI quirk only for those boxes.
+
+Cc: Brecht Machiels <brecht@mos6581.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: stable <stable@vger.kernel.org> #3.10+
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Rabin Vincent <rabin.vincent@stericsson.com>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+[jstultz: Changed variable name for clarity, added extra dmi entry]
+Tested-by: Brecht Machiels <brecht@mos6581.org>
+Tested-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- kernel/time/timekeeping.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/rtc/rtc-cmos.c | 52 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 51 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 3f6a827..2793c43 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1024,6 +1024,8 @@ static int timekeeping_suspend(void)
- 		timekeeping_suspend_time =
- 			timespec_add(timekeeping_suspend_time, delta_delta);
- 	}
+diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
+index f148762..a2325bc 100644
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -34,11 +34,11 @@
+ #include <linux/interrupt.h>
+ #include <linux/spinlock.h>
+ #include <linux/platform_device.h>
+-#include <linux/mod_devicetable.h>
+ #include <linux/log2.h>
+ #include <linux/pm.h>
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
++#include <linux/dmi.h>
+ 
+ /* this is for "generic access to PC-style RTC" using CMOS_READ/CMOS_WRITE */
+ #include <asm-generic/rtc.h>
+@@ -377,6 +377,51 @@ static int cmos_set_alarm(struct device *dev, struct rtc_wkalrm *t)
+ 	return 0;
+ }
+ 
++/*
++ * Do not disable RTC alarm on shutdown - workaround for b0rked BIOSes.
++ */
++static bool alarm_disable_quirk;
 +
-+	timekeeping_update(tk, TK_MIRROR);
- 	write_seqcount_end(&timekeeper_seq);
- 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
++static int __init set_alarm_disable_quirk(const struct dmi_system_id *id)
++{
++	alarm_disable_quirk = true;
++	pr_info("rtc-cmos: BIOS has alarm-disable quirk. ");
++	pr_info("RTC alarms disabled\n");
++	return 0;
++}
++
++static const struct dmi_system_id rtc_quirks[] __initconst = {
++	/* https://bugzilla.novell.com/show_bug.cgi?id=805740 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "IBM Truman",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "4852570"),
++		},
++	},
++	/* https://bugzilla.novell.com/show_bug.cgi?id=812592 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "Gigabyte GA-990XA-UD3",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR,
++					"Gigabyte Technology Co., Ltd."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "GA-990XA-UD3"),
++		},
++	},
++	/* http://permalink.gmane.org/gmane.linux.kernel/1604474 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "Toshiba Satellite L300",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Satellite L300"),
++		},
++	},
++	{}
++};
++
+ static int cmos_alarm_irq_enable(struct device *dev, unsigned int enabled)
+ {
+ 	struct cmos_rtc	*cmos = dev_get_drvdata(dev);
+@@ -385,6 +430,9 @@ static int cmos_alarm_irq_enable(struct device *dev, unsigned int enabled)
+ 	if (!is_valid_irq(cmos->irq))
+ 		return -EINVAL;
+ 
++	if (alarm_disable_quirk)
++		return 0;
++
+ 	spin_lock_irqsave(&rtc_lock, flags);
+ 
+ 	if (enabled)
+@@ -1157,6 +1205,8 @@ static int __init cmos_init(void)
+ 			platform_driver_registered = true;
+ 	}
+ 
++	dmi_check_system(rtc_quirks);
++
+ 	if (retval == 0)
+ 		return 0;
  
 -- 
 1.8.3.2
