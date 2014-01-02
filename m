@@ -1,124 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751857AbaABO6P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 09:58:15 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:37381 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814AbaABO6O (ORCPT
+	id S1751920AbaABO6T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 09:58:19 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751849AbaABO6Q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 09:58:14 -0500
-Date: Thu, 2 Jan 2014 17:57:01 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Michael Gunselmann <michael.gunselmann@studium.uni-erlangen.de>
-Cc: devel@driverdev.osuosl.org, linux-kernel@i4.cs.fau.de,
-        Martin Hofmann <martin.hofmann@studium.uni-erlange.de>,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        Michael Gunselmann <michael.gunselmann@studium.uni-erlange.de>,
-        martin.hofmann@studium.uni-erlangen.de, forest@alittletooquiet.net
-Subject: Re: [PATCH 7/7] vt6655: Fixed most of the checkpatch warnings in wmgr
-Message-ID: <20140102145701.GA30164@mwanda>
-References: <1388415157-17615-1-git-send-email-michael.gunselmann@studium.uni-erlangen.de>
- <1388415157-17615-8-git-send-email-michael.gunselmann@studium.uni-erlangen.de>
+	Thu, 2 Jan 2014 09:58:16 -0500
+From: Richard Weinberger <richard@nod.at>
+To: Qi Wang =?utf-8?B?546L6LW3IChxaXdhbmcp?= <qiwang@micron.com>
+Cc: Richard Weinberger <richard.weinberger@gmail.com>,
+        "dedekind1@gmail.com" <dedekind1@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH 1/1]  MTD: UBI:  avoid program operation on  NOR flash after erasure interrupted
+Date: Thu, 02 Jan 2014 15:58:09 +0100
+Message-ID: <3253694.tov52PJeEo@sandpuppy>
+User-Agent: KMail/4.11.2 (Linux/3.12.0-34.ge8fa6b4-desktop; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <71CF8D7F32C5C24C9CD1D0E02D52498A770BA3A9@NTXXIAMBX02.xacn.micron.com>
+References: <71CF8D7F32C5C24C9CD1D0E02D52498A770B54B1@NTXXIAMBX02.xacn.micron.com> <71CF8D7F32C5C24C9CD1D0E02D52498A770BA389@NTXXIAMBX02.xacn.micron.com> <71CF8D7F32C5C24C9CD1D0E02D52498A770BA3A9@NTXXIAMBX02.xacn.micron.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1388415157-17615-8-git-send-email-michael.gunselmann@studium.uni-erlangen.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 30, 2013 at 03:52:37PM +0100, Michael Gunselmann wrote:
-> wmgr.h: Fixed checkpatch errors.
-> 	Four typedef warnings remain.
-> 		line 85: This typedef increases understandability
-> 			 so this warning is not touched.
-> 		line 196, 203 and 214:
-> 			 These typedef-errors might be fixed in a
-> 			 later commit. Fixing them makes it necessary
-> 			 to touch many other files of the driver
-> 			 using this typedef.
-> 
-> wmgr.c: Fixed checkpatch errors (mostly comments and braces)
-> 	Long lines were ignored and will be fixed in a later commit.
-> 	Seven warnings remain:
-> 		line 562, 770 and 921:
-> 			When removing the braces checkpatch complains
-> 			about the compiler is running into trouble.
-> 			So these lines are not touched.
-> 		line 713, 865, 1618 and 2163:
-> 			Checkpatch complains about not using netdev_dbg
-> 			instead of printk.
-> 			These warnings will be fixed in a later commit.
-> 
+Am Mittwoch, 1. Januar 2014, 13:11:21 schrieb Qi Wang 王起:
+> If have any questions, please let me know. 
 
-Don't list the things which you don't change.  We're not interested in
-that.
+Did you send the patch again using Outlook?
+Or are you behind a MS Exchange server?
 
-This patch does too many changes at once.  If you want to fix all all
-the "checkpatch warnings" and your diff is around 20 lines long then
-that counts as doing one thing per patch.  If the diffstat is over a
-thousand lines long like in this patch then it can't be a grab bag of
-random things all munged together in one gigantor patch.
+The patch is still malformed. :-(
+e.g. it is base64 encoded.
 
-This patch mindlessly updates comment style.  If we wanted that we
-could script it.
+Can you please try using git send-email?
 
-> -//2008-8-4 <add> by chester
-> +/* 2008-8-4 <add> by chester */
+Thanks,
+//richard
 
-Delete these.  We have proper version control now.
-
-> -		DBG_PRT(MSG_LEVEL_INFO, KERN_INFO "Max Support rate = %d \n",
-> +		DBG_PRT(MSG_LEVEL_INFO, KERN_INFO "Max Support rate = %d\n",
->  			pMgmt->sNodeDBTable[uNodeIndex].wMaxSuppRate);
-> -	}//else { TODO: received STA under state1 handle }
-> -	else {
-> -		return;
->  	}
-> +	/* else { TODO: received STA under state1 handle } */
-> +	else
-> +		return;
-
-This isn't right.  The correct style is:
-
-	} else {
-		return;
-	}
-
-But even better would be to reverse the condition and pull everything
-in one indent level.
-
-	if (pMgmt->sNodeDBTable[uNodeIndex].eNodeState < NODE_AUTH)
-		return;
-
-	pMgmt->sNodeDBTable[uNodeIndex].eNodeState = NODE_ASSOC;
-	pMgmt->sNodeDBTable[uNodeIndex].wCapInfo = cpu_to_le16(*sFrame.pwCapInfo);
-
-	etc...
-
-
-> @@ -1384,11 +1369,12 @@ s_vMgrRxAuthenSequence_2(
->  			s_vMgrLogStatus(pMgmt, cpu_to_le16((*(pFrame->pwStatus))));
->  			pMgmt->eCurrState = WMAC_STATE_IDLE;
->  		}
-> -		if (pDevice->eCommandState == WLAN_AUTHENTICATE_WAIT) {
-> -//                spin_unlock_irq(&pDevice->lock);
-> -//                vCommandTimerWait((void *)pDevice, 0);
-> -//                spin_lock_irq(&pDevice->lock);
-> -		}
-> +/*		if (pDevice->eCommandState == WLAN_AUTHENTICATE_WAIT) {
-> + *                spin_unlock_irq(&pDevice->lock);
-> + *                vCommandTimerWait((void *)pDevice, 0);
-> + *                spin_lock_irq(&pDevice->lock);
-> + *		}
-> + */
->  
-
-Just delete this sort of thing instead of updating the comment style.
-There are a couple other examples of this as well.  Please redo this
-patch.
-
-regards,
-dan carpenter
