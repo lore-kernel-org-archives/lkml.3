@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007AbaABRHq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:07:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40316 "EHLO
+	id S1753116AbaABRHz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:07:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40333 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752966AbaABRHm (ORCPT
+	with ESMTP id S1753018AbaABRHw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:07:42 -0500
+	Thu, 2 Jan 2014 12:07:52 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hong Zhiguo <zhiguohong@tencent.com>, Jens Axboe <axboe@kernel.dk>,
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 60/91] Update of blkg_stat and blkg_rwstat may happen in bh context. While u64_stats_fetch_retry is only preempt_disable on 32bit UP system. This is not enough to avoid preemption by bh and may read strange 64 bit value.
-Date: Thu,  2 Jan 2014 09:04:35 -0800
-Message-Id: <1388682306-30859-61-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 63/91] ARM: mvebu: use the virtual CPU registers to access coherency registers
+Date: Thu,  2 Jan 2014 09:04:38 -0800
+Message-Id: <1388682306-30859-64-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -27,46 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hong Zhiguo <zhiguohong@tencent.com>
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-commit 2c575026fae6e63771bd2a4c1d407214a8096a89 upstream.
+commit b6dda00cddcc71d2030668bc0cc0fed758c411c2 upstream.
 
-Signed-off-by: Hong Zhiguo <zhiguohong@tencent.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+The Armada XP provides a mechanism called "virtual CPU registers" or
+"per-CPU register banking", to access the per-CPU registers of the
+current CPU, without having to worry about finding on which CPU we're
+running. CPU0 has its registers at 0x21800, CPU1 at 0x21900, CPU2 at
+0x21A00 and CPU3 at 0x21B00. The virtual registers accessing the
+current CPU registers are at 0x21000.
+
+However, in the Device Tree node that provides the register addresses
+for the coherency unit (which is responsible for ensuring coherency
+between processors, and I/O coherency between processors and the
+DMA-capable devices), a mistake was made: the CPU0-specific registers
+were specified instead of the virtual CPU registers. This means that
+the coherency barrier needed for I/O coherency was not behaving
+properly when executed from a CPU different from CPU0. This patch
+fixes that by using the virtual CPU registers.
+
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Fixes: e60304f8cb7bb5 "arm: mvebu: Add hardware I/O Coherency support"
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- block/blk-cgroup.h | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/arm/boot/dts/armada-370-xp.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 2459730..6f33c3f 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -370,9 +370,9 @@ static inline uint64_t blkg_stat_read(struct blkg_stat *stat)
- 	uint64_t v;
+diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
+index 4c0abe8..269b6b0 100644
+--- a/arch/arm/boot/dts/armada-370-xp.dtsi
++++ b/arch/arm/boot/dts/armada-370-xp.dtsi
+@@ -39,7 +39,7 @@
+ 	coherency-fabric@d0020200 {
+ 		compatible = "marvell,coherency-fabric";
+ 		reg = <0xd0020200 0xb0>,
+-		      <0xd0021810 0x1c>;
++		      <0xd0021010 0x1c>;
+ 	};
  
- 	do {
--		start = u64_stats_fetch_begin(&stat->syncp);
-+		start = u64_stats_fetch_begin_bh(&stat->syncp);
- 		v = stat->cnt;
--	} while (u64_stats_fetch_retry(&stat->syncp, start));
-+	} while (u64_stats_fetch_retry_bh(&stat->syncp, start));
- 
- 	return v;
- }
-@@ -426,9 +426,9 @@ static inline struct blkg_rwstat blkg_rwstat_read(struct blkg_rwstat *rwstat)
- 	struct blkg_rwstat tmp;
- 
- 	do {
--		start = u64_stats_fetch_begin(&rwstat->syncp);
-+		start = u64_stats_fetch_begin_bh(&rwstat->syncp);
- 		tmp = *rwstat;
--	} while (u64_stats_fetch_retry(&rwstat->syncp, start));
-+	} while (u64_stats_fetch_retry_bh(&rwstat->syncp, start));
- 
- 	return tmp;
- }
+ 	soc {
 -- 
 1.8.3.2
 
