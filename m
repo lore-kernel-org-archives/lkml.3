@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340AbaABVgQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 16:36:16 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:39602 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258AbaABVgO (ORCPT
+	id S1752598AbaABVhR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 16:37:17 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:42037 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752446AbaABVhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 16:36:14 -0500
-Date: Thu, 2 Jan 2014 22:36:29 +0100
-From: Johan Hovold <jhovold@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH, RFC 15/30] usbserial: stop using interruptible_sleep_on
-Message-ID: <20140102213629.GA12793@localhost>
-References: <1388664474-1710039-1-git-send-email-arnd@arndb.de>
- <1388664474-1710039-16-git-send-email-arnd@arndb.de>
+	Thu, 2 Jan 2014 16:37:15 -0500
+Message-ID: <52C5DC08.6030508@lwfinger.net>
+Date: Thu, 02 Jan 2014 15:37:12 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1388664474-1710039-16-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tim Jester-Pfadt <t.jp@gmx.de>, gregkh@linuxfoundation.org
+CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Staging: rtl8188eu: Fixed coding style issues
+References: <20140102204640.GA1149@archlinux>
+In-Reply-To: <20140102204640.GA1149@archlinux>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
-
-On Thu, Jan 02, 2014 at 01:07:39PM +0100, Arnd Bergmann wrote:
-> We really want to kill off interruptible_sleep_on, which is defined
-> in a way that is always racy. There are four usb-serial drivers using
-> it to implement their tiocmiwait() functions, which is defined in
-> a way that always has a race when called from user space.
-> 
-> This patch changes the four drivers in the same way to use an open-coded
-> prepare_to_wait/finish_wait loop to get rid of the deprecated function
-> call, but it does not address the fundamental race.
+On 01/02/2014 02:46 PM, Tim Jester-Pfadt wrote:
+> Fixed indentation coding style issues on rtw_io.c
 >
-> This particular method of implementing it was chosen because it is
-> least invasive, a better but more invasive alternative would be
-> to use usb_serial_generic_tiocmiwait, which is something I did not
-> dare try without access to hardware.
-
-I'd prefer to just fix the race once and for all. These four drivers
-have been on my todo list since I converted the other usb-serial drivers
-about a year ago. In fact, I posted a fix for f81232 last week, and
-I've had a fix for pl2303 brewing as part of larger series for quite
-some time.
-
-I'll post a conversion series to linux-usb shortly and make sure to keep
-you CC:ed on the sleep_on-killing patches.
-
-Thanks,
-Johan
-
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Johan Hovold <jhovold@gmail.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: linux-usb@vger.kernel.org
+> Signed-off-by: Tim Jester-Pfadt <t.jp@gmx.de>
 > ---
->  drivers/usb/serial/ch341.c      | 29 ++++++++++++++++--------
->  drivers/usb/serial/cypress_m8.c | 49 ++++++++++++++++++++++++++---------------
->  drivers/usb/serial/f81232.c     | 29 ++++++++++++++++--------
->  drivers/usb/serial/pl2303.c     | 29 ++++++++++++++++--------
->  4 files changed, 91 insertions(+), 45 deletions(-)
+>   drivers/staging/rtl8188eu/core/rtw_io.c | 12 ++++++------
+>   1 file changed, 6 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/staging/rtl8188eu/core/rtw_io.c b/drivers/staging/rtl8188eu/core/rtw_io.c
+> index 10c9c65..6be6c50 100644
+> --- a/drivers/staging/rtl8188eu/core/rtw_io.c
+> +++ b/drivers/staging/rtl8188eu/core/rtw_io.c
+> @@ -205,9 +205,9 @@ void _rtw_read_mem(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem)
+>
+>   	_func_enter_;
+>   	if (adapter->bDriverStopped || adapter->bSurpriseRemoved) {
+> -	     RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
+> -		      ("rtw_read_mem:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
+> -		      adapter->bDriverStopped, adapter->bSurpriseRemoved));
+> +		RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
+> +			("rtw_read_mem:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
+> +			adapter->bDriverStopped, adapter->bSurpriseRemoved));
+
+The latest version of checkpatch.pl lists the following:
+
+CHECK: Alignment should match open parenthesis
+#87: FILE: drivers/staging/rtl8188eu/core/rtw_io.c:207:
++               RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
++                       ("rtw_read_mem:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
+
+The continuing lines should be indented one more space.
+
+Larry
+
