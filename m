@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823AbaABRDp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:03:45 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:59280 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917AbaABRDm (ORCPT
+	id S1752005AbaABREc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:04:32 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:52501 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833AbaABREa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:03:42 -0500
+	Thu, 2 Jan 2014 12:04:30 -0500
+Date: Thu, 2 Jan 2014 18:03:56 +0100
+From: Tim Jester-Pfadt <t.jp@gmx.de>
+To: gregkh@linuxfoundation.org
+Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: rtl8188eu: Fixed coding style issues
+Message-ID: <20140102170356.GA29980@archlinux>
 MIME-Version: 1.0
-In-Reply-To: <20140102143221.GR26588@tbergstrom-lnx.Nvidia.com>
-References: <1387468474-26521-1-git-send-email-pdeschrijver@nvidia.com>
-	<1387468474-26521-5-git-send-email-pdeschrijver@nvidia.com>
-	<CACRpkdbXc_yH-=WgpQyVwHC_TSPfbfx=tHwziNhmB6t0HuSfRw@mail.gmail.com>
-	<20140102143221.GR26588@tbergstrom-lnx.Nvidia.com>
-Date: Thu, 2 Jan 2014 18:03:42 +0100
-Message-ID: <CACRpkdZzaiU-BAmkBS1usLRVKxVEyiTuciNpKATK7k+zA3YKZg@mail.gmail.com>
-Subject: Re: [PATCH 4/6] ARM: tegra: rework fuse.c
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Danny Huang <dahuang@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 2, 2014 at 3:32 PM, Peter De Schrijver
-<pdeschrijver@nvidia.com> wrote:
-> On Thu, Jan 02, 2014 at 01:37:43PM +0100, Linus Walleij wrote:
->> On Thu, Dec 19, 2013 at 4:54 PM, Peter De Schrijver
->> <pdeschrijver@nvidia.com> wrote:
->>
->> > Reduce fuse.c to the minimum functionality required for the early bootstages.
->> > Also export tegra_read_straps() for use by the fuse driver.
->> >
->> > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
->>
->> Aha, but why?
->>
->
-> The efuse driver in patch 2 of this series, adds the randomness, so we don't
-> need to add it here then?
+Fixed indentation coding style issues on rtw_io.c
 
-Aha I wasn't CC:ed on patch 2 so I didn't see that...
+Signed-off-by: Tim Jester-Pfadt <t.jp@gmx.de>
+---
+ drivers/staging/rtl8188eu/core/rtw_io.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> Yes, it's done in the efuse driver now, do you think that's too late?
+diff --git a/drivers/staging/rtl8188eu/core/rtw_io.c b/drivers/staging/rtl8188eu/core/rtw_io.c
+index 10c9c65..69b408e 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_io.c
++++ b/drivers/staging/rtl8188eu/core/rtw_io.c
+@@ -205,7 +205,7 @@ void _rtw_read_mem(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem)
+ 
+ 	_func_enter_;
+ 	if (adapter->bDriverStopped || adapter->bSurpriseRemoved) {
+-	     RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
++		RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
+ 		      ("rtw_read_mem:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
+ 		      adapter->bDriverStopped, adapter->bSurpriseRemoved));
+ 	     return;
+@@ -239,7 +239,7 @@ void _rtw_read_port(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem)
+ 	_func_enter_;
+ 
+ 	if (adapter->bDriverStopped || adapter->bSurpriseRemoved) {
+-	     RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
++		RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
+ 		      ("rtw_read_port:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
+ 		      adapter->bDriverStopped, adapter->bSurpriseRemoved));
+ 	     return;
+-- 
+1.8.5.2
 
-Don't know but I don't think so. The important part is that it's done
-before drivers needing good randomness (as opposed to good
-entropy). The only Tegra driver I'm aware of that needs this is the
-crypto driver (which I patched a bit) and I think that will only come
-into play when you do something like set up a VPN tunnel or
-similar which will be waaaaay later, so no problem AFAICT.
-
-Yours,
-Linus Walleij
