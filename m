@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803AbaABRJz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:09:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40551 "EHLO
+	id S1753822AbaABRKM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:10:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40556 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753751AbaABRJw (ORCPT
+	with ESMTP id S1753777AbaABRJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:09:52 -0500
+	Thu, 2 Jan 2014 12:09:54 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Olav Haugan <ohaugan@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Bo Shen <voice.shen@atmel.com>, Mark Brown <broonie@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 43/91] staging: zsmalloc: Ensure handle is never 0 on success
-Date: Thu,  2 Jan 2014 09:04:18 -0800
-Message-Id: <1388682306-30859-44-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 88/91] ASoC: wm8731: fix dsp mode configuration
+Date: Thu,  2 Jan 2014 09:05:03 -0800
+Message-Id: <1388682306-30859-89-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -28,72 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olav Haugan <ohaugan@codeaurora.org>
+From: Bo Shen <voice.shen@atmel.com>
 
-commit 67296874eb1cc80317bf2a8fba22b494e21eb29b upstream.
+commit b4af6ef99a60c5b56df137d7accd81ba1ee1254e upstream.
 
-zsmalloc encodes a handle using the pfn and an object
-index. On hardware platforms with physical memory starting
-at 0x0 the pfn can be 0. This causes the encoded handle to be
-0 and is incorrectly interpreted as an allocation failure.
+According to WM8731 "PD, Rev 4.9 October 2012" datasheet, when it
+works in DSP mode A, LRP = 1, while works in DSP mode B, LRP = 0.
+So, fix LRP for DSP mode as the datesheet specification.
 
-This issue affects all current and future SoCs with physical
-memory starting at 0x0. All MSM8974 SoCs which includes
-Google Nexus 5 devices are affected.
-
-To prevent this false error we ensure that the encoded handle
-will not be 0 when allocation succeeds.
-
-Signed-off-by: Olav Haugan <ohaugan@codeaurora.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Bo Shen <voice.shen@atmel.com>
+Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/staging/zsmalloc/zsmalloc-main.c | 17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+ sound/soc/codecs/wm8731.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-index 851a2ff..60f77ff 100644
---- a/drivers/staging/zsmalloc/zsmalloc-main.c
-+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-@@ -431,7 +431,12 @@ static struct page *get_next_page(struct page *page)
- 	return next;
- }
- 
--/* Encode <page, obj_idx> as a single handle value */
-+/*
-+ * Encode <page, obj_idx> as a single handle value.
-+ * On hardware platforms with physical memory starting at 0x0 the pfn
-+ * could be 0 so we ensure that the handle will never be 0 by adjusting the
-+ * encoded obj_idx value before encoding.
-+ */
- static void *obj_location_to_handle(struct page *page, unsigned long obj_idx)
- {
- 	unsigned long handle;
-@@ -442,17 +447,21 @@ static void *obj_location_to_handle(struct page *page, unsigned long obj_idx)
- 	}
- 
- 	handle = page_to_pfn(page) << OBJ_INDEX_BITS;
--	handle |= (obj_idx & OBJ_INDEX_MASK);
-+	handle |= ((obj_idx + 1) & OBJ_INDEX_MASK);
- 
- 	return (void *)handle;
- }
- 
--/* Decode <page, obj_idx> pair from the given object handle */
-+/*
-+ * Decode <page, obj_idx> pair from the given object handle. We adjust the
-+ * decoded obj_idx back to its original value since it was adjusted in
-+ * obj_location_to_handle().
-+ */
- static void obj_handle_to_location(unsigned long handle, struct page **page,
- 				unsigned long *obj_idx)
- {
- 	*page = pfn_to_page(handle >> OBJ_INDEX_BITS);
--	*obj_idx = handle & OBJ_INDEX_MASK;
-+	*obj_idx = (handle & OBJ_INDEX_MASK) - 1;
- }
- 
- static unsigned long obj_idx_to_offset(struct page *page,
+diff --git a/sound/soc/codecs/wm8731.c b/sound/soc/codecs/wm8731.c
+index 5276062..10d492b 100644
+--- a/sound/soc/codecs/wm8731.c
++++ b/sound/soc/codecs/wm8731.c
+@@ -407,10 +407,10 @@ static int wm8731_set_dai_fmt(struct snd_soc_dai *codec_dai,
+ 		iface |= 0x0001;
+ 		break;
+ 	case SND_SOC_DAIFMT_DSP_A:
+-		iface |= 0x0003;
++		iface |= 0x0013;
+ 		break;
+ 	case SND_SOC_DAIFMT_DSP_B:
+-		iface |= 0x0013;
++		iface |= 0x0003;
+ 		break;
+ 	default:
+ 		return -EINVAL;
 -- 
 1.8.3.2
 
