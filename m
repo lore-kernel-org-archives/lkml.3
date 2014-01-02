@@ -1,184 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265AbaABTRz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 14:17:55 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:40222 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398AbaABTRv (ORCPT
+	id S1751994AbaABTWW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 14:22:22 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:57958 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751755AbaABTWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 14:17:51 -0500
-Date: Thu, 2 Jan 2014 14:16:09 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Fabio Fantoni <fabio.fantoni@m2r.biz>, axboe@kernel.dk,
-        leosilva@linux.vnet.ibm.com, linux-fbdev@vger.kernel.org,
-        dmitry.torokhov@gmail.com, ian.campbell@citrix.com,
-        stefano.stabellini@eu.citrix.com, linux-pci@vger.kernel.org,
-        netdev@vger.kernel.org, ashley@ashleylai.com, tpmdd@selhorst.net,
-        linux-kernel@vger.kernel.org, mail@srajiv.net,
-        tpmdd-devel@lists.sourceforge.net, tomi.valkeinen@ti.com,
-        linux-input@vger.kernel.org, bhelgaas@google.com,
-        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
-        plagnioj@jcrosoft.com, peterhuewe@gmx.de
-Subject: Re: [Xen-devel] [PATCH v3 1/2] xen/pvhvm: If xen_platform_pci=0 is
- set don't blow up (v3).
-Message-ID: <20140102191608.GJ3021@pegasus.dumpdata.com>
-References: <1387206250-13963-1-git-send-email-konrad.wilk@oracle.com>
- <1387206250-13963-2-git-send-email-konrad.wilk@oracle.com>
- <52B01F67.1030108@m2r.biz>
- <20131217145150.GC4683@phenom.dumpdata.com>
- <20131217212333.GA31966@phenom.dumpdata.com>
- <20131231143258.GA3018@phenom.dumpdata.com>
- <52C58138.1030301@citrix.com>
+	Thu, 2 Jan 2014 14:22:21 -0500
+Date: Thu, 2 Jan 2014 14:22:19 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Du, ChangbinX" <changbinx.du@intel.com>
+cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "sarah.a.sharp@linux.intel.com" <sarah.a.sharp@linux.intel.com>,
+        "Lan, Tianyu" <tianyu.lan@intel.com>,
+        "burzalodowa@gmail.com" <burzalodowa@gmail.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] usb/core: fix NULL pointer dereference in
+ recursively_mark_NOTATTACHED
+In-Reply-To: <0C18FE92A7765D4EB9EE5D38D86A563A01A31B4E@SHSMSX103.ccr.corp.intel.com>
+Message-ID: <Pine.LNX.4.44L0.1401021417030.892-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52C58138.1030301@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 02, 2014 at 03:09:44PM +0000, David Vrabel wrote:
-> On 31/12/13 14:32, Konrad Rzeszutek Wilk wrote:
-> >> That is because 'disks' is incorrect. It should have been 'ide-disks'
-> >>
-> >> [    0.000000] unrecognised option 'disks' in parameter 'xen_emul_unplug'
-> >>
-> >> With the 'ide-disks' it should work. I will update the description to
-> >> mention 'ide-disks' instead of 'disks'. Thank you for finding this!
-> >>
-> > 
-> > I've v4 with said update and will push it to Linus shortly.
-> > 
-> > Thanks!
-> > 
-> > P.S.
-> > Here is v4:
-> > 
-> >>From 275a81e7496d3532e5b4752703c50a7c8355a6c7 Mon Sep 17 00:00:00 2001
-> > From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > Date: Tue, 26 Nov 2013 15:05:40 -0500
-> > Subject: [PATCH] xen/pvhvm: If xen_platform_pci=0 is set don't blow up (v4).
-> > 
-> > The user has the option of disabling the platform driver:
-> > 00:02.0 Unassigned class [ff80]: XenSource, Inc. Xen Platform Device (rev 01)
-> > 
-> > which is used to unplug the emulated drivers (IDE, Realtek 8169, etc)
-> > and allow the PV drivers to take over. If the user wishes
-> > to disable that they can set:
-> > 
-> >   xen_platform_pci=0
-> >   (in the guest config file)
-> > 
-> > or
-> >   xen_emul_unplug=never
-> >   (on the Linux command line)
-> > 
-> > except it does not work properly. The PV drivers still try to
-> > load and since the Xen platform driver is not run - and it
-> > has not initialized the grant tables, most of the PV drivers
-> > stumble upon:
-> > 
-> > input: Xen Virtual Keyboard as /devices/virtual/input/input5
-> > input: Xen Virtual Pointer as /devices/virtual/input/input6M
-> > ------------[ cut here ]------------
-> > kernel BUG at /home/konrad/ssd/konrad/linux/drivers/xen/grant-table.c:1206!
-> > invalid opcode: 0000 [#1] SMP
-> > Modules linked in: xen_kbdfront(+) xenfs xen_privcmd
-> > CPU: 6 PID: 1389 Comm: modprobe Not tainted 3.13.0-rc1upstream-00021-ga6c892b-dirty #1
-> > Hardware name: Xen HVM domU, BIOS 4.4-unstable 11/26/2013
-> > RIP: 0010:[<ffffffff813ddc40>]  [<ffffffff813ddc40>] get_free_entries+0x2e0/0x300
-> > Call Trace:
-> >  [<ffffffff8150d9a3>] ? evdev_connect+0x1e3/0x240
-> >  [<ffffffff813ddd0e>] gnttab_grant_foreign_access+0x2e/0x70
-> >  [<ffffffffa0010081>] xenkbd_connect_backend+0x41/0x290 [xen_kbdfront]
-> >  [<ffffffffa0010a12>] xenkbd_probe+0x2f2/0x324 [xen_kbdfront]
-> >  [<ffffffff813e5757>] xenbus_dev_probe+0x77/0x130
-> >  [<ffffffff813e7217>] xenbus_frontend_dev_probe+0x47/0x50
-> >  [<ffffffff8145e9a9>] driver_probe_device+0x89/0x230
-> >  [<ffffffff8145ebeb>] __driver_attach+0x9b/0xa0
-> >  [<ffffffff8145eb50>] ? driver_probe_device+0x230/0x230
-> >  [<ffffffff8145eb50>] ? driver_probe_device+0x230/0x230
-> >  [<ffffffff8145cf1c>] bus_for_each_dev+0x8c/0xb0
-> >  [<ffffffff8145e7d9>] driver_attach+0x19/0x20
-> >  [<ffffffff8145e260>] bus_add_driver+0x1a0/0x220
-> >  [<ffffffff8145f1ff>] driver_register+0x5f/0xf0
-> >  [<ffffffff813e55c5>] xenbus_register_driver_common+0x15/0x20
-> >  [<ffffffff813e76b3>] xenbus_register_frontend+0x23/0x40
-> >  [<ffffffffa0015000>] ? 0xffffffffa0014fff
-> >  [<ffffffffa001502b>] xenkbd_init+0x2b/0x1000 [xen_kbdfront]
-> >  [<ffffffff81002049>] do_one_initcall+0x49/0x170
-> > 
-> > .. snip..
-> > 
-> > which is hardly nice. This patch fixes this by having each
-> > PV driver check for:
-> >  - if running in PV, then it is fine to execute (as that is their
-> >    native environment).
-> >  - if running in HVM, check if user wanted 'xen_emul_unplug=never',
-> >    in which case bail out and don't load any PV drivers.
-> >  - if running in HVM, and if PCI device 5853:0001 (xen_platform_pci)
-> >    does not exist, then bail out and not load PV drivers.
-> >  - (v2) if running in HVM, and if the user wanted 'xen_emul_unplug=ide-disks',
-> >    then bail out for all PV devices _except_ the block one.
-> >    Ditto for the network one ('nics').
-> >  - (v2) if running in HVM, and if the user wanted 'xen_emul_unplug=unnecessary'
-> >    then load block PV driver, and also setup the legacy IDE paths.
-> >    In (v3) make it actually load PV drivers.
-> [...]
-> > --- a/arch/x86/xen/platform-pci-unplug.c
-> > +++ b/arch/x86/xen/platform-pci-unplug.c
-> > @@ -69,6 +69,80 @@ static int check_platform_magic(void)
-> >  	return 0;
-> >  }
-> >  
-> > +bool xen_has_pv_devices()
-> > +{
-> > +	if (!xen_domain())
-> > +		return false;
-> > +
-> > +	/* PV domains always have them. */
-> > +	if (xen_pv_domain())
-> > +		return true;
-> > +
-> > +	/* And user has xen_platform_pci=0 set in guest config as
-> > +	 * driver did not modify the value. */
-> > +	if (xen_platform_pci_unplug == 0)
-> > +		return false;
-> > +
-> > +	if (xen_platform_pci_unplug & XEN_UNPLUG_NEVER)
-> > +		return false;
-> > +
-> > +	if (xen_platform_pci_unplug & XEN_UNPLUG_ALL)
-> > +		return true;
-> > +
-> > +	/* This is an odd one - we are going to run legacy
-> > +	 * and PV drivers at the same time. */
-> > +	if (xen_platform_pci_unplug & XEN_UNPLUG_UNNECESSARY)
-> > +		return true;
-> > +
-> > +	/* And the caller has to follow with xen_pv_{disk,nic}_devices
-> > +	 * to be certain which driver can load. */
-> > +	return false;
-> 
-> This may result in:
-> 
-> xen_has_pv_devices() == false
-> xen_has_pv_disk_devices() == true
+On Thu, 26 Dec 2013, Du, ChangbinX wrote:
 
-Yes.
+> I can reproduce issue by adding a delay just after usb_set_intfdata(intf, NULL)
+>  (echo -1 > bConfigurationValue to trigger hub_dissconnect())without your patch.
 > 
-> which looks odd to me.  Surely xen_has_pv_*_devices() is a subset of
-> xen_has_pv_devices()?
-
-I wish, this thing drives me nuts and I couldn't come up with a sensible
-way to make this work for those special ones that have their own
-xen_emul_unplug parameter without special casing the
-'xen_has_pv_devices'.
-
-Perhaps it should be renamed to 'xen_has_pv_generic_devices' ?
-
+> After patch applied, cannot reproduce and didn't found any other issue. Patch works well.
 > 
-> David
+> Alan, need I update patch to v2 or you will do it?
+
+Changbin, after looking more closely I realized there was a second 
+aspect to this race: recursively_mark_NOTATTACHED uses hub->ports[i] 
+while hub_disconnect removes the port devices.  You ought to be 
+able to cause an oops by inserting a delay just after the loop where 
+usb_hub_remove_port_device is called.
+
+The updated patch below should fix both problems.  Can you test it?
+
+Alan Stern
+
+
+
+Index: usb-3.13/drivers/usb/core/hub.c
+===================================================================
+--- usb-3.13.orig/drivers/usb/core/hub.c
++++ usb-3.13/drivers/usb/core/hub.c
+@@ -1607,7 +1607,7 @@ static void hub_disconnect(struct usb_in
+ {
+ 	struct usb_hub *hub = usb_get_intfdata(intf);
+ 	struct usb_device *hdev = interface_to_usbdev(intf);
+-	int i;
++	int port1;
+ 
+ 	/* Take the hub off the event list and don't let it be added again */
+ 	spin_lock_irq(&hub_event_lock);
+@@ -1622,11 +1622,15 @@ static void hub_disconnect(struct usb_in
+ 	hub->error = 0;
+ 	hub_quiesce(hub, HUB_DISCONNECT);
+ 
+-	usb_set_intfdata (intf, NULL);
++	/* Avoid races with recursively_mark_NOTATTACHED() */
++	spin_lock_irq(&device_state_lock);
++	port1 = hdev->maxchild;
++	hdev->maxchild = 0;
++	usb_set_intfdata(intf, NULL);
++	spin_unlock_irq(&device_state_lock);
+ 
+-	for (i = 0; i < hdev->maxchild; i++)
+-		usb_hub_remove_port_device(hub, i + 1);
+-	hub->hdev->maxchild = 0;
++	for (; port1 > 0; --port1)
++		usb_hub_remove_port_device(hub, port1);
+ 
+ 	if (hub->hdev->speed == USB_SPEED_HIGH)
+ 		highspeed_hubs--;
+
