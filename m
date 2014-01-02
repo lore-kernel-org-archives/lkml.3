@@ -1,57 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039AbaABRLL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:11:11 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:20364 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752410AbaABRLH (ORCPT
+	id S1753990AbaABRKy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:10:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40621 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987AbaABRKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:11:07 -0500
-Date: Thu, 2 Jan 2014 12:11:00 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Tom Zanussi <tom.zanussi@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 0/2] tracing: Fixes to event_triggers patches found by
- Fengguang's test bot
-Message-ID: <20140102121100.5f09ffb9@gandalf.local.home>
-In-Reply-To: <1387768382.14728.9.camel@empanada>
-References: <20131222030759.339128630@goodmis.org>
-	<1387768382.14728.9.camel@empanada>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Thu, 2 Jan 2014 12:10:49 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 82/91] ARM: footbridge: fix EBSA285 LEDs
+Date: Thu,  2 Jan 2014 09:04:57 -0800
+Message-Id: <1388682306-30859-83-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
+References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 22 Dec 2013 21:13:02 -0600
-Tom Zanussi <tom.zanussi@linux.intel.com> wrote:
+3.8.13.15 -stable review patch.  If anyone has any objections, please let me know.
 
-> Hi Steve,
-> 
-> On Sat, 2013-12-21 at 22:07 -0500, Steven Rostedt wrote:
-> > Tom,
-> > 
-> > This is the changes I made to fix the reports that Fengguang's kbuild test bot
-> > found. I folded in your change that fixes the bug with -ENODEV used in kernel.h.
-> > 
-> 
-> These look fine to me, and I didn't see any problems after running
-> through my normal event trigger testing with them applied.
-> 
-> So you can add my Acked-by and/or Tested-by..
-> 
-> Thanks for writing these improved versions!
+------------------
 
-Bah, I forgot to add these to the change logs before pushing to my
-for-next branch. I hate to rebase, but I also would like these tags
-too. 
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-Hmm, I may just rebase anyway. We still have a couple of weeks before
-the merge window opens.
+commit 67130c5464f50428aea0b4526a6729d61f9a1d53 upstream.
 
--- Steve
+- The LEDs register is write-only: it can't be read-modify-written.
+- The LEDs are write-1-for-off not 0.
+- The check for the platform was inverted.
+
+Fixes: cf6856d693dd ("ARM: mach-footbridge: retire custom LED code")
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ arch/arm/mach-footbridge/ebsa285.c | 22 +++++++++++++---------
+ 1 file changed, 13 insertions(+), 9 deletions(-)
+
+diff --git a/arch/arm/mach-footbridge/ebsa285.c b/arch/arm/mach-footbridge/ebsa285.c
+index b09551e..87574a6 100644
+--- a/arch/arm/mach-footbridge/ebsa285.c
++++ b/arch/arm/mach-footbridge/ebsa285.c
+@@ -30,21 +30,24 @@ static const struct {
+ 	const char *name;
+ 	const char *trigger;
+ } ebsa285_leds[] = {
+-	{ "ebsa285:amber", "heartbeat", },
+-	{ "ebsa285:green", "cpu0", },
++	{ "ebsa285:amber", "cpu0", },
++	{ "ebsa285:green", "heartbeat", },
+ 	{ "ebsa285:red",},
+ };
+ 
++static unsigned char hw_led_state;
++
+ static void ebsa285_led_set(struct led_classdev *cdev,
+ 		enum led_brightness b)
+ {
+ 	struct ebsa285_led *led = container_of(cdev,
+ 			struct ebsa285_led, cdev);
+ 
+-	if (b != LED_OFF)
+-		*XBUS_LEDS |= led->mask;
++	if (b == LED_OFF)
++		hw_led_state |= led->mask;
+ 	else
+-		*XBUS_LEDS &= ~led->mask;
++		hw_led_state &= ~led->mask;
++	*XBUS_LEDS = hw_led_state;
+ }
+ 
+ static enum led_brightness ebsa285_led_get(struct led_classdev *cdev)
+@@ -52,18 +55,19 @@ static enum led_brightness ebsa285_led_get(struct led_classdev *cdev)
+ 	struct ebsa285_led *led = container_of(cdev,
+ 			struct ebsa285_led, cdev);
+ 
+-	return (*XBUS_LEDS & led->mask) ? LED_FULL : LED_OFF;
++	return hw_led_state & led->mask ? LED_OFF : LED_FULL;
+ }
+ 
+ static int __init ebsa285_leds_init(void)
+ {
+ 	int i;
+ 
+-	if (machine_is_ebsa285())
++	if (!machine_is_ebsa285())
+ 		return -ENODEV;
+ 
+-	/* 3 LEDS All ON */
+-	*XBUS_LEDS |= XBUS_LED_AMBER | XBUS_LED_GREEN | XBUS_LED_RED;
++	/* 3 LEDS all off */
++	hw_led_state = XBUS_LED_AMBER | XBUS_LED_GREEN | XBUS_LED_RED;
++	*XBUS_LEDS = hw_led_state;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(ebsa285_leds); i++) {
+ 		struct ebsa285_led *led;
+-- 
+1.8.3.2
+
