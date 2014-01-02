@@ -1,20 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754409AbaABRU7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:20:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40429 "EHLO
+	id S1753956AbaABRVd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:21:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40419 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753422AbaABRJM (ORCPT
+	with ESMTP id S1751928AbaABRJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:09:12 -0500
+	Thu, 2 Jan 2014 12:09:08 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+Cc: Tony Luck <tony.luck@intel.com>, Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andy Lutomirski <luto@amacapital.net>, Paul Turner <pjt@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 67/91] can: flexcan: use correct clock as base for bit rate calculation
-Date: Thu,  2 Jan 2014 09:04:42 -0800
-Message-Id: <1388682306-30859-68-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 61/91] time: Fix 1ns/tick drift w/ GENERIC_TIME_VSYSCALL_OLD
+Date: Thu,  2 Jan 2014 09:04:36 -0800
+Message-Id: <1388682306-30859-62-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -27,43 +34,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit 1a3e5173f5e72cbf7f0c8927b33082e361c16d72 upstream.
+commit 4be77398ac9d948773116b6be4a3c91b3d6ea18c upstream.
 
-The flexcan IP core uses the peripheral clock ("per") as basic clock for the
-bit timing calculation. However the driver uses the the wrong clock ("ipg").
-This leads to wrong bit rates if the rates on both clock are different.
+Since commit 1e75fa8be9f (time: Condense timekeeper.xtime
+into xtime_sec - merged in v3.6), there has been an problem
+with the error accounting in the timekeeping code, such that
+when truncating to nanoseconds, we round up to the next nsec,
+but the balancing adjustment to the ntp_error value was dropped.
 
-This patch fixes the problem by using the correct clock for the bit rate
-calculation.
+This causes 1ns per tick drift forward of the clock.
 
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+In 3.7, this logic was isolated to only GENERIC_TIME_VSYSCALL_OLD
+architectures (s390, ia64, powerpc).
+
+The fix is simply to balance the accounting and to subtract the
+added nanosecond from ntp_error. This allows the internal long-term
+clock steering to keep the clock accurate.
+
+While this fix removes the regression added in 1e75fa8be9f, the
+ideal solution is to move away from GENERIC_TIME_VSYSCALL_OLD
+and use the new VSYSCALL method, which avoids entirely the
+nanosecond granular rounding, and the resulting short-term clock
+adjustment oscillation needed to keep long term accurate time.
+
+[ jstultz: Many thanks to Martin for his efforts identifying this
+  	   subtle bug, and providing the fix. ]
+
+Originally-from: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: Paul Turner <pjt@google.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/1385149491-20307-1-git-send-email-john.stultz@linaro.org
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/can/flexcan.c | 2 +-
+ kernel/time/timekeeping.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
-index 4c90a27..b12fce6 100644
---- a/drivers/net/can/flexcan.c
-+++ b/drivers/net/can/flexcan.c
-@@ -1010,7 +1010,6 @@ static int flexcan_probe(struct platform_device *pdev)
- 			err = PTR_ERR(clk_ipg);
- 			goto failed_clock;
- 		}
--		clock_freq = clk_get_rate(clk_ipg);
- 
- 		clk_per = devm_clk_get(&pdev->dev, "per");
- 		if (IS_ERR(clk_per)) {
-@@ -1018,6 +1017,7 @@ static int flexcan_probe(struct platform_device *pdev)
- 			err = PTR_ERR(clk_per);
- 			goto failed_clock;
- 		}
-+		clock_freq = clk_get_rate(clk_per);
- 	}
- 
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index cbc6acb..16c444d 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1127,7 +1127,7 @@ static inline void old_vsyscall_fixup(struct timekeeper *tk)
+ 	tk->xtime_nsec -= remainder;
+ 	tk->xtime_nsec += 1ULL << tk->shift;
+ 	tk->ntp_error += remainder << tk->ntp_error_shift;
+-
++	tk->ntp_error -= (1ULL << tk->shift) << tk->ntp_error_shift;
+ }
+ #else
+ #define old_vsyscall_fixup(tk)
 -- 
 1.8.3.2
 
