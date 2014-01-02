@@ -1,150 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751216AbaABFnk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 00:43:40 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:40171 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797AbaABFni (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 00:43:38 -0500
-Message-ID: <52C4FC45.3040805@linux.vnet.ibm.com>
-Date: Thu, 02 Jan 2014 11:12:29 +0530
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-CC: rjw@rjwysocki.net, daniel.lezcano@linaro.org, lenb@kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        kyungmin.park@samsung.com
-Subject: Re: [PATCH v2 3/9] POWERPC: pseries: cpuidle: use the common cpuidle_[un]register()
- routines
-References: <1387565251-7051-1-git-send-email-b.zolnierkie@samsung.com> <1387565251-7051-4-git-send-email-b.zolnierkie@samsung.com>
-In-Reply-To: <1387565251-7051-4-git-send-email-b.zolnierkie@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751183AbaABGHR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 01:07:17 -0500
+Received: from mga11.intel.com ([192.55.52.93]:46850 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750745AbaABGHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 01:07:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,589,1384329600"; 
+   d="scan'208";a="452584860"
+Message-ID: <1388642820.3739.80.camel@rzhang1-mobl4>
+Subject: Re: [PATCH] thermal: exynos: handle gate clock for misplaced
+ TRIMINFO register
+From: Zhang Rui <rui.zhang@intel.com>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: linux-pm@vger.kernel.org, naveenkrishna.ch@gmail.com,
+        eduardo.valentin@ti.com, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, amit.daniel@samsung.com,
+        kgene.kim@samsung.com, devicetree@vger.kernel.org,
+        b.zolnierkie@samsung.com, cpgs@samsung.com
+Date: Thu, 02 Jan 2014 14:07:00 +0800
+In-Reply-To: <1383828154-428-1-git-send-email-ch.naveen@samsung.com>
+References: <1383828154-428-1-git-send-email-ch.naveen@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14010205-5490-0000-0000-000004B9BC70
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2013 12:17 AM, Bartlomiej Zolnierkiewicz wrote:
-> It is now possible to use the common cpuidle_[un]register() routines
-> (instead of open-coding them) so do it.
+On Thu, 2013-11-07 at 18:12 +0530, Naveen Krishna Chatradhi wrote:
+> On Exynos5420 the TMU(4) for GPU has a seperate clock enable bit from
+> the other TMU channels(0 ~ 3). Hence, accessing TRIMINFO for base_second
+> should be acompanied by enabling the respective clock.
 > 
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> This patch which allow for a "clk_sec" clock to be specified in the
+> device-tree which will be ungated when accessing the TRIMINFO register.
+> 
+> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 
-Acked-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Eduardo,
 
-> Cc: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+what do you think of this patch?
+
+thanks,
+rui
 > ---
->  arch/powerpc/platforms/pseries/processor_idle.c | 57 ++-----------------------
->  1 file changed, 3 insertions(+), 54 deletions(-)
+>  drivers/thermal/samsung/exynos_tmu.c |   24 +++++++++++++++++++++++-
+>  1 file changed, 23 insertions(+), 1 deletion(-)
 > 
-> diff --git a/arch/powerpc/platforms/pseries/processor_idle.c b/arch/powerpc/platforms/pseries/processor_idle.c
-> index 8aa8c40..94134a5 100644
-> --- a/arch/powerpc/platforms/pseries/processor_idle.c
-> +++ b/arch/powerpc/platforms/pseries/processor_idle.c
-> @@ -28,7 +28,6 @@ struct cpuidle_driver pseries_idle_driver = {
->  #define MAX_IDLE_STATE_COUNT	2
-> 
->  static int max_idle_state = MAX_IDLE_STATE_COUNT - 1;
-> -static struct cpuidle_device __percpu *pseries_cpuidle_devices;
->  static struct cpuidle_state *cpuidle_state_table;
-> 
->  static inline void idle_loop_prolog(unsigned long *in_purr)
-> @@ -191,7 +190,7 @@ static int pseries_cpuidle_add_cpu_notifier(struct notifier_block *n,
->  {
->  	int hotcpu = (unsigned long)hcpu;
->  	struct cpuidle_device *dev =
-> -			per_cpu_ptr(pseries_cpuidle_devices, hotcpu);
-> +			per_cpu_ptr(cpuidle_devices, hotcpu);
-> 
->  	if (dev && cpuidle_get_driver()) {
->  		switch (action) {
-> @@ -248,48 +247,6 @@ static int pseries_cpuidle_driver_init(void)
->  	return 0;
+> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+> index b54825a..33edd1a 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> @@ -47,6 +47,7 @@
+>   * @irq_work: pointer to the irq work structure.
+>   * @lock: lock to implement synchronization.
+>   * @clk: pointer to the clock structure.
+> + * @clk_sec: pointer to the clock structure for accessing the base_second.
+>   * @temp_error1: fused value of the first point trim.
+>   * @temp_error2: fused value of the second point trim.
+>   * @regulator: pointer to the TMU regulator structure.
+> @@ -61,7 +62,7 @@ struct exynos_tmu_data {
+>  	enum soc_type soc;
+>  	struct work_struct irq_work;
+>  	struct mutex lock;
+> -	struct clk *clk;
+> +	struct clk *clk, *clk_sec;
+>  	u8 temp_error1, temp_error2;
+>  	struct regulator *regulator;
+>  	struct thermal_sensor_conf *reg_conf;
+> @@ -152,6 +153,8 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+>  
+>  	mutex_lock(&data->lock);
+>  	clk_enable(data->clk);
+> +	if (!IS_ERR(data->clk_sec))
+> +		clk_enable(data->clk_sec);
+>  
+>  	if (TMU_SUPPORTS(pdata, READY_STATUS)) {
+>  		status = readb(data->base + reg->tmu_status);
+> @@ -306,6 +309,8 @@ skip_calib_data:
+>  out:
+>  	clk_disable(data->clk);
+>  	mutex_unlock(&data->lock);
+> +	if (!IS_ERR(data->clk_sec))
+> +		clk_disable(data->clk_sec);
+>  
+>  	return ret;
 >  }
-> 
-> -/* pseries_idle_devices_uninit(void)
-> - * unregister cpuidle devices and de-allocate memory
-> - */
-> -static void pseries_idle_devices_uninit(void)
-> -{
-> -	int i;
-> -	struct cpuidle_device *dev;
-> -
-> -	for_each_possible_cpu(i) {
-> -		dev = per_cpu_ptr(pseries_cpuidle_devices, i);
-> -		cpuidle_unregister_device(dev);
-> -	}
-> -
-> -	free_percpu(pseries_cpuidle_devices);
-> -	return;
-> -}
-> -
-> -/* pseries_idle_devices_init()
-> - * allocate, initialize and register cpuidle device
-> - */
-> -static int pseries_idle_devices_init(void)
-> -{
-> -	int i;
-> -	struct cpuidle_device *dev;
-> -
-> -	pseries_cpuidle_devices = alloc_percpu(struct cpuidle_device);
-> -	if (pseries_cpuidle_devices == NULL)
-> -		return -ENOMEM;
-> -
-> -	for_each_possible_cpu(i) {
-> -		dev = per_cpu_ptr(pseries_cpuidle_devices, i);
-> -		dev->cpu = i;
-> -		if (cpuidle_register_device(dev)) {
-> -			printk(KERN_DEBUG \
-> -				"cpuidle_register_device %d failed!\n", i);
-> -			return -EIO;
-> -		}
-> -	}
-> -
-> -	return 0;
-> -}
-> -
->  /*
->   * pseries_idle_probe()
->   * Choose state table for shared versus dedicated partition
-> @@ -325,19 +282,12 @@ static int __init pseries_processor_idle_init(void)
->  		return retval;
-> 
->  	pseries_cpuidle_driver_init();
-> -	retval = cpuidle_register_driver(&pseries_idle_driver);
-> +	retval = cpuidle_register(&pseries_idle_driver, NULL);
->  	if (retval) {
->  		printk(KERN_DEBUG "Registration of pseries driver failed.\n");
->  		return retval;
+> @@ -457,12 +462,16 @@ static void exynos_tmu_work(struct work_struct *work)
+>  	const struct exynos_tmu_registers *reg = pdata->registers;
+>  	unsigned int val_irq, val_type;
+>  
+> +	if (!IS_ERR(data->clk_sec))
+> +		clk_enable(data->clk_sec);
+>  	/* Find which sensor generated this interrupt */
+>  	if (reg->tmu_irqstatus) {
+>  		val_type = readl(data->base_second + reg->tmu_irqstatus);
+>  		if (!((val_type >> data->id) & 0x1))
+>  			goto out;
 >  	}
-> 
-> -	retval = pseries_idle_devices_init();
-> -	if (retval) {
-> -		pseries_idle_devices_uninit();
-> -		cpuidle_unregister_driver(&pseries_idle_driver);
-> -		return retval;
-> -	}
-> -
->  	register_cpu_notifier(&setup_hotplug_notifier);
->  	printk(KERN_DEBUG "pseries_idle_driver registered\n");
-> 
-> @@ -348,8 +298,7 @@ static void __exit pseries_processor_idle_exit(void)
->  {
-> 
->  	unregister_cpu_notifier(&setup_hotplug_notifier);
-> -	pseries_idle_devices_uninit();
-> -	cpuidle_unregister_driver(&pseries_idle_driver);
-> +	cpuidle_unregister(&pseries_idle_driver);
-> 
->  	return;
+> +	if (!IS_ERR(data->clk_sec))
+> +		clk_disable(data->clk_sec);
+>  
+>  	exynos_report_trigger(data->reg_conf);
+>  	mutex_lock(&data->lock);
+> @@ -641,6 +650,15 @@ static int exynos_tmu_probe(struct platform_device *pdev)
+>  	if (ret)
+>  		return ret;
+>  
+> +	data->clk_sec = devm_clk_get(&pdev->dev, "tmu_apbif_sec");
+> +	if (!IS_ERR(data->clk_sec)) {
+> +		ret = clk_prepare(data->clk_sec);
+> +		if (ret) {
+> +			dev_err(&pdev->dev, "Failed to get clock\n");
+> +			return  PTR_ERR(data->clk_sec);
+> +		}
+> +	}
+> +
+>  	if (pdata->type == SOC_ARCH_EXYNOS4210 ||
+>  	    pdata->type == SOC_ARCH_EXYNOS4412 ||
+>  	    pdata->type == SOC_ARCH_EXYNOS5250 ||
+> @@ -713,6 +731,8 @@ static int exynos_tmu_probe(struct platform_device *pdev)
+>  	return 0;
+>  err_clk:
+>  	clk_unprepare(data->clk);
+> +	if (!IS_ERR(data->clk_sec))
+> +		clk_unprepare(data->clk_sec);
+>  	return ret;
 >  }
-> 
+>  
+> @@ -725,6 +745,8 @@ static int exynos_tmu_remove(struct platform_device *pdev)
+>  	exynos_unregister_thermal(data->reg_conf);
+>  
+>  	clk_unprepare(data->clk);
+> +	if (!IS_ERR(data->clk_sec))
+> +		clk_unprepare(data->clk_sec);
+>  
+>  	if (!IS_ERR(data->regulator))
+>  		regulator_disable(data->regulator);
+
 
