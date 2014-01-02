@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752296AbaABRJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 12:09:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40471 "EHLO
+	id S1753621AbaABRJh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 12:09:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40494 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753420AbaABRJZ (ORCPT
+	with ESMTP id S1753588AbaABRJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 12:09:25 -0500
+	Thu, 2 Jan 2014 12:09:33 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
+Cc: Girish K S <ks.giri@samsung.com>, Tejun Heo <tj@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 42/91] gpio: mvebu: make mvchip->irqbase signed for error handling
-Date: Thu,  2 Jan 2014 09:04:17 -0800
-Message-Id: <1388682306-30859-43-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 39/91] ahci: sata: add support for exynos5440 sata
+Date: Thu,  2 Jan 2014 09:04:14 -0800
+Message-Id: <1388682306-30859-40-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388682306-30859-1-git-send-email-kamal@canonical.com>
 References: <1388682306-30859-1-git-send-email-kamal@canonical.com>
@@ -28,38 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Girish K S <girishks2000@gmail.com>
 
-commit d535922691fc026479fcc03e78ac3d931a54e75a upstream.
+commit 1e8f5f761ca3636bb6e281d9dd8adfa887b38eea upstream.
 
-There is a bug in mvebu_gpio_probe() where we do:
+This patch adds the compatible string of the exynos5440 sata controller
+compliant with the ahci 1.3 and sata 3.0 specification.
 
-	mvchip->irqbase = irq_alloc_descs(-1, 0, ngpios, -1);
-	if (mvchip->irqbase < 0) {
+changes in v2:
+		changed the compatible string by adding the actual IP
+owners name instead of the SoC vendor name.
 
-The problem is that mvchip->irqbase is unsigned so the error handling
-doesn't work.  I have changed it to be a regular int.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Girish K S <ks.giri@samsung.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpio/gpio-mvebu.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/ata/ahci_platform.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpio/gpio-mvebu.c b/drivers/gpio/gpio-mvebu.c
-index 456663c..6300159 100644
---- a/drivers/gpio/gpio-mvebu.c
-+++ b/drivers/gpio/gpio-mvebu.c
-@@ -78,7 +78,7 @@ struct mvebu_gpio_chip {
- 	spinlock_t	   lock;
- 	void __iomem	  *membase;
- 	void __iomem	  *percpu_membase;
--	unsigned int       irqbase;
-+	int		   irqbase;
- 	struct irq_domain *domain;
- 	int                soc_variant;
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index 7a8a284..2daaee0 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -327,6 +327,7 @@ static SIMPLE_DEV_PM_OPS(ahci_pm_ops, ahci_suspend, ahci_resume);
+ 
+ static const struct of_device_id ahci_of_match[] = {
+ 	{ .compatible = "snps,spear-ahci", },
++	{ .compatible = "snps,exynos5440-ahci", },
+ 	{},
  };
+ MODULE_DEVICE_TABLE(of, ahci_of_match);
 -- 
 1.8.3.2
 
