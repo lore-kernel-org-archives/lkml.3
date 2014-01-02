@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751837AbaABM3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 07:29:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5541 "EHLO mx1.redhat.com"
+	id S1751782AbaABM3N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 07:29:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26548 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751380AbaABM2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 07:28:45 -0500
+	id S1751365AbaABM2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 07:28:44 -0500
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
 Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 5/6] GFS2: Wait for async DIO in glock state changes
-Date: Thu,  2 Jan 2014 12:28:13 +0000
-Message-Id: <1388665694-1639-6-git-send-email-swhiteho@redhat.com>
+Subject: [PATCH 4/6] GFS2: Fix incorrect invalidation for DIO/buffered I/O
+Date: Thu,  2 Jan 2014 12:28:12 +0000
+Message-Id: <1388665694-1639-5-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1388665694-1639-1-git-send-email-swhiteho@redhat.com>
 References: <1388665694-1639-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to wait for any outstanding DIO to complete in a couple
-of situations. Firstly, in case we are changing out of deferred
-mode (in inode_go_sync) where GLF_DIRTY will not be set. That
-call could be prefixed with a test for gl_state == LM_ST_DEFERRED
-but it doesn't seem worth it bearing in mind that the test for
-outstanding DIO is very quick anyway, in the usual case that there
-is none.
+In patch 209806aba9d540dde3db0a5ce72307f85f33468f we allowed
+local deferred locks to be granted against a cached exclusive
+lock. That opened up a corner case which this patch now
+fixes.
 
-The second case is in inode_go_lock which will catch the cases
-where we have a cached EX lock, but where we grant deferred locks
-against it so that there is no glock state transistion. We only
-need to wait if the state is not deferred, since DIO is valid
-anyway in that state.
+The solution to the problem is to check whether we have cached
+pages each time we do direct I/O and if so to unmap, flush
+and invalidate those pages. Since the glock state machine
+normally does that for us, mostly the code will be a no-op.
 
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
-diff --git a/fs/gfs2/glops.c b/fs/gfs2/glops.c
-index db908f6..f88dcd9 100644
---- a/fs/gfs2/glops.c
-+++ b/fs/gfs2/glops.c
-@@ -192,8 +192,11 @@ static void inode_go_sync(struct gfs2_glock *gl)
+diff --git a/fs/gfs2/aops.c b/fs/gfs2/aops.c
+index b7fc035..73f3e4e 100644
+--- a/fs/gfs2/aops.c
++++ b/fs/gfs2/aops.c
+@@ -986,6 +986,7 @@ static ssize_t gfs2_direct_IO(int rw, struct kiocb *iocb,
+ {
+ 	struct file *file = iocb->ki_filp;
+ 	struct inode *inode = file->f_mapping->host;
++	struct address_space *mapping = inode->i_mapping;
+ 	struct gfs2_inode *ip = GFS2_I(inode);
+ 	struct gfs2_holder gh;
+ 	int rv;
+@@ -1006,6 +1007,35 @@ static ssize_t gfs2_direct_IO(int rw, struct kiocb *iocb,
+ 	if (rv != 1)
+ 		goto out; /* dio not valid, fall back to buffered i/o */
  
- 	if (ip && !S_ISREG(ip->i_inode.i_mode))
- 		ip = NULL;
--	if (ip && test_and_clear_bit(GIF_SW_PAGED, &ip->i_flags))
--		unmap_shared_mapping_range(ip->i_inode.i_mapping, 0, 0);
-+	if (ip) {
-+		if (test_and_clear_bit(GIF_SW_PAGED, &ip->i_flags))
-+			unmap_shared_mapping_range(ip->i_inode.i_mapping, 0, 0);
-+		inode_dio_wait(&ip->i_inode);
-+	}
- 	if (!test_and_clear_bit(GLF_DIRTY, &gl->gl_flags))
- 		return;
- 
-@@ -410,6 +413,9 @@ static int inode_go_lock(struct gfs2_holder *gh)
- 			return error;
- 	}
- 
-+	if (gh->gh_state != LM_ST_DEFERRED)
-+		inode_dio_wait(&ip->i_inode);
++	/*
++	 * Now since we are holding a deferred (CW) lock at this point, you
++	 * might be wondering why this is ever needed. There is a case however
++	 * where we've granted a deferred local lock against a cached exclusive
++	 * glock. That is ok provided all granted local locks are deferred, but
++	 * it also means that it is possible to encounter pages which are
++	 * cached and possibly also mapped. So here we check for that and sort
++	 * them out ahead of the dio. The glock state machine will take care of
++	 * everything else.
++	 *
++	 * If in fact the cached glock state (gl->gl_state) is deferred (CW) in
++	 * the first place, mapping->nr_pages will always be zero.
++	 */
++	if (mapping->nrpages) {
++		loff_t lstart = offset & (PAGE_CACHE_SIZE - 1);
++		loff_t len = iov_length(iov, nr_segs);
++		loff_t end = PAGE_ALIGN(offset + len) - 1;
 +
- 	if ((ip->i_diskflags & GFS2_DIF_TRUNC_IN_PROG) &&
- 	    (gl->gl_state == LM_ST_EXCLUSIVE) &&
- 	    (gh->gh_state == LM_ST_EXCLUSIVE)) {
++		rv = 0;
++		if (len == 0)
++			goto out;
++		if (test_and_clear_bit(GIF_SW_PAGED, &ip->i_flags))
++			unmap_shared_mapping_range(ip->i_inode.i_mapping, offset, len);
++		rv = filemap_write_and_wait_range(mapping, lstart, end);
++		if (rv)
++			return rv;
++		truncate_inode_pages_range(mapping, lstart, end);
++	}
++
+ 	rv = __blockdev_direct_IO(rw, iocb, inode, inode->i_sb->s_bdev, iov,
+ 				  offset, nr_segs, gfs2_get_block_direct,
+ 				  NULL, NULL, 0);
 -- 
 1.8.3.1
 
