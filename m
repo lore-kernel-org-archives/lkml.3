@@ -1,195 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691AbaABU6f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 15:58:35 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:55348 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751788AbaABU6e (ORCPT
+	id S1752798AbaABU7Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 15:59:24 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:11555 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752701AbaABU7X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 15:58:34 -0500
-Date: Thu, 2 Jan 2014 15:58:27 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 15/17] tracing/uprobes: Add support for full argument
- access methods
-Message-ID: <20140102155827.21b552e0@gandalf.local.home>
-In-Reply-To: <1387168336-13213-16-git-send-email-namhyung@kernel.org>
-References: <1387168336-13213-1-git-send-email-namhyung@kernel.org>
-	<1387168336-13213-16-git-send-email-namhyung@kernel.org>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Thu, 2 Jan 2014 15:59:23 -0500
+Message-ID: <1388696357.11119.10.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v5 4/4] futex: Avoid taking hb lock if nothing to wakeup
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>, Jeff Mahoney <jeffm@suse.com>,
+        Jason Low <jason.low2@hp.com>, Waiman Long <Waiman.Long@hp.com>,
+        Tom Vaden <tom.vaden@hp.com>, "Norton, Scott J" <scott.norton@hp.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>
+Date: Thu, 02 Jan 2014 12:59:17 -0800
+In-Reply-To: <CA+55aFwNPgzORGyKaziqBGqY9Uubuuo0w=rGQvcHS-Ftz4HQ9g@mail.gmail.com>
+References: <1388675120-8017-1-git-send-email-davidlohr@hp.com>
+	 <1388675120-8017-5-git-send-email-davidlohr@hp.com>
+	 <CA+55aFwNPgzORGyKaziqBGqY9Uubuuo0w=rGQvcHS-Ftz4HQ9g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Dec 2013 13:32:14 +0900
-Namhyung Kim <namhyung@kernel.org> wrote:
+On Thu, 2014-01-02 at 11:23 -0800, Linus Torvalds wrote:
+> On Thu, Jan 2, 2014 at 7:05 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> >
+> > In futex_wake() there is clearly no point in taking the hb->lock if we know
+> > beforehand that there are no tasks to be woken.
+> 
+> Btw, I think we could optimize this a bit further for the wakeup case.
+> 
+> wake_futex() does a get_task_struct(p)/put_task_struct(p) around its
+> actual waking logic, and I don't think that's necessary. The task
+> structures are RCU-delayed, and the task cannot go away until the
+> "q->lock_ptr = NULL" afaik, so you could replace that atomic inc/dec
+> with just a RCU read region.
 
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> Enable to fetch other types of argument for the uprobes.  IOW, we can
-> access stack, memory, deref, bitfield and retval from uprobes now.
-> 
-> The format for the argument types are same as kprobes (but @SYMBOL
-> type is not supported for uprobes), i.e:
-> 
->   @ADDR   : Fetch memory at ADDR
->   $stackN : Fetch Nth entry of stack (N >= 0)
->   $stack  : Fetch stack address
->   $retval : Fetch return value
->   +|-offs(FETCHARG) : Fetch memory at FETCHARG +|- offs address
-> 
-> Note that the retval only can be used with uretprobes.
-> 
-> Original-patch-by: Hyeoncheol Lee <cheol.lee@lge.com>
+I had originally explored making the whole plist thing more rcu aware
+but never got to anything worth sharing. What you say does make a lot of
+sense, however, I haven't been able to see any actual improvements. It
+doesn't hurt however, so I'd have no problem adding such patch to the
+lot.
 
-Where was the original patch posted? And can we get Hyeoncheol's SOB for
-this?
-
-Thanks!
-
--- Steve
-
-> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  Documentation/trace/uprobetracer.txt | 25 +++++++++++++++++++++++++
->  kernel/trace/trace_probe.c           | 34 ++++++++++++++++++++++------------
->  2 files changed, 47 insertions(+), 12 deletions(-)
 > 
-> diff --git a/Documentation/trace/uprobetracer.txt b/Documentation/trace/uprobetracer.txt
-> index 8f1a8b8956fc..6e5cff263e2b 100644
-> --- a/Documentation/trace/uprobetracer.txt
-> +++ b/Documentation/trace/uprobetracer.txt
-> @@ -31,6 +31,31 @@ Synopsis of uprobe_tracer
->  
->    FETCHARGS     : Arguments. Each probe can have up to 128 args.
->     %REG         : Fetch register REG
-> +   @ADDR	: Fetch memory at ADDR (ADDR should be in userspace)
-> +   $stackN	: Fetch Nth entry of stack (N >= 0)
-> +   $stack	: Fetch stack address.
-> +   $retval	: Fetch return value.(*)
-> +   +|-offs(FETCHARG) : Fetch memory at FETCHARG +|- offs address.(**)
-> +   NAME=FETCHARG     : Set NAME as the argument name of FETCHARG.
-> +   FETCHARG:TYPE     : Set TYPE as the type of FETCHARG. Currently, basic types
-> +		       (u8/u16/u32/u64/s8/s16/s32/s64), "string" and bitfield
-> +		       are supported.
-> +
-> +  (*) only for return probe.
-> +  (**) this is useful for fetching a field of data structures.
-> +
-> +Types
-> +-----
-> +Several types are supported for fetch-args. Uprobe tracer will access memory
-> +by given type. Prefix 's' and 'u' means those types are signed and unsigned
-> +respectively. Traced arguments are shown in decimal (signed) or hex (unsigned).
-> +String type is a special type, which fetches a "null-terminated" string from
-> +user space.
-> +Bitfield is another special type, which takes 3 parameters, bit-width, bit-
-> +offset, and container-size (usually 32). The syntax is;
-> +
-> + b<bit-width>@<bit-offset>/<container-size>
-> +
->  
->  Event Profiling
->  ---------------
-> diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-> index 8f7a2b6d389d..a130d612e705 100644
-> --- a/kernel/trace/trace_probe.c
-> +++ b/kernel/trace/trace_probe.c
-> @@ -255,12 +255,18 @@ fail:
->  }
->  
->  /* Special function : only accept unsigned long */
-> -static __kprobes void fetch_stack_address(struct pt_regs *regs,
-> -					void *dummy, void *dest)
-> +static __kprobes void fetch_kernel_stack_address(struct pt_regs *regs,
-> +						 void *dummy, void *dest)
->  {
->  	*(unsigned long *)dest = kernel_stack_pointer(regs);
->  }
->  
-> +static __kprobes void fetch_user_stack_address(struct pt_regs *regs,
-> +					       void *dummy, void *dest)
-> +{
-> +	*(unsigned long *)dest = user_stack_pointer(regs);
-> +}
-> +
->  static fetch_func_t get_fetch_size_function(const struct fetch_type *type,
->  					    fetch_func_t orig_fn,
->  					    const struct fetch_type *ftbl)
-> @@ -305,7 +311,8 @@ int traceprobe_split_symbol_offset(char *symbol, unsigned long *offset)
->  #define PARAM_MAX_STACK (THREAD_SIZE / sizeof(unsigned long))
->  
->  static int parse_probe_vars(char *arg, const struct fetch_type *t,
-> -			    struct fetch_param *f, bool is_return)
-> +			    struct fetch_param *f, bool is_return,
-> +			    bool is_kprobe)
->  {
->  	int ret = 0;
->  	unsigned long param;
-> @@ -317,13 +324,16 @@ static int parse_probe_vars(char *arg, const struct fetch_type *t,
->  			ret = -EINVAL;
->  	} else if (strncmp(arg, "stack", 5) == 0) {
->  		if (arg[5] == '\0') {
-> -			if (strcmp(t->name, DEFAULT_FETCH_TYPE_STR) == 0)
-> -				f->fn = fetch_stack_address;
-> +			if (strcmp(t->name, DEFAULT_FETCH_TYPE_STR))
-> +				return -EINVAL;
-> +
-> +			if (is_kprobe)
-> +				f->fn = fetch_kernel_stack_address;
->  			else
-> -				ret = -EINVAL;
-> +				f->fn = fetch_user_stack_address;
->  		} else if (isdigit(arg[5])) {
->  			ret = kstrtoul(arg + 5, 10, &param);
-> -			if (ret || param > PARAM_MAX_STACK)
-> +			if (ret || (is_kprobe && param > PARAM_MAX_STACK))
->  				ret = -EINVAL;
->  			else {
->  				f->fn = t->fetch[FETCH_MTD_stack];
-> @@ -350,13 +360,9 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
->  	ftbl = is_kprobe ? kprobes_fetch_type_table : uprobes_fetch_type_table;
->  	BUG_ON(ftbl == NULL);
->  
-> -	/* Until uprobe_events supports only reg arguments */
-> -	if (!is_kprobe && arg[0] != '%')
-> -		return -EINVAL;
-> -
->  	switch (arg[0]) {
->  	case '$':
-> -		ret = parse_probe_vars(arg + 1, t, f, is_return);
-> +		ret = parse_probe_vars(arg + 1, t, f, is_return, is_kprobe);
->  		break;
->  
->  	case '%':	/* named register */
-> @@ -377,6 +383,10 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
->  			f->fn = t->fetch[FETCH_MTD_memory];
->  			f->data = (void *)param;
->  		} else {
-> +			/* uprobes don't support symbols */
-> +			if (!is_kprobe)
-> +				return -EINVAL;
-> +
->  			ret = traceprobe_split_symbol_offset(arg + 1, &offset);
->  			if (ret)
->  				break;
+> Maybe it's not a big deal ("wake_up_state()" ends up getting the task
+> struct pi_lock anyway, so it's not like we can avoid toucing the task
+> structure), but I'm getting the feeling that we're doing a lot of
+> unnecessary work here.
+
+I passed this idea through my wakeup measuring program and didn't notice
+hardly any difference, just noise, even for large amounts of futexes.
+I believe that peterz's idea of lockless batch wakeups is the next step
+worth looking into for futexes -- even though the spurious wakeup
+problem can become a real pain.
+
+Thanks,
+Davidlohr
+
 
