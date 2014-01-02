@@ -1,163 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750807AbaABJxc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 04:53:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51864 "EHLO mx1.redhat.com"
+	id S1750787AbaABKCs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 05:02:48 -0500
+Received: from ni.piap.pl ([195.187.100.4]:51151 "EHLO ni.piap.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750707AbaABJxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 04:53:31 -0500
-Date: Thu, 2 Jan 2014 10:53:04 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Ahern <dsahern@gmail.com>
-Subject: [PATCHv2 1/2] tools lib traceevent: Replace tabs with spaces for all
- non-commands statements
-Message-ID: <20140102095304.GA1196@krava.brq.redhat.com>
-References: <1388595050-23005-1-git-send-email-jolsa@redhat.com>
- <1388602784.10966.4.camel@pippen.local.home>
+	id S1750711AbaABKCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 05:02:46 -0500
+From: khalasa@piap.pl (Krzysztof =?utf-8?Q?Ha=C5=82asa?=)
+To: Willy Tarreau <w@1wt.eu>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, John Stultz <john.stultz@linaro.org>
+References: <m3mwjhux0e.fsf@t19.piap.pl> <20131231104511.GA9688@1wt.eu>
+Date: Thu, 02 Jan 2014 11:02:44 +0100
+In-Reply-To: <20131231104511.GA9688@1wt.eu> (Willy Tarreau's message of "Tue,
+	31 Dec 2013 11:45:11 +0100")
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1388602784.10966.4.camel@pippen.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <m3txdmu2ez.fsf@t19.piap.pl>
+Content-Type: text/plain
+Subject: Re: v3.13-rc6+ regression (ARM board)
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE,
+	 bases: 20140102 #7222383, check: 20140102 clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 01, 2014 at 01:59:44PM -0500, Steven Rostedt wrote:
-> On Wed, 2014-01-01 at 17:50 +0100, Jiri Olsa wrote:
-> > Replacing tabs with spaces for all non-commands statements
-> > in 'Makefile'.
-> > 
-> 
-> Instead of just stating what you did, can you also include a "why" you
-> did it?
+>> There seems to be a regression in v3.13-rc6+ (up to current tip =
+>> 71ce176ee6ed1735b9a1160a5704a915d13849b1).
+>>
+>> Board is Gateworks Cambria, CPU Intel IXP435 ARM big endian, gcc 4.7.3.
+>> The board boots correctly and works (shell mostly, and SSHD) for about
+>> 50 seconds. After 52-54 seconds, it frozes dead without any console
+>> (UART) output.
+>>
+>> Bisecting shows 5e30025a319910695f5010dc0fb53a23299da14d as the first
+>> bad commit. Interestingly it's a merge:
 
-sry about that.. attached v2 with updated changelog
+Reverting 1ca7d67cf5d5a2aef26a8d9afd789006fa098347 on top of current tip
+(9a0bb2966efbf30a71c128c3af63307d8b5f5fc0) fixes my issue.
 
-it was already discussed before in here:
-http://marc.info/?t=136484403900003&r=1&w=2
+What now?
 
-thanks,
-jirka
+1ca7d67cf5d5a2aef26a8d9afd789006fa098347:
+    seqcount: Add lockdep functionality to seqcount/seqlock structures
 
+    Currently seqlocks and seqcounts don't support lockdep.
 
----
-The tabbed indentation in non-commands statements could
-be sometimes considered as follow up for the rule command
-in the Makefile.
+    After running across a seqcount related deadlock in the timekeeping
+    code, I used a less-refined and more focused variant of this patch
+    to narrow down the cause of the issue.
 
-This error is hard to find, so as a precaution replacing
-tabs with spaces for all non-commands statements.
+    This is a first-pass attempt to properly enable lockdep functionality
+    on seqlocks and seqcounts.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
----
- tools/lib/traceevent/Makefile | 54 +++++++++++++++++++++----------------------
- 1 file changed, 27 insertions(+), 27 deletions(-)
+    Since seqcounts are used in the vdso gettimeofday code, I've provided
+    non-lockdep accessors for those needs.
 
-diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-index ca4ab78..76fe0ae 100644
---- a/tools/lib/traceevent/Makefile
-+++ b/tools/lib/traceevent/Makefile
-@@ -86,8 +86,8 @@ ifeq ($(BUILD_SRC),)
- ifneq ($(OUTPUT),)
- 
- define build_output
--	$(if $(VERBOSE:1=),@)+$(MAKE) -C $(OUTPUT) \
--	BUILD_SRC=$(CURDIR)/ -f $(CURDIR)/Makefile $1
-+  $(if $(VERBOSE:1=),@)+$(MAKE) -C $(OUTPUT) \
-+  BUILD_SRC=$(CURDIR)/ -f $(CURDIR)/Makefile $1
- endef
- 
- all: sub-make
-@@ -221,23 +221,23 @@ $(PLUGINS): %.so: %.o
- 	$(QUIET_LINK)$(CC) $(CFLAGS) -shared -nostartfiles -o $@ $<
- 
- define make_version.h
--	(echo '/* This file is automatically generated. Do not modify. */';		\
--	echo \#define VERSION_CODE $(shell						\
--	expr $(VERSION) \* 256 + $(PATCHLEVEL));					\
--	echo '#define EXTRAVERSION ' $(EXTRAVERSION);					\
--	echo '#define VERSION_STRING "'$(VERSION).$(PATCHLEVEL).$(EXTRAVERSION)'"';	\
--	echo '#define FILE_VERSION '$(FILE_VERSION);					\
--	) > $1
-+  (echo '/* This file is automatically generated. Do not modify. */';		\
-+   echo \#define VERSION_CODE $(shell						\
-+   expr $(VERSION) \* 256 + $(PATCHLEVEL));					\
-+   echo '#define EXTRAVERSION ' $(EXTRAVERSION);				\
-+   echo '#define VERSION_STRING "'$(VERSION).$(PATCHLEVEL).$(EXTRAVERSION)'"';	\
-+   echo '#define FILE_VERSION '$(FILE_VERSION);					\
-+  ) > $1
- endef
- 
- define update_version.h
--	($(call make_version.h, $@.tmp);		\
--	if [ -r $@ ] && cmp -s $@ $@.tmp; then		\
--		rm -f $@.tmp;				\
--	else						\
--		echo '  UPDATE                 $@';	\
--		mv -f $@.tmp $@;			\
--	fi);
-+  ($(call make_version.h, $@.tmp);		\
-+    if [ -r $@ ] && cmp -s $@ $@.tmp; then	\
-+      rm -f $@.tmp;				\
-+    else					\
-+      echo '  UPDATE                 $@';	\
-+      mv -f $@.tmp $@;				\
-+    fi);
- endef
- 
- ep_version.h: force
-@@ -246,13 +246,13 @@ ep_version.h: force
- VERSION_FILES = ep_version.h
- 
- define update_dir
--	(echo $1 > $@.tmp;	\
--	if [ -r $@ ] && cmp -s $@ $@.tmp; then		\
--		rm -f $@.tmp;				\
--	else						\
--		echo '  UPDATE                 $@';	\
--		mv -f $@.tmp $@;			\
--	fi);
-+  (echo $1 > $@.tmp;				\
-+   if [ -r $@ ] && cmp -s $@ $@.tmp; then	\
-+     rm -f $@.tmp;				\
-+   else						\
-+     echo '  UPDATE                 $@';	\
-+     mv -f $@.tmp $@;				\
-+   fi);
- endef
- 
- ## make deps
-@@ -262,10 +262,10 @@ all_deps := $(all_objs:%.o=.%.d)
- 
- # let .d file also depends on the source and header files
- define check_deps
--		@set -e; $(RM) $@; \
--		$(CC) -MM $(CFLAGS) $< > $@.$$$$; \
--		sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
--		$(RM) $@.$$$$
-+  @set -e; $(RM) $@; \
-+  $(CC) -MM $(CFLAGS) $< > $@.$$$$; \
-+  sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
-+  $(RM) $@.$$$$
- endef
- 
- $(all_deps): .%.d: $(src)/%.c
+    I've also handled one case where there were nested seqlock writers
+    and there may be more edge cases.
+
+    Comments and feedback would be appreciated!
 -- 
-1.8.3.1
+Krzysztof Halasa
 
+Research Institute for Automation and Measurements PIAP
+Al. Jerozolimskie 202, 02-486 Warsaw, Poland
