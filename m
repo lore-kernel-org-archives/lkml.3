@@ -1,106 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833AbaACRhL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 12:37:11 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:38291 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750935AbaACRhK (ORCPT
+	id S1752512AbaACRjO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 12:39:14 -0500
+Received: from smtprelay0215.hostedemail.com ([216.40.44.215]:52115 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751856AbaACRjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 12:37:10 -0500
-Date: Fri, 3 Jan 2014 12:35:55 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Mukesh Rathor <mukesh.rathor@oracle.com>
-Cc: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
-        stefano.stabellini@eu.citrix.com
-Subject: Re: [PATCH v12 03/18] xen/pvh: Early bootup changes in PV code (v2).
-Message-ID: <20140103173555.GF27019@phenom.dumpdata.com>
-References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com>
- <1388550945-25499-4-git-send-email-konrad.wilk@oracle.com>
- <52C58691.4040502@citrix.com>
- <20140102183221.GD3021@pegasus.dumpdata.com>
- <20140102173438.40612127@mantra.us.oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140102173438.40612127@mantra.us.oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Fri, 3 Jan 2014 12:39:13 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2692:2693:2828:3138:3139:3140:3141:3142:3351:3622:3865:3866:3867:3868:3870:3871:3874:4321:5007:6119:7652:7903:8526:10004:10400:10848:11232:11658:11914:12517:12519:12663:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: care59_6d1f8de4a0a38
+X-Filterd-Recvd-Size: 1960
+Message-ID: <1388770748.14334.19.camel@joe-AO722>
+Subject: Re: [PATCH] lib/vsprintf: add %pT[C012] format specifier
+From: Joe Perches <joe@perches.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Jiri Kosina <jkosina@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 03 Jan 2014 09:39:08 -0800
+In-Reply-To: <CAGXu5jL7RunQuAw1MjnUMgWeYMX35+YcGeaZYCx6dhND3YUmsQ@mail.gmail.com>
+References: <1388507067.2259.24.camel@joe-AO722>
+	 <201401011434.GAF34360.FFQOVtFOHJSMLO@I-love.SAKURA.ne.jp>
+	 <1388555362.2259.38.camel@joe-AO722>
+	 <201401011902.JEF43770.FSOVFFOHOtQLJM@I-love.SAKURA.ne.jp>
+	 <1388626389.2259.57.camel@joe-AO722>
+	 <201401021349.JGJ78109.OOFtFFHJMLSOQV@I-love.SAKURA.ne.jp>
+	 <CAGXu5jL7RunQuAw1MjnUMgWeYMX35+YcGeaZYCx6dhND3YUmsQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 02, 2014 at 05:34:38PM -0800, Mukesh Rathor wrote:
-> On Thu, 2 Jan 2014 13:32:21 -0500
-> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> 
-> > On Thu, Jan 02, 2014 at 03:32:33PM +0000, David Vrabel wrote:
-> > > On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
-> > > > From: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > > > 
-> > > > In the bootup code for PVH we can trap cpuid via vmexit, so don't
-> > > > need to use emulated prefix call. We also check for vector
-> > > > callback early on, as it is a required feature. PVH also runs at
-> > > > default kernel IOPL.
-> > > > 
-> > > > Finally, pure PV settings are moved to a separate function that
-> > > > are only called for pure PV, ie, pv with pvmmu. They are also
-> > > > #ifdef with CONFIG_XEN_PVMMU.
-> > > [...]
-> > > > @@ -331,12 +333,15 @@ static void xen_cpuid(unsigned int *ax,
-> > > > unsigned int *bx, break;
-> > > >  	}
-> > > >  
-> > > > -	asm(XEN_EMULATE_PREFIX "cpuid"
-> > > > -		: "=a" (*ax),
-> > > > -		  "=b" (*bx),
-> > > > -		  "=c" (*cx),
-> > > > -		  "=d" (*dx)
-> > > > -		: "0" (*ax), "2" (*cx));
-> > > > +	if (xen_pvh_domain())
-> > > > +		native_cpuid(ax, bx, cx, dx);
-> > > > +	else
-> > > > +		asm(XEN_EMULATE_PREFIX "cpuid"
-> > > > +			: "=a" (*ax),
-> > > > +			"=b" (*bx),
-> > > > +			"=c" (*cx),
-> > > > +			"=d" (*dx)
-> > > > +			: "0" (*ax), "2" (*cx));
-> > > 
-> > > For this one off cpuid call it seems preferrable to me to use the
-> > > emulate prefix rather than diverge from PV.
-> > 
-> > This was before the PV cpuid was deemed OK to be used on PVH.
-> > Will rip this out to use the same version.
-> 
-> Whats wrong with using native cpuid? That is one of the benefits that
-> cpuid can be trapped via vmexit, and also there is talk of making PV
-> cpuid trap obsolete in the future. I suggest leaving it native.
+On Fri, 2014-01-03 at 09:08 -0800, Kees Cook wrote:
+> I'm on board with the idea of embedding comm/pid/whatever,
 
-I chatted with David, Andrew and Roger on IRC about this. I like the
-idea of using xen_cpuid because:
- 1) It filters some of the CPUID flags that guests should not use. There is
-    the 'aperfmperf,'x2apic', 'xsave', and whether the MWAIT_LEAF
-    should be exposed (so that the ACPI AML code can call the right
-    initialization code to use the extended C3 states instead of the
-    legacy IOPORT ones). All of that is in xen_cpuid.
-   
- 2) It works, while we can concentrate on making 1) work in the
-    hypervisor/toolstack.
+I still think the space reduction isn't worth the
+complication.
 
-Meaning that the future way would be to use the native cpuid and have
-the hypervisor/toolstack setup the proper cpuid. In other words - use
-the xen_cpuid as is until that code for filtering is in the hypervisor.
+>  but I
+> either missed or do not understand why a second format-start character
+> is being added. I think this will complicate audits and maybe trigger
+> weird info leaks (imagine printing a string that was %-escaped, but
+> not 0x1A-escaped?)
+> Why not use % followed by 0x1A to be the start code, instead of just 0x1A?
+
+gcc would bleat an error for
+	"unknown conversion type character 0x1a in format".
 
 
-Except that PVH does not work the PV cpuid at all. I get a triple fault.
-The instruction it fails at is at the 'XEN_EMULATE_PREFIX'.
-
-Mukesh, can you point me to the patch where the PV cpuid functionality
-is enabled?
-
-Anyhow, as it stands, I will just use the native cpuid.
-
-> 
-> Mukesh
-> 
