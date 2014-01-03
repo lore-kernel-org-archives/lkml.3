@@ -1,35 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711AbaACSXl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 13:23:41 -0500
-Received: from www.sr71.net ([198.145.64.142]:58454 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751067AbaACSXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 13:23:40 -0500
-Message-ID: <52C70024.1060605@sr71.net>
-Date: Fri, 03 Jan 2014 10:23:32 -0800
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753123AbaACSYV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 13:24:21 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:64717 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752436AbaACSYU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 13:24:20 -0500
 MIME-Version: 1.0
-To: Laura Abbott <lauraa@codeaurora.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kyungmin Park <kmpark@infradead.org>, linux-mm@kvack.org,
-        Russell King <linux@arm.linux.org.uk>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCHv3 00/11] Intermix Lowmem and vmalloc
-References: <1388699609-18214-1-git-send-email-lauraa@codeaurora.org>
-In-Reply-To: <1388699609-18214-1-git-send-email-lauraa@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201401031804.34124.arnd@arndb.de>
+References: <1388763959-27491-1-git-send-email-geert@linux-m68k.org>
+	<201401031804.34124.arnd@arndb.de>
+Date: Fri, 3 Jan 2014 19:24:19 +0100
+X-Google-Sender-Auth: LkxpaPV9f2vw8BFJIgvqbDuOUR0
+Message-ID: <CAMuHMdXoZJEgMXH0K1d5kDs+XSM_KMkigUq+mKYVQezdxZ929g@mail.gmail.com>
+Subject: Re: [PATCH] arm/smp: Make boot_secondary() static
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2014 01:53 PM, Laura Abbott wrote:
-> The goal here is to allow as much lowmem to be mapped as if the block of memory
-> was not reserved from the physical lowmem region. Previously, we had been
-> hacking up the direct virt <-> phys translation to ignore a large region of
-> memory. This did not scale for multiple holes of memory however.
+On Fri, Jan 3, 2014 at 6:04 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 03 January 2014, Geert Uytterhoeven wrote:
+>> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+>>
+>> After becoming a mandatory function, boot_secondary() is no longer used
+>> outside arch/arm/kernel/smp.c. Hence make it static.
+>> The code is reshuffled a bit to avoid a forward declaration.
+>>
+>> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+>
+> How about taking it one step further by removing the function entirely?
+> Like this:
+>
+> @@ -92,6 +92,9 @@ int __cpu_up(unsigned int cpu, struct task_struct *idle)
+>  {
+>         int ret;
+>
+> +       if (!smp_ops.smp_boot_secondary)
+> +               return -ENOSYS;
+> +
+>         /*
+>          * We need to tell the secondary core where to find
+>          * its stack and the page tables.
+> @@ -111,7 +114,7 @@ int __cpu_up(unsigned int cpu, struct task_struct *idle)
+>         /*
+>          * Now bring the CPU into our world.
+>          */
+> -       ret = boot_secondary(cpu, idle);
+> +       ret = smp_ops.smp_boot_secondary(cpu, idle);
+>         if (ret == 0) {
+>                 /*
+>                  * CPU was successfully started, wait for it
 
-How much lowmem do these holes end up eating up in practice, ballpark?
-I'm curious how painful this is going to get.
+Fine for me.
+
+Do you want me to fold this into my patch, or will you apply this on top?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
