@@ -1,184 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792AbaACN3z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 08:29:55 -0500
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:46572
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752146AbaACN3y (ORCPT
+	id S1752834AbaACNa0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 08:30:26 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:53443 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086AbaACN2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 08:29:54 -0500
-X-IronPort-AV: E=Sophos;i="4.95,598,1384297200"; 
-   d="scan'208";a="43372044"
-Date: Fri, 3 Jan 2014 14:29:35 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Michal Marek <mmarek@suse.cz>
-cc: Nishanth Menon <nm@ti.com>, Julia.Lawall@lip6.fr, Gilles.Muller@lip6.fr,
-        nicolas.palix@imag.fr, linux-kernel@vger.kernel.org,
-        cocci@systeme.lip6.fr, linux-pm@vger.kernel.org,
-        Sekhar Nori <nsekhar@ti.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: Re: [PATCH resend] scripts: Coccinelle script for pm_runtime_* return
- checks with IS_ERR_VALUE
-In-Reply-To: <52C6B3C8.7040509@suse.cz>
-Message-ID: <alpine.DEB.2.10.1401031429140.2095@hadrien>
-References: <1385991581-16843-1-git-send-email-nm@ti.com> <52C6B3C8.7040509@suse.cz>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 3 Jan 2014 08:28:18 -0500
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 06/11] ASoC: twl4030: Remove reset registers functionality
+Date: Fri, 3 Jan 2014 15:27:51 +0200
+Message-ID: <1388755676-16036-7-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1388755676-16036-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1388755676-16036-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The register states now tracked by the regmap implementation in the core which
+makes the reset registers functionality 'redundant' since we know the state
+of the registers now all the time.
 
-On Fri, 3 Jan 2014, Michal Marek wrote:
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ include/linux/i2c/twl.h    |  1 -
+ sound/soc/codecs/twl4030.c | 17 -----------------
+ 2 files changed, 18 deletions(-)
 
-> On 2013-12-02 14:39, Nishanth Menon wrote:
-> > As indicated by Sekhar in [1], there seems to be a tendency to use
-> > IS_ERR_VALUE to check the error result for pm_runtime_* functions which
-> > make no sense considering commit c48cd65 (ARM: OMAP: use consistent
-> > error checking) - the error values can either be < 0 for error OR
-> > 0, 1 in cases where we have success.
-> >
-> > So, setup a coccinelle script to help identify the same.
->
-> Julia, Gilles, do you have any objections to this semantic patch?
+diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
+index 2937a9472b94..ade1c06d4ceb 100644
+--- a/include/linux/i2c/twl.h
++++ b/include/linux/i2c/twl.h
+@@ -670,7 +670,6 @@ struct twl4030_codec_data {
+ 	unsigned int digimic_delay; /* in ms */
+ 	unsigned int ramp_delay_value;
+ 	unsigned int offset_cncl_path;
+-	unsigned int reset_registers:1;
+ 	unsigned int hs_extmute:1;
+ 	int hs_extmute_gpio;
+ };
+diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
+index 7b732ab70d2c..ab2f22299db2 100644
+--- a/sound/soc/codecs/twl4030.c
++++ b/sound/soc/codecs/twl4030.c
+@@ -268,17 +268,6 @@ static void twl4030_codec_enable(struct snd_soc_codec *codec, int enable)
+ 	udelay(10);
+ }
+ 
+-static inline void twl4030_reset_registers(struct snd_soc_codec *codec)
+-{
+-	int i;
+-
+-	/* set all audio section registers to reasonable defaults */
+-	for (i = TWL4030_REG_OPTION; i <= TWL4030_REG_MISC_SET_2; i++)
+-		if (i != TWL4030_REG_APLL_CTL)
+-			twl4030_write(codec, i, twl4030_reg[i]);
+-
+-}
+-
+ static void twl4030_setup_pdata_of(struct twl4030_codec_data *pdata,
+ 				   struct device_node *node)
+ {
+@@ -359,10 +348,6 @@ static void twl4030_init_chip(struct snd_soc_codec *codec)
+ 		}
+ 	}
+ 
+-	/* Reset registers, if no setup data or if instructed to do so */
+-	if (!pdata || (pdata && pdata->reset_registers))
+-		twl4030_reset_registers(codec);
+-
+ 	/* Refresh APLL_CTL register from HW */
+ 	twl_i2c_read_u8(TWL4030_MODULE_AUDIO_VOICE, &byte,
+ 			    TWL4030_REG_APLL_CTL);
+@@ -2293,8 +2278,6 @@ static int twl4030_soc_remove(struct snd_soc_codec *codec)
+ 	struct twl4030_priv *twl4030 = snd_soc_codec_get_drvdata(codec);
+ 	struct twl4030_codec_data *pdata = twl4030->pdata;
+ 
+-	/* Reset registers to their chip default before leaving */
+-	twl4030_reset_registers(codec);
+ 	twl4030_set_bias_level(codec, SND_SOC_BIAS_OFF);
+ 
+ 	if (pdata && pdata->hs_extmute && gpio_is_valid(pdata->hs_extmute_gpio))
+-- 
+1.8.5.2
 
-No objections.
-
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
-
->
-> Thanks,
-> Michal
-> >
-> > [1] http://marc.info/?t=138472678100003&r=1&w=2
-> >
-> > Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-> > Reported-by: Sekhar Nori <nsekhar@ti.com>
-> > Signed-off-by: Nishanth Menon <nm@ti.com>
-> > ---
-> > Original post: http://marc.info/?t=138559437300001&r=1&w=2
-> >
-> >  scripts/coccinelle/api/pm_runtime.cocci |  109 +++++++++++++++++++++++++++++++
-> >  1 file changed, 109 insertions(+)
-> >  create mode 100644 scripts/coccinelle/api/pm_runtime.cocci
-> >
-> > diff --git a/scripts/coccinelle/api/pm_runtime.cocci b/scripts/coccinelle/api/pm_runtime.cocci
-> > new file mode 100644
-> > index 0000000..f01789e
-> > --- /dev/null
-> > +++ b/scripts/coccinelle/api/pm_runtime.cocci
-> > @@ -0,0 +1,109 @@
-> > +/// Make sure pm_runtime_* calls does not use unnecessary IS_ERR_VALUE
-> > +//
-> > +// Keywords: pm_runtime
-> > +// Confidence: Medium
-> > +// Copyright (C) 2013 Texas Instruments Incorporated - GPLv2.
-> > +// URL: http://coccinelle.lip6.fr/
-> > +// Options: --include-headers
-> > +
-> > +virtual patch
-> > +virtual context
-> > +virtual org
-> > +virtual report
-> > +
-> > +//----------------------------------------------------------
-> > +//  Detection
-> > +//----------------------------------------------------------
-> > +
-> > +@runtime_bad_err_handle exists@
-> > +expression ret;
-> > +@@
-> > +(
-> > +ret = \(pm_runtime_idle\|
-> > +	pm_runtime_suspend\|
-> > +	pm_runtime_autosuspend\|
-> > +	pm_runtime_resume\|
-> > +	pm_request_idle\|
-> > +	pm_request_resume\|
-> > +	pm_request_autosuspend\|
-> > +	pm_runtime_get\|
-> > +	pm_runtime_get_sync\|
-> > +	pm_runtime_put\|
-> > +	pm_runtime_put_autosuspend\|
-> > +	pm_runtime_put_sync\|
-> > +	pm_runtime_put_sync_suspend\|
-> > +	pm_runtime_put_sync_autosuspend\|
-> > +	pm_runtime_set_active\|
-> > +	pm_schedule_suspend\|
-> > +	pm_runtime_barrier\|
-> > +	pm_generic_runtime_suspend\|
-> > +	pm_generic_runtime_resume\)(...);
-> > +...
-> > +IS_ERR_VALUE(ret)
-> > +...
-> > +)
-> > +
-> > +//----------------------------------------------------------
-> > +//  For context mode
-> > +//----------------------------------------------------------
-> > +
-> > +@depends on runtime_bad_err_handle && context@
-> > +identifier pm_runtime_api;
-> > +expression ret;
-> > +@@
-> > +(
-> > +ret = pm_runtime_api(...);
-> > +...
-> > +* IS_ERR_VALUE(ret)
-> > +...
-> > +)
-> > +
-> > +//----------------------------------------------------------
-> > +//  For patch mode
-> > +//----------------------------------------------------------
-> > +
-> > +@depends on runtime_bad_err_handle && patch@
-> > +identifier pm_runtime_api;
-> > +expression ret;
-> > +@@
-> > +(
-> > +ret = pm_runtime_api(...);
-> > +...
-> > +- IS_ERR_VALUE(ret)
-> > ++ ret < 0
-> > +...
-> > +)
-> > +
-> > +//----------------------------------------------------------
-> > +//  For org and report mode
-> > +//----------------------------------------------------------
-> > +
-> > +@r depends on runtime_bad_err_handle exists@
-> > +position p1, p2;
-> > +identifier pm_runtime_api;
-> > +expression ret;
-> > +@@
-> > +(
-> > +ret = pm_runtime_api@p1(...);
-> > +...
-> > +IS_ERR_VALUE@p2(ret)
-> > +...
-> > +)
-> > +
-> > +@script:python depends on org@
-> > +p1 << r.p1;
-> > +p2 << r.p2;
-> > +pm_runtime_api << r.pm_runtime_api;
-> > +@@
-> > +
-> > +cocci.print_main(pm_runtime_api,p1)
-> > +cocci.print_secs("IS_ERR_VALUE",p2)
-> > +
-> > +@script:python depends on report@
-> > +p1 << r.p1;
-> > +p2 << r.p2;
-> > +pm_runtime_api << r.pm_runtime_api;
-> > +@@
-> > +
-> > +msg = "%s returns < 0 as error. Unecessary IS_ERR_VALUE at line %s" % (pm_runtime_api, p2[0].line)
-> > +coccilib.report.print_report(p1[0],msg)
-> >
->
->
