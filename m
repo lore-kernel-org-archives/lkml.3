@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751223AbaACFUc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 00:20:32 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:42002 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750753AbaACFUa (ORCPT
+	id S1750889AbaACF3v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 00:29:51 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:44711 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaACF3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 00:20:30 -0500
+	Fri, 3 Jan 2014 00:29:49 -0500
+From: Tushar Behera <tushar.behera@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org
+Cc: rpurdie@rpsys.net, cooloney@gmail.com
+Subject: [PATCH V2] leds: s3c24xx: Fix build failure
+Date: Fri,  3 Jan 2014 10:55:57 +0530
+Message-Id: <1388726757-7387-1-git-send-email-tushar.behera@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1388394595-1347-1-git-send-email-tushar.behera@linaro.org>
+References: <1388394595-1347-1-git-send-email-tushar.behera@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <52C62A44.4070304@huawei.com>
-References: <52C62A44.4070304@huawei.com>
-Date: Thu, 2 Jan 2014 21:20:30 -0800
-Message-ID: <CAM_iQpW0+Ftvk=QBE+0yMNW00VkBee1+yAEmbPkT+zjij9RX-Q@mail.gmail.com>
-Subject: Re: [RFC PATCH net-next 0/4] net_cls for sys container
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: Libo Chen <clbchenlibo.chen@huawei.com>
-Cc: David Miller <davem@davemloft.net>, Jamal Hadi Salim <jhs@mojatatu.com>,
-        Li Zefan <lizefan@huawei.com>, Eric Dumazet <edumazet@google.com>,
-        pshelar@nicira.com, jasowang@redhat.com,
-        Simon Horman <horms@verge.net.au>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Linux Kernel Network Developers <netdev@vger.kernel.org>,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        Patrick McHardy <kaber@trash.net>, xemul@openvz.org,
-        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 2, 2014 at 7:11 PM, Libo Chen <clbchenlibo.chen@huawei.com> wrote:
-> Hi guys,
->
-> Now, lxc created with veth can not be under control by
-> cls_cgroup.
->
-> the former discussion:
-> http://lkml.indiana.edu/hypermail/linux/kernel/1312.1/00214.html
->
-> In short, because cls_cgroup relys classid attached to sock
-> filter skb, but sock will be cleared inside dev_forward_skb()
-> in veth_xmit().
+Commit c67d0f29262b ("ARM: s3c24xx: get rid of custom <mach/gpio.h>")
+removed the usage of mach/gpio.h file, but we need to include
+plat/gpio-cfg.h to avoid following build error.
 
+Fixes following build error.
+drivers/leds/leds-s3c24xx.c: In function ‘s3c24xx_led_probe’:
+drivers/leds/leds-s3c24xx.c:100:2: error: implicit declaration of
+function ‘s3c_gpio_setpull’ [-Werror=implicit-function-declaration]
 
-So what are you trying to achieve here?
+Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+---
+Changes for V2:
+* Updated commit message
+
+Bryan,
+
+I should have been more explicit regarding this patch. This patch fixes
+build error on linux-next after the above patch was merged.
+
+Tested at next-20131224.
+
+ drivers/leds/leds-s3c24xx.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/leds/leds-s3c24xx.c b/drivers/leds/leds-s3c24xx.c
+index 76483fb..87cf215 100644
+--- a/drivers/leds/leds-s3c24xx.c
++++ b/drivers/leds/leds-s3c24xx.c
+@@ -21,6 +21,7 @@
+ 
+ #include <mach/hardware.h>
+ #include <mach/regs-gpio.h>
++#include <plat/gpio-cfg.h>
+ #include <linux/platform_data/leds-s3c24xx.h>
+ 
+ /* our context */
+-- 
+1.7.9.5
+
