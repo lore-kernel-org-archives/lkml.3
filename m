@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103AbaACQXx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 11:23:53 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:56908 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751358AbaACQXv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 11:23:51 -0500
+	id S1751313AbaACQaw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 11:30:52 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:47416 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750997AbaACQav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 11:30:51 -0500
 X-IronPort-AV: E=Sophos;i="4.95,598,1384300800"; 
-   d="scan'208";a="87392298"
-Date: Fri, 3 Jan 2014 16:23:02 +0000
+   d="scan'208";a="89583612"
+Date: Fri, 3 Jan 2014 16:30:02 +0000
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 X-X-Sender: sstabellini@kaball.uk.xensource.com
 To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
+CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
         <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
-        <mukesh.rathor@oracle.com>
-Subject: Re: [PATCH v12 05/18] xen/mmu/p2m: Refactor the xen_pagetable_init
- code.
-In-Reply-To: <20140103160200.GE27019@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1401031622310.8667@kaball.uk.xensource.com>
-References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com> <1388550945-25499-6-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.02.1401031544180.8667@kaball.uk.xensource.com> <20140103160200.GE27019@phenom.dumpdata.com>
+        <stefano.stabellini@eu.citrix.com>, <mukesh.rathor@oracle.com>
+Subject: Re: [PATCH v12 10/18] xen/pvh: Update E820 to work with PVH (v2)
+In-Reply-To: <1388550945-25499-11-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1401031629110.8667@kaball.uk.xensource.com>
+References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com> <1388550945-25499-11-git-send-email-konrad.wilk@oracle.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
@@ -30,148 +27,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Jan 2014, Konrad Rzeszutek Wilk wrote:
-> On Fri, Jan 03, 2014 at 03:47:15PM +0000, Stefano Stabellini wrote:
-> > On Tue, 31 Dec 2013, Konrad Rzeszutek Wilk wrote:
-> > > The revector and copying of the P2M only happens when
-> > > !auto-xlat and on 64-bit builds. It is not obvious from
-> > > the code, so lets have seperate 32 and 64-bit functions.
-> > > 
-> > > We also invert the check for auto-xlat to make the code
-> > > flow simpler.
-> > > 
-> > > Suggested-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > > ---
-> > >  arch/x86/xen/mmu.c | 73 ++++++++++++++++++++++++++++++------------------------
-> > >  1 file changed, 40 insertions(+), 33 deletions(-)
-> > > 
-> > > diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> > > index ce563be..d792a69 100644
-> > > --- a/arch/x86/xen/mmu.c
-> > > +++ b/arch/x86/xen/mmu.c
-> > > @@ -1198,44 +1198,40 @@ static void __init xen_cleanhighmap(unsigned long vaddr,
-> > >  	 * instead of somewhere later and be confusing. */
-> > >  	xen_mc_flush();
-> > >  }
-> > > -#endif
-> > > -static void __init xen_pagetable_init(void)
-> > > +static void __init xen_pagetable_p2m_copy(void)
-> > >  {
-> > > -#ifdef CONFIG_X86_64
-> > >  	unsigned long size;
-> > >  	unsigned long addr;
-> > > -#endif
-> > > -	paging_init();
-> > > -	xen_setup_shared_info();
-> > > -#ifdef CONFIG_X86_64
-> > > -	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
-> > > -		unsigned long new_mfn_list;
-> > > +	unsigned long new_mfn_list;
-> > > +
-> > > +	if (xen_feature(XENFEAT_auto_translated_physmap))
-> > > +		return;
-> > > +
-> > > +	size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
-> > > +
-> > > +	/* On 32-bit, we get zero so this never gets executed. */
-> > 
-> > Given that this code is already ifdef'ed CONFIG_X86_64, this comment
-> > should be removed.
+On Tue, 31 Dec 2013, Konrad Rzeszutek Wilk wrote:
+> From: Mukesh Rathor <mukesh.rathor@oracle.com>
 > 
-> Sure.
-> > 
-> > 
-> > > +	new_mfn_list = xen_revector_p2m_tree();
-> > 
-> > I take from the comment that new_mfn_list must not be zero. Maybe we
-> > want a BUG_ON or a WARN_ON?
+> In xen_add_extra_mem() we can skip updating P2M as it's managed
+> by Xen. PVH maps the entire IO space, but only RAM pages need
+> to be repopulated.
 > 
-> It can be zero, in which case we don't want to revector.
-> > 
-> > 
-> > > +	if (new_mfn_list && new_mfn_list != xen_start_info->mfn_list) {
-> > > +		/* using __ka address and sticking INVALID_P2M_ENTRY! */
-> > > +		memset((void *)xen_start_info->mfn_list, 0xff, size);
-> > > +
-> > > +		/* We should be in __ka space. */
-> > > +		BUG_ON(xen_start_info->mfn_list < __START_KERNEL_map);
-> > > +		addr = xen_start_info->mfn_list;
-> > > +		/* We roundup to the PMD, which means that if anybody at this stage is
-> > > +		 * using the __ka address of xen_start_info or xen_start_info->shared_info
-> > > +		 * they are in going to crash. Fortunatly we have already revectored
-> > > +		 * in xen_setup_kernel_pagetable and in xen_setup_shared_info. */
-> > > +		size = roundup(size, PMD_SIZE);
-> > > +		xen_cleanhighmap(addr, addr + size);
-> > >  
-> > >  		size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
-> > > +		memblock_free(__pa(xen_start_info->mfn_list), size);
-> > > +		/* And revector! Bye bye old array */
-> > > +		xen_start_info->mfn_list = new_mfn_list;
-> > > +	} else
-> > > +		return;
-> > 
-> > This was a normal condition when the function was executed on both
-> > x86_64 and x86_32. Now that it is only executed on x86_64, is it still
-> > the case?
-> 
-> It could be. Since this particular patch just moves code I would hesitate
-> to make changes here. Perhaps a seperate patch after the conditions
-> under which the xen_revector_p2m_tree() fail can be done?
+> Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-No, I think that's OK as it is.
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
 
-> > 
-> > 
-> > > -		/* On 32-bit, we get zero so this never gets executed. */
-> > > -		new_mfn_list = xen_revector_p2m_tree();
-> > > -		if (new_mfn_list && new_mfn_list != xen_start_info->mfn_list) {
-> > > -			/* using __ka address and sticking INVALID_P2M_ENTRY! */
-> > > -			memset((void *)xen_start_info->mfn_list, 0xff, size);
-> > > -
-> > > -			/* We should be in __ka space. */
-> > > -			BUG_ON(xen_start_info->mfn_list < __START_KERNEL_map);
-> > > -			addr = xen_start_info->mfn_list;
-> > > -			/* We roundup to the PMD, which means that if anybody at this stage is
-> > > -			 * using the __ka address of xen_start_info or xen_start_info->shared_info
-> > > -			 * they are in going to crash. Fortunatly we have already revectored
-> > > -			 * in xen_setup_kernel_pagetable and in xen_setup_shared_info. */
-> > > -			size = roundup(size, PMD_SIZE);
-> > > -			xen_cleanhighmap(addr, addr + size);
-> > > -
-> > > -			size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
-> > > -			memblock_free(__pa(xen_start_info->mfn_list), size);
-> > > -			/* And revector! Bye bye old array */
-> > > -			xen_start_info->mfn_list = new_mfn_list;
-> > > -		} else
-> > > -			goto skip;
-> > > -	}
-> > >  	/* At this stage, cleanup_highmap has already cleaned __ka space
-> > >  	 * from _brk_limit way up to the max_pfn_mapped (which is the end of
-> > >  	 * the ramdisk). We continue on, erasing PMD entries that point to page
-> > > @@ -1255,8 +1251,19 @@ static void __init xen_pagetable_init(void)
-> > >  	 * anything at this stage. */
-> > >  	xen_cleanhighmap(MODULES_VADDR, roundup(MODULES_VADDR, PUD_SIZE) - 1);
-> > >  #endif
-> > > -skip:
-> > > +}
-> > > +#else
-> > > +static void __init xen_pagetable_p2m_copy(void)
-> > > +{
-> > > +	/* Nada! */
-> > > +}
-> > >  #endif
-> > > +
-> > > +static void __init xen_pagetable_init(void)
-> > > +{
-> > > +	paging_init();
-> > > +	xen_setup_shared_info();
-> > > +	xen_pagetable_p2m_copy();
-> > >  	xen_post_allocator_init();
-> > >  }
-> > >  static void xen_write_cr2(unsigned long cr2)
-> > > -- 
-> > > 1.8.3.1
-> > > 
+>  arch/x86/xen/setup.c | 23 ++++++++++++++++++++---
+>  1 file changed, 20 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+> index 2137c51..dd5f905 100644
+> --- a/arch/x86/xen/setup.c
+> +++ b/arch/x86/xen/setup.c
+> @@ -27,6 +27,7 @@
+>  #include <xen/interface/memory.h>
+>  #include <xen/interface/physdev.h>
+>  #include <xen/features.h>
+> +#include "mmu.h"
+>  #include "xen-ops.h"
+>  #include "vdso.h"
+>  
+> @@ -81,6 +82,9 @@ static void __init xen_add_extra_mem(u64 start, u64 size)
+>  
+>  	memblock_reserve(start, size);
+>  
+> +	if (xen_feature(XENFEAT_auto_translated_physmap))
+> +		return;
+> +
+>  	xen_max_p2m_pfn = PFN_DOWN(start + size);
+>  	for (pfn = PFN_DOWN(start); pfn < xen_max_p2m_pfn; pfn++) {
+>  		unsigned long mfn = pfn_to_mfn(pfn);
+> @@ -103,6 +107,7 @@ static unsigned long __init xen_do_chunk(unsigned long start,
+>  		.domid        = DOMID_SELF
+>  	};
+>  	unsigned long len = 0;
+> +	int xlated_phys = xen_feature(XENFEAT_auto_translated_physmap);
+>  	unsigned long pfn;
+>  	int ret;
+>  
+> @@ -116,7 +121,7 @@ static unsigned long __init xen_do_chunk(unsigned long start,
+>  				continue;
+>  			frame = mfn;
+>  		} else {
+> -			if (mfn != INVALID_P2M_ENTRY)
+> +			if (!xlated_phys && mfn != INVALID_P2M_ENTRY)
+>  				continue;
+>  			frame = pfn;
+>  		}
+> @@ -154,6 +159,13 @@ static unsigned long __init xen_do_chunk(unsigned long start,
+>  static unsigned long __init xen_release_chunk(unsigned long start,
+>  					      unsigned long end)
+>  {
+> +	/*
+> +	 * Xen already ballooned out the E820 non RAM regions for us
+> +	 * and set them up properly in EPT.
+> +	 */
+> +	if (xen_feature(XENFEAT_auto_translated_physmap))
+> +		return end - start;
+> +
+>  	return xen_do_chunk(start, end, true);
+>  }
+>  
+> @@ -222,7 +234,13 @@ static void __init xen_set_identity_and_release_chunk(
+>  	 * (except for the ISA region which must be 1:1 mapped) to
+>  	 * release the refcounts (in Xen) on the original frames.
+>  	 */
+> -	for (pfn = start_pfn; pfn <= max_pfn_mapped && pfn < end_pfn; pfn++) {
+> +
+> +	/*
+> +	 * PVH E820 matches the hypervisor's P2M which means we need to
+> +	 * account for the proper values of *release and *identity.
+> +	 */
+> +	for (pfn = start_pfn; !xen_feature(XENFEAT_auto_translated_physmap) &&
+> +	     pfn <= max_pfn_mapped && pfn < end_pfn; pfn++) {
+>  		pte_t pte = __pte_ma(0);
+>  
+>  		if (pfn < PFN_UP(ISA_END_ADDRESS))
 > 
