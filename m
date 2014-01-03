@@ -1,150 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084AbaACAHu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 19:07:50 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:23704 "EHLO
+	id S1754207AbaACAIE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 19:08:04 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:23744 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753849AbaACAHp (ORCPT
+	with ESMTP id S1752146AbaACAHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 19:07:45 -0500
+	Thu, 2 Jan 2014 19:07:51 -0500
 From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        x86 <x86@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Len Brown <lenb@kernel.org>
-Subject: [PATCH v2 05/10] ACPI: Add acpi_run_dsm()
-Date: Thu,  2 Jan 2014 16:08:12 -0800
-Message-Id: <1388707697-16800-6-git-send-email-yinghai@kernel.org>
+        Joerg Roedel <joro@8bytes.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Subject: [PATCH v5 23/33] x86, ioapic: Find usable ioapic id for 64bit.
+Date: Thu,  2 Jan 2014 16:05:55 -0800
+Message-Id: <1388707565-16535-24-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1388707697-16800-1-git-send-email-yinghai@kernel.org>
-References: <1388707697-16800-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
+References: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will need to use that get dmar entries for hotplug
+Checking the id in register, if that is duplicated, will pick one and
+update id register.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Len Brown <lenb@kernel.org>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 ---
- drivers/acpi/bus.c   | 77 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/acpi.h | 10 +++++++
- 2 files changed, 87 insertions(+)
+ arch/x86/kernel/apic/io_apic.c | 38 +++++++++++++++++++++++++++++++++-----
+ 1 file changed, 33 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
-index bba9b72..14d18d3 100644
---- a/drivers/acpi/bus.c
-+++ b/drivers/acpi/bus.c
-@@ -283,6 +283,83 @@ out_kfree:
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index af6cbcd..248a21d 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3660,19 +3660,22 @@ static int io_apic_get_unique_id(int ioapic, int apic_id)
+ 	return apic_id;
  }
- EXPORT_SYMBOL(acpi_run_osc);
  
-+static void acpi_print_dsm_error(acpi_handle handle,
-+	struct acpi_dsm_context *context, char *error)
-+{
-+	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER};
-+
-+	if (ACPI_FAILURE(acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer)))
-+		printk(KERN_DEBUG "%s for idx %x\n", error, context->func_idx);
-+	else {
-+		printk(KERN_DEBUG "%s:%s for idx %x\n",
-+			(char *)buffer.pointer, error, context->func_idx);
-+		kfree(buffer.pointer);
-+	}
-+}
-+
-+acpi_status acpi_run_dsm(acpi_handle handle, struct acpi_dsm_context *context)
-+{
-+	acpi_status status;
-+	struct acpi_object_list input;
-+	union acpi_object in_params[4];
-+	union acpi_object *out_obj;
-+	u8 uuid[16];
-+	struct acpi_buffer output = {ACPI_ALLOCATE_BUFFER, NULL};
-+
-+	if (!context)
-+		return AE_ERROR;
-+	if (ACPI_FAILURE(acpi_str_to_uuid(context->uuid_str, uuid)))
-+		return AE_ERROR;
-+	context->ret.length = ACPI_ALLOCATE_BUFFER;
-+	context->ret.pointer = NULL;
-+
-+	/* Setting up input parameters */
-+	input.count = 4;
-+	input.pointer = in_params;
-+	in_params[0].type		= ACPI_TYPE_BUFFER;
-+	in_params[0].buffer.length	= 16;
-+	in_params[0].buffer.pointer	= uuid;
-+	in_params[1].type		= ACPI_TYPE_INTEGER;
-+	in_params[1].integer.value	= context->rev;
-+	in_params[2].type		= ACPI_TYPE_INTEGER;
-+	in_params[2].integer.value	= context->func_idx;
-+	in_params[3].type		= ACPI_TYPE_PACKAGE;
-+	in_params[3].package.count	= context->func_argc;
-+	in_params[3].package.elements	= context->func_argv;
-+
-+	status = acpi_evaluate_object(handle, "_DSM", &input, &output);
-+	if (ACPI_FAILURE(status))
-+		return status;
-+
-+	if (!output.length)
-+		return AE_NULL_OBJECT;
-+
-+	out_obj = output.pointer;
-+	if (out_obj->type != ACPI_TYPE_BUFFER) {
-+		acpi_print_dsm_error(handle, context,
-+			"_DSM evaluation returned wrong type");
-+		status = AE_TYPE;
-+		goto out_kfree;
-+	}
-+
-+	context->ret.length = out_obj->buffer.length;
-+	context->ret.pointer = kmalloc(context->ret.length, GFP_KERNEL);
-+	if (!context->ret.pointer) {
-+		status =  AE_NO_MEMORY;
-+		goto out_kfree;
-+	}
-+	memcpy(context->ret.pointer, out_obj->buffer.pointer,
-+		context->ret.length);
-+	status =  AE_OK;
-+
-+out_kfree:
-+	kfree(output.pointer);
-+	if (status != AE_OK)
-+		context->ret.pointer = NULL;
-+	return status;
-+}
-+EXPORT_SYMBOL(acpi_run_dsm);
-+
- bool osc_sb_apei_support_acked;
- static u8 sb_uuid_str[] = "0811B06E-4A27-44F9-8D60-3CBBC22E7B48";
- static void acpi_bus_osc_support(void)
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 762980a..02daa9c 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -323,6 +323,16 @@ void __init acpi_nvs_nosave(void);
- void __init acpi_nvs_nosave_s3(void);
- #endif /* CONFIG_PM_SLEEP */
+-static u8 io_apic_unique_id(u8 id)
++static u8 io_apic_unique_id(int idx, u8 id)
+ {
+ 	if ((boot_cpu_data.x86_vendor == X86_VENDOR_INTEL) &&
+ 	    !APIC_XAPIC(apic_version[boot_cpu_physical_apicid]))
+-		return io_apic_get_unique_id(nr_ioapics, id);
++		return io_apic_get_unique_id(idx, id);
+ 	else
+ 		return id;
+ }
+ #else
+-static u8 io_apic_unique_id(u8 id)
++static u8 io_apic_unique_id(int idx, u8 id)
+ {
+ 	int i;
++	u8 new_id;
++	unsigned long flags;
+ 	DECLARE_BITMAP(used, 256);
++	union IO_APIC_reg_00 reg_00;
  
-+struct acpi_dsm_context {
-+	char *uuid_str; /* uuid string */
-+	int rev;
-+	int func_idx;	/* function index */
-+	int func_argc;
-+	union acpi_object *func_argv;
-+	struct acpi_buffer ret; /* free by caller if success */
-+};
-+acpi_status acpi_run_dsm(acpi_handle handle, struct acpi_dsm_context *context);
+ 	bitmap_zero(used, 256);
+ 	for_each_ioapic(i)
+@@ -3680,7 +3683,32 @@ static u8 io_apic_unique_id(u8 id)
+ 
+ 	if (!test_bit(id, used))
+ 		return id;
+-	return find_first_zero_bit(used, 256);
 +
- struct acpi_osc_context {
- 	char *uuid_str;			/* UUID string */
- 	int rev;
++	/* check register at first */
++	raw_spin_lock_irqsave(&ioapic_lock, flags);
++	reg_00.raw = io_apic_read(idx, 0);
++	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
++	new_id = reg_00.bits.ID;
++	if (!test_bit(new_id, used)) {
++		apic_printk(APIC_VERBOSE, KERN_INFO
++			"IOAPIC[%d]: Using reg apic_id %d instead of %d\n",
++			 idx, new_id, id);
++		return new_id;
++	}
++
++	new_id = find_first_zero_bit(used, 256);
++	reg_00.bits.ID = new_id;
++	raw_spin_lock_irqsave(&ioapic_lock, flags);
++	io_apic_write(idx, 0, reg_00.raw);
++	reg_00.raw = io_apic_read(idx, 0);
++	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
++
++	/* Sanity check */
++	if (reg_00.bits.ID != new_id)
++		pr_warn("IOAPIC[%d]: Unable to change apic_id to %d!\n",
++			idx, new_id);
++
++	return new_id;
+ }
+ #endif
+ 
+@@ -3955,7 +3983,7 @@ int __mp_register_ioapic(int id, u32 address, u32 gsi_base, bool hotadd)
+ 	if (bad_ioapic_register(idx))
+ 		goto clear_out;
+ 
+-	ioapics[idx].mp_config.apicid = io_apic_unique_id(id);
++	ioapics[idx].mp_config.apicid = io_apic_unique_id(idx, id);
+ 	ioapics[idx].mp_config.apicver = io_apic_get_version(idx);
+ 
+ 	/*
 -- 
 1.8.4
 
