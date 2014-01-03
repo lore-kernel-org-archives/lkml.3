@@ -1,88 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947AbaACTXw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 14:23:52 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:64100 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139AbaACTXu (ORCPT
+	id S1753242AbaACTbs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 14:31:48 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:38123 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139AbaACTbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 14:23:50 -0500
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Linux PM <linux-pm@vger.kernel.org>
-Subject: [PATCH v2] Documentation/cpu-freq: add intel-pstate.txt
-Date: Sat,  4 Jan 2014 00:53:46 +0530
-Message-Id: <1388777026-12227-1-git-send-email-artagnon@gmail.com>
-X-Mailer: git-send-email 1.8.5.2.227.g53f3478
+	Fri, 3 Jan 2014 14:31:47 -0500
+MIME-Version: 1.0
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <52C70698.2030004@codeaurora.org>
+References: <1388438133-431-1-git-send-email-sboyd@codeaurora.org>
+	<201401021913.25920.arnd@arndb.de>
+	<52C70698.2030004@codeaurora.org>
+Date: Fri, 3 Jan 2014 11:31:46 -0800
+Message-ID: <CAOesGMiFixweRT1R-y2Cxvx+p6tzf3Qr-TaAwqDBCgB=Ge8FfA@mail.gmail.com>
+Subject: Re: [PATCH v2 0/7] Allow MSM DT platforms to be built multi-platform
+From: Olof Johansson <olof@lixom.net>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arm@kernel.org" <arm@kernel.org>, linux-arm-msm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Clark <robdclark@gmail.com>, Dave Airlie <airlied@redhat.com>,
+        David Brown <davidb@codeaurora.org>, Chris Ball <cjb@laptop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Intel P-state driver is currently undocumented. Add some
-documentation based on the cover-letter sent with the original series.
+On Fri, Jan 3, 2014 at 10:51 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> On 01/02/14 10:13, Arnd Bergmann wrote:
+>> On Monday 30 December 2013, Stephen Boyd wrote:
+>>> These patches allow the DT based MSM platforms to be built as part of the
+>>> multi-platform kernel. I need acks from Chris Ball on the mmc patch and
+>>> Rob/Dave on the drm patch. I dropped Arnd's ack on patch 6 because I've
+>>> rebased that patch on top of the patchset David sent out (which this is in
+>>> reply to). The rebase was fairly minor and the new patch for drm/msm is
+>>> trivial. Please consider for v3.14.
+>> Just for the record, I'm definitely happy with the way this is turning out,
+>> don't see my question on the serial driver as a NAK. I assume we will apply
+>> the patches for 3.14, but I first want to have a better understanding on
+>> where we are with the stuff that is already queued up for 3.14.
+>>
+>
+> It would be great if we could get these patches in for 3.14. Now that
+> Olof has applied the collection of patches that David sent, these
+> patches should apply cleanly on top of arm-soc.git qcom/soc. Can you
+> apply them directly to the arm-soc tree?
 
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Linux PM <linux-pm@vger.kernel.org>
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
----
- Thanks to Rafael and Randy for corrections.
- I will send a follow-up for Documentation/ABI/testing/ soon.
+Yeah, we'll get to it in a bit.
 
- Documentation/cpu-freq/intel-pstate.txt | 40 +++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
- create mode 100644 Documentation/cpu-freq/intel-pstate.txt
 
-diff --git a/Documentation/cpu-freq/intel-pstate.txt b/Documentation/cpu-freq/intel-pstate.txt
-new file mode 100644
-index 0000000..69bc26a
---- /dev/null
-+++ b/Documentation/cpu-freq/intel-pstate.txt
-@@ -0,0 +1,40 @@
-+Intel P-state driver
-+--------------------
-+
-+This driver implements a scaling driver with an internal governor for
-+Intel Core processors.  The driver follows the same model as the
-+Transmeta scaling driver (longrun.c) and implements the setpolicy()
-+instead of target().  Scaling drivers that implement setpolicy() are
-+assmumed to implement internal governors by the cpufreq core. All the
-+logic for selecting the current P state is contained within the
-+driver; no external governor is used by the cpufreq core.
-+
-+Intel SandyBridge+ processors are supported.
-+
-+New sysfs files for controlling P state selection have been added to
-+/sys/devices/system/cpu/intel_pstate/
-+
-+      max_perf_pct: limits the maximum P state that will be requested by
-+      the driver stated as a percentage of the available performance.
-+
-+      min_perf_pct: limits the minimum P state that will be  requested by
-+      the driver stated as a percentage of the available performance.
-+
-+      no_turbo: limits the driver to selecting P states below the turbo
-+      frequency range.
-+
-+For contemporary Intel processors, the frequency is controlled by the
-+processor itself and the P-states exposed to software are related to
-+performance levels.  The idea that frequency can be set to a single
-+frequency is fiction for Intel Core processors. Even if the scaling
-+driver selects a single P state the actual frequency the processor
-+will run at is selected by the processor itself.
-+
-+New debugfs files have also been added to /sys/kernel/debug/pstate_snb/
-+
-+      deadband
-+      d_gain_pct
-+      i_gain_pct
-+      p_gain_pct
-+      sample_rate_ms
-+      setpoint
--- 
-1.8.5.2.227.g53f3478
-
+-Olof
