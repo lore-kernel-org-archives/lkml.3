@@ -1,42 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737AbaACN3o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 08:29:44 -0500
-Received: from emea01-am1-ndr.ptr.protection.outlook.com ([157.56.116.98]:28078
-	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752076AbaACN3F convert rfc822-to-8bit (ORCPT
+	id S1752792AbaACN3z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 08:29:55 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:46572
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752146AbaACN3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 08:29:05 -0500
-Content-Type: text/plain; charset="utf-8"
+	Fri, 3 Jan 2014 08:29:54 -0500
+X-IronPort-AV: E=Sophos;i="4.95,598,1384297200"; 
+   d="scan'208";a="43372044"
+Date: Fri, 3 Jan 2014 14:29:35 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Michal Marek <mmarek@suse.cz>
+cc: Nishanth Menon <nm@ti.com>, Julia.Lawall@lip6.fr, Gilles.Muller@lip6.fr,
+        nicolas.palix@imag.fr, linux-kernel@vger.kernel.org,
+        cocci@systeme.lip6.fr, linux-pm@vger.kernel.org,
+        Sekhar Nori <nsekhar@ti.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [PATCH resend] scripts: Coccinelle script for pm_runtime_* return
+ checks with IS_ERR_VALUE
+In-Reply-To: <52C6B3C8.7040509@suse.cz>
+Message-ID: <alpine.DEB.2.10.1401031429140.2095@hadrien>
+References: <1385991581-16843-1-git-send-email-nm@ti.com> <52C6B3C8.7040509@suse.cz>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: DONATION FOR YOU.
-To: Recipients <charles888@office042.onmicrosoft.com>
-From: Charles Francis Feeney <charles888@office042.onmicrosoft.com>
-Date: Fri, 3 Jan 2014 18:58:36 +0530
-Reply-To: <charlesfrancisfeeney889@gmail.com>
-Message-ID: <e9600897-7f09-4230-a8bb-d4c927343519@SINPR04MB348.apcprd04.prod.outlook.com>
-X-Originating-IP: [116.202.71.56]
-X-ClientProxiedBy: DM2PR06CA009.namprd06.prod.outlook.com (10.141.96.39) To
- SINPR04MB348.apcprd04.prod.outlook.com (10.141.116.147)
-X-Forefront-PRVS: 00808B16F3
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(10019001)(199002)(189002)(555904002)(59766001)(56776001)(77982001)(89136003)(66066001)(90146001)(74502001)(47446002)(81342001)(64872005)(83322001)(74662001)(77096001)(74316001)(43066001)(76176001)(76796001)(76786001)(19580405001)(19580395003)(76576001)(23676002)(74366001)(15202345003)(54316002)(65816001)(31686002)(42186004)(81542001)(4396001)(80022001)(85306002)(87266001)(69226001)(47976001)(50986001)(15975445006)(80976001)(81816001)(54356001)(74706001)(49866001)(50466002)(79102001)(33646001)(46102001)(63696002)(85852003)(56816005)(51856001)(53256004)(47776003)(1496004)(87976001)(81686001)(47736001)(74876001)(76482001)(83072002)(62346011);DIR:OUT;SFP:1501;SCL:5;SRVR:SINPR04MB348;H:[116.202.71.56];CLIP:116.202.71.56;FPR:;RD:InfoNoRecords;A:0;MX:1;LANG:en;
-X-OriginatorOrg: office042.onmicrosoft.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-My name is Charles Francis Feeney, a philanthropist and the founder of The Atlantic Philanthropies, one of the largest private foundations in the world. I believe strongly in ‘giving while living.’ I had one idea that never changed in my mind — that you should use your wealth to help people and I have decided to secretly give USD 1.9Million to randomly selected individuals worldwide. On receipt of this email, you should count yourself as the lucky individual. Your email address was chosen online while searching at random. Kindly get back to me at your earliest convenience, so I know your email address is valid.
+On Fri, 3 Jan 2014, Michal Marek wrote:
 
-(charlesfrancisfeeney889@gmail.com ) Email me.
+> On 2013-12-02 14:39, Nishanth Menon wrote:
+> > As indicated by Sekhar in [1], there seems to be a tendency to use
+> > IS_ERR_VALUE to check the error result for pm_runtime_* functions which
+> > make no sense considering commit c48cd65 (ARM: OMAP: use consistent
+> > error checking) - the error values can either be < 0 for error OR
+> > 0, 1 in cases where we have success.
+> >
+> > So, setup a coccinelle script to help identify the same.
+>
+> Julia, Gilles, do you have any objections to this semantic patch?
 
-Visit the web page to know more about me: http://en.wikipedia.org/wiki/Chuck_Feeney 
+No objections.
 
-Regards,
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 
-Charles F. Feeney
-charlesfrancisfeeney889@gmail.com
+>
+> Thanks,
+> Michal
+> >
+> > [1] http://marc.info/?t=138472678100003&r=1&w=2
+> >
+> > Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+> > Reported-by: Sekhar Nori <nsekhar@ti.com>
+> > Signed-off-by: Nishanth Menon <nm@ti.com>
+> > ---
+> > Original post: http://marc.info/?t=138559437300001&r=1&w=2
+> >
+> >  scripts/coccinelle/api/pm_runtime.cocci |  109 +++++++++++++++++++++++++++++++
+> >  1 file changed, 109 insertions(+)
+> >  create mode 100644 scripts/coccinelle/api/pm_runtime.cocci
+> >
+> > diff --git a/scripts/coccinelle/api/pm_runtime.cocci b/scripts/coccinelle/api/pm_runtime.cocci
+> > new file mode 100644
+> > index 0000000..f01789e
+> > --- /dev/null
+> > +++ b/scripts/coccinelle/api/pm_runtime.cocci
+> > @@ -0,0 +1,109 @@
+> > +/// Make sure pm_runtime_* calls does not use unnecessary IS_ERR_VALUE
+> > +//
+> > +// Keywords: pm_runtime
+> > +// Confidence: Medium
+> > +// Copyright (C) 2013 Texas Instruments Incorporated - GPLv2.
+> > +// URL: http://coccinelle.lip6.fr/
+> > +// Options: --include-headers
+> > +
+> > +virtual patch
+> > +virtual context
+> > +virtual org
+> > +virtual report
+> > +
+> > +//----------------------------------------------------------
+> > +//  Detection
+> > +//----------------------------------------------------------
+> > +
+> > +@runtime_bad_err_handle exists@
+> > +expression ret;
+> > +@@
+> > +(
+> > +ret = \(pm_runtime_idle\|
+> > +	pm_runtime_suspend\|
+> > +	pm_runtime_autosuspend\|
+> > +	pm_runtime_resume\|
+> > +	pm_request_idle\|
+> > +	pm_request_resume\|
+> > +	pm_request_autosuspend\|
+> > +	pm_runtime_get\|
+> > +	pm_runtime_get_sync\|
+> > +	pm_runtime_put\|
+> > +	pm_runtime_put_autosuspend\|
+> > +	pm_runtime_put_sync\|
+> > +	pm_runtime_put_sync_suspend\|
+> > +	pm_runtime_put_sync_autosuspend\|
+> > +	pm_runtime_set_active\|
+> > +	pm_schedule_suspend\|
+> > +	pm_runtime_barrier\|
+> > +	pm_generic_runtime_suspend\|
+> > +	pm_generic_runtime_resume\)(...);
+> > +...
+> > +IS_ERR_VALUE(ret)
+> > +...
+> > +)
+> > +
+> > +//----------------------------------------------------------
+> > +//  For context mode
+> > +//----------------------------------------------------------
+> > +
+> > +@depends on runtime_bad_err_handle && context@
+> > +identifier pm_runtime_api;
+> > +expression ret;
+> > +@@
+> > +(
+> > +ret = pm_runtime_api(...);
+> > +...
+> > +* IS_ERR_VALUE(ret)
+> > +...
+> > +)
+> > +
+> > +//----------------------------------------------------------
+> > +//  For patch mode
+> > +//----------------------------------------------------------
+> > +
+> > +@depends on runtime_bad_err_handle && patch@
+> > +identifier pm_runtime_api;
+> > +expression ret;
+> > +@@
+> > +(
+> > +ret = pm_runtime_api(...);
+> > +...
+> > +- IS_ERR_VALUE(ret)
+> > ++ ret < 0
+> > +...
+> > +)
+> > +
+> > +//----------------------------------------------------------
+> > +//  For org and report mode
+> > +//----------------------------------------------------------
+> > +
+> > +@r depends on runtime_bad_err_handle exists@
+> > +position p1, p2;
+> > +identifier pm_runtime_api;
+> > +expression ret;
+> > +@@
+> > +(
+> > +ret = pm_runtime_api@p1(...);
+> > +...
+> > +IS_ERR_VALUE@p2(ret)
+> > +...
+> > +)
+> > +
+> > +@script:python depends on org@
+> > +p1 << r.p1;
+> > +p2 << r.p2;
+> > +pm_runtime_api << r.pm_runtime_api;
+> > +@@
+> > +
+> > +cocci.print_main(pm_runtime_api,p1)
+> > +cocci.print_secs("IS_ERR_VALUE",p2)
+> > +
+> > +@script:python depends on report@
+> > +p1 << r.p1;
+> > +p2 << r.p2;
+> > +pm_runtime_api << r.pm_runtime_api;
+> > +@@
+> > +
+> > +msg = "%s returns < 0 as error. Unecessary IS_ERR_VALUE at line %s" % (pm_runtime_api, p2[0].line)
+> > +coccilib.report.print_report(p1[0],msg)
+> >
+>
+>
