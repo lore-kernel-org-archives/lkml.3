@@ -1,110 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538AbaACKKU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 05:10:20 -0500
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:44563 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841AbaACKKR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 05:10:17 -0500
+	id S1751304AbaACKOQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 05:14:16 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:12262 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750922AbaACKOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 05:14:15 -0500
+X-IronPort-AV: E=Sophos;i="4.95,597,1384300800"; 
+   d="scan'208";a="89487629"
+Message-ID: <52C68D73.70005@citrix.com>
+Date: Fri, 3 Jan 2014 10:14:11 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <1388740661-15011-1-git-send-email-jiel@marvell.com>
-References: <1388740661-15011-1-git-send-email-jiel@marvell.com>
-Date: Fri, 3 Jan 2014 15:40:16 +0530
-Message-ID: <CAKohpo=osvNc0rKEsawCE9nggCQdGr7bgT+D8=KhkgpnAyXXaw@mail.gmail.com>
-Subject: Re: [PATCH v4] cpufreq: Fix timer/workqueue corruption by protecting
- reading governor_enabled
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Jane Li <jiel@marvell.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mukesh Rathor <mukesh.rathor@oracle.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
+        <boris.ostrovsky@oracle.com>, <stefano.stabellini@eu.citrix.com>
+Subject: Re: [PATCH v12 06/18] xen/pvh: MMU changes for PVH (v2)
+References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com>	<1388550945-25499-7-git-send-email-konrad.wilk@oracle.com>	<52C54C82.5010802@citrix.com> <20140102173639.3869d841@mantra.us.oracle.com>
+In-Reply-To: <20140102173639.3869d841@mantra.us.oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 January 2014 14:47,  <jiel@marvell.com> wrote:
-> From: Jane Li <jiel@marvell.com>
->
-> When a CPU is hot removed we'll cancel all the delayed work items via
-> gov_cancel_work(). Sometimes the delayed work function determines that
-> it should adjust the delay for all other CPUs that the policy is
-> managing. If this scenario occurs, the canceling CPU will cancel its own
-> work but queue up the other CPUs works to run.
->
-> Commit 3617f2(cpufreq: Fix timer/workqueue corruption due to double
-> queueing) has tried to fix this, but reading governor_enabled is not
-> protected by cpufreq_governor_lock. Even though od_dbs_timer() checks
-> governor_enabled before gov_queue_work(), this scenario may occur. For
-> example:
->
->  CPU0                                        CPU1
->  ----                                        ----
->  cpu_down()
->   ...                                        <work runs>
->   __cpufreq_remove_dev()                     od_dbs_timer()
->    __cpufreq_governor()                       policy->governor_enabled
->     policy->governor_enabled = false;
->     cpufreq_governor_dbs()
->      case CPUFREQ_GOV_STOP:
->       gov_cancel_work(dbs_data, policy);
->        cpu0 work is canceled
->         timer is canceled
->         cpu1 work is canceled
->         <waits for cpu1>
->                                               gov_queue_work(*, *, true);
->                                                cpu0 work queued
->                                                cpu1 work queued
->                                                cpu2 work queued
->                                                ...
->         cpu1 work is canceled
->         cpu2 work is canceled
->         ...
->
-> At the end of the GOV_STOP case cpu0 still has a work queued to
-> run although the code is expecting all of the works to be
-> canceled. __cpufreq_remove_dev() will then proceed to
-> re-initialize all the other CPUs works except for the CPU that is
-> going down. The CPUFREQ_GOV_START case in cpufreq_governor_dbs()
-> will trample over the queued work and debugobjects will spit out
-> a warning:
->
-> WARNING: at lib/debugobjects.c:260 debug_print_object+0x94/0xbc()
-> ODEBUG: init active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x14
-> Modules linked in:
-> CPU: 1 PID: 1205 Comm: sh Tainted: G        W    3.10.0 #200
-> [<c01144f0>] (unwind_backtrace+0x0/0xf8) from [<c0111d98>] (show_stack+0x10/0x14)
-> [<c0111d98>] (show_stack+0x10/0x14) from [<c01272cc>] (warn_slowpath_common+0x4c/0x68)
-> [<c01272cc>] (warn_slowpath_common+0x4c/0x68) from [<c012737c>] (warn_slowpath_fmt+0x30/0x40)
-> [<c012737c>] (warn_slowpath_fmt+0x30/0x40) from [<c034c640>] (debug_print_object+0x94/0xbc)
-> [<c034c640>] (debug_print_object+0x94/0xbc) from [<c034c7f8>] (__debug_object_init+0xc8/0x3c0)
-> [<c034c7f8>] (__debug_object_init+0xc8/0x3c0) from [<c01360e0>] (init_timer_key+0x20/0x104)
-> [<c01360e0>] (init_timer_key+0x20/0x104) from [<c04872ac>] (cpufreq_governor_dbs+0x1dc/0x68c)
-> [<c04872ac>] (cpufreq_governor_dbs+0x1dc/0x68c) from [<c04833a8>] (__cpufreq_governor+0x80/0x1b0)
-> [<c04833a8>] (__cpufreq_governor+0x80/0x1b0) from [<c0483704>] (__cpufreq_remove_dev.isra.12+0x22c/0x380)
-> [<c0483704>] (__cpufreq_remove_dev.isra.12+0x22c/0x380) from [<c0692f38>] (cpufreq_cpu_callback+0x48/0x5c)
-> [<c0692f38>] (cpufreq_cpu_callback+0x48/0x5c) from [<c014fb40>] (notifier_call_chain+0x44/0x84)
-> [<c014fb40>] (notifier_call_chain+0x44/0x84) from [<c012ae44>] (__cpu_notify+0x2c/0x48)
-> [<c012ae44>] (__cpu_notify+0x2c/0x48) from [<c068dd40>] (_cpu_down+0x80/0x258)
-> [<c068dd40>] (_cpu_down+0x80/0x258) from [<c068df40>] (cpu_down+0x28/0x3c)
-> [<c068df40>] (cpu_down+0x28/0x3c) from [<c068e4c0>] (store_online+0x30/0x74)
-> [<c068e4c0>] (store_online+0x30/0x74) from [<c03a7308>] (dev_attr_store+0x18/0x24)
-> [<c03a7308>] (dev_attr_store+0x18/0x24) from [<c0256fe0>] (sysfs_write_file+0x100/0x180)
-> [<c0256fe0>] (sysfs_write_file+0x100/0x180) from [<c01fec9c>] (vfs_write+0xbc/0x184)
-> [<c01fec9c>] (vfs_write+0xbc/0x184) from [<c01ff034>] (SyS_write+0x40/0x68)
-> [<c01ff034>] (SyS_write+0x40/0x68) from [<c010e200>] (ret_fast_syscall+0x0/0x48)
->
-> In gov_queue_work(), lock cpufreq_governor_lock before gov_queue_work,
-> and unlock it after __gov_queue_work(). In this way, governor_enabled
-> is guaranteed not changed in gov_queue_work().
->
-> Signed-off-by: Jane Li <jiel@marvell.com>
-> ---
->  drivers/cpufreq/cpufreq.c          |    2 +-
->  drivers/cpufreq/cpufreq_governor.c |    6 +++++-
->  drivers/cpufreq/cpufreq_governor.h |    2 ++
->  3 files changed, 8 insertions(+), 2 deletions(-)
+On 03/01/14 01:36, Mukesh Rathor wrote:
+> On Thu, 2 Jan 2014 11:24:50 +0000
+> David Vrabel <david.vrabel@citrix.com> wrote:
+> 
+>> On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
+>>> From: Mukesh Rathor <mukesh.rathor@oracle.com>
+>>>
+>>> .. which are surprinsingly small compared to the amount for PV code.
+>>>
+>>> PVH uses mostly native mmu ops, we leave the generic (native_*) for
+>>> the majority and just overwrite the baremetal with the ones we need.
+>>>
+>>> We also optimize one - the TLB flush. The native operation would
+>>> needlessly IPI offline VCPUs causing extra wakeups. Using the
+>>> Xen one avoids that and lets the hypervisor determine which
+>>> VCPU needs the TLB flush.
+>>
+>> This TLB flush optimization should be a separate patch.
+> 
+> It's not really an "optimization", we are using PV mechanism instead
+> of native because PV one performs better.
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Um.  Isn't that the very definition of an optimization?
+
+I do think it is better for the essential MMU changes to be clearly
+separate from the optional ones.
+
+David
+
