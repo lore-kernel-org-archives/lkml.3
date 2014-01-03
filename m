@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751304AbaACKOQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 05:14:16 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:12262 "EHLO SMTP.CITRIX.COM"
+	id S1751470AbaACKPa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 05:15:30 -0500
+Received: from canardo.mork.no ([148.122.252.1]:33037 "EHLO canardo.mork.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750922AbaACKOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 05:14:15 -0500
-X-IronPort-AV: E=Sophos;i="4.95,597,1384300800"; 
-   d="scan'208";a="89487629"
-Message-ID: <52C68D73.70005@citrix.com>
-Date: Fri, 3 Jan 2014 10:14:11 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S1750788AbaACKP2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 05:15:28 -0500
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: cpufreq@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] cpufreq: try to resume policies which failed on last resume
+Organization: m
+References: <f9d7b0d5424e4443597d2ed39bec3fedd2b10d1e.1387848958.git.viresh.kumar@linaro.org>
+	<5562479.pVWRuDL0y6@vostro.rjw.lan> <87zjne7f75.fsf@nemi.mork.no>
+	<2302938.b8tymqrMEz@vostro.rjw.lan> <878uuxquxu.fsf@nemi.mork.no>
+Date: Fri, 03 Jan 2014 10:53:34 +0100
+In-Reply-To: <878uuxquxu.fsf@nemi.mork.no> (=?utf-8?Q?=22Bj=C3=B8rn?=
+ Mork"'s message of "Fri, 03
+	Jan 2014 10:24:45 +0100")
+Message-ID: <871u0po0gx.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-To: Mukesh Rathor <mukesh.rathor@oracle.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
-        <boris.ostrovsky@oracle.com>, <stefano.stabellini@eu.citrix.com>
-Subject: Re: [PATCH v12 06/18] xen/pvh: MMU changes for PVH (v2)
-References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com>	<1388550945-25499-7-git-send-email-konrad.wilk@oracle.com>	<52C54C82.5010802@citrix.com> <20140102173639.3869d841@mantra.us.oracle.com>
-In-Reply-To: <20140102173639.3869d841@mantra.us.oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/14 01:36, Mukesh Rathor wrote:
-> On Thu, 2 Jan 2014 11:24:50 +0000
-> David Vrabel <david.vrabel@citrix.com> wrote:
-> 
->> On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
->>> From: Mukesh Rathor <mukesh.rathor@oracle.com>
->>>
->>> .. which are surprinsingly small compared to the amount for PV code.
->>>
->>> PVH uses mostly native mmu ops, we leave the generic (native_*) for
->>> the majority and just overwrite the baremetal with the ones we need.
->>>
->>> We also optimize one - the TLB flush. The native operation would
->>> needlessly IPI offline VCPUs causing extra wakeups. Using the
->>> Xen one avoids that and lets the hypervisor determine which
->>> VCPU needs the TLB flush.
+Bjørn Mork <bjorn@mork.no> writes:
+> "Rafael J. Wysocki" <rjw@rjwysocki.net> writes:
+>
+>> OK, thanks!  Well, this is somewhat worrisome.
 >>
->> This TLB flush optimization should be a separate patch.
-> 
-> It's not really an "optimization", we are using PV mechanism instead
-> of native because PV one performs better.
+>> Could you also check the linux-pm.git/fixes branch that contains all patches
+>> I'm planning to push for 3.13-rc7 shortly?
+>
+> It's definitely still there.  But I'm less sure about the exact trigger.
 
-Um.  Isn't that the very definition of an optimization?
+I did a couple of more tests after clean reboots, and 100% sure ways to
+trigger the circular locking on my laptop are
 
-I do think it is better for the essential MMU changes to be clearly
-separate from the optional ones.
+  echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+  s2disk
 
-David
+or
 
+  echo 1401000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 
+  s2disk
+
+or
+
+  echo 1401000 > /sys/devices/system/cpu/cpu1/cpufreq/scaling_max_freq 
+  s2disk
+
+
+Note that "ondemand" and "1401000" are the default vaules, so I don't
+actually change anything here.  The write is causing the problem, not
+the value.  As expected, I guess.
+
+Also note that boot vs non-boot cpu doesn't seem to matter.  Nor does
+cancelling the hibernation.  The warning appears on hibernate - not on
+resume.
+
+Hope this helps.
+
+
+Bjørn
