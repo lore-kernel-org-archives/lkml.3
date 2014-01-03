@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096AbaACCN6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 21:13:58 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:44074 "EHLO
+	id S1753986AbaACCNz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 21:13:55 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:31592 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753105AbaACCLt (ORCPT
+	by vger.kernel.org with ESMTP id S1753181AbaACCLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 2 Jan 2014 21:11:49 -0500
-Message-Id: <20140103021145.670057776@goodmis.org>
+Message-Id: <20140103021146.430827601@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 02 Jan 2014 21:10:29 -0500
+Date: Thu, 02 Jan 2014 21:10:34 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Namhyung Kim <namhyung@kernel.org>
-Subject: [for-next][PATCH 08/17] tracing/probes: Split [ku]probes_fetch_type_table
+Subject: [for-next][PATCH 13/17] tracing/uprobes: Pass is_return to traceprobe_parse_probe_arg()
 References: <20140103021021.238772653@goodmis.org>
-Content-Disposition: inline; filename=0008-tracing-probes-Split-ku-probes_fetch_type_table.patch
-X-RR-Connecting-IP: 107.14.168.142:25
+Content-Disposition: inline; filename=0013-tracing-uprobes-Pass-is_return-to-traceprobe_parse_p.patch
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,332 +31,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Use separate fetch_type_table for kprobes and uprobes.  It currently
-shares all fetch methods but some of them will be implemented
-differently later.
+Currently uprobes don't pass is_return to the argument parser so that
+it cannot make use of "$retval" fetch method since it only works for
+return probes.
 
-This is not to break build if [ku]probes is configured alone (like
-!CONFIG_KPROBE_EVENT and CONFIG_UPROBE_EVENT).  So I added '__weak'
-to the table declaration so that it can be safely omitted when it
-configured out.
-
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Acked-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- kernel/trace/trace_kprobe.c | 20 ++++++++++++++
- kernel/trace/trace_probe.c  | 65 ++++++++++++++++++---------------------------
- kernel/trace/trace_probe.h  | 53 ++++++++++++++++++++++++++++++++++++
- kernel/trace/trace_uprobe.c | 20 ++++++++++++++
- 4 files changed, 119 insertions(+), 39 deletions(-)
+ kernel/trace/trace_uprobe.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index c9ffdaf..fe3f00c 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -88,6 +88,26 @@ static int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs);
- static int kretprobe_dispatcher(struct kretprobe_instance *ri,
- 				struct pt_regs *regs);
- 
-+/* Fetch type information table */
-+const struct fetch_type kprobes_fetch_type_table[] = {
-+	/* Special types */
-+	[FETCH_TYPE_STRING] = __ASSIGN_FETCH_TYPE("string", string, string,
-+					sizeof(u32), 1, "__data_loc char[]"),
-+	[FETCH_TYPE_STRSIZE] = __ASSIGN_FETCH_TYPE("string_size", u32,
-+					string_size, sizeof(u32), 0, "u32"),
-+	/* Basic types */
-+	ASSIGN_FETCH_TYPE(u8,  u8,  0),
-+	ASSIGN_FETCH_TYPE(u16, u16, 0),
-+	ASSIGN_FETCH_TYPE(u32, u32, 0),
-+	ASSIGN_FETCH_TYPE(u64, u64, 0),
-+	ASSIGN_FETCH_TYPE(s8,  u8,  1),
-+	ASSIGN_FETCH_TYPE(s16, u16, 1),
-+	ASSIGN_FETCH_TYPE(s32, u32, 1),
-+	ASSIGN_FETCH_TYPE(s64, u64, 1),
-+
-+	ASSIGN_FETCH_TYPE_END
-+};
-+
- /*
-  * Allocate new trace_probe and initialize it (including kprobes).
-  */
-diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index c26bc9e..541036e 100644
---- a/kernel/trace/trace_probe.c
-+++ b/kernel/trace/trace_probe.c
-@@ -54,10 +54,6 @@ DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d")
- DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%d")
- DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%Ld")
- 
--/* For defining macros, define string/string_size types */
--typedef u32 string;
--typedef u32 string_size;
--
- /* Print type function for string type */
- __kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
- 						  const char *name,
-@@ -74,7 +70,6 @@ __kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
- 
- const char PRINT_TYPE_FMT_NAME(string)[] = "\\\"%s\\\"";
- 
--#define FETCH_FUNC_NAME(method, type)	fetch_##method##_##type
- /*
-  * Define macro for basic types - we don't need to define s* types, because
-  * we have to care only about bitwidth at recording time.
-@@ -359,25 +354,8 @@ free_bitfield_fetch_param(struct bitfield_fetch_param *data)
- 	kfree(data);
- }
- 
--/* Fetch type information table */
--static const struct fetch_type fetch_type_table[] = {
--	/* Special types */
--	[FETCH_TYPE_STRING] = __ASSIGN_FETCH_TYPE("string", string, string,
--					sizeof(u32), 1, "__data_loc char[]"),
--	[FETCH_TYPE_STRSIZE] = __ASSIGN_FETCH_TYPE("string_size", u32,
--					string_size, sizeof(u32), 0, "u32"),
--	/* Basic types */
--	ASSIGN_FETCH_TYPE(u8,  u8,  0),
--	ASSIGN_FETCH_TYPE(u16, u16, 0),
--	ASSIGN_FETCH_TYPE(u32, u32, 0),
--	ASSIGN_FETCH_TYPE(u64, u64, 0),
--	ASSIGN_FETCH_TYPE(s8,  u8,  1),
--	ASSIGN_FETCH_TYPE(s16, u16, 1),
--	ASSIGN_FETCH_TYPE(s32, u32, 1),
--	ASSIGN_FETCH_TYPE(s64, u64, 1),
--};
--
--static const struct fetch_type *find_fetch_type(const char *type)
-+static const struct fetch_type *find_fetch_type(const char *type,
-+						const struct fetch_type *ftbl)
- {
- 	int i;
- 
-@@ -398,21 +376,22 @@ static const struct fetch_type *find_fetch_type(const char *type)
- 
- 		switch (bs) {
- 		case 8:
--			return find_fetch_type("u8");
-+			return find_fetch_type("u8", ftbl);
- 		case 16:
--			return find_fetch_type("u16");
-+			return find_fetch_type("u16", ftbl);
- 		case 32:
--			return find_fetch_type("u32");
-+			return find_fetch_type("u32", ftbl);
- 		case 64:
--			return find_fetch_type("u64");
-+			return find_fetch_type("u64", ftbl);
- 		default:
- 			goto fail;
- 		}
- 	}
- 
--	for (i = 0; i < ARRAY_SIZE(fetch_type_table); i++)
--		if (strcmp(type, fetch_type_table[i].name) == 0)
--			return &fetch_type_table[i];
-+	for (i = 0; ftbl[i].name; i++) {
-+		if (strcmp(type, ftbl[i].name) == 0)
-+			return &ftbl[i];
-+	}
- 
- fail:
- 	return NULL;
-@@ -426,16 +405,17 @@ static __kprobes void fetch_stack_address(struct pt_regs *regs,
- }
- 
- static fetch_func_t get_fetch_size_function(const struct fetch_type *type,
--					fetch_func_t orig_fn)
-+					    fetch_func_t orig_fn,
-+					    const struct fetch_type *ftbl)
- {
- 	int i;
- 
--	if (type != &fetch_type_table[FETCH_TYPE_STRING])
-+	if (type != &ftbl[FETCH_TYPE_STRING])
- 		return NULL;	/* Only string type needs size function */
- 
- 	for (i = 0; i < FETCH_MTD_END; i++)
- 		if (type->fetch[i] == orig_fn)
--			return fetch_type_table[FETCH_TYPE_STRSIZE].fetch[i];
-+			return ftbl[FETCH_TYPE_STRSIZE].fetch[i];
- 
- 	WARN_ON(1);	/* This should not happen */
- 
-@@ -504,12 +484,14 @@ static int parse_probe_vars(char *arg, const struct fetch_type *t,
- static int parse_probe_arg(char *arg, const struct fetch_type *t,
- 		     struct fetch_param *f, bool is_return, bool is_kprobe)
- {
-+	const struct fetch_type *ftbl;
- 	unsigned long param;
- 	long offset;
- 	char *tmp;
--	int ret;
-+	int ret = 0;
- 
--	ret = 0;
-+	ftbl = is_kprobe ? kprobes_fetch_type_table : uprobes_fetch_type_table;
-+	BUG_ON(ftbl == NULL);
- 
- 	/* Until uprobe_events supports only reg arguments */
- 	if (!is_kprobe && arg[0] != '%')
-@@ -568,7 +550,7 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
- 			struct deref_fetch_param	*dprm;
- 			const struct fetch_type		*t2;
- 
--			t2 = find_fetch_type(NULL);
-+			t2 = find_fetch_type(NULL, ftbl);
- 			*tmp = '\0';
- 			dprm = kzalloc(sizeof(struct deref_fetch_param), GFP_KERNEL);
- 
-@@ -637,9 +619,13 @@ static int __parse_bitfield_probe_arg(const char *bf,
- int traceprobe_parse_probe_arg(char *arg, ssize_t *size,
- 		struct probe_arg *parg, bool is_return, bool is_kprobe)
- {
-+	const struct fetch_type *ftbl;
- 	const char *t;
- 	int ret;
- 
-+	ftbl = is_kprobe ? kprobes_fetch_type_table : uprobes_fetch_type_table;
-+	BUG_ON(ftbl == NULL);
-+
- 	if (strlen(arg) > MAX_ARGSTR_LEN) {
- 		pr_info("Argument is too long.: %s\n",  arg);
- 		return -ENOSPC;
-@@ -654,7 +640,7 @@ int traceprobe_parse_probe_arg(char *arg, ssize_t *size,
- 		arg[t - parg->comm] = '\0';
- 		t++;
- 	}
--	parg->type = find_fetch_type(t);
-+	parg->type = find_fetch_type(t, ftbl);
- 	if (!parg->type) {
- 		pr_info("Unsupported type: %s\n", t);
- 		return -EINVAL;
-@@ -668,7 +654,8 @@ int traceprobe_parse_probe_arg(char *arg, ssize_t *size,
- 
- 	if (ret >= 0) {
- 		parg->fetch_size.fn = get_fetch_size_function(parg->type,
--							      parg->fetch.fn);
-+							      parg->fetch.fn,
-+							      ftbl);
- 		parg->fetch_size.data = parg->fetch.data;
- 	}
- 
-diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
-index bd621c0..5b77798 100644
---- a/kernel/trace/trace_probe.h
-+++ b/kernel/trace/trace_probe.h
-@@ -126,6 +126,10 @@ struct fetch_param {
- 	void 			*data;
- };
- 
-+/* For defining macros, define string/string_size types */
-+typedef u32 string;
-+typedef u32 string_size;
-+
- #define PRINT_TYPE_FUNC_NAME(type)	print_type_##type
- #define PRINT_TYPE_FMT_NAME(type)	print_type_format_##type
- 
-@@ -146,6 +150,47 @@ DECLARE_BASIC_PRINT_TYPE_FUNC(s32);
- DECLARE_BASIC_PRINT_TYPE_FUNC(s64);
- DECLARE_BASIC_PRINT_TYPE_FUNC(string);
- 
-+#define FETCH_FUNC_NAME(method, type)	fetch_##method##_##type
-+
-+/* Declare macro for basic types */
-+#define DECLARE_FETCH_FUNC(method, type)				\
-+extern void FETCH_FUNC_NAME(method, type)(struct pt_regs *regs, 	\
-+					  void *data, void *dest)
-+
-+#define DECLARE_BASIC_FETCH_FUNCS(method) 	\
-+DECLARE_FETCH_FUNC(method, u8);			\
-+DECLARE_FETCH_FUNC(method, u16);		\
-+DECLARE_FETCH_FUNC(method, u32);		\
-+DECLARE_FETCH_FUNC(method, u64)
-+
-+DECLARE_BASIC_FETCH_FUNCS(reg);
-+#define fetch_reg_string			NULL
-+#define fetch_reg_string_size			NULL
-+
-+DECLARE_BASIC_FETCH_FUNCS(stack);
-+#define fetch_stack_string			NULL
-+#define fetch_stack_string_size			NULL
-+
-+DECLARE_BASIC_FETCH_FUNCS(retval);
-+#define fetch_retval_string			NULL
-+#define fetch_retval_string_size		NULL
-+
-+DECLARE_BASIC_FETCH_FUNCS(memory);
-+DECLARE_FETCH_FUNC(memory, string);
-+DECLARE_FETCH_FUNC(memory, string_size);
-+
-+DECLARE_BASIC_FETCH_FUNCS(symbol);
-+DECLARE_FETCH_FUNC(symbol, string);
-+DECLARE_FETCH_FUNC(symbol, string_size);
-+
-+DECLARE_BASIC_FETCH_FUNCS(deref);
-+DECLARE_FETCH_FUNC(deref, string);
-+DECLARE_FETCH_FUNC(deref, string_size);
-+
-+DECLARE_BASIC_FETCH_FUNCS(bitfield);
-+#define fetch_bitfield_string			NULL
-+#define fetch_bitfield_string_size		NULL
-+
- /* Default (unsigned long) fetch type */
- #define __DEFAULT_FETCH_TYPE(t) u##t
- #define _DEFAULT_FETCH_TYPE(t) __DEFAULT_FETCH_TYPE(t)
-@@ -176,9 +221,17 @@ ASSIGN_FETCH_FUNC(bitfield, ftype),			\
- #define ASSIGN_FETCH_TYPE(ptype, ftype, sign)			\
- 	__ASSIGN_FETCH_TYPE(#ptype, ptype, ftype, sizeof(ftype), sign, #ptype)
- 
-+#define ASSIGN_FETCH_TYPE_END {}
-+
- #define FETCH_TYPE_STRING	0
- #define FETCH_TYPE_STRSIZE	1
- 
-+/*
-+ * Fetch type information table.
-+ * It's declared as a weak symbol due to conditional compilation.
-+ */
-+extern __weak const struct fetch_type kprobes_fetch_type_table[];
-+extern __weak const struct fetch_type uprobes_fetch_type_table[];
- 
- struct probe_arg {
- 	struct fetch_param	fetch;
 diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index b233d9c..2c60925 100644
+index bebd2f5..8bfd29a 100644
 --- a/kernel/trace/trace_uprobe.c
 +++ b/kernel/trace/trace_uprobe.c
-@@ -74,6 +74,26 @@ static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs);
- static int uretprobe_dispatcher(struct uprobe_consumer *con,
- 				unsigned long func, struct pt_regs *regs);
+@@ -514,7 +514,7 @@ static int create_trace_uprobe(int argc, char **argv)
  
-+/* Fetch type information table */
-+const struct fetch_type uprobes_fetch_type_table[] = {
-+	/* Special types */
-+	[FETCH_TYPE_STRING] = __ASSIGN_FETCH_TYPE("string", string, string,
-+					sizeof(u32), 1, "__data_loc char[]"),
-+	[FETCH_TYPE_STRSIZE] = __ASSIGN_FETCH_TYPE("string_size", u32,
-+					string_size, sizeof(u32), 0, "u32"),
-+	/* Basic types */
-+	ASSIGN_FETCH_TYPE(u8,  u8,  0),
-+	ASSIGN_FETCH_TYPE(u16, u16, 0),
-+	ASSIGN_FETCH_TYPE(u32, u32, 0),
-+	ASSIGN_FETCH_TYPE(u64, u64, 0),
-+	ASSIGN_FETCH_TYPE(s8,  u8,  1),
-+	ASSIGN_FETCH_TYPE(s16, u16, 1),
-+	ASSIGN_FETCH_TYPE(s32, u32, 1),
-+	ASSIGN_FETCH_TYPE(s64, u64, 1),
-+
-+	ASSIGN_FETCH_TYPE_END
-+};
-+
- static inline void init_trace_uprobe_filter(struct trace_uprobe_filter *filter)
- {
- 	rwlock_init(&filter->rwlock);
+ 		/* Parse fetch argument */
+ 		ret = traceprobe_parse_probe_arg(arg, &tu->tp.size, parg,
+-						 false, false);
++						 is_return, false);
+ 		if (ret) {
+ 			pr_info("Parse error at argument[%d]. (%d)\n", i, ret);
+ 			goto error;
 -- 
 1.8.4.3
 
