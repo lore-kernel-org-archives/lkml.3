@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564AbaACC7r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 21:59:47 -0500
-Received: from mga02.intel.com ([134.134.136.20]:39826 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751574AbaACC7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 21:59:46 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,595,1384329600"; 
-   d="asc'?scan'208";a="461006281"
-Date: Thu, 2 Jan 2014 21:40:38 -0500
-From: "Chen, Gong" <gong.chen@linux.intel.com>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Kyungmin Park <kmpark@infradead.org>, Dave Hansen <dave@sr71.net>,
-        linux-mm@kvack.org, Joerg Roedel <joro@8bytes.org>,
-        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: Re: [RFC PATCHv3 02/11] iommu/omap: Use get_vm_area directly
-Message-ID: <20140103024038.GD1913@gchen.bj.intel.com>
-Mail-Followup-To: Laura Abbott <lauraa@codeaurora.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Kyungmin Park <kmpark@infradead.org>, Dave Hansen <dave@sr71.net>,
-	linux-mm@kvack.org, Joerg Roedel <joro@8bytes.org>,
-	linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
-References: <1388699609-18214-1-git-send-email-lauraa@codeaurora.org>
- <1388699609-18214-3-git-send-email-lauraa@codeaurora.org>
+	id S1753341AbaACDLp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 22:11:45 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:52651 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751773AbaACDLo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 22:11:44 -0500
+Message-ID: <52C62A4D.5010000@huawei.com>
+Date: Fri, 3 Jan 2014 11:11:09 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Ycz6tD7Th1CMF4v7"
-Content-Disposition: inline
-In-Reply-To: <1388699609-18214-3-git-send-email-lauraa@codeaurora.org>
-X-PGP-Key-ID: A43922C7
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Miller <davem@davemloft.net>, <jhs@mojatatu.com>
+CC: <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        <ebiederm@xmission.com>, <containers@lists.linux-foundation.org>,
+        <cgroups@vger.kernel.org>, Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Li Zefan <lizefan@huawei.com>
+Subject: [RFC PATCH net-next 2/4] cls_cgroup: introduce a helper: bk_cls_classid()
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.158]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Ycz6tD7Th1CMF4v7
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+it can save classid from skb->sk->sk_classid
+to skb->bk_classid
 
-On Thu, Jan 02, 2014 at 01:53:20PM -0800, Laura Abbott wrote:
-> diff --git a/drivers/iommu/omap-iovmm.c b/drivers/iommu/omap-iovmm.c
-> index d147259..6280d50 100644
-> --- a/drivers/iommu/omap-iovmm.c
-> +++ b/drivers/iommu/omap-iovmm.c
-> @@ -214,7 +214,7 @@ static void *vmap_sg(const struct sg_table *sgt)
->  	if (!total)
->  		return ERR_PTR(-EINVAL);
-> =20
-> -	new =3D __get_vm_area(total, VM_IOREMAP, VMALLOC_START, VMALLOC_END);
-> +	new =3D get_vm_area(total, VM_IOREMAP);
-This driver is a module but get_vm_area is not exported. You need to add
-one extra EXPORT_SYMBOL_GPL(get_vm_area).
+Signed-off-by: Libo Chen <clbchenlibo.chen@huawei.com>
+---
+ include/net/cls_cgroup.h | 11 +++++++++++
+ net/sched/cls_cgroup.c   |  1 -
+ 2 files changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/include/net/cls_cgroup.h b/include/net/cls_cgroup.h
+index 33d03b6..4249ea3 100644
+--- a/include/net/cls_cgroup.h
++++ b/include/net/cls_cgroup.h
+@@ -16,6 +16,7 @@
+ #include <linux/cgroup.h>
+ #include <linux/hardirq.h>
+ #include <linux/rcupdate.h>
++#include <net/sock.h>
+
+ #if IS_ENABLED(CONFIG_NET_CLS_CGROUP)
+ struct cgroup_cls_state
+@@ -26,6 +27,12 @@ struct cgroup_cls_state
+
+ void sock_update_classid(struct sock *sk);
+
++static inline void bk_cls_classid(struct sk_buff *skb)
++{
++	if (skb->sk && skb->sk->sk_classid)
++		skb->backup_classid = skb->sk->sk_classid;
++}
++
+ #if IS_BUILTIN(CONFIG_NET_CLS_CGROUP)
+ static inline u32 task_cls_classid(struct task_struct *p)
+ {
+@@ -61,6 +68,10 @@ static inline u32 task_cls_classid(struct task_struct *p)
+ }
+ #endif
+ #else /* !CGROUP_NET_CLS_CGROUP */
++static inline void bk_cls_classid(struct sk_buff *skb)
++{
++}
++
+ static inline void sock_update_classid(struct sock *sk)
+ {
+ }
+diff --git a/net/sched/cls_cgroup.c b/net/sched/cls_cgroup.c
+index f9d21258..d228a5d 100644
+--- a/net/sched/cls_cgroup.c
++++ b/net/sched/cls_cgroup.c
+@@ -20,7 +20,6 @@
+ #include <linux/fdtable.h>
+ #include <net/rtnetlink.h>
+ #include <net/pkt_cls.h>
+-#include <net/sock.h>
+ #include <net/cls_cgroup.h>
+
+ static inline struct cgroup_cls_state *css_cls_state(struct cgroup_subsys_state *css)
+-- 
+1.8.2.2
 
 
---Ycz6tD7Th1CMF4v7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSxiMmAAoJEI01n1+kOSLH9xgP/AhHieQaiUiJ0LAI2it3pQQx
-dQiXOhvWANMFORGLj00UXRvQQlxs1jorUp4jxxUePWbqT+ZQvOVGIJZwmF3W0Vp3
-bPLWbVCcYM1x0AtEqFTC0MRieBCdwK3MOhLN3eVvurWyXyPJD73wVmOGEqpXkLoG
-cMMvfnf/w/V6fdTi3ryAwBn2E8aIrdLuU3FwooDSSl5PztLHXUSlkpqNrn5FnNBD
-JNil5+clc619Nw1W3IYoCkOYrFQoxVjLgRlS9MfhyKMP+wt/iJmu+t6kI+OYJouV
-OJRqjeu8syC8V+nZNkL/StzqthKTdCJbXJRy/GFFCePwzvacuEPmdAtQ3Dhyixvx
-EAVzj4DbL2xEiz+v8iFisu6vz7i12VoKoTqSlb/Bz6VCKpQQ34lzU+axjsPOgZrU
-4bDMlNdtGDPjASbjHxtSRfL+U6cJuDmH86zXenjzosBTD5MRnhOw80bagbejl30b
-E65cHCCGstx2O9D691QHCnoVY6Xubqmq5HhWXS8Exl+72FiAUaN5pcTtTjsYcn1q
-dyjPNfOTVhDMC/5mAMisiqxghMasXnMMUpDltc5s2mw5I5EnRQRSdfJzhJ75rxQW
-y3R9ibRlO4DMnb+eeXknulaw1P3psQ1KW39CA9nh8rHHLdZ10OaAGs97VwlWkiQw
-rUW2+MyROALPhKwm8NAy
-=ud7f
------END PGP SIGNATURE-----
-
---Ycz6tD7Th1CMF4v7--
