@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504AbaACOiJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 09:38:09 -0500
-Received: from mout2.freenet.de ([195.4.92.92]:36045 "EHLO mout2.freenet.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751586AbaACOiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 09:38:07 -0500
-X-Greylist: delayed 507 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Jan 2014 09:38:07 EST
-Date: Fri, 3 Jan 2014 15:27:19 +0100
-From: Andreas Hartmann <andihartmann@01019freenet.de>
-To: linux-kernel@vger.kernel.org
-Subject: Strange problem with vxlan!
-Message-ID: <20140103152719.4a8db2ce@dualc.maya.org>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Originated-At: 79.222.19.223!53744
+	id S1752142AbaACOkM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 09:40:12 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:34934 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751586AbaACOkJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 09:40:09 -0500
+Date: Fri, 3 Jan 2014 09:39:02 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com, stefano.stabellini@eu.citrix.com,
+        mukesh.rathor@oracle.com
+Subject: Re: [PATCH v12 07/18] xen/pvh: Setup up shared_info.
+Message-ID: <20140103143902.GB27019@phenom.dumpdata.com>
+References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com>
+ <1388550945-25499-8-git-send-email-konrad.wilk@oracle.com>
+ <52C54D3C.4050101@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52C54D3C.4050101@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Given is the following network architecture: connection of a virtual bridge br0 and a remote ethernet-switch through vxlan tunnel via WLAN:
+On Thu, Jan 02, 2014 at 11:27:56AM +0000, David Vrabel wrote:
+> On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
+> > From: Mukesh Rathor <mukesh.rathor@oracle.com>
+> > 
+> > For PVHVM the shared_info structure is provided via the same way
+> > as for normal PV guests (see include/xen/interface/xen.h).
+> > 
+> > That is during bootup we get 'xen_start_info' via the %esi register
+> > in startup_xen. Then later we extract the 'shared_info' from said
+> > structure (in xen_setup_shared_info) and start using it.
+> > 
+> > The 'xen_setup_shared_info' is all setup to work with auto-xlat
+> > guests, but there are two functions which it calls that are not:
+> > xen_setup_mfn_list_list and xen_setup_vcpu_info_placement.
+> > This patch modifies those to work in auto-xlat mode.
+> [...]
+> > --- a/arch/x86/xen/enlighten.c
+> > +++ b/arch/x86/xen/enlighten.c
+> > @@ -1147,8 +1147,9 @@ void xen_setup_vcpu_info_placement(void)
+> >  		xen_vcpu_setup(cpu);
+> >  
+> >  	/* xen_vcpu_setup managed to place the vcpu_info within the
+> > -	   percpu area for all cpus, so make use of it */
+> > -	if (have_vcpu_info_placement) {
+> > +	 * percpu area for all cpus, so make use of it. Note that for
+> > +	 * PVH we want to use native IRQ mechanism. */
+> > +	if (have_vcpu_info_placement && !xen_pvh_domain()) {
+> >  		pv_irq_ops.save_fl = __PV_IS_CALLEE_SAVE(xen_save_fl_direct);
+> >  		pv_irq_ops.restore_fl = __PV_IS_CALLEE_SAVE(xen_restore_fl_direct);
+> >  		pv_irq_ops.irq_disable = __PV_IS_CALLEE_SAVE(xen_irq_disable_direct);
+> 
+> Should this be in a separate patch: "xen/pvh: use native irq ops"?
+
+On a second thought I think not. The reason is explained in the commit
+description:
+
+ The 'xen_setup_shared_info' is all setup to work with auto-xlat
+ guests, but there are two functions which it calls that are not:
+ xen_setup_mfn_list_list and xen_setup_vcpu_info_placement.
+ This patch modifies those to work in auto-xlat mode.
+
+If we move this to another patch, it is going to be mostly the same
+comment and this patch will feel unfinished.
 
 
-
-host 			[br0: tap0,vxlan0]
-    				|    ||
-				|    ===========
-				|	      ||
-				|	      ||
-VM (WLAN access point)	[br0: eth0, wlan0]    ||
-				      |	      ||
-				      |	      ||
-			  -------------	      ||
-			  |		      ||
-STA			[wlan0, br0: eth0, vxlan0]
-				      |
-				      |
-   |----------------------------------|
-Switch				      
-   |
-   ----------
-	    |
-notebook [eth0]
-
-
-
-The configuration of the vxlan is:
-
-host: route add -net 224.0.0.0 netmask 240.0.0.0 dev br0
-      ip li add vxlan0 type vxlan id 1 group 239.1.1.1 dev br0
-
-STA:  route add -net 224.0.0.0 netmask 240.0.0.0 dev wlan0
-      ip li add vxlan0 type vxlan id 1 group 239.1.1.1 dev wlan0
-
-This means: the endpoints of the vxlan tunnel are br0 (host) and STA (wlan0). 
-Between them, there is the WLAN AP (a VM belonging to the host).
-
-
-Now the problem:
-
-If the VM (=AP) runs e.g. Linux 3.4.x, all is working fine as expected. 
-If the VM runs 3.12.x or even 3.10.x, the tunnel works fine a few minutes after creation. Afterwards it is broken.
-
-Broken means:
-A "dhcpcd eth0" e.g. on the notebook times out, doesn't work any more. Traces show:
-The udp-tunnel-packages sent by the STA through vxlan0 can be seen on the host / tap0, but they can't be seen on vxlan0 (if it works, they can be seen on the vxlan0 device, too).
-
-On the host runs Linux 3.10.x, on the STA 3.11.6.
-
-
-Any idea why vxlan is broken w/ Linux 3.12.x or 3.10.x on the VM (AP)?
-
-
-
-Thanks in advance for any hint,
-regards,
-Andreas
+> 
+> David
