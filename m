@@ -1,49 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751278AbaACGFS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 01:05:18 -0500
-Received: from ni.piap.pl ([195.187.100.4]:46349 "EHLO ni.piap.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751105AbaACGFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 01:05:16 -0500
-From: khalasa@piap.pl (Krzysztof =?utf-8?Q?Ha=C5=82asa?=)
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Willy Tarreau <w@1wt.eu>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org
-References: <52C5E675.80701@linaro.org>
-	<1388704274-5278-1-git-send-email-john.stultz@linaro.org>
-	<1388704274-5278-2-git-send-email-john.stultz@linaro.org>
-Date: Fri, 03 Jan 2014 07:05:14 +0100
-In-Reply-To: <1388704274-5278-2-git-send-email-john.stultz@linaro.org> (John
-	Stultz's message of "Thu, 2 Jan 2014 15:11:14 -0800")
-MIME-Version: 1.0
-Message-ID: <m3fvp5txb9.fsf@t19.piap.pl>
-Content-Type: text/plain
-Subject: Re: [PATCH 2/2] sched_clock: Disable seqlock lockdep usage in sched_clock
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE,
-	 bases: 20140103 #7232212, check: 20140103 clean
+	id S1751358AbaACGJW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 01:09:22 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:50922 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750850AbaACGJV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 01:09:21 -0500
+From: Barry Song <21cnbao@gmail.com>
+To: jkosina@suse.cz, arnd@arndb.de, gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, workgroup.linux@csr.com,
+        Bin Shi <Bin.Shi@csr.com>, Barry Song <Baohua.Song@csr.com>
+Subject: [PATCH] apm-emulation: add hibernation APM events to support suspend2disk
+Date: Fri,  3 Jan 2014 14:08:54 +0800
+Message-Id: <1388729334-14242-1-git-send-email-21cnbao@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-John Stultz <john.stultz@linaro.org> writes:
+From: Bin Shi <Bin.Shi@csr.com>
 
-> Unforunately the seqlock lockdep enablmenet can't be used
-> in sched_clock, since the lockdep infrastructure eventually
-> calls into sched_clock, which causes a deadlock.
->
-> Thus, this patch changes all generic sched_clock usage
-> to use the raw_* methods.
+Some embedded systems use hibernation for fast boot. and in it,
+some software components need to handle specific things before
+hibernation and after restore. So it needs to capture the apm
+status about these pm events.
 
-These two patches fix the problem. Thanks to all involved.
+Currently apm just supports suspend to ram, but not suspend to disk,
+so here add logic about hibernation apm events.
+
+Signed-off-by: Bin Shi <Bin.Shi@csr.com>
+Signed-off-by: Barry Song <Baohua.Song@csr.com>
+---
+ drivers/char/apm-emulation.c  |   11 +++++++++--
+ include/uapi/linux/apm_bios.h |    2 ++
+ 2 files changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/char/apm-emulation.c b/drivers/char/apm-emulation.c
+index 46118f8..dd9dfa1 100644
+--- a/drivers/char/apm-emulation.c
++++ b/drivers/char/apm-emulation.c
+@@ -531,6 +531,7 @@ static int apm_suspend_notifier(struct notifier_block *nb,
+ {
+ 	struct apm_user *as;
+ 	int err;
++	unsigned long apm_event;
+ 
+ 	/* short-cut emergency suspends */
+ 	if (atomic_read(&userspace_notification_inhibit))
+@@ -538,6 +539,9 @@ static int apm_suspend_notifier(struct notifier_block *nb,
+ 
+ 	switch (event) {
+ 	case PM_SUSPEND_PREPARE:
++	case PM_HIBERNATION_PREPARE:
++		apm_event = (event == PM_SUSPEND_PREPARE) ?
++			APM_USER_SUSPEND : APM_USER_HIBERNATION;
+ 		/*
+ 		 * Queue an event to all "writer" users that we want
+ 		 * to suspend and need their ack.
+@@ -550,7 +554,7 @@ static int apm_suspend_notifier(struct notifier_block *nb,
+ 			    as->writer && as->suser) {
+ 				as->suspend_state = SUSPEND_PENDING;
+ 				atomic_inc(&suspend_acks_pending);
+-				queue_add_event(&as->queue, APM_USER_SUSPEND);
++				queue_add_event(&as->queue, apm_event);
+ 			}
+ 		}
+ 
+@@ -601,11 +605,14 @@ static int apm_suspend_notifier(struct notifier_block *nb,
+ 		return notifier_from_errno(err);
+ 
+ 	case PM_POST_SUSPEND:
++	case PM_POST_HIBERNATION:
++		apm_event = (event == PM_POST_SUSPEND) ?
++			APM_NORMAL_RESUME : APM_HIBERNATION_RESUME;
+ 		/*
+ 		 * Anyone on the APM queues will think we're still suspended.
+ 		 * Send a message so everyone knows we're now awake again.
+ 		 */
+-		queue_event(APM_NORMAL_RESUME);
++		queue_event(apm_event);
+ 
+ 		/*
+ 		 * Finally, wake up anyone who is sleeping on the suspend.
+diff --git a/include/uapi/linux/apm_bios.h b/include/uapi/linux/apm_bios.h
+index 724f409..df79bca 100644
+--- a/include/uapi/linux/apm_bios.h
++++ b/include/uapi/linux/apm_bios.h
+@@ -67,6 +67,8 @@ struct apm_bios_info {
+ #define APM_USER_SUSPEND	0x000a
+ #define APM_STANDBY_RESUME	0x000b
+ #define APM_CAPABILITY_CHANGE	0x000c
++#define APM_USER_HIBERNATION	0x000d
++#define APM_HIBERNATION_RESUME	0x000e
+ 
+ /*
+  * Error codes
 -- 
-Krzysztof Halasa
+1.7.5.4
 
-Research Institute for Automation and Measurements PIAP
-Al. Jerozolimskie 202, 02-486 Warsaw, Poland
