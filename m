@@ -1,40 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880AbaACQlD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 11:41:03 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:32864 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751098AbaACQlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 11:41:01 -0500
-Message-ID: <52C6E814.7090301@suse.cz>
-Date: Fri, 03 Jan 2014 17:40:52 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752103AbaACQlR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 11:41:17 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:57629 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931AbaACQlP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 11:41:15 -0500
+X-IronPort-AV: E=Sophos;i="4.95,598,1384300800"; 
+   d="scan'208";a="87397720"
+Date: Fri, 3 Jan 2014 16:40:26 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
+        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
+        <stefano.stabellini@eu.citrix.com>, <mukesh.rathor@oracle.com>
+Subject: Re: [PATCH v12 12/18] xen/grants: Remove gnttab_max_grant_frames
+ dependency on gnttab_init.
+In-Reply-To: <1388550945-25499-13-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1401031640200.8667@kaball.uk.xensource.com>
+References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com> <1388550945-25499-13-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Josh Triplett <josh@joshtriplett.org>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/7] Makefile: Build with -Werror=date-time if the compiler
- supports it
-References: <cover.1387833347.git.josh@joshtriplett.org> <106ff2bbebe0c2c75bedf1c52a666d638b4dc20e.1387833347.git.josh@joshtriplett.org>
-In-Reply-To: <106ff2bbebe0c2c75bedf1c52a666d638b4dc20e.1387833347.git.josh@joshtriplett.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-12-23 22:56, Josh Triplett wrote:
-> GCC 4.9 and newer have a new warning -Wdate-time, which warns on any use
-> of __DATE__, __TIME__, or __TIMESTAMP__, which would make the build
-> non-deterministic.  Now that the kernel does not use any of those
-> macros, turn on -Werror=date-time if available, to keep it that way.
+On Tue, 31 Dec 2013, Konrad Rzeszutek Wilk wrote:
+> The function gnttab_max_grant_frames() returns the maximum amount
+> of frames (pages) of grants we can have. Unfortunatly it was
+> dependent on gnttab_init() having been run before to initialize
+> the boot max value (boot_max_nr_grant_frames).
+> 
+> This meant that users of gnttab_max_grant_frames would always
+> get a zero value if they called before gnttab_init() - such as
+> 'platform_pci_init' (drivers/xen/platform-pci.c).
+> 
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-Nice, I didn't know about -Wdate-time. Do you want me to merge the
-entire series, or do you want individual maintainers merge the patches?
-In the latter case, I'd wait with applying 7/7 in order not to break the
-build. At any rate, you can add
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-Acked-by: Michal Marek <mmarek@suse.cz>
 
-Thanks,
-Michal
+>  drivers/xen/grant-table.c | 9 ++++++---
+>  1 file changed, 6 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> index aa846a4..99399cb 100644
+> --- a/drivers/xen/grant-table.c
+> +++ b/drivers/xen/grant-table.c
+> @@ -62,7 +62,6 @@
+>  
+>  static grant_ref_t **gnttab_list;
+>  static unsigned int nr_grant_frames;
+> -static unsigned int boot_max_nr_grant_frames;
+>  static int gnttab_free_count;
+>  static grant_ref_t gnttab_free_head;
+>  static DEFINE_SPINLOCK(gnttab_list_lock);
+> @@ -827,6 +826,11 @@ static unsigned int __max_nr_grant_frames(void)
+>  unsigned int gnttab_max_grant_frames(void)
+>  {
+>  	unsigned int xen_max = __max_nr_grant_frames();
+> +	static unsigned int boot_max_nr_grant_frames;
+> +
+> +	/* First time, initialize it properly. */
+> +	if (!boot_max_nr_grant_frames)
+> +		boot_max_nr_grant_frames = __max_nr_grant_frames();
+>  
+>  	if (xen_max > boot_max_nr_grant_frames)
+>  		return boot_max_nr_grant_frames;
+> @@ -1227,13 +1231,12 @@ int gnttab_init(void)
+>  
+>  	gnttab_request_version();
+>  	nr_grant_frames = 1;
+> -	boot_max_nr_grant_frames = __max_nr_grant_frames();
+>  
+>  	/* Determine the maximum number of frames required for the
+>  	 * grant reference free list on the current hypervisor.
+>  	 */
+>  	BUG_ON(grefs_per_grant_frame == 0);
+> -	max_nr_glist_frames = (boot_max_nr_grant_frames *
+> +	max_nr_glist_frames = (gnttab_max_grant_frames() *
+>  			       grefs_per_grant_frame / RPP);
+>  
+>  	gnttab_list = kmalloc(max_nr_glist_frames * sizeof(grant_ref_t *),
+> -- 
+> 1.8.3.1
+> 
