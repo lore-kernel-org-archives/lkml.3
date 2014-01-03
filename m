@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000AbaACNBk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 08:01:40 -0500
-Received: from plane.gmane.org ([80.91.229.3]:60485 "EHLO plane.gmane.org"
+	id S1751811AbaACNOr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 08:14:47 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:15566 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751022AbaACNBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 08:01:38 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Holger =?iso-8859-1?q?Hoffst=E4tte?= 
-	<holger.hoffstaette@googlemail.com>
-Subject: 3.12.6 warning/lockup at kernel/workqueue.c:1587
- worker_enter_idle+0xde/0x150()
-Date: Fri, 3 Jan 2014 13:01:14 +0000 (UTC)
-Message-ID: <pan.2014.01.03.13.01.26@googlemail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: p5b006574.dip0.t-ipconnect.de
-User-Agent: Pan/0.139 (Sexual Chocolate; GIT bf56508
- git://git.gnome.org/pan2)
+	id S1751085AbaACNOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 08:14:46 -0500
+X-IronPort-AV: E=Sophos;i="4.95,598,1384300800"; 
+   d="scan'208";a="89526783"
+Date: Fri, 3 Jan 2014 13:13:57 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Mark Salter <msalter@redhat.com>
+CC: Chen Baozi <baozich@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
+        <xen-devel@lists.xenproject.org>, <catalin.marinas@arm.com>,
+        <stefano.stabellini@eu.citrix.com>, <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH] arm64/xen: redefine xen_remap on arm64
+In-Reply-To: <1388431259.2564.15.camel@deneb.redhat.com>
+Message-ID: <alpine.DEB.2.02.1401031310100.8667@kaball.uk.xensource.com>
+References: <1388386511-32276-1-git-send-email-baozich@gmail.com> <1388431259.2564.15.camel@deneb.redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 30 Dec 2013, Mark Salter wrote:
+> On Mon, 2013-12-30 at 14:55 +0800, Chen Baozi wrote:
+> > xen_remap used to be defined as ioremap_cached on arm64. In commit
+> > c04e8e2fe, a new ioremap_cache was implemented, and ioremap_cached
+> > was deleted, while xen_remap stays the same. This would lead to
+> > the failure when building with CONFIG_HVC_XEN. Redefined xen_remap
+> > on arm64 as ioremap_cache on arm64 to fix it.
+> > 
+> 
+> I missed that include of arm header by arm64 when looking for users
+> of arm64's ioremap_cached() when working on commit c04e8e2fe. Anyway,
+> grepping the kernel tree, I see:
+> 
+>   ioremap_cached()
+>     defined by: arm, metag, unicore32
+>     used by: arch/arm/include/asm/xen/page.h
+>              drivers/mtd/maps/pxa2xx-flash.c
+> 
+>   ioremap_cache()
+>     defined by: arm64, sh, xtensa, ia64, x86
+>     used by: drivers/video/vesafb.c
+>              drivers/char/toshiba.c
+>              drivers/acpi/apei
+>              drivers/lguest/lguest_device.c
+>              drivers/sfi/sfi_core.c
+>              include/linux/acpi_io.h
+> 
+> I think it would be better to just avoid the confusion and the ifdef in
+> asm/xen/page.h by globally changing ioremap_cached to ioremap_cache.
 
-For one of my machines the new year started with a hiccup:
-
-Jan  1 01:55:39 tux kernel: ------------[ cut here ]------------
-Jan  1 01:55:39 tux kernel: WARNING: CPU: 1 PID: 21725 at kernel/workqueue.c:1587 worker_enter_idle+0xde/0x150()
-Jan  1 01:55:39 tux kernel: Modules linked in: sch_fq_codel btrfs libcrc32c xor raid6_pq nfsd auth_rpcgss oid_registry lockd sunrpc usbhid snd_hda_codec_hdmi snd_hda_codec_realtek x86_pkg_temp_thermal coretemp kvm_intel kvm crc32_pclmul crc32c_intel aesni_intel aes_x86_64 glue_helper lrw gf128mul ablk_helper cryptd snd_hda_intel snd_hda_codec r8169 i2c_i801 snd_pcm mii i2c_core snd_page_alloc snd_timer snd video soundcore
-Jan  1 01:55:39 tux kernel: CPU: 1 PID: 21725 Comm: kworker/1:1 Not tainted 3.12.6 #1
-Jan  1 01:55:39 tux kernel: Hardware name: System manufacturer System Product Name/P8Z68-V LX, BIOS 0703 10/21/2011
-Jan  1 01:55:39 tux kernel:  0000000000000009 ffff88020d599e08 ffffffff814636ef 0000000000000000
-Jan  1 01:55:39 tux kernel:  ffff88020d599e40 ffffffff8103c2e3 ffff88023fa91440 ffff880221a3f830
-Jan  1 01:55:39 tux kernel:  ffff8800965fe9a0 ffff88023fa91440 ffff880221a3f800 ffff88020d599e50
-Jan  1 01:55:39 tux kernel: Call Trace:
-Jan  1 01:55:39 tux kernel:  [<ffffffff814636ef>] dump_stack+0x45/0x56
-Jan  1 01:55:39 tux kernel:  [<ffffffff8103c2e3>] warn_slowpath_common+0x73/0x90
-Jan  1 01:55:39 tux kernel:  [<ffffffff8103c3b5>] warn_slowpath_null+0x15/0x20
-Jan  1 01:55:39 tux kernel:  [<ffffffff810514ee>] worker_enter_idle+0xde/0x150
-Jan  1 01:55:39 tux kernel:  [<ffffffff810535d8>] worker_thread+0x1a8/0x390
-Jan  1 01:55:39 tux kernel:  [<ffffffff81053430>] ? manage_workers.isra.26+0x2a0/0x2a0
-Jan  1 01:55:39 tux kernel:  [<ffffffff8105944b>] kthread+0xbb/0xc0
-Jan  1 01:55:39 tux kernel:  [<ffffffff81059390>] ? kthread_create_on_node+0x110/0x110
-Jan  1 01:55:39 tux kernel:  [<ffffffff8146e3fc>] ret_from_fork+0x7c/0xb0
-Jan  1 01:55:39 tux kernel:  [<ffffffff81059390>] ? kthread_create_on_node+0x110/0x110
-Jan  1 01:55:39 tux kernel: ---[ end trace 4500aee39afe638c ]---
-
-The machine was doing pretty much nothing at the time; I only noticed the problem
-when I couldn't ssh in, though pings were still coming in and out (console worked).
-Apparently some thread was now stuck so going into single-user or even controlled
-reboot no longer worked; I had to hit the big switch. Unkillable processes were
-e.g. chrony (ntp server) and NFS.
-
-Any insights? The box is rock solid otherwise, and the only thing out of the
-ordinary is that it's running the latest BFS, which so far has not shown to be
-a problem in any way, on multiple machines.
-
-thanks,
-Holger
-
+While I welcome the suggestion, this is a critical fix for a regression
+that I think should go in as soon as possible, maybe 3.13-rc7, while I
+don't think that a global s/ioremap_cached/ioremap_cache would be
+acceptable at this stage.
