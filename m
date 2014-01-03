@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671AbaACRtO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 12:49:14 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:37865 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751098AbaACRtM (ORCPT
+	id S1752750AbaACRu7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 12:50:59 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:54879 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172AbaACRu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 12:49:12 -0500
+	Fri, 3 Jan 2014 12:50:58 -0500
+X-IronPort-AV: E=Sophos;i="4.95,599,1384300800"; 
+   d="scan'208";a="87420133"
+Date: Fri, 3 Jan 2014 17:50:08 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        <xen-devel@lists.xensource.com>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH v5 16/33] xen, irq: Call irq_alloc_reserved_desc_at()
+ at first
+In-Reply-To: <1388707565-16535-17-git-send-email-yinghai@kernel.org>
+Message-ID: <alpine.DEB.2.02.1401031749340.8667@kaball.uk.xensource.com>
+References: <1388707565-16535-1-git-send-email-yinghai@kernel.org> <1388707565-16535-17-git-send-email-yinghai@kernel.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1388770748.14334.19.camel@joe-AO722>
-References: <1388507067.2259.24.camel@joe-AO722>
-	<201401011434.GAF34360.FFQOVtFOHJSMLO@I-love.SAKURA.ne.jp>
-	<1388555362.2259.38.camel@joe-AO722>
-	<201401011902.JEF43770.FSOVFFOHOtQLJM@I-love.SAKURA.ne.jp>
-	<1388626389.2259.57.camel@joe-AO722>
-	<201401021349.JGJ78109.OOFtFFHJMLSOQV@I-love.SAKURA.ne.jp>
-	<CAGXu5jL7RunQuAw1MjnUMgWeYMX35+YcGeaZYCx6dhND3YUmsQ@mail.gmail.com>
-	<1388770748.14334.19.camel@joe-AO722>
-Date: Fri, 3 Jan 2014 09:49:11 -0800
-X-Google-Sender-Auth: M8JJD-QQxEL074WotCeKP601dBw
-Message-ID: <CAGXu5j+gHtgx9MVCaJ2ogJ0WGCeTDkphsH3gm7S=+mTssicABg@mail.gmail.com>
-Subject: Re: [PATCH] lib/vsprintf: add %pT[C012] format specifier
-From: Kees Cook <keescook@chromium.org>
-To: Joe Perches <joe@perches.com>
-Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Jiri Kosina <jkosina@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 3, 2014 at 9:39 AM, Joe Perches <joe@perches.com> wrote:
-> On Fri, 2014-01-03 at 09:08 -0800, Kees Cook wrote:
->> I'm on board with the idea of embedding comm/pid/whatever,
->
-> I still think the space reduction isn't worth the
-> complication.
->
->>  but I
->> either missed or do not understand why a second format-start character
->> is being added. I think this will complicate audits and maybe trigger
->> weird info leaks (imagine printing a string that was %-escaped, but
->> not 0x1A-escaped?)
->> Why not use % followed by 0x1A to be the start code, instead of just 0x1A?
->
-> gcc would bleat an error for
->         "unknown conversion type character 0x1a in format".
+On Thu, 2 Jan 2014, Yinghai Lu wrote:
+> To make x86 irq allocation to be same with booting path and ioapic
+> hot add path, We will pre-reserve irq for all gsi at first.
+> We have to use alloc_reserved here, otherwise irq_alloc_desc_at will fail
+> because bit is already get marked for pre-reserved in irq bitmaps.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: xen-devel@lists.xensource.com
+> ---
+>  drivers/xen/events.c | 8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> index 4035e83..020cd77 100644
+> --- a/drivers/xen/events.c
+> +++ b/drivers/xen/events.c
+> @@ -508,8 +508,12 @@ static int __must_check xen_allocate_irq_gsi(unsigned gsi)
+>  	/* Legacy IRQ descriptors are already allocated by the arch. */
+>  	if (gsi < NR_IRQS_LEGACY)
+>  		irq = gsi;
+> -	else
+> -		irq = irq_alloc_desc_at(gsi, -1);
+> +	else {
+> +		/* for x86, irq already get reserved for gsi */
+> +		irq = irq_alloc_reserved_desc_at(gsi, -1);
+> +		if (irq < 0)
+> +			irq = irq_alloc_desc_at(gsi, -1);
+> +	}
 
-Oh right. Bleh. Which gets me back around to the original patch which
-overloaded %p.
+This is common code. On ARM I get:
 
-Hrmpf. Yeah, on the fence about this.
+drivers/xen/events.c: In function 'xen_allocate_irq_gsi':
+drivers/xen/events.c:513:3: error: implicit declaration of function 'irq_alloc_reserved_desc_at' [-Werror=implicit-function-declaration]
+   irq = irq_alloc_reserved_desc_at(gsi, -1);
+   ^
+cc1: some warnings being treated as errors
 
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
