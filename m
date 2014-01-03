@@ -1,72 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463AbaACRpN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 12:45:13 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:56243 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055AbaACRpL (ORCPT
+	id S1752627AbaACRqm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 12:46:42 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:45398 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099AbaACRql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 12:45:11 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-ce-52c6f724577f
-Message-id: <52C6F722.3090704@samsung.com>
-Date: Fri, 03 Jan 2014 21:45:06 +0400
-From: Alexey Perevalov <a.perevalov@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
- Thunderbird/17.0.7
-MIME-version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, anton@enomsg.org, kyungmin.park@samsung.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 0/3] Deferrable timers support for timerfd API
-References: <1388687448-12987-1-git-send-email-a.perevalov@samsung.com>
- <52C5F38D.5060201@linaro.org>
-In-reply-to: <52C5F38D.5060201@linaro.org>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHLMWRmVeSWpSXmKPExsVy+t/xy7oq348FGWz5amwxZ/0aNouDWzUt
-	zvzWtTjb9Ibd4vKuOWwOrB4T+j8xety5tofN48SM3ywefVtWMXp83iQXwBrFZZOSmpNZllqk
-	b5fAlfH01Er2gv+cFa8PrmVsYGzh6GLk4JAQMJHY9yOxi5ETyBSTuHBvPVsXIxeHkMBSRolV
-	81exQDifGSU6u6awg1TxCmhJ7Jp3GcxmEVCVeLz9EDPIIDYBA4l992xBTFGBCImjyzUhqgUl
-	fky+xwJiiwhoSCxccpUJpIRZIEti5v1ikLCwgJPErvkvmUBsIYF0iWtTd4DZnECLnh9rB2tl
-	FrCWWDlpGyOELS+xec1b5gmMArOQbJiFpGwWkrIFjMyrGEVTS5MLipPSc430ihNzi0vz0vWS
-	83M3MULC+OsOxqXHrA4xCnAwKvHwZpw8FiTEmlhWXJl7iFGCg1lJhDfwDVCINyWxsiq1KD++
-	qDQntfgQIxMHp1QDI8/sylf1kwufhnzrO5zGZFvL/8luzuvf/E9POnwKatS4/njqRMmHJ2ct
-	OSykVbJtnfypsmUiaU+YmN1erNMwYznrInJvx+EJq0QDO9XmsvMrzeXaKW9qaNrwsuZU43Ev
-	6TCrvIV7d55bcfnGiePZ04NPM7ju3O75+lFjBl+8P8sEx9pzPWL285RYijMSDbWYi4oTAecY
-	AChBAgAA
+	Fri, 3 Jan 2014 12:46:41 -0500
+Message-ID: <52C6F781.4040500@gmail.com>
+Date: Fri, 03 Jan 2014 09:46:41 -0800
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Ramkumar Ramachandra <artagnon@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] Documentation/cpu-freq: add intel-pstate.txt
+References: <1388748673-11032-1-git-send-email-artagnon@gmail.com> <2121197.s7JHyFUj5C@vostro.rjw.lan>
+In-Reply-To: <2121197.s7JHyFUj5C@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/2014 03:17 AM, John Stultz wrote:
-> On 01/02/2014 10:30 AM, Alexey Perevalov wrote:
->> This version introduces new clockid (CLOCK_DEFERRABLE) , for timerfd_create, instead of
->> new flag (TFD_TIMER_DEFERRABLE) for timerfd_settime introduced in previous version.
-> So why did you make this change?
+On 01/03/2014 04:09 AM, Rafael J. Wysocki wrote:
+> On Friday, January 03, 2014 05:01:13 PM Ramkumar Ramachandra wrote:
+>> The Intel P-state driver is currently undocumented. Add some
+>> documentation based on the cover-letter sent with the original series.
+>>
+>> Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
 >
-> thanks
-> -john
->
+> Dirk, what do you think?
 >
 
-I looked at alarm timers and found approach of making timer behavior 
-persistent per file descriptor is better than
-changeable by timerfd_settime. I think "end user wake up from suspend" 
-and "don't wake up in idle" is the same thing on the same abstraction level.
+This is accurate, along with the wording changes suggested by you and
+Randy,
+>> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+>> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+>> Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+>> ---
+>>   I was looking for documentation on my cpufreq driver, intel_pstate,
+>>   and found nothing: so, here's a small start. Although the original
+>>   message said SandyBridge only, I noticed that
+>>   /sys/devices/system/cpu/cpu0/cpufreq/scaling_driver says intel_pstate
+>>   on my IvyBridge; so I figured subsequent patches introduced support
+>>   for SandyBridge+.
+>>
+>>   I noticed two "policies" in the code: CPUFREQ_POLICY_PERFORMANCE and
+>>   CPUFREQ_POLICY_POWERSAVE, but I have no idea how to switch from one
+>>   to the other. The userspace tool cpupower seems to be too tightly
+>>   tied to the acpi-cpufreq driver, and I'm not able to find any others.
+>>
+>>   Also, how well is the driver performing? I seem to be getting
+>>   terrible battery life on my 2013 MBP.
+>>
+>>   Thanks.
+>>
+>>   Documentation/cpu-freq/intel-pstate.txt | 40 +++++++++++++++++++++++++++++++++
+>>   1 file changed, 40 insertions(+)
+>>   create mode 100644 Documentation/cpu-freq/intel-pstate.txt
+>>
+>> diff --git a/Documentation/cpu-freq/intel-pstate.txt b/Documentation/cpu-freq/intel-pstate.txt
+>> new file mode 100644
+>> index 0000000..fda74ab
+>> --- /dev/null
+>> +++ b/Documentation/cpu-freq/intel-pstate.txt
+>> @@ -0,0 +1,40 @@
+>> +Intel P-state driver
+>> +--------------------
+>> +
+>> +This driver implements a scaling driver with an internal governor for
+>> +Intel Core processors.  The driver follows the same model as the
+>> +Transmeta scaling driver (longrun.c) and implements the setpolicy()
+>> +instead of target().  Scaling drivers that implement setpolicy() are
+>> +assmuned to implement internal governors by the cpufreq core. All the
+>> +logic for selecting the current P state is contained within the driver
+>> +no external governor is used by the cpufreq core.
+>> +
+>> +Only Intel SandyBridge+ processors are supported.
+>
+> That's not the case any more.
 
-Yes Anton's previous  patches worked with CLOCK_MONOTONIC only and I 
-didn't intend to use it with CLOCK_REALTIME, cause it's hard to me to 
-find such use case.
-Another way - it's stay as was Anton's patch, I mean as flag for the 
-timerfd_settime, but in original patch set both hrtimer and deferrable 
-timers initialized in timerfd_create, I think it's not needed. Also 
-ability to change timer behavior looks not good if you couldn't change 
-alarm timer behavior, not unified API.
+SandyBridge+ is accurate "only SandyBridge" is not
 
-If I'm right, only high resolution timer could be REALTIME, and there is 
-no deferrable behavior for hrtimer only for timer_list.
+>
+>> +
+>> +New sysfs files for controlling P state selection have been added to
+>> +/sys/devices/system/cpu/intel_pstate/
+>> +
+>> +      max_perf_pct: limits the maximum P state that will be requested by
+>> +      the driver stated as a percentage of the avail performance.
+>> +
+>> +      min_perf_pct: limits the minimum P state that will be  requested by
+>> +      the driver stated as a percentage of the avail performance.
+>> +
+>> +      no_turbo: limits the driver to selecting P states below the turbo
+>> +      frequency range.
+>> +
+>
+> It would be good to document them in Documentation/ABI/testing/ as well.
+>
+>> +The units for these for these files are purposely abstract and stated
+>> +in terms of available performance and not frequency.  In idea that
+>
+> I would say "For contemporary Intel processor the frequency is controlled
+> by the processor itself and the P-states exposed to software are related to
+> performance levels" instead.
+>
+>> +frequency can be set to a single frequency is a fiction for Intel Core
+>> +processors. Even if the scaling driver selects a single P state the
+>> +actual frequency the processor will run at is selected by the
+>> +processor itself.
+>> +
+>> +New debugfs files have also been added to /sys/kernel/debug/pstate_snb/
+>> +
+>> +      deadband
+>> +      d_gain_pct
+>> +      i_gain_pct
+>> +      p_gain_pct
+>> +      sample_rate_ms
+>> +      setpoint
+>>
+>
+> Thanks!
+>
 
-
--- 
-Best regards,
-Alexey Perevalov
