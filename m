@@ -1,70 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806AbaACPlz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 10:41:55 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:28931 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751950AbaACPly (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 10:41:54 -0500
+	id S1752890AbaACPmh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 10:42:37 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:43806 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752436AbaACPmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 10:42:36 -0500
 X-IronPort-AV: E=Sophos;i="4.95,598,1384300800"; 
-   d="scan'208";a="87379905"
-Message-ID: <52C6DA3F.7070509@citrix.com>
-Date: Fri, 3 Jan 2014 15:41:51 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
-MIME-Version: 1.0
+   d="scan'208";a="89568797"
+Date: Fri, 3 Jan 2014 15:41:47 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
 To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
-        <boris.ostrovsky@oracle.com>, <stefano.stabellini@eu.citrix.com>,
-        <mukesh.rathor@oracle.com>
-Subject: Re: [PATCH v12 15/18] xen/pvh: Piggyback on PVHVM for grant driver
- (v2)
-References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com> <1388550945-25499-16-git-send-email-konrad.wilk@oracle.com> <52C59483.5030607@citrix.com> <20140102185023.GG3021@pegasus.dumpdata.com> <52C6A4E5.3080904@citrix.com> <20140103144409.GC27019@phenom.dumpdata.com>
-In-Reply-To: <20140103144409.GC27019@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
+        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
+        <stefano.stabellini@eu.citrix.com>, <mukesh.rathor@oracle.com>
+Subject: Re: [PATCH v12 04/18] xen/pvh: Don't setup P2M tree.
+In-Reply-To: <1388550945-25499-5-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1401031541390.8667@kaball.uk.xensource.com>
+References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com> <1388550945-25499-5-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/14 14:44, Konrad Rzeszutek Wilk wrote:
-> On Fri, Jan 03, 2014 at 11:54:13AM +0000, David Vrabel wrote:
->> On 02/01/14 18:50, Konrad Rzeszutek Wilk wrote:
->>> On Thu, Jan 02, 2014 at 04:32:03PM +0000, David Vrabel wrote:
->>>> On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
->>>>> @@ -1320,4 +1323,4 @@ static int __gnttab_init(void)
->>>>>  	return gnttab_init();
->>>>>  }
->>>>>  
->>>>> -core_initcall(__gnttab_init);
->>>>> +core_initcall_sync(__gnttab_init);
->>>>
->>>> Why has this become _sync?
->>>
->>> It needs to run _after_ the xen_pvh_gnttab_setup has run (which is
->>> at gnttab_init):
->>
->>
->> The use of core_initcall_sync() doesn't imply any ordering to me.  Can't
+On Tue, 31 Dec 2013, Konrad Rzeszutek Wilk wrote:
+> P2M is not available for PVH. Fortunatly for us the
+> P2M code already has mostly the support for auto-xlat guest thanks to
+> commit 3d24bbd7dddbea54358a9795abaf051b0f18973c
+> "grant-table: call set_phys_to_machine after mapping grant refs"
+> which: "
+> introduces set_phys_to_machine calls for auto_translated guests
+> (even on x86) in gnttab_map_refs and gnttab_unmap_refs.
+> translated by swiotlb-xen... " so we don't need to muck much.
 > 
-> It has a clear ordering property.
-
-This really isn't obvious to me.  Can you point to the docs/code the
-guarantee this?  I couldn't find it.
-
->> you call xen_pvh_gnttab_setup() from within __gnttab_init() ?
+> with above mentioned "commit you'll get set_phys_to_machine calls
+> from gnttab_map_refs and gnttab_unmap_refs but PVH guests won't do
+> anything with them " (Stefano Stabellini) which is OK - we want
+> them to be NOPs.
 > 
-> No. That is due to the fact that __gnttab_init() is in drivers/xen and is
-> also used by the ARM code.
+> This is because we assume that an "IOMMU is always present on the
+> plaform and Xen is going to make the appropriate IOMMU pagetable
+> changes in the hypercall implementation of GNTTABOP_map_grant_ref
+> and GNTTABOP_unmap_grant_ref, then eveything should be transparent
+> from PVH priviligied point of view and DMA transfers involving
+> foreign pages keep working with no issues[sp]
 > 
-> Stefano in his previous review mentioned he would like PVH specific
-> code in arch/x86:
+> Otherwise we would need a P2M (and an M2P) for PVH priviligied to
+> track these foreign pages .. (see arch/arm/xen/p2m.c)."
+> (Stefano Stabellini).
 > 
-> https://lkml.org/lkml/2013/12/18/507
+> We still have to inhibit the building of the P2M tree.
+> That had been done in the past by not calling
+> xen_build_dynamic_phys_to_machine (which setups the P2M tree
+> and gives us virtual address to access them). But we are missing
+> a check for xen_build_mfn_list_list - which was continuing to setup
+> the P2M tree and would blow up at trying to get the virtual
+> address of p2m_missing (which would have been setup by
+> xen_build_dynamic_phys_to_machine).
+> 
+> Hence a check is needed to not call xen_build_mfn_list_list when
+> running in auto-xlat mode.
+> 
+> Instead of replicating the check for auto-xlat in enlighten.c
+> do it in the p2m.c code. The reason is that the xen_build_mfn_list_list
+> is called also in xen_arch_post_suspend without any checks for
+> auto-xlat. So for PVH or PV with auto-xlat - we would needlessly
+> allocate space for an P2M tree.
+> 
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-Call it xen_arch_gnttab_setup() and add weak stub for other architectures?
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-David
+
+>  arch/x86/xen/enlighten.c |  3 +--
+>  arch/x86/xen/p2m.c       | 12 ++++++++++--
+>  2 files changed, 11 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index 755e5bb..ab4dd70 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1493,8 +1493,7 @@ asmlinkage void __init xen_start_kernel(void)
+>  	x86_configure_nx();
+>  
+>  	/* Get mfn list */
+> -	if (!xen_feature(XENFEAT_auto_translated_physmap))
+> -		xen_build_dynamic_phys_to_machine();
+> +	xen_build_dynamic_phys_to_machine();
+>  
+>  	/*
+>  	 * Set up kernel GDT and segment registers, mainly so that
+> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+> index 2ae8699..fb7ee0a 100644
+> --- a/arch/x86/xen/p2m.c
+> +++ b/arch/x86/xen/p2m.c
+> @@ -280,6 +280,9 @@ void __ref xen_build_mfn_list_list(void)
+>  {
+>  	unsigned long pfn;
+>  
+> +	if (xen_feature(XENFEAT_auto_translated_physmap))
+> +		return;
+> +
+>  	/* Pre-initialize p2m_top_mfn to be completely missing */
+>  	if (p2m_top_mfn == NULL) {
+>  		p2m_mid_missing_mfn = extend_brk(PAGE_SIZE, PAGE_SIZE);
+> @@ -346,10 +349,15 @@ void xen_setup_mfn_list_list(void)
+>  /* Set up p2m_top to point to the domain-builder provided p2m pages */
+>  void __init xen_build_dynamic_phys_to_machine(void)
+>  {
+> -	unsigned long *mfn_list = (unsigned long *)xen_start_info->mfn_list;
+> -	unsigned long max_pfn = min(MAX_DOMAIN_PAGES, xen_start_info->nr_pages);
+> +	unsigned long *mfn_list;
+> +	unsigned long max_pfn;
+>  	unsigned long pfn;
+>  
+> +	 if (xen_feature(XENFEAT_auto_translated_physmap))
+> +		return;
+> +
+> +	mfn_list = (unsigned long *)xen_start_info->mfn_list;
+> +	max_pfn = min(MAX_DOMAIN_PAGES, xen_start_info->nr_pages);
+>  	xen_max_p2m_pfn = max_pfn;
+>  
+>  	p2m_missing = extend_brk(PAGE_SIZE, PAGE_SIZE);
+> -- 
+> 1.8.3.1
+> 
