@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188AbaACCPO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 21:15:14 -0500
+	id S1754271AbaACCQE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 21:16:04 -0500
 Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:36344 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752742AbaACCLr (ORCPT
+	by vger.kernel.org with ESMTP id S1751788AbaACCLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 21:11:47 -0500
-Message-Id: <20140103021145.957897267@goodmis.org>
+	Thu, 2 Jan 2014 21:11:46 -0500
+Message-Id: <20140103021145.815573809@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 02 Jan 2014 21:10:31 -0500
+Date: Thu, 02 Jan 2014 21:10:30 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
@@ -20,9 +20,9 @@ Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Namhyung Kim <namhyung@kernel.org>
-Subject: [for-next][PATCH 10/17] tracing/probes: Move symbol fetch method to kprobes
+Subject: [for-next][PATCH 09/17] tracing/probes: Implement stack fetch method for uprobes
 References: <20140103021021.238772653@goodmis.org>
-Content-Disposition: inline; filename=0010-tracing-probes-Move-symbol-fetch-method-to-kprobes.patch
+Content-Disposition: inline; filename=0009-tracing-probes-Implement-stack-fetch-method-for-upro.patch
 X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -31,10 +31,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Move existing functions to trace_kprobe.c and add NULL entries to the
-uprobes fetch type table.  I don't make them static since some generic
-routines like update/free_XXX_fetch_param() require pointers to the
-functions.
+Use separate method to fetch from stack.  Move existing functions to
+trace_kprobe.c and make them static.  Also add new stack fetch
+implementation for uprobes.
 
 Acked-by: Oleg Nesterov <oleg@redhat.com>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
@@ -43,209 +42,158 @@ Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- kernel/trace/trace_kprobe.c | 59 +++++++++++++++++++++++++++++++++++++++++++++
- kernel/trace/trace_probe.c  | 59 ---------------------------------------------
- kernel/trace/trace_probe.h  | 24 ++++++++++++++++++
- kernel/trace/trace_uprobe.c |  8 ++++++
- 4 files changed, 91 insertions(+), 59 deletions(-)
+ kernel/trace/trace_kprobe.c | 15 +++++++++++++++
+ kernel/trace/trace_probe.c  | 22 ----------------------
+ kernel/trace/trace_probe.h  | 14 ++++++++++----
+ kernel/trace/trace_uprobe.c | 41 +++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 66 insertions(+), 26 deletions(-)
 
 diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 389f9e4..d2a4fd2 100644
+index fe3f00c..389f9e4 100644
 --- a/kernel/trace/trace_kprobe.c
 +++ b/kernel/trace/trace_kprobe.c
-@@ -88,6 +88,51 @@ static int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs);
+@@ -88,6 +88,21 @@ static int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs);
  static int kretprobe_dispatcher(struct kretprobe_instance *ri,
  				struct pt_regs *regs);
  
-+/* Memory fetching by symbol */
-+struct symbol_cache {
-+	char		*symbol;
-+	long		offset;
-+	unsigned long	addr;
-+};
-+
-+unsigned long update_symbol_cache(struct symbol_cache *sc)
-+{
-+	sc->addr = (unsigned long)kallsyms_lookup_name(sc->symbol);
-+
-+	if (sc->addr)
-+		sc->addr += sc->offset;
-+
-+	return sc->addr;
-+}
-+
-+void free_symbol_cache(struct symbol_cache *sc)
-+{
-+	kfree(sc->symbol);
-+	kfree(sc);
-+}
-+
-+struct symbol_cache *alloc_symbol_cache(const char *sym, long offset)
-+{
-+	struct symbol_cache *sc;
-+
-+	if (!sym || strlen(sym) == 0)
-+		return NULL;
-+
-+	sc = kzalloc(sizeof(struct symbol_cache), GFP_KERNEL);
-+	if (!sc)
-+		return NULL;
-+
-+	sc->symbol = kstrdup(sym, GFP_KERNEL);
-+	if (!sc->symbol) {
-+		kfree(sc);
-+		return NULL;
-+	}
-+	sc->offset = offset;
-+	update_symbol_cache(sc);
-+
-+	return sc;
-+}
-+
- /*
-  * Kprobes-specific fetch functions
-  */
-@@ -103,6 +148,20 @@ DEFINE_BASIC_FETCH_FUNCS(stack)
- #define fetch_stack_string	NULL
- #define fetch_stack_string_size	NULL
- 
-+#define DEFINE_FETCH_symbol(type)					\
-+__kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,	\
-+					  void *data, void *dest)	\
++/*
++ * Kprobes-specific fetch functions
++ */
++#define DEFINE_FETCH_stack(type)					\
++static __kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,\
++					  void *offset, void *dest)	\
 +{									\
-+	struct symbol_cache *sc = data;					\
-+	if (sc->addr)							\
-+		fetch_memory_##type(regs, (void *)sc->addr, dest);	\
-+	else								\
-+		*(type *)dest = 0;					\
++	*(type *)dest = (type)regs_get_kernel_stack_nth(regs,		\
++				(unsigned int)((unsigned long)offset));	\
 +}
-+DEFINE_BASIC_FETCH_FUNCS(symbol)
-+DEFINE_FETCH_symbol(string)
-+DEFINE_FETCH_symbol(string_size)
++DEFINE_BASIC_FETCH_FUNCS(stack)
++/* No string on the stack entry */
++#define fetch_stack_string	NULL
++#define fetch_stack_string_size	NULL
 +
  /* Fetch type information table */
  const struct fetch_type kprobes_fetch_type_table[] = {
  	/* Special types */
 diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index 77aa7d1..a31ad47 100644
+index 541036e..77aa7d1 100644
 --- a/kernel/trace/trace_probe.c
 +++ b/kernel/trace/trace_probe.c
-@@ -180,65 +180,6 @@ __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
- 		*(u32 *)dest = len;
- }
+@@ -70,16 +70,6 @@ __kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
  
--/* Memory fetching by symbol */
--struct symbol_cache {
--	char		*symbol;
--	long		offset;
--	unsigned long	addr;
--};
+ const char PRINT_TYPE_FMT_NAME(string)[] = "\\\"%s\\\"";
+ 
+-/*
+- * Define macro for basic types - we don't need to define s* types, because
+- * we have to care only about bitwidth at recording time.
+- */
+-#define DEFINE_BASIC_FETCH_FUNCS(method) \
+-DEFINE_FETCH_##method(u8)		\
+-DEFINE_FETCH_##method(u16)		\
+-DEFINE_FETCH_##method(u32)		\
+-DEFINE_FETCH_##method(u64)
 -
--static unsigned long update_symbol_cache(struct symbol_cache *sc)
--{
--	sc->addr = (unsigned long)kallsyms_lookup_name(sc->symbol);
--
--	if (sc->addr)
--		sc->addr += sc->offset;
--
--	return sc->addr;
--}
--
--static void free_symbol_cache(struct symbol_cache *sc)
--{
--	kfree(sc->symbol);
--	kfree(sc);
--}
--
--static struct symbol_cache *alloc_symbol_cache(const char *sym, long offset)
--{
--	struct symbol_cache *sc;
--
--	if (!sym || strlen(sym) == 0)
--		return NULL;
--
--	sc = kzalloc(sizeof(struct symbol_cache), GFP_KERNEL);
--	if (!sc)
--		return NULL;
--
--	sc->symbol = kstrdup(sym, GFP_KERNEL);
--	if (!sc->symbol) {
--		kfree(sc);
--		return NULL;
--	}
--	sc->offset = offset;
--	update_symbol_cache(sc);
--
--	return sc;
--}
--
--#define DEFINE_FETCH_symbol(type)					\
--__kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,	\
--					  void *data, void *dest)	\
+ #define CHECK_FETCH_FUNCS(method, fn)			\
+ 	(((FETCH_FUNC_NAME(method, u8) == fn) ||	\
+ 	  (FETCH_FUNC_NAME(method, u16) == fn) ||	\
+@@ -102,18 +92,6 @@ DEFINE_BASIC_FETCH_FUNCS(reg)
+ #define fetch_reg_string	NULL
+ #define fetch_reg_string_size	NULL
+ 
+-#define DEFINE_FETCH_stack(type)					\
+-__kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,	\
+-					  void *offset, void *dest)	\
 -{									\
--	struct symbol_cache *sc = data;					\
--	if (sc->addr)							\
--		fetch_memory_##type(regs, (void *)sc->addr, dest);	\
--	else								\
--		*(type *)dest = 0;					\
+-	*(type *)dest = (type)regs_get_kernel_stack_nth(regs,		\
+-				(unsigned int)((unsigned long)offset));	\
 -}
--DEFINE_BASIC_FETCH_FUNCS(symbol)
--DEFINE_FETCH_symbol(string)
--DEFINE_FETCH_symbol(string_size)
+-DEFINE_BASIC_FETCH_FUNCS(stack)
+-/* No string on the stack entry */
+-#define fetch_stack_string	NULL
+-#define fetch_stack_string_size	NULL
 -
- /* Dereference memory access function */
- struct deref_fetch_param {
- 	struct fetch_param	orig;
+ #define DEFINE_FETCH_retval(type)					\
+ __kprobes void FETCH_FUNC_NAME(retval, type)(struct pt_regs *regs,	\
+ 					  void *dummy, void *dest)	\
 diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
-index 8211dd6..8be8455 100644
+index 5b77798..8211dd6 100644
 --- a/kernel/trace/trace_probe.h
 +++ b/kernel/trace/trace_probe.h
-@@ -239,6 +239,30 @@ ASSIGN_FETCH_FUNC(bitfield, ftype),			\
- extern __weak const struct fetch_type kprobes_fetch_type_table[];
- extern __weak const struct fetch_type uprobes_fetch_type_table[];
+@@ -167,10 +167,6 @@ DECLARE_BASIC_FETCH_FUNCS(reg);
+ #define fetch_reg_string			NULL
+ #define fetch_reg_string_size			NULL
  
-+#ifdef CONFIG_KPROBE_EVENT
-+struct symbol_cache;
-+unsigned long update_symbol_cache(struct symbol_cache *sc);
-+void free_symbol_cache(struct symbol_cache *sc);
-+struct symbol_cache *alloc_symbol_cache(const char *sym, long offset);
-+#else
-+struct symbol_cache {
-+};
-+static inline unsigned long __used update_symbol_cache(struct symbol_cache *sc)
-+{
-+	return 0;
-+}
+-DECLARE_BASIC_FETCH_FUNCS(stack);
+-#define fetch_stack_string			NULL
+-#define fetch_stack_string_size			NULL
+-
+ DECLARE_BASIC_FETCH_FUNCS(retval);
+ #define fetch_retval_string			NULL
+ #define fetch_retval_string_size		NULL
+@@ -191,6 +187,16 @@ DECLARE_BASIC_FETCH_FUNCS(bitfield);
+ #define fetch_bitfield_string			NULL
+ #define fetch_bitfield_string_size		NULL
+ 
++/*
++ * Define macro for basic types - we don't need to define s* types, because
++ * we have to care only about bitwidth at recording time.
++ */
++#define DEFINE_BASIC_FETCH_FUNCS(method) \
++DEFINE_FETCH_##method(u8)		\
++DEFINE_FETCH_##method(u16)		\
++DEFINE_FETCH_##method(u32)		\
++DEFINE_FETCH_##method(u64)
 +
-+static inline void __used free_symbol_cache(struct symbol_cache *sc)
-+{
-+}
-+
-+static inline struct symbol_cache * __used
-+alloc_symbol_cache(const char *sym, long offset)
-+{
-+	return NULL;
-+}
-+#endif /* CONFIG_KPROBE_EVENT */
-+
- struct probe_arg {
- 	struct fetch_param	fetch;
- 	struct fetch_param	fetch_size;
+ /* Default (unsigned long) fetch type */
+ #define __DEFAULT_FETCH_TYPE(t) u##t
+ #define _DEFAULT_FETCH_TYPE(t) __DEFAULT_FETCH_TYPE(t)
 diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 5395d37..24ef6a3 100644
+index 2c60925..5395d37 100644
 --- a/kernel/trace/trace_uprobe.c
 +++ b/kernel/trace/trace_uprobe.c
-@@ -115,6 +115,14 @@ DEFINE_BASIC_FETCH_FUNCS(stack)
- #define fetch_stack_string_size	NULL
+@@ -74,6 +74,47 @@ static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs);
+ static int uretprobe_dispatcher(struct uprobe_consumer *con,
+ 				unsigned long func, struct pt_regs *regs);
  
- 
-+/* uprobes do not support symbol fetch methods */
-+#define fetch_symbol_u8			NULL
-+#define fetch_symbol_u16		NULL
-+#define fetch_symbol_u32		NULL
-+#define fetch_symbol_u64		NULL
-+#define fetch_symbol_string		NULL
-+#define fetch_symbol_string_size	NULL
++#ifdef CONFIG_STACK_GROWSUP
++static unsigned long adjust_stack_addr(unsigned long addr, unsigned int n)
++{
++	return addr - (n * sizeof(long));
++}
++#else
++static unsigned long adjust_stack_addr(unsigned long addr, unsigned int n)
++{
++	return addr + (n * sizeof(long));
++}
++#endif
++
++static unsigned long get_user_stack_nth(struct pt_regs *regs, unsigned int n)
++{
++	unsigned long ret;
++	unsigned long addr = user_stack_pointer(regs);
++
++	addr = adjust_stack_addr(addr, n);
++
++	if (copy_from_user(&ret, (void __force __user *) addr, sizeof(ret)))
++		return 0;
++
++	return ret;
++}
++
++/*
++ * Uprobes-specific fetch functions
++ */
++#define DEFINE_FETCH_stack(type)					\
++static __kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,\
++					  void *offset, void *dest)	\
++{									\
++	*(type *)dest = (type)get_user_stack_nth(regs,			\
++					      ((unsigned long)offset)); \
++}
++DEFINE_BASIC_FETCH_FUNCS(stack)
++/* No string on the stack entry */
++#define fetch_stack_string	NULL
++#define fetch_stack_string_size	NULL
++
 +
  /* Fetch type information table */
  const struct fetch_type uprobes_fetch_type_table[] = {
