@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410AbaACUeE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 15:34:04 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:21974 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753846AbaACU37 (ORCPT
+	id S1754497AbaACUeN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 15:34:13 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:23296 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753824AbaACU37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Jan 2014 15:29:59 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -12,9 +12,9 @@ To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
         boris.ostrovsky@oracle.com, stefano.stabellini@eu.citrix.com,
         david.vrabel@citrix.com
 Cc: hpa@zytor.com, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v13 05/19] xen/mmu/p2m: Refactor the xen_pagetable_init code (v2).
-Date: Fri,  3 Jan 2014 14:38:22 -0500
-Message-Id: <1388777916-1328-6-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH v13 04/19] xen/pvh: Don't setup P2M tree.
+Date: Fri,  3 Jan 2014 14:38:21 -0500
+Message-Id: <1388777916-1328-5-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1388777916-1328-1-git-send-email-konrad.wilk@oracle.com>
 References: <1388777916-1328-1-git-send-email-konrad.wilk@oracle.com>
@@ -23,113 +23,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The revector and copying of the P2M only happens when
-!auto-xlat and on 64-bit builds. It is not obvious from
-the code, so lets have seperate 32 and 64-bit functions.
+P2M is not available for PVH. Fortunatly for us the
+P2M code already has mostly the support for auto-xlat guest thanks to
+commit 3d24bbd7dddbea54358a9795abaf051b0f18973c
+"grant-table: call set_phys_to_machine after mapping grant refs"
+which: "
+introduces set_phys_to_machine calls for auto_translated guests
+(even on x86) in gnttab_map_refs and gnttab_unmap_refs.
+translated by swiotlb-xen... " so we don't need to muck much.
 
-We also invert the check for auto-xlat to make the code
-flow simpler.
+with above mentioned "commit you'll get set_phys_to_machine calls
+from gnttab_map_refs and gnttab_unmap_refs but PVH guests won't do
+anything with them " (Stefano Stabellini) which is OK - we want
+them to be NOPs.
 
-Suggested-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+This is because we assume that an "IOMMU is always present on the
+plaform and Xen is going to make the appropriate IOMMU pagetable
+changes in the hypercall implementation of GNTTABOP_map_grant_ref
+and GNTTABOP_unmap_grant_ref, then eveything should be transparent
+from PVH priviligied point of view and DMA transfers involving
+foreign pages keep working with no issues[sp]
+
+Otherwise we would need a P2M (and an M2P) for PVH priviligied to
+track these foreign pages .. (see arch/arm/xen/p2m.c)."
+(Stefano Stabellini).
+
+We still have to inhibit the building of the P2M tree.
+That had been done in the past by not calling
+xen_build_dynamic_phys_to_machine (which setups the P2M tree
+and gives us virtual address to access them). But we are missing
+a check for xen_build_mfn_list_list - which was continuing to setup
+the P2M tree and would blow up at trying to get the virtual
+address of p2m_missing (which would have been setup by
+xen_build_dynamic_phys_to_machine).
+
+Hence a check is needed to not call xen_build_mfn_list_list when
+running in auto-xlat mode.
+
+Instead of replicating the check for auto-xlat in enlighten.c
+do it in the p2m.c code. The reason is that the xen_build_mfn_list_list
+is called also in xen_arch_post_suspend without any checks for
+auto-xlat. So for PVH or PV with auto-xlat - we would needlessly
+allocate space for an P2M tree.
+
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- arch/x86/xen/mmu.c | 70 +++++++++++++++++++++++++++++-------------------------
- 1 file changed, 37 insertions(+), 33 deletions(-)
+ arch/x86/xen/enlighten.c |  3 +--
+ arch/x86/xen/p2m.c       | 12 ++++++++++--
+ 2 files changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index ce563be..c140eff 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1198,44 +1198,40 @@ static void __init xen_cleanhighmap(unsigned long vaddr,
- 	 * instead of somewhere later and be confusing. */
- 	xen_mc_flush();
- }
--#endif
--static void __init xen_pagetable_init(void)
-+static void __init xen_pagetable_p2m_copy(void)
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index eb0efc2..23ead29 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1488,8 +1488,7 @@ asmlinkage void __init xen_start_kernel(void)
+ 	x86_configure_nx();
+ 
+ 	/* Get mfn list */
+-	if (!xen_feature(XENFEAT_auto_translated_physmap))
+-		xen_build_dynamic_phys_to_machine();
++	xen_build_dynamic_phys_to_machine();
+ 
+ 	/*
+ 	 * Set up kernel GDT and segment registers, mainly so that
+diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+index 2ae8699..fb7ee0a 100644
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -280,6 +280,9 @@ void __ref xen_build_mfn_list_list(void)
  {
--#ifdef CONFIG_X86_64
- 	unsigned long size;
- 	unsigned long addr;
--#endif
--	paging_init();
--	xen_setup_shared_info();
--#ifdef CONFIG_X86_64
--	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
--		unsigned long new_mfn_list;
-+	unsigned long new_mfn_list;
-+
+ 	unsigned long pfn;
+ 
 +	if (xen_feature(XENFEAT_auto_translated_physmap))
 +		return;
 +
-+	size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
-+
-+	/* On 32-bit, we get zero so this never gets executed. */
-+	new_mfn_list = xen_revector_p2m_tree();
-+	if (new_mfn_list && new_mfn_list != xen_start_info->mfn_list) {
-+		/* using __ka address and sticking INVALID_P2M_ENTRY! */
-+		memset((void *)xen_start_info->mfn_list, 0xff, size);
-+
-+		/* We should be in __ka space. */
-+		BUG_ON(xen_start_info->mfn_list < __START_KERNEL_map);
-+		addr = xen_start_info->mfn_list;
-+		/* We roundup to the PMD, which means that if anybody at this stage is
-+		 * using the __ka address of xen_start_info or xen_start_info->shared_info
-+		 * they are in going to crash. Fortunatly we have already revectored
-+		 * in xen_setup_kernel_pagetable and in xen_setup_shared_info. */
-+		size = roundup(size, PMD_SIZE);
-+		xen_cleanhighmap(addr, addr + size);
+ 	/* Pre-initialize p2m_top_mfn to be completely missing */
+ 	if (p2m_top_mfn == NULL) {
+ 		p2m_mid_missing_mfn = extend_brk(PAGE_SIZE, PAGE_SIZE);
+@@ -346,10 +349,15 @@ void xen_setup_mfn_list_list(void)
+ /* Set up p2m_top to point to the domain-builder provided p2m pages */
+ void __init xen_build_dynamic_phys_to_machine(void)
+ {
+-	unsigned long *mfn_list = (unsigned long *)xen_start_info->mfn_list;
+-	unsigned long max_pfn = min(MAX_DOMAIN_PAGES, xen_start_info->nr_pages);
++	unsigned long *mfn_list;
++	unsigned long max_pfn;
+ 	unsigned long pfn;
  
- 		size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
-+		memblock_free(__pa(xen_start_info->mfn_list), size);
-+		/* And revector! Bye bye old array */
-+		xen_start_info->mfn_list = new_mfn_list;
-+	} else
++	 if (xen_feature(XENFEAT_auto_translated_physmap))
 +		return;
- 
--		/* On 32-bit, we get zero so this never gets executed. */
--		new_mfn_list = xen_revector_p2m_tree();
--		if (new_mfn_list && new_mfn_list != xen_start_info->mfn_list) {
--			/* using __ka address and sticking INVALID_P2M_ENTRY! */
--			memset((void *)xen_start_info->mfn_list, 0xff, size);
--
--			/* We should be in __ka space. */
--			BUG_ON(xen_start_info->mfn_list < __START_KERNEL_map);
--			addr = xen_start_info->mfn_list;
--			/* We roundup to the PMD, which means that if anybody at this stage is
--			 * using the __ka address of xen_start_info or xen_start_info->shared_info
--			 * they are in going to crash. Fortunatly we have already revectored
--			 * in xen_setup_kernel_pagetable and in xen_setup_shared_info. */
--			size = roundup(size, PMD_SIZE);
--			xen_cleanhighmap(addr, addr + size);
--
--			size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
--			memblock_free(__pa(xen_start_info->mfn_list), size);
--			/* And revector! Bye bye old array */
--			xen_start_info->mfn_list = new_mfn_list;
--		} else
--			goto skip;
--	}
- 	/* At this stage, cleanup_highmap has already cleaned __ka space
- 	 * from _brk_limit way up to the max_pfn_mapped (which is the end of
- 	 * the ramdisk). We continue on, erasing PMD entries that point to page
-@@ -1255,7 +1251,15 @@ static void __init xen_pagetable_init(void)
- 	 * anything at this stage. */
- 	xen_cleanhighmap(MODULES_VADDR, roundup(MODULES_VADDR, PUD_SIZE) - 1);
- #endif
--skip:
-+}
-+#endif
 +
-+static void __init xen_pagetable_init(void)
-+{
-+	paging_init();
-+	xen_setup_shared_info();
-+#ifdef CONFIG_X86_64
-+	xen_pagetable_p2m_copy();
- #endif
- 	xen_post_allocator_init();
- }
++	mfn_list = (unsigned long *)xen_start_info->mfn_list;
++	max_pfn = min(MAX_DOMAIN_PAGES, xen_start_info->nr_pages);
+ 	xen_max_p2m_pfn = max_pfn;
+ 
+ 	p2m_missing = extend_brk(PAGE_SIZE, PAGE_SIZE);
 -- 
 1.8.3.1
 
