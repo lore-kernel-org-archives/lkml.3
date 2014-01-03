@@ -1,245 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870AbaACAQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 19:16:56 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:21899 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753847AbaACAHf (ORCPT
+	id S1754890AbaACARF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 19:17:05 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:50954 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753575AbaACAQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 19:07:35 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: [PATCH v5 05/33] x86, irq: Modify irq chip once for irq remapping
-Date: Thu,  2 Jan 2014 16:05:37 -0800
-Message-Id: <1388707565-16535-6-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
-References: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 2 Jan 2014 19:16:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131229112101.GB26295@amd.pavel.ucw.cz>
+References: <20131227095705.GC17143@amd.pavel.ucw.cz> <BLU172-W8D850A8DEA8C0D87FBF45ACCC0@phx.gbl>
+ <20131228101622.GA13564@amd.pavel.ucw.cz> <CAMuHMdVz7FWgYZRVHy6pK+g_2QKxTW00N8jmjWHe05m5CJvPOw@mail.gmail.com>
+ <20131228192935.GA28119@amd.pavel.ucw.cz> <CAMuHMdXDJ6uhe6srV-+0a8=cpBUgP+VakG+_wyLwAuiQSRVhqQ@mail.gmail.com>
+ <20131228212523.GA8733@amd.pavel.ucw.cz> <20131228215042.GA7048@kroah.com>
+ <20131228235045.GA8786@amd.pavel.ucw.cz> <20131229014324.GB18455@kroah.com> <20131229112101.GB26295@amd.pavel.ucw.cz>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Thu, 2 Jan 2014 16:16:38 -0800
+Message-ID: <CAK5ve-LOFE6h5w=+pSgfYMaW5GZQfayVfpRzP0NAfMPWZkk5iw@mail.gmail.com>
+Subject: Re: how to represent sequence of brightnesses in /sys (was Re:
+ [PATCH] Add the LED burst trigger)
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Greg KH <greg@kroah.com>, Geert Uytterhoeven <geert@linux-m68k.org>,
+        Joe Xue <lgxue@hotmail.com>, "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "rob@landley.net" <rob@landley.net>,
+        "milo.kim@ti.com" <milo.kim@ti.com>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code: after irq remapping is enabled, irq_chip fields are modified
-during every irq setup.
-	mp_register_gsi
-		io_apic_set_pci_routing
-			io_apic_setup_irq_pin
-				setup_ioapic_irq
-					ioapic_register_intr
-						setup_remapped_irq
-	native_setup_msi_irqs
-		setup_msi_irq
-			setup_remapped_irq
-	default_setup_hpet_msi
-		setup_remapped_irq
-that is not efficient.
+On Sun, Dec 29, 2013 at 3:21 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> Hi!
+>
+>> > Idea would be "sequence of brigtnesses" (one file) and "delay between
+>> > changes" (second file).
+>>
+>> Ick.
+>>
+>> > Reason to do it in kernel is that some machines actually have
+>> > "coprocessor" on i2c that can do it while main CPU is suspended. (For
+>> > more reasons, see beggining of thread).
+>>
+>> Ick ick.
+>>
+>> > Binary attribute with array of bytes should be acceptable, rights?
+>>
+>> Not at all.
+>>
+>> > (IOW write(..., buf, size) )
+>> >
+>> > Ascii array of decimal integers -- no so, right?
+>> >
+>> > (IOW printf("%d %d ..", buf[0], buf[1]) )
+>>
+>> Use an ioctl with a structure to get things correct as a character
+>> device.  As odds are, you aren't going to be able to create a "generic"
+>> format for all of this for all types of devices that support such a
+>> "co-processor".
+>
+> Well, we already do have hw-specific driver in the tree,
+> drivers/leds/leds-lp55xx-common.c . But the interface is
+> "interesting" and I believe we should have generic interface and it
+> should use existing trigger framework -- array of brightnesses does
+> not seem too complicated.
+>
+> Do you have suggestion how to pass the brightnesses over sysfs?
+>
 
-We only need to modify those irq chip one time after we enable
-irq remapping.
+What about send those binary stuff as firmware through kernel firmware
+interface and LED trigger sysfs is just for parameters setup and
+enable/disable controlling.
 
-Change irq_remap_modify_chip_defaults() to __init as it only gets
-called during booting stage, via irq_remap_modify_chips().
-
-Affected irq_chip: ioapic_chip, msi_chip, hpet_msi_type.
-We don't need to use #ifdef in irq_remap_modify_chips():
-IRQ_REMAP only support x86_64 && X86_IO_APIC && PCI_MSI.
-HPET_TIMER is selected when x86_64 is set.
-When we have IRQ_REMAP enabled, al three chips are defined and
-used.
-
--v3: Remove irq_chip in setup_remapped_irq according to Sebastian.
-     also add missing "\n" in printk.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Cc: Joerg Roedel <joro@8bytes.org>
----
- arch/x86/include/asm/io_apic.h       |  5 +++++
- arch/x86/include/asm/irq_remapping.h |  8 ++------
- arch/x86/kernel/apic/apic.c          |  9 ++++++++-
- arch/x86/kernel/apic/io_apic.c       | 14 ++++++--------
- drivers/iommu/irq_remapping.c        | 13 ++++++++++---
- 5 files changed, 31 insertions(+), 18 deletions(-)
-
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 459e50a..eaff3ad 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -215,6 +215,11 @@ static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned
- 
- extern void io_apic_eoi(unsigned int apic, unsigned int vector);
- 
-+extern struct irq_chip ioapic_chip;
-+extern struct irq_chip msi_chip;
-+extern struct irq_chip hpet_msi_type;
-+void irq_remap_modify_chips(void);
-+
- #else  /* !CONFIG_X86_IO_APIC */
- 
- #define io_apic_assign_pci_irqs 0
-diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
-index 606f42e..304c93f 100644
---- a/arch/x86/include/asm/irq_remapping.h
-+++ b/arch/x86/include/asm/irq_remapping.h
-@@ -52,9 +52,7 @@ extern void compose_remapped_msi_msg(struct pci_dev *pdev,
- 				     struct msi_msg *msg, u8 hpet_id);
- extern int setup_hpet_msi_remapped(unsigned int irq, unsigned int id);
- extern void panic_if_irq_remap(const char *msg);
--extern bool setup_remapped_irq(int irq,
--			       struct irq_cfg *cfg,
--			       struct irq_chip *chip);
-+extern bool setup_remapped_irq(int irq, struct irq_cfg *cfg);
- 
- #else  /* CONFIG_IRQ_REMAP */
- 
-@@ -89,9 +87,7 @@ static inline void panic_if_irq_remap(const char *msg)
- {
- }
- 
--static inline bool setup_remapped_irq(int irq,
--				      struct irq_cfg *cfg,
--				      struct irq_chip *chip)
-+static inline bool setup_remapped_irq(int irq, struct irq_cfg *cfg)
- {
- 	return false;
- }
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index d278736..37447b1 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1572,6 +1572,8 @@ void enable_x2apic(void)
- int __init enable_IR(void)
- {
- #ifdef CONFIG_IRQ_REMAP
-+	int ret;
-+
- 	if (!irq_remapping_supported()) {
- 		pr_debug("intr-remapping not supported\n");
- 		return -1;
-@@ -1583,7 +1585,12 @@ int __init enable_IR(void)
- 		return -1;
- 	}
- 
--	return irq_remapping_enable();
-+	ret = irq_remapping_enable();
-+
-+	if (ret >= 0)
-+		irq_remap_modify_chips();
-+
-+	return ret;
- #endif
- 	return -1;
- }
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index e63a5bd..6e9f55b 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1238,8 +1238,6 @@ void __setup_vector_irq(int cpu)
- 	raw_spin_unlock(&vector_lock);
- }
- 
--static struct irq_chip ioapic_chip;
--
- #ifdef CONFIG_X86_32
- static inline int IO_APIC_irq_trigger(int irq)
- {
-@@ -1280,7 +1278,7 @@ static void ioapic_register_intr(unsigned int irq, struct irq_cfg *cfg,
- 		fasteoi = false;
- 	}
- 
--	if (setup_remapped_irq(irq, cfg, chip))
-+	if (setup_remapped_irq(irq, cfg))
- 		fasteoi = trigger != 0;
- 
- 	hdl = fasteoi ? handle_fasteoi_irq : handle_edge_irq;
-@@ -2516,7 +2514,7 @@ static void ack_apic_level(struct irq_data *data)
- 	ioapic_irqd_unmask(data, cfg, masked);
- }
- 
--static struct irq_chip ioapic_chip __read_mostly = {
-+struct irq_chip ioapic_chip __read_mostly = {
- 	.name			= "IO-APIC",
- 	.irq_startup		= startup_ioapic_irq,
- 	.irq_mask		= mask_ioapic_irq,
-@@ -3098,7 +3096,7 @@ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
-  * IRQ Chip for MSI PCI/PCI-X/PCI-Express Devices,
-  * which implement the MSI or MSI-X Capability Structure.
-  */
--static struct irq_chip msi_chip = {
-+struct irq_chip msi_chip = {
- 	.name			= "PCI-MSI",
- 	.irq_unmask		= unmask_msi_irq,
- 	.irq_mask		= mask_msi_irq,
-@@ -3128,7 +3126,7 @@ int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
- 	if (!irq_offset)
- 		write_msi_msg(irq, &msg);
- 
--	setup_remapped_irq(irq, irq_get_chip_data(irq), chip);
-+	setup_remapped_irq(irq, irq_get_chip_data(irq));
- 
- 	irq_set_chip_and_handler_name(irq, chip, handle_edge_irq, "edge");
- 
-@@ -3245,7 +3243,7 @@ static int hpet_msi_set_affinity(struct irq_data *data,
- 	return IRQ_SET_MASK_OK_NOCOPY;
- }
- 
--static struct irq_chip hpet_msi_type = {
-+struct irq_chip hpet_msi_type = {
- 	.name = "HPET_MSI",
- 	.irq_unmask = hpet_msi_unmask,
- 	.irq_mask = hpet_msi_mask,
-@@ -3266,7 +3264,7 @@ int default_setup_hpet_msi(unsigned int irq, unsigned int id)
- 
- 	hpet_msi_write(irq_get_handler_data(irq), &msg);
- 	irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
--	setup_remapped_irq(irq, irq_get_chip_data(irq), chip);
-+	setup_remapped_irq(irq, irq_get_chip_data(irq));
- 
- 	irq_set_chip_and_handler_name(irq, chip, handle_edge_irq, "edge");
- 	return 0;
-diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index 85ae2cf..8e4e3af 100644
---- a/drivers/iommu/irq_remapping.c
-+++ b/drivers/iommu/irq_remapping.c
-@@ -375,19 +375,26 @@ static void ir_print_prefix(struct irq_data *data, struct seq_file *p)
- 	seq_printf(p, " IR-%s", data->chip->name);
- }
- 
--static void irq_remap_modify_chip_defaults(struct irq_chip *chip)
-+static void __init irq_remap_modify_chip_defaults(struct irq_chip *chip)
- {
-+	printk(KERN_DEBUG "irq_chip: %s ==> IR-%s\n", chip->name, chip->name);
- 	chip->irq_print_chip = ir_print_prefix;
- 	chip->irq_ack = ir_ack_apic_edge;
- 	chip->irq_eoi = ir_ack_apic_level;
- 	chip->irq_set_affinity = x86_io_apic_ops.set_affinity;
- }
- 
--bool setup_remapped_irq(int irq, struct irq_cfg *cfg, struct irq_chip *chip)
-+void __init irq_remap_modify_chips(void)
-+{
-+	irq_remap_modify_chip_defaults(&ioapic_chip);
-+	irq_remap_modify_chip_defaults(&msi_chip);
-+	irq_remap_modify_chip_defaults(&hpet_msi_type);
-+}
-+
-+bool setup_remapped_irq(int irq, struct irq_cfg *cfg)
- {
- 	if (!irq_remapped(cfg))
- 		return false;
- 	irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
--	irq_remap_modify_chip_defaults(chip);
- 	return true;
- }
--- 
-1.8.4
-
+Thanks,
+-Bryan
