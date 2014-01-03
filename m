@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751203AbaACEDT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 23:03:19 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:37436 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834AbaACEDS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 23:03:18 -0500
-Message-ID: <1388721792.4741.0.camel@phoenix>
-Subject: [PATCH] clocksource: mxs_timer: Get rid of mxs_clockevent_mode
- variable
-From: Axel Lin <axel.lin@ingics.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Shawn Guo <shawn.guo@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 03 Jan 2014 12:03:12 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1750914AbaACENt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 23:13:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32830 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750790AbaACENr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 23:13:47 -0500
+Date: Fri, 3 Jan 2014 12:12:37 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        bp@alien8.de, greg@kroah.com, toshi.kani@hp.com,
+        akpm@linux-foundation.org, mingo@kernel.org, msalter@redhat.com,
+        leif.lindholm@linaro.org
+Subject: Re: [PATCH v7 00/12] kexec kernel efi runtime support
+Message-ID: <20140103041237.GA4506@dhcp-16-198.nay.redhat.com>
+References: <1387533742-18018-1-git-send-email-dyoung@redhat.com>
+ <20131221173515.GE29501@console-pimps.org>
+ <20140102024256.GB2563@darkstar.nay.redhat.com>
+ <20140102103549.GC2618@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140102103549.GC2618@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current mode setting is stored in mode field of struct clock_event_device.
-So we can just remove the mxs_clockevent_mode variable.
+> Please send these as separate patches and include the compiler errors in
+> the commit message. I'll pick them up and send them to Peter.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/clocksource/mxs_timer.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+Sent.
 
-diff --git a/drivers/clocksource/mxs_timer.c b/drivers/clocksource/mxs_timer.c
-index 0f5e65f..d7d5f11 100644
---- a/drivers/clocksource/mxs_timer.c
-+++ b/drivers/clocksource/mxs_timer.c
-@@ -77,7 +77,6 @@
- #define BV_TIMROTv2_TIMCTRLn_SELECT__TICK_ALWAYS	0xf
- 
- static struct clock_event_device mxs_clockevent_device;
--static enum clock_event_mode mxs_clockevent_mode = CLOCK_EVT_MODE_UNUSED;
- 
- static void __iomem *mxs_timrot_base;
- static u32 timrot_major_version;
-@@ -156,7 +155,7 @@ static void mxs_set_mode(enum clock_event_mode mode,
- 	/* Disable interrupt in timer module */
- 	timrot_irq_disable();
- 
--	if (mode != mxs_clockevent_mode) {
-+	if (mode != evt->mode) {
- 		/* Set event time into the furthest future */
- 		if (timrot_is_v1())
- 			__raw_writel(0xffff,
-@@ -171,13 +170,10 @@ static void mxs_set_mode(enum clock_event_mode mode,
- 
- #ifdef DEBUG
- 	pr_info("%s: changing mode from %s to %s\n", __func__,
--		clock_event_mode_label[mxs_clockevent_mode],
-+		clock_event_mode_label[evt->mode],
- 		clock_event_mode_label[mode]);
- #endif /* DEBUG */
- 
--	/* Remember timer mode */
--	mxs_clockevent_mode = mode;
--
- 	switch (mode) {
- 	case CLOCK_EVT_MODE_PERIODIC:
- 		pr_err("%s: Periodic mode is not implemented\n", __func__);
--- 
-1.8.1.2
+>  
+> > build fix: move parse_efi_setup to efi*.c, call it in efi_init instead in setup.c
+> 
+> Why have you moved the call site for parse_efi_setup()? What's the
+> rationale? Parsing SETUP_* entries outside of parse_setup_data() seems
+> to me to be a step backwards in terms of clarity.
 
+SETUP_PCI also duplicate the parsing logic out of setup.c.
+I added static inline in ifdef else branch, but I got some warnings yestoday
+about "unused function", double checked it today there's no such warnings
+anymore, it might be caused by some mistake.
 
+Changed to static inline {} in patches I just sent a moment ago.
 
-
+Thanks
+Dave
