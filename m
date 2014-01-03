@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880AbaACN2J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 08:28:09 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:48549 "EHLO comal.ext.ti.com"
+	id S1752849AbaACNdE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 08:33:04 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:49076 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751086AbaACN2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 08:28:08 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 00/11] ASoC/MFD: twl4030 codec local register cache removal
-Date: Fri, 3 Jan 2014 15:27:45 +0200
-Message-ID: <1388755676-16036-1-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.8.5.2
+	id S1751872AbaACNdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 08:33:01 -0500
+X-IronPort-AV: E=Sophos;i="4.95,598,1384300800"; 
+   d="scan'208";a="89530347"
+Date: Fri, 3 Jan 2014 13:32:09 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Mark Salter <msalter@redhat.com>, Chen Baozi <baozich@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <xen-devel@lists.xenproject.org>, <catalin.marinas@arm.com>,
+        <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <robherring2@gmail.com>, <will.deacon@arm.com>,
+        <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] arm64/xen: redefine xen_remap on arm64
+In-Reply-To: <alpine.DEB.2.02.1401031310100.8667@kaball.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1401031329160.8667@kaball.uk.xensource.com>
+References: <1388386511-32276-1-git-send-email-baozich@gmail.com> <1388431259.2564.15.camel@deneb.redhat.com> <alpine.DEB.2.02.1401031310100.8667@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 3 Jan 2014, Stefano Stabellini wrote:
+> On Mon, 30 Dec 2013, Mark Salter wrote:
+> > On Mon, 2013-12-30 at 14:55 +0800, Chen Baozi wrote:
+> > > xen_remap used to be defined as ioremap_cached on arm64. In commit
+> > > c04e8e2fe, a new ioremap_cache was implemented, and ioremap_cached
+> > > was deleted, while xen_remap stays the same. This would lead to
+> > > the failure when building with CONFIG_HVC_XEN. Redefined xen_remap
+> > > on arm64 as ioremap_cache on arm64 to fix it.
+> > > 
+> > 
+> > I missed that include of arm header by arm64 when looking for users
+> > of arm64's ioremap_cached() when working on commit c04e8e2fe. Anyway,
+> > grepping the kernel tree, I see:
+> > 
+> >   ioremap_cached()
+> >     defined by: arm, metag, unicore32
+> >     used by: arch/arm/include/asm/xen/page.h
+> >              drivers/mtd/maps/pxa2xx-flash.c
+> > 
+> >   ioremap_cache()
+> >     defined by: arm64, sh, xtensa, ia64, x86
+> >     used by: drivers/video/vesafb.c
+> >              drivers/char/toshiba.c
+> >              drivers/acpi/apei
+> >              drivers/lguest/lguest_device.c
+> >              drivers/sfi/sfi_core.c
+> >              include/linux/acpi_io.h
+> > 
+> > I think it would be better to just avoid the confusion and the ifdef in
+> > asm/xen/page.h by globally changing ioremap_cached to ioremap_cache.
+> 
+> While I welcome the suggestion, this is a critical fix for a regression
+> that I think should go in as soon as possible, maybe 3.13-rc7, while I
+> don't think that a global s/ioremap_cached/ioremap_cache would be
+> acceptable at this stage.
 
-After the twl6040 codec, now it is time for the twl4030 codec driver to loose
-it's local reg cache and let the MFD core's regmap to take care of the caching.
+BTW Rob Herring sent a patch in November to solve the problem by
+renaming ioremap_cached to ioremap_cache under arch/arm:
 
-We have different functions behind of the 0x49 i2c address in twl (where the
-audio registers can be found between 0x01 - 0x49). I mark all non audio
-registers as volatile for now to avoid any side effect of the caching. Gradually
-other functionalities can also move their caching to regmap to simplify the code.
+http://marc.info/?l=linux-arm-kernel&m=138394601804783
 
-I have included couple of clean up patches after the local regcache removal to
-the series to freshen up the code a bit.
-
-Regards,
-Peter
----
-Peter Ujfalusi (11):
-  MFD: twl-core: Simplify IO wrapper functions by moving common code out
-  MFD: twl-core: API to set the regcache bypass for a given regmap in
-    twl
-  MFD: twl-core: Enable regcache for audio registers
-  ASoC: twl4030: Separate write condition checking from I/O function
-  ASoC: twl4030: Remove check defaults functionality
-  ASoC: twl4030: Remove reset registers functionality
-  ASoC: twl4030: Introduce local ctl register cache
-  ASoC: twl4030: Remove local reg cache
-  ASoC: twl4030: Parameter alignment fixes (for code consistency)
-  ASoC: twl4030: Move the ctl cache update local to twl4030_write()
-    function
-  ASoC: twl4030: Pass the twl4030_priv directly to
-    twl4030_can_write_to_chip()
-
- drivers/mfd/twl-core.c     | 190 +++++++++++++++++++----
- include/linux/i2c/twl.h    |   5 +-
- sound/soc/codecs/twl4030.c | 376 ++++++++++++++++-----------------------------
- 3 files changed, 300 insertions(+), 271 deletions(-)
-
--- 
-1.8.5.2
-
+I wrongly assumed that was going to go in.
+I think it is too late for that now. We'll have to go this this patch
+for 3.13.
