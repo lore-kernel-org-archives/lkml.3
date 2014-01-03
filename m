@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192AbaACRPK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 12:15:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18113 "EHLO mx1.redhat.com"
+	id S1751964AbaACRVp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 12:21:45 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:48887 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751139AbaACRPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 12:15:08 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1388769034.20141.11.camel@x220>
-References: <1388769034.20141.11.camel@x220> <1388766184.20141.6.camel@x220> <20140103160812.8153.74401.stgit@warthog.procyon.org.uk> <9629.1388766864@warthog.procyon.org.uk>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: dhowells@redhat.com, akpm@linux-foundation.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tomas Winkler <tomas.winkler@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mei: mei-amt-version: remove unneeded call of mei_deinit()
-Date: Fri, 03 Jan 2014 17:14:59 +0000
-Message-ID: <25291.1388769299@warthog.procyon.org.uk>
+	id S1751098AbaACRVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 12:21:44 -0500
+X-IronPort-AV: E=Sophos;i="4.95,598,1384300800"; 
+   d="scan'208";a="89604022"
+Date: Fri, 3 Jan 2014 17:20:54 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad@darnok.org>
+CC: David Vrabel <david.vrabel@citrix.com>, <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <xen-devel@lists.xenproject.org>, <boris.ostrovsky@oracle.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH v12 15/18] xen/pvh: Piggyback on PVHVM for
+ grant driver (v2)
+In-Reply-To: <20140103154820.GA20976@andromeda.dapyr.net>
+Message-ID: <alpine.DEB.2.02.1401031659230.8667@kaball.uk.xensource.com>
+References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com> <1388550945-25499-16-git-send-email-konrad.wilk@oracle.com> <52C59483.5030607@citrix.com> <20140102185023.GG3021@pegasus.dumpdata.com> <52C6A4E5.3080904@citrix.com>
+ <20140103144409.GC27019@phenom.dumpdata.com> <52C6DA3F.7070509@citrix.com> <20140103154820.GA20976@andromeda.dapyr.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Bolle <pebolle@tiscali.nl> wrote:
+On Fri, 3 Jan 2014, Konrad Rzeszutek Wilk wrote:
+> On Fri, Jan 03, 2014 at 03:41:51PM +0000, David Vrabel wrote:
+> > On 03/01/14 14:44, Konrad Rzeszutek Wilk wrote:
+> > > On Fri, Jan 03, 2014 at 11:54:13AM +0000, David Vrabel wrote:
+> > >> On 02/01/14 18:50, Konrad Rzeszutek Wilk wrote:
+> > >>> On Thu, Jan 02, 2014 at 04:32:03PM +0000, David Vrabel wrote:
+> > >>>> On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
+> > >>>>> @@ -1320,4 +1323,4 @@ static int __gnttab_init(void)
+> > >>>>>  	return gnttab_init();
+> > >>>>>  }
+> > >>>>>  
+> > >>>>> -core_initcall(__gnttab_init);
+> > >>>>> +core_initcall_sync(__gnttab_init);
+> > >>>>
+> > >>>> Why has this become _sync?
+> > >>>
+> > >>> It needs to run _after_ the xen_pvh_gnttab_setup has run (which is
+> > >>> at gnttab_init):
+> > >>
+> > >>
+> > >> The use of core_initcall_sync() doesn't imply any ordering to me.  Can't
+> > > 
+> > > It has a clear ordering property.
+> > 
+> > This really isn't obvious to me.  Can you point to the docs/code the
+> > guarantee this?  I couldn't find it.
+> 
+> include/linux/init.h
+> > 
+> > >> you call xen_pvh_gnttab_setup() from within __gnttab_init() ?
+> > > 
+> > > No. That is due to the fact that __gnttab_init() is in drivers/xen and is
+> > > also used by the ARM code.
+> > > 
+> > > Stefano in his previous review mentioned he would like PVH specific
+> > > code in arch/x86:
+> > > 
+> > > https://lkml.org/lkml/2013/12/18/507
+> > 
+> > Call it xen_arch_gnttab_setup() and add weak stub for other architectures?
+> 
+> Stefano, thoughts?
 
-> From: Paul Bolle <pebolle@tiscali.nl>
-> 
-> Building mei-amt-version.o triggers a GCC warning:
->     Documentation/misc-devices/mei/mei-amt-version.c: In function 'main':
->     Documentation/misc-devices/mei/mei-amt-version.c:103:5: warning: 'acmd.fd' is used uninitialized in this function [-Wuninitialized]
->       if (cl->fd != -1)
->          ^
->     Documentation/misc-devices/mei/mei-amt-version.c:443:21: note: 'acmd.fd' was declared here
->       struct amt_host_if acmd;
->                          ^
-> 
-> GCC is correct. See, the call chain that GCC detects must be
->     main()
->         amt_host_if_init()
->             mei_init()
->                 mei_deinit()
-> 
-> But when we enter mei_deinit() struct amt_host_if acmd is still
-> unitialized. That makes the test for (effectively) amt_host_if->mei_cl->fd
-> bogus.
-> 
-> But it turns out that call of mei_deinit() isn't needed at all. All of
-> the members of mei_cl will be set later in mei_init() and none will be
-> used before they are set. So we can simply drop this call of
-> mei_deinit().
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+I think that you can safely move __gnttab_init to postcore_initcall if
+it works correctly for the PV and PVH cases, because HVM and ARM are
+unaffected by it.  In fact they don't initialize the grant table via
+__gnttab_init at all. See:
 
-Builds without warning for me.
+/* Delay grant-table initialization in the PV on HVM case */
+if (xen_hvm_domain())
+	return 0;
 
-Acked-by: David Howells <dhowells@redhat.com>
+at the beginning of __gnttab_init.
