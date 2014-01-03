@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753866AbaACWG3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 17:06:29 -0500
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:61518 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753814AbaACWG0 (ORCPT
+	id S1753908AbaACWHk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 17:07:40 -0500
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:34383 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753814AbaACWHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 17:06:26 -0500
-Message-ID: <52C7345D.30603@redhat.com>
-Date: Fri, 03 Jan 2014 23:06:21 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
+	Fri, 3 Jan 2014 17:07:39 -0500
 MIME-Version: 1.0
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-CC: Gleb Natapov <gleb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kashyap Chamarthy <kchamart@redhat.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "Richard W.M. Jones" <rjones@redhat.com>
-Subject: Re: intel_pstate divide error with v3.13-rc4-256-gb7000ad
-References: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com> <4794554.Hmd2RUNYDT@vostro.rjw.lan> <52C18A23.10703@redhat.com> <3710588.K8glfx1cYs@vostro.rjw.lan> <52C6F3B4.3050904@gmail.com> <20140103180435.GK10961@minantech.com> <52C716C1.6070704@gmail.com>
-In-Reply-To: <52C716C1.6070704@gmail.com>
-X-Enigmail-Version: 1.6
+In-Reply-To: <loom.20140103T194726-983@post.gmane.org>
+References: <loom.20140103T194726-983@post.gmane.org>
+Date: Fri, 3 Jan 2014 23:07:38 +0100
+Message-ID: <CAFLxGvzVw31Z=hLi35J5_zE4PA5RDMgyQmcNd0kgk9LXr-kQAg@mail.gmail.com>
+Subject: Re: GPL violators (charging for a Linux kernel by itself and then
+ charging again for source)
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Eric Appleman <erappleman@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 03/01/2014 21:00, Dirk Brandewie ha scritto:
-> +    case MSR_IA32_MPERF:
-> +    case MSR_IA32_APERF:
+On Fri, Jan 3, 2014 at 7:56 PM, Eric Appleman <erappleman@gmail.com> wrote:
+> https://plus.google.com/115556873499158641618/posts/VfAcAdUHU6h
+> Mirror in case of deletion: http://pastebin.com/7fXKR6ss
+>
+> A small snippet...
+>
+> "Chad can sell his kernel, and he has the right to refuse to sell it to
+> specific people he if sees fit.
+> Chad can charge for the source code. so as long as the price of the source
+> code does NOT exceed the cost of the kernel itself.  There is NO limit to
+> what Chad can charge for the kernel.
+> Source needs to be made available only to "users of the software" and only
+> if "requested" by the "user of the software" - and yes, as stated above, a
+> fee can be charged for access to the electronic download of source, as long
+> as it is no more than the cost of the kernel.
+>
+> Yes, people who "buy" the kernel can share it with who they want with or
+> without a charge, but Chad still has the right to charge for source if the
+> "3rd party" requests source."
+>
+> I'm curious to know if there is a single maintainer or contributor on this
+> list who finds such behavior acceptable.
+>
+> Wasn't the whole idea of a fee being permitted an acknowledgment that
+> physical distribution of source was acceptable if electronic was not
+> possible (low bandwidth ISP, security concerns, etc).
 
-These should never be accessed.  A KVM VM will always have
-CPUID[06H].ECX = 0, and the Intel manual says that the MSRs are only
-present if CPUID returns that value with bit 0 set.
+GPLv2 states:
+"You may charge a fee for the physical act of transferring a copy, and
+you may at your option offer warranty protection in exchange for a
+fee."
 
-I think the actual bug is that intel_pstate_init does not check the
-feature bits in CPUID (either manually or via x86_match_cpu).
+> I don't have a problem with people charging for GPL software, you can do
+> that. But usually the money goes towards supporting the user or covering the
+> costs of hardware it's shipped on. All I see is a profit-driven scheme that
+> effectively charges for a Linux kernel that you all made together and Chad
+> represents less than 0.001% of.
 
-Paolo
+I really cannot understand the rumors about this Chad dude. Nobody is
+forced to use/buy binaries
+from him.
+Anyway, just my 2 cents...
+
+-- 
+Thanks,
+//richard
