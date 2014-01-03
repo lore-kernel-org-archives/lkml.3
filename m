@@ -1,89 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456AbaACANb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 19:13:31 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:37931 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709AbaACAN2 (ORCPT
+	id S1754805AbaACAOJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 19:14:09 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:23654 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753925AbaACAHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 19:13:28 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140102192745.GB2025@core.coreip.homeip.net>
-References: <20131231193442.GA25208@core.coreip.homeip.net>
-	<CAD=FV=VjYtXA5XHiuz-bULpW_MCBWxw2eTvg+SQz9CrgsER4AA@mail.gmail.com>
-	<20140102192745.GB2025@core.coreip.homeip.net>
-Date: Thu, 2 Jan 2014 16:13:27 -0800
-X-Google-Sender-Auth: zhozzTfk6ulLK1bgFMqVKx_EdJE
-Message-ID: <CAA25o9Tf_wEnJ1H4tKVXbS4R3pgbh6nbEWChEyjzRRDcusYRFg@mail.gmail.com>
-Subject: Re: [PATCH] Input: cros_ec_keyb - switch from using uint8_t to u8
-From: Luigi Semenzato <semenzato@chromium.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Doug Anderson <dianders@chromium.org>, linux-input@vger.kernel.org,
-        Simon Glass <sjg@chromium.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 2 Jan 2014 19:07:40 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Pavel Machek <pavel@ucw.cz>, Joerg Roedel <joro@8bytes.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Subject: [PATCH v5 18/33] x86, irq: Add ioapic_gsi_to_irq
+Date: Thu,  2 Jan 2014 16:05:50 -0800
+Message-Id: <1388707565-16535-19-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
+References: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you, this is useful information, and it would be even more
-useful if it made it in Documentation/CodingStyle :-)
+For hot add ioapic, irq_base is not equal to gsi_base.
+We need a way to do mapping between gsi and irq.
 
+Also remove irq_to_gsi() that is confusing, just use that array
+directly as we only have one caller and it already check
+input irq before use it.
 
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+---
+ arch/x86/include/asm/io_apic.h |  1 +
+ arch/x86/kernel/acpi/boot.c    | 22 +++++-----------------
+ arch/x86/kernel/apic/io_apic.c | 29 ++++++++++++++++++++++++++++-
+ 3 files changed, 34 insertions(+), 18 deletions(-)
 
-On Thu, Jan 2, 2014 at 11:27 AM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Thu, Jan 02, 2014 at 08:12:09AM -0800, Doug Anderson wrote:
->> Dmitry,
->>
->> On Tue, Dec 31, 2013 at 11:34 AM, Dmitry Torokhov
->> <dmitry.torokhov@gmail.com> wrote:
->> > u8 is proper in-kernel type for unsigned byte data.
->>
->> I won't say that I keep up with all the latest trends here, but this
->> surprised me so I did some research.  My findings don't agree with
->> your statement.  Perhaps there are different standards that are used
->> for the input subsystem?
->>
->> Specifically looking at
->> <https://www.kernel.org/doc/Documentation/CodingStyle>, I see:
->>
->>      Therefore, the Linux-specific 'u8/u16/u32/u64' types and their
->>      signed equivalents which are identical to standard types are
->>      permitted -- although they are not mandatory in new code of your
->>      own.
->>
->>      When editing existing code which already uses one or the other set
->>      of types, you should conform to the existing choices in that code.
->>
->> That makes it sound like the author of that document would prefer
->> uint8_t but will accept u8.  It also seems like if code is consistent
->> about using a given type (as this code is) that it shouldn't be
->> changed.
->>
->> I'm always happy to be enlightened, though!
->
-> I prefer uXX in kernel because it matches __uXX that we publish in UAPI.
-> Also here is Linus's response form the discussion that introduced that
-> particular wording in CodingStyle [1]:
->
-> "The problem with uint32_t is that it's ugly, it used to be unportable,
-> and you can't use it in header files _anyway_.
->
-> In other words, there's no _point_ to the "standard type".
->
-> I really object to this whole thing. The fact is, "u8" and friends _are_
-> the standard types as far as the kernel is concerned.  Claiming that
-> they aren't is just silly.
->
-> It's the "uint32_t" kind of thing that isn't standard within the kernel.
-> You can't use that thing in public header files anyway due to name
-> scoping rules, so they have basically no redeeming features."
->
-> Thanks.
->
-> --
-> Dmitry
->
-> [1] http://marc.info/?l=linux-kernel&m=114659539715468&w=2
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 8181fd8..02ac411 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -180,6 +180,7 @@ struct mp_ioapic_gsi{
+ };
+ extern struct mp_ioapic_gsi  mp_gsi_routing[];
+ extern u32 gsi_top;
++int ioapic_gsi_to_irq(u32 gsi);
+ int mp_find_ioapic(u32 gsi);
+ int mp_find_ioapic_pin(int ioapic, u32 gsi);
+ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base);
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 6c0b43b..0f9c133 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -113,6 +113,10 @@ static unsigned int gsi_to_irq(unsigned int gsi)
+ 		}
+ 	}
+ 
++#ifdef CONFIG_X86_IO_APIC
++	if (acpi_irq_model == ACPI_IRQ_MODEL_IOAPIC)
++		return ioapic_gsi_to_irq(gsi);
++#endif
+ 	/* Provide an identity mapping of gsi == irq
+ 	 * except on truly weird platforms that have
+ 	 * non isa irqs in the first 16 gsis.
+@@ -125,22 +129,6 @@ static unsigned int gsi_to_irq(unsigned int gsi)
+ 	return irq;
+ }
+ 
+-static u32 irq_to_gsi(int irq)
+-{
+-	unsigned int gsi;
+-
+-	if (irq < NR_IRQS_LEGACY)
+-		gsi = isa_irq_to_gsi[irq];
+-	else if (irq < gsi_top)
+-		gsi = irq;
+-	else if (irq < (gsi_top + NR_IRQS_LEGACY))
+-		gsi = irq - gsi_top;
+-	else
+-		gsi = 0xffffffff;
+-
+-	return gsi;
+-}
+-
+ /*
+  * This is just a simple wrapper around early_ioremap(),
+  * with sanity checks for phys == 0 and size == 0.
+@@ -530,7 +518,7 @@ int acpi_isa_irq_to_gsi(unsigned isa_irq, u32 *gsi)
+ {
+ 	if (isa_irq >= 16)
+ 		return -1;
+-	*gsi = irq_to_gsi(isa_irq);
++	*gsi = isa_irq_to_gsi[isa_irq];
+ 	return 0;
+ }
+ 
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index a1af837..066611f 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1041,13 +1041,16 @@ static int pin_2_irq(int idx, int apic, int pin)
+ 
+ 	if (test_bit(bus, mp_bus_not_pci)) {
+ 		irq = mp_irqs[idx].srcbusirq;
+-	} else {
++	} else if (gsi_cfg->gsi_base == gsi_cfg->irq_base) {
+ 		u32 gsi = gsi_cfg->gsi_base + pin;
+ 
+ 		if (gsi >= NR_IRQS_LEGACY)
+ 			irq = gsi;
+ 		else
+ 			irq = gsi_top + gsi;
++	} else {
++		/* hotadd ioapic */
++		irq = gsi_cfg->irq_base + pin;
+ 	}
+ 
+ #ifdef CONFIG_X86_32
+@@ -1473,6 +1476,30 @@ static void __init setup_IO_APIC_irqs(void)
+ 		__io_apic_setup_irqs(ioapic_idx);
+ }
+ 
++int ioapic_gsi_to_irq(u32 gsi)
++{
++	int ioapic_idx = 0, irq = gsi;
++	struct mp_ioapic_gsi *gsi_cfg;
++
++	ioapic_idx = mp_find_ioapic(gsi);
++	if (ioapic_idx < 0)
++		return -1;
++
++	gsi_cfg = mp_ioapic_gsi_routing(ioapic_idx);
++	if (gsi_cfg->gsi_base == gsi_cfg->irq_base) {
++		if (gsi < NR_IRQS_LEGACY)
++			irq = gsi_top + gsi;
++	} else {
++		int pin = mp_find_ioapic_pin(ioapic_idx, gsi);
++
++		if (pin < 0)
++			return -1;
++		/* hotadd ioapic */
++		irq = gsi_cfg->irq_base + pin;
++	}
++
++	return irq;
++}
+ /*
+  * for the gsit that is not in first ioapic
+  * but could not use acpi_register_gsi()
+-- 
+1.8.4
+
