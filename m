@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540AbaACAux (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 19:50:53 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:38626 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753274AbaACAuw (ORCPT
+	id S1753581AbaACAva (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 19:51:30 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:19729 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751528AbaACAv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 19:50:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <1388704274-5278-1-git-send-email-john.stultz@linaro.org>
-References: <52C5E675.80701@linaro.org>
-	<1388704274-5278-1-git-send-email-john.stultz@linaro.org>
-Date: Thu, 2 Jan 2014 16:50:50 -0800
-X-Google-Sender-Auth: O7pquY7C-0mAUD9J-3sfCujC_jQ
-Message-ID: <CA+55aFxv8wTRifZ9iHn-tCfUqwpJZmLiF7QU=Pc6dVa8QnTyCQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] seqlock: Use raw_ prefix instead of _no_lockdep
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        =?UTF-8?Q?Krzysztof_Ha=C5=82asa?= <khalasa@piap.pl>,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Willy Tarreau <w@1wt.eu>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 2 Jan 2014 19:51:29 -0500
+Date: Thu, 2 Jan 2014 19:51:28 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, pmladek@suse.cz,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/9] smp: Provide __smp_call_function_any()
+Message-ID: <20140102195128.5aa6d84f@gandalf.local.home>
+In-Reply-To: <1387831171-5264-6-git-send-email-jack@suse.cz>
+References: <1387831171-5264-1-git-send-email-jack@suse.cz>
+	<1387831171-5264-6-git-send-email-jack@suse.cz>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 2, 2014 at 3:11 PM, John Stultz <john.stultz@linaro.org> wrote:
-> Linus disliked the _no_lockdep() naming, so instead
-> use the more-consistent raw_* prefix to the non-lockdep
-> enabled seqcount methods.
->
-> This also adds raw_ methods for the write operations
-> as well, which will be utilized in a following patch.
+On Mon, 23 Dec 2013 21:39:26 +0100
+Jan Kara <jack@suse.cz> wrote:
 
-Ack on this and on 2/2. I'm assuming I'll get them through the -tip
-tree, which is where the problem came from. No?
+> Provide function to call given function on any cpu from a given cpu mask
+> while providing own csd structure.
+> 
+> Signed-off-by: Jan Kara <jack@suse.cz>
 
-               Linus
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
