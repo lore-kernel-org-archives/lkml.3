@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754458AbaACUeI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 15:34:08 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:21972 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753837AbaACU37 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 15:29:59 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        boris.ostrovsky@oracle.com, stefano.stabellini@eu.citrix.com,
-        david.vrabel@citrix.com
-Cc: hpa@zytor.com, Mukesh Rathor <mukesh.rathor@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v13 01/19] xen/p2m: Check for auto-xlat when doing mfn_to_local_pfn.
-Date: Fri,  3 Jan 2014 14:38:18 -0500
-Message-Id: <1388777916-1328-2-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1388777916-1328-1-git-send-email-konrad.wilk@oracle.com>
-References: <1388777916-1328-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1754513AbaACUen (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 15:34:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36515 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754021AbaACUem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 15:34:42 -0500
+Message-ID: <52C71EDA.6090706@suse.cz>
+Date: Fri, 03 Jan 2014 21:34:34 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>
+CC: linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] scripts/gcc-version.sh: handle CC="gcc -m32"
+References: <87d2l5ji06.fsf@rustcorp.com.au> <52C6EF1C.9070809@suse.cz>
+In-Reply-To: <52C6EF1C.9070809@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
+On 3.1.2014 18:10, Michal Marek wrote:
+> On 2013-12-10 08:13, Rusty Russell wrote:
+>> Without it we get ugly warnings (though build still succeeds).
+>>
+>> $ make -j8 CC="gcc -m32"
+>> In file included from <command-line>:0:0:
+>> /usr/include/stdc-predef.h:30:26: fatal error: bits/predefs.h: No such file or directory
+>>  #include <bits/predefs.h>
+>>                           ^
+>> compilation terminated.
+>> In file included from <command-line>:0:0:
+>> /usr/include/stdc-predef.h:30:26: fatal error: bits/predefs.h: No such file or directory
+>>  #include <bits/predefs.h>
+>>                           ^
+>> compilation terminated.
+>> /home/rusty/devel/kernel/linux/scripts/gcc-version.sh: line 31: printf: #: invalid number
+>> /home/rusty/devel/kernel/linux/scripts/gcc-version.sh: line 31: printf: #: invalid number
+>> /bin/sh: 1: [: 0001: unexpected operator
+>>   CHK     include/config/kernel.release
+>>   CHK     include/generated/uapi/linux/version.h
+>> make[1]: Nothing to be done for `all'.
+>> ...
+>>
+>> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+>>
+>> diff --git a/scripts/gcc-version.sh b/scripts/gcc-version.sh
+>> index 7f2126df91f2..d48b0cbaf246 100644
+>> --- a/scripts/gcc-version.sh
+>> +++ b/scripts/gcc-version.sh
+>> @@ -14,7 +14,7 @@ if [ "$1" = "-p" ] ; then
+>>  	shift;
+>>  fi
+>>  
+>> -compiler="$*"
+>> +compiler="$1"
+> 
+> But this will break things like CC="ccache gcc". Your problem is that
+> you do not have the 32bit glibc headers, right?
 
-Most of the functions in page.h are prefaced with
-	if (xen_feature(XENFEAT_auto_translated_physmap))
-		return mfn;
+BTW, what is the usecase for CC="gcc -m32"? AFAICS, at least x86 and
+powerpc do this for you when building a 32bit kernel.
 
-Except the mfn_to_local_pfn. At a first sight, the function
-should work without this patch - as the 'mfn_to_mfn' has
-a similar check. But there are no such check in the
-'get_phys_to_machine' function - so we would crash in there.
-
-This fixes it by following the convention of having the
-check for auto-xlat in these static functions.
-
-Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- arch/x86/include/asm/xen/page.h | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-index b913915..4a092cc 100644
---- a/arch/x86/include/asm/xen/page.h
-+++ b/arch/x86/include/asm/xen/page.h
-@@ -167,7 +167,12 @@ static inline xpaddr_t machine_to_phys(xmaddr_t machine)
-  */
- static inline unsigned long mfn_to_local_pfn(unsigned long mfn)
- {
--	unsigned long pfn = mfn_to_pfn(mfn);
-+	unsigned long pfn;
-+
-+	if (xen_feature(XENFEAT_auto_translated_physmap))
-+		return mfn;
-+
-+	pfn = mfn_to_pfn(mfn);
- 	if (get_phys_to_machine(pfn) != mfn)
- 		return -1; /* force !pfn_valid() */
- 	return pfn;
--- 
-1.8.3.1
+Thanks,
+Michal
 
