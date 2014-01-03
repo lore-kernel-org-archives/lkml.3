@@ -1,101 +1,541 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751337AbaACPxa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 10:53:30 -0500
-Received: from smarthost01c.mail.zen.net.uk ([212.23.1.5]:57594 "EHLO
-	smarthost01c.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750919AbaACPx2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 10:53:28 -0500
-Message-ID: <1388764386.3430.10.camel@linaro1.home>
-Subject: Re: [PATCH 2/5] ARM: kprobes-test: use <asm/opcodes.h> for
- instruction accesses
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-networking@linaro.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 03 Jan 2014 15:53:06 +0000
-In-Reply-To: <1387815579-15677-3-git-send-email-taras.kondratiuk@linaro.org>
-References: <1387815579-15677-1-git-send-email-taras.kondratiuk@linaro.org>
-	 <1387815579-15677-3-git-send-email-taras.kondratiuk@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01c-IP: [82.69.122.217]
+	id S1751596AbaACPy2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 10:54:28 -0500
+Received: from mga03.intel.com ([143.182.124.21]:3413 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751376AbaACPy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 10:54:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,598,1384329600"; 
+   d="scan'208";a="453294407"
+Date: Fri, 3 Jan 2014 23:54:21 +0800
+From: fengguang.wu@intel.com
+To: Josef Bacik <jbacik@fusionio.com>
+Cc: linux-btrfs <linux-btrfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@linux.intel.com
+Subject: 1be41b78: +18% increased btrfs write throughput
+Message-ID: <20140103155421.GA7494@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Heirloom mailx 12.5 6/20/10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-12-23 at 18:19 +0200, Taras Kondratiuk wrote:
-> From: Ben Dooks <ben.dooks@codethink.co.uk>
-> 
-> Ensure we read instructions in the correct endian-ness by using
-> the <asm/opcodes.h> helper to transform them as necessary.
-> 
-> Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
-> [taras.kondratiuk@linaro.org: fix next_instruction() function]
-> Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-> ---
+Hi Josef,
 
-Apart from the spurious line removal (see below) then:
+FYI. We are doing 0day performance tests and happen to notice that
+btrfs write throughput increased considerably during v3.10-11 time
+frame:
 
-Acked-by: Jon Medhurst <tixy@linaro.org>
+          v3.10                      v3.11                      v3.12                  v3.13-rc6
+---------------  -------------------------  -------------------------  -------------------------
+     50619 ~ 1%     +17.0%      59209 ~ 2%     +18.8%      60159 ~ 2%     +20.5%      61007 ~ 0%  lkp-ws02/micro/dd-write/11HDD-JBOD-cfq-btrfs-1dd
+     50619          +17.0%      59209          +18.8%      60159          +20.5%      61007       TOTAL iostat.sdd.wkB/s
 
-and you can include an ACK for the other patches in this series too.
+and it's contributed by 
 
-Thanks.
+commit 1be41b78bc688fc634bf30965d2be692c99fd11d
+Author:     Josef Bacik <jbacik@fusionio.com>
+AuthorDate: Wed Jun 12 13:56:06 2013 -0400
+Commit:     Josef Bacik <jbacik@fusionio.com>
+CommitDate: Mon Jul 1 08:52:28 2013 -0400
+
+    Btrfs: fix transaction throttling for delayed refs
+    
+    Dave has this fs_mark script that can make btrfs abort with sufficient amount of
+    ram.  This is because with more ram we can keep more dirty metadata in cache
+    which in a round about way makes for many more pending delayed refs.  What
+    happens is we end up not throttling the transaction enough so when we go to
+    commit the transaction when we've completely filled the file system we'll
+    abort() because we use all of the space in the global reserve and we still have
+    delayed refs to run.  To fix this we need to make the delayed ref flushing and
+    the transaction throttling dependant upon the number of delayed refs that we
+    have instead of how much reserved space is left in the global reserve.  With
+    this patch we not only stop aborting transactions but we also get a smoother run
+    speed with fs_mark and it makes us about 10% faster.  Thanks,
+    
+    Reported-by: David Sterba <dsterba@suse.cz>
+    Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+
+ fs/btrfs/ctree.h       |  2 ++
+ fs/btrfs/extent-tree.c | 61 ++++++++++++++++++++++++++++++++++++++++++++++----
+ fs/btrfs/transaction.c | 24 +++++++++-----------
+ 3 files changed, 69 insertions(+), 18 deletions(-)
+
+                                 time.elapsed_time
+
+   740 ++------------------*------------------------------------------------+
+       *..         .*.*..*    *..*.*..*.                                    |
+   720 ++ *.*..*.*.                     *..*.*..*.  .*..*.    .*..*.  .*.   |
+       |                                          *.      *..*      *.   *..*
+   700 ++                                                                   |
+       |                                                                    |
+   680 ++                                                                   |
+       |                                                                    |
+   660 ++                                                                   |
+       |                                                                    |
+   640 ++                                                                   |
+       |                                                                    |
+   620 ++ O                      O                                          |
+       O    O  O O  O O  O O  O    O  O O  O O  O O  O  O O  O O  O O  O    |
+   600 ++-------------------------------------------------------------------+
 
 
->  arch/arm/kernel/kprobes-test.c |   12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/arm/kernel/kprobes-test.c b/arch/arm/kernel/kprobes-test.c
-> index 0cd63d0..96e3dbc 100644
-> --- a/arch/arm/kernel/kprobes-test.c
-> +++ b/arch/arm/kernel/kprobes-test.c
-> @@ -1329,7 +1329,8 @@ static void test_case_failed(const char *message)
->  static unsigned long next_instruction(unsigned long pc)
->  {
->  #ifdef CONFIG_THUMB2_KERNEL
-> -	if ((pc & 1) && !is_wide_instruction(*(u16 *)(pc - 1)))
-> +	if ((pc & 1) &&
-> +	    !is_wide_instruction(__mem_to_opcode_thumb16(*(u16 *)(pc - 1))))
->  		return pc + 2;
->  	else
->  #endif
-> @@ -1374,13 +1375,13 @@ static uintptr_t __used kprobes_test_case_start(const char *title, void *stack)
->  
->  	if (test_case_is_thumb) {
->  		u16 *p = (u16 *)(test_code & ~1);
-> -		current_instruction = p[0];
-> +		current_instruction = __mem_to_opcode_thumb16(p[0]);
->  		if (is_wide_instruction(current_instruction)) {
-> -			current_instruction <<= 16;
-> -			current_instruction |= p[1];
-> +			u16 instr2 = __mem_to_opcode_thumb16(p[1]);
-> +			current_instruction = __opcode_thumb32_compose(current_instruction, instr2);
->  		}
->  	} else {
-> -		current_instruction = *(u32 *)test_code;
-> +		current_instruction = __mem_to_opcode_arm(*(u32 *)test_code);
->  	}
->  
->  	if (current_title[0] == '.')
-> @@ -1593,7 +1594,6 @@ static int run_test_cases(void (*tests)(void), const union decode_item *table)
->  	return 0;
->  }
->  
-> -
+                            time.voluntary_context_switches
 
-I know the above blank line isn't needed but I believe the convention is
-to avoid doing unrelated white-space clean-ups in patches.
+   100000 ++------------------*-*----*--------------------------------------+
+    90000 ++   *.    .*..*.*.     *.   *..                                  |
+          *. ..  *..*                      .*.. .*..*.*.*..*.*..*.*..*     .*
+    80000 ++*                             *    *                      +  .* |
+    70000 ++                                                           *.   |
+          |                                                                 |
+    60000 ++                                                                |
+    50000 ++                                                                |
+    40000 ++                                                                |
+          |                                                                 |
+    30000 ++                                                                |
+    20000 ++                                                                |
+          |                                                                 |
+    10000 ++                                                                |
+        0 O+O--O-O--O-O--O-O--O-O-O--O-O--O-O--O-O--O-O-O--O-O--O-O--O-O----+
 
->  static int __init run_all_tests(void)
->  {
->  	int ret = 0;
 
+                                time.file_system_inputs
+
+   800000 ++--------------------*----*--------------------------------------+
+          |    *.    .*..*.*..*   *.   *..                                  |
+   700000 *+ ..  *..*                      .*.. .*..*.*.*..*.*..*.*..*     .*
+          | *                             *    *                      +  .* |
+   600000 ++                                                           *.   |
+   500000 ++                                                                |
+          |                                                                 |
+   400000 ++                                                                |
+          |                                                                 |
+   300000 ++                                                                |
+   200000 ++                                                                |
+          |                                                                 |
+   100000 ++                                                                |
+          |                                                                 |
+        0 O+O--O-O--O-O--O-O--O-O-O--O-O--O-O--O-O--O-O-O--O-O--O-O--O-O----+
+
+
+                               time.file_system_outputs
+
+   900000 ++----------------------------------------------------------------+
+          |    *.*..         .*.*.  .*.            .*.*.*..*.       .*      |
+   800000 *+ ..     *.*..*.*.     *.   *.. .*..*.*.          *..*.*.  +  .*.*
+   700000 ++*                             *                            *.   |
+          |                                                                 |
+   600000 ++                                                                |
+   500000 ++                                                                |
+          |                                                                 |
+   400000 ++                                                                |
+   300000 ++                                                                |
+          |                                                                 |
+   200000 ++                                                                |
+   100000 ++                                                                |
+          |                                                                 |
+        0 O+O--O-O--O-O--O-O--O-O-O--O-O--O-O--O-O--O-O-O--O-O--O-O--O-O----+
+
+
+                                 perf-stat.page-faults
+
+   6.6e+06 ++---------------------------------------------------------------+
+           |                                                                |
+   6.4e+06 ++              .*.*..   .*..                                    |
+           *.  .*.*..*.*.*.      *.*    *.  .*.      .*..*.                 |
+   6.2e+06 ++*.                           *.   *..*.*      *..*.*.*..*.*..*.*
+           |                                                                |
+     6e+06 ++                                                               |
+           |                                                                |
+   5.8e+06 ++                                                               |
+           |                                                                |
+   5.6e+06 ++                                                               |
+           |                                                                |
+   5.4e+06 ++O                     O                                        |
+           O    O O  O O O  O O  O   O  O O  O O  O O O  O O  O O O  O O    |
+   5.2e+06 ++---------------------------------------------------------------+
+
+
+                                perf-stat.minor-faults
+
+   6.6e+06 ++---------------------------------------------------------------+
+           |                                                                |
+   6.4e+06 ++              .*.*..   .*..                                    |
+           *.  .*.*..*.*.*.      *.*    *.  .*.      .*..*.                 |
+   6.2e+06 ++*.                           *.   *..*.*      *..*.*.*..*.*..*.*
+           |                                                                |
+     6e+06 ++                                                               |
+           |                                                                |
+   5.8e+06 ++                                                               |
+           |                                                                |
+   5.6e+06 ++                                                               |
+           |                                                                |
+   5.4e+06 ++O                     O                                        |
+           O    O O  O O O  O O  O   O  O O  O O  O O O  O O  O O O  O O    |
+   5.2e+06 ++---------------------------------------------------------------+
+
+
+                                   vmstat.io.bi
+
+   600 ++-----------*-*--*-*--*--*----*-------------------------------------+
+       |          ..               *.  +                                    |
+   500 *+.*.*..*.*                      *..*.*..*.*..  .*.*..*.*..*.*..*.*..*
+       |                                             *.                     |
+       |                                                                    |
+   400 ++                                                                   |
+       |                                                                    |
+   300 ++                                                                   |
+       |                                                                    |
+   200 ++                                                                   |
+       |  O                      O                                          |
+       |                                                                    |
+   100 ++      O                                                            |
+       O    O    O  O O  O O  O    O  O O  O O  O O  O    O  O O  O O  O    |
+     0 ++-----------------------------------------------O-------------------+
+
+
+                                     vmstat.io.bo
+
+   660000 ++----------------------------------------------------------------+
+          |                                    O O  O O O    O  O O  O      |
+   640000 O+   O    O O  O O  O O    O O  O O              O           O    |
+          | O    O                O                                         |
+   620000 ++                                                                |
+          |                                                                 |
+   600000 ++                                                                |
+          |                                                                 |
+   580000 ++                                                                |
+          |                                                                 |
+   560000 ++                                                             .*.|
+          |                              .*.  .*.*..*. .*..*.*..*.*..*.*.   *
+   540000 *+*..*.*..*.         .*.*.. .*.   *.        *                     |
+          |           *..*.*..*      *                                      |
+   520000 ++----------------------------------------------------------------+
+
+
+                                iostat.sde.avgrq-sz
+
+   720 ++-------------------------------------------------------------------+
+       |              O               O                                     |
+   700 ++           O      O  O    O                              O         |
+   680 O+ O O  O O       O       O      O  O O    O                 O       |
+       |                                        O    O  O O  O O       O    |
+   660 ++                                                                   |
+       |                                                                    |
+   640 ++                                                                   |
+       |                                                                    |
+   620 ++                                                                   |
+   600 ++                                                                   |
+       |                                                                    |
+   580 ++          .*.*..*.*..  .*.*..           .*..  .*.        *.    .*..|
+       *..*.*..*.*.           *.      *.*.. .*..*    *.   *..*. ..  *..*    *
+   560 ++----------------------------------*-------------------*------------+
+
+
+                                iostat.sde.avgqu-sz
+
+   125 ++-------------------------------------------------------------------+
+       |                                                          O         |
+   120 ++                                       O    O                      |
+       O    O  O O  O O    O  O       O    O O    O       O  O O    O       |
+       |  O              O       O O    O               O              O    |
+   115 ++                                                                   |
+       |                                                                    |
+   110 ++                                                                   |
+       |                                                                    |
+   105 ++                                                                   |
+       |                                         .*..                       |
+       | .*.       .*                   *..*.*..*      .*.  .*.  .*.*.. .*..*
+   100 *+   *.. .*.  +       .*..*.*.. +             *.   *.   *.      *    |
+       |       *      *..*.*.         *                                     |
+    95 ++-------------------------------------------------------------------+
+
+
+                                iostat.sdf.avgrq-sz
+
+   720 ++-------------------------------------------------------------------+
+       |              O               O                                     |
+   700 ++   O  O    O    O    O    O                                        |
+   680 O+        O         O     O      O  O O    O                 O       |
+       |  O                                     O    O  O O  O O  O    O    |
+   660 ++                                                                   |
+       |                                                                    |
+   640 ++                                                                   |
+       |                                                                    |
+   620 ++                                                                   |
+   600 ++                                                                   |
+       |                        .*                                          |
+   580 ++ *.*..           .*..*.  +              .*..         .*..*.*..  *..|
+       |..      .*..*.*..*         *..*.*.. .*..*    *..*.*..*          +   *
+   560 *+------*---------------------------*---------------------------*----+
+
+
+                                iostat.sdg.avgrq-sz
+
+   720 ++-------------------------------------------------------------------+
+       |              O       O                                             |
+   700 O+        O  O      O          O                                     |
+   680 ++   O            O         O       O O  O O  O  O O  O    O O       |
+       |  O    O                 O      O                      O       O    |
+   660 ++                                                                   |
+   640 ++                                                                   |
+       |                                                                    |
+   620 ++                                                                   |
+   600 ++                                                                   |
+       |        .*..                                               .*..     |
+   580 ++  .*..*    *.*..*.  .*..*.*..*.       .*.*..*..*.*..*.*..*     .*..*
+   560 ++.*                *.           *..*.*.                        *    |
+       *.                                                                   |
+   540 ++-------------------------------------------------------------------+
+
+
+                                iostat.sdd.avgrq-sz
+
+   720 ++-------------------------------------------------------------------+
+       |                 O                                                  |
+   700 O+        O    O    O  O  O O  O O                                   |
+   680 ++   O  O    O                      O O  O O  O  O      O  O O       |
+       |  O                                               O  O         O    |
+   660 ++                                                                   |
+   640 ++                                                                   |
+       |                                                                    |
+   620 ++                                                                   |
+   600 ++                                                                   |
+       |                                                                    |
+   580 ++  .*..*.*..*.*.. .*..*..*.*..           .*..  .*.*..*.*.. .*.. .*..*
+   560 *+.*              *            *.*.. .*..*    *.           *    *    |
+       |                                   *                                |
+   540 ++-------------------------------------------------------------------+
+
+
+                                iostat.sdd.avgqu-sz
+
+   120 ++-------------------------------------------------------------------+
+       |    O            O    O              O  O O  O  O    O O  O    O    |
+   115 O+ O    O O  O O    O     O O  O O  O              O         O       |
+       |                                                                    |
+       |                                                                    |
+   110 ++                                                                   |
+       |                                                                    |
+   105 ++                                                                   |
+       |                                                                    |
+   100 ++ *.                                      *..  .*.  .*.*..*.  .*.*..|
+       |..  *..*.*..*.*..*.  .*..*.    .*..      +   *.   *.        *.      *
+       *                   *.      *..*     .*..*                           |
+    95 ++                                  *                                |
+       |                                                                    |
+    90 ++-------------------------------------------------------------------+
+
+
+                                iostat.sdh.avgrq-sz
+
+   720 ++-------------------------------------------------------------------+
+       |              O       O                                             |
+   700 O+   O  O           O     O O  O O                                   |
+   680 ++ O      O  O    O                 O    O    O  O    O    O O  O    |
+       |                                     O    O       O    O            |
+   660 ++                                                                   |
+   640 ++                                                                   |
+       |                                                                    |
+   620 ++                                                                   |
+   600 ++                                                                   |
+       |                                                                    |
+   580 ++.*.*..*.*.. .*..*.*..  .*.*..*.       .*.*..  .*.  .*.  .*.*.. .*..*
+   560 *+           *         *.        *..*.*.      *.   *.   *.      *    |
+       |                                                                    |
+   540 ++-------------------------------------------------------------------+
+
+
+                                iostat.sdh.avgqu-sz
+
+   120 ++-------------------------------------------------------------------+
+       |              O  O    O              O    O     O    O O            |
+       |       O    O      O       O  O O                 O       O O  O    |
+   115 O+ O O    O                         O    O    O                      |
+       |                         O                                          |
+       |                                                                    |
+   110 ++                                                                   |
+       |                                                                    |
+   105 ++                                                                   |
+       |                                                                    |
+       |                                                                    |
+   100 ++.*.                                 *.. .*..   *.  .*.         .*..|
+       *.   *..*.    .*..         .*..      +   *     ..  *.   *..*.*..*    *
+       |         *..*    *.*..*..*     .*..*         *                      |
+    95 ++-----------------------------*-------------------------------------+
+
+
+                                iostat.sdi.avgrq-sz
+
+   720 ++-------------------------------------------------------------------+
+       |              O  O                                                  |
+   700 O+   O    O  O      O  O    O  O    O                                |
+   680 ++ O    O                 O      O                 O  O O  O O  O    |
+       |                                     O  O O  O  O                   |
+   660 ++                                                                   |
+   640 ++                                                                   |
+       |                                                                    |
+   620 ++                                                                   |
+   600 ++                                                                   |
+       |                        .*.                                .*.. .*..|
+   580 ++     .*.*..*.*..*.  .*.   *..*.     *.. .*..*..*.*..*.  .*    *    |
+   560 *+.*.*.             *.           *.. +   *              *.           *
+       |                                   *                                |
+   540 ++-------------------------------------------------------------------+
+
+
+                                iostat.sdi.avgqu-sz
+
+   125 ++-------------------------------------------------------------------+
+       |                                                                    |
+   120 ++                             O                                     |
+       |                   O  O              O    O       O         O  O    |
+       O            O O  O         O       O    O    O  O    O    O         |
+   115 ++   O  O O               O      O                      O            |
+       |  O                                                                 |
+   110 ++                                                                   |
+       |                                                                    |
+   105 ++                                                                   |
+       |                                                                    |
+       |                                                      .*..      .*..|
+   100 ++ *.*..*.*..*.       .*..           .*..*.*..*..*.*..*    *.  .*    |
+       |..            *..*.*.    *.*..*.*..*                        *.      *
+    95 *+-------------------------------------------------------------------+
+
+
+                                iostat.sdj.avgqu-sz
+
+   120 ++---------------------------------------------------------O---------+
+       |              O                         O    O    O    O    O  O    |
+   115 O+ O O    O  O    O    O    O  O    O O    O     O    O              |
+       |       O           O     O      O                                   |
+       |                                                                    |
+   110 ++                                                                   |
+       |                                                                    |
+   105 ++                                                                   |
+       |                                                *                   |
+   100 ++.*.*..*.                            *..       + +         .*..  *..|
+       *.        *..*.                      +   *.*.. +   *..*.*..*     +   *
+       |              *..*.  .*..*.*..*.*..*         *                 *    |
+    95 ++                  *.                                               |
+       |                                                                    |
+    90 ++-------------------------------------------------------------------+
+
+
+                                iostat.sdk.avgrq-sz
+
+   720 ++-------------------------------------------------------------------+
+       |                                                                    |
+   700 ++   O    O    O  O O  O    O  O    O                                |
+   680 O+ O    O    O            O                        O         O       |
+       |                                O    O  O O  O  O    O    O    O    |
+   660 ++                                                      O            |
+       |                                                                    |
+   640 ++                                                                   |
+       |                                                                    |
+   620 ++                                                                   |
+   600 ++                                                                   |
+       |                                                                    |
+   580 ++.*.    .*.. .*..     *..     *.         .*..  .*.  .*.    .*.. .*..*
+       *.   *..*    *    *. ..   *. ..  *.. .*..*    *.   *.   *..*    *    |
+   560 ++------------------*-------*-------*--------------------------------+
+
+
+                                iostat.sdk.avgqu-sz
+
+   125 ++-------------------------------------------------------------------+
+       |                                                                    |
+   120 ++                                                 O                 |
+       O         O    O  O O     O O       O O    O          O      O       |
+   115 ++ O O  O    O         O       O O       O    O  O      O  O    O    |
+       |                                                                    |
+   110 ++                                                                   |
+       |                                                                    |
+   105 ++                                                                   |
+       |                                         .*..                       |
+   100 ++.*.  .*.                      .*.. .*..*      .*.*..*.            .*
+       *.   *.   *..*.       .*..*.  .*    *         *.        *..*.*..*.*. |
+    95 ++             *..*.*.      *.                                       |
+       |                                                                    |
+    90 ++-------------------------------------------------------------------+
+
+
+                                iostat.sdl.avgrq-sz
+
+   720 ++-------------------------------------------------------------------+
+       O                                                                    |
+   700 ++   O    O    O       O    O       O                                |
+   680 ++      O    O    O O     O    O O       O    O  O    O O  O O       |
+       |  O                                  O    O       O            O    |
+   660 ++                                                                   |
+   640 ++                                                                   |
+       |                                                                    |
+   620 ++                                                                   |
+   600 ++                                                                   |
+       |                                                                 *..|
+   580 ++  .*..*.*..*.*..*    *..*.*..*.       .*.*..  .*.  .*.  .*.*.. +   *
+   560 *+.*               + ..          *..*.*.      *.   *.   *.      *    |
+       |                   *                                                |
+   540 ++-------------------------------------------------------------------+
+
+
+                                iostat.sdl.avgqu-sz
+
+   125 ++-------------------------------------------------------------------+
+       |                                                                    |
+   120 ++                                       O    O                      |
+       |    O    O            O       O                 O    O    O O       |
+       O              O  O O     O O    O  O O    O       O    O       O    |
+   115 ++ O    O    O                                                       |
+       |                                                                    |
+   110 ++                                                                   |
+       |                                                                    |
+   105 ++                                                                   |
+       |                                                         .*.        |
+       |   .*..*.                              .*.*..  .*.  .*.*.   *.. .*..|
+   100 ++.*      *..*        .*..*    *.*.. .*.      *.   *.           *    *
+       *.            +  .*.*.     + ..     *                                |
+    95 ++-------------*------------*----------------------------------------+
+
+
+                                iostat.sdm.avgrq-sz
+
+   700 ++---------------------O-------O-------------------------------------+
+       O    O  O O    O  O O     O      O  O O    O                         |
+   680 ++ O         O              O            O    O  O O  O      O       |
+       |                                                       O  O         |
+   660 ++                                                              O    |
+       |                                                                    |
+   640 ++                                                                   |
+       |                                                                    |
+   620 ++                                                                   |
+       |                                                                    |
+   600 ++                                                                   |
+       |             .*..                                                *..|
+   580 ++   *.. .*..*     .*..  .*.*..*.       .*.*..  .*.  .*.  .*.*.. +   *
+       |   +   *         *    *.        *.. .*.      *.   *.   *.      *    |
+   560 *+-*--------------------------------*--------------------------------+
+
+
+                                iostat.sdn.avgrq-sz
+
+   700 ++------------------O----------O-------------------------------------+
+       O    O    O    O  O    O    O    O  O                                |
+   680 ++ O    O    O            O           O  O O  O  O O  O O  O O       |
+   660 ++                                                              O    |
+       |                                                                    |
+   640 ++                                                                   |
+       |                                                                    |
+   620 ++                                                                   |
+       |                                                                    |
+   600 ++                                                                   |
+   580 ++                    .*..*                                      .*..|
+       *..*.  .*.*..    .*.*.     +  .*.    .*.. .*..  .*    *.    .*..*    *
+   560 ++   *.      *.*.           *.   *..*    *    *.  + ..  *..*         |
+       |                                                  *                 |
+   540 ++-------------------------------------------------------------------+
 
