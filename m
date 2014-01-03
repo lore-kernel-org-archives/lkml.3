@@ -1,109 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944AbaACSlO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 13:41:14 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:35335 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751158AbaACSlN (ORCPT
+	id S1753131AbaACSlw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 13:41:52 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:53400 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752304AbaACSlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 13:41:13 -0500
-Date: Fri, 3 Jan 2014 13:39:56 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xenproject.org,
-        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH v12 15/18] xen/pvh: Piggyback on PVHVM for
- grant driver (v2)
-Message-ID: <20140103183956.GA29058@phenom.dumpdata.com>
-References: <1388550945-25499-16-git-send-email-konrad.wilk@oracle.com>
- <52C59483.5030607@citrix.com>
- <20140102185023.GG3021@pegasus.dumpdata.com>
- <52C6A4E5.3080904@citrix.com>
- <20140103144409.GC27019@phenom.dumpdata.com>
- <52C6DA3F.7070509@citrix.com>
- <20140103154820.GA20976@andromeda.dapyr.net>
- <alpine.DEB.2.02.1401031659230.8667@kaball.uk.xensource.com>
- <20140103181459.GG27019@phenom.dumpdata.com>
- <alpine.DEB.2.02.1401031827570.8667@kaball.uk.xensource.com>
+	Fri, 3 Jan 2014 13:41:51 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arm/smp: Make boot_secondary() static
+Date: Fri, 03 Jan 2014 19:41:42 +0100
+Message-ID: <4243977.Rh2PlZQ4Sh@wuerfel>
+User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <CAMuHMdXoZJEgMXH0K1d5kDs+XSM_KMkigUq+mKYVQezdxZ929g@mail.gmail.com>
+References: <1388763959-27491-1-git-send-email-geert@linux-m68k.org> <201401031804.34124.arnd@arndb.de> <CAMuHMdXoZJEgMXH0K1d5kDs+XSM_KMkigUq+mKYVQezdxZ929g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1401031827570.8667@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:8XptjgDA0o7D51LuOCr/xnz75EJL4ncPHtULP9rTmHk
+ A5VCTGxCt39rcBYu0pv6FUP73gTqW808UBdMRZ9y7NqkaCPRsz
+ c8KRr2UObRUeqnLMpKgtO4/YZOV/iqSsAC77m6T6ezRQh6//Dz
+ Osl0+VKWTgi+p+Cd3aK+pvcS6R9rRSh1pf5Zk3n5wVFekmF+EM
+ RgCpcJrfr2fA7J6Swc3uyWDDj8Q5UoFLzNoxlfAh+dq5ECUtkc
+ X1JtJDdTnZNLEWl7+5wjhPTShz3K18HTHRv0+KXigeNTevHS7D
+ Kf/+caJpXv9+4SyXBUK/IeG/lc+6JbnOBx+Z1Y3jRfExf6euYX
+ rQnHHdwtyztBC3YUws8Q=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 03, 2014 at 06:29:25PM +0000, Stefano Stabellini wrote:
-> On Fri, 3 Jan 2014, Konrad Rzeszutek Wilk wrote:
-> > On Fri, Jan 03, 2014 at 05:20:54PM +0000, Stefano Stabellini wrote:
-> > > On Fri, 3 Jan 2014, Konrad Rzeszutek Wilk wrote:
-> > > > On Fri, Jan 03, 2014 at 03:41:51PM +0000, David Vrabel wrote:
-> > > > > On 03/01/14 14:44, Konrad Rzeszutek Wilk wrote:
-> > > > > > On Fri, Jan 03, 2014 at 11:54:13AM +0000, David Vrabel wrote:
-> > > > > >> On 02/01/14 18:50, Konrad Rzeszutek Wilk wrote:
-> > > > > >>> On Thu, Jan 02, 2014 at 04:32:03PM +0000, David Vrabel wrote:
-> > > > > >>>> On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
-> > > > > >>>>> @@ -1320,4 +1323,4 @@ static int __gnttab_init(void)
-> > > > > >>>>>  	return gnttab_init();
-> > > > > >>>>>  }
-> > > > > >>>>>  
-> > > > > >>>>> -core_initcall(__gnttab_init);
-> > > > > >>>>> +core_initcall_sync(__gnttab_init);
-> > > > > >>>>
-> > > > > >>>> Why has this become _sync?
-> > > > > >>>
-> > > > > >>> It needs to run _after_ the xen_pvh_gnttab_setup has run (which is
-> > > > > >>> at gnttab_init):
-> > > > > >>
-> > > > > >>
-> > > > > >> The use of core_initcall_sync() doesn't imply any ordering to me.  Can't
-> > > > > > 
-> > > > > > It has a clear ordering property.
-> > > > > 
-> > > > > This really isn't obvious to me.  Can you point to the docs/code the
-> > > > > guarantee this?  I couldn't find it.
-> > > > 
-> > > > include/linux/init.h
-> > > > > 
-> > > > > >> you call xen_pvh_gnttab_setup() from within __gnttab_init() ?
-> > > > > > 
-> > > > > > No. That is due to the fact that __gnttab_init() is in drivers/xen and is
-> > > > > > also used by the ARM code.
-> > > > > > 
-> > > > > > Stefano in his previous review mentioned he would like PVH specific
-> > > > > > code in arch/x86:
-> > > > > > 
-> > > > > > https://lkml.org/lkml/2013/12/18/507
-> > > > > 
-> > > > > Call it xen_arch_gnttab_setup() and add weak stub for other architectures?
-> > > > 
-> > > > Stefano, thoughts?
-> > > 
-> > > I think that you can safely move __gnttab_init to postcore_initcall if
-> > > it works correctly for the PV and PVH cases, because HVM and ARM are
-> > > unaffected by it.  In fact they don't initialize the grant table via
-> > > __gnttab_init at all. See:
-> > 
-> > The 'xenbus_init' is called in postcore_initcall. I don't actually
-> > know if it is OK to call that _before_ gnttab_init is called.
+On Friday 03 January 2014 19:24:19 Geert Uytterhoeven wrote:
+> Fine for me.
 > 
-> No, xenbus_init needs to be called after gnttab_init, however the
-> alphabetical order would enforce it.
-> Not that I would want to rely on it :-)
+> Do you want me to fold this into my patch, or will you apply this on top?
+> 
+> 
 
-Exactly. Which is why I came back to the idea of just moving __gnttab_init 
-one level down in the '1' runlevel. This way I can guarantee that this
-order of operation will be done:
+The patch is for Russell anyway, so please fold my change into your
+patch, unless he prefers your previous version of course.
 
-xen_pvh_gnttab_setup
-__gnttab_init
-xenbus_init
-
-Without anybody coming up with a patch that would randomize the order
-of functions called within the runlevels.
-
-I gather you prefer then this approach then?
-
+	Arnd
