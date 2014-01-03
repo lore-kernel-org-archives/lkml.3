@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354AbaACOfI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 09:35:08 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:52413 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820AbaACOfG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 09:35:06 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH 01/17] ARM: spear: Remove deprecated IRQF_DISABLED flag
-Date: Fri, 3 Jan 2014 15:34:37 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, olof@lixom.net, khilman@linaro.org,
-        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-References: <1388419771-30075-1-git-send-email-daniel.lezcano@linaro.org> <201401021929.46581.arnd@arndb.de> <52C5B52E.6080609@linaro.org>
-In-Reply-To: <52C5B52E.6080609@linaro.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1752504AbaACOiJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 09:38:09 -0500
+Received: from mout2.freenet.de ([195.4.92.92]:36045 "EHLO mout2.freenet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751586AbaACOiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 09:38:07 -0500
+X-Greylist: delayed 507 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Jan 2014 09:38:07 EST
+Date: Fri, 3 Jan 2014 15:27:19 +0100
+From: Andreas Hartmann <andihartmann@01019freenet.de>
+To: linux-kernel@vger.kernel.org
+Subject: Strange problem with vxlan!
+Message-ID: <20140103152719.4a8db2ce@dualc.maya.org>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201401031534.37533.arnd@arndb.de>
-X-Provags-ID: V02:K0:J0LLZ8ezz1HuyW+POrTOfMakWL3fUo5GITDf/fe6zw3
- tGgELNdo02pA8plSlibm02QFkPELP6cqPFgtLekhL+mcUAHyga
- aQbHXfEvkKJYHFLmzYW9aa82bQAF1IZvaXDch4o1khBMY1nzXS
- p0TbMaj9X4ncb4aSTj9bdXWpLmxJpLxcZRZ18lmpkjNvc1vCn7
- jCvZvY4wROhyTdntkDwpZlgI171bhFuIFY0FIombIBhS7hw83n
- mgp6Ie8XU8Fd5I+23NZi4l9oV5XnEWnxM4ujttReBNzR61XZDY
- q8juN6fpU4DVSvPJWeotjRYeRM5c/QFpivzbk35uoXj+GmfkTl
- asePrNXQFBwHMGJY0Vok=
+X-Originated-At: 79.222.19.223!53744
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 02 January 2014, Daniel Lezcano wrote:
-> On 01/02/2014 07:29 PM, Arnd Bergmann wrote:
-> > On Monday 30 December 2013, Daniel Lezcano wrote:
-> >> This flag is a NOOP and scheduled to be removed
-> >>
-> >> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> >
-> > Thanks for sending this series. I think the patches are duplicates of stuff that
-> > Michael Opdenacker has sent before (actually multiple times). I have no problem
-> > applying either version into arm-soc, but I think it would be better to attribute
-> > them to Michael, since he came first. Can you two please coordinate and send a
-> > single pull request for the arm-soc related patches that haven't made it into
-> > linux-next yet?
-> 
-> Michael removed the flag for:
-> 
-> pxa (ed7936f913456e4c01aed75deba6cfaf830fa8cf)
-> samsung (fa53d5cdbffbce421c3bd2f937b5626fc044fedc)
-> avr32 (7155530d9eb692994d208836e4965da06b17c99d)
-> ep93xx (3a71ae4796fdaedbdbdab94660b7b7b5bfe61d1d)
-> plat-orion (eb4d552b933ac59c0c8e0604ff435c5208a82679)
-> 
-> The patchset I sent is on top of arm/for-next and finishes to remove 
-> this flag for arch/arm. It should not overlap with what Michael did.
-> 
-> I'm ok to attribute the patchset to Michael if that can help to accept 
-> this patchset and kill this flag for arch/arm.
+Given is the following network architecture: connection of a virtual bridge br0 and a remote ethernet-switch through vxlan tunnel via WLAN:
 
-IIRC, Michael actually sent patches for all uses in the entire kernel
-previously, but relied on sub-maintainers to pick them up one by one.
-Some patches already got 'Acked-by' replies, which I'd like to keep.
 
-It's probably time to do a bigger sweeping change now and kill it for
-good, bypassing the remaining maintainers that haven't acted so far.
-We can certainly carry the patches related to arm-soc, and I think
-it's worth trying once more to get the scsi patches merged, since there
-is a bunch of them. Everything else can probably go directly as a
-single pull-request to Linus, or perhaps via Andrew Morton.
 
-	Arnd
+host 			[br0: tap0,vxlan0]
+    				|    ||
+				|    ===========
+				|	      ||
+				|	      ||
+VM (WLAN access point)	[br0: eth0, wlan0]    ||
+				      |	      ||
+				      |	      ||
+			  -------------	      ||
+			  |		      ||
+STA			[wlan0, br0: eth0, vxlan0]
+				      |
+				      |
+   |----------------------------------|
+Switch				      
+   |
+   ----------
+	    |
+notebook [eth0]
+
+
+
+The configuration of the vxlan is:
+
+host: route add -net 224.0.0.0 netmask 240.0.0.0 dev br0
+      ip li add vxlan0 type vxlan id 1 group 239.1.1.1 dev br0
+
+STA:  route add -net 224.0.0.0 netmask 240.0.0.0 dev wlan0
+      ip li add vxlan0 type vxlan id 1 group 239.1.1.1 dev wlan0
+
+This means: the endpoints of the vxlan tunnel are br0 (host) and STA (wlan0). 
+Between them, there is the WLAN AP (a VM belonging to the host).
+
+
+Now the problem:
+
+If the VM (=AP) runs e.g. Linux 3.4.x, all is working fine as expected. 
+If the VM runs 3.12.x or even 3.10.x, the tunnel works fine a few minutes after creation. Afterwards it is broken.
+
+Broken means:
+A "dhcpcd eth0" e.g. on the notebook times out, doesn't work any more. Traces show:
+The udp-tunnel-packages sent by the STA through vxlan0 can be seen on the host / tap0, but they can't be seen on vxlan0 (if it works, they can be seen on the vxlan0 device, too).
+
+On the host runs Linux 3.10.x, on the STA 3.11.6.
+
+
+Any idea why vxlan is broken w/ Linux 3.12.x or 3.10.x on the VM (AP)?
+
+
+
+Thanks in advance for any hint,
+regards,
+Andreas
