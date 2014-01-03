@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921AbaACAjw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 19:39:52 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:47295 "EHLO
+	id S1753947AbaACAkT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 19:40:19 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:47301 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752956AbaACAhr (ORCPT
+	with ESMTP id S1752846AbaACAhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 19:37:47 -0500
+	Thu, 2 Jan 2014 19:37:46 -0500
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
-        <devicetree@vger.kernel.org>
-Subject: [PATCH v2 08/10] devicetree: bindings: Document PM8921/8058 keypads
-Date: Thu,  2 Jan 2014 16:37:38 -0800
-Message-Id: <1388709460-19222-9-git-send-email-sboyd@codeaurora.org>
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org
+Subject: [PATCH v2 04/10] Input: pmic8xxx-keypad - Migrate to regmap APIs
+Date: Thu,  2 Jan 2014 16:37:34 -0800
+Message-Id: <1388709460-19222-5-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.5.2.228.g8f9f19c
 In-Reply-To: <1388709460-19222-1-git-send-email-sboyd@codeaurora.org>
 References: <1388709460-19222-1-git-send-email-sboyd@codeaurora.org>
@@ -22,93 +21,231 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the keypad device found on PM8921 and PM8058 PMICs.
+Use the regmap APIs for this driver instead of custom pm8xxx
+APIs. This breaks this driver's dependency on the pm8xxx APIs and
+allows us to easily port it to other bus protocols in the future.
 
-Cc: <devicetree@vger.kernel.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- .../bindings/input/qcom,pm8xxx-keypad.txt          | 72 ++++++++++++++++++++++
- 1 file changed, 72 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8xxx-keypad.txt
+ drivers/input/keyboard/pmic8xxx-keypad.c | 81 ++++++++++++--------------------
+ 1 file changed, 29 insertions(+), 52 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/input/qcom,pm8xxx-keypad.txt b/Documentation/devicetree/bindings/input/qcom,pm8xxx-keypad.txt
-new file mode 100644
-index 000000000000..aa5a9c6cf512
---- /dev/null
-+++ b/Documentation/devicetree/bindings/input/qcom,pm8xxx-keypad.txt
-@@ -0,0 +1,72 @@
-+Qualcomm PM8xxx PMIC Keypad
+diff --git a/drivers/input/keyboard/pmic8xxx-keypad.c b/drivers/input/keyboard/pmic8xxx-keypad.c
+index 4e6bfbf94ae4..c6d3d216ffa7 100644
+--- a/drivers/input/keyboard/pmic8xxx-keypad.c
++++ b/drivers/input/keyboard/pmic8xxx-keypad.c
+@@ -19,8 +19,8 @@
+ #include <linux/bitops.h>
+ #include <linux/delay.h>
+ #include <linux/mutex.h>
++#include <linux/regmap.h>
+ 
+-#include <linux/mfd/pm8xxx/core.h>
+ #include <linux/mfd/pm8xxx/gpio.h>
+ #include <linux/input/pmic8xxx-keypad.h>
+ 
+@@ -87,6 +87,7 @@
+  * struct pmic8xxx_kp - internal keypad data structure
+  * @pdata - keypad platform data pointer
+  * @input - input device pointer for keypad
++ * @regmap - regmap handle
+  * @key_sense_irq - key press/release irq number
+  * @key_stuck_irq - key stuck notification irq number
+  * @keycodes - array to hold the key codes
+@@ -98,6 +99,7 @@
+ struct pmic8xxx_kp {
+ 	const struct pm8xxx_keypad_platform_data *pdata;
+ 	struct input_dev *input;
++	struct regmap *regmap;
+ 	int key_sense_irq;
+ 	int key_stuck_irq;
+ 
+@@ -110,33 +112,6 @@ struct pmic8xxx_kp {
+ 	u8 ctrl_reg;
+ };
+ 
+-static int pmic8xxx_kp_write_u8(struct pmic8xxx_kp *kp,
+-				 u8 data, u16 reg)
+-{
+-	int rc;
+-
+-	rc = pm8xxx_writeb(kp->dev->parent, reg, data);
+-	return rc;
+-}
+-
+-static int pmic8xxx_kp_read(struct pmic8xxx_kp *kp,
+-				 u8 *data, u16 reg, unsigned num_bytes)
+-{
+-	int rc;
+-
+-	rc = pm8xxx_read_buf(kp->dev->parent, reg, data, num_bytes);
+-	return rc;
+-}
+-
+-static int pmic8xxx_kp_read_u8(struct pmic8xxx_kp *kp,
+-				 u8 *data, u16 reg)
+-{
+-	int rc;
+-
+-	rc = pmic8xxx_kp_read(kp, data, reg, 1);
+-	return rc;
+-}
+-
+ static u8 pmic8xxx_col_state(struct pmic8xxx_kp *kp, u8 col)
+ {
+ 	/* all keys pressed on that particular row? */
+@@ -161,9 +136,9 @@ static u8 pmic8xxx_col_state(struct pmic8xxx_kp *kp, u8 col)
+ static int pmic8xxx_chk_sync_read(struct pmic8xxx_kp *kp)
+ {
+ 	int rc;
+-	u8 scan_val;
++	unsigned int scan_val;
+ 
+-	rc = pmic8xxx_kp_read_u8(kp, &scan_val, KEYP_SCAN);
++	rc = regmap_read(kp->regmap, KEYP_SCAN, &scan_val);
+ 	if (rc < 0) {
+ 		dev_err(kp->dev, "Error reading KEYP_SCAN reg, rc=%d\n", rc);
+ 		return rc;
+@@ -171,7 +146,7 @@ static int pmic8xxx_chk_sync_read(struct pmic8xxx_kp *kp)
+ 
+ 	scan_val |= 0x1;
+ 
+-	rc = pmic8xxx_kp_write_u8(kp, scan_val, KEYP_SCAN);
++	rc = regmap_write(kp->regmap, KEYP_SCAN, scan_val);
+ 	if (rc < 0) {
+ 		dev_err(kp->dev, "Error writing KEYP_SCAN reg, rc=%d\n", rc);
+ 		return rc;
+@@ -187,26 +162,24 @@ static int pmic8xxx_kp_read_data(struct pmic8xxx_kp *kp, u16 *state,
+ 					u16 data_reg, int read_rows)
+ {
+ 	int rc, row;
+-	u8 new_data[PM8XXX_MAX_ROWS];
++	unsigned int val;
+ 
+-	rc = pmic8xxx_kp_read(kp, new_data, data_reg, read_rows);
+-	if (rc)
+-		return rc;
+-
+-	for (row = 0; row < kp->pdata->num_rows; row++) {
+-		dev_dbg(kp->dev, "new_data[%d] = %d\n", row,
+-					new_data[row]);
+-		state[row] = pmic8xxx_col_state(kp, new_data[row]);
++	for (row = 0; row < read_rows; row++) {
++		rc = regmap_read(kp->regmap, data_reg, &val);
++		if (rc)
++			return rc;
++		dev_dbg(kp->dev, "%d = %d\n", row, val);
++		state[row] = pmic8xxx_col_state(kp, val);
+ 	}
+ 
+-	return rc;
++	return 0;
+ }
+ 
+ static int pmic8xxx_kp_read_matrix(struct pmic8xxx_kp *kp, u16 *new_state,
+ 					 u16 *old_state)
+ {
+ 	int rc, read_rows;
+-	u8 scan_val;
++	unsigned int scan_val;
+ 
+ 	if (kp->pdata->num_rows < PM8XXX_MIN_ROWS)
+ 		read_rows = PM8XXX_MIN_ROWS;
+@@ -236,14 +209,14 @@ static int pmic8xxx_kp_read_matrix(struct pmic8xxx_kp *kp, u16 *new_state,
+ 	/* 4 * 32KHz clocks */
+ 	udelay((4 * DIV_ROUND_UP(USEC_PER_SEC, KEYP_CLOCK_FREQ)) + 1);
+ 
+-	rc = pmic8xxx_kp_read_u8(kp, &scan_val, KEYP_SCAN);
++	rc = regmap_read(kp->regmap, KEYP_SCAN, &scan_val);
+ 	if (rc < 0) {
+ 		dev_err(kp->dev, "Error reading KEYP_SCAN reg, rc=%d\n", rc);
+ 		return rc;
+ 	}
+ 
+ 	scan_val &= 0xFE;
+-	rc = pmic8xxx_kp_write_u8(kp, scan_val, KEYP_SCAN);
++	rc = regmap_write(kp->regmap, KEYP_SCAN, scan_val);
+ 	if (rc < 0)
+ 		dev_err(kp->dev, "Error writing KEYP_SCAN reg, rc=%d\n", rc);
+ 
+@@ -379,10 +352,10 @@ static irqreturn_t pmic8xxx_kp_stuck_irq(int irq, void *data)
+ static irqreturn_t pmic8xxx_kp_irq(int irq, void *data)
+ {
+ 	struct pmic8xxx_kp *kp = data;
+-	u8 ctrl_val, events;
++	unsigned int ctrl_val, events;
+ 	int rc;
+ 
+-	rc = pmic8xxx_kp_read(kp, &ctrl_val, KEYP_CTRL, 1);
++	rc = regmap_read(kp->regmap, KEYP_CTRL, &ctrl_val);
+ 	if (rc < 0) {
+ 		dev_err(kp->dev, "failed to read keyp_ctrl register\n");
+ 		return IRQ_HANDLED;
+@@ -421,7 +394,7 @@ static int pmic8xxx_kpd_init(struct pmic8xxx_kp *kp)
+ 
+ 	ctrl_val |= (bits << KEYP_CTRL_SCAN_ROWS_SHIFT);
+ 
+-	rc = pmic8xxx_kp_write_u8(kp, ctrl_val, KEYP_CTRL);
++	rc = regmap_write(kp->regmap, KEYP_CTRL, ctrl_val);
+ 	if (rc < 0) {
+ 		dev_err(kp->dev, "Error writing KEYP_CTRL reg, rc=%d\n", rc);
+ 		return rc;
+@@ -439,7 +412,7 @@ static int pmic8xxx_kpd_init(struct pmic8xxx_kp *kp)
+ 
+ 	scan_val |= (cycles << KEYP_SCAN_ROW_HOLD_SHIFT);
+ 
+-	rc = pmic8xxx_kp_write_u8(kp, scan_val, KEYP_SCAN);
++	rc = regmap_write(kp->regmap, KEYP_SCAN, scan_val);
+ 	if (rc)
+ 		dev_err(kp->dev, "Error writing KEYP_SCAN reg, rc=%d\n", rc);
+ 
+@@ -474,7 +447,7 @@ static int pmic8xxx_kp_enable(struct pmic8xxx_kp *kp)
+ 
+ 	kp->ctrl_reg |= KEYP_CTRL_KEYP_EN;
+ 
+-	rc = pmic8xxx_kp_write_u8(kp, kp->ctrl_reg, KEYP_CTRL);
++	rc = regmap_write(kp->regmap, KEYP_CTRL, kp->ctrl_reg);
+ 	if (rc < 0)
+ 		dev_err(kp->dev, "Error writing KEYP_CTRL reg, rc=%d\n", rc);
+ 
+@@ -487,7 +460,7 @@ static int pmic8xxx_kp_disable(struct pmic8xxx_kp *kp)
+ 
+ 	kp->ctrl_reg &= ~KEYP_CTRL_KEYP_EN;
+ 
+-	rc = pmic8xxx_kp_write_u8(kp, kp->ctrl_reg, KEYP_CTRL);
++	rc = regmap_write(kp->regmap, KEYP_CTRL, kp->ctrl_reg);
+ 	if (rc < 0)
+ 		return rc;
+ 
+@@ -525,7 +498,7 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
+ 	const struct matrix_keymap_data *keymap_data;
+ 	struct pmic8xxx_kp *kp;
+ 	int rc;
+-	u8 ctrl_val;
++	unsigned int ctrl_val;
+ 
+ 	struct pm_gpio kypd_drv = {
+ 		.direction	= PM_GPIO_DIR_OUT,
+@@ -590,6 +563,10 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
+ 	if (!kp)
+ 		return -ENOMEM;
+ 
++	kp->regmap = dev_get_regmap(pdev->dev.parent, NULL);
++	if (!kp->regmap)
++		return -ENODEV;
 +
-+PROPERTIES
-+
-+- compatible:
-+	Usage: required
-+	Value type: <string>
-+	Definition: must be one of:
-+		    "qcom,pm8058-keypad"
-+		    "qcom,pm8921-keypad"
-+- interrupts:
-+	Usage: required
-+	Value type: <prop-encoded-array>
-+	Definition: the first interrupt specifies the key sense interrupt
-+		    and the second interrupt specifies the key stuck interrupt.
-+		    The format of the specifier is defined by the binding
-+		    document describing the node's interrupt parent.
-+
-+- linux,keymap:
-+	Usage: required
-+	Value type: <prop-encoded-array>
-+	Definition: the linux keymap. More information can be found in
-+		    input/matrix-keymap.txt.
-+
-+- keypad,num-rows:
-+	Usage: required
-+	Value type: <u32>
-+	Definition: number of rows in the keymap. More information can be found
-+		    in input/matrix-keymap.txt.
-+
-+- keypad,num-columns:
-+	Usage: required
-+	Value type: <u32>
-+	Definition: number of columns in the keymap. More information can be
-+		    found in input/matrix-keymap.txt.
-+
-+- debounce:
-+	Usage: optional
-+	Value type: <u32>
-+	Definition: time in microseconds that key must be pressed or release
-+		    for key sense interrupt to trigger.
-+
-+- scan-delay:
-+	Usage: optional
-+	Value type: <u32>
-+	Definition: time in microseconds to pause between successive scans
-+		    of the matrix array.
-+
-+- row-hold:
-+	Usage: optional
-+	Value type: <u32>
-+	Definition: time in nanoseconds to pause between scans of each row in
-+		    the matrix array.
-+
-+EXAMPLE
-+
-+	keypad {
-+		compatible = "qcom,pm8921-keypad";
-+		interrupt-parent = <&pmicintc>;
-+		interrupts = <74 1>, <75 1>;
-+		linux,keymap = <
-+			MATRIX_KEY(0, 0, KEY_VOLUMEUP)
-+			MATRIX_KEY(0, 1, KEY_VOLUMEDOWN)
-+			MATRIX_KEY(0, 2, KEY_CAMERA_FOCUS)
-+			MATRIX_KEY(0, 3, KEY_CAMERA)
-+			>;
-+		keypad,num-rows = <1>;
-+		keypad,num-columns = <5>;
-+		debounce = <15>;
-+		scan-delay = <32>;
-+		row-hold = <91500>;
-+	};
+ 	platform_set_drvdata(pdev, kp);
+ 
+ 	kp->pdata	= pdata;
+@@ -678,7 +655,7 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
+ 		return rc;
+ 	}
+ 
+-	rc = pmic8xxx_kp_read_u8(kp, &ctrl_val, KEYP_CTRL);
++	rc = regmap_read(kp->regmap, KEYP_CTRL, &ctrl_val);
+ 	if (rc < 0) {
+ 		dev_err(&pdev->dev, "failed to read KEYP_CTRL register\n");
+ 		return rc;
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
