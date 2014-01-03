@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805AbaACAOJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 19:14:09 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:23654 "EHLO
+	id S1754790AbaACAOH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 19:14:07 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:23656 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753925AbaACAHk (ORCPT
+	with ESMTP id S1753933AbaACAHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 2 Jan 2014 19:07:40 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -13,12 +13,12 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Pavel Machek <pavel@ucw.cz>, Joerg Roedel <joro@8bytes.org>,
+        Joerg Roedel <joro@8bytes.org>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Subject: [PATCH v5 18/33] x86, irq: Add ioapic_gsi_to_irq
-Date: Thu,  2 Jan 2014 16:05:50 -0800
-Message-Id: <1388707565-16535-19-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v5 15/33] x86, irq: Split out alloc_ioapic_save_registers()
+Date: Thu,  2 Jan 2014 16:05:47 -0800
+Message-Id: <1388707565-16535-16-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
 References: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
@@ -27,136 +27,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For hot add ioapic, irq_base is not equal to gsi_base.
-We need a way to do mapping between gsi and irq.
+Split alloc_ioapic_save_registers() from early_irq_init(),
+so it will be used per ioapic.
 
-Also remove irq_to_gsi() that is confusing, just use that array
-directly as we only have one caller and it already check
-input irq before use it.
+Will call that later for hot-added ioapic controller.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Pavel Machek <pavel@ucw.cz>
 Cc: Joerg Roedel <joro@8bytes.org>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 ---
- arch/x86/include/asm/io_apic.h |  1 +
- arch/x86/kernel/acpi/boot.c    | 22 +++++-----------------
- arch/x86/kernel/apic/io_apic.c | 29 ++++++++++++++++++++++++++++-
- 3 files changed, 34 insertions(+), 18 deletions(-)
+ arch/x86/kernel/apic/io_apic.c | 22 +++++++++++++++-------
+ 1 file changed, 15 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 8181fd8..02ac411 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -180,6 +180,7 @@ struct mp_ioapic_gsi{
- };
- extern struct mp_ioapic_gsi  mp_gsi_routing[];
- extern u32 gsi_top;
-+int ioapic_gsi_to_irq(u32 gsi);
- int mp_find_ioapic(u32 gsi);
- int mp_find_ioapic_pin(int ioapic, u32 gsi);
- void __init mp_register_ioapic(int id, u32 address, u32 gsi_base);
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 6c0b43b..0f9c133 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -113,6 +113,10 @@ static unsigned int gsi_to_irq(unsigned int gsi)
- 		}
- 	}
- 
-+#ifdef CONFIG_X86_IO_APIC
-+	if (acpi_irq_model == ACPI_IRQ_MODEL_IOAPIC)
-+		return ioapic_gsi_to_irq(gsi);
-+#endif
- 	/* Provide an identity mapping of gsi == irq
- 	 * except on truly weird platforms that have
- 	 * non isa irqs in the first 16 gsis.
-@@ -125,22 +129,6 @@ static unsigned int gsi_to_irq(unsigned int gsi)
- 	return irq;
- }
- 
--static u32 irq_to_gsi(int irq)
--{
--	unsigned int gsi;
--
--	if (irq < NR_IRQS_LEGACY)
--		gsi = isa_irq_to_gsi[irq];
--	else if (irq < gsi_top)
--		gsi = irq;
--	else if (irq < (gsi_top + NR_IRQS_LEGACY))
--		gsi = irq - gsi_top;
--	else
--		gsi = 0xffffffff;
--
--	return gsi;
--}
--
- /*
-  * This is just a simple wrapper around early_ioremap(),
-  * with sanity checks for phys == 0 and size == 0.
-@@ -530,7 +518,7 @@ int acpi_isa_irq_to_gsi(unsigned isa_irq, u32 *gsi)
- {
- 	if (isa_irq >= 16)
- 		return -1;
--	*gsi = irq_to_gsi(isa_irq);
-+	*gsi = isa_irq_to_gsi[isa_irq];
- 	return 0;
- }
- 
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index a1af837..066611f 100644
+index 5822c37..c94dd19 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1041,13 +1041,16 @@ static int pin_2_irq(int idx, int apic, int pin)
+@@ -283,6 +283,19 @@ static struct irq_cfg *alloc_reserved_irq_and_cfg_at(unsigned int at, int node)
+ /* irq_cfg is indexed by the sum of all RTEs in all I/O APICs. */
+ static struct irq_cfg irq_cfgx[NR_IRQS_LEGACY];
  
- 	if (test_bit(bus, mp_bus_not_pci)) {
- 		irq = mp_irqs[idx].srcbusirq;
--	} else {
-+	} else if (gsi_cfg->gsi_base == gsi_cfg->irq_base) {
- 		u32 gsi = gsi_cfg->gsi_base + pin;
- 
- 		if (gsi >= NR_IRQS_LEGACY)
- 			irq = gsi;
- 		else
- 			irq = gsi_top + gsi;
-+	} else {
-+		/* hotadd ioapic */
-+		irq = gsi_cfg->irq_base + pin;
- 	}
- 
- #ifdef CONFIG_X86_32
-@@ -1473,6 +1476,30 @@ static void __init setup_IO_APIC_irqs(void)
- 		__io_apic_setup_irqs(ioapic_idx);
- }
- 
-+int ioapic_gsi_to_irq(u32 gsi)
++static void alloc_ioapic_saved_registers(int idx)
 +{
-+	int ioapic_idx = 0, irq = gsi;
-+	struct mp_ioapic_gsi *gsi_cfg;
++	if (ioapics[idx].saved_registers)
++		return;
 +
-+	ioapic_idx = mp_find_ioapic(gsi);
-+	if (ioapic_idx < 0)
-+		return -1;
++	ioapics[idx].saved_registers =
++			kzalloc(sizeof(struct IO_APIC_route_entry) *
++				ioapics[idx].nr_registers, GFP_KERNEL);
 +
-+	gsi_cfg = mp_ioapic_gsi_routing(ioapic_idx);
-+	if (gsi_cfg->gsi_base == gsi_cfg->irq_base) {
-+		if (gsi < NR_IRQS_LEGACY)
-+			irq = gsi_top + gsi;
-+	} else {
-+		int pin = mp_find_ioapic_pin(ioapic_idx, gsi);
-+
-+		if (pin < 0)
-+			return -1;
-+		/* hotadd ioapic */
-+		irq = gsi_cfg->irq_base + pin;
-+	}
-+
-+	return irq;
++	if (!ioapics[idx].saved_registers)
++		pr_err("IOAPIC %d: suspend/resume impossible!\n", idx);
 +}
- /*
-  * for the gsit that is not in first ioapic
-  * but could not use acpi_register_gsi()
++
+ int __init arch_early_irq_init(void)
+ {
+ 	struct irq_cfg *cfg;
+@@ -291,13 +304,8 @@ int __init arch_early_irq_init(void)
+ 	if (!legacy_pic->nr_legacy_irqs)
+ 		io_apic_irqs = ~0UL;
+ 
+-	for (i = 0; i < nr_ioapics; i++) {
+-		ioapics[i].saved_registers =
+-			kzalloc(sizeof(struct IO_APIC_route_entry) *
+-				ioapics[i].nr_registers, GFP_KERNEL);
+-		if (!ioapics[i].saved_registers)
+-			pr_err("IOAPIC %d: suspend/resume impossible!\n", i);
+-	}
++	for (i = 0; i < nr_ioapics; i++)
++		alloc_ioapic_saved_registers(i);
+ 
+ 	cfg = irq_cfgx;
+ 	count = ARRAY_SIZE(irq_cfgx);
 -- 
 1.8.4
 
