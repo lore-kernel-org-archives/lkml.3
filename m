@@ -1,270 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173AbaACUbt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 15:31:49 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:22012 "EHLO
+	id S1754141AbaACUbs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 15:31:48 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:22015 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753886AbaACUaD (ORCPT
+	with ESMTP id S1753892AbaACUaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Jan 2014 15:30:03 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
         boris.ostrovsky@oracle.com, stefano.stabellini@eu.citrix.com,
         david.vrabel@citrix.com
-Cc: hpa@zytor.com, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v13 16/19] xen/grant: Implement an grant frame array struct (v2).
-Date: Fri,  3 Jan 2014 14:38:33 -0500
-Message-Id: <1388777916-1328-17-git-send-email-konrad.wilk@oracle.com>
+Cc: hpa@zytor.com, Mukesh Rathor <mukesh.rathor@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH v13 19/19] xen/pvh: Support ParaVirtualized Hardware extensions (v3).
+Date: Fri,  3 Jan 2014 14:38:36 -0500
+Message-Id: <1388777916-1328-20-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1388777916-1328-1-git-send-email-konrad.wilk@oracle.com>
 References: <1388777916-1328-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'xen_hvm_resume_frames' used to be an 'unsigned long'
-and contain the virtual address of the grants. That was OK
-for most architectures (PVHVM, ARM) were the grants are contiguous
-in memory. That however is not the case for PVH - in which case
-we will have to do a lookup for each virtual address for the PFN.
+From: Mukesh Rathor <mukesh.rathor@oracle.com>
 
-Instead of doing that, lets make it a structure which will contain
-the array of PFNs, the virtual address and the count of said PFNs.
+PVH allows PV linux guest to utilize hardware extended capabilities,
+such as running MMU updates in a HVM container.
 
-Also provide a generic functions: gnttab_setup_auto_xlat_frames and
-gnttab_free_auto_xlat_frames to populate said structure with
-appropriate values for PVHVM and ARM.
+The Xen side defines PVH as (from docs/misc/pvh-readme.txt,
+with modifications):
 
-To round it off, change the name from 'xen_hvm_resume_frames' to
-a more descriptive one - 'xen_auto_xlat_grant_frames'.
+"* the guest uses auto translate:
+ - p2m is managed by Xen
+ - pagetables are owned by the guest
+ - mmu_update hypercall not available
+* it uses event callback and not vlapic emulation,
+* IDT is native, so set_trap_table hcall is also N/A for a PVH guest.
 
-For PVH, in patch "xen/pvh: Piggyback on PVHVM for grant driver"
-we will populate the 'xen_auto_xlat_grant_frames' by ourselves.
+For a full list of hcalls supported for PVH, see pvh_hypercall64_table
+in arch/x86/hvm/hvm.c in xen.  From the ABI prespective, it's mostly a
+PV guest with auto translate, although it does use hvm_op for setting
+callback vector."
 
-v2 moves the xen_remap in the gnttab_setup_auto_xlat_frames
-and also introduces xen_unmap for gnttab_free_auto_xlat_frames.
+Use .ascii and .asciz to define xen feature string. Note, the PVH
+string must be in a single line (not multiple lines with \) to keep the
+assembler from putting null char after each string before \.
+This patch allows it to be configured and enabled.
 
-Suggested-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+We also use introduce the 'XEN_ELFNOTE_SUPPORTED_FEATURES' ELF note to
+tell the hypervisor that 'hvm_callback_vector' is what the kernel
+needs. We can not put it in 'XEN_ELFNOTE_FEATURES' as older hypervisor
+parse fields they don't understand as errors and refuse to load
+the kernel. This work-around fixes the problem.
+
+Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- arch/arm/include/asm/xen/page.h |  1 +
- arch/arm/xen/enlighten.c        |  9 +++++--
- arch/x86/include/asm/xen/page.h |  1 +
- drivers/xen/grant-table.c       | 58 ++++++++++++++++++++++++++++++++++++-----
- drivers/xen/platform-pci.c      | 10 ++++---
- include/xen/grant_table.h       |  9 ++++++-
- 6 files changed, 75 insertions(+), 13 deletions(-)
+ arch/x86/xen/Kconfig            |  2 +-
+ arch/x86/xen/xen-head.S         | 25 ++++++++++++++++++++++++-
+ include/xen/interface/elfnote.h | 13 +++++++++++++
+ 3 files changed, 38 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
-index 75579a9d..5af8fb3 100644
---- a/arch/arm/include/asm/xen/page.h
-+++ b/arch/arm/include/asm/xen/page.h
-@@ -118,5 +118,6 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
- }
+diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
+index e7d0590..d88bfd6 100644
+--- a/arch/x86/xen/Kconfig
++++ b/arch/x86/xen/Kconfig
+@@ -53,6 +53,6 @@ config XEN_DEBUG_FS
  
- #define xen_remap(cookie, size) ioremap_cached((cookie), (size));
-+#define xen_unmap(cookie) iounmap((cookie))
+ config XEN_PVH
+ 	bool "Support for running as a PVH guest"
+-	depends on X86_64 && XEN && BROKEN
++	depends on X86_64 && XEN
+ 	select XEN_PVHVM
+ 	def_bool n
+diff --git a/arch/x86/xen/xen-head.S b/arch/x86/xen/xen-head.S
+index 7faed58..485b695 100644
+--- a/arch/x86/xen/xen-head.S
++++ b/arch/x86/xen/xen-head.S
+@@ -11,8 +11,28 @@
+ #include <asm/page_types.h>
  
- #endif /* _ASM_ARM_XEN_PAGE_H */
-diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-index 8550123..2162172 100644
---- a/arch/arm/xen/enlighten.c
-+++ b/arch/arm/xen/enlighten.c
-@@ -208,6 +208,7 @@ static int __init xen_guest_init(void)
- 	const char *version = NULL;
- 	const char *xen_prefix = "xen,xen-";
- 	struct resource res;
-+	unsigned long grant_frames;
+ #include <xen/interface/elfnote.h>
++#include <xen/interface/features.h>
+ #include <asm/xen/interface.h>
  
- 	node = of_find_compatible_node(NULL, NULL, "xen,xen");
- 	if (!node) {
-@@ -224,10 +225,10 @@ static int __init xen_guest_init(void)
- 	}
- 	if (of_address_to_resource(node, GRANT_TABLE_PHYSADDR, &res))
- 		return 0;
--	xen_hvm_resume_frames = res.start;
-+	grant_frames = res.start;
- 	xen_events_irq = irq_of_parse_and_map(node, 0);
- 	pr_info("Xen %s support found, events_irq=%d gnttab_frame_pfn=%lx\n",
--			version, xen_events_irq, (xen_hvm_resume_frames >> PAGE_SHIFT));
-+			version, xen_events_irq, (grant_frames >> PAGE_SHIFT));
- 	xen_domain_type = XEN_HVM_DOMAIN;
- 
- 	xen_setup_features();
-@@ -265,6 +266,10 @@ static int __init xen_guest_init(void)
- 	if (xen_vcpu_info == NULL)
- 		return -ENOMEM;
- 
-+	if (gnttab_setup_auto_xlat_frames(grant_frames)) {
-+		free_percpu(xen_vcpu_info);
-+		return -ENOMEM;
-+	}
- 	gnttab_init();
- 	if (!xen_initial_domain())
- 		xenbus_probe(NULL);
-diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-index 4a092cc..3e276eb 100644
---- a/arch/x86/include/asm/xen/page.h
-+++ b/arch/x86/include/asm/xen/page.h
-@@ -227,5 +227,6 @@ void make_lowmem_page_readonly(void *vaddr);
- void make_lowmem_page_readwrite(void *vaddr);
- 
- #define xen_remap(cookie, size) ioremap((cookie), (size));
-+#define xen_unmap(cookie) iounmap((cookie))
- 
- #endif /* _ASM_X86_XEN_PAGE_H */
-diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-index cc1b4fa..6c78fd21 100644
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -65,8 +65,7 @@ static unsigned int nr_grant_frames;
- static int gnttab_free_count;
- static grant_ref_t gnttab_free_head;
- static DEFINE_SPINLOCK(gnttab_list_lock);
--unsigned long xen_hvm_resume_frames;
--EXPORT_SYMBOL_GPL(xen_hvm_resume_frames);
-+struct grant_frames xen_auto_xlat_grant_frames;
- 
- static union {
- 	struct grant_entry_v1 *v1;
-@@ -838,6 +837,51 @@ unsigned int gnttab_max_grant_frames(void)
- }
- EXPORT_SYMBOL_GPL(gnttab_max_grant_frames);
- 
-+int gnttab_setup_auto_xlat_frames(unsigned long addr)
-+{
-+	xen_pfn_t *pfn;
-+	unsigned int max_nr_gframes = __max_nr_grant_frames();
-+	unsigned int i;
-+	void *vaddr;
++#ifdef CONFIG_XEN_PVH
++#define PVH_FEATURES_STR  "|writable_descriptor_tables|auto_translated_physmap|supervisor_mode_kernel"
++/* Note the lack of 'hvm_callback_vector'. Older hypervisor will
++ * balk at this being part of XEN_ELFNOTE_FEATURES, so we put it in
++ * XEN_ELFNOTE_SUPPORTED_FEATURES which older hypervisors will ignore.
++ */
++#define PVH_FEATURES ((1 << XENFEAT_writable_page_tables) | \
++		      (1 << XENFEAT_auto_translated_physmap) | \
++		      (1 << XENFEAT_supervisor_mode_kernel) | \
++		      (1 << XENFEAT_hvm_callback_vector))
++/* The XENFEAT_writable_page_tables is not stricly neccessary as we set that
++ * up regardless whether this CONFIG option is enabled or not, but it
++ * clarifies what the right flags need to be.
++ */
++#else
++#define PVH_FEATURES_STR  ""
++#define PVH_FEATURES (0)
++#endif
 +
-+	if (xen_auto_xlat_grant_frames.count)
-+		return -EINVAL;
-+
-+	vaddr = xen_remap(addr, PAGE_SIZE * max_nr_gframes);
-+	if (vaddr == NULL) {
-+		pr_warn("Failed to ioremap gnttab share frames (addr=0x%08lx)!\n",
-+			addr);
-+		return -ENOMEM;
-+	}
-+	pfn = kcalloc(max_nr_gframes, sizeof(pfn[0]), GFP_KERNEL);
-+	if (!pfn) {
-+		xen_unmap(vaddr);
-+		return -ENOMEM;
-+	}
-+	for (i = 0; i < max_nr_gframes; i++)
-+		pfn[i] = PFN_DOWN(addr) + i;
-+
-+	xen_auto_xlat_grant_frames.vaddr = vaddr;
-+	xen_auto_xlat_grant_frames.pfn = pfn;
-+	xen_auto_xlat_grant_frames.count = max_nr_gframes;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(gnttab_setup_auto_xlat_frames);
-+
-+void gnttab_free_auto_xlat_frames(void)
-+{
-+	if (!xen_auto_xlat_grant_frames.count)
-+		return;
-+	kfree(xen_auto_xlat_grant_frames.pfn);
-+	xen_unmap(xen_auto_xlat_grant_frames.vaddr);
-+
-+	xen_auto_xlat_grant_frames.pfn = NULL;
-+	xen_auto_xlat_grant_frames.count = 0;
-+	xen_auto_xlat_grant_frames.vaddr = NULL;
-+}
-+EXPORT_SYMBOL_GPL(gnttab_free_auto_xlat_frames);
-+
- /* Handling of paged out grant targets (GNTST_eagain) */
- #define MAX_DELAY 256
- static inline void
-@@ -1068,6 +1112,7 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
- 		struct xen_add_to_physmap xatp;
- 		unsigned int i = end_idx;
- 		rc = 0;
-+		BUG_ON(xen_auto_xlat_grant_frames.count < nr_gframes);
- 		/*
- 		 * Loop backwards, so that the first hypercall has the largest
- 		 * index, ensuring that the table will grow only once.
-@@ -1076,7 +1121,7 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
- 			xatp.domid = DOMID_SELF;
- 			xatp.idx = i;
- 			xatp.space = XENMAPSPACE_grant_table;
--			xatp.gpfn = (xen_hvm_resume_frames >> PAGE_SHIFT) + i;
-+			xatp.gpfn = xen_auto_xlat_grant_frames.pfn[i];
- 			rc = HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp);
- 			if (rc != 0) {
- 				pr_warn("grant table add_to_physmap failed, err=%d\n",
-@@ -1175,11 +1220,10 @@ static int gnttab_setup(void)
+ 	__INIT
+ ENTRY(startup_xen)
+ 	cld
+@@ -95,7 +115,10 @@ NEXT_HYPERCALL(arch_6)
+ #endif
+ 	ELFNOTE(Xen, XEN_ELFNOTE_ENTRY,          _ASM_PTR startup_xen)
+ 	ELFNOTE(Xen, XEN_ELFNOTE_HYPERCALL_PAGE, _ASM_PTR hypercall_page)
+-	ELFNOTE(Xen, XEN_ELFNOTE_FEATURES,       .asciz "!writable_page_tables|pae_pgdir_above_4gb")
++	ELFNOTE(Xen, XEN_ELFNOTE_FEATURES,       .ascii "!writable_page_tables|pae_pgdir_above_4gb"; .asciz PVH_FEATURES_STR)
++	ELFNOTE(Xen, XEN_ELFNOTE_SUPPORTED_FEATURES, .long (PVH_FEATURES) |
++						(1 << XENFEAT_writable_page_tables) |
++						(1 << XENFEAT_dom0))
+ 	ELFNOTE(Xen, XEN_ELFNOTE_PAE_MODE,       .asciz "yes")
+ 	ELFNOTE(Xen, XEN_ELFNOTE_LOADER,         .asciz "generic")
+ 	ELFNOTE(Xen, XEN_ELFNOTE_L1_MFN_VALID,
+diff --git a/include/xen/interface/elfnote.h b/include/xen/interface/elfnote.h
+index 0360b15..6f4eae3 100644
+--- a/include/xen/interface/elfnote.h
++++ b/include/xen/interface/elfnote.h
+@@ -140,6 +140,19 @@
+  */
+ #define XEN_ELFNOTE_SUSPEND_CANCEL 14
  
- 	if (xen_feature(XENFEAT_auto_translated_physmap) && gnttab_shared.addr == NULL)
- 	{
--		gnttab_shared.addr = xen_remap(xen_hvm_resume_frames,
--					       PAGE_SIZE * max_nr_gframes);
-+		gnttab_shared.addr = xen_auto_xlat_grant_frames.vaddr;
- 		if (gnttab_shared.addr == NULL) {
--			pr_warn("Failed to ioremap gnttab share frames (addr=0x%08lx)!\n",
--					xen_hvm_resume_frames);
-+			pr_warn("gnttab share frames (addr=0x%08lx) is not mapped!\n",
-+				(unsigned long)xen_auto_xlat_grant_frames.vaddr);
- 			return -ENOMEM;
- 		}
- 	}
-diff --git a/drivers/xen/platform-pci.c b/drivers/xen/platform-pci.c
-index 2f3528e..f1947ac 100644
---- a/drivers/xen/platform-pci.c
-+++ b/drivers/xen/platform-pci.c
-@@ -108,6 +108,7 @@ static int platform_pci_init(struct pci_dev *pdev,
- 	long ioaddr;
- 	long mmio_addr, mmio_len;
- 	unsigned int max_nr_gframes;
-+	unsigned long grant_frames;
++/*
++ * The features supported by this kernel (numeric).
++ *
++ * Other than XEN_ELFNOTE_FEATURES on pre-4.2 Xen, this note allows a
++ * kernel to specify support for features that older hypervisors don't
++ * know about. The set of features 4.2 and newer hypervisors will
++ * consider supported by the kernel is the combination of the sets
++ * specified through this and the string note.
++ *
++ * LEGACY: FEATURES
++ */
++#define XEN_ELFNOTE_SUPPORTED_FEATURES 17
++
+ #endif /* __XEN_PUBLIC_ELFNOTE_H__ */
  
- 	if (!xen_domain())
- 		return -ENODEV;
-@@ -154,13 +155,16 @@ static int platform_pci_init(struct pci_dev *pdev,
- 	}
- 
- 	max_nr_gframes = gnttab_max_grant_frames();
--	xen_hvm_resume_frames = alloc_xen_mmio(PAGE_SIZE * max_nr_gframes);
-+	grant_frames = alloc_xen_mmio(PAGE_SIZE * max_nr_gframes);
-+	if (gnttab_setup_auto_xlat_frames(grant_frames))
-+		goto out;
- 	ret = gnttab_init();
- 	if (ret)
--		goto out;
-+		goto grant_out;
- 	xenbus_probe(NULL);
- 	return 0;
--
-+grant_out:
-+	gnttab_free_auto_xlat_frames();
- out:
- 	pci_release_region(pdev, 0);
- mem_out:
-diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
-index 694dcaf..5acb1e4 100644
---- a/include/xen/grant_table.h
-+++ b/include/xen/grant_table.h
-@@ -178,8 +178,15 @@ int arch_gnttab_map_status(uint64_t *frames, unsigned long nr_gframes,
- 			   grant_status_t **__shared);
- void arch_gnttab_unmap(void *shared, unsigned long nr_gframes);
- 
--extern unsigned long xen_hvm_resume_frames;
-+struct grant_frames {
-+	xen_pfn_t *pfn;
-+	unsigned int count;
-+	void *vaddr;
-+};
-+extern struct grant_frames xen_auto_xlat_grant_frames;
- unsigned int gnttab_max_grant_frames(void);
-+int gnttab_setup_auto_xlat_frames(unsigned long addr);
-+void gnttab_free_auto_xlat_frames(void);
- 
- #define gnttab_map_vaddr(map) ((void *)(map.host_virt_addr))
- 
+ /*
 -- 
 1.8.3.1
 
