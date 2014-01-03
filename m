@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752756AbaACSvJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 13:51:09 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:45863 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139AbaACSvH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 13:51:07 -0500
-Message-ID: <52C70698.2030004@codeaurora.org>
-Date: Fri, 03 Jan 2014 10:51:04 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
-CC: arm@kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
-        Dave Airlie <airlied@redhat.com>, David Brown <davidb@codeaurora.org>,
-        Chris Ball <cjb@laptop.org>
-Subject: Re: [PATCH v2 0/7] Allow MSM DT platforms to be built multi-platform
-References: <1388438133-431-1-git-send-email-sboyd@codeaurora.org> <201401021913.25920.arnd@arndb.de>
-In-Reply-To: <201401021913.25920.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752696AbaACS5Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 13:57:24 -0500
+Received: from plane.gmane.org ([80.91.229.3]:54032 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751359AbaACS5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 13:57:23 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Eric Appleman <erappleman@gmail.com>
+Subject: Re: GPL violators (charging for a Linux kernel by itself and then charging again for source)
+Date: Fri, 3 Jan 2014 18:56:58 +0000 (UTC)
+Message-ID: <loom.20140103T194726-983@post.gmane.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 68.194.217.253 (Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.5 Safari/537.36)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/14 10:13, Arnd Bergmann wrote:
-> On Monday 30 December 2013, Stephen Boyd wrote:
->> These patches allow the DT based MSM platforms to be built as part of the
->> multi-platform kernel. I need acks from Chris Ball on the mmc patch and
->> Rob/Dave on the drm patch. I dropped Arnd's ack on patch 6 because I've
->> rebased that patch on top of the patchset David sent out (which this is in
->> reply to). The rebase was fairly minor and the new patch for drm/msm is
->> trivial. Please consider for v3.14.
-> Just for the record, I'm definitely happy with the way this is turning out,
-> don't see my question on the serial driver as a NAK. I assume we will apply
-> the patches for 3.14, but I first want to have a better understanding on
-> where we are with the stuff that is already queued up for 3.14.
->
+https://plus.google.com/115556873499158641618/posts/VfAcAdUHU6h
+Mirror in case of deletion: http://pastebin.com/7fXKR6ss
 
-It would be great if we could get these patches in for 3.14. Now that
-Olof has applied the collection of patches that David sent, these
-patches should apply cleanly on top of arm-soc.git qcom/soc. Can you
-apply them directly to the arm-soc tree?
+A small snippet...
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+"Chad can sell his kernel, and he has the right to refuse to sell it to 
+specific people he if sees fit.
+Chad can charge for the source code. so as long as the price of the source 
+code does NOT exceed the cost of the kernel itself.  There is NO limit to 
+what Chad can charge for the kernel.
+Source needs to be made available only to "users of the software" and only 
+if "requested" by the "user of the software" - and yes, as stated above, a 
+fee can be charged for access to the electronic download of source, as long 
+as it is no more than the cost of the kernel.
+
+Yes, people who "buy" the kernel can share it with who they want with or 
+without a charge, but Chad still has the right to charge for source if the 
+"3rd party" requests source."
+
+I'm curious to know if there is a single maintainer or contributor on this 
+list who finds such behavior acceptable.
+
+Wasn't the whole idea of a fee being permitted an acknowledgment that 
+physical distribution of source was acceptable if electronic was not 
+possible (low bandwidth ISP, security concerns, etc).
+
+I don't have a problem with people charging for GPL software, you can do 
+that. But usually the money goes towards supporting the user or covering the 
+costs of hardware it's shipped on. All I see is a profit-driven scheme that 
+effectively charges for a Linux kernel that you all made together and Chad 
+represents less than 0.001% of.
+
+- Eric
 
