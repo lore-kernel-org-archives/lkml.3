@@ -1,104 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224AbaACFvB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 00:51:01 -0500
-Received: from mga01.intel.com ([192.55.52.88]:47972 "EHLO mga01.intel.com"
+	id S1752448AbaACFvG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 00:51:06 -0500
+Received: from mga14.intel.com ([143.182.124.37]:60733 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751385AbaACFs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 00:48:26 -0500
+	id S1750753AbaACFvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 00:51:03 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,595,1384329600"; 
-   d="scan'208";a="459449340"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
-        eranian@google.com, andi@firstfloor.org,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH 05/14] perf, core: allow pmu specific data for perf task context
-Date: Fri,  3 Jan 2014 13:48:02 +0800
-Message-Id: <1388728091-18564-6-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1388728091-18564-1-git-send-email-zheng.z.yan@intel.com>
-References: <1388728091-18564-1-git-send-email-zheng.z.yan@intel.com>
+   d="scan'208";a="453096519"
+Message-ID: <1388728253.25123.98.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 1/1]  MTD: UBI:  avoid program operation on  NOR flash
+ after erasure interrupted
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Qi Wang =?UTF-8?Q?=E7=8E=8B=E8=B5=B7?= "(qiwang)" 
+	<qiwang@micron.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
+Date: Fri, 03 Jan 2014 07:50:53 +0200
+In-Reply-To: <71CF8D7F32C5C24C9CD1D0E02D52498A770BA889@NTXXIAMBX02.xacn.micron.com>
+References: <71CF8D7F32C5C24C9CD1D0E02D52498A770B54B1@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770B68A8@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770B6F77@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770B79C8@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770B8611@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770BA389@NTXXIAMBX02.xacn.micron.com>
+	 <1388675460.25123.90.camel@sauron.fi.intel.com>
+	 <1388676172.25123.93.camel@sauron.fi.intel.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770BA889@NTXXIAMBX02.xacn.micron.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Later patches will use pmu specific data to save LBR stack.
+On Fri, 2014-01-03 at 02:31 +0000, Qi Wang 王起 (qiwang) wrote:
+> OK, thank you Artem.
+> 
+> I will change to git send-mail next time. And I will be very careful to push patch to you next time.
+> Sorry to bring so much trouble to you as I am first time to push patch to Linux main trunk.(Maybe it also is Micron Technology company first time to push patch to Linux main trunk, I am being Micron China Shanghai team volunteer to contact Linux committee to push patch). 
+> Anyway, Thanks for your patience to give me a good starting. 
+> And if you have anything need my or my team help, Please kindly let me know. Our team is glad to contribute to Linux community.
+> Wish you have a wonderful 2014.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
----
- include/linux/perf_event.h |  5 +++++
- kernel/events/core.c       | 19 ++++++++++++++++++-
- 2 files changed, 23 insertions(+), 1 deletion(-)
+Please, remember that I pushed your patch to a temporary branch, only
+for you to be able to easily pick it. I do not send it upstream.
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 96cb88b..147f9d3 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -252,6 +252,10 @@ struct pmu {
- 	 */
- 	void (*sched_task)		(struct perf_event_context *ctx,
- 					 bool sched_in);
-+	/*
-+	 * PMU specific data size
-+	 */
-+	size_t				task_ctx_size;
- };
- 
- /**
-@@ -496,6 +500,7 @@ struct perf_event_context {
- 	int				pin_count;
- 	int				nr_cgroups;	 /* cgroup evts */
- 	int				nr_branch_stack; /* branch_stack evt */
-+	void				*task_ctx_data; /* pmu specific data */
- 	struct rcu_head			rcu_head;
- };
- 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index aba4d6d..b6650ab 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -883,6 +883,15 @@ static void get_ctx(struct perf_event_context *ctx)
- 	WARN_ON(!atomic_inc_not_zero(&ctx->refcount));
- }
- 
-+static void free_ctx(struct rcu_head *head)
-+{
-+	struct perf_event_context *ctx;
-+
-+	ctx = container_of(head, struct perf_event_context, rcu_head);
-+	kfree(ctx->task_ctx_data);
-+	kfree(ctx);
-+}
-+
- static void put_ctx(struct perf_event_context *ctx)
- {
- 	if (atomic_dec_and_test(&ctx->refcount)) {
-@@ -890,7 +899,7 @@ static void put_ctx(struct perf_event_context *ctx)
- 			put_ctx(ctx->parent_ctx);
- 		if (ctx->task)
- 			put_task_struct(ctx->task);
--		kfree_rcu(ctx, rcu_head);
-+		call_rcu(&ctx->rcu_head, free_ctx);
- 	}
- }
- 
-@@ -3020,6 +3029,14 @@ alloc_perf_context(struct pmu *pmu, struct task_struct *task)
- 	if (!ctx)
- 		return NULL;
- 
-+	if (task && pmu->task_ctx_size > 0) {
-+		ctx->task_ctx_data = kzalloc(pmu->task_ctx_size, GFP_KERNEL);
-+		if (!ctx->task_ctx_data) {
-+			kfree(ctx);
-+			return NULL;
-+		}
-+	}
-+
- 	__perf_event_init_context(ctx);
- 	if (task) {
- 		ctx->task = task;
+As I said, I need to you look at it and confirm that it is all-right.
+And if it is not all-right, correct it.
+
+This is because I modified it myself.
+
+So waiting for your response on this.
+
 -- 
-1.8.4.2
+Best Regards,
+Artem Bityutskiy
 
