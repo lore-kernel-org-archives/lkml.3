@@ -1,99 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985AbaACDdN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 22:33:13 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:34340 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751521AbaACDdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 22:33:11 -0500
-Date: Fri, 3 Jan 2014 11:33:03 +0800
-From: Han Pingtian <hanpt@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Dave Hansen <dave.hansen@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Michal Hocko <mhocko@suse.cz>
-Subject: Re: [RFC] mm: show message when updating min_free_kbytes in thp
-Message-ID: <20140103033303.GB4106@localhost.localdomain>
-Mail-Followup-To: linux-kernel@vger.kernel.org,
-	Dave Hansen <dave.hansen@intel.com>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Mel Gorman <mgorman@suse.de>,
-	Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-	Michal Hocko <mhocko@suse.cz>
-References: <20140101002935.GA15683@localhost.localdomain>
- <52C5AA61.8060701@intel.com>
+	id S1753109AbaACDjS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 22:39:18 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:39781 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743AbaACDjR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 22:39:17 -0500
+X-Originating-IP: 50.43.14.201
+Date: Thu, 2 Jan 2014 19:39:07 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cl@linux-foundation.org,
+        penberg@kernel.org, mpm@selenic.com
+Subject: Re: Memory allocator semantics
+Message-ID: <20140103033906.GB2983@leaf>
+References: <20140102203320.GA27615@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52C5AA61.8060701@intel.com>
+In-Reply-To: <20140102203320.GA27615@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14010303-0320-0000-0000-00000218A44E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 02, 2014 at 10:05:21AM -0800, Dave Hansen wrote:
-> On 12/31/2013 04:29 PM, Han Pingtian wrote:
-> > min_free_kbytes may be updated during thp's initialization. Sometimes,
-> > this will change the value being set by user. Showing message will
-> > clarify this confusion.
-> ...
-> > -	if (recommended_min > min_free_kbytes)
-> > +	if (recommended_min > min_free_kbytes) {
-> >  		min_free_kbytes = recommended_min;
-> > +		pr_info("min_free_kbytes is updated to %d by enabling transparent hugepage.\n",
-> > +			min_free_kbytes);
-> > +	}
+On Thu, Jan 02, 2014 at 12:33:20PM -0800, Paul E. McKenney wrote:
+> Hello!
 > 
-> "updated" doesn't tell us much.  It's also kinda nasty that if we enable
-> then disable THP, we end up with an elevated min_free_kbytes.  Maybe we
-> should at least put something in that tells the user how to get back
-> where they were if they care:
+> From what I can see, the Linux-kernel's SLAB, SLOB, and SLUB memory
+> allocators would deal with the following sort of race:
 > 
-> "raising min_free_kbytes from %d to %d to help transparent hugepage
-> allocations"
+> A.	CPU 0: r1 = kmalloc(...); ACCESS_ONCE(gp) = r1;
 > 
-Thanks. I have updated it according to your suggestion.
+> 	CPU 1: r2 = ACCESS_ONCE(gp); if (r2) kfree(r2);
+> 
+> However, my guess is that this should be considered an accident of the
+> current implementation rather than a feature.  The reason for this is
+> that I cannot see how you would usefully do (A) above without also allowing
+> (B) and (C) below, both of which look to me to be quite destructive:
 
+(A) only seems OK if "gp" is guaranteed to be NULL beforehand, *and* if
+no other CPUs can possibly do what CPU 1 is doing in parallel.  Even
+then, it seems questionable how this could ever be used successfully in
+practice.
 
->From f9902b16ff0c326349e72eca9facef2c98f8595d Mon Sep 17 00:00:00 2001
-From: Han Pingtian <hanpt@linux.vnet.ibm.com>
-Date: Fri, 3 Jan 2014 11:10:49 +0800
-Subject: [PATCH] mm: show message when raising min_free_kbytes in THP
+This seems similar to the TCP simultaneous-SYN case: theoretically
+possible, absurd in practice.
 
-min_free_kbytes may be raised during THP's initialization. Sometimes,
-this will change the value being set by user. Showing message will
-clarify this confusion.
+> B.	CPU 0: r1 = kmalloc(...);  ACCESS_ONCE(shared_x) = r1;
+> 
+>         CPU 1: r2 = ACCESS_ONCE(shared_x); if (r2) kfree(r2);
+> 
+> 	CPU 2: r3 = ACCESS_ONCE(shared_x); if (r3) kfree(r3);
+> 
+> 	This results in the memory being on two different freelists.
 
-Showing the old value of min_free_kbytes according to Dave Hansen's
-suggestion. This will give user the chance to restore old value of
-min_free_kbytes.
+That's a straightforward double-free bug.  You need some kind of
+synchronization there to ensure that only one call to kfree occurs.
 
-Signed-off-by: Han Pingtian <hanpt@linux.vnet.ibm.com>
----
- mm/huge_memory.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+> C.      CPU 0: r1 = kmalloc(...);  ACCESS_ONCE(shared_x) = r1;
+> 
+> 	CPU 1: r2 = ACCESS_ONCE(shared_x); r2->a = 1; r2->b = 2;
+> 
+> 	CPU 2: r3 = ACCESS_ONCE(shared_x); if (r3) kfree(r3);
+> 
+> 	CPU 3: r4 = kmalloc(...);  r4->s = 3; r4->t = 4;
+> 
+> 	This results in the memory being used by two different CPUs,
+> 	each of which believe that they have sole access.
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 7de1bf8..1f0356d 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -130,8 +130,11 @@ static int set_recommended_min_free_kbytes(void)
- 			      (unsigned long) nr_free_buffer_pages() / 20);
- 	recommended_min <<= (PAGE_SHIFT-10);
- 
--	if (recommended_min > min_free_kbytes)
-+	if (recommended_min > min_free_kbytes) {
-+		pr_info("raising min_free_kbytes from %d to %d to help transparent hugepage allocations\n",
-+			min_free_kbytes, recommended_min);
- 		min_free_kbytes = recommended_min;
-+	}
- 	setup_per_zone_wmarks();
- 	return 0;
- }
--- 
-1.7.7.6
+This is not OK either: CPU 2 has called kfree on a pointer that CPU 1
+still considers alive, and again, the CPUs haven't used any form of
+synchronization to prevent that.
 
+> But I thought I should ask the experts.
+> 
+> So, am I correct that kernel hackers are required to avoid "drive-by"
+> kfree()s of kmalloc()ed memory?
+
+Don't kfree things that are in use, and synchronize to make sure all
+CPUs agree about "in use", yes.
+
+> PS.  To the question "Why would anyone care about (A)?", then answer
+>      is "Inquiring programming-language memory-model designers want
+>      to know."
+
+I find myself wondering about the original form of the question, since
+I'd hope that programming-languge memory-model designers would
+understand the need for synchronization around reclaiming memory.
+
+- Josh Triplett
