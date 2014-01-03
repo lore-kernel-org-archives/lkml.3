@@ -1,114 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507AbaACTzW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 14:55:22 -0500
-Received: from mga14.intel.com ([143.182.124.37]:13823 "EHLO mga14.intel.com"
+	id S1753448AbaACTzV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 14:55:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18499 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753187AbaACTzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 14:55:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,599,1384329600"; 
-   d="scan'208";a="401023755"
-Date: Fri, 3 Jan 2014 11:54:55 -0800
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: walt <w41ter@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        David Laight <david.laight@aculab.com>, Mark Lord <mlord@pobox.com>,
-        linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within a
- USB payload burst
-Message-ID: <20140103195455.GA4193@xanatos>
-References: <20131218211219.461663463@linuxfoundation.org>
- <20131218211220.412278148@linuxfoundation.org>
- <52C32BB0.90600@gmail.com>
- <20140102191510.GA9621@xanatos>
- <52C6D9F1.9000709@gmail.com>
+	id S1752849AbaACTzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 14:55:19 -0500
+Date: Fri, 3 Jan 2014 20:55:19 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [PATCH v2 0/1] mm: fix the theoretical compound_lock() vs
+	prep_new_page() race
+Message-ID: <20140103195519.GA26555@redhat.com>
+References: <20131211175615.GA24546@redhat.com> <20131211191855.GA32485@redhat.com> <20131213151035.GE5408@redhat.com> <20131213162240.GA11762@redhat.com> <20131213173406.GG5408@redhat.com> <20131216183618.GA28252@redhat.com> <20131216201952.GE21218@redhat.com> <20131219190846.GA24566@redhat.com> <20131219190920.GB24566@redhat.com> <20131223114300.GC727@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52C6D9F1.9000709@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131223114300.GC727@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 03, 2014 at 07:40:33AM -0800, walt wrote:
-> On 01/02/2014 11:15 AM, Sarah Sharp wrote:
-> > On Tue, Dec 31, 2013 at 12:40:16PM -0800, walt wrote:
-> >> On 12/18/2013 01:11 PM, Greg Kroah-Hartman wrote:
-> >>> 3.12-stable review patch.  If anyone has any objections, please let me know.
-> >>>
-> >>> ------------------
-> >>>
-> >>> From: David Laight <David.Laight@ACULAB.COM>
-> >>>
-> >>> commit 35773dac5f862cb1c82ea151eba3e2f6de51ec3e upstream.
-> >>>
-> >>> Section 4.11.7.1 of rev 1.0 of the xhci specification states that a link TRB
-> >>> can only occur at a boundary between underlying USB frames (512 bytes for
-> >>> high speed devices).
-> >>>
-> >>> If this isn't done the USB frames aren't formatted correctly and, for example,
-> >>> the USB3 ethernet ax88179_178a card will stop sending...
-> >>
-> >>
-> >> Unfortunately this patch causes a regression when copying large files to my
-> >> outboard USB3 drive. (Nothing at all to do with networking.)
-> 
-> > Do you have CONFIG_USB_DEBUG turned on for 3.13?  If so, you should see
-> > dmesg output from this statement shortly before your drive fails:
-> > 
-> > if (num_trbs >= TRBS_PER_SEGMENT) {
-> > 	xhci_err(xhci, "Too many fragments %d, max %d\n",
-> > 		num_trbs, TRBS_PER_SEGMENT - 1);
-> > 	return -ENOMEM;
-> > }
-> 
-> Well, the answers depend on whether the usb3 drive uses logical volumes or not
-> (lvm2), which I can't explain.  What I've described so far is with lvm2.
-> 
-> When using lvm2 on the usb3 drive, turning on USB_DEBUG has *no* effect -- the
-> console prints two or three lines stating that the ext4 journal has quit and
-> the drive is remounted ro.  That particular drive stays wedged until the next
-> reboot, but no other ill effects to the system.
+On 12/23, Andrea Arcangeli wrote:
+>
+> Acked-by: Andrea Arcangeli <aarcange@redhat.com>
+>
+> Only one improvement possible, the smp_wmb() could have been put under
+> CONFIG_TRANSPARENT_HUGEPAGE somehow. No difference for x86-64 though.
 
-Odd. In 3.12 xHCI has dynamic debugging, and turning on CONFIG_USB_DEBUG
-should turn on debugging by default, so it's confusing that you didn't
-see any messages.
+I thought it would be better to serialize it with get_page_unless_zero()
+in general, but OK, As the changelog says I didn't find another problematic
+caller, so please see v2. I preserved your ack, thanks.
 
-Can I see your .config from /boot/?  Also, did you try capturing dmesg
-with `tail -f /var/log/kern.log` or just dmesg?  Perhaps you need to run
-`sudo dmesg -n 7`?
+And I would like to know your opinion about other changes I sent ;)
 
-> OTOH, when I put a disk with just an ordinary ext4 partition in the usb3 dock,
-> (no logical volumes) the copy failure becomes catastrophic, with kernel panic
-> messages, leaving the system unresponsive and needing a hard reset to recover.
-> 
-> I also tried your other suggestion:
-> 
-> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-> index 4265b48..1a6a43d 100644
-> --- a/drivers/usb/host/xhci.c
-> +++ b/drivers/usb/host/xhci.c
-> @@ -4714,7 +4714,7 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
->         int                     retval;
->  
->         /* Accept arbitrarily long scatter-gather lists */
-> -       hcd->self.sg_tablesize = ~0;
-> +       hcd->self.sg_tablesize = 31;
->  
->         /* support to build packet from discontinuous buffers */
->         hcd->self.no_sg_constraint = 1;
-> 
-> Sadly it didn't fix the problem.  Did I get the patch right?
+Oleg.
 
-Yes, you did.  So perhaps the patch triggers a different bug.  I can't
-tell until I see xHCI debugging output.
-
-> Thanks for your help, and I'm happy to try more ideas, as always.
-
-Thanks for your patience. :)
-
-Sarah Sharp
