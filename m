@@ -1,125 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788AbaACLzi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 06:55:38 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:65381 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751085AbaACLzg (ORCPT
+	id S1751860AbaACLzm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 06:55:42 -0500
+Received: from canardo.mork.no ([148.122.252.1]:34296 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751704AbaACLzi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 06:55:36 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Ramkumar Ramachandra <artagnon@gmail.com>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] Documentation/cpu-freq: add intel-pstate.txt
-Date: Fri, 03 Jan 2014 13:09:18 +0100
-Message-ID: <2121197.s7JHyFUj5C@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.13.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1388748673-11032-1-git-send-email-artagnon@gmail.com>
-References: <1388748673-11032-1-git-send-email-artagnon@gmail.com>
+	Fri, 3 Jan 2014 06:55:38 -0500
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq\@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] cpufreq: try to resume policies which failed on last resume
+Organization: m
+References: <f9d7b0d5424e4443597d2ed39bec3fedd2b10d1e.1387848958.git.viresh.kumar@linaro.org>
+	<5562479.pVWRuDL0y6@vostro.rjw.lan> <87zjne7f75.fsf@nemi.mork.no>
+	<2302938.b8tymqrMEz@vostro.rjw.lan> <878uuxquxu.fsf@nemi.mork.no>
+	<871u0po0gx.fsf@nemi.mork.no>
+	<CAKohpo=9p8ArfWyyWkdQm_BWtyWbWe_dsg6VAUP60VUFcAjFSw@mail.gmail.com>
+Date: Fri, 03 Jan 2014 12:55:29 +0100
+In-Reply-To: <CAKohpo=9p8ArfWyyWkdQm_BWtyWbWe_dsg6VAUP60VUFcAjFSw@mail.gmail.com>
+	(Viresh Kumar's message of "Fri, 3 Jan 2014 16:49:17 +0530")
+Message-ID: <87wqihmg9a.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 03, 2014 05:01:13 PM Ramkumar Ramachandra wrote:
-> The Intel P-state driver is currently undocumented. Add some
-> documentation based on the cover-letter sent with the original series.
-> 
-> Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
+Viresh Kumar <viresh.kumar@linaro.org> writes:
 
-Dirk, what do you think?
+> On 3 January 2014 15:23, Bjørn Mork <bjorn@mork.no> wrote:
+>> Note that "ondemand" and "1401000" are the default vaules, so I don't
+>> actually change anything here.  The write is causing the problem, not
+>> the value.  As expected, I guess.
+>>
+>> Also note that boot vs non-boot cpu doesn't seem to matter.  Nor does
+>> cancelling the hibernation.  The warning appears on hibernate - not on
+>> resume.
+>
+> Hmm... I spent quite some time understanding whats going on and really
+> couldn't get across anything as of now. I haven't tried reproducing it though.
+>
+> Few things that I can make out of this mail chain so far:
+> - Apart from the log, everything is working fine. i.e. system is back in
+> working condition.
 
-> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-> Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-> ---
->  I was looking for documentation on my cpufreq driver, intel_pstate,
->  and found nothing: so, here's a small start. Although the original
->  message said SandyBridge only, I noticed that
->  /sys/devices/system/cpu/cpu0/cpufreq/scaling_driver says intel_pstate
->  on my IvyBridge; so I figured subsequent patches introduced support
->  for SandyBridge+.
-> 
->  I noticed two "policies" in the code: CPUFREQ_POLICY_PERFORMANCE and
->  CPUFREQ_POLICY_POWERSAVE, but I have no idea how to switch from one
->  to the other. The userspace tool cpupower seems to be too tightly
->  tied to the acpi-cpufreq driver, and I'm not able to find any others.
-> 
->  Also, how well is the driver performing? I seem to be getting
->  terrible battery life on my 2013 MBP.
-> 
->  Thanks.
-> 
->  Documentation/cpu-freq/intel-pstate.txt | 40 +++++++++++++++++++++++++++++++++
->  1 file changed, 40 insertions(+)
->  create mode 100644 Documentation/cpu-freq/intel-pstate.txt
-> 
-> diff --git a/Documentation/cpu-freq/intel-pstate.txt b/Documentation/cpu-freq/intel-pstate.txt
-> new file mode 100644
-> index 0000000..fda74ab
-> --- /dev/null
-> +++ b/Documentation/cpu-freq/intel-pstate.txt
-> @@ -0,0 +1,40 @@
-> +Intel P-state driver
-> +--------------------
-> +
-> +This driver implements a scaling driver with an internal governor for
-> +Intel Core processors.  The driver follows the same model as the
-> +Transmeta scaling driver (longrun.c) and implements the setpolicy()
-> +instead of target().  Scaling drivers that implement setpolicy() are
-> +assmuned to implement internal governors by the cpufreq core. All the
-> +logic for selecting the current P state is contained within the driver
-> +no external governor is used by the cpufreq core.
-> +
-> +Only Intel SandyBridge+ processors are supported.
+Correct. And users not running a lock debugging kernel will of course
+not even see the warning.
 
-That's not the case any more.
+> - It only happens when cpufreq_add_dev() fails during hibernation while
+> we enable non-boot CPUs again to save image to disk. So, isn't a problem
+> for a system which doesn't have any issues with add_dev() failing on
+> hibernation
 
-> +
-> +New sysfs files for controlling P state selection have been added to
-> +/sys/devices/system/cpu/intel_pstate/
-> +
-> +      max_perf_pct: limits the maximum P state that will be requested by
-> +      the driver stated as a percentage of the avail performance.
-> +
-> +      min_perf_pct: limits the minimum P state that will be  requested by
-> +      the driver stated as a percentage of the avail performance.
-> +
-> +      no_turbo: limits the driver to selecting P states below the turbo
-> +      frequency range.
-> +
+Wrong.  This was my initial assumption but I later found out that the
+issue is unrelated to hibernation failures.  Sorry about the confusion.
 
-It would be good to document them in Documentation/ABI/testing/ as well.
+> - There is a contention of locks in the order they are taken. And the contention
+> looks to be between, hotplug lock taken by cpu_online_cpus() and s_active
+> lock for sysfs files. Don't know what's the role of previous write to
+> sysfs files.
+> As that should finish before hibernation starts and so all locks should be back
+> in place.
 
-> +The units for these for these files are purposely abstract and stated
-> +in terms of available performance and not frequency.  In idea that
+Yes, that seems logical.  But I guess this is where it fails?
 
-I would say "For contemporary Intel processor the frequency is controlled
-by the processor itself and the P-states exposed to software are related to 
-performance levels" instead.
 
-> +frequency can be set to a single frequency is a fiction for Intel Core
-> +processors. Even if the scaling driver selects a single P state the
-> +actual frequency the processor will run at is selected by the
-> +processor itself.
-> +
-> +New debugfs files have also been added to /sys/kernel/debug/pstate_snb/
-> +
-> +      deadband
-> +      d_gain_pct
-> +      i_gain_pct
-> +      p_gain_pct
-> +      sample_rate_ms
-> +      setpoint
-> 
 
-Thanks!
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Bjørn
