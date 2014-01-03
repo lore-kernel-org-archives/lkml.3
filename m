@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580AbaACPeq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 10:34:46 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:28609 "EHLO SMTP.CITRIX.COM"
+	id S1752727AbaACPic (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 10:38:32 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:19679 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752267AbaACPeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 10:34:44 -0500
+	id S1752005AbaACPiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 10:38:20 -0500
 X-IronPort-AV: E=Sophos;i="4.95,598,1384300800"; 
-   d="scan'208";a="89566838"
-Date: Fri, 3 Jan 2014 15:33:55 +0000
+   d="scan'208";a="89567669"
+Date: Fri, 3 Jan 2014 15:37:21 +0000
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 X-X-Sender: sstabellini@kaball.uk.xensource.com
 To: David Vrabel <david.vrabel@citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+CC: Mukesh Rathor <mukesh.rathor@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
-        <boris.ostrovsky@oracle.com>, <stefano.stabellini@eu.citrix.com>,
-        <mukesh.rathor@oracle.com>
-Subject: Re: [PATCH v12 02/18] xen/pvh/x86: Define what an PVH guest is
+        <boris.ostrovsky@oracle.com>, <stefano.stabellini@eu.citrix.com>
+Subject: Re: [PATCH v12 03/18] xen/pvh: Early bootup changes in PV code
  (v2).
-In-Reply-To: <52C549F1.8070005@citrix.com>
-Message-ID: <alpine.DEB.2.02.1401031533350.8667@kaball.uk.xensource.com>
-References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com> <1388550945-25499-3-git-send-email-konrad.wilk@oracle.com> <52C549F1.8070005@citrix.com>
+In-Reply-To: <52C69F09.5010407@citrix.com>
+Message-ID: <alpine.DEB.2.02.1401031537110.8667@kaball.uk.xensource.com>
+References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com> <1388550945-25499-4-git-send-email-konrad.wilk@oracle.com> <52C58691.4040502@citrix.com> <20140102183221.GD3021@pegasus.dumpdata.com> <20140102173438.40612127@mantra.us.oracle.com>
+ <52C69F09.5010407@citrix.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
@@ -29,52 +30,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Jan 2014, David Vrabel wrote:
-> On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
-> > From: Mukesh Rathor <mukesh.rathor@oracle.com>
+On Fri, 3 Jan 2014, David Vrabel wrote:
+> On 03/01/14 01:34, Mukesh Rathor wrote:
+> > On Thu, 2 Jan 2014 13:32:21 -0500
+> > Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
 > > 
-> > Which is a PV guest with auto page translation enabled
-> > and with vector callback. It is a cross between PVHVM and PV.
+> >> On Thu, Jan 02, 2014 at 03:32:33PM +0000, David Vrabel wrote:
+> >>> On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
+> >>>> From: Mukesh Rathor <mukesh.rathor@oracle.com>
+> >>>>
+> >>>> In the bootup code for PVH we can trap cpuid via vmexit, so don't
+> >>>> need to use emulated prefix call. We also check for vector
+> >>>> callback early on, as it is a required feature. PVH also runs at
+> >>>> default kernel IOPL.
+> >>>>
+> >>>> Finally, pure PV settings are moved to a separate function that
+> >>>> are only called for pure PV, ie, pv with pvmmu. They are also
+> >>>> #ifdef with CONFIG_XEN_PVMMU.
+> >>> [...]
+> >>>> @@ -331,12 +333,15 @@ static void xen_cpuid(unsigned int *ax,
+> >>>> unsigned int *bx, break;
+> >>>>  	}
+> >>>>  
+> >>>> -	asm(XEN_EMULATE_PREFIX "cpuid"
+> >>>> -		: "=a" (*ax),
+> >>>> -		  "=b" (*bx),
+> >>>> -		  "=c" (*cx),
+> >>>> -		  "=d" (*dx)
+> >>>> -		: "0" (*ax), "2" (*cx));
+> >>>> +	if (xen_pvh_domain())
+> >>>> +		native_cpuid(ax, bx, cx, dx);
+> >>>> +	else
+> >>>> +		asm(XEN_EMULATE_PREFIX "cpuid"
+> >>>> +			: "=a" (*ax),
+> >>>> +			"=b" (*bx),
+> >>>> +			"=c" (*cx),
+> >>>> +			"=d" (*dx)
+> >>>> +			: "0" (*ax), "2" (*cx));
+> >>>
+> >>> For this one off cpuid call it seems preferrable to me to use the
+> >>> emulate prefix rather than diverge from PV.
+> >>
+> >> This was before the PV cpuid was deemed OK to be used on PVH.
+> >> Will rip this out to use the same version.
 > > 
-> > The Xen side defines PVH as (from docs/misc/pvh-readme.txt,
-> > with modifications):
-> > 
-> > "* the guest uses auto translate:
-> >  - p2m is managed by Xen
-> >  - pagetables are owned by the guest
-> >  - mmu_update hypercall not available
-> > * it uses event callback and not vlapic emulation,
-> > * IDT is native, so set_trap_table hcall is also N/A for a PVH guest.
-> > 
-> > For a full list of hcalls supported for PVH, see pvh_hypercall64_table
-> > in arch/x86/hvm/hvm.c in xen.  From the ABI prespective, it's mostly a
-> > PV guest with auto translate, although it does use hvm_op for setting
-> > callback vector."
-> > 
-> > We don't have yet a Kconfig entry setup as we do not
-> > have all the parts ready for it - so we piggyback
-> > on the PVHVM config option. This scaffolding will
-> > be removed later.
-> > 
-> > Note that on ARM the concept of PVH is non-existent. As Ian
-> > put it: "an ARM guest is neither PV nor HVM nor PVHVM.
-> > It's a bit like PVH but is different also (it's further towards
-> > the H end of the spectrum than even PVH).". As such these
-> > options (PVHVM, PVH) are never enabled nor seen on ARM
-> > compilations.
-> [...]
-> > --- a/include/xen/xen.h
-> > +++ b/include/xen/xen.h
-> > @@ -29,4 +29,20 @@ extern enum xen_domain_type xen_domain_type;
-> >  #define xen_initial_domain()	(0)
-> >  #endif	/* CONFIG_XEN_DOM0 */
-> >  
-> > +#ifdef CONFIG_XEN_PVHVM
-> > +/* Temporarily under XEN_PVHVM, but will be under CONFIG_XEN_PVH */
+> > Whats wrong with using native cpuid? That is one of the benefits that
+> > cpuid can be trapped via vmexit, and also there is talk of making PV
+> > cpuid trap obsolete in the future. I suggest leaving it native.
 > 
-> This is a bit confusing.  I think it would be better to add the
-> CONFIG_XEN_PVH option with this patch but make it default n and not
-> possible to enable.
- 
-I am OK with the patch as is, but your suggestion would probably make
-things better.
+> It should either use the PV interface or the HVM one, not a hybrid of
+> the two.
+
+I agree
