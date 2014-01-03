@@ -1,64 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806AbaACSOd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 13:14:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34353 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751129AbaACSOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 13:14:31 -0500
-Message-ID: <1388772869.5769.1.camel@linux-fkkt.site>
-Subject: Re: [PATCH v1] xhci: Switch Intel Lynx Point ports to EHCI on
- shutdown
-From: Oliver Neukum <oneukum@suse.de>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Denis Turischev <denis.turischev@compulab.co.il>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, dashing.meng@gmail.com,
-        Niklas Schnelle <niklas@komani.de>, Giorgos <ganastasiouGR@gmail.com>,
-        art1@vhex.net
-Date: Fri, 03 Jan 2014 19:14:29 +0100
-In-Reply-To: <20140103000334.GE9621@xanatos>
-References: <52B31EDA.60908@compulab.co.il>
-	 <52B327D5.3080805@compulab.co.il> <20131219182110.GC3573@xanatos>
-	 <52B41EC7.1070704@compulab.co.il> <20131220234547.GC2835@xanatos>
-	 <52B69925.8030409@compulab.co.il> <20140103000334.GE9621@xanatos>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752849AbaACSQQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 13:16:16 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:17604 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125AbaACSQP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 13:16:15 -0500
+Date: Fri, 3 Jan 2014 13:14:59 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH v12 15/18] xen/pvh: Piggyback on PVHVM for
+ grant driver (v2)
+Message-ID: <20140103181459.GG27019@phenom.dumpdata.com>
+References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com>
+ <1388550945-25499-16-git-send-email-konrad.wilk@oracle.com>
+ <52C59483.5030607@citrix.com>
+ <20140102185023.GG3021@pegasus.dumpdata.com>
+ <52C6A4E5.3080904@citrix.com>
+ <20140103144409.GC27019@phenom.dumpdata.com>
+ <52C6DA3F.7070509@citrix.com>
+ <20140103154820.GA20976@andromeda.dapyr.net>
+ <alpine.DEB.2.02.1401031659230.8667@kaball.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1401031659230.8667@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-02 at 16:03 -0800, Sarah Sharp wrote:
-> That means your system worked fine in 3.13-rc3 (when the quirk was
-> applied broadly), but won't work for 3.13-rc6 (when the quirk was
-> narrowed to HP machines).  So we need the quirk to apply to your
-> systems
-> as well.
+On Fri, Jan 03, 2014 at 05:20:54PM +0000, Stefano Stabellini wrote:
+> On Fri, 3 Jan 2014, Konrad Rzeszutek Wilk wrote:
+> > On Fri, Jan 03, 2014 at 03:41:51PM +0000, David Vrabel wrote:
+> > > On 03/01/14 14:44, Konrad Rzeszutek Wilk wrote:
+> > > > On Fri, Jan 03, 2014 at 11:54:13AM +0000, David Vrabel wrote:
+> > > >> On 02/01/14 18:50, Konrad Rzeszutek Wilk wrote:
+> > > >>> On Thu, Jan 02, 2014 at 04:32:03PM +0000, David Vrabel wrote:
+> > > >>>> On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
+> > > >>>>> @@ -1320,4 +1323,4 @@ static int __gnttab_init(void)
+> > > >>>>>  	return gnttab_init();
+> > > >>>>>  }
+> > > >>>>>  
+> > > >>>>> -core_initcall(__gnttab_init);
+> > > >>>>> +core_initcall_sync(__gnttab_init);
+> > > >>>>
+> > > >>>> Why has this become _sync?
+> > > >>>
+> > > >>> It needs to run _after_ the xen_pvh_gnttab_setup has run (which is
+> > > >>> at gnttab_init):
+> > > >>
+> > > >>
+> > > >> The use of core_initcall_sync() doesn't imply any ordering to me.  Can't
+> > > > 
+> > > > It has a clear ordering property.
+> > > 
+> > > This really isn't obvious to me.  Can you point to the docs/code the
+> > > guarantee this?  I couldn't find it.
+> > 
+> > include/linux/init.h
+> > > 
+> > > >> you call xen_pvh_gnttab_setup() from within __gnttab_init() ?
+> > > > 
+> > > > No. That is due to the fact that __gnttab_init() is in drivers/xen and is
+> > > > also used by the ARM code.
+> > > > 
+> > > > Stefano in his previous review mentioned he would like PVH specific
+> > > > code in arch/x86:
+> > > > 
+> > > > https://lkml.org/lkml/2013/12/18/507
+> > > 
+> > > Call it xen_arch_gnttab_setup() and add weak stub for other architectures?
+> > 
+> > Stefano, thoughts?
 > 
-> ISTR that the other folks on Cc (Meng, Niklas, Giorgos, and Art) all
-> had
-> systems that broke when commit
-> 638298dc66ea36623dbc2757a24fc2c4ab41b016
-> was introduced.  For those systems, what vendor was the system, and
-> what
-> BIOS was it running?
+> I think that you can safely move __gnttab_init to postcore_initcall if
+> it works correctly for the PV and PVH cases, because HVM and ARM are
+> unaffected by it.  In fact they don't initialize the grant table via
+> __gnttab_init at all. See:
+
+The 'xenbus_init' is called in postcore_initcall. I don't actually
+know if it is OK to call that _before_ gnttab_init is called.
+
 > 
-> Takashi, did the HP systems that needed the quirk have a Phoenix BIOS?
+> /* Delay grant-table initialization in the PV on HVM case */
+> if (xen_hvm_domain())
+> 	return 0;
 > 
-> Denis, do all of Compulab's Haswell systems reboot on shutdown?  Are
-> they all running a Phoenix BIOS?  Can you send me the output of `sudo
-> lspci -vvv -s` for the xHCI host?
-> 
-> Basically, I'm trying to find a common variable to key off.  I suspect
-> BIOS vendor is probably the right thing, instead of system vendor.
-
-The BIOS vendor on HP systems is "Hewlett-Packard"
-I guess the hope for a single common denominator is futile.
-It'll have to be a list.
-
-	Regards
-		Oliver
-
-
+> at the beginning of __gnttab_init.
