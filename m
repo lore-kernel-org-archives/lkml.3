@@ -1,71 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012AbaACD6L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 22:58:11 -0500
-Received: from smtprelay0242.hostedemail.com ([216.40.44.242]:34103 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750726AbaACD6K (ORCPT
+	id S1751203AbaACEDT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 23:03:19 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:37436 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834AbaACEDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 22:58:10 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3865:3866:3867:3868:3874:4321:4605:5007:6691:7652:8957:10004:10400:10848:11026:11232:11657:11658:11914:12043:12296:12438:12517:12519:12740:13019:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: town15_46ec6e60fd04f
-X-Filterd-Recvd-Size: 2378
-Message-ID: <1388721483.2527.0.camel@joe-AO722>
-Subject: Re: [PATCH v3] Staging: rtl8188eu: Fixed coding style issues
-From: Joe Perches <joe@perches.com>
-To: Tim Jester-Pfadt <t.jp@gmx.de>
-Cc: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Thu, 02 Jan 2014 19:58:03 -0800
-In-Reply-To: <20140102232259.GA4112@archlinux>
-References: <20140102204640.GA1149@archlinux>
-	 <20140102232259.GA4112@archlinux>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
+	Thu, 2 Jan 2014 23:03:18 -0500
+Message-ID: <1388721792.4741.0.camel@phoenix>
+Subject: [PATCH] clocksource: mxs_timer: Get rid of mxs_clockevent_mode
+ variable
+From: Axel Lin <axel.lin@ingics.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Shawn Guo <shawn.guo@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Date: Fri, 03 Jan 2014 12:03:12 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The current mode setting is stored in mode field of struct clock_event_device.
+So we can just remove the mxs_clockevent_mode variable.
 
-On Fri, 2014-01-03 at 00:22 +0100, Tim Jester-Pfadt wrote:
-> Fixed indentation coding style issues on rtw_io.c
-[]
-> diff --git a/drivers/staging/rtl8188eu/core/rtw_io.c b/drivers/staging/rtl8188eu/core/rtw_io.c
-[]
-> @@ -205,9 +205,9 @@ void _rtw_read_mem(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem)
->  
->  	_func_enter_;
->  	if (adapter->bDriverStopped || adapter->bSurpriseRemoved) {
-> -	     RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
-> -		      ("rtw_read_mem:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
-> -		      adapter->bDriverStopped, adapter->bSurpriseRemoved));
-> +		RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
-> +			 ("rtw_read_mem:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
-> +			 adapter->bDriverStopped, adapter->bSurpriseRemoved));
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/clocksource/mxs_timer.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-Be nice to remove the unnecessary parentheses on all of these too
+diff --git a/drivers/clocksource/mxs_timer.c b/drivers/clocksource/mxs_timer.c
+index 0f5e65f..d7d5f11 100644
+--- a/drivers/clocksource/mxs_timer.c
++++ b/drivers/clocksource/mxs_timer.c
+@@ -77,7 +77,6 @@
+ #define BV_TIMROTv2_TIMCTRLn_SELECT__TICK_ALWAYS	0xf
+ 
+ static struct clock_event_device mxs_clockevent_device;
+-static enum clock_event_mode mxs_clockevent_mode = CLOCK_EVT_MODE_UNUSED;
+ 
+ static void __iomem *mxs_timrot_base;
+ static u32 timrot_major_version;
+@@ -156,7 +155,7 @@ static void mxs_set_mode(enum clock_event_mode mode,
+ 	/* Disable interrupt in timer module */
+ 	timrot_irq_disable();
+ 
+-	if (mode != mxs_clockevent_mode) {
++	if (mode != evt->mode) {
+ 		/* Set event time into the furthest future */
+ 		if (timrot_is_v1())
+ 			__raw_writel(0xffff,
+@@ -171,13 +170,10 @@ static void mxs_set_mode(enum clock_event_mode mode,
+ 
+ #ifdef DEBUG
+ 	pr_info("%s: changing mode from %s to %s\n", __func__,
+-		clock_event_mode_label[mxs_clockevent_mode],
++		clock_event_mode_label[evt->mode],
+ 		clock_event_mode_label[mode]);
+ #endif /* DEBUG */
+ 
+-	/* Remember timer mode */
+-	mxs_clockevent_mode = mode;
+-
+ 	switch (mode) {
+ 	case CLOCK_EVT_MODE_PERIODIC:
+ 		pr_err("%s: Periodic mode is not implemented\n", __func__);
+-- 
+1.8.1.2
 
-		RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
-			 "rtw_read_mem:bDriverStopped(%d) OR bSurpriseRemoved(%d)",
-			 adapter->bDriverStopped, adapter->bSurpriseRemoved);
-
-etc...
-
-A few other things too:
-
-o The _func_enter_ uses are unnecessary and could/should
-  be removed.  There's a standard function tracing capability.
-o The RT_TRACE uses that embed a function name could/should use
-  %s:, __func__
-o The RT_TRACE macro doesn't add a terminating newline and these
-  uses should have them.
-
-		RT_TRACE(_module_rtl871x_io_c_, _drv_info_,
-			 "%s:bDriverStopped(%d) OR bSurpriseRemoved(%d)\n",
-			 __func__, adapter->bDriverStopped, adapter->bSurpriseRemoved);
 
 
 
