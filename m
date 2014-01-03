@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771AbaACPkk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 10:40:40 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:51301 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005AbaACPkh (ORCPT
+	id S1752806AbaACPlz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 10:41:55 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:28931 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751950AbaACPly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 10:40:37 -0500
-Message-ID: <52C6D9F1.9000709@gmail.com>
-Date: Fri, 03 Jan 2014 07:40:33 -0800
-From: walt <w41ter@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Fri, 3 Jan 2014 10:41:54 -0500
+X-IronPort-AV: E=Sophos;i="4.95,598,1384300800"; 
+   d="scan'208";a="87379905"
+Message-ID: <52C6DA3F.7070509@citrix.com>
+Date: Fri, 3 Jan 2014 15:41:51 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        David Laight <david.laight@aculab.com>, Mark Lord <mlord@pobox.com>,
-        linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
- a USB payload burst
-References: <20131218211219.461663463@linuxfoundation.org> <20131218211220.412278148@linuxfoundation.org> <52C32BB0.90600@gmail.com> <20140102191510.GA9621@xanatos>
-In-Reply-To: <20140102191510.GA9621@xanatos>
-Content-Type: text/plain; charset=UTF-8
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
+        <boris.ostrovsky@oracle.com>, <stefano.stabellini@eu.citrix.com>,
+        <mukesh.rathor@oracle.com>
+Subject: Re: [PATCH v12 15/18] xen/pvh: Piggyback on PVHVM for grant driver
+ (v2)
+References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com> <1388550945-25499-16-git-send-email-konrad.wilk@oracle.com> <52C59483.5030607@citrix.com> <20140102185023.GG3021@pegasus.dumpdata.com> <52C6A4E5.3080904@citrix.com> <20140103144409.GC27019@phenom.dumpdata.com>
+In-Reply-To: <20140103144409.GC27019@phenom.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2014 11:15 AM, Sarah Sharp wrote:
-> On Tue, Dec 31, 2013 at 12:40:16PM -0800, walt wrote:
->> On 12/18/2013 01:11 PM, Greg Kroah-Hartman wrote:
->>> 3.12-stable review patch.  If anyone has any objections, please let me know.
+On 03/01/14 14:44, Konrad Rzeszutek Wilk wrote:
+> On Fri, Jan 03, 2014 at 11:54:13AM +0000, David Vrabel wrote:
+>> On 02/01/14 18:50, Konrad Rzeszutek Wilk wrote:
+>>> On Thu, Jan 02, 2014 at 04:32:03PM +0000, David Vrabel wrote:
+>>>> On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
+>>>>> @@ -1320,4 +1323,4 @@ static int __gnttab_init(void)
+>>>>>  	return gnttab_init();
+>>>>>  }
+>>>>>  
+>>>>> -core_initcall(__gnttab_init);
+>>>>> +core_initcall_sync(__gnttab_init);
+>>>>
+>>>> Why has this become _sync?
 >>>
->>> ------------------
->>>
->>> From: David Laight <David.Laight@ACULAB.COM>
->>>
->>> commit 35773dac5f862cb1c82ea151eba3e2f6de51ec3e upstream.
->>>
->>> Section 4.11.7.1 of rev 1.0 of the xhci specification states that a link TRB
->>> can only occur at a boundary between underlying USB frames (512 bytes for
->>> high speed devices).
->>>
->>> If this isn't done the USB frames aren't formatted correctly and, for example,
->>> the USB3 ethernet ax88179_178a card will stop sending...
+>>> It needs to run _after_ the xen_pvh_gnttab_setup has run (which is
+>>> at gnttab_init):
 >>
 >>
->> Unfortunately this patch causes a regression when copying large files to my
->> outboard USB3 drive. (Nothing at all to do with networking.)
-
-> Do you have CONFIG_USB_DEBUG turned on for 3.13?  If so, you should see
-> dmesg output from this statement shortly before your drive fails:
+>> The use of core_initcall_sync() doesn't imply any ordering to me.  Can't
 > 
-> if (num_trbs >= TRBS_PER_SEGMENT) {
-> 	xhci_err(xhci, "Too many fragments %d, max %d\n",
-> 		num_trbs, TRBS_PER_SEGMENT - 1);
-> 	return -ENOMEM;
-> }
+> It has a clear ordering property.
 
-Well, the answers depend on whether the usb3 drive uses logical volumes or not
-(lvm2), which I can't explain.  What I've described so far is with lvm2.
+This really isn't obvious to me.  Can you point to the docs/code the
+guarantee this?  I couldn't find it.
 
-When using lvm2 on the usb3 drive, turning on USB_DEBUG has *no* effect -- the
-console prints two or three lines stating that the ext4 journal has quit and
-the drive is remounted ro.  That particular drive stays wedged until the next
-reboot, but no other ill effects to the system.
+>> you call xen_pvh_gnttab_setup() from within __gnttab_init() ?
+> 
+> No. That is due to the fact that __gnttab_init() is in drivers/xen and is
+> also used by the ARM code.
+> 
+> Stefano in his previous review mentioned he would like PVH specific
+> code in arch/x86:
+> 
+> https://lkml.org/lkml/2013/12/18/507
 
-OTOH, when I put a disk with just an ordinary ext4 partition in the usb3 dock,
-(no logical volumes) the copy failure becomes catastrophic, with kernel panic
-messages, leaving the system unresponsive and needing a hard reset to recover.
+Call it xen_arch_gnttab_setup() and add weak stub for other architectures?
 
-I also tried your other suggestion:
-
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 4265b48..1a6a43d 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -4714,7 +4714,7 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
-        int                     retval;
- 
-        /* Accept arbitrarily long scatter-gather lists */
--       hcd->self.sg_tablesize = ~0;
-+       hcd->self.sg_tablesize = 31;
- 
-        /* support to build packet from discontinuous buffers */
-        hcd->self.no_sg_constraint = 1;
-
-Sadly it didn't fix the problem.  Did I get the patch right?
-
-Thanks for your help, and I'm happy to try more ideas, as always.
-
-
+David
