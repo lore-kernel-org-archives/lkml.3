@@ -1,143 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608AbaACTz4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 14:55:56 -0500
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:3477 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753570AbaACTzx (ORCPT
+	id S1753697AbaACUAB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 15:00:01 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:40434 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753438AbaACT77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 14:55:53 -0500
-Message-ID: <1388778945.2956.20.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v3 13/14] mm, hugetlb: retry if failed to allocate and
- there is concurrent user
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>, aswin@hp.com
-Date: Fri, 03 Jan 2014 11:55:45 -0800
-In-Reply-To: <20131223021118.GA2487@lge.com>
-References: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com>
-	 <1387349640-8071-14-git-send-email-iamjoonsoo.kim@lge.com>
-	 <20131219170202.0df2d82a2adefa3ab616bdaa@linux-foundation.org>
-	 <20131220140153.GC11295@suse.de>
-	 <1387608497.3119.17.camel@buesod1.americas.hpqcorp.net>
-	 <20131223004438.GA19388@lge.com> <20131223021118.GA2487@lge.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Fri, 3 Jan 2014 14:59:59 -0500
+Message-ID: <52C716C1.6070704@gmail.com>
+Date: Fri, 03 Jan 2014 12:00:01 -0800
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@kernel.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kashyap Chamarthy <kchamart@redhat.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "Richard W.M. Jones" <rjones@redhat.com>
+Subject: Re: intel_pstate divide error with v3.13-rc4-256-gb7000ad
+References: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com> <4794554.Hmd2RUNYDT@vostro.rjw.lan> <52C18A23.10703@redhat.com> <3710588.K8glfx1cYs@vostro.rjw.lan> <52C6F3B4.3050904@gmail.com> <20140103180435.GK10961@minantech.com>
+In-Reply-To: <20140103180435.GK10961@minantech.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joonsoo,
+On 01/03/2014 10:04 AM, Gleb Natapov wrote:
+> On Fri, Jan 03, 2014 at 09:30:28AM -0800, Dirk Brandewie wrote:
+>> Hi All,
+>>
+>> Sorry for being late to the party but I just got back from vacation.
+>>
+>> There is something deeply wrong here.  We should have never gotten to
+>> intel_pstate_init_cpu().  The VM had to have returned value from the read
+>> of the max pstate at driver init time and 0 when the CPU was being brought up.
+>>
+>> intel_pstate_msrs_not_valid() was added to solve this issue early on
+>> if I remember correctly it was Josh that reported it then.  Is there
+>> a definative way to detect whether we are running in a VM?
+>>
+> Checking for VM is a wrong thing to do here. KVM should behave like it
+> does not support p-state.
+>
+>> Can some one tell me how the nested environment differs in regards to
+>> reading MSRs?
+>>
+> It shouldn't differ, but there may be bug somewhere in nested emulation.
+> We shouldn't try and hind the bug by doing more checks in Linux but
+> rather fixing KVM bug that causes Linux to behave incorrectly.
 
-Sorry about the delay...
+Based on the unhandled MSR messages in the host dmesg the following patch
+should make sure the correct values are returned for PLAT_FORM_INFO, APERF
+and MPERF.  intel_pstate and turbostat are the only users of these registers.
 
-On Mon, 2013-12-23 at 11:11 +0900, Joonsoo Kim wrote:
-> On Mon, Dec 23, 2013 at 09:44:38AM +0900, Joonsoo Kim wrote:
-> > On Fri, Dec 20, 2013 at 10:48:17PM -0800, Davidlohr Bueso wrote:
-> > > On Fri, 2013-12-20 at 14:01 +0000, Mel Gorman wrote:
-> > > > On Thu, Dec 19, 2013 at 05:02:02PM -0800, Andrew Morton wrote:
-> > > > > On Wed, 18 Dec 2013 15:53:59 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> > > > > 
-> > > > > > If parallel fault occur, we can fail to allocate a hugepage,
-> > > > > > because many threads dequeue a hugepage to handle a fault of same address.
-> > > > > > This makes reserved pool shortage just for a little while and this cause
-> > > > > > faulting thread who can get hugepages to get a SIGBUS signal.
-> > > > > > 
-> > > > > > To solve this problem, we already have a nice solution, that is,
-> > > > > > a hugetlb_instantiation_mutex. This blocks other threads to dive into
-> > > > > > a fault handler. This solve the problem clearly, but it introduce
-> > > > > > performance degradation, because it serialize all fault handling.
-> > > > > > 
-> > > > > > Now, I try to remove a hugetlb_instantiation_mutex to get rid of
-> > > > > > performance degradation.
-> > > > > 
-> > > > > So the whole point of the patch is to improve performance, but the
-> > > > > changelog doesn't include any performance measurements!
-> > > > > 
-> > > > 
-> > > > I don't really deal with hugetlbfs any more and I have not examined this
-> > > > series but I remember why I never really cared about this mutex. It wrecks
-> > > > fault scalability but AFAIK fault scalability almost never mattered for
-> > > > workloads using hugetlbfs.  The most common user of hugetlbfs by far is
-> > > > sysv shared memory. The memory is faulted early in the lifetime of the
-> > > > workload and after that it does not matter. At worst, it hurts application
-> > > > startup time but that is still poor motivation for putting a lot of work
-> > > > into removing the mutex.
-> > > 
-> > > Yep, important hugepage workloads initially pound heavily on this lock,
-> > > then it naturally decreases.
-> > > 
-> > > > Microbenchmarks will be able to trigger problems in this area but it'd
-> > > > be important to check if any workload that matters is actually hitting
-> > > > that problem.
-> > > 
-> > > I was thinking of writing one to actually get some numbers for this
-> > > patchset -- I don't know of any benchmark that might stress this lock. 
-> > > 
-> > > However I first measured the amount of cycles it costs to start an
-> > > Oracle DB and things went south with these changes. A simple 'startup
-> > > immediate' calls hugetlb_fault() ~5000 times. For a vanilla kernel, this
-> > > costs ~7.5 billion cycles and with this patchset it goes up to ~27.1
-> > > billion. While there is naturally a fair amount of variation, these
-> > > changes do seem to do more harm than good, at least in real world
-> > > scenarios.
-> > 
-> > Hello,
-> > 
-> > I think that number of cycles is not proper to measure this patchset,
-> > because cycles would be wasted by fault handling failure. Instead, it
-> > targeted improved elapsed time. 
+Could you try the folloinw patch minus Rafael's patch please.
+Compile tested only.
 
-Fair enough, however the fact of the matter is this approach does en up
-hurting performance. Regarding total startup time, I didn't see hardly
-any differences, with both vanilla and this patchset it takes close to
-33.5 seconds.
+TIA
+--Dirk
 
-> Could you tell me how long it
-> > takes to fault all of it's hugepages?
-> > 
-> > Anyway, this order of magnitude still seems a problem. :/
-> > 
-> > I guess that cycles are wasted by zeroing hugepage in fault-path like as
-> > Andrew pointed out.
-> > 
-> > I will send another patches to fix this problem.
-> 
-> Hello, Davidlohr.
-> 
-> Here goes the fix on top of this series.
+commit 5594b89bee7f83200c1a70bf95d50ac35e4fe3f8
+Author: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Date:   Fri Jan 3 11:44:15 2014 -0800
 
-... and with this patch we go from 27 down to 11 billion cycles, so this
-approach still costs more than what we currently have. A perf stat shows
-that an entire 1Gb huge page aware DB startup costs around ~30 billion
-cycles on a vanilla kernel, so the impact of hugetlb_fault() is
-definitely non trivial and IMO worth considering.
+     x86/kvm: Handle MSR_PLATFORM_INFO, MSR_IA32_MPERF and MSR_IA32_APERF MSRs
 
-Now, I took my old patchset (https://lkml.org/lkml/2013/7/26/299) for a
-ride and things do look quite better, which is basically what Andrew was
-suggesting previously anyway. With the hash table approach the startup
-time did go down to ~25.1 seconds, which is a nice -24.7% time
-reduction, with hugetlb_fault() consuming roughly 5.3 billion cycles.
-This hash table was on a 80 core system, so since we do the power of two
-round up we end up with 256 entries -- I think we can do better if we
-enlarger further, maybe something like statically 1024, or probably
-better, 8-ish * nr cpus.
+     Handle MSRs correctly when read from a nested KVM
 
-Thoughts? Is there any reason why we cannot go with this instead? Yes,
-we still keep the mutex, but the approach is (1) proven better for
-performance on real world workloads and (2) far less invasive. 
+     Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+---
+  arch/x86/kvm/x86.c | 3 +++
+  1 file changed, 3 insertions(+)
 
-Thanks,
-Davidlohr
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 5d004da..390ef27 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -2336,6 +2336,9 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 
+*pdata)
+
+  	switch (msr) {
+  	case MSR_IA32_PLATFORM_ID:
++	case MSR_IA32_MPERF:
++	case MSR_IA32_APERF:
++	case MSR_PLATFORM_INFO:
+  	case MSR_IA32_EBL_CR_POWERON:
+  	case MSR_IA32_DEBUGCTLMSR:
+  	case MSR_IA32_LASTBRANCHFROMIP:
 
