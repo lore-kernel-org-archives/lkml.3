@@ -1,90 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147AbaACPqH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 10:46:07 -0500
-Received: from juliette.telenet-ops.be ([195.130.137.74]:54457 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752566AbaACPqE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 10:46:04 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Marc Zyngier <marc.zyngier@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: [PATCH] arm/smp: Make boot_secondary() static
-Date: Fri,  3 Jan 2014 16:45:59 +0100
-Message-Id: <1388763959-27491-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752876AbaACPsT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 10:48:19 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:33841 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751950AbaACPsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 10:48:17 -0500
+X-IronPort-AV: E=Sophos;i="4.95,598,1384300800"; 
+   d="scan'208";a="89570458"
+Date: Fri, 3 Jan 2014 15:47:15 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
+        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
+        <stefano.stabellini@eu.citrix.com>, <mukesh.rathor@oracle.com>
+Subject: Re: [PATCH v12 05/18] xen/mmu/p2m: Refactor the xen_pagetable_init
+ code.
+In-Reply-To: <1388550945-25499-6-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1401031544180.8667@kaball.uk.xensource.com>
+References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com> <1388550945-25499-6-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+On Tue, 31 Dec 2013, Konrad Rzeszutek Wilk wrote:
+> The revector and copying of the P2M only happens when
+> !auto-xlat and on 64-bit builds. It is not obvious from
+> the code, so lets have seperate 32 and 64-bit functions.
+> 
+> We also invert the check for auto-xlat to make the code
+> flow simpler.
+> 
+> Suggested-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  arch/x86/xen/mmu.c | 73 ++++++++++++++++++++++++++++++------------------------
+>  1 file changed, 40 insertions(+), 33 deletions(-)
+> 
+> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> index ce563be..d792a69 100644
+> --- a/arch/x86/xen/mmu.c
+> +++ b/arch/x86/xen/mmu.c
+> @@ -1198,44 +1198,40 @@ static void __init xen_cleanhighmap(unsigned long vaddr,
+>  	 * instead of somewhere later and be confusing. */
+>  	xen_mc_flush();
+>  }
+> -#endif
+> -static void __init xen_pagetable_init(void)
+> +static void __init xen_pagetable_p2m_copy(void)
+>  {
+> -#ifdef CONFIG_X86_64
+>  	unsigned long size;
+>  	unsigned long addr;
+> -#endif
+> -	paging_init();
+> -	xen_setup_shared_info();
+> -#ifdef CONFIG_X86_64
+> -	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
+> -		unsigned long new_mfn_list;
+> +	unsigned long new_mfn_list;
+> +
+> +	if (xen_feature(XENFEAT_auto_translated_physmap))
+> +		return;
+> +
+> +	size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
+> +
+> +	/* On 32-bit, we get zero so this never gets executed. */
 
-After becoming a mandatory function, boot_secondary() is no longer used
-outside arch/arm/kernel/smp.c. Hence make it static.
-The code is reshuffled a bit to avoid a forward declaration.
+Given that this code is already ifdef'ed CONFIG_X86_64, this comment
+should be removed.
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
----
- arch/arm/include/asm/smp.h |    6 ------
- arch/arm/kernel/smp.c      |   18 +++++++++++-------
- 2 files changed, 11 insertions(+), 13 deletions(-)
 
-diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
-index 22a3b9b5d4a1..0d2c8c6f8d1d 100644
---- a/arch/arm/include/asm/smp.h
-+++ b/arch/arm/include/asm/smp.h
-@@ -49,12 +49,6 @@ extern void smp_init_cpus(void);
- extern void set_smp_cross_call(void (*)(const struct cpumask *, unsigned int));
- 
- /*
-- * Boot a secondary CPU, and assign it the specified idle task.
-- * This also gives us the initial stack to use for this CPU.
-- */
--extern int boot_secondary(unsigned int cpu, struct task_struct *);
--
--/*
-  * Called from platform specific assembly code, this is the
-  * secondary CPU entry point.
-  */
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index dc894ab3622b..d05259a33d93 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -88,6 +88,17 @@ static unsigned long get_arch_pgd(pgd_t *pgd)
- 	return pgdir >> ARCH_PGD_SHIFT;
- }
- 
-+/*
-+ * Boot a secondary CPU, and assign it the specified idle task.
-+ * This also gives us the initial stack to use for this CPU.
-+ */
-+static int boot_secondary(unsigned int cpu, struct task_struct *idle)
-+{
-+	if (smp_ops.smp_boot_secondary)
-+		return smp_ops.smp_boot_secondary(cpu, idle);
-+	return -ENOSYS;
-+}
-+
- int __cpu_up(unsigned int cpu, struct task_struct *idle)
- {
- 	int ret;
-@@ -140,13 +151,6 @@ void __init smp_init_cpus(void)
- 		smp_ops.smp_init_cpus();
- }
- 
--int boot_secondary(unsigned int cpu, struct task_struct *idle)
--{
--	if (smp_ops.smp_boot_secondary)
--		return smp_ops.smp_boot_secondary(cpu, idle);
--	return -ENOSYS;
--}
--
- int platform_can_cpu_hotplug(void)
- {
- #ifdef CONFIG_HOTPLUG_CPU
--- 
-1.7.9.5
+> +	new_mfn_list = xen_revector_p2m_tree();
 
+I take from the comment that new_mfn_list must not be zero. Maybe we
+want a BUG_ON or a WARN_ON?
+
+
+> +	if (new_mfn_list && new_mfn_list != xen_start_info->mfn_list) {
+> +		/* using __ka address and sticking INVALID_P2M_ENTRY! */
+> +		memset((void *)xen_start_info->mfn_list, 0xff, size);
+> +
+> +		/* We should be in __ka space. */
+> +		BUG_ON(xen_start_info->mfn_list < __START_KERNEL_map);
+> +		addr = xen_start_info->mfn_list;
+> +		/* We roundup to the PMD, which means that if anybody at this stage is
+> +		 * using the __ka address of xen_start_info or xen_start_info->shared_info
+> +		 * they are in going to crash. Fortunatly we have already revectored
+> +		 * in xen_setup_kernel_pagetable and in xen_setup_shared_info. */
+> +		size = roundup(size, PMD_SIZE);
+> +		xen_cleanhighmap(addr, addr + size);
+>  
+>  		size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
+> +		memblock_free(__pa(xen_start_info->mfn_list), size);
+> +		/* And revector! Bye bye old array */
+> +		xen_start_info->mfn_list = new_mfn_list;
+> +	} else
+> +		return;
+
+This was a normal condition when the function was executed on both
+x86_64 and x86_32. Now that it is only executed on x86_64, is it still
+the case?
+
+
+> -		/* On 32-bit, we get zero so this never gets executed. */
+> -		new_mfn_list = xen_revector_p2m_tree();
+> -		if (new_mfn_list && new_mfn_list != xen_start_info->mfn_list) {
+> -			/* using __ka address and sticking INVALID_P2M_ENTRY! */
+> -			memset((void *)xen_start_info->mfn_list, 0xff, size);
+> -
+> -			/* We should be in __ka space. */
+> -			BUG_ON(xen_start_info->mfn_list < __START_KERNEL_map);
+> -			addr = xen_start_info->mfn_list;
+> -			/* We roundup to the PMD, which means that if anybody at this stage is
+> -			 * using the __ka address of xen_start_info or xen_start_info->shared_info
+> -			 * they are in going to crash. Fortunatly we have already revectored
+> -			 * in xen_setup_kernel_pagetable and in xen_setup_shared_info. */
+> -			size = roundup(size, PMD_SIZE);
+> -			xen_cleanhighmap(addr, addr + size);
+> -
+> -			size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
+> -			memblock_free(__pa(xen_start_info->mfn_list), size);
+> -			/* And revector! Bye bye old array */
+> -			xen_start_info->mfn_list = new_mfn_list;
+> -		} else
+> -			goto skip;
+> -	}
+>  	/* At this stage, cleanup_highmap has already cleaned __ka space
+>  	 * from _brk_limit way up to the max_pfn_mapped (which is the end of
+>  	 * the ramdisk). We continue on, erasing PMD entries that point to page
+> @@ -1255,8 +1251,19 @@ static void __init xen_pagetable_init(void)
+>  	 * anything at this stage. */
+>  	xen_cleanhighmap(MODULES_VADDR, roundup(MODULES_VADDR, PUD_SIZE) - 1);
+>  #endif
+> -skip:
+> +}
+> +#else
+> +static void __init xen_pagetable_p2m_copy(void)
+> +{
+> +	/* Nada! */
+> +}
+>  #endif
+> +
+> +static void __init xen_pagetable_init(void)
+> +{
+> +	paging_init();
+> +	xen_setup_shared_info();
+> +	xen_pagetable_p2m_copy();
+>  	xen_post_allocator_init();
+>  }
+>  static void xen_write_cr2(unsigned long cr2)
+> -- 
+> 1.8.3.1
+> 
