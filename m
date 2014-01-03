@@ -1,172 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751287AbaACFsV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 00:48:21 -0500
+	id S1751423AbaACFs1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 00:48:27 -0500
 Received: from mga01.intel.com ([192.55.52.88]:47972 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750769AbaACFsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 00:48:19 -0500
+	id S1751363AbaACFsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 00:48:25 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,595,1384329600"; 
-   d="scan'208";a="459449297"
+   d="scan'208";a="459449332"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
         eranian@google.com, andi@firstfloor.org,
         "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH 00/14] perf, x86: Haswell LBR call stack support
-Date: Fri,  3 Jan 2014 13:47:57 +0800
-Message-Id: <1388728091-18564-1-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH 04/14] perf, x86: Basic Haswell LBR call stack support
+Date: Fri,  3 Jan 2014 13:48:01 +0800
+Message-Id: <1388728091-18564-5-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1388728091-18564-1-git-send-email-zheng.z.yan@intel.com>
+References: <1388728091-18564-1-git-send-email-zheng.z.yan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For many profiling tasks we need the callgraph. For example we often
-need to see the caller of a lock or the caller of a memcpy or other
-library function to actually tune the program. Frame pointer unwinding
-is efficient and works well. But frame pointers are off by default on
-64bit code (and on modern 32bit gccs), so there are many binaries around
-that do not use frame pointers. Profiling unchanged production code is
-very useful in practice. On some CPUs frame pointer also has a high
-cost. Dwarf2 unwinding also does not always work and is extremely slow
-(upto 20% overhead).
+When the call stack feature is enabled, the LBR stack will capture
+unfiltered call data normally, but as return instructions are executed,
+the last captured branch record is flushed from the on-chip registers
+in a last-in first-out (LIFO) manner. Thus, branch information relative
+to leaf functions will not be captured, while preserving the call stack
+information of the main line execution path.
 
-Haswell has a new feature that utilizes the existing Last Branch Record
-facility to record call chains. When the feature is enabled, function
-call will be collected as normal, but as return instructions are
-executed the last captured branch record is popped from the on-chip LBR
-registers. The LBR call stack facility provides an alternative to get
-callgraph. It has some limitations too, but should work in most cases
-and is significantly faster than dwarf. Frame pointer unwinding is still
-the best default, but LBR call stack is a good alternative when nothing
-else works.
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+---
+ arch/x86/kernel/cpu/perf_event.h           |  7 ++-
+ arch/x86/kernel/cpu/perf_event_intel.c     |  2 +-
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 98 +++++++++++++++++++++++-------
+ 3 files changed, 82 insertions(+), 25 deletions(-)
 
-This patch series adds LBR call stack support. User can enabled/disable
-this through an sysfs attribute file in the CPU PMU directory:
- echo 1 > /sys/bus/event_source/devices/cpu/lbr_callstack 
-
-When profiling bc(1) on Fedora 19:
- echo 'scale=2000; 4*a(1)' > cmd; perf record -g fp bc -l < cmd
-
-If this feature is enabled, perf report output looks like:
-    50.36%       bc  bc                 [.] bc_divide
-                 |
-                 --- bc_divide
-                     execute
-                     run_code
-                     yyparse
-                     main
-                     __libc_start_main
-                     _start
-
-    33.66%       bc  bc                 [.] _one_mult
-                 |
-                 --- _one_mult
-                     bc_divide
-                     execute
-                     run_code
-                     yyparse
-                     main
-                     __libc_start_main
-                     _start
-
-     7.62%       bc  bc                 [.] _bc_do_add
-                 |
-                 --- _bc_do_add
-                    |
-                    |--99.89%-- 0x2000186a8
-                     --0.11%-- [...]
-
-     6.83%       bc  bc                 [.] _bc_do_sub
-                 |
-                 --- _bc_do_sub
-                    |
-                    |--99.94%-- bc_add
-                    |          execute
-                    |          run_code
-                    |          yyparse
-                    |          main
-                    |          __libc_start_main
-                    |          _start
-                     --0.06%-- [...]
-
-     0.46%       bc  libc-2.17.so       [.] __memset_sse2
-                 |
-                 --- __memset_sse2
-                    |
-                    |--54.13%-- bc_new_num
-                    |          |
-                    |          |--51.00%-- bc_divide
-                    |          |          execute
-                    |          |          run_code
-                    |          |          yyparse
-                    |          |          main
-                    |          |          __libc_start_main
-                    |          |          _start
-                    |          |
-                    |          |--30.46%-- _bc_do_sub
-                    |          |          bc_add
-                    |          |          execute
-                    |          |          run_code
-                    |          |          yyparse
-                    |          |          main
-                    |          |          __libc_start_main
-                    |          |          _start
-                    |          |
-                    |           --18.55%-- _bc_do_add
-                    |                     bc_add
-                    |                     execute
-                    |                     run_code
-                    |                     yyparse
-                    |                     main
-                    |                     __libc_start_main
-                    |                     _start
-                    |
-                     --45.87%-- bc_divide
-                               execute
-                               run_code
-                               yyparse
-                               main
-                               __libc_start_main
-                               _start
-
-If this feature is disabled, perf report output looks like:
-    50.49%       bc  bc                 [.] bc_divide
-                 |
-                 --- bc_divide
-
-    33.57%       bc  bc                 [.] _one_mult
-                 |
-                 --- _one_mult
-
-     7.61%       bc  bc                 [.] _bc_do_add
-                 |
-                 --- _bc_do_add
-                     0x2000186a8
-
-     6.88%       bc  bc                 [.] _bc_do_sub
-                 |
-                 --- _bc_do_sub
-
-     0.42%       bc  libc-2.17.so       [.] __memcpy_ssse3_back
-                 |
-                 --- __memcpy_ssse3_back
-
-The LBR call stack has following known limitations
- - Zero length calls are not filtered out by hardware
- - Exception handing such as setjmp/longjmp will have calls/returns not
-   match
- - Pushing different return address onto the stack will have calls/returns
-   not match
- - If callstack is deeper than the LBR, only the last entries are captured
-
-Change since previous version
- - split change into more patches
- - introduce context switch callback and use it to flush LBR
- - use the context switch callback to save/restore LBR
- - dynamic allocate memory area for storing LBR stack, always switch the
-   memory area during context switch
- - disable this feature by default
- - more description in change logs
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 80b8e83..3ef4b79 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -460,7 +460,10 @@ struct x86_pmu {
+ };
+ 
+ enum {
+-	PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE = PERF_SAMPLE_BRANCH_MAX_SHIFT,
++	PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT = PERF_SAMPLE_BRANCH_MAX_SHIFT,
++	PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE,
++
++	PERF_SAMPLE_BRANCH_CALL_STACK = 1U << PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT,
+ };
+ 
+ #define x86_add_quirk(func_)						\
+@@ -697,6 +700,8 @@ void intel_pmu_lbr_init_atom(void);
+ 
+ void intel_pmu_lbr_init_snb(void);
+ 
++void intel_pmu_lbr_init_hsw(void);
++
+ int intel_pmu_setup_lbr_filter(struct perf_event *event);
+ 
+ int p4_pmu_init(void);
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 4325bae..84a1c09 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2494,7 +2494,7 @@ __init int intel_pmu_init(void)
+ 		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids, sizeof(hw_cache_event_ids));
+ 		memcpy(hw_cache_extra_regs, snb_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
+ 
+-		intel_pmu_lbr_init_snb();
++		intel_pmu_lbr_init_hsw();
+ 
+ 		x86_pmu.event_constraints = intel_hsw_event_constraints;
+ 		x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index 7ff2a99..bdd8758 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -39,6 +39,7 @@ static enum {
+ #define LBR_IND_JMP_BIT		6 /* do not capture indirect jumps */
+ #define LBR_REL_JMP_BIT		7 /* do not capture relative jumps */
+ #define LBR_FAR_BIT		8 /* do not capture far branches */
++#define LBR_CALL_STACK_BIT	9 /* enable call stack */
+ 
+ #define LBR_KERNEL	(1 << LBR_KERNEL_BIT)
+ #define LBR_USER	(1 << LBR_USER_BIT)
+@@ -49,6 +50,7 @@ static enum {
+ #define LBR_REL_JMP	(1 << LBR_REL_JMP_BIT)
+ #define LBR_IND_JMP	(1 << LBR_IND_JMP_BIT)
+ #define LBR_FAR		(1 << LBR_FAR_BIT)
++#define LBR_CALL_STACK	(1 << LBR_CALL_STACK_BIT)
+ 
+ #define LBR_PLM (LBR_KERNEL | LBR_USER)
+ 
+@@ -74,24 +76,25 @@ static enum {
+  * x86control flow changes include branches, interrupts, traps, faults
+  */
+ enum {
+-	X86_BR_NONE     = 0,      /* unknown */
+-
+-	X86_BR_USER     = 1 << 0, /* branch target is user */
+-	X86_BR_KERNEL   = 1 << 1, /* branch target is kernel */
+-
+-	X86_BR_CALL     = 1 << 2, /* call */
+-	X86_BR_RET      = 1 << 3, /* return */
+-	X86_BR_SYSCALL  = 1 << 4, /* syscall */
+-	X86_BR_SYSRET   = 1 << 5, /* syscall return */
+-	X86_BR_INT      = 1 << 6, /* sw interrupt */
+-	X86_BR_IRET     = 1 << 7, /* return from interrupt */
+-	X86_BR_JCC      = 1 << 8, /* conditional */
+-	X86_BR_JMP      = 1 << 9, /* jump */
+-	X86_BR_IRQ      = 1 << 10,/* hw interrupt or trap or fault */
+-	X86_BR_IND_CALL = 1 << 11,/* indirect calls */
+-	X86_BR_ABORT    = 1 << 12,/* transaction abort */
+-	X86_BR_IN_TX    = 1 << 13,/* in transaction */
+-	X86_BR_NO_TX    = 1 << 14,/* not in transaction */
++	X86_BR_NONE		= 0,      /* unknown */
++
++	X86_BR_USER		= 1 << 0, /* branch target is user */
++	X86_BR_KERNEL		= 1 << 1, /* branch target is kernel */
++
++	X86_BR_CALL		= 1 << 2, /* call */
++	X86_BR_RET		= 1 << 3, /* return */
++	X86_BR_SYSCALL		= 1 << 4, /* syscall */
++	X86_BR_SYSRET		= 1 << 5, /* syscall return */
++	X86_BR_INT		= 1 << 6, /* sw interrupt */
++	X86_BR_IRET		= 1 << 7, /* return from interrupt */
++	X86_BR_JCC		= 1 << 8, /* conditional */
++	X86_BR_JMP		= 1 << 9, /* jump */
++	X86_BR_IRQ		= 1 << 10,/* hw interrupt or trap or fault */
++	X86_BR_IND_CALL		= 1 << 11,/* indirect calls */
++	X86_BR_ABORT		= 1 << 12,/* transaction abort */
++	X86_BR_IN_TX		= 1 << 13,/* in transaction */
++	X86_BR_NO_TX		= 1 << 14,/* not in transaction */
++	X86_BR_CALL_STACK	= 1 << 15,/* call stack */
+ };
+ 
+ #define X86_BR_PLM (X86_BR_USER | X86_BR_KERNEL)
+@@ -135,7 +138,14 @@ static void __intel_pmu_lbr_enable(void)
+ 		wrmsrl(MSR_LBR_SELECT, cpuc->lbr_sel->config);
+ 
+ 	rdmsrl(MSR_IA32_DEBUGCTLMSR, debugctl);
+-	debugctl |= (DEBUGCTLMSR_LBR | DEBUGCTLMSR_FREEZE_LBRS_ON_PMI);
++	debugctl |= DEBUGCTLMSR_LBR;
++	/*
++	 * LBR callstack does not work well with FREEZE_LBRS_ON_PMI.
++	 * If FREEZE_LBRS_ON_PMI is set, PMI near call/return instructions
++	 * may cause superfluous increase/decrease of LBR_TOS.
++	 */
++	if (!cpuc->lbr_sel || !(cpuc->lbr_sel->config & LBR_CALL_STACK))
++		debugctl |= DEBUGCTLMSR_FREEZE_LBRS_ON_PMI;
+ 	wrmsrl(MSR_IA32_DEBUGCTLMSR, debugctl);
+ }
+ 
+@@ -354,7 +364,7 @@ void intel_pmu_lbr_read(void)
+  * - in case there is no HW filter
+  * - in case the HW filter has errata or limitations
+  */
+-static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
++static int intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
+ {
+ 	u64 br_type = event->attr.branch_sample_type;
+ 	int mask = 0;
+@@ -388,11 +398,21 @@ static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
+ 	if (br_type & PERF_SAMPLE_BRANCH_NO_TX)
+ 		mask |= X86_BR_NO_TX;
+ 
++	if (br_type & PERF_SAMPLE_BRANCH_CALL_STACK) {
++		if (!x86_pmu.lbr_sel_map)
++			return -EOPNOTSUPP;
++		if (mask & ~(X86_BR_USER | X86_BR_KERNEL))
++			return -EINVAL;
++		mask |= X86_BR_CALL | X86_BR_IND_CALL | X86_BR_RET |
++			X86_BR_CALL_STACK;
++	}
++
+ 	/*
+ 	 * stash actual user request into reg, it may
+ 	 * be used by fixup code for some CPU
+ 	 */
+ 	event->hw.branch_reg.reg = mask;
++	return 0;
+ }
+ 
+ /*
+@@ -421,8 +441,11 @@ static int intel_pmu_setup_hw_lbr_filter(struct perf_event *event)
+ 	reg = &event->hw.branch_reg;
+ 	reg->idx = EXTRA_REG_LBR;
+ 
+-	/* LBR_SELECT operates in suppress mode so invert mask */
+-	reg->config = ~mask & x86_pmu.lbr_sel_mask;
++	/*
++	 * the first 8 bits (LBR_SEL_MASK) in LBR_SELECT operates
++	 * in suppress mode so invert mask
++	 */
++	reg->config = mask ^ x86_pmu.lbr_sel_mask;
+ 
+ 	return 0;
+ }
+@@ -440,7 +463,9 @@ int intel_pmu_setup_lbr_filter(struct perf_event *event)
+ 	/*
+ 	 * setup SW LBR filter
+ 	 */
+-	intel_pmu_setup_sw_lbr_filter(event);
++	ret = intel_pmu_setup_sw_lbr_filter(event);
++	if (ret)
++		return ret;
+ 
+ 	/*
+ 	 * setup HW LBR filter, if any
+@@ -695,6 +720,19 @@ static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
+ 	[PERF_SAMPLE_BRANCH_IND_CALL_SHIFT]	= LBR_IND_CALL,
+ };
+ 
++static const int hsw_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
++	[PERF_SAMPLE_BRANCH_ANY_SHIFT]		= LBR_ANY,
++	[PERF_SAMPLE_BRANCH_USER_SHIFT]		= LBR_USER,
++	[PERF_SAMPLE_BRANCH_KERNEL_SHIFT]	= LBR_KERNEL,
++	[PERF_SAMPLE_BRANCH_HV_SHIFT]		= LBR_IGN,
++	[PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT]	= LBR_RETURN | LBR_FAR,
++	[PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT]	= LBR_REL_CALL | LBR_IND_CALL
++						| LBR_FAR,
++	[PERF_SAMPLE_BRANCH_IND_CALL_SHIFT]	= LBR_IND_CALL,
++	[PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT]	= LBR_REL_CALL | LBR_IND_CALL
++						| LBR_RETURN | LBR_CALL_STACK,
++};
++
+ /* core */
+ void intel_pmu_lbr_init_core(void)
+ {
+@@ -751,6 +789,20 @@ void intel_pmu_lbr_init_snb(void)
+ 	pr_cont("16-deep LBR, ");
+ }
+ 
++/* haswell */
++void intel_pmu_lbr_init_hsw(void)
++{
++	x86_pmu.lbr_nr	 = 16;
++	x86_pmu.lbr_tos	 = MSR_LBR_TOS;
++	x86_pmu.lbr_from = MSR_LBR_NHM_FROM;
++	x86_pmu.lbr_to   = MSR_LBR_NHM_TO;
++
++	x86_pmu.lbr_sel_mask = LBR_SEL_MASK;
++	x86_pmu.lbr_sel_map  = hsw_lbr_sel_map;
++
++	pr_cont("16-deep LBR, ");
++}
++
+ /* atom */
+ void intel_pmu_lbr_init_atom(void)
+ {
+-- 
+1.8.4.2
 
