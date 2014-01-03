@@ -1,123 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807AbaACQfJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 11:35:09 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:54709 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889AbaACQfH (ORCPT
+	id S1751386AbaACQjm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 11:39:42 -0500
+Received: from mo4.mail-out.ovh.net ([178.32.228.4]:46971 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039AbaACQjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 11:35:07 -0500
-X-IronPort-AV: E=Sophos;i="4.95,598,1384300800"; 
-   d="scan'208";a="87396121"
-Date: Fri, 3 Jan 2014 16:34:18 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
-        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
-        <stefano.stabellini@eu.citrix.com>, <mukesh.rathor@oracle.com>
-Subject: Re: [PATCH v12 11/18] xen/pvh: Piggyback on PVHVM for event channels
- (v2)
-In-Reply-To: <1388550945-25499-12-git-send-email-konrad.wilk@oracle.com>
-Message-ID: <alpine.DEB.2.02.1401031633070.8667@kaball.uk.xensource.com>
-References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com> <1388550945-25499-12-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 3 Jan 2014 11:39:40 -0500
+X-Greylist: delayed 71087 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Jan 2014 11:39:40 EST
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+In-Reply-To: <CAAVeFuL+rbccJTj+Zr=nXwOq1x8p1FQ1R=-_mZ8pPxHQ_g03wA@mail.gmail.com>
+References: <1387239745-2890-1-git-send-email-jjhiblot@traphandler.com>
+	<CAAVeFuKAGfnnsbtBg=zfmciyMdZHgrX_EpecqPjG=oO6rZdWag@mail.gmail.com>
+	<CACh+v5MUsYW-=qaVubzt8CWRGxibKDB3PjMZ6AaeDYgeTNzONA@mail.gmail.com>
+	<CAAVeFuJ=s8e8g5LG2CVAkS3guj-HRUYrwKxywFxq36sNpAjQGQ@mail.gmail.com>
+	<CACh+v5NhUzoRc4YuPJdSia21XTDh8tLo=oBZyo7Re7deOTjUdA@mail.gmail.com>
+	<CAAVeFuL+rbccJTj+Zr=nXwOq1x8p1FQ1R=-_mZ8pPxHQ_g03wA@mail.gmail.com>
+Date: Fri, 3 Jan 2014 17:39:34 +0100
+Message-ID: <CACh+v5Mu0CciYZwDpZBJV+R8CYtnQymffDGJp94k8jQ54EKPDw@mail.gmail.com>
+Subject: Re: [PATCH] Tracing events with GPIOs
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-Ovh-Tracer-Id: 16697940044456482840
+X-Ovh-Remote: 209.85.220.44 (mail-pa0-f44.google.com)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrvdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrvdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Dec 2013, Konrad Rzeszutek Wilk wrote:
-> From: Mukesh Rathor <mukesh.rathor@oracle.com>
-> 
-> PVH is a PV guest with a twist - there are certain things
-> that work in it like HVM and some like PV. There is
-> a similar mode - PVHVM where we run in HVM mode with
-> PV code enabled - and this patch explores that.
-> 
-> The most notable PV interfaces are the XenBus and event channels.
-> 
-> We will piggyback on how the event channel mechanism is
-> used in PVHVM - that is we want the normal native IRQ mechanism
-> and we will install a vector (hvm callback) for which we
-> will call the event channel mechanism.
-> 
-> This means that from a pvops perspective, we can use
-> native_irq_ops instead of the Xen PV specific. Albeit in the
-> future we could support pirq_eoi_map. But that is
-> a feature request that can be shared with PVHVM.
-> 
-> Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/xen/irq.c   |  5 ++++-
->  drivers/xen/events.c | 16 ++++++++++------
->  2 files changed, 14 insertions(+), 7 deletions(-)
-> 
-> diff --git a/arch/x86/xen/irq.c b/arch/x86/xen/irq.c
-> index 0da7f86..76ca326 100644
-> --- a/arch/x86/xen/irq.c
-> +++ b/arch/x86/xen/irq.c
-> @@ -5,6 +5,7 @@
->  #include <xen/interface/xen.h>
->  #include <xen/interface/sched.h>
->  #include <xen/interface/vcpu.h>
-> +#include <xen/features.h>
->  #include <xen/events.h>
->  
->  #include <asm/xen/hypercall.h>
-> @@ -128,6 +129,8 @@ static const struct pv_irq_ops xen_irq_ops __initconst = {
->  
->  void __init xen_init_irq_ops(void)
->  {
-> -	pv_irq_ops = xen_irq_ops;
-> +	/* For PVH we use default pv_irq_ops settings. */
-> +	if (!xen_feature(XENFEAT_hvm_callback_vector))
-> +		pv_irq_ops = xen_irq_ops;
->  	x86_init.irqs.intr_init = xen_init_IRQ;
->  }
-> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-> index 4035e83..bf8fb29 100644
-> --- a/drivers/xen/events.c
-> +++ b/drivers/xen/events.c
-> @@ -1908,20 +1908,24 @@ void __init xen_init_IRQ(void)
->  	pirq_needs_eoi = pirq_needs_eoi_flag;
->  
->  #ifdef CONFIG_X86
-> -	if (xen_hvm_domain()) {
-> +	if (xen_pv_domain()) {
-> +		irq_ctx_init(smp_processor_id());
-> +		if (xen_initial_domain())
-> +			pci_xen_initial_domain();
-> +	}
-> +	if (xen_feature(XENFEAT_hvm_callback_vector))
->  		xen_callback_vector();
-> +
-> +	if (xen_hvm_domain()) {
->  		native_init_IRQ();
->  		/* pci_xen_hvm_init must be called after native_init_IRQ so that
->  		 * __acpi_register_gsi can point at the right function */
->  		pci_xen_hvm_init();
-> -	} else {
-> +	} else if (!xen_pvh_domain()) {
-> +		/* TODO: No PVH support for PIRQ EOI */
->  		int rc;
->  		struct physdev_pirq_eoi_gmfn eoi_gmfn;
->  
-> -		irq_ctx_init(smp_processor_id());
-> -		if (xen_initial_domain())
-> -			pci_xen_initial_domain();
+2014/1/3 Alexandre Courbot <gnurou@gmail.com>:
+> On Fri, Dec 20, 2013 at 5:40 PM, Jean-Jacques Hiblot
+> <jjhiblot@traphandler.com> wrote:
+>> 2013/12/20 Alexandre Courbot <gnurou@gmail.com>:
+>>> On Thu, Dec 19, 2013 at 8:38 PM, Jean-Jacques Hiblot
+>>> <jjhiblot@traphandler.com> wrote:
+>>>> 2013/12/19 Alexandre Courbot <gnurou@gmail.com>:
+>>>>> The problems I can see so far:
+>>>>>
+>>>>> - Using gpiod, GPIOs are not specified as integers, but are typically
+>>>>> mapped to a given (device, function) pair (device can be NULL) using
+>>>>> device tree/platform data/ACPI and obtained by the corresponding
+>>>>> device driver through gpiod_get(). You would need to find a different
+>>>>> way to specify GPIOs, maybe using the gpio_chip's label and the GPIO
+>>>>> hardware number.
+>>>>>
+>>>>> - Even if you do so, there is currently no way to arbitrarily obtain a
+>>>>> GPIO that has not been explicitly mapped to a (device, function), and
+>>>>> IIUC you need to specify the tracing GPIO freely from user-space. This
+>>>>> hints that we will need to add a function that is sensibly the same as
+>>>>> gpio_request_one() to the gpiod API, but I wonder if that does not
+>>>>> defeats the purpose somehow.
+>>>>
+>>>> This is something I was wondering about for another reason. In many
+>>>> cases the GPIOs that are physically available for probing will be
+>>>> limited to the GPIOs already assigned a function (backlight control
+>>>> for example), others are usually not routed except in eval boards or
+>>>> early prototypes. And consequently those GPIOs will be requested by a
+>>>> driver long before a probe is set.
+>>>> It would be nice not to have to remove the driver to be able to use
+>>>> this GPIO  as a probe. Maybe a gpiod_steal() interface and a flag
+>>>> indicating that the GPIO can be safely stolen?
+>>>
+>>> Mmm an explicit way to hijack a GPIO does not sound very safe. Do you
+>>> have concrete cases where you need to do so? I guess most boards you
+>>> may want to use this patch with would have at least some spare GPIOs
+>>> with pins somewhere on the board for this kind of purpose.
+>> It's not always true. There are quite a few platforms where GPIOs is a
+>> scarce resource (ppc for example). For example, the board I'm working
+>> on at the moment is built around a APM powerpc which has only 16
+>> GPIOs. Of those 16 GPIOS, some are not routed and most of the others
+>> are hidden by the shielding so that I can probe only those that go to
+>> external connectors.
+>> IMHO it's probably the case for most of the boards that go into a
+>> final product where EMI and space constraints are tight.
+>> But I agree that's not safe. I thought that maybe a flag indicating
+>> when it is safe would help (on my board that would be : ok to use the
+>> GPIO that turns on or off the backlight, not ok to use the GPIO that
+>> controls the power supply)
+>
+> Rather than a flag per GPIO or board (my definition of "safe" is
+> rather strict ; I'd consider being able to mess with the backlight as
+> unsafe), I think I'd be more comfortable with having this as a kernel
+> config option, defaulting to 'n', and clearly stating that this can
+> potentially allow any GPIO to be hijacked (which is, apart for the
+> last point, what you already did). That way people can make an
+> informed decision about whether to enable it or not (disabled for
+> distro kernels, enabled for the occasional hacker who wants to use
+> this feature).
+>
+> But before doing this, I'd like to make sure we explore every
+> possibility to make this safer by design.
+I agree and to be honest I'm not comfortable with the hijacker's way.
+Maybe I should just stick to the proper way of requesting a GPIO. When
+this feature is used,  it'll not be in the field after production but
+during the development when building a new kernel is not really an
+issue.
 
-We already have a mechanism to identify whether
-PHYSDEVOP_pirq_eoi_gmfn_v2 is available or not. Can't we just rely on
-that?
-
-
->  		pirq_eoi_map = (void *)__get_free_page(GFP_KERNEL|__GFP_ZERO);
->  		eoi_gmfn.gmfn = virt_to_mfn(pirq_eoi_map);
->  		rc = HYPERVISOR_physdev_op(PHYSDEVOP_pirq_eoi_gmfn_v2, &eoi_gmfn);
-> -- 
-> 1.8.3.1
-> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-gpio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
