@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442AbaACAhv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 19:37:51 -0500
+	id S1753492AbaACAhw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 19:37:52 -0500
 Received: from smtp.codeaurora.org ([198.145.11.231]:47295 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521AbaACAhp (ORCPT
+	with ESMTP id S1752146AbaACAhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 19:37:45 -0500
+	Thu, 2 Jan 2014 19:37:46 -0500
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH v2 02/10] genirq: Add devm_request_any_context_irq()
-Date: Thu,  2 Jan 2014 16:37:32 -0800
-Message-Id: <1388709460-19222-3-git-send-email-sboyd@codeaurora.org>
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org
+Subject: [PATCH v2 05/10] Input: pmic8xxx-pwrkey - Migrate to DT
+Date: Thu,  2 Jan 2014 16:37:35 -0800
+Message-Id: <1388709460-19222-6-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.5.2.228.g8f9f19c
 In-Reply-To: <1388709460-19222-1-git-send-email-sboyd@codeaurora.org>
 References: <1388709460-19222-1-git-send-email-sboyd@codeaurora.org>
@@ -22,89 +21,143 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some drivers use request_any_context_irq() but there isn't a
-devm_* function for it. Add one so that these drivers don't need
-to explicitly free the irq on driver detach.
+The driver is only supported on DT enabled platforms. Convert the
+driver to DT so that it can probe properly.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- include/linux/interrupt.h |  5 +++++
- kernel/irq/devres.c       | 45 +++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 50 insertions(+)
+ drivers/input/misc/pmic8xxx-pwrkey.c  | 33 ++++++++++++++++++++-------------
+ include/linux/input/pmic8xxx-pwrkey.h | 31 -------------------------------
+ 2 files changed, 20 insertions(+), 44 deletions(-)
+ delete mode 100644 include/linux/input/pmic8xxx-pwrkey.h
 
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index 0053adde0ed9..a2678d35b5a2 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -158,6 +158,11 @@ devm_request_irq(struct device *dev, unsigned int irq, irq_handler_t handler,
- 					 devname, dev_id);
+diff --git a/drivers/input/misc/pmic8xxx-pwrkey.c b/drivers/input/misc/pmic8xxx-pwrkey.c
+index aaf332510623..72f629f37211 100644
+--- a/drivers/input/misc/pmic8xxx-pwrkey.c
++++ b/drivers/input/misc/pmic8xxx-pwrkey.c
+@@ -20,8 +20,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/regmap.h>
+ #include <linux/log2.h>
+-
+-#include <linux/input/pmic8xxx-pwrkey.h>
++#include <linux/of.h>
+ 
+ #define PON_CNTL_1 0x1C
+ #define PON_CNTL_PULL_UP BIT(7)
+@@ -80,6 +79,13 @@ static int pmic8xxx_pwrkey_resume(struct device *dev)
+ static SIMPLE_DEV_PM_OPS(pm8xxx_pwr_key_pm_ops,
+ 		pmic8xxx_pwrkey_suspend, pmic8xxx_pwrkey_resume);
+ 
++static const struct of_device_id pm8xxx_pwr_key_id_table[] = {
++	{ .compatible = "qcom,pm8058-pwrkey" },
++	{ .compatible = "qcom,pm8921-pwrkey" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, pm8xxx_pwr_key_id_table);
++
+ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
+ {
+ 	struct input_dev *pwr;
+@@ -90,15 +96,15 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
+ 	unsigned int pon_cntl;
+ 	struct regmap *regmap;
+ 	struct pmic8xxx_pwrkey *pwrkey;
+-	const struct pm8xxx_pwrkey_platform_data *pdata =
+-					dev_get_platdata(&pdev->dev);
++	u32 kpd_delay;
++	bool pull_up;
+ 
+-	if (!pdata) {
+-		dev_err(&pdev->dev, "power key platform data not supplied\n");
+-		return -EINVAL;
+-	}
++	if (of_property_read_u32(pdev->dev.of_node, "debounce", &kpd_delay))
++		kpd_delay = 0;
++
++	pull_up = of_property_read_bool(pdev->dev.of_node, "pull-up");
+ 
+-	if (pdata->kpd_trigger_delay_us > 62500) {
++	if (kpd_delay > 62500) {
+ 		dev_err(&pdev->dev, "invalid power key trigger delay\n");
+ 		return -EINVAL;
+ 	}
+@@ -126,7 +132,7 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
+ 	pwr->name = "pmic8xxx_pwrkey";
+ 	pwr->phys = "pmic8xxx_pwrkey/input0";
+ 
+-	delay = (pdata->kpd_trigger_delay_us << 10) / USEC_PER_SEC;
++	delay = (kpd_delay << 10) / USEC_PER_SEC;
+ 	delay = 1 + ilog2(delay);
+ 
+ 	err = regmap_read(regmap, PON_CNTL_1, &pon_cntl);
+@@ -137,7 +143,7 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
+ 
+ 	pon_cntl &= ~PON_CNTL_TRIG_DELAY_MASK;
+ 	pon_cntl |= (delay & PON_CNTL_TRIG_DELAY_MASK);
+-	if (pdata->pull_up)
++	if (pull_up)
+ 		pon_cntl |= PON_CNTL_PULL_UP;
+ 	else
+ 		pon_cntl &= ~PON_CNTL_PULL_UP;
+@@ -173,7 +179,7 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	platform_set_drvdata(pdev, pwrkey);
+-	device_init_wakeup(&pdev->dev, pdata->wakeup);
++	device_init_wakeup(&pdev->dev, 1);
+ 
+ 	return 0;
  }
- 
-+extern int __must_check
-+devm_request_any_context_irq(struct device *dev, unsigned int irq,
-+		 irq_handler_t handler, unsigned long irqflags,
-+		 const char *devname, void *dev_id);
-+
- extern void devm_free_irq(struct device *dev, unsigned int irq, void *dev_id);
- 
- /*
-diff --git a/kernel/irq/devres.c b/kernel/irq/devres.c
-index bd8e788d71e0..1ef0606797c9 100644
---- a/kernel/irq/devres.c
-+++ b/kernel/irq/devres.c
-@@ -73,6 +73,51 @@ int devm_request_threaded_irq(struct device *dev, unsigned int irq,
- EXPORT_SYMBOL(devm_request_threaded_irq);
- 
- /**
-+ *	devm_request_any_context_irq - allocate an interrupt line for a managed device
-+ *	@dev: device to request interrupt for
-+ *	@irq: Interrupt line to allocate
-+ *	@handler: Function to be called when the IRQ occurs
-+ *	@thread_fn: function to be called in a threaded interrupt context. NULL
-+ *		    for devices which handle everything in @handler
-+ *	@irqflags: Interrupt type flags
-+ *	@devname: An ascii name for the claiming device
-+ *	@dev_id: A cookie passed back to the handler function
-+ *
-+ *	Except for the extra @dev argument, this function takes the
-+ *	same arguments and performs the same function as
-+ *	request_any_context_irq().  IRQs requested with this function will be
-+ *	automatically freed on driver detach.
-+ *
-+ *	If an IRQ allocated with this function needs to be freed
-+ *	separately, devm_free_irq() must be used.
-+ */
-+int devm_request_any_context_irq(struct device *dev, unsigned int irq,
-+			      irq_handler_t handler, unsigned long irqflags,
-+			      const char *devname, void *dev_id)
-+{
-+	struct irq_devres *dr;
-+	int rc;
-+
-+	dr = devres_alloc(devm_irq_release, sizeof(struct irq_devres),
-+			  GFP_KERNEL);
-+	if (!dr)
-+		return -ENOMEM;
-+
-+	rc = request_any_context_irq(irq, handler, irqflags, devname, dev_id);
-+	if (rc) {
-+		devres_free(dr);
-+		return rc;
-+	}
-+
-+	dr->irq = irq;
-+	dr->dev_id = dev_id;
-+	devres_add(dev, dr);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(devm_request_any_context_irq);
-+
-+/**
-  *	devm_free_irq - free an interrupt
-  *	@dev: device to free interrupt for
-  *	@irq: Interrupt line to free
+@@ -189,9 +195,10 @@ static struct platform_driver pmic8xxx_pwrkey_driver = {
+ 	.probe		= pmic8xxx_pwrkey_probe,
+ 	.remove		= pmic8xxx_pwrkey_remove,
+ 	.driver		= {
+-		.name	= PM8XXX_PWRKEY_DEV_NAME,
++		.name	= "pm8xxx-pwrkey",
+ 		.owner	= THIS_MODULE,
+ 		.pm	= &pm8xxx_pwr_key_pm_ops,
++		.of_match_table = pm8xxx_pwr_key_id_table,
+ 	},
+ };
+ module_platform_driver(pmic8xxx_pwrkey_driver);
+diff --git a/include/linux/input/pmic8xxx-pwrkey.h b/include/linux/input/pmic8xxx-pwrkey.h
+deleted file mode 100644
+index 6d2974e57109..000000000000
+--- a/include/linux/input/pmic8xxx-pwrkey.h
++++ /dev/null
+@@ -1,31 +0,0 @@
+-/* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 and
+- * only version 2 as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- */
+-
+-#ifndef __PMIC8XXX_PWRKEY_H__
+-#define __PMIC8XXX_PWRKEY_H__
+-
+-#define PM8XXX_PWRKEY_DEV_NAME "pm8xxx-pwrkey"
+-
+-/**
+- * struct pm8xxx_pwrkey_platform_data - platform data for pwrkey driver
+- * @pull up:  power on register control for pull up/down configuration
+- * @kpd_trigger_delay_us: time delay for power key state change interrupt
+- *                  trigger.
+- * @wakeup: configure power key as wakeup source
+- */
+-struct pm8xxx_pwrkey_platform_data  {
+-	bool pull_up;
+-	u32  kpd_trigger_delay_us;
+-	u32  wakeup;
+-};
+-
+-#endif /* __PMIC8XXX_PWRKEY_H__ */
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
