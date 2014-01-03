@@ -1,42 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356AbaACArb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 19:47:31 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:59228 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752181AbaACAra (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 19:47:30 -0500
-Date: Thu, 2 Jan 2014 19:47:25 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, pmladek@suse.cz,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/9] smp: Teach __smp_call_function_single() to check
- for offline cpus
-Message-ID: <20140102194725.22f1adce@gandalf.local.home>
-In-Reply-To: <1387831171-5264-5-git-send-email-jack@suse.cz>
-References: <1387831171-5264-1-git-send-email-jack@suse.cz>
-	<1387831171-5264-5-git-send-email-jack@suse.cz>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	id S1753470AbaACArj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 19:47:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63008 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752012AbaACArg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 19:47:36 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        Michel Lespinasse <walken@google.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Yang Zhang <yang.z.zhang@Intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Janet Morgan <janet.morgan@Intel.com>, Tony Luck <tony.luck@Intel.com>,
+        Ruiv Wang <ruiv.wang@gmail.com>, Gong Chen <gong.chen@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, x86@kernel.org
+Subject: [PATCH] x86: Add check for number of available vectors before CPU down [v4]
+Date: Thu,  2 Jan 2014 19:47:24 -0500
+Message-Id: <1388710044-8280-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Dec 2013 21:39:25 +0100
-Jan Kara <jack@suse.cz> wrote:
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64791
 
-> Align __smp_call_function_single() with smp_call_function_single() so
-> that it also checks whether requested cpu is still online.
-> 
-> Signed-off-by: Jan Kara <jack@suse.cz>
+When a cpu is downed on a system, the irqs on the cpu are assigned to
+other cpus.  It is possible, however, that when a cpu is downed there
+aren't enough free vectors on the remaining cpus to account for the
+vectors from the cpu that is being downed.
 
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+This results in an interesting "overflow" condition where irqs are
+"assigned" to a CPU but are not handled.
 
--- Steve
+For example, when downing cpus on a 1-64 logical processor system:
+
+<snip>
+[  232.021745] smpboot: CPU 61 is now offline
+[  238.480275] smpboot: CPU 62 is now offline
+[  245.991080] ------------[ cut here ]------------
+[  245.996270] WARNING: CPU: 0 PID: 0 at net/sched/sch_generic.c:264 dev_watchdog+0x246/0x250()
+[  246.005688] NETDEV WATCHDOG: p786p1 (ixgbe): transmit queue 0 timed out
+[  246.013070] Modules linked in: lockd sunrpc iTCO_wdt iTCO_vendor_support sb_edac ixgbe microcode e1000e pcspkr joydev edac_core lpc_ich ioatdma ptp mdio mfd_core i2c_i801 dca pps_core i2c_core wmi acpi_cpufreq isci libsas scsi_transport_sas
+[  246.037633] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.12.0+ #14
+[  246.044451] Hardware name: Intel Corporation S4600LH ........../SVRBD-ROW_T, BIOS SE5C600.86B.01.08.0003.022620131521 02/26/2013
+[  246.057371]  0000000000000009 ffff88081fa03d40 ffffffff8164fbf6 ffff88081fa0ee48
+[  246.065728]  ffff88081fa03d90 ffff88081fa03d80 ffffffff81054ecc ffff88081fa13040
+[  246.074073]  0000000000000000 ffff88200cce0000 0000000000000040 0000000000000000
+[  246.082430] Call Trace:
+[  246.085174]  <IRQ>  [<ffffffff8164fbf6>] dump_stack+0x46/0x58
+[  246.091633]  [<ffffffff81054ecc>] warn_slowpath_common+0x8c/0xc0
+[  246.098352]  [<ffffffff81054fb6>] warn_slowpath_fmt+0x46/0x50
+[  246.104786]  [<ffffffff815710d6>] dev_watchdog+0x246/0x250
+[  246.110923]  [<ffffffff81570e90>] ? dev_deactivate_queue.constprop.31+0x80/0x80
+[  246.119097]  [<ffffffff8106092a>] call_timer_fn+0x3a/0x110
+[  246.125224]  [<ffffffff8106280f>] ? update_process_times+0x6f/0x80
+[  246.132137]  [<ffffffff81570e90>] ? dev_deactivate_queue.constprop.31+0x80/0x80
+[  246.140308]  [<ffffffff81061db0>] run_timer_softirq+0x1f0/0x2a0
+[  246.146933]  [<ffffffff81059a80>] __do_softirq+0xe0/0x220
+[  246.152976]  [<ffffffff8165fedc>] call_softirq+0x1c/0x30
+[  246.158920]  [<ffffffff810045f5>] do_softirq+0x55/0x90
+[  246.164670]  [<ffffffff81059d35>] irq_exit+0xa5/0xb0
+[  246.170227]  [<ffffffff8166062a>] smp_apic_timer_interrupt+0x4a/0x60
+[  246.177324]  [<ffffffff8165f40a>] apic_timer_interrupt+0x6a/0x70
+[  246.184041]  <EOI>  [<ffffffff81505a1b>] ? cpuidle_enter_state+0x5b/0xe0
+[  246.191559]  [<ffffffff81505a17>] ? cpuidle_enter_state+0x57/0xe0
+[  246.198374]  [<ffffffff81505b5d>] cpuidle_idle_call+0xbd/0x200
+[  246.204900]  [<ffffffff8100b7ae>] arch_cpu_idle+0xe/0x30
+[  246.210846]  [<ffffffff810a47b0>] cpu_startup_entry+0xd0/0x250
+[  246.217371]  [<ffffffff81646b47>] rest_init+0x77/0x80
+[  246.223028]  [<ffffffff81d09e8e>] start_kernel+0x3ee/0x3fb
+[  246.229165]  [<ffffffff81d0989f>] ? repair_env_string+0x5e/0x5e
+[  246.235787]  [<ffffffff81d095a5>] x86_64_start_reservations+0x2a/0x2c
+[  246.242990]  [<ffffffff81d0969f>] x86_64_start_kernel+0xf8/0xfc
+[  246.249610] ---[ end trace fb74fdef54d79039 ]---
+[  246.254807] ixgbe 0000:c2:00.0 p786p1: initiating reset due to tx timeout
+[  246.262489] ixgbe 0000:c2:00.0 p786p1: Reset adapter
+Last login: Mon Nov 11 08:35:14 from 10.18.17.119
+[root@(none) ~]# [  246.792676] ixgbe 0000:c2:00.0 p786p1: detected SFP+: 5
+[  249.231598] ixgbe 0000:c2:00.0 p786p1: NIC Link is Up 10 Gbps, Flow Control: RX/TX
+[  246.792676] ixgbe 0000:c2:00.0 p786p1: detected SFP+: 5
+[  249.231598] ixgbe 0000:c2:00.0 p786p1: NIC Link is Up 10 Gbps, Flow Control: RX/TX
+
+(last lines keep repeating.  ixgbe driver is dead until module reload.)
+
+If the downed cpu has more vectors than are free on the remaining cpus on the
+system, it is possible that some vectors are "orphaned" even though they are
+assigned to a cpu.  In this case, since the ixgbe driver had a watchdog, the
+watchdog fired and notified that something was wrong.
+
+This patch adds a function, check_vectors(), to compare the number of vectors
+on the CPU going down and compares it to the number of vectors available on
+the system.  If there aren't enough vectors for the CPU to go down, an
+error is returned and propogated back to userspace.
+
+Tested on both -tip and current linux.git.
+
+v2: Do not need to look at percpu irqs
+v3: Need to check affinity to prevent counting of MSIs in IOAPIC Lowest
+    Priority Mode
+v4: Additional changes suggested by Gong Chen.
+
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Yang Zhang <yang.z.zhang@Intel.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Janet Morgan <janet.morgan@intel.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Ruiv Wang <ruiv.wang@gmail.com>
+Cc: Gong Chen <gong.chen@linux.intel.com>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Cc: x86@kernel.org
+---
+ arch/x86/include/asm/irq.h |    1 +
+ arch/x86/kernel/irq.c      |   56 ++++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/smpboot.c  |    6 +++++
+ 3 files changed, 63 insertions(+)
+
+diff --git a/arch/x86/include/asm/irq.h b/arch/x86/include/asm/irq.h
+index 0ea10f27..cb6cfcd 100644
+--- a/arch/x86/include/asm/irq.h
++++ b/arch/x86/include/asm/irq.h
+@@ -25,6 +25,7 @@ extern void irq_ctx_init(int cpu);
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+ #include <linux/cpumask.h>
++extern int check_irq_vectors_for_cpu_disable(void);
+ extern void fixup_irqs(void);
+ extern void irq_force_complete_move(int);
+ #endif
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 22d0687..8a2e470 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -262,6 +262,62 @@ __visible void smp_trace_x86_platform_ipi(struct pt_regs *regs)
+ EXPORT_SYMBOL_GPL(vector_used_by_percpu_irq);
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
++/*
++ * This cpu is going to be removed and its vectors migrated to the remaining
++ * online cpus.  Check to see if there are enough vectors in the remaining cpus.
++ */
++int check_irq_vectors_for_cpu_disable(void)
++{
++	int irq, cpu;
++	unsigned int vector, this_count, count;
++	struct irq_desc *desc;
++	struct irq_data *data;
++	struct cpumask affinity_new, online_new;
++
++	cpumask_copy(&online_new, cpu_online_mask);
++	cpu_clear(smp_processor_id(), online_new);
++
++	this_count = 0;
++	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
++		irq = __this_cpu_read(vector_irq[vector]);
++		if (irq >= 0) {
++			desc = irq_to_desc(irq);
++			data = irq_desc_get_irq_data(desc);
++			cpumask_copy(&affinity_new, data->affinity);
++			cpu_clear(smp_processor_id(), affinity_new);
++			/*
++			 * Only count active non-percpu irqs, and those
++			 * irqs that are not linked to on an online cpu; in
++			 * fixup_irqs(), chip->irq_set_affinity() will be
++			 * called which will set vector_irq[irq] for each
++			 * cpu.
++			 */
++			if (irq_has_action(irq) && !irqd_is_per_cpu(data) &&
++			    (cpumask_empty(&affinity_new) ||
++			     !cpumask_subset(&affinity_new, &online_new)))
++				this_count++;
++		}
++	}
++
++	count = 0;
++	for_each_online_cpu(cpu) {
++		if (cpu == smp_processor_id())
++			continue;
++		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS;
++		     vector++) {
++			if (per_cpu(vector_irq, cpu)[vector] < 0)
++				count++;
++		}
++	}
++
++	if (count < this_count) {
++		pr_warn("CPU %d disable failed: CPU has %u vectors assigned and there are only %u available.\n",
++			smp_processor_id(), this_count, count);
++		return -ERANGE;
++	}
++	return 0;
++}
++
+ /* A cpu has been removed from cpu_online_mask.  Reset irq affinities. */
+ void fixup_irqs(void)
+ {
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 85dc05a..391ea52 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1312,6 +1312,12 @@ void cpu_disable_common(void)
+ 
+ int native_cpu_disable(void)
+ {
++	int ret;
++
++	ret = check_irq_vectors_for_cpu_disable();
++	if (ret)
++		return ret;
++
+ 	clear_local_APIC();
+ 
+ 	cpu_disable_common();
+-- 
+1.7.9.3
+
