@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493AbaACAUl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 19:20:41 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:21530 "EHLO
+	id S1753963AbaACAUh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 19:20:37 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:21532 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753263AbaACAGO (ORCPT
+	with ESMTP id S1752862AbaACAGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 2 Jan 2014 19:06:14 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -13,9 +13,9 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v5 29/33] PCI, x86, ACPI: Link acpi ioapic register to ioapic
-Date: Thu,  2 Jan 2014 16:06:01 -0800
-Message-Id: <1388707565-16535-30-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v5 32/33] PCI, x86, ACPI: get ioapic address from acpi device
+Date: Thu,  2 Jan 2014 16:06:04 -0800
+Message-Id: <1388707565-16535-33-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
 References: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
@@ -24,50 +24,143 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During ioapic hotplug, acpi_register_ioapic will be called.
-Now for x86, that function is blank.
-Fill that will update __mp_register_ioapic to use those ioapic.
+Some ioapic controllers do not show up on pci config space,
+or pci device is there but no bar is used and is set by firmware in
+other non standard registers.
+
+We can get ioapic address from ACPI0009's _CRS.
+
+-v2: Use acpi_mem_addr_resource_to_address64() to address MEMORY in _CRS
+     of Rui Wang's machine.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/kernel/acpi/boot.c | 18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
+ drivers/pci/ioapic.c | 86 +++++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 71 insertions(+), 15 deletions(-)
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 0f9c133..77bf505 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -651,16 +651,26 @@ EXPORT_SYMBOL(acpi_unmap_lsapic);
+diff --git a/drivers/pci/ioapic.c b/drivers/pci/ioapic.c
+index 60351b2..54de155 100644
+--- a/drivers/pci/ioapic.c
++++ b/drivers/pci/ioapic.c
+@@ -32,6 +32,36 @@ struct acpi_pci_ioapic {
+ static LIST_HEAD(ioapic_list);
+ static DEFINE_MUTEX(ioapic_list_lock);
  
- int acpi_register_ioapic(acpi_handle handle, u64 phys_addr, u32 gsi_base)
++static acpi_status setup_res(struct acpi_resource *acpi_res, void *data)
++{
++	struct resource *res;
++	struct acpi_resource_address64 addr;
++	acpi_status status;
++	unsigned long flags;
++	u64 start, end;
++
++	status = acpi_mem_addr_resource_to_address64(acpi_res, &addr);
++	if (!ACPI_SUCCESS(status))
++		return AE_OK;
++
++	if (addr.resource_type == ACPI_MEMORY_RANGE) {
++		if (addr.info.mem.caching == ACPI_PREFETCHABLE_MEMORY)
++			return AE_OK;
++		flags = IORESOURCE_MEM;
++	} else
++		return AE_OK;
++
++	start = addr.minimum + addr.translation_offset;
++	end = addr.maximum + addr.translation_offset;
++
++	res = data;
++	res->flags = flags;
++	res->start = start;
++	res->end = end;
++
++	return AE_OK;
++}
++
+ static void handle_ioapic_add(acpi_handle handle, struct pci_dev **pdev,
+ 				 u32 *pgsi_base)
  {
--	/* TBD */
--	return -EINVAL;
-+	u64 addr = 0;
-+	int apic_id;
-+
-+	apic_id = acpi_get_ioapic_id(handle, gsi_base, &addr);
-+
-+	if (apic_id < 0)
-+		return -1;
-+
-+	if (phys_addr != addr)
-+		pr_warn("ioapic 0x%02x address is not consistent _CRS/dev(%llx) _MAT/MADT(%llx) \n",
-+			apic_id, phys_addr, addr);
-+
-+	return	__mp_register_ioapic(apic_id, phys_addr, gsi_base, true);
- }
+@@ -54,33 +84,56 @@ static void handle_ioapic_add(acpi_handle handle, struct pci_dev **pdev,
+ 		return;
  
- EXPORT_SYMBOL(acpi_register_ioapic);
+ 	dev = acpi_get_pci_dev(handle);
+-	if (!dev)
+-		return;
++	if (!dev || !pci_resource_len(dev, 0)) {
++		struct acpi_device_info *info;
++		char *hid = NULL;
++
++		status = acpi_get_object_info(handle, &info);
++		if (ACPI_FAILURE(status))
++			goto exit_put;
++		if (info->valid & ACPI_VALID_HID)
++			hid = info->hardware_id.string;
++		if (!hid || strcmp(hid, "ACPI0009")) {
++			kfree(info);
++			goto exit_put;
++		}
++		kfree(info);
++		memset(res, 0, sizeof(*res));
++		acpi_walk_resources(handle, METHOD_NAME__CRS, setup_res, res);
++		if (!res->flags)
++			goto exit_put;
++	}
  
- int acpi_unregister_ioapic(acpi_handle handle, u32 gsi_base)
+ 	acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+ 
+ 	gsi_base = gsb;
+ 	type = "IOxAPIC";
++	if (dev) {
++		ret = pci_enable_device(dev);
++		if (ret < 0)
++			goto exit_put;
+ 
+-	ret = pci_enable_device(dev);
+-	if (ret < 0)
+-		goto exit_put;
+-
+-	pci_set_master(dev);
++		pci_set_master(dev);
+ 
+-	if (dev->class == PCI_CLASS_SYSTEM_PIC_IOAPIC)
+-		type = "IOAPIC";
++		if (dev->class == PCI_CLASS_SYSTEM_PIC_IOAPIC)
++			type = "IOAPIC";
+ 
+-	if (pci_request_region(dev, 0, type))
+-		goto exit_disable;
++		if (pci_resource_len(dev, 0)) {
++			if (pci_request_region(dev, 0, type))
++				goto exit_disable;
+ 
+-	res = &dev->resource[0];
++			res = &dev->resource[0];
++		}
++	}
+ 
+-	if (acpi_register_ioapic(handle, res->start, gsi_base))
+-		goto exit_release;
++	if (acpi_register_ioapic(handle, res->start, gsi_base)) {
++		if (dev)
++			goto exit_release;
++		return;
++	}
+ 
+ 	pr_info("%s %s %s at %pR, GSI %u\n",
+-		dev_name(&dev->dev), objname, type,
++		dev ? dev_name(&dev->dev) : "", objname, type,
+ 		res, gsi_base);
+ 
+ 	*pdev = dev;
+@@ -100,6 +153,9 @@ static void handle_ioapic_remove(acpi_handle handle, struct pci_dev *dev,
  {
--	/* TBD */
--	return -EINVAL;
-+	return mp_unregister_ioapic(gsi_base);
- }
+ 	acpi_unregister_ioapic(handle, gsi_base);
  
- EXPORT_SYMBOL(acpi_unregister_ioapic);
++	if (!dev)
++		return;
++
+ 	pci_release_region(dev, 0);
+ 	pci_disable_device(dev);
+ 	pci_dev_put(dev);
 -- 
 1.8.4
 
