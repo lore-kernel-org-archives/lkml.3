@@ -1,93 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246AbaACANU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 19:13:20 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:23713 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753990AbaACAHq (ORCPT
+	id S1754456AbaACANb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 19:13:31 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:37931 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752709AbaACAN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 19:07:46 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        x86 <x86@kernel.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Joerg Roedel <joro@8bytes.org>, Donald Dutile <ddutile@redhat.com>
-Subject: [PATCH v2 04/10] IOMMU: iommu_unique_seq_id()
-Date: Thu,  2 Jan 2014 16:08:11 -0800
-Message-Id: <1388707697-16800-5-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1388707697-16800-1-git-send-email-yinghai@kernel.org>
-References: <1388707697-16800-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 2 Jan 2014 19:13:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140102192745.GB2025@core.coreip.homeip.net>
+References: <20131231193442.GA25208@core.coreip.homeip.net>
+	<CAD=FV=VjYtXA5XHiuz-bULpW_MCBWxw2eTvg+SQz9CrgsER4AA@mail.gmail.com>
+	<20140102192745.GB2025@core.coreip.homeip.net>
+Date: Thu, 2 Jan 2014 16:13:27 -0800
+X-Google-Sender-Auth: zhozzTfk6ulLK1bgFMqVKx_EdJE
+Message-ID: <CAA25o9Tf_wEnJ1H4tKVXbS4R3pgbh6nbEWChEyjzRRDcusYRFg@mail.gmail.com>
+Subject: Re: [PATCH] Input: cros_ec_keyb - switch from using uint8_t to u8
+From: Luigi Semenzato <semenzato@chromium.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Doug Anderson <dianders@chromium.org>, linux-input@vger.kernel.org,
+        Simon Glass <sjg@chromium.org>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So for hot-remove/hot-add will reuse seq_id.
+Thank you, this is useful information, and it would be even more
+useful if it made it in Documentation/CodingStyle :-)
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Donald Dutile <ddutile@redhat.com>
----
- drivers/iommu/dmar.c | 18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index a14867c..f5e0718 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -785,11 +785,22 @@ out:
- 	return err;
- }
- 
-+static DECLARE_BITMAP(iommu_allocated, 1024);
-+
-+static int iommu_unique_seq_id(void)
-+{
-+	int id;
-+
-+	id = find_first_zero_bit(iommu_allocated, 1024);
-+	__set_bit(id, iommu_allocated);
-+
-+	return id;
-+}
-+
- int alloc_iommu(struct dmar_drhd_unit *drhd)
- {
- 	struct intel_iommu *iommu;
- 	u32 ver, sts;
--	static int iommu_allocated = 0;
- 	int agaw = 0;
- 	int msagaw = 0;
- 	int err;
-@@ -803,7 +814,7 @@ int alloc_iommu(struct dmar_drhd_unit *drhd)
- 	if (!iommu)
- 		return -ENOMEM;
- 
--	iommu->seq_id = iommu_allocated++;
-+	iommu->seq_id = iommu_unique_seq_id();
- 	sprintf (iommu->name, "dmar%d", iommu->seq_id);
- 
- 	err = map_iommu(iommu, drhd->reg_base_addr);
-@@ -855,6 +866,7 @@ int alloc_iommu(struct dmar_drhd_unit *drhd)
-  err_unmap:
- 	unmap_iommu(iommu);
-  error:
-+	__clear_bit(iommu->seq_id, iommu_allocated);
- 	kfree(iommu);
- 	return err;
- }
-@@ -869,6 +881,8 @@ void free_iommu(struct intel_iommu *iommu)
- 	if (iommu->reg)
- 		unmap_iommu(iommu);
- 
-+	__clear_bit(iommu->seq_id, iommu_allocated);
-+
- 	kfree(iommu);
- }
- 
--- 
-1.8.4
 
+On Thu, Jan 2, 2014 at 11:27 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Thu, Jan 02, 2014 at 08:12:09AM -0800, Doug Anderson wrote:
+>> Dmitry,
+>>
+>> On Tue, Dec 31, 2013 at 11:34 AM, Dmitry Torokhov
+>> <dmitry.torokhov@gmail.com> wrote:
+>> > u8 is proper in-kernel type for unsigned byte data.
+>>
+>> I won't say that I keep up with all the latest trends here, but this
+>> surprised me so I did some research.  My findings don't agree with
+>> your statement.  Perhaps there are different standards that are used
+>> for the input subsystem?
+>>
+>> Specifically looking at
+>> <https://www.kernel.org/doc/Documentation/CodingStyle>, I see:
+>>
+>>      Therefore, the Linux-specific 'u8/u16/u32/u64' types and their
+>>      signed equivalents which are identical to standard types are
+>>      permitted -- although they are not mandatory in new code of your
+>>      own.
+>>
+>>      When editing existing code which already uses one or the other set
+>>      of types, you should conform to the existing choices in that code.
+>>
+>> That makes it sound like the author of that document would prefer
+>> uint8_t but will accept u8.  It also seems like if code is consistent
+>> about using a given type (as this code is) that it shouldn't be
+>> changed.
+>>
+>> I'm always happy to be enlightened, though!
+>
+> I prefer uXX in kernel because it matches __uXX that we publish in UAPI.
+> Also here is Linus's response form the discussion that introduced that
+> particular wording in CodingStyle [1]:
+>
+> "The problem with uint32_t is that it's ugly, it used to be unportable,
+> and you can't use it in header files _anyway_.
+>
+> In other words, there's no _point_ to the "standard type".
+>
+> I really object to this whole thing. The fact is, "u8" and friends _are_
+> the standard types as far as the kernel is concerned.  Claiming that
+> they aren't is just silly.
+>
+> It's the "uint32_t" kind of thing that isn't standard within the kernel.
+> You can't use that thing in public header files anyway due to name
+> scoping rules, so they have basically no redeeming features."
+>
+> Thanks.
+>
+> --
+> Dmitry
+>
+> [1] http://marc.info/?l=linux-kernel&m=114659539715468&w=2
