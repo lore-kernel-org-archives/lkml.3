@@ -1,101 +1,660 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751358AbaACGJW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 01:09:22 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:50922 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850AbaACGJV (ORCPT
+	id S1751139AbaACGTi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 01:19:38 -0500
+Received: from mail-db8lp0185.outbound.messaging.microsoft.com ([213.199.154.185]:22851
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750717AbaACGTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 01:09:21 -0500
-From: Barry Song <21cnbao@gmail.com>
-To: jkosina@suse.cz, arnd@arndb.de, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, workgroup.linux@csr.com,
-        Bin Shi <Bin.Shi@csr.com>, Barry Song <Baohua.Song@csr.com>
-Subject: [PATCH] apm-emulation: add hibernation APM events to support suspend2disk
-Date: Fri,  3 Jan 2014 14:08:54 +0800
-Message-Id: <1388729334-14242-1-git-send-email-21cnbao@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 3 Jan 2014 01:19:35 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 4
+X-BigFish: VS4(z551bizc8kzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <thierry.reding@gmail.com>, <bpringlemeir@nbsps.com>,
+        <linux-pwm@vger.kernel.org>
+CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Xiubo Li <Li.Xiubo@freescale.com>, Alison Wang <b18965@freescale.com>,
+        Jingchang Lu <b35083@freescale.com>
+Subject: [PATCHv8 RFC] pwm: Add Freescale FTM PWM driver support
+Date: Fri, 3 Jan 2014 13:24:21 +0800
+Message-ID: <1388726661-3391-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bin Shi <Bin.Shi@csr.com>
+The FTM PWM device can be found on Vybrid VF610 Tower and
+Layerscape LS-1 SoCs.
 
-Some embedded systems use hibernation for fast boot. and in it,
-some software components need to handle specific things before
-hibernation and after restore. So it needs to capture the apm
-status about these pm events.
-
-Currently apm just supports suspend to ram, but not suspend to disk,
-so here add logic about hibernation apm events.
-
-Signed-off-by: Bin Shi <Bin.Shi@csr.com>
-Signed-off-by: Barry Song <Baohua.Song@csr.com>
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+Signed-off-by: Alison Wang <b18965@freescale.com>
+Signed-off-by: Jingchang Lu <b35083@freescale.com>
+Reviewed-by: Sascha Hauer <s.hauer@pengutronix.de>
 ---
- drivers/char/apm-emulation.c  |   11 +++++++++--
- include/uapi/linux/apm_bios.h |    2 ++
- 2 files changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/char/apm-emulation.c b/drivers/char/apm-emulation.c
-index 46118f8..dd9dfa1 100644
---- a/drivers/char/apm-emulation.c
-+++ b/drivers/char/apm-emulation.c
-@@ -531,6 +531,7 @@ static int apm_suspend_notifier(struct notifier_block *nb,
- {
- 	struct apm_user *as;
- 	int err;
-+	unsigned long apm_event;
+Hi Thierry, Bill
+
+In this patch series only this one has been changed. I'm sending this
+patch for your comments.
+
+This patch series is the Freescale FTM PWM implementation. And there
+are 8 channels most supported by the FTM PWM. This implementation is
+only compatible with device tree definition.
+
+This patch series is based on linux-next and has been tested on Vybrid
+VF610 Tower board using device tree.
+
+
+
+Changes in v8 RFC:
+- Remove ftm_readl/ftm_writel.
+- Add pwm-fsl-ftm.h file.
+
+Changes in v8:
+- Fix some issues pointed by Thierry.
+- Fix the _readl/_writel of sparse check.
+
+Changes in v7:
+- Add big-endian mode support.
+- Add FTM mutex lock.
+- Add period time check with the current running pwm(s).
+- Recode the counter clock source selecting.
+- Sort some header files alphabetically, etc.
+
+[snip] v1~v6
+
+
+
+
+ drivers/pwm/Kconfig       |  10 ++
+ drivers/pwm/Makefile      |   1 +
+ drivers/pwm/pwm-fsl-ftm.c | 426 ++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/pwm/pwm-fsl-ftm.h | 101 +++++++++++
+ 4 files changed, 538 insertions(+)
+ create mode 100644 drivers/pwm/pwm-fsl-ftm.c
+ create mode 100644 drivers/pwm/pwm-fsl-ftm.h
+
+diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+index 3f66427..ec4bf78 100644
+--- a/drivers/pwm/Kconfig
++++ b/drivers/pwm/Kconfig
+@@ -71,6 +71,16 @@ config PWM_EP93XX
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called pwm-ep93xx.
  
- 	/* short-cut emergency suspends */
- 	if (atomic_read(&userspace_notification_inhibit))
-@@ -538,6 +539,9 @@ static int apm_suspend_notifier(struct notifier_block *nb,
- 
- 	switch (event) {
- 	case PM_SUSPEND_PREPARE:
-+	case PM_HIBERNATION_PREPARE:
-+		apm_event = (event == PM_SUSPEND_PREPARE) ?
-+			APM_USER_SUSPEND : APM_USER_HIBERNATION;
- 		/*
- 		 * Queue an event to all "writer" users that we want
- 		 * to suspend and need their ack.
-@@ -550,7 +554,7 @@ static int apm_suspend_notifier(struct notifier_block *nb,
- 			    as->writer && as->suser) {
- 				as->suspend_state = SUSPEND_PENDING;
- 				atomic_inc(&suspend_acks_pending);
--				queue_add_event(&as->queue, APM_USER_SUSPEND);
-+				queue_add_event(&as->queue, apm_event);
- 			}
- 		}
- 
-@@ -601,11 +605,14 @@ static int apm_suspend_notifier(struct notifier_block *nb,
- 		return notifier_from_errno(err);
- 
- 	case PM_POST_SUSPEND:
-+	case PM_POST_HIBERNATION:
-+		apm_event = (event == PM_POST_SUSPEND) ?
-+			APM_NORMAL_RESUME : APM_HIBERNATION_RESUME;
- 		/*
- 		 * Anyone on the APM queues will think we're still suspended.
- 		 * Send a message so everyone knows we're now awake again.
- 		 */
--		queue_event(APM_NORMAL_RESUME);
-+		queue_event(apm_event);
- 
- 		/*
- 		 * Finally, wake up anyone who is sleeping on the suspend.
-diff --git a/include/uapi/linux/apm_bios.h b/include/uapi/linux/apm_bios.h
-index 724f409..df79bca 100644
---- a/include/uapi/linux/apm_bios.h
-+++ b/include/uapi/linux/apm_bios.h
-@@ -67,6 +67,8 @@ struct apm_bios_info {
- #define APM_USER_SUSPEND	0x000a
- #define APM_STANDBY_RESUME	0x000b
- #define APM_CAPABILITY_CHANGE	0x000c
-+#define APM_USER_HIBERNATION	0x000d
-+#define APM_HIBERNATION_RESUME	0x000e
- 
- /*
-  * Error codes
++config PWM_FSL_FTM
++	tristate "Freescale FlexTimer Module (FTM) PWM support"
++	depends on OF
++	help
++	  Generic FTM PWM framework driver for Freescale VF610 and
++	  Layerscape LS-1 SoCs.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called pwm-fsl-ftm.
++
+ config PWM_IMX
+ 	tristate "i.MX PWM support"
+ 	depends on ARCH_MXC
+diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
+index 8b754e4..b335db1 100644
+--- a/drivers/pwm/Makefile
++++ b/drivers/pwm/Makefile
+@@ -4,6 +4,7 @@ obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
+ obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
+ obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
+ obj-$(CONFIG_PWM_EP93XX)	+= pwm-ep93xx.o
++obj-$(CONFIG_PWM_FSL_FTM)	+= pwm-fsl-ftm.o
+ obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
+ obj-$(CONFIG_PWM_JZ4740)	+= pwm-jz4740.o
+ obj-$(CONFIG_PWM_LPC32XX)	+= pwm-lpc32xx.o
+diff --git a/drivers/pwm/pwm-fsl-ftm.c b/drivers/pwm/pwm-fsl-ftm.c
+new file mode 100644
+index 0000000..39093e5
+--- /dev/null
++++ b/drivers/pwm/pwm-fsl-ftm.c
+@@ -0,0 +1,426 @@
++/*
++ *  Freescale FlexTimer Module (FTM) PWM Driver
++ *
++ *  Copyright 2012-2013 Freescale Semiconductor, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#include <linux/clk.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/of_address.h>
++#include <linux/platform_device.h>
++#include <linux/pwm.h>
++#include <linux/slab.h>
++
++#include "pwm-fsl-ftm.h"
++
++static inline struct fsl_pwm_chip *to_fsl_chip(struct pwm_chip *chip)
++{
++	return container_of(chip, struct fsl_pwm_chip, chip);
++}
++
++static int fsl_pwm_request(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct fsl_pwm_chip *fpc = to_fsl_chip(chip);
++
++	return clk_prepare_enable(fpc->sys_clk);
++}
++
++static void fsl_pwm_free(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct fsl_pwm_chip *fpc = to_fsl_chip(chip);
++
++	clk_disable_unprepare(fpc->sys_clk);
++}
++
++static inline int fsl_pwm_calculate_default_ps(struct fsl_pwm_chip *fpc,
++					       enum fsl_pwm_clk index)
++{
++	unsigned long sys_rate, cnt_rate;
++	unsigned long long ratio;
++
++	sys_rate = clk_get_rate(fpc->sys_clk);
++	if (!sys_rate)
++		return -EINVAL;
++
++	cnt_rate = clk_get_rate(fpc->counter_clk);
++	if (!cnt_rate)
++		return -EINVAL;
++
++	switch (index) {
++	case FSL_PWM_CLK_SYS:
++		fpc->clk_ps = 1;
++		break;
++	case FSL_PWM_CLK_FIX:
++		ratio = 2 * cnt_rate - 1;
++		do_div(ratio, sys_rate);
++		fpc->clk_ps = ratio;
++		break;
++	case FSL_PWM_CLK_EXT:
++		ratio = 4 * cnt_rate - 1;
++		do_div(ratio, sys_rate);
++		fpc->clk_ps = ratio;
++		break;
++	}
++
++	return 0;
++}
++
++static inline unsigned long fsl_pwm_calculate_cycles(struct fsl_pwm_chip *fpc,
++						     unsigned long period_ns)
++{
++	unsigned long long c, c0;
++
++	c = clk_get_rate(fpc->counter_clk);
++	c = c * period_ns;
++	do_div(c, 1000000000UL);
++
++	do {
++		c0 = c;
++		do_div(c0, (1 << fpc->clk_ps));
++		if (c0 <= 0xFFFF)
++			return (unsigned long)c0;
++	} while (++fpc->clk_ps < 8);
++
++	return 0;
++}
++
++static unsigned long fsl_pwm_calculate_period_cycles(struct fsl_pwm_chip *fpc,
++						     unsigned long period_ns,
++						     enum fsl_pwm_clk index)
++{
++	bool bg = fpc->big_endian;
++	int ret;
++
++	fpc->counter_clk_select = FTM_SC_CLK(bg, index);
++
++	ret = fsl_pwm_calculate_default_ps(fpc, index);
++	if (ret) {
++		dev_err(fpc->chip.dev, "failed to calculate default "
++				"prescaler: %d\n", ret);
++		return 0;
++	}
++
++	return fsl_pwm_calculate_cycles(fpc, period_ns);
++}
++
++static unsigned long fsl_pwm_calculate_period(struct fsl_pwm_chip *fpc,
++					      unsigned long period_ns)
++{
++	struct clk *cnt_clk[3];
++	enum fsl_pwm_clk m0, m1;
++	unsigned long fix_rate, ext_rate, cycles;
++
++	fpc->counter_clk = fpc->sys_clk;
++	cycles = fsl_pwm_calculate_period_cycles(fpc, period_ns,
++			FSL_PWM_CLK_SYS);
++	if (cycles)
++		return cycles;
++
++	cnt_clk[FSL_PWM_CLK_FIX] = devm_clk_get(fpc->chip.dev, "ftm_fix");
++	if (IS_ERR(cnt_clk[FSL_PWM_CLK_FIX]))
++		return PTR_ERR(cnt_clk[FSL_PWM_CLK_FIX]);
++
++	cnt_clk[FSL_PWM_CLK_EXT] = devm_clk_get(fpc->chip.dev, "ftm_ext");
++	if (IS_ERR(cnt_clk[FSL_PWM_CLK_EXT]))
++		return PTR_ERR(cnt_clk[FSL_PWM_CLK_EXT]);
++
++	fpc->counter_clk_en = devm_clk_get(fpc->chip.dev, "ftm_cnt_clk_en");
++	if (IS_ERR(fpc->counter_clk_en))
++		return PTR_ERR(fpc->counter_clk_en);
++
++	fix_rate = clk_get_rate(cnt_clk[FSL_PWM_CLK_FIX]);
++	ext_rate = clk_get_rate(cnt_clk[FSL_PWM_CLK_EXT]);
++
++	if (fix_rate > ext_rate) {
++		m0 = FSL_PWM_CLK_FIX;
++		m1 = FSL_PWM_CLK_EXT;
++	} else {
++		m0 = FSL_PWM_CLK_EXT;
++		m1 = FSL_PWM_CLK_FIX;
++	}
++
++	fpc->counter_clk = cnt_clk[m0];
++	cycles = fsl_pwm_calculate_period_cycles(fpc, period_ns, m0);
++	if (cycles)
++		return cycles;
++
++	fpc->counter_clk = cnt_clk[m1];
++
++	return fsl_pwm_calculate_period_cycles(fpc, period_ns, m0);
++}
++
++static unsigned long fsl_pwm_calculate_duty(struct fsl_pwm_chip *fpc,
++					    unsigned long period_ns,
++					    unsigned long duty_ns)
++{
++	unsigned long long val, duty;
++
++	val = readl(fpc->base + FTM_MOD);
++	duty = duty_ns * (val + 1);
++	do_div(duty, period_ns);
++
++	return (unsigned long)duty;
++}
++
++static int fsl_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
++			  int duty_ns, int period_ns)
++{
++	struct fsl_pwm_chip *fpc = to_fsl_chip(chip);
++	bool bg = fpc->big_endian;
++	u32 val, period, duty;
++
++	mutex_lock(&fpc->lock);
++
++	/*
++	 * The Freescale FTM controller supports only a single period for
++	 * all PWM channels, therefore incompatible changes need to be
++	 * refused.
++	 */
++	if (fpc->period_ns && fpc->period_ns != period_ns) {
++		dev_err(fpc->chip.dev,
++				"conflicting period requested for PWM %u\n",
++				pwm->hwpwm);
++		mutex_unlock(&fpc->lock);
++		return -EBUSY;
++	}
++
++	if (!fpc->period_ns && duty_ns) {
++		period = fsl_pwm_calculate_period(fpc, period_ns);
++		if (!period) {
++			dev_err(fpc->chip.dev, "failed to calculate period\n");
++			mutex_unlock(&fpc->lock);
++			return -EINVAL;
++		}
++
++		val = readl(fpc->base + FTM_SC);
++		val &= ~FTM_SC_PS_MASK(bg);
++		val |= fpc->clk_ps << FTM_SC_PS_SHIFT(bg);
++		writel(val, fpc->base + FTM_SC);
++		writel(FTM_SWAP32(bg, period - 1), fpc->base + FTM_MOD);
++
++		fpc->period_ns = period_ns;
++	}
++
++	mutex_unlock(&fpc->lock);
++
++	duty = fsl_pwm_calculate_duty(fpc, period_ns, duty_ns);
++
++	writel((FTM_CSC_MSB(bg) | FTM_CSC_ELSB(bg)),
++			fpc->base + FTM_CSC(pwm->hwpwm));
++	writel(FTM_SWAP32(bg, duty), fpc->base + FTM_CV(pwm->hwpwm));
++
++	return 0;
++}
++
++static int fsl_pwm_set_polarity(struct pwm_chip *chip,
++				struct pwm_device *pwm,
++				enum pwm_polarity polarity)
++{
++	struct fsl_pwm_chip *fpc = to_fsl_chip(chip);
++	bool bg = fpc->big_endian;
++	u32 val;
++
++	val = readl(fpc->base + FTM_POL);
++
++	if (polarity == PWM_POLARITY_INVERSED)
++		val |= FTM_POL_CHAN(bg, pwm->hwpwm);
++	else
++		val &= ~FTM_POL_CHAN(bg, pwm->hwpwm);
++
++	writel(val, fpc->base + FTM_POL);
++
++	return 0;
++}
++
++static int fsl_counter_clock_enable(struct fsl_pwm_chip *fpc)
++{
++	bool bg = fpc->big_endian;
++	u32 val;
++	int ret;
++
++	if (fpc->counter_clk_enable++)
++		return 0;
++
++	ret = clk_prepare_enable(fpc->counter_clk);
++	if (ret) {
++		fpc->counter_clk_enable--;
++		return ret;
++	}
++
++	ret = clk_prepare_enable(fpc->counter_clk_en);
++	if (ret) {
++		fpc->counter_clk_enable--;
++		return ret;
++	}
++
++	/* select counter clock source */
++	val = readl(fpc->base + FTM_SC);
++	val &= ~FTM_SC_CLK_MASK(bg);
++	val |= fpc->counter_clk_select;
++	writel(val, fpc->base + FTM_SC);
++
++	return 0;
++}
++
++static int fsl_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct fsl_pwm_chip *fpc = to_fsl_chip(chip);
++	bool bg = fpc->big_endian;
++	u32 val;
++	int ret;
++
++	val = readl(fpc->base + FTM_OUTMASK);
++	val &= ~FTM_OUTMASK_CHAN(bg, pwm->hwpwm);
++	writel(val, fpc->base + FTM_OUTMASK);
++
++	mutex_lock(&fpc->lock);
++	ret = fsl_counter_clock_enable(fpc);
++	mutex_unlock(&fpc->lock);
++
++	return ret;
++}
++
++static inline void fsl_counter_clock_disable(struct fsl_pwm_chip *fpc)
++{
++	bool bg = fpc->big_endian;
++	u32 val;
++
++	if (--fpc->counter_clk_enable)
++		return;
++
++	val = readl(fpc->base + FTM_SC);
++	val &= ~FTM_SC_CLK_MASK(bg);
++	writel(val, fpc->base + FTM_SC);
++
++	clk_disable_unprepare(fpc->counter_clk_en);
++	clk_disable_unprepare(fpc->counter_clk);
++}
++
++static void fsl_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct fsl_pwm_chip *fpc = to_fsl_chip(chip);
++	bool bg = fpc->big_endian;
++	u32 val;
++
++	val = readl(fpc->base + FTM_OUTMASK);
++	val |= FTM_OUTMASK_CHAN(bg, pwm->hwpwm);
++	writel(val, fpc->base + FTM_OUTMASK);
++
++	mutex_lock(&fpc->lock);
++
++	fsl_counter_clock_disable(fpc);
++
++	val = readl(fpc->base + FTM_OUTMASK);
++
++	if ((val & FTM_OUTMASK_CHAN_MASK(bg)) == FTM_OUTMASK_CHAN_MASK(bg)) {
++		fpc->period_ns = 0;
++		fpc->counter_clk_en = NULL;
++	}
++
++	mutex_unlock(&fpc->lock);
++}
++
++static const struct pwm_ops fsl_pwm_ops = {
++	.request = fsl_pwm_request,
++	.free = fsl_pwm_free,
++	.config = fsl_pwm_config,
++	.set_polarity = fsl_pwm_set_polarity,
++	.enable = fsl_pwm_enable,
++	.disable = fsl_pwm_disable,
++	.owner = THIS_MODULE,
++};
++
++static int fsl_pwm_probe(struct platform_device *pdev)
++{
++	struct fsl_pwm_chip *fpc;
++	struct resource *res;
++	struct device_node *np = pdev->dev.of_node;
++	int ret;
++
++	fpc = devm_kzalloc(&pdev->dev, sizeof(*fpc), GFP_KERNEL);
++	if (!fpc)
++		return -ENOMEM;
++
++	mutex_init(&fpc->lock);
++
++	fpc->chip.dev = &pdev->dev;
++
++	fpc->big_endian = of_property_read_bool(np, "big-endian");
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	fpc->base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(fpc->base))
++		return PTR_ERR(fpc->base);
++
++	fpc->sys_clk = devm_clk_get(&pdev->dev, "ftm_sys");
++	if (IS_ERR(fpc->sys_clk)) {
++		dev_err(&pdev->dev,
++				"failed to get \"ftm_sys\" clock\n");
++		return PTR_ERR(fpc->sys_clk);
++	}
++
++	ret = clk_prepare_enable(fpc->sys_clk);
++	if (ret)
++		return ret;
++
++	writel(0x0, fpc->base + FTM_CNTIN);
++	writel(0x0, fpc->base + FTM_OUTINIT);
++	writel(FTM_OUTMASK_CHAN_MASK(fpc->big_endian),
++		fpc->base + FTM_OUTMASK);
++	clk_disable_unprepare(fpc->sys_clk);
++
++	fpc->chip.ops = &fsl_pwm_ops;
++	fpc->chip.of_xlate = of_pwm_xlate_with_flags;
++	fpc->chip.of_pwm_n_cells = 3;
++	fpc->chip.base = -1;
++	fpc->chip.npwm = 8;
++
++	ret = pwmchip_add(&fpc->chip);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "failed to add PWM chip : %d\n", ret);
++		return ret;
++	}
++
++	platform_set_drvdata(pdev, fpc);
++
++	return 0;
++}
++
++static int fsl_pwm_remove(struct platform_device *pdev)
++{
++	struct fsl_pwm_chip *fpc = platform_get_drvdata(pdev);
++
++	mutex_destroy(&fpc->lock);
++
++	return pwmchip_remove(&fpc->chip);
++}
++
++static const struct of_device_id fsl_pwm_dt_ids[] = {
++	{ .compatible = "fsl,vf610-ftm-pwm", },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, fsl_pwm_dt_ids);
++
++static struct platform_driver fsl_pwm_driver = {
++	.driver = {
++		.name = "fsl-ftm-pwm",
++		.of_match_table = fsl_pwm_dt_ids,
++	},
++	.probe = fsl_pwm_probe,
++	.remove = fsl_pwm_remove,
++};
++module_platform_driver(fsl_pwm_driver);
++
++MODULE_DESCRIPTION("Freescale FlexTimer Module PWM Driver");
++MODULE_AUTHOR("Xiubo Li <Li.Xiubo@freescale.com>");
++MODULE_ALIAS("platform:fsl-ftm-pwm");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/pwm/pwm-fsl-ftm.h b/drivers/pwm/pwm-fsl-ftm.h
+new file mode 100644
+index 0000000..5fb79ae
+--- /dev/null
++++ b/drivers/pwm/pwm-fsl-ftm.h
+@@ -0,0 +1,101 @@
++/*
++ *  Copyright 2012-2013 Freescale Semiconductor, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __PWM_FSL_FTM_H
++#define __PWM_FSL_FTM_H
++
++#include <linux/clk.h>
++#include <linux/mutex.h>
++#include <linux/pwm.h>
++
++#define FTM_SC		0x00
++#define FTM_SC_CLK_SHIFT(b)	(b ? 27 : 3)
++#define FTM_SC_CLK_MASK(b)	(0x3 << FTM_SC_CLK_SHIFT(b))
++#define FTM_SC_CLK(b, c)	((c + 1) << FTM_SC_CLK_SHIFT(b))
++#define FTM_SC_PS_SHIFT(b)	(b ? 24 : 0)
++#define FTM_SC_PS_MASK(b)	(0x7 << FTM_SC_PS_SHIFT(b))
++
++#define FTM_CNT		0x04
++#define FTM_MOD		0x08
++
++#define FTM_CSC_BASE	0x0C
++#define FTM_CSC_MSB(b)	(b ? BIT(29) : BIT(5))
++#define FTM_CSC_MSA(b)	(b ? BIT(28) : BIT(4))
++#define FTM_CSC_ELSB(b)	(b ? BIT(27) : BIT(3))
++#define FTM_CSC_ELSA(b)	(b ? BIT(26) : BIT(2))
++#define FTM_CSC(_channel)	(FTM_CSC_BASE + ((_channel) * 8))
++
++#define FTM_CV_BASE	0x10
++#define FTM_CV(_channel)	(FTM_CV_BASE + ((_channel) * 8))
++
++#define FTM_CNTIN	0x4C
++#define FTM_STATUS	0x50
++
++#define FTM_MODE	0x54
++#define FTM_MODE_FTMEN(b)	(b ? BIT(24) : BIT(0))
++#define FTM_MODE_INIT(b)	(b ? BIT(26) : BIT(2))
++#define FTM_MODE_PWMSYNC(b)	(b ? BIT(27) : BIT(3))
++
++#define FTM_SYNC	0x58
++#define FTM_OUTINIT	0x5C
++
++#define FTM_OUTMASK	0x60
++#define FTM_OUTMASK_CHAN_MASK(b)	(b ? 0xFF00 : 0xFF)
++#define FTM_OUTMASK_CHAN(b, c)	(b ? BIT(24 + c) : BIT(c))
++
++#define FTM_COMBINE	0x64
++#define FTM_DEADTIME	0x68
++#define FTM_EXTTRIG	0x6C
++
++#define FTM_POL		0x70
++#define FTM_POL_CHAN(b, c)	(b ? BIT(24 + c) : BIT(c))
++
++#define FTM_FMS		0x74
++#define FTM_FILTER	0x78
++#define FTM_FLTCTRL	0x7C
++#define FTM_QDCTRL	0x80
++#define FTM_CONF	0x84
++#define FTM_FLTPOL	0x88
++#define FTM_SYNCONF	0x8C
++#define FTM_INVCTRL	0x90
++#define FTM_SWOCTRL	0x94
++#define FTM_PWMLOAD	0x98
++
++#define __FTM_SWAP32(v) ((u32)(\
++	(((u32)(v) & (u32)0x000000ffUL) << 24) |\
++	(((u32)(v) & (u32)0x0000ff00UL) <<  8) |\
++	(((u32)(v) & (u32)0x00ff0000UL) >>  8) |\
++	(((u32)(v) & (u32)0xff000000UL) >> 24)))
++#define FTM_SWAP32(b, v)	(b ? __FTM_SWAP32(v) : v)
++
++enum fsl_pwm_clk {
++	FSL_PWM_CLK_SYS,
++	FSL_PWM_CLK_FIX,
++	FSL_PWM_CLK_EXT,
++};
++
++struct fsl_pwm_chip {
++	struct pwm_chip chip;
++
++	struct mutex lock;
++
++	struct clk *sys_clk;
++	struct clk *counter_clk;
++	struct clk *counter_clk_en;
++	unsigned int counter_clk_select;
++	unsigned int counter_clk_enable;
++	unsigned int clk_ps;
++
++	void __iomem *base;
++
++	int period_ns;
++	bool big_endian;
++};
++
++#endif /* __PWM_FSL_FTM_H */
 -- 
-1.7.5.4
+1.8.4
+
 
