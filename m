@@ -1,541 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751596AbaACPy2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 10:54:28 -0500
-Received: from mga03.intel.com ([143.182.124.21]:3413 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751376AbaACPy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 10:54:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,598,1384329600"; 
-   d="scan'208";a="453294407"
-Date: Fri, 3 Jan 2014 23:54:21 +0800
-From: fengguang.wu@intel.com
-To: Josef Bacik <jbacik@fusionio.com>
-Cc: linux-btrfs <linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@linux.intel.com
-Subject: 1be41b78: +18% increased btrfs write throughput
-Message-ID: <20140103155421.GA7494@localhost>
-MIME-Version: 1.0
+	id S1751302AbaACQAP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 11:00:15 -0500
+Received: from andromeda.dapyr.net ([206.212.254.10]:60939 "EHLO
+	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863AbaACQAO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 11:00:14 -0500
+X-Greylist: delayed 692 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Jan 2014 11:00:14 EST
+Date: Fri, 3 Jan 2014 11:48:20 -0400
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+To: David Vrabel <david.vrabel@citrix.com>, stefano.stabellini@eu.citrix.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
+        linux-kernel@vger.kernel.org, stefano.stabellini@eu.citrix.com
+Subject: Re: [Xen-devel] [PATCH v12 15/18] xen/pvh: Piggyback on PVHVM for grant driver (v2)
+Message-ID: <20140103154820.GA20976@andromeda.dapyr.net>
+References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com> <1388550945-25499-16-git-send-email-konrad.wilk@oracle.com> <52C59483.5030607@citrix.com> <20140102185023.GG3021@pegasus.dumpdata.com> <52C6A4E5.3080904@citrix.com> <20140103144409.GC27019@phenom.dumpdata.com> <52C6DA3F.7070509@citrix.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Heirloom mailx 12.5 6/20/10
+In-Reply-To: <52C6DA3F.7070509@citrix.com>
+User-Agent: Mutt/1.5.9i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Josef,
-
-FYI. We are doing 0day performance tests and happen to notice that
-btrfs write throughput increased considerably during v3.10-11 time
-frame:
-
-          v3.10                      v3.11                      v3.12                  v3.13-rc6
----------------  -------------------------  -------------------------  -------------------------
-     50619 ~ 1%     +17.0%      59209 ~ 2%     +18.8%      60159 ~ 2%     +20.5%      61007 ~ 0%  lkp-ws02/micro/dd-write/11HDD-JBOD-cfq-btrfs-1dd
-     50619          +17.0%      59209          +18.8%      60159          +20.5%      61007       TOTAL iostat.sdd.wkB/s
-
-and it's contributed by 
-
-commit 1be41b78bc688fc634bf30965d2be692c99fd11d
-Author:     Josef Bacik <jbacik@fusionio.com>
-AuthorDate: Wed Jun 12 13:56:06 2013 -0400
-Commit:     Josef Bacik <jbacik@fusionio.com>
-CommitDate: Mon Jul 1 08:52:28 2013 -0400
-
-    Btrfs: fix transaction throttling for delayed refs
-    
-    Dave has this fs_mark script that can make btrfs abort with sufficient amount of
-    ram.  This is because with more ram we can keep more dirty metadata in cache
-    which in a round about way makes for many more pending delayed refs.  What
-    happens is we end up not throttling the transaction enough so when we go to
-    commit the transaction when we've completely filled the file system we'll
-    abort() because we use all of the space in the global reserve and we still have
-    delayed refs to run.  To fix this we need to make the delayed ref flushing and
-    the transaction throttling dependant upon the number of delayed refs that we
-    have instead of how much reserved space is left in the global reserve.  With
-    this patch we not only stop aborting transactions but we also get a smoother run
-    speed with fs_mark and it makes us about 10% faster.  Thanks,
-    
-    Reported-by: David Sterba <dsterba@suse.cz>
-    Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-
- fs/btrfs/ctree.h       |  2 ++
- fs/btrfs/extent-tree.c | 61 ++++++++++++++++++++++++++++++++++++++++++++++----
- fs/btrfs/transaction.c | 24 +++++++++-----------
- 3 files changed, 69 insertions(+), 18 deletions(-)
-
-                                 time.elapsed_time
-
-   740 ++------------------*------------------------------------------------+
-       *..         .*.*..*    *..*.*..*.                                    |
-   720 ++ *.*..*.*.                     *..*.*..*.  .*..*.    .*..*.  .*.   |
-       |                                          *.      *..*      *.   *..*
-   700 ++                                                                   |
-       |                                                                    |
-   680 ++                                                                   |
-       |                                                                    |
-   660 ++                                                                   |
-       |                                                                    |
-   640 ++                                                                   |
-       |                                                                    |
-   620 ++ O                      O                                          |
-       O    O  O O  O O  O O  O    O  O O  O O  O O  O  O O  O O  O O  O    |
-   600 ++-------------------------------------------------------------------+
-
-
-                            time.voluntary_context_switches
-
-   100000 ++------------------*-*----*--------------------------------------+
-    90000 ++   *.    .*..*.*.     *.   *..                                  |
-          *. ..  *..*                      .*.. .*..*.*.*..*.*..*.*..*     .*
-    80000 ++*                             *    *                      +  .* |
-    70000 ++                                                           *.   |
-          |                                                                 |
-    60000 ++                                                                |
-    50000 ++                                                                |
-    40000 ++                                                                |
-          |                                                                 |
-    30000 ++                                                                |
-    20000 ++                                                                |
-          |                                                                 |
-    10000 ++                                                                |
-        0 O+O--O-O--O-O--O-O--O-O-O--O-O--O-O--O-O--O-O-O--O-O--O-O--O-O----+
-
-
-                                time.file_system_inputs
-
-   800000 ++--------------------*----*--------------------------------------+
-          |    *.    .*..*.*..*   *.   *..                                  |
-   700000 *+ ..  *..*                      .*.. .*..*.*.*..*.*..*.*..*     .*
-          | *                             *    *                      +  .* |
-   600000 ++                                                           *.   |
-   500000 ++                                                                |
-          |                                                                 |
-   400000 ++                                                                |
-          |                                                                 |
-   300000 ++                                                                |
-   200000 ++                                                                |
-          |                                                                 |
-   100000 ++                                                                |
-          |                                                                 |
-        0 O+O--O-O--O-O--O-O--O-O-O--O-O--O-O--O-O--O-O-O--O-O--O-O--O-O----+
-
-
-                               time.file_system_outputs
-
-   900000 ++----------------------------------------------------------------+
-          |    *.*..         .*.*.  .*.            .*.*.*..*.       .*      |
-   800000 *+ ..     *.*..*.*.     *.   *.. .*..*.*.          *..*.*.  +  .*.*
-   700000 ++*                             *                            *.   |
-          |                                                                 |
-   600000 ++                                                                |
-   500000 ++                                                                |
-          |                                                                 |
-   400000 ++                                                                |
-   300000 ++                                                                |
-          |                                                                 |
-   200000 ++                                                                |
-   100000 ++                                                                |
-          |                                                                 |
-        0 O+O--O-O--O-O--O-O--O-O-O--O-O--O-O--O-O--O-O-O--O-O--O-O--O-O----+
-
-
-                                 perf-stat.page-faults
-
-   6.6e+06 ++---------------------------------------------------------------+
-           |                                                                |
-   6.4e+06 ++              .*.*..   .*..                                    |
-           *.  .*.*..*.*.*.      *.*    *.  .*.      .*..*.                 |
-   6.2e+06 ++*.                           *.   *..*.*      *..*.*.*..*.*..*.*
-           |                                                                |
-     6e+06 ++                                                               |
-           |                                                                |
-   5.8e+06 ++                                                               |
-           |                                                                |
-   5.6e+06 ++                                                               |
-           |                                                                |
-   5.4e+06 ++O                     O                                        |
-           O    O O  O O O  O O  O   O  O O  O O  O O O  O O  O O O  O O    |
-   5.2e+06 ++---------------------------------------------------------------+
-
-
-                                perf-stat.minor-faults
-
-   6.6e+06 ++---------------------------------------------------------------+
-           |                                                                |
-   6.4e+06 ++              .*.*..   .*..                                    |
-           *.  .*.*..*.*.*.      *.*    *.  .*.      .*..*.                 |
-   6.2e+06 ++*.                           *.   *..*.*      *..*.*.*..*.*..*.*
-           |                                                                |
-     6e+06 ++                                                               |
-           |                                                                |
-   5.8e+06 ++                                                               |
-           |                                                                |
-   5.6e+06 ++                                                               |
-           |                                                                |
-   5.4e+06 ++O                     O                                        |
-           O    O O  O O O  O O  O   O  O O  O O  O O O  O O  O O O  O O    |
-   5.2e+06 ++---------------------------------------------------------------+
-
-
-                                   vmstat.io.bi
-
-   600 ++-----------*-*--*-*--*--*----*-------------------------------------+
-       |          ..               *.  +                                    |
-   500 *+.*.*..*.*                      *..*.*..*.*..  .*.*..*.*..*.*..*.*..*
-       |                                             *.                     |
-       |                                                                    |
-   400 ++                                                                   |
-       |                                                                    |
-   300 ++                                                                   |
-       |                                                                    |
-   200 ++                                                                   |
-       |  O                      O                                          |
-       |                                                                    |
-   100 ++      O                                                            |
-       O    O    O  O O  O O  O    O  O O  O O  O O  O    O  O O  O O  O    |
-     0 ++-----------------------------------------------O-------------------+
-
-
-                                     vmstat.io.bo
-
-   660000 ++----------------------------------------------------------------+
-          |                                    O O  O O O    O  O O  O      |
-   640000 O+   O    O O  O O  O O    O O  O O              O           O    |
-          | O    O                O                                         |
-   620000 ++                                                                |
-          |                                                                 |
-   600000 ++                                                                |
-          |                                                                 |
-   580000 ++                                                                |
-          |                                                                 |
-   560000 ++                                                             .*.|
-          |                              .*.  .*.*..*. .*..*.*..*.*..*.*.   *
-   540000 *+*..*.*..*.         .*.*.. .*.   *.        *                     |
-          |           *..*.*..*      *                                      |
-   520000 ++----------------------------------------------------------------+
-
-
-                                iostat.sde.avgrq-sz
-
-   720 ++-------------------------------------------------------------------+
-       |              O               O                                     |
-   700 ++           O      O  O    O                              O         |
-   680 O+ O O  O O       O       O      O  O O    O                 O       |
-       |                                        O    O  O O  O O       O    |
-   660 ++                                                                   |
-       |                                                                    |
-   640 ++                                                                   |
-       |                                                                    |
-   620 ++                                                                   |
-   600 ++                                                                   |
-       |                                                                    |
-   580 ++          .*.*..*.*..  .*.*..           .*..  .*.        *.    .*..|
-       *..*.*..*.*.           *.      *.*.. .*..*    *.   *..*. ..  *..*    *
-   560 ++----------------------------------*-------------------*------------+
-
-
-                                iostat.sde.avgqu-sz
-
-   125 ++-------------------------------------------------------------------+
-       |                                                          O         |
-   120 ++                                       O    O                      |
-       O    O  O O  O O    O  O       O    O O    O       O  O O    O       |
-       |  O              O       O O    O               O              O    |
-   115 ++                                                                   |
-       |                                                                    |
-   110 ++                                                                   |
-       |                                                                    |
-   105 ++                                                                   |
-       |                                         .*..                       |
-       | .*.       .*                   *..*.*..*      .*.  .*.  .*.*.. .*..*
-   100 *+   *.. .*.  +       .*..*.*.. +             *.   *.   *.      *    |
-       |       *      *..*.*.         *                                     |
-    95 ++-------------------------------------------------------------------+
-
-
-                                iostat.sdf.avgrq-sz
-
-   720 ++-------------------------------------------------------------------+
-       |              O               O                                     |
-   700 ++   O  O    O    O    O    O                                        |
-   680 O+        O         O     O      O  O O    O                 O       |
-       |  O                                     O    O  O O  O O  O    O    |
-   660 ++                                                                   |
-       |                                                                    |
-   640 ++                                                                   |
-       |                                                                    |
-   620 ++                                                                   |
-   600 ++                                                                   |
-       |                        .*                                          |
-   580 ++ *.*..           .*..*.  +              .*..         .*..*.*..  *..|
-       |..      .*..*.*..*         *..*.*.. .*..*    *..*.*..*          +   *
-   560 *+------*---------------------------*---------------------------*----+
-
-
-                                iostat.sdg.avgrq-sz
-
-   720 ++-------------------------------------------------------------------+
-       |              O       O                                             |
-   700 O+        O  O      O          O                                     |
-   680 ++   O            O         O       O O  O O  O  O O  O    O O       |
-       |  O    O                 O      O                      O       O    |
-   660 ++                                                                   |
-   640 ++                                                                   |
-       |                                                                    |
-   620 ++                                                                   |
-   600 ++                                                                   |
-       |        .*..                                               .*..     |
-   580 ++  .*..*    *.*..*.  .*..*.*..*.       .*.*..*..*.*..*.*..*     .*..*
-   560 ++.*                *.           *..*.*.                        *    |
-       *.                                                                   |
-   540 ++-------------------------------------------------------------------+
-
-
-                                iostat.sdd.avgrq-sz
-
-   720 ++-------------------------------------------------------------------+
-       |                 O                                                  |
-   700 O+        O    O    O  O  O O  O O                                   |
-   680 ++   O  O    O                      O O  O O  O  O      O  O O       |
-       |  O                                               O  O         O    |
-   660 ++                                                                   |
-   640 ++                                                                   |
-       |                                                                    |
-   620 ++                                                                   |
-   600 ++                                                                   |
-       |                                                                    |
-   580 ++  .*..*.*..*.*.. .*..*..*.*..           .*..  .*.*..*.*.. .*.. .*..*
-   560 *+.*              *            *.*.. .*..*    *.           *    *    |
-       |                                   *                                |
-   540 ++-------------------------------------------------------------------+
-
-
-                                iostat.sdd.avgqu-sz
-
-   120 ++-------------------------------------------------------------------+
-       |    O            O    O              O  O O  O  O    O O  O    O    |
-   115 O+ O    O O  O O    O     O O  O O  O              O         O       |
-       |                                                                    |
-       |                                                                    |
-   110 ++                                                                   |
-       |                                                                    |
-   105 ++                                                                   |
-       |                                                                    |
-   100 ++ *.                                      *..  .*.  .*.*..*.  .*.*..|
-       |..  *..*.*..*.*..*.  .*..*.    .*..      +   *.   *.        *.      *
-       *                   *.      *..*     .*..*                           |
-    95 ++                                  *                                |
-       |                                                                    |
-    90 ++-------------------------------------------------------------------+
-
-
-                                iostat.sdh.avgrq-sz
-
-   720 ++-------------------------------------------------------------------+
-       |              O       O                                             |
-   700 O+   O  O           O     O O  O O                                   |
-   680 ++ O      O  O    O                 O    O    O  O    O    O O  O    |
-       |                                     O    O       O    O            |
-   660 ++                                                                   |
-   640 ++                                                                   |
-       |                                                                    |
-   620 ++                                                                   |
-   600 ++                                                                   |
-       |                                                                    |
-   580 ++.*.*..*.*.. .*..*.*..  .*.*..*.       .*.*..  .*.  .*.  .*.*.. .*..*
-   560 *+           *         *.        *..*.*.      *.   *.   *.      *    |
-       |                                                                    |
-   540 ++-------------------------------------------------------------------+
-
-
-                                iostat.sdh.avgqu-sz
-
-   120 ++-------------------------------------------------------------------+
-       |              O  O    O              O    O     O    O O            |
-       |       O    O      O       O  O O                 O       O O  O    |
-   115 O+ O O    O                         O    O    O                      |
-       |                         O                                          |
-       |                                                                    |
-   110 ++                                                                   |
-       |                                                                    |
-   105 ++                                                                   |
-       |                                                                    |
-       |                                                                    |
-   100 ++.*.                                 *.. .*..   *.  .*.         .*..|
-       *.   *..*.    .*..         .*..      +   *     ..  *.   *..*.*..*    *
-       |         *..*    *.*..*..*     .*..*         *                      |
-    95 ++-----------------------------*-------------------------------------+
-
-
-                                iostat.sdi.avgrq-sz
-
-   720 ++-------------------------------------------------------------------+
-       |              O  O                                                  |
-   700 O+   O    O  O      O  O    O  O    O                                |
-   680 ++ O    O                 O      O                 O  O O  O O  O    |
-       |                                     O  O O  O  O                   |
-   660 ++                                                                   |
-   640 ++                                                                   |
-       |                                                                    |
-   620 ++                                                                   |
-   600 ++                                                                   |
-       |                        .*.                                .*.. .*..|
-   580 ++     .*.*..*.*..*.  .*.   *..*.     *.. .*..*..*.*..*.  .*    *    |
-   560 *+.*.*.             *.           *.. +   *              *.           *
-       |                                   *                                |
-   540 ++-------------------------------------------------------------------+
-
-
-                                iostat.sdi.avgqu-sz
-
-   125 ++-------------------------------------------------------------------+
-       |                                                                    |
-   120 ++                             O                                     |
-       |                   O  O              O    O       O         O  O    |
-       O            O O  O         O       O    O    O  O    O    O         |
-   115 ++   O  O O               O      O                      O            |
-       |  O                                                                 |
-   110 ++                                                                   |
-       |                                                                    |
-   105 ++                                                                   |
-       |                                                                    |
-       |                                                      .*..      .*..|
-   100 ++ *.*..*.*..*.       .*..           .*..*.*..*..*.*..*    *.  .*    |
-       |..            *..*.*.    *.*..*.*..*                        *.      *
-    95 *+-------------------------------------------------------------------+
-
-
-                                iostat.sdj.avgqu-sz
-
-   120 ++---------------------------------------------------------O---------+
-       |              O                         O    O    O    O    O  O    |
-   115 O+ O O    O  O    O    O    O  O    O O    O     O    O              |
-       |       O           O     O      O                                   |
-       |                                                                    |
-   110 ++                                                                   |
-       |                                                                    |
-   105 ++                                                                   |
-       |                                                *                   |
-   100 ++.*.*..*.                            *..       + +         .*..  *..|
-       *.        *..*.                      +   *.*.. +   *..*.*..*     +   *
-       |              *..*.  .*..*.*..*.*..*         *                 *    |
-    95 ++                  *.                                               |
-       |                                                                    |
-    90 ++-------------------------------------------------------------------+
-
-
-                                iostat.sdk.avgrq-sz
-
-   720 ++-------------------------------------------------------------------+
-       |                                                                    |
-   700 ++   O    O    O  O O  O    O  O    O                                |
-   680 O+ O    O    O            O                        O         O       |
-       |                                O    O  O O  O  O    O    O    O    |
-   660 ++                                                      O            |
-       |                                                                    |
-   640 ++                                                                   |
-       |                                                                    |
-   620 ++                                                                   |
-   600 ++                                                                   |
-       |                                                                    |
-   580 ++.*.    .*.. .*..     *..     *.         .*..  .*.  .*.    .*.. .*..*
-       *.   *..*    *    *. ..   *. ..  *.. .*..*    *.   *.   *..*    *    |
-   560 ++------------------*-------*-------*--------------------------------+
-
-
-                                iostat.sdk.avgqu-sz
-
-   125 ++-------------------------------------------------------------------+
-       |                                                                    |
-   120 ++                                                 O                 |
-       O         O    O  O O     O O       O O    O          O      O       |
-   115 ++ O O  O    O         O       O O       O    O  O      O  O    O    |
-       |                                                                    |
-   110 ++                                                                   |
-       |                                                                    |
-   105 ++                                                                   |
-       |                                         .*..                       |
-   100 ++.*.  .*.                      .*.. .*..*      .*.*..*.            .*
-       *.   *.   *..*.       .*..*.  .*    *         *.        *..*.*..*.*. |
-    95 ++             *..*.*.      *.                                       |
-       |                                                                    |
-    90 ++-------------------------------------------------------------------+
-
-
-                                iostat.sdl.avgrq-sz
-
-   720 ++-------------------------------------------------------------------+
-       O                                                                    |
-   700 ++   O    O    O       O    O       O                                |
-   680 ++      O    O    O O     O    O O       O    O  O    O O  O O       |
-       |  O                                  O    O       O            O    |
-   660 ++                                                                   |
-   640 ++                                                                   |
-       |                                                                    |
-   620 ++                                                                   |
-   600 ++                                                                   |
-       |                                                                 *..|
-   580 ++  .*..*.*..*.*..*    *..*.*..*.       .*.*..  .*.  .*.  .*.*.. +   *
-   560 *+.*               + ..          *..*.*.      *.   *.   *.      *    |
-       |                   *                                                |
-   540 ++-------------------------------------------------------------------+
-
-
-                                iostat.sdl.avgqu-sz
-
-   125 ++-------------------------------------------------------------------+
-       |                                                                    |
-   120 ++                                       O    O                      |
-       |    O    O            O       O                 O    O    O O       |
-       O              O  O O     O O    O  O O    O       O    O       O    |
-   115 ++ O    O    O                                                       |
-       |                                                                    |
-   110 ++                                                                   |
-       |                                                                    |
-   105 ++                                                                   |
-       |                                                         .*.        |
-       |   .*..*.                              .*.*..  .*.  .*.*.   *.. .*..|
-   100 ++.*      *..*        .*..*    *.*.. .*.      *.   *.           *    *
-       *.            +  .*.*.     + ..     *                                |
-    95 ++-------------*------------*----------------------------------------+
-
-
-                                iostat.sdm.avgrq-sz
-
-   700 ++---------------------O-------O-------------------------------------+
-       O    O  O O    O  O O     O      O  O O    O                         |
-   680 ++ O         O              O            O    O  O O  O      O       |
-       |                                                       O  O         |
-   660 ++                                                              O    |
-       |                                                                    |
-   640 ++                                                                   |
-       |                                                                    |
-   620 ++                                                                   |
-       |                                                                    |
-   600 ++                                                                   |
-       |             .*..                                                *..|
-   580 ++   *.. .*..*     .*..  .*.*..*.       .*.*..  .*.  .*.  .*.*.. +   *
-       |   +   *         *    *.        *.. .*.      *.   *.   *.      *    |
-   560 *+-*--------------------------------*--------------------------------+
-
-
-                                iostat.sdn.avgrq-sz
-
-   700 ++------------------O----------O-------------------------------------+
-       O    O    O    O  O    O    O    O  O                                |
-   680 ++ O    O    O            O           O  O O  O  O O  O O  O O       |
-   660 ++                                                              O    |
-       |                                                                    |
-   640 ++                                                                   |
-       |                                                                    |
-   620 ++                                                                   |
-       |                                                                    |
-   600 ++                                                                   |
-   580 ++                    .*..*                                      .*..|
-       *..*.  .*.*..    .*.*.     +  .*.    .*.. .*..  .*    *.    .*..*    *
-   560 ++   *.      *.*.           *.   *..*    *    *.  + ..  *..*         |
-       |                                                  *                 |
-   540 ++-------------------------------------------------------------------+
-
+On Fri, Jan 03, 2014 at 03:41:51PM +0000, David Vrabel wrote:
+> On 03/01/14 14:44, Konrad Rzeszutek Wilk wrote:
+> > On Fri, Jan 03, 2014 at 11:54:13AM +0000, David Vrabel wrote:
+> >> On 02/01/14 18:50, Konrad Rzeszutek Wilk wrote:
+> >>> On Thu, Jan 02, 2014 at 04:32:03PM +0000, David Vrabel wrote:
+> >>>> On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
+> >>>>> @@ -1320,4 +1323,4 @@ static int __gnttab_init(void)
+> >>>>>  	return gnttab_init();
+> >>>>>  }
+> >>>>>  
+> >>>>> -core_initcall(__gnttab_init);
+> >>>>> +core_initcall_sync(__gnttab_init);
+> >>>>
+> >>>> Why has this become _sync?
+> >>>
+> >>> It needs to run _after_ the xen_pvh_gnttab_setup has run (which is
+> >>> at gnttab_init):
+> >>
+> >>
+> >> The use of core_initcall_sync() doesn't imply any ordering to me.  Can't
+> > 
+> > It has a clear ordering property.
+> 
+> This really isn't obvious to me.  Can you point to the docs/code the
+> guarantee this?  I couldn't find it.
+
+include/linux/init.h
+> 
+> >> you call xen_pvh_gnttab_setup() from within __gnttab_init() ?
+> > 
+> > No. That is due to the fact that __gnttab_init() is in drivers/xen and is
+> > also used by the ARM code.
+> > 
+> > Stefano in his previous review mentioned he would like PVH specific
+> > code in arch/x86:
+> > 
+> > https://lkml.org/lkml/2013/12/18/507
+> 
+> Call it xen_arch_gnttab_setup() and add weak stub for other architectures?
+
+Stefano, thoughts?
+
+> 
+> David
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
