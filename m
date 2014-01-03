@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262AbaACOdg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 09:33:36 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55506 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752067AbaACOdf (ORCPT
+	id S1752354AbaACOfI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 09:35:08 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:52413 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820AbaACOfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 09:33:35 -0500
-Date: Fri, 3 Jan 2014 14:31:04 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Mark Salter <msalter@redhat.com>, catalin.marinas@arm.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
-        Chen Baozi <baozich@gmail.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm64/xen: redefine xen_remap on arm64
-Message-ID: <20140103143104.GN7383@n2100.arm.linux.org.uk>
-References: <1388386511-32276-1-git-send-email-baozich@gmail.com> <1388431259.2564.15.camel@deneb.redhat.com> <alpine.DEB.2.02.1401031310100.8667@kaball.uk.xensource.com>
+	Fri, 3 Jan 2014 09:35:06 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH 01/17] ARM: spear: Remove deprecated IRQF_DISABLED flag
+Date: Fri, 3 Jan 2014 15:34:37 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, olof@lixom.net, khilman@linaro.org,
+        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        patches@linaro.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+References: <1388419771-30075-1-git-send-email-daniel.lezcano@linaro.org> <201401021929.46581.arnd@arndb.de> <52C5B52E.6080609@linaro.org>
+In-Reply-To: <52C5B52E.6080609@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1401031310100.8667@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201401031534.37533.arnd@arndb.de>
+X-Provags-ID: V02:K0:J0LLZ8ezz1HuyW+POrTOfMakWL3fUo5GITDf/fe6zw3
+ tGgELNdo02pA8plSlibm02QFkPELP6cqPFgtLekhL+mcUAHyga
+ aQbHXfEvkKJYHFLmzYW9aa82bQAF1IZvaXDch4o1khBMY1nzXS
+ p0TbMaj9X4ncb4aSTj9bdXWpLmxJpLxcZRZ18lmpkjNvc1vCn7
+ jCvZvY4wROhyTdntkDwpZlgI171bhFuIFY0FIombIBhS7hw83n
+ mgp6Ie8XU8Fd5I+23NZi4l9oV5XnEWnxM4ujttReBNzR61XZDY
+ q8juN6fpU4DVSvPJWeotjRYeRM5c/QFpivzbk35uoXj+GmfkTl
+ asePrNXQFBwHMGJY0Vok=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 03, 2014 at 01:13:57PM +0000, Stefano Stabellini wrote:
-> On Mon, 30 Dec 2013, Mark Salter wrote:
-> > On Mon, 2013-12-30 at 14:55 +0800, Chen Baozi wrote:
-> > > xen_remap used to be defined as ioremap_cached on arm64. In commit
-> > > c04e8e2fe, a new ioremap_cache was implemented, and ioremap_cached
-> > > was deleted, while xen_remap stays the same. This would lead to
-> > > the failure when building with CONFIG_HVC_XEN. Redefined xen_remap
-> > > on arm64 as ioremap_cache on arm64 to fix it.
-> > > 
-> > 
-> > I missed that include of arm header by arm64 when looking for users
-> > of arm64's ioremap_cached() when working on commit c04e8e2fe. Anyway,
-> > grepping the kernel tree, I see:
-> > 
-> >   ioremap_cached()
-> >     defined by: arm, metag, unicore32
-> >     used by: arch/arm/include/asm/xen/page.h
-> >              drivers/mtd/maps/pxa2xx-flash.c
-> > 
-> >   ioremap_cache()
-> >     defined by: arm64, sh, xtensa, ia64, x86
-> >     used by: drivers/video/vesafb.c
-> >              drivers/char/toshiba.c
-> >              drivers/acpi/apei
-> >              drivers/lguest/lguest_device.c
-> >              drivers/sfi/sfi_core.c
-> >              include/linux/acpi_io.h
-> > 
-> > I think it would be better to just avoid the confusion and the ifdef in
-> > asm/xen/page.h by globally changing ioremap_cached to ioremap_cache.
+On Thursday 02 January 2014, Daniel Lezcano wrote:
+> On 01/02/2014 07:29 PM, Arnd Bergmann wrote:
+> > On Monday 30 December 2013, Daniel Lezcano wrote:
+> >> This flag is a NOOP and scheduled to be removed
+> >>
+> >> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> >
+> > Thanks for sending this series. I think the patches are duplicates of stuff that
+> > Michael Opdenacker has sent before (actually multiple times). I have no problem
+> > applying either version into arm-soc, but I think it would be better to attribute
+> > them to Michael, since he came first. Can you two please coordinate and send a
+> > single pull request for the arm-soc related patches that haven't made it into
+> > linux-next yet?
 > 
-> While I welcome the suggestion, this is a critical fix for a regression
-> that I think should go in as soon as possible, maybe 3.13-rc7, while I
-> don't think that a global s/ioremap_cached/ioremap_cache would be
-> acceptable at this stage.
+> Michael removed the flag for:
+> 
+> pxa (ed7936f913456e4c01aed75deba6cfaf830fa8cf)
+> samsung (fa53d5cdbffbce421c3bd2f937b5626fc044fedc)
+> avr32 (7155530d9eb692994d208836e4965da06b17c99d)
+> ep93xx (3a71ae4796fdaedbdbdab94660b7b7b5bfe61d1d)
+> plat-orion (eb4d552b933ac59c0c8e0604ff435c5208a82679)
+> 
+> The patchset I sent is on top of arm/for-next and finishes to remove 
+> this flag for arch/arm. It should not overlap with what Michael did.
+> 
+> I'm ok to attribute the patchset to Michael if that can help to accept 
+> this patchset and kill this flag for arch/arm.
 
-Since it's just one driver, just make the change for ARM (provided the
-grep is accurate.)  pxa2xx-flash is only used on ARM and not the other
-two listed there, so looks like metag and unicore just decided to copy
-ARM.
+IIRC, Michael actually sent patches for all uses in the entire kernel
+previously, but relied on sub-maintainers to pick them up one by one.
+Some patches already got 'Acked-by' replies, which I'd like to keep.
 
-My grep concurs with yours.
+It's probably time to do a bigger sweeping change now and kill it for
+good, bypassing the remaining maintainers that haven't acted so far.
+We can certainly carry the patches related to arm-soc, and I think
+it's worth trying once more to get the scsi patches merged, since there
+is a bunch of them. Everything else can probably go directly as a
+single pull-request to Linus, or perhaps via Andrew Morton.
 
-So... just change ioremap_cached -> ioremap_cache in
-arch/arm/include/asm/io.h
-arch/arm/include/asm/xen/page.h
-drivers/mtd/maps/pxa2xx-flash.c
-
-to fix the problem.
-
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+	Arnd
