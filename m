@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562AbaACPDl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 10:03:41 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33476 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751931AbaACPDk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 10:03:40 -0500
-Date: Fri, 3 Jan 2014 15:03:24 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: eric.ernst@linux.intel.com
-Cc: wim@iguana.be, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Gabriel Touzeau <gabrielx.touzeau@intel.com>,
-        Yann Puech <yann.puech@intel.com>,
-        Jeremy Compostella <jeremy.compostella@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>
-Subject: Re: [PATCH 1/1] watchdog: Adding Merrifield watchdog driver support
-Message-ID: <20140103150324.3f36cb50@alan.etchedpixels.co.uk>
-In-Reply-To: <1388710602-18513-1-git-send-email-eric.ernst@linux.intel.com>
-References: <1388710602-18513-1-git-send-email-eric.ernst@linux.intel.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752627AbaACPFR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 10:05:17 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:59609 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752076AbaACPFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 10:05:16 -0500
+X-IronPort-AV: E=Sophos;i="4.95,598,1384300800"; 
+   d="scan'208";a="89554863"
+Date: Fri, 3 Jan 2014 15:04:27 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
+        <mukesh.rathor@oracle.com>, <jbeulich@suse.com>
+Subject: Re: [Xen-devel] [PATCH v11 09/12] xen/pvh: Piggyback on PVHVM XenBus
+ and event channels for PVH.
+In-Reply-To: <20131231185656.GB3129@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1401031501180.8667@kaball.uk.xensource.com>
+References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com> <1387313503-31362-10-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.02.1312181827280.8667@kaball.uk.xensource.com> <20131231185656.GB3129@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  2 Jan 2014 16:56:42 -0800
-eric.ernst@linux.intel.com wrote:
-
-> From: Gabriel Touzeau <gabrielx.touzeau@intel.com>
+On Tue, 31 Dec 2013, Konrad Rzeszutek Wilk wrote:
+> > > --- a/drivers/xen/xenbus/xenbus_client.c
+> > > +++ b/drivers/xen/xenbus/xenbus_client.c
+> > > @@ -45,6 +45,7 @@
+> > >  #include <xen/grant_table.h>
+> > >  #include <xen/xenbus.h>
+> > >  #include <xen/xen.h>
+> > > +#include <xen/features.h>
+> > >  
+> > >  #include "xenbus_probe.h"
+> > >  
+> > > @@ -743,7 +744,7 @@ static const struct xenbus_ring_ops ring_ops_hvm = {
+> > >  
+> > >  void __init xenbus_ring_ops_init(void)
+> > >  {
+> > > -	if (xen_pv_domain())
+> > > +	if (xen_pv_domain() && !xen_feature(XENFEAT_auto_translated_physmap))
+> > 
+> > Can we just change this test to
+> > 
+> > if (!xen_feature(XENFEAT_auto_translated_physmap))
+> > 
+> > ?
 > 
-> Added Merrifield watchdog driver support.
+> No. If we do then the HVM domains (which are also !auto-xlat)
+> will end up using the PV version of ring_ops.
+
+Actually HVM guests have XENFEAT_auto_translated_physmap, so in this
+case they would get &ring_ops_hvm.
+
+
+> > >  		ring_ops = &ring_ops_pv;
+> > >  	else
+> > >  		ring_ops = &ring_ops_hvm;
+> > > -- 
+> > > 1.8.3.1
+> > > 
+> > > 
+> > > _______________________________________________
+> > > Xen-devel mailing list
+> > > Xen-devel@lists.xen.org
+> > > http://lists.xen.org/xen-devel
+> > > 
 > 
-> Based on initial implementation from prior Intel SCU-based platforms, this
-> driver has several changes specific to the Tangier SoC / Merrifield platform.
-
-We have a watchdog driver layer now. Any new driver should be using that.
-It deals with a lot of the work for you so you'll just need the actual
-methods doing the work. It also registers both the legacy device and new
-style watchdog nodes as appropriate so you can have multiple watchdogs on
-a system.
-
-Look at watchdog_core.c and watchdog_dev.c and the various things that
-use it.
-
-Alan
