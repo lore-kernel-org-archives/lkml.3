@@ -1,51 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062AbaACOBT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 09:01:19 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:62387 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649AbaACOBR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 09:01:17 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Johan Hovold <jhovold@gmail.com>
-Subject: Re: [PATCH, RFC 15/30] usbserial: stop using interruptible_sleep_on
-Date: Fri, 3 Jan 2014 15:01:12 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org
-References: <1388664474-1710039-1-git-send-email-arnd@arndb.de> <1388664474-1710039-16-git-send-email-arnd@arndb.de> <20140102213629.GA12793@localhost>
-In-Reply-To: <20140102213629.GA12793@localhost>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201401031501.12554.arnd@arndb.de>
-X-Provags-ID: V02:K0:JB9sqN0EYleZn6q5yPu4ZhT1WmxqFex0j25/ahKOeVK
- 5vLanDGYHWnvZ93D5ct9x7PLBzrKypbPcTi4BMSJqYnqpZ8NnO
- WwpqwwabXvm2C4suh48nF6urQ3XmZ0EloJ7ddqzbjAayL6HWK1
- i8DGmFM17AKkhXmJeTKvtq37Mg5uFBPENb1J0CQ3uIxPjr+8yC
- fnEVkWDDsPQt8ygaA1eJ6jr09kzV1yetVFs15ayRK7QnKwgtII
- K1HhuZOuDGt3IadxYfUf11xAhGcwJQ3hGuyPpUMTvDUm/ZEVnI
- 93qCGporDvSUns8zEDTix9XrrPUoiYlShhW9qquEhtbAz5P3/J
- t/0WrKG3Z8SmQlKB/eSs=
+	id S1752055AbaACOc7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 09:32:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64340 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751529AbaACOc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 09:32:58 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH 2/2] perf tests: Fix installation tests path setup
+Date: Fri,  3 Jan 2014 15:32:33 +0100
+Message-Id: <1388759553-12974-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1388759553-12974-1-git-send-email-jolsa@redhat.com>
+References: <1388759553-12974-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 02 January 2014, Johan Hovold wrote:
-> I'd prefer to just fix the race once and for all. These four drivers
-> have been on my todo list since I converted the other usb-serial drivers
-> about a year ago. In fact, I posted a fix for f81232 last week, and
-> I've had a fix for pl2303 brewing as part of larger series for quite
-> some time.
-> 
-> I'll post a conversion series to linux-usb shortly and make sure to keep
-> you CC:ed on the sleep_on-killing patches.
+From: "jolsa@redhat.com" <jolsa@redhat.com>
 
-Ah, excellent!
+Currently installation tests work only over x86_64,
+adding arch check to make it work over i386 as well.
 
-Much better to see the job done properly than me adding more hacks on top.
+NOTE looks like x86 is the only arch running tests,
+we need some IS_(32/64) flag to make this generic.
 
-	Arnd
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/tests/make | 30 ++++++++++++++++++++----------
+ 1 file changed, 20 insertions(+), 10 deletions(-)
+
+diff --git a/tools/perf/tests/make b/tools/perf/tests/make
+index f641c35..e341088 100644
+--- a/tools/perf/tests/make
++++ b/tools/perf/tests/make
+@@ -1,6 +1,16 @@
+ PERF := .
+ MK   := Makefile
+ 
++include config/Makefile.arch
++
++# FIXME looks like x86 is the only arch running tests ;-)
++# we need some IS_(32/64) flag to make this generic
++ifeq ($(IS_X86_64),1)
++lib = lib64
++else
++lib = lib
++endif
++
+ has = $(shell which $1 2>/dev/null)
+ 
+ # standard single make variable specified
+@@ -118,16 +128,16 @@ installed_files_bin := bin/perf
+ installed_files_bin += etc/bash_completion.d/perf
+ installed_files_bin += libexec/perf-core/perf-archive
+ 
+-installed_files_plugins := lib64/traceevent/plugins/plugin_cfg80211.so
+-installed_files_plugins += lib64/traceevent/plugins/plugin_scsi.so
+-installed_files_plugins += lib64/traceevent/plugins/plugin_xen.so
+-installed_files_plugins += lib64/traceevent/plugins/plugin_function.so
+-installed_files_plugins += lib64/traceevent/plugins/plugin_sched_switch.so
+-installed_files_plugins += lib64/traceevent/plugins/plugin_mac80211.so
+-installed_files_plugins += lib64/traceevent/plugins/plugin_kvm.so
+-installed_files_plugins += lib64/traceevent/plugins/plugin_kmem.so
+-installed_files_plugins += lib64/traceevent/plugins/plugin_hrtimer.so
+-installed_files_plugins += lib64/traceevent/plugins/plugin_jbd2.so
++installed_files_plugins := $(lib)/traceevent/plugins/plugin_cfg80211.so
++installed_files_plugins += $(lib)/traceevent/plugins/plugin_scsi.so
++installed_files_plugins += $(lib)/traceevent/plugins/plugin_xen.so
++installed_files_plugins += $(lib)/traceevent/plugins/plugin_function.so
++installed_files_plugins += $(lib)/traceevent/plugins/plugin_sched_switch.so
++installed_files_plugins += $(lib)/traceevent/plugins/plugin_mac80211.so
++installed_files_plugins += $(lib)/traceevent/plugins/plugin_kvm.so
++installed_files_plugins += $(lib)/traceevent/plugins/plugin_kmem.so
++installed_files_plugins += $(lib)/traceevent/plugins/plugin_hrtimer.so
++installed_files_plugins += $(lib)/traceevent/plugins/plugin_jbd2.so
+ 
+ installed_files_all := $(installed_files_bin)
+ installed_files_all += $(installed_files_plugins)
+-- 
+1.8.3.1
+
