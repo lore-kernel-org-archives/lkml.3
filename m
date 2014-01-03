@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202AbaACTkM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 14:40:12 -0500
-Received: from vhex.net ([146.185.136.158]:36244 "EHLO vhex.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751359AbaACTkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 14:40:11 -0500
-X-Greylist: delayed 329 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Jan 2014 14:40:11 EST
-Message-ID: <52C710CE.1090302@vhex.net>
-Date: Fri, 03 Jan 2014 20:34:38 +0100
-From: art1 <art1@vhex.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753375AbaACTqd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 14:46:33 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:60061 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752896AbaACTqb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 14:46:31 -0500
 MIME-Version: 1.0
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Denis Turischev <denis.turischev@compulab.co.il>
-CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, Oliver Neukum <oneukum@suse.de>,
-        dashing.meng@gmail.com, Niklas Schnelle <niklas@komani.de>,
-        Giorgos <ganastasiouGR@gmail.com>
-Subject: Re: [PATCH v1] xhci: Switch Intel Lynx Point ports to EHCI on shutdown
-References: <52B31EDA.60908@compulab.co.il> <52B327D5.3080805@compulab.co.il> <20131219182110.GC3573@xanatos> <52B41EC7.1070704@compulab.co.il> <20131220234547.GC2835@xanatos> <52B69925.8030409@compulab.co.il> <20140103000334.GE9621@xanatos>
-In-Reply-To: <20140103000334.GE9621@xanatos>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <52C70C75.4050502@t-online.de>
+References: <52C70C75.4050502@t-online.de>
+Date: Fri, 3 Jan 2014 11:46:29 -0800
+X-Google-Sender-Auth: 5cKVw6NMwIcF1or1Zu59Lnr1jG0
+Message-ID: <CA+55aFxVs_aGnMdcTck3C7AayFrjX=GrFSwmJwiC9q3-3wySgw@mail.gmail.com>
+Subject: Re: [BUG 3.13.0-rc6] reiserfs possible circular locking dependency
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Knut Petersen <Knut_Petersen@t-online.de>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Jeff Mahoney <jeffm@suse.com>,
+        reiserfs-devel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/2014 01:03 AM, Sarah Sharp wrote:
-> ISTR that the other folks on Cc (Meng, Niklas, Giorgos, and Art) all 
-> had systems that broke when commit 
-> 638298dc66ea36623dbc2757a24fc2c4ab41b016 was introduced. For those 
-> systems, what vendor was the system, and what BIOS was it running?
-Information from dmidecode:
+On Fri, Jan 3, 2014 at 11:16 AM, Knut Petersen
+<Knut_Petersen@t-online.de> wrote:
+> Rebooting after a power failure on an openSuSE 13.1 system
+> with kernel 3.13.0-rc6 triggered the attached lockdep warning.
 
-BIOS Information
-         Vendor: American Megatrends Inc.
+Hmm. It seems to be that the *normal* sequence should be:
 
-System Information
-         Manufacturer: To Be Filled By O.E.M.
-         Product Name: To Be Filled By O.E.M.
-         Version: To Be Filled By O.E.M.
+ - get i_mutex, call lookup, which gets sbi->lock (reiserfs_write_lock)
 
-Base Board Information
-         Manufacturer: ASRock
-         Product Name: B85 Pro4
+but in the mounting path, we have special circumstances.
 
+That finish_unfinished() function does
+
+ - reiserfs_write_lock_nested() .
+ - remove_save_link
+ - iput(inode) with the write lock held
+
+and that can apparently end up taking i_mutex in open_xa_dir (and then
+recursively the write lock, but that's an explicitly recursive lock,
+so that part should be ok).
+
+Now, I don't think this can *really* deadlock with the normal order of
+operations, because during mounting there is no other process that can
+take those in the reverse order (since the filesystem isn't live), but
+I do wonder if we should just release the reiserfs write lock over the
+iputs. We release it in other parts anyway (like for the quota off)
+
+Jeff, you already touched this exact case in commit d2d0395fd177
+("reiserfs: locking, release lock around quota operations") except
+that was for those quota operation cases.
+
+Even if it's not a real problem, making lockdep happy sounds like a
+good idea. Of course, the trouble is that this code path almost never
+gets exercised (which is why this hasn't been noticed earlier), so
+testing...
+
+Jeff? Comments?
+
+             Linus
