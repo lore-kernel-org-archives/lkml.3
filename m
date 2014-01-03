@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753938AbaACAHk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 19:07:40 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:21887 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753844AbaACAHe (ORCPT
+	id S1754551AbaACAOq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 19:14:46 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:23651 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753922AbaACAHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 19:07:34 -0500
+	Thu, 2 Jan 2014 19:07:40 -0500
 From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        x86 <x86@kernel.org>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Joerg Roedel <joro@8bytes.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Subject: [PATCH v5 08/33] x86, irq: Make dmar_msi/hpet_msi irq_chip name consistent
-Date: Thu,  2 Jan 2014 16:05:40 -0800
-Message-Id: <1388707565-16535-9-git-send-email-yinghai@kernel.org>
+        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v2 00/10] IOMMU: irq-remapping and dmar hotplug support
+Date: Thu,  2 Jan 2014 16:08:07 -0800
+Message-Id: <1388707697-16800-1-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
-References: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All others are using "-" instead of "_".
+During pci root bus hot-add, ioapic and iommu need to be parsed at first.
+Using acpi_pci_driver->add to do that.
 
-Change dmar_msi and hpet_msi to use "-".
+The patches need to apply after for-x86-irq
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
----
- arch/x86/kernel/apic/io_apic.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+could get from
+        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-iommu-3.14
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index c52085c..241325c 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3204,7 +3204,7 @@ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
- }
- 
- static struct irq_chip dmar_msi_type = {
--	.name			= "DMAR_MSI",
-+	.name			= "DMAR-MSI",
- 	.irq_unmask		= dmar_msi_unmask,
- 	.irq_mask		= dmar_msi_mask,
- 	.irq_ack		= ack_apic_edge,
-@@ -3252,7 +3252,7 @@ static int hpet_msi_set_affinity(struct irq_data *data,
- }
- 
- struct irq_chip hpet_msi_type = {
--	.name = "HPET_MSI",
-+	.name = "HPET-MSI",
- 	.irq_unmask = hpet_msi_unmask,
- 	.irq_mask = hpet_msi_mask,
- 	.irq_ack = ack_apic_edge,
+-v2: refreshed after 3.13-rc6
+
+Yinghai Lu (10):
+  IOMMU: Update dmar units devices list during hotplug
+  IOMMU: Fix tboot force iommu logic
+  IOMMU: Don't clean handler data before free_irq()
+  IOMMU: iommu_unique_seq_id()
+  ACPI: Add acpi_run_dsm()
+  IOMMU: Separate free_dmar_iommu from free_iommu
+  IOMMU: Add init_dmar_one()
+  IOMMU: Add intel_enable_irq_remapping_one()
+  IOMMU: Add dmar_parse_one_drhd()
+  IOMMU: Add intel iommu irq-remapping and dmar hotplug support
+
+ drivers/acpi/bus.c                  |  77 +++++++
+ drivers/acpi/pci_root.c             |   2 +
+ drivers/iommu/dmar.c                | 414 ++++++++++++++++++++++++++++++++++--
+ drivers/iommu/intel-iommu.c         | 162 +++++++++++---
+ drivers/iommu/intel_irq_remapping.c | 167 ++++++++++++++-
+ include/linux/acpi.h                |  10 +
+ include/linux/dmar.h                |  53 ++++-
+ include/linux/pci-acpi.h            |   8 +
+ 8 files changed, 836 insertions(+), 57 deletions(-)
+
 -- 
 1.8.4
 
