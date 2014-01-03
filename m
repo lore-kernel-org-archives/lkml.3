@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270AbaACSCa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 13:02:30 -0500
-Received: from mga01.intel.com ([192.55.52.88]:50775 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753197AbaACSC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753227AbaACSC2 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 3 Jan 2014 13:02:28 -0500
+Received: from mga09.intel.com ([134.134.136.24]:8752 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753104AbaACSCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 13:02:12 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,599,1384329600"; 
-   d="scan'208";a="459715621"
-Subject: [PATCH 5/9] mm: rearrange struct page
+   d="scan'208";a="453345798"
+Subject: [PATCH 8/9] mm: slub: remove 'struct page' alignment restrictions
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
         penberg@kernel.org, cl@linux-foundation.org,
         Dave Hansen <dave@sr71.net>
 From: Dave Hansen <dave@sr71.net>
-Date: Fri, 03 Jan 2014 10:01:56 -0800
+Date: Fri, 03 Jan 2014 10:02:02 -0800
 References: <20140103180147.6566F7C1@viggo.jf.intel.com>
 In-Reply-To: <20140103180147.6566F7C1@viggo.jf.intel.com>
-Message-Id: <20140103180156.684C95D6@viggo.jf.intel.com>
+Message-Id: <20140103180202.DE1B5842@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,266 +26,248 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Hansen <dave.hansen@linux.intel.com>
 
-To make the layout of 'struct page' look nicer, I broke
-up a few of the unions.  But, this has a cost: things that
-were guaranteed to line up before might not any more.  To make up
-for that, some BUILD_BUG_ON()s are added to manually check for
-the alignment dependencies.
+SLUB depends on a 16-byte cmpxchg for an optimization.  In order
+to get guaranteed 16-byte alignment (required by the hardware on
+x86), 'struct page' is padded out from 56 to 64 bytes.
 
-This makes it *MUCH* more clear how the first few fields of
-'struct page' get used by the slab allocators.
+Those 8-bytes matter.  We've gone to great lengths to keep
+'struct page' small in the past.  It's a shame that we bloat it
+now just for alignment reasons when we have *extra* space.  Also,
+increasing the size of 'struct page' by 14% makes it 14% more
+likely that we will miss a cacheline when fetching it.
+
+This patch takes an unused 8-byte area of slub's 'struct page'
+and reuses it to internally align to the 16-bytes that we need.
+
+Note that this also gets rid of the ugly slub #ifdef that we use
+to segregate ->counters and ->_count for cases where we need to
+manipulate ->counters without the benefit of a hardware cmpxchg.
+
+This patch takes me from 16909584K of reserved memory at boot
+down to 14814472K, so almost *exactly* 2GB of savings!  It also
+helps performance, presumably because of that 14% fewer
+cacheline effect.  A 30GB dd to a ramfs file:
+
+	dd if=/dev/zero of=bigfile bs=$((1<<30)) count=30
+
+is sped up by about 4.4% in my testing.
+
+The value of maintaining the cmpxchg16 operation can be
+demonstrated in some tiny little microbenchmarks, so it is
+probably something we should keep around instead of just using
+the spinlock for everything:
+
+	http://lkml.kernel.org/r/52B345A3.6090700@sr71.net
 
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 ---
 
- linux.git-davehans/include/linux/mm_types.h |  101 ++++++++++++++--------------
- linux.git-davehans/mm/slab.c                |    6 -
- linux.git-davehans/mm/slab_common.c         |   17 ++++
- linux.git-davehans/mm/slob.c                |   25 +++---
- 4 files changed, 84 insertions(+), 65 deletions(-)
+ linux.git-davehans/arch/Kconfig             |    8 ----
+ linux.git-davehans/arch/s390/Kconfig        |    1 
+ linux.git-davehans/arch/x86/Kconfig         |    1 
+ linux.git-davehans/include/linux/mm_types.h |   55 +++++++---------------------
+ linux.git-davehans/init/Kconfig             |    2 -
+ linux.git-davehans/mm/slab_common.c         |   10 +++--
+ linux.git-davehans/mm/slub.c                |    4 ++
+ 7 files changed, 26 insertions(+), 55 deletions(-)
 
-diff -puN include/linux/mm_types.h~rearrange-struct-page include/linux/mm_types.h
---- linux.git/include/linux/mm_types.h~rearrange-struct-page	2014-01-02 13:40:30.396315632 -0800
-+++ linux.git-davehans/include/linux/mm_types.h	2014-01-02 13:40:30.405316037 -0800
-@@ -46,27 +46,60 @@ struct page {
+diff -puN arch/Kconfig~remove-struct-page-alignment-restrictions arch/Kconfig
+--- linux.git/arch/Kconfig~remove-struct-page-alignment-restrictions	2014-01-02 14:56:39.071044198 -0800
++++ linux.git-davehans/arch/Kconfig	2014-01-02 14:56:39.086044872 -0800
+@@ -289,14 +289,6 @@ config HAVE_RCU_TABLE_FREE
+ config ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	bool
+ 
+-config HAVE_ALIGNED_STRUCT_PAGE
+-	bool
+-	help
+-	  This makes sure that struct pages are double word aligned and that
+-	  e.g. the SLUB allocator can perform double word atomic operations
+-	  on a struct page for better performance. However selecting this
+-	  might increase the size of a struct page by a word.
+-
+ config HAVE_CMPXCHG_LOCAL
+ 	bool
+ 
+diff -puN arch/s390/Kconfig~remove-struct-page-alignment-restrictions arch/s390/Kconfig
+--- linux.git/arch/s390/Kconfig~remove-struct-page-alignment-restrictions	2014-01-02 14:56:39.073044287 -0800
++++ linux.git-davehans/arch/s390/Kconfig	2014-01-02 14:56:39.087044917 -0800
+@@ -102,7 +102,6 @@ config S390
+ 	select GENERIC_FIND_FIRST_BIT
+ 	select GENERIC_SMP_IDLE_THREAD
+ 	select GENERIC_TIME_VSYSCALL
+-	select HAVE_ALIGNED_STRUCT_PAGE if SLUB
+ 	select HAVE_ARCH_JUMP_LABEL if !MARCH_G5
+ 	select HAVE_ARCH_SECCOMP_FILTER
+ 	select HAVE_ARCH_SECCOMP
+diff -puN arch/x86/Kconfig~remove-struct-page-alignment-restrictions arch/x86/Kconfig
+--- linux.git/arch/x86/Kconfig~remove-struct-page-alignment-restrictions	2014-01-02 14:56:39.075044377 -0800
++++ linux.git-davehans/arch/x86/Kconfig	2014-01-02 14:56:39.088044962 -0800
+@@ -77,7 +77,6 @@ config X86
+ 	select HAVE_PERF_USER_STACK_DUMP
+ 	select HAVE_DEBUG_KMEMLEAK
+ 	select ANON_INODES
+-	select HAVE_ALIGNED_STRUCT_PAGE if SLUB
+ 	select HAVE_CMPXCHG_LOCAL
+ 	select HAVE_ARCH_KMEMCHECK
+ 	select HAVE_USER_RETURN_NOTIFIER
+diff -puN include/linux/mm_types.h~remove-struct-page-alignment-restrictions include/linux/mm_types.h
+--- linux.git/include/linux/mm_types.h~remove-struct-page-alignment-restrictions	2014-01-02 14:56:39.076044423 -0800
++++ linux.git-davehans/include/linux/mm_types.h	2014-01-02 14:56:39.089045007 -0800
+@@ -24,38 +24,30 @@
+ struct address_space;
+ 
+ struct slub_data {
+-	void *unused;
+ 	void *freelist;
+ 	union {
+ 		struct {
+ 			unsigned inuse:16;
+ 			unsigned objects:15;
+ 			unsigned frozen:1;
+-			atomic_t dontuse_slub_count;
+ 		};
+-		/*
+-		 * ->counters is used to make it easier to copy
+-		 * all of the above counters in one chunk.
+-		 * The actual counts are never accessed via this.
+-		 */
+-#if defined(CONFIG_SLUB_ATTEMPT_CMPXCHG_DOUBLE)
+-		unsigned long counters;
+-#else
+-		/*
+-		 * Keep _count separate from slub cmpxchg_double data.
+-		 * As the rest of the double word is protected by
+-		 * slab_lock but _count is not.
+-		 */
+ 		struct {
+-			unsigned counters;
+-			/*
+-			 * This isn't used directly, but declare it here
+-			 * for clarity since it must line up with _count
+-			 * from 'struct page'
+-			 */
++			/* counters is just a helperfor the above bitfield */
++			unsigned long counters;
++			atomic_t padding;
+ 			atomic_t separate_count;
+ 		};
+-#endif
++		/*
++		 * the double-cmpxchg case:
++		 * counters and _count overlap:
++		 */
++		union {
++			unsigned long counters2;
++			struct {
++				atomic_t padding2;
++				atomic_t _count;
++			};
++		};
+ 	};
+ };
+ 
+@@ -70,15 +62,8 @@ struct slub_data {
+  * moment. Note that we have no way to track which tasks are using
+  * a page, though if it is a pagecache page, rmap structures can tell us
+  * who is mapping it.
+- *
+- * The objects in struct page are organized in double word blocks in
+- * order to allows us to use atomic double word operations on portions
+- * of struct page. That is currently only used by slub but the arrangement
+- * allows the use of atomic double word operations on the flags/mapping
+- * and lru list pointers also.
+  */
+ struct page {
+-	/* First double word block */
  	unsigned long flags;		/* Atomic flags, some possibly
  					 * updated asynchronously */
  	union {
--		struct address_space *mapping;	/* If low bit clear, points to
--						 * inode address_space, or NULL.
--						 * If page mapped as anonymous
--						 * memory, low bit is set, and
--						 * it points to anon_vma object:
--						 * see PAGE_MAPPING_ANON below.
--						 */
--		void *s_mem;			/* slab first object */
--	};
--
--	/* Second double word */
--	struct {
--		union {
-+		struct /* the normal uses */ {
- 			pgoff_t index;		/* Our offset within mapping. */
--			void *freelist;		/* sl[aou]b first free object */
-+			/*
-+			 * mapping: If low bit clear, points to
-+			 * inode address_space, or NULL.  If page
-+			 * mapped as anonymous memory, low bit is
-+			 * set, and it points to anon_vma object:
-+			 * see PAGE_MAPPING_ANON below.
-+			 */
-+			struct address_space *mapping;
-+			/*
-+			 * Count of ptes mapped in mms, to show when page
-+			 * is mapped & limit reverse map searches.
-+			 *
-+			 * Used also for tail pages refcounting instead
-+			 * of _count. Tail pages cannot be mapped and
-+			 * keeping the tail page _count zero at all times
-+			 * guarantees get_page_unless_zero() will never
-+			 * succeed on tail pages.
-+			 */
-+			atomic_t _mapcount;
-+			atomic_t _count;
-+		}; /* end of the "normal" use */
-+
-+		struct { /* SLUB */
-+			void *unused;
-+			void *freelist;
-+			unsigned inuse:16;
-+			unsigned objects:15;
-+			unsigned frozen:1;
-+			atomic_t dontuse_slub_count;
- 		};
--
--		union {
-+		struct { /* SLAB */
-+			void *s_mem;
-+			void *slab_freelist;
-+			unsigned int active;
-+			atomic_t dontuse_slab_count;
-+		};
-+		struct { /* SLOB */
-+			void *slob_unused;
-+			void *slob_freelist;
-+			unsigned int units;
-+			atomic_t dontuse_slob_count;
-+		};
-+		/*
-+		 * This is here to help the slub code deal with
-+		 * its inuse/objects/frozen bitfields as a single
-+		 * blob.
-+		 */
-+		struct { /* slub helpers */
-+			void *slubhelp_unused;
-+			void *slubhelp_freelist;
- #if defined(CONFIG_HAVE_CMPXCHG_DOUBLE) && \
--	defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
--			/* Used for cmpxchg_double in slub */
-+    defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
- 			unsigned long counters;
- #else
- 			/*
-@@ -76,38 +109,6 @@ struct page {
- 			 */
- 			unsigned counters;
- #endif
--
--			struct {
--
--				union {
--					/*
--					 * Count of ptes mapped in
--					 * mms, to show when page is
--					 * mapped & limit reverse map
--					 * searches.
--					 *
--					 * Used also for tail pages
--					 * refcounting instead of
--					 * _count. Tail pages cannot
--					 * be mapped and keeping the
--					 * tail page _count zero at
--					 * all times guarantees
--					 * get_page_unless_zero() will
--					 * never succeed on tail
--					 * pages.
--					 */
--					atomic_t _mapcount;
--
--					struct { /* SLUB */
--						unsigned inuse:16;
--						unsigned objects:15;
--						unsigned frozen:1;
--					};
--					int units;	/* SLOB */
--				};
--				atomic_t _count;		/* Usage count, see below. */
--			};
--			unsigned int active;	/* SLAB */
+@@ -121,7 +106,6 @@ struct page {
  		};
  	};
  
-diff -puN mm/slab.c~rearrange-struct-page mm/slab.c
---- linux.git/mm/slab.c~rearrange-struct-page	2014-01-02 13:40:30.398315722 -0800
-+++ linux.git-davehans/mm/slab.c	2014-01-02 13:40:30.407316127 -0800
-@@ -1955,7 +1955,7 @@ static void slab_destroy(struct kmem_cac
+-	/* Third double word block */
+ 	union {
+ 		struct list_head lru;	/* Pageout list, eg. active_list
+ 					 * protected by zone->lru_lock !
+@@ -150,7 +134,6 @@ struct page {
+ #endif
+ 	};
+ 
+-	/* Remainder is not double word aligned */
+ 	union {
+ 		unsigned long private;		/* Mapping-private opaque data:
+ 					 	 * usually used for buffer_heads
+@@ -199,15 +182,7 @@ struct page {
+ #ifdef LAST_CPUPID_NOT_IN_PAGE_FLAGS
+ 	int _last_cpupid;
+ #endif
+-}
+-/*
+- * The struct page can be forced to be double word aligned so that atomic ops
+- * on double words work. The SLUB allocator can make use of such a feature.
+- */
+-#ifdef CONFIG_HAVE_ALIGNED_STRUCT_PAGE
+-	__aligned(2 * sizeof(unsigned long))
+-#endif
+-;
++};
+ 
+ struct page_frag {
+ 	struct page *page;
+diff -puN init/Kconfig~remove-struct-page-alignment-restrictions init/Kconfig
+--- linux.git/init/Kconfig~remove-struct-page-alignment-restrictions	2014-01-02 14:56:39.078044513 -0800
++++ linux.git-davehans/init/Kconfig	2014-01-02 14:56:39.090045052 -0800
+@@ -841,7 +841,7 @@ config SLUB_CPU_PARTIAL
+ 
+ config SLUB_ATTEMPT_CMPXCHG_DOUBLE
+ 	default y
+-	depends on SLUB && HAVE_CMPXCHG_DOUBLE && HAVE_ALIGNED_STRUCT_PAGE
++	depends on SLUB && HAVE_CMPXCHG_DOUBLE
+ 	bool "SLUB: attempt to use double-cmpxchg operations"
+ 	help
+ 	  Some CPUs support instructions that let you do a large double-word
+diff -puN mm/slab_common.c~remove-struct-page-alignment-restrictions mm/slab_common.c
+--- linux.git/mm/slab_common.c~remove-struct-page-alignment-restrictions	2014-01-02 14:56:39.080044602 -0800
++++ linux.git-davehans/mm/slab_common.c	2014-01-02 14:56:39.090045052 -0800
+@@ -674,7 +674,6 @@ module_init(slab_proc_init);
+ void slab_build_checks(void)
  {
- 	void *freelist;
+ 	SLAB_PAGE_CHECK(_count, dontuse_slab_count);
+-	SLAB_PAGE_CHECK(_count, slub_data.dontuse_slub_count);
+ 	SLAB_PAGE_CHECK(_count, dontuse_slob_count);
  
--	freelist = page->freelist;
-+	freelist = page->slab_freelist;
- 	slab_destroy_debugcheck(cachep, page);
- 	if (unlikely(cachep->flags & SLAB_DESTROY_BY_RCU)) {
- 		struct rcu_head *head;
-@@ -2543,7 +2543,7 @@ static void *alloc_slabmgmt(struct kmem_
- 
- static inline unsigned int *slab_freelist(struct page *page)
- {
--	return (unsigned int *)(page->freelist);
-+	return (unsigned int *)(page->slab_freelist);
- }
- 
- static void cache_init_objs(struct kmem_cache *cachep,
-@@ -2648,7 +2648,7 @@ static void slab_map_pages(struct kmem_c
- 			   void *freelist)
- {
- 	page->slab_cache = cache;
--	page->freelist = freelist;
-+	page->slab_freelist = freelist;
- }
- 
- /*
-diff -puN mm/slab_common.c~rearrange-struct-page mm/slab_common.c
---- linux.git/mm/slab_common.c~rearrange-struct-page	2014-01-02 13:40:30.400315812 -0800
-+++ linux.git-davehans/mm/slab_common.c	2014-01-02 13:40:30.407316127 -0800
-@@ -658,3 +658,20 @@ static int __init slab_proc_init(void)
- }
- module_init(slab_proc_init);
- #endif /* CONFIG_SLABINFO */
-+#define SLAB_PAGE_CHECK(field1, field2)        \
-+	BUILD_BUG_ON(offsetof(struct page, field1) !=   \
-+		     offsetof(struct page, field2))
-+/*
-+ * To make the layout of 'struct page' look nicer, we've broken
-+ * up a few of the unions.  Folks declaring their own use of the
-+ * first few fields need to make sure that their use does not
-+ * interfere with page->_count.  This ensures that the individual
-+ * users' use actually lines up with the real ->_count.
-+ */
-+void slab_build_checks(void)
-+{
-+	SLAB_PAGE_CHECK(_count, dontuse_slab_count);
-+	SLAB_PAGE_CHECK(_count, dontuse_slub_count);
-+	SLAB_PAGE_CHECK(_count, dontuse_slob_count);
-+}
-+
-diff -puN mm/slob.c~rearrange-struct-page mm/slob.c
---- linux.git/mm/slob.c~rearrange-struct-page	2014-01-02 13:40:30.402315902 -0800
-+++ linux.git-davehans/mm/slob.c	2014-01-02 13:40:30.408316172 -0800
-@@ -219,7 +219,8 @@ static void *slob_page_alloc(struct page
- 	slob_t *prev, *cur, *aligned = NULL;
- 	int delta = 0, units = SLOB_UNITS(size);
- 
--	for (prev = NULL, cur = sp->freelist; ; prev = cur, cur = slob_next(cur)) {
-+	for (prev = NULL, cur = sp->slob_freelist; ;
-+	     prev = cur,  cur = slob_next(cur)) {
- 		slobidx_t avail = slob_units(cur);
- 
- 		if (align) {
-@@ -243,12 +244,12 @@ static void *slob_page_alloc(struct page
- 				if (prev)
- 					set_slob(prev, slob_units(prev), next);
- 				else
--					sp->freelist = next;
-+					sp->slob_freelist = next;
- 			} else { /* fragment */
- 				if (prev)
- 					set_slob(prev, slob_units(prev), cur + units);
- 				else
--					sp->freelist = cur + units;
-+					sp->slob_freelist = cur + units;
- 				set_slob(cur + units, avail - units, next);
- 			}
- 
-@@ -321,7 +322,7 @@ static void *slob_alloc(size_t size, gfp
- 
- 		spin_lock_irqsave(&slob_lock, flags);
- 		sp->units = SLOB_UNITS(PAGE_SIZE);
--		sp->freelist = b;
-+		sp->slob_freelist = b;
- 		INIT_LIST_HEAD(&sp->list);
- 		set_slob(b, SLOB_UNITS(PAGE_SIZE), b + SLOB_UNITS(PAGE_SIZE));
- 		set_slob_page_free(sp, slob_list);
-@@ -368,7 +369,7 @@ static void slob_free(void *block, int s
- 	if (!slob_page_free(sp)) {
- 		/* This slob page is about to become partially free. Easy! */
- 		sp->units = units;
--		sp->freelist = b;
-+		sp->slob_freelist = b;
- 		set_slob(b, units,
- 			(void *)((unsigned long)(b +
- 					SLOB_UNITS(PAGE_SIZE)) & PAGE_MASK));
-@@ -388,15 +389,15 @@ static void slob_free(void *block, int s
+ 	/*
+@@ -688,9 +687,12 @@ void slab_build_checks(void)
+ 	 * carve out for _count in that case actually lines up
+ 	 * with the real _count.
  	 */
- 	sp->units += units;
+-#if !(defined(CONFIG_HAVE_CMPXCHG_DOUBLE) && \
+-	    defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE))
+ 	SLAB_PAGE_CHECK(_count, slub_data.separate_count);
+-#endif
++
++	/*
++	 * We need at least three double-words worth of space to
++	 * ensure that we can align to a double-wordk internally.
++	 */
++	BUILD_BUG_ON(sizeof(struct slub_data) != sizeof(unsigned long) * 3);
+ }
  
--	if (b < (slob_t *)sp->freelist) {
--		if (b + units == sp->freelist) {
--			units += slob_units(sp->freelist);
--			sp->freelist = slob_next(sp->freelist);
-+	if (b < (slob_t *)sp->slob_freelist) {
-+		if (b + units == sp->slob_freelist) {
-+			units += slob_units(sp->slob_freelist);
-+			sp->slob_freelist = slob_next(sp->slob_freelist);
- 		}
--		set_slob(b, units, sp->freelist);
--		sp->freelist = b;
-+		set_slob(b, units, sp->slob_freelist);
-+		sp->slob_freelist = b;
- 	} else {
--		prev = sp->freelist;
-+		prev = sp->slob_freelist;
- 		next = slob_next(prev);
- 		while (b > next) {
- 			prev = next;
+diff -puN mm/slub.c~remove-struct-page-alignment-restrictions mm/slub.c
+--- linux.git/mm/slub.c~remove-struct-page-alignment-restrictions	2014-01-02 14:56:39.082044693 -0800
++++ linux.git-davehans/mm/slub.c	2014-01-02 14:56:39.092045142 -0800
+@@ -239,7 +239,11 @@ static inline struct kmem_cache_node *ge
+ 
+ static inline struct slub_data *slub_data(struct page *page)
+ {
++	int doubleword_bytes = BITS_PER_LONG * 2 / 8;
+ 	void *ptr = &page->slub_data;
++#if defined(CONFIG_SLUB_ATTEMPT_CMPXCHG_DOUBLE)
++	ptr = PTR_ALIGN(ptr, doubleword_bytes);
++#endif
+ 	return ptr;
+ }
+ 
 _
