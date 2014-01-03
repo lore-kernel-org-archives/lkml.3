@@ -1,110 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002AbaACWWh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 17:22:37 -0500
-Received: from fieldses.org ([174.143.236.118]:35046 "EHLO fieldses.org"
+	id S1754026AbaACWZM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 17:25:12 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33520 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753540AbaACWWg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 17:22:36 -0500
-Date: Fri, 3 Jan 2014 17:22:26 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: wengmeiling.weng@huawei.com, greg@kroah.com, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH] nfsd: check passed socket's net matches NFSd
- superblock's one
-Message-ID: <20140103222226.GD5164@fieldses.org>
-References: <20131230142339.16166.28243.stgit@localhost.localdomain>
+	id S1753618AbaACWZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 17:25:10 -0500
+Message-ID: <52C7389C.6000902@zytor.com>
+Date: Fri, 03 Jan 2014 14:24:28 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131230142339.16166.28243.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Matt Fleming <matt@console-pimps.org>, Dave Young <dyoung@redhat.com>
+CC: mingo@kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        kexec@lists.infradead.org
+Subject: Re: [PATCH tip/efi-kexec] x86: setup.c build fix
+References: <20140103035648.GA5291@darkstar.nay.redhat.com> <20140103144044.GD2618@console-pimps.org>
+In-Reply-To: <20140103144044.GD2618@console-pimps.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 30, 2013 at 05:23:59PM +0300, Stanislav Kinsbursky wrote:
-> There could be a case, when NFSd file system is mounted in network, different
-> to socket's one, like below:
+On 01/03/2014 06:40 AM, Matt Fleming wrote:
+> On Fri, 03 Jan, at 11:56:49AM, Dave Young wrote:
+>> In case without CONFIG_EFI, there will be below build error:
+>>    arch/x86/built-in.o: In function `setup_arch':
+>>>> (.init.text+0x9dc): undefined reference to `parse_efi_setup'
+>>
+>> Thus fix it by adding blank inline function in asm/efi.h
+>> Also remove an unused declaration for variable efi_data_len.
+>>
+>> Signed-off-by: Dave Young <dyoung@redhat.com>
+>> ---
+>>  arch/x86/include/asm/efi.h |    5 ++---
+>>  1 file changed, 2 insertions(+), 3 deletions(-)
 > 
-> "ip netns exec" creates new network and mount namespace, which duplicates NFSd
-> mount point, created in init_net context. And thus NFS server stop in nested
-> network context leads to RPCBIND client destruction in init_net.
-> Then, on NFSd start in nested network context, rpc.nfsd process creates socket
-> in nested net and passes it into "write_ports", which leads to RPCBIND sockets
-> creation in init_net context because of the same reason (NFSd monut point was
-> created in init_net context). An attempt to register passed socket in nested
-> net leads to panic, because no RPCBIND client present in nexted network
-> namespace.
+> Thanks Dave. I picked up both patches.
+> 
 
-So it's the attempt to use a NULL ->rpcb_local_clnt4?
+Something I should be pulling?
 
-Interesting, thanks--applying with a minor fix to logged message.
+	-hpa
 
---b.
-
-> 
-> This patch add check that passed socket's net matches NFSd superblock's one.
-> And returns -EINVAL error to user psace otherwise.
-> 
-> Reported-by: Weng Meiling <wengmeiling.weng@huawei.com>
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> Cc: stable@vger.kernel.org
-> ---
->  fs/nfsd/nfsctl.c               |    5 +++++
->  include/linux/sunrpc/svcsock.h |    1 +
->  net/sunrpc/svcsock.c           |   11 +++++++++++
->  3 files changed, 17 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
-> index 7f55517..f34d9de 100644
-> --- a/fs/nfsd/nfsctl.c
-> +++ b/fs/nfsd/nfsctl.c
-> @@ -699,6 +699,11 @@ static ssize_t __write_ports_addfd(char *buf, struct net *net)
->  	if (err != 0 || fd < 0)
->  		return -EINVAL;
->  
-> +	if (svc_alien_sock(net, fd)) {
-> +		printk(KERN_ERR "%s: socket net is different to NFSd's one\n", __func__);
-> +		return -EINVAL;
-> +	}
-> +
->  	err = nfsd_create_serv(net);
->  	if (err != 0)
->  		return err;
-> diff --git a/include/linux/sunrpc/svcsock.h b/include/linux/sunrpc/svcsock.h
-> index 62fd1b7..947009e 100644
-> --- a/include/linux/sunrpc/svcsock.h
-> +++ b/include/linux/sunrpc/svcsock.h
-> @@ -56,6 +56,7 @@ int		svc_recv(struct svc_rqst *, long);
->  int		svc_send(struct svc_rqst *);
->  void		svc_drop(struct svc_rqst *);
->  void		svc_sock_update_bufs(struct svc_serv *serv);
-> +bool		svc_alien_sock(struct net *net, int fd);
->  int		svc_addsock(struct svc_serv *serv, const int fd,
->  					char *name_return, const size_t len);
->  void		svc_init_xprt_sock(void);
-> diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
-> index b6e59f0..3ba5b87 100644
-> --- a/net/sunrpc/svcsock.c
-> +++ b/net/sunrpc/svcsock.c
-> @@ -1397,6 +1397,17 @@ static struct svc_sock *svc_setup_socket(struct svc_serv *serv,
->  	return svsk;
->  }
->  
-> +bool svc_alien_sock(struct net *net, int fd)
-> +{
-> +	int err;
-> +	struct socket *sock = sockfd_lookup(fd, &err);
-> +
-> +	if (sock && (sock_net(sock->sk) != net))
-> +		return true;
-> +	return false;
-> +}
-> +EXPORT_SYMBOL_GPL(svc_alien_sock);
-> +
->  /**
->   * svc_addsock - add a listener socket to an RPC service
->   * @serv: pointer to RPC service to which to add a new listener
-> 
