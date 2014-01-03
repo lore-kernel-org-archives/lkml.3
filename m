@@ -1,173 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751236AbaACFrj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 00:47:39 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:40038 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096AbaACFrM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 00:47:12 -0500
-X-Originating-IP: 50.43.14.201
-Date: Thu, 2 Jan 2014 21:47:00 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cl@linux-foundation.org,
-        penberg@kernel.org, mpm@selenic.com
-Subject: Re: Memory allocator semantics
-Message-ID: <20140103054700.GA4865@leaf>
-References: <20140102203320.GA27615@linux.vnet.ibm.com>
- <20140103033906.GB2983@leaf>
- <20140103051417.GT19211@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140103051417.GT19211@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
+	id S1751287AbaACFsV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 00:48:21 -0500
+Received: from mga01.intel.com ([192.55.52.88]:47972 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750769AbaACFsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 00:48:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,595,1384329600"; 
+   d="scan'208";a="459449297"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
+        eranian@google.com, andi@firstfloor.org,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH 00/14] perf, x86: Haswell LBR call stack support
+Date: Fri,  3 Jan 2014 13:47:57 +0800
+Message-Id: <1388728091-18564-1-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 02, 2014 at 09:14:17PM -0800, Paul E. McKenney wrote:
-> On Thu, Jan 02, 2014 at 07:39:07PM -0800, Josh Triplett wrote:
-> > On Thu, Jan 02, 2014 at 12:33:20PM -0800, Paul E. McKenney wrote:
-> > > Hello!
-> > > 
-> > > From what I can see, the Linux-kernel's SLAB, SLOB, and SLUB memory
-> > > allocators would deal with the following sort of race:
-> > > 
-> > > A.	CPU 0: r1 = kmalloc(...); ACCESS_ONCE(gp) = r1;
-> > > 
-> > > 	CPU 1: r2 = ACCESS_ONCE(gp); if (r2) kfree(r2);
-> > > 
-> > > However, my guess is that this should be considered an accident of the
-> > > current implementation rather than a feature.  The reason for this is
-> > > that I cannot see how you would usefully do (A) above without also allowing
-> > > (B) and (C) below, both of which look to me to be quite destructive:
-> > 
-> > (A) only seems OK if "gp" is guaranteed to be NULL beforehand, *and* if
-> > no other CPUs can possibly do what CPU 1 is doing in parallel.  Even
-> > then, it seems questionable how this could ever be used successfully in
-> > practice.
-> > 
-> > This seems similar to the TCP simultaneous-SYN case: theoretically
-> > possible, absurd in practice.
-> 
-> Heh!
-> 
-> Agreed on the absurdity, but my quick look and slab/slob/slub leads
-> me to believe that current Linux kernel would actually do something
-> sensible in this case.  But only because they don't touch the actual
-> memory.  DYNIX/ptx would have choked on it, IIRC.
+For many profiling tasks we need the callgraph. For example we often
+need to see the caller of a lock or the caller of a memcpy or other
+library function to actually tune the program. Frame pointer unwinding
+is efficient and works well. But frame pointers are off by default on
+64bit code (and on modern 32bit gccs), so there are many binaries around
+that do not use frame pointers. Profiling unchanged production code is
+very useful in practice. On some CPUs frame pointer also has a high
+cost. Dwarf2 unwinding also does not always work and is extremely slow
+(upto 20% overhead).
 
-Based on this and the discussion at the bottom of your mail, I think I'm
-starting to understand what you're getting at; this seems like less of a
-question of "could this usefully happen?" and more "does the allocator
-know how to protect *itself*?".
+Haswell has a new feature that utilizes the existing Last Branch Record
+facility to record call chains. When the feature is enabled, function
+call will be collected as normal, but as return instructions are
+executed the last captured branch record is popped from the on-chip LBR
+registers. The LBR call stack facility provides an alternative to get
+callgraph. It has some limitations too, but should work in most cases
+and is significantly faster than dwarf. Frame pointer unwinding is still
+the best default, but LBR call stack is a good alternative when nothing
+else works.
 
-> > > But I thought I should ask the experts.
-> > > 
-> > > So, am I correct that kernel hackers are required to avoid "drive-by"
-> > > kfree()s of kmalloc()ed memory?
-> > 
-> > Don't kfree things that are in use, and synchronize to make sure all
-> > CPUs agree about "in use", yes.
-> 
-> For example, ensure that each kmalloc() happens unambiguously before the
-> corresponding kfree().  ;-)
+This patch series adds LBR call stack support. User can enabled/disable
+this through an sysfs attribute file in the CPU PMU directory:
+ echo 1 > /sys/bus/event_source/devices/cpu/lbr_callstack 
 
-That too, yes. :)
+When profiling bc(1) on Fedora 19:
+ echo 'scale=2000; 4*a(1)' > cmd; perf record -g fp bc -l < cmd
 
-> > > PS.  To the question "Why would anyone care about (A)?", then answer
-> > >      is "Inquiring programming-language memory-model designers want
-> > >      to know."
-> > 
-> > I find myself wondering about the original form of the question, since
-> > I'd hope that programming-languge memory-model designers would
-> > understand the need for synchronization around reclaiming memory.
-> 
-> I think that they do now.  The original form of the question was as
-> follows:
-> 
-> 	But my intuition at the moment is that allowing racing
-> 	accesses and providing pointer atomicity leads to a much more
-> 	complicated and harder to explain model.  You have to deal
-> 	with initialization issues and OOTA problems without atomics.
-> 	And the implementation has to deal with cross-thread visibility
-> 	of malloc meta-information, which I suspect will be expensive.
-> 	You now essentially have to be able to malloc() in one thread,
-> 	transfer the pointer via a race to another thread, and free()
-> 	in the second thread.  That’s hard unless malloc() and free()
-> 	always lock (as I presume they do in the Linux kernel).
+If this feature is enabled, perf report output looks like:
+    50.36%       bc  bc                 [.] bc_divide
+                 |
+                 --- bc_divide
+                     execute
+                     run_code
+                     yyparse
+                     main
+                     __libc_start_main
+                     _start
 
-As mentioned above, this makes much more sense now.  This seems like a
-question of how the allocator protects its *own* internal data
-structures, rather than whether the allocator can usefully be used for
-the cases you mentioned above.  And that's a reasonable question to ask
-if you're building a language memory model for a language with malloc
-and free as part of its standard library.
+    33.66%       bc  bc                 [.] _one_mult
+                 |
+                 --- _one_mult
+                     bc_divide
+                     execute
+                     run_code
+                     yyparse
+                     main
+                     __libc_start_main
+                     _start
 
-To roughly sketch out some general rules that might work as a set of
-scalable design constraints for malloc/free:
+     7.62%       bc  bc                 [.] _bc_do_add
+                 |
+                 --- _bc_do_add
+                    |
+                    |--99.89%-- 0x2000186a8
+                     --0.11%-- [...]
 
-- malloc may always return any unallocated memory; it has no obligation
-  to avoid returning memory that was just recently freed.  In fact, an
-  implementation may even be particularly *likely* to return memory that
-  was just recently freed, for performance reasons.  Any program which
-  assumes a delay or a memory barrier before memory reuse is broken.
+     6.83%       bc  bc                 [.] _bc_do_sub
+                 |
+                 --- _bc_do_sub
+                    |
+                    |--99.94%-- bc_add
+                    |          execute
+                    |          run_code
+                    |          yyparse
+                    |          main
+                    |          __libc_start_main
+                    |          _start
+                     --0.06%-- [...]
 
-- Multiple calls to free on the same memory will produce undefined
-  behavior, and in particular may result in a well-known form of
-  security hole.  free has no obligation to protect itself against
-  multiple calls to free on the same memory, unless otherwise specified
-  as part of some debugging mode.  This holds whether the calls to free
-  occur in series or in parallel (e.g. two or more calls racing with
-  each other).  It is the job of the calling program to avoid calling
-  free multiple times on the same memory, such as via reference
-  counting, RCU, or some other mechanism.
+     0.46%       bc  libc-2.17.so       [.] __memset_sse2
+                 |
+                 --- __memset_sse2
+                    |
+                    |--54.13%-- bc_new_num
+                    |          |
+                    |          |--51.00%-- bc_divide
+                    |          |          execute
+                    |          |          run_code
+                    |          |          yyparse
+                    |          |          main
+                    |          |          __libc_start_main
+                    |          |          _start
+                    |          |
+                    |          |--30.46%-- _bc_do_sub
+                    |          |          bc_add
+                    |          |          execute
+                    |          |          run_code
+                    |          |          yyparse
+                    |          |          main
+                    |          |          __libc_start_main
+                    |          |          _start
+                    |          |
+                    |           --18.55%-- _bc_do_add
+                    |                     bc_add
+                    |                     execute
+                    |                     run_code
+                    |                     yyparse
+                    |                     main
+                    |                     __libc_start_main
+                    |                     _start
+                    |
+                     --45.87%-- bc_divide
+                               execute
+                               run_code
+                               yyparse
+                               main
+                               __libc_start_main
+                               _start
 
-- It is the job of the calling program to avoid calling free on memory
-  that is currently in use, such as via reference counting, RCU, or some
-  other mechanism.  Accessing memory after reclaiming it will produce
-  undefined behavior.  This includes calling free on memory concurrently
-  with accesses to that memory (e.g. via a race).
+If this feature is disabled, perf report output looks like:
+    50.49%       bc  bc                 [.] bc_divide
+                 |
+                 --- bc_divide
 
-- malloc and free must work correctly when concurrently called from
-  multiple threads without synchronization.  Any synchronization or
-  memory barriers required internally by the implementations must be
-  provided by the implementation.  However, an implementation is not
-  required to use any particular form of synchronization, such as
-  locking or memory barriers, and the caller of malloc or free may not
-  make any assumptions about the ordering of its own operations
-  surrounding those calls.  For example, an implementation may use
-  per-CPU memory pools, and only use synchronization when it cannot
-  satisfy an allocation request from the current CPU's pool.
+    33.57%       bc  bc                 [.] _one_mult
+                 |
+                 --- _one_mult
 
-- An implementation of free must support being called on any memory
-  allocated by the same implementation of malloc, at any time, from any
-  CPU.  In particular, a call to free on memory freshly malloc'd on
-  another CPU, with no intervening synchronization between the two
-  calls, must succeed and reclaim the memory.  However, the actual calls
-  to malloc and free must not race with each other; in particular, the
-  pointer value returned by malloc is not valid (for access or for calls
-  to free) until malloc itself has returned.  (Such a race would require
-  the caller of free to divine the value returned by malloc before
-  malloc returns.)  Thus, the implementations of malloc and free may
-  safely assume a data dependency (via the returned pointer value
-  itself) between the call to malloc and the call to free; such a
-  dependency may allow further assumptions about memory ordering based
-  on the platform's memory model.
+     7.61%       bc  bc                 [.] _bc_do_add
+                 |
+                 --- _bc_do_add
+                     0x2000186a8
 
-> But the first I heard of it was something like litmus test (A) above.
-> 
-> (And yes, I already disabused them of their notion that Linux kernel
-> kmalloc() and kfree() always lock.)
+     6.88%       bc  bc                 [.] _bc_do_sub
+                 |
+                 --- _bc_do_sub
 
-That much does seem like an easy assumption to make if you've never
-thought about how to write a scalable allocator.  The concept of per-CPU
-memory pools is the very first thing that should come to mind when
-thinking the words "scalable" and "allocator" in the same sentence, but
-first you have to get programming-language memory-model designers
-thinking the word "scalable". ;)
+     0.42%       bc  libc-2.17.so       [.] __memcpy_ssse3_back
+                 |
+                 --- __memcpy_ssse3_back
 
-- Josh Triplett
+The LBR call stack has following known limitations
+ - Zero length calls are not filtered out by hardware
+ - Exception handing such as setjmp/longjmp will have calls/returns not
+   match
+ - Pushing different return address onto the stack will have calls/returns
+   not match
+ - If callstack is deeper than the LBR, only the last entries are captured
+
+Change since previous version
+ - split change into more patches
+ - introduce context switch callback and use it to flush LBR
+ - use the context switch callback to save/restore LBR
+ - dynamic allocate memory area for storing LBR stack, always switch the
+   memory area during context switch
+ - disable this feature by default
+ - more description in change logs
+
