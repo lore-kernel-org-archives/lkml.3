@@ -1,122 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751513AbaACJTd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 04:19:33 -0500
-Received: from mail-bn1lp0149.outbound.protection.outlook.com ([207.46.163.149]:20001
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751099AbaACJT0 convert rfc822-to-8bit (ORCPT
+	id S1751596AbaACJU0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 04:20:26 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:15984 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751096AbaACJUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 04:19:26 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Huan Wang <Huan.Wang@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jingchang Lu <jingchang.lu@freescale.com>
-Subject: RE: [PATCHv8 1/4] pwm: Add Freescale FTM PWM driver support
-Thread-Topic: [PATCHv8 1/4] pwm: Add Freescale FTM PWM driver support
-Thread-Index: AQHPB6ipMx0gIe2NTUmSOapMVXIH7JpxR9QAgAD6zUA=
-Date: Fri, 3 Jan 2014 09:19:22 +0000
-Message-ID: <bb5e14370ddb4ce2921140d147244097@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1388656624-26570-1-git-send-email-Li.Xiubo@freescale.com>
- <1388656624-26570-2-git-send-email-Li.Xiubo@freescale.com>
- <3716216.GQHQhxMFvx@wuerfel>
-In-Reply-To: <3716216.GQHQhxMFvx@wuerfel>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 00808B16F3
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(199002)(189002)(24454002)(51704005)(65816001)(56816005)(33646001)(74316001)(31966008)(46102001)(51856001)(66066001)(83072002)(74706001)(2656002)(90146001)(69226001)(47446002)(80022001)(53806001)(54356001)(74662001)(74502001)(76482001)(63696002)(81542001)(87936001)(76786001)(87266001)(76576001)(81686001)(81816001)(74876001)(77982001)(83322001)(56776001)(74366001)(81342001)(80976001)(85306002)(4396001)(76796001)(54316002)(50986001)(79102001)(85852003)(47976001)(59766001)(49866001)(47736001)(24736002)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB221;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 3 Jan 2014 04:20:22 -0500
+From: <jiel@marvell.com>
+To: <rjw@rjwysocki.net>, <viresh.kumar@linaro.org>
+CC: <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Jane Li <jiel@marvell.com>
+Subject: [PATCH v4] cpufreq: Fix timer/workqueue corruption by protecting reading governor_enabled
+Date: Fri, 3 Jan 2014 17:17:41 +0800
+Message-ID: <1388740661-15011-1-git-send-email-jiel@marvell.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-01-03_03:2014-01-02,2014-01-03,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1401030005
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+From: Jane Li <jiel@marvell.com>
 
+When a CPU is hot removed we'll cancel all the delayed work items via
+gov_cancel_work(). Sometimes the delayed work function determines that
+it should adjust the delay for all other CPUs that the policy is
+managing. If this scenario occurs, the canceling CPU will cancel its own
+work but queue up the other CPUs works to run.
 
-> Subject: Re: [PATCHv8 1/4] pwm: Add Freescale FTM PWM driver support
-> 
-> On Thursday 02 January 2014 17:57:01 Xiubo Li wrote:
-> > +static inline u32 ftm_readl(bool big_endian, const void __iomem *addr)
-> > +{
-> > +       u32 val;
-> > +
-> > +       val = __raw_readl(addr);
-> > +
-> > +       if (likely(big_endian))
-> > +               val = be32_to_cpu((__force __be32)val);
-> > +       else
-> > +               val = le32_to_cpu((__force __le32)val);
-> > +       rmb();
-> > +
-> > +       return val;
-> > +}
-> > +
-> > +static inline void ftm_writel(bool big_endian, u32 val, void __iomem *addr)
-> > +{
-> > +       wmb();
-> > +       if (likely(big_endian))
-> > +               val = (__force u32)cpu_to_be32(val);
-> > +       else
-> > +               val = (__force u32)cpu_to_le32(val);
-> > +
-> > +       __raw_writel(val, addr);
-> 
-> These functions definitely need some comments regarding why this is necessary.
-> I assume that after 8 rounds of review (that I did not read) this has been
-> discussed already, so please explain above the functions why you don't just
-> use ioread32be/ioread32 and iowrite32be/iowrite32 here.
->
+Commit 3617f2(cpufreq: Fix timer/workqueue corruption due to double
+queueing) has tried to fix this, but reading governor_enabled is not
+protected by cpufreq_governor_lock. Even though od_dbs_timer() checks
+governor_enabled before gov_queue_work(), this scenario may occur. For
+example:
 
-As Thierry has commonts in some days before:
-----
-A few years ago GregKH commented in response to a patch that ioread*()
-weren't supposed to be used for memory-mapped only devices. The original
-purpose apparently was to allow drivers to work with both I/O and
-memory-mapped devices.
-----
-I'm not very sure.
+ CPU0                                        CPU1
+ ----                                        ----
+ cpu_down()
+  ...                                        <work runs>
+  __cpufreq_remove_dev()                     od_dbs_timer()
+   __cpufreq_governor()                       policy->governor_enabled
+    policy->governor_enabled = false;
+    cpufreq_governor_dbs()
+     case CPUFREQ_GOV_STOP:
+      gov_cancel_work(dbs_data, policy);
+       cpu0 work is canceled
+        timer is canceled
+        cpu1 work is canceled
+        <waits for cpu1>
+                                              gov_queue_work(*, *, true);
+                                               cpu0 work queued
+                                               cpu1 work queued
+                                               cpu2 work queued
+                                               ...
+        cpu1 work is canceled
+        cpu2 work is canceled
+        ...
 
-The big-endian supports is added at v7~v8 patch series.
+At the end of the GOV_STOP case cpu0 still has a work queued to
+run although the code is expecting all of the works to be
+canceled. __cpufreq_remove_dev() will then proceed to
+re-initialize all the other CPUs works except for the CPU that is
+going down. The CPUFREQ_GOV_START case in cpufreq_governor_dbs()
+will trample over the queued work and debugobjects will spit out
+a warning:
 
+WARNING: at lib/debugobjects.c:260 debug_print_object+0x94/0xbc()
+ODEBUG: init active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x14
+Modules linked in:
+CPU: 1 PID: 1205 Comm: sh Tainted: G        W    3.10.0 #200
+[<c01144f0>] (unwind_backtrace+0x0/0xf8) from [<c0111d98>] (show_stack+0x10/0x14)
+[<c0111d98>] (show_stack+0x10/0x14) from [<c01272cc>] (warn_slowpath_common+0x4c/0x68)
+[<c01272cc>] (warn_slowpath_common+0x4c/0x68) from [<c012737c>] (warn_slowpath_fmt+0x30/0x40)
+[<c012737c>] (warn_slowpath_fmt+0x30/0x40) from [<c034c640>] (debug_print_object+0x94/0xbc)
+[<c034c640>] (debug_print_object+0x94/0xbc) from [<c034c7f8>] (__debug_object_init+0xc8/0x3c0)
+[<c034c7f8>] (__debug_object_init+0xc8/0x3c0) from [<c01360e0>] (init_timer_key+0x20/0x104)
+[<c01360e0>] (init_timer_key+0x20/0x104) from [<c04872ac>] (cpufreq_governor_dbs+0x1dc/0x68c)
+[<c04872ac>] (cpufreq_governor_dbs+0x1dc/0x68c) from [<c04833a8>] (__cpufreq_governor+0x80/0x1b0)
+[<c04833a8>] (__cpufreq_governor+0x80/0x1b0) from [<c0483704>] (__cpufreq_remove_dev.isra.12+0x22c/0x380)
+[<c0483704>] (__cpufreq_remove_dev.isra.12+0x22c/0x380) from [<c0692f38>] (cpufreq_cpu_callback+0x48/0x5c)
+[<c0692f38>] (cpufreq_cpu_callback+0x48/0x5c) from [<c014fb40>] (notifier_call_chain+0x44/0x84)
+[<c014fb40>] (notifier_call_chain+0x44/0x84) from [<c012ae44>] (__cpu_notify+0x2c/0x48)
+[<c012ae44>] (__cpu_notify+0x2c/0x48) from [<c068dd40>] (_cpu_down+0x80/0x258)
+[<c068dd40>] (_cpu_down+0x80/0x258) from [<c068df40>] (cpu_down+0x28/0x3c)
+[<c068df40>] (cpu_down+0x28/0x3c) from [<c068e4c0>] (store_online+0x30/0x74)
+[<c068e4c0>] (store_online+0x30/0x74) from [<c03a7308>] (dev_attr_store+0x18/0x24)
+[<c03a7308>] (dev_attr_store+0x18/0x24) from [<c0256fe0>] (sysfs_write_file+0x100/0x180)
+[<c0256fe0>] (sysfs_write_file+0x100/0x180) from [<c01fec9c>] (vfs_write+0xbc/0x184)
+[<c01fec9c>] (vfs_write+0xbc/0x184) from [<c01ff034>] (SyS_write+0x40/0x68)
+[<c01ff034>] (SyS_write+0x40/0x68) from [<c010e200>] (ret_fast_syscall+0x0/0x48)
 
-> Also all callers seem to be of the style
-> 
->        val = ftm_readl(fpc->big_endian, fpc->base + FTM_SC);
-> 
-> so I wonder why you don't just pass the fpc pointer to the function
-> and make it
-> 
-> static inline void ftm_readl(struct fsl_pwm_chip *fpc, unsigned long reg, u32
-> val)
-> {
-> 	if (fpc->big_endian)
-> 		iowrite32be(val, fpc->base + reg);
-> 	else
-> 		iowrite32(val, fpc->base + reg);
-> }
-> 
+In gov_queue_work(), lock cpufreq_governor_lock before gov_queue_work,
+and unlock it after __gov_queue_work(). In this way, governor_enabled
+is guaranteed not changed in gov_queue_work().
 
-Yes, it was.
+Signed-off-by: Jane Li <jiel@marvell.com>
+---
+ drivers/cpufreq/cpufreq.c          |    2 +-
+ drivers/cpufreq/cpufreq_governor.c |    6 +++++-
+ drivers/cpufreq/cpufreq_governor.h |    2 ++
+ 3 files changed, 8 insertions(+), 2 deletions(-)
 
-I thought this will make the ftm_readl/ftm_writel look more brief like other drivers.
-
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 16d7b4a..185c9f5 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -39,7 +39,7 @@ static struct cpufreq_driver *cpufreq_driver;
+ static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data);
+ static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data_fallback);
+ static DEFINE_RWLOCK(cpufreq_driver_lock);
+-static DEFINE_MUTEX(cpufreq_governor_lock);
++DEFINE_MUTEX(cpufreq_governor_lock);
+ static LIST_HEAD(cpufreq_policy_list);
  
-Thanks very much.
-
---
-Best Regards,
-Xiubo
+ #ifdef CONFIG_HOTPLUG_CPU
+diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+index e6be635..ba43991 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -119,8 +119,9 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
+ {
+ 	int i;
+ 
++	mutex_lock(&cpufreq_governor_lock);
+ 	if (!policy->governor_enabled)
+-		return;
++		goto out_unlock;
+ 
+ 	if (!all_cpus) {
+ 		/*
+@@ -135,6 +136,9 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
+ 		for_each_cpu(i, policy->cpus)
+ 			__gov_queue_work(i, dbs_data, delay);
+ 	}
++
++out_unlock:
++	mutex_unlock(&cpufreq_governor_lock);
+ }
+ EXPORT_SYMBOL_GPL(gov_queue_work);
+ 
+diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+index b5f2b86..bfb9ae1 100644
+--- a/drivers/cpufreq/cpufreq_governor.h
++++ b/drivers/cpufreq/cpufreq_governor.h
+@@ -257,6 +257,8 @@ static ssize_t show_sampling_rate_min_gov_pol				\
+ 	return sprintf(buf, "%u\n", dbs_data->min_sampling_rate);	\
+ }
+ 
++extern struct mutex cpufreq_governor_lock;
++
+ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu);
+ bool need_load_eval(struct cpu_dbs_common_info *cdbs,
+ 		unsigned int sampling_rate);
+-- 
+1.7.9.5
 
