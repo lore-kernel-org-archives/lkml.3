@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658AbaACU7i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 15:59:38 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:31454 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752463AbaACU7h (ORCPT
+	id S1753887AbaACVA1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 16:00:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50775 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752696AbaACVA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 15:59:37 -0500
-Date: Fri, 3 Jan 2014 23:59:09 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Forest Bond <forest@alittletooquiet.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joe Perches <joe@perches.com>, Teodora Baluta <teobaluta@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch] staging: vt6655: check too restrictive (off by one)
-Message-ID: <20140103205909.GA9698@elgon.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Fri, 3 Jan 2014 16:00:26 -0500
+Date: Fri, 3 Jan 2014 13:00:23 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH v2 1/1] mm: fix the theoretical compound_lock() vs
+ prep_new_page() race
+Message-Id: <20140103130023.fdbf96fc95c702bf63871b56@linux-foundation.org>
+In-Reply-To: <20140103195547.GB26555@redhat.com>
+References: <20131211191855.GA32485@redhat.com>
+	<20131213151035.GE5408@redhat.com>
+	<20131213162240.GA11762@redhat.com>
+	<20131213173406.GG5408@redhat.com>
+	<20131216183618.GA28252@redhat.com>
+	<20131216201952.GE21218@redhat.com>
+	<20131219190846.GA24566@redhat.com>
+	<20131219190920.GB24566@redhat.com>
+	<20131223114300.GC727@redhat.com>
+	<20140103195519.GA26555@redhat.com>
+	<20140103195547.GB26555@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-key_len == MAX_KEY_LEN is valid but we return an error.
+On Fri, 3 Jan 2014 20:55:47 +0100 Oleg Nesterov <oleg@redhat.com> wrote:
 
-Introduced-by: 6b7200fe0a59 ('Staging: vt6655: memory corruption in check in wpa_set_wpadev()')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> get/put_page(thp_tail) paths do get_page_unless_zero(page_head) +
+> compound_lock(). In theory this page_head can be already freed and
+> reallocated as alloc_pages(__GFP_COMP, smaller_order). In this case
+> get_page_unless_zero() can succeed right after set_page_refcounted(),
+> and compound_lock() can race with the non-atomic __SetPageHead().
 
-diff --git a/drivers/staging/vt6655/wpactl.c b/drivers/staging/vt6655/wpactl.c
-index ee83704e4401..d43efb85f4d3 100644
---- a/drivers/staging/vt6655/wpactl.c
-+++ b/drivers/staging/vt6655/wpactl.c
-@@ -202,8 +202,8 @@ int wpa_set_keys(PSDevice pDevice, void *ctx, bool fcpfkernel)
- 	int uu, ii;
- 
- 	if (param->u.wpa_key.alg_name > WPA_ALG_CCMP ||
--	    param->u.wpa_key.key_len >= MAX_KEY_LEN ||
--	    param->u.wpa_key.seq_len >= MAX_KEY_LEN)
-+	    param->u.wpa_key.key_len > MAX_KEY_LEN ||
-+	    param->u.wpa_key.seq_len > MAX_KEY_LEN)
- 		return -EINVAL;
- 
- 	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "param->u.wpa_key.alg_name = %d \n", param->u.wpa_key.alg_name);
+Would be useful to mention that these things are happening inside
+prep_compound_opage() (yes?).
+
+> Perhaps we should rework the thp locking (under discussion), but
+> until then this patch moves set_page_refcounted() and adds wmb()
+> to ensure that page->_count != 0 comes as a last change.
+> 
+> I am not sure about other callers of set_page_refcounted(), but at
+> first glance they look fine to me.
+
+I don't get it.  We're in prep_new_page() - this page is freshly
+allocated and no other thread yet has any means by which to look it up
+and start fiddling with it?
+
