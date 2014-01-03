@@ -1,103 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968AbaACNhS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 08:37:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58425 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751085AbaACNhP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 08:37:15 -0500
-Date: Fri, 3 Jan 2014 14:24:32 +0100
-From: mmarek <mmarek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Yang Bai <hamo.by@gmail.com>
-Subject: Re: [PATCH] scripts: Have make TAGS not include structure members
-Message-ID: <20140103132432.GA32469@sepie.suse.cz>
-References: <20131115093645.6dc03918@gandalf.local.home>
- <CAMuHMdXSBSOkfd2MGbn=rpXQRZYw5TKLsR=3SoeSyrcD2CzunA@mail.gmail.com>
- <20131119155907.11fbdecea0aa40764a3d927a@linux-foundation.org>
- <20131119190426.27b010e4@gandalf.local.home>
- <20131119160855.2527630f87d060801d9ee3bb@linux-foundation.org>
- <20131119191435.4dce1499@gandalf.local.home>
- <528BFFBF.4050807@codeaurora.org>
- <20131119193414.48912cbd@gandalf.local.home>
+	id S1752194AbaACNhv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 08:37:51 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:62028 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752062AbaACNhu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 08:37:50 -0500
+X-IronPort-AV: E=Sophos;i="4.95,598,1384300800"; 
+   d="scan'208";a="87342822"
+Message-ID: <52C6BD2B.6090108@citrix.com>
+Date: Fri, 3 Jan 2014 13:37:47 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131119193414.48912cbd@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <boris.ostrovsky@oracle.com>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xenproject.org>, <stefano.stabellini@eu.citrix.com>,
+        <mukesh.rathor@oracle.com>
+Subject: Re: [PATCH v12] Linux Xen PVH support.
+References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com> <52C598C6.7040902@citrix.com> <20140102190256.GH3021@pegasus.dumpdata.com>
+In-Reply-To: <20140102190256.GH3021@pegasus.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 07:34:14PM -0500, Steven Rostedt wrote:
-> I wasn't going to use this change, but instead add this change:
-[...]
-> --- linux-trace.git.orig/scripts/tags.sh	2013-11-19 19:29:34.352371615 -0500
-> +++ linux-trace.git/scripts/tags.sh	2013-11-19 19:32:37.821152204 -0500
-> @@ -218,7 +218,7 @@ exuberant()
->  
->  emacs()
->  {
-> -	all_target_sources | xargs $1 -a                        \
-> +	all_target_sources | xargs $@ -a                        \
->  	--regex='/^\(ENTRY\|_GLOBAL\)(\([^)]*\)).*/\2/'         \
->  	--regex='/^SYSCALL_DEFINE[0-9]?(\([^,)]*\).*/sys_\1/'   \
->  	--regex='/^TRACE_EVENT(\([^,)]*\).*/trace_\1/'		\
-> @@ -263,7 +263,7 @@ xtags()
->  	if $1 --version 2>&1 | grep -iq exuberant; then
->  		exuberant $1
->  	elif $1 --version 2>&1 | grep -iq emacs; then
-> -		emacs $1
-> +		emacs $@
->  	else
->  		all_target_sources | xargs $1 -a
->          fi
-> @@ -313,7 +313,7 @@ case "$1" in
->  
->  	"TAGS")
->  		rm -f TAGS
-> -		xtags etags
-> +		xtags etags --no-members
->  		remove_structs=y
+On 02/01/14 19:02, Konrad Rzeszutek Wilk wrote:
+> On Thu, Jan 02, 2014 at 04:50:14PM +0000, David Vrabel wrote:
+>> On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
+>>> The patches, also available at
+>>> git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git devel/pvh.v12
+>>>
+>>> implements the neccessary functionality to boot a PV guest in PVH mode.
+>>
+>> In general this looks in much better shape now.  Some of the refactoring
+>> patches should be queued for 3.14.
+> 
+> <nods> Thank you for your review!
+>>
+>> I'm not sure if when the rest wants to go in given that the PVH
+>> hypervisor ABI is not yet finalized and is missing support for a number
+>> of things with no visible plan for how/when/if this missing
+>> functionality will be implemented.
+> 
+> We could follow the same path that Xen ARM in Linux did.
 
+ARM was a whole new architecture with limited hardware availability
+initially so I think what the ARM port did was the right approach.  It's
+less clear to me if this is sensible for an existing, widely used
+architecture.
 
-The logic looks OK, but it is not completely obvious that $@ means
-'etags --no-members, iff called as etags'. How about using a more
-descriptive variable like this?
+If the PVH ABI was fixed and documented then it would be a non-brainer
+to merge kernel support even if it was not fully feature complete.
 
-diff --git a/scripts/tags.sh b/scripts/tags.sh
-index 58c4559..3afc479 100755
---- a/scripts/tags.sh
-+++ b/scripts/tags.sh
-@@ -219,7 +219,7 @@ exuberant()
- 
- emacs()
- {
--	all_target_sources | xargs $1 -a                        \
-+	all_target_sources | xargs $1 $no_members -a            \
- 	--regex='/^\(ENTRY\|_GLOBAL\)(\([^)]*\)).*/\2/'         \
- 	--regex='/^SYSCALL_DEFINE[0-9]?(\([^,)]*\).*/sys_\1/'   \
- 	--regex='/^TRACE_EVENT(\([^,)]*\).*/trace_\1/'		\
-@@ -308,12 +308,15 @@ case "$1" in
- 
- 	"tags")
- 		rm -f tags
-+		no_members=
- 		xtags ctags
- 		remove_structs=y
- 		;;
- 
- 	"TAGS")
- 		rm -f TAGS
-+		# Do not index struct members when generating Emacs TAGS
-+		no_members=--no-members
- 		xtags etags
- 		remove_structs=y
- 		;;
+What I don't want is guests or dom0s that used to boot in PVH mode that
+would end up not booting at all if Xen is upgraded.  It's probably ok if
+PV can be used a fallback.  It's also probably ok if this fallback is a
+manual process (e.g., user has to set pvh=0 to get a working guest again).
 
-Michal
+It would also be preferable for PVH guests to fail hard if run on newer,
+incompatible hypervisors.  Whether this is feasible would depend on what
+the ABI changes are.
+
+David
