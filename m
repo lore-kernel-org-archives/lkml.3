@@ -1,85 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556AbaACTzp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 14:55:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34075 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752436AbaACTzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 14:55:42 -0500
-Date: Fri, 3 Jan 2014 20:55:47 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [PATCH v2 1/1] mm: fix the theoretical compound_lock() vs
-	prep_new_page() race
-Message-ID: <20140103195547.GB26555@redhat.com>
-References: <20131211191855.GA32485@redhat.com> <20131213151035.GE5408@redhat.com> <20131213162240.GA11762@redhat.com> <20131213173406.GG5408@redhat.com> <20131216183618.GA28252@redhat.com> <20131216201952.GE21218@redhat.com> <20131219190846.GA24566@redhat.com> <20131219190920.GB24566@redhat.com> <20131223114300.GC727@redhat.com> <20140103195519.GA26555@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140103195519.GA26555@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753608AbaACTz4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 14:55:56 -0500
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:3477 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753570AbaACTzx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 14:55:53 -0500
+Message-ID: <1388778945.2956.20.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v3 13/14] mm, hugetlb: retry if failed to allocate and
+ there is concurrent user
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>, aswin@hp.com
+Date: Fri, 03 Jan 2014 11:55:45 -0800
+In-Reply-To: <20131223021118.GA2487@lge.com>
+References: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com>
+	 <1387349640-8071-14-git-send-email-iamjoonsoo.kim@lge.com>
+	 <20131219170202.0df2d82a2adefa3ab616bdaa@linux-foundation.org>
+	 <20131220140153.GC11295@suse.de>
+	 <1387608497.3119.17.camel@buesod1.americas.hpqcorp.net>
+	 <20131223004438.GA19388@lge.com> <20131223021118.GA2487@lge.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get/put_page(thp_tail) paths do get_page_unless_zero(page_head) +
-compound_lock(). In theory this page_head can be already freed and
-reallocated as alloc_pages(__GFP_COMP, smaller_order). In this case
-get_page_unless_zero() can succeed right after set_page_refcounted(),
-and compound_lock() can race with the non-atomic __SetPageHead().
+Hi Joonsoo,
 
-Perhaps we should rework the thp locking (under discussion), but
-until then this patch moves set_page_refcounted() and adds wmb()
-to ensure that page->_count != 0 comes as a last change.
+Sorry about the delay...
 
-I am not sure about other callers of set_page_refcounted(), but at
-first glance they look fine to me.
+On Mon, 2013-12-23 at 11:11 +0900, Joonsoo Kim wrote:
+> On Mon, Dec 23, 2013 at 09:44:38AM +0900, Joonsoo Kim wrote:
+> > On Fri, Dec 20, 2013 at 10:48:17PM -0800, Davidlohr Bueso wrote:
+> > > On Fri, 2013-12-20 at 14:01 +0000, Mel Gorman wrote:
+> > > > On Thu, Dec 19, 2013 at 05:02:02PM -0800, Andrew Morton wrote:
+> > > > > On Wed, 18 Dec 2013 15:53:59 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> > > > > 
+> > > > > > If parallel fault occur, we can fail to allocate a hugepage,
+> > > > > > because many threads dequeue a hugepage to handle a fault of same address.
+> > > > > > This makes reserved pool shortage just for a little while and this cause
+> > > > > > faulting thread who can get hugepages to get a SIGBUS signal.
+> > > > > > 
+> > > > > > To solve this problem, we already have a nice solution, that is,
+> > > > > > a hugetlb_instantiation_mutex. This blocks other threads to dive into
+> > > > > > a fault handler. This solve the problem clearly, but it introduce
+> > > > > > performance degradation, because it serialize all fault handling.
+> > > > > > 
+> > > > > > Now, I try to remove a hugetlb_instantiation_mutex to get rid of
+> > > > > > performance degradation.
+> > > > > 
+> > > > > So the whole point of the patch is to improve performance, but the
+> > > > > changelog doesn't include any performance measurements!
+> > > > > 
+> > > > 
+> > > > I don't really deal with hugetlbfs any more and I have not examined this
+> > > > series but I remember why I never really cared about this mutex. It wrecks
+> > > > fault scalability but AFAIK fault scalability almost never mattered for
+> > > > workloads using hugetlbfs.  The most common user of hugetlbfs by far is
+> > > > sysv shared memory. The memory is faulted early in the lifetime of the
+> > > > workload and after that it does not matter. At worst, it hurts application
+> > > > startup time but that is still poor motivation for putting a lot of work
+> > > > into removing the mutex.
+> > > 
+> > > Yep, important hugepage workloads initially pound heavily on this lock,
+> > > then it naturally decreases.
+> > > 
+> > > > Microbenchmarks will be able to trigger problems in this area but it'd
+> > > > be important to check if any workload that matters is actually hitting
+> > > > that problem.
+> > > 
+> > > I was thinking of writing one to actually get some numbers for this
+> > > patchset -- I don't know of any benchmark that might stress this lock. 
+> > > 
+> > > However I first measured the amount of cycles it costs to start an
+> > > Oracle DB and things went south with these changes. A simple 'startup
+> > > immediate' calls hugetlb_fault() ~5000 times. For a vanilla kernel, this
+> > > costs ~7.5 billion cycles and with this patchset it goes up to ~27.1
+> > > billion. While there is naturally a fair amount of variation, these
+> > > changes do seem to do more harm than good, at least in real world
+> > > scenarios.
+> > 
+> > Hello,
+> > 
+> > I think that number of cycles is not proper to measure this patchset,
+> > because cycles would be wasted by fault handling failure. Instead, it
+> > targeted improved elapsed time. 
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Andrea Arcangeli <aarcange@redhat.com>
----
- mm/page_alloc.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
+Fair enough, however the fact of the matter is this approach does en up
+hurting performance. Regarding total startup time, I didn't see hardly
+any differences, with both vanilla and this patchset it takes close to
+33.5 seconds.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 115b23b..d323102 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -865,8 +865,6 @@ static int prep_new_page(struct page *page, int order, gfp_t gfp_flags)
- 	}
- 
- 	set_page_private(page, 0);
--	set_page_refcounted(page);
--
- 	arch_alloc_page(page, order);
- 	kernel_map_pages(page, 1 << order, 1);
- 
-@@ -876,6 +874,16 @@ static int prep_new_page(struct page *page, int order, gfp_t gfp_flags)
- 	if (order && (gfp_flags & __GFP_COMP))
- 		prep_compound_page(page, order);
- 
-+	/*
-+	 * Make sure the caller of get_page_unless_zero() will see the
-+	 * fully initialized page. Say, to ensure that compound_lock()
-+	 * can't race with the non-atomic __SetPage*() above.
-+	 */
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+	smp_wmb();
-+#endif
-+	set_page_refcounted(page);
-+
- 	return 0;
- }
- 
--- 
-1.5.5.1
+> Could you tell me how long it
+> > takes to fault all of it's hugepages?
+> > 
+> > Anyway, this order of magnitude still seems a problem. :/
+> > 
+> > I guess that cycles are wasted by zeroing hugepage in fault-path like as
+> > Andrew pointed out.
+> > 
+> > I will send another patches to fix this problem.
+> 
+> Hello, Davidlohr.
+> 
+> Here goes the fix on top of this series.
 
+... and with this patch we go from 27 down to 11 billion cycles, so this
+approach still costs more than what we currently have. A perf stat shows
+that an entire 1Gb huge page aware DB startup costs around ~30 billion
+cycles on a vanilla kernel, so the impact of hugetlb_fault() is
+definitely non trivial and IMO worth considering.
+
+Now, I took my old patchset (https://lkml.org/lkml/2013/7/26/299) for a
+ride and things do look quite better, which is basically what Andrew was
+suggesting previously anyway. With the hash table approach the startup
+time did go down to ~25.1 seconds, which is a nice -24.7% time
+reduction, with hugetlb_fault() consuming roughly 5.3 billion cycles.
+This hash table was on a 80 core system, so since we do the power of two
+round up we end up with 256 entries -- I think we can do better if we
+enlarger further, maybe something like statically 1024, or probably
+better, 8-ish * nr cpus.
+
+Thoughts? Is there any reason why we cannot go with this instead? Yes,
+we still keep the mutex, but the approach is (1) proven better for
+performance on real world workloads and (2) far less invasive. 
+
+Thanks,
+Davidlohr
 
