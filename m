@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750889AbaACF3v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 00:29:51 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:44711 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717AbaACF3t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 00:29:49 -0500
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org
-Cc: rpurdie@rpsys.net, cooloney@gmail.com
-Subject: [PATCH V2] leds: s3c24xx: Fix build failure
-Date: Fri,  3 Jan 2014 10:55:57 +0530
-Message-Id: <1388726757-7387-1-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1388394595-1347-1-git-send-email-tushar.behera@linaro.org>
-References: <1388394595-1347-1-git-send-email-tushar.behera@linaro.org>
+	id S1751251AbaACFdT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 00:33:19 -0500
+Received: from mga01.intel.com ([192.55.52.88]:34670 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750753AbaACFdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 00:33:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,595,1384329600"; 
+   d="scan'208";a="459444976"
+Date: Thu, 2 Jan 2014 21:38:17 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: Hayes Wang <hayeswang@realtek.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next] r8152: fix the wrong return value
+Message-ID: <20140103053817.GA3403@psi-dev26.jf.intel.com>
+References: <1388719316-5702-1-git-send-email-hayeswang@realtek.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1388719316-5702-1-git-send-email-hayeswang@realtek.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit c67d0f29262b ("ARM: s3c24xx: get rid of custom <mach/gpio.h>")
-removed the usage of mach/gpio.h file, but we need to include
-plat/gpio-cfg.h to avoid following build error.
+On Fri, Jan 03, 2014 at 11:21:56AM +0800, Hayes Wang wrote:
+> The return value should be the boolean value, not the error code.
+> 
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+> Spotted-by: Dan Carpenter <dan.carpenter@oracle.com>
+> ---
+>  drivers/net/usb/r8152.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+> index e3d878c..13fabbb 100644
+> --- a/drivers/net/usb/r8152.c
+> +++ b/drivers/net/usb/r8152.c
+> @@ -2708,7 +2708,7 @@ static bool rtl_ops_init(struct r8152 *tp, const struct usb_device_id *id)
+>  			ops->unload		= rtl8153_unload;
+>  			break;
+>  		default:
+> -			ret = -EFAULT;
+> +			ret = false;
 
-Fixes following build error.
-drivers/leds/leds-s3c24xx.c: In function ‘s3c24xx_led_probe’:
-drivers/leds/leds-s3c24xx.c:100:2: error: implicit declaration of
-function ‘s3c_gpio_setpull’ [-Werror=implicit-function-declaration]
+How about fix the function's return type instead?
+Returning bool for success/error in Linux kernel is not natural. You
+gotta check rtl_ops_init() for success and !rtl_ops_init() for error.
+And you are unable to return the error value.
 
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
----
-Changes for V2:
-* Updated commit message
+Br, David
 
-Bryan,
-
-I should have been more explicit regarding this patch. This patch fixes
-build error on linux-next after the above patch was merged.
-
-Tested at next-20131224.
-
- drivers/leds/leds-s3c24xx.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/leds/leds-s3c24xx.c b/drivers/leds/leds-s3c24xx.c
-index 76483fb..87cf215 100644
---- a/drivers/leds/leds-s3c24xx.c
-+++ b/drivers/leds/leds-s3c24xx.c
-@@ -21,6 +21,7 @@
- 
- #include <mach/hardware.h>
- #include <mach/regs-gpio.h>
-+#include <plat/gpio-cfg.h>
- #include <linux/platform_data/leds-s3c24xx.h>
- 
- /* our context */
--- 
-1.7.9.5
-
+>  			break;
+>  		}
+>  		break;
+> -- 
+> 1.8.4.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
