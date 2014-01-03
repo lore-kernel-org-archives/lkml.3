@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185AbaACWrV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 17:47:21 -0500
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:39828 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753666AbaACWrR (ORCPT
+	id S1753773AbaACWxL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 17:53:11 -0500
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:36033 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753569AbaACWw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 17:47:17 -0500
-Date: Fri, 3 Jan 2014 15:47:13 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v5 25/33] PCI, x86: Make ioapic hotplug support built-in
-Message-ID: <20140103224713.GC18987@google.com>
-References: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
- <1388707565-16535-26-git-send-email-yinghai@kernel.org>
+	Fri, 3 Jan 2014 17:52:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1388707565-16535-26-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52C738C0.5090604@turmel.org>
+References: <loom.20140103T194726-983@post.gmane.org>
+	<CAFLxGvzVw31Z=hLi35J5_zE4PA5RDMgyQmcNd0kgk9LXr-kQAg@mail.gmail.com>
+	<52C738C0.5090604@turmel.org>
+Date: Fri, 3 Jan 2014 23:52:56 +0100
+Message-ID: <CAFLxGvxeXf9nY5Uz3bSs8c3OiZXn8p-hTcN_Lw_jb+WOA5CASQ@mail.gmail.com>
+Subject: Re: GPL violators (charging for a Linux kernel by itself and then
+ charging again for source)
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Phil Turmel <philip@turmel.org>
+Cc: Eric Appleman <erappleman@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[fixed Rafael's email address; I imagine you got a few bounces :)]
+On Fri, Jan 3, 2014 at 11:25 PM, Phil Turmel <philip@turmel.org> wrote:
+> On 01/03/2014 05:07 PM, Richard Weinberger wrote:
+>> On Fri, Jan 3, 2014 at 7:56 PM, Eric Appleman <erappleman@gmail.com> wrote:
+>
+>>> Wasn't the whole idea of a fee being permitted an acknowledgment that
+>>> physical distribution of source was acceptable if electronic was not
+>>> possible (low bandwidth ISP, security concerns, etc).
+>>
+>> GPLv2 states:
+>> "You may charge a fee for the physical act of transferring a copy, and
+>> you may at your option offer warranty protection in exchange for a
+>> fee."
+>
+> Yeah, that's section #1.  Charge all you want for general distribution.
+>
+> But you are forgetting section #3, which kicks in if you distribute in
+> compiled or executable form.  It limits the fee for separate source code
+> delivery to "no more than your cost of physically performing source
+> distribution"
+>
+> Only your customers are entitled to that service, though.
 
-On Thu, Jan 02, 2014 at 04:05:57PM -0800, Yinghai Lu wrote:
-> ioapic hotplug should be built-in like pci root bus hotplug.
-> 
-> Also need to make it depends on X86_IO_APIC.
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Not customers. Anyone who got an binary from you (no matter how).
+GPLv2 only cares about distribution of binaries not customers.
 
-Most of this series is x86-specific and outside the scope of PCI, so I
-assume somebody else will deal with it.
+But this kind of discussion should move to legal@gpl-violations.org.
 
-This particular patch doesn't seem to depend on anything else, so I'll
-merge it.
-
-> ---
->  drivers/pci/Kconfig  | 3 ++-
->  drivers/pci/ioapic.c | 6 +++++-
->  2 files changed, 7 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
-> index b6a99f7..893503f 100644
-> --- a/drivers/pci/Kconfig
-> +++ b/drivers/pci/Kconfig
-> @@ -105,9 +105,10 @@ config PCI_PASID
->  	  If unsure, say N.
->  
->  config PCI_IOAPIC
-> -	tristate "PCI IO-APIC hotplug support" if X86
-> +	bool "PCI IO-APIC hotplug support" if X86
->  	depends on PCI
->  	depends on ACPI
-> +	depends on X86_IO_APIC
->  	default !X86
->  
->  config PCI_LABEL
-> diff --git a/drivers/pci/ioapic.c b/drivers/pci/ioapic.c
-> index 50ce680..2c2930e 100644
-> --- a/drivers/pci/ioapic.c
-> +++ b/drivers/pci/ioapic.c
-> @@ -113,6 +113,10 @@ static struct pci_driver ioapic_driver = {
->  	.remove		= ioapic_remove,
->  };
->  
-> -module_pci_driver(ioapic_driver);
-> +static int __init ioapic_init(void)
-> +{
-> +	return pci_register_driver(&ioapic_driver);
-> +}
-> +module_init(ioapic_init);
->  
->  MODULE_LICENSE("GPL");
-> -- 
-> 1.8.4
-> 
+-- 
+Thanks,
+//richard
