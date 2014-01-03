@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512AbaACRjO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 12:39:14 -0500
-Received: from smtprelay0215.hostedemail.com ([216.40.44.215]:52115 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751856AbaACRjN (ORCPT
+	id S1752463AbaACRpN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 12:45:13 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:56243 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055AbaACRpL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 12:39:13 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2692:2693:2828:3138:3139:3140:3141:3142:3351:3622:3865:3866:3867:3868:3870:3871:3874:4321:5007:6119:7652:7903:8526:10004:10400:10848:11232:11658:11914:12517:12519:12663:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: care59_6d1f8de4a0a38
-X-Filterd-Recvd-Size: 1960
-Message-ID: <1388770748.14334.19.camel@joe-AO722>
-Subject: Re: [PATCH] lib/vsprintf: add %pT[C012] format specifier
-From: Joe Perches <joe@perches.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Jiri Kosina <jkosina@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 03 Jan 2014 09:39:08 -0800
-In-Reply-To: <CAGXu5jL7RunQuAw1MjnUMgWeYMX35+YcGeaZYCx6dhND3YUmsQ@mail.gmail.com>
-References: <1388507067.2259.24.camel@joe-AO722>
-	 <201401011434.GAF34360.FFQOVtFOHJSMLO@I-love.SAKURA.ne.jp>
-	 <1388555362.2259.38.camel@joe-AO722>
-	 <201401011902.JEF43770.FSOVFFOHOtQLJM@I-love.SAKURA.ne.jp>
-	 <1388626389.2259.57.camel@joe-AO722>
-	 <201401021349.JGJ78109.OOFtFFHJMLSOQV@I-love.SAKURA.ne.jp>
-	 <CAGXu5jL7RunQuAw1MjnUMgWeYMX35+YcGeaZYCx6dhND3YUmsQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 3 Jan 2014 12:45:11 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-ce-52c6f724577f
+Message-id: <52C6F722.3090704@samsung.com>
+Date: Fri, 03 Jan 2014 21:45:06 +0400
+From: Alexey Perevalov <a.perevalov@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
+ Thunderbird/17.0.7
+MIME-version: 1.0
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, anton@enomsg.org, kyungmin.park@samsung.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 0/3] Deferrable timers support for timerfd API
+References: <1388687448-12987-1-git-send-email-a.perevalov@samsung.com>
+ <52C5F38D.5060201@linaro.org>
+In-reply-to: <52C5F38D.5060201@linaro.org>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHLMWRmVeSWpSXmKPExsVy+t/xy7oq348FGWz5amwxZ/0aNouDWzUt
+	zvzWtTjb9Ibd4vKuOWwOrB4T+j8xety5tofN48SM3ywefVtWMXp83iQXwBrFZZOSmpNZllqk
+	b5fAlfH01Er2gv+cFa8PrmVsYGzh6GLk4JAQMJHY9yOxi5ETyBSTuHBvPVsXIxeHkMBSRolV
+	81exQDifGSU6u6awg1TxCmhJ7Jp3GcxmEVCVeLz9EDPIIDYBA4l992xBTFGBCImjyzUhqgUl
+	fky+xwJiiwhoSCxccpUJpIRZIEti5v1ikLCwgJPErvkvmUBsIYF0iWtTd4DZnECLnh9rB2tl
+	FrCWWDlpGyOELS+xec1b5gmMArOQbJiFpGwWkrIFjMyrGEVTS5MLipPSc430ihNzi0vz0vWS
+	83M3MULC+OsOxqXHrA4xCnAwKvHwZpw8FiTEmlhWXJl7iFGCg1lJhDfwDVCINyWxsiq1KD++
+	qDQntfgQIxMHp1QDI8/sylf1kwufhnzrO5zGZFvL/8luzuvf/E9POnwKatS4/njqRMmHJ2ct
+	OSykVbJtnfypsmUiaU+YmN1erNMwYznrInJvx+EJq0QDO9XmsvMrzeXaKW9qaNrwsuZU43Ev
+	6TCrvIV7d55bcfnGiePZ04NPM7ju3O75+lFjBl+8P8sEx9pzPWL285RYijMSDbWYi4oTAecY
+	AChBAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-01-03 at 09:08 -0800, Kees Cook wrote:
-> I'm on board with the idea of embedding comm/pid/whatever,
+On 01/03/2014 03:17 AM, John Stultz wrote:
+> On 01/02/2014 10:30 AM, Alexey Perevalov wrote:
+>> This version introduces new clockid (CLOCK_DEFERRABLE) , for timerfd_create, instead of
+>> new flag (TFD_TIMER_DEFERRABLE) for timerfd_settime introduced in previous version.
+> So why did you make this change?
+>
+> thanks
+> -john
+>
+>
 
-I still think the space reduction isn't worth the
-complication.
+I looked at alarm timers and found approach of making timer behavior 
+persistent per file descriptor is better than
+changeable by timerfd_settime. I think "end user wake up from suspend" 
+and "don't wake up in idle" is the same thing on the same abstraction level.
 
->  but I
-> either missed or do not understand why a second format-start character
-> is being added. I think this will complicate audits and maybe trigger
-> weird info leaks (imagine printing a string that was %-escaped, but
-> not 0x1A-escaped?)
-> Why not use % followed by 0x1A to be the start code, instead of just 0x1A?
+Yes Anton's previous  patches worked with CLOCK_MONOTONIC only and I 
+didn't intend to use it with CLOCK_REALTIME, cause it's hard to me to 
+find such use case.
+Another way - it's stay as was Anton's patch, I mean as flag for the 
+timerfd_settime, but in original patch set both hrtimer and deferrable 
+timers initialized in timerfd_create, I think it's not needed. Also 
+ability to change timer behavior looks not good if you couldn't change 
+alarm timer behavior, not unified API.
 
-gcc would bleat an error for
-	"unknown conversion type character 0x1a in format".
+If I'm right, only high resolution timer could be REALTIME, and there is 
+no deferrable behavior for hrtimer only for timer_list.
 
 
+-- 
+Best regards,
+Alexey Perevalov
