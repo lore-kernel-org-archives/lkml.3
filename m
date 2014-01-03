@@ -1,83 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446AbaACOz5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 09:55:57 -0500
-Received: from mail.wdtv.com ([66.118.69.84]:49297 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751923AbaACOzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 09:55:55 -0500
-From: Gene Heskett <gheskett@wdtv.com>
-To: Ken Moffat <zarniwhoop@ntlworld.com>
-Subject: Re: AMD microcode fails to update with v3.8.3 and newer, bisect failed
-Date: Fri, 3 Jan 2014 09:55:45 -0500
-Cc: Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org
-References: <201401011752.00267.gheskett@wdtv.com> <20140102181513.GA9391@milliways> <201401021812.05431.gheskett@wdtv.com>
-In-Reply-To: <201401021812.05431.gheskett@wdtv.com>
+	id S1752290AbaACPBo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 10:01:44 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55543 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751931AbaACPBn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 10:01:43 -0500
+Date: Fri, 3 Jan 2014 14:59:17 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Mark Salter <msalter@redhat.com>, catalin.marinas@arm.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
+        Chen Baozi <baozich@gmail.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] arm64/xen: redefine xen_remap on arm64
+Message-ID: <20140103145917.GP7383@n2100.arm.linux.org.uk>
+References: <1388386511-32276-1-git-send-email-baozich@gmail.com> <1388431259.2564.15.camel@deneb.redhat.com> <alpine.DEB.2.02.1401031310100.8667@kaball.uk.xensource.com> <20140103143104.GN7383@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1401031444550.8667@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1256"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201401030955.45645.gheskett@wdtv.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1401031444550.8667@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 02 January 2014, Gene Heskett wrote:
->On Thursday 02 January 2014, Ken Moffat wrote:
->>On Thu, Jan 02, 2014 at 12:24:56AM -0500, Gene Heskett wrote:
->>> On Wednesday 01 January 2014, Ken Moffat wrote:
->>> >On Thu, Jan 02, 2014 at 04:08:15AM +0000, Ken Moffat wrote:
->>> >>  Anyway, best of luck and I hope you get it sorted.
-[...]
->My "makeit" script actually stores the .config as a config-$VER.gz in the
->boot, renaming an existing one to gz.old if its found.  But that was
->apparently overwritten more than twice while attempting the bisect.
->
->No progress today, I've been out playing small town broadcast engineer,
->the local AM'ers daytime transmitter put out about 1 kilgram of smoke at
->turn on this morning.  A gassy 807 took out a 10 henry choke in the
->power supply about 10kg, but now nice and toasty overdone.  Parts on
->order, but are up in PA, and this current snowstorm has PA in just about
->in a total lockdown. Might have it by Monday.
->
->Cheers, Gene
+On Fri, Jan 03, 2014 at 02:49:54PM +0000, Stefano Stabellini wrote:
+> OK. That would be Rob's patch below.
 
-This morning I may have found a clue.  The last thing I did last night was 
-to note that in the boots where it worked, the module microcode was a 
-MODULE, not built in.  So I made a boot with only that change, after having 
-built a previous boot with all the ext# stuff built in too.
+Looks fine to me.
 
-I am booted to 3.12.6, 32 bit build on a phenom cpu, it IS recognizing all 
-8Gb of my memory, and:
+> Are you going to take care of sending it to Linus?
 
-gene@coyote:~/src/linux-3.12.6$ dmesg|grep microcode
-[   22.572212] microcode: CPU0: patch_level=0x01000065
-[   22.573242] microcode: CPU0: new patch_level=0x01000083
-[   22.573256] microcode: CPU1: patch_level=0x01000065
-[   22.573263] microcode: CPU1: new patch_level=0x01000083
-[   22.573273] microcode: CPU2: patch_level=0x01000065
-[   22.573281] microcode: CPU2: new patch_level=0x01000083
-[   22.573293] microcode: CPU3: patch_level=0x01000065
-[   22.573301] microcode: CPU3: new patch_level=0x01000083
-[   22.573377] microcode: Microcode Update Driver: v2.00 
-<tigran@aivazian.fsnet.co.uk>, Peter Oruba
+If you want to stick it in the patch system, I'll throw it in my tree.
+I need to push out the next set of fixes soon anyway.
 
-So the microcode updating does not work when built in.
+Thanks.
 
-So the $64k questions are, 1. does it work for anyone else when built in? 
-and 2. is it supposed to?
-
-Obviously if it is supposed to work, why not?  I'm not equipt to do much 
-more than report.  The coal mines canary comes to mind.
-
-Cheers, Gene
 -- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Genes Web page <http://geneslinuxbox.net:6309/gene>
-
-I'm not tense, just terribly, terribly alert!
-A pen in the hand of this president is far more
-dangerous than 200 million guns in the hands of
-         law-abiding citizens.
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
