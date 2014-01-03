@@ -1,87 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558AbaACVYU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 16:24:20 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:50656 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753362AbaACVYR (ORCPT
+	id S1753492AbaACVpH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 16:45:07 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:37028 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752756AbaACVpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 16:24:17 -0500
-Date: Fri, 3 Jan 2014 14:24:13 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jiang Liu <jiang.liu@huawei.com>
-Subject: Re: [PATCH v5 24/33] x86: Move declaration for mp_register_ioapic()
-Message-ID: <20140103212413.GA18987@google.com>
-References: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
- <1388707565-16535-25-git-send-email-yinghai@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1388707565-16535-25-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 3 Jan 2014 16:45:05 -0500
+Date: Fri, 3 Jan 2014 16:45:00 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH] x86: Do not force removal of __user when calling
+ copy_to/from_user_nocheck()
+Message-ID: <20140103164500.5f6478f5@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 02, 2014 at 04:05:56PM -0800, Yinghai Lu wrote:
-> Address compiling problem that Fengguang report.
 
-Does this fix a problem that's already in the upstream tree?
+Commit ff47ab4ff3cdd "x86: Add 1/2/4/8 byte optimization to 64bit
+__copy_{from,to}_user_inatomic" added a "_nocheck" call in between
+the copy_to/from_user() and copy_user_generic(). As both the
+normal and nocheck versions of theses calls use the proper __user
+annotation, a typecast to remove it should not be added.
+This causes sparse to spin out the following warnings:
 
-If it merely fixes a problem that was added somewhere in your patches,
-why don't you fold this fix into the patch that added the problem?
+arch/x86/include/asm/uaccess_64.h:207:47: warning: incorrect type in argument 2 (different address spaces)
+arch/x86/include/asm/uaccess_64.h:207:47:    expected void const [noderef] <asn:1>*src
+arch/x86/include/asm/uaccess_64.h:207:47:    got void const *<noident>
+arch/x86/include/asm/uaccess_64.h:207:47: warning: incorrect type in argument 2 (different address spaces)
+arch/x86/include/asm/uaccess_64.h:207:47:    expected void const [noderef] <asn:1>*src
+arch/x86/include/asm/uaccess_64.h:207:47:    got void const *<noident>
+arch/x86/include/asm/uaccess_64.h:207:47: warning: incorrect type in argument 2 (different address spaces)
+arch/x86/include/asm/uaccess_64.h:207:47:    expected void const [noderef] <asn:1>*src
+arch/x86/include/asm/uaccess_64.h:207:47:    got void const *<noident>
+arch/x86/include/asm/uaccess_64.h:207:47: warning: incorrect type in argument 2 (different address spaces)
+arch/x86/include/asm/uaccess_64.h:207:47:    expected void const [noderef] <asn:1>*src
+arch/x86/include/asm/uaccess_64.h:207:47:    got void const *<noident>
 
-If you included more details, like the exact problem report, I could
-probably have figured this out myself.
+Cc: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ arch/x86/include/asm/uaccess_64.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Bjorn
+diff --git a/arch/x86/include/asm/uaccess_64.h b/arch/x86/include/asm/uaccess_64.h
+index 190413d..12a26b9 100644
+--- a/arch/x86/include/asm/uaccess_64.h
++++ b/arch/x86/include/asm/uaccess_64.h
+@@ -204,13 +204,13 @@ int __copy_in_user(void __user *dst, const void __user *src, unsigned size)
+ static __must_check __always_inline int
+ __copy_from_user_inatomic(void *dst, const void __user *src, unsigned size)
+ {
+-	return __copy_from_user_nocheck(dst, (__force const void *)src, size);
++	return __copy_from_user_nocheck(dst, src, size);
+ }
+ 
+ static __must_check __always_inline int
+ __copy_to_user_inatomic(void __user *dst, const void *src, unsigned size)
+ {
+-	return __copy_to_user_nocheck((__force void *)dst, src, size);
++	return __copy_to_user_nocheck(dst, src, size);
+ }
+ 
+ extern long __copy_user_nocache(void *dst, const void __user *src,
+-- 
+1.8.1.4
 
-> Reported-by: Fengguang Wu <wfg@linux.intel.com>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Cc: Jiang Liu <jiang.liu@huawei.com>
-> ---
->  arch/x86/include/asm/mpspec.h | 18 +++++++++++++++++-
->  1 file changed, 17 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
-> index b98665f..e9d850e 100644
-> --- a/arch/x86/include/asm/mpspec.h
-> +++ b/arch/x86/include/asm/mpspec.h
-> @@ -95,10 +95,26 @@ static inline void early_reserve_e820_mpc_new(void) { }
->  #endif
->  
->  int generic_processor_info(int apicid, int version);
-> -#ifdef CONFIG_ACPI
-> +#ifdef CONFIG_X86_IO_APIC
->  int __mp_register_ioapic(int id, u32 address, u32 gsi_base, bool hot);
->  int mp_unregister_ioapic(u32 gsi_base);
->  extern void mp_register_ioapic(int id, u32 address, u32 gsi_base);
-> +#else
-> +static inline int __mp_register_ioapic(int id, u32 address, u32 gsi_base,
-> +					 bool hot)
-> +{
-> +	return 0;
-> +}
-> +static inline int mp_unregister_ioapic(u32 gsi_base)
-> +{
-> +	return 0;
-> +}
-> +static inline void mp_register_ioapic(int id, u32 address, u32 gsi_base)
-> +{
-> +}
-> +#endif
-> +
-> +#ifdef CONFIG_ACPI
->  extern void mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger,
->  				   u32 gsi);
->  extern void mp_config_acpi_legacy_irqs(void);
-> -- 
-> 1.8.4
-> 
