@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002AbaACUaI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 15:30:08 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:23337 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753884AbaACUaD (ORCPT
+	id S1753982AbaACUaH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 15:30:07 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:21968 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753666AbaACU37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 15:30:03 -0500
+	Fri, 3 Jan 2014 15:29:59 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
         boris.ostrovsky@oracle.com, stefano.stabellini@eu.citrix.com,
         david.vrabel@citrix.com
 Cc: hpa@zytor.com, Mukesh Rathor <mukesh.rathor@oracle.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v13 11/19] xen/pvh: Secondary VCPU bringup (non-bootup CPUs)
-Date: Fri,  3 Jan 2014 14:38:28 -0500
-Message-Id: <1388777916-1328-12-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH v13 10/19] xen/pvh: Load GDT/GS in early PV bootup code for BSP.
+Date: Fri,  3 Jan 2014 14:38:27 -0500
+Message-Id: <1388777916-1328-11-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1388777916-1328-1-git-send-email-konrad.wilk@oracle.com>
 References: <1388777916-1328-1-git-send-email-konrad.wilk@oracle.com>
@@ -26,187 +26,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mukesh Rathor <mukesh.rathor@oracle.com>
 
-The VCPU bringup protocol follows the PV with certain twists.
->From xen/include/public/arch-x86/xen.h:
+During early bootup we start life using the Xen provided
+GDT, which means that we are running with %cs segment set
+to FLAT_KERNEL_CS (FLAT_RING3_CS64 0xe033, GDT index 261).
 
-Also note that when calling DOMCTL_setvcpucontext and VCPU_initialise
-for HVM and PVH guests, not all information in this structure is updated:
+But for PVH we want to be use HVM type mechanism for
+segment operations. As such we need to switch to the HVM
+one and also reload ourselves with the __KERNEL_CS:eip
+to run in the proper GDT and segment.
 
- - For HVM guests, the structures read include: fpu_ctxt (if
- VGCT_I387_VALID is set), flags, user_regs, debugreg[*]
+For HVM this is usually done in 'secondary_startup_64' in
+(head_64.S) but since we are not taking that bootup
+path (we start in PV - xen_start_kernel) we need to do
+that in the early PV bootup paths.
 
- - PVH guests are the same as HVM guests, but additionally use ctrlreg[3] to
- set cr3. All other fields not used should be set to 0.
-
-This is what we do. We piggyback on the 'xen_setup_gdt' - but modify
-a bit - we need to call 'load_percpu_segment' so that 'switch_to_new_gdt'
-can load per-cpu data-structures. It has no effect on the VCPU0.
-
-We also piggyback on the %rdi register to pass in the CPU number - so
-that when we bootup a new CPU, the cpu_bringup_and_idle will have
-passed as the first parameter the CPU number (via %rdi for 64-bit).
+For good measure we also zero out the %fs, %ds, and %es
+(not strictly needed as Xen has already cleared them
+for us). The %gs is loaded by 'switch_to_new_gdt'.
 
 Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 ---
- arch/x86/xen/enlighten.c | 11 ++++++++---
- arch/x86/xen/smp.c       | 49 ++++++++++++++++++++++++++++++++----------------
- arch/x86/xen/xen-ops.h   |  1 +
- 3 files changed, 42 insertions(+), 19 deletions(-)
+ arch/x86/xen/enlighten.c | 39 +++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 37 insertions(+), 2 deletions(-)
 
 diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 1170d00..fde62c4 100644
+index 23ead29..1170d00 100644
 --- a/arch/x86/xen/enlighten.c
 +++ b/arch/x86/xen/enlighten.c
-@@ -1409,14 +1409,19 @@ static void __init xen_boot_params_init_edd(void)
-  * Set up the GDT and segment registers for -fstack-protector.  Until
+@@ -1410,8 +1410,43 @@ static void __init xen_boot_params_init_edd(void)
   * we do this, we have to be careful not to call any stack-protected
   * function, which is most of the kernel.
-+ *
-+ * Note, that it is refok - because the only caller of this after init
-+ * is PVH which is not going to use xen_load_gdt_boot or other
-+ * __init functions.
   */
--static void __init xen_setup_gdt(void)
-+void __ref xen_setup_gdt(int cpu)
+-static void __init xen_setup_stackprotector(void)
++static void __init xen_setup_gdt(void)
  {
- 	if (xen_feature(XENFEAT_auto_translated_physmap)) {
- #ifdef CONFIG_X86_64
- 		unsigned long dummy;
++	if (xen_feature(XENFEAT_auto_translated_physmap)) {
++#ifdef CONFIG_X86_64
++		unsigned long dummy;
++
++		switch_to_new_gdt(0); /* GDT and GS set */
++
++		/* We are switching of the Xen provided GDT to our HVM mode
++		 * GDT. The new GDT has  __KERNEL_CS with CS.L = 1
++		 * and we are jumping to reload it.
++		 */
++		asm volatile ("pushq %0\n"
++			      "leaq 1f(%%rip),%0\n"
++			      "pushq %0\n"
++			      "lretq\n"
++			      "1:\n"
++			      : "=&r" (dummy) : "0" (__KERNEL_CS));
++
++		/*
++		 * While not needed, we also set the %es, %ds, and %fs
++		 * to zero. We don't care about %ss as it is NULL.
++		 * Strictly speaking this is not needed as Xen zeros those
++		 * out (and also MSR_FS_BASE, MSR_GS_BASE, MSR_KERNEL_GS_BASE)
++		 *
++		 * Linux zeros them in cpu_init() and in secondary_startup_64
++		 * (for BSP).
++		 */
++		loadsegment(es, 0);
++		loadsegment(ds, 0);
++		loadsegment(fs, 0);
++#else
++		/* PVH: TODO Implement. */
++		BUG();
++#endif
++		return; /* PVH does not need any PV GDT ops. */
++	}
+ 	pv_cpu_ops.write_gdt_entry = xen_write_gdt_entry_boot;
+ 	pv_cpu_ops.load_gdt = xen_load_gdt_boot;
  
--		switch_to_new_gdt(0); /* GDT and GS set */
-+		load_percpu_segment(cpu); /* We need to access per-cpu area */
-+		switch_to_new_gdt(cpu); /* GDT and GS set */
- 
- 		/* We are switching of the Xen provided GDT to our HVM mode
- 		 * GDT. The new GDT has  __KERNEL_CS with CS.L = 1
-@@ -1529,7 +1534,7 @@ asmlinkage void __init xen_start_kernel(void)
+@@ -1494,7 +1529,7 @@ asmlinkage void __init xen_start_kernel(void)
  	 * Set up kernel GDT and segment registers, mainly so that
  	 * -fstack-protector code can be executed.
  	 */
--	xen_setup_gdt();
-+	xen_setup_gdt(0);
+-	xen_setup_stackprotector();
++	xen_setup_gdt();
  
  	xen_init_irq_ops();
  	xen_init_cpuid_mask();
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index c36b325..5e46190 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -73,9 +73,11 @@ static void cpu_bringup(void)
- 	touch_softlockup_watchdog();
- 	preempt_disable();
- 
--	xen_enable_sysenter();
--	xen_enable_syscall();
--
-+	/* PVH runs in ring 0 and allows us to do native syscalls. Yay! */
-+	if (!xen_feature(XENFEAT_supervisor_mode_kernel)) {
-+		xen_enable_sysenter();
-+		xen_enable_syscall();
-+	}
- 	cpu = smp_processor_id();
- 	smp_store_cpu_info(cpu);
- 	cpu_data(cpu).x86_max_cores = 1;
-@@ -97,8 +99,14 @@ static void cpu_bringup(void)
- 	wmb();			/* make sure everything is out */
- }
- 
--static void cpu_bringup_and_idle(void)
-+/* Note: cpu parameter is only relevant for PVH */
-+static void cpu_bringup_and_idle(int cpu)
- {
-+#ifdef CONFIG_X86_64
-+	if (xen_feature(XENFEAT_auto_translated_physmap) &&
-+	    xen_feature(XENFEAT_supervisor_mode_kernel))
-+		xen_setup_gdt(cpu);
-+#endif
- 	cpu_bringup();
- 	cpu_startup_entry(CPUHP_ONLINE);
- }
-@@ -274,9 +282,10 @@ static void __init xen_smp_prepare_boot_cpu(void)
- 	native_smp_prepare_boot_cpu();
- 
- 	if (xen_pv_domain()) {
--		/* We've switched to the "real" per-cpu gdt, so make sure the
--		   old memory can be recycled */
--		make_lowmem_page_readwrite(xen_initial_gdt);
-+		if (!xen_feature(XENFEAT_writable_page_tables))
-+			/* We've switched to the "real" per-cpu gdt, so make
-+			 * sure the old memory can be recycled. */
-+			make_lowmem_page_readwrite(xen_initial_gdt);
- 
- #ifdef CONFIG_X86_32
- 		/*
-@@ -360,22 +369,21 @@ cpu_initialize_context(unsigned int cpu, struct task_struct *idle)
- 
- 	gdt = get_cpu_gdt_table(cpu);
- 
--	ctxt->flags = VGCF_IN_KERNEL;
--	ctxt->user_regs.ss = __KERNEL_DS;
- #ifdef CONFIG_X86_32
-+	/* Note: PVH is not yet supported on x86_32. */
- 	ctxt->user_regs.fs = __KERNEL_PERCPU;
- 	ctxt->user_regs.gs = __KERNEL_STACK_CANARY;
--#else
--	ctxt->gs_base_kernel = per_cpu_offset(cpu);
- #endif
- 	ctxt->user_regs.eip = (unsigned long)cpu_bringup_and_idle;
- 
- 	memset(&ctxt->fpu_ctxt, 0, sizeof(ctxt->fpu_ctxt));
- 
--	{
-+	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
-+		ctxt->flags = VGCF_IN_KERNEL;
- 		ctxt->user_regs.eflags = 0x1000; /* IOPL_RING1 */
- 		ctxt->user_regs.ds = __USER_DS;
- 		ctxt->user_regs.es = __USER_DS;
-+		ctxt->user_regs.ss = __KERNEL_DS;
- 
- 		xen_copy_trap_info(ctxt->trap_ctxt);
- 
-@@ -396,18 +404,27 @@ cpu_initialize_context(unsigned int cpu, struct task_struct *idle)
- #ifdef CONFIG_X86_32
- 		ctxt->event_callback_cs     = __KERNEL_CS;
- 		ctxt->failsafe_callback_cs  = __KERNEL_CS;
-+#else
-+		ctxt->gs_base_kernel = per_cpu_offset(cpu);
- #endif
- 		ctxt->event_callback_eip    =
- 					(unsigned long)xen_hypervisor_callback;
- 		ctxt->failsafe_callback_eip =
- 					(unsigned long)xen_failsafe_callback;
-+		ctxt->user_regs.cs = __KERNEL_CS;
-+		per_cpu(xen_cr3, cpu) = __pa(swapper_pg_dir);
-+#ifdef CONFIG_X86_32
- 	}
--	ctxt->user_regs.cs = __KERNEL_CS;
-+#else
-+	} else
-+		/* N.B. The user_regs.eip (cpu_bringup_and_idle) is called with
-+		 * %rdi having the cpu number - which means are passing in
-+		 * as the first parameter the cpu. Subtle!
-+		 */
-+		ctxt->user_regs.rdi = cpu;
-+#endif
- 	ctxt->user_regs.esp = idle->thread.sp0 - sizeof(struct pt_regs);
--
--	per_cpu(xen_cr3, cpu) = __pa(swapper_pg_dir);
- 	ctxt->ctrlreg[3] = xen_pfn_to_cr3(virt_to_mfn(swapper_pg_dir));
--
- 	if (HYPERVISOR_vcpu_op(VCPUOP_initialise, cpu, ctxt))
- 		BUG();
- 
-diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
-index 95f8c61..9059c24 100644
---- a/arch/x86/xen/xen-ops.h
-+++ b/arch/x86/xen/xen-ops.h
-@@ -123,4 +123,5 @@ __visible void xen_adjust_exception_frame(void);
- 
- extern int xen_panic_handler_init(void);
- 
-+void xen_setup_gdt(int cpu);
- #endif /* XEN_OPS_H */
 -- 
 1.8.3.1
 
