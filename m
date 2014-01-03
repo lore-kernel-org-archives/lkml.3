@@ -1,191 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529AbaACAGZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 19:06:25 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:21547 "EHLO
+	id S1753564AbaACAGc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 19:06:32 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:21607 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753327AbaACAGQ (ORCPT
+	with ESMTP id S1752848AbaACAGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 19:06:16 -0500
+	Thu, 2 Jan 2014 19:06:30 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
         Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v5 31/33] ACPI, x86/PCI: Move resource_to_addr() to acpi generic
-Date: Thu,  2 Jan 2014 16:06:03 -0800
-Message-Id: <1388707565-16535-32-git-send-email-yinghai@kernel.org>
+        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Joerg Roedel <joro@8bytes.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Subject: [PATCH v5 13/33] x86, irq: Add alloc_reserved_irq_and_cfg_at()
+Date: Thu,  2 Jan 2014 16:05:45 -0800
+Message-Id: <1388707565-16535-14-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
 References: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rui wang reported ioapic hot-add does not work on his machine
-that _CRS have MEMORY_FIXED.
-He also proposed to expose resource_to_addr() and use it for ioapic.
+For ioapic hot-add support, it would be easy if we have continuous
+irq numbers for new added ioapic controller.
 
-We should move it to acpi generic, as ioapi.c current is in
-drivers/pci/.
+We can reserve irq range at first, then allocate those
+pre-reserved one when it is needed.
 
-Or should move it to acpica?
+Add alloc_reserved_irq_and_cfg_at() to really allocate irq_desc and cfg,
+because pre-reserved only mark bits in allocate_irqs bit maps.
+
+Also fallback to alloc_irq_and_cfg_at(), and it is needed as
+we do not actually reserved irq for io apic irq yet.
+
+This patch is x86 arch code.
+
+-v2: update changelog by adding reasons, requested by Konrad.
+-v3: according to tglx, separate to another patch, and use
+     alloc_reserved_... instead of realloc_...
+     also add handling for one possible path in
+       alloc_reserved_irq_and_cfg_at().
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 ---
- arch/x86/pci/acpi.c     | 51 ++-----------------------------------------------
- drivers/acpi/resource.c | 46 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/acpi.h    |  3 +++
- 3 files changed, 51 insertions(+), 49 deletions(-)
+ arch/x86/kernel/apic/io_apic.c | 25 ++++++++++++++++++++++++-
+ 1 file changed, 24 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index 4f25ec0..9dc42c6 100644
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -219,60 +219,13 @@ static void teardown_mcfg_map(struct pci_root_info *info)
- #endif
- 
- static acpi_status
--resource_to_addr(struct acpi_resource *resource,
--			struct acpi_resource_address64 *addr)
--{
--	acpi_status status;
--	struct acpi_resource_memory24 *memory24;
--	struct acpi_resource_memory32 *memory32;
--	struct acpi_resource_fixed_memory32 *fixed_memory32;
--
--	memset(addr, 0, sizeof(*addr));
--	switch (resource->type) {
--	case ACPI_RESOURCE_TYPE_MEMORY24:
--		memory24 = &resource->data.memory24;
--		addr->resource_type = ACPI_MEMORY_RANGE;
--		addr->minimum = memory24->minimum;
--		addr->address_length = memory24->address_length;
--		addr->maximum = addr->minimum + addr->address_length - 1;
--		return AE_OK;
--	case ACPI_RESOURCE_TYPE_MEMORY32:
--		memory32 = &resource->data.memory32;
--		addr->resource_type = ACPI_MEMORY_RANGE;
--		addr->minimum = memory32->minimum;
--		addr->address_length = memory32->address_length;
--		addr->maximum = addr->minimum + addr->address_length - 1;
--		return AE_OK;
--	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
--		fixed_memory32 = &resource->data.fixed_memory32;
--		addr->resource_type = ACPI_MEMORY_RANGE;
--		addr->minimum = fixed_memory32->address;
--		addr->address_length = fixed_memory32->address_length;
--		addr->maximum = addr->minimum + addr->address_length - 1;
--		return AE_OK;
--	case ACPI_RESOURCE_TYPE_ADDRESS16:
--	case ACPI_RESOURCE_TYPE_ADDRESS32:
--	case ACPI_RESOURCE_TYPE_ADDRESS64:
--		status = acpi_resource_to_address64(resource, addr);
--		if (ACPI_SUCCESS(status) &&
--		    (addr->resource_type == ACPI_MEMORY_RANGE ||
--		    addr->resource_type == ACPI_IO_RANGE) &&
--		    addr->address_length > 0) {
--			return AE_OK;
--		}
--		break;
--	}
--	return AE_ERROR;
--}
--
--static acpi_status
- count_resource(struct acpi_resource *acpi_res, void *data)
- {
- 	struct pci_root_info *info = data;
- 	struct acpi_resource_address64 addr;
- 	acpi_status status;
- 
--	status = resource_to_addr(acpi_res, &addr);
-+	status = acpi_mem_addr_resource_to_address64(acpi_res, &addr);
- 	if (ACPI_SUCCESS(status))
- 		info->res_num++;
- 	return AE_OK;
-@@ -288,7 +241,7 @@ setup_resource(struct acpi_resource *acpi_res, void *data)
- 	unsigned long flags;
- 	u64 start, orig_end, end;
- 
--	status = resource_to_addr(acpi_res, &addr);
-+	status = acpi_mem_addr_resource_to_address64(acpi_res, &addr);
- 	if (!ACPI_SUCCESS(status))
- 		return AE_OK;
- 
-diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
-index b7201fc..6199ddf 100644
---- a/drivers/acpi/resource.c
-+++ b/drivers/acpi/resource.c
-@@ -414,6 +414,52 @@ void acpi_dev_free_resource_list(struct list_head *list)
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index b943012..4b836ea 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -301,6 +301,29 @@ static void free_irq_at(unsigned int at, struct irq_cfg *cfg)
+ 	irq_free_desc(at);
  }
- EXPORT_SYMBOL_GPL(acpi_dev_free_resource_list);
  
-+acpi_status acpi_mem_addr_resource_to_address64(struct acpi_resource *resource,
-+			struct acpi_resource_address64 *addr)
++static struct irq_cfg *alloc_reserved_irq_and_cfg_at(unsigned int at, int node)
 +{
-+	acpi_status status;
-+	struct acpi_resource_memory24 *memory24;
-+	struct acpi_resource_memory32 *memory32;
-+	struct acpi_resource_fixed_memory32 *fixed_memory32;
++	struct irq_cfg *cfg;
++	int res;
 +
-+	memset(addr, 0, sizeof(*addr));
-+	switch (resource->type) {
-+	case ACPI_RESOURCE_TYPE_MEMORY24:
-+		memory24 = &resource->data.memory24;
-+		addr->resource_type = ACPI_MEMORY_RANGE;
-+		addr->minimum = memory24->minimum;
-+		addr->address_length = memory24->address_length;
-+		addr->maximum = addr->minimum + addr->address_length - 1;
-+		return AE_OK;
-+	case ACPI_RESOURCE_TYPE_MEMORY32:
-+		memory32 = &resource->data.memory32;
-+		addr->resource_type = ACPI_MEMORY_RANGE;
-+		addr->minimum = memory32->minimum;
-+		addr->address_length = memory32->address_length;
-+		addr->maximum = addr->minimum + addr->address_length - 1;
-+		return AE_OK;
-+	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
-+		fixed_memory32 = &resource->data.fixed_memory32;
-+		addr->resource_type = ACPI_MEMORY_RANGE;
-+		addr->minimum = fixed_memory32->address;
-+		addr->address_length = fixed_memory32->address_length;
-+		addr->maximum = addr->minimum + addr->address_length - 1;
-+		return AE_OK;
-+	case ACPI_RESOURCE_TYPE_ADDRESS16:
-+	case ACPI_RESOURCE_TYPE_ADDRESS32:
-+	case ACPI_RESOURCE_TYPE_ADDRESS64:
-+		status = acpi_resource_to_address64(resource, addr);
-+		if (ACPI_SUCCESS(status) &&
-+		    (addr->resource_type == ACPI_MEMORY_RANGE ||
-+		    addr->resource_type == ACPI_IO_RANGE) &&
-+		    addr->address_length > 0) {
-+			return AE_OK;
-+		}
-+		break;
++	res = irq_alloc_reserved_desc_at(at, node);
++
++	if (res >= 0) {
++		cfg = irq_desc_get_chip_data(irq_to_desc(at));
++		if (cfg)
++			return cfg;
++
++		cfg = alloc_irq_cfg(at, node);
++		if (cfg)
++			irq_set_chip_data(at, cfg);
++		else
++			irq_free_desc(at);
++
++		return cfg;
 +	}
-+	return AE_ERROR;
++
++	return alloc_irq_and_cfg_at(at, node);
 +}
-+
- struct res_proc_context {
- 	struct list_head *list;
- 	int (*preproc)(struct acpi_resource *, void *);
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index ee8058e..762980a 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -293,6 +293,9 @@ unsigned long acpi_dev_irq_flags(u8 triggering, u8 polarity, u8 shareable);
- bool acpi_dev_resource_interrupt(struct acpi_resource *ares, int index,
- 				 struct resource *res);
  
-+acpi_status acpi_mem_addr_resource_to_address64(struct acpi_resource *resource,
-+			struct acpi_resource_address64 *addr);
-+
- struct resource_list_entry {
- 	struct list_head node;
- 	struct resource res;
+ struct io_apic {
+ 	unsigned int index;
+@@ -3357,7 +3380,7 @@ int arch_setup_ht_irq(unsigned int irq, struct pci_dev *dev)
+ static int
+ io_apic_setup_irq_pin(unsigned int irq, int node, struct io_apic_irq_attr *attr)
+ {
+-	struct irq_cfg *cfg = alloc_irq_and_cfg_at(irq, node);
++	struct irq_cfg *cfg = alloc_reserved_irq_and_cfg_at(irq, node);
+ 	int ret;
+ 
+ 	if (!cfg)
 -- 
 1.8.4
 
