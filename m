@@ -1,97 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323AbaACCQX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 21:16:23 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:44074 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751528AbaACCLq (ORCPT
+	id S1753705AbaACCQx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 21:16:53 -0500
+Received: from mailout.micron.com ([137.201.242.129]:21369 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753481AbaACCQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 21:11:46 -0500
-Message-Id: <20140103021144.667522241@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Thu, 02 Jan 2014 21:10:23 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [for-next][PATCH 02/17] tracing/probes: Fix basic print type functions
-References: <20140103021021.238772653@goodmis.org>
-Content-Disposition: inline; filename=0002-tracing-probes-Fix-basic-print-type-functions.patch
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Thu, 2 Jan 2014 21:16:51 -0500
+From: =?utf-8?B?UWkgV2FuZyDnjovotbcgKHFpd2FuZyk=?= <qiwang@micron.com>
+To: Richard Weinberger <richard@nod.at>
+CC: Richard Weinberger <richard.weinberger@gmail.com>,
+        "dedekind1@gmail.com" <dedekind1@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: RE: [PATCH 1/1]  MTD: UBI:  avoid program operation on  NOR flash
+ after erasure interrupted
+Thread-Topic: [PATCH 1/1]  MTD: UBI:  avoid program operation on  NOR flash
+ after erasure interrupted
+Thread-Index: AQHPBvI9R7Ql4kYjCUG7syxWj0KNGppvUelggAGwL4CAAUJSIA==
+Date: Fri, 3 Jan 2014 02:16:14 +0000
+Message-ID: <71CF8D7F32C5C24C9CD1D0E02D52498A770BA85C@NTXXIAMBX02.xacn.micron.com>
+References: <71CF8D7F32C5C24C9CD1D0E02D52498A770B54B1@NTXXIAMBX02.xacn.micron.com>
+ <71CF8D7F32C5C24C9CD1D0E02D52498A770BA389@NTXXIAMBX02.xacn.micron.com>
+ <71CF8D7F32C5C24C9CD1D0E02D52498A770BA3A9@NTXXIAMBX02.xacn.micron.com>
+ <3253694.tov52PJeEo@sandpuppy>
+In-Reply-To: <3253694.tov52PJeEo@sandpuppy>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.84.5]
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20402.003
+X-TM-AS-Result: No--9.452100-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s032Gve3020644
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Hi Richard:
+Artem already has push this patch to 'linux-ubifs' git tree.  
+Thanks for you remind, I will change to git send-mail next time. 
+Thanks again for  your reply. I will be very careful to push patch to you next time. 
 
-The print format of s32 type was "ld" and it's casted to "long".  So
-it turned out to print 4294967295 for "-1" on 64-bit systems.  Not
-sure whether it worked well on 32-bit systems.
+Thanks a lot
 
-Anyway, it doesn't need to have cast argument at all since it already
-casted using type pointer - just get rid of it.  Thanks to Oleg for
-pointing that out.
+-----Original Message-----
+From: Richard Weinberger [mailto:richard@nod.at] 
+Sent: Thursday, January 02, 2014 10:58 PM
+To: Qi Wang ÁéãËµ∑ (qiwang)
+Cc: Richard Weinberger; dedekind1@gmail.com; linux-kernel@vger.kernel.org; linux-mtd@lists.infradead.org; Adrian Hunter
+Subject: Re: [PATCH 1/1] MTD: UBI: avoid program operation on NOR flash after erasure interrupted
 
-And print 0x prefix for unsigned type as it shows hex numbers.
+Am Mittwoch, 1. Januar 2014, 13:11:21 schrieb Qi Wang ÁéãËµ∑:
+> If have any questions, please let me know. 
 
-Suggested-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- kernel/trace/trace_probe.c | 22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+Did you send the patch again using Outlook?
+Or are you behind a MS Exchange server?
 
-diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index 412e959..430505b 100644
---- a/kernel/trace/trace_probe.c
-+++ b/kernel/trace/trace_probe.c
-@@ -40,23 +40,23 @@ const char *reserved_field_names[] = {
- #define PRINT_TYPE_FMT_NAME(type)	print_type_format_##type
- 
- /* Printing  in basic type function template */
--#define DEFINE_BASIC_PRINT_TYPE_FUNC(type, fmt, cast)			\
-+#define DEFINE_BASIC_PRINT_TYPE_FUNC(type, fmt)				\
- static __kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,	\
- 						const char *name,	\
--						void *data, void *ent)\
-+						void *data, void *ent)	\
- {									\
--	return trace_seq_printf(s, " %s=" fmt, name, (cast)*(type *)data);\
-+	return trace_seq_printf(s, " %s=" fmt, name, *(type *)data);	\
- }									\
- static const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
- 
--DEFINE_BASIC_PRINT_TYPE_FUNC(u8, "%x", unsigned int)
--DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned int)
--DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%lx", unsigned long)
--DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%llx", unsigned long long)
--DEFINE_BASIC_PRINT_TYPE_FUNC(s8, "%d", int)
--DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", int)
--DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%ld", long)
--DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%lld", long long)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(u8 , "0x%x")
-+DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "0x%x")
-+DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "0x%x")
-+DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "0x%Lx")
-+DEFINE_BASIC_PRINT_TYPE_FUNC(s8,  "%d")
-+DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d")
-+DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%d")
-+DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%Ld")
- 
- static inline void *get_rloc_data(u32 *dl)
- {
--- 
-1.8.4.3
+The patch is still malformed. :-(
+e.g. it is base64 encoded.
 
+Can you please try using git send-email?
 
+Thanks,
+//richard
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
