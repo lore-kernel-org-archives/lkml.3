@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754611AbaACUfg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 15:35:36 -0500
-Received: from mga01.intel.com ([192.55.52.88]:17760 "EHLO mga01.intel.com"
+	id S1754656AbaACUfu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 15:35:50 -0500
+Received: from mga11.intel.com ([192.55.52.93]:57132 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753947AbaACUf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 15:35:27 -0500
+	id S1754621AbaACUfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 15:35:48 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,599,1384329600"; 
-   d="scan'208";a="459776409"
+   d="scan'208";a="459776574"
 From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org
 Cc: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] x86: Add support for Cache QoS Monitoring (CQM) detection
-Date: Fri,  3 Jan 2014 12:34:42 -0800
-Message-Id: <1388781285-18067-2-git-send-email-peter.p.waskiewicz.jr@intel.com>
+Subject: [PATCH 4/4] Documentation: Add documentation for cacheqos cgroup
+Date: Fri,  3 Jan 2014 12:34:45 -0800
+Message-Id: <1388781285-18067-5-git-send-email-peter.p.waskiewicz.jr@intel.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1388781285-18067-1-git-send-email-peter.p.waskiewicz.jr@intel.com>
 References: <1388781285-18067-1-git-send-email-peter.p.waskiewicz.jr@intel.com>
@@ -24,149 +26,204 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the new Cache QoS Monitoring (CQM)
-feature found in future Intel Xeon processors.  It includes the
-new values to track CQM resources to the cpuinfo_x86 structure,
-plus the CPUID detection routines for CQM.
-
-CQM allows a process, or set of processes, to be tracked by the CPU
-to determine the cache usage of that task group.  Using this data
-from the CPU, software can be written to extract this data and
-report cache usage and occupancy for a particular process, or
-group of processes.
-
-More information about Cache QoS Monitoring can be found in the
-Intel (R) x86 Architecture Software Developer Manual, section 17.14.
+This patch adds the documentation for the new cacheqos cgroup
+subsystem.  It provides the overview of how the new subsystem
+works, how Cache QoS Monitoring works in the x86 architecture,
+and how everything is tied together between the hardware and the
+cgroup software stack.
 
 Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
 ---
- arch/x86/configs/x86_64_defconfig |  1 +
- arch/x86/include/asm/cpufeature.h |  9 ++++++++-
- arch/x86/include/asm/processor.h  |  3 +++
- arch/x86/kernel/cpu/common.c      | 39 +++++++++++++++++++++++++++++++++++++++
- 4 files changed, 51 insertions(+), 1 deletion(-)
+ Documentation/cgroups/00-INDEX     |   2 +
+ Documentation/cgroups/cacheqos.txt | 166 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 168 insertions(+)
+ create mode 100644 Documentation/cgroups/cacheqos.txt
 
-diff --git a/arch/x86/configs/x86_64_defconfig b/arch/x86/configs/x86_64_defconfig
-index c1119d4..8e98ed4 100644
---- a/arch/x86/configs/x86_64_defconfig
-+++ b/arch/x86/configs/x86_64_defconfig
-@@ -14,6 +14,7 @@ CONFIG_LOG_BUF_SHIFT=18
- CONFIG_CGROUPS=y
- CONFIG_CGROUP_FREEZER=y
- CONFIG_CPUSETS=y
-+CONFIG_CGROUP_CACHEQOS=y
- CONFIG_CGROUP_CPUACCT=y
- CONFIG_RESOURCE_COUNTERS=y
- CONFIG_CGROUP_SCHED=y
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 89270b4..5dd59a2 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -8,7 +8,7 @@
- #include <asm/required-features.h>
- #endif
- 
--#define NCAPINTS	10	/* N 32-bit words worth of info */
-+#define NCAPINTS	12	/* N 32-bit words worth of info */
- #define NBUGINTS	1	/* N 32-bit bug flags */
- 
- /*
-@@ -216,10 +216,17 @@
- #define X86_FEATURE_ERMS	(9*32+ 9) /* Enhanced REP MOVSB/STOSB */
- #define X86_FEATURE_INVPCID	(9*32+10) /* Invalidate Processor Context ID */
- #define X86_FEATURE_RTM		(9*32+11) /* Restricted Transactional Memory */
-+#define X86_FEATURE_CQM		(9*32+12) /* Cache QoS Monitoring */
- #define X86_FEATURE_RDSEED	(9*32+18) /* The RDSEED instruction */
- #define X86_FEATURE_ADX		(9*32+19) /* The ADCX and ADOX instructions */
- #define X86_FEATURE_SMAP	(9*32+20) /* Supervisor Mode Access Prevention */
- 
-+/* Intel-defined CPU QoS Sub-leaf, CPUID level 0x0000000F:0 (edx), word 10 */
-+#define X86_FEATURE_CQM_LLC	(10*32+ 1) /* LLC QoS if 1 */
+diff --git a/Documentation/cgroups/00-INDEX b/Documentation/cgroups/00-INDEX
+index bc461b6..055655d 100644
+--- a/Documentation/cgroups/00-INDEX
++++ b/Documentation/cgroups/00-INDEX
+@@ -2,6 +2,8 @@
+ 	- this file
+ blkio-controller.txt
+ 	- Description for Block IO Controller, implementation and usage details.
++cacheqos.txt
++	- Description for Cache QoS Monitoring; implementation and usage details
+ cgroups.txt
+ 	- Control Groups definition, implementation details, examples and API.
+ cpuacct.txt
+diff --git a/Documentation/cgroups/cacheqos.txt b/Documentation/cgroups/cacheqos.txt
+new file mode 100644
+index 0000000..b7b85ce
+--- /dev/null
++++ b/Documentation/cgroups/cacheqos.txt
+@@ -0,0 +1,166 @@
++Cache QoS Monitoring Controller
++-------------------------------
 +
-+/* Intel-defined CPU QoS Sub-leaf, CPUID level 0x0000000F:1 (edx), word 11 */
-+#define X86_FEATURE_CQM_OCCUP_LLC (11*32+ 0) /* LLC occupancy monitoring if 1 */
++1. Overview
++===========
 +
- /*
-  * BUG word(s)
-  */
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 7b034a4..3892281 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -110,6 +110,9 @@ struct cpuinfo_x86 {
- 	/* in KB - valid for CPUS which support this call: */
- 	int			x86_cache_size;
- 	int			x86_cache_alignment;	/* In bytes */
-+	/* Cache QoS architectural values: */
-+	int			x86_cache_max_rmid;	/* max index */
-+	int			x86_cache_occ_scale;	/* scale to bytes */
- 	int			x86_power;
- 	unsigned long		loops_per_jiffy;
- 	/* cpuid returned max cores value: */
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 6abc172..f18bc43 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -626,6 +626,30 @@ void get_cpu_cap(struct cpuinfo_x86 *c)
- 		c->x86_capability[9] = ebx;
- 	}
- 
-+	/* Additional Intel-defined flags: level 0x0000000F */
-+	if (c->cpuid_level >= 0x0000000F) {
-+		u32 eax, ebx, ecx, edx;
++The Cache QoS Monitoring controller is used to group tasks using cgroups and
++monitor the CPU cache usage and occupancy of the grouped tasks.  This
++monitoring does require hardware support for this information, especially
++since cache optimization and usage models will vary between CPU architectures.
 +
-+		/* QoS sub-leaf, EAX=0Fh, ECX=0 */
-+		cpuid_count(0x0000000F, 0, &eax, &ebx, &ecx, &edx);
-+		c->x86_capability[10] = edx;
-+		if (cpu_has(c, X86_FEATURE_CQM_LLC)) {
-+			/* will be overridden if occupancy monitoring exists */
-+			c->x86_cache_max_rmid = ebx;
++The Cache QoS Monitoring controller supports multi-hierarchy groups. A
++monitoring group accumulates the cache usage of all of its child groups and
++the tasks directly present in its group.
 +
-+			/* QoS sub-leaf, EAX=0Fh, ECX=1 */
-+			cpuid_count(0x0000000F, 1, &eax, &ebx, &ecx, &edx);
-+			c->x86_capability[11] = edx;
-+			if (cpu_has(c, X86_FEATURE_CQM_OCCUP_LLC)) {
-+				c->x86_cache_max_rmid = ecx;
-+				c->x86_cache_occ_scale = ebx;
-+			}
-+		} else {
-+			c->x86_cache_max_rmid = -1;
-+			c->x86_cache_occ_scale = -1;
-+		}
-+	}
++Monitoring groups can be created by first mounting the cgroup filesystem.
 +
- 	/* AMD-defined flags: level 0x80000001 */
- 	xlvl = cpuid_eax(0x80000000);
- 	c->extended_cpuid_level = xlvl;
-@@ -814,6 +838,20 @@ static void generic_identify(struct cpuinfo_x86 *c)
- 	detect_nopl(c);
- }
- 
-+static void x86_init_cache_qos(struct cpuinfo_x86 *c)
-+{
-+	/*
-+	 * The heavy lifting of max_rmid and cache_occ_scale are handled
-+	 * in get_cpu_cap().  Here we just set the max_rmid for the boot_cpu
-+	 * in case CQM bits really aren't there in this CPU.
-+	 */
-+	if (c != &boot_cpu_data) {
-+		boot_cpu_data.x86_cache_max_rmid =
-+			min(boot_cpu_data.x86_cache_max_rmid,
-+			    c->x86_cache_max_rmid);
-+	}
-+}
++# mount -t cgroup -ocacheqos none /sys/fs/cgroup/cacheqos
 +
- /*
-  * This does the hard work of actually picking apart the CPU stuff...
-  */
-@@ -903,6 +941,7 @@ static void identify_cpu(struct cpuinfo_x86 *c)
- 
- 	init_hypervisor(c);
- 	x86_init_rdrand(c);
-+	x86_init_cache_qos(c);
- 
- 	/*
- 	 * Clear/Set all flags overriden by options, need do it
++With the above step, the initial or the parent monitoring group becomes
++visible at /sys/fs/cgroup/cacheqos. At bootup, this group includes all the
++tasks in the system. /sys/fs/cgroup/cacheqos/tasks lists the tasks in this
++cgroup.  Each file in the cgroup is described in greater detail below.
++
++
++2. Basic usage
++==============
++
++New monitoring groups can be created under the parent group
++/sys/fs/cgroup/cacheqos.
++
++# cd /sys/fs/cgroup/cacheqos
++# mkdir g1
++# echo $$ > g1/tasks
++
++The above steps create a new group g1 and move the current shell
++process (bash) into it. At this point, the group is ready to be monitored.
++However, since this process requires hardware support to identify tasks
++properly, the mechanisms in the hardware are most likely a finite resource.
++So new monitoring groups are not activated by default to monitor their
++respective task groups.
++
++To enable a task group for hardware monitoring:
++
++# cd /sys/fs/cgroup/cacheqos
++# mkdir g1
++# echo $$ > g1/tasks
++# echo 1 > g1/cacheqos.monitor_cache
++
++This will enable monitoring for the tasks in the g1 monitoring group.  Note
++that the root monitoring group is always enabled and cannot be turned off.
++
++
++3. Overview of files
++====================
++
++- cacheqos.monitor_cache:
++	Controls whether or not the monitoring group is enabled or not.  This
++	is a R/W field, and expects 0 for disable, 1 for enable.
++
++	If no available hardware resources are left for monitoring, writing a
++	1 to this file will result in -EAGAIN being returned (Resource
++	temporarily unavailable).
++
++- cacheqos.occupancy:
++	This is a read-only field.  It returns the total cache occupancy in
++	bytes of the task group for all CPUs it has run on.
++
++- cacheqos.occupancy_percent:
++	This is a read-only field.  It returns the total cache occupancy used
++	as a percentage for all CPUs it has run on.  The percentage is based
++	on the size of the cache, which can obviously vary from CPU to CPU.
++
++- cacheqos.occupancy_persocket:
++	This is a read-only field.  It returns the total cache occupancy used
++	by the task group, broken down per CPU socket (usually per NUMA node).
++
++- cacheqos.occupancy_percent_persocket:
++	This is a read-only field.  It returns the total cache occupancy used
++	by the task group, broken down per CPU socket (usually per NUMA node).
++	Each socket's occupancy is presented as a percentage of the total
++	cache.
++
++4. Adding new architectures
++===========================
++
++Currently Cache QoS Monitoring support only exists in modern Intel Xeon
++processors.  Due to this, the Kconfig option for Cache QoS Monitoring depends
++on X86_64 or X86.  If another architecture supports cache monitoring, then
++a few functions need to be implemented by the architecture, and that
++architecture needs to be added to some #if clauses for support.  These are:
++
++- init/Kconfig
++	Add the new architecture to the dependancy list
++
++- kernel/sched/cacheqos.c
++	Add the new architecture to the #if line to compile out
++	cacheqos_late_init():
++
++	#if !defined(CONFIG_X86_64) || !defined(CONFIG_X86)
++	static int __init cacheqos_late_init(void)          ^^^^^^^
++
++The following functions need to be implemented by the architecture:
++
++- void cacheqos_map_schedule_out(void);
++	This function is called by the scheduler when swapping out a task from
++	a CPU.  This would be where the CPU architecture code to stop monitoring
++	for a particular task would be executed.
++
++	Refer to arch/x86/kernel/cpu/perf_event_intel_uncore.c for an example.
++
++- void cacheqos_map_schedule_in(struct cacheqos *);
++	This function is called by the scheduler when swapping a task into a
++	CPU core.  This would be where the CPU architecture code to start
++	monitoring a particular task would be executed.
++
++	Refer to arch/x86/kernel/cpu/perf_event_intel_uncore.c for an example.
++
++- void cacheqos_read(void *);
++	This function is called by the cacheqos cgroup subsystem when
++	collating the cache usage data.  This would be where the CPU
++	architecture code to pull information for a particular monitoring
++	unit would exist.
++
++	Refer to arch/x86/kernel/cpu/perf_event_intel_uncore.c for an example.
++
++- int __init cacheqos_late_init(void);  (late_initcall)
++	This function needs to be implemented as late_initcall for the
++	specific architecture.  The reason for a later invocation is the
++	CPU features can be determined, which happens after the cgroup subsystem
++	is started in the kernel boot sequence.  Since the configuration of
++	the cacheqos cgroup depends on how much of particular monitoring
++	resources are available, the cgroup's root_cacheqos_group's subsys_info
++	field cannot be initialized until the CPU features are discovered.
++
++	This function's responsibility is to allocate the
++	root_cacheqos_group.subsys_info field and initialize these fields:
++		- cache_max_rmid: Maximum resource monitoring ID on this CPU
++		- cache_occ_scale: This is used to scale the occupancy data
++				   being collected, meant to help compress the
++				   values being stored in the CPU.  This may
++				   exist or not in a particular architecture.
++		- cache_size: Size of the cache being monitored, used for the
++			      percentage reporting.
++
++	Refer to arch/x86/kernel/cpu/perf_event_intel_uncore.c for an example.
++
++
++5. Intel-specific implementation
++================================
++
++Intel Xeon processors implement Cache QoS Monitoring using Resource Monitoring
++Identifiers, or RMIDs.  When a task is scheduled on a CPU core, the RMID that
++is associated with that task (or group that task belongs to) is written to the
++IA32_PRQ_ASSOC MSR for that CPU.  That instructs that CPU to accumulate cache
++occupancy data while that task runs.  When that task is scheduled out, the
++IA32_PQR_ASSOC MSR is written with a 0, clearing the monitoring mechanism.
++
++To retrieve the monitoring data, the RMID for the task group being read is
++used to build a configuration map for the IA32_QM_EVTSEL MSR.  Once the map is
++written to that MSR, the result is written to the IA32_QM_CTR MSR.  That data
++is then stored, but multiplied by the cache_occ_scale, which is read from the
++CPUID sub-leaf during CPU initialization.
++
++For details on the implementation, please refer to the Intel Software
++Development Manual, Volume 3, Chapter 17.14: Cache Quality of Service Monitoring
 -- 
 1.8.3.1
 
