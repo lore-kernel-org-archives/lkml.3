@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101AbaACX3d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 18:29:33 -0500
-Received: from mga02.intel.com ([134.134.136.20]:56863 "EHLO mga02.intel.com"
+	id S1754144AbaACXg0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 18:36:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38455 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753819AbaACX3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 18:29:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,600,1384329600"; 
-   d="scan'208";a="461425452"
-Date: Fri, 3 Jan 2014 15:29:29 -0800
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: walt <w41ter@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        David Laight <david.laight@aculab.com>, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within a
- USB payload burst
-Message-ID: <20140103232929.GD4193@xanatos>
-References: <20131218211219.461663463@linuxfoundation.org>
- <20131218211220.412278148@linuxfoundation.org>
- <52C32BB0.90600@gmail.com>
- <20140102191510.GA9621@xanatos>
- <52C6D9F1.9000709@gmail.com>
- <20140103195455.GA4193@xanatos>
- <52C729CE.9050307@gmail.com>
+	id S1753819AbaACXgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 18:36:25 -0500
+Message-ID: <52C74972.6050909@suse.cz>
+Date: Sat, 04 Jan 2014 00:36:18 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52C729CE.9050307@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Michel Lespinasse <walken@google.com>, Bob Liu <bob.liu@oracle.com>,
+        Nick Piggin <npiggin@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm/mlock: fix BUG_ON unlocked page for nolinear VMAs
+References: <1387267550-8689-1-git-send-email-liwanp@linux.vnet.ibm.com>	<52b1138b.0201430a.19a8.605dSMTPIN_ADDED_BROKEN@mx.google.com>	<52B11765.8030005@oracle.com>	<52b120a5.a3b2440a.3acf.ffffd7c3SMTPIN_ADDED_BROKEN@mx.google.com>	<52B166CF.6080300@suse.cz>	<52b1699f.87293c0a.75d1.34d3SMTPIN_ADDED_BROKEN@mx.google.com>	<20131218134316.977d5049209d9278e1dad225@linux-foundation.org>	<52C71ACC.20603@oracle.com> <CA+55aFzDcFyyXwUUu5bLP3fsiuzxU7VPivpTPHgp8smvdTeESg@mail.gmail.com>
+In-Reply-To: <CA+55aFzDcFyyXwUUu5bLP3fsiuzxU7VPivpTPHgp8smvdTeESg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 03, 2014 at 01:21:18PM -0800, walt wrote:
-> I'm so sorry Sarah, that was another mistake.  The mistake is so stupid I'm not
-> going to publish it here :(
+On 01/03/2014 09:52 PM, Linus Torvalds wrote:
+> On Fri, Jan 3, 2014 at 12:17 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>>
+>> Ping? This BUG() is triggerable in 3.13-rc6 right now.
 > 
-> Once I finally ran the kernel with debugging actually compiled in, dmesg contains
-> xhci debugging messages.  Wow :)
+> So Andrew suggested just removing the BUG_ON(), but it's been there
+> for a *long* time.
+
+Yes, Andrew also merged this patch for that:
+ http://ozlabs.org/~akpm/mmots/broken-out/mm-remove-bug_on-from-mlock_vma_page.patch
+
+But there wasn't enough confidence in the fix to sent it to you yet, I guess.
+
+The related thread: http://www.spinics.net/lists/linux-mm/msg66972.html
+
+> And I detest the patch that was sent out that said "Should I check?"
 > 
-> It's a big file so I zipped and attached it, which I hope is acceptable in lkml.
+> Maybe we should just remove that mlock_vma_page() thing instead in
 
-Yep, that's fine.  Sticking it in pastebin (or up on your server) is
-also fine, if it gets really big.
+You mean that it it's already undeterministic because it can be already skipped when
+mmap_sem can't be acquired for read? I think the assumption for this case is that mmap_sem
+is already held for write which means VM_LOCKED is unset anyway (per comments at
+try_to_unmap_file(), which calls try_to_unmap_cluster()). I'm however not sure how it is
+protected from somebody else holding the semaphore...
 
-> BTW, this dmesg is from a kernel with sg_tablesize = 31, which as I said before
-> doesn't fix the problem.  The cp stopped around 7GB just as before.
+> try_to_unmap_cluster()? Or maybe actually lock the page around calling
+> it?
+
+check_page is already locked, see try_to_munlock() which calls try_to_unmap_file(). So
+this might smell of potential deadlock?
+
+I'm for going with the removal of BUG_ON. The TestSetPageMlocked should provide enough
+race protection.
+
+>              Linus
 > 
-> Sorry for the noise...
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
 
-No worries! :)  With the dmesg, I can finally see what happened:
-
-[  188.703059] xhci_hcd 0000:03:00.0: Cancel URB ffff8800b7d2e0c0, dev 1, ep 0x2, starting at offset 0xbb7b9000
-[  188.703072] xhci_hcd 0000:03:00.0: // Ding dong!
-[  193.711022] xhci_hcd 0000:03:00.0: xHCI host not responding to stop endpoint command.
-[  193.711029] xhci_hcd 0000:03:00.0: Assuming host is dying, halting host.
-[  193.711046] xhci_hcd 0000:03:00.0: // Halt the HC
-[  193.711060] xhci_hcd 0000:03:00.0: Killing URBs for slot ID 1, ep index 0
-[  193.711066] xhci_hcd 0000:03:00.0: Killing URBs for slot ID 1, ep index 2
-[  193.711078] xhci_hcd 0000:03:00.0: Killing URBs for slot ID 1, ep index 3
-[  193.711096] xhci_hcd 0000:03:00.0: Calling usb_hc_died()
-[  193.711103] xhci_hcd 0000:03:00.0: HC died; cleaning up
-[  193.711116] xhci_hcd 0000:03:00.0: xHCI host controller is dead.
-
-It seems that the xHCI driver tried to stop the endpoint ring in order
-to cancel a SCSI transfer, and the driver never got a response for that.
-
-The offset is rather suspicious (0xbb7b9000), and it probably means the
-driver attempted to cancel a transfer that had been moved to the
-beginning of the ring segment, with no-op TRBs before the link TRB.
-
-I suspect David's patch triggers a bug in the command cancellation code.
-There's also the unlikely possibility that the no-op TRBs did indeed
-cause the host to hang.  Either way, I'll have to look into it.
-
-I'll let you know when I have some diagnostic patches ready.
-
-Sarah Sharp
