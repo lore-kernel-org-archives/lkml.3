@@ -1,263 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753097AbaACCXT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 21:23:19 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:47098 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751487AbaACCXR (ORCPT
+	id S1753281AbaACCbl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 21:31:41 -0500
+Received: from mailout.micron.com ([137.201.242.129]:29519 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752012AbaACCbk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 21:23:17 -0500
-X-AuditID: cbfee61b-b7f456d000006dfd-b4-52c61f13dbff
-From: Weijie Yang <weijie.yang@samsung.com>
-To: "'Dan Streetman'" <ddstreet@ieee.org>,
-        "'Seth Jennings'" <sjennings@variantweb.net>
-Cc: "'Linux-MM'" <linux-mm@kvack.org>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'Bob Liu'" <bob.liu@oracle.com>, "'Minchan Kim'" <minchan@kernel.org>,
-        "'Shirish Pargaonkar'" <spargaonkar@suse.com>,
-        "'Mel Gorman'" <mgorman@suse.de>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-References: <1387459407-29342-1-git-send-email-ddstreet@ieee.org>
- <CALZtONDyq_r5=KBYBChWPG0WXDXOyFXBQ7ZZd7+6BXRZzDrNwA@mail.gmail.com>
-In-reply-to: <CALZtONDyq_r5=KBYBChWPG0WXDXOyFXBQ7ZZd7+6BXRZzDrNwA@mail.gmail.com>
-Subject: RE: [PATCH] mm/zswap: add writethrough option
-Date: Fri, 03 Jan 2014 10:21:34 +0800
-Message-id: <000001cf082a$bfc28a40$3f479ec0$%yang@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8H0MEFUVpfLkj5SxW43zfa3i41pQAV8foA
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNIsWRmVeSWpSXmKPExsVy+t9jQV1h+WNBBp2HLSzmrF/DZtF1aiqL
-	xYW23SwWl3fNYbO4t+Y/q8Xkd88YLZZ9fc9u8enoIzaL8wvWMjpwejydcJDJY9OqTjaPTZ8m
-	sXucmPGbxePj01ssHuu3XGXx2Hy62uP6tyKPz5vkAjijuGxSUnMyy1KL9O0SuDIuXT/CWrDQ
-	veLc3QnMDYxXjbsYOTkkBEwk/t6fwA5hi0lcuLeerYuRi0NIYDqjxJqZC5khnD+MErfWbWMD
-	qWIT0Ja427+RFcQWEQiVuPRhNiNIEbPADCaJ/6cughUJCXQwSrye7g5icwoES7zrvgG2QljA
-	TGLl6dtgzSwCqhJ/Hj8Fi/MK2EmcfXKDDcIWlPgx+R4LiM0soC4xad4iZghbXmLzmrdANgfQ
-	qeoSj/7qgpgiAkYSJ7daQVSIS2w8cotlAqPQLCSDZiEZNAvJoFlIWhYwsqxiFE0tSC4oTkrP
-	NdIrTswtLs1L10vOz93ECI6yZ9I7GFc1WBxiFOBgVOLh9Wg8GiTEmlhWXJl7iFGCg1lJhJdB
-	9liQEG9KYmVValF+fFFpTmrxIUZpDhYlcd6DrdaBQgLpiSWp2ampBalFMFkmDk6pBsb6V2ZB
-	1vXWUkLhW2NT9Xv42NdOv2BT9u9OWolmQlLIShYJ2X83WCbOdhAWYIvbkv7ZSE7wdFzSiYO9
-	Ne9/sQi6fs9jWbfmhoFITtN3g79b51/+8v6w0J8rH/YWPJFjeqR23OiXpuBFbQ9jk8o5d4Sk
-	3r1fV28Y2lxzt7b+yqfO2TN7HhUl/FNiKc5INNRiLipOBAB0BnW+rgIAAA==
+	Thu, 2 Jan 2014 21:31:40 -0500
+From: =?utf-8?B?UWkgV2FuZyDnjovotbcgKHFpd2FuZyk=?= <qiwang@micron.com>
+To: "dedekind1@gmail.com" <dedekind1@gmail.com>
+CC: Adrian Hunter <adrian.hunter@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
+Subject: RE: [PATCH 1/1]  MTD: UBI:  avoid program operation on  NOR flash
+ after erasure interrupted
+Thread-Topic: [PATCH 1/1]  MTD: UBI:  avoid program operation on  NOR flash
+ after erasure interrupted
+Thread-Index: AQHPBvI9R7Ql4kYjCUG7syxWj0KNGppxBa8AgAADUQCAAT0XoA==
+Date: Fri, 3 Jan 2014 02:31:12 +0000
+Message-ID: <71CF8D7F32C5C24C9CD1D0E02D52498A770BA889@NTXXIAMBX02.xacn.micron.com>
+References: <71CF8D7F32C5C24C9CD1D0E02D52498A770B54B1@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770B68A8@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770B6F77@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770B79C8@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770B8611@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770BA389@NTXXIAMBX02.xacn.micron.com>
+	 <1388675460.25123.90.camel@sauron.fi.intel.com>
+ <1388676172.25123.93.camel@sauron.fi.intel.com>
+In-Reply-To: <1388676172.25123.93.camel@sauron.fi.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.84.5]
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20402.003
+X-TM-AS-Result: No--20.695800-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s032ViEr020665
 
-On Thu, Jan 2, 2014 at 11:38 PM, Dan Streetman <ddstreet@ieee.org> wrote:
-> Happy new year!
->
-> Seth, just checking if you have had a chance yet to think about this one.
->
->
-> On Thu, Dec 19, 2013 at 8:23 AM, Dan Streetman <ddstreet@ieee.org> wrote:
-> > Currently, zswap is writeback cache; stored pages are not sent
-> > to swap disk, and when zswap wants to evict old pages it must
-> > first write them back to swap cache/disk manually.  This avoids
-> > swap out disk I/O up front, but only moves that disk I/O to
-> > the writeback case (for pages that are evicted), and adds the
-> > overhead of having to uncompress the evicted pages and the
-> > need for an additional free page (to store the uncompressed page).
-> >
-> > This optionally changes zswap to writethrough cache by enabling
-> > frontswap_writethrough() before registering, so that any
-> > successful page store will also be written to swap disk.  The
-> > default remains writeback.  To enable writethrough, the param
-> > zswap.writethrough=1 must be used at boot.
-> >
-> > Whether writeback or writethrough will provide better performance
-> > depends on many factors including disk I/O speed/throughput,
-> > CPU speed(s), system load, etc.  In most cases it is likely
-> > that writeback has better performance than writethrough before
-> > zswap is full, but after zswap fills up writethrough has
-> > better performance than writeback.
-> >
-> > Signed-off-by: Dan Streetman <ddstreet@ieee.org>
+OK, thank you Artem.
 
-Thanks for your work.
-Although I won't try writethrough mode in embedded device, I hope it may be
-helpful to others.
-I reviewed this patch, and it is good to me.
+I will change to git send-mail next time. And I will be very careful to push patch to you next time.
+Sorry to bring so much trouble to you as I am first time to push patch to Linux main trunk.(Maybe it also is Micron Technology company first time to push patch to Linux main trunk, I am being Micron China Shanghai team volunteer to contact Linux committee to push patch). 
+Anyway, Thanks for your patience to give me a good starting. 
+And if you have anything need my or my team help, Please kindly let me know. Our team is glad to contribute to Linux community.
+Wish you have a wonderful 2014.
+Thank you
 
-Reviewed-by: Weijie Yang <weijie.yang@samsung.com>
 
-> > ---
-> >
-> > Based on specjbb testing on my laptop, the results for both writeback
-> > and writethrough are better than not using zswap at all, but writeback
-> > does seem to be better than writethrough while zswap isn't full.  Once
-> > it fills up, performance for writethrough is essentially close to not
-> > using zswap, while writeback seems to be worse than not using zswap.
-> > However, I think more testing on a wider span of systems and conditions
-> > is needed.  Additionally, I'm not sure that specjbb is measuring true
-> > performance under fully loaded cpu conditions, so additional cpu load
-> > might need to be added or specjbb parameters modified (I took the
-> > values from the 4 "warehouses" test run).
-> >
-> > In any case though, I think having writethrough as an option is still
-> > useful.  More changes could be made, such as changing from writeback
-> > to writethrough based on the zswap % full.  And the patch doesn't
-> > change default behavior - writethrough must be specifically enabled.
-> >
-> > The %-ized numbers I got from specjbb on average, using the default
-> > 20% max_pool_percent and varying the amount of heap used as shown:
-> >
-> > ram | no zswap | writeback | writethrough
-> > 75     93.08     100         96.90
-> > 87     96.58     95.58       96.72
-> > 100    92.29     89.73       86.75
-> > 112    63.80     38.66       19.66
-> > 125    4.79      29.90       15.75
-> > 137    4.99      4.50        4.75
-> > 150    4.28      4.62        5.01
-> > 162    5.20      2.94        4.66
-> > 175    5.71      2.11        4.84
-> >
-> >
-> >
-> >  mm/zswap.c | 68 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----
-> >  1 file changed, 64 insertions(+), 4 deletions(-)
-> >
-> > diff --git a/mm/zswap.c b/mm/zswap.c
-> > index e55bab9..2f919db 100644
-> > --- a/mm/zswap.c
-> > +++ b/mm/zswap.c
-> > @@ -61,6 +61,8 @@ static atomic_t zswap_stored_pages = ATOMIC_INIT(0);
-> >  static u64 zswap_pool_limit_hit;
-> >  /* Pages written back when pool limit was reached */
-> >  static u64 zswap_written_back_pages;
-> > +/* Pages evicted when pool limit was reached */
-> > +static u64 zswap_evicted_pages;
-> >  /* Store failed due to a reclaim failure after pool limit was reached */
-> >  static u64 zswap_reject_reclaim_fail;
-> >  /* Compressed page was too big for the allocator to (optimally) store */
-> > @@ -89,6 +91,10 @@ static unsigned int zswap_max_pool_percent = 20;
-> >  module_param_named(max_pool_percent,
-> >                         zswap_max_pool_percent, uint, 0644);
-> >
-> > +/* Writeback/writethrough mode (fixed at boot for now) */
-> > +static bool zswap_writethrough;
-> > +module_param_named(writethrough, zswap_writethrough, bool, 0444);
-> > +
-> >  /*********************************
-> >  * compression functions
-> >  **********************************/
-> > @@ -629,6 +635,48 @@ end:
-> >  }
-> >
-> >  /*********************************
-> > +* evict code
-> > +**********************************/
-> > +
-> > +/*
-> > + * This evicts pages that have already been written through to swap.
-> > + */
-> > +static int zswap_evict_entry(struct zbud_pool *pool, unsigned long handle)
-> > +{
-> > +       struct zswap_header *zhdr;
-> > +       swp_entry_t swpentry;
-> > +       struct zswap_tree *tree;
-> > +       pgoff_t offset;
-> > +       struct zswap_entry *entry;
-> > +
-> > +       /* extract swpentry from data */
-> > +       zhdr = zbud_map(pool, handle);
-> > +       swpentry = zhdr->swpentry; /* here */
-> > +       zbud_unmap(pool, handle);
-> > +       tree = zswap_trees[swp_type(swpentry)];
-> > +       offset = swp_offset(swpentry);
-> > +       BUG_ON(pool != tree->pool);
-> > +
-> > +       /* find and ref zswap entry */
-> > +       spin_lock(&tree->lock);
-> > +       entry = zswap_rb_search(&tree->rbroot, offset);
-> > +       if (!entry) {
-> > +               /* entry was invalidated */
-> > +               spin_unlock(&tree->lock);
-> > +               return 0;
-> > +       }
-> > +
-> > +       zswap_evicted_pages++;
-> > +
-> > +       zswap_rb_erase(&tree->rbroot, entry);
-> > +       zswap_entry_put(tree, entry);
-> > +
-> > +       spin_unlock(&tree->lock);
-> > +
-> > +       return 0;
-> > +}
-> > +
-> > +/*********************************
-> >  * frontswap hooks
-> >  **********************************/
-> >  /* attempts to compress and store an single page */
-> > @@ -744,7 +792,7 @@ static int zswap_frontswap_load(unsigned type, pgoff_t offset,
-> >         spin_lock(&tree->lock);
-> >         entry = zswap_entry_find_get(&tree->rbroot, offset);
-> >         if (!entry) {
-> > -               /* entry was written back */
-> > +               /* entry was written back or evicted */
-> >                 spin_unlock(&tree->lock);
-> >                 return -1;
-> >         }
-> > @@ -778,7 +826,7 @@ static void zswap_frontswap_invalidate_page(unsigned type, pgoff_t offset)
-> >         spin_lock(&tree->lock);
-> >         entry = zswap_rb_search(&tree->rbroot, offset);
-> >         if (!entry) {
-> > -               /* entry was written back */
-> > +               /* entry was written back or evicted */
-> >                 spin_unlock(&tree->lock);
-> >                 return;
-> >         }
-> > @@ -813,18 +861,26 @@ static void zswap_frontswap_invalidate_area(unsigned type)
-> >         zswap_trees[type] = NULL;
-> >  }
-> >
-> > -static struct zbud_ops zswap_zbud_ops = {
-> > +static struct zbud_ops zswap_zbud_writeback_ops = {
-> >         .evict = zswap_writeback_entry
-> >  };
-> > +static struct zbud_ops zswap_zbud_writethrough_ops = {
-> > +       .evict = zswap_evict_entry
-> > +};
-> >
-> >  static void zswap_frontswap_init(unsigned type)
-> >  {
-> >         struct zswap_tree *tree;
-> > +       struct zbud_ops *ops;
-> >
-> >         tree = kzalloc(sizeof(struct zswap_tree), GFP_KERNEL);
-> >         if (!tree)
-> >                 goto err;
-> > -       tree->pool = zbud_create_pool(GFP_KERNEL, &zswap_zbud_ops);
-> > +       if (zswap_writethrough)
-> > +               ops = &zswap_zbud_writethrough_ops;
-> > +       else
-> > +               ops = &zswap_zbud_writeback_ops;
-> > +       tree->pool = zbud_create_pool(GFP_KERNEL, ops);
-> >         if (!tree->pool)
-> >                 goto freetree;
-> >         tree->rbroot = RB_ROOT;
-> > @@ -875,6 +931,8 @@ static int __init zswap_debugfs_init(void)
-> >                         zswap_debugfs_root, &zswap_reject_compress_poor);
-> >         debugfs_create_u64("written_back_pages", S_IRUGO,
-> >                         zswap_debugfs_root, &zswap_written_back_pages);
-> > +       debugfs_create_u64("evicted_pages", S_IRUGO,
-> > +                       zswap_debugfs_root, &zswap_evicted_pages);
-> >         debugfs_create_u64("duplicate_entry", S_IRUGO,
-> >                         zswap_debugfs_root, &zswap_duplicate_entry);
-> >         debugfs_create_u64("pool_pages", S_IRUGO,
-> > @@ -919,6 +977,8 @@ static int __init init_zswap(void)
-> >                 pr_err("per-cpu initialization failed\n");
-> >                 goto pcpufail;
-> >         }
-> > +       if (zswap_writethrough)
-> > +               frontswap_writethrough(true);
-> >         frontswap_register_ops(&zswap_frontswap_ops);
-> >         if (zswap_debugfs_init())
-> >                 pr_warn("debugfs initialization failed\n");
-> > --
-> > 1.8.3.1
-> >
+-----Original Message-----
+From: Artem Bityutskiy [mailto:dedekind1@gmail.com] 
+Sent: Thursday, January 02, 2014 11:23 PM
+To: Qi Wang ÁéãËµ∑ (qiwang)
+Cc: Adrian Hunter; linux-kernel@vger.kernel.org; linux-mtd@lists.infradead.org
+Subject: Re: [PATCH 1/1] MTD: UBI: avoid program operation on NOR flash after erasure interrupted
 
+On Thu, 2014-01-02 at 17:11 +0200, Artem Bityutskiy wrote:
+> Anyway, I did not respond for long time, so I decided to do all these
+> modifications myself. Could you please review and test the below patch,
+> which is also attached. I did not compile it even. If there are issues,
+> just fix-it up and send the the fix or the fixed version. If it is OK,
+> give me your "Tested-by:" please. Thanks!
+
+Actually, for convenience, I've pushed this patch to the 'qi' branch of
+the 'linux-ubifs' git tree:
+
+git://git.infradead.org/ubifs-2.6.git
+
+-- 
+Best Regards,
+Artem Bityutskiy
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
