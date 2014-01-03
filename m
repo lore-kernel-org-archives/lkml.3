@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578AbaACPTE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 10:19:04 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:8079 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752568AbaACPTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 10:19:01 -0500
-X-IronPort-AV: E=Sophos;i="4.95,598,1384300800"; 
-   d="scan'208";a="89560902"
-Message-ID: <52C6D4E3.9000701@citrix.com>
-Date: Fri, 3 Jan 2014 15:18:59 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
-        <boris.ostrovsky@oracle.com>, <stefano.stabellini@eu.citrix.com>,
-        <mukesh.rathor@oracle.com>
-Subject: Re: [PATCH v12 07/18] xen/pvh: Setup up shared_info.
-References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com> <1388550945-25499-8-git-send-email-konrad.wilk@oracle.com> <52C54D3C.4050101@citrix.com> <20140103143902.GB27019@phenom.dumpdata.com>
-In-Reply-To: <20140103143902.GB27019@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1752256AbaACPXn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 10:23:43 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33510 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529AbaACPXl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 10:23:41 -0500
+Date: Fri, 3 Jan 2014 15:23:13 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Bryan Wu <cooloney@gmail.com>
+Cc: David Lang <david@lang.hm>, Joe Xue <lgxue@hotmail.com>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "rob@landley.net" <rob@landley.net>,
+        "milo.kim@ti.com" <milo.kim@ti.com>, "pavel@ucw.cz" <pavel@ucw.cz>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH] Add LED pattern trigger
+Message-ID: <20140103152313.4fd5c48f@alan.etchedpixels.co.uk>
+In-Reply-To: <CAK5ve-KTQvJeLXmJt-NgPy6Ju+kBzWVoSQB7TKR9TW+mfD=bxg@mail.gmail.com>
+References: <1388362275-1618-1-git-send-email-lgxue@hotmail.com>
+	<20131230162158.7420e811@alan.etchedpixels.co.uk>
+	<BLU172-W451DF59115DB2B0A7F694AACC90@phx.gbl>
+	<20140101201053.12be7d27@alan.etchedpixels.co.uk>
+	<alpine.DEB.2.02.1401011423180.27645@nftneq.ynat.uz>
+	<20140101230135.48f6f781@alan.etchedpixels.co.uk>
+	<alpine.DEB.2.02.1401011547340.27645@nftneq.ynat.uz>
+	<CAK5ve-KTQvJeLXmJt-NgPy6Ju+kBzWVoSQB7TKR9TW+mfD=bxg@mail.gmail.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/14 14:39, Konrad Rzeszutek Wilk wrote:
-> On Thu, Jan 02, 2014 at 11:27:56AM +0000, David Vrabel wrote:
->> On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
->>> From: Mukesh Rathor <mukesh.rathor@oracle.com>
->>>
->>> For PVHVM the shared_info structure is provided via the same way
->>> as for normal PV guests (see include/xen/interface/xen.h).
->>>
->>> That is during bootup we get 'xen_start_info' via the %esi register
->>> in startup_xen. Then later we extract the 'shared_info' from said
->>> structure (in xen_setup_shared_info) and start using it.
->>>
->>> The 'xen_setup_shared_info' is all setup to work with auto-xlat
->>> guests, but there are two functions which it calls that are not:
->>> xen_setup_mfn_list_list and xen_setup_vcpu_info_placement.
->>> This patch modifies those to work in auto-xlat mode.
->> [...]
->>> --- a/arch/x86/xen/enlighten.c
->>> +++ b/arch/x86/xen/enlighten.c
->>> @@ -1147,8 +1147,9 @@ void xen_setup_vcpu_info_placement(void)
->>>  		xen_vcpu_setup(cpu);
->>>  
->>>  	/* xen_vcpu_setup managed to place the vcpu_info within the
->>> -	   percpu area for all cpus, so make use of it */
->>> -	if (have_vcpu_info_placement) {
->>> +	 * percpu area for all cpus, so make use of it. Note that for
->>> +	 * PVH we want to use native IRQ mechanism. */
->>> +	if (have_vcpu_info_placement && !xen_pvh_domain()) {
->>>  		pv_irq_ops.save_fl = __PV_IS_CALLEE_SAVE(xen_save_fl_direct);
->>>  		pv_irq_ops.restore_fl = __PV_IS_CALLEE_SAVE(xen_restore_fl_direct);
->>>  		pv_irq_ops.irq_disable = __PV_IS_CALLEE_SAVE(xen_irq_disable_direct);
->>
->> Should this be in a separate patch: "xen/pvh: use native irq ops"?
-> 
-> On a second thought I think not. The reason is explained in the commit
-> description:
-> 
->  The 'xen_setup_shared_info' is all setup to work with auto-xlat
->  guests, but there are two functions which it calls that are not:
->  xen_setup_mfn_list_list and xen_setup_vcpu_info_placement.
->  This patch modifies those to work in auto-xlat mode.
-> 
-> If we move this to another patch, it is going to be mostly the same
-> comment and this patch will feel unfinished.
+> Also for user space application, I think we don't have any user space
+> LED library, if I'm wrong please correct me. Why there is no such
+> library, since we don't need it.
 
-Looking at again, this hunk be in "xen/pvh: Piggyback on PVHVM for event
-channel" where we have:
+No - rght now it is a case of "we don't have a kernel driver because we
+don't need one"
 
-+	if (!xen_feature(XENFEAT_hvm_callback_vector))
-+		pv_irq_ops = xen_irq_ops;
+> IMHO, firstly we should take this trigger into kernel, most time it
+> works as a module. But we need to define a good interface between
+> kernel and user space.
 
-The tests in both places need to be the same as well.
+You need the interface defined first. To do that it needs to reflect the
+actual hardware accelerated devices, and also to deal with resource
+management for those devices if necessary (eg if they can only manage one
+led of a set at a time).
 
-David
+Your API can't handle things like brightness level, cross-fades
+(which require multiple LEDs handled as one unit) and the like.
+
+So the starting point has to be the hardware accelerated devices, whether
+you then support software emulation in kernel or user space is a follow
+on discussion. What the kernel/user API is also has to be a follow on
+discussion from understanding what the hardware accelerated devices can
+do and what their limits are.
+
+Alan
