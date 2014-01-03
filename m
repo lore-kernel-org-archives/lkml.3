@@ -1,204 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751459AbaACImq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 03:42:46 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:44501 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750853AbaACImo convert rfc822-to-8bit (ORCPT
+	id S1751381AbaACIti (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 03:49:38 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:64527 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841AbaACIth (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 03:42:44 -0500
-X-Originating-IP: 50.43.14.201
-Date: Fri, 3 Jan 2014 00:42:36 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cl@linux-foundation.org,
-        penberg@kernel.org, mpm@selenic.com
-Subject: Re: Memory allocator semantics
-Message-ID: <20140103084236.GA5992@leaf>
-References: <20140102203320.GA27615@linux.vnet.ibm.com>
- <20140103033906.GB2983@leaf>
- <20140103051417.GT19211@linux.vnet.ibm.com>
- <20140103054700.GA4865@leaf>
- <20140103075727.GU19211@linux.vnet.ibm.com>
+	Fri, 3 Jan 2014 03:49:37 -0500
+X-AuditID: 9c93017e-b7cd8ae000002ce9-d4-52c6799faa50
+From: Namhyung Kim <namhyung@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 4/8] perf tools: Introduce struct perf_log
+References: <1388036284-32342-1-git-send-email-namhyung@kernel.org>
+	<1388036284-32342-5-git-send-email-namhyung@kernel.org>
+	<52BC426D.8020408@gmail.com>
+Date: Fri, 03 Jan 2014 17:49:35 +0900
+In-Reply-To: <52BC426D.8020408@gmail.com> (David Ahern's message of "Thu, 26
+	Dec 2013 09:51:25 -0500")
+Message-ID: <8761q1fo0w.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140103075727.GU19211@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 02, 2014 at 11:57:27PM -0800, Paul E. McKenney wrote:
-> On Thu, Jan 02, 2014 at 09:47:00PM -0800, Josh Triplett wrote:
-> > On Thu, Jan 02, 2014 at 09:14:17PM -0800, Paul E. McKenney wrote:
-> > > On Thu, Jan 02, 2014 at 07:39:07PM -0800, Josh Triplett wrote:
-> > > > On Thu, Jan 02, 2014 at 12:33:20PM -0800, Paul E. McKenney wrote:
-> > > > > Hello!
-> > > > > 
-> > > > > From what I can see, the Linux-kernel's SLAB, SLOB, and SLUB memory
-> > > > > allocators would deal with the following sort of race:
-> > > > > 
-> > > > > A.	CPU 0: r1 = kmalloc(...); ACCESS_ONCE(gp) = r1;
-> > > > > 
-> > > > > 	CPU 1: r2 = ACCESS_ONCE(gp); if (r2) kfree(r2);
-> > > > > 
-> > > > > However, my guess is that this should be considered an accident of the
-> > > > > current implementation rather than a feature.  The reason for this is
-> > > > > that I cannot see how you would usefully do (A) above without also allowing
-> > > > > (B) and (C) below, both of which look to me to be quite destructive:
-> > > > 
-> > > > (A) only seems OK if "gp" is guaranteed to be NULL beforehand, *and* if
-> > > > no other CPUs can possibly do what CPU 1 is doing in parallel.  Even
-> > > > then, it seems questionable how this could ever be used successfully in
-> > > > practice.
-> > > > 
-> > > > This seems similar to the TCP simultaneous-SYN case: theoretically
-> > > > possible, absurd in practice.
-> > > 
-> > > Heh!
-> > > 
-> > > Agreed on the absurdity, but my quick look and slab/slob/slub leads
-> > > me to believe that current Linux kernel would actually do something
-> > > sensible in this case.  But only because they don't touch the actual
-> > > memory.  DYNIX/ptx would have choked on it, IIRC.
-> > 
-> > Based on this and the discussion at the bottom of your mail, I think I'm
-> > starting to understand what you're getting at; this seems like less of a
-> > question of "could this usefully happen?" and more "does the allocator
-> > know how to protect *itself*?".
-> 
-> Or perhaps "What are the rules when a concurrent program interacts with
-> a memory allocator?"  Like the set you provided below.  ;-)
+Hi David,
 
-:)
+On Thu, 26 Dec 2013 09:51:25 -0500, David Ahern wrote:
+> On 12/26/13, 12:38 AM, Namhyung Kim wrote:
+>> diff --git a/tools/perf/util/log.c b/tools/perf/util/log.c
+>> new file mode 100644
+>> index 000000000000..3838d49f82de
+>> --- /dev/null
+>> +++ b/tools/perf/util/log.c
+>> @@ -0,0 +1,105 @@
+>> +#include <stdio.h>
+>> +#include <stdlib.h>
+>> +#include "util/debug.h"
+>> +
+>> +#define LINEMAP_GROW  128
+>> +
+>> +struct perf_log perf_log = {
+>> +	.seen_newline = true,
+>> +};
+>> +
+>> +int perf_log_init(void)
+>
+> Why return int if the rc is not checked? Failure here is not going to
+> stop the perf command right?
 
-> > > > > But I thought I should ask the experts.
-> > > > > 
-> > > > > So, am I correct that kernel hackers are required to avoid "drive-by"
-> > > > > kfree()s of kmalloc()ed memory?
-> > > > 
-> > > > Don't kfree things that are in use, and synchronize to make sure all
-> > > > CPUs agree about "in use", yes.
-> > > 
-> > > For example, ensure that each kmalloc() happens unambiguously before the
-> > > corresponding kfree().  ;-)
-> > 
-> > That too, yes. :)
-> > 
-> > > > > PS.  To the question "Why would anyone care about (A)?", then answer
-> > > > >      is "Inquiring programming-language memory-model designers want
-> > > > >      to know."
-> > > > 
-> > > > I find myself wondering about the original form of the question, since
-> > > > I'd hope that programming-languge memory-model designers would
-> > > > understand the need for synchronization around reclaiming memory.
-> > > 
-> > > I think that they do now.  The original form of the question was as
-> > > follows:
-> > > 
-> > > 	But my intuition at the moment is that allowing racing
-> > > 	accesses and providing pointer atomicity leads to a much more
-> > > 	complicated and harder to explain model.  You have to deal
-> > > 	with initialization issues and OOTA problems without atomics.
-> > > 	And the implementation has to deal with cross-thread visibility
-> > > 	of malloc meta-information, which I suspect will be expensive.
-> > > 	You now essentially have to be able to malloc() in one thread,
-> > > 	transfer the pointer via a race to another thread, and free()
-> > > 	in the second thread.  That’s hard unless malloc() and free()
-> > > 	always lock (as I presume they do in the Linux kernel).
-> > 
-> > As mentioned above, this makes much more sense now.  This seems like a
-> > question of how the allocator protects its *own* internal data
-> > structures, rather than whether the allocator can usefully be used for
-> > the cases you mentioned above.  And that's a reasonable question to ask
-> > if you're building a language memory model for a language with malloc
-> > and free as part of its standard library.
-> > 
-> > To roughly sketch out some general rules that might work as a set of
-> > scalable design constraints for malloc/free:
-> > 
-> > - malloc may always return any unallocated memory; it has no obligation
-> >   to avoid returning memory that was just recently freed.  In fact, an
-> >   implementation may even be particularly *likely* to return memory that
-> >   was just recently freed, for performance reasons.  Any program which
-> >   assumes a delay or a memory barrier before memory reuse is broken.
-> 
-> Agreed.
-> 
-> > - Multiple calls to free on the same memory will produce undefined
-> >   behavior, and in particular may result in a well-known form of
-> >   security hole.  free has no obligation to protect itself against
-> >   multiple calls to free on the same memory, unless otherwise specified
-> >   as part of some debugging mode.  This holds whether the calls to free
-> >   occur in series or in parallel (e.g. two or more calls racing with
-> >   each other).  It is the job of the calling program to avoid calling
-> >   free multiple times on the same memory, such as via reference
-> >   counting, RCU, or some other mechanism.
-> 
-> Yep!
-> 
-> > - It is the job of the calling program to avoid calling free on memory
-> >   that is currently in use, such as via reference counting, RCU, or some
-> >   other mechanism.  Accessing memory after reclaiming it will produce
-> >   undefined behavior.  This includes calling free on memory concurrently
-> >   with accesses to that memory (e.g. via a race).
-> 
-> Yep!
-> 
-> > - malloc and free must work correctly when concurrently called from
-> >   multiple threads without synchronization.  Any synchronization or
-> >   memory barriers required internally by the implementations must be
-> >   provided by the implementation.  However, an implementation is not
-> >   required to use any particular form of synchronization, such as
-> >   locking or memory barriers, and the caller of malloc or free may not
-> >   make any assumptions about the ordering of its own operations
-> >   surrounding those calls.  For example, an implementation may use
-> >   per-CPU memory pools, and only use synchronization when it cannot
-> >   satisfy an allocation request from the current CPU's pool.
-> 
-> Yep, though in C/C++11 this comes out something very roughly like:
-> "A free() involving a given byte of memory synchronizes-with a later
-> alloc() returning a block containing that block of memory."
+Right.  I'll add a debug print if it's failed.
 
-Gah.  That doesn't seem like a memory-ordering guarantee the allocator
-should have to provide for its caller, and I can easily think of
-allocator structures that wouldn't guarantee it without the inclusion of
-an explicit memory barrier.
+>
+>> +{
+>> +	FILE *fp;
+>> +	char name[] = "/tmp/perf-log-XXXXXX";
+>> +	int fd = mkstemp(name);
+>> +
+>> +	if (fd < 0)
+>> +		return -1;
+>> +
+>> +	fp = fdopen(fd, "r+");
+>> +	if (fp == NULL) {
+>> +		close(fd);
+>> +		return -1;
+>> +	}
+>> +
+>> +	perf_log.fp = fp;
+>
+> Add 'unlink(name);' here to ensure the file is removed regardless of
+> how perf terminates.
 
-(Also, I assume the last use of "block" in that sentence should have
-been "byte"?)
+Ah, okay.  I thought the mkstemp() unlinked the file after open()
+returns.  It seems this is what tmpfile(3) does.  I'll switch to
+tmpfile() then.
 
-> > - An implementation of free must support being called on any memory
-> >   allocated by the same implementation of malloc, at any time, from any
-> >   CPU.  In particular, a call to free on memory freshly malloc'd on
-> >   another CPU, with no intervening synchronization between the two
-> >   calls, must succeed and reclaim the memory.  However, the actual calls
-> >   to malloc and free must not race with each other; in particular, the
-> >   pointer value returned by malloc is not valid (for access or for calls
-> >   to free) until malloc itself has returned.  (Such a race would require
-> >   the caller of free to divine the value returned by malloc before
-> >   malloc returns.)  Thus, the implementations of malloc and free may
-> >   safely assume a data dependency (via the returned pointer value
-> >   itself) between the call to malloc and the call to free; such a
-> >   dependency may allow further assumptions about memory ordering based
-> >   on the platform's memory model.
-> 
-> I would be OK requiring the user to have a happens-before relationship
-> between an allocation and a subsequent matching free.
+>
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +int perf_log_exit(void)
+>> +{
+>> +	FILE *fp = perf_log.fp;
+>> +	if (fp)
+>> +		fclose(fp);
+>> +
+>> +	free(perf_log.linemap);
+>> +
+>> +	perf_log.fp = NULL;
+>> +	perf_log.linemap = NULL;
+>> +	return 0;
+>> +}
+>> +
+>> +static int grow_linemap(struct perf_log *log)
+>> +{
+>> +	off_t *newmap;
+>> +	int newsize = log->nr_alloc + LINEMAP_GROW;
+>> +
+>> +	newmap = realloc(log->linemap, newsize * sizeof(*log->linemap));
+>> +	if (newmap == NULL)
+>> +		return -1;
+>> +
+>> +	log->nr_alloc = newsize;
+>> +	log->linemap = newmap;
+>> +	return 0;
+>> +}
+>
+> What's the point of linemap?
 
-I *think* that's the right formal relationship I'm suggesting, yes.
-Mostly I'm suggesting that since the only sensible way for the pointer
-value you're passing to free to have come into existence is to have
-received it from malloc at some point in the past (as opposed to
-magically divining its value), it's not so much "requiring the user to
-have a happens-before relationship" as "not allowing the user to
-randomly make up pointers and free them, even if they happen to match
-the value being returned from a concurrent malloc".  Because that's the
-only way I can think of for malloc and free to race on the same pointer.
+To save an offset of each line.  We need to keep it in order to move to
+an arbitraty line in the browser.
 
-In any case, let me know if the rules sketched above end up proving
-useful as part of the requirements for malloc/free.
+>
+>> +
+>> +static int __add_to_linemap(struct perf_log *log, off_t idx)
+>> +{
+>> +	if (log->lines == log->nr_alloc)
+>> +		if (grow_linemap(log) < 0)
+>> +			return -1;
+>> +
+>> +	log->linemap[log->lines++] = idx;
+>> +	return 0;
+>> +}
+>> +
+>> +static void add_to_linemap(struct perf_log *log, const char *msg, off_t base)
+>> +{
+>> +	const char *pos;
+>> +
+>> +	if (strlen(msg) == 0)
+>> +		return;
+>> +
+>> +	if (log->seen_newline) {
+>> +		if (__add_to_linemap(log, base) < 0)
+>> +			return;
+>> +	}
+>> +
+>> +	if ((pos = strchr(msg, '\n')) != NULL) {
+>> +		log->seen_newline = true;
+>> +		pos++;
+>> +		add_to_linemap(log, pos, base + (pos - msg));
+>> +	} else {
+>> +		log->seen_newline = false;
+>> +	}
+>> +}
+>> +
+>> +void perf_log_add(const char *msg)
+>> +{
+>> +	FILE *fp = perf_log.fp;
+>
+> Don't assume every user of libperf calls perf_log_init() or that the
+> file was actually created. i.e., add 'if (fp == NULL) return;'
 
-- Josh Triplett
+Okay.
+
+>
+>
+>> +	off_t offset = ftello(fp);
+>> +
+>> +	add_to_linemap(&perf_log, msg, offset);
+>> +
+>> +	fwrite(msg, 1, strlen(msg), fp);
+>
+> And if write fails?
+
+Hmm.. it's a problem.  We might go back to original linemap position for
+a failure case.  I'll save the offset and line number and restore them.
+
+>
+>> +}
+>> +
+>> +void perf_log_addv(const char *fmt, va_list ap)
+>> +{
+>> +	char buf[4096];
+>
+> Add as an optimization add the fp != NULL check here too. Don't need
+> to do the vsnprintf only to drop it.
+
+Okay.
+
+>
+>> +
+>> +	vsnprintf(buf, sizeof(buf), fmt, ap);
+>> +	perf_log_add(buf);
+>> +}
+>>
+>
+> What limits the size of the file - other than the obvious out of space
+> in /tmp? Allow the file to grow without bounds in case a user wants
+> the messages seems dangerous.
+
+Hmm. I don't have an idea what the reasonable size.  It's a temp file
+anyway and usually it contains not much data - well, 'perf top -vvv' is
+different and might need some surgery.
+
+>
+> What about using a circular buffer instead?
+
+Instead of a file?  Yes, it's possible but I think it might not be a
+good choice for the browser since it could alter the index during the
+circulation so that the browser can confuse to update the entries.
+
+Thanks,
+Namhyung
