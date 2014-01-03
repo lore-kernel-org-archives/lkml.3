@@ -1,96 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875AbaACWpm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 17:45:42 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:49218 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753385AbaACWpl (ORCPT
+	id S1754068AbaACWrG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 17:47:06 -0500
+Received: from [198.137.202.10] ([198.137.202.10]:33754 "EHLO
+	terminus.zytor.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1753666AbaACWrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 17:45:41 -0500
-Message-ID: <52C73D90.3020904@gmail.com>
-Date: Fri, 03 Jan 2014 15:45:36 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 3 Jan 2014 17:47:04 -0500
+Date: Fri, 3 Jan 2014 14:46:19 -0800
+From: tip-bot for Steven Rostedt <tipbot@zytor.com>
+Message-ID: <tip-c7c4c8f1b828b550295f1d937578e3090f3b5d66@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        rostedt@goodmis.org, ak@linux.intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, ak@linux.intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <20140103164500.5f6478f5@gandalf.local.home>
+References: <20140103164500.5f6478f5@gandalf.local.home>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/build] x86, sparse:
+  Do not force removal of __user when calling copy_to/from_user_nocheck()
+Git-Commit-ID: c7c4c8f1b828b550295f1d937578e3090f3b5d66
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Joseph Schuchart <joseph.schuchart@tu-dresden.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        thomas.ilsche@tu-dresden.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Perf: Correct Assumptions about Sample Timestamps in
- Passes
-References: <528E1EE6.9040407@tu-dresden.de> <20131127135137.GA24403@gmail.com> <52B437AA.4090102@tu-dresden.de> <52B479E1.7020204@gmail.com> <20131223131051.GB585@localhost.localdomain> <52B84C49.70001@gmail.com> <20131226151429.GA15303@localhost.localdomain> <52BC4A13.1090508@gmail.com> <20131226153033.GC15303@localhost.localdomain> <52C46083.9070605@gmail.com> <20140103220745.GB11061@localhost.localdomain>
-In-Reply-To: <20140103220745.GB11061@localhost.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 03 Jan 2014 14:46:26 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/3/14, 3:07 PM, Frederic Weisbecker wrote:
-> On Wed, Jan 01, 2014 at 11:37:55AM -0700, David Ahern wrote:
->> On 12/26/13, 8:30 AM, Frederic Weisbecker wrote:
->>> On Thu, Dec 26, 2013 at 10:24:03AM -0500, David Ahern wrote:
->>>> On 12/26/13, 10:14 AM, Frederic Weisbecker wrote:
->>>>>> I was carrying that patch while working on perf-kvm-stat-live last
->>>>>> Fall. It does not solve the problem for live commands, so ended up
->>>>>> dropping it and going with local (to the command) hacks. I still
->>>>>> think for live commands getting a perf_clock timestamp at the start
->>>>>> of a round and using that as the flush time will work best.
->>
->> For perf-kvm-stat-live using perf_clock value at the start of the
->> round as the flush time works beautifully:
->>
->> https://github.com/dsahern/linux/commit/ba8b7b63d5dbdc95aedbbafa670c2232e0cc07a2
->>
->> Never once failed with "Warning: Timestamp below last timeslice
->> flush" error.
->
-> I'm not sure I understand why we need that. Why doesn't it work by simply flushing
-> events prior to the earliest timestamp among every CPUs last event?
+Commit-ID:  c7c4c8f1b828b550295f1d937578e3090f3b5d66
+Gitweb:     http://git.kernel.org/tip/c7c4c8f1b828b550295f1d937578e3090f3b5d66
+Author:     Steven Rostedt <rostedt@goodmis.org>
+AuthorDate: Fri, 3 Jan 2014 16:45:00 -0500
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 3 Jan 2014 14:43:44 -0800
 
-Here's one scenario. Consider N-mmaps:
+x86, sparse: Do not force removal of __user when calling copy_to/from_user_nocheck()
 
-        |----- t_flush
-        v
-0   -----|---x------------------------
-1   -----|----|------------------------
-...      |
-N   -----|-------ssss-|-----------------
+Commit ff47ab4ff3cdd "x86: Add 1/2/4/8 byte optimization to 64bit
+__copy_{from,to}_user_inatomic" added a "_nocheck" call in between
+the copy_to/from_user() and copy_user_generic(). As both the
+normal and nocheck versions of theses calls use the proper __user
+annotation, a typecast to remove it should not be added.
+This causes sparse to spin out the following warnings:
 
-      t_start t_1 ... t_N
+arch/x86/include/asm/uaccess_64.h:207:47: warning: incorrect type in argument 2 (different address spaces)
+arch/x86/include/asm/uaccess_64.h:207:47:    expected void const [noderef] <asn:1>*src
+arch/x86/include/asm/uaccess_64.h:207:47:    got void const *<noident>
+arch/x86/include/asm/uaccess_64.h:207:47: warning: incorrect type in argument 2 (different address spaces)
+arch/x86/include/asm/uaccess_64.h:207:47:    expected void const [noderef] <asn:1>*src
+arch/x86/include/asm/uaccess_64.h:207:47:    got void const *<noident>
+arch/x86/include/asm/uaccess_64.h:207:47: warning: incorrect type in argument 2 (different address spaces)
+arch/x86/include/asm/uaccess_64.h:207:47:    expected void const [noderef] <asn:1>*src
+arch/x86/include/asm/uaccess_64.h:207:47:    got void const *<noident>
+arch/x86/include/asm/uaccess_64.h:207:47: warning: incorrect type in argument 2 (different address spaces)
+arch/x86/include/asm/uaccess_64.h:207:47:    expected void const [noderef] <asn:1>*src
+arch/x86/include/asm/uaccess_64.h:207:47:    got void const *<noident>
 
-You start a round at some time -- t_start. By starting a round it means 
-you go to mmap 0 and check for events, then mmap 1, ..., mmap N. It 
-takes a finite amount of time to move from one mmap to another.
+Cc: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/20140103164500.5f6478f5@gandalf.local.home
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/uaccess_64.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Assume there are no events on mmap 0, 1, ... N-1 but samples are 
-generated in mmap N. In the time it takes to move forward from 0 to N, a 
-sample can be generated for mmap 0 and written to the buffer - the 'x' 
-above. It now contains a timestamp < than samples on any other mmap and 
-out pops the flush error.
-
-perf-kvm can have over 650,000 events per second and those tend to come 
-in bunches on a single mmap. So even if you go for a "max of the min 
-times across mmaps" it is often wrong.
-
-The non-perf_clock logic in perf-kvm uses the min time across all mmaps 
-and even it occasionally fails with the flush error.
-
-David
-
-
->
-> I can see one remaining issue when an event interrupts another in a CPU. If the
-> interrupt happens after perf_prepare_sample() -> perf_clock() and perf_output_begin(),
-> we may have locally non-monotonic timestamps in a CPU buffer.
->
-> That could be solved with a heuristic similar to yours: flush events prior a few millisecs
-> before the barrier since interrupt are supposed to be short. Or we could move the perf_clock()
-> event snapshot to perf_output_sample() to make sure that the event space is reserved before
-> we get the timestamp, thus the interrupting events having superior timestamps are guaranteed
-> to be past the interrupted event in the stream.
->
-
+diff --git a/arch/x86/include/asm/uaccess_64.h b/arch/x86/include/asm/uaccess_64.h
+index 190413d..12a26b9 100644
+--- a/arch/x86/include/asm/uaccess_64.h
++++ b/arch/x86/include/asm/uaccess_64.h
+@@ -204,13 +204,13 @@ int __copy_in_user(void __user *dst, const void __user *src, unsigned size)
+ static __must_check __always_inline int
+ __copy_from_user_inatomic(void *dst, const void __user *src, unsigned size)
+ {
+-	return __copy_from_user_nocheck(dst, (__force const void *)src, size);
++	return __copy_from_user_nocheck(dst, src, size);
+ }
+ 
+ static __must_check __always_inline int
+ __copy_to_user_inatomic(void __user *dst, const void *src, unsigned size)
+ {
+-	return __copy_to_user_nocheck((__force void *)dst, src, size);
++	return __copy_to_user_nocheck(dst, src, size);
+ }
+ 
+ extern long __copy_user_nocache(void *dst, const void __user *src,
