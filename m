@@ -1,91 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753773AbaACWQV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 17:16:21 -0500
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:50903 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753313AbaACWQT (ORCPT
+	id S1753918AbaACWST (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 17:18:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51224 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753362AbaACWSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 17:16:19 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAEuXFEw=A0mppxtgzpmnh3feLiKYb+LJQvFRMrW3C4h+jHpO2Q@mail.gmail.com>
-References: <1388234173-31654-1-git-send-email-jeffrey.t.kirsher@intel.com>
- <20140102.192133.1585340046080167370.davem@davemloft.net> <CAEuXFEw=A0mppxtgzpmnh3feLiKYb+LJQvFRMrW3C4h+jHpO2Q@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 3 Jan 2014 15:15:57 -0700
-Message-ID: <CAErSpo7K3OBuTEZrXmhQ3iXtLf3M5JNnEqmAvaceroJ46VAOKg@mail.gmail.com>
-Subject: Re: [net-next] pci_regs.h: Add PCI bus link speed and width defines
-To: Jesse Brandeburg <jesse.brandeburg@gmail.com>
-Cc: David Miller <davem@davemloft.net>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        NetDEV list <netdev@vger.kernel.org>,
-        "gospo@redhat.com" <gospo@redhat.com>,
-        "sassmann@redhat.com" <sassmann@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 3 Jan 2014 17:18:18 -0500
+Date: Fri, 3 Jan 2014 14:18:16 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, penberg@kernel.org,
+        cl@linux-foundation.org
+Subject: Re: [PATCH 0/9] re-shrink 'struct page' when SLUB is on.
+Message-Id: <20140103141816.20ef2a24c8adffae040e53dc@linux-foundation.org>
+In-Reply-To: <20140103180147.6566F7C1@viggo.jf.intel.com>
+References: <20140103180147.6566F7C1@viggo.jf.intel.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 3, 2014 at 2:53 PM, Jesse Brandeburg
-<jesse.brandeburg@gmail.com> wrote:
-> +linux-pci
+On Fri, 03 Jan 2014 10:01:47 -0800 Dave Hansen <dave@sr71.net> wrote:
 
-Thanks, Jesse.
+> This is a minor update from the last version.  The most notable
+> thing is that I was able to demonstrate that maintaining the
+> cmpxchg16 optimization has _some_ value.
+> 
+> Otherwise, the code changes are just a few minor cleanups.
+> 
+> ---
+> 
+> SLUB depends on a 16-byte cmpxchg for an optimization which
+> allows it to not disable interrupts in its fast path.  This
+> optimization has some small but measurable benefits:
+> 
+> 	http://lkml.kernel.org/r/52B345A3.6090700@sr71.net
 
-> <and see note below>
->
-> On Thu, Jan 2, 2014 at 4:21 PM, David Miller <davem@davemloft.net> wrote:
->> From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
->> Date: Sat, 28 Dec 2013 04:36:13 -0800
->>
->>> Add missing PCI bus link speed 8.0 GT/s and bus link widths of
->>> x1, x2, x4 and x8.
->>>
->>> CC: <linux-kernel@vger.kernel.org>
->>> Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
->>
->> Can a PCI person please ACK this?  This is a prerequisite for some
->> networking driver changes Jeff would like to push to me.
+So really the only significant benefit from the cmpxchg16 is with
+cache-cold eight-byte kmalloc/kfree?  8% faster in this case?  But with
+cache-hot kmalloc/kfree the benefit of cmpxchg16 is precisely zero.
 
-The additions look correct to me, and I don't object to them per se, so:
+This is really weird and makes me suspect a measurement glitch.
 
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+Even if this 8% is real, it's unclear that it's worth all the
+complexity the cmpxchg16 adds.
 
-However, I do raise my eyebrows a bit at drivers that poke around in
-the PCIe capability.  I would prefer to have PCI core interfaces that
-handle that instead.  But I haven't seen Jeff's changes yet.
+It would be really useful (hint :)) if we were to know exactly where
+that 8% is coming from - perhaps it's something which is not directly
+related to the cmpxchg16, and we can fix it separately.
 
->>> ---
->>>  include/uapi/linux/pci_regs.h | 5 +++++
->>>  1 file changed, 5 insertions(+)
->>>
->>> diff --git a/include/uapi/linux/pci_regs.h b/include/uapi/linux/pci_regs.h
->>> index 4a98e85..c870c2a 100644
->>> --- a/include/uapi/linux/pci_regs.h
->>> +++ b/include/uapi/linux/pci_regs.h
->>> @@ -489,7 +489,12 @@
->>>  #define  PCI_EXP_LNKSTA_CLS  0x000f  /* Current Link Speed */
->>>  #define  PCI_EXP_LNKSTA_CLS_2_5GB 0x0001 /* Current Link Speed 2.5GT/s */
->>>  #define  PCI_EXP_LNKSTA_CLS_5_0GB 0x0002 /* Current Link Speed 5.0GT/s */
->>> +#define  PCI_EXP_LNKSTA_CLS_8_0GB 0x0003 /* Current Link Speed 8.0GT/s */
->>>  #define  PCI_EXP_LNKSTA_NLW  0x03f0  /* Negotiated Link Width */
->>> +#define  PCI_EXP_LNKSTA_NLW_X1       0x0010  /* Current Link Width x1 */
->>> +#define  PCI_EXP_LNKSTA_NLW_X2       0x0020  /* Current Link Width x2 */
->>> +#define  PCI_EXP_LNKSTA_NLW_X4       0x0040  /* Current Link Width x4 */
->>> +#define  PCI_EXP_LNKSTA_NLW_X8       0x0080  /* Current Link Width x8 */
->>>  #define  PCI_EXP_LNKSTA_NLW_SHIFT 4  /* start of NLW mask in link status */
->>>  #define  PCI_EXP_LNKSTA_LT   0x0800  /* Link Training */
->>>  #define  PCI_EXP_LNKSTA_SLC  0x1000  /* Slot Clock Configuration */
->
-> also note that these defines from this patch are already partially
-> defined in drivers/pci/probe.c but likely need to move into a header
-> file and be consolidated throughout the kernel.  That said I don't see
-> any issue with adding these as a separate set of defines in
-> uapi/linux/pci_regs.h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
