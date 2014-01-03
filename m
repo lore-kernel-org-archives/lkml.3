@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132AbaACWrM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 17:47:12 -0500
-Received: from [198.137.202.10] ([198.137.202.10]:33759 "EHLO
-	terminus.zytor.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1753666AbaACWrJ (ORCPT
+	id S1754185AbaACWrV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 17:47:21 -0500
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:39828 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753666AbaACWrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 17:47:09 -0500
-Date: Fri, 3 Jan 2014 14:46:09 -0800
-From: tip-bot for David Woodhouse <tipbot@zytor.com>
-Message-ID: <tip-c86cd70a46c97b001dd9d8b3e925d2a38b88d3ca@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        dwmw2@infradead.org, tglx@linutronix.de, hpa@linux.intel.com,
-        David.Woodhouse@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org, tglx@linutronix.de, hpa@linux.intel.com,
-        David.Woodhouse@intel.com
-In-Reply-To: <1388788242.2391.75.camel@shinybook.infradead.org>
-References: <1388788242.2391.75.camel@shinybook.infradead.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/build] x86, boot: Use .code16 instead of .code16gcc
-Git-Commit-ID: c86cd70a46c97b001dd9d8b3e925d2a38b88d3ca
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 3 Jan 2014 17:47:17 -0500
+Date: Fri, 3 Jan 2014 15:47:13 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v5 25/33] PCI, x86: Make ioapic hotplug support built-in
+Message-ID: <20140103224713.GC18987@google.com>
+References: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
+ <1388707565-16535-26-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 03 Jan 2014 14:46:16 -0800 (PST)
+In-Reply-To: <1388707565-16535-26-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c86cd70a46c97b001dd9d8b3e925d2a38b88d3ca
-Gitweb:     http://git.kernel.org/tip/c86cd70a46c97b001dd9d8b3e925d2a38b88d3ca
-Author:     David Woodhouse <dwmw2@infradead.org>
-AuthorDate: Fri, 3 Jan 2014 22:30:42 +0000
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 3 Jan 2014 14:40:09 -0800
+[fixed Rafael's email address; I imagine you got a few bounces :)]
 
-x86, boot: Use .code16 instead of .code16gcc
+On Thu, Jan 02, 2014 at 04:05:57PM -0800, Yinghai Lu wrote:
+> ioapic hotplug should be built-in like pci root bus hotplug.
+> 
+> Also need to make it depends on X86_IO_APIC.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-This reverts commit 28b48688 ("x86, boot: use .code16gcc instead
-of .code16").
+Most of this series is x86-specific and outside the scope of PCI, so I
+assume somebody else will deal with it.
 
-Versions of binutils older than 2.16 are already not working, so this
-workaround is no longer necessary either.  At the same time, some of
-the transformations that .code16gcc does can be *extremely*
-counterintuitive to a human programmer.
+This particular patch doesn't seem to depend on anything else, so I'll
+merge it.
 
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-Link: http://lkml.kernel.org/r/1388788242.2391.75.camel@shinybook.infradead.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/boot/bioscall.S | 2 +-
- arch/x86/boot/copy.S     | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/boot/bioscall.S b/arch/x86/boot/bioscall.S
-index 1dfbf64..5077937 100644
---- a/arch/x86/boot/bioscall.S
-+++ b/arch/x86/boot/bioscall.S
-@@ -13,7 +13,7 @@
-  * touching registers they shouldn't be.
-  */
- 
--	.code16gcc
-+	.code16
- 	.text
- 	.globl	intcall
- 	.type	intcall, @function
-diff --git a/arch/x86/boot/copy.S b/arch/x86/boot/copy.S
-index 11f272c..07a7a4a 100644
---- a/arch/x86/boot/copy.S
-+++ b/arch/x86/boot/copy.S
-@@ -14,7 +14,7 @@
-  * Memory copy routines
-  */
- 
--	.code16gcc
-+	.code16
- 	.text
- 
- GLOBAL(memcpy)
+> ---
+>  drivers/pci/Kconfig  | 3 ++-
+>  drivers/pci/ioapic.c | 6 +++++-
+>  2 files changed, 7 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
+> index b6a99f7..893503f 100644
+> --- a/drivers/pci/Kconfig
+> +++ b/drivers/pci/Kconfig
+> @@ -105,9 +105,10 @@ config PCI_PASID
+>  	  If unsure, say N.
+>  
+>  config PCI_IOAPIC
+> -	tristate "PCI IO-APIC hotplug support" if X86
+> +	bool "PCI IO-APIC hotplug support" if X86
+>  	depends on PCI
+>  	depends on ACPI
+> +	depends on X86_IO_APIC
+>  	default !X86
+>  
+>  config PCI_LABEL
+> diff --git a/drivers/pci/ioapic.c b/drivers/pci/ioapic.c
+> index 50ce680..2c2930e 100644
+> --- a/drivers/pci/ioapic.c
+> +++ b/drivers/pci/ioapic.c
+> @@ -113,6 +113,10 @@ static struct pci_driver ioapic_driver = {
+>  	.remove		= ioapic_remove,
+>  };
+>  
+> -module_pci_driver(ioapic_driver);
+> +static int __init ioapic_init(void)
+> +{
+> +	return pci_register_driver(&ioapic_driver);
+> +}
+> +module_init(ioapic_init);
+>  
+>  MODULE_LICENSE("GPL");
+> -- 
+> 1.8.4
+> 
