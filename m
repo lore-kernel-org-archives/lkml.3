@@ -1,120 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751611AbaACLKL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 06:10:11 -0500
-Received: from mga09.intel.com ([134.134.136.24]:49728 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751076AbaACLKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 06:10:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,597,1384329600"; 
-   d="scan'208";a="461162539"
-From: "Tc, Jenny" <jenny.tc@intel.com>
-To: Anton Vorontsov <anton@enomsg.org>,
-        =?utf-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
-CC: David Woodhouse <dwmw2@infradead.org>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "freemangordon@abv.bg" <freemangordon@abv.bg>,
-        "aaro.koskinen@iki.fi" <aaro.koskinen@iki.fi>,
-        "pavel@ucw.cz" <pavel@ucw.cz>
-Subject: RE: [PATCH v2 1/3] power_supply: Add power_supply notifier
-Thread-Topic: [PATCH v2 1/3] power_supply: Add power_supply notifier
-Thread-Index: AQHO5RFDfa/cA+i2sUmlOXctUUhQ1Zo/oZYAgDN7/hA=
-Date: Fri, 3 Jan 2014 11:09:49 +0000
-Message-ID: <20ADAB092842284E95860F279283C56422D1AD1E@BGSMSX104.gar.corp.intel.com>
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
- <1384856285-19593-1-git-send-email-pali.rohar@gmail.com>
- <1384856285-19593-2-git-send-email-pali.rohar@gmail.com>
- <20131201222330.GB6271@lizard>
-In-Reply-To: <20131201222330.GB6271@lizard>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="utf-8"
+	id S1751425AbaACLTV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 06:19:21 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:59412 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751022AbaACLTS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 06:19:18 -0500
 MIME-Version: 1.0
+In-Reply-To: <871u0po0gx.fsf@nemi.mork.no>
+References: <f9d7b0d5424e4443597d2ed39bec3fedd2b10d1e.1387848958.git.viresh.kumar@linaro.org>
+	<5562479.pVWRuDL0y6@vostro.rjw.lan>
+	<87zjne7f75.fsf@nemi.mork.no>
+	<2302938.b8tymqrMEz@vostro.rjw.lan>
+	<878uuxquxu.fsf@nemi.mork.no>
+	<871u0po0gx.fsf@nemi.mork.no>
+Date: Fri, 3 Jan 2014 16:49:17 +0530
+Message-ID: <CAKohpo=9p8ArfWyyWkdQm_BWtyWbWe_dsg6VAUP60VUFcAjFSw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] cpufreq: try to resume policies which failed on last resume
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: =?ISO-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s03BAHbi022157
 
-Anton,
+On 3 January 2014 15:23, Bjørn Mork <bjorn@mork.no> wrote:
+> Note that "ondemand" and "1401000" are the default vaules, so I don't
+> actually change anything here.  The write is causing the problem, not
+> the value.  As expected, I guess.
+>
+> Also note that boot vs non-boot cpu doesn't seem to matter.  Nor does
+> cancelling the hibernation.  The warning appears on hibernate - not on
+> resume.
 
-I don't see this patch in Linux tree. Any update on this would be helpful
+Hmm... I spent quite some time understanding whats going on and really
+couldn't get across anything as of now. I haven't tried reproducing it though.
 
-Thanks
-Jenny
+Few things that I can make out of this mail chain so far:
+- Apart from the log, everything is working fine. i.e. system is back in
+working condition.
+- It only happens when cpufreq_add_dev() fails during hibernation while
+we enable non-boot CPUs again to save image to disk. So, isn't a problem
+for a system which doesn't have any issues with add_dev() failing on
+hibernation
+- There is a contention of locks in the order they are taken. And the contention
+looks to be between, hotplug lock taken by cpu_online_cpus() and s_active
+lock for sysfs files. Don't know what's the role of previous write to
+sysfs files.
+As that should finish before hibernation starts and so all locks should be back
+in place.
 
-> -----Original Message-----
-> From: Anton Vorontsov [mailto:anton@scarybugs.org] On Behalf Of Anton
-> Vorontsov
-> Sent: Monday, December 02, 2013 3:54 AM
-> To: Pali RohÃ¡r
-> Cc: David Woodhouse; Tony Lindgren; Russell King; linux-kernel@vger.kernel.org;
-> linux-omap@vger.kernel.org; freemangordon@abv.bg; aaro.koskinen@iki.fi;
-> pavel@ucw.cz; Tc, Jenny
-> Subject: Re: [PATCH v2 1/3] power_supply: Add power_supply notifier
-> 
-> On Tue, Nov 19, 2013 at 11:18:03AM +0100, Pali RohÃ¡r wrote:
-> > This patch adds a notifier chain to the power_supply.
-> > This notifier helps drivers in other subsystem to listen to changes in
-> > power supply subsystem. This would help to take some actions in those
-> > drivers on changing the power supply properties.
-> > One such scenario is to increase/decrease system performance based on
-> > the battery capacity/voltage. Another scenario is to adjust the h/w
-> > peak current detection voltage/current thresholds based on battery
-> > voltage/capacity. The notifier helps drivers to listen to changes in
-> > power_suppy susbystem without polling the power_supply properties
-> >
-> > Signed-off-by: Jenny TC <jenny.tc@intel.com>
-> > Signed-off-by: Pali RohÃ¡r <pali.rohar@gmail.com>
-> ...
-> > +enum power_supply_notifier_events {
-> > +	PSY_EVENT_NONE,
-> 
-> This one is not needed.
-> 
-> > +	PSY_EVENT_PROP_CHANGED,
-> > +	PSY_EVENT_BATTERY,
-> > +	PSY_EVENT_CABLE,
-> > +};
-> 
-> The only event that is currently used in your patch series is
-> EVENT_PROP_CHANGED... So, I applied the patch with the following changes:
-> 
-> diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h index
-> c6f52c0..0c2a260 100644
-> --- a/include/linux/power_supply.h
-> +++ b/include/linux/power_supply.h
-> @@ -15,6 +15,7 @@
->  #include <linux/init.h>
->  #include <linux/slab.h>
->  #include <linux/device.h>
-> +#include <linux/notifier.h>
->  #include <linux/err.h>
->  #include <linux/power_supply.h>
->  #include <linux/thermal.h>
-> @@ -159,10 +159,7 @@ enum power_supply_type {  };
-> 
->  enum power_supply_notifier_events {
-> -	PSY_EVENT_NONE,
->  	PSY_EVENT_PROP_CHANGED,
-> -	PSY_EVENT_BATTERY,
-> -	PSY_EVENT_CABLE,
->  };
-> 
->  union power_supply_propval {
-> @@ -242,7 +239,7 @@ struct power_supply_info {
->  	int use_for_apm;
->  };
-> 
-> -extern struct atomic_notifier_head    power_supply_notifier;
-> +extern struct atomic_notifier_head power_supply_notifier;
->  extern int power_supply_reg_notifier(struct notifier_block *nb);  extern void
-> power_supply_unreg_notifier(struct notifier_block *nb);  extern struct
-> power_supply *power_supply_get_by_name(const char *name);
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+--
+viresh
