@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751386AbaACJ4m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 04:56:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55909 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750860AbaACJ4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 04:56:40 -0500
-Date: Fri, 3 Jan 2014 10:56:35 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Henrik Rydberg <rydberg@euromail.se>
-cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Edel Maks <edelmaks@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/3] HID: multitouch: add support of other generic
- collections in hid-mt
-In-Reply-To: <52B5F96D.9050400@euromail.se>
-Message-ID: <alpine.LNX.2.00.1401031056000.14951@pobox.suse.cz>
-References: <1387470191-9725-1-git-send-email-benjamin.tissoires@redhat.com> <1387470191-9725-4-git-send-email-benjamin.tissoires@redhat.com> <52B5F96D.9050400@euromail.se>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751562AbaACKDh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 05:03:37 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:62069 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841AbaACKDf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 05:03:35 -0500
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: broonie@kernel.org, sachin.kamat@linaro.org, mark.rutland@arm.com
+Subject: [PATCH Resend] regulator: s5m8767: Update LDO index in s5m8767-regulator.txt
+Date: Fri,  3 Jan 2014 15:29:49 +0530
+Message-Id: <1388743189-6174-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 21 Dec 2013, Henrik Rydberg wrote:
+LDO indices start from 1. Update the example accordingly.
 
-> > The ANTEC Touch Pad is a device which can switch from a multitouch
-> > touchpad to a mouse. It thus presents several generic collections which
-> > are currently ignored by hid-multitouch. Enable them by using the generic
-> > protocol. Adding also a suffix for them depending on their application.
-> 
-> In what way does this and the preceeding patches differ from "else if (is_pen ||
-> export_all_inputs)"? Adding a functional pattern which then is converted to a
-> generic case, such that the usual branching is bound to occur anyways, seems
-> unnecessary.
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+---
+ .../bindings/regulator/s5m8767-regulator.txt       |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Benjamin,
-
-did you have chance to do any followup work on this?
-
-If this is to go into 3.14, it's the time to have the thing finalized.
-
-Thanks,
-
+diff --git a/Documentation/devicetree/bindings/regulator/s5m8767-regulator.txt b/Documentation/devicetree/bindings/regulator/s5m8767-regulator.txt
+index d1660a90fc06..fc6b38f035bd 100644
+--- a/Documentation/devicetree/bindings/regulator/s5m8767-regulator.txt
++++ b/Documentation/devicetree/bindings/regulator/s5m8767-regulator.txt
+@@ -83,7 +83,7 @@ as per the datasheet of s5m8767.
+ 
+ 	- LDOn
+ 		  - valid values for n are 1 to 28
+-		  - Example: LDO0, LD01, LDO28
++		  - Example: LDO1, LD02, LDO28
+ 	- BUCKn
+ 		  - valid values for n are 1 to 9.
+ 		  - Example: BUCK1, BUCK2, BUCK9
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.9.5
+
