@@ -1,28 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849AbaACNdE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 08:33:04 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:49076 "EHLO SMTP.CITRIX.COM"
+	id S1752121AbaACNgm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 08:36:42 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:44763 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751872AbaACNdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 08:33:01 -0500
+	id S1751086AbaACNgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 08:36:41 -0500
 X-IronPort-AV: E=Sophos;i="4.95,598,1384300800"; 
-   d="scan'208";a="89530347"
-Date: Fri, 3 Jan 2014 13:32:09 +0000
+   d="scan'208";a="89531282"
+Date: Fri, 3 Jan 2014 13:35:52 +0000
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Mark Salter <msalter@redhat.com>, Chen Baozi <baozich@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <xen-devel@lists.xenproject.org>, <catalin.marinas@arm.com>,
-        <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <robherring2@gmail.com>, <will.deacon@arm.com>,
-        <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] arm64/xen: redefine xen_remap on arm64
-In-Reply-To: <alpine.DEB.2.02.1401031310100.8667@kaball.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1401031329160.8667@kaball.uk.xensource.com>
-References: <1388386511-32276-1-git-send-email-baozich@gmail.com> <1388431259.2564.15.camel@deneb.redhat.com> <alpine.DEB.2.02.1401031310100.8667@kaball.uk.xensource.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <linux-kernel@vger.kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [PATCH] swiotlb: Don't DoS us with 'swiotlb buffer is full'
+In-Reply-To: <1388505254-2986-1-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1401031334240.8667@kaball.uk.xensource.com>
+References: <1388505254-2986-1-git-send-email-konrad.wilk@oracle.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
@@ -31,47 +26,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Jan 2014, Stefano Stabellini wrote:
-> On Mon, 30 Dec 2013, Mark Salter wrote:
-> > On Mon, 2013-12-30 at 14:55 +0800, Chen Baozi wrote:
-> > > xen_remap used to be defined as ioremap_cached on arm64. In commit
-> > > c04e8e2fe, a new ioremap_cache was implemented, and ioremap_cached
-> > > was deleted, while xen_remap stays the same. This would lead to
-> > > the failure when building with CONFIG_HVC_XEN. Redefined xen_remap
-> > > on arm64 as ioremap_cache on arm64 to fix it.
-> > > 
-> > 
-> > I missed that include of arm header by arm64 when looking for users
-> > of arm64's ioremap_cached() when working on commit c04e8e2fe. Anyway,
-> > grepping the kernel tree, I see:
-> > 
-> >   ioremap_cached()
-> >     defined by: arm, metag, unicore32
-> >     used by: arch/arm/include/asm/xen/page.h
-> >              drivers/mtd/maps/pxa2xx-flash.c
-> > 
-> >   ioremap_cache()
-> >     defined by: arm64, sh, xtensa, ia64, x86
-> >     used by: drivers/video/vesafb.c
-> >              drivers/char/toshiba.c
-> >              drivers/acpi/apei
-> >              drivers/lguest/lguest_device.c
-> >              drivers/sfi/sfi_core.c
-> >              include/linux/acpi_io.h
-> > 
-> > I think it would be better to just avoid the confusion and the ifdef in
-> > asm/xen/page.h by globally changing ioremap_cached to ioremap_cache.
+On Tue, 31 Dec 2013, Konrad Rzeszutek Wilk wrote:
+> There is no need for that so lets use ratelimiting.
+> Also add some extra information to be helpful.
 > 
-> While I welcome the suggestion, this is a critical fix for a regression
-> that I think should go in as soon as possible, maybe 3.13-rc7, while I
-> don't think that a global s/ioremap_cached/ioremap_cache would be
-> acceptable at this stage.
+> CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-BTW Rob Herring sent a patch in November to solve the problem by
-renaming ioremap_cached to ioremap_cache under arch/arm:
+lib/swiotlb.c: In function 'swiotlb_tbl_map_single':
+lib/swiotlb.c:509:3: warning: format '%ld' expects argument of type 'long int', but argument 3 has type 'size_t' [-Wformat=]
 
-http://marc.info/?l=linux-arm-kernel&m=138394601804783
 
-I wrongly assumed that was going to go in.
-I think it is too late for that now. We'll have to go this this patch
-for 3.13.
+>  lib/swiotlb.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+> index e4399fa..7c97bd2 100644
+> --- a/lib/swiotlb.c
+> +++ b/lib/swiotlb.c
+> @@ -505,7 +505,8 @@ phys_addr_t swiotlb_tbl_map_single(struct device *hwdev,
+>  
+>  not_found:
+>  	spin_unlock_irqrestore(&io_tlb_lock, flags);
+> -	dev_warn(hwdev, "swiotlb buffer is full\n");
+> +	if (printk_ratelimit())
+> +		dev_warn(hwdev, "swiotlb buffer is full (sz: %ld bytes)\n", size);
+>  	return SWIOTLB_MAP_ERROR;
+>  found:
+>  	spin_unlock_irqrestore(&io_tlb_lock, flags);
+> -- 
+> 1.8.3.1
+> 
