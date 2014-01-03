@@ -1,43 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846AbaACB1S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 20:27:18 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:51472 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574AbaACB1Q (ORCPT
+	id S1752051AbaACBfv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 20:35:51 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:44618 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487AbaACBfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 20:27:16 -0500
-Message-ID: <52C611F3.8090306@codeaurora.org>
-Date: Thu, 02 Jan 2014 17:27:15 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH v2 06/10] Input: pm8xxx-vibrator - Add DT match table
-References: <1388709460-19222-1-git-send-email-sboyd@codeaurora.org> <1388709460-19222-7-git-send-email-sboyd@codeaurora.org> <20140103011722.GA9300@core.coreip.homeip.net>
-In-Reply-To: <20140103011722.GA9300@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 2 Jan 2014 20:35:50 -0500
+Date: Thu, 2 Jan 2014 17:34:38 -0800
+From: Mukesh Rathor <mukesh.rathor@oracle.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
+        stefano.stabellini@eu.citrix.com
+Subject: Re: [PATCH v12 03/18] xen/pvh: Early bootup changes in PV code
+ (v2).
+Message-ID: <20140102173438.40612127@mantra.us.oracle.com>
+In-Reply-To: <20140102183221.GD3021@pegasus.dumpdata.com>
+References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com>
+	<1388550945-25499-4-git-send-email-konrad.wilk@oracle.com>
+	<52C58691.4040502@citrix.com>
+	<20140102183221.GD3021@pegasus.dumpdata.com>
+Organization: Oracle Corporation
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/14 17:17, Dmitry Torokhov wrote:
-> Hi Stephen,
->
-> On Thu, Jan 02, 2014 at 04:37:36PM -0800, Stephen Boyd wrote:
->> The driver is only supported on DT enabled platforms. Convert the
->> driver to DT so that it can probe properly.
-> I do not see MFD_PM8XXX depending on OF, should it be added if it only
-> supported on DT?
+On Thu, 2 Jan 2014 13:32:21 -0500
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
 
-No that would unnecessarily limit the compile coverage of this driver.
-This one is so simple that it doesn't even use any OF APIs because it is
-all hidden behind the platform bus.
+> On Thu, Jan 02, 2014 at 03:32:33PM +0000, David Vrabel wrote:
+> > On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
+> > > From: Mukesh Rathor <mukesh.rathor@oracle.com>
+> > > 
+> > > In the bootup code for PVH we can trap cpuid via vmexit, so don't
+> > > need to use emulated prefix call. We also check for vector
+> > > callback early on, as it is a required feature. PVH also runs at
+> > > default kernel IOPL.
+> > > 
+> > > Finally, pure PV settings are moved to a separate function that
+> > > are only called for pure PV, ie, pv with pvmmu. They are also
+> > > #ifdef with CONFIG_XEN_PVMMU.
+> > [...]
+> > > @@ -331,12 +333,15 @@ static void xen_cpuid(unsigned int *ax,
+> > > unsigned int *bx, break;
+> > >  	}
+> > >  
+> > > -	asm(XEN_EMULATE_PREFIX "cpuid"
+> > > -		: "=a" (*ax),
+> > > -		  "=b" (*bx),
+> > > -		  "=c" (*cx),
+> > > -		  "=d" (*dx)
+> > > -		: "0" (*ax), "2" (*cx));
+> > > +	if (xen_pvh_domain())
+> > > +		native_cpuid(ax, bx, cx, dx);
+> > > +	else
+> > > +		asm(XEN_EMULATE_PREFIX "cpuid"
+> > > +			: "=a" (*ax),
+> > > +			"=b" (*bx),
+> > > +			"=c" (*cx),
+> > > +			"=d" (*dx)
+> > > +			: "0" (*ax), "2" (*cx));
+> > 
+> > For this one off cpuid call it seems preferrable to me to use the
+> > emulate prefix rather than diverge from PV.
+> 
+> This was before the PV cpuid was deemed OK to be used on PVH.
+> Will rip this out to use the same version.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Whats wrong with using native cpuid? That is one of the benefits that
+cpuid can be trapped via vmexit, and also there is talk of making PV
+cpuid trap obsolete in the future. I suggest leaving it native.
+
+Mukesh
 
