@@ -1,97 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751172AbaACIjv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 03:39:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34691 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750841AbaACIjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 03:39:49 -0500
-User-agent: mu4e 0.9.9.6pre2; emacs 24.3.1
-From: Madper Xie <cxie@redhat.com>
-To: "linux-efi\@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Matt Fleming <matt.fleming@intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [BUG] Kernel OOPS when reboot if I set reboot=efi,{warm, cold} (and some questions :-)
-Date: Fri, 03 Jan 2014 16:39:38 +0800
-Message-ID: <8738l5zcfp.fsf@redhat.com>
+	id S1751459AbaACImq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 03:42:46 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:44501 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853AbaACImo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 03:42:44 -0500
+X-Originating-IP: 50.43.14.201
+Date: Fri, 3 Jan 2014 00:42:36 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cl@linux-foundation.org,
+        penberg@kernel.org, mpm@selenic.com
+Subject: Re: Memory allocator semantics
+Message-ID: <20140103084236.GA5992@leaf>
+References: <20140102203320.GA27615@linux.vnet.ibm.com>
+ <20140103033906.GB2983@leaf>
+ <20140103051417.GT19211@linux.vnet.ibm.com>
+ <20140103054700.GA4865@leaf>
+ <20140103075727.GU19211@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140103075727.GU19211@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Howdy Folks,
-  Happy new yeah, happy new bug!
-  With a uefi system, I meet following panic when reboot after I adding
-  `reboot=efi,warm`
-[call trace]:
-<0>[  698.736637] reboot: Restarting system
-<5>[  698.737407] reboot: machine restart
-<1>[  698.738399] BUG: unable to handle kernel paging request at 00000000ded53e60
-<1>[  698.738924] IP: [<ffff8800dedb946d>] 0xffff8800dedb946d
-<4>[  698.739408] PGD 0 
-<4>[  698.739868] Oops: 0000 [#1] SMP 
-<4>[  698.740316] Modules linked in: nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6t_REJECT ipt_REJECT xt_conntrack ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables ip6table_nat nf_conntrack_ipv6 nf_defrag_ipv6 nf_nat_ipv6 ip6table_mangle ip6table_security ip6table_raw ip6table_filter ip6_tables iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack iptable_mangle iptable_security iptable_raw iptable_filter ip_tables sg vfat fat snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel arc4 ath9k snd_hda_codec snd_hwdep ath9k_common ath9k_hw snd_seq snd_seq_device ath3k ath snd_pcm snd_page_alloc mac80211 btusb cfg80211 r8169 snd_timer bluetooth snd rfkill mii soundcore shpchp iTCO_wdt iTCO_vendor_support lpc_ich mfd_core pcspkr microcode dcdbas i2c_i801Panic#2 Part2
-<4>[  698.743245]  serio_raw i2c_core video xfs libcrc32c usb_storage sd_mod crc_t10dif crct10dif_common ahci libahci libata dm_mirror dm_region_hash dm_log dm_mod
-<4>[  698.744276] CPU: 0 PID: 1939 Comm: reboot Not tainted 3.13.0-rc6+ #10
-<4>[  698.744793] Hardware name: Dell Inc. XPS 8500  /0NW73C, BIOS A09 09/05/2012
-<4>[  698.745314] task: ffff8800db6fbe30 ti: ffff88003eb86000 task.ti: ffff88003eb86000
-<4>[  698.745850] RIP: 0010:[<ffff8800dedb946d>]  [<ffff8800dedb946d>] 0xffff8800dedb946d
-<4>[  698.746394] RSP: 0018:ffff88003eb87cb0  EFLAGS: 00010046
-<4>[  698.746937] RAX: 00000000ded53e18 RBX: 0000000000000000 RCX: ffff8800dedb9a80
-<4>[  698.747494] RDX: ffff8800dedb9c50 RSI: 0000000000000000 RDI: ffff8800dedb9428
-<4>[  698.748055] RBP: 0000000000000001 R08: 0000000000000000 R09: ffff88003eb87ce0
-<4>[  698.748619] R10: ffffffff81a082c0 R11: ffff88003eb87cf8 R12: 0000000028121969
-<4>[  698.749190] R13: 00000000fffffffe R14: 0000000000000cf9 R15: 0000000000000000
-<4>[  698.749771] FS:  00007f16f206c880(0000) GS:ffff88021ec00000(0000) knlGS:0000000000000000
-<4>[  698.750364] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-<4>[  698.750963] CR2: 00000000ded53e60 CR3: 000000003e2d6000 CR4: 00000000001407f0
-Panic#2 Part1
-<4>[  698.751572] Stack:
-<4>[  698.752182]  ffffffff81a082c0 ffff88003eb87d50 0000000000000082 ffffc9000a27fff8
-<4>[  698.752816]  ffff88003eb87d00 0000000000000411 0000000000000001 0000000000010000
-<4>[  698.753455]  ffff8800dedb9428 ffffffff8105c556 000000004c564c54 0000000000000000
-<4>[  698.754097] Call Trace:
-<4>[  698.754740]  [<ffffffff8105c556>] ? efi_call4+0x46/0x80
-<4>[  698.755398]  [<ffffffff8105bc5c>] ? virt_efi_reset_system+0x2c/0x30
-<4>[  698.756062]  [<ffffffff8103f8d5>] ? native_machine_emergency_restart+0x1a5/0x270
-<4>[  698.756731]  [<ffffffff810491f0>] ? native_apic_msr_write+0x30/0x40
-<4>[  698.757399]  [<ffffffff8104357b>] ? disable_local_APIC+0x4b/0x50
-<4>[  698.758059]  [<ffffffff8103f427>] ? native_machine_restart+0x37/0x40
-<4>[  698.758719]  [<ffffffff8103f62f>] ? machine_restart+0xf/0x20
-<4>[  698.759379]  [<ffffffff8108e865>] ? kernel_restart+0x45/0x60
-<4>[  698.760034]  [<ffffffff8108eba9>] ? SYSC_reboot+0x229/0x260
-<4>[  698.760685]  [<ffffffff811b5ee9>] ? do_readv_writev+0x169/0x220
-<4>[  698.761331]  [<ffffffff811b6c5e>] ? __fput+0x17e/0x260
-<4>[  698.761972]  [<ffffffff811b6d8e>] ? ____fput+0xe/0x10
-<4>[  698.762609]  [<ffffffff8108ec7e>] ? SyS_reboot+0xe/0x10
-<4>[  698.763242]  [<ffffffff815e87e9>] ? system_call_fastpath+0x16/0x1b
-<4>[  698.763876] Code: 4d 8d 4b e8 49 89 43 d8 48 8b 05 47 08 00 00 48 8d 15 f8 07 00 00 48 8d 0d 21 06 00 00 bd 01 00 00 00 45 33 c0 49 89 6b e8 33 f6 <ff> 50 48 48 3b c6 40 0f b6 fe 0f 4d fd e8 bd 05 00 00 40 3a c6 
-<1>[  698.765285] RIP  [<ffff8800dedb946d>] 0xffff8800dedb946d
-<4>[  698.765972]  RSP <ffff88003eb87cb0>
-<4>[  698.766647] CR2: 00000000ded53e60
-<4>[  698.768462] ---[ end trace b97908aef93ab59d ]---
-<0>[  702.809043] Kernel panic - not syncing: Fatal exception
+On Thu, Jan 02, 2014 at 11:57:27PM -0800, Paul E. McKenney wrote:
+> On Thu, Jan 02, 2014 at 09:47:00PM -0800, Josh Triplett wrote:
+> > On Thu, Jan 02, 2014 at 09:14:17PM -0800, Paul E. McKenney wrote:
+> > > On Thu, Jan 02, 2014 at 07:39:07PM -0800, Josh Triplett wrote:
+> > > > On Thu, Jan 02, 2014 at 12:33:20PM -0800, Paul E. McKenney wrote:
+> > > > > Hello!
+> > > > > 
+> > > > > From what I can see, the Linux-kernel's SLAB, SLOB, and SLUB memory
+> > > > > allocators would deal with the following sort of race:
+> > > > > 
+> > > > > A.	CPU 0: r1 = kmalloc(...); ACCESS_ONCE(gp) = r1;
+> > > > > 
+> > > > > 	CPU 1: r2 = ACCESS_ONCE(gp); if (r2) kfree(r2);
+> > > > > 
+> > > > > However, my guess is that this should be considered an accident of the
+> > > > > current implementation rather than a feature.  The reason for this is
+> > > > > that I cannot see how you would usefully do (A) above without also allowing
+> > > > > (B) and (C) below, both of which look to me to be quite destructive:
+> > > > 
+> > > > (A) only seems OK if "gp" is guaranteed to be NULL beforehand, *and* if
+> > > > no other CPUs can possibly do what CPU 1 is doing in parallel.  Even
+> > > > then, it seems questionable how this could ever be used successfully in
+> > > > practice.
+> > > > 
+> > > > This seems similar to the TCP simultaneous-SYN case: theoretically
+> > > > possible, absurd in practice.
+> > > 
+> > > Heh!
+> > > 
+> > > Agreed on the absurdity, but my quick look and slab/slob/slub leads
+> > > me to believe that current Linux kernel would actually do something
+> > > sensible in this case.  But only because they don't touch the actual
+> > > memory.  DYNIX/ptx would have choked on it, IIRC.
+> > 
+> > Based on this and the discussion at the bottom of your mail, I think I'm
+> > starting to understand what you're getting at; this seems like less of a
+> > question of "could this usefully happen?" and more "does the allocator
+> > know how to protect *itself*?".
+> 
+> Or perhaps "What are the rules when a concurrent program interacts with
+> a memory allocator?"  Like the set you provided below.  ;-)
 
+:)
 
-According to Call Trace, the panic happen when call ResetSystem() which
-is a uefi run time service. It's seems a asm code in efi_stub_64.S
-I disassembly it with crash got following outputs:
-crash> dis efi_call4
-0xffffffff810518f0 <efi_call4>: mov    %rsp,%rax
-[ ... ]
-0xffffffff81051918 <efi_call4+40>:      movaps %xmm3,0x30(%rsp)
-0xffffffff8105191d <efi_call4+45>:      movaps %xmm4,0x20(%rsp)
-0xffffffff81051922 <efi_call4+50>:      movaps %xmm5,0x10(%rsp)
-0xffffffff81051927 <efi_call4+55>:      sub    $0x20,%rsp
-[ ... ]
+> > > > > But I thought I should ask the experts.
+> > > > > 
+> > > > > So, am I correct that kernel hackers are required to avoid "drive-by"
+> > > > > kfree()s of kmalloc()ed memory?
+> > > > 
+> > > > Don't kfree things that are in use, and synchronize to make sure all
+> > > > CPUs agree about "in use", yes.
+> > > 
+> > > For example, ensure that each kmalloc() happens unambiguously before the
+> > > corresponding kfree().  ;-)
+> > 
+> > That too, yes. :)
+> > 
+> > > > > PS.  To the question "Why would anyone care about (A)?", then answer
+> > > > >      is "Inquiring programming-language memory-model designers want
+> > > > >      to know."
+> > > > 
+> > > > I find myself wondering about the original form of the question, since
+> > > > I'd hope that programming-languge memory-model designers would
+> > > > understand the need for synchronization around reclaiming memory.
+> > > 
+> > > I think that they do now.  The original form of the question was as
+> > > follows:
+> > > 
+> > > 	But my intuition at the moment is that allowing racing
+> > > 	accesses and providing pointer atomicity leads to a much more
+> > > 	complicated and harder to explain model.  You have to deal
+> > > 	with initialization issues and OOTA problems without atomics.
+> > > 	And the implementation has to deal with cross-thread visibility
+> > > 	of malloc meta-information, which I suspect will be expensive.
+> > > 	You now essentially have to be able to malloc() in one thread,
+> > > 	transfer the pointer via a race to another thread, and free()
+> > > 	in the second thread.  That’s hard unless malloc() and free()
+> > > 	always lock (as I presume they do in the Linux kernel).
+> > 
+> > As mentioned above, this makes much more sense now.  This seems like a
+> > question of how the allocator protects its *own* internal data
+> > structures, rather than whether the allocator can usefully be used for
+> > the cases you mentioned above.  And that's a reasonable question to ask
+> > if you're building a language memory model for a language with malloc
+> > and free as part of its standard library.
+> > 
+> > To roughly sketch out some general rules that might work as a set of
+> > scalable design constraints for malloc/free:
+> > 
+> > - malloc may always return any unallocated memory; it has no obligation
+> >   to avoid returning memory that was just recently freed.  In fact, an
+> >   implementation may even be particularly *likely* to return memory that
+> >   was just recently freed, for performance reasons.  Any program which
+> >   assumes a delay or a memory barrier before memory reuse is broken.
+> 
+> Agreed.
+> 
+> > - Multiple calls to free on the same memory will produce undefined
+> >   behavior, and in particular may result in a well-known form of
+> >   security hole.  free has no obligation to protect itself against
+> >   multiple calls to free on the same memory, unless otherwise specified
+> >   as part of some debugging mode.  This holds whether the calls to free
+> >   occur in series or in parallel (e.g. two or more calls racing with
+> >   each other).  It is the job of the calling program to avoid calling
+> >   free multiple times on the same memory, such as via reference
+> >   counting, RCU, or some other mechanism.
+> 
+> Yep!
+> 
+> > - It is the job of the calling program to avoid calling free on memory
+> >   that is currently in use, such as via reference counting, RCU, or some
+> >   other mechanism.  Accessing memory after reclaiming it will produce
+> >   undefined behavior.  This includes calling free on memory concurrently
+> >   with accesses to that memory (e.g. via a race).
+> 
+> Yep!
+> 
+> > - malloc and free must work correctly when concurrently called from
+> >   multiple threads without synchronization.  Any synchronization or
+> >   memory barriers required internally by the implementations must be
+> >   provided by the implementation.  However, an implementation is not
+> >   required to use any particular form of synchronization, such as
+> >   locking or memory barriers, and the caller of malloc or free may not
+> >   make any assumptions about the ordering of its own operations
+> >   surrounding those calls.  For example, an implementation may use
+> >   per-CPU memory pools, and only use synchronization when it cannot
+> >   satisfy an allocation request from the current CPU's pool.
+> 
+> Yep, though in C/C++11 this comes out something very roughly like:
+> "A free() involving a given byte of memory synchronizes-with a later
+> alloc() returning a block containing that block of memory."
 
-So it seems the panic happen when SAVE_XMM? Does SAVE_XMM will trigger
-paging? (`unable to handle kernel paging request at 00000000ded53e60`)
+Gah.  That doesn't seem like a memory-ordering guarantee the allocator
+should have to provide for its caller, and I can easily think of
+allocator structures that wouldn't guarantee it without the inclusion of
+an explicit memory barrier.
 
-in case it's a hardware special issue: My testbed is a DELL xps x8500
-And I'll try to test it on another uefi system.
---
-Best,
-Madper
+(Also, I assume the last use of "block" in that sentence should have
+been "byte"?)
+
+> > - An implementation of free must support being called on any memory
+> >   allocated by the same implementation of malloc, at any time, from any
+> >   CPU.  In particular, a call to free on memory freshly malloc'd on
+> >   another CPU, with no intervening synchronization between the two
+> >   calls, must succeed and reclaim the memory.  However, the actual calls
+> >   to malloc and free must not race with each other; in particular, the
+> >   pointer value returned by malloc is not valid (for access or for calls
+> >   to free) until malloc itself has returned.  (Such a race would require
+> >   the caller of free to divine the value returned by malloc before
+> >   malloc returns.)  Thus, the implementations of malloc and free may
+> >   safely assume a data dependency (via the returned pointer value
+> >   itself) between the call to malloc and the call to free; such a
+> >   dependency may allow further assumptions about memory ordering based
+> >   on the platform's memory model.
+> 
+> I would be OK requiring the user to have a happens-before relationship
+> between an allocation and a subsequent matching free.
+
+I *think* that's the right formal relationship I'm suggesting, yes.
+Mostly I'm suggesting that since the only sensible way for the pointer
+value you're passing to free to have come into existence is to have
+received it from malloc at some point in the past (as opposed to
+magically divining its value), it's not so much "requiring the user to
+have a happens-before relationship" as "not allowing the user to
+randomly make up pointers and free them, even if they happen to match
+the value being returned from a concurrent malloc".  Because that's the
+only way I can think of for malloc and free to race on the same pointer.
+
+In any case, let me know if the rules sketched above end up proving
+useful as part of the requirements for malloc/free.
+
+- Josh Triplett
