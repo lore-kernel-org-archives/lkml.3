@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751642AbaACFsk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 00:48:40 -0500
+	id S1751722AbaACFsu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 00:48:50 -0500
 Received: from mga01.intel.com ([192.55.52.88]:23246 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751584AbaACFsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 00:48:38 -0500
+	id S1751592AbaACFsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 00:48:39 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,595,1384329600"; 
-   d="scan'208";a="459449413"
+   d="scan'208";a="459449420"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
         eranian@google.com, andi@firstfloor.org,
         "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH 13/14] perf, x86: enable LBR callstack when recording callchain
-Date: Fri,  3 Jan 2014 13:48:10 +0800
-Message-Id: <1388728091-18564-14-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH 14/14] perf, x86: Discard zero length call entries in LBR call stack
+Date: Fri,  3 Jan 2014 13:48:11 +0800
+Message-Id: <1388728091-18564-15-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1388728091-18564-1-git-send-email-zheng.z.yan@intel.com>
 References: <1388728091-18564-1-git-send-email-zheng.z.yan@intel.com>
@@ -24,166 +24,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Try enabling the LBR callstack facility if user requests recording
-user space callchain. Also adds a cpu pmu attribute to enable/disable
-this feature. This feature is disabled by default because it may
-contend for the LBR with other events that explicitly require branch
-stack
+"Zero length call" uses the attribute of the call instruction to push
+the immediate instruction pointer on to the stack and then pops off
+that address into a register. This is accomplished without any matching
+return instruction. It confuses the hardware and make the recorded call
+stack incorrect. Try fixing the call stack by discarding zero length
+call entries.
 
 Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c | 99 ++++++++++++++++++++++++++++------------
- arch/x86/kernel/cpu/perf_event.h |  7 +++
- 2 files changed, 77 insertions(+), 29 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 1509340..3ea184a 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -399,37 +399,49 @@ int x86_pmu_hw_config(struct perf_event *event)
- 
- 		if (event->attr.precise_ip > precise)
- 			return -EOPNOTSUPP;
-+	}
-+	/*
-+	 * check that PEBS LBR correction does not conflict with
-+	 * whatever the user is asking with attr->branch_sample_type
-+	 */
-+	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
-+		u64 *br_type = &event->attr.branch_sample_type;
-+
-+		if (has_branch_stack(event)) {
-+			if (!precise_br_compat(event))
-+				return -EOPNOTSUPP;
-+
-+			/* branch_sample_type is compatible */
-+
-+		} else {
-+			/*
-+			 * user did not specify  branch_sample_type
-+			 *
-+			 * For PEBS fixups, we capture all
-+			 * the branches at the priv level of the
-+			 * event.
-+			 */
-+			*br_type = PERF_SAMPLE_BRANCH_ANY;
-+
-+			if (!event->attr.exclude_user)
-+				*br_type |= PERF_SAMPLE_BRANCH_USER;
-+
-+			if (!event->attr.exclude_kernel)
-+				*br_type |= PERF_SAMPLE_BRANCH_KERNEL;
-+		}
-+	} else if ((event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) &&
-+		   !has_branch_stack(event) &&
-+		   x86_pmu.attr_lbr_callstack &&
-+		   !event->attr.exclude_user &&
-+		   (event->attach_state & PERF_ATTACH_TASK)) {
- 		/*
--		 * check that PEBS LBR correction does not conflict with
--		 * whatever the user is asking with attr->branch_sample_type
-+		 * user did not specify branch_sample_type,
-+		 * try using the LBR call stack facility to
-+		 * record call chains of user program.
- 		 */
--		if (event->attr.precise_ip > 1 &&
--		    x86_pmu.intel_cap.pebs_format < 2) {
--			u64 *br_type = &event->attr.branch_sample_type;
--
--			if (has_branch_stack(event)) {
--				if (!precise_br_compat(event))
--					return -EOPNOTSUPP;
--
--				/* branch_sample_type is compatible */
--
--			} else {
--				/*
--				 * user did not specify  branch_sample_type
--				 *
--				 * For PEBS fixups, we capture all
--				 * the branches at the priv level of the
--				 * event.
--				 */
--				*br_type = PERF_SAMPLE_BRANCH_ANY;
--
--				if (!event->attr.exclude_user)
--					*br_type |= PERF_SAMPLE_BRANCH_USER;
--
--				if (!event->attr.exclude_kernel)
--					*br_type |= PERF_SAMPLE_BRANCH_KERNEL;
--			}
--		}
-+		event->attr.branch_sample_type =
-+			PERF_SAMPLE_BRANCH_USER |
-+			PERF_SAMPLE_BRANCH_CALL_STACK;
- 	}
- 
- 	/*
-@@ -1828,10 +1840,39 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
- 	return count;
- }
- 
-+static ssize_t get_attr_lbr_callstack(struct device *cdev,
-+				      struct device_attribute *attr, char *buf)
-+{
-+	return snprintf(buf, 40, "%d\n", x86_pmu.attr_lbr_callstack);
-+}
-+
-+static ssize_t set_attr_lbr_callstack(struct device *cdev,
-+				      struct device_attribute *attr,
-+				      const char *buf, size_t count)
-+{
-+	unsigned long val;
-+	ssize_t ret;
-+
-+	ret = kstrtoul(buf, 0, &val);
-+	if (ret)
-+		return ret;
-+
-+	if (!!val != !!x86_pmu.attr_lbr_callstack) {
-+		if (val && !x86_pmu_has_lbr_callstack())
-+			return -EOPNOTSUPP;
-+		x86_pmu.attr_lbr_callstack = !!val;
-+	}
-+	return count;
-+}
-+
- static DEVICE_ATTR(rdpmc, S_IRUSR | S_IWUSR, get_attr_rdpmc, set_attr_rdpmc);
-+static DEVICE_ATTR(lbr_callstack, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
-+		   get_attr_lbr_callstack, set_attr_lbr_callstack);
-+
- 
- static struct attribute *x86_pmu_attrs[] = {
- 	&dev_attr_rdpmc.attr,
-+	&dev_attr_lbr_callstack.attr,
- 	NULL,
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index 08e3ba1..57bdd34 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -94,7 +94,8 @@ enum {
+ 	X86_BR_ABORT		= 1 << 12,/* transaction abort */
+ 	X86_BR_IN_TX		= 1 << 13,/* in transaction */
+ 	X86_BR_NO_TX		= 1 << 14,/* not in transaction */
+-	X86_BR_CALL_STACK	= 1 << 15,/* call stack */
++	X86_BR_ZERO_CALL	= 1 << 15,/* zero length call */
++	X86_BR_CALL_STACK	= 1 << 16,/* call stack */
  };
  
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 3ed9629..b45258c 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -400,6 +400,7 @@ struct x86_pmu {
- 	 * sysfs attrs
- 	 */
- 	int		attr_rdpmc;
-+	int		attr_lbr_callstack;
- 	struct attribute **format_attrs;
- 	struct attribute **event_attrs;
+ #define X86_BR_PLM (X86_BR_USER | X86_BR_KERNEL)
+@@ -111,13 +112,15 @@ enum {
+ 	 X86_BR_JMP	 |\
+ 	 X86_BR_IRQ	 |\
+ 	 X86_BR_ABORT	 |\
+-	 X86_BR_IND_CALL)
++	 X86_BR_IND_CALL |\
++	 X86_BR_ZERO_CALL)
  
-@@ -504,6 +505,12 @@ static struct perf_pmu_events_attr event_attr_##v = {			\
+ #define X86_BR_ALL (X86_BR_PLM | X86_BR_ANY)
  
- extern struct x86_pmu x86_pmu __read_mostly;
- 
-+static inline bool x86_pmu_has_lbr_callstack(void)
-+{
-+	return  x86_pmu.lbr_sel_map &&
-+		x86_pmu.lbr_sel_map[PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT] > 0;
-+}
-+
- DECLARE_PER_CPU(struct cpu_hw_events, cpu_hw_events);
- 
- int x86_perf_event_set_period(struct perf_event *event);
+ #define X86_BR_ANY_CALL		 \
+ 	(X86_BR_CALL		|\
+ 	 X86_BR_IND_CALL	|\
++	 X86_BR_ZERO_CALL	|\
+ 	 X86_BR_SYSCALL		|\
+ 	 X86_BR_IRQ		|\
+ 	 X86_BR_INT)
+@@ -652,6 +655,12 @@ static int branch_type(unsigned long from, unsigned long to, int abort)
+ 		ret = X86_BR_INT;
+ 		break;
+ 	case 0xe8: /* call near rel */
++		insn_get_immediate(&insn);
++		if (insn.immediate1.value == 0) {
++			/* zero length call */
++			ret = X86_BR_ZERO_CALL;
++			break;
++		}
+ 	case 0x9a: /* call far absolute */
+ 		ret = X86_BR_CALL;
+ 		break;
 -- 
 1.8.4.2
 
