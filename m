@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751785AbaACL3Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 06:29:16 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:13456 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837AbaACL3P (ORCPT
+	id S1751828AbaACL3Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 06:29:25 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:57878 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481AbaACL3Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 06:29:15 -0500
-X-IronPort-AV: E=Sophos;i="4.95,597,1384300800"; 
-   d="scan'208";a="87314429"
-Message-ID: <52C69F09.5010407@citrix.com>
-Date: Fri, 3 Jan 2014 11:29:13 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
-MIME-Version: 1.0
-To: Mukesh Rathor <mukesh.rathor@oracle.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
-        <boris.ostrovsky@oracle.com>, <stefano.stabellini@eu.citrix.com>
-Subject: Re: [PATCH v12 03/18] xen/pvh: Early bootup changes in PV code (v2).
-References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com>	<1388550945-25499-4-git-send-email-konrad.wilk@oracle.com>	<52C58691.4040502@citrix.com>	<20140102183221.GD3021@pegasus.dumpdata.com> <20140102173438.40612127@mantra.us.oracle.com>
-In-Reply-To: <20140102173438.40612127@mantra.us.oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+	Fri, 3 Jan 2014 06:29:16 -0500
+From: Ming Lei <tom.leiming@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Cc: Ming Lei <tom.leiming@gmail.com>
+Subject: [PATCH] block: blk-mq: fix initializing request's start time
+Date: Fri,  3 Jan 2014 19:29:04 +0800
+Message-Id: <1388748544-14156-1-git-send-email-tom.leiming@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/14 01:34, Mukesh Rathor wrote:
-> On Thu, 2 Jan 2014 13:32:21 -0500
-> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> 
->> On Thu, Jan 02, 2014 at 03:32:33PM +0000, David Vrabel wrote:
->>> On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
->>>> From: Mukesh Rathor <mukesh.rathor@oracle.com>
->>>>
->>>> In the bootup code for PVH we can trap cpuid via vmexit, so don't
->>>> need to use emulated prefix call. We also check for vector
->>>> callback early on, as it is a required feature. PVH also runs at
->>>> default kernel IOPL.
->>>>
->>>> Finally, pure PV settings are moved to a separate function that
->>>> are only called for pure PV, ie, pv with pvmmu. They are also
->>>> #ifdef with CONFIG_XEN_PVMMU.
->>> [...]
->>>> @@ -331,12 +333,15 @@ static void xen_cpuid(unsigned int *ax,
->>>> unsigned int *bx, break;
->>>>  	}
->>>>  
->>>> -	asm(XEN_EMULATE_PREFIX "cpuid"
->>>> -		: "=a" (*ax),
->>>> -		  "=b" (*bx),
->>>> -		  "=c" (*cx),
->>>> -		  "=d" (*dx)
->>>> -		: "0" (*ax), "2" (*cx));
->>>> +	if (xen_pvh_domain())
->>>> +		native_cpuid(ax, bx, cx, dx);
->>>> +	else
->>>> +		asm(XEN_EMULATE_PREFIX "cpuid"
->>>> +			: "=a" (*ax),
->>>> +			"=b" (*bx),
->>>> +			"=c" (*cx),
->>>> +			"=d" (*dx)
->>>> +			: "0" (*ax), "2" (*cx));
->>>
->>> For this one off cpuid call it seems preferrable to me to use the
->>> emulate prefix rather than diverge from PV.
->>
->> This was before the PV cpuid was deemed OK to be used on PVH.
->> Will rip this out to use the same version.
-> 
-> Whats wrong with using native cpuid? That is one of the benefits that
-> cpuid can be trapped via vmexit, and also there is talk of making PV
-> cpuid trap obsolete in the future. I suggest leaving it native.
+blk_rq_init() is called in req's complete handler to initialize
+the request, so the members of start_time and start_time_ns might
+become inaccurate when it is allocated in future.
 
-It should either use the PV interface or the HVM one, not a hybrid of
-the two.
+The patch initializes the two members in blk_mq_rq_ctx_init() to
+fix the problem.
 
-David
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+---
+ block/blk-mq.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/block/blk-mq.c b/block/blk-mq.c
+index 0974a26..68734f87 100644
+--- a/block/blk-mq.c
++++ b/block/blk-mq.c
+@@ -188,6 +188,8 @@ static void blk_mq_rq_ctx_init(struct request_queue *q, struct blk_mq_ctx *ctx,
+ 
+ 	rq->mq_ctx = ctx;
+ 	rq->cmd_flags = rw_flags;
++	rq->start_time = jiffies;
++	set_start_time_ns(rq);
+ 	ctx->rq_dispatched[rw_is_sync(rw_flags)]++;
+ }
+ 
+-- 
+1.7.9.5
+
