@@ -1,76 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480AbaACUS4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 15:18:56 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:19697 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752062AbaACUSz (ORCPT
+	id S1753614AbaACUW0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 15:22:26 -0500
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:47014 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753313AbaACUWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 15:18:55 -0500
-Message-ID: <52C71ACC.20603@oracle.com>
-Date: Fri, 03 Jan 2014 15:17:16 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 3 Jan 2014 15:22:24 -0500
+X-Originating-IP: 50.43.14.201
+Date: Fri, 3 Jan 2014 12:22:15 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>
+Subject: Re: [PATCH] drivers: Remove unused devm_*_put functions
+Message-ID: <20140103202215.GA12111@leaf>
+References: <20131221104920.GA3626@rashika>
+ <CACRpkdYyFXt1g-fL9dUTwQLnT4senUjvRpehc6yuQ9rV4ztwSA@mail.gmail.com>
+ <CAAVeFuJug5wNZrSr5UcP8w8E0a3iYF=bcNEzJgQaZ=u4CX8Daw@mail.gmail.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-CC: Vlastimil Babka <vbabka@suse.cz>, Michel Lespinasse <walken@google.com>,
-        Bob Liu <bob.liu@oracle.com>, npiggin@suse.de,
-        kosaki.motohiro@jp.fujitsu.com, riel@redhat.com,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] mm/mlock: fix BUG_ON unlocked page for nolinear VMAs
-References: <1387267550-8689-1-git-send-email-liwanp@linux.vnet.ibm.com>	<52b1138b.0201430a.19a8.605dSMTPIN_ADDED_BROKEN@mx.google.com>	<20131218032329.GA6044@hacker.(null)>	<52B11765.8030005@oracle.com>	<52b120a5.a3b2440a.3acf.ffffd7c3SMTPIN_ADDED_BROKEN@mx.google.com>	<52B166CF.6080300@suse.cz>	<52b1699f.87293c0a.75d1.34d3SMTPIN_ADDED_BROKEN@mx.google.com> <20131218134316.977d5049209d9278e1dad225@linux-foundation.org>
-In-Reply-To: <20131218134316.977d5049209d9278e1dad225@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAVeFuJug5wNZrSr5UcP8w8E0a3iYF=bcNEzJgQaZ=u4CX8Daw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2013 04:43 PM, Andrew Morton wrote:
-> On Wed, 18 Dec 2013 17:23:03 +0800 Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
->
->>>> diff --git a/mm/rmap.c b/mm/rmap.c
->>>> index 55c8b8d..1e24813 100644
->>>> --- a/mm/rmap.c
->>>> +++ b/mm/rmap.c
->>>> @@ -1347,6 +1347,7 @@ static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
->>>>   	unsigned long end;
->>>>   	int ret = SWAP_AGAIN;
->>>>   	int locked_vma = 0;
->>>> +	int we_locked = 0;
->>>>
->>>>   	address = (vma->vm_start + cursor) & CLUSTER_MASK;
->>>>   	end = address + CLUSTER_SIZE;
->>>> @@ -1385,9 +1386,15 @@ static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
->>>>   		BUG_ON(!page || PageAnon(page));
->>>>
->>>>   		if (locked_vma) {
->>>> -			mlock_vma_page(page);   /* no-op if already mlocked */
->>>> -			if (page == check_page)
->>>> +			if (page != check_page) {
->>>> +				we_locked = trylock_page(page);
->>>
->>> If it's not us who has the page already locked, but somebody else, he
->>> might unlock it at this point and then the BUG_ON in mlock_vma_page()
->>> will trigger again.
->
-> yes, this patch is pretty weak.
->
->> Any better idea is appreciated. ;-)
->
-> Remove the BUG_ON() from mlock_vma_page()?  Why was it added?
-> isolate_lru_page() and putback_lru_page() and *might* require
-> the page be locked, but I don't immediately see issues?
+On Fri, Jan 03, 2014 at 08:07:22PM +0900, Alexandre Courbot wrote:
+> On Thu, Jan 2, 2014 at 10:07 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> > On Sat, Dec 21, 2013 at 11:49 AM, Rashika Kheria
+> > <rashika.kheria@gmail.com> wrote:
+> >> -/**
+> >> - * devm_gpiod_put - Resource-managed gpiod_put()
+> >> - * @desc:      GPIO descriptor to dispose of
+> >> - *
+> >> - * Dispose of a GPIO descriptor obtained with devm_gpiod_get() or
+> >> - * devm_gpiod_get_index(). Normally this function will not be called as the GPIO
+> >> - * will be disposed of by the resource management code.
+> >> - */
+> >> -void devm_gpiod_put(struct device *dev, struct gpio_desc *desc)
+> >> -{
+> >> -       WARN_ON(devres_release(dev, devm_gpiod_release, devm_gpiod_match,
+> >> -               &desc));
+> >> -}
+> >> -EXPORT_SYMBOL(devm_gpiod_put);
+> >
+> > Alexandre what do you think about this? Can we think of a scenario
+> > where explicit garbage collection is going to be needed or should we
+> > remove this for now?
+> 
+> Sorry for the delayed reply, I quickly saw the patch and then the
+> holidays got in the way. :)
+> 
+> I think all these functions should be kept. It is true that they are
+> seldomly used, and that the purpose of devm is to garbage-collect
+> resources upon driver removal, but they might (actually, probably
+> will) become needed by someone at some point in the future. One
+> example I can think of is two drivers that collaborate to share the
+> same GPIO line. If they acquire the GPIO through devm_gpiod_get() they
+> will need devm_gpiod_put() to release it so the other driver can
+> acquire it.
+> 
+> On a more general note, devm_clk_put(), devm_regulator_put(),
+> devm_pinctrl_put() and probably others devm_*_put() functions are
+> actively used in the kernel, to  support the idea that a devm removal
+> function makes sense. That not all the subsystem-provided functions
+> are used by mainline drivers does not necessary mean they should be
+> removed, especially if they serve a purpose. We should keep our APIs
+> consistent and future-proof, not to mention out-of-tree drivers that
+> may use them.
+> 
+> So this patch is a nack as far as I'm concerned, not only the GPIO
+> part, but the whole of it.
 
-Ping? This BUG() is triggerable in 3.13-rc6 right now.
+As far as I can tell, the few calls to the devm_*_put functions I can
+see look like unnecessary calls as part of driver/device
+uninitialization, and could be removed either directly or with minor
+reworking.  That there are only 1-2 calls to each in the entire kernel
+is also quite telling.
 
+In any case, it's disappointing to have a pile of unused functions in
+the kernel on the theory that they *might* be needed; it's not like it'd
+be hard to retrieve them from git if they're ever needed.
 
-Thanks,
-Sasha
+However, if you're insistent on keeping them, it'd be easy enough to
+provide patches to include an appropriate header with prototypes for
+them instead, which would also eliminate the warning this patch series
+set out to eliminate.
 
+- Josh Triplett
