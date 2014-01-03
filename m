@@ -1,66 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751921AbaACMwL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 07:52:11 -0500
-Received: from mail.fireflyinternet.com ([87.106.93.118]:62910 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751835AbaACMv6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 07:51:58 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
-Date: Fri, 3 Jan 2014 12:51:51 +0000
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: ben@bwidawsk.net, daniel.vetter@ffwll.ch, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm/i915: Fix refcount leak and possible NULL
- pointerdereference.
-Message-ID: <20140103125151.GA4367@nuc-i3427.alporthouse.com>
-References: <201312242050.CGH78112.JQFOSVMLOFtHOF@I-love.SAKURA.ne.jp>
- <20131225215249.GA3832@nuc-i3427.alporthouse.com>
- <201401032042.BJF09317.FJFQOFOVtSOLMH@I-love.SAKURA.ne.jp>
+	id S1751833AbaACM5t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 07:57:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57818 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751085AbaACM5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 07:57:48 -0500
+Message-ID: <52C6B3C8.7040509@suse.cz>
+Date: Fri, 03 Jan 2014 13:57:44 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201401032042.BJF09317.FJFQOFOVtSOLMH@I-love.SAKURA.ne.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nishanth Menon <nm@ti.com>, Julia.Lawall@lip6.fr, Gilles.Muller@lip6.fr,
+        nicolas.palix@imag.fr
+CC: linux-kernel@vger.kernel.org, cocci@systeme.lip6.fr,
+        linux-pm@vger.kernel.org, Sekhar Nori <nsekhar@ti.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [PATCH resend] scripts: Coccinelle script for pm_runtime_* return
+ checks with IS_ERR_VALUE
+References: <1385991581-16843-1-git-send-email-nm@ti.com>
+In-Reply-To: <1385991581-16843-1-git-send-email-nm@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 03, 2014 at 08:42:18PM +0900, Tetsuo Handa wrote:
-> Chris Wilson wrote:
-> > On Tue, Dec 24, 2013 at 08:50:23PM +0900, Tetsuo Handa wrote:
-> > > >From 482be6384379072eb4c0d45d0ab8a25df4f59ed7 Mon Sep 17 00:00:00 2001
-> > > From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> > > Date: Tue, 24 Dec 2013 18:04:14 +0900
-> > > Subject: [PATCH] drm/i915: Fix refcount leak and possible NULL pointer dereference.
-> > > 
-> > > Since get_pid_task() grabs a reference on the task_struct, we have to drop the
-> > > refcount after reading that task's comm name. Also, directly reading like
-> > > get_pid_task()->comm can trigger an oops when get_pid_task() returned NULL.
-> > 
-> > The second issue is moot as file itself cannot exist if the task_struct
-> > is NULL, and the task_struct cannot be destroyed until we finish the
-> > function. The simpler fix would appear to be s/get_pid_task/pid_task/
+On 2013-12-02 14:39, Nishanth Menon wrote:
+> As indicated by Sekhar in [1], there seems to be a tendency to use
+> IS_ERR_VALUE to check the error result for pm_runtime_* functions which
+> make no sense considering commit c48cd65 (ARM: OMAP: use consistent
+> error checking) - the error values can either be < 0 for error OR
+> 0, 1 in cases where we have success.
 > 
-> If I understand correctly, priv->pid = get_pid(task_pid(current)); in
-> drm_open_helper() grabs a reference on "struct pid" before adding to
-> &dev->filelist, and put_pid(file_priv->pid); in drm_release() releases that
-> reference after removing from &dev->filelist.
+> So, setup a coccinelle script to help identify the same.
+
+Julia, Gilles, do you have any objections to this semantic patch?
+
+Thanks,
+Michal
 > 
-> So, you meant that mutex_lock_interruptible(&dev->struct_mutex); in
-> i915_gem_object_info() prevents drm_release() from calling put_pid() ?
+> [1] http://marc.info/?t=138472678100003&r=1&w=2
+> 
+> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+> Reported-by: Sekhar Nori <nsekhar@ti.com>
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> ---
+> Original post: http://marc.info/?t=138559437300001&r=1&w=2
+> 
+>  scripts/coccinelle/api/pm_runtime.cocci |  109 +++++++++++++++++++++++++++++++
+>  1 file changed, 109 insertions(+)
+>  create mode 100644 scripts/coccinelle/api/pm_runtime.cocci
+> 
+> diff --git a/scripts/coccinelle/api/pm_runtime.cocci b/scripts/coccinelle/api/pm_runtime.cocci
+> new file mode 100644
+> index 0000000..f01789e
+> --- /dev/null
+> +++ b/scripts/coccinelle/api/pm_runtime.cocci
+> @@ -0,0 +1,109 @@
+> +/// Make sure pm_runtime_* calls does not use unnecessary IS_ERR_VALUE
+> +//
+> +// Keywords: pm_runtime
+> +// Confidence: Medium
+> +// Copyright (C) 2013 Texas Instruments Incorporated - GPLv2.
+> +// URL: http://coccinelle.lip6.fr/
+> +// Options: --include-headers
+> +
+> +virtual patch
+> +virtual context
+> +virtual org
+> +virtual report
+> +
+> +//----------------------------------------------------------
+> +//  Detection
+> +//----------------------------------------------------------
+> +
+> +@runtime_bad_err_handle exists@
+> +expression ret;
+> +@@
+> +(
+> +ret = \(pm_runtime_idle\|
+> +	pm_runtime_suspend\|
+> +	pm_runtime_autosuspend\|
+> +	pm_runtime_resume\|
+> +	pm_request_idle\|
+> +	pm_request_resume\|
+> +	pm_request_autosuspend\|
+> +	pm_runtime_get\|
+> +	pm_runtime_get_sync\|
+> +	pm_runtime_put\|
+> +	pm_runtime_put_autosuspend\|
+> +	pm_runtime_put_sync\|
+> +	pm_runtime_put_sync_suspend\|
+> +	pm_runtime_put_sync_autosuspend\|
+> +	pm_runtime_set_active\|
+> +	pm_schedule_suspend\|
+> +	pm_runtime_barrier\|
+> +	pm_generic_runtime_suspend\|
+> +	pm_generic_runtime_resume\)(...);
+> +...
+> +IS_ERR_VALUE(ret)
+> +...
+> +)
+> +
+> +//----------------------------------------------------------
+> +//  For context mode
+> +//----------------------------------------------------------
+> +
+> +@depends on runtime_bad_err_handle && context@
+> +identifier pm_runtime_api;
+> +expression ret;
+> +@@
+> +(
+> +ret = pm_runtime_api(...);
+> +...
+> +* IS_ERR_VALUE(ret)
+> +...
+> +)
+> +
+> +//----------------------------------------------------------
+> +//  For patch mode
+> +//----------------------------------------------------------
+> +
+> +@depends on runtime_bad_err_handle && patch@
+> +identifier pm_runtime_api;
+> +expression ret;
+> +@@
+> +(
+> +ret = pm_runtime_api(...);
+> +...
+> +- IS_ERR_VALUE(ret)
+> ++ ret < 0
+> +...
+> +)
+> +
+> +//----------------------------------------------------------
+> +//  For org and report mode
+> +//----------------------------------------------------------
+> +
+> +@r depends on runtime_bad_err_handle exists@
+> +position p1, p2;
+> +identifier pm_runtime_api;
+> +expression ret;
+> +@@
+> +(
+> +ret = pm_runtime_api@p1(...);
+> +...
+> +IS_ERR_VALUE@p2(ret)
+> +...
+> +)
+> +
+> +@script:python depends on org@
+> +p1 << r.p1;
+> +p2 << r.p2;
+> +pm_runtime_api << r.pm_runtime_api;
+> +@@
+> +
+> +cocci.print_main(pm_runtime_api,p1)
+> +cocci.print_secs("IS_ERR_VALUE",p2)
+> +
+> +@script:python depends on report@
+> +p1 << r.p1;
+> +p2 << r.p2;
+> +pm_runtime_api << r.pm_runtime_api;
+> +@@
+> +
+> +msg = "%s returns < 0 as error. Unecessary IS_ERR_VALUE at line %s" % (pm_runtime_api, p2[0].line)
+> +coccilib.report.print_report(p1[0],msg)
+> 
 
-Right, my understanding is that since we take the struct_mutex during
-release of the filp (and across this list walker) that is sufficient
-serialisation to prevent the task struct from disappearing from
-underneath us.
- 
-> Then, this file->pid in &dev->filelist keeps at least one reference.
-> OK. Updated patch follows.
-
-Looks good to me, and the comment is great.
--Chris
-
--- 
-Chris Wilson, Intel Open Source Technology Centre
