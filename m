@@ -1,115 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589AbaACUCK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 15:02:10 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:47270 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752849AbaACUCH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 15:02:07 -0500
+	id S1753653AbaACUDo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 15:03:44 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:45995 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752463AbaACUDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 15:03:42 -0500
+Date: Fri, 3 Jan 2014 14:02:26 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+CC: <akpm@linux-foundation.org>, USB list <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-next@vger.kernel.org>
+Subject: Re: mmotm 2014-01-02-14-35 uploaded (musb)
+Message-ID: <20140103200226.GD18722@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <20140102223649.D8FB931C206@corp2gmr1-1.hot.corp.google.com>
+ <52C6FA1E.4030607@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <CE2C58F938F4C44EA74FFF880BAA7E5E1CD22E04@BBYEXM01.pmc-sierra.internal>
-References: <CAD0Z9T+69VoSnDY-Sj7a1QfJ-KLJYVyL9=WQ123XMfRvQmGdsg@mail.gmail.com>
-	<52B8518B.4060204@gmail.com>
-	<52B8569D.4050101@redhat.com>
-	<CAD0Z9TK-cn=X3ywSzPnEQN-FB+ue+0dHQ3EHuwonC+KfgrmPMA@mail.gmail.com>
-	<20131223163410.GA28220@redhat.com>
-	<20131223172744.GA2069@redhat.com>
-	<20131223182323.GA8656@gmail.com>
-	<20131223183341.GA6082@redhat.com>
-	<20131224082931.GA20471@gmail.com>
-	<CE2C58F938F4C44EA74FFF880BAA7E5E1C68AD12@BBYEXM01.pmc-sierra.internal>
-	<20131227161802.GA21077@redhat.com>
-	<CE2C58F938F4C44EA74FFF880BAA7E5E1CD22E04@BBYEXM01.pmc-sierra.internal>
-Date: Fri, 3 Jan 2014 12:02:06 -0800
-Message-ID: <CAA9_cme0MZvz_6VXXpP3ATkR6p_OznHpVtyyNxA+HK2iBvb7Rg@mail.gmail.com>
-Subject: Re: spinlock_irqsave() && flags (Was: pm80xx: Spinlock fix)
-From: Dan Williams <dan.j.williams@gmail.com>
-To: Suresh Thiagarajan <Suresh.Thiagarajan@pmcs.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Jason Seba <jason.seba42@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tomas Henzl <thenzl@redhat.com>, Jack Wang <xjtuwjp@gmail.com>,
-        Viswas G <Viswas.G@pmcs.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "JBottomley@parallels.com" <JBottomley@parallels.com>,
-        Vasanthalakshmi Tharmarajan 
-	<Vasanthalakshmi.Tharmarajan@pmcs.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PyMzGVE0NRonI6bs"
+Content-Disposition: inline
+In-Reply-To: <52C6FA1E.4030607@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 2, 2014 at 2:31 AM, Suresh Thiagarajan
-<Suresh.Thiagarajan@pmcs.com> wrote:
->
->
-> On Fri, Dec 27, 2013 at 9:48 PM, Oleg Nesterov <oleg@redhat.com> wrote:
->> On 12/24, Suresh Thiagarajan wrote:
->>>
->>> Below is a small pseudo code on protecting/serializing the flag for global access.
->>> struct temp
->>> {
->>>       ...
->>>       spinlock_t lock;
->>>       unsigned long lock_flags;
->>> };
->>> void my_lock(struct temp *t)
->>> {
->>>                unsigned long flag; // thread-private variable as suggested
->>>                spin_lock_irqsave(&t->lock, flag);
->>>                t->lock_flags = flag; //updating inside critical section now to serialize the access to flag
->>> }
->>>
->>> void my_unlock(struct temp *t)
->>> {
->>>                unsigned long flag = t->lock_flags;
->>>                t->lock_flags = 0;  //clearing it before getting out of critical section
->>>                spin_unlock_irqrestore(&t->lock, flag);
->>> }
->>
->> Yes, this should work as a quick fix. And you do not need to clear ->lock_flags
->> in my_unlock().
->>
->> But when I look at original patch again, I no longer understand why do
->> you need pm8001_ha->lock_flags at all. Of course I do not understand this
->> code, I am sure I missed something, but at first glance it seems that only
->> this sequence
->>
->>         spin_unlock_irq(&pm8001_ha->lock);
->>         t->task_done(t);
->>         spin_lock_irq(&pm8001_ha->lock);
->>
->> should be fixed?
->>
->> If yes, why you can't simply do spin_unlock() + spin_lock() around
->> t->task_done() ? This won't enable irqs, but spin_unlock_irqrestore()
->> doesn't necessarily enables irqs too, so ->task_done() can run with
->> irqs disabled?
->>
->> And note that the pattern above has a lot of users, perhaps it makes
->> sense to start with something like the patch below?
->
-> Thanks James, Oleg and all for your inputs.
-> Will start with review and testing this patch and then work/investigate to keep shortest and clearest critical
-> section so that we can have the lock and unlock within the same routine.
->
+--PyMzGVE0NRonI6bs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Fwiw we solved this in libsas a while back with a similar pattern
-proposed by Oleg:
+On Fri, Jan 03, 2014 at 09:57:50AM -0800, Randy Dunlap wrote:
+> On 01/02/14 14:36, akpm@linux-foundation.org wrote:
+> > The mm-of-the-moment snapshot 2014-01-02-14-35 has been uploaded to
+> >=20
+> >    http://www.ozlabs.org/~akpm/mmotm/
+> >=20
+> > mmotm-readme.txt says
+> >=20
+> > README for mm-of-the-moment:
+> >=20
+> > http://www.ozlabs.org/~akpm/mmotm/
+> >=20
+> > This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+> > more than once a week.
+>=20
+> on x86_64:
+>=20
+> when CONFIG_USB is not enabled:
+>=20
+> drivers/built-in.o: In function `musb_init':
+> musb_core.c:(.init.text+0x45fc): undefined reference to `usb_disabled'
 
-unsigned long flags;
+already have a patch for that. Waiting for Greg to merge ;-)
 
-local_irq_save(flags);
-spin_unlock(lock);
-...
-spin_lock_lock(lock);
-local_irq_restore(flags);
+commit 89f836a8c56bfea6585a09f7afff7094968a4fd0
+Author: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Date:   Thu Dec 26 09:24:52 2013 -0300
 
-See commit 312d3e56119a "[SCSI] libsas: remove ata_port.lock
-management duties from lldds"
+    usb: musb: Remove usb_disable() check in module_init()
+   =20
+    Removing the check to usb_disable() before registering the platform
+    driver allows to build this driver when !USB && USB_GADGET, to be
+    used in gadget-only mode.
+   =20
+    Also, use module_platform_driver() to register the platform driver.
+   =20
+    Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+    Signed-off-by: Felipe Balbi <balbi@ti.com>
 
---
-Dan
+diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+index 0e7f4a0..5942f00 100644
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -2325,19 +2325,4 @@ static struct platform_driver musb_driver =3D {
+ 	.shutdown	=3D musb_shutdown,
+ };
+=20
+-/*------------------------------------------------------------------------=
+-*/
+-
+-static int __init musb_init(void)
+-{
+-	if (usb_disabled())
+-		return 0;
+-
+-	return platform_driver_register(&musb_driver);
+-}
+-module_init(musb_init);
+-
+-static void __exit musb_cleanup(void)
+-{
+-	platform_driver_unregister(&musb_driver);
+-}
+-module_exit(musb_cleanup);
++module_platform_driver(musb_driver);
+
+--=20
+balbi
+
+--PyMzGVE0NRonI6bs
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSxxdSAAoJEIaOsuA1yqREQawP/iJjjmuYGymOGJKsYYbZ61JF
+9UH/j/3n74I5D14PUUj+bxEdG0+kNbrtP5lyKbzJNncUiJdYlyRcLDM8dEuMGIkw
+nLm43bpPaw1XsndyiJ72zdIEdUmXQ6HyHSjVntkaXESU9bnLFW8e1Vb11nK7NwAP
+qYTFB22yL0i2+QzRW7onk4gK9VbFW5pBXFquCmzWRbtX7MX4SNoYn0TCphngSTC6
+Yj+3GTi6utz+b/FS75NcnPJFE3j7YneuxYwP1W2IRH5L1xp53QFqKV4aLQyMakqi
+X4xqLw4vyJtn3kG0+SB/ULAdSYJcIeqE2Q02+LJImq8ttlQ5wWFWm6o5auIHyuHh
+lXlRjWLV/5qUVbme9u8QCetyRa+RCnFqfmbOECUCpGBGbK6Kxv/nxinJlhjiTd1Z
+JuXjLbChpG1hlrTMHdL7N111II28mY8VNTNzwi53CcWncDtPXciZ5jCOSbHcH4Sm
+Yw1iEsQLqVv1C4dB1oJRGqbccGXCxjbrOlcpPGCfWXSZXblzeA6+V1Ka5EYZCg2E
+30qoXiKY9mcacJm2G+4lieRsumCedwOTNELPzfgTt9oDhgUS9fBSg2WDfhmFvdSz
+XUFBLLru7Zv1Mc5FfdnFVlnSuJZIhlFEi64DOx4u4k6bBb0Ty5JlI386jkcq+6Ae
+koip7daN6BBDm8ZCAY5w
+=PmLm
+-----END PGP SIGNATURE-----
+
+--PyMzGVE0NRonI6bs--
