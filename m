@@ -1,140 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985AbaACAF7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 19:05:59 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:21427 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752851AbaACAF4 (ORCPT
+	id S1754900AbaACAXi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 19:23:38 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:23150 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752920AbaACAF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 19:05:56 -0500
+	Thu, 2 Jan 2014 19:05:58 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
         Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v5 00/33] x86, irq: Support ioapic controller hotplug
-Date: Thu,  2 Jan 2014 16:05:32 -0800
-Message-Id: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
+        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Alexander Gordeev <agordeev@redhat.com>
+Subject: [PATCH v5 01/33] genirq: Split __irq_reserve_irqs from irq_alloc_descs
+Date: Thu,  2 Jan 2014 16:05:33 -0800
+Message-Id: <1388707565-16535-2-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.4
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
+References: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+irq_alloc_descs and irq_reserve_irqs are almost the same.
+Separate code out to __irq_reserved_irqs, and other two reuse
+__irq_reserve_irqs.
 
-Intel cpu (from IVB) include cpu cores, mem controller, and IIO.
-When hotplug cpu physically, it will involve cpu hotplug, mem hotplug,
-and pci root hotplug.
+We will use __irq_reserve_irqs for coming ioapic hotplug support.
 
-IIO includes pci host bridge, ioapic controller and iommu etc.
-pci devices will need to use ioapic and iommu.
-To make pci root bus hotplug working, we need ioapic hotplug support.
+-v2: fix func docbook related comments, pointed out by tglx.
 
-Now ioapics are with ACPI MADT table. During booting, kernel will parse
-MADT and put info into ioapic arrays.
-Also Bjorn added one pci device based driver, but it is not wired in yet,
-as it need to call acpi_register_ioapic, and that is TBD.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Alexander Gordeev <agordeev@redhat.com>
+Reviewed-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ include/linux/irq.h  |  1 +
+ kernel/irq/irqdesc.c | 54 ++++++++++++++++++++++++++++++----------------------
+ 2 files changed, 32 insertions(+), 23 deletions(-)
 
-This patchset will
-1. extend genirq to support reserve/alloc_reserved method.
-   because we want irqs for one ioapic controller to be linear mapping
-   to the gsi range.
-2. change ioapic array operation code so we could insert new ioapic and
-   remove one leave the blank slot.
-3. record irq_base in gsi_config in ioapic struct, and use it to convert gsi
-   to irq for pci device using that ioapic controller
-4. make static ioapic path (from MADT) use same code as hot-add path,
-   with reserve/alloc_reserved method.
-5. change ioapic add/remove to use acpi way, as that is only needed when
-   pci root bus hotplug.
-6. also support the case that ioapic controller is hiding in pci
-   config space or ioapic address is not managed by pci reallocation subsys.
-
-Also include some cleanups
-1. print MSI-X clearly in /proc/interrupts and dmesg.
-2. convert ioapic irq_2_pin to be generic list.
-
-It is based on linus's tree of 2014/01/02 aka v3.11-rc6.
-
-could get them from:
-        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-irq-3.14
-
--v3: split last patch to 4 patches per request from Bjorn.
-     drop one patch that will put pci device name in proc/interrupts
-     update changelog.
--v4: address review from tglx, change to realloc to alloc_reserved.
-     separate x86 code and core code into different patches.
--v5: refresh to 3.13-rc6. also add patches to move resource_to_addr to generic code.
-
-Rui Wang (1):
-  x86, ioapic: Hotadd of IOAPICs described in static MADT
-
-Yinghai Lu (32):
-  genirq: Split __irq_reserve_irqs from irq_alloc_descs
-  genirq: Add irq_alloc_reserved_desc()
-  genirq: Do not free unallocated irq descriptors
-  x86, irq: Change irq_remap_modify_chip_defaults() to static
-  x86, irq: Modify irq chip once for irq remapping
-  x86, irq: Show MSI-X clearly in debug message
-  x86, irq: Show MSI-X in /proc/interrupt
-  x86, irq: Make dmar_msi/hpet_msi irq_chip name consistent
-  ia64, irq: Add dummy create_irq_nr()
-  iommu, irq: Allocate irq_desc for dmar_msi with local node
-  x86, irq: Kill create_irq()
-  x86, irq: Convert irq_2_pin list to generic list
-  x86, irq: Add alloc_reserved_irq_and_cfg_at()
-  x86, irq: Move down arch_early_irq_init()
-  x86, irq: Split out alloc_ioapic_save_registers()
-  xen, irq: Call irq_alloc_reserved_desc_at() at first
-  x86, irq: Reserve irq range and alloc_reserved for booting path
-  x86, irq: Add ioapic_gsi_to_irq
-  x86, irq: Add for_each_ioapic helper
-  x86, irq: More strict checking about registering ioapic
-  x86, irq: Make mp_register_ioapic handle hot-added ioapic
-  x86, irq: Add mp_unregister_ioapic to handle hot-remove ioapic
-  x86, ioapic: Find usable ioapic id for 64bit.
-  x86: Move declaration for mp_register_ioapic()
-  PCI, x86: Make ioapic hotplug support built-in
-  ACPI: Make map_mat_entry handle x2apic entry
-  ACPI: Move acpi_get_cpuid() to separated file
-  ACPI, ioapic: Add acpi_get_ioapic_id()
-  PCI, x86, ACPI: Link acpi ioapic register to ioapic
-  PCI, x86, ACPI: Enable ioapic hotplug support with acpi host bridge.
-  ACPI, x86/PCI: Move resource_to_addr() to acpi generic
-  PCI, x86, ACPI: get ioapic address from acpi device
-
- arch/ia64/kernel/irq_ia64.c          |  10 +
- arch/x86/include/asm/hw_irq.h        |   2 +-
- arch/x86/include/asm/io_apic.h       |  13 +
- arch/x86/include/asm/irq_remapping.h |  14 +-
- arch/x86/include/asm/mpspec.h        |  20 +-
- arch/x86/kernel/acpi/boot.c          |  40 ++-
- arch/x86/kernel/apic/apic.c          |   9 +-
- arch/x86/kernel/apic/io_apic.c       | 485 +++++++++++++++++++++++++----------
- arch/x86/kernel/devicetree.c         |   2 +-
- arch/x86/pci/acpi.c                  |  51 +---
- drivers/acpi/Makefile                |   1 +
- drivers/acpi/apic_id.c               | 294 +++++++++++++++++++++
- drivers/acpi/pci_root.c              |   4 +
- drivers/acpi/processor_core.c        | 191 --------------
- drivers/acpi/resource.c              |  46 ++++
- drivers/iommu/amd_iommu_init.c       |   2 +-
- drivers/iommu/dmar.c                 |   2 +-
- drivers/iommu/intel_irq_remapping.c  |   2 +-
- drivers/iommu/irq_remapping.c        |  18 +-
- drivers/pci/Kconfig                  |   3 +-
- drivers/pci/ioapic.c                 | 230 ++++++++++++-----
- drivers/xen/events.c                 |   8 +-
- include/acpi/processor.h             |   3 -
- include/linux/acpi.h                 |  16 ++
- include/linux/irq.h                  |   4 +
- include/linux/pci-acpi.h             |   8 +
- kernel/irq/irqdesc.c                 |  80 ++++--
- 27 files changed, 1050 insertions(+), 508 deletions(-)
- create mode 100644 drivers/acpi/apic_id.c
-
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index 7dc1003..0229caf 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -614,6 +614,7 @@ int __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
+ 
+ void irq_free_descs(unsigned int irq, unsigned int cnt);
+ int irq_reserve_irqs(unsigned int from, unsigned int cnt);
++int __irq_reserve_irqs(int irq, unsigned int from, unsigned int cnt);
+ 
+ static inline void irq_free_desc(unsigned int irq)
+ {
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index 192a302..a151db6 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -340,18 +340,15 @@ void irq_free_descs(unsigned int from, unsigned int cnt)
+ EXPORT_SYMBOL_GPL(irq_free_descs);
+ 
+ /**
+- * irq_alloc_descs - allocate and initialize a range of irq descriptors
+- * @irq:	Allocate for specific irq number if irq >= 0
++ * __irq_reserve_irqs - reserve a range of irqs
++ * @irq:	Reserve for specific irq number if irq >= 0
+  * @from:	Start the search from this irq number
+- * @cnt:	Number of consecutive irqs to allocate.
+- * @node:	Preferred node on which the irq descriptor should be allocated
+- * @owner:	Owning module (can be NULL)
++ * @cnt:	Number of consecutive irqs to reserve.
+  *
+  * Returns the first irq number or error code
+  */
+ int __ref
+-__irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
+-		  struct module *owner)
++__irq_reserve_irqs(int irq, unsigned int from, unsigned int cnt)
+ {
+ 	int start, ret;
+ 
+@@ -369,7 +366,7 @@ __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
+ 	start = bitmap_find_next_zero_area(allocated_irqs, IRQ_BITMAP_BITS,
+ 					   from, cnt, 0);
+ 	ret = -EEXIST;
+-	if (irq >=0 && start != irq)
++	if (irq >= 0 && start != irq)
+ 		goto err;
+ 
+ 	if (start + cnt > nr_irqs) {
+@@ -380,12 +377,36 @@ __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
+ 
+ 	bitmap_set(allocated_irqs, start, cnt);
+ 	mutex_unlock(&sparse_irq_lock);
+-	return alloc_descs(start, cnt, node, owner);
++	return start;
+ 
+ err:
+ 	mutex_unlock(&sparse_irq_lock);
+ 	return ret;
+ }
++
++/**
++ * __irq_alloc_descs - allocate and initialize a range of irq descriptors
++ * @irq:	Allocate for specific irq number if irq >= 0
++ * @from:	Start the search from this irq number
++ * @cnt:	Number of consecutive irqs to allocate.
++ * @node:	Preferred node on which the irq descriptor should be allocated
++ * @owner:	Owning module (can be NULL)
++ *
++ * Returns the first irq number or error code
++ */
++int __ref
++__irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
++		  struct module *owner)
++{
++	int start;
++
++	start = __irq_reserve_irqs(irq, from, cnt);
++
++	if (start < 0)
++		return start;
++
++	return alloc_descs(start, cnt, node, owner);
++}
+ EXPORT_SYMBOL_GPL(__irq_alloc_descs);
+ 
+ /**
+@@ -397,20 +418,7 @@ EXPORT_SYMBOL_GPL(__irq_alloc_descs);
+  */
+ int irq_reserve_irqs(unsigned int from, unsigned int cnt)
+ {
+-	unsigned int start;
+-	int ret = 0;
+-
+-	if (!cnt || (from + cnt) > nr_irqs)
+-		return -EINVAL;
+-
+-	mutex_lock(&sparse_irq_lock);
+-	start = bitmap_find_next_zero_area(allocated_irqs, nr_irqs, from, cnt, 0);
+-	if (start == from)
+-		bitmap_set(allocated_irqs, start, cnt);
+-	else
+-		ret = -EEXIST;
+-	mutex_unlock(&sparse_irq_lock);
+-	return ret;
++	return __irq_reserve_irqs(from, from, cnt);
+ }
+ 
+ /**
 -- 
 1.8.4
 
