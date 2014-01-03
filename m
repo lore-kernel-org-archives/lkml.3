@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750AbaACRu7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 12:50:59 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:54879 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172AbaACRu6 (ORCPT
+	id S1752829AbaACRva (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 12:51:30 -0500
+Received: from 7.mo2.mail-out.ovh.net ([188.165.48.182]:58345 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751263AbaACRv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 12:50:58 -0500
-X-IronPort-AV: E=Sophos;i="4.95,599,1384300800"; 
-   d="scan'208";a="87420133"
-Date: Fri, 3 Jan 2014 17:50:08 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        <xen-devel@lists.xensource.com>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH v5 16/33] xen, irq: Call irq_alloc_reserved_desc_at()
- at first
-In-Reply-To: <1388707565-16535-17-git-send-email-yinghai@kernel.org>
-Message-ID: <alpine.DEB.2.02.1401031749340.8667@kaball.uk.xensource.com>
-References: <1388707565-16535-1-git-send-email-yinghai@kernel.org> <1388707565-16535-17-git-send-email-yinghai@kernel.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 3 Jan 2014 12:51:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+In-Reply-To: <CACRpkdYMBq267qW59QtEY6b+-jmqafnWRsuZOG=9FWF=aUpRpA@mail.gmail.com>
+References: <1387239745-2890-1-git-send-email-jjhiblot@traphandler.com>
+	<CAAVeFuKAGfnnsbtBg=zfmciyMdZHgrX_EpecqPjG=oO6rZdWag@mail.gmail.com>
+	<CACRpkdYMBq267qW59QtEY6b+-jmqafnWRsuZOG=9FWF=aUpRpA@mail.gmail.com>
+Date: Fri, 3 Jan 2014 17:32:59 +0100
+Message-ID: <CACh+v5Mfq5uC90tH2Q1BTr-f9Sa98Y0HkeYb=F3XChrEehupRQ@mail.gmail.com>
+Subject: Re: [PATCH] Tracing events with GPIOs
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-Ovh-Tracer-Id: 16590416603555256344
+X-Ovh-Remote: 209.85.192.175 (mail-pd0-f175.google.com)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrvdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrvdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Jan 2014, Yinghai Lu wrote:
-> To make x86 irq allocation to be same with booting path and ioapic
-> hot add path, We will pre-reserve irq for all gsi at first.
-> We have to use alloc_reserved here, otherwise irq_alloc_desc_at will fail
-> because bit is already get marked for pre-reserved in irq bitmaps.
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Cc: xen-devel@lists.xensource.com
-> ---
->  drivers/xen/events.c | 8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-> index 4035e83..020cd77 100644
-> --- a/drivers/xen/events.c
-> +++ b/drivers/xen/events.c
-> @@ -508,8 +508,12 @@ static int __must_check xen_allocate_irq_gsi(unsigned gsi)
->  	/* Legacy IRQ descriptors are already allocated by the arch. */
->  	if (gsi < NR_IRQS_LEGACY)
->  		irq = gsi;
-> -	else
-> -		irq = irq_alloc_desc_at(gsi, -1);
-> +	else {
-> +		/* for x86, irq already get reserved for gsi */
-> +		irq = irq_alloc_reserved_desc_at(gsi, -1);
-> +		if (irq < 0)
-> +			irq = irq_alloc_desc_at(gsi, -1);
-> +	}
+2014/1/2 Linus Walleij <linus.walleij@linaro.org>:
+> On Thu, Dec 19, 2013 at 7:52 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
+>> On Tue, Dec 17, 2013 at 9:22 AM, Jean-Jacques Hiblot
+>> <jjhiblot@traphandler.com> wrote:
+>>>
+>>> This patch implements a new tracing mechanism based on kprobes and using GPIO.
+>>> Debugging with GPIO is very common in the embedded world. At least for those of us
+>>> fortunate enough to have an oscilloscope or a logic analyzer on their bench...
+>>> This is especially true if the issue results of a hardware/sofware interaction.
+>>>
+>>> Typical use cases are :
+>>> * mixed software/hardware debugging. For example when the software detects a
+>>>   situation of interest (typically an error) it toggles a GPIO to trigger the
+>>>   oscilloscope acquisition.
+>>> * direct latency/duration measurements.
+>>>
+>>> examples:
+>>> To trig the oscilloscope whenever a mmc command error:
+>>>   echo "p:my_mmc_blk_error mmc_blk_cmd_error gpiopulse@13" > /sys/kernel/debug/tracing/kprobe_events
+>>>   echo 1 > /sys/kernel/debug/tracing/events/kprobes/my_mmc_blk_error/enable
+>
+> I've never seen the whole patch.
+>
+> Can you please repost this and include linux-gpio@vger.kernel.org and also
+> me on the To: line?
 
-This is common code. On ARM I get:
+Hello Linus,
 
-drivers/xen/events.c: In function 'xen_allocate_irq_gsi':
-drivers/xen/events.c:513:3: error: implicit declaration of function 'irq_alloc_reserved_desc_at' [-Werror=implicit-function-declaration]
-   irq = irq_alloc_reserved_desc_at(gsi, -1);
-   ^
-cc1: some warnings being treated as errors
+I'll repost the patch.
+It has evolved a bit since you've been included in the cc list. It's
+now based upon the 'event trigger' and more important for you, it
+doesn't request nor configure the GPIO before using it. The reason is
+that how to do this is still being discussed with Alexandre.
 
+Jean-Jacques
+
+>
+> Yours,
+> Linus Walleij
