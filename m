@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751613AbaACQHe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 11:07:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34542 "EHLO mx1.redhat.com"
+	id S1751880AbaACQHk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 11:07:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3112 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750889AbaACQHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 11:07:31 -0500
+	id S1751768AbaACQHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 11:07:38 -0500
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 1/7] Make for_each_child_of_node() reference its args when
- CONFIG_OF=n
+Subject: [PATCH 2/7] Fix a defined-but-not-used warning for
+ do_gma_backlight_set()
 From: David Howells <dhowells@redhat.com>
 To: akpm@linux-foundation.org
-Cc: Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        dhowells@redhat.com, Rob Herring <robh+dt@kernel.org>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 03 Jan 2014 16:07:23 +0000
-Message-ID: <20140103160723.8153.14334.stgit@warthog.procyon.org.uk>
+Cc: dhowells@redhat.com, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>
+Date: Fri, 03 Jan 2014 16:07:31 +0000
+Message-ID: <20140103160731.8153.73224.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -27,39 +26,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make for_each_child_of_node() reference its args when CONFIG_OF=n to avoid
-warnings like:
+Fix the following warning:
 
-	drivers/leds/leds-pwm.c:88:22: warning: unused variable 'node' [-Wunused-variable]
-	  struct device_node *node = pdev->dev.of_node;
-			      ^
+	drivers/gpu/drm/gma500/backlight.c:29:13: warning: 'do_gma_backlight_set' defined but not used [-Wunused-function]
+
+by moving the entire function inside the conditional section currently inside
+of it.  All the places that call it are so conditionalised.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Grant Likely <grant.likely@linaro.org>
-cc: Rob Herring <robh+dt@kernel.org>
-cc: devicetree@vger.kernel.org
+cc: Alan Cox <alan@linux.intel.com>
+cc: Greg Kroah-Hartman <gregkh@suse.de>
 ---
 
- include/linux/of.h |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/gma500/backlight.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 276c546980d8..70c64ba17fa5 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -377,8 +377,13 @@ static inline bool of_have_populated_dt(void)
- 	return false;
+diff --git a/drivers/gpu/drm/gma500/backlight.c b/drivers/gpu/drm/gma500/backlight.c
+index 143eba3309c5..d4f79bc3665e 100644
+--- a/drivers/gpu/drm/gma500/backlight.c
++++ b/drivers/gpu/drm/gma500/backlight.c
+@@ -26,13 +26,13 @@
+ #include "intel_bios.h"
+ #include "power.h"
+ 
++#ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
+ static void do_gma_backlight_set(struct drm_device *dev)
+ {
+-#ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
+ 	struct drm_psb_private *dev_priv = dev->dev_private;
+ 	backlight_update_status(dev_priv->backlight_device);
+-#endif	
  }
++#endif	
  
-+/* Kill an unused variable warning on a device_node pointer */
-+static inline void __of_use_dn(const struct device_node *np)
-+{
-+}
-+
- #define for_each_child_of_node(parent, child) \
--	while (0)
-+	while (__of_use_dn(parent), __of_use_dn(child), 0)
- 
- #define for_each_available_child_of_node(parent, child) \
- 	while (0)
+ void gma_backlight_enable(struct drm_device *dev)
+ {
 
