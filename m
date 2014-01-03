@@ -1,144 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751313AbaACHtk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 02:49:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54731 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809AbaACHti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 02:49:38 -0500
-Date: Fri, 3 Jan 2014 08:49:34 +0100
-From: Jan Kara <jack@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        pmladek@suse.cz, Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/9] printk: Release lockbuf_lock before calling
- console_trylock_for_printk()
-Message-ID: <20140103074934.GC31086@quack.suse.cz>
-References: <1387831171-5264-1-git-send-email-jack@suse.cz>
- <1387831171-5264-7-git-send-email-jack@suse.cz>
- <20140102205305.3c607926@gandalf.local.home>
+	id S1751216AbaACHzA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 02:55:00 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:43940 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750812AbaACHy6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 02:54:58 -0500
+Date: Thu, 2 Jan 2014 23:54:47 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: eric.ernst@linux.intel.com
+Cc: wim@iguana.be, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Gabriel Touzeau <gabrielx.touzeau@intel.com>,
+        Yann Puech <yann.puech@intel.com>,
+        Jeremy Compostella <jeremy.compostella@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>
+Subject: Re: [PATCH 1/1] watchdog: Adding Merrifield watchdog driver support
+Message-ID: <20140103075447.GB10680@core.coreip.homeip.net>
+References: <1388710602-18513-1-git-send-email-eric.ernst@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140102205305.3c607926@gandalf.local.home>
+In-Reply-To: <1388710602-18513-1-git-send-email-eric.ernst@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 02-01-14 20:53:05, Steven Rostedt wrote:
-> On Mon, 23 Dec 2013 21:39:27 +0100
-> Jan Kara <jack@suse.cz> wrote:
-> 
-> > There's no reason to hold lockbuf_lock when entering
-> > console_trylock_for_printk(). The first thing this function does is
-> > calling down_trylock(console_sem) and if that fails it immediately
-> > unlocks lockbuf_lock. So lockbuf_lock isn't needed for that branch.
-> > When down_trylock() succeeds, the rest of console_trylock() is OK
-> > without lockbuf_lock (it is called without it from other places), and
-> > the only remaining thing in console_trylock_for_printk() is
-> > can_use_console() call. For that call console_sem is enough (it
-> > iterates all consoles and checks CON_ANYTIME flag).
-> > 
-> > So we drop logbuf_lock before entering console_trylock_for_printk()
-> > which simplifies the code.
-> 
-> I'm very nervous about this change. The interlocking between console
-> lock and logbuf_lock seems to be very subtle. Especially the comment
-> where logbuf_lock is defined:
-> 
-> /*
->  * The logbuf_lock protects kmsg buffer, indices, counters. It is also
->  * used in interesting ways to provide interlocking in console_unlock();
->  */
-> 
-> Unfortunately, it does not specify what those "interesting ways" are.
-  Hum, yes. So I was digging in history and the comment was added by Andrew
-Morton in early 2002 when converting console_lock to console_sem +
-logbuf_lock. I'm sure he remembers all the details ;) It is part of commit
-a880f45a48be2956d2c78a839c472287d54435c1 in linux-history.git.
+Hi Gabriel,
 
-Looking into that commit I think the comment refers to the following trick:
-printk()
-	/* This stops the holder of console_sem just where we want him */
-	spin_lock_irqsave(&logbuf_lock, flags);
-	...
-	if (!down_trylock(&console_sem)) {
-		/*
-		 * We own the drivers.  We can drop the spinlock and let
-		 * release_console_sem() print the text
-		 */
-		spin_unlock_irqrestore(&logbuf_lock, flags);
-		...
-	} else {
-		/*
-		 * Someone else owns the drivers.  We drop the spinlock, which
-		 * allows the semaphore holder to proceed and to call the
-		 * console drivers with the output which we just produced.
-		 */
-		spin_unlock_irqrestore(&logbuf_lock, flags);
-	}
+On Thu, Jan 02, 2014 at 04:56:42PM -0800, eric.ernst@linux.intel.com wrote:
+> +
+> +/* Statics */
+> +static struct intel_scu_watchdog_dev watchdog_device;
+> +
+> +/* Module params */
+> +static bool disable_kernel_watchdog;
+> +module_param(disable_kernel_watchdog, bool, S_IRUGO);
+> +MODULE_PARM_DESC(disable_kernel_watchdog,
+> +		"Disable kernel watchdog"
+> +		"Set to 0, watchdog started at boot"
+> +		"and left running; Set to 1; watchdog"
+> +		"is not started until user space"
+> +		"watchdog daemon is started; also if the"
+> +		"timer is started by the iafw firmware, it"
+> +		"will be disabled upon initialization of this"
+> +		"driver if disable_kernel_watchdog is set");
 
-release_console_sem() (equivalent of today's console_unlock()):
-	for ( ; ; ) {
-		spin_lock_irqsave(&logbuf_lock, flags);
-...
-		if (con_start == log_end)
-			break;                  /* Nothing to print */
-...
-		spin_unlock_irqrestore(&logbuf_lock, flags);
-		call_console_drivers(_con_start, _log_end);
-	}
-	up(&console_sem);
-	spin_unlock_irqrestore(&logbuf_lock, flags);
+You need to add spaces at the end of your strings otheriwse
+concatenation will produce a mess.
 
-This interesting combination of console_sem and logbuf_lock locking makes
-sure we cannot exit the loop in release_console_sem() before printk()
-decides whether it should do printing or not. So the appended message gets
-reliably printed either by current holder of console_sem or by CPU in
-printk(). Apparently this trick got broken sometime later and then fixed up
-again by rechecking 'console_seq != log_next_seq' after releasing
-console_sem. So I think the comment isn't valid anymore.
+> +
+> +static int pre_timeout = DEFAULT_PRETIMEOUT;
+> +module_param(pre_timeout, int, S_IRUGO | S_IWUSR);
+> +MODULE_PARM_DESC(pre_timeout,
+> +		"Watchdog pre timeout"
+> +		"Time between interrupt and resetting the system"
+> +		"The range is from 1 to 160");
+> +
+> +static int timeout = DEFAULT_TIMEOUT;
+> +module_param(timeout, int, S_IRUGO | S_IWUSR);
+> +MODULE_PARM_DESC(timeout,
+> +		"Default Watchdog timer setting"
+> +		"Complete cycle time"
+> +		"The range is from 1 to 170"
+> +		"This is the time for all keep alives to arrive");
+> +
+> +/* Setting reset_on_release will cause an immediate reset when the watchdog
+> + * is released. If false, the watchdog timer is refreshed for one more
+> + * interval. At the end of that interval, the watchdog timer will reset the
+> + * system.
+> + */
 
-> Now what I think this does is to make sure whoever wrote to the logbuf
-> first, does the flushing. With your change we now have:
-> 
-> 	CPU 0				CPU 1
-> 	-----				-----
->    printk("blah");
->    lock(logbuf_lock);
-> 
-> 				printk("bazinga!");
-> 				lock(logbuf_lock);
-> 				<blocked>
-> 
->    unlock(logbuf_lock);
->    < NMI comes in delays CPU>
-> 
-> 				<get logbuf_lock>
-> 				unlock(logbuf_lock)
-> 				console_trylock_for_printk()
-> 				console_unlock();
-> 				< dumps output >
-> 
->   
-> Now is this a bad thing? I don't know. But the current locking will
-> make sure that the first writer into logbuf_lock gets to do the
-> dumping, and all the others will just add onto that writer.
-> 
-> Your change now lets the second or third or whatever writer into printk
-> be the one that dumps the log.
-  I agree and I admit I didn't think about this. But given how printk
-buffering works this doesn't seem to be any problem at all. But I can
-comment about this in the changelog.
+Multi-line comments in majority of kernel code are in form of
 
-> Again, this may not be a big deal, but as printk is such a core part of
-> the Linux kernel, and this is a very subtle change, I rather be very
-> cautious here and try to think what can go wrong when this happens.
-  Sure. Thanks for review!
+/*
+ * Multi-line comment should be
+ * formatted like this.
+ */
 
-								Honza
+> +static bool reset_on_release = true;
+> +
+> +/* Check current timeouts */
+> +static int check_timeouts(int pre_timeout_time, int timeout_time)
+> +{
+> +	if (pre_timeout_time < timeout_time)
+> +		return 0;
+> +
+> +	return -EINVAL;
+> +}
+> +
+> +/* Set the different timeouts needed by the SCU FW and start the
+> + * kernel watchdog */
+> +static int watchdog_set_timeouts_and_start(int pretimeout,
+> +					   int timeout)
+> +{
+> +	int ret, input_size;
+> +	struct ipc_wd_start {
+> +		u32 pretimeout;
+> +		u32 timeout;
+> +	} ipc_wd_start = { pretimeout, timeout };
+> +
+> +	/* SCU expects the input size for watchdog IPC to
+> +	 * be based on double-word */
+> +	input_size = (sizeof(ipc_wd_start) + 3) / 4;
+> +
+> +	ret = intel_scu_ipc_command(IPC_WATCHDOG,
+> +				    SCU_WATCHDOG_START, (u32 *)&ipc_wd_start,
+> +				    input_size, NULL, 0);
+> +	if (ret) {
+> +		pr_crit("Error configuring and starting watchdog: %d\n",
+> +			ret);
+> +		return -EIO;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/* Provisioning function for future enhancement : allow to fine tune timing
+> +   according to watchdog action settings */
+> +static int watchdog_set_appropriate_timeouts(void)
+> +{
+> +	pr_debug("Setting shutdown timeouts\n");
+> +	return watchdog_set_timeouts_and_start(pre_timeout, timeout);
+> +}
+> +
+> +/* Keep alive  */
+> +static int watchdog_keepalive(void)
+> +{
+> +	int ret;
+> +
+> +	/* Pet the watchdog */
+> +	ret = intel_scu_ipc_command(IPC_WATCHDOG,
+> +					SCU_WATCHDOG_KEEPALIVE, NULL, 0, NULL, 0);
+> +	if (ret) {
+> +		pr_crit("Error executing keepalive: %x\n", ret);
+> +		return -EIO;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/* stops the timer */
+> +static int watchdog_stop(void)
+> +{
+> +	int ret;
+> +
+> +	watchdog_device.started = false;
+> +
+> +	ret = intel_scu_ipc_command(IPC_WATCHDOG,
+> +					SCU_WATCHDOG_STOP, NULL, 0, NULL, 0);
+> +	if (ret) {
+> +		pr_crit("Error stopping watchdog: %x\n", ret);
+> +		return -EIO;
+> +	}
+> +	return 0;
+> +}
+> +
+> +/* warning interrupt handler */
+> +static irqreturn_t watchdog_warning_interrupt(int irq, void *dev_id)
+> +{
+> +	pr_warn("[SHTDWN] %s, WATCHDOG TIMEOUT!\n", __func__);
+> +
+> +	/* Let's reset the platform after dumping some data */
+> +	trigger_all_cpu_backtrace();
+> +	panic("Kernel Watchdog");
+> +
+> +	/* This code should not be reached */
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +/* Program and starts the timer */
+> +static int watchdog_config_and_start(u32 newtimeout, u32 newpretimeout)
+> +{
+> +	int ret;
+> +
+> +	timeout = newtimeout;
+> +	pre_timeout = newpretimeout;
+> +
+> +	pr_info("timeout=%ds, pre_timeout=%ds\n", timeout, pre_timeout);
+> +
+> +	/* Configure the watchdog */
+> +	ret = watchdog_set_timeouts_and_start(pre_timeout, timeout);
+> +	if (ret) {
+> +		pr_err("%s: Cannot configure the watchdog\n", __func__);
+> +
+> +		/* Make sure the watchdog timer is stopped */
+> +		watchdog_stop();
+> +		return ret;
+> +	}
+> +
+> +	watchdog_device.started = true;
+> +
+> +	return 0;
+> +}
+> +
+> +/* Open */
+> +static int intel_scu_open(struct inode *inode, struct file *file)
+> +{
+> +	/* Set flag to indicate that watchdog device is open */
+> +	if (test_and_set_bit(0, &watchdog_device.driver_open)) {
+> +		pr_err("watchdog device is busy\n");
+
+You probably do not want to spam the logs. Returning -EBUSY should be
+enough.
+
+> +		return -EBUSY;
+> +	}
+> +
+> +	return nonseekable_open(inode, file);
+> +}
+> +
+> +/* Release */
+> +static int intel_scu_release(struct inode *inode, struct file *file)
+> +{
+> +	/*
+> +	 * This watchdog should not be closed after the timer
+> +	 * is started with the WDIPC_SETTIMEOUT ioctl.
+> +	 * If reset_on_release is set this  will cause an
+> +	 * immediate reset. If reset_on_release is not set, the watchdog
+> +	 * timer is refreshed for one more interval. At the end
+> +	 * of that interval, the watchdog timer will reset the system.
+> +	 */
+> +
+> +	if (!test_bit(0, &watchdog_device.driver_open)) {
+> +		pr_err("intel_scu_release, without open\n");
+> +		return -ENOTTY;
+> +	}
+> +
+> +	if (!watchdog_device.started) {
+> +		/* Just close, since timer has not been started */
+> +		pr_err("Closed, without starting timer\n");
+
+Why pr_err? It looks like it might be useful when debugging the driver,
+but not for production code.
+
+Thanks.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Dmitry
