@@ -1,77 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142AbaACOkM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 09:40:12 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:34934 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751586AbaACOkJ (ORCPT
+	id S1752515AbaACOku (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 09:40:50 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:39798 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751704AbaACOkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 09:40:09 -0500
-Date: Fri, 3 Jan 2014 09:39:02 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
-        boris.ostrovsky@oracle.com, stefano.stabellini@eu.citrix.com,
-        mukesh.rathor@oracle.com
-Subject: Re: [PATCH v12 07/18] xen/pvh: Setup up shared_info.
-Message-ID: <20140103143902.GB27019@phenom.dumpdata.com>
-References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com>
- <1388550945-25499-8-git-send-email-konrad.wilk@oracle.com>
- <52C54D3C.4050101@citrix.com>
+	Fri, 3 Jan 2014 09:40:49 -0500
+Date: Fri, 3 Jan 2014 14:40:44 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Dave Young <dyoung@redhat.com>
+Cc: hpa@zytor.com, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, kexec@lists.infradead.org
+Subject: Re: [PATCH tip/efi-kexec] x86: setup.c build fix
+Message-ID: <20140103144044.GD2618@console-pimps.org>
+References: <20140103035648.GA5291@darkstar.nay.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52C54D3C.4050101@citrix.com>
+In-Reply-To: <20140103035648.GA5291@darkstar.nay.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 02, 2014 at 11:27:56AM +0000, David Vrabel wrote:
-> On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
-> > From: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > 
-> > For PVHVM the shared_info structure is provided via the same way
-> > as for normal PV guests (see include/xen/interface/xen.h).
-> > 
-> > That is during bootup we get 'xen_start_info' via the %esi register
-> > in startup_xen. Then later we extract the 'shared_info' from said
-> > structure (in xen_setup_shared_info) and start using it.
-> > 
-> > The 'xen_setup_shared_info' is all setup to work with auto-xlat
-> > guests, but there are two functions which it calls that are not:
-> > xen_setup_mfn_list_list and xen_setup_vcpu_info_placement.
-> > This patch modifies those to work in auto-xlat mode.
-> [...]
-> > --- a/arch/x86/xen/enlighten.c
-> > +++ b/arch/x86/xen/enlighten.c
-> > @@ -1147,8 +1147,9 @@ void xen_setup_vcpu_info_placement(void)
-> >  		xen_vcpu_setup(cpu);
-> >  
-> >  	/* xen_vcpu_setup managed to place the vcpu_info within the
-> > -	   percpu area for all cpus, so make use of it */
-> > -	if (have_vcpu_info_placement) {
-> > +	 * percpu area for all cpus, so make use of it. Note that for
-> > +	 * PVH we want to use native IRQ mechanism. */
-> > +	if (have_vcpu_info_placement && !xen_pvh_domain()) {
-> >  		pv_irq_ops.save_fl = __PV_IS_CALLEE_SAVE(xen_save_fl_direct);
-> >  		pv_irq_ops.restore_fl = __PV_IS_CALLEE_SAVE(xen_restore_fl_direct);
-> >  		pv_irq_ops.irq_disable = __PV_IS_CALLEE_SAVE(xen_irq_disable_direct);
+On Fri, 03 Jan, at 11:56:49AM, Dave Young wrote:
+> In case without CONFIG_EFI, there will be below build error:
+>    arch/x86/built-in.o: In function `setup_arch':
+> >> (.init.text+0x9dc): undefined reference to `parse_efi_setup'
 > 
-> Should this be in a separate patch: "xen/pvh: use native irq ops"?
-
-On a second thought I think not. The reason is explained in the commit
-description:
-
- The 'xen_setup_shared_info' is all setup to work with auto-xlat
- guests, but there are two functions which it calls that are not:
- xen_setup_mfn_list_list and xen_setup_vcpu_info_placement.
- This patch modifies those to work in auto-xlat mode.
-
-If we move this to another patch, it is going to be mostly the same
-comment and this patch will feel unfinished.
-
-
+> Thus fix it by adding blank inline function in asm/efi.h
+> Also remove an unused declaration for variable efi_data_len.
 > 
-> David
+> Signed-off-by: Dave Young <dyoung@redhat.com>
+> ---
+>  arch/x86/include/asm/efi.h |    5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+
+Thanks Dave. I picked up both patches.
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
