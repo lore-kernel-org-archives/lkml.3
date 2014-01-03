@@ -1,99 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752304AbaACRI2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 12:08:28 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:50985 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055AbaACRI0 (ORCPT
+	id S1752389AbaACRKi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 12:10:38 -0500
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:53453 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750869AbaACRKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 12:08:26 -0500
-MIME-Version: 1.0
-In-Reply-To: <201401021349.JGJ78109.OOFtFFHJMLSOQV@I-love.SAKURA.ne.jp>
-References: <1388507067.2259.24.camel@joe-AO722>
-	<201401011434.GAF34360.FFQOVtFOHJSMLO@I-love.SAKURA.ne.jp>
-	<1388555362.2259.38.camel@joe-AO722>
-	<201401011902.JEF43770.FSOVFFOHOtQLJM@I-love.SAKURA.ne.jp>
-	<1388626389.2259.57.camel@joe-AO722>
-	<201401021349.JGJ78109.OOFtFFHJMLSOQV@I-love.SAKURA.ne.jp>
-Date: Fri, 3 Jan 2014 09:08:25 -0800
-X-Google-Sender-Auth: eL_IbYXLDV0lDskvDfqnkRsL2J4
-Message-ID: <CAGXu5jL7RunQuAw1MjnUMgWeYMX35+YcGeaZYCx6dhND3YUmsQ@mail.gmail.com>
-Subject: Re: [PATCH] lib/vsprintf: add %pT[C012] format specifier
-From: Kees Cook <keescook@chromium.org>
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Jiri Kosina <jkosina@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 3 Jan 2014 12:10:37 -0500
+Message-ID: <1388769034.20141.11.camel@x220>
+Subject: [PATCH] mei: mei-amt-version: remove unneeded call of mei_deinit()
+From: Paul Bolle <pebolle@tiscali.nl>
+To: David Howells <dhowells@redhat.com>
+Cc: akpm@linux-foundation.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tomas Winkler <tomas.winkler@intel.com>, linux-kernel@vger.kernel.org
+Date: Fri, 03 Jan 2014 18:10:34 +0100
+In-Reply-To: <9629.1388766864@warthog.procyon.org.uk>
+References: <1388766184.20141.6.camel@x220>
+	 <20140103160812.8153.74401.stgit@warthog.procyon.org.uk>
+	 <9629.1388766864@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 03 Jan 2014 17:10:35.0324 (UTC) FILETIME=[B77FE7C0:01CF08A6]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 1, 2014 at 8:49 PM, Tetsuo Handa
-<penguin-kernel@i-love.sakura.ne.jp> wrote:
-> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Date: Thu, 2 Jan 2014 13:37:14 +0900
-> Subject: [PATCH v3] lib/vsprintf: support built-in tokens
->
-> The vast majority of ->comm accesses are accessing current->comm, for
-> debug reasons. I'm counting 350-odd sites. At all these sites it's
-> pointless passing `current' to the printk function at all!
->
-> This patch introduces a set of vsprintf tokens for embedding globally visible
-> arguments into the format string, so that we can reduce text size a bit (and
-> in the future make reading of task_struct->comm consistent) by stop generating
-> the code to pass an argument which the callee already has access to, with an
-> assumption that currently we are not using the 0x1A byte within the format
-> string.
->
-> Some examples are shown below.
->
->   pr_info("comm=%s\n", current->comm);
->           => pr_info("comm=" EMBED_CURRENT_COMM "\n");
->
->   pr_info("pid=%d\n", current->pid);
->           => pr_info("pid=" EMBED_CURRENT_PID "\n");
->
->   pr_info("%s(%d)\n", current->comm, current->pid);
->           => pr_info(EMBED_CURRENT_COMM "(" EMBED_CURRENT_PID ")\n");
->
->   pr_info("[%-6.6s]\n", current->comm);
->           => pr_info(EMBED_FORMAT "-6.6" EMBED_CURRENT_COMM "\n");
->
-> Since this patch does not use get_task_comm(), you should not convert from
-> get_task_comm(current) to built-in tokens if you want constsistent reading.
->
-> Suggested-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> ---
->  include/linux/kernel.h |   17 ++++++++
->  lib/vsprintf.c         |  101 +++++++++++++++++++++++++++++++++++++++++++++++-
->  2 files changed, 116 insertions(+), 2 deletions(-)
-> [...]
-> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-> index 10909c5..b05217d 100644
-> @@ -1423,7 +1512,7 @@ int format_decode(const char *fmt, struct printf_spec *spec)
->         spec->type = FORMAT_TYPE_NONE;
->
->         for (; *fmt ; ++fmt) {
-> -               if (*fmt == '%')
-> +               if (*fmt == '%' || *fmt == 0x1A)
->                         break;
->         }
->
+On Fri, 2014-01-03 at 16:34 +0000, David Howells wrote:
+> Paul Bolle <pebolle@tiscali.nl> wrote:
+> > But it turns out that call of mei_deinit() isn't needed at all. All of
+> > the members of mei_cl will be set later in mei_init() and none will be
+> > used before they are set. So we can simply drop this call of
+> > mei_deinit()."
+> > 
+> > Is that analysis (still) correct?
+> 
+> It looks true as the code stands.  Can you send me your patch?
 
-I'm on board with the idea of embedding comm/pid/whatever, but I
-either missed or do not understand why a second format-start character
-is being added. I think this will complicate audits and maybe trigger
-weird info leaks (imagine printing a string that was %-escaped, but
-not 0x1A-escaped?)
+Sure. Below the scissors (hope I've typed those correctly).
 
-Why not use % followed by 0x1A to be the start code, instead of just 0x1A?
 
--Kees
+Paul Bolle
+-------->8------- 
+From: Paul Bolle <pebolle@tiscali.nl>
 
+Building mei-amt-version.o triggers a GCC warning:
+    Documentation/misc-devices/mei/mei-amt-version.c: In function 'main':
+    Documentation/misc-devices/mei/mei-amt-version.c:103:5: warning: 'acmd.fd' is used uninitialized in this function [-Wuninitialized]
+      if (cl->fd != -1)
+         ^
+    Documentation/misc-devices/mei/mei-amt-version.c:443:21: note: 'acmd.fd' was declared here
+      struct amt_host_if acmd;
+                         ^
+
+GCC is correct. See, the call chain that GCC detects must be
+    main()
+        amt_host_if_init()
+            mei_init()
+                mei_deinit()
+
+But when we enter mei_deinit() struct amt_host_if acmd is still
+unitialized. That makes the test for (effectively) amt_host_if->mei_cl->fd
+bogus.
+
+But it turns out that call of mei_deinit() isn't needed at all. All of
+the members of mei_cl will be set later in mei_init() and none will be
+used before they are set. So we can simply drop this call of
+mei_deinit().
+
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+ Documentation/misc-devices/mei/mei-amt-version.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/Documentation/misc-devices/mei/mei-amt-version.c b/Documentation/misc-devices/mei/mei-amt-version.c
+index 49e4f77..57d0d87 100644
+--- a/Documentation/misc-devices/mei/mei-amt-version.c
++++ b/Documentation/misc-devices/mei/mei-amt-version.c
+@@ -115,8 +115,6 @@ static bool mei_init(struct mei *me, const uuid_le *guid,
+ 	struct mei_client *cl;
+ 	struct mei_connect_client_data data;
+ 
+-	mei_deinit(me);
+-
+ 	me->verbose = verbose;
+ 
+ 	me->fd = open("/dev/mei", O_RDWR);
 -- 
-Kees Cook
-Chrome OS Security
+1.8.4.2
+
