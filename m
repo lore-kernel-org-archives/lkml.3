@@ -1,128 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738AbaACALO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 19:11:14 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:22024 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754171AbaACAH6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 19:07:58 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jiang Liu <jiang.liu@huawei.com>, Joerg Roedel <joro@8bytes.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Subject: [PATCH v5 22/33] x86, irq: Add mp_unregister_ioapic to handle hot-remove ioapic
-Date: Thu,  2 Jan 2014 16:05:54 -0800
-Message-Id: <1388707565-16535-23-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
-References: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1754748AbaACALv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 19:11:51 -0500
+Received: from plane.gmane.org ([80.91.229.3]:55803 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753556AbaACALN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jan 2014 19:11:13 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: =?UTF-8?B?U8OpYmFzdGllbiBMdXR0cmluZ2Vy?= <seblu@seblu.net>
+Subject: Last depmod fails with 3.13-rc6
+Date: Fri, 03 Jan 2014 01:11:00 +0100
+Message-ID: <la4v6a$a94$1@ger.gmane.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: slice.seblu.net
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It will free ioapic related irq_desc and also clear allocated_irqs bits.
+Hello,
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
----
- arch/x86/include/asm/mpspec.h  |  1 +
- arch/x86/kernel/apic/io_apic.c | 45 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 46 insertions(+)
+Trying to run depmod (from kmod 16) on the 3.13-rc6, I got this error
+message:
 
-diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
-index 59d8465..b98665f 100644
---- a/arch/x86/include/asm/mpspec.h
-+++ b/arch/x86/include/asm/mpspec.h
-@@ -97,6 +97,7 @@ static inline void early_reserve_e820_mpc_new(void) { }
- int generic_processor_info(int apicid, int version);
- #ifdef CONFIG_ACPI
- int __mp_register_ioapic(int id, u32 address, u32 gsi_base, bool hot);
-+int mp_unregister_ioapic(u32 gsi_base);
- extern void mp_register_ioapic(int id, u32 address, u32 gsi_base);
- extern void mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger,
- 				   u32 gsi);
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 0fdda49..af6cbcd 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -334,6 +334,20 @@ static void __init reserve_ioapic_gsi_irq_extra(void)
- 	}
- }
- 
-+static void free_ioapic_gsi_irq_base(int idx)
-+{
-+	int i;
-+	struct mp_ioapic_gsi *gsi_cfg = mp_ioapic_gsi_routing(idx);
-+	int irq_base = gsi_cfg->irq_base;
-+	int irq_cnt = gsi_cfg->gsi_end - gsi_cfg->gsi_base + 1;
-+
-+	if (irq_base < 0)
-+		return;
-+
-+	for (i = irq_base; i < irq_base + irq_cnt; i++)
-+		free_irq_at(i, irq_get_chip_data(i));
-+}
-+
- static void alloc_ioapic_saved_registers(int idx)
- {
- 	if (ioapics[idx].saved_registers)
-@@ -347,6 +361,11 @@ static void alloc_ioapic_saved_registers(int idx)
- 		pr_err("IOAPIC %d: suspend/resume impossible!\n", idx);
- }
- 
-+static void free_ioapic_saved_registers(int idx)
-+{
-+	kfree(ioapics[idx].saved_registers);
-+}
-+
- int __init arch_early_irq_init(void)
- {
- 	int node = cpu_to_node(0);
-@@ -3999,6 +4018,32 @@ void mp_register_ioapic(int id, u32 address, u32 gsi_base)
- 	__mp_register_ioapic(id, address, gsi_base, false);
- }
- 
-+int mp_unregister_ioapic(u32 gsi_base)
-+{
-+	int idx;
-+
-+	lock_ioapics();
-+
-+	idx = __mp_find_ioapic(gsi_base);
-+	if (idx < 0) {
-+		unlock_ioapics();
-+		return -EINVAL;
-+	}
-+	clear_bit(idx, ioapics_mask);
-+
-+	free_ioapic_saved_registers(idx);
-+
-+	free_ioapic_gsi_irq_base(idx);
-+
-+	clear_fixmap(FIX_IO_APIC_BASE_0 + idx);
-+	memset(&ioapics[idx], 0, sizeof(struct ioapic));
-+	nr_ioapics = bitmap_weight(ioapics_mask, MAX_IO_APICS);
-+
-+	unlock_ioapics();
-+
-+	return 0;
-+}
-+
- /* Enable IOAPIC early just for system timer */
- void __init pre_init_apic_IRQ0(void)
- {
+# depmod 3.13.0-rc6-seblu
+depmod: ERROR: Module 'hci_vhci' has devname (vhci) but lacks major and
+minor information. Ignoring.
+# echo $?
+1
+
+The message and error code seem to be on purpose[2] but they break tools
+which rely on depmod return 0 (like kernel-install).
+
+Maybe fixing this in the kernel before the release will avoid future
+updates issue downstream.
+
+[1] http://git.kernel.org/cgit/utils/kernel/kmod/kmod.git/commit/?id=6506ddf
+
 -- 
-1.8.4
+Sébastien "Seblu" Luttringer
+https://seblu.net
+GPG: 0x2072D77A
 
