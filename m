@@ -1,210 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185AbaACUiV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 15:38:21 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:23294 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753820AbaACU37 (ORCPT
+	id S1753470AbaACUrv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 15:47:51 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55013 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753199AbaACUrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 15:29:59 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        boris.ostrovsky@oracle.com, stefano.stabellini@eu.citrix.com,
-        david.vrabel@citrix.com
-Cc: hpa@zytor.com, Mukesh Rathor <mukesh.rathor@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v13 03/19] xen/pvh: Early bootup changes in PV code (v4).
-Date: Fri,  3 Jan 2014 14:38:20 -0500
-Message-Id: <1388777916-1328-4-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1388777916-1328-1-git-send-email-konrad.wilk@oracle.com>
-References: <1388777916-1328-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Fri, 3 Jan 2014 15:47:49 -0500
+Message-ID: <52C721F3.2020101@infradead.org>
+Date: Fri, 03 Jan 2014 12:47:47 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: balbi@ti.com
+CC: akpm@linux-foundation.org, USB list <linux-usb@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
+Subject: Re: mmotm 2014-01-02-14-35 uploaded (musb)
+References: <20140102223649.D8FB931C206@corp2gmr1-1.hot.corp.google.com> <52C6FA1E.4030607@infradead.org> <20140103200226.GD18722@saruman.home>
+In-Reply-To: <20140103200226.GD18722@saruman.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
+On 01/03/14 12:02, Felipe Balbi wrote:
+> On Fri, Jan 03, 2014 at 09:57:50AM -0800, Randy Dunlap wrote:
+>> On 01/02/14 14:36, akpm@linux-foundation.org wrote:
+>>> The mm-of-the-moment snapshot 2014-01-02-14-35 has been uploaded to
+>>>
+>>>    http://www.ozlabs.org/~akpm/mmotm/
+>>>
+>>> mmotm-readme.txt says
+>>>
+>>> README for mm-of-the-moment:
+>>>
+>>> http://www.ozlabs.org/~akpm/mmotm/
+>>>
+>>> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+>>> more than once a week.
+>>
+>> on x86_64:
+>>
+>> when CONFIG_USB is not enabled:
+>>
+>> drivers/built-in.o: In function `musb_init':
+>> musb_core.c:(.init.text+0x45fc): undefined reference to `usb_disabled'
+> 
+> already have a patch for that. Waiting for Greg to merge ;-)
 
-We don't use the filtering that 'xen_cpuid' is doing
-because the hypervisor treats 'XEN_EMULATE_PREFIX' as
-an invalid instruction. This means that all of the filtering
-will have to be done in the hypervisor/toolstack.
+Thanks.
 
-Without the filtering we expose to the guest the:
+> commit 89f836a8c56bfea6585a09f7afff7094968a4fd0
+> Author: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+> Date:   Thu Dec 26 09:24:52 2013 -0300
+> 
+>     usb: musb: Remove usb_disable() check in module_init()
+>     
+>     Removing the check to usb_disable() before registering the platform
+>     driver allows to build this driver when !USB && USB_GADGET, to be
+>     used in gadget-only mode.
+>     
+>     Also, use module_platform_driver() to register the platform driver.
+>     
+>     Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+>     Signed-off-by: Felipe Balbi <balbi@ti.com>
 
- - cpu topology (sockets, cores, etc);
- - the APERF (which the generic scheduler likes to
-    use), see  5e626254206a709c6e937f3dda69bf26c7344f6f
-    "xen/setup: filter APERFMPERF cpuid feature out"
- - and the inability to figure out whether MWAIT_LEAF
-   should be exposed or not. See
-   df88b2d96e36d9a9e325bfcd12eb45671cbbc937
-   "xen/enlighten: Disable MWAIT_LEAF so that acpi-pad won't be loaded."
- - x2apic, see  4ea9b9aca90cfc71e6872ed3522356755162932c
-   "xen: mask x2APIC feature in PV"
-
-We also check for vector callback early on, as it is a required
-feature. PVH also runs at default kernel IOPL.
-
-Finally, pure PV settings are moved to a separate function that are
-only called for pure PV, ie, pv with pvmmu. They are also #ifdef
-with CONFIG_XEN_PVMMU.
-
-Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/enlighten.c | 48 ++++++++++++++++++++++++++++++++++--------------
- arch/x86/xen/setup.c     | 18 ++++++++++++------
- 2 files changed, 46 insertions(+), 20 deletions(-)
-
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index fa6ade7..eb0efc2 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -46,6 +46,7 @@
- #include <xen/hvm.h>
- #include <xen/hvc-console.h>
- #include <xen/acpi.h>
-+#include <xen/features.h>
- 
- #include <asm/paravirt.h>
- #include <asm/apic.h>
-@@ -262,8 +263,9 @@ static void __init xen_banner(void)
- 	struct xen_extraversion extra;
- 	HYPERVISOR_xen_version(XENVER_extraversion, &extra);
- 
--	printk(KERN_INFO "Booting paravirtualized kernel on %s\n",
--	       pv_info.name);
-+	pr_info("Booting paravirtualized kernel %son %s\n",
-+		xen_feature(XENFEAT_auto_translated_physmap) ?
-+			"with PVH extensions " : "", pv_info.name);
- 	printk(KERN_INFO "Xen version: %d.%d%s%s\n",
- 	       version >> 16, version & 0xffff, extra.extraversion,
- 	       xen_feature(XENFEAT_mmu_pt_update_preserve_ad) ? " (preserve-AD)" : "");
-@@ -433,7 +435,7 @@ static void __init xen_init_cpuid_mask(void)
- 
- 	ax = 1;
- 	cx = 0;
--	xen_cpuid(&ax, &bx, &cx, &dx);
-+	cpuid(1, &ax, &bx, &cx, &dx);
- 
- 	xsave_mask =
- 		(1 << (X86_FEATURE_XSAVE % 32)) |
-@@ -1420,6 +1422,19 @@ static void __init xen_setup_stackprotector(void)
- 	pv_cpu_ops.load_gdt = xen_load_gdt;
- }
- 
-+static void __init xen_pvh_early_guest_init(void)
-+{
-+	if (!xen_feature(XENFEAT_auto_translated_physmap))
-+		return;
-+
-+	if (xen_feature(XENFEAT_hvm_callback_vector))
-+		xen_have_vector_callback = 1;
-+
-+#ifdef CONFIG_X86_32
-+	BUG(); /* PVH: Implement proper support. */
-+#endif
-+}
-+
- /* First C function to be called on Xen boot */
- asmlinkage void __init xen_start_kernel(void)
- {
-@@ -1431,13 +1446,16 @@ asmlinkage void __init xen_start_kernel(void)
- 
- 	xen_domain_type = XEN_PV_DOMAIN;
- 
-+	xen_setup_features();
-+	xen_pvh_early_guest_init();
- 	xen_setup_machphys_mapping();
- 
- 	/* Install Xen paravirt ops */
- 	pv_info = xen_info;
- 	pv_init_ops = xen_init_ops;
--	pv_cpu_ops = xen_cpu_ops;
- 	pv_apic_ops = xen_apic_ops;
-+	if (!xen_pvh_domain())
-+		pv_cpu_ops = xen_cpu_ops;
- 
- 	x86_init.resources.memory_setup = xen_memory_setup;
- 	x86_init.oem.arch_setup = xen_arch_setup;
-@@ -1469,8 +1487,6 @@ asmlinkage void __init xen_start_kernel(void)
- 	/* Work out if we support NX */
- 	x86_configure_nx();
- 
--	xen_setup_features();
--
- 	/* Get mfn list */
- 	if (!xen_feature(XENFEAT_auto_translated_physmap))
- 		xen_build_dynamic_phys_to_machine();
-@@ -1548,14 +1564,18 @@ asmlinkage void __init xen_start_kernel(void)
- 	/* set the limit of our address space */
- 	xen_reserve_top();
- 
--	/* We used to do this in xen_arch_setup, but that is too late on AMD
--	 * were early_cpu_init (run before ->arch_setup()) calls early_amd_init
--	 * which pokes 0xcf8 port.
--	 */
--	set_iopl.iopl = 1;
--	rc = HYPERVISOR_physdev_op(PHYSDEVOP_set_iopl, &set_iopl);
--	if (rc != 0)
--		xen_raw_printk("physdev_op failed %d\n", rc);
-+	/* PVH: runs at default kernel iopl of 0 */
-+	if (!xen_pvh_domain()) {
-+		/*
-+		 * We used to do this in xen_arch_setup, but that is too late
-+		 * on AMD were early_cpu_init (run before ->arch_setup()) calls
-+		 * early_amd_init which pokes 0xcf8 port.
-+		 */
-+		set_iopl.iopl = 1;
-+		rc = HYPERVISOR_physdev_op(PHYSDEVOP_set_iopl, &set_iopl);
-+		if (rc != 0)
-+			xen_raw_printk("physdev_op failed %d\n", rc);
-+	}
- 
- #ifdef CONFIG_X86_32
- 	/* set up basic CPUID stuff */
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 68c054f..2137c51 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -563,16 +563,13 @@ void xen_enable_nmi(void)
- 		BUG();
- #endif
- }
--void __init xen_arch_setup(void)
-+void __init xen_pvmmu_arch_setup(void)
- {
--	xen_panic_handler_init();
--
- 	HYPERVISOR_vm_assist(VMASST_CMD_enable, VMASST_TYPE_4gb_segments);
- 	HYPERVISOR_vm_assist(VMASST_CMD_enable, VMASST_TYPE_writable_pagetables);
- 
--	if (!xen_feature(XENFEAT_auto_translated_physmap))
--		HYPERVISOR_vm_assist(VMASST_CMD_enable,
--				     VMASST_TYPE_pae_extended_cr3);
-+	HYPERVISOR_vm_assist(VMASST_CMD_enable,
-+			     VMASST_TYPE_pae_extended_cr3);
- 
- 	if (register_callback(CALLBACKTYPE_event, xen_hypervisor_callback) ||
- 	    register_callback(CALLBACKTYPE_failsafe, xen_failsafe_callback))
-@@ -581,6 +578,15 @@ void __init xen_arch_setup(void)
- 	xen_enable_sysenter();
- 	xen_enable_syscall();
- 	xen_enable_nmi();
-+}
-+
-+/* This function is not called for HVM domains */
-+void __init xen_arch_setup(void)
-+{
-+	xen_panic_handler_init();
-+	if (!xen_feature(XENFEAT_auto_translated_physmap))
-+		xen_pvmmu_arch_setup();
-+
- #ifdef CONFIG_ACPI
- 	if (!(xen_start_info->flags & SIF_INITDOMAIN)) {
- 		printk(KERN_INFO "ACPI in unprivileged domain disabled\n");
 -- 
-1.8.3.1
-
+~Randy
