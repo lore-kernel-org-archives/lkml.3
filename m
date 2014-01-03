@@ -1,93 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753109AbaACDjS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jan 2014 22:39:18 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:39781 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743AbaACDjR (ORCPT
+	id S1753643AbaACDkz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jan 2014 22:40:55 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:52577 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751920AbaACDkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jan 2014 22:39:17 -0500
-X-Originating-IP: 50.43.14.201
-Date: Thu, 2 Jan 2014 19:39:07 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cl@linux-foundation.org,
-        penberg@kernel.org, mpm@selenic.com
-Subject: Re: Memory allocator semantics
-Message-ID: <20140103033906.GB2983@leaf>
-References: <20140102203320.GA27615@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140102203320.GA27615@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 2 Jan 2014 22:40:53 -0500
+Date: Fri, 3 Jan 2014 11:40:37 +0800
+From: littlebat <dashing.meng@gmail.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: denis.turischev@compulab.co.il, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
+        Oliver Neukum <oneukum@suse.de>, dashing.meng@gmail.com,
+        Niklas Schnelle <niklas@komani.de>, Giorgos <ganastasiouGR@gmail.com>,
+        art1@vhex.net
+Subject: Re: [PATCH v1] xhci: Switch Intel Lynx Point ports to EHCI on
+ shutdown
+Message-Id: <20140103114037.89bd88ae161ac9f9827a3008@gmail.com>
+In-Reply-To: <20140103000334.GE9621@xanatos>
+References: <52B31EDA.60908@compulab.co.il>
+	<52B327D5.3080805@compulab.co.il>
+	<20131219182110.GC3573@xanatos>
+	<52B41EC7.1070704@compulab.co.il>
+	<20131220234547.GC2835@xanatos>
+	<52B69925.8030409@compulab.co.il>
+	<20140103000334.GE9621@xanatos>
+Organization: RMQ
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 02, 2014 at 12:33:20PM -0800, Paul E. McKenney wrote:
-> Hello!
-> 
-> From what I can see, the Linux-kernel's SLAB, SLOB, and SLUB memory
-> allocators would deal with the following sort of race:
-> 
-> A.	CPU 0: r1 = kmalloc(...); ACCESS_ONCE(gp) = r1;
-> 
-> 	CPU 1: r2 = ACCESS_ONCE(gp); if (r2) kfree(r2);
-> 
-> However, my guess is that this should be considered an accident of the
-> current implementation rather than a feature.  The reason for this is
-> that I cannot see how you would usefully do (A) above without also allowing
-> (B) and (C) below, both of which look to me to be quite destructive:
+On Thu, 2 Jan 2014 16:03:34 -0800
+Sarah Sharp <sarah.a.sharp@linux.intel.com> wrote:
 
-(A) only seems OK if "gp" is guaranteed to be NULL beforehand, *and* if
-no other CPUs can possibly do what CPU 1 is doing in parallel.  Even
-then, it seems questionable how this could ever be used successfully in
-practice.
-
-This seems similar to the TCP simultaneous-SYN case: theoretically
-possible, absurd in practice.
-
-> B.	CPU 0: r1 = kmalloc(...);  ACCESS_ONCE(shared_x) = r1;
+> On Sun, Dec 22, 2013 at 09:47:49AM +0200, Denis Turischev wrote:
+> > On 12/21/2013 01:45 AM, Sarah Sharp wrote:
+> > > On Fri, Dec 20, 2013 at 12:41:11PM +0200, Denis Turischev wrote:
+> > >>> Also, which kernel are you experiencing this issue on?  In
+> > >>> 3.12, I queued a separate patch to deal with spurious reboot
+> > >>> issues on Lynx Point:
+> > >>>
+> > >>> commit 638298dc66ea36623dbc2757a24fc2c4ab41b016
+> > >> Sorry, I indeed tested not on the latest kernel version, Ubuntu
+> > >> 3.13-rc3 has this patch and it works for me.
+> > > 
+> > > What does "Ubuntu 3.13-rc3" mean?  Where did you get your kernel
+> > > from?
+> > Latest Ubuntu development kernel based on mainline 3.13-rc3.
+> > http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.13-rc3-trusty/
+> > > 
+> > > Also, do you have an HP system, or is this a different vendor?
+> > No, it's not HP system, it's Compulab's IntensePC-2 with Phoenix
+> > BIOS.
 > 
->         CPU 1: r2 = ACCESS_ONCE(shared_x); if (r2) kfree(r2);
+> Ok, that's a bit of an issue then.  Your system needs the quirk
+> introduced by commit 638298dc66ea36623dbc2757a24fc2c4ab41b016 "xhci:
+> Fix spurious wakeups after S5 on Haswell".  That went into 3.12-rc3.
+> However, in 3.13-rc6, commit 6962d914f317b119e0db7189199b21ec77a4b3e0
+> "xhci: Limit the spurious wakeup fix only to HP machines" limited the
+> quirk to only HP systems.
 > 
-> 	CPU 2: r3 = ACCESS_ONCE(shared_x); if (r3) kfree(r3);
+> That means your system worked fine in 3.13-rc3 (when the quirk was
+> applied broadly), but won't work for 3.13-rc6 (when the quirk was
+> narrowed to HP machines).  So we need the quirk to apply to your
+> systems as well.
 > 
-> 	This results in the memory being on two different freelists.
+> ISTR that the other folks on Cc (Meng, Niklas, Giorgos, and Art) all
+> had systems that broke when commit
+> 638298dc66ea36623dbc2757a24fc2c4ab41b016 was introduced.  For those
+> systems, what vendor was the system, and what BIOS was it running?
 
-That's a straightforward double-free bug.  You need some kind of
-synchronization there to ensure that only one call to kfree occurs.
+I'm Meng(littlebat), 
+Motherboard vendor:
+Manufacturer: ASRock
+Product Name: Z87 Pro3
 
-> C.      CPU 0: r1 = kmalloc(...);  ACCESS_ONCE(shared_x) = r1;
+BIOS:
+
+Boot into BIOS setup interface, only show:
+ASRock UEFI Setup Utility
+UIFI Version: Z87 Pro3 P2.20
+Chipset Version: C2
+
+Information below gotten from command: sudo dmidecode
+# dmidecode 2.12
+SMBIOS 2.7 present.
+26 structures occupying 1467 bytes.
+Table at 0x000EE880.
+
+Handle 0x0000, DMI type 0, 24 bytes
+BIOS Information
+	Vendor: American Megatrends Inc.
+	Version: P2.20
+	Release Date: 07/03/2013
+	Address: 0xF0000
+	Runtime Size: 64 kB
+	ROM Size: 8192 kB
+	Characteristics:
+		PCI is supported
+		BIOS is upgradeable
+		BIOS shadowing is allowed
+		Boot from CD is supported
+		Selectable boot is supported
+		BIOS ROM is socketed
+		EDD is supported
+		5.25"/1.2 MB floppy services are supported (int 13h)
+		3.5"/720 kB floppy services are supported (int 13h)
+		3.5"/2.88 MB floppy services are supported (int 13h)
+		Print screen service is supported (int 5h)
+		8042 keyboard services are supported (int 9h)
+		Serial services are supported (int 14h)
+		Printer services are supported (int 17h)
+		ACPI is supported
+		USB legacy is supported
+		BIOS boot specification is supported
+		Targeted content distribution is supported
+		UEFI is supported
+	BIOS Revision: 4.6
+
+The original bug report of mine is:
+https://bugzilla.kernel.org/show_bug.cgi?id=66551
+
+and the bug disappeared when applied patch: commit
+6962d914f317b119e0db7189199b21ec77a4b3e0 "xhci: Limit the spurious
+wakeup fix only to HP machines"
+
 > 
-> 	CPU 1: r2 = ACCESS_ONCE(shared_x); r2->a = 1; r2->b = 2;
+> Takashi, did the HP systems that needed the quirk have a Phoenix BIOS?
 > 
-> 	CPU 2: r3 = ACCESS_ONCE(shared_x); if (r3) kfree(r3);
+> Denis, do all of Compulab's Haswell systems reboot on shutdown?  Are
+> they all running a Phoenix BIOS?  Can you send me the output of `sudo
+> lspci -vvv -s` for the xHCI host?
 > 
-> 	CPU 3: r4 = kmalloc(...);  r4->s = 3; r4->t = 4;
+> Basically, I'm trying to find a common variable to key off.  I suspect
+> BIOS vendor is probably the right thing, instead of system vendor.
 > 
-> 	This results in the memory being used by two different CPUs,
-> 	each of which believe that they have sole access.
-
-This is not OK either: CPU 2 has called kfree on a pointer that CPU 1
-still considers alive, and again, the CPUs haven't used any form of
-synchronization to prevent that.
-
-> But I thought I should ask the experts.
-> 
-> So, am I correct that kernel hackers are required to avoid "drive-by"
-> kfree()s of kmalloc()ed memory?
-
-Don't kfree things that are in use, and synchronize to make sure all
-CPUs agree about "in use", yes.
-
-> PS.  To the question "Why would anyone care about (A)?", then answer
->      is "Inquiring programming-language memory-model designers want
->      to know."
-
-I find myself wondering about the original form of the question, since
-I'd hope that programming-languge memory-model designers would
-understand the need for synchronization around reclaiming memory.
-
-- Josh Triplett
+> Sarah Sharp
