@@ -1,832 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448AbaACSEB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 13:04:01 -0500
-Received: from mga02.intel.com ([134.134.136.20]:48215 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751880AbaACSCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 13:02:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,599,1384329600"; 
-   d="scan'208";a="461309820"
-Subject: [PATCH 6/9] mm: slub: rearrange 'struct page' fields
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        penberg@kernel.org, cl@linux-foundation.org,
-        Dave Hansen <dave@sr71.net>
-From: Dave Hansen <dave@sr71.net>
-Date: Fri, 03 Jan 2014 10:01:58 -0800
-References: <20140103180147.6566F7C1@viggo.jf.intel.com>
-In-Reply-To: <20140103180147.6566F7C1@viggo.jf.intel.com>
-Message-Id: <20140103180158.9530D16F@viggo.jf.intel.com>
+	id S1753514AbaACSEp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 13:04:45 -0500
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:38052 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753476AbaACSEn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 13:04:43 -0500
+Date: Fri, 3 Jan 2014 20:04:36 +0200
+From: Gleb Natapov <gleb@kernel.org>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kashyap Chamarthy <kchamart@redhat.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "Richard W.M. Jones" <rjones@redhat.com>
+Subject: Re: intel_pstate divide error with v3.13-rc4-256-gb7000ad
+Message-ID: <20140103180435.GK10961@minantech.com>
+References: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com>
+ <4794554.Hmd2RUNYDT@vostro.rjw.lan>
+ <52C18A23.10703@redhat.com>
+ <3710588.K8glfx1cYs@vostro.rjw.lan>
+ <52C6F3B4.3050904@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52C6F3B4.3050904@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 03, 2014 at 09:30:28AM -0800, Dirk Brandewie wrote:
+> Hi All,
+> 
+> Sorry for being late to the party but I just got back from vacation.
+> 
+> There is something deeply wrong here.  We should have never gotten to
+> intel_pstate_init_cpu().  The VM had to have returned value from the read
+> of the max pstate at driver init time and 0 when the CPU was being brought up.
+> 
+> intel_pstate_msrs_not_valid() was added to solve this issue early on
+> if I remember correctly it was Josh that reported it then.  Is there
+> a definative way to detect whether we are running in a VM?
+> 
+Checking for VM is a wrong thing to do here. KVM should behave like it
+does not support p-state.
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+> Can some one tell me how the nested environment differs in regards to
+> reading MSRs?
+> 
+It shouldn't differ, but there may be bug somewhere in nested emulation.
+We shouldn't try and hind the bug by doing more checks in Linux but
+rather fixing KVM bug that causes Linux to behave incorrectly.
 
-SLUB has some very unique alignment constraints it places
-on 'struct page'.  Break those out in to a separate structure
-which will not pollute 'struct page'.
+> TIA
+> --Dirk
+> 
+> On 12/30/2013 06:07 PM, Rafael J. Wysocki wrote:
+> >>>---
+> >>>  drivers/cpufreq/intel_pstate.c |    5 +++++
+> >>>  1 file changed, 5 insertions(+)
+> >>>
+> >>>Index: linux-pm/drivers/cpufreq/intel_pstate.c
+> >>>===================================================================
+> >>>--- linux-pm.orig/drivers/cpufreq/intel_pstate.c
+> >>>+++ linux-pm/drivers/cpufreq/intel_pstate.c
+> >>>@@ -614,6 +614,11 @@ static int intel_pstate_init_cpu(unsigne
+> >>>  	cpu = all_cpu_data[cpunum];
+> >>>
+> >>>  	intel_pstate_get_cpu_pstates(cpu);
+> >>>+	if (!cpu->pstate.current_pstate) {
+> >>>+		all_cpu_data[cpunum] = NULL;
+> >>>+		kfree(cpu);
+> >>>+		return -ENODATA;
+> >>>+	}
+> >>>
+> >>>  	cpu->cpu = cpunum;
+> >>>
+> >>>
+> >>
+> >>
+> >>Thanks Rafel, I can confirm this patch helps.
+> >
+> >Awesome, thanks!
+> >
+> >Below is an official version with a changelog.  I'll queue it up as a fix
+> >for 3.13.
+> >
+> >Thanks,
+> >Rafael
+> >
+> >
+> >---
+> >From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >Subject: intel_pstate: Fail initialization if P-state information is missing
+> >
+> >If pstate.current_pstate is 0 after the initial
+> >intel_pstate_get_cpu_pstates(), this means that we were unable to
+> >obtain any useful P-state information and there is no reason to
+> >continue, so free memory and return an error in that case.
+> >
+> >This fixes the following divide error occuring in a nested KVM
+> >guest:
+> >
+> >Intel P-state driver initializing.
+> >Intel pstate controlling: cpu 0
+> >cpufreq: __cpufreq_add_dev: ->get() failed
+> >divide error: 0000 [#1] SMP
+> >Modules linked in:
+> >CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.13.0-0.rc4.git5.1.fc21.x86_64 #1
+> >Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> >task: ffff88001ea20000 ti: ffff88001e9bc000 task.ti: ffff88001e9bc000
+> >RIP: 0010:[<ffffffff815c551d>]  [<ffffffff815c551d>] intel_pstate_timer_func+0x11d/0x2b0
+> >RSP: 0000:ffff88001ee03e18  EFLAGS: 00010246
+> >RAX: 0000000000000000 RBX: ffff88001a454348 RCX: 0000000000006100
+> >RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
+> >RBP: ffff88001ee03e38 R08: 0000000000000000 R09: 0000000000000000
+> >R10: ffff88001ea20000 R11: 0000000000000000 R12: 00000c0a1ea20000
+> >R13: 1ea200001ea20000 R14: ffffffff815c5400 R15: ffff88001a454348
+> >FS:  0000000000000000(0000) GS:ffff88001ee00000(0000) knlGS:0000000000000000
+> >CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> >CR2: 0000000000000000 CR3: 0000000001c0c000 CR4: 00000000000006f0
+> >Stack:
+> >  fffffffb1a454390 ffffffff821a4500 ffff88001a454390 0000000000000100
+> >  ffff88001ee03ea8 ffffffff81083e9a ffffffff81083e15 ffffffff82d5ed40
+> >  ffffffff8258cc60 0000000000000000 ffffffff81ac39de 0000000000000000
+> >Call Trace:
+> >  <IRQ>
+> >  [<ffffffff81083e9a>] call_timer_fn+0x8a/0x310
+> >  [<ffffffff81083e15>] ? call_timer_fn+0x5/0x310
+> >  [<ffffffff815c5400>] ? pid_param_set+0x130/0x130
+> >  [<ffffffff81084354>] run_timer_softirq+0x234/0x380
+> >  [<ffffffff8107aee4>] __do_softirq+0x104/0x430
+> >  [<ffffffff8107b5fd>] irq_exit+0xcd/0xe0
+> >  [<ffffffff81770645>] smp_apic_timer_interrupt+0x45/0x60
+> >  [<ffffffff8176efb2>] apic_timer_interrupt+0x72/0x80
+> >  <EOI>
+> >  [<ffffffff810e15cd>] ? vprintk_emit+0x1dd/0x5e0
+> >  [<ffffffff81757719>] printk+0x67/0x69
+> >  [<ffffffff815c1493>] __cpufreq_add_dev.isra.13+0x883/0x8d0
+> >  [<ffffffff815c14f0>] cpufreq_add_dev+0x10/0x20
+> >  [<ffffffff814a14d1>] subsys_interface_register+0xb1/0xf0
+> >  [<ffffffff815bf5cf>] cpufreq_register_driver+0x9f/0x210
+> >  [<ffffffff81fb19af>] intel_pstate_init+0x27d/0x3be
+> >  [<ffffffff81761e3e>] ? mutex_unlock+0xe/0x10
+> >  [<ffffffff81fb1732>] ? cpufreq_gov_dbs_init+0x12/0x12
+> >  [<ffffffff8100214a>] do_one_initcall+0xfa/0x1b0
+> >  [<ffffffff8109dbf5>] ? parse_args+0x225/0x3f0
+> >  [<ffffffff81f64193>] kernel_init_freeable+0x1fc/0x287
+> >  [<ffffffff81f638d0>] ? do_early_param+0x88/0x88
+> >  [<ffffffff8174b530>] ? rest_init+0x150/0x150
+> >  [<ffffffff8174b53e>] kernel_init+0xe/0x130
+> >  [<ffffffff8176e27c>] ret_from_fork+0x7c/0xb0
+> >  [<ffffffff8174b530>] ? rest_init+0x150/0x150
+> >Code: c1 e0 05 48 63 bc 03 10 01 00 00 48 63 83 d0 00 00 00 48 63 d6 48 c1 e2 08 c1 e1 08 4c 63 c2 48 c1 e0 08 48 98 48 c1 e0 08 48 99 <49> f7 f8 48 98 48 0f af f8 48 c1 ff 08 29 f9 89 ca c1 fa 1f 89
+> >RIP  [<ffffffff815c551d>] intel_pstate_timer_func+0x11d/0x2b0
+> >  RSP <ffff88001ee03e18>
+> >---[ end trace f166110ed22cc37a ]---
+> >Kernel panic - not syncing: Fatal exception in interrupt
+> >
+> >Reported-and-tested-by: Kashyap Chamarthy <kchamart@redhat.com>
+> >Cc: Josh Boyer <jwboyer@fedoraproject.org>
+> >Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >---
+> >  drivers/cpufreq/intel_pstate.c |    5 +++++
+> >  1 file changed, 5 insertions(+)
+> >
+> >Index: linux-pm/drivers/cpufreq/intel_pstate.c
+> >===================================================================
+> >--- linux-pm.orig/drivers/cpufreq/intel_pstate.c
+> >+++ linux-pm/drivers/cpufreq/intel_pstate.c
+> >@@ -614,6 +614,11 @@ static int intel_pstate_init_cpu(unsigne
+> >  	cpu = all_cpu_data[cpunum];
+> >
+> >  	intel_pstate_get_cpu_pstates(cpu);
+> >+	if (!cpu->pstate.current_pstate) {
+> >+		all_cpu_data[cpunum] = NULL;
+> >+		kfree(cpu);
+> >+		return -ENODATA;
+> >+	}
+> >
+> >  	cpu->cpu = cpunum;
+> >
+> >
+> 
 
-This structure will be moved around inside 'struct page' at
-runtime in the next patch, so it is necessary to break it out for
-those uses as well.
-
-Vim pattern used for the renames:
-%s/\(page\|new\)\(->\|\.\)\(freelist\|counters\)/slub_data(\1)\2\3/g
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
----
-
- linux.git-davehans/include/linux/mm_types.h |   66 ++++---
- linux.git-davehans/mm/slab_common.c         |   29 ++-
- linux.git-davehans/mm/slub.c                |  253 ++++++++++++++--------------
- 3 files changed, 192 insertions(+), 156 deletions(-)
-
-diff -puN include/linux/mm_types.h~slub-rearrange include/linux/mm_types.h
---- linux.git/include/linux/mm_types.h~slub-rearrange	2014-01-02 13:40:30.733330787 -0800
-+++ linux.git-davehans/include/linux/mm_types.h	2014-01-02 15:24:43.756840049 -0800
-@@ -23,6 +23,43 @@
- 
- struct address_space;
- 
-+struct slub_data {
-+	void *unused;
-+	void *freelist;
-+	union {
-+		struct {
-+			unsigned inuse:16;
-+			unsigned objects:15;
-+			unsigned frozen:1;
-+			atomic_t dontuse_slub_count;
-+		};
-+		/*
-+		 * ->counters is used to make it easier to copy
-+		 * all of the above counters in one chunk.
-+		 * The actual counts are never accessed via this.
-+		 */
-+#if defined(CONFIG_HAVE_CMPXCHG_DOUBLE) && \
-+    defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
-+		unsigned long counters;
-+#else
-+		/*
-+		 * Keep _count separate from slub cmpxchg_double data.
-+		 * As the rest of the double word is protected by
-+		 * slab_lock but _count is not.
-+		 */
-+		struct {
-+			unsigned counters;
-+			/*
-+			 * This isn't used directly, but declare it here
-+			 * for clarity since it must line up with _count
-+			 * from 'struct page'
-+			 */
-+			atomic_t separate_count;
-+		};
-+#endif
-+	};
-+};
-+
- #define USE_SPLIT_PTE_PTLOCKS	(NR_CPUS >= CONFIG_SPLIT_PTLOCK_CPUS)
- #define USE_SPLIT_PMD_PTLOCKS	(USE_SPLIT_PTE_PTLOCKS && \
- 		IS_ENABLED(CONFIG_ARCH_ENABLE_SPLIT_PMD_PTLOCK))
-@@ -70,14 +107,7 @@ struct page {
- 			atomic_t _count;
- 		}; /* end of the "normal" use */
- 
--		struct { /* SLUB */
--			void *unused;
--			void *freelist;
--			unsigned inuse:16;
--			unsigned objects:15;
--			unsigned frozen:1;
--			atomic_t dontuse_slub_count;
--		};
-+		struct slub_data slub_data;
- 		struct { /* SLAB */
- 			void *s_mem;
- 			void *slab_freelist;
-@@ -90,26 +120,6 @@ struct page {
- 			unsigned int units;
- 			atomic_t dontuse_slob_count;
- 		};
--		/*
--		 * This is here to help the slub code deal with
--		 * its inuse/objects/frozen bitfields as a single
--		 * blob.
--		 */
--		struct { /* slub helpers */
--			void *slubhelp_unused;
--			void *slubhelp_freelist;
--#if defined(CONFIG_HAVE_CMPXCHG_DOUBLE) && \
--    defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
--			unsigned long counters;
--#else
--			/*
--			 * Keep _count separate from slub cmpxchg_double data.
--			 * As the rest of the double word is protected by
--			 * slab_lock but _count is not.
--			 */
--			unsigned counters;
--#endif
--		};
- 	};
- 
- 	/* Third double word block */
-diff -puN mm/slab_common.c~slub-rearrange mm/slab_common.c
---- linux.git/mm/slab_common.c~slub-rearrange	2014-01-02 13:40:30.735330876 -0800
-+++ linux.git-davehans/mm/slab_common.c	2014-01-02 15:24:35.095449871 -0800
-@@ -658,20 +658,39 @@ static int __init slab_proc_init(void)
- }
- module_init(slab_proc_init);
- #endif /* CONFIG_SLABINFO */
-+
- #define SLAB_PAGE_CHECK(field1, field2)        \
- 	BUILD_BUG_ON(offsetof(struct page, field1) !=   \
- 		     offsetof(struct page, field2))
- /*
-  * To make the layout of 'struct page' look nicer, we've broken
-- * up a few of the unions.  Folks declaring their own use of the
-- * first few fields need to make sure that their use does not
-- * interfere with page->_count.  This ensures that the individual
-- * users' use actually lines up with the real ->_count.
-+ * up a few of the unions.  But, this has made it hard to see if
-+ * any given use will interfere with page->_count.
-+ *
-+ * To work around this, each user declares their own _count field
-+ * and we check them at build time to ensure that the independent
-+ * definitions actually line up with the real ->_count.
-  */
- void slab_build_checks(void)
- {
- 	SLAB_PAGE_CHECK(_count, dontuse_slab_count);
--	SLAB_PAGE_CHECK(_count, dontuse_slub_count);
-+	SLAB_PAGE_CHECK(_count, slub_data.dontuse_slub_count);
- 	SLAB_PAGE_CHECK(_count, dontuse_slob_count);
-+
-+	/*
-+	 * When doing a double-cmpxchg, the slub code sucks in
-+	 * _count.  But, this is harmless since if _count is
-+	 * modified, the cmpxchg will fail.  When not using a
-+	 * real cmpxchg, the slub code uses a lock.  But, _count
-+	 * is not modified under that lock and updates can be
-+	 * lost if they race with one of the "faked" cmpxchg
-+	 * under that lock.  This makes sure that the space we
-+	 * carve out for _count in that case actually lines up
-+	 * with the real _count.
-+	 */
-+#if !(defined(CONFIG_HAVE_CMPXCHG_DOUBLE) && \
-+	    defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE))
-+	SLAB_PAGE_CHECK(_count, slub_data.separate_count);
-+#endif
- }
- 
-diff -puN mm/slub.c~slub-rearrange mm/slub.c
---- linux.git/mm/slub.c~slub-rearrange	2014-01-02 13:40:30.737330966 -0800
-+++ linux.git-davehans/mm/slub.c	2014-01-02 15:27:23.607040821 -0800
-@@ -52,8 +52,8 @@
-  *   The slab_lock is only used for debugging and on arches that do not
-  *   have the ability to do a cmpxchg_double. It only protects the second
-  *   double word in the page struct. Meaning
-- *	A. page->freelist	-> List of object free in a page
-- *	B. page->counters	-> Counters of objects
-+ *	A. slub_data(page)->freelist	-> List of object free in a page
-+ *	B. slub_data(page)->counters	-> Counters of objects
-  *	C. page->frozen		-> frozen state
-  *
-  *   If a slab is frozen then it is exempt from list management. It is not
-@@ -237,6 +237,12 @@ static inline struct kmem_cache_node *ge
- 	return s->node[node];
- }
- 
-+static inline struct slub_data *slub_data(struct page *page)
-+{
-+	void *ptr = &page->slub_data;
-+	return ptr;
-+}
-+
- /* Verify that a pointer has an address that is valid within a slab page */
- static inline int check_valid_pointer(struct kmem_cache *s,
- 				struct page *page, const void *object)
-@@ -247,7 +253,7 @@ static inline int check_valid_pointer(st
- 		return 1;
- 
- 	base = page_address(page);
--	if (object < base || object >= base + page->objects * s->size ||
-+	if (object < base || object >= base + slub_data(page)->objects * s->size ||
- 		(object - base) % s->size) {
- 		return 0;
- 	}
-@@ -365,7 +371,7 @@ static inline bool __cmpxchg_double_slab
- #if defined(CONFIG_HAVE_CMPXCHG_DOUBLE) && \
-     defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
- 	if (s->flags & __CMPXCHG_DOUBLE) {
--		if (cmpxchg_double(&page->freelist, &page->counters,
-+		if (cmpxchg_double(&slub_data(page)->freelist, &slub_data(page)->counters,
- 			freelist_old, counters_old,
- 			freelist_new, counters_new))
- 		return 1;
-@@ -373,10 +379,10 @@ static inline bool __cmpxchg_double_slab
- #endif
- 	{
- 		slab_lock(page);
--		if (page->freelist == freelist_old &&
--					page->counters == counters_old) {
--			page->freelist = freelist_new;
--			page->counters = counters_new;
-+		if (slub_data(page)->freelist == freelist_old &&
-+					slub_data(page)->counters == counters_old) {
-+			slub_data(page)->freelist = freelist_new;
-+			slub_data(page)->counters = counters_new;
- 			slab_unlock(page);
- 			return 1;
- 		}
-@@ -401,7 +407,7 @@ static inline bool cmpxchg_double_slab(s
- #if defined(CONFIG_HAVE_CMPXCHG_DOUBLE) && \
-     defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
- 	if (s->flags & __CMPXCHG_DOUBLE) {
--		if (cmpxchg_double(&page->freelist, &page->counters,
-+		if (cmpxchg_double(&slub_data(page)->freelist, &slub_data(page)->counters,
- 			freelist_old, counters_old,
- 			freelist_new, counters_new))
- 		return 1;
-@@ -412,10 +418,10 @@ static inline bool cmpxchg_double_slab(s
- 
- 		local_irq_save(flags);
- 		slab_lock(page);
--		if (page->freelist == freelist_old &&
--					page->counters == counters_old) {
--			page->freelist = freelist_new;
--			page->counters = counters_new;
-+		if (slub_data(page)->freelist == freelist_old &&
-+		    slub_data(page)->counters == counters_old) {
-+			slub_data(page)->freelist = freelist_new;
-+			slub_data(page)->counters = counters_new;
- 			slab_unlock(page);
- 			local_irq_restore(flags);
- 			return 1;
-@@ -446,7 +452,7 @@ static void get_map(struct kmem_cache *s
- 	void *p;
- 	void *addr = page_address(page);
- 
--	for (p = page->freelist; p; p = get_freepointer(s, p))
-+	for (p = slub_data(page)->freelist; p; p = get_freepointer(s, p))
- 		set_bit(slab_index(p, s, addr), map);
- }
- 
-@@ -557,7 +563,8 @@ static void print_page_info(struct page
- {
- 	printk(KERN_ERR
- 	       "INFO: Slab 0x%p objects=%u used=%u fp=0x%p flags=0x%04lx\n",
--	       page, page->objects, page->inuse, page->freelist, page->flags);
-+	       page, slub_data(page)->objects, slub_data(page)->inuse,
-+	       slub_data(page)->freelist, page->flags);
- 
- }
- 
-@@ -843,14 +850,14 @@ static int check_slab(struct kmem_cache
- 	}
- 
- 	maxobj = order_objects(compound_order(page), s->size, s->reserved);
--	if (page->objects > maxobj) {
-+	if (slub_data(page)->objects > maxobj) {
- 		slab_err(s, page, "objects %u > max %u",
--			s->name, page->objects, maxobj);
-+			s->name, slub_data(page)->objects, maxobj);
- 		return 0;
- 	}
--	if (page->inuse > page->objects) {
-+	if (slub_data(page)->inuse > slub_data(page)->objects) {
- 		slab_err(s, page, "inuse %u > max %u",
--			s->name, page->inuse, page->objects);
-+			s->name, slub_data(page)->inuse, slub_data(page)->objects);
- 		return 0;
- 	}
- 	/* Slab_pad_check fixes things up after itself */
-@@ -869,8 +876,8 @@ static int on_freelist(struct kmem_cache
- 	void *object = NULL;
- 	unsigned long max_objects;
- 
--	fp = page->freelist;
--	while (fp && nr <= page->objects) {
-+	fp = slub_data(page)->freelist;
-+	while (fp && nr <= slub_data(page)->objects) {
- 		if (fp == search)
- 			return 1;
- 		if (!check_valid_pointer(s, page, fp)) {
-@@ -880,8 +887,8 @@ static int on_freelist(struct kmem_cache
- 				set_freepointer(s, object, NULL);
- 			} else {
- 				slab_err(s, page, "Freepointer corrupt");
--				page->freelist = NULL;
--				page->inuse = page->objects;
-+				slub_data(page)->freelist = NULL;
-+				slub_data(page)->inuse = slub_data(page)->objects;
- 				slab_fix(s, "Freelist cleared");
- 				return 0;
- 			}
-@@ -896,16 +903,16 @@ static int on_freelist(struct kmem_cache
- 	if (max_objects > MAX_OBJS_PER_PAGE)
- 		max_objects = MAX_OBJS_PER_PAGE;
- 
--	if (page->objects != max_objects) {
-+	if (slub_data(page)->objects != max_objects) {
- 		slab_err(s, page, "Wrong number of objects. Found %d but "
--			"should be %d", page->objects, max_objects);
--		page->objects = max_objects;
-+			"should be %d", slub_data(page)->objects, max_objects);
-+		slub_data(page)->objects = max_objects;
- 		slab_fix(s, "Number of objects adjusted.");
- 	}
--	if (page->inuse != page->objects - nr) {
-+	if (slub_data(page)->inuse != slub_data(page)->objects - nr) {
- 		slab_err(s, page, "Wrong object count. Counter is %d but "
--			"counted were %d", page->inuse, page->objects - nr);
--		page->inuse = page->objects - nr;
-+			"counted were %d", slub_data(page)->inuse, slub_data(page)->objects - nr);
-+		slub_data(page)->inuse = slub_data(page)->objects - nr;
- 		slab_fix(s, "Object count adjusted.");
- 	}
- 	return search == NULL;
-@@ -918,8 +925,8 @@ static void trace(struct kmem_cache *s,
- 		printk(KERN_INFO "TRACE %s %s 0x%p inuse=%d fp=0x%p\n",
- 			s->name,
- 			alloc ? "alloc" : "free",
--			object, page->inuse,
--			page->freelist);
-+			object, slub_data(page)->inuse,
-+			slub_data(page)->freelist);
- 
- 		if (!alloc)
- 			print_section("Object ", (void *)object,
-@@ -1085,8 +1092,8 @@ bad:
- 		 * as used avoids touching the remaining objects.
- 		 */
- 		slab_fix(s, "Marking all objects used");
--		page->inuse = page->objects;
--		page->freelist = NULL;
-+		slub_data(page)->inuse = slub_data(page)->objects;
-+		slub_data(page)->freelist = NULL;
- 	}
- 	return 0;
- }
-@@ -1366,7 +1373,7 @@ static struct page *allocate_slab(struct
- 	if (!page)
- 		return NULL;
- 
--	page->objects = oo_objects(oo);
-+	slub_data(page)->objects = oo_objects(oo);
- 	mod_zone_page_state(page_zone(page),
- 		(s->flags & SLAB_RECLAIM_ACCOUNT) ?
- 		NR_SLAB_RECLAIMABLE : NR_SLAB_UNRECLAIMABLE,
-@@ -1399,7 +1406,7 @@ static struct page *new_slab(struct kmem
- 		goto out;
- 
- 	order = compound_order(page);
--	inc_slabs_node(s, page_to_nid(page), page->objects);
-+	inc_slabs_node(s, page_to_nid(page), slub_data(page)->objects);
- 	memcg_bind_pages(s, order);
- 	page->slab_cache = s;
- 	__SetPageSlab(page);
-@@ -1412,7 +1419,7 @@ static struct page *new_slab(struct kmem
- 		memset(start, POISON_INUSE, PAGE_SIZE << order);
- 
- 	last = start;
--	for_each_object(p, s, start, page->objects) {
-+	for_each_object(p, s, start, slub_data(page)->objects) {
- 		setup_object(s, page, last);
- 		set_freepointer(s, last, p);
- 		last = p;
-@@ -1420,9 +1427,9 @@ static struct page *new_slab(struct kmem
- 	setup_object(s, page, last);
- 	set_freepointer(s, last, NULL);
- 
--	page->freelist = start;
--	page->inuse = page->objects;
--	page->frozen = 1;
-+	slub_data(page)->freelist = start;
-+	slub_data(page)->inuse = slub_data(page)->objects;
-+	slub_data(page)->frozen = 1;
- out:
- 	return page;
- }
-@@ -1437,7 +1444,7 @@ static void __free_slab(struct kmem_cach
- 
- 		slab_pad_check(s, page);
- 		for_each_object(p, s, page_address(page),
--						page->objects)
-+						slub_data(page)->objects)
- 			check_object(s, page, p, SLUB_RED_INACTIVE);
- 	}
- 
-@@ -1498,7 +1505,7 @@ static void free_slab(struct kmem_cache
- 
- static void discard_slab(struct kmem_cache *s, struct page *page)
- {
--	dec_slabs_node(s, page_to_nid(page), page->objects);
-+	dec_slabs_node(s, page_to_nid(page), slub_data(page)->objects);
- 	free_slab(s, page);
- }
- 
-@@ -1548,23 +1555,23 @@ static inline void *acquire_slab(struct
- 	 * The old freelist is the list of objects for the
- 	 * per cpu allocation list.
- 	 */
--	freelist = page->freelist;
--	counters = page->counters;
--	new.counters = counters;
--	*objects = new.objects - new.inuse;
-+	freelist = slub_data(page)->freelist;
-+	counters = slub_data(page)->counters;
-+	slub_data(&new)->counters = counters;
-+	*objects = slub_data(&new)->objects - slub_data(&new)->inuse;
- 	if (mode) {
--		new.inuse = page->objects;
--		new.freelist = NULL;
-+		slub_data(&new)->inuse = slub_data(page)->objects;
-+		slub_data(&new)->freelist = NULL;
- 	} else {
--		new.freelist = freelist;
-+		slub_data(&new)->freelist = freelist;
- 	}
- 
--	VM_BUG_ON(new.frozen);
--	new.frozen = 1;
-+	VM_BUG_ON(slub_data(&new)->frozen);
-+	slub_data(&new)->frozen = 1;
- 
- 	if (!__cmpxchg_double_slab(s, page,
- 			freelist, counters,
--			new.freelist, new.counters,
-+			slub_data(&new)->freelist, slub_data(&new)->counters,
- 			"acquire_slab"))
- 		return NULL;
- 
-@@ -1789,7 +1796,7 @@ static void deactivate_slab(struct kmem_
- 	struct page new;
- 	struct page old;
- 
--	if (page->freelist) {
-+	if (slub_data(page)->freelist) {
- 		stat(s, DEACTIVATE_REMOTE_FREES);
- 		tail = DEACTIVATE_TO_TAIL;
- 	}
-@@ -1807,16 +1814,16 @@ static void deactivate_slab(struct kmem_
- 		unsigned long counters;
- 
- 		do {
--			prior = page->freelist;
--			counters = page->counters;
-+			prior = slub_data(page)->freelist;
-+			counters = slub_data(page)->counters;
- 			set_freepointer(s, freelist, prior);
--			new.counters = counters;
--			new.inuse--;
--			VM_BUG_ON(!new.frozen);
-+			slub_data(&new)->counters = counters;
-+			slub_data(&new)->inuse--;
-+			VM_BUG_ON(!slub_data(&new)->frozen);
- 
- 		} while (!__cmpxchg_double_slab(s, page,
- 			prior, counters,
--			freelist, new.counters,
-+			freelist, slub_data(&new)->counters,
- 			"drain percpu freelist"));
- 
- 		freelist = nextfree;
-@@ -1838,24 +1845,24 @@ static void deactivate_slab(struct kmem_
- 	 */
- redo:
- 
--	old.freelist = page->freelist;
--	old.counters = page->counters;
--	VM_BUG_ON(!old.frozen);
-+	slub_data(&old)->freelist = slub_data(page)->freelist;
-+	slub_data(&old)->counters = slub_data(page)->counters;
-+	VM_BUG_ON(!slub_data(&old)->frozen);
- 
- 	/* Determine target state of the slab */
--	new.counters = old.counters;
-+	slub_data(&new)->counters = slub_data(&old)->counters;
- 	if (freelist) {
--		new.inuse--;
--		set_freepointer(s, freelist, old.freelist);
--		new.freelist = freelist;
-+		slub_data(&new)->inuse--;
-+		set_freepointer(s, freelist, slub_data(&old)->freelist);
-+		slub_data(&new)->freelist = freelist;
- 	} else
--		new.freelist = old.freelist;
-+		slub_data(&new)->freelist = slub_data(&old)->freelist;
- 
--	new.frozen = 0;
-+	slub_data(&new)->frozen = 0;
- 
--	if (!new.inuse && n->nr_partial > s->min_partial)
-+	if (!slub_data(&new)->inuse && n->nr_partial > s->min_partial)
- 		m = M_FREE;
--	else if (new.freelist) {
-+	else if (slub_data(&new)->freelist) {
- 		m = M_PARTIAL;
- 		if (!lock) {
- 			lock = 1;
-@@ -1904,8 +1911,8 @@ redo:
- 
- 	l = m;
- 	if (!__cmpxchg_double_slab(s, page,
--				old.freelist, old.counters,
--				new.freelist, new.counters,
-+				slub_data(&old)->freelist, slub_data(&old)->counters,
-+				slub_data(&new)->freelist, slub_data(&new)->counters,
- 				"unfreezing slab"))
- 		goto redo;
- 
-@@ -1950,21 +1957,21 @@ static void unfreeze_partials(struct kme
- 
- 		do {
- 
--			old.freelist = page->freelist;
--			old.counters = page->counters;
--			VM_BUG_ON(!old.frozen);
-+			slub_data(&old)->freelist = slub_data(page)->freelist;
-+			slub_data(&old)->counters = slub_data(page)->counters;
-+			VM_BUG_ON(!slub_data(&old)->frozen);
- 
--			new.counters = old.counters;
--			new.freelist = old.freelist;
-+			slub_data(&new)->counters = slub_data(&old)->counters;
-+			slub_data(&new)->freelist = slub_data(&old)->freelist;
- 
--			new.frozen = 0;
-+			slub_data(&new)->frozen = 0;
- 
- 		} while (!__cmpxchg_double_slab(s, page,
--				old.freelist, old.counters,
--				new.freelist, new.counters,
-+				slub_data(&old)->freelist, slub_data(&old)->counters,
-+				slub_data(&new)->freelist, slub_data(&new)->counters,
- 				"unfreezing slab"));
- 
--		if (unlikely(!new.inuse && n->nr_partial > s->min_partial)) {
-+		if (unlikely(!slub_data(&new)->inuse && n->nr_partial > s->min_partial)) {
- 			page->next = discard_page;
- 			discard_page = page;
- 		} else {
-@@ -2028,7 +2035,7 @@ static void put_cpu_partial(struct kmem_
- 		}
- 
- 		pages++;
--		pobjects += page->objects - page->inuse;
-+		pobjects += slub_data(page)->objects - slub_data(page)->inuse;
- 
- 		page->pages = pages;
- 		page->pobjects = pobjects;
-@@ -2101,7 +2108,7 @@ static inline int node_match(struct page
- 
- static int count_free(struct page *page)
- {
--	return page->objects - page->inuse;
-+	return slub_data(page)->objects - slub_data(page)->inuse;
- }
- 
- static unsigned long count_partial(struct kmem_cache_node *n,
-@@ -2184,8 +2191,8 @@ static inline void *new_slab_objects(str
- 		 * No other reference to the page yet so we can
- 		 * muck around with it freely without cmpxchg
- 		 */
--		freelist = page->freelist;
--		page->freelist = NULL;
-+		freelist = slub_data(page)->freelist;
-+		slub_data(page)->freelist = NULL;
- 
- 		stat(s, ALLOC_SLAB);
- 		c->page = page;
-@@ -2205,7 +2212,7 @@ static inline bool pfmemalloc_match(stru
- }
- 
- /*
-- * Check the page->freelist of a page and either transfer the freelist to the
-+ * Check the ->freelist of a page and either transfer the freelist to the
-  * per cpu freelist or deactivate the page.
-  *
-  * The page is still frozen if the return value is not NULL.
-@@ -2221,18 +2228,18 @@ static inline void *get_freelist(struct
- 	void *freelist;
- 
- 	do {
--		freelist = page->freelist;
--		counters = page->counters;
-+		freelist = slub_data(page)->freelist;
-+		counters = slub_data(page)->counters;
- 
--		new.counters = counters;
--		VM_BUG_ON(!new.frozen);
-+		slub_data(&new)->counters = counters;
-+		VM_BUG_ON(!slub_data(&new)->frozen);
- 
--		new.inuse = page->objects;
--		new.frozen = freelist != NULL;
-+		slub_data(&new)->inuse = slub_data(page)->objects;
-+		slub_data(&new)->frozen = freelist != NULL;
- 
- 	} while (!__cmpxchg_double_slab(s, page,
- 		freelist, counters,
--		NULL, new.counters,
-+		NULL, slub_data(&new)->counters,
- 		"get_freelist"));
- 
- 	return freelist;
-@@ -2319,7 +2326,7 @@ load_freelist:
- 	 * page is pointing to the page from which the objects are obtained.
- 	 * That page must be frozen for per cpu allocations to work.
- 	 */
--	VM_BUG_ON(!c->page->frozen);
-+	VM_BUG_ON(!slub_data(c->page)->frozen);
- 	c->freelist = get_freepointer(s, freelist);
- 	c->tid = next_tid(c->tid);
- 	local_irq_restore(flags);
-@@ -2533,13 +2540,13 @@ static void __slab_free(struct kmem_cach
- 			spin_unlock_irqrestore(&n->list_lock, flags);
- 			n = NULL;
- 		}
--		prior = page->freelist;
--		counters = page->counters;
-+		prior = slub_data(page)->freelist;
-+		counters = slub_data(page)->counters;
- 		set_freepointer(s, object, prior);
--		new.counters = counters;
--		was_frozen = new.frozen;
--		new.inuse--;
--		if ((!new.inuse || !prior) && !was_frozen) {
-+		slub_data(&new)->counters = counters;
-+		was_frozen = slub_data(&new)->frozen;
-+		slub_data(&new)->inuse--;
-+		if ((!slub_data(&new)->inuse || !prior) && !was_frozen) {
- 
- 			if (kmem_cache_has_cpu_partial(s) && !prior)
- 
-@@ -2549,7 +2556,7 @@ static void __slab_free(struct kmem_cach
- 				 * We can defer the list move and instead
- 				 * freeze it.
- 				 */
--				new.frozen = 1;
-+				slub_data(&new)->frozen = 1;
- 
- 			else { /* Needs to be taken off a list */
- 
-@@ -2569,7 +2576,7 @@ static void __slab_free(struct kmem_cach
- 
- 	} while (!cmpxchg_double_slab(s, page,
- 		prior, counters,
--		object, new.counters,
-+		object, slub_data(&new)->counters,
- 		"__slab_free"));
- 
- 	if (likely(!n)) {
-@@ -2578,7 +2585,7 @@ static void __slab_free(struct kmem_cach
- 		 * If we just froze the page then put it onto the
- 		 * per cpu partial list.
- 		 */
--		if (new.frozen && !was_frozen) {
-+		if (slub_data(&new)->frozen && !was_frozen) {
- 			put_cpu_partial(s, page, 1);
- 			stat(s, CPU_PARTIAL_FREE);
- 		}
-@@ -2591,7 +2598,7 @@ static void __slab_free(struct kmem_cach
-                 return;
-         }
- 
--	if (unlikely(!new.inuse && n->nr_partial > s->min_partial))
-+	if (unlikely(!slub_data(&new)->inuse && n->nr_partial > s->min_partial))
- 		goto slab_empty;
- 
- 	/*
-@@ -2877,18 +2884,18 @@ static void early_kmem_cache_node_alloc(
- 				"in order to be able to continue\n");
- 	}
- 
--	n = page->freelist;
-+	n = slub_data(page)->freelist;
- 	BUG_ON(!n);
--	page->freelist = get_freepointer(kmem_cache_node, n);
--	page->inuse = 1;
--	page->frozen = 0;
-+	slub_data(page)->freelist = get_freepointer(kmem_cache_node, n);
-+	slub_data(page)->inuse = 1;
-+	slub_data(page)->frozen = 0;
- 	kmem_cache_node->node[node] = n;
- #ifdef CONFIG_SLUB_DEBUG
- 	init_object(kmem_cache_node, n, SLUB_RED_ACTIVE);
- 	init_tracking(kmem_cache_node, n);
- #endif
- 	init_kmem_cache_node(n);
--	inc_slabs_node(kmem_cache_node, node, page->objects);
-+	inc_slabs_node(kmem_cache_node, node, slub_data(page)->objects);
- 
- 	add_partial(n, page, DEACTIVATE_TO_HEAD);
- }
-@@ -3144,7 +3151,7 @@ static void list_slab_objects(struct kme
- #ifdef CONFIG_SLUB_DEBUG
- 	void *addr = page_address(page);
- 	void *p;
--	unsigned long *map = kzalloc(BITS_TO_LONGS(page->objects) *
-+	unsigned long *map = kzalloc(BITS_TO_LONGS(slub_data(page)->objects) *
- 				     sizeof(long), GFP_ATOMIC);
- 	if (!map)
- 		return;
-@@ -3152,7 +3159,7 @@ static void list_slab_objects(struct kme
- 	slab_lock(page);
- 
- 	get_map(s, page, map);
--	for_each_object(p, s, addr, page->objects) {
-+	for_each_object(p, s, addr, slub_data(page)->objects) {
- 
- 		if (!test_bit(slab_index(p, s, addr), map)) {
- 			printk(KERN_ERR "INFO: Object 0x%p @offset=%tu\n",
-@@ -3175,7 +3182,7 @@ static void free_partial(struct kmem_cac
- 	struct page *page, *h;
- 
- 	list_for_each_entry_safe(page, h, &n->partial, lru) {
--		if (!page->inuse) {
-+		if (!slub_data(page)->inuse) {
- 			remove_partial(n, page);
- 			discard_slab(s, page);
- 		} else {
-@@ -3412,11 +3419,11 @@ int kmem_cache_shrink(struct kmem_cache
- 		 * Build lists indexed by the items in use in each slab.
- 		 *
- 		 * Note that concurrent frees may occur while we hold the
--		 * list_lock. page->inuse here is the upper limit.
-+		 * list_lock.  ->inuse here is the upper limit.
- 		 */
- 		list_for_each_entry_safe(page, t, &n->partial, lru) {
--			list_move(&page->lru, slabs_by_inuse + page->inuse);
--			if (!page->inuse)
-+			list_move(&page->lru, slabs_by_inuse + slub_data(page)->inuse);
-+			if (!slub_data(page)->inuse)
- 				n->nr_partial--;
- 		}
- 
-@@ -3855,12 +3862,12 @@ void *__kmalloc_node_track_caller(size_t
- #ifdef CONFIG_SYSFS
- static int count_inuse(struct page *page)
- {
--	return page->inuse;
-+	return slub_data(page)->inuse;
- }
- 
- static int count_total(struct page *page)
- {
--	return page->objects;
-+	return slub_data(page)->objects;
- }
- #endif
- 
-@@ -3876,16 +3883,16 @@ static int validate_slab(struct kmem_cac
- 		return 0;
- 
- 	/* Now we know that a valid freelist exists */
--	bitmap_zero(map, page->objects);
-+	bitmap_zero(map, slub_data(page)->objects);
- 
- 	get_map(s, page, map);
--	for_each_object(p, s, addr, page->objects) {
-+	for_each_object(p, s, addr, slub_data(page)->objects) {
- 		if (test_bit(slab_index(p, s, addr), map))
- 			if (!check_object(s, page, p, SLUB_RED_INACTIVE))
- 				return 0;
- 	}
- 
--	for_each_object(p, s, addr, page->objects)
-+	for_each_object(p, s, addr, slub_data(page)->objects)
- 		if (!test_bit(slab_index(p, s, addr), map))
- 			if (!check_object(s, page, p, SLUB_RED_ACTIVE))
- 				return 0;
-@@ -4086,10 +4093,10 @@ static void process_slab(struct loc_trac
- 	void *addr = page_address(page);
- 	void *p;
- 
--	bitmap_zero(map, page->objects);
-+	bitmap_zero(map, slub_data(page)->objects);
- 	get_map(s, page, map);
- 
--	for_each_object(p, s, addr, page->objects)
-+	for_each_object(p, s, addr, slub_data(page)->objects)
- 		if (!test_bit(slab_index(p, s, addr), map))
- 			add_location(t, s, get_track(s, p, alloc));
- }
-@@ -4288,9 +4295,9 @@ static ssize_t show_slab_objects(struct
- 
- 			node = page_to_nid(page);
- 			if (flags & SO_TOTAL)
--				x = page->objects;
-+				x = slub_data(page)->objects;
- 			else if (flags & SO_OBJECTS)
--				x = page->inuse;
-+				x = slub_data(page)->inuse;
- 			else
- 				x = 1;
- 
-_
+--
+			Gleb.
