@@ -1,165 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545AbaADRlp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 12:41:45 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:61781 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752977AbaADRln (ORCPT
+	id S1754799AbaADRmi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 12:42:38 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:63633 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754733AbaADRmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 12:41:43 -0500
+	Sat, 4 Jan 2014 12:42:36 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <52C8480C.9040409@roeck-us.net>
+Date: Sat, 04 Jan 2014 09:42:36 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140104074621.GD20272@core.coreip.homeip.net>
-References: <20140104052756.GA32561@core.coreip.homeip.net>
-	<CAHQ1cqG2=CX6ypONUgVgzjG_3nVJOBLq5LPYwN0BrzwOLCTxzQ@mail.gmail.com>
-	<20140104061650.GB20272@core.coreip.homeip.net>
-	<CAHQ1cqEQtXRaPWo6wYgpDrjwGhnAySvb7Jvs8KFRTTRb3g++GQ@mail.gmail.com>
-	<20140104074621.GD20272@core.coreip.homeip.net>
-Date: Sat, 4 Jan 2014 09:41:43 -0800
-Message-ID: <CAHQ1cqEmpejiMPij+jQM0YEceShyHPRJ2dPkuaLkuBLYLXQyJg@mail.gmail.com>
-Subject: Re: [PATCH] Input: ims-pcu - remove unneeded get_unaligned_xxx
-From: Andrey Smirnov <andrew.smirnov@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Markus Mayer <markus.mayer@linaro.org>, Wim Van Sebroeck <wim@iguana.be>,
+        Christian Daudt <bcm@fixthebug.org>
+CC: Linaro Patches <patches@linaro.org>,
+        Linux Watchdog List <linux-watchdog@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] watchdog: bcm281xx: Debugfs support
+References: <1388524934-10563-1-git-send-email-markus.mayer@linaro.org> <1388524934-10563-2-git-send-email-markus.mayer@linaro.org>
+In-Reply-To: <1388524934-10563-2-git-send-email-markus.mayer@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 3, 2014 at 11:46 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Fri, Jan 03, 2014 at 10:49:07PM -0800, Andrey Smirnov wrote:
->> On Fri, Jan 3, 2014 at 10:16 PM, Dmitry Torokhov
->> <dmitry.torokhov@gmail.com> wrote:
->> > On Fri, Jan 03, 2014 at 09:52:25PM -0800, Andrey Smirnov wrote:
->> >> On Fri, Jan 3, 2014 at 9:28 PM, Dmitry Torokhov
->> >> <dmitry.torokhov@gmail.com> wrote:
->> >> > pcu->cmd_buf[IMS_PCU_DATA_OFFSET] is word aligned so we do not need to use
->> >> > get_unaligned_le16 to access it.
->> >> >
->> >> > Also let's add build time check to make sure it stays aligned.
->> >>
->> >> - AFAIK, there's no guarantee the "pcu" itself is aligned
->> >
->> > Yes. kmalloc returns aligned pointer, otherwise every access to members
->> > other than u8 would risk unaligned exception.
->>
->> OK, fair point.
->>
->> >
->> >> - This change assumes that aligning data on the 2-byte boundary is
->> >> sufficient for all architectures that do not allow unaligned data
->> >> access, which I don't think is a good assumption to make
->> >
->> > What arches require word access be double-word aligned?
->>
->> I don't know and neither do I care. Even if there aren't any in Linux
->> today do you expect it to never add a support to one that would impose
->> such a restriction?
+On 12/31/2013 01:22 PM, Markus Mayer wrote:
+> This change introduces debugfs support for the BCM281xx watchdog driver.
 >
-> There is a lot of assumptions in kernel that might get broken by a
-> random arch.
-
-I fact that there are such assumptions in kernel doesn't mean we
-should add more. IMHO, especially input drivers should be as CPU
-architecture agnostic as possible.
-
-> For example, the assumption that pointer and long require
-> the same storage.
-
-That is an assumption about compiler implementation, since the size of
-the basic types is implementation-specific.
-
+> Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
+> ---
+>   drivers/watchdog/Kconfig        |   10 ++++
+>   drivers/watchdog/bcm_kona_wdt.c |  116 +++++++++++++++++++++++++++++++++++++--
+>   2 files changed, 122 insertions(+), 4 deletions(-)
 >
-> Anyway, it looks like gcc has __alignof__(type) construct that will make
-> sure we ensure the right alignment for type.
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index 10d188a..9b8b96d 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -1152,6 +1152,16 @@ config BCM_KONA_WDT
+>   	  Say 'Y' or 'M' here to enable the driver. The module will be called
+>   	  bcm_kona_wdt.
 >
->>
->> The whole point of get_unaligned_* "framework" is to provide drivers
->> with unified interface that would allow you not to care about
->> alignment.
+> +config BCM_KONA_WDT_DEBUG
+> +	bool "DEBUGFS support for BCM Kona Watchdog"
+> +	depends on BCM_KONA_WDT
+> +	help
+> +	  If enabled, adds /sys/kernel/debug/bcm-kona-wdt/info which provides
+> +	  access to the driver's internal data structures as well as watchdog
+> +	  timer hardware registres.
+> +
+Unless Wim already applied this patch, I would suggest to merge the followup patch
+with this one.
+
+> +	  If in doubt, say 'N'.
+> +
+>   config LANTIQ_WDT
+>   	tristate "Lantiq SoC watchdog"
+>   	depends on LANTIQ
+> diff --git a/drivers/watchdog/bcm_kona_wdt.c b/drivers/watchdog/bcm_kona_wdt.c
+> index 7e41a83..d3aa473 100644
+> --- a/drivers/watchdog/bcm_kona_wdt.c
+> +++ b/drivers/watchdog/bcm_kona_wdt.c
+> @@ -11,6 +11,7 @@
+>    * GNU General Public License for more details.
+>    */
 >
-> No, it is not that you do not care about alignment, it is so that you
-> can safely access data that you know to be unaligned.
-
-Or the data the alignment of which you cannot guarantee, which was
-exactly my point.
-
-> Otherwise code would be littered with get_uanligned_*.
+> +#include <linux/debugfs.h>
+>   #include <linux/delay.h>
+>   #include <linux/err.h>
+>   #include <linux/io.h>
+> @@ -55,9 +56,13 @@ struct bcm_kona_wdt {
+>   	 */
+>   	int resolution;
+>   	spinlock_t lock;
+> +#ifdef CONFIG_BCM_KONA_WDT_DEBUG
+> +	unsigned long busy_count;
+> +	struct dentry *debugfs;
+> +#endif
+>   };
 >
->> "Framework" in which architectures that support unaligned
->> access can fallback to good old functions like *_to_cpup and
->> architectures that do would provide the code to handle access in
->> whatever manner is best suited for them.
->>
->> >
->> >> - On x86 or any other architecture that allows unaligned access
->> >> get_unaligned_le16() is actually results to call to le16_to_cpup(), so
->> >> this change doesn't really save anything while imposing restrictions
->> >> on the arrangement of the fields in struct ims_pcu and causing
->> >> unnecessary build errors.
->> >
->> > Unless somebody changes the layout there won't be any new build errors,
->> > will there?
->>
->> So do you expect that code to never change from now on? I most likely
->> will be working on changes to support accelerometer data aggregation
->> and implementing associated with it input devices and this may or may
->> not require me to add fields to that structure, so what am I supposed
->> to do in that case? Juggle fields around until I find the right
->> combination that does not trigger build error?.
->>
+> -static int secure_register_read(void __iomem *addr)
+> +static int secure_register_read(struct bcm_kona_wdt *wdt, uint32_t offset)
+>   {
+>   	uint32_t val;
+>   	unsigned count = 0;
+> @@ -70,10 +75,16 @@ static int secure_register_read(void __iomem *addr)
+>   	do {
+>   		if (unlikely(count > 1))
+>   			udelay(5);
+> -		val = readl_relaxed(addr);
+> +		val = readl_relaxed(wdt->base + offset);
+>   		count++;
+>   	} while ((val & SECWDOG_WD_LOAD_FLAG) && count < SECWDOG_MAX_TRY);
 >
-> Umm, yes? And your juggling will be reduced to nothing if you add new
-> fields at the end of the structure.
-
-Oh, OK. I did not not expect you to be OK with such pointless
-arbitrary limitations placed in order to save a handful of cycles in a
-function that is not very often called, but if you are I don't believe
-we would arrive anywhere with this argument.  Let's at least add an
-appropriate comment to the structure warning the potential user that
-the way it is organized is important, since it may affect layout and
-break the build.
-
+> +#ifdef CONFIG_BCM_KONA_WDT_DEBUG
+> +	/* Remember the maximum number iterations due to WD_LOAD_FLAG */
+> +	if (count > wdt->busy_count)
+> +		wdt->busy_count = count;
+> +#endif
+> +
+>   	/* This is the only place we return a negative value. */
+>   	if (val & SECWDOG_WD_LOAD_FLAG)
+>   		return -ETIMEDOUT;
+> @@ -84,6 +95,80 @@ static int secure_register_read(void __iomem *addr)
+>   	return val;
+>   }
 >
->> I honestly don't understand the purpose of this change, it doesn't
->> really save any performance,
+> +#ifdef CONFIG_BCM_KONA_WDT_DEBUG
+> +
+> +static int bcm_kona_wdt_dbg_show(struct seq_file *s, void *data)
+> +{
+> +	int ctl_val, cur_val, ret;
+> +	unsigned long flags;
+> +	struct bcm_kona_wdt *wdt = s->private;
+> +
+> +	if (!wdt)
+> +		return seq_puts(s, "No device pointer\n");
+> +
+> +	spin_lock_irqsave(&wdt->lock, flags);
+> +	ctl_val = secure_register_read(wdt, SECWDOG_CTRL_REG);
+> +	cur_val = secure_register_read(wdt, SECWDOG_COUNT_REG);
+> +	spin_unlock_irqrestore(&wdt->lock, flags);
+> +
+> +	if (ctl_val < 0 || cur_val < 0) {
+> +		ret = seq_puts(s, "Error accessing hardware\n");
+> +	} else {
+> +		int ctl, cur, ctl_sec, cur_sec, res;
+> +
+> +		ctl = ctl_val & SECWDOG_COUNT_MASK;
+> +		res = (ctl_val & SECWDOG_RES_MASK) >> SECWDOG_CLKS_SHIFT;
+> +		cur = cur_val & SECWDOG_COUNT_MASK;
+> +		ctl_sec = TICKS_TO_SECS(ctl, wdt);
+> +		cur_sec = TICKS_TO_SECS(cur, wdt);
+> +		ret = seq_printf(s, "Resolution: %d / %d\n"
+> +				"Control: %d s / %d (%#x) ticks\n"
+> +				"Current: %d s / %d (%#x) ticks\n"
+> +				"Busy count: %lu\n", res,
+> +				wdt->resolution, ctl_sec, ctl, ctl, cur_sec,
+> +				cur, cur, wdt->busy_count);
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +static int bcm_kona_dbg_open(struct inode *inode, struct file *file)
+> +{
+> +	return single_open(file, bcm_kona_wdt_dbg_show, inode->i_private);
+> +}
+> +
+> +static const struct file_operations bcm_kona_dbg_operations = {
+> +	.open		= bcm_kona_dbg_open,
+> +	.read		= seq_read,
+> +	.llseek		= seq_lseek,
+> +	.release	= single_release,
+> +};
+> +
+> +static struct dentry *bcm_kona_wdt_debugfs_init(struct bcm_kona_wdt *wdt,
+> +	struct watchdog_device *wdd)
+> +{
+> +	struct dentry *dir;
+> +
+> +	dir = debugfs_create_dir(BCM_KONA_WDT_NAME, NULL);
+> +	if (IS_ERR_OR_NULL(dir))
+> +		return NULL;
+> +
+> +	if (debugfs_create_file("info", S_IFREG | S_IRUGO, dir, wdt,
+> +				&bcm_kona_dbg_operations))
+> +		return dir;
+> +
+> +	/* Clean up */
+> +	debugfs_remove_recursive(dir);
+> +	return NULL;
+> +}
+> +
+> +static void bcm_kona_debugfs_exit(struct dentry *dir)
+> +{
+> +	debugfs_remove_recursive(dir);
+> +}
+> +
+> +#endif /* CONFIG_BCM_KONA_WDT_DEBUG */
+> +
+>   static int bcm_kona_wdt_ctrl_reg_modify(struct bcm_kona_wdt *wdt,
+>   					unsigned mask, unsigned newval)
+>   {
+> @@ -93,7 +178,7 @@ static int bcm_kona_wdt_ctrl_reg_modify(struct bcm_kona_wdt *wdt,
 >
-> Technically it does as it does not require going through unaligned
-> access on arches that can't do it.
-
-OK, if we are going to stick to technicalities, then technically until
-we actually compiled both versions of the code on the platforms in
-question and did the actual performance measurements nothing can be
-said about performance improvement and we can only speculate about
-potential performance improvements.
-
+>   	spin_lock_irqsave(&wdt->lock, flags);
 >
->> IMHO decreases potability of the driver,
+> -	val = secure_register_read(wdt->base + SECWDOG_CTRL_REG);
+> +	val = secure_register_read(wdt, SECWDOG_CTRL_REG);
+>   	if (val < 0) {
+>   		ret = val;
+>   	} else {
+> @@ -140,7 +225,7 @@ static unsigned int bcm_kona_wdt_get_timeleft(struct watchdog_device *wdog)
+>   	unsigned long flags;
 >
-> I think that your concern can be solved with alignof.
-
-OK, as I said before I don't think you and I will come to an agreement
-on this one, since I see this change as a premature micro-optimization
-that makes the code less abstract since now it has knowledge of CPU
-alignment(which IMHO should be contained, as much as possible, in
-architecture specific code) and you don't think that those are
-actually problems of the patch. But since you the maintainer of the
-subsystem and the final call about the inclusion of the patch is
-yours, then you should do whatever you see fit(Or as another option
-you can as ask other subsystems maintainers to weigh in on the
-matter).
-
-Anyway, TL;DR of the whole thing is:
- - Your arguments do not convince me in the slightest
- - I don't think that mine do you
- - Let's stop wasting out time
- - Do as you see fit, since you are the maintainer
-
-Cheers,
-Andrey
-
+>   	spin_lock_irqsave(&wdt->lock, flags);
+> -	val = secure_register_read(wdt->base + SECWDOG_COUNT_REG);
+> +	val = secure_register_read(wdt, SECWDOG_COUNT_REG);
+>   	spin_unlock_irqrestore(&wdt->lock, flags);
 >
-> Thanks.
+>   	if (val < 0)
+> @@ -190,6 +275,27 @@ static void bcm_kona_wdt_shutdown(struct platform_device *pdev)
+>   	bcm_kona_wdt_stop(&bcm_kona_wdt_wdd);
+>   }
 >
-> --
-> Dmitry
+> +#ifdef CONFIG_BCM_KONA_WDT_DEBUG
+> +static void bcm_kona_wdt_debug_init(struct platform_device *pdev)
+> +{
+> +	struct bcm_kona_wdt *wdt = platform_get_drvdata(pdev);
+> +
+> +	wdt->debugfs = bcm_kona_wdt_debugfs_init(wdt, &bcm_kona_wdt_wdd);
+> +}
+> +
+> +static void bcm_kona_wdt_debug_exit(struct platform_device *pdev)
+> +{
+> +	struct bcm_kona_wdt *wdt = platform_get_drvdata(pdev);
+> +
+> +	if (wdt->debugfs)
+> +		bcm_kona_debugfs_exit(wdt->debugfs);
+> +}
+> +
+> +#else
+> +static void bcm_kona_wdt_debug_init(struct platform_device *pdev) {}
+> +static void bcm_kona_wdt_debug_exit(struct platform_device *pdev) {}
+> +#endif
+> +
+
+Can you fold those functions into bcm_kona_wdt_debugfs_init() and bcm_kona_debugfs_exit() ?
+Then you only need a sinfle #ifdef / #else combination. Only functional change would be to
+set wdt->debugfs in bcm_kona_wdt_debugfs_init() and to check it in bcm_kona_debugfs_exit().
+
+Thanks,
+Guenter
+
