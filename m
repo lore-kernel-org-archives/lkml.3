@@ -1,123 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691AbaADRqG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 12:46:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36385 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751313AbaADRqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 12:46:03 -0500
-Date: Sat, 4 Jan 2014 12:45:45 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Andi Kleen <ak@linux.intel.com>
-cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@iki.fi>,
-        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org
-Subject: [PATCH] fix crash when using XFS on loopback
-Message-ID: <alpine.LRH.2.02.1401041241590.4648@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1755047AbaADRsZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 12:48:25 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:40820 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754823AbaADRsU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Jan 2014 12:48:20 -0500
+Date: Sat, 4 Jan 2014 19:48:13 +0200
+From: Gleb Natapov <gleb@minantech.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Kashyap Chamarthy <kchamart@redhat.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "Richard W.M. Jones" <rjones@redhat.com>
+Subject: Re: intel_pstate divide error with v3.13-rc4-256-gb7000ad
+Message-ID: <20140104174813.GL10961@minantech.com>
+References: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com>
+ <2513222.AheLcigoE8@vostro.rjw.lan>
+ <52C7C7EE.1070407@redhat.com>
+ <1676077.d8A9e8eo7M@vostro.rjw.lan>
+ <52C84733.1090507@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52C84733.1090507@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch 8456a648cf44f14365f1f44de90a3da2526a4776 causes crash in the
-LVM2 testsuite on PA-RISC (the crashing test is fsadm.sh). The testsuite
-doesn't crash on 3.12, crashes on 3.13-rc1 and later.
+On Sat, Jan 04, 2014 at 06:38:59PM +0100, Paolo Bonzini wrote:
+> Il 04/01/2014 15:38, Rafael J. Wysocki ha scritto:
+> > Well, it's just a sanity check and it makes the problem go away for the reporter.
+> > 
+> >> > Your patch is welcome but perhaps it should have a WARN_ON too.
+> > It has been pulled in already, so the WARN_ON() can only be added via a separate
+> > patch now.  Would you like to prepare that patch?
+> 
+> Yes, I'll add it together with the CPUID check.  I'll send the patch so
+> that it can get into 3.14.
+> 
+CPUID check, while correct, will sweep the problem under the rug. Current
+Linux logic should detect non working pstate in KVM. We should look into
+why this is not happening for nested.
 
- Bad Address (null pointer deref?): Code=15 regs=000000413edd89a0 (Addr=000006202224647d)
- CPU: 3 PID: 24008 Comm: loop0 Not tainted 3.13.0-rc6 #5
- task: 00000001bf3c0048 ti: 000000413edd8000 task.ti: 000000413edd8000
-
-      YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
- PSW: 00001000000001101111100100001110 Not tainted
- r00-03  000000ff0806f90e 00000000405c8de0 000000004013e6c0 000000413edd83f0
- r04-07  00000000405a95e0 0000000000000200 00000001414735f0 00000001bf349e40
- r08-11  0000000010fe3d10 0000000000000001 00000040829c7778 000000413efd9000
- r12-15  0000000000000000 000000004060d800 0000000010fe3000 0000000010fe3000
- r16-19  000000413edd82a0 00000041078ddbc0 0000000000000010 0000000000000001
- r20-23  0008f3d0d83a8000 0000000000000000 00000040829c7778 0000000000000080
- r24-27  00000001bf349e40 00000001bf349e40 202d66202224640d 00000000405a95e0
- r28-31  202d662022246465 000000413edd88f0 000000413edd89a0 0000000000000001
- sr00-03  000000000532c000 0000000000000000 0000000000000000 000000000532c000
- sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
-
- IASQ: 0000000000000000 0000000000000000 IAOQ: 00000000401fe42c 00000000401fe430
-  IIR: 539c0030    ISR: 00000000202d6000  IOR: 000006202224647d
-  CPU:        3   CR30: 000000413edd8000 CR31: 0000000000000000
-  ORIG_R28: 00000000405a95e0
-  IAOQ[0]: vma_interval_tree_iter_first+0x14/0x48
-  IAOQ[1]: vma_interval_tree_iter_first+0x18/0x48
-  RP(r2): flush_dcache_page+0x128/0x388
- Backtrace:
-  [<000000004013e6c0>] flush_dcache_page+0x128/0x388
-  [<0000000010fe6ca0>] lo_splice_actor+0x90/0x148 [loop]
-  [<00000000402579b0>] splice_from_pipe_feed+0xc0/0x1d0
-  [<00000000402580a4>] __splice_from_pipe+0xac/0xc0
-  [<0000000010fe6bbc>] lo_direct_splice_actor+0x1c/0x70 [loop]
-  [<000000004025854c>] splice_direct_to_actor+0xec/0x228
-  [<0000000010fe63ac>] lo_receive+0xe4/0x298 [loop]
-  [<0000000010fe69d8>] loop_thread+0x478/0x640 [loop]
-  [<000000004018975c>] kthread+0x134/0x168
-  [<000000004012c020>] end_fault_vector+0x20/0x28
-  [<00000000115e0098>] xfs_setsize_buftarg+0x0/0x90 [xfs]
-
- Kernel panic - not syncing: Bad Address (null pointer deref?)
-
-The patch 8456a648cf44f14365f1f44de90a3da2526a4776 changes the page
-structure so that the slab subsystem reuses the page->mapping field.
-
-The crash happens in the following way:
-* XFS allocates some memory from slab and issues a bio to read data into
-  it.
-* the bio is sent to the loopback device.
-* lo_receive creates an actor and calls splice_direct_to_actor.
-* lo_splice_actor copies data to the target page.
-* lo_splice_actor calls flush_dcache_page because the page may be mapped
-  by userspace. In that case we need to flush the kernel cache.
-* flush_dcache_page asks for the list of userspace mappings, however that
-  page->mapping field is reused by the slab subsystem for a different
-  purpose. This causes the crash.
-
-Note that other architectures without coherent caches (sparc, arm, mips)
-also call page_mapping from flush_dcache_page, so they may crash in the
-same way.
-
-This patch fixes this bug by testing if the page is a slab page in
-page_mapping and returning NULL if it is.
-
-
-The patch also fixes VM_BUG_ON(PageSlab(page)) that could happen in
-earlier kernels in the same scenario on architectures without cache
-coherence when CONFIG_DEBUG_VM is enabled - so it should be backported to
-stable kernels.
-
-
-In the old kernels, the function page_mapping is placed in
-include/linux/mm.h, so you should modify the patch accordingly when
-backporting it.
-
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: stable@vger.kernel.org
-
----
- mm/util.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
-Index: linux-3.13-rc6/mm/util.c
-===================================================================
---- linux-3.13-rc6.orig/mm/util.c	2014-01-04 00:06:07.000000000 +0100
-+++ linux-3.13-rc6/mm/util.c	2014-01-04 00:24:42.000000000 +0100
-@@ -390,7 +390,10 @@ struct address_space *page_mapping(struc
- {
- 	struct address_space *mapping = page->mapping;
- 
--	VM_BUG_ON(PageSlab(page));
-+	/* This happens if someone calls flush_dcache_page on slab page */
-+	if (unlikely(PageSlab(page)))
-+		return NULL;
-+
- 	if (unlikely(PageSwapCache(page))) {
- 		swp_entry_t entry;
- 
+--
+			Gleb.
