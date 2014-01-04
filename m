@@ -1,239 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754799AbaADRmi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 12:42:38 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:63633 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754733AbaADRmg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 12:42:36 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <52C8480C.9040409@roeck-us.net>
-Date: Sat, 04 Jan 2014 09:42:36 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754691AbaADRqG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 12:46:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36385 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751313AbaADRqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Jan 2014 12:46:03 -0500
+Date: Sat, 4 Jan 2014 12:45:45 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Andi Kleen <ak@linux.intel.com>
+cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@iki.fi>,
+        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org
+Subject: [PATCH] fix crash when using XFS on loopback
+Message-ID: <alpine.LRH.2.02.1401041241590.4648@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-To: Markus Mayer <markus.mayer@linaro.org>, Wim Van Sebroeck <wim@iguana.be>,
-        Christian Daudt <bcm@fixthebug.org>
-CC: Linaro Patches <patches@linaro.org>,
-        Linux Watchdog List <linux-watchdog@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] watchdog: bcm281xx: Debugfs support
-References: <1388524934-10563-1-git-send-email-markus.mayer@linaro.org> <1388524934-10563-2-git-send-email-markus.mayer@linaro.org>
-In-Reply-To: <1388524934-10563-2-git-send-email-markus.mayer@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/31/2013 01:22 PM, Markus Mayer wrote:
-> This change introduces debugfs support for the BCM281xx watchdog driver.
->
-> Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
-> ---
->   drivers/watchdog/Kconfig        |   10 ++++
->   drivers/watchdog/bcm_kona_wdt.c |  116 +++++++++++++++++++++++++++++++++++++--
->   2 files changed, 122 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> index 10d188a..9b8b96d 100644
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -1152,6 +1152,16 @@ config BCM_KONA_WDT
->   	  Say 'Y' or 'M' here to enable the driver. The module will be called
->   	  bcm_kona_wdt.
->
-> +config BCM_KONA_WDT_DEBUG
-> +	bool "DEBUGFS support for BCM Kona Watchdog"
-> +	depends on BCM_KONA_WDT
-> +	help
-> +	  If enabled, adds /sys/kernel/debug/bcm-kona-wdt/info which provides
-> +	  access to the driver's internal data structures as well as watchdog
-> +	  timer hardware registres.
-> +
-Unless Wim already applied this patch, I would suggest to merge the followup patch
-with this one.
+The patch 8456a648cf44f14365f1f44de90a3da2526a4776 causes crash in the
+LVM2 testsuite on PA-RISC (the crashing test is fsadm.sh). The testsuite
+doesn't crash on 3.12, crashes on 3.13-rc1 and later.
 
-> +	  If in doubt, say 'N'.
-> +
->   config LANTIQ_WDT
->   	tristate "Lantiq SoC watchdog"
->   	depends on LANTIQ
-> diff --git a/drivers/watchdog/bcm_kona_wdt.c b/drivers/watchdog/bcm_kona_wdt.c
-> index 7e41a83..d3aa473 100644
-> --- a/drivers/watchdog/bcm_kona_wdt.c
-> +++ b/drivers/watchdog/bcm_kona_wdt.c
-> @@ -11,6 +11,7 @@
->    * GNU General Public License for more details.
->    */
->
-> +#include <linux/debugfs.h>
->   #include <linux/delay.h>
->   #include <linux/err.h>
->   #include <linux/io.h>
-> @@ -55,9 +56,13 @@ struct bcm_kona_wdt {
->   	 */
->   	int resolution;
->   	spinlock_t lock;
-> +#ifdef CONFIG_BCM_KONA_WDT_DEBUG
-> +	unsigned long busy_count;
-> +	struct dentry *debugfs;
-> +#endif
->   };
->
-> -static int secure_register_read(void __iomem *addr)
-> +static int secure_register_read(struct bcm_kona_wdt *wdt, uint32_t offset)
->   {
->   	uint32_t val;
->   	unsigned count = 0;
-> @@ -70,10 +75,16 @@ static int secure_register_read(void __iomem *addr)
->   	do {
->   		if (unlikely(count > 1))
->   			udelay(5);
-> -		val = readl_relaxed(addr);
-> +		val = readl_relaxed(wdt->base + offset);
->   		count++;
->   	} while ((val & SECWDOG_WD_LOAD_FLAG) && count < SECWDOG_MAX_TRY);
->
-> +#ifdef CONFIG_BCM_KONA_WDT_DEBUG
-> +	/* Remember the maximum number iterations due to WD_LOAD_FLAG */
-> +	if (count > wdt->busy_count)
-> +		wdt->busy_count = count;
-> +#endif
-> +
->   	/* This is the only place we return a negative value. */
->   	if (val & SECWDOG_WD_LOAD_FLAG)
->   		return -ETIMEDOUT;
-> @@ -84,6 +95,80 @@ static int secure_register_read(void __iomem *addr)
->   	return val;
->   }
->
-> +#ifdef CONFIG_BCM_KONA_WDT_DEBUG
-> +
-> +static int bcm_kona_wdt_dbg_show(struct seq_file *s, void *data)
-> +{
-> +	int ctl_val, cur_val, ret;
-> +	unsigned long flags;
-> +	struct bcm_kona_wdt *wdt = s->private;
-> +
-> +	if (!wdt)
-> +		return seq_puts(s, "No device pointer\n");
-> +
-> +	spin_lock_irqsave(&wdt->lock, flags);
-> +	ctl_val = secure_register_read(wdt, SECWDOG_CTRL_REG);
-> +	cur_val = secure_register_read(wdt, SECWDOG_COUNT_REG);
-> +	spin_unlock_irqrestore(&wdt->lock, flags);
-> +
-> +	if (ctl_val < 0 || cur_val < 0) {
-> +		ret = seq_puts(s, "Error accessing hardware\n");
-> +	} else {
-> +		int ctl, cur, ctl_sec, cur_sec, res;
-> +
-> +		ctl = ctl_val & SECWDOG_COUNT_MASK;
-> +		res = (ctl_val & SECWDOG_RES_MASK) >> SECWDOG_CLKS_SHIFT;
-> +		cur = cur_val & SECWDOG_COUNT_MASK;
-> +		ctl_sec = TICKS_TO_SECS(ctl, wdt);
-> +		cur_sec = TICKS_TO_SECS(cur, wdt);
-> +		ret = seq_printf(s, "Resolution: %d / %d\n"
-> +				"Control: %d s / %d (%#x) ticks\n"
-> +				"Current: %d s / %d (%#x) ticks\n"
-> +				"Busy count: %lu\n", res,
-> +				wdt->resolution, ctl_sec, ctl, ctl, cur_sec,
-> +				cur, cur, wdt->busy_count);
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +static int bcm_kona_dbg_open(struct inode *inode, struct file *file)
-> +{
-> +	return single_open(file, bcm_kona_wdt_dbg_show, inode->i_private);
-> +}
-> +
-> +static const struct file_operations bcm_kona_dbg_operations = {
-> +	.open		= bcm_kona_dbg_open,
-> +	.read		= seq_read,
-> +	.llseek		= seq_lseek,
-> +	.release	= single_release,
-> +};
-> +
-> +static struct dentry *bcm_kona_wdt_debugfs_init(struct bcm_kona_wdt *wdt,
-> +	struct watchdog_device *wdd)
-> +{
-> +	struct dentry *dir;
-> +
-> +	dir = debugfs_create_dir(BCM_KONA_WDT_NAME, NULL);
-> +	if (IS_ERR_OR_NULL(dir))
-> +		return NULL;
-> +
-> +	if (debugfs_create_file("info", S_IFREG | S_IRUGO, dir, wdt,
-> +				&bcm_kona_dbg_operations))
-> +		return dir;
-> +
-> +	/* Clean up */
-> +	debugfs_remove_recursive(dir);
-> +	return NULL;
-> +}
-> +
-> +static void bcm_kona_debugfs_exit(struct dentry *dir)
-> +{
-> +	debugfs_remove_recursive(dir);
-> +}
-> +
-> +#endif /* CONFIG_BCM_KONA_WDT_DEBUG */
-> +
->   static int bcm_kona_wdt_ctrl_reg_modify(struct bcm_kona_wdt *wdt,
->   					unsigned mask, unsigned newval)
->   {
-> @@ -93,7 +178,7 @@ static int bcm_kona_wdt_ctrl_reg_modify(struct bcm_kona_wdt *wdt,
->
->   	spin_lock_irqsave(&wdt->lock, flags);
->
-> -	val = secure_register_read(wdt->base + SECWDOG_CTRL_REG);
-> +	val = secure_register_read(wdt, SECWDOG_CTRL_REG);
->   	if (val < 0) {
->   		ret = val;
->   	} else {
-> @@ -140,7 +225,7 @@ static unsigned int bcm_kona_wdt_get_timeleft(struct watchdog_device *wdog)
->   	unsigned long flags;
->
->   	spin_lock_irqsave(&wdt->lock, flags);
-> -	val = secure_register_read(wdt->base + SECWDOG_COUNT_REG);
-> +	val = secure_register_read(wdt, SECWDOG_COUNT_REG);
->   	spin_unlock_irqrestore(&wdt->lock, flags);
->
->   	if (val < 0)
-> @@ -190,6 +275,27 @@ static void bcm_kona_wdt_shutdown(struct platform_device *pdev)
->   	bcm_kona_wdt_stop(&bcm_kona_wdt_wdd);
->   }
->
-> +#ifdef CONFIG_BCM_KONA_WDT_DEBUG
-> +static void bcm_kona_wdt_debug_init(struct platform_device *pdev)
-> +{
-> +	struct bcm_kona_wdt *wdt = platform_get_drvdata(pdev);
-> +
-> +	wdt->debugfs = bcm_kona_wdt_debugfs_init(wdt, &bcm_kona_wdt_wdd);
-> +}
-> +
-> +static void bcm_kona_wdt_debug_exit(struct platform_device *pdev)
-> +{
-> +	struct bcm_kona_wdt *wdt = platform_get_drvdata(pdev);
-> +
-> +	if (wdt->debugfs)
-> +		bcm_kona_debugfs_exit(wdt->debugfs);
-> +}
-> +
-> +#else
-> +static void bcm_kona_wdt_debug_init(struct platform_device *pdev) {}
-> +static void bcm_kona_wdt_debug_exit(struct platform_device *pdev) {}
-> +#endif
-> +
+ Bad Address (null pointer deref?): Code=15 regs=000000413edd89a0 (Addr=000006202224647d)
+ CPU: 3 PID: 24008 Comm: loop0 Not tainted 3.13.0-rc6 #5
+ task: 00000001bf3c0048 ti: 000000413edd8000 task.ti: 000000413edd8000
 
-Can you fold those functions into bcm_kona_wdt_debugfs_init() and bcm_kona_debugfs_exit() ?
-Then you only need a sinfle #ifdef / #else combination. Only functional change would be to
-set wdt->debugfs in bcm_kona_wdt_debugfs_init() and to check it in bcm_kona_debugfs_exit().
+      YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+ PSW: 00001000000001101111100100001110 Not tainted
+ r00-03  000000ff0806f90e 00000000405c8de0 000000004013e6c0 000000413edd83f0
+ r04-07  00000000405a95e0 0000000000000200 00000001414735f0 00000001bf349e40
+ r08-11  0000000010fe3d10 0000000000000001 00000040829c7778 000000413efd9000
+ r12-15  0000000000000000 000000004060d800 0000000010fe3000 0000000010fe3000
+ r16-19  000000413edd82a0 00000041078ddbc0 0000000000000010 0000000000000001
+ r20-23  0008f3d0d83a8000 0000000000000000 00000040829c7778 0000000000000080
+ r24-27  00000001bf349e40 00000001bf349e40 202d66202224640d 00000000405a95e0
+ r28-31  202d662022246465 000000413edd88f0 000000413edd89a0 0000000000000001
+ sr00-03  000000000532c000 0000000000000000 0000000000000000 000000000532c000
+ sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
 
-Thanks,
-Guenter
+ IASQ: 0000000000000000 0000000000000000 IAOQ: 00000000401fe42c 00000000401fe430
+  IIR: 539c0030    ISR: 00000000202d6000  IOR: 000006202224647d
+  CPU:        3   CR30: 000000413edd8000 CR31: 0000000000000000
+  ORIG_R28: 00000000405a95e0
+  IAOQ[0]: vma_interval_tree_iter_first+0x14/0x48
+  IAOQ[1]: vma_interval_tree_iter_first+0x18/0x48
+  RP(r2): flush_dcache_page+0x128/0x388
+ Backtrace:
+  [<000000004013e6c0>] flush_dcache_page+0x128/0x388
+  [<0000000010fe6ca0>] lo_splice_actor+0x90/0x148 [loop]
+  [<00000000402579b0>] splice_from_pipe_feed+0xc0/0x1d0
+  [<00000000402580a4>] __splice_from_pipe+0xac/0xc0
+  [<0000000010fe6bbc>] lo_direct_splice_actor+0x1c/0x70 [loop]
+  [<000000004025854c>] splice_direct_to_actor+0xec/0x228
+  [<0000000010fe63ac>] lo_receive+0xe4/0x298 [loop]
+  [<0000000010fe69d8>] loop_thread+0x478/0x640 [loop]
+  [<000000004018975c>] kthread+0x134/0x168
+  [<000000004012c020>] end_fault_vector+0x20/0x28
+  [<00000000115e0098>] xfs_setsize_buftarg+0x0/0x90 [xfs]
 
+ Kernel panic - not syncing: Bad Address (null pointer deref?)
+
+The patch 8456a648cf44f14365f1f44de90a3da2526a4776 changes the page
+structure so that the slab subsystem reuses the page->mapping field.
+
+The crash happens in the following way:
+* XFS allocates some memory from slab and issues a bio to read data into
+  it.
+* the bio is sent to the loopback device.
+* lo_receive creates an actor and calls splice_direct_to_actor.
+* lo_splice_actor copies data to the target page.
+* lo_splice_actor calls flush_dcache_page because the page may be mapped
+  by userspace. In that case we need to flush the kernel cache.
+* flush_dcache_page asks for the list of userspace mappings, however that
+  page->mapping field is reused by the slab subsystem for a different
+  purpose. This causes the crash.
+
+Note that other architectures without coherent caches (sparc, arm, mips)
+also call page_mapping from flush_dcache_page, so they may crash in the
+same way.
+
+This patch fixes this bug by testing if the page is a slab page in
+page_mapping and returning NULL if it is.
+
+
+The patch also fixes VM_BUG_ON(PageSlab(page)) that could happen in
+earlier kernels in the same scenario on architectures without cache
+coherence when CONFIG_DEBUG_VM is enabled - so it should be backported to
+stable kernels.
+
+
+In the old kernels, the function page_mapping is placed in
+include/linux/mm.h, so you should modify the patch accordingly when
+backporting it.
+
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: stable@vger.kernel.org
+
+---
+ mm/util.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+Index: linux-3.13-rc6/mm/util.c
+===================================================================
+--- linux-3.13-rc6.orig/mm/util.c	2014-01-04 00:06:07.000000000 +0100
++++ linux-3.13-rc6/mm/util.c	2014-01-04 00:24:42.000000000 +0100
+@@ -390,7 +390,10 @@ struct address_space *page_mapping(struc
+ {
+ 	struct address_space *mapping = page->mapping;
+ 
+-	VM_BUG_ON(PageSlab(page));
++	/* This happens if someone calls flush_dcache_page on slab page */
++	if (unlikely(PageSlab(page)))
++		return NULL;
++
+ 	if (unlikely(PageSwapCache(page))) {
+ 		swp_entry_t entry;
+ 
