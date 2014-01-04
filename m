@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013AbaADVY1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 16:24:27 -0500
-Received: from mga03.intel.com ([143.182.124.21]:6107 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754800AbaADVYZ convert rfc822-to-8bit (ORCPT
+	id S1755091AbaADVYv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 16:24:51 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:53682 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755019AbaADVYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 16:24:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,604,1384329600"; 
-   d="scan'208";a="453695748"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: David Howells <dhowells@redhat.com>, Paul Bolle <pebolle@tiscali.nl>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 7/7] Fix uninitialised variable warning in
- mei-amt-version.c
-Thread-Topic: [PATCH 7/7] Fix uninitialised variable warning in
- mei-amt-version.c
-Thread-Index: AQHPCJ4GLDSEu4hgLEuZyrmpCW5oGZpzDWQAgAADKwCAAgDYYA==
-Date: Sat, 4 Jan 2014 21:24:21 +0000
-Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AF3BC0D@HASMSX106.ger.corp.intel.com>
-References: <1388766184.20141.6.camel@x220>
- <20140103160812.8153.74401.stgit@warthog.procyon.org.uk>
- <9629.1388766864@warthog.procyon.org.uk>
-In-Reply-To: <9629.1388766864@warthog.procyon.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sat, 4 Jan 2014 16:24:50 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Gleb Natapov <gleb@minantech.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Kashyap Chamarthy <kchamart@redhat.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "Richard W.M. Jones" <rjones@redhat.com>
+Subject: Re: intel_pstate divide error with v3.13-rc4-256-gb7000ad
+Date: Sat, 04 Jan 2014 22:38:33 +0100
+Message-ID: <4410803.FiVxaMNxvJ@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.13.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20140104174813.GL10961@minantech.com>
+References: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com> <52C84733.1090507@redhat.com> <20140104174813.GL10961@minantech.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Saturday, January 04, 2014 07:48:13 PM Gleb Natapov wrote:
+> On Sat, Jan 04, 2014 at 06:38:59PM +0100, Paolo Bonzini wrote:
+> > Il 04/01/2014 15:38, Rafael J. Wysocki ha scritto:
+> > > Well, it's just a sanity check and it makes the problem go away for the reporter.
+> > > 
+> > >> > Your patch is welcome but perhaps it should have a WARN_ON too.
+> > > It has been pulled in already, so the WARN_ON() can only be added via a separate
+> > > patch now.  Would you like to prepare that patch?
+> > 
+> > Yes, I'll add it together with the CPUID check.  I'll send the patch so
+> > that it can get into 3.14.
+> > 
+> CPUID check, while correct, will sweep the problem under the rug. Current
+> Linux logic should detect non working pstate in KVM. We should look into
+> why this is not happening for nested.
 
+I agree.  It's better not to use CPUID for that in my opinion.
 
-> -----Original Message-----
-> From: David Howells [mailto:dhowells@redhat.com]
-> Sent: Friday, January 03, 2014 18:34
-> To: Paul Bolle
-> Cc: dhowells@redhat.com; akpm@linux-foundation.org; Greg Kroah-Hartman;
-> Winkler, Tomas; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 7/7] Fix uninitialised variable warning in mei-amt-version.c
-> 
-> Paul Bolle <pebolle@tiscali.nl> wrote:
-> 
-> > But it turns out that call of mei_deinit() isn't needed at all. All of
-> > the members of mei_cl will be set later in mei_init() and none will be
-> > used before they are set. So we can simply drop this call of
-> > mei_deinit()."
-> >
-> > Is that analysis (still) correct?
-> 
-> It looks true as the code stands.  Can you send me your patch?
+Thanks!
 
-Yes, the analysis is correct,  need to fix the typo in the title and but otherwise ACK.
-
-Thanks
-Tomas
-
-
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
