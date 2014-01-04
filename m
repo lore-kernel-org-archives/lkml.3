@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739AbaADT4a (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 14:56:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47494 "EHLO mx1.redhat.com"
+	id S1754545AbaADUIX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 15:08:23 -0500
+Received: from mail.ispras.ru ([83.149.199.45]:37098 "EHLO mail.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754157AbaADT4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 14:56:12 -0500
-Date: Sat, 4 Jan 2014 14:55:55 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: John David Anglin <dave.anglin@bell.net>
-cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Andi Kleen <ak@linux.intel.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@iki.fi>,
-        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org
-Subject: Re: [PATCH] fix crash when using XFS on loopback
-In-Reply-To: <BLU0-SMTP390C5C965F9A4FB18F1EBE97B50@phx.gbl>
-Message-ID: <alpine.LRH.2.02.1401041451350.21108@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1401041241590.4648@file01.intranet.prod.int.rdu2.redhat.com> <BLU0-SMTP390C5C965F9A4FB18F1EBE97B50@phx.gbl>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752977AbaADUIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Jan 2014 15:08:22 -0500
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Thierry Escande <thierry.escande@linux.intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
+        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
+        linux-wireless@vger.kernel.org, linux-nfc@ml01.01.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] NFC: port100: fix leak of usb_device
+Date: Sun,  5 Jan 2014 00:08:05 +0400
+Message-Id: <1388866085-11007-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 4 Jan 2014, John David Anglin wrote:
+port100_probe() calls usb_get_dev(), but there is no usb_put_dev()
+in port100_disconnect(). The patch adds one.
 
-> On 4-Jan-14, at 12:45 PM, Mikulas Patocka wrote:
-> 
-> > * flush_dcache_page asks for the list of userspace mappings, however that
-> > page->mapping field is reused by the slab subsystem for a different
-> > purpose. This causes the crash.
-> 
-> I'd noticed the other day that the parisc implementation of
-> flush_dcache_page()
-> should return if "!mapping || mapping != page->mapping" is true.  This would
-> have avoided crash.
-> 
-> Dave
+Found by Linux Driver Verification project (linuxtesting.org).
 
-I think no.
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/nfc/port100.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-page_mapping returns NULL if the page has only anonymous mapping and it is 
-not placed in the swap cache. In this case, you need to flush the kernel 
-cache.
+diff --git a/drivers/nfc/port100.c b/drivers/nfc/port100.c
+index 8a0571eb2627..a8555f81cbba 100644
+--- a/drivers/nfc/port100.c
++++ b/drivers/nfc/port100.c
+@@ -1509,6 +1509,7 @@ static void port100_disconnect(struct usb_interface *interface)
+ 
+ 	usb_free_urb(dev->in_urb);
+ 	usb_free_urb(dev->out_urb);
++	usb_put_dev(dev->udev);
+ 
+ 	kfree(dev->cmd);
+ 
+-- 
+1.8.3.2
 
-Maybe you could skip cache flush if the page is neither anonymous nor 
-file-backed, but I haven't seen this condition in other architectures' 
-flush_dcache_page.
-
-Mikulas
