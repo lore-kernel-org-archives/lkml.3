@@ -1,222 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755131AbaADCqt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 21:46:49 -0500
-Received: from mout.gmx.net ([212.227.17.20]:64772 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754700AbaADCnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 21:43:19 -0500
-From: Peter Huewe <peterhuewe@gmx.de>
-To: James Morris <jmorris@namei.org>
-Cc: Ashley Lai <ashley@ashleylai.com>, tpmdd-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 12/15] tpm: Use the ops structure instead of a copy in tpm_vendor_specific
-Date: Sat,  4 Jan 2014 03:44:46 +0100
-Message-Id: <1388803489-13258-12-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1388803489-13258-1-git-send-email-peterhuewe@gmx.de>
-References: <201401040335.04980.PeterHuewe@gmx.de>
- <1388803489-13258-1-git-send-email-peterhuewe@gmx.de>
-X-Provags-ID: V03:K0:XkwTKCgm8YcT03+cxjyZOztHWAOIpu/8DnBCybrlpDygifM+tXM
- V+vuEs+VMrBaztETzC2UNTSrI9HG8C4Ds+SAByvlvy7Iiie5SIv+xXZoMpPV8cmAsBWurVf
- kXVjH6X4ZlLHGNJhQI89CEopeQBrqNu0NKwOGVnfQrpph1nb/CscLKMN8rchKymywF9DM+Q
- FMFSwFImPeJg4qACXk/3A==
+	id S1755157AbaADCrq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 21:47:46 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:8663 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754213AbaADCrn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 21:47:43 -0500
+X-AuditID: cbfee68e-b7f566d000002344-17-52c7764d76b3
+From: kgene@kernel.org
+To: "'Tomasz Figa'" <t.figa@samsung.com>,
+        "'Mike Turquette'" <mturquette@linaro.org>
+Cc: "'Andrew Bresticker'" <abrestic@chromium.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
+        "'Sylwester Nawrocki'" <sylvester.nawrocki@gmail.com>,
+        linux-arm-kernel@lists.infradead.org,
+        "'Padmavathi Venna'" <padma.v@samsung.com>
+References: <1380046016-5811-1-git-send-email-abrestic@chromium.org>
+ <20131127184145.16819.44300@quantum> <529BBB9E.40300@samsung.com>
+ <1592382.OOUUI06mrc@amdc1227>
+In-reply-to: <1592382.OOUUI06mrc@amdc1227>
+Subject: RE: [PATCH V4 1/6] clk: exynos-audss: convert to platform device
+Date: Sat, 04 Jan 2014 11:47:41 +0900
+Message-id: <230001cf08f7$568ded80$03a9c880$@kernel.org>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIFk8Y75iXmmTzNRR5Z67QzfLeapgJuhQx7AlgrWKIBQxSTTpnWd/LA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgleLIzCtJLcpLzFFi42I5/e+Zsa5v2fEgg1s7bSxWvv/LaDH/yDlW
+	i02Pr7FaLGxbwmJxedccNosZ5/cxWTydcJHN4vfN72wW8z7vZLJYP+M1iwOXx+yGiyweO2fd
+	Zfe4c20Pm8fmJfUefVtWMXp83iQXwBbFZZOSmpNZllqkb5fAlfHi8D/2gqucFcturmFtYFzI
+	3sXIwSEhYCLx4GVSFyMnkCkmceHeejYQW0hgGaPExj9OEHETiTU/zgGVcwHFpzNK7LqzhAXC
+	+csocebiZbBBbEDdU59IgzQIC2hJLNzSxAJiiwgESBxf18AEUs8scIpJonX3bCaIDSsYJWYe
+	0wGxOYEatj07wwLR7Cnxef0RMJtFQFXi2c5bYDavgIXE98d32SFsQYkfk++BxZmBetfvPM4E
+	YctLbF7zlhniagWJHWdfM0Ic4SZxdO8DqBoRiX0v3jGCHCQhMJFDonf+PFaIZQIS3yYfYoGE
+	iqzEpgNQcyQlDq64wTKBUXIWktWzkKyehWT1LCQrFjCyrGIUTS1ILihOSi8y0itOzC0uzUvX
+	S87P3cQIif2+HYw3D1gfYkwGWj+RWUo0OR+YOvJK4g2NzYwsTE1MjY3MLc1IE1YS5130MClI
+	SCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA+PahrSYntlcTwrfVl4pZXz/YMmqDTeCznxddtjR
+	u9ru1GEut5luxWLuOytdtetPdfAvrPOx1NZ6euO9tUTSrU/3Y1VXbm1++a+94/ufrQs1th7O
+	tlv/b0F9i/DaB3FF5Tu3uITmzz8XMq/H5XZMmB6DOWuVoPjqXsHDlZN7vfuWf1tr5B64XEWJ
+	pTgj0VCLuag4EQCPVTXeEwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPKsWRmVeSWpSXmKPExsVy+t9jQV3fsuNBBnMvCFisfP+X0WL+kXOs
+	FpseX2O1WNi2hMXi8q45bBYzzu9jsng64SKbxe+b39ks5n3eyWSxfsZrFgcuj9kNF1k8ds66
+	y+5x59oeNo/NS+o9+rasYvT4vEkugC2qgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX
+	0NLCXEkhLzE31VbJxSdA1y0zB+g0JYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYG
+	aCBhHWPGi8P/2AuuclYsu7mGtYFxIXsXIyeHhICJxJof56BsMYkL99azdTFycQgJTGeU2HVn
+	CQuE85dR4szFy0BVHBxsQFVTn0iDNAgLaEks3NLEAmKLCARIHF/XwARSzyxwikmidfdsJpCE
+	kMAKRomZx3RAbE6ghm3PzrBANHtKfF5/BMxmEVCVeLbzFpjNK2Ah8f3xXXYIW1Dix+R7YHFm
+	oN71O48zQdjyEpvXvGWGuFpBYsfZ14wQR7hJHN37AKpGRGLfi3eMExiFZyEZNQvJqFlIRs1C
+	0rKAkWUVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnByeSa9g3FVg8UhRgEORiUe3gOnjwUJ
+	sSaWFVfmHmKU4GBWEuGd6Xo8SIg3JbGyKrUoP76oNCe1+BBjMtCnE5mlRJPzgYkvryTe0NjE
+	zMjSyMzCyMTcnDRhJXHeg63WgUIC6YklqdmpqQWpRTBbmDg4pRoYoz1WzT0tHPvnm1/wxX5N
+	nm95u/SDakTP/i9btfZy7YGjDhKlxikCxzmaarmqDl9l4vh2R7/h1bR78zKdcr7EqTzn/1EQ
+	//mhwpFXu/2kfju9ZO92NPS9/K78XhkPG9elkDjen+7eEyYodbo6LNzv2bZ8u+7uecpHzy/6
+	dPrKhL4XJfVd3qIKSizFGYmGWsxFxYkAyOpDpXIDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Tomasz Figa wrote:
+> 
+> Hi Kukjin, Mike,
+> 
+> On Monday 02 of December 2013 07:43:42 Kukjin Kim wrote:
+> > On 11/28/13 03:41, Mike Turquette wrote:
+> > > Quoting Padma Venkat (2013-11-25 22:29:44)
+> > >> Hi Mike and Kukjin,
+> > >>
+> > >> On Tue, Oct 8, 2013 at 10:23 PM, Andrew Bresticker
+> > >> <abrestic@chromium.org>  wrote:
+> > >>> Hi Mike and Kukjin,
+> > >>>
+> > >>> Any decisions regarding this patchset?  I believe all comments have
+> > >>> been addressed.
+> > >>>
+> > >>> Thanks,
+> > >>> Andrew
+> > >>
+> > >> Any decisions on this patchset. These can be applied directly on
+> > >> linux-samsung tree.
+> > >
+> > > For all of the clk parts:
+> > >
+> > > Acked-by: Mike Turquette<mturquette@linaro.org>
+> > >
+> > > I'm happy to take them in as part of a pull request.
+> > >
+> > OK, Mike, I will take this series into samsung tree and let me send a
+> > pull request for your clk tree to avoid useless merge conflicts.
+> 
+- some persons in Cc
 
-This builds on the last commit to use the ops structure in the core
-and reduce the size of tpm_vendor_specific.
+> Hmm, I can't find this series in any tree, so I guess it has been lost
+> in action.
+> 
+Oops, sorry about that :-(
 
-Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Reviewed-by: Joel Schopp <jschopp@linux.vnet.ibm.com>
-Reviewed-by: Ashley Lai <adlai@linux.vnet.ibm.com>
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/char/tpm/tpm-interface.c    | 34 ++++++++++++----------------------
- drivers/char/tpm/tpm-sysfs.c        |  2 +-
- drivers/char/tpm/tpm.h              |  9 +--------
- drivers/char/tpm/tpm_i2c_stm_st33.c |  4 ++--
- 4 files changed, 16 insertions(+), 33 deletions(-)
+> Should I take it through samsung-clk tree with your acks?
+> 
+Tomasz, yes please take this series with my ack.
 
-diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
-index 1b01246..62e10fd 100644
---- a/drivers/char/tpm/tpm-interface.c
-+++ b/drivers/char/tpm/tpm-interface.c
-@@ -353,7 +353,7 @@ ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
- 
- 	mutex_lock(&chip->tpm_mutex);
- 
--	rc = chip->vendor.send(chip, (u8 *) buf, count);
-+	rc = chip->ops->send(chip, (u8 *) buf, count);
- 	if (rc < 0) {
- 		dev_err(chip->dev,
- 			"tpm_transmit: tpm_send: error %zd\n", rc);
-@@ -365,12 +365,12 @@ ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
- 
- 	stop = jiffies + tpm_calc_ordinal_duration(chip, ordinal);
- 	do {
--		u8 status = chip->vendor.status(chip);
--		if ((status & chip->vendor.req_complete_mask) ==
--		    chip->vendor.req_complete_val)
-+		u8 status = chip->ops->status(chip);
-+		if ((status & chip->ops->req_complete_mask) ==
-+		    chip->ops->req_complete_val)
- 			goto out_recv;
- 
--		if (chip->vendor.req_canceled(chip, status)) {
-+		if (chip->ops->req_canceled(chip, status)) {
- 			dev_err(chip->dev, "Operation Canceled\n");
- 			rc = -ECANCELED;
- 			goto out;
-@@ -380,13 +380,13 @@ ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
- 		rmb();
- 	} while (time_before(jiffies, stop));
- 
--	chip->vendor.cancel(chip);
-+	chip->ops->cancel(chip);
- 	dev_err(chip->dev, "Operation Timed out\n");
- 	rc = -ETIME;
- 	goto out;
- 
- out_recv:
--	rc = chip->vendor.recv(chip, (u8 *) buf, bufsiz);
-+	rc = chip->ops->recv(chip, (u8 *) buf, bufsiz);
- 	if (rc < 0)
- 		dev_err(chip->dev,
- 			"tpm_transmit: tpm_recv: error %zd\n", rc);
-@@ -807,12 +807,12 @@ EXPORT_SYMBOL_GPL(tpm_send);
- static bool wait_for_tpm_stat_cond(struct tpm_chip *chip, u8 mask,
- 					bool check_cancel, bool *canceled)
- {
--	u8 status = chip->vendor.status(chip);
-+	u8 status = chip->ops->status(chip);
- 
- 	*canceled = false;
- 	if ((status & mask) == mask)
- 		return true;
--	if (check_cancel && chip->vendor.req_canceled(chip, status)) {
-+	if (check_cancel && chip->ops->req_canceled(chip, status)) {
- 		*canceled = true;
- 		return true;
- 	}
-@@ -828,7 +828,7 @@ int wait_for_tpm_stat(struct tpm_chip *chip, u8 mask, unsigned long timeout,
- 	bool canceled = false;
- 
- 	/* check current status */
--	status = chip->vendor.status(chip);
-+	status = chip->ops->status(chip);
- 	if ((status & mask) == mask)
- 		return 0;
- 
-@@ -855,7 +855,7 @@ again:
- 	} else {
- 		do {
- 			msleep(TPM_TIMEOUT);
--			status = chip->vendor.status(chip);
-+			status = chip->ops->status(chip);
- 			if ((status & mask) == mask)
- 				return 0;
- 		} while (time_before(jiffies, stop));
-@@ -1027,9 +1027,6 @@ void tpm_dev_vendor_release(struct tpm_chip *chip)
- 	if (!chip)
- 		return;
- 
--	if (chip->vendor.release)
--		chip->vendor.release(chip->dev);
--
- 	clear_bit(chip->dev_num, dev_mask);
- }
- EXPORT_SYMBOL_GPL(tpm_dev_vendor_release);
-@@ -1073,14 +1070,7 @@ struct tpm_chip *tpm_register_hardware(struct device *dev,
- 	mutex_init(&chip->tpm_mutex);
- 	INIT_LIST_HEAD(&chip->list);
- 
--	chip->vendor.req_complete_mask = ops->req_complete_mask;
--	chip->vendor.req_complete_val = ops->req_complete_val;
--	chip->vendor.req_canceled = ops->req_canceled;
--	chip->vendor.recv = ops->recv;
--	chip->vendor.send = ops->send;
--	chip->vendor.cancel = ops->cancel;
--	chip->vendor.status = ops->status;
--
-+	chip->ops = ops;
- 	chip->dev_num = find_first_zero_bit(dev_mask, TPM_NUM_DEVICES);
- 
- 	if (chip->dev_num >= TPM_NUM_DEVICES) {
-diff --git a/drivers/char/tpm/tpm-sysfs.c b/drivers/char/tpm/tpm-sysfs.c
-index 506a07b..c3503cb 100644
---- a/drivers/char/tpm/tpm-sysfs.c
-+++ b/drivers/char/tpm/tpm-sysfs.c
-@@ -245,7 +245,7 @@ static ssize_t cancel_store(struct device *dev, struct device_attribute *attr,
- 	if (chip == NULL)
- 		return 0;
- 
--	chip->vendor.cancel(chip);
-+	chip->ops->cancel(chip);
- 	return count;
- }
- static DEVICE_ATTR_WO(cancel);
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index a56af2c..7b0a46e 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -64,9 +64,6 @@ enum tpm_duration {
- struct tpm_chip;
- 
- struct tpm_vendor_specific {
--	u8 req_complete_mask;
--	u8 req_complete_val;
--	bool (*req_canceled)(struct tpm_chip *chip, u8 status);
- 	void __iomem *iobase;		/* ioremapped address */
- 	unsigned long base;		/* TPM base address */
- 
-@@ -76,11 +73,6 @@ struct tpm_vendor_specific {
- 	int region_size;
- 	int have_region;
- 
--	int (*recv) (struct tpm_chip *, u8 *, size_t);
--	int (*send) (struct tpm_chip *, u8 *, size_t);
--	void (*cancel) (struct tpm_chip *);
--	u8 (*status) (struct tpm_chip *);
--	void (*release) (struct device *);
- 	struct miscdevice miscdev;
- 	struct list_head list;
- 	int locality;
-@@ -104,6 +96,7 @@ struct tpm_vendor_specific {
- 
- struct tpm_chip {
- 	struct device *dev;	/* Device stuff */
-+	const struct tpm_class_ops *ops;
- 
- 	int dev_num;		/* /dev/tpm# */
- 	char devname[7];
-diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c b/drivers/char/tpm/tpm_i2c_stm_st33.c
-index 874b3be..5b0dd8e 100644
---- a/drivers/char/tpm/tpm_i2c_stm_st33.c
-+++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
-@@ -564,7 +564,7 @@ static int tpm_stm_i2c_recv(struct tpm_chip *chip, unsigned char *buf,
- 	}
- 
- out:
--	chip->vendor.cancel(chip);
-+	chip->ops->cancel(chip);
- 	release_locality(chip);
- 	return size;
- }
-@@ -807,7 +807,7 @@ static int tpm_st33_i2c_pm_resume(struct device *dev)
- 	if (power_mgt) {
- 		gpio_set_value(pin_infos->io_lpcpd, 1);
- 		ret = wait_for_serirq_timeout(chip,
--					  (chip->vendor.status(chip) &
-+					  (chip->ops->status(chip) &
- 					  TPM_STS_VALID) == TPM_STS_VALID,
- 					  chip->vendor.timeout_b);
- 	} else {
--- 
-1.8.1.5
+Thanks,
+Kukjin
 
