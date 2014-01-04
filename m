@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903AbaADRcj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 12:32:39 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:18648 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754856AbaADRcR (ORCPT
+	id S1754352AbaADRjQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 12:39:16 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:43353 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753681AbaADRjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 12:32:17 -0500
-Date: Sat, 4 Jan 2014 20:32:22 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: kbuild test robot <fengguang.wu@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kbuild-all@01.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [usb:usb-next 50/92] drivers/usb/serial/pl2303.c:149
- pl2303_vendor_read() error: doing dma on the stack (buf)
-Message-ID: <20140104173222.GE5443@mwanda>
-References: <52c72b83.q16oondgjy37AZvd%fengguang.wu@intel.com>
- <20140104112341.GA10004@localhost>
+	Sat, 4 Jan 2014 12:39:13 -0500
+Message-ID: <52C84733.1090507@redhat.com>
+Date: Sat, 04 Jan 2014 18:38:59 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140104112341.GA10004@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Gleb Natapov <gleb@kernel.org>, Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Kashyap Chamarthy <kchamart@redhat.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "Richard W.M. Jones" <rjones@redhat.com>
+Subject: Re: intel_pstate divide error with v3.13-rc4-256-gb7000ad
+References: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com> <2513222.AheLcigoE8@vostro.rjw.lan> <52C7C7EE.1070407@redhat.com> <1676077.d8A9e8eo7M@vostro.rjw.lan>
+In-Reply-To: <1676077.d8A9e8eo7M@vostro.rjw.lan>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 04, 2014 at 12:23:41PM +0100, Johan Hovold wrote:
-> On Sat, Jan 04, 2014 at 05:28:35AM +0800, kbuild test robot wrote:
-> > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git usb-next
-> > head:   bd6383c81d5f33e01688a87c50a8d3a878aa43d5
-> > commit: 362eb02603be7bb835c47f2cf585954a5080449d [50/92] USB: pl2303: add error handling to vendor read and write functions
-> > 
-> > New smatch warnings:
-> > drivers/usb/serial/pl2303.c:149 pl2303_vendor_read() error: doing dma on the stack (buf)
-> >
-> > Old smatch warnings:
-> > drivers/usb/serial/pl2303.c:673 pl2303_ioctl() warn: check that 'ser' doesn't leak information (struct has a hole after 'iomem_reg_shift')
-> > 
-> > vim +149 drivers/usb/serial/pl2303.c
-> > 
-> > 8bf769eb Johan Hovold   2012-10-15  133  };
-> > 8bf769eb Johan Hovold   2012-10-15  134  
-> > ^1da177e Linus Torvalds 2005-04-16  135  struct pl2303_private {
-> > ^1da177e Linus Torvalds 2005-04-16  136  	spinlock_t lock;
-> > ^1da177e Linus Torvalds 2005-04-16  137  	u8 line_control;
-> > ^1da177e Linus Torvalds 2005-04-16  138  	u8 line_status;
-> > 623c8263 Johan Hovold   2013-12-29  139  
-> > 623c8263 Johan Hovold   2013-12-29  140  	u8 line_settings[7];
-> > ^1da177e Linus Torvalds 2005-04-16  141  };
-> > ^1da177e Linus Torvalds 2005-04-16  142  
-> > 362eb026 Johan Hovold   2013-12-29  143  static int pl2303_vendor_read(struct usb_serial *serial, u16 value,
-> > 362eb026 Johan Hovold   2013-12-29  144  							unsigned char buf[1])
+Il 04/01/2014 15:38, Rafael J. Wysocki ha scritto:
+> Well, it's just a sanity check and it makes the problem go away for the reporter.
 > 
-> This is a false positive. A pointer passed as an array is still just a
-> pointer (and in this case the buffer it points to is not on the stack).
-> 
-> Looks like smatch needs to be updated.
-> 
+>> > Your patch is welcome but perhaps it should have a WARN_ON too.
+> It has been pulled in already, so the WARN_ON() can only be added via a separate
+> patch now.  Would you like to prepare that patch?
 
-Thanks.  I have written a fix for this and will push next week.
+Yes, I'll add it together with the CPUID check.  I'll send the patch so
+that it can get into 3.14.
 
-regards,
-dan carpenter
-
+Paolo
