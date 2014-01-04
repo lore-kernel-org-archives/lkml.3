@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744AbaADSeQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 13:34:16 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54577 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359AbaADSeP (ORCPT
+	id S1754819AbaADSib (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 13:38:31 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:42295 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359AbaADSia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 13:34:15 -0500
-Date: Sat, 4 Jan 2014 18:34:03 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Jeff Mahoney <jeffm@suse.com>,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, tglx@linutronix.de, paulmck@linux.vnet.ibm.com,
-        mingo@kernel.org
-Subject: Re: [PATCH] kobject: provide kobject_put_wait to fix module unload
- race
-Message-ID: <20140104183403.GG10323@ZenIV.linux.org.uk>
-References: <alpine.LRH.2.02.1401021733250.27775@file01.intranet.prod.int.rdu2.redhat.com>
- <20140104181620.GA2087@kroah.com>
+	Sat, 4 Jan 2014 13:38:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140104181620.GA2087@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140104173210.GA32402@kroah.com>
+References: <1388755289.22017.42.camel@deadeye.wl.decadent.org.uk>
+	<CAEwRVpN7z5rDnqNg3ZF+5=Go1EXKAm0TutQPUZ_mj2OCQ5-kwQ@mail.gmail.com>
+	<20140104173210.GA32402@kroah.com>
+Date: Sun, 5 Jan 2014 02:38:28 +0800
+Message-ID: <CAEwRVpM4vo05aq5HVbgHnVaCs2q32=WfwSLy3aOZJqopFUFw1Q@mail.gmail.com>
+Subject: Re: Linux 3.2.54
+From: Teck Choon Giam <giamteckchoon@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, Jiri Slaby <jslaby@suse.cz>,
+        stable@vger.kernel.org, lwn@lwn.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 04, 2014 at 10:16:20AM -0800, Greg Kroah-Hartman wrote:
+On Sun, Jan 5, 2014 at 1:32 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Sun, Jan 05, 2014 at 12:43:05AM +0800, Teck Choon Giam wrote:
+>> Hi Ben,
+>>
+>>
+>> On Fri, Jan 3, 2014 at 9:21 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
+>> > I'm announcing the release of the 3.2.54 kernel.
+>> >
+>> > All users of the 3.2 kernel series should upgrade.
+>> >
+>> > The updated 3.2.y git tree can be found at:
+>> >         git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.2.y
+>> > and can be browsed at the normal kernel.org git web browser:
+>> >         http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git
+>>
+>>
+>> Just for your information,
+>> https://www.kernel.org/pub/linux/kernel/v3.x/ I can only see version
+>> 3.2.54 with tar.xz and tar.gz where tar.bz2 extension is missing.  I
+>> don't know whether is this intentionally but just to let you know in
+>> case.
+>
+> As was announced earlier, there will not be any more .bz2 tarballs
+> created starting this year, sorry.  So this was intentional.
 
-> > I came up with a simpler patch to achieve the same purpose - this patch 
-> > makes fixing the drivers easy - the driver is fixed just by replacing 
-> > "kobject_put" with "kobject_put_wait" in the unload routine.
-> 
-> No, that's not ok at all.
+Noted and thanks.
 
-Agreed - all it takes is one cargo-culter who religoiusly does such
-conversion and drops a ref to parent before that to child.
+Kindest regards,
 
-> > However, this pattern is buggy with respect to modules. The release method
-> > is placed in the driver's module. When the driver exits, the module
-> > reference count is zero, thus the module may be freed. However, there may
-> > still be references to the kobject. If the module is unloaded and then the
-> > release method is called, a crash happens.
-> 
-> Yes, module unloading while a kobject is still "active" is not a good
-> thing, what modules do you have that cause this problem?  Why not just
-> grab the module reference in your kobject if you need this type of
-> protection?  It's not the kobject's code fault that this issue is there,
-> or that we now have a "delayed release" function to expose this type of
-> thing, it's the user of the kobject.
-> 
-> Please fix the broken users of the kobject first.
-
-<snide> Are you saying that there is another kind? </snide>
-
-When would you grab that reference to module?  More to the point, when
-would you *drop* it?  Doing so from module_exit is not going to work,
-obviously...
+Giam Teck Choon
