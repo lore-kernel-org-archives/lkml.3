@@ -1,80 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790AbaADUwh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 15:52:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9587 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753367AbaADUwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 15:52:35 -0500
-Date: Sat, 4 Jan 2014 15:52:14 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: John David Anglin <dave.anglin@bell.net>
-cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Andi Kleen <ak@linux.intel.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@iki.fi>,
-        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org
-Subject: Re: [PATCH] fix crash when using XFS on loopback
-In-Reply-To: <BLU0-SMTP1018039B0747722C9B5B22E97B50@phx.gbl>
-Message-ID: <alpine.LRH.2.02.1401041536210.21108@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1401041241590.4648@file01.intranet.prod.int.rdu2.redhat.com> <BLU0-SMTP390C5C965F9A4FB18F1EBE97B50@phx.gbl> <alpine.LRH.2.02.1401041451350.21108@file01.intranet.prod.int.rdu2.redhat.com>
- <BLU0-SMTP1018039B0747722C9B5B22E97B50@phx.gbl>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1754900AbaADVGx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 16:06:53 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:36136 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753656AbaADVGv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Jan 2014 16:06:51 -0500
+Date: Sat, 4 Jan 2014 13:08:04 -0800
+From: Kent Overstreet <kmo@daterainc.com>
+To: Shaohua Li <shli@kernel.org>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, hch@infradead.org
+Subject: Re: [patch 1/2]percpu_ida: fix a live lock
+Message-ID: <20140104210804.GA24199@kmo-pixel>
+References: <20131231033827.GA31994@kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131231033827.GA31994@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Sat, 4 Jan 2014, John David Anglin wrote:
-
-> On 4-Jan-14, at 2:55 PM, Mikulas Patocka wrote:
+On Tue, Dec 31, 2013 at 11:38:27AM +0800, Shaohua Li wrote:
 > 
-> > On Sat, 4 Jan 2014, John David Anglin wrote:
-> > 
-> > > On 4-Jan-14, at 12:45 PM, Mikulas Patocka wrote:
-> > > 
-> > > > * flush_dcache_page asks for the list of userspace mappings, however
-> > > > that
-> > > > page->mapping field is reused by the slab subsystem for a different
-> > > > purpose. This causes the crash.
-> > > 
-> > > I'd noticed the other day that the parisc implementation of
-> > > flush_dcache_page()
-> > > should return if "!mapping || mapping != page->mapping" is true.  This
-> > > would
-> > > have avoided crash.
-> > > 
-> > > Dave
-> > 
-> > I think no.
-> > 
-> > page_mapping returns NULL if the page has only anonymous mapping and it is
-> > not placed in the swap cache. In this case, you need to flush the kernel
-> > cache.
+> steal_tags only happens when free tags is more than half of the total tags.
+> This is too restrict and can cause live lock. I found one cpu has free tags,
+> but other cpu can't steal (thread is bound to specific cpus), threads which
+> wants to allocate tags are always sleeping. I found this when I run next patch,
+> but this could happen without it I think.
 > 
-> 
-> The suggestion is to add the "mapping != page->mapping" to the current NULL
-> check.
-> It occurs after the kernel cache flush.
+> I did performance test too with null_blk. Two cases (each cpu has enough percpu
+> tags, or total tags are limited) haven't performance changes.
 
-"if (!mapping || mapping != page->mapping) return;"
-returns if the mapping is NULL (and that is wrong because the variable 
-mapping is NULL for anonymous pages).
-
-You could probably return "if (!mapping && !PageAnon(page))", but the 
-other architectures aren't doing it.
-
-> It doesn't seem right to flush the vma mappings associated with swap address
-> space
-> and that appears to be happening with current code.
->
-> Dave
-> --
-> John David Anglin	dave.anglin@bell.net
-
-I suppose that "vma_interval_tree_foreach" is empty operation for swap 
-address space. Or isn't it?
-
-Mikulas
+This doesn't appear to me to fix anything wrong with the current code
+(and it'll hurt performance) - we explicitly don't guarantee that all
+the tags will be available for allocation at any given time, only half
+of them. Can you explain more how this is being used where you're seeing
+the issue? And I don't see the other patch in your patch series.
