@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754258AbaADABH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 19:01:07 -0500
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:38162 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753866AbaADABF (ORCPT
+	id S1754304AbaADACV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 19:02:21 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:43382 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753866AbaADACU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 19:01:05 -0500
+	Fri, 3 Jan 2014 19:02:20 -0500
+Date: Fri, 3 Jan 2014 16:02:13 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Fabio Estevam <festevam@gmail.com>, shawn.guo@linaro.org,
+        Anson.Huang@freescale.com, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH v3 1/2] regulator: anatop-regulator: Fix the error
+ handling on probe
+Message-ID: <20140104000213.GA23926@core.coreip.homeip.net>
+References: <1387809881-16092-1-git-send-email-festevam@gmail.com>
+ <20131224130357.GD30815@sirena.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20140103.185607.1380379872647540168.davem@davemloft.net>
-References: <20140102.192133.1585340046080167370.davem@davemloft.net>
- <CAEuXFEw=A0mppxtgzpmnh3feLiKYb+LJQvFRMrW3C4h+jHpO2Q@mail.gmail.com>
- <CAErSpo7K3OBuTEZrXmhQ3iXtLf3M5JNnEqmAvaceroJ46VAOKg@mail.gmail.com> <20140103.185607.1380379872647540168.davem@davemloft.net>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 3 Jan 2014 17:00:42 -0700
-Message-ID: <CAErSpo7TJXTCxpFKWXLTaHmqXXnYQdnpNeWt+cehSaES2Jh30w@mail.gmail.com>
-Subject: Re: [net-next] pci_regs.h: Add PCI bus link speed and width defines
-To: David Miller <davem@davemloft.net>
-Cc: jesse.brandeburg@gmail.com,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        netdev <netdev@vger.kernel.org>, "gospo@redhat.com" <gospo@redhat.com>,
-        "sassmann@redhat.com" <sassmann@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bjorn.helgaas@hp.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131224130357.GD30815@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 3, 2014 at 4:56 PM, David Miller <davem@davemloft.net> wrote:
-> From: Bjorn Helgaas <bhelgaas@google.com>
-> Date: Fri, 3 Jan 2014 15:15:57 -0700
->
->> However, I do raise my eyebrows a bit at drivers that poke around in
->> the PCIe capability.  I would prefer to have PCI core interfaces that
->> handle that instead.  But I haven't seen Jeff's changes yet.
->
-> The changes just read the link status to interpret the speed at which
-> the PCI-E link is running at.
+On Tue, Dec 24, 2013 at 01:03:57PM +0000, Mark Brown wrote:
+> On Mon, Dec 23, 2013 at 12:44:40PM -0200, Fabio Estevam wrote:
+> > From: Fabio Estevam <fabio.estevam@freescale.com>
+> > 
+> > Currently when of_get_parent() or syscon_node_to_regmap() fail 
+> > 'kfree(sreg->name)' is not called, which is incorrect.
+> 
+> Applied both, thanks.
 
-Several drivers want to do that.  It'd be nice if somebody abstracted
-that out somehow.  Jacob added pcie_get_minimum_link() which is
-similar.  But maybe Jeff needs something more in this case.
+Sorry for being too later, but why are we making copy to begin with? It
+is not like DT data will disappear later on.
 
-In any case, it's not a blocker for this patch.
+Thanks.
 
-Bjorn
+-- 
+Dmitry
