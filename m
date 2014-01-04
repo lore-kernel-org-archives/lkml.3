@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545AbaADUIX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 15:08:23 -0500
-Received: from mail.ispras.ru ([83.149.199.45]:37098 "EHLO mail.ispras.ru"
+	id S1754579AbaADUXg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 15:23:36 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:51515 "EHLO mail.wdtv.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752977AbaADUIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 15:08:22 -0500
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Thierry Escande <thierry.escande@linux.intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
-        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
-        linux-wireless@vger.kernel.org, linux-nfc@ml01.01.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: [PATCH] NFC: port100: fix leak of usb_device
-Date: Sun,  5 Jan 2014 00:08:05 +0400
-Message-Id: <1388866085-11007-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.3.2
+	id S1753656AbaADUXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Jan 2014 15:23:35 -0500
+From: Gene Heskett <gheskett@wdtv.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: Linux 3.2.54
+Date: Sat, 4 Jan 2014 15:23:32 -0500
+Cc: Teck Choon Giam <giamteckchoon@gmail.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, Jiri Slaby <jslaby@suse.cz>,
+        stable@vger.kernel.org, lwn@lwn.net
+References: <1388755289.22017.42.camel@deadeye.wl.decadent.org.uk> <CAEwRVpN7z5rDnqNg3ZF+5=Go1EXKAm0TutQPUZ_mj2OCQ5-kwQ@mail.gmail.com> <20140104173210.GA32402@kroah.com>
+In-Reply-To: <20140104173210.GA32402@kroah.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="windows-1256"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201401041523.33303.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-port100_probe() calls usb_get_dev(), but there is no usb_put_dev()
-in port100_disconnect(). The patch adds one.
+On Saturday 04 January 2014, Greg KH wrote:
+>On Sun, Jan 05, 2014 at 12:43:05AM +0800, Teck Choon Giam wrote:
+>> Hi Ben,
+>> 
+>> On Fri, Jan 3, 2014 at 9:21 PM, Ben Hutchings <ben@decadent.org.uk> 
+wrote:
+>> > I'm announcing the release of the 3.2.54 kernel.
+>> > 
+>> > All users of the 3.2 kernel series should upgrade.
+>> > 
+>> > The updated 3.2.y git tree can be found at:
+>> >         git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-st
+>> >         able.git linux-3.2.y
+>> > 
+>> > and can be browsed at the normal kernel.org git web browser:
+>> >         http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable
+>> >         .git
+>> 
+>> Just for your information,
+>> https://www.kernel.org/pub/linux/kernel/v3.x/ I can only see version
+>> 3.2.54 with tar.xz and tar.gz where tar.bz2 extension is missing.  I
+>> don't know whether is this intentionally but just to let you know in
+>> case.
+>
+>As was announced earlier, there will not be any more .bz2 tarballs
+>created starting this year, sorry.  So this was intentional.
+>
+>thanks,
+>
+>greg k-h
 
-Found by Linux Driver Verification project (linuxtesting.org).
+And good riddance.  bz2's have made enough unpacking mistakes that I 
+haven't pulled one in years unless it was the only choice.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/nfc/port100.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/nfc/port100.c b/drivers/nfc/port100.c
-index 8a0571eb2627..a8555f81cbba 100644
---- a/drivers/nfc/port100.c
-+++ b/drivers/nfc/port100.c
-@@ -1509,6 +1509,7 @@ static void port100_disconnect(struct usb_interface *interface)
- 
- 	usb_free_urb(dev->in_urb);
- 	usb_free_urb(dev->out_urb);
-+	usb_put_dev(dev->udev);
- 
- 	kfree(dev->cmd);
- 
--- 
-1.8.3.2
-
+Cheers, Gene
