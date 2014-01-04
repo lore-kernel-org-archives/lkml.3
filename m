@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936AbaADFDO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 00:03:14 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:45313 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741AbaADFDM (ORCPT
+	id S1751113AbaADFLc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 00:11:32 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:61672 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794AbaADFLa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 00:03:12 -0500
+	Sat, 4 Jan 2014 00:11:30 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140104044433.GA20272@core.coreip.homeip.net>
-References: <1388623621-32245-1-git-send-email-andrew.smirnov@gmail.com>
-	<20140104013957.GA19702@core.coreip.homeip.net>
-	<CAHQ1cqEvXn3u2joA7dNaiz6fmHELnKjZTWF2F-7vvvBAx+9Drw@mail.gmail.com>
-	<20140104044433.GA20272@core.coreip.homeip.net>
-Date: Fri, 3 Jan 2014 21:03:11 -0800
-Message-ID: <CAHQ1cqHJOi5mLptHSTw3W8dpdyJrUp8QnmCTtYdNX4YCTTNoaA@mail.gmail.com>
-Subject: Re: [PATCH v2] ims-pcu: Add commands supported by the new version of
- the FW
-From: Andrey Smirnov <andrew.smirnov@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <52AECF56.8020508@atmel.com>
+References: <20131216104738.6f845aabd0e3b609ed9ca170@canb.auug.org.au>
+	<52AECF56.8020508@atmel.com>
+Date: Fri, 3 Jan 2014 21:11:29 -0800
+Message-ID: <CAOesGMgi3COtsr+-9B3Tt350gwBs0Qm0AjatjLWCWTeUkAP5og@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the renesas tree with the arm-soc tree
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Simon Horman <horms@verge.net.au>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Boris BREZILLON <b.brezillon@overkiz.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Mike Turquette <mturquette@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 3, 2014 at 8:44 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Fri, Jan 03, 2014 at 08:24:17PM -0800, Andrey Smirnov wrote:
->> On Fri, Jan 3, 2014 at 5:39 PM, Dmitry Torokhov
->> <dmitry.torokhov@gmail.com> wrote:
->> > Hi Andrey,
->> >
->> > On Wed, Jan 01, 2014 at 04:47:01PM -0800, Andrey Smirnov wrote:
->> >> New version of the PCU firmware supports two new commands:
->> >>   - IMS_PCU_CMD_OFN_SET_CONFIG which allows to write data to the
->> >>   registers of one finger navigation(OFN) chip present on the device
->> >>   - IMS_PCU_CMD_OFN_GET_CONFIG which allows to read data form the
->> >>   registers of said chip.
->> >>
->> >> This commit adds two helper functions to use those commands and sysfs
->> >> attributes to use them. It also exposes some OFN configuration
->> >> parameters via sysfs.
->> >
->> > Thank you for making the changes. I do not still quite like the games we
->> > play with the OFN attributes, how about the patch below (on top of
->> > yours)?
->> >
+On Mon, Dec 16, 2013 at 2:00 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+> On 16/12/2013 00:47, Stephen Rothwell :
+>> Hi Simon,
 >>
->> Yeah, I agree I like it the "two separate sysfs groups" group approach
->> better. The only small nitpick about your patch is that I think we
->> should use "get_unaligned_le16" instead of "le16_to_cpup"(In case
->> anyone decides to run the driver on SuperH or C6x DSPs from TI :-)).
->> Let me test it and if everything works as expected I'll apply you
->> patch, convert it to "get_unaligned_le16", squash and send v3 of the
->> patch.
+>> Today's linux-next merge of the renesas tree got a conflict in
+>> drivers/clk/Makefile between commit 0ad6125b1579 ("clk: at91: add PMC
+>> base support") from the arm-soc tree and commit 10cdfe9f327a ("clk:
+>> shmobile: Add R-Car Gen2 clocks support") from the renesas tree.
+>>
+>> I fixed it up (see below) and can carry the fix as necessary (no action
+>> is required).
 >
-> Why do we need get_unaligned_le16()? As far as I can see pcu->cmd_buf is
-> aligned and therefore pcu->cmd_buf[2] is also aligned on word boundary.
+> Fine for me.
 
-* The "pcu" structure is allocated with kmalloc which doesn't give any
-guarantees about address alignment.
-* I am not sure if the cmd_buf field in that structure is aligned, and
-even if it is, any future changes to that structure may shift its
-offset.
-* Also even if the data we are interested in is aligned on 2-byte
-border, I think all those architectures require 4-byte border
-alignment.
+Simon, Nicolas,
 
->
-> Thanks.
->
-> --
-> Dmitry
+<mini-rant>
+
+While a very minor issue, this should have been altogether avoided
+with a little more attention when applying patches. The Makefile is
+sorted, and you've appended new lines to the end instead of in the
+place they're supposed to go. Sure, others have done the same mistake
+in a few places but that doesn't mean we shouldn't try to keep it
+sorted.
+
+The very reason _to_ sort a Makefile is to avoid these needless
+add-add conflicts when two people append to the same unsorted list.
+
+Now I can't resolve it properly and move the entries when I do the
+same merge (and get the same conflict), because that will cause a
+third conflict for Stephen, and he's about to return from vacation and
+is going to cuss at us if we cause too many new conflicts in one day.
+:)
+
+</mini-rant>
+
+So, best choice is to keep the unsortedness now, and have Mike resort
+his Makefile for us at the end of the merge window. And keep a little
+closer eye on Makefile and Kconfig additions in the future. :)
+
+
+-Olof
