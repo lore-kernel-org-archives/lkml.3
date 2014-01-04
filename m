@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755131AbaADSWm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 13:22:42 -0500
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:18129 "EHLO
-	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755020AbaADSWk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755077AbaADSWk (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 4 Jan 2014 13:22:40 -0500
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:18128 "EHLO
+	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754729AbaADSWj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Jan 2014 13:22:39 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
@@ -15,9 +15,9 @@ Cc: Alexander Gordeev <agordeev@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Andi Kleen <ak@linux.jf.intel.com>
-Subject: [PATCH RFC v2 4/4] perf/tool: IRQ-bound performance events
-Date: Sat,  4 Jan 2014 19:22:36 +0100
-Message-Id: <891b359bc77491c4de1692f580f2c70b87ba6ab3.1388858996.git.agordeev@redhat.com>
+Subject: [PATCH RFC v2 3/4] perf/x86/Intel: IRQ-bound performance events
+Date: Sat,  4 Jan 2014 19:22:35 +0100
+Message-Id: <0f8b702d450fb717bb05936da25c49752f28b862.1388858996.git.agordeev@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <cover.1388858996.git.agordeev@redhat.com>
 References: <cover.1388858996.git.agordeev@redhat.com>
@@ -27,213 +27,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- tools/perf/builtin-stat.c      |    9 +++++++++
- tools/perf/util/evlist.c       |   38 ++++++++++++++++++++++++++++++++++++++
- tools/perf/util/evlist.h       |    3 +++
- tools/perf/util/evsel.c        |    8 ++++++++
- tools/perf/util/evsel.h        |    3 +++
- tools/perf/util/parse-events.c |   24 ++++++++++++++++++++++++
- tools/perf/util/parse-events.h |    1 +
- 7 files changed, 86 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/perf_event.h       |    5 ++
+ arch/x86/kernel/cpu/perf_event_intel.c |   72 +++++++++++++++++++++++++++----
+ 2 files changed, 67 insertions(+), 10 deletions(-)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index b27b264..48c9d90 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -292,6 +292,7 @@ static int create_perf_stat_counter(struct perf_evsel *evsel)
- 				    PERF_FORMAT_TOTAL_TIME_RUNNING;
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 03c9595..78aed95 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -164,6 +164,11 @@ struct cpu_hw_events {
+ 	struct perf_guest_switch_msr	guest_switch_msrs[X86_PMC_IDX_MAX];
  
- 	attr->inherit = !no_inherit;
-+	attr->hardirq = 1;
+ 	/*
++	 * Intel hardware interrupt context exclude bits
++	 */
++	u64				intel_ctrl_hardirq_mask;
++
++	/*
+ 	 * Intel checkpoint mask
+ 	 */
+ 	u64				intel_cp_status;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index c656997..98a4f38 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1057,14 +1057,11 @@ static void intel_pmu_disable_all(void)
+ 	intel_pmu_lbr_disable_all();
+ }
  
- 	if (target__has_cpu(&target))
- 		return perf_evsel__open_per_cpu(evsel, perf_evsel__cpus(evsel));
-@@ -590,6 +591,12 @@ static int __run_perf_stat(int argc, const char **argv)
- 		return -1;
+-static void intel_pmu_enable_all(int added)
++static void __intel_pmu_enable(struct cpu_hw_events *cpuc, u64 control)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+-
+ 	intel_pmu_pebs_enable_all();
+ 	intel_pmu_lbr_enable_all();
+-	wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL,
+-			x86_pmu.intel_ctrl & ~cpuc->intel_ctrl_guest_mask);
++	wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, control);
+ 
+ 	if (test_bit(INTEL_PMC_IDX_FIXED_BTS, cpuc->active_mask)) {
+ 		struct perf_event *event =
+@@ -1077,6 +1074,56 @@ static void intel_pmu_enable_all(int added)
+ 	}
+ }
+ 
++static void intel_pmu_enable_all(int added)
++{
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	u64 disable_mask = cpuc->intel_ctrl_guest_mask |
++			   cpuc->intel_ctrl_hardirq_mask;
++	__intel_pmu_enable(cpuc, x86_pmu.intel_ctrl & ~disable_mask);
++}
++
++u64 __get_intel_ctrl_hardirq_mask(struct perf_event *events[], int count)
++{
++	u64 ret = 0;
++	int i;
++
++	BUG_ON(count > x86_pmu.num_counters);
++
++	for (i = 0; i < count; i++) {
++		struct perf_event *event = events[i];
++		BUG_ON(!is_hardirq_event(event));
++		if (!event->hw.state)
++			ret |= (1ull << event->hw.idx);
++	}
++
++	return ret;
++}
++
++static inline u64 intel_pmu_get_control(void)
++{
++	u64 control;
++
++	rdmsrl(MSR_CORE_PERF_GLOBAL_CTRL, control);
++
++	return control;
++}
++
++static void intel_pmu_disable_hardirq(struct perf_event *events[], int count)
++{
++	u64 control = intel_pmu_get_control();
++	u64 mask = __get_intel_ctrl_hardirq_mask(events, count);
++
++	wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, control & ~mask);
++}
++
++static void intel_pmu_enable_hardirq(struct perf_event *events[], int count)
++{
++	u64 control = intel_pmu_get_control();
++	u64 mask = __get_intel_ctrl_hardirq_mask(events, count);
++
++	wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, control | mask);
++}
++
+ /*
+  * Workaround for:
+  *   Intel Errata AAK100 (model 26)
+@@ -1200,6 +1247,8 @@ static void intel_pmu_disable_event(struct perf_event *event)
+ 		return;
  	}
  
-+	if (perf_evlist__apply_hardirq(evsel_list)) {
-+		error("failed to set hardirq with %d (%s)\n", errno,
-+			strerror(errno));
-+		return -1;
-+	}
-+
- 	/*
- 	 * Enable counters and exec the command:
++	if (is_hardirq_event(event))
++		cpuc->intel_ctrl_hardirq_mask &= ~(1ull << hwc->idx);
+ 	cpuc->intel_ctrl_guest_mask &= ~(1ull << hwc->idx);
+ 	cpuc->intel_ctrl_host_mask &= ~(1ull << hwc->idx);
+ 	cpuc->intel_cp_status &= ~(1ull << hwc->idx);
+@@ -1276,6 +1325,8 @@ static void intel_pmu_enable_event(struct perf_event *event)
+ 		cpuc->intel_ctrl_guest_mask |= (1ull << hwc->idx);
+ 	if (event->attr.exclude_guest)
+ 		cpuc->intel_ctrl_host_mask |= (1ull << hwc->idx);
++	if (is_hardirq_event(event))
++		cpuc->intel_ctrl_hardirq_mask |= (1ull << hwc->idx);
+ 
+ 	if (unlikely(event_is_checkpointed(event)))
+ 		cpuc->intel_cp_status |= (1ull << hwc->idx);
+@@ -1347,7 +1398,7 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 	struct perf_sample_data data;
+ 	struct cpu_hw_events *cpuc;
+ 	int bit, loops;
+-	u64 status;
++	u64 control, status;
+ 	int handled;
+ 
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
+@@ -1358,11 +1409,12 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
  	 */
-@@ -1613,6 +1620,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 		     parse_events_option),
- 	OPT_CALLBACK(0, "filter", &evsel_list, "filter",
- 		     "event filter", parse_filter),
-+	OPT_CALLBACK('h', "hardirq", &evsel_list, "hardirq",
-+		     "stat events on existing hardware IRQ", parse_hardirq),
- 	OPT_BOOLEAN('i', "no-inherit", &no_inherit,
- 		    "child tasks do not inherit counters"),
- 	OPT_STRING('p', "pid", &target.pid, "pid",
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 0810f5c..5104232 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -861,6 +861,27 @@ int perf_evlist__apply_filters(struct perf_evlist *evlist)
- 	return err;
- }
+ 	if (!x86_pmu.late_ack)
+ 		apic_write(APIC_LVTPC, APIC_DM_NMI);
++	control = intel_pmu_get_control();
+ 	intel_pmu_disable_all();
+ 	handled = intel_pmu_drain_bts_buffer();
+ 	status = intel_pmu_get_status();
+ 	if (!status) {
+-		intel_pmu_enable_all(0);
++		__intel_pmu_enable(cpuc, control);
+ 		return handled;
+ 	}
  
-+int perf_evlist__apply_hardirq(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel;
-+	int err = 0;
-+	const int ncpus = cpu_map__nr(evlist->cpus),
-+		  nthreads = thread_map__nr(evlist->threads);
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		if (evsel->hardirq == NULL)
-+			continue;
-+
-+		err = perf_evsel__set_hardirq(evsel, ncpus, nthreads, evsel->hardirq);
-+		if (err)
-+			break;
-+
-+		evsel->attr.hardirq = 1;
-+	}
-+
-+	return err;
-+}
-+
- int perf_evlist__set_filter(struct perf_evlist *evlist, const char *filter)
- {
- 	struct perf_evsel *evsel;
-@@ -877,6 +898,23 @@ int perf_evlist__set_filter(struct perf_evlist *evlist, const char *filter)
- 	return err;
- }
+@@ -1427,7 +1479,7 @@ again:
+ 		goto again;
  
-+int perf_evlist__set_hardirq(struct perf_evlist *evlist,
-+			     const struct perf_hardirq_event_disp *hardirq)
-+{
-+	struct perf_evsel *evsel;
-+	int err = 0;
-+	const int ncpus = cpu_map__nr(evlist->cpus),
-+		  nthreads = thread_map__nr(evlist->threads);
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		err = perf_evsel__set_hardirq(evsel, ncpus, nthreads, hardirq);
-+		if (err)
-+			break;
-+	}
-+
-+	return err;
-+}
-+
- bool perf_evlist__valid_sample_type(struct perf_evlist *evlist)
- {
- 	struct perf_evsel *pos;
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 518e521..12dc36d 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -71,6 +71,8 @@ int perf_evlist__add_newtp(struct perf_evlist *evlist,
- 			   const char *sys, const char *name, void *handler);
- 
- int perf_evlist__set_filter(struct perf_evlist *evlist, const char *filter);
-+int perf_evlist__set_hardirq(struct perf_evlist *evlist,
-+			     const struct perf_hardirq_event_disp *hardirq);
- 
- struct perf_evsel *
- perf_evlist__find_tracepoint_by_id(struct perf_evlist *evlist, int id);
-@@ -136,6 +138,7 @@ static inline void perf_evlist__set_maps(struct perf_evlist *evlist,
- 
- int perf_evlist__create_maps(struct perf_evlist *evlist, struct target *target);
- int perf_evlist__apply_filters(struct perf_evlist *evlist);
-+int perf_evlist__apply_hardirq(struct perf_evlist *evlist);
- 
- void __perf_evlist__set_leader(struct list_head *list);
- void perf_evlist__set_leader(struct perf_evlist *evlist);
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index ade8d9c..23d52a3 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -704,6 +704,14 @@ int perf_evsel__set_filter(struct perf_evsel *evsel, int ncpus, int nthreads,
- 				     (void *)filter);
- }
- 
-+int perf_evsel__set_hardirq(struct perf_evsel *evsel, int ncpus, int nthreads,
-+			    const struct perf_hardirq_event_disp *disp)
-+{
-+	return perf_evsel__run_ioctl(evsel, ncpus, nthreads,
-+				     PERF_EVENT_IOC_SET_HARDIRQ,
-+				     (void *)disp);
-+}
-+
- int perf_evsel__enable(struct perf_evsel *evsel, int ncpus, int nthreads)
- {
- 	return perf_evsel__run_ioctl(evsel, ncpus, nthreads,
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index f1b3256..f07221b 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -59,6 +59,7 @@ struct perf_evsel {
- 	struct list_head	node;
- 	struct perf_event_attr	attr;
- 	char			*filter;
-+	struct perf_hardirq_event_disp *hardirq;
- 	struct xyarray		*fd;
- 	struct xyarray		*sample_id;
- 	u64			*id;
-@@ -169,6 +170,8 @@ void perf_evsel__set_sample_id(struct perf_evsel *evsel,
- 
- int perf_evsel__set_filter(struct perf_evsel *evsel, int ncpus, int nthreads,
- 			   const char *filter);
-+int perf_evsel__set_hardirq(struct perf_evsel *evsel, int ncpus, int nthreads,
-+			    const struct perf_hardirq_event_disp *hardirq);
- int perf_evsel__enable(struct perf_evsel *evsel, int ncpus, int nthreads);
- 
- int perf_evsel__open_per_cpu(struct perf_evsel *evsel,
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 0153435..7a5114d 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -987,6 +987,30 @@ int parse_filter(const struct option *opt, const char *str,
- 	return 0;
- }
- 
-+int parse_hardirq(const struct option *opt, const char *str,
-+		  int unset __maybe_unused)
-+{
-+	struct perf_evlist *evlist = *(struct perf_evlist **)opt->value;
-+	struct perf_evsel *evsel;
-+	struct perf_hardirq_event_disp *event_disp;
-+
-+	event_disp = malloc(offsetof(typeof(*event_disp), disp) +
-+			    sizeof(event_disp->disp[0]));
-+	if (!event_disp) {
-+		fprintf(stderr, "not enough memory to hold hardirq disp\n");
-+		return -1;
-+	}
-+
-+	event_disp->nr_disp		= 1;
-+	event_disp->disp[0].irq_nr	= atoi(str);
-+	event_disp->disp[0].actions	= -1;
-+
-+	list_for_each_entry(evsel, &evlist->entries, node)
-+		evsel->hardirq = event_disp;
-+
-+	return 0;
-+}
-+
- static const char * const event_type_descriptors[] = {
- 	"Hardware event",
- 	"Software event",
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index f1cb4c4..a6927d6 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -33,6 +33,7 @@ extern int parse_events_option(const struct option *opt, const char *str,
- extern int parse_events(struct perf_evlist *evlist, const char *str);
- extern int parse_events_terms(struct list_head *terms, const char *str);
- extern int parse_filter(const struct option *opt, const char *str, int unset);
-+extern int parse_hardirq(const struct option *opt, const char *str, int unset);
- 
- #define EVENTS_HELP_MAX (128*1024)
- 
+ done:
+-	intel_pmu_enable_all(0);
++	__intel_pmu_enable(cpuc, control);
+ 	/*
+ 	 * Only unmask the NMI after the overflow counters
+ 	 * have been reset. This avoids spurious NMIs on
+@@ -2078,8 +2130,8 @@ static __initconst const struct x86_pmu intel_pmu = {
+ 	.disable_all		= intel_pmu_disable_all,
+ 	.enable_all		= intel_pmu_enable_all,
+ 	.enable			= intel_pmu_enable_event,
+-	.disable_hardirq	= x86_pmu_nop_hardirq,
+-	.enable_hardirq		= x86_pmu_nop_hardirq,
++	.disable_hardirq	= intel_pmu_disable_hardirq,
++	.enable_hardirq		= intel_pmu_enable_hardirq,
+ 	.disable		= intel_pmu_disable_event,
+ 	.hw_config		= intel_pmu_hw_config,
+ 	.schedule_events	= x86_schedule_events,
 -- 
 1.7.7.6
 
