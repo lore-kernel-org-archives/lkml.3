@@ -1,91 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754372AbaADASJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 19:18:09 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:38472 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754069AbaADASH (ORCPT
+	id S1754421AbaADASc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 19:18:32 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:43413 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754279AbaADASb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 19:18:07 -0500
+	Fri, 3 Jan 2014 19:18:31 -0500
+Message-ID: <52C75353.8060505@linaro.org>
+Date: Fri, 03 Jan 2014 16:18:27 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <52C74972.6050909@suse.cz>
-References: <1387267550-8689-1-git-send-email-liwanp@linux.vnet.ibm.com>
-	<52b1138b.0201430a.19a8.605dSMTPIN_ADDED_BROKEN@mx.google.com>
-	<52B11765.8030005@oracle.com>
-	<52b120a5.a3b2440a.3acf.ffffd7c3SMTPIN_ADDED_BROKEN@mx.google.com>
-	<52B166CF.6080300@suse.cz>
-	<52b1699f.87293c0a.75d1.34d3SMTPIN_ADDED_BROKEN@mx.google.com>
-	<20131218134316.977d5049209d9278e1dad225@linux-foundation.org>
-	<52C71ACC.20603@oracle.com>
-	<CA+55aFzDcFyyXwUUu5bLP3fsiuzxU7VPivpTPHgp8smvdTeESg@mail.gmail.com>
-	<52C74972.6050909@suse.cz>
-Date: Fri, 3 Jan 2014 16:18:05 -0800
-X-Google-Sender-Auth: j5v0Y1KfsQgFrglIyHN4LXrevbw
-Message-ID: <CA+55aFzq1iQqddGo-m=vutwMYn5CPf65Ergov5svKR4AWC3rUQ@mail.gmail.com>
-Subject: Re: [PATCH] mm/mlock: fix BUG_ON unlocked page for nolinear VMAs
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Michel Lespinasse <walken@google.com>, Bob Liu <bob.liu@oracle.com>,
-        Nick Piggin <npiggin@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Alexey Perevalov <a.perevalov@samsung.com>
+CC: linux-kernel@vger.kernel.org, anton@enomsg.org, kyungmin.park@samsung.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 0/3] Deferrable timers support for timerfd API
+References: <1388687448-12987-1-git-send-email-a.perevalov@samsung.com> <52C5F38D.5060201@linaro.org> <52C6F722.3090704@samsung.com>
+In-Reply-To: <52C6F722.3090704@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 3, 2014 at 3:36 PM, Vlastimil Babka <vbabka@suse.cz> wrote:
+On 01/03/2014 09:45 AM, Alexey Perevalov wrote:
+> On 01/03/2014 03:17 AM, John Stultz wrote:
+>> On 01/02/2014 10:30 AM, Alexey Perevalov wrote:
+>>> This version introduces new clockid (CLOCK_DEFERRABLE) , for
+>>> timerfd_create, instead of
+>>> new flag (TFD_TIMER_DEFERRABLE) for timerfd_settime introduced in
+>>> previous version.
+>> So why did you make this change?
+>>
+>> thanks
+>> -john
+>>
+>>
 >
-> I'm for going with the removal of BUG_ON. The TestSetPageMlocked should provide enough
-> race protection.
+> I looked at alarm timers and found approach of making timer behavior
+> persistent per file descriptor is better than
+> changeable by timerfd_settime. I think "end user wake up from suspend"
+> and "don't wake up in idle" is the same thing on the same abstraction
+> level.
+>
+> Yes Anton's previous  patches worked with CLOCK_MONOTONIC only and I
+> didn't intend to use it with CLOCK_REALTIME, cause it's hard to me to
+> find such use case.
+> Another way - it's stay as was Anton's patch, I mean as flag for the
+> timerfd_settime, but in original patch set both hrtimer and deferrable
+> timers initialized in timerfd_create, I think it's not needed. Also
+> ability to change timer behavior looks not good if you couldn't change
+> alarm timer behavior, not unified API.
 
-Maybe. But dammit, that's subtle, and I don't think you're even right.
+So while the alarm timers are a reasonable precedent, I think they were
+introduced prior to the timerfd interface, so it seemed at the time
+having new clockids for the functionality was required to work with the
+existing syscalls that use the clockid (Though in retrospect, I question
+if it would have been better to use timer flags to introduce the alarm
+functionality rather then introducing it via a clockid, as it would
+simplify the clockid definitions).
 
-It basically depends on mlock_vma_page() and munlock_vma_page() being
-able to run CONCURRENTLY on the same page. In particular, you could
-have a mlock_vma_page() set the bit on one CPU, and munlock_vma_page()
-immediately clearing it on another, and then the rest of those
-functions could run with a totally arbitrary interleaving when working
-with the exact same page.
+Now that we have the timerfd interface, and if this functionality is
+really limited to the timerfds, then we may want to consider what might
+be, at least to me, the cleaner approach of using the flag.
 
-They both do basically
+Either way, I'd like to make sure we have a sound rational. My worry is
+that deferrable timers would be desired on more then just
+CLOCK_MONOTONIC, so we could quite likely end up with quite a few new
+clockids (ie: CLOCK_BOOTTIME_DEFERRED, CLOCK_TAI_DEFERRED,
+CLOCK_REALTIME_DEFERRED).
 
-    if (!isolate_lru_page(page))
-        putback_lru_page(page);
 
-but one or the other would randomly win the race (it's internally
-protected by the lru lock), and *if* the munlock_vma_page() wins it,
-it would also do
+>
+> If I'm right, only high resolution timer could be REALTIME, and there
+> is no deferrable behavior for hrtimer only for timer_list.
+>
+>
+I'm not sure I understood this part. Could you explain further?
 
-    try_to_munlock(page);
+thanks
+-john
 
-but if mlock_vma_page() wins it, that wouldn't happen. That looks
-entirely broken - you end up with the PageMlocked bit clear, but
-try_to_munlock() was never called on that page, because
-mlock_vma_page() got to the page isolation before the "subsequent"
-munlock_vma_page().
-
-And this is very much what the page lock serialization would prevent.
-So no, the PageMlocked in *no* way gives serialization. It's an atomic
-bit op, yes, but that only "serializes" in one direction, not when you
-can have a mix of bit setting and clearing.
-
-So quite frankly, I think you're wrong. The BUG_ON() is correct, or at
-least enforces some kind of ordering. And try_to_unmap_cluster() is
-just broken in calling that without the page being locked. That's my
-opinion. There may be some *other* reason why it all happens to work,
-but no, "TestSetPageMlocked should provide enough race protection" is
-simply not true, and even if it were, it's way too subtle and odd to
-be a good rule.
-
-So I really object to just removing the BUG_ON(). Not with a *lot*
-more explanation as to why these kinds of issues wouldn't matter.
-
-                 Linus
