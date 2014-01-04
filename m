@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974AbaADWkL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 17:40:11 -0500
-Received: from sauhun.de ([89.238.76.85]:42460 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754352AbaADWkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 17:40:08 -0500
-Date: Sat, 4 Jan 2014 23:40:01 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, monstr@monstr.eu, joe@perches.com,
-        Kedareswara rao Appana <appana.durga.rao@xilinx.com>,
-        Jingoo Han <jg1.han@samsung.com>, Jean Delvare <khali@linux-fr.org>,
-        Peter Korsgaard <jacmet@sunsite.dk>, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v5 1/3] i2c: xilinx: Fix i2c checkpatch warnings
-Message-ID: <20140104224001.GG3150@katana>
-References: <c220f51fd2ee7a5d65afa805a62582bd23e4d599.1387465488.git.michal.simek@xilinx.com>
+	id S1755116AbaADWmL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 17:42:11 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:42043 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754352AbaADWmK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Jan 2014 17:42:10 -0500
+Date: Sat, 4 Jan 2014 14:42:06 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mikulas Patocka <mpatocka@redhat.com>, Jeff Mahoney <jeffm@suse.com>,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, tglx@linutronix.de, paulmck@linux.vnet.ibm.com,
+        mingo@kernel.org
+Subject: Re: [PATCH] kobject: provide kobject_put_wait to fix module unload
+ race
+Message-ID: <20140104224206.GC18213@core.coreip.homeip.net>
+References: <alpine.LRH.2.02.1401021733250.27775@file01.intranet.prod.int.rdu2.redhat.com>
+ <20140104181620.GA2087@kroah.com>
+ <20140104183403.GG10323@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8bBEDOJVaa9YlTAt"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <c220f51fd2ee7a5d65afa805a62582bd23e4d599.1387465488.git.michal.simek@xilinx.com>
+In-Reply-To: <20140104183403.GG10323@ZenIV.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Jan 04, 2014 at 06:34:03PM +0000, Al Viro wrote:
+> On Sat, Jan 04, 2014 at 10:16:20AM -0800, Greg Kroah-Hartman wrote:
+> 
+> > > I came up with a simpler patch to achieve the same purpose - this patch 
+> > > makes fixing the drivers easy - the driver is fixed just by replacing 
+> > > "kobject_put" with "kobject_put_wait" in the unload routine.
+> > 
+> > No, that's not ok at all.
+> 
+> Agreed - all it takes is one cargo-culter who religoiusly does such
+> conversion and drops a ref to parent before that to child.
+> 
+> > > However, this pattern is buggy with respect to modules. The release method
+> > > is placed in the driver's module. When the driver exits, the module
+> > > reference count is zero, thus the module may be freed. However, there may
+> > > still be references to the kobject. If the module is unloaded and then the
+> > > release method is called, a crash happens.
+> > 
+> > Yes, module unloading while a kobject is still "active" is not a good
+> > thing, what modules do you have that cause this problem?  Why not just
+> > grab the module reference in your kobject if you need this type of
+> > protection?  It's not the kobject's code fault that this issue is there,
+> > or that we now have a "delayed release" function to expose this type of
+> > thing, it's the user of the kobject.
+> > 
+> > Please fix the broken users of the kobject first.
+> 
+> <snide> Are you saying that there is another kind? </snide>
+> 
+> When would you grab that reference to module?  More to the point, when
+> would you *drop* it?  Doing so from module_exit is not going to work,
+> obviously...
 
---8bBEDOJVaa9YlTAt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+You normally have subsystem core module that does handle release of its
+objects and users of said objects so it is usually OK for objects to
+outlive the users, you just need to make sure the core stays around.
 
-On Thu, Dec 19, 2013 at 04:05:04PM +0100, Michal Simek wrote:
-> From: Kedareswara rao Appana <appana.durga.rao@xilinx.com>
->=20
-> Code changes to fix checkpatch warnings listed below.
-> - WARNING: please, no space before tabs
-> - WARNING: quoted string split across lines
->=20
-> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+In input we grab module reference to input core when we allocate input
+device and drop it when input device is freed. This way we can be sure
+that input core stays around until all input devices are gone. The same
+for serio.
 
-Whole series applied to for-next, thanks!
+Thanks. 
 
-
---8bBEDOJVaa9YlTAt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSyI3BAAoJEBQN5MwUoCm2K1YP+wZlEMYw2NZIdMc2vqyOPDIe
-q5BPBnW75ODw9NZs1EKBlJ55emDdeqZ8t3aawKXFzooNfiJ0VG6H1+d8IE1wnjYU
-u67J0C3Njp4zvsJNvWwxtCANXitdZRIA2XHqqfnWgLXC0Q3ZVvxf5v9lMuhg+v4G
-e2+zZjKbXt/AOgPKn/nlUT02D/B/L1zmERqFFdIpgOe9ou0AyepO8nMLlUDphDaK
-G6WLU2dX3aJT0vtJTXktTuYJ5FshOjIWlClAPRcPnnTLK4faBcD5suDrZ9Mx9S8n
-gSnf1E7LJ9GgutXwavYQ+in7Cmj2xkCkzv0hmeE3zC0h2QzzblWY3FFH2/LWrOqT
-i+TnzskifSipSKm3f1TCm69BsC8CZKN/2o+iyXGMutCNxCiwg/RgOf0Tx4LfPoMd
-rFM41A7MoEfy0DWZu6XWF7d1nEjTaGqy3zfr2PGq1Kwmujy+W9PrMcgBRafC1RO7
-t8ikk2pzeBtTK0mMmMRdFbKbuyNPvg1xG+eJIH+m/Ir8WkRT5cPUZdri7jDRbey3
-JqQjHfvKeDIO8FukBtSMgnUzVvXA7vmSe57h+718nW3KHpzzikBw+Ch84pjJHUjT
-asWy4SpvprkOEwfFibp6786cp3513A8nSGKAZGyEXYOg9PfZ97qUBDVT+7TBfCmp
-Z3iHeiN/Sy9J1zwYv2o6
-=PvQ2
------END PGP SIGNATURE-----
-
---8bBEDOJVaa9YlTAt--
+-- 
+Dmitry
