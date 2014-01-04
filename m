@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664AbaADAaW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 19:30:22 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:44570 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754589AbaADAaS (ORCPT
+	id S1754453AbaADAfm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 19:35:42 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:35383 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754196AbaADAfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 19:30:18 -0500
-Date: Fri, 3 Jan 2014 16:29:04 -0800
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
-        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
-        <jbeulich@suse.com>
-Subject: Re: [Xen-devel] [PATCH v11 09/12] xen/pvh: Piggyback on PVHVM
- XenBus and event channels for PVH.
-Message-ID: <20140103162904.5b51041f@mantra.us.oracle.com>
-In-Reply-To: <alpine.DEB.2.02.1401031501180.8667@kaball.uk.xensource.com>
-References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
-	<1387313503-31362-10-git-send-email-konrad.wilk@oracle.com>
-	<alpine.DEB.2.02.1312181827280.8667@kaball.uk.xensource.com>
-	<20131231185656.GB3129@phenom.dumpdata.com>
-	<alpine.DEB.2.02.1401031501180.8667@kaball.uk.xensource.com>
-Organization: Oracle Corporation
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
+	Fri, 3 Jan 2014 19:35:41 -0500
+Date: Fri, 03 Jan 2014 19:35:39 -0500 (EST)
+Message-Id: <20140103.193539.332685938065529152.davem@davemloft.net>
+To: grantgrundler@gmail.com
+Cc: Julia.Lawall@lip6.fr, grundler@parisc-linux.org,
+        kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: tulip: delete useless tests on netdev_priv
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAP6odjhqzKPiBdxQVm5BbbOFwiekJu66_WgSE+E4g_nkHh+-dQ@mail.gmail.com>
+References: <1388680129-13661-1-git-send-email-Julia.Lawall@lip6.fr>
+	<CAP6odjhqzKPiBdxQVm5BbbOFwiekJu66_WgSE+E4g_nkHh+-dQ@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 03 Jan 2014 16:35:40 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Jan 2014 15:04:27 +0000
-Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
+From: Grant Grundler <grantgrundler@gmail.com>
+Date: Thu, 2 Jan 2014 07:57:26 -0800
 
-> On Tue, 31 Dec 2013, Konrad Rzeszutek Wilk wrote:
-> > > > --- a/drivers/xen/xenbus/xenbus_client.c
-> > > > +++ b/drivers/xen/xenbus/xenbus_client.c
-> > > > @@ -45,6 +45,7 @@
-> > > >  #include <xen/grant_table.h>
-> > > >  #include <xen/xenbus.h>
-> > > >  #include <xen/xen.h>
-> > > > +#include <xen/features.h>
-> > > >  
-> > > >  #include "xenbus_probe.h"
-> > > >  
-> > > > @@ -743,7 +744,7 @@ static const struct xenbus_ring_ops
-> > > > ring_ops_hvm = { 
-> > > >  void __init xenbus_ring_ops_init(void)
-> > > >  {
-> > > > -	if (xen_pv_domain())
-> > > > +	if (xen_pv_domain()
-> > > > && !xen_feature(XENFEAT_auto_translated_physmap))
-> > > 
-> > > Can we just change this test to
-> > > 
-> > > if (!xen_feature(XENFEAT_auto_translated_physmap))
-> > > 
-> > > ?
-> > 
-> > No. If we do then the HVM domains (which are also !auto-xlat)
-> > will end up using the PV version of ring_ops.
+> On Thu, Jan 2, 2014 at 8:28 AM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
+>> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>>
+>> Netdev_priv performs an addition, not a pointer dereference, so it seems
+>> quit unlikely that its result would ever be NULL.
 > 
-> Actually HVM guests have XENFEAT_auto_translated_physmap, so in this
-> case they would get &ring_ops_hvm.
+> LGTM.
+> 
+>  >
+>> A semantic patch that makes this change is as follows:
+>> (http://coccinelle.lip6.fr/)
+>>
+>> // <smpl>
+>> @@
+>> statement S;
+>> @@
+>>
+>> - if (!netdev_priv(...)) S
+>> // </smpl>
+>>
+>> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Acked-by: Grant Grundler <grundler@parisc-linux.org>
 
-Right. Back then I was confused about all the other PV modes, like
-shadow, supervisor, ... but looks like they are all obsolete. It could 
-just be:
-
-        if (!xen_feature(XENFEAT_auto_translated_physmap))
-                ring_ops = &ring_ops_pv;
-        else
-                ring_ops = &ring_ops_hvm;
-
-thanks,
-Mukesh
+Applied, thanks everyone.
