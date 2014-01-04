@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680AbaADBvd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 20:51:33 -0500
-Received: from mga02.intel.com ([134.134.136.20]:53793 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754240AbaADBvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 20:51:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,601,1384329600"; 
-   d="asc'?scan'208";a="461464032"
-Message-ID: <1388800272.2275.7.camel@jtkirshe-mobl>
-Subject: Re: [net-next] pci_regs.h: Add PCI bus link speed and width defines
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: David Miller <davem@davemloft.net>
-Cc: bhelgaas@google.com, jesse.brandeburg@gmail.com, linux-pci@vger.kernel.org,
-        netdev@vger.kernel.org, gospo@redhat.com, sassmann@redhat.com,
-        linux-kernel@vger.kernel.org, bjorn.helgaas@hp.com
-Date: Fri, 03 Jan 2014 17:51:12 -0800
-In-Reply-To: <20140103.204826.924684292174040714.davem@davemloft.net>
-References: <CAErSpo7TJXTCxpFKWXLTaHmqXXnYQdnpNeWt+cehSaES2Jh30w@mail.gmail.com>
-	 <20140103.193008.684316024702680161.davem@davemloft.net>
-	 <1388798859.2275.5.camel@jtkirshe-mobl>
-	 <20140103.204826.924684292174040714.davem@davemloft.net>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-BXTfQvhXaAdBDn0qA9FR"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	id S1754414AbaADC0x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 21:26:53 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:23336 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753589AbaADC0w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 21:26:52 -0500
+Date: Fri, 3 Jan 2014 21:25:30 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Mukesh Rathor <mukesh.rathor@oracle.com>
+Cc: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
+        stefano.stabellini@eu.citrix.com
+Subject: Re: [PATCH v12 10/18] xen/pvh: Update E820 to work with PVH (v2)
+Message-ID: <20140104022526.GA14630@pegasus.dumpdata.com>
+References: <1388550945-25499-1-git-send-email-konrad.wilk@oracle.com>
+ <1388550945-25499-11-git-send-email-konrad.wilk@oracle.com>
+ <52C59068.1040603@citrix.com>
+ <20140102184133.GE3021@pegasus.dumpdata.com>
+ <20140103172337.1e077e56@mantra.us.oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140103172337.1e077e56@mantra.us.oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 03, 2014 at 05:23:37PM -0800, Mukesh Rathor wrote:
+> On Thu, 2 Jan 2014 13:41:34 -0500
+> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> 
+> > On Thu, Jan 02, 2014 at 04:14:32PM +0000, David Vrabel wrote:
+> > > On 01/01/14 04:35, Konrad Rzeszutek Wilk wrote:
+> > > > From: Mukesh Rathor <mukesh.rathor@oracle.com>
+> > > > 
+> > > > In xen_add_extra_mem() we can skip updating P2M as it's managed
+> > > > by Xen. PVH maps the entire IO space, but only RAM pages need
+> > > > to be repopulated.
+> > > 
+> > > So this looks minimal but I can't work out what PVH actually needs
+> > > to do here.  This code really doesn't need to be made any more
+> > > confusing.
+> > 
+> > I gather you prefer Mukesh's original version?
+> 
+> I think Konrad thats easier to follow as one can quickly spot
+> the PVH difference... but your call.
 
---=-BXTfQvhXaAdBDn0qA9FR
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I prefer the one that re-uses the existing logic. That has been - both
+in the hypervisor and in the Linux kernel for PVH - the path - just do
+nice little one-offs that do something simpler and easier than the
+old PV path.
 
-On Fri, 2014-01-03 at 20:48 -0500, David Miller wrote:
-> From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-> Date: Fri, 03 Jan 2014 17:27:39 -0800
->=20
-> > What do you want to do with the current series of patches
-> > (mainly the ixgbe LER patches) on my tree?  I know that there is a
-> > thread going on between Joe Perches and Mark, but it sounded like Mark
-> > is working on a follow-on patch to address Joe's concerns.
->=20
-> I want the LER config option removed.
+That way one can easily spot how PV vs PVH works for certain operations.
 
-Ok.
+It also from a testing coverage perspective means we end up using the
+same codepath for both PV and PVH - so we do get more testing exposure
+for different modes.
 
---=-BXTfQvhXaAdBDn0qA9FR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAABCgAGBQJSx2kQAAoJEOVv75VaS+3OsBcQAIFtIvX8tivJfLPFq4jsxl/e
-KIkY0PoRFMfuAARBRYOjw+uqhIXVr4r1CuJTCV2taqUDGY0n0o66+uTGwhxi8TfQ
-a5dbs3pJnEH2SOmpB3fQXUerLrU2QYhoRk6WXNi5LMOzJ20AFesIN5ruNX7hRrnr
-cBr+PcbVcCeyZ5tFYu5HST1dceyIDJSEFI5Z8osRr94eJgit/Z2DX78E9474rW5m
-4frdS5cfdgT/2CSyQPhOF/a6iRdwTgC+bRFsKVGtKh52Zb992Li+Sp9wP6HVWbsE
-V787F83M34TOiyAQXovGvZE1VWb+dvgskw9VjBV7chRh2Frb3a6eS0NCujR3i1hY
-yJzxFteHo3OnwiNeFPlsBtDElh/MwHcSQfSRNMcpOppD0BTh8bAYkaK7E8UitRik
-V+Wz7XND92XxDyWnkVmZtdCeWGYakofdVlrdwgHDFMmkBAjzD7oWAorbKHXYI9td
-x86g2oCKV9C8TGos0uFFWvKEF9ICDYoNFWosixzA0IGNVwhdySQp3H4kAb/eW9kp
-mrZQtsVAwy3zYjSFaWYplDq6kalmGFn3S4T5cRqIbYWjTr8CbmUj3yO0gkgYRa3U
-lu1Z8lgwXM5dE4NIoqRX1sHvjT+/3eZgMQlvmHAFEA/9D6CUfbjtBUPK6uF1OFlD
-3nCWD5jaUQM4WatYB71q
-=/dO+
------END PGP SIGNATURE-----
-
---=-BXTfQvhXaAdBDn0qA9FR--
-
+> 
+> thanks
+> mukesh
+> 
