@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936AbaADSWP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 13:22:15 -0500
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:18118 "EHLO
+	id S1755131AbaADSWm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 13:22:42 -0500
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:18129 "EHLO
 	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752404AbaADSWO (ORCPT
+	by vger.kernel.org with ESMTP id S1755020AbaADSWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 13:22:14 -0500
+	Sat, 4 Jan 2014 13:22:40 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
@@ -15,172 +15,225 @@ Cc: Alexander Gordeev <agordeev@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Andi Kleen <ak@linux.jf.intel.com>
-Subject: [PATCH RFC v2 0/4] perf: IRQ-bound performance events
-Date: Sat,  4 Jan 2014 19:22:32 +0100
-Message-Id: <cover.1388858996.git.agordeev@redhat.com>
+Subject: [PATCH RFC v2 4/4] perf/tool: IRQ-bound performance events
+Date: Sat,  4 Jan 2014 19:22:36 +0100
+Message-Id: <891b359bc77491c4de1692f580f2c70b87ba6ab3.1388858996.git.agordeev@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <cover.1388858996.git.agordeev@redhat.com>
+References: <cover.1388858996.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ tools/perf/builtin-stat.c      |    9 +++++++++
+ tools/perf/util/evlist.c       |   38 ++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/evlist.h       |    3 +++
+ tools/perf/util/evsel.c        |    8 ++++++++
+ tools/perf/util/evsel.h        |    3 +++
+ tools/perf/util/parse-events.c |   24 ++++++++++++++++++++++++
+ tools/perf/util/parse-events.h |    1 +
+ 7 files changed, 86 insertions(+), 0 deletions(-)
 
-This is version 2 of RFC "perf: IRQ-bound performance events". That is an
-introduction of IRQ-bound performance events - ones that only count in a
-context of a hardware interrupt handler. Ingo suggested to extend this
-functionality to softirq and threaded handlers as well:
-
-[quote]
-
-Looks useful.
-
-I think the main challenges are:
-
- - Creating a proper ABI for all this:
-
-   - IRQ numbers alone are probably not specific enough: we'd also want to 
-     be more specific to match on handler names - or handler numbers if
-     the handler name is not unique.
-
-   - another useful variant would be where IRQ numbers are too specific:
-     something like 'perf top irq' would be a natural thing to do, to see 
-     only overhead in hardirq execution - without limiting it to a
-     specific handler. An 'all irq contexts' wildcard concept?
-
- - Covering softirqs as well. If we handle both hardirqs and softirqs,
-   then we are pretty much feature complete: all major context types that 
-   the Linux kernel cares about are covered in instrumentation. For things
-   like networking the softirq overhead is obviously very important, and 
-   for example on routers it will do most of the execution.
-
- - Covering threaded IRQs as well, in a similar model. So if someone types
-   'perf top irq', and some IRQ handlers are running threaded, those
-   should probaby be included as well.
-
- - Making the tooling friendlier: 'perf top irq' would be useful, and
-   accepting handler names would be useful as well.
-
-The runtime overhead of your patches seems to be pretty low: when no IRQ 
-contexts are instrumented then it's a single 'is the list empty' check at 
-context scheduling time. That looks acceptable.
-
-Regarding the ABI and IRQ/softirq context enumeration you are breaking 
-lots of new ground here, because unlike tasks, cgroups and CPUs the IRQ 
-execution contexts do not have a good programmatically accessible 
-namespace (yet). So it has to be thought out pretty well I think, but once 
-we have it, it will be a lovely feature IMO.
-
-Thanks,
-
-	Ingo
-
-[/quote]
-
-This RFC version addresses only "Creating a proper ABI for all this"
-suggestion for kernel side. Each hardware interrupt context performance
-event is assigned a bitmask where each bit indicates whether the action with
-the bit's number should be measured or not. A task to convert handler
-name(s), wildcards etc. to bitmasks to be off-loaded to user level and is
-not yet supported.
-
-The kernel side implementation revolves around a need to make enabling and
-disabling performance counters in hardware interrupt context as fast as
-possible. For this reason a new command PERF_EVENT_IOC_SET_HARDIRQ pre-
-allocates and initializes a per-CPU array with performance events destined
-for this IRQ, before the event is started. Once, the action (aka ISR) is
-called, another pre-allocated per-CPU array gets initialized with events for
-this action and then submitted to relevant PMUs using a new PMU callback:
-
-	void (*start_hardirq)(struct perf_event *events[], int count);
-
-Since the performance events are expected known to PMUs, it should be able
-to enable the counters in a performance-aware manner. I.e. in the sample
-patch for Intel PMU this goal is achieved with a single pass thru the
-'events' array and a single call to WRMSR instruction.
-
-By contrast with version 1 of this RFC, per-CPU lists are replaced with
-per-CPU arrays whenever possible. With an assumption there will be normally
-no more than a dozen of events being counted at a time, it expected to add
-to cache hit rate when the events are enabled or disabled from the hardware
-interrupt context.
-
-Besides the original purpose the design accommodates an ability to run the
-same performance counter for any combination of actions and IRQs, which
-makes possible a unlimited level of flexibility. This feature is not yet
-supported with the perf tool, though.
-
-Although the whole idea seems simple, I am not sure if it fits into the
-current perf design and does not break some ground assumptions. The very
-purpose of this RFC is to ensure the taken approach is correct.
-
-This RFC interleaves with toggling events introduced some time ago. While
-addressing a similar problem, it does not appear the toggling events could
-count on per-action basis, nor to provide a flexibility this RFC assumes.
-The performance is also a major concern. Perhaps, the two designs could be
-merged, but at the moment I am not realizing how. Suggestions are very
-welcomed.
-
-
-The perf tool update for now is just a hack to make possible kernel side
-testing. Here is a sample session against IRQ #8, 'rtc0' device:
-
-# ./tools/perf/perf stat -a -e L1-dcache-load-misses:k --hardirq=8 sleep 1
-
- Performance counter stats for 'system wide':
-
-                 0      L1-dcache-load-misses                                       
-
-       1.001190052 seconds time elapsed
-
-# ./tools/perf/perf stat -a -e L1-dcache-load-misses:k --hardirq=8 hwclock --test
-Sat 04 Jan 2014 12:16:36 EST  -0.484913 seconds
-
- Performance counter stats for 'system wide':
-
-               374      L1-dcache-load-misses                                       
-
-       0.485939068 seconds time elapsed
-
-
-The patchset is against Arnaldo's repo, in "perf/core" branch.
-
-The tree could be found in "pci-next-msi-v5" branch in repo:
-https://github.com/a-gordeev/linux.git
-
-Thanks!
-
-Alexander Gordeev (4):
-  perf/core: IRQ-bound performance events
-  perf/x86: IRQ-bound performance events
-  perf/x86/Intel: IRQ-bound performance events
-  perf/tool: IRQ-bound performance events
-
- arch/x86/kernel/cpu/perf_event.c       |   55 +++++-
- arch/x86/kernel/cpu/perf_event.h       |   15 ++
- arch/x86/kernel/cpu/perf_event_amd.c   |    2 +
- arch/x86/kernel/cpu/perf_event_intel.c |   72 ++++++-
- arch/x86/kernel/cpu/perf_event_knc.c   |    2 +
- arch/x86/kernel/cpu/perf_event_p4.c    |    2 +
- arch/x86/kernel/cpu/perf_event_p6.c    |    2 +
- include/linux/irq.h                    |   10 +
- include/linux/irqdesc.h                |    4 +
- include/linux/perf_event.h             |   24 ++
- include/uapi/linux/perf_event.h        |   14 ++-
- kernel/events/Makefile                 |    2 +-
- kernel/events/core.c                   |  142 ++++++++++++-
- kernel/events/hardirq.c                |  370 ++++++++++++++++++++++++++++++++
- kernel/irq/handle.c                    |    7 +-
- kernel/irq/irqdesc.c                   |   15 ++
- tools/perf/builtin-stat.c              |    9 +
- tools/perf/util/evlist.c               |   38 ++++
- tools/perf/util/evlist.h               |    3 +
- tools/perf/util/evsel.c                |    8 +
- tools/perf/util/evsel.h                |    3 +
- tools/perf/util/parse-events.c         |   24 ++
- tools/perf/util/parse-events.h         |    1 +
- 23 files changed, 811 insertions(+), 13 deletions(-)
- create mode 100644 kernel/events/hardirq.c
-
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index b27b264..48c9d90 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -292,6 +292,7 @@ static int create_perf_stat_counter(struct perf_evsel *evsel)
+ 				    PERF_FORMAT_TOTAL_TIME_RUNNING;
+ 
+ 	attr->inherit = !no_inherit;
++	attr->hardirq = 1;
+ 
+ 	if (target__has_cpu(&target))
+ 		return perf_evsel__open_per_cpu(evsel, perf_evsel__cpus(evsel));
+@@ -590,6 +591,12 @@ static int __run_perf_stat(int argc, const char **argv)
+ 		return -1;
+ 	}
+ 
++	if (perf_evlist__apply_hardirq(evsel_list)) {
++		error("failed to set hardirq with %d (%s)\n", errno,
++			strerror(errno));
++		return -1;
++	}
++
+ 	/*
+ 	 * Enable counters and exec the command:
+ 	 */
+@@ -1613,6 +1620,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		     parse_events_option),
+ 	OPT_CALLBACK(0, "filter", &evsel_list, "filter",
+ 		     "event filter", parse_filter),
++	OPT_CALLBACK('h', "hardirq", &evsel_list, "hardirq",
++		     "stat events on existing hardware IRQ", parse_hardirq),
+ 	OPT_BOOLEAN('i', "no-inherit", &no_inherit,
+ 		    "child tasks do not inherit counters"),
+ 	OPT_STRING('p', "pid", &target.pid, "pid",
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 0810f5c..5104232 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -861,6 +861,27 @@ int perf_evlist__apply_filters(struct perf_evlist *evlist)
+ 	return err;
+ }
+ 
++int perf_evlist__apply_hardirq(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel;
++	int err = 0;
++	const int ncpus = cpu_map__nr(evlist->cpus),
++		  nthreads = thread_map__nr(evlist->threads);
++
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		if (evsel->hardirq == NULL)
++			continue;
++
++		err = perf_evsel__set_hardirq(evsel, ncpus, nthreads, evsel->hardirq);
++		if (err)
++			break;
++
++		evsel->attr.hardirq = 1;
++	}
++
++	return err;
++}
++
+ int perf_evlist__set_filter(struct perf_evlist *evlist, const char *filter)
+ {
+ 	struct perf_evsel *evsel;
+@@ -877,6 +898,23 @@ int perf_evlist__set_filter(struct perf_evlist *evlist, const char *filter)
+ 	return err;
+ }
+ 
++int perf_evlist__set_hardirq(struct perf_evlist *evlist,
++			     const struct perf_hardirq_event_disp *hardirq)
++{
++	struct perf_evsel *evsel;
++	int err = 0;
++	const int ncpus = cpu_map__nr(evlist->cpus),
++		  nthreads = thread_map__nr(evlist->threads);
++
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		err = perf_evsel__set_hardirq(evsel, ncpus, nthreads, hardirq);
++		if (err)
++			break;
++	}
++
++	return err;
++}
++
+ bool perf_evlist__valid_sample_type(struct perf_evlist *evlist)
+ {
+ 	struct perf_evsel *pos;
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 518e521..12dc36d 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -71,6 +71,8 @@ int perf_evlist__add_newtp(struct perf_evlist *evlist,
+ 			   const char *sys, const char *name, void *handler);
+ 
+ int perf_evlist__set_filter(struct perf_evlist *evlist, const char *filter);
++int perf_evlist__set_hardirq(struct perf_evlist *evlist,
++			     const struct perf_hardirq_event_disp *hardirq);
+ 
+ struct perf_evsel *
+ perf_evlist__find_tracepoint_by_id(struct perf_evlist *evlist, int id);
+@@ -136,6 +138,7 @@ static inline void perf_evlist__set_maps(struct perf_evlist *evlist,
+ 
+ int perf_evlist__create_maps(struct perf_evlist *evlist, struct target *target);
+ int perf_evlist__apply_filters(struct perf_evlist *evlist);
++int perf_evlist__apply_hardirq(struct perf_evlist *evlist);
+ 
+ void __perf_evlist__set_leader(struct list_head *list);
+ void perf_evlist__set_leader(struct perf_evlist *evlist);
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index ade8d9c..23d52a3 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -704,6 +704,14 @@ int perf_evsel__set_filter(struct perf_evsel *evsel, int ncpus, int nthreads,
+ 				     (void *)filter);
+ }
+ 
++int perf_evsel__set_hardirq(struct perf_evsel *evsel, int ncpus, int nthreads,
++			    const struct perf_hardirq_event_disp *disp)
++{
++	return perf_evsel__run_ioctl(evsel, ncpus, nthreads,
++				     PERF_EVENT_IOC_SET_HARDIRQ,
++				     (void *)disp);
++}
++
+ int perf_evsel__enable(struct perf_evsel *evsel, int ncpus, int nthreads)
+ {
+ 	return perf_evsel__run_ioctl(evsel, ncpus, nthreads,
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index f1b3256..f07221b 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -59,6 +59,7 @@ struct perf_evsel {
+ 	struct list_head	node;
+ 	struct perf_event_attr	attr;
+ 	char			*filter;
++	struct perf_hardirq_event_disp *hardirq;
+ 	struct xyarray		*fd;
+ 	struct xyarray		*sample_id;
+ 	u64			*id;
+@@ -169,6 +170,8 @@ void perf_evsel__set_sample_id(struct perf_evsel *evsel,
+ 
+ int perf_evsel__set_filter(struct perf_evsel *evsel, int ncpus, int nthreads,
+ 			   const char *filter);
++int perf_evsel__set_hardirq(struct perf_evsel *evsel, int ncpus, int nthreads,
++			    const struct perf_hardirq_event_disp *hardirq);
+ int perf_evsel__enable(struct perf_evsel *evsel, int ncpus, int nthreads);
+ 
+ int perf_evsel__open_per_cpu(struct perf_evsel *evsel,
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 0153435..7a5114d 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -987,6 +987,30 @@ int parse_filter(const struct option *opt, const char *str,
+ 	return 0;
+ }
+ 
++int parse_hardirq(const struct option *opt, const char *str,
++		  int unset __maybe_unused)
++{
++	struct perf_evlist *evlist = *(struct perf_evlist **)opt->value;
++	struct perf_evsel *evsel;
++	struct perf_hardirq_event_disp *event_disp;
++
++	event_disp = malloc(offsetof(typeof(*event_disp), disp) +
++			    sizeof(event_disp->disp[0]));
++	if (!event_disp) {
++		fprintf(stderr, "not enough memory to hold hardirq disp\n");
++		return -1;
++	}
++
++	event_disp->nr_disp		= 1;
++	event_disp->disp[0].irq_nr	= atoi(str);
++	event_disp->disp[0].actions	= -1;
++
++	list_for_each_entry(evsel, &evlist->entries, node)
++		evsel->hardirq = event_disp;
++
++	return 0;
++}
++
+ static const char * const event_type_descriptors[] = {
+ 	"Hardware event",
+ 	"Software event",
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index f1cb4c4..a6927d6 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -33,6 +33,7 @@ extern int parse_events_option(const struct option *opt, const char *str,
+ extern int parse_events(struct perf_evlist *evlist, const char *str);
+ extern int parse_events_terms(struct list_head *terms, const char *str);
+ extern int parse_filter(const struct option *opt, const char *str, int unset);
++extern int parse_hardirq(const struct option *opt, const char *str, int unset);
+ 
+ #define EVENTS_HELP_MAX (128*1024)
+ 
 -- 
 1.7.7.6
 
