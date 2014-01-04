@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987AbaADWvE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 17:51:04 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:63439 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754545AbaADWvC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 17:51:02 -0500
-Date: Sat, 4 Jan 2014 17:50:58 -0500
-From: Tejun Heo <tj@kernel.org>
-To: "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Li Zefan <lizefan@huawei.com>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] x86: Add Cache QoS Monitoring (CQM) support
-Message-ID: <20140104225058.GC24306@htj.dyndns.org>
-References: <1388781285-18067-1-git-send-email-peter.p.waskiewicz.jr@intel.com>
- <20140104161050.GA24306@htj.dyndns.org>
- <1388875369.9761.25.camel@ppwaskie-mobl.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1388875369.9761.25.camel@ppwaskie-mobl.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755183AbaADXeB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 18:34:01 -0500
+Received: from ozlabs.org ([203.10.76.45]:55965 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754939AbaADXd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Jan 2014 18:33:59 -0500
+Date: Sun, 5 Jan 2014 10:33:53 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 1/3] kconfig: consolidate arch-specific seccomp options
+Message-Id: <20140105103353.9bf06782c851f8eaec0e0f33@canb.auug.org.au>
+In-Reply-To: <52C85B34.6040001@sr71.net>
+References: <20140102202014.CA206E9B@viggo.jf.intel.com>
+	<20140105023853.dda6c1f9c6f9875159634e69@canb.auug.org.au>
+	<52C85B34.6040001@sr71.net>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sun__5_Jan_2014_10_33_53_+1100_Xdx2b_+gSyIFCvcN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--Signature=_Sun__5_Jan_2014_10_33_53_+1100_Xdx2b_+gSyIFCvcN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Sat, Jan 04, 2014 at 10:43:00PM +0000, Waskiewicz Jr, Peter P wrote:
-> Simply put, when we want to allocate an RMID for monitoring httpd
-> traffic, we can create a new child in the subsystem hierarchy, and
-> assign the httpd processes to it.  Then the RMID can be assigned to the
-> subsystem, and each process inherits that RMID.  So instead of dealing
-> with assigning an RMID to each and every process, we can leverage the
-> existing cgroup mechanisms for grouping processes and their children to
-> a group, and they inherit the RMID.
+Hi Dave,
 
-Here's one thing that I don't get, possibly because I'm not
-understanding the processor feature too well.  Why does the processor
-have to be aware of the grouping?  ie. why can't it be done
-per-process and then aggregated?  Is there something inherent about
-the monitored events which requires such peculiarity?  Or is it that
-accessing the stats data is noticieably expensive to do per context
-switch?
+On Sat, 04 Jan 2014 11:04:20 -0800 Dave Hansen <dave@sr71.net> wrote:
+>
+> On 01/04/2014 07:38 AM, Stephen Rothwell wrote:
+> > On Thu, 02 Jan 2014 12:20:14 -0800 Dave Hansen <dave@sr71.net> wrote:
+> >> From: Dave Hansen <dave.hansen@linux.intel.com>
+> >> There is *NOTHING* architecture-specific about SECCOMP except
+> >> that the syscalls have per-architecture definitions, like every
+> >> other syscall.  It is absurd to have the option in the
+> >> arch-specific menus.
+> >=20
+> > You seem to have (mostly) lost the dependency some of the architecture
+> > versions of config SECCOMP had on PROC_FS ...
+>=20
+> I _believe_ the /proc interface has gone away.  I can't find any
+> reference to /proc/<pid>/seccomp in any of the code.  Is there some
+> /proc dependency that I'm missing outside of the removed
+> /proc/<pid>/seccomp interface?
 
-> Please let me know if this is a better explanation, and gives a better
-> picture of why we decided to approach the implementation this way.  Also
-> note that this feature, Cache QoS Monitoring, is the first in a series
-> of Platform QoS Monitoring features that will be coming.  So this isn't
-> a one-off feature, so however this first piece gets accepted, we want to
-> make sure it's easy to expand and not impact userspace tools repeatedly
-> (if possible).
+I don't know, but if it has gone then it is worth mentioning in the
+commit message ... and you did preserve the dependency in the sparc64
+case.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-In general, I'm quite strongly opposed against using cgroup as
-arbitrary grouping mechanism for anything other than resource control,
-especially given that we're moving away from multiple hierarchies.
+--Signature=_Sun__5_Jan_2014_10_33_53_+1100_Xdx2b_+gSyIFCvcN
+Content-Type: application/pgp-signature
 
-Thanks.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
--- 
-tejun
+iQIcBAEBCAAGBQJSyJpmAAoJEMDTa8Ir7ZwVZ9MP/0Rzml0PVSjq47Y4DZrLpTnY
+fOzJkEpH3234nQNHt84eJNYRivdWNkn+zmSLlSzL5I6KvKG0EFdmgU5q7bNXa3xf
+un0/EZ31nL5bassoyQOHRXU5tYtvGQ98MNW6rE4btLNaYMvRY7e91Z8ldjsREsAE
+z+9JQWU18CUVDTfXrY+Fxv1/M4sIjNRo4uc6sAEa0lgolXJzkcgEUW4xyZiHx6Vw
+D34sPIwVVHzmmEqrkhWVj3LBsdH0FiRJ/mtLC7vcFIjzQw4rV5/x8mjGOqCCHCdm
+YChlh/D6z97ofEgrFOHXzi4HepH4Tx34RB2kjxaPxPBuWDMYgFSKdihm7Cuu+Mwy
+oUMmVfqYyj618oFBW+cyqT7h3EmzOaXvP4RfY9ReeWSRMi+r5gjnV86yND2jdeFP
+XwaLD37DDgJJZGUYohoGgYZtuJEt9cHtHilJimBcgFdaoNrbNMY/fUvaA6y4EPOJ
+3g2XLkO2klUOi6S7kfaXlRsegu3wRMAv8nK9x6or+GPLox6fHCrGjjIK3sMecKZT
+GXvxi14WGmZk4SajN3diQOnr8oCxOOasHPW4xIy4kVlkBIC5zAeW/Zc9nmB49g7p
+KDu7S6HMgU8uuQXVM1GHLb4QrMPrSogjsyWPt0UI552Mc079h9/ITN6/4iGwpQz5
++UONFWEeXLEAjeZAGiKz
+=1oIO
+-----END PGP SIGNATURE-----
+
+--Signature=_Sun__5_Jan_2014_10_33_53_+1100_Xdx2b_+gSyIFCvcN--
