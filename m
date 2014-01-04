@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755001AbaADUkR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 15:40:17 -0500
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:60523 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754352AbaADUkQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 15:40:16 -0500
+	id S1754790AbaADUwh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 15:52:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9587 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753367AbaADUwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Jan 2014 15:52:35 -0500
+Date: Sat, 4 Jan 2014 15:52:14 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: John David Anglin <dave.anglin@bell.net>
+cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Andi Kleen <ak@linux.intel.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@iki.fi>,
+        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org
+Subject: Re: [PATCH] fix crash when using XFS on loopback
+In-Reply-To: <BLU0-SMTP1018039B0747722C9B5B22E97B50@phx.gbl>
+Message-ID: <alpine.LRH.2.02.1401041536210.21108@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1401041241590.4648@file01.intranet.prod.int.rdu2.redhat.com> <BLU0-SMTP390C5C965F9A4FB18F1EBE97B50@phx.gbl> <alpine.LRH.2.02.1401041451350.21108@file01.intranet.prod.int.rdu2.redhat.com>
+ <BLU0-SMTP1018039B0747722C9B5B22E97B50@phx.gbl>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Date: Sat, 4 Jan 2014 12:40:14 -0800
-Message-ID: <CAC2Wwaxuxh7Qz=Ko8gPL0A_x7LpxXucgf+p37+44eq6XH2H2HQ@mail.gmail.com>
-Subject: error when getting page from page table in KVM ept violation handler
-From: Ruby Zhang <littleegg.zhang@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-I'm trying to get a page structure at KVM ept violation handler (in
-tdp_page_fault). My code is invoked when tdp_page_fault calls
-__direct_map (where the page fault should have been handled, is it?).
-But I get a "unable to handle kerenel paging request" error
-occasionally when I try to access the second double word of the page
-structure. Here's my code:
 
-Inside __direct_map
 
-for_each_shadow_entry(vcpu, (u64)gfn << PAGE_SHIFT, iterator) {
-   if (iterator.level == level) {
-       mmu_set_spte(vcpu, iterator.sptep, ACC_ALL,
-             write, &emulate, level, gfn, pfn, prefault, map_writeable);
-       direct_pte_prefetch(vcpu, iterator.sptep);
-       ++vcpu->stat.pf_fixed;
-// beginning of my code:
-     if (level == 1) {
-       pgd_t *pgdp;
-       pud_t *pudp;
-       pmd_t *pmdp;
-       pte_t *ptep;
-       unsigned long hva = gfn_to_hva(vcpu->kvm, gfn);
-       struct page *page = NULL;
-       pgdp = pgd_offset(current->mm, hva);
-       if (!pgd_present(*pgdp))
-           goto out;
-       pudp = pud_offset(pgdp, hva);
-       if (!pud_present(*pudp))
-           goto out;
-       pmdp = pmd_offset(pudp, hva);
-       if (!pmd_preset(*pmdp))
-          goto out;
-       ptep = pte_offset_map(pmdp, hva);
-       if (!pte_present(*ptep) || pte_none(*ptep))
-          goto out;
-       if (!pfn_valid(pte_pfn(*ptep)))
-          goto out;
-       page = pte_page(*ptep);
-       if (!page)
-          goto out;
+On Sat, 4 Jan 2014, John David Anglin wrote:
 
-// this prink gives the unable to handle paging request" error:
-      printk(KERN_CRIT "page %p count %d mapping %p\n",
-            page, atomic_read(&page->_count), page->mapping);
+> On 4-Jan-14, at 2:55 PM, Mikulas Patocka wrote:
+> 
+> > On Sat, 4 Jan 2014, John David Anglin wrote:
+> > 
+> > > On 4-Jan-14, at 12:45 PM, Mikulas Patocka wrote:
+> > > 
+> > > > * flush_dcache_page asks for the list of userspace mappings, however
+> > > > that
+> > > > page->mapping field is reused by the slab subsystem for a different
+> > > > purpose. This causes the crash.
+> > > 
+> > > I'd noticed the other day that the parisc implementation of
+> > > flush_dcache_page()
+> > > should return if "!mapping || mapping != page->mapping" is true.  This
+> > > would
+> > > have avoided crash.
+> > > 
+> > > Dave
+> > 
+> > I think no.
+> > 
+> > page_mapping returns NULL if the page has only anonymous mapping and it is
+> > not placed in the swap cache. In this case, you need to flush the kernel
+> > cache.
+> 
+> 
+> The suggestion is to add the "mapping != page->mapping" to the current NULL
+> check.
+> It occurs after the kernel cache flush.
 
-out:
-.........
-     }
+"if (!mapping || mapping != page->mapping) return;"
+returns if the mapping is NULL (and that is wrong because the variable 
+mapping is NULL for anonymous pages).
 
-// end of my code
+You could probably return "if (!mapping && !PageAnon(page))", but the 
+other architectures aren't doing it.
 
-}
+> It doesn't seem right to flush the vma mappings associated with swap address
+> space
+> and that appears to be happening with current code.
+>
+> Dave
+> --
+> John David Anglin	dave.anglin@bell.net
 
-Is there anything I did wrong here to get the page? The error only
-happens occasionally.
+I suppose that "vma_interval_tree_foreach" is empty operation for swap 
+address space. Or isn't it?
 
-Thanks
+Mikulas
