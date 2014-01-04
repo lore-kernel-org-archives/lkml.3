@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763AbaADCnW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 21:43:22 -0500
-Received: from mout.gmx.net ([212.227.15.15]:55920 "EHLO mout.gmx.net"
+	id S1755067AbaADCp7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 21:45:59 -0500
+Received: from mout.gmx.net ([212.227.17.21]:53601 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754568AbaADCmv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 21:42:51 -0500
+	id S1754768AbaADCnX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 21:43:23 -0500
 From: Peter Huewe <peterhuewe@gmx.de>
 To: James Morris <jmorris@namei.org>
 Cc: Ashley Lai <ashley@ashleylai.com>, tpmdd-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, Peter Huewe <PeterHuewe@gmx.de>,
-        stable@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 03/15] tpm/tpm_i2c_stm_st33: Check return code of get_burstcount
-Date: Sat,  4 Jan 2014 03:44:37 +0100
-Message-Id: <1388803489-13258-3-git-send-email-peterhuewe@gmx.de>
+        linux-kernel@vger.kernel.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH 14/15] tpm: tpm_tis: Fix compile problems with CONFIG_PM_SLEEP/CONFIG_PNP
+Date: Sat,  4 Jan 2014 03:44:48 +0100
+Message-Id: <1388803489-13258-14-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1388803489-13258-1-git-send-email-peterhuewe@gmx.de>
 References: <201401040335.04980.PeterHuewe@gmx.de>
  <1388803489-13258-1-git-send-email-peterhuewe@gmx.de>
-X-Provags-ID: V03:K0:qo6AuHPTnDxugOQtHgETgCyBCxtVxmqF40pHHCzMVm7md6N68hc
- yUecMhYpx68W/62Z3aC3qPgu3aKDQJgHnksCVAXQcXmywpOlGs6ZzxFtBVB9O+Yvrw5CJ0n
- UqSpdkmU4J1A0ID0yXwrSIQ0kfgkFG6yoz7nTBhms2xGlTmYufSEIGFbkhrAm1XFIAyFjET
- aa9EMNdon6EPm8S1JqjSA==
+X-Provags-ID: V03:K0:Zuc2J+gC0W7S33cBx1advI2vgXtOStFYyuysWym5U1wTBHVV4lI
+ QJvEeKTiZ0bJbnAyr4gNZmquKQ53uo5SNhxecX4wOg2HviqACkuoCr0W9+wScSE7dQlgd9b
+ 5Q28gwILcKccHBIk8YJMOaZynxSpbfPp1yutGxeGH7bNf459olZwHBLrhBfm3jk1XL1iCsY
+ 6qZzxhgV4eC6uM273mDBA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Huewe <PeterHuewe@gmx.de>
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 
-The 'get_burstcount' function can in some circumstances 'return -EBUSY' which
-in tpm_stm_i2c_send is stored in an 'u32 burstcnt'
-thus converting the signed value into an unsigned value, resulting
-in 'burstcnt' being huge.
-Changing the type to u32 only does not solve the problem as the signed
-value is converted to an unsigned in I2C_WRITE_DATA, resulting in the
-same effect.
+If CONFIG_PM_SLEEP=n, CONFIG_PNP=y we get this warning:
 
-Thus
--> Change type of burstcnt to u32 (the return type of get_burstcount)
--> Add a check for the return value of 'get_burstcount' and propagate a
-potential error.
+drivers/char/tpm/tpm_tis.c:706:13: warning: 'tpm_tis_reenable_interrupts' defined but not used [-Wunused-function]
 
-This makes also sense in the 'I2C_READ_DATA' case, where the there is no
-signed/unsigned conversion.
+This seems to have been introduced in a2fa3fb0d 'tpm: convert tpm_tis driver
+to use dev_pm_ops from legacy pm_ops'
 
-found by coverity
-Cc: stable@vger.kernel.org
+Also, unpon reviewing, the #ifdefs around tpm_tis_pm are not right, the first
+reference is protected, the second is not. tpm_tis_pm is always defined so we
+can drop the #ifdef.
+
+Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/char/tpm/tpm_i2c_stm_st33.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/char/tpm/tpm_tis.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c b/drivers/char/tpm/tpm_i2c_stm_st33.c
-index a0d6ceb5..cf68403 100644
---- a/drivers/char/tpm/tpm_i2c_stm_st33.c
-+++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
-@@ -410,6 +410,8 @@ static int recv_data(struct tpm_chip *chip, u8 *buf, size_t count)
- 			     &chip->vendor.read_queue)
- 	       == 0) {
- 		burstcnt = get_burstcount(chip);
-+		if (burstcnt < 0)
-+			return burstcnt;
- 		len = min_t(int, burstcnt, count - size);
- 		I2C_READ_DATA(client, TPM_DATA_FIFO, buf + size, len);
- 		size += len;
-@@ -451,7 +453,8 @@ static irqreturn_t tpm_ioserirq_handler(int irq, void *dev_id)
- static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
- 			    size_t len)
- {
--	u32 status, burstcnt = 0, i, size;
-+	u32 status, i, size;
-+	int burstcnt = 0;
- 	int ret;
- 	u8 data;
- 	struct i2c_client *client;
-@@ -482,6 +485,8 @@ static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
+diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+index 8094b08..a9ed227 100644
+--- a/drivers/char/tpm/tpm_tis.c
++++ b/drivers/char/tpm/tpm_tis.c
+@@ -702,7 +702,7 @@ out_err:
+ 	return rc;
+ }
  
- 	for (i = 0; i < len - 1;) {
- 		burstcnt = get_burstcount(chip);
-+		if (burstcnt < 0)
-+			return burstcnt;
- 		size = min_t(int, len - i - 1, burstcnt);
- 		ret = I2C_WRITE_DATA(client, TPM_DATA_FIFO, buf, size);
- 		if (ret < 0)
+-#if defined(CONFIG_PNP) || defined(CONFIG_PM_SLEEP)
++#ifdef CONFIG_PM_SLEEP
+ static void tpm_tis_reenable_interrupts(struct tpm_chip *chip)
+ {
+ 	u32 intmask;
+@@ -723,9 +723,7 @@ static void tpm_tis_reenable_interrupts(struct tpm_chip *chip)
+ 	iowrite32(intmask,
+ 		  chip->vendor.iobase + TPM_INT_ENABLE(chip->vendor.locality));
+ }
+-#endif
+ 
+-#ifdef CONFIG_PM_SLEEP
+ static int tpm_tis_resume(struct device *dev)
+ {
+ 	struct tpm_chip *chip = dev_get_drvdata(dev);
+@@ -794,11 +792,9 @@ static struct pnp_driver tis_pnp_driver = {
+ 	.id_table = tpm_pnp_tbl,
+ 	.probe = tpm_tis_pnp_init,
+ 	.remove = tpm_tis_pnp_remove,
+-#ifdef CONFIG_PM_SLEEP
+ 	.driver	= {
+ 		.pm = &tpm_tis_pm,
+ 	},
+-#endif
+ };
+ 
+ #define TIS_HID_USR_IDX sizeof(tpm_pnp_tbl)/sizeof(struct pnp_device_id) -2
 -- 
 1.8.1.5
 
