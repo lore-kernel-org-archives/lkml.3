@@ -1,306 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566AbaADAuF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 19:50:05 -0500
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:45924 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754115AbaADAuD (ORCPT
+	id S1754404AbaADA7Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 19:59:16 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:35504 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753892AbaADA7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 19:50:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <1387485747-25759-2-git-send-email-apelete@seketeli.net>
-References: <1387485747-25759-1-git-send-email-apelete@seketeli.net>
-	<1387485747-25759-2-git-send-email-apelete@seketeli.net>
-Date: Sat, 4 Jan 2014 01:50:02 +0100
-Message-ID: <CAFLxGvzL-NE+3Y4tWAmCiXq1DsdEDB2zMpm52X_uVTy9u7sCCg@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] usb: musb: add support for JZ4740 usb device controller
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Apelete Seketeli <apelete@seketeli.net>
-Cc: linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 3 Jan 2014 19:59:14 -0500
+Date: Fri, 03 Jan 2014 19:59:13 -0500 (EST)
+Message-Id: <20140103.195913.1578018150201921315.davem@davemloft.net>
+To: Julia.Lawall@lip6.fr
+Cc: steve.glendinning@shawell.net, kernel-janitors@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] smsc9420: use named constants for pci_power_t
+ values
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1388706031-22180-4-git-send-email-Julia.Lawall@lip6.fr>
+References: <1388706031-22180-1-git-send-email-Julia.Lawall@lip6.fr>
+	<1388706031-22180-4-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 03 Jan 2014 16:59:14 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 9:42 PM, Apelete Seketeli <apelete@seketeli.net> wrote:
-> Add support for Ingenic JZ4740 USB Device Controller through a
-> specific musb glue layer.
->
-> JZ4740 UDC not being OTG compatible and missing some hardware
-> registers, this musb glue layer is written from scratch to be used in
-> gadget mode only and take silicon design specifics into account.
->
-> Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> ---
->  drivers/usb/musb/Kconfig  |    8 +-
->  drivers/usb/musb/Makefile |    1 +
->  drivers/usb/musb/jz4740.c |  201 +++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 209 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/usb/musb/jz4740.c
->
-> diff --git a/drivers/usb/musb/Kconfig b/drivers/usb/musb/Kconfig
-> index 57dfc0c..14d7e72 100644
-> --- a/drivers/usb/musb/Kconfig
-> +++ b/drivers/usb/musb/Kconfig
-> @@ -93,6 +93,12 @@ config USB_MUSB_BLACKFIN
->  config USB_MUSB_UX500
->         tristate "Ux500 platforms"
->
-> +config USB_MUSB_JZ4740
-> +       tristate "JZ4740"
-> +       depends on MACH_JZ4740 || COMPILE_TEST
-> +       depends on USB_MUSB_GADGET
-> +       depends on USB_OTG_BLACKLIST_HUB
-> +
->  endchoice
->
->  config USB_MUSB_AM335X_CHILD
-> @@ -100,7 +106,7 @@ config USB_MUSB_AM335X_CHILD
->
->  choice
->         prompt 'MUSB DMA mode'
-> -       default MUSB_PIO_ONLY if ARCH_MULTIPLATFORM
-> +       default MUSB_PIO_ONLY if ARCH_MULTIPLATFORM || USB_MUSB_JZ4740
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+Date: Fri,  3 Jan 2014 00:40:31 +0100
 
-Just out of curiosity, why can't we use DMA?
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> The semantic patch that makes this change is as follows:
+> (http://coccinelle.lip6.fr/)
+ ...
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
->         default USB_UX500_DMA if USB_MUSB_UX500
->         default USB_INVENTRA_DMA if USB_MUSB_OMAP2PLUS || USB_MUSB_BLACKFIN
->         default USB_TI_CPPI_DMA if USB_MUSB_DAVINCI
-> diff --git a/drivers/usb/musb/Makefile b/drivers/usb/musb/Makefile
-> index c5ea5c6..ba49501 100644
-> --- a/drivers/usb/musb/Makefile
-> +++ b/drivers/usb/musb/Makefile
-> @@ -19,6 +19,7 @@ obj-$(CONFIG_USB_MUSB_DAVINCI)                        += davinci.o
->  obj-$(CONFIG_USB_MUSB_DA8XX)                   += da8xx.o
->  obj-$(CONFIG_USB_MUSB_BLACKFIN)                        += blackfin.o
->  obj-$(CONFIG_USB_MUSB_UX500)                   += ux500.o
-> +obj-$(CONFIG_USB_MUSB_JZ4740)                  += jz4740.o
->
->
->  obj-$(CONFIG_USB_MUSB_AM335X_CHILD)            += musb_am335x.o
-> diff --git a/drivers/usb/musb/jz4740.c b/drivers/usb/musb/jz4740.c
-> new file mode 100644
-> index 0000000..5f30537
-> --- /dev/null
-> +++ b/drivers/usb/musb/jz4740.c
-> @@ -0,0 +1,201 @@
-> +/*
-> + * Ingenic JZ4740 "glue layer"
-> + *
-> + * Copyright (C) 2013, Apelete Seketeli <apelete@seketeli.net>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * You should have received a copy of the GNU General Public License along
-> + * with this program; if not, write to the Free Software Foundation, Inc.,
-> + * 675 Mass Ave, Cambridge, MA 02139, USA.
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/dma-mapping.h>
-> +#include <linux/errno.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/platform_device.h>
-> +
-> +#include "musb_core.h"
-> +
-> +struct jz4740_glue {
-> +       struct device           *dev;
-> +       struct platform_device  *musb;
-> +       struct clk              *clk;
-> +};
-> +
-> +static irqreturn_t jz4740_musb_interrupt(int irq, void *__hci)
-> +{
-> +       unsigned long   flags;
-> +       irqreturn_t     retval = IRQ_NONE;
-> +       struct musb     *musb = __hci;
-> +
-> +       spin_lock_irqsave(&musb->lock, flags);
-> +
-> +       musb->int_usb = musb_readb(musb->mregs, MUSB_INTRUSB);
-> +       musb->int_tx = musb_readw(musb->mregs, MUSB_INTRTX);
-> +       musb->int_rx = musb_readw(musb->mregs, MUSB_INTRRX);
-> +
-> +       /*
-> +        * The controller is gadget only, the state of the host mode IRQ bits is
-> +        * undefined. Mask them to make sure that the musb driver core will
-> +        * never see them set
-> +        */
-> +       musb->int_usb &= MUSB_INTR_SUSPEND | MUSB_INTR_RESUME |
-> +           MUSB_INTR_RESET | MUSB_INTR_SOF;
-> +
-> +       if (musb->int_usb || musb->int_tx || musb->int_rx)
-> +               retval = musb_interrupt(musb);
-> +
-> +       spin_unlock_irqrestore(&musb->lock, flags);
-> +
-> +       return retval;
-> +}
-> +
-> +static struct musb_fifo_cfg jz4740_musb_fifo_cfg[] = {
-> +{ .hw_ep_num = 1, .style = FIFO_TX, .maxpacket = 512, },
-> +{ .hw_ep_num = 1, .style = FIFO_RX, .maxpacket = 512, },
-> +{ .hw_ep_num = 2, .style = FIFO_TX, .maxpacket = 64, },
-> +};
-> +
-> +static struct musb_hdrc_config jz4740_musb_config = {
-> +       /* Silicon does not implement USB OTG. */
-> +       .multipoint = 0,
-> +       /* Max EPs scanned, driver will decide which EP can be used. */
-> +       .num_eps    = 4,
-> +       /* RAMbits needed to configure EPs from table */
-> +       .ram_bits   = 9,
-> +       .fifo_cfg = jz4740_musb_fifo_cfg,
-> +       .fifo_cfg_size = ARRAY_SIZE(jz4740_musb_fifo_cfg),
-> +};
-> +
-> +static struct musb_hdrc_platform_data jz4740_musb_platform_data = {
-> +       .mode   = MUSB_PERIPHERAL,
-> +       .config = &jz4740_musb_config,
-> +};
-> +
-> +static int jz4740_musb_init(struct musb *musb)
-> +{
-> +       musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
-> +       if (!musb->xceiv) {
-> +               pr_err("HS UDC: no transceiver configured\n");
-> +               return -ENODEV;
-> +       }
-> +
-> +       /* Silicon does not implement ConfigData register.
-> +        * Set dyn_fifo to avoid reading EP config from hardware.
-> +        */
-> +       musb->dyn_fifo = true;
-> +
-> +       musb->isr = jz4740_musb_interrupt;
-> +
-> +       return 0;
-> +}
-> +
-> +static int jz4740_musb_exit(struct musb *musb)
-> +{
-> +       usb_put_phy(musb->xceiv);
-> +
-> +       return 0;
-> +}
-> +
-> +static const struct musb_platform_ops jz4740_musb_ops = {
-> +       .init           = jz4740_musb_init,
-> +       .exit           = jz4740_musb_exit,
-> +};
-> +
-> +static int jz4740_probe(struct platform_device *pdev)
-> +{
-> +       struct musb_hdrc_platform_data  *pdata = &jz4740_musb_platform_data;
-> +       struct platform_device          *musb;
-> +       struct jz4740_glue              *glue;
-> +       struct clk                      *clk;
-> +       int                             ret;
-> +
-> +       glue = devm_kzalloc(&pdev->dev, sizeof(*glue), GFP_KERNEL);
-> +       if (!glue)
-> +               return -ENOMEM;
-> +
-> +       musb = platform_device_alloc("musb-hdrc", PLATFORM_DEVID_AUTO);
-> +       if (!musb) {
-> +               dev_err(&pdev->dev, "failed to allocate musb device\n");
-> +               return -ENOMEM;
-> +       }
-> +
-> +       clk = devm_clk_get(&pdev->dev, "udc");
-> +       if (IS_ERR(clk)) {
-> +               dev_err(&pdev->dev, "failed to get clock\n");
-> +               ret = PTR_ERR(clk);
-> +               goto err_platform_device_put;
-> +       }
-> +
-> +       ret = clk_prepare_enable(clk);
-> +       if (ret) {
-> +               dev_err(&pdev->dev, "failed to enable clock\n");
-> +               goto err_platform_device_put;
-> +       }
-> +
-> +       musb->dev.parent                = &pdev->dev;
-> +
-> +       glue->dev                       = &pdev->dev;
-> +       glue->musb                      = musb;
-> +       glue->clk                       = clk;
-> +
-> +       pdata->platform_ops             = &jz4740_musb_ops;
-> +
-> +       platform_set_drvdata(pdev, glue);
-> +
-> +       ret = platform_device_add_resources(musb, pdev->resource,
-> +                                           pdev->num_resources);
-> +       if (ret) {
-> +               dev_err(&pdev->dev, "failed to add resources\n");
-> +               goto err_clk_disable;
-> +       }
-> +
-> +       ret = platform_device_add_data(musb, pdata, sizeof(*pdata));
-> +       if (ret) {
-> +               dev_err(&pdev->dev, "failed to add platform_data\n");
-> +               goto err_clk_disable;
-> +       }
-> +
-> +       ret = platform_device_add(musb);
-> +       if (ret) {
-> +               dev_err(&pdev->dev, "failed to register musb device\n");
-> +               goto err_clk_disable;
-> +       }
-> +
-> +       return 0;
-> +
-> +err_clk_disable:
-> +       clk_disable_unprepare(clk);
-> +err_platform_device_put:
-> +       platform_device_put(musb);
-> +       return ret;
-> +}
-> +
-> +static int jz4740_remove(struct platform_device *pdev)
-> +{
-> +       struct jz4740_glue      *glue = platform_get_drvdata(pdev);
-> +
-> +       platform_device_unregister(glue->musb);
-> +       clk_disable_unprepare(glue->clk);
-> +
-> +       return 0;
-> +}
-> +
-> +static struct platform_driver jz4740_driver = {
-> +       .probe          = jz4740_probe,
-> +       .remove         = jz4740_remove,
-> +       .driver         = {
-> +               .name   = "musb-jz4740",
-> +       },
-> +};
-> +
-> +MODULE_DESCRIPTION("JZ4740 MUSB Glue Layer");
-> +MODULE_AUTHOR("Apelete Seketeli <apelete@seketeli.net>");
-> +MODULE_LICENSE("GPL v2");
-> +module_platform_driver(jz4740_driver);
-> --
-> 1.7.10.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
--- 
-Thanks,
-//richard
+Applied, thanks Julia.
