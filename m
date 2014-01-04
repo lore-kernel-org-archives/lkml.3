@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754921AbaADUhB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 15:37:01 -0500
-Received: from hygieia.santi-shop.eu ([78.46.175.2]:55540 "EHLO
-	hygieia.santi-shop.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753367AbaADUhA (ORCPT
+	id S1755001AbaADUkR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 15:40:17 -0500
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:60523 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754352AbaADUkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 15:37:00 -0500
-Date: Sat, 4 Jan 2014 21:36:54 +0100
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: "Gideon D'souza" <gidisrael@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: How does a newbie find work?
-Message-ID: <20140104213654.0f0b34f2@neptune.home>
-In-Reply-To: <CAPNrq4yXdbdfq4hrtZdZn_5UDPduGoTCNJb1-9u-Qf1nf2RgXQ@mail.gmail.com>
-References: <CAPNrq4yXdbdfq4hrtZdZn_5UDPduGoTCNJb1-9u-Qf1nf2RgXQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.22; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 4 Jan 2014 15:40:16 -0500
+MIME-Version: 1.0
+Date: Sat, 4 Jan 2014 12:40:14 -0800
+Message-ID: <CAC2Wwaxuxh7Qz=Ko8gPL0A_x7LpxXucgf+p37+44eq6XH2H2HQ@mail.gmail.com>
+Subject: error when getting page from page table in KVM ept violation handler
+From: Ruby Zhang <littleegg.zhang@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gideon,
+Hi,
+I'm trying to get a page structure at KVM ept violation handler (in
+tdp_page_fault). My code is invoked when tdp_page_fault calls
+__direct_map (where the page fault should have been handled, is it?).
+But I get a "unable to handle kerenel paging request" error
+occasionally when I try to access the second double word of the page
+structure. Here's my code:
 
-On Sat, 04 January 2014 "Gideon D'souza" <gidisrael@gmail.com> wrote:
-> I've been looking to hacking at the kernel for a long time now.
-> 
-> I've managed to have a good setup, build the latest stable kernel and
-> boot from it. I've read some of the docs, Coding Styles etc and
-> watched GregKH's talks on youtube. I'm also reading Robert Love's
-> Linux Kernel Development.
-> 
-> 
-> Id like now to get my hands dirty but I can't seem to find something
-> simple to do. I posted to kernel janitors and kernel mentors, but no
-> dice. The bugs list looks thoroughly contrived.
-> 
-> I've made small contributions to other OSS projects before but now I'm
-> at a loss for how to study the kernel code base, what to try to
-> break/change to study how the kernel works.
-> 
-> Is there some simple work a newbie like me can take up? Any maintainer
-> need some grunt work done? Or perhaps someone could suggest a pet
-> project I could try to understand things better? (Should I be learning
-> how to write device drivers?)
-> 
-> Things that are very interesting to me so far are the KVM and the Scheduler.
+Inside __direct_map
 
-Starting with writing some driver (or improving existing drivers) is one
-option, though that wont get you doing work in relation with the scheduler
-(maybe there is some minor driver-like work for KVM though, don't know).
+for_each_shadow_entry(vcpu, (u64)gfn << PAGE_SHIFT, iterator) {
+   if (iterator.level == level) {
+       mmu_set_spte(vcpu, iterator.sptep, ACC_ALL,
+             write, &emulate, level, gfn, pfn, prefault, map_writeable);
+       direct_pte_prefetch(vcpu, iterator.sptep);
+       ++vcpu->stat.pf_fixed;
+// beginning of my code:
+     if (level == 1) {
+       pgd_t *pgdp;
+       pud_t *pudp;
+       pmd_t *pmdp;
+       pte_t *ptep;
+       unsigned long hva = gfn_to_hva(vcpu->kvm, gfn);
+       struct page *page = NULL;
+       pgdp = pgd_offset(current->mm, hva);
+       if (!pgd_present(*pgdp))
+           goto out;
+       pudp = pud_offset(pgdp, hva);
+       if (!pud_present(*pudp))
+           goto out;
+       pmdp = pmd_offset(pudp, hva);
+       if (!pmd_preset(*pmdp))
+          goto out;
+       ptep = pte_offset_map(pmdp, hva);
+       if (!pte_present(*ptep) || pte_none(*ptep))
+          goto out;
+       if (!pfn_valid(pte_pfn(*ptep)))
+          goto out;
+       page = pte_page(*ptep);
+       if (!page)
+          goto out;
 
-A better start, and at least as useful is to read and review patches
-flowing by that affect your areas of interest, test them and provide
-feedback about possible bugs or improvements (proposing patches to fix
-those if applicable or even just providing performance data [what
-workloads benefit or suffer from given feature-patches and by how much]
-for things like scheduler changes).
+// this prink gives the unable to handle paging request" error:
+      printk(KERN_CRIT "page %p count %d mapping %p\n",
+            page, atomic_read(&page->_count), page->mapping);
 
-This way you will get to know the development process, maintainers
-and the internals of the kernel in those areas - don't forget to subscribe
-to the specific mailing lists!
+out:
+.........
+     }
 
-Regards,
-Bruno
+// end of my code
 
-> Regards,
-> Gideon
+}
+
+Is there anything I did wrong here to get the page? The error only
+happens occasionally.
+
+Thanks
