@@ -1,120 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513AbaADAtP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 19:49:15 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:47257 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754442AbaADAtN (ORCPT
+	id S1754566AbaADAuF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 19:50:05 -0500
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:45924 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754115AbaADAuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 19:49:13 -0500
-Date: Fri, 3 Jan 2014 16:48:00 -0800
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com, jbeulich@suse.com
-Subject: Re: [Xen-devel] [PATCH v11 09/12] xen/pvh: Piggyback on PVHVM
- XenBus and event channels for PVH.
-Message-ID: <20140103164800.00ef581c@mantra.us.oracle.com>
-In-Reply-To: <20131218211739.GD11717@phenom.dumpdata.com>
-References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
-	<1387313503-31362-10-git-send-email-konrad.wilk@oracle.com>
-	<alpine.DEB.2.02.1312181827280.8667@kaball.uk.xensource.com>
-	<20131218211739.GD11717@phenom.dumpdata.com>
-Organization: Oracle Corporation
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Fri, 3 Jan 2014 19:50:03 -0500
+MIME-Version: 1.0
+In-Reply-To: <1387485747-25759-2-git-send-email-apelete@seketeli.net>
+References: <1387485747-25759-1-git-send-email-apelete@seketeli.net>
+	<1387485747-25759-2-git-send-email-apelete@seketeli.net>
+Date: Sat, 4 Jan 2014 01:50:02 +0100
+Message-ID: <CAFLxGvzL-NE+3Y4tWAmCiXq1DsdEDB2zMpm52X_uVTy9u7sCCg@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] usb: musb: add support for JZ4740 usb device controller
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Apelete Seketeli <apelete@seketeli.net>
+Cc: linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Dec 2013 16:17:39 -0500
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+On Thu, Dec 19, 2013 at 9:42 PM, Apelete Seketeli <apelete@seketeli.net> wrote:
+> Add support for Ingenic JZ4740 USB Device Controller through a
+> specific musb glue layer.
+>
+> JZ4740 UDC not being OTG compatible and missing some hardware
+> registers, this musb glue layer is written from scratch to be used in
+> gadget mode only and take silicon design specifics into account.
+>
+> Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> ---
+>  drivers/usb/musb/Kconfig  |    8 +-
+>  drivers/usb/musb/Makefile |    1 +
+>  drivers/usb/musb/jz4740.c |  201 +++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 209 insertions(+), 1 deletion(-)
+>  create mode 100644 drivers/usb/musb/jz4740.c
+>
+> diff --git a/drivers/usb/musb/Kconfig b/drivers/usb/musb/Kconfig
+> index 57dfc0c..14d7e72 100644
+> --- a/drivers/usb/musb/Kconfig
+> +++ b/drivers/usb/musb/Kconfig
+> @@ -93,6 +93,12 @@ config USB_MUSB_BLACKFIN
+>  config USB_MUSB_UX500
+>         tristate "Ux500 platforms"
+>
+> +config USB_MUSB_JZ4740
+> +       tristate "JZ4740"
+> +       depends on MACH_JZ4740 || COMPILE_TEST
+> +       depends on USB_MUSB_GADGET
+> +       depends on USB_OTG_BLACKLIST_HUB
+> +
+>  endchoice
+>
+>  config USB_MUSB_AM335X_CHILD
+> @@ -100,7 +106,7 @@ config USB_MUSB_AM335X_CHILD
+>
+>  choice
+>         prompt 'MUSB DMA mode'
+> -       default MUSB_PIO_ONLY if ARCH_MULTIPLATFORM
+> +       default MUSB_PIO_ONLY if ARCH_MULTIPLATFORM || USB_MUSB_JZ4740
 
-> On Wed, Dec 18, 2013 at 06:31:43PM +0000, Stefano Stabellini wrote:
-> > On Tue, 17 Dec 2013, Konrad Rzeszutek Wilk wrote:
-> > > From: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > > 
-> > > PVH is a PV guest with a twist - there are certain things
-> > > that work in it like HVM and some like PV. There is
-> > > a similar mode - PVHVM where we run in HVM mode with
-> > > PV code enabled - and this patch explores that.
-> > > 
-> > > The most notable PV interfaces are the XenBus and event channels.
-> > > For PVH, we will use XenBus and event channels.
-> > > 
-> > > For the XenBus mechanism we piggyback on how it is done for
-> > > PVHVM guests.
-> > > 
-> > > Ditto for the event channel mechanism - we piggyback on PVHVM -
-> > > by setting up a specific vector callback and that
-> > > vector ends up calling the event channel mechanism to
-> > > dispatch the events as needed.
-> > > 
-> > > This means that from a pvops perspective, we can use
-> > > native_irq_ops instead of the Xen PV specific. Albeit in the
-> > > future we could support pirq_eoi_map. But that is
-> > > a feature request that can be shared with PVHVM.
-> > > 
-> > > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > > ---
-> > >  arch/x86/xen/enlighten.c           | 6 ++++++
-> > >  arch/x86/xen/irq.c                 | 5 ++++-
-> > >  drivers/xen/events.c               | 5 +++++
-> > >  drivers/xen/xenbus/xenbus_client.c | 3 ++-
-> > >  4 files changed, 17 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> > > index e420613..7fceb51 100644
-> > > --- a/arch/x86/xen/enlighten.c
-> > > +++ b/arch/x86/xen/enlighten.c
-> > > @@ -1134,6 +1134,8 @@ void xen_setup_shared_info(void)
-> > >  	/* In UP this is as good a place as any to set up shared
-> > > info */ xen_setup_vcpu_info_placement();
-> > >  #endif
-> > > +	if (xen_pvh_domain())
-> > > +		return;
-> > >  
-> > >  	xen_setup_mfn_list_list();
-> > >  }
-> > 
-> > This is another one of those cases where I think we would benefit
-> > from introducing xen_setup_shared_info_pvh instead of adding more
-> > ifs here.
-> 
-> Actually this one can be removed.
-> 
-> > 
-> > 
-> > > @@ -1146,6 +1148,10 @@ void xen_setup_vcpu_info_placement(void)
-> > >  	for_each_possible_cpu(cpu)
-> > >  		xen_vcpu_setup(cpu);
-> > >  
-> > > +	/* PVH always uses native IRQ ops */
-> > > +	if (xen_pvh_domain())
-> > > +		return;
-> > > +
-> > >  	/* xen_vcpu_setup managed to place the vcpu_info within
-> > > the percpu area for all cpus, so make use of it */
-> > >  	if (have_vcpu_info_placement) {
-> > 
-> > Same here?
-> 
-> Hmmm, I wonder if the vcpu info placement could work with PVH.
+Just out of curiosity, why can't we use DMA?
 
-It should now (after a patch I sent while ago)... the comment implies
-that PVH uses native IRQs even case of vcpu info placlement...
+>         default USB_UX500_DMA if USB_MUSB_UX500
+>         default USB_INVENTRA_DMA if USB_MUSB_OMAP2PLUS || USB_MUSB_BLACKFIN
+>         default USB_TI_CPPI_DMA if USB_MUSB_DAVINCI
+> diff --git a/drivers/usb/musb/Makefile b/drivers/usb/musb/Makefile
+> index c5ea5c6..ba49501 100644
+> --- a/drivers/usb/musb/Makefile
+> +++ b/drivers/usb/musb/Makefile
+> @@ -19,6 +19,7 @@ obj-$(CONFIG_USB_MUSB_DAVINCI)                        += davinci.o
+>  obj-$(CONFIG_USB_MUSB_DA8XX)                   += da8xx.o
+>  obj-$(CONFIG_USB_MUSB_BLACKFIN)                        += blackfin.o
+>  obj-$(CONFIG_USB_MUSB_UX500)                   += ux500.o
+> +obj-$(CONFIG_USB_MUSB_JZ4740)                  += jz4740.o
+>
+>
+>  obj-$(CONFIG_USB_MUSB_AM335X_CHILD)            += musb_am335x.o
+> diff --git a/drivers/usb/musb/jz4740.c b/drivers/usb/musb/jz4740.c
+> new file mode 100644
+> index 0000000..5f30537
+> --- /dev/null
+> +++ b/drivers/usb/musb/jz4740.c
+> @@ -0,0 +1,201 @@
+> +/*
+> + * Ingenic JZ4740 "glue layer"
+> + *
+> + * Copyright (C) 2013, Apelete Seketeli <apelete@seketeli.net>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * You should have received a copy of the GNU General Public License along
+> + * with this program; if not, write to the Free Software Foundation, Inc.,
+> + * 675 Mass Ave, Cambridge, MA 02139, USA.
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/dma-mapping.h>
+> +#include <linux/errno.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +
+> +#include "musb_core.h"
+> +
+> +struct jz4740_glue {
+> +       struct device           *dev;
+> +       struct platform_device  *musb;
+> +       struct clk              *clk;
+> +};
+> +
+> +static irqreturn_t jz4740_musb_interrupt(int irq, void *__hci)
+> +{
+> +       unsigned long   flags;
+> +       irqreturn_t     retval = IRQ_NONE;
+> +       struct musb     *musb = __hci;
+> +
+> +       spin_lock_irqsave(&musb->lock, flags);
+> +
+> +       musb->int_usb = musb_readb(musb->mregs, MUSB_INTRUSB);
+> +       musb->int_tx = musb_readw(musb->mregs, MUSB_INTRTX);
+> +       musb->int_rx = musb_readw(musb->mregs, MUSB_INTRRX);
+> +
+> +       /*
+> +        * The controller is gadget only, the state of the host mode IRQ bits is
+> +        * undefined. Mask them to make sure that the musb driver core will
+> +        * never see them set
+> +        */
+> +       musb->int_usb &= MUSB_INTR_SUSPEND | MUSB_INTR_RESUME |
+> +           MUSB_INTR_RESET | MUSB_INTR_SOF;
+> +
+> +       if (musb->int_usb || musb->int_tx || musb->int_rx)
+> +               retval = musb_interrupt(musb);
+> +
+> +       spin_unlock_irqrestore(&musb->lock, flags);
+> +
+> +       return retval;
+> +}
+> +
+> +static struct musb_fifo_cfg jz4740_musb_fifo_cfg[] = {
+> +{ .hw_ep_num = 1, .style = FIFO_TX, .maxpacket = 512, },
+> +{ .hw_ep_num = 1, .style = FIFO_RX, .maxpacket = 512, },
+> +{ .hw_ep_num = 2, .style = FIFO_TX, .maxpacket = 64, },
+> +};
+> +
+> +static struct musb_hdrc_config jz4740_musb_config = {
+> +       /* Silicon does not implement USB OTG. */
+> +       .multipoint = 0,
+> +       /* Max EPs scanned, driver will decide which EP can be used. */
+> +       .num_eps    = 4,
+> +       /* RAMbits needed to configure EPs from table */
+> +       .ram_bits   = 9,
+> +       .fifo_cfg = jz4740_musb_fifo_cfg,
+> +       .fifo_cfg_size = ARRAY_SIZE(jz4740_musb_fifo_cfg),
+> +};
+> +
+> +static struct musb_hdrc_platform_data jz4740_musb_platform_data = {
+> +       .mode   = MUSB_PERIPHERAL,
+> +       .config = &jz4740_musb_config,
+> +};
+> +
+> +static int jz4740_musb_init(struct musb *musb)
+> +{
+> +       musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
+> +       if (!musb->xceiv) {
+> +               pr_err("HS UDC: no transceiver configured\n");
+> +               return -ENODEV;
+> +       }
+> +
+> +       /* Silicon does not implement ConfigData register.
+> +        * Set dyn_fifo to avoid reading EP config from hardware.
+> +        */
+> +       musb->dyn_fifo = true;
+> +
+> +       musb->isr = jz4740_musb_interrupt;
+> +
+> +       return 0;
+> +}
+> +
+> +static int jz4740_musb_exit(struct musb *musb)
+> +{
+> +       usb_put_phy(musb->xceiv);
+> +
+> +       return 0;
+> +}
+> +
+> +static const struct musb_platform_ops jz4740_musb_ops = {
+> +       .init           = jz4740_musb_init,
+> +       .exit           = jz4740_musb_exit,
+> +};
+> +
+> +static int jz4740_probe(struct platform_device *pdev)
+> +{
+> +       struct musb_hdrc_platform_data  *pdata = &jz4740_musb_platform_data;
+> +       struct platform_device          *musb;
+> +       struct jz4740_glue              *glue;
+> +       struct clk                      *clk;
+> +       int                             ret;
+> +
+> +       glue = devm_kzalloc(&pdev->dev, sizeof(*glue), GFP_KERNEL);
+> +       if (!glue)
+> +               return -ENOMEM;
+> +
+> +       musb = platform_device_alloc("musb-hdrc", PLATFORM_DEVID_AUTO);
+> +       if (!musb) {
+> +               dev_err(&pdev->dev, "failed to allocate musb device\n");
+> +               return -ENOMEM;
+> +       }
+> +
+> +       clk = devm_clk_get(&pdev->dev, "udc");
+> +       if (IS_ERR(clk)) {
+> +               dev_err(&pdev->dev, "failed to get clock\n");
+> +               ret = PTR_ERR(clk);
+> +               goto err_platform_device_put;
+> +       }
+> +
+> +       ret = clk_prepare_enable(clk);
+> +       if (ret) {
+> +               dev_err(&pdev->dev, "failed to enable clock\n");
+> +               goto err_platform_device_put;
+> +       }
+> +
+> +       musb->dev.parent                = &pdev->dev;
+> +
+> +       glue->dev                       = &pdev->dev;
+> +       glue->musb                      = musb;
+> +       glue->clk                       = clk;
+> +
+> +       pdata->platform_ops             = &jz4740_musb_ops;
+> +
+> +       platform_set_drvdata(pdev, glue);
+> +
+> +       ret = platform_device_add_resources(musb, pdev->resource,
+> +                                           pdev->num_resources);
+> +       if (ret) {
+> +               dev_err(&pdev->dev, "failed to add resources\n");
+> +               goto err_clk_disable;
+> +       }
+> +
+> +       ret = platform_device_add_data(musb, pdata, sizeof(*pdata));
+> +       if (ret) {
+> +               dev_err(&pdev->dev, "failed to add platform_data\n");
+> +               goto err_clk_disable;
+> +       }
+> +
+> +       ret = platform_device_add(musb);
+> +       if (ret) {
+> +               dev_err(&pdev->dev, "failed to register musb device\n");
+> +               goto err_clk_disable;
+> +       }
+> +
+> +       return 0;
+> +
+> +err_clk_disable:
+> +       clk_disable_unprepare(clk);
+> +err_platform_device_put:
+> +       platform_device_put(musb);
+> +       return ret;
+> +}
+> +
+> +static int jz4740_remove(struct platform_device *pdev)
+> +{
+> +       struct jz4740_glue      *glue = platform_get_drvdata(pdev);
+> +
+> +       platform_device_unregister(glue->musb);
+> +       clk_disable_unprepare(glue->clk);
+> +
+> +       return 0;
+> +}
+> +
+> +static struct platform_driver jz4740_driver = {
+> +       .probe          = jz4740_probe,
+> +       .remove         = jz4740_remove,
+> +       .driver         = {
+> +               .name   = "musb-jz4740",
+> +       },
+> +};
+> +
+> +MODULE_DESCRIPTION("JZ4740 MUSB Glue Layer");
+> +MODULE_AUTHOR("Apelete Seketeli <apelete@seketeli.net>");
+> +MODULE_LICENSE("GPL v2");
+> +module_platform_driver(jz4740_driver);
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-perhaps it would be more clear to do:
 
-        for_each_possible_cpu(cpu)
-                xen_vcpu_setup(cpu);
-        /* PVH always uses native IRQ ops */
-        if (have_vcpu_info_placement && !xen_pvh_domain) {
-            pv_irq_ops.save_fl = __PV_IS_CALLEE_SAVE(xen_save_fl_direct);
-            .........
 
+-- 
+Thanks,
+//richard
