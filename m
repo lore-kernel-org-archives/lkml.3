@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754611AbaADOZv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 09:25:51 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:34376 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753270AbaADOZu (ORCPT
+	id S1754664AbaADOb7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 09:31:59 -0500
+Received: from mail-qe0-f53.google.com ([209.85.128.53]:33860 "EHLO
+	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753680AbaADOb5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 09:25:50 -0500
-Message-ID: <52C819E2.8090509@oracle.com>
-Date: Sat, 04 Jan 2014 09:25:38 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Sat, 4 Jan 2014 09:31:57 -0500
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: mm: kernel BUG at mm/huge_memory.c:1440!
-References: <52B88F6E.8070909@oracle.com> <20131223200255.GA18521@node.dhcp.inet.fi> <52B8AAFD.5090401@oracle.com>
-In-Reply-To: <52B8AAFD.5090401@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+From: "Gideon D'souza" <gidisrael@gmail.com>
+Date: Sat, 4 Jan 2014 20:01:36 +0530
+Message-ID: <CAPNrq4yXdbdfq4hrtZdZn_5UDPduGoTCNJb1-9u-Qf1nf2RgXQ@mail.gmail.com>
+Subject: How does a newbie find work?
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/2013 04:28 PM, Sasha Levin wrote:
-> On 12/23/2013 03:02 PM, Kirill A. Shutemov wrote:
->>> [  265.474585] kernel BUG at mm/huge_memory.c:1440!
->> Could you dump_page() on the bug?
->
-> [  469.007946] page:ffffea0005bd8000 count:3 mapcount:0 mapping:ffff8800bcd3d171 index: 0x7fca81000
-> [  469.009362] page flags: 0x2afffff80090018(uptodate|dirty|swapcache|swapbacked)
+Hey Guys,
 
-Ping? It still shows up in 3.13-rc6.
+I've been looking to hacking at the kernel for a long time now.
+
+I've managed to have a good setup, build the latest stable kernel and
+boot from it. I've read some of the docs, Coding Styles etc and
+watched GregKH's talks on youtube. I'm also reading Robert Love's
+Linux Kernel Development.
 
 
-Thanks,
-Sasha
+Id like now to get my hands dirty but I can't seem to find something
+simple to do. I posted to kernel janitors and kernel mentors, but no
+dice. The bugs list looks thoroughly contrived.
 
+I've made small contributions to other OSS projects before but now I'm
+at a loss for how to study the kernel code base, what to try to
+break/change to study how the kernel works.
+
+Is there some simple work a newbie like me can take up? Any maintainer
+need some grunt work done? Or perhaps someone could suggest a pet
+project I could try to understand things better? (Should I be learning
+how to write device drivers?)
+
+Things that are very interesting to me so far are the KVM and the Scheduler.
+
+
+Regards,
+Gideon
