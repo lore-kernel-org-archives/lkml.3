@@ -1,102 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591AbaADB1v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jan 2014 20:27:51 -0500
-Received: from mga09.intel.com ([134.134.136.24]:29961 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753866AbaADB1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jan 2014 20:27:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,601,1384329600"; 
-   d="asc'?scan'208";a="433724350"
-Message-ID: <1388798859.2275.5.camel@jtkirshe-mobl>
-Subject: Re: [net-next] pci_regs.h: Add PCI bus link speed and width defines
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: David Miller <davem@davemloft.net>
-Cc: bhelgaas@google.com, jesse.brandeburg@gmail.com, linux-pci@vger.kernel.org,
-        netdev@vger.kernel.org, gospo@redhat.com, sassmann@redhat.com,
-        linux-kernel@vger.kernel.org, bjorn.helgaas@hp.com
-Date: Fri, 03 Jan 2014 17:27:39 -0800
-In-Reply-To: <20140103.193008.684316024702680161.davem@davemloft.net>
-References: <CAErSpo7K3OBuTEZrXmhQ3iXtLf3M5JNnEqmAvaceroJ46VAOKg@mail.gmail.com>
-	 <20140103.185607.1380379872647540168.davem@davemloft.net>
-	 <CAErSpo7TJXTCxpFKWXLTaHmqXXnYQdnpNeWt+cehSaES2Jh30w@mail.gmail.com>
-	 <20140103.193008.684316024702680161.davem@davemloft.net>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-bc8+RZ/we7a+7iRUIBQh"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	id S1754602AbaADBaS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jan 2014 20:30:18 -0500
+Received: from emea01-am1-ndr.ptr.protection.outlook.com ([157.56.116.103]:34311
+	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753967AbaADBaR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jan 2014 20:30:17 -0500
+Content-Type: text/plain; charset=US-ASCII
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Personal Loan
+To: Recipients <bussinesservice0005@businessloan183.onmicrosoft.com>
+From: "''Hyde Finance Loan Company''" 
+	<bussinesservice0005@businessloan183.onmicrosoft.com>
+Date: Sat, 4 Jan 2014 06:59:36 +0530
+Reply-To: <hydenance@gmail.com>
+Message-ID: <b2f4ad77-915e-4230-a3ca-891abaeb215e@SIXPR03MB208.apcprd03.prod.outlook.com>
+X-Originating-IP: [180.215.221.154]
+X-ClientProxiedBy: DM2PR05CA017.namprd05.prod.outlook.com (10.141.154.155)
+ To SIXPR03MB208.apcprd03.prod.outlook.com (10.242.150.22)
+X-Forefront-PRVS: 008184426E
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(10019001)(189002)(199002)(74876001)(66066001)(46102001)(85852003)(4396001)(81686001)(65816001)(31686002)(19580395003)(47776003)(64872005)(50466002)(47736001)(47976001)(87976001)(50986001)(63696002)(558084003)(49866001)(81542001)(33646001)(74706001)(74366001)(76796001)(53256004)(80022001)(47446002)(85306002)(76482001)(90146001)(1496004)(56816005)(19580405001)(69226001)(51856001)(83322001)(77096001)(80976001)(87266001)(17643785005)(76576001)(54356001)(76176001)(77982001)(81342001)(54316002)(83072002)(89136003)(43066001)(74662001)(76786001)(74502001)(79102001)(81816001)(74316001)(56776001)(59766001)(42186004)(221733001)(23756003)(62346011);DIR:OUT;SFP:1501;SCL:5;SRVR:SIXPR03MB208;H:[180.215.221.154];CLIP:180.215.221.154;FPR:;RD:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: businessloan183.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-bc8+RZ/we7a+7iRUIBQh
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Fri, 2014-01-03 at 19:30 -0500, David Miller wrote:
-> From: Bjorn Helgaas <bhelgaas@google.com>
-> Date: Fri, 3 Jan 2014 17:00:42 -0700
->=20
-> > On Fri, Jan 3, 2014 at 4:56 PM, David Miller <davem@davemloft.net> wrot=
-e:
-> >> From: Bjorn Helgaas <bhelgaas@google.com>
-> >> Date: Fri, 3 Jan 2014 15:15:57 -0700
-> >>
-> >>> However, I do raise my eyebrows a bit at drivers that poke around in
-> >>> the PCIe capability.  I would prefer to have PCI core interfaces that
-> >>> handle that instead.  But I haven't seen Jeff's changes yet.
-> >>
-> >> The changes just read the link status to interpret the speed at which
-> >> the PCI-E link is running at.
-> >=20
-> > Several drivers want to do that.  It'd be nice if somebody abstracted
-> > that out somehow.  Jacob added pcie_get_minimum_link() which is
-> > similar.  But maybe Jeff needs something more in this case.
-> >=20
-> > In any case, it's not a blocker for this patch.
->=20
-> Ok.
->=20
-> Jeff, please merge this via the Intel submission process and don't forget
-> to add Bjorn's ACK.
->=20
-> Thanks.
-
-Ok, will do.  What do you want to do with the current series of patches
-(mainly the ixgbe LER patches) on my tree?  I know that there is a
-thread going on between Joe Perches and Mark, but it sounded like Mark
-is working on a follow-on patch to address Joe's concerns.
-
-Guess I want to know if I leave my tree alone for you to pull or toss
-the current pull request series and get the i40e series applied.
-
-Cheers,
-Jeff
-
---=-bc8+RZ/we7a+7iRUIBQh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAABCgAGBQJSx2OLAAoJEOVv75VaS+3OD0YQAJYpxBJNhXgmwleu7tbOAbUU
-1W2HBbDfZmBt6AnQb12HqPDYcoGUedYEYUf/PCwBJhSEqcRkOKOCypQ9SXS7rodv
-CDyD0HmYgh73xgeSj8KHz4auWhqQ/YmrOWCegFzl+E81vgsqCad+K6geN7Gd4Y6Q
-DLrsl9y8s2llbky96NI8/UbJAgQvyml3oxEi+ylXiAp+Ct2DOsJ9ddJM29fM944N
-BYPZQft1Fc9wVK4G12cHtB0ebCnx8+jAU/IPjobOGL0Tbpx6HfeN/KQJ1WAYnd0c
-R4HCndqYjqf2cQMRJ8jLKmhIWUlD8jvdE19oJ+lsbTuF0CXBB7AFS6CAbSTZ8/NJ
-d8x+k2Dy1LlxIf2u6uOX9QkMdJckIsoJ8U6DClnbxYzEHpDzF47ewsI+0lWx4h7S
-vBk2UaxU7esIzDQTX9dCIy9Vl4c7htQMdkxCqvdy2YFDL2XpW8iUJ+eResClA5oO
-KEIaOq65B4K/HLQSiFaZYhAJKM5L0F08QxoxmdgugNsF3UG33kFAsKm1KJTb5zap
-ARlTM+1GK3+5dwVV8a+PxKkXBj60z+ZQg/lhrhkj0hTEkAKc0Shapcgv2Jcn/1t8
-negrW1A8pHb9KhSsYrXyE4x6Ur3TxBlNBKqzO2jkzOdrqx1kob9uH9edysO9L2qo
-P5EcvYhxN2ljxx7fDpc6
-=1RgL
------END PGP SIGNATURE-----
-
---=-bc8+RZ/we7a+7iRUIBQh--
-
+Are you in any kind of financial difficulties? if yes,Contact hydenance@gmail.com now for more details.
