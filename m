@@ -1,330 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561AbaADOiC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 09:38:02 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:55326 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753408AbaADOh6 (ORCPT
+	id S1754572AbaADPFw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 10:05:52 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:58899 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753680AbaADPFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 09:37:58 -0500
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Kamil Debski <k.debski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        kyungmin.park@samsung.com, kishon@ti.com, t.figa@samsung.com,
-        s.nawrocki@samsung.com, m.szyprowski@samsung.com,
-        gautam.vivek@samsung.com, mat.krawczuk@gmail.com,
-        yulgon.kim@samsung.com, p.paneri@samsung.com,
-        av.tikhomirov@samsung.com, jg1.han@samsung.com, galak@codeaurora.org,
-        matt.porter@linaro.org, tjakobi@math.uni-bielefeld.de,
-        stern@rowland.harvard.edu
-Subject: [PATCH v6 6/9] phy: Add support for S5PV210 to the Exynos USB 2.0 PHY driver
-Date: Sat, 04 Jan 2014 15:37:53 +0100
-Message-ID: <99213501.qYql54IFOy@flatron>
-User-Agent: KMail/4.12 (Linux/3.12.6-gentoo; KDE/4.12.0; x86_64; ; )
-In-Reply-To: <1387545857-9472-7-git-send-email-k.debski@samsung.com>
-References: <1387545857-9472-1-git-send-email-k.debski@samsung.com> <1387545857-9472-7-git-send-email-k.debski@samsung.com>
+	Sat, 4 Jan 2014 10:05:50 -0500
+Date: Sat, 4 Jan 2014 16:05:41 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Joseph Schuchart <joseph.schuchart@tu-dresden.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        thomas.ilsche@tu-dresden.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Perf: Correct Assumptions about Sample Timestamps in
+ Passes
+Message-ID: <20140104150539.GA17617@localhost.localdomain>
+References: <52B437AA.4090102@tu-dresden.de>
+ <52B479E1.7020204@gmail.com>
+ <20131223131051.GB585@localhost.localdomain>
+ <52B84C49.70001@gmail.com>
+ <20131226151429.GA15303@localhost.localdomain>
+ <52BC4A13.1090508@gmail.com>
+ <20131226153033.GC15303@localhost.localdomain>
+ <52C46083.9070605@gmail.com>
+ <20140103220745.GB11061@localhost.localdomain>
+ <52C73D90.3020904@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52C73D90.3020904@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mateusz Krawczuk <mat.krawczuk@gmail.com>
+On Fri, Jan 03, 2014 at 03:45:36PM -0700, David Ahern wrote:
+> On 1/3/14, 3:07 PM, Frederic Weisbecker wrote:
+> >I'm not sure I understand why we need that. Why doesn't it work by simply flushing
+> >events prior to the earliest timestamp among every CPUs last event?
+> 
+> Here's one scenario. Consider N-mmaps:
+> 
+>        |----- t_flush
+>        v
+> 0   -----|---x------------------------
+> 1   -----|----|------------------------
+> ...      |
+> N   -----|-------ssss-|-----------------
+> 
+>      t_start t_1 ... t_N
+> 
+> You start a round at some time -- t_start. By starting a round it
+> means you go to mmap 0 and check for events, then mmap 1, ..., mmap
+> N. It takes a finite amount of time to move from one mmap to
+> another.
+> 
+> Assume there are no events on mmap 0, 1, ... N-1 but samples are
+> generated in mmap N. In the time it takes to move forward from 0 to
+> N, a sample can be generated for mmap 0 and written to the buffer -
+> the 'x' above. It now contains a timestamp < than samples on any
+> other mmap and out pops the flush error.
 
-Add support for the Samsung's S5PV210 SoC to the Exynos USB 2.0 PHY driver.
+Lets reformulate as following. I'm copy-pasting the example in session.c
+but adapting it to your scenario.
 
-Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-[k.debski@samsung.com: cleanup and commit description]
-[k.debski@samsung.com: make changes accordingly to the mailing list
-comments]
-Signed-off-by: Kamil Debski <k.debski@samsung.com>
-[tomasz.figa@gmail.com: fix compilation issues and UPHYCLK register
-setup]
-Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
----
- .../devicetree/bindings/phy/samsung-phy.txt        |   1 +
- drivers/phy/Kconfig                                |  10 ++
- drivers/phy/Makefile                               |   1 +
- drivers/phy/phy-s5pv210-usb2.c                     | 188 +++++++++++++++++++++
- drivers/phy/phy-samsung-usb2.c                     |   6 +
- drivers/phy/phy-samsung-usb2.h                     |   1 +
- 6 files changed, 207 insertions(+)
- create mode 100644 drivers/phy/phy-s5pv210-usb2.c
+ *    ============ PASS n =================
+ *       CPU 0         |   CPU 1
+ *                     |
+ *          -          |         2
+ *          -          |         3
+ *          -          |         4  <--- max recorded
+ *
+ *    ============ PASS n + 1 ==============
+ *       CPU 0         |   CPU 1
+ *                     |
+ *          1          |         5
+ *          -          |         6
+ *          -          |         7 <---- max recorded
+ *
+ *      Flush every events below timestamp 4
+ *
 
-Changes since v5:
- - Fixed compilation issues.
- - Fixed incorrect value written to UPHYCLK register.
+So in the first round, CPU 0 has no event by the time we read it. Then while
+we read the events from CPU 1 (val 2,3,4), a new one comes in concurrently
+in CPU 0 (val 1, which matches 's' in your example ). We missed it due to the
+linear mmap read on all buffers so we'll get it on the second round.
 
-diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
-index 39d52cc..eb40460 100644
---- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
-+++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
-@@ -26,6 +26,7 @@ Samsung S5P/EXYNOS SoC series USB PHY
- 
- Required properties:
- - compatible : should be one of the listed compatibles:
-+	- "samsung,s5pv210-usb2-phy"
- 	- "samsung,exynos4210-usb2-phy"
- 	- "samsung,exynos4212-usb2-phy"
- - reg : a list of registers used by phy driver
-diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index 55b49d1..8298d7c 100644
---- a/drivers/phy/Kconfig
-+++ b/drivers/phy/Kconfig
-@@ -61,6 +61,16 @@ config PHY_SAMSUNG_USB2
- 	  particular SoCs has to be enabled in addition to this driver. Number
- 	  and type of supported phys depends on the SoC.
- 
-+config PHY_S5PV210_USB2
-+	bool "Support for S5PV210"
-+	depends on PHY_SAMSUNG_USB2
-+	depends on ARCH_S5PV210
-+	help
-+	  Enable USB PHY support for S5PV210. This option requires that Samsung
-+	  USB 2.0 PHY driver is enabled and means that support for this
-+	  particular SoC is compiled in the driver. In case of S5PV210 two phys
-+	  are available - device and host.
-+
- config PHY_EXYNOS4210_USB2
- 	bool "Support for Exynos 4210"
- 	depends on PHY_SAMSUNG_USB2
-diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-index 9f4befd..fefc6c2 100644
---- a/drivers/phy/Makefile
-+++ b/drivers/phy/Makefile
-@@ -8,5 +8,6 @@ obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)	+= phy-exynos-mipi-video.o
- obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
- obj-$(CONFIG_TWL4030_USB)		+= phy-twl4030-usb.o
- obj-$(CONFIG_PHY_SAMSUNG_USB2)		+= phy-samsung-usb2.o
-+obj-$(CONFIG_PHY_S5PV210_USB2)		+= phy-s5pv210-usb2.o
- obj-$(CONFIG_PHY_EXYNOS4210_USB2)	+= phy-exynos4210-usb2.o
- obj-$(CONFIG_PHY_EXYNOS4212_USB2)	+= phy-exynos4212-usb2.o
-diff --git a/drivers/phy/phy-s5pv210-usb2.c b/drivers/phy/phy-s5pv210-usb2.c
-new file mode 100644
-index 0000000..f96764c
---- /dev/null
-+++ b/drivers/phy/phy-s5pv210-usb2.c
-@@ -0,0 +1,188 @@
-+/*
-+ * Samsung SoC USB 1.1/2.0 PHY driver - S5PV210 support
-+ *
-+ * Copyright (C) 2013 Samsung Electronics Co., Ltd.
-+ * Authors: Kamil Debski <k.debski@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/delay.h>
-+#include <linux/io.h>
-+#include <linux/phy/phy.h>
-+#include "phy-samsung-usb2.h"
-+
-+/* Exynos USB PHY registers */
-+
-+/* PHY power control */
-+#define S5PV210_UPHYPWR			0x0
-+
-+#define S5PV210_UPHYPWR_PHY0_SUSPEND	BIT(0)
-+#define S5PV210_UPHYPWR_PHY0_PWR	BIT(3)
-+#define S5PV210_UPHYPWR_PHY0_OTG_PWR	BIT(4)
-+#define S5PV210_UPHYPWR_PHY0	( \
-+	S5PV210_UPHYPWR_PHY0_SUSPEND | \
-+	S5PV210_UPHYPWR_PHY0_PWR | \
-+	S5PV210_UPHYPWR_PHY0_OTG_PWR)
-+
-+#define S5PV210_UPHYPWR_PHY1_SUSPEND	BIT(6)
-+#define S5PV210_UPHYPWR_PHY1_PWR	BIT(7)
-+#define S5PV210_UPHYPWR_PHY1 ( \
-+	S5PV210_UPHYPWR_PHY1_SUSPEND | \
-+	S5PV210_UPHYPWR_PHY1_PWR)
-+
-+/* PHY clock control */
-+#define S5PV210_UPHYCLK			0x4
-+
-+#define S5PV210_UPHYCLK_PHYFSEL_MASK	(0x3 << 0)
-+#define S5PV210_UPHYCLK_PHYFSEL_48MHZ	(0x0 << 0)
-+#define S5PV210_UPHYCLK_PHYFSEL_24MHZ	(0x3 << 0)
-+#define S5PV210_UPHYCLK_PHYFSEL_12MHZ	(0x2 << 0)
-+
-+#define S5PV210_UPHYCLK_PHY0_ID_PULLUP	BIT(2)
-+#define S5PV210_UPHYCLK_PHY0_COMMON_ON	BIT(4)
-+#define S5PV210_UPHYCLK_PHY1_COMMON_ON	BIT(7)
-+
-+/* PHY reset control */
-+#define S5PV210_UPHYRST			0x8
-+
-+#define S5PV210_URSTCON_PHY0		BIT(0)
-+#define S5PV210_URSTCON_OTG_HLINK	BIT(1)
-+#define S5PV210_URSTCON_OTG_PHYLINK	BIT(2)
-+#define S5PV210_URSTCON_PHY1_ALL	BIT(3)
-+#define S5PV210_URSTCON_HOST_LINK_ALL	BIT(4)
-+
-+/* Isolation, configured in the power management unit */
-+#define S5PV210_USB_ISOL_OFFSET		0x680c
-+#define S5PV210_USB_ISOL_DEVICE		BIT(0)
-+#define S5PV210_USB_ISOL_HOST		BIT(1)
-+
-+
-+enum s5pv210_phy_id {
-+	S5PV210_DEVICE,
-+	S5PV210_HOST,
-+	S5PV210_NUM_PHYS,
-+};
-+
-+/*
-+ * s5pv210_rate_to_clk() converts the supplied clock rate to the value that
-+ * can be written to the phy register.
-+ */
-+static int s5pv210_rate_to_clk(unsigned long rate, u32 *reg)
-+{
-+	switch (rate) {
-+	case 12 * MHZ:
-+		*reg = S5PV210_UPHYCLK_PHYFSEL_12MHZ;
-+		break;
-+	case 24 * MHZ:
-+		*reg = S5PV210_UPHYCLK_PHYFSEL_24MHZ;
-+		break;
-+	case 48 * MHZ:
-+		*reg = S5PV210_UPHYCLK_PHYFSEL_48MHZ;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static void s5pv210_isol(struct samsung_usb2_phy_instance *inst, bool on)
-+{
-+	struct samsung_usb2_phy_driver *drv = inst->drv;
-+	u32 mask;
-+
-+	switch (inst->cfg->id) {
-+	case S5PV210_DEVICE:
-+		mask = S5PV210_USB_ISOL_DEVICE;
-+		break;
-+	case S5PV210_HOST:
-+		mask = S5PV210_USB_ISOL_HOST;
-+		break;
-+	default:
-+		return;
-+	};
-+
-+	regmap_update_bits(drv->reg_pmu, S5PV210_USB_ISOL_OFFSET,
-+							mask, on ? 0 : mask);
-+}
-+
-+static void s5pv210_phy_pwr(struct samsung_usb2_phy_instance *inst, bool on)
-+{
-+	struct samsung_usb2_phy_driver *drv = inst->drv;
-+	u32 rstbits = 0;
-+	u32 phypwr = 0;
-+	u32 rst;
-+	u32 pwr;
-+
-+	switch (inst->cfg->id) {
-+	case S5PV210_DEVICE:
-+		phypwr =	S5PV210_UPHYPWR_PHY0;
-+		rstbits =	S5PV210_URSTCON_PHY0;
-+		break;
-+	case S5PV210_HOST:
-+		phypwr =	S5PV210_UPHYPWR_PHY1;
-+		rstbits =	S5PV210_URSTCON_PHY1_ALL |
-+				S5PV210_URSTCON_HOST_LINK_ALL;
-+		break;
-+	};
-+
-+	if (on) {
-+		writel(inst->clk_reg_val, drv->reg_phy + S5PV210_UPHYCLK);
-+
-+		pwr = readl(drv->reg_phy + S5PV210_UPHYPWR);
-+		pwr &= ~phypwr;
-+		writel(pwr, drv->reg_phy + S5PV210_UPHYPWR);
-+
-+		rst = readl(drv->reg_phy + S5PV210_UPHYRST);
-+		rst |= rstbits;
-+		writel(rst, drv->reg_phy + S5PV210_UPHYRST);
-+		udelay(10);
-+		rst &= ~rstbits;
-+		writel(rst, drv->reg_phy + S5PV210_UPHYRST);
-+	} else {
-+		pwr = readl(drv->reg_phy + S5PV210_UPHYPWR);
-+		pwr |= phypwr;
-+		writel(pwr, drv->reg_phy + S5PV210_UPHYPWR);
-+	}
-+}
-+
-+static int s5pv210_power_on(struct samsung_usb2_phy_instance *inst)
-+{
-+	s5pv210_isol(inst, 0);
-+	s5pv210_phy_pwr(inst, 1);
-+
-+	return 0;
-+}
-+
-+static int s5pv210_power_off(struct samsung_usb2_phy_instance *inst)
-+{
-+	s5pv210_phy_pwr(inst, 0);
-+	s5pv210_isol(inst, 1);
-+
-+	return 0;
-+}
-+
-+static const struct samsung_usb2_common_phy s5pv210_phys[S5PV210_NUM_PHYS] = {
-+	[S5PV210_DEVICE] = {
-+		.label		= "device",
-+		.id		= S5PV210_DEVICE,
-+		.rate_to_clk	= s5pv210_rate_to_clk,
-+		.power_on	= s5pv210_power_on,
-+		.power_off	= s5pv210_power_off,
-+	},
-+	[S5PV210_HOST] = {
-+		.label		= "host",
-+		.id		= S5PV210_HOST,
-+		.rate_to_clk	= s5pv210_rate_to_clk,
-+		.power_on	= s5pv210_power_on,
-+		.power_off	= s5pv210_power_off,
-+	},
-+};
-+
-+const struct samsung_usb2_phy_config s5pv210_usb2_phy_config = {
-+	.num_phys	= ARRAY_SIZE(s5pv210_phys),
-+	.phys		= s5pv210_phys,
-+};
-diff --git a/drivers/phy/phy-samsung-usb2.c b/drivers/phy/phy-samsung-usb2.c
-index 3c09e0e..464a626 100644
---- a/drivers/phy/phy-samsung-usb2.c
-+++ b/drivers/phy/phy-samsung-usb2.c
-@@ -95,6 +95,12 @@ static struct phy *samsung_usb2_phy_xlate(struct device *dev,
- }
- 
- static const struct of_device_id samsung_usb2_phy_of_match[] = {
-+#ifdef CONFIG_PHY_S5PV210_USB2
-+	{
-+		.compatible = "samsung,s5pv210-usb2-phy",
-+		.data = &s5pv210_usb2_phy_config,
-+	},
-+#endif
- #ifdef CONFIG_PHY_EXYNOS4210_USB2
- 	{
- 		.compatible = "samsung,exynos4210-usb2-phy",
-diff --git a/drivers/phy/phy-samsung-usb2.h b/drivers/phy/phy-samsung-usb2.h
-index ab89f91..5f5b240 100644
---- a/drivers/phy/phy-samsung-usb2.h
-+++ b/drivers/phy/phy-samsung-usb2.h
-@@ -61,6 +61,7 @@ struct samsung_usb2_phy_config {
- 	bool has_mode_switch;
- };
- 
-+extern const struct samsung_usb2_phy_config s5pv210_usb2_phy_config;
- extern const struct samsung_usb2_phy_config exynos4210_usb2_phy_config;
- extern const struct samsung_usb2_phy_config exynos4212_usb2_phy_config;
- #endif
--- 
-1.8.5.2
+We find it out in the second round, CPU 1 has also new events. At this time we know that
+if CPU 0 had events up to timestamp 4, we should have seen all of them because
+we read CPU 0 buffer in PASS n + 1 after we read CPU 1 buffer on PASS n.
 
+Of course that's what happens in a perfect world with the assumption that ordering
+is all correct, that events write/commit doesn't take too much time to complete,
+that perf_clock() is globally monotonic (and it's not IIUC). But a little heuristical
+correction on the timestamp barrier should prevent from issues with that.
 
+So this is how the code behaves currently and it should handle a case like above.
+Now there is still the problem of:
+
+1) local timestamps not moving forward (could it happen when events happen in storm,
+when they overflow multiple times in once for example, and clock is not granular
+enough?)
+Anyway this should be solved with the patch that takes the earliest last event on all
+CPU buffer instead of the maximum of a round as a barrier.
+
+2) local timestamps not monotonic due to interrupting events. This could be fixed
+in the kernel with moving perf_clock() snapshot in perf_output_sample().
