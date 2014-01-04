@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752053AbaADHbv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 02:31:51 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:35122 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953AbaADHbu (ORCPT
+	id S1754068AbaADHd0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 02:33:26 -0500
+Received: from www262.sakura.ne.jp ([202.181.97.72]:56937 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752746AbaADHdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 02:31:50 -0500
-Date: Sat, 4 Jan 2014 07:31:43 +0000
-From: Minchan Kim <minchan@kernel.org>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: Dave Hansen <dave@sr71.net>, Andrew Morton <akpm@linux-foundation.org>,
-        Kyungmin Park <kmpark@infradead.org>, linux-mm@kvack.org,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCHv3 00/11] Intermix Lowmem and vmalloc
-Message-ID: <20140104073143.GA5594@gmail.com>
-References: <1388699609-18214-1-git-send-email-lauraa@codeaurora.org>
- <52C70024.1060605@sr71.net>
- <52C734F4.5020602@codeaurora.org>
-MIME-Version: 1.0
+	Sat, 4 Jan 2014 02:33:25 -0500
+X-Nat-Received: from [202.181.97.72]:61573 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1388820755.15737
+To: cl@linux-foundation.org, penberg@kernel.org, mpm@selenic.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] slub: Fix possible format string bug.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Message-Id: <201401041632.ACE65688.JSVQtFFMHOOOLF@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sat, 4 Jan 2014 16:32:31 +0900
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52C734F4.5020602@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 04012014 #7242800, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+I found an unapplied patch from https://lkml.org/lkml/2013/9/19/17 .
+----------
+>From 38f01b48ae371058845274f4d7def4d81dbac4ea Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Sat, 4 Jan 2014 16:26:00 +0900
+Subject: [PATCH] slub: Fix possible format string bug.
 
-On Fri, Jan 03, 2014 at 02:08:52PM -0800, Laura Abbott wrote:
-> On 1/3/2014 10:23 AM, Dave Hansen wrote:
-> >On 01/02/2014 01:53 PM, Laura Abbott wrote:
-> >>The goal here is to allow as much lowmem to be mapped as if the block of memory
-> >>was not reserved from the physical lowmem region. Previously, we had been
-> >>hacking up the direct virt <-> phys translation to ignore a large region of
-> >>memory. This did not scale for multiple holes of memory however.
-> >
-> >How much lowmem do these holes end up eating up in practice, ballpark?
-> >I'm curious how painful this is going to get.
-> >
-> 
-> In total, the worst case can be close to 100M with an average case
-> around 70M-80M. The split and number of holes vary with the layout
-> but end up with 60M-80M one hole and the rest in the other.
+The "name" is determined at runtime and is parsed as format string.
 
-One more thing I'd like to know is how bad direct virt <->phys tranlsation
-in scale POV and how often virt<->phys tranlsation is called in your worload
-so what's the gain from this patch?
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+---
+ mm/slub.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks.
-
+diff --git a/mm/slub.c b/mm/slub.c
+index 545a170..058381e 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -5163,7 +5163,7 @@ static int sysfs_slab_add(struct kmem_cache *s)
+ 	}
+ 
+ 	s->kobj.kset = slab_kset;
+-	err = kobject_init_and_add(&s->kobj, &slab_ktype, NULL, name);
++	err = kobject_init_and_add(&s->kobj, &slab_ktype, NULL, "%s", name);
+ 	if (err) {
+ 		kobject_put(&s->kobj);
+ 		return err;
+-- 
+1.7.9.5
