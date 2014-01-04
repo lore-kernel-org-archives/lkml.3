@@ -1,41 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900AbaADVGx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 16:06:53 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:36136 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753656AbaADVGv (ORCPT
+	id S1755022AbaADVHD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 16:07:03 -0500
+Received: from webmail.cidb.gov.my ([103.21.252.89]:42982 "EHLO
+	webmail.cidb.gov.my" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754861AbaADVGz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 16:06:51 -0500
-Date: Sat, 4 Jan 2014 13:08:04 -0800
-From: Kent Overstreet <kmo@daterainc.com>
-To: Shaohua Li <shli@kernel.org>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, hch@infradead.org
-Subject: Re: [patch 1/2]percpu_ida: fix a live lock
-Message-ID: <20140104210804.GA24199@kmo-pixel>
-References: <20131231033827.GA31994@kernel.org>
+	Sat, 4 Jan 2014 16:06:55 -0500
+X-Greylist: delayed 648 seconds by postgrey-1.27 at vger.kernel.org; Sat, 04 Jan 2014 16:06:55 EST
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131231033827.GA31994@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: Hope you are fine.
+To: Recipients <Bayford@cidb.gov.my>
+From: "Gillian and Adrian Bayford's" <Bayford@cidb.gov.my>
+Date: Sat, 04 Jan 2014 21:48:34 +0100
+Reply-To: 2391532155@qq.com
+X-Antivirus: avast! (VPS 140103-0, 01/03/2014), Outbound message
+X-Antivirus-Status: Clean
+Message-Id: <20140104205252.D6728163876@webmail.cidb.gov.my>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 31, 2013 at 11:38:27AM +0800, Shaohua Li wrote:
-> 
-> steal_tags only happens when free tags is more than half of the total tags.
-> This is too restrict and can cause live lock. I found one cpu has free tags,
-> but other cpu can't steal (thread is bound to specific cpus), threads which
-> wants to allocate tags are always sleeping. I found this when I run next patch,
-> but this could happen without it I think.
-> 
-> I did performance test too with null_blk. Two cases (each cpu has enough percpu
-> tags, or total tags are limited) haven't performance changes.
+Dear Beneficiary
+My Wife Gillian and I are donating £1.5 Million GBP to you.Contact us via my wife email at (gillianandadrian@qq.com) for further details.
 
-This doesn't appear to me to fix anything wrong with the current code
-(and it'll hurt performance) - we explicitly don't guarantee that all
-the tags will be available for allocation at any given time, only half
-of them. Can you explain more how this is being used where you're seeing
-the issue? And I don't see the other patch in your patch series.
+Best Regards,
+Gillian and Adrian Bayford•
+Copyright ©2014• The Bayford Foundation• All Rights Reserved•
