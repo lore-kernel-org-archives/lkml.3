@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861AbaADTEa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 14:04:30 -0500
-Received: from www.sr71.net ([198.145.64.142]:35335 "EHLO blackbird.sr71.net"
+	id S1754739AbaADT4a (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 14:56:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47494 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754120AbaADTE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 14:04:28 -0500
-Message-ID: <52C85B34.6040001@sr71.net>
-Date: Sat, 04 Jan 2014 11:04:20 -0800
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754157AbaADT4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Jan 2014 14:56:12 -0500
+Date: Sat, 4 Jan 2014 14:55:55 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: John David Anglin <dave.anglin@bell.net>
+cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Andi Kleen <ak@linux.intel.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@iki.fi>,
+        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org
+Subject: Re: [PATCH] fix crash when using XFS on loopback
+In-Reply-To: <BLU0-SMTP390C5C965F9A4FB18F1EBE97B50@phx.gbl>
+Message-ID: <alpine.LRH.2.02.1401041451350.21108@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1401041241590.4648@file01.intranet.prod.int.rdu2.redhat.com> <BLU0-SMTP390C5C965F9A4FB18F1EBE97B50@phx.gbl>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 1/3] kconfig: consolidate arch-specific seccomp options
-References: <20140102202014.CA206E9B@viggo.jf.intel.com> <20140105023853.dda6c1f9c6f9875159634e69@canb.auug.org.au>
-In-Reply-To: <20140105023853.dda6c1f9c6f9875159634e69@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/2014 07:38 AM, Stephen Rothwell wrote:
-> On Thu, 02 Jan 2014 12:20:14 -0800 Dave Hansen <dave@sr71.net> wrote:
->> From: Dave Hansen <dave.hansen@linux.intel.com>
->> There is *NOTHING* architecture-specific about SECCOMP except
->> that the syscalls have per-architecture definitions, like every
->> other syscall.  It is absurd to have the option in the
->> arch-specific menus.
-> 
-> You seem to have (mostly) lost the dependency some of the architecture
-> versions of config SECCOMP had on PROC_FS ...
+On Sat, 4 Jan 2014, John David Anglin wrote:
 
-I _believe_ the /proc interface has gone away.  I can't find any
-reference to /proc/<pid>/seccomp in any of the code.  Is there some
-/proc dependency that I'm missing outside of the removed
-/proc/<pid>/seccomp interface?
+> On 4-Jan-14, at 12:45 PM, Mikulas Patocka wrote:
+> 
+> > * flush_dcache_page asks for the list of userspace mappings, however that
+> > page->mapping field is reused by the slab subsystem for a different
+> > purpose. This causes the crash.
+> 
+> I'd noticed the other day that the parisc implementation of
+> flush_dcache_page()
+> should return if "!mapping || mapping != page->mapping" is true.  This would
+> have avoided crash.
+> 
+> Dave
+
+I think no.
+
+page_mapping returns NULL if the page has only anonymous mapping and it is 
+not placed in the swap cache. In this case, you need to flush the kernel 
+cache.
+
+Maybe you could skip cache flush if the page is neither anonymous nor 
+file-backed, but I haven't seen this condition in other architectures' 
+flush_dcache_page.
+
+Mikulas
