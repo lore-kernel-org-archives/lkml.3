@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751065AbaAEGOS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 01:14:18 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:44699 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830AbaAEGOR (ORCPT
+	id S1750969AbaAEH5M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 02:57:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59119 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816AbaAEH5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 01:14:17 -0500
-Date: Sat, 4 Jan 2014 22:14:13 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Ethan Zhao <ethan.kernel@gmail.com>
-Cc: hans.verkuil@cisco.com, m.chehab@samsung.com, gregkh@linuxfoundation.org,
-        mchehab@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [media] saa7146: fix a possible NULL pointer reference
- in saa7146_set_position
-Message-ID: <20140105061413.GF18213@core.coreip.homeip.net>
-References: <1388887680-942-1-git-send-email-ethan.kernel@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1388887680-942-1-git-send-email-ethan.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 5 Jan 2014 02:57:11 -0500
+Date: Sat, 4 Jan 2014 23:57:43 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jan Kara <jack@suse.cz>
+Cc: pmladek@suse.cz, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 9/9] printk: Hand over printing to console if printing
+ too long
+Message-Id: <20140104235743.e6714e29.akpm@linux-foundation.org>
+In-Reply-To: <1387831171-5264-10-git-send-email-jack@suse.cz>
+References: <1387831171-5264-1-git-send-email-jack@suse.cz>
+	<1387831171-5264-10-git-send-email-jack@suse.cz>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 05, 2014 at 10:08:00AM +0800, Ethan Zhao wrote:
-> Function saa7146_format_by_fourcc() may return NULL, reference of the returned
-> result would cause NULL pointer issue without checking.
+On Mon, 23 Dec 2013 21:39:30 +0100 Jan Kara <jack@suse.cz> wrote:
+
+> Currently, console_unlock() prints messages from kernel printk buffer to
+> console while the buffer is non-empty. When serial console is attached,
+> printing is slow and thus other CPUs in the system have plenty of time
+> to append new messages to the buffer while one CPU is printing. Thus the
+> CPU can spend unbounded amount of time doing printing in console_unlock().
+> This is especially serious problem if the printk() calling
+> console_unlock() was called with interrupts disabled.
 > 
-> Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
-> ---
->  drivers/media/common/saa7146/saa7146_hlp.c | 9 +++++++--
->  1 file changed, 7 insertions(+), 2 deletions(-)
+> In practice users have observed a CPU can spend tens of seconds printing
+> in console_unlock() (usually during boot when hundreds of SCSI devices
+> are discovered) resulting in RCU stalls (CPU doing printing doesn't
+> reach quiescent state for a long time), softlockup reports (IPIs for the
+> printing CPU don't get served and thus other CPUs are spinning waiting
+> for the printing CPU to process IPIs), and eventually a machine death
+> (as messages from stalls and lockups append to printk buffer faster than
+> we are able to print). So these machines are unable to boot with serial
+> console attached. Also during artificial stress testing SATA disk
+> disappears from the system because its interrupts aren't served for too
+> long.
 > 
-> diff --git a/drivers/media/common/saa7146/saa7146_hlp.c b/drivers/media/common/saa7146/saa7146_hlp.c
-> index be746d1..3e23eab 100644
-> --- a/drivers/media/common/saa7146/saa7146_hlp.c
-> +++ b/drivers/media/common/saa7146/saa7146_hlp.c
-> @@ -575,6 +575,7 @@ static void saa7146_set_position(struct saa7146_dev *dev, int w_x, int w_y, int
->  	 */
->  	u32 base = (u32)(unsigned long)vv->ov_fb.base;
->  
-> +	int which = 1;
->  	struct	saa7146_video_dma vdma1;
->  
->  	/* calculate memory offsets for picture, look if we shall top-down-flip */
-> @@ -608,10 +609,14 @@ static void saa7146_set_position(struct saa7146_dev *dev, int w_x, int w_y, int
->  		vdma1.pitch *= -1;
->  	}
->  
-> -	vdma1.base_page = sfmt->swap;
-> +	if (sfmt)
-> +		vdma1.base_page = sfmt->swap;
-> +	else
-> +		which = 0;
-> +
->  	vdma1.num_line_byte = (vv->standard->v_field<<16)+vv->standard->h_pixels;
->  
-> -	saa7146_write_out_dma(dev, 1, &vdma1);
-> +	saa7146_write_out_dma(dev, which, &vdma1);
+> This patch implements a mechanism where after printing specified number
+> of characters (tunable as a kernel parameter printk.offload_chars), CPU
+> doing printing asks for help by setting a 'hand over' state. The CPU
+> still keeps printing until another CPU running printk() or a CPU being
+> pinged by an IPI comes and takes over printing.  This way no CPU should
+> spend printing too long if there is heavy printk traffic.
 
-If saa7146_format_by_fourcc() returns NULL you'll crash much earlier
-when trying to do
-
-	int depth = sfmt->depth;
-
-I am not familiar with the code by it seems you are papering over the
-problem. Will we ever get here with unknown pixel format?
-
-Thanks.
-
--- 
-Dmitry
+It all seems to rely on luck?  If there are 100k characters queued and
+all the other CPUs stop calling printk(), the CPU which is left in
+printk is screwed, isn't it?  If so, perhaps it can send an async IPI
+to ask for help?
