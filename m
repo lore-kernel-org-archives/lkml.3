@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750992AbaAEFqS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 00:46:18 -0500
-Received: from mail-ie0-f195.google.com ([209.85.223.195]:42761 "EHLO
-	mail-ie0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747AbaAEFqD (ORCPT
+	id S1751005AbaAEFyP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 00:54:15 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:52692 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747AbaAEFyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 00:46:03 -0500
+	Sun, 5 Jan 2014 00:54:14 -0500
+Date: Sun, 5 Jan 2014 14:54:09 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Olof Johansson <olof@lixom.net>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Boris BREZILLON <b.brezillon@overkiz.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: Re: linux-next: manual merge of the renesas tree with the arm-soc
+ tree
+Message-ID: <20140105055407.GC5150@verge.net.au>
+References: <20131216104738.6f845aabd0e3b609ed9ca170@canb.auug.org.au>
+ <52AECF56.8020508@atmel.com>
+ <CAOesGMgi3COtsr+-9B3Tt350gwBs0Qm0AjatjLWCWTeUkAP5og@mail.gmail.com>
+ <20140104224346.c0f1689a8c7c62d4ee22aa3b@canb.auug.org.au>
 MIME-Version: 1.0
-Date: Sun, 5 Jan 2014 00:46:00 -0500
-Message-ID: <CAM__s2Bk=Hgzm3-f7N=A032PxUV6N87=42qZ=7kt7u8d_Ny5gg@mail.gmail.com>
-Subject: Propose for LINUX kernel and PERL
-From: Antti Heikkinen <antti.heikkinen.4@gmail.com>
-To: linux-kernel@vger.kernel.org, advocacy@perl.org, beginners@perl.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140104224346.c0f1689a8c7c62d4ee22aa3b@canb.auug.org.au>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To Dear Perl and LINUX kernel development community:
+On Sat, Jan 04, 2014 at 10:43:46PM +1100, Stephen Rothwell wrote:
+> Hi Olof,
+> 
+> On Fri, 3 Jan 2014 21:11:29 -0800 Olof Johansson <olof@lixom.net> wrote:
+> >
+> > Now I can't resolve it properly and move the entries when I do the
+> > same merge (and get the same conflict), because that will cause a
+> > third conflict for Stephen, and he's about to return from vacation and
+> > is going to cuss at us if we cause too many new conflicts in one day.
+> > :)
+> 
+> Since I have now been made aware of the issue, you might as well just
+> sort it in the merge.  And I have never been known to "cuss", though
+> ranting is a possibility :-)
 
-My propose to you at your list: is possible to write operate system in
-PERL? I am student in university, looked for interest project to
-conclude my study on LINUX kernel.
 
-This semester, I take beginner PERL course and learn power of
-procedural language. I automate many daily task with use of it. Very
-impressive ability to make many thing work, interpret or can compile
-also.
+Rant accepted. I will be more careful in future.
 
-Also about LINUX, I talk to much fellow students and professors, and
-take a operate system course use FreeBSD and LINUX. FreeBSD okay, but
-they say LINUX kernel is too big and bloat, run poor with too many
-developer. And too much quick decision from leader with ego is too big
-and bloat too, kekeke.
-
-LINUX kernel can perform more good if written in not C and C++ but
-Perl? Just certain portion of LINUX kernel to rewrite? For instant,
-schedule or support of multithread? If so, should use Perl5 or Perl6,
-focus to x86 or x86-64? Can you want to join me this my project? But
-to hear your expertise.
-
-Am excited to learn and begin study project. Can you want to join this
-my project? Please direct reply of email to myself.
-
-Much thank to you,
-Antti Heikkinen
