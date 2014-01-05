@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751762AbaAETru (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 14:47:50 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:17925 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751475AbaAETrt (ORCPT
+	id S1751849AbaAETtm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 14:49:42 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:61838 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448AbaAETtk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 14:47:49 -0500
-Date: Sun, 5 Jan 2014 22:47:53 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-Cc: gregkh@linuxfoundation.org, omar.ramirez@copitl.com, pali.rohar@gmail.com,
-        pavel@ucw.cz, linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Ivaylo Dimitrov <freemangordon@abv.bg>
-Subject: Re: [PATCH v2] Staging: tidspbridge: Use hashtable implementation
-Message-ID: <20140105194752.GF5443@mwanda>
-References: <52C9AAB3.6050300@gmail.com>
- <1388948292-5084-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1388948292-5084-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Sun, 5 Jan 2014 14:49:40 -0500
+From: Guenter Roeck <linux@roeck-us.net>
+To: Karsten Keil <isdn@linux-pingi.de>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH v2] isdn: Mark build for telespci and hfc_pci as broken for big endian ARM
+Date: Sun,  5 Jan 2014 11:49:27 -0800
+Message-Id: <1388951367-7411-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks much nicer.  I had a few tiny comments, but those could be
-addressed in later patches.  (There is a lot of work to be done on this
-driver).
+With arm:allmodconfig, building the Teles PCI driver fails with
 
-On Sun, Jan 05, 2014 at 08:58:12PM +0200, Ivaylo Dimitrov wrote:
-> -static u16 name_hash(void *key, u16 max_bucket)
-> +static u32 name_hash(const void *key)
->  {
-> -	u16 ret;
-> -	u16 hash;
-> -	char *name = (char *)key;
-> +	u32 hash;
-> +	const char *name = (const char *)key;
-                           ^^^^^^^^^^^^^^
+telespci.c:294:2: error: #error "not running on big endian machines now"
 
-I can't compile this driver, but I'm pretty sure this cast is not
-needed.
+Similar, building the driver for HFC PCI-Bus cards fails with
 
-> -static bool name_match(void *key, void *sp)
-> +static bool name_match(const void *key, const void *sp)
->  {
->  	if ((key != NULL) && (sp != NULL)) {
-> -		if (strcmp((char *)key, ((struct dbll_symbol *)sp)->name) ==
-> -		    0)
-> +		if (strcmp((const char *)key,
-> +			   ((const struct dbll_symbol *)sp)->name) == 0)
->  			return true;
+hfc_pci.c:1647:2: error: #error "not running on big endian machines now"
 
-Unneeded casting.
+Mark build as broken for big endian ARM machines.
 
-		if (strcmp(key, ((struct dbll_symbol *)sp)->name) == 0)
-			return true;
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+v2: Turns out CPU_LITTLE_ENDIAN is not defined for little-endian-only
+    architectures. Instead of messing with the overall Kconfig architecture,
+    mark build as broken for big endian ARM machines.
+    Also updated headline accordingly.
 
-regards,
-dan carpenter
+ drivers/isdn/hisax/Kconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/isdn/hisax/Kconfig b/drivers/isdn/hisax/Kconfig
+index d9edcc9..53dbb75 100644
+--- a/drivers/isdn/hisax/Kconfig
++++ b/drivers/isdn/hisax/Kconfig
+@@ -109,7 +109,7 @@ config HISAX_16_3
+ 
+ config HISAX_TELESPCI
+ 	bool "Teles PCI"
+-	depends on PCI && (BROKEN || !(SPARC || PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN)))
++	depends on PCI && (BROKEN || !(SPARC || PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN) || (ARM && !CPU_LITTLE_ENDIAN)))
+ 	help
+ 	  This enables HiSax support for the Teles PCI.
+ 	  See <file:Documentation/isdn/README.HiSax> on how to configure it.
+@@ -318,7 +318,7 @@ config HISAX_GAZEL
+ 
+ config HISAX_HFC_PCI
+ 	bool "HFC PCI-Bus cards"
+-	depends on PCI && (BROKEN || !(SPARC || PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN)))
++	depends on PCI && (BROKEN || !(SPARC || PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN) || (ARM && !CPU_LITTLE_ENDIAN)))
+ 	help
+ 	  This enables HiSax support for the HFC-S PCI 2BDS0 based cards.
+ 
+-- 
+1.7.9.7
+
