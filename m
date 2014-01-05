@@ -1,146 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881AbaAEVSO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 16:18:14 -0500
-Received: from mail-qe0-f46.google.com ([209.85.128.46]:51109 "EHLO
-	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837AbaAEVSG (ORCPT
+	id S1751864AbaAEV36 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 16:29:58 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35204 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751550AbaAEV35 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 16:18:06 -0500
-From: Dan LaManna <dan.lamanna@gmail.com>
-To: gregkh@linuxfoundation.org, teobaluta@gmail.com, andrea.merello@gmail.com,
-        linville@tuxdriver.com, rusty@rustcorp.com.au
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Dan LaManna <dan.lamanna@gmail.com>
-Subject: [PATCH] Staging: rtl8187se: fix styling issues in r8180_wx.c
-Date: Sun,  5 Jan 2014 16:17:36 -0500
-Message-Id: <1388956656-10790-1-git-send-email-dan.lamanna@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 5 Jan 2014 16:29:57 -0500
+Date: Sun, 5 Jan 2014 21:29:51 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: "Gideon D'souza" <gidisrael@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: How does a newbie find work?
+Message-ID: <20140105212951.4e13b083@alan.etchedpixels.co.uk>
+In-Reply-To: <CAPNrq4yXdbdfq4hrtZdZn_5UDPduGoTCNJb1-9u-Qf1nf2RgXQ@mail.gmail.com>
+References: <CAPNrq4yXdbdfq4hrtZdZn_5UDPduGoTCNJb1-9u-Qf1nf2RgXQ@mail.gmail.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the r8180_wx.c which fixes various whitespace issues,
-brace issues, and casting/declaration syntax issues.
+> I've made small contributions to other OSS projects before but now I'm
+> at a loss for how to study the kernel code base, what to try to
+> break/change to study how the kernel works.
 
-Signed-off-by: Dan LaManna <dan.lamanna@gmail.com>
----
- drivers/staging/rtl8187se/r8180_wx.c |   28 ++++++++++++++--------------
- 1 file changed, 14 insertions(+), 14 deletions(-)
+LXR is useful for finding code and where it goes, but the kernel is a big
+project. Don't assume anyone knows how of all it works.
 
-diff --git a/drivers/staging/rtl8187se/r8180_wx.c b/drivers/staging/rtl8187se/r8180_wx.c
-index 4e01653..7b4adac 100644
---- a/drivers/staging/rtl8187se/r8180_wx.c
-+++ b/drivers/staging/rtl8187se/r8180_wx.c
-@@ -61,7 +61,7 @@ static int r8180_wx_set_key(struct net_device *dev,
- 		return 0;
- 
- 	if (erq->length > 0) {
--		u32* tkey = (u32*) key;
-+		u32 *tkey = (u32 *) key;
- 		priv->key0[0] = tkey[0];
- 		priv->key0[1] = tkey[1];
- 		priv->key0[2] = tkey[2];
-@@ -295,7 +295,7 @@ static int rtl8180_wx_get_range(struct net_device *dev,
- 		}
- 
- 		if (val == IW_MAX_FREQUENCIES)
--		break;
-+			break;
- 	}
- 
- 	range->num_frequency = val;
-@@ -311,14 +311,14 @@ static int r8180_wx_set_scan(struct net_device *dev, struct iw_request_info *a,
- {
- 	struct r8180_priv *priv = ieee80211_priv(dev);
- 	int ret;
--	struct ieee80211_device* ieee = priv->ieee80211;
-+	struct ieee80211_device *ieee = priv->ieee80211;
- 
- 
- 	if (priv->ieee80211->bHwRadioOff)
- 		return 0;
- 
- 	if (wrqu->data.flags & IW_SCAN_THIS_ESSID)	{
--		struct iw_scan_req* req = (struct iw_scan_req*)b;
-+		struct iw_scan_req *req = (struct iw_scan_req *)b;
- 		if (req->essid_len)		{
- 			ieee->current_network.ssid_len = req->essid_len;
- 			memcpy(ieee->current_network.ssid, req->essid, req->essid_len);
-@@ -516,7 +516,8 @@ static int r8180_wx_set_enc(struct net_device *dev,
- 
- 	down(&priv->wx_sem);
- 
--	if (priv->hw_wep) ret = r8180_wx_set_key(dev, info, wrqu, key);
-+	if (priv->hw_wep)
-+		ret = r8180_wx_set_key(dev, info, wrqu, key);
- 	else	{
- 		DMESG("Setting SW wep key");
- 		ret = ieee80211_wx_set_encode(priv->ieee80211, info, wrqu, key);
-@@ -541,7 +542,7 @@ static int r8180_wx_set_scan_type(struct net_device *dev, struct iw_request_info
- 	iwreq_data *wrqu, char *p)	{
- 
- 	struct r8180_priv *priv = ieee80211_priv(dev);
--	int *parms = (int*)p;
-+	int *parms = (int *)p;
- 	int mode = parms[0];
- 
- 	if (priv->ieee80211->bHwRadioOff)
-@@ -872,7 +873,7 @@ static int r8180_wx_set_preamble(struct net_device *dev,
- 	if (*extra < 0 || *extra > 2)
- 		ret = -1;
- 	else
--		priv->plcp_preamble_mode = *((short *)extra) ;
-+		priv->plcp_preamble_mode = *((short *)extra);
- 
- 
- 
-@@ -1035,7 +1036,7 @@ static int r8180_wx_set_channelplan(struct net_device *dev,
- 		/* Set new channel map */
- 		for (i = 1; i <= DefaultChannelPlan[*val].Len; i++)
- 			GET_DOT11D_INFO(priv->ieee80211)->channel_map[DefaultChannelPlan[*val].Channel[i-1]] = 1;
--		
-+
- 	}
- 	up(&priv->wx_sem);
- 
-@@ -1070,8 +1071,7 @@ static int r8180_wx_set_forcerate(struct net_device *dev,
- 	printk("==============>%s(): forcerate is %d\n", __func__, forcerate);
- 	if ((forcerate == 2) || (forcerate == 4) || (forcerate == 11) || (forcerate == 22) || (forcerate == 12) ||
- 		(forcerate == 18) || (forcerate == 24) || (forcerate == 36) || (forcerate == 48) || (forcerate == 72) ||
--		(forcerate == 96) || (forcerate == 108))
--	{
-+		(forcerate == 96) || (forcerate == 108)) {
- 		priv->ForcedDataRate = 1;
- 		priv->ieee80211->rate = forcerate * 5;
- 	}	else if (forcerate == 0)	{
-@@ -1358,22 +1358,22 @@ static inline int is_same_network(struct ieee80211_network *src,
- 		 * We treat all <hidden> with the same BSSID and channel
- 		 * as one network
- 		 */
--		return (((src->ssid_len == dst->ssid_len) || (ieee->iw_mode == IW_MODE_INFRA)) && /* YJ,mod, 080819,for hidden ap */
-+		return ((src->ssid_len == dst->ssid_len) || (ieee->iw_mode == IW_MODE_INFRA)) && /* YJ,mod, 080819,for hidden ap */
- 			(src->channel == dst->channel) &&
- 			!memcmp(src->bssid, dst->bssid, ETH_ALEN) &&
- 			(!memcmp(src->ssid, dst->ssid, src->ssid_len) || (ieee->iw_mode == IW_MODE_INFRA)) &&  /* YJ,mod, 080819,for hidden ap */
- 			((src->capability & WLAN_CAPABILITY_IBSS) ==
- 			(dst->capability & WLAN_CAPABILITY_IBSS)) &&
- 			((src->capability & WLAN_CAPABILITY_BSS) ==
--			(dst->capability & WLAN_CAPABILITY_BSS)));
-+			(dst->capability & WLAN_CAPABILITY_BSS));
- }
- 
- /* WB modified to show signal to GUI on 18-01-2008 */
- static struct iw_statistics *r8180_get_wireless_stats(struct net_device *dev)
- {
- 	struct r8180_priv *priv = ieee80211_priv(dev);
--	struct ieee80211_device* ieee = priv->ieee80211;
--	struct iw_statistics* wstats = &priv->wstats;
-+	struct ieee80211_device *ieee = priv->ieee80211;
-+	struct iw_statistics *wstats = &priv->wstats;
- 	int tmp_level = 0;
- 	int tmp_qual = 0;
- 	int tmp_noise = 0;
--- 
-1.7.10.4
+> Is there some simple work a newbie like me can take up? Any maintainer
+> need some grunt work done? Or perhaps someone could suggest a pet
+> project I could try to understand things better? (Should I be learning
+> how to write device drivers?)
+> 
+> Things that are very interesting to me so far are the KVM and the Scheduler.
 
+Then I would fiddle with KVM and the scheduler !
+
+Alan
