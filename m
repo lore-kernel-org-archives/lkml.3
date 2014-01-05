@@ -1,90 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913AbaAEUwK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 15:52:10 -0500
-Received: from exprod5og106.obsmtp.com ([64.18.0.182]:37595 "HELO
-	exprod5og106.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751629AbaAEUwH (ORCPT
+	id S1751819AbaAEVSA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 16:18:00 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:26871 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751653AbaAEVR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 15:52:07 -0500
+	Sun, 5 Jan 2014 16:17:59 -0500
+Date: Mon, 6 Jan 2014 00:18:04 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Ivaylo Dimitrov <freemangordon@abv.bg>,
+        pavel@ucw.cz, pali.rohar@gmail.com
+Subject: Re: [PATCH] Staging: tidspbridge: Use hashtable implementation
+Message-ID: <20140105211804.GG5443@mwanda>
+References: <1387992592-3208-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+ <20140102134635.GD28413@mwanda>
+ <52C9AAB3.6050300@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140105180122.GB980@kroah.com>
-References: <1387594651-25771-1-git-send-email-rapatel@apm.com>
-	<201312212111.40576.arnd@arndb.de>
-	<CAPw-ZTnsu_EmOW3aZTVKAVjQsdi8qMy95y2ZcYxzgVrjGkirTA@mail.gmail.com>
-	<1441245.xPZLG2iNZ6@wuerfel>
-	<CAN1v_PtFz42crHW5=cUgw-fAnPn3rQht=o0t3nmjJRamYSLDMg@mail.gmail.com>
-	<20140105033848.GA22595@kroah.com>
-	<CAPw-ZT=noCwc+3o_762ewTcn2J3SjZ5u11V=Aa8RrZZf4DT5Yw@mail.gmail.com>
-	<20140105180122.GB980@kroah.com>
-Date: Sun, 5 Jan 2014 12:52:05 -0800
-Message-ID: <CAN1v_PsE2mevK4-2D3MTevtwQF4XkaMzVGHpDZUoqR+a6uMUyg@mail.gmail.com>
-Subject: Re: [PATCH V2 0/4] misc: xgene: Add support for APM X-Gene SoC Queue
- Manager/Traffic Manager
-From: Ravi Patel <rapatel@apm.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Loc Ho <lho@apm.com>, Arnd Bergmann <arnd@arndb.de>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jon Masters <jcm@redhat.com>, "patches@apm.com" <patches@apm.com>,
-        Keyur Chudgar <kchudgar@apm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52C9AAB3.6050300@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 5, 2014 at 10:01 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Sat, Jan 04, 2014 at 09:39:08PM -0800, Loc Ho wrote:
->> Hi,
->>
->> >> >> >> This patch adds support for APM X-Gene SoC Queue Manager/Traffic Manager.
->> >> >> >>  QMTM is required by APM X-Gene SoC Ethernet, PktDMA (XOR Engine) and
->> >> >> >>  Security Engine subsystems. All subsystems communicate with QMTM using
->> >> >> >>  messages which include information about the work to be performed and
->> >> >> >>  the location of associated data buffers.
->> >> >> >
->> >> >> > Please describe here what the purpose of the qmtm is, as this is not
->> >> >> > entirely clear from the code.
->> >> >> >
->> >> >> > In particular, please describe how this differs from a dmaengine driver
->> >> >> > and why it is not possible to extend the dma slave API to describe qmtm
->> >> >> > as a dma engine.
->> >> >> >
->> >> >> [Loc Ho]
->> >> >> If the QM driver implements the DMA API, what about the actual DMA
->> >> >> engine driver which interfaces with this QM driver. We would have DMA
->> >> >> client interfaces with the X-Gene DMA driver (not available yet) via
->> >> >> DMA API which in turn interfaces with this QM driver via DMA API.
->> >> >> Won't this be kind of awkward? Also, the QM only manage messages (or
->> >> >> descriptors) which are 32-bytes or 64-bytes. It doesn't actually do
->> >> >> any data transfer of various sizes.
->> >> >
->> >> > Please describe here what the purpose of the qmtm is, as this is not
->> >> > entirely clear from the code or from your reply.
->> >> >
->> >> > Greg was guessing that it's a bus controller, my best guess is a DMA
->> >> > engine. If it's something completely different, you have to let
->> >> > us know what it is so we can do a proper review rather than guessing.
->> >> >
->> >> > Please provide a link to the data sheet if you are unable to explain.
->> >>
->> >> Here is URL to a text document explaining role of QMTM device with CPU, Ethernet
->> >> subsystem.
->> >>
->> >> https://drive.google.com/file/d/0B28TgQZ3JLoRRGNnbjJoUGNHWW8/edit?usp=sharing
->> >
->> > There is nothing at this link :(
->>
->> I tried click on the txt file link from web site
->> http://www.spinics.net/lists/netdev/msg264628.html and don't see any
->> problem with accessing the txt file.
->
-> Now it's working :)
->
-> Anyway, as this is a .txt file, why wasn't it just sent in email, and
-> added to the patch series as a documentation file?
+This is not really an issue with this patch, it's something from the
+original code so it doesn't affect merging the patch.
 
-Sure I will include the text documentation to an appropriate place in the
-Documentation directory in my next version of QMTM patch.
+On Sun, Jan 05, 2014 at 08:55:47PM +0200, Ivaylo Dimitrov wrote:
+> >Again, reverse the IS_ERR() check and return directly.  Use the struct
+> >pointer instead of the address of the first member.
+> >
+> >	sym = gh_find(lib->sym_tab, (char *)name);
+> >	if (IS_ERR(sym))
+> >		return NULL;
+> >
+> >	return (struct dbll_symbol *)sym;
+> >
+> >That way is easier to read.  gh_find() should accept const pointers btw,
+> >we shouldn't have to cast away the const in each of the callers.
+> I don't think it is a good idea to return the structdbll_symbol*
+> here - the function return type is structdynload_symbol* not
+> structdbll_symbol*.
+
+Oops.
+
+> And that will break if we exchange value and name members of
+> structdbll_symbol.
+
+It will break anyway if we do that.  It's one of those things where you
+can't worry too much about what crazy people might try to do later and
+then no one reviews the code and no one tests it.  If we start doing
+that sort of thing we are screwed already so it's not worth worrying
+about.
+
+I feel like the types in this driver are not beautiful.
+
+The names are not clear.  Take "struct dbll_tar_obj" for example.  I'm
+not clear what "dbll_" means.  I think the "d" stands for dynmic.  What
+information does the "_obj" add?  It would be better to call it
+"struct dbll_target".
+
+"dbll_alloc" is a verb instead of a noun so it sounds like a function
+not a struct.
+
+But mostly there is too much nonsense casting throughout.
+dbll_find_symbol() takes a struct dynamic_loader_sym pointer but we
+immediatly cast it to struct ldr_symbol.  The struct ldr_symbol is
+defined as:
+
+struct ldr_symbol {
+	struct dynamic_loader_sym dl_symbol;
+        struct dbll_library_obj *lib;
+};
+
+The reason it does this is because it was originally C++ code and it
+was ported to C.  I think we could move the "lib pointer to the end
+of the "dynamic_loader_sym" struct.  We could make it a "void *data".
+That would remove a source of casting.
+
+There is a lot of this kind of stuff going on:
+
+	struct dbll_library_obj *zl_lib = (struct dbll_library_obj *)lib;
+
+"lib" is already a dbll_library_obj struct.  And "lib" is a better name,
+what does zl_lib mean?  I think it's Hungarian notation which we don't
+like.  Sometimes it uses pzl_ and I think the "p" means pointer.  Ugh.
+Inside of functions then we don't need to prefix local variables.  It's
+only for global variables where you run into naming clashes.
+
+Anyway...  This driver needs a lot of fixing where data types are
+concerned.
+
+regards,
+dan carpenter
+
