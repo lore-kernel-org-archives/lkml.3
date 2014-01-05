@@ -1,51 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751805AbaAEUbD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 15:31:03 -0500
-Received: from smtprelay0102.hostedemail.com ([216.40.44.102]:42984 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751405AbaAEUaz (ORCPT
+	id S1751862AbaAEUiH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 15:38:07 -0500
+Received: from smtpfb1-g21.free.fr ([212.27.42.9]:59394 "EHLO
+	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751395AbaAEUiC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 15:30:55 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3865:3866:3867:3870:4321:5007:7652:8957:10004:10400:10848:11026:11232:11657:11658:11914:12043:12296:12438:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: seat34_7c0d3cc35271e
-X-Filterd-Recvd-Size: 1630
-Message-ID: <1388953851.5808.31.camel@joe-AO722>
-Subject: Re: [PATCH 1/2] Staging: lustre: Fix line length exceeding 80
- characters
-From: Joe Perches <joe@perches.com>
-To: MonamAgarwal <monamagarwal123@gmail.com>
-Cc: gregkh@linuxfoundation.org, rashika.kheria@gmail.com,
-        peter.p.waskiewicz.jr@intel.com, andreas.dilger@intel.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Sun, 05 Jan 2014 12:30:51 -0800
-In-Reply-To: <52c9bc8b.ca41420a.775b.ffff98ce@mx.google.com>
-References: <52c9bc8b.ca41420a.775b.ffff98ce@mx.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 5 Jan 2014 15:38:02 -0500
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-ia64@vger.kernel.org,
+        Jeremy Kerr <jk@ozlabs.org>, Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        cbe-oss-dev@lists.ozlabs.org, linux-fsdevel@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-kernel@vger.kernel.org,
+        Ulrich Drepper <drepper@gmail.com>
+Subject: [PATCH v5 0/7] Getting rid of get_unused_fd() / enable close-on-exec
+Date: Sun,  5 Jan 2014 21:36:27 +0100
+Message-Id: <cover.1388952061.git.ydroneaud@opteya.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-06 at 01:41 +0530, MonamAgarwal wrote:
-> This patch fixes the following checkpatch.pl warning in
-> lustre/ldlm/interval_tree.c
-> WARNING: line over 80 characters in the file
-[]
-> diff --git a/drivers/staging/lustre/lustre/ldlm/interval_tree.c b/drivers/staging/lustre/lustre/ldlm/interval_tree.c
-[]
-> @@ -429,7 +429,8 @@ static void interval_erase_color(struct interval_node *node,
->  					struct interval_node *o_left;
->  					o_left = tmp->in_left;
->  					if (o_left)
-> -						o_left->in_color = INTERVAL_BLACK;
-> +						o_left->in_color =
-> +							INTERVAL_BLACK;
+Hi,
 
-Likely this function would be better off with some
-refactoring instead of straining to fit 80 cols.
+Please find the fifth revision of my patchset to remove get_unused_fd()
+macro in order to help subsystems to use get_unused_fd_flags() (or
+anon_inode_getfd()) with flags either provided by the userspace or
+set to O_CLOEXEC by default where appropriate.
 
+Without get_unused_fd() macro, more subsystems are likely to use
+get_unused_fd_flags() (or anon_inode_getfd()) and be teached to
+provide an API that let userspace choose the opening flags
+of the file descriptor.
+
+Not allowing userspace to provide the "open" flags or not using O_CLOEXEC
+by default should be considered bad practice from security point of view:
+in most case O_CLOEXEC must be used to not leak file descriptor across
+exec().
+
+Not allowing userspace to atomically set close-on-exec flag and not using
+O_CLOEXEC should be avoided to protect multi-threaded program
+from race condition when it tried to set close-on-exec flag using
+fcntl(fd, F_SETFD, FD_CLOEXEC) after opening the file descriptor.
+
+Example:
+
+    int fd;
+    int ret;
+
+    fd = open(filename, O_RDONLY);
+    if (fd < 0) {
+        perror("open");
+        return -1;
+    }
+
+    /*
+     * window opened for another thread to call fork(),
+     * then the new process can call exec() at any time
+     * and the file descriptor would be inherited
+     */
+
+    ret = fcntl(fd, F_SETFD, FD_CLOEXEC)
+    if (ret < 0) {
+        perror("fnctl()");
+        close(fd);
+        return -1;
+    }
+
+vs.:
+
+    int fd;
+    fd = open(filaneme, O_RDONLY | O_CLOEXEC);
+    if (fd < 0) {
+        perror("open");
+        return -1;
+    }
+
+Using O_CLOEXEC by default when flags are not (eg. cannot be) provided
+by userspace is the safest bet as it allows userspace to choose, if, when
+and where the file descriptor is going to be inherited across exec():
+userspace is free to call fcntl() to remove FD_CLOEXEC flag in the child
+process that will call exec().
+
+Unfortunately, O_CLOEXEC cannot be made the default for most existing system
+calls as it's not the default behavior for POSIX / Unix. Reader interested
+in this issue could have a look at "Ghosts of Unix past, part 2: Conflated
+designs" [1] article by Neil Brown.
+
+FAQ:
+
+- Why do one want close-on-exec ?
+
+Setting close-on-exec flag on file descriptor ensure it won't be inherited
+silently by child, child of child, etc. when executing another program.
+
+If the file descriptor is not closed, some kernel resources can be locked
+until the last process with the opened file descriptor exit.
+
+If the file descriptor is not closed, this can lead to a security issue,
+eg. making resources available to a less privileged program allowing
+information leak and/or deny of service.
+
+- Why do one need atomic close-on-exec ?
+
+Even if it's possible to set close-on-exec flag through call to fcntl()
+as shown previously, it introduces a race condition in multi-threaded
+process, where a thread call fork() / exec() while another thread
+is between call to open() and fcntl().
+
+Additionally, using close-on-exec free the programmer from tracking manually
+which file descriptor is to close in a child before calling exec():
+in a program using multiple third-party libraries, it's difficult to know
+which file descriptor must be closed.
+AFAIK, while there's a atexit(), pthread_atfork(), there's no atexec()
+userspace function in libc to allow libraries to register a handler in
+order to close its opened file descriptor before exec().
+
+- Why default to close-on-exec ?
+
+Some kernel interfaces don't allow userspace to pass a O_CLOEXEC-like
+flag when creating a new file descriptor.
+
+In such cases, if possible (see below), O_CLOEXEC must be made
+the default so that userspace doesn't have to call fcntl()
+which, as demonstrated previously, is open to race condition in
+multi-threaded program.
+
+- How to choose between flag 0 or O_CLOEXEC in call to
+  get_unused_fd_flags() (or anon_inode_getfd()) ?
+
+Short: Will it break existing application ? Will it break kernel ABI ?
+
+       If answer is no, use O_CLOEXEC.
+       If answer is yes, use 0.
+
+Long: If userspace expect to retrieve a file descriptor with plain
+      old Unix(tm) semantics, O_CLOEXEC must not be the default, as it
+      could break some applications expecting that the file descriptor
+      will be inherited across exec().
+
+      But for some subsystems, such as InfiniBand, KVM, VFIO, it makes
+      no sense to have file descriptors inherited across exec() since
+      those are tied to resources that will vanish when a another program
+      will replace the current one by mean of exec(), so it's safe to use
+      O_CLOEXEC in such cases.
+
+      For others, like XFS, the file descriptor is retrieved by one
+      program and will be used by a different program, executed as a
+      child. In this case, setting O_CLOEXEC would break existing
+      application which do not expect to have to call fcntl(fd,
+      F_SETFD, 0) to make it available across exec().
+
+      If file descriptor created by a subsystem is not tied to the
+      current process resources, it's likely legal to use it in a
+      different process context, thus O_CLOEXEC must not be the default.
+
+      If one, as a subsystem maintainer, cannot tell for sure that
+      no userspace program ever rely current behavior, eg. file descriptor
+      being inherited across exec(), then the default flag *must*
+      be kept 0 to not break application.
+
+- This subsystem cannot be turned to use O_CLOEXEC by default:
+
+If O_CLOEXEC cannot be made the default, it would be interesting
+to think to extend the API to have a (set of) function(s) taking
+a flag parameter so that userspace can atomically request close-on-exec
+if it need it (and it should need it).
+
+- Background:
+
+One might want to read "Secure File Descriptor Handling" [2] by
+Ulrich Drepper who is responsible of adding O_CLOEXEC flag on open(),
+and flags alike on other syscalls.
+
+One might also want to read PEP-446 "Make newly created file descriptors
+non-inheritable" [3] by Victor Stinner since it has lot more background
+information on file descriptor leaking.
+
+One also like to read "Excuse me son, but your code is leaking !!!" [4]
+by Dan Walsh for advice.
+
+[1] http://lwn.net/Articles/412131/
+[2] http://udrepper.livejournal.com/20407.html
+[3] http://www.python.org/dev/peps/pep-0446/
+[4] http://danwalsh.livejournal.com/53603.html
+
+- Statistics:
+
+In linux-next tag 20131224, they're currently:
+
+- 32 calls to fd_install()
+       with one call part of anon_inode_getfd()
+- 24 calls to get_unused_fd_flags()
+       with one call part of anon_inode_getfd()
+       with another part of get_unused_fd() macro
+- 11 calls to anon_inode_getfd()
+-  8 calls to anon_inode_getfile()
+       with one call part of anon_inode_getfd()
+-  7 calls to get_unused_fd()
+
+Changes from patchset v4 [PATCHSETv4]:
+
+- rewrote cover letter following discussion with perf maintainer.
+  Thanks to Peter Zijlstra.
+
+- modified a bit some commit messages.
+
+- events: use get_unused_fd_flags(0) instead of get_unused_fd()
+  DROPPED: replaced by following patch
+
+- perf: introduce a flag to enable close-on-exec in perf_event_open()
+  NEW: instead of hard coding the flags to 0, this patch
+       allows userspace to specify close-on-exec flag.
+
+- fanotify: use get_unused_fd_flags(0) instead of get_unused_fd()
+  DROPPED: replaced by following patch
+
+- fanotify: enable close-on-exec on events' fd when requested in
+    fanotify_init()
+  NEW: instead of hard coding the flags to 0, this patch
+       enable close-on-exec if userspace request it.
+
+Changes from patchset v3 [PATCHSETv3]:
+
+- industrialio: use anon_inode_getfd() with O_CLOEXEC flag
+  DROPPED: applied upstream
+
+Changes from patchset v2 [PATCHSETv2]:
+
+- android/sw_sync: use get_unused_fd_flags(O_CLOEXEC) instead of get_unused_fd()
+  DROPPED: applied upstream
+
+- android/sync: use get_unused_fd_flags(O_CLOEXEC) instead of get_unused_fd()
+  DROPPED: applied upstream
+
+- vfio: use get_unused_fd_flags(0) instead of get_unused_fd()
+  DROPPED: applied upstream.
+  Additionally subsystem maintainer applied another patch on top
+  to set the flags to O_CLOEXEC.
+
+- industrialio: use anon_inode_getfd() with O_CLOEXEC flag
+  NEW: propose to use O_CLOEXEC as default flag.
+
+Changes from patchset v1 [PATCHSETv1]:
+
+- explicitly added subsystem maintainers as mail recepients.
+
+- infiniband: use get_unused_fd_flags(0) instead of get_unused_fd()
+  DROPPED: subsystem maintainer applied another patch
+           using get_unused_fd_flags(O_CLOEXEC) as suggested.
+
+- android/sw_sync: use get_unused_fd_flags(0) instead of get_unused_fd()
+  MODIFIED: use get_unused_fd_flags(O_CLOEXEC) as suggested
+
+- android/sync: use get_unused_fd_flags(0) instead of get_unused_fd()
+  MODIFIED: use get_unused_fd_flags(O_CLOEXEC) as suggested
+
+- xfs: use get_unused_fd_flags(0) instead of get_unused_fd()
+  DROPPED: applied asis by subsystem maintainer.
+
+- sctp: use get_unused_fd_flags(0) instead of get_unused_fd()
+  DROPPED: applied asis by subsystem maintainer.
+
+Links:
+
+[PATCHSETv4]
+  http://lkml.kernel.org/r/cover.1383121137.git.ydroneaud@opteya.com
+
+[PATCHSETv3]
+  http://lkml.kernel.org/r/cover.1378460926.git.ydroneaud@opteya.com
+
+[PATCHSETv2]
+  http://lkml.kernel.org/r/cover.1376327678.git.ydroneaud@opteya.com
+
+[PATCHSETv1]
+  http://lkml.kernel.org/r/cover.1372777600.git.ydroneaud@opteya.com
+
+PS: Happy new (gregorian calendar's) year 2014 and best wishes ;)
+
+Yann Droneaud (7):
+  ia64: use get_unused_fd_flags(0) instead of get_unused_fd()
+  ppc/cell: use get_unused_fd_flags(0) instead of get_unused_fd()
+  binfmt_misc: use get_unused_fd_flags(0) instead of get_unused_fd()
+  file: use get_unused_fd_flags(0) instead of get_unused_fd()
+  fanotify: enable close-on-exec on events' fd when requested in
+    fanotify_init()
+  perf: introduce a flag to enable close-on-exec in perf_event_open()
+  file: remove macro get_unused_fd()
+
+ arch/ia64/kernel/perfmon.c                |  2 +-
+ arch/powerpc/platforms/cell/spufs/inode.c |  4 ++--
+ fs/binfmt_misc.c                          |  2 +-
+ fs/file.c                                 |  2 +-
+ fs/notify/fanotify/fanotify_user.c        |  2 +-
+ include/linux/file.h                      |  1 -
+ include/uapi/linux/perf_event.h           |  1 +
+ kernel/events/core.c                      | 12 +++++++++---
+ 8 files changed, 16 insertions(+), 10 deletions(-)
+
+-- 
+1.8.4.2
 
