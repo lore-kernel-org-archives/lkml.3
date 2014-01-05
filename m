@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072AbaAEUjj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 15:39:39 -0500
-Received: from fieldses.org ([174.143.236.118]:52440 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752040AbaAEUjf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 15:39:35 -0500
-Date: Sun, 5 Jan 2014 15:39:34 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nfs-ganesha-devel@lists.sourceforge.net,
-        samba-technical@lists.samba.org
-Subject: Re: [PATCH v3 1/6] locks: consolidate common code in the
- flock_to_posix_lock routines
-Message-ID: <20140105203934.GD22918@fieldses.org>
-References: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
- <1386703055-22308-2-git-send-email-jlayton@redhat.com>
- <20131210212253.GC20831@fieldses.org>
- <20131210232204.GD20831@fieldses.org>
- <20131211061856.615c39ba@tlielax.poochiereds.net>
- <20131211143724.GA29300@fieldses.org>
- <20131211151931.GC29300@fieldses.org>
- <20131211140741.292028e8@tlielax.poochiereds.net>
- <20131211225616.GA3483@fieldses.org>
- <20131212054406.4360d79e@tlielax.poochiereds.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131212054406.4360d79e@tlielax.poochiereds.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752157AbaAEUkJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 15:40:09 -0500
+Received: from smtpfb1-g21.free.fr ([212.27.42.9]:59518 "EHLO
+	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751920AbaAEUkH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jan 2014 15:40:07 -0500
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCHv5 7/7] file: remove macro get_unused_fd()
+Date: Sun,  5 Jan 2014 21:36:34 +0100
+Message-Id: <3716c4782ba81be22ad0cff437a00a64305f3f26.1388952061.git.ydroneaud@opteya.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <cover.1388952061.git.ydroneaud@opteya.com>
+References: <cover.1388952061.git.ydroneaud@opteya.com>
+In-Reply-To: <cover.1388952061.git.ydroneaud@opteya.com>
+References: <cover.1388952061.git.ydroneaud@opteya.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ugh, I screwed up one more when rewriting flock{64}_to_posix_lock, an
-off-by-one error caused by not noticing that the "end" offset of a lock
-is at start + len - 1, not start + len. 
+Macro get_unused_fd() allocates a file descriptor without enabling
+close-on-exec: it calls function get_unused_fd_flags() without
+O_CLOEXEC flag.
 
-(So for example, a 1-byte lock starting at offset 5 is recorded as
-(fl_start, fl_end) == (5, 5), not (5,6)....)
+This can be seen as an unsafe default: in most case close-on-exec
+should be enabled to not leak file descriptor across exec().
 
-This actually causes "cthon -l" fails as it attempts a lock with
-(start, len) == (1, OFFSET_MAX).
+This patch removes get_unused_fd() instead of updating it to use
+O_CLOEXEC so that out of tree modules won't be affect by a runtime
+behavor change which might introduce other kind of bug. It's better
+to catch the change at build time, making it easier to fix.
 
---b.
+Removing the macro will also promote use of get_unused_fd_flags()
+(or anon_inode_getfd()) with flags provided by userspace. Or, if
+flags cannot be given by userspace, with flags set to O_CLOEXEC set
+by default.
 
-diff --git a/fs/locks.c b/fs/locks.c
-index 9523b89..f017280 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -365,16 +365,17 @@ static int flock64_to_posix_lock(struct file *filp, struct file_lock *fl,
- 	fl->fl_start += l->l_start;
- 	if (fl->fl_start < 0)
- 		return -EINVAL;
--	if (l->l_len > 0 && l->l_len - 1 > OFFSET_MAX - fl->fl_start)
--		return -EOVERFLOW;
--	if (fl->fl_start + l->l_len < 0)
--		return -EINVAL;
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Link: http://lkml.kernel.org/r/cover.1388952061.git.ydroneaud@opteya.com
+---
+ include/linux/file.h | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/include/linux/file.h b/include/linux/file.h
+index cbacf4faf447..866600259c07 100644
+--- a/include/linux/file.h
++++ b/include/linux/file.h
+@@ -63,7 +63,6 @@ extern void set_close_on_exec(unsigned int fd, int flag);
+ extern bool get_close_on_exec(unsigned int fd);
+ extern void put_filp(struct file *);
+ extern int get_unused_fd_flags(unsigned flags);
+-#define get_unused_fd() get_unused_fd_flags(0)
+ extern void put_unused_fd(unsigned int fd);
  
- 	/* POSIX-1996 leaves the case l->l_len < 0 undefined;
- 	   POSIX-2001 defines it. */
--	if (l->l_len > 0)
-+	if (l->l_len > 0) {
-+		if (l->l_len - 1 > OFFSET_MAX - fl->fl_start)
-+			return -EOVERFLOW;
- 		fl->fl_end = fl->fl_start + l->l_len - 1;
--	else if (l->l_len < 0) {
-+
-+	} else if (l->l_len < 0) {
-+		if (fl->fl_start + l->l_len < 0)
-+			return -EINVAL;
- 		fl->fl_end = fl->fl_start - 1;
- 		fl->fl_start += l->l_len;
- 	} else
+ extern void fd_install(unsigned int fd, struct file *file);
+-- 
+1.8.4.2
+
