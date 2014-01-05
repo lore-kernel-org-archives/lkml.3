@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751345AbaAEQQs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 11:16:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7391 "EHLO mx1.redhat.com"
+	id S1751368AbaAEQ1M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 11:27:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10163 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751112AbaAEQQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 11:16:47 -0500
-Date: Sun, 5 Jan 2014 17:16:32 +0100
+	id S1751112AbaAEQ1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jan 2014 11:27:10 -0500
+Date: Sun, 5 Jan 2014 17:26:50 +0100
 From: Jiri Olsa <jolsa@redhat.com>
 To: Namhyung Kim <namhyung@kernel.org>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
@@ -18,7 +18,7 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>
 Subject: Re: [PATCH 03/21] perf hists: Add support for accumulated stat of
  hist entry
-Message-ID: <20140105161632.GB10018@krava.brq.redhat.com>
+Message-ID: <20140105162650.GC10018@krava.brq.redhat.com>
 References: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
  <1387873347-28838-4-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
@@ -80,9 +80,8 @@ On Tue, Dec 24, 2013 at 05:22:09PM +0900, Namhyung Kim wrote:
 >  			he->branch_info = malloc(sizeof(*he->branch_info));
 >  			if (he->branch_info == NULL) {
 > +				free(he->stat_acc);
->  				free(he);
->  				return NULL;
 
-hum, he->stat_acc should get freed in hist_entry__free
+probably not big deal but above free should be under
+symbol_conf.cumulate_callchain check..
 
 jirka
