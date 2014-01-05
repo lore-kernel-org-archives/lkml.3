@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750971AbaAEDik (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 22:38:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58001 "EHLO
+	id S1751081AbaAEDmS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 22:42:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58016 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805AbaAEDii (ORCPT
+	with ESMTP id S1750806AbaAEDmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 22:38:38 -0500
-Date: Sat, 4 Jan 2014 19:38:48 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ravi Patel <rapatel@apm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Loc Ho <lho@apm.com>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jon Masters <jcm@redhat.com>, "patches@apm.com" <patches@apm.com>,
-        Keyur Chudgar <kchudgar@apm.com>
-Subject: Re: [PATCH V2 0/4] misc: xgene: Add support for APM X-Gene SoC Queue
- Manager/Traffic Manager
-Message-ID: <20140105033848.GA22595@kroah.com>
-References: <1387594651-25771-1-git-send-email-rapatel@apm.com>
- <201312212111.40576.arnd@arndb.de>
- <CAPw-ZTnsu_EmOW3aZTVKAVjQsdi8qMy95y2ZcYxzgVrjGkirTA@mail.gmail.com>
- <1441245.xPZLG2iNZ6@wuerfel>
- <CAN1v_PtFz42crHW5=cUgw-fAnPn3rQht=o0t3nmjJRamYSLDMg@mail.gmail.com>
+	Sat, 4 Jan 2014 22:42:17 -0500
+Date: Sat, 4 Jan 2014 19:42:28 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Jeff Mahoney <jeffm@suse.com>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com, tglx@linutronix.de,
+        paulmck@linux.vnet.ibm.com, mingo@kernel.org
+Subject: Re: [PATCH] kobject: provide kobject_put_wait to fix module unload
+ race
+Message-ID: <20140105034228.GC22595@kroah.com>
+References: <alpine.LRH.2.02.1401021733250.27775@file01.intranet.prod.int.rdu2.redhat.com>
+ <20140104181620.GA2087@kroah.com>
+ <alpine.LRH.2.02.1401041456070.21108@file01.intranet.prod.int.rdu2.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAN1v_PtFz42crHW5=cUgw-fAnPn3rQht=o0t3nmjJRamYSLDMg@mail.gmail.com>
+In-Reply-To: <alpine.LRH.2.02.1401041456070.21108@file01.intranet.prod.int.rdu2.redhat.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 04, 2014 at 03:59:46PM -0800, Ravi Patel wrote:
-> On Sat, Dec 21, 2013 at 11:03 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Saturday 21 December 2013 17:00:51 Loc Ho wrote:
-> >> On Sat, Dec 21, 2013 at 12:11 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> >> > On Saturday 21 December 2013, Ravi Patel wrote:
-> >> >> This patch adds support for APM X-Gene SoC Queue Manager/Traffic Manager.
-> >> >>  QMTM is required by APM X-Gene SoC Ethernet, PktDMA (XOR Engine) and
-> >> >>  Security Engine subsystems. All subsystems communicate with QMTM using
-> >> >>  messages which include information about the work to be performed and
-> >> >>  the location of associated data buffers.
-> >> >
-> >> > Please describe here what the purpose of the qmtm is, as this is not
-> >> > entirely clear from the code.
-> >> >
-> >> > In particular, please describe how this differs from a dmaengine driver
-> >> > and why it is not possible to extend the dma slave API to describe qmtm
-> >> > as a dma engine.
-> >> >
-> >> [Loc Ho]
-> >> If the QM driver implements the DMA API, what about the actual DMA
-> >> engine driver which interfaces with this QM driver. We would have DMA
-> >> client interfaces with the X-Gene DMA driver (not available yet) via
-> >> DMA API which in turn interfaces with this QM driver via DMA API.
-> >> Won't this be kind of awkward? Also, the QM only manage messages (or
-> >> descriptors) which are 32-bytes or 64-bytes. It doesn't actually do
-> >> any data transfer of various sizes.
-> >
-> > Please describe here what the purpose of the qmtm is, as this is not
-> > entirely clear from the code or from your reply.
-> >
-> > Greg was guessing that it's a bus controller, my best guess is a DMA
-> > engine. If it's something completely different, you have to let
-> > us know what it is so we can do a proper review rather than guessing.
-> >
-> > Please provide a link to the data sheet if you are unable to explain.
+On Sat, Jan 04, 2014 at 03:35:39PM -0500, Mikulas Patocka wrote:
 > 
-> Here is URL to a text document explaining role of QMTM device with CPU, Ethernet
-> subsystem.
 > 
-> https://drive.google.com/file/d/0B28TgQZ3JLoRRGNnbjJoUGNHWW8/edit?usp=sharing
+> On Sat, 4 Jan 2014, Greg Kroah-Hartman wrote:
+> 
+> > On Sat, Jan 04, 2014 at 01:06:01PM -0500, Mikulas Patocka wrote:
+> > > Hi
+> > > 
+> > > I noticed that Jeff Mahoney added a new structure kobj_completion, defined 
+> > > in include/linux/kobj_completion.h to the kernel 3.13-rc1 in the patch 
+> > > eee031649707db3c9920d9498f8d03819b74fc23. In the current upstream kernel, 
+> > > this interface is still unused.
+> > 
+> > There are pending btrfs patches to use this interface.
+> > 
+> > > However, converting the drivers to use kobj_completion is not trivial 
+> > > (note that all users of the original kobject interface are buggy - so all 
+> > > of them need to be converted).
+> > 
+> > Wait, what?  How are "all users" buggy?  Please explain this in detail.
+> 
+> 1) some code takes a reference to a kobject
+> 2) the user unloads the device
+> 3) the device driver unload routine calls kobject_put (but there is still 
+>    reference, so the kobject is not destroyed)
 
-There is nothing at this link :(
+A driver should never be messing around with "raw" kobjects, they should
+be using a 'struct device' which is created/managed by the subsystem
+they belong to.  See Dmitry's example of input and serio as ways to do
+this, also USB and PCI do this properly.
 
-> PktDMA and Security subsystem interfaces with QMTM in the same way as Ethernet.
+Perhaps your sybsystem isn't doing this properly?  What code do you have
+that creates raw kobjects and has this problem?
 
-How does a "security" subsystem have anything to do with ethernet?
-
-confused,
+thanks,
 
 greg k-h
