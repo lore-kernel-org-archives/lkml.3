@@ -1,59 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751262AbaAENS1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 08:18:27 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:58586 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaAENS0 (ORCPT
+	id S1751196AbaAENWA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 08:22:00 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:61253 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115AbaAENV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 08:18:26 -0500
-Date: Sun, 5 Jan 2014 21:13:00 +0800
-From: Shaohua Li <shli@kernel.org>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, hch@infradead.org
-Subject: Re: [patch 1/2]percpu_ida: fix a live lock
-Message-ID: <20140105131300.GB4186@kernel.org>
-References: <20131231033827.GA31994@kernel.org>
- <20140104210804.GA24199@kmo-pixel>
+	Sun, 5 Jan 2014 08:21:58 -0500
+Date: Sun, 5 Jan 2014 14:21:55 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 1/2] sched/nohz: add debugfs control over
+ sched_tick_max_deferment
+Message-ID: <20140105132153.GA25212@localhost.localdomain>
+References: <1387315388-31676-1-git-send-email-khilman@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140104210804.GA24199@kmo-pixel>
+In-Reply-To: <1387315388-31676-1-git-send-email-khilman@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 04, 2014 at 01:08:04PM -0800, Kent Overstreet wrote:
-> On Tue, Dec 31, 2013 at 11:38:27AM +0800, Shaohua Li wrote:
-> > 
-> > steal_tags only happens when free tags is more than half of the total tags.
-> > This is too restrict and can cause live lock. I found one cpu has free tags,
-> > but other cpu can't steal (thread is bound to specific cpus), threads which
-> > wants to allocate tags are always sleeping. I found this when I run next patch,
-> > but this could happen without it I think.
-> > 
-> > I did performance test too with null_blk. Two cases (each cpu has enough percpu
-> > tags, or total tags are limited) haven't performance changes.
+On Tue, Dec 17, 2013 at 01:23:07PM -0800, Kevin Hilman wrote:
+> Allow debugfs override of sched_tick_max_deferment in order to ease
+> finding/fixing the remaining issues with full nohz.
 > 
-> This doesn't appear to me to fix anything wrong with the current code
-> (and it'll hurt performance)
+> The value to be written is in jiffies, and -1 means the max deferment
+> is disabled (scheduler_tick_max_deferment() returns KTIME_MAX.)
+> 
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+> ---
+>  kernel/sched/core.c | 16 +++++++++++++++-
+>  1 file changed, 15 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 5ac63c9a995a..4b1fe3e69fe4 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -2175,6 +2175,8 @@ void scheduler_tick(void)
+>  }
+>  
+>  #ifdef CONFIG_NO_HZ_FULL
+> +static u32 sched_tick_max_deferment = HZ;
+> +
+>  /**
+>   * scheduler_tick_max_deferment
+>   *
+> @@ -2193,13 +2195,25 @@ u64 scheduler_tick_max_deferment(void)
+>  	struct rq *rq = this_rq();
+>  	unsigned long next, now = ACCESS_ONCE(jiffies);
+>  
+> -	next = rq->last_sched_tick + HZ;
+> +	if (sched_tick_max_deferment == -1)
+> +		return KTIME_MAX;
+> +
+> +	next = rq->last_sched_tick + sched_tick_max_deferment;
+>  
+>  	if (time_before_eq(next, now))
+>  		return 0;
+>  
+>  	return jiffies_to_usecs(next - now) * NSEC_PER_USEC;
+>  }
+> +
+> +static __init int sched_nohz_full_init_debug(void)
+> +{
+> +	debugfs_create_u32("sched_tick_max_deferment", 0644, NULL,
+> +			   &sched_tick_max_deferment);
+> +
+> +	return 0;
+> +}
+> +late_initcall(sched_nohz_full_init_debug);
 
-I suspects this hurts performance too, but it doesn't actually in my test.
+If the goal is mostly to turn off sched_tick_max_deferment (set to -1), we should
+perhaps make it a boolean sched feature (see kernel/sched/features.h) as it's a pretty
+well consolidated interface.
 
-> - we explicitly don't guarantee that all
-> the tags will be available for allocation at any given time, only half
-> of them. 
-
-only half of the tags can be used? this is scaring. Of course we hope all tags
-are available.
-
-> Can you explain more how this is being used where you're seeing
-> the issue? And I don't see the other patch in your patch series.
-
-tasks are bound to specific cpus. And I saw one cpu has a lot of free (but less
-than half of total tags), but other cpus can't allocate tags, so I saw a live
-lock.
-
-Thanks,
-Shaohua
+>  #endif
+>  
+>  notrace unsigned long get_parent_ip(unsigned long addr)
+> -- 
+> 1.8.3
+> 
