@@ -1,74 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754992AbaAEAT2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 19:19:28 -0500
-Received: from wildsau.enemy.org ([193.170.194.34]:46778 "EHLO
-	wildsau.enemy.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754416AbaAEAT1 (ORCPT
+	id S1755078AbaAEAfK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 19:35:10 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:41798 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754579AbaAEAfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 19:19:27 -0500
-X-Greylist: delayed 331 seconds by postgrey-1.27 at vger.kernel.org; Sat, 04 Jan 2014 19:19:27 EST
-Date: Sun, 5 Jan 2014 01:13:53 +0100 (CET)
-From: Herbert Rosmanith <lkml@wildsau.enemy.org>
+	Sat, 4 Jan 2014 19:35:08 -0500
+Date: Sun, 5 Jan 2014 08:35:01 +0800
+From: Han Pingtian <hanpt@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
-Subject: 3.11.10: rtl8192cu device name, kernel crash
-Message-ID: <alpine.LNX.2.00.1401050108340.14069@wildsau.enemy.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+Cc: Dave Hansen <dave.hansen@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Michal Hocko <mhocko@suse.cz>
+Subject: Re: [RFC] mm: show message when updating min_free_kbytes in thp
+Message-ID: <20140105003501.GC4106@localhost.localdomain>
+Mail-Followup-To: linux-kernel@vger.kernel.org,
+	Dave Hansen <dave.hansen@intel.com>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Mel Gorman <mgorman@suse.de>,
+	Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+	Michal Hocko <mhocko@suse.cz>
+References: <20140101002935.GA15683@localhost.localdomain>
+ <52C5AA61.8060701@intel.com>
+ <20140103033303.GB4106@localhost.localdomain>
+ <52C6FED2.7070700@intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52C6FED2.7070700@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14010500-9332-0000-0000-000002AA7C37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 03, 2014 at 10:17:54AM -0800, Dave Hansen wrote:
+> On 01/02/2014 07:33 PM, Han Pingtian wrote:
+> > @@ -130,8 +130,11 @@ static int set_recommended_min_free_kbytes(void)
+> >  			      (unsigned long) nr_free_buffer_pages() / 20);
+> >  	recommended_min <<= (PAGE_SHIFT-10);
+> >  
+> > -	if (recommended_min > min_free_kbytes)
+> > +	if (recommended_min > min_free_kbytes) {
+> > +		pr_info("raising min_free_kbytes from %d to %d to help transparent hugepage allocations\n",
+> > +			min_free_kbytes, recommended_min);
+> >  		min_free_kbytes = recommended_min;
+> > +	}
+> >  	setup_per_zone_wmarks();
+> >  	return 0;
+> >  }
+> 
+> I know I gave you that big bloated string, but 108 columns is a _wee_
+> bit over 80. :)
+> 
+> Otherwise, I do like the new message
 
-hello list,
+Thanks. This is the new version:
 
-this afternoon I bought a new usb/wlan adapter, which identifies 
-itself as:
+>From f4d085a880dfae7638b33c242554efb0afc0852b Mon Sep 17 00:00:00 2001
+From: Han Pingtian <hanpt@linux.vnet.ibm.com>
+Date: Fri, 3 Jan 2014 11:10:49 +0800
+Subject: [PATCH] mm: show message when raising min_free_kbytes in THP
 
-    # lsusb
-    ...
-    Bus 001 Device 017: ID 0bda:8178 Realtek Semiconductor Corp. RTL8192CU 802.11n WLAN Adapter
+min_free_kbytes may be raised during THP's initialization. Sometimes,
+this will change the value being set by user. Showing message will
+clarify this confusion.
 
-the first thing I noticed is that the device name is renamed:
+Showing the old value of min_free_kbytes according to Dave Hansen's
+suggestion. This will give user the chance to restore old value of
+min_free_kbytes.
 
-    [ 4444.688299] systemd-udevd[3090]: renamed network interface wlan1 to wlp0s29f7u4u4u2
+Signed-off-by: Han Pingtian <hanpt@linux.vnet.ibm.com>
+---
+ mm/huge_memory.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-Excellent! I always hated that userfriendly and easy to remember names like "wlan1".
-Finally I have a more sophisticated name, "wlp0s29f7u4u4u2" that strictly follows
-The Tao Of Terribly Silly Device Naming.
-
-Additionally, iwconfig and ifconfig cannot decide upon the device name.
-While iwconfig sees "wlp0s29f7u4u4u2", ifconfig is a bit short-sighted and 
-only sees "wlp0s29f7".
-The problem is that none of the two devicenames can be used for configuring it:
-
-    # dhclient -d wlp0s29f7
-    ...
-    SIOCSIFADDR: No such device
-    wlp0s29f7: ERROR while getting interface flags: No such device
-    wlp0s29f7: ERROR while getting interface flags: No such device
-    Bind socket to interface: No such device
-
-    and:
-
-     # dhclient -d wlp0s29f7u4u4u2
-     ...
-     Bind socket to interface: No such device
-
-Renaming "wlp0s29f7u4u4u2" back to "wlan1" will make the adapter known to
-dhclient/ifconfig (finally udev can do something useful), but not without
-crashing the system in between: I added the mac-addr. to the
-persistent-net udev-rules, did a /etc/init.d/udev restart,
-and removed the adapter from the usb hub. Instantly, the system froze, I had to
-push the power button to get it back. This was the 2nd time the system
-crashed, the first time on the console: it was some kernel panic. As the system
-didn't react anymore, I did not bother to write down the lengthy panic message.
-
-By the way, kernel version is 3.11.10.
-As the device is handled by the rtl8192cu module, which is not in the 
-staging directory, it is considered stable, isn't it?
-
-cheers,
-herp
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 7de1bf8..7910360 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -130,8 +130,12 @@ static int set_recommended_min_free_kbytes(void)
+ 			      (unsigned long) nr_free_buffer_pages() / 20);
+ 	recommended_min <<= (PAGE_SHIFT-10);
+ 
+-	if (recommended_min > min_free_kbytes)
++	if (recommended_min > min_free_kbytes) {
++		pr_info("raising min_free_kbytes from %d to %d "
++			"to help transparent hugepage allocations\n",
++			min_free_kbytes, recommended_min);
+ 		min_free_kbytes = recommended_min;
++	}
+ 	setup_per_zone_wmarks();
+ 	return 0;
+ }
+-- 
+1.7.7.6
 
