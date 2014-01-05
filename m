@@ -1,114 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751809AbaAESSe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 13:18:34 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:42905 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454AbaAESSd (ORCPT
+	id S1751854AbaAESSz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 13:18:55 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:44687 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751819AbaAESSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 13:18:33 -0500
-Date: Sun, 5 Jan 2014 21:18:31 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Rostislav Lisovy <lisovy@gmail.com>
-Cc: Hartley Sweeten <HartleyS@visionengravers.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        "pisa@cmp.felk.cvut.cz" <pisa@cmp.felk.cvut.cz>
-Subject: Re: [PATCH] comedi: Humusoft MF634 and MF624 DAQ cards driver
-Message-ID: <20140105181831.GG30234@mwanda>
-References: <1388453796-17088-1-git-send-email-lisovy@gmail.com>
- <1388453796-17088-2-git-send-email-lisovy@gmail.com>
- <DC148C5AA1CEBA4E87973D432B1C2D8817E5C72E@P3PWEX4MB008.ex4.secureserver.net>
- <1388934244.732.37.camel@lolumad>
+	Sun, 5 Jan 2014 13:18:54 -0500
+X-IronPort-AV: E=Sophos;i="4.95,608,1384300800"; 
+   d="scan'208";a="87715388"
+Date: Sun, 5 Jan 2014 18:18:03 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        <boris.ostrovsky@oracle.com>, <stefano.stabellini@eu.citrix.com>,
+        <david.vrabel@citrix.com>, <hpa@zytor.com>
+Subject: Re: [PATCH v13 15/19] xen/grant-table: Refactor gnttab_init
+In-Reply-To: <1388777916-1328-16-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1401051817150.8667@kaball.uk.xensource.com>
+References: <1388777916-1328-1-git-send-email-konrad.wilk@oracle.com> <1388777916-1328-16-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1388934244.732.37.camel@lolumad>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 05, 2014 at 04:04:04PM +0100, Rostislav Lisovy wrote:
-> Hello Hartley (and Dan);
-> Thank you for the review. I do agree with most of the things, however I
-> would like to explain/discuss a few of them...
+On Fri, 3 Jan 2014, Konrad Rzeszutek Wilk wrote:
+> We have this odd scenario of where for PV paths we take a shortcut
+> but for the HVM paths we first ioremap xen_hvm_resume_frames, then
+> assign it to gnttab_shared.addr. This is needed because gnttab_map
+> uses gnttab_shared.addr.
 > 
-> On Thu, 2014-01-02 at 18:38 +0000, Hartley Sweeten wrote: 
-> > On Monday, December 30, 2013 6:37 PM, Rostislav Lisovy wrote:
-> > >
-> > >  create mode 100644 drivers/staging/comedi/drivers/mf6x4.c
-> > 
-> > Hello Rostislav,
-> > 
-> > As pointed out by Dan Carpenter, you need to add a change log and
-> > Signed-off-by lines to this patch.
+> Instead of having:
+> 	if (pv)
+> 		return gnttab_map
+> 	if (hvm)
+> 		...
 > 
-> I agree, the missing Signed-off-by is my mistake. I always thought that
-> the change log should explain the changes to previous version of the
-> same patch (when resending the patch). What is the reason to have a
-> change log in the first version of the patch (everything is a change)?
-
-
-Right now the change log is just "create mode 100644
-drivers/staging/comedi/drivers/mf6x4.c" which is not English.  Just
-rephrase it into English and add the bit from the Kconfig file.  It
-doesn't have to be a novel.
-
-> > > +/* BAR2 registers */
-> > > +#define MF634_GPIOC_reg					0x68
-> > 
-> > Please rename these CamelCase defines (i.e. s/_reg/_REG).
+> 	gnttab_map
 > 
-> I would not call it CamelCase -- it is more like a suffix. The name is
-> thus composed of the prefix (MF6X4), the name (same as in the
-> documentation) and a suffix (saying if this is a register name or a
-> field in a register or mask, etc.) -- the reason why I use lower case is
-> that it helps readability.
+> Lets move the HVM part before the gnttab_map and remove the
+> first call to gnttab_map.
 > 
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 
-It's not really kernel style...  And especially since we're going to
-make this into a function.  MF6X4_DA_reg() looks really bad to me.
+As I wrote in my reply to the previous version of the patch, you can
+have my acked-by, except for the spurious code style fix mixed-up with
+the other changes.
 
-> > > +	devpriv->bar0_mem = pci_ioremap_bar(pcidev, board->bar_nums[0]);
-> > > +	if (!devpriv->bar0_mem) {
-> > > +		dev_err(dev->class_dev, "Failed to remap Device configuration BAR\n");
-> > > +		ret = -ENODEV;
-> > 
-> > Just return the error here and below.
+
+>  drivers/xen/grant-table.c | 13 ++++---------
+>  1 file changed, 4 insertions(+), 9 deletions(-)
 > 
-> The reason I did it in this way is the comment next to the 'out' label.
-> For somebody not experienced with comedi drivers (like me or somebody
-> else reading the code in the future) the sequence of memory allocation
-> (or 'pci_ioremap_bar') followed by a 'return' statement looks quite
-> scary. Either I can write the comment to each return or do it with the
-> single point of exit.
+> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> index 99399cb..cc1b4fa 100644
+> --- a/drivers/xen/grant-table.c
+> +++ b/drivers/xen/grant-table.c
+> @@ -1173,22 +1173,17 @@ static int gnttab_setup(void)
+>  	if (max_nr_gframes < nr_grant_frames)
+>  		return -ENOSYS;
+>  
+> -	if (xen_pv_domain())
+> -		return gnttab_map(0, nr_grant_frames - 1);
+> -
+> -	if (gnttab_shared.addr == NULL) {
+> +	if (xen_feature(XENFEAT_auto_translated_physmap) && gnttab_shared.addr == NULL)
+> +	{
+>  		gnttab_shared.addr = xen_remap(xen_hvm_resume_frames,
+> -						PAGE_SIZE * max_nr_gframes);
+> +					       PAGE_SIZE * max_nr_gframes);
+>  		if (gnttab_shared.addr == NULL) {
+>  			pr_warn("Failed to ioremap gnttab share frames (addr=0x%08lx)!\n",
+>  					xen_hvm_resume_frames);
+>  			return -ENOMEM;
+>  		}
+>  	}
+> -
+> -	gnttab_map(0, nr_grant_frames - 1);
+> -
+> -	return 0;
+> +	return gnttab_map(0, nr_grant_frames - 1);
+>  }
+>  
+>  int gnttab_resume(void)
+> -- 
+> 1.8.3.1
 > 
-
-Doing the empty goto is annoying because you assume that a goto has a
-point instead of just hopping to the bottom of the function for no
-reason.
-
-Looking at this code again, I bet Hartley meant to remove the dev_err()
-and as well as the goto.  Yep.  Looking through pci_ioremap_bar() it
-prints its own error messages so the dev_err() is redundant.
-
-Comedi's cleanup routines confused me at first too.  There should
-definitely be a comment on this somewhere.  I suspect that there is a
-commented on this already but I wasn't able to find it.  Maybe it
-belongs in skel.c with a comment next to the struct comedi_driver
-definition to "see skel.c".  But We don't want these kind of "known
-issue for someone after writing their first comedi driver" comments in
-every .c file.
-
-For the driver code we want it to be as little fluff as possible:
-
-	devpriv->bar0_mem = pci_ioremap_bar(pcidev, board->bar_nums[0]);
-	if (!devpriv->bar0_mem)
-		return -ENODEV;
-
-regards,
-dan carpenter
