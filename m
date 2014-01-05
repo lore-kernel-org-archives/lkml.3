@@ -1,42 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750831AbaAEBcv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 20:32:51 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:44807 "EHLO
+	id S1750867AbaAECFA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 21:05:00 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:44926 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734AbaAEBcu (ORCPT
+	with ESMTP id S1750734AbaAECE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 20:32:50 -0500
-Date: Sat, 04 Jan 2014 20:32:49 -0500 (EST)
-Message-Id: <20140104.203249.1100084640435359350.davem@davemloft.net>
-To: allen.pais@oracle.com
-Cc: bigeasy@linutronix.de, linux-kernel@vger.kernel.org,
-        sparclinux@vger.kernel.org
-Subject: Re: [PATCH 2/3] sparc64: convert spinlock_t to raw_spinlock_t in
- mmu_context_t
+	Sat, 4 Jan 2014 21:04:59 -0500
+Date: Sat, 04 Jan 2014 21:04:55 -0500 (EST)
+Message-Id: <20140104.210455.997293877557315254.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Sparc
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <52AEDCFD.9020402@oracle.com>
-References: <1387166853-10782-3-git-send-email-allen.pais@oracle.com>
-	<52AED5BB.1060002@linutronix.de>
-	<52AEDCFD.9020402@oracle.com>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Sat, 04 Jan 2014 17:32:50 -0800 (PST)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Sat, 04 Jan 2014 18:04:58 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Allen Pais <allen.pais@oracle.com>
-Date: Mon, 16 Dec 2013 16:29:09 +0530
 
-> I did not think it'd be nice to put the call trace in the commit message.
-> But if needed I can re-send them.
+Please pull to get these Sparc bug fixes:
 
-The more information you provide in a commit message, the better.
+1) Missing include can lead to build failure, from Kirill Tkhai.
 
-Please add those traces to the commit messages, and then you can add
-my:
+2) Use dev_is_pci() where applicable, from Yijing Wang.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+3) Enable irqs after we enable preemption in cpu startup path,
+   from Kirill Tkhai.
+
+4) Revert a __copy_{to,from}_user_inatomic change that broke
+   iov_iter_copy_from_user_atomic() and thus several tests in
+   xfstests and LTP.  From Dave Kleikamp.
+
+Please pull, thanks a lot!
+
+The following changes since commit dea4f48a0a301b23c65af8e4fe8ccf360c272fbf:
+
+  Merge branch 'leds-fixes-for-3.13' of git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds (2013-12-02 12:08:01 -0800)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git master
+
+for you to fetch changes up to 16932237f2978a2265662f8de4af743b1f55a209:
+
+  Revert "sparc64: Fix __copy_{to,from}_user_inatomic defines." (2014-01-04 17:55:19 -0800)
+
+----------------------------------------------------------------
+Dave Kleikamp (1):
+      Revert "sparc64: Fix __copy_{to,from}_user_inatomic defines."
+
+Kirill Tkhai (2):
+      sparc64: Fix build regression
+      sparc64: smp_callin: Enable irqs after preemption is disabled
+
+Yijing Wang (1):
+      sparc/PCI: Use dev_is_pci() to identify PCI devices
+
+ arch/sparc/include/asm/uaccess_64.h | 4 ++--
+ arch/sparc/kernel/iommu.c           | 2 +-
+ arch/sparc/kernel/ioport.c          | 5 ++---
+ arch/sparc/kernel/kgdb_64.c         | 1 +
+ arch/sparc/kernel/smp_64.c          | 3 ++-
+ 5 files changed, 8 insertions(+), 7 deletions(-)
