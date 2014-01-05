@@ -1,72 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941AbaAEWt0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 17:49:26 -0500
-Received: from smtprelay0083.hostedemail.com ([216.40.44.83]:50799 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751371AbaAEWtZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 17:49:25 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3868:4250:4321:5007:7652:8957:10004:10400:10848:11026:11232:11473:11658:11914:12438:12517:12519:12555:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: curve98_178b158f55d09
-X-Filterd-Recvd-Size: 2462
-Message-ID: <1388962160.5808.33.camel@joe-AO722>
-Subject: Re: [PATCH] Staging: rtl8187se: fix styling issues in r8180_wx.c
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Dan LaManna <dan.lamanna@gmail.com>, gregkh@linuxfoundation.org,
-        teobaluta@gmail.com, andrea.merello@gmail.com, linville@tuxdriver.com,
-        rusty@rustcorp.com.au, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Sun, 05 Jan 2014 14:49:20 -0800
-In-Reply-To: <20140105214555.GH30234@mwanda>
-References: <1388956656-10790-1-git-send-email-dan.lamanna@gmail.com>
-	 <20140105214555.GH30234@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751974AbaAEXC3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 18:02:29 -0500
+Received: from ring0.de ([91.143.88.219]:46943 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751448AbaAEXC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jan 2014 18:02:27 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Mon, 6 Jan 2014 00:01:57 +0100
+From: Sebastian Reichel <sre@ring0.de>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org development" 
+	<linux-bluetooth@vger.kernel.org>,
+        Ville Tervo <ville.tervo@nokia.com>
+Subject: Re: [PATCH v4] Bluetooth: Add hci_h4p driver
+Message-ID: <20140105230155.GA2681@earth.universe>
+Mail-Followup-To: Pavel Machek <pavel@ucw.cz>,
+	Marcel Holtmann <marcel@holtmann.org>,
+	Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+	=?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= <freemangordon@abv.bg>,
+	"Gustavo F. Padovan" <gustavo@padovan.org>,
+	Johan Hedberg <johan.hedberg@gmail.com>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	"linux-bluetooth@vger.kernel.org development" <linux-bluetooth@vger.kernel.org>,
+	Ville Tervo <ville.tervo@nokia.com>
+References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com>
+ <1727897.LBX8128hIo@izba>
+ <20140102161824.GA8204@amd.pavel.ucw.cz>
+ <A5B72277-42D4-4A24-8A29-9BE18762E8C4@holtmann.org>
+ <20140103001753.GA21023@amd.pavel.ucw.cz>
+ <20140103010519.GA27678@earth.universe>
+ <20140105223250.GB27517@amd.pavel.ucw.cz>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="3MwIy2ne0vdjdPXF"
+Content-Disposition: inline
+In-Reply-To: <20140105223250.GB27517@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-06 at 00:45 +0300, Dan Carpenter wrote:
-> On Sun, Jan 05, 2014 at 04:17:36PM -0500, Dan LaManna wrote:
-> > @@ -1358,22 +1358,22 @@ static inline int is_same_network(struct ieee80211_network *src,
-> >  		 * We treat all <hidden> with the same BSSID and channel
-> >  		 * as one network
-> >  		 */
-> > -		return (((src->ssid_len == dst->ssid_len) || (ieee->iw_mode == IW_MODE_INFRA)) && /* YJ,mod, 080819,for hidden ap */
-> > +		return ((src->ssid_len == dst->ssid_len) || (ieee->iw_mode == IW_MODE_INFRA)) && /* YJ,mod, 080819,for hidden ap */
-> >  			(src->channel == dst->channel) &&
-> >  			!memcmp(src->bssid, dst->bssid, ETH_ALEN) &&
-> >  			(!memcmp(src->ssid, dst->ssid, src->ssid_len) || (ieee->iw_mode == IW_MODE_INFRA)) &&  /* YJ,mod, 080819,for hidden ap */
-> >  			((src->capability & WLAN_CAPABILITY_IBSS) ==
-> >  			(dst->capability & WLAN_CAPABILITY_IBSS)) &&
-> >  			((src->capability & WLAN_CAPABILITY_BSS) ==
-> > -			(dst->capability & WLAN_CAPABILITY_BSS)));
-> > +			(dst->capability & WLAN_CAPABILITY_BSS));
-> >  }
-> >  
-> 
-> Break this up.
 
-[]
+--3MwIy2ne0vdjdPXF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 	if (src->capability & WLAN_CAPABILITY_IBSS !=
-> 	    dst->capability & WLAN_CAPABILITY_IBSS)
+On Sun, Jan 05, 2014 at 11:32:50PM +0100, Pavel Machek wrote:
+> > > Changes from v3: Moved platform data into
+> > > include/linux/platform_data/, something I missed before.
+> >=20
+> > As I wrote before Tony plans to remove the boardcode for all
+> > OMAP boards including the Nokia N900 for 3.14, so you cannot
+> > boot without DT from 3.14 onwards.
+>=20
+> Well, I believe it was agreed that DT should work for at least one
+> version before platform support is removed.=20
 
-Needs parentheses
+https://git.kernel.org/cgit/linux/kernel/git/tmlind/linux-omap.git/tag/?id=
+=3Domap-for-v3.14/omap3-board-removal-signed
 
-	if ((src->capability & WLAN_CAPABILITY_IBSS) !=
-	    (dst->capability & WLAN_CAPABILITY_IBSS))
+There have been some discussion with RMK and iirc at the end
+the plan still was to remove the boardcode for 3.14.
 
-> 		return 0;
-> 	if (src->capability & WLAN_CAPABILITY_BSS !=
-> 	    dst->capability & WLAN_CAPABILITY_BSS)
-> 	    	return 0;
+> > The drivers can still be initialized the old way using pdata quirks
+> > until all drivers are converted, but I think this driver can simply
+> > be prepared for DT directly:
+>=20
+> Well, normally DT support means a bit of argumentation and bikeshed
+> painting... I believe it would be better to get the driver in as-is
+> and then work on adding DT support.
 
-here too.
+Maybe. Especially the UART reference may result in some discussion.
+But having the discussion early means its finished earlier :)
+Assuming this is not merged for 3.14 there is quite some time for
+the DT binding discussion ;)
 
+-- Sebastian
 
+--3MwIy2ne0vdjdPXF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSyeRjAAoJENju1/PIO/qacRkP/396yDvi9ieQ/T5nkfuQKql+
+Oz89UdQaYdW17cwXvB61/TP4TUn/FMXhlE2EIWmKTWNbW/s9pt5U5IK6jOtQDNyW
+TLOmSEJpL2ta1jSC8lMlipMdflpgEBzhoOznhvRm/Ifnco2/zOY2kyy1XDAUyLyy
+c251vg5BbI96QlRQzsxAdzfcjsH05L0Z8qD3Til/pznqH5Kew4ktVJHIH3qaNdTY
+3bbGm4qPTCr2nNvk0tDi+56QT++1HuAnKhIkSVE9YLanRrrRAOUlyQ4VWMeIxKPL
+rt+qZTE+hICqT4KMfGTIEyrIgKywAHTuwQ9DC5l5MwpT7g4y4oLWGBk+ztGrDR7p
+G4/jmVZcI8pXrGgfnhOmJAclEwSm1TY5r5x2hQA1yUHgEVIHZdhITfaahegnd0a8
+SJ0fFvw7nP2plIeAoBxrXYqZKWY6K5ZyJGdOOSO7+Y8qtnxo1kvIo5jJrHsbBpww
+rIrcSyhNQF00fmRLfwTMd+d2z1w4oEobPRLzOvtAUYflNNqzfScUkP8OlRelLUQf
+hheGt7w/muHl8pUskwZRFxobgyak96AXtRerWc3HLu87yDqTi8wO6qUewGnxtXZ/
+RC3ZM2+GW4hCKfa7AeJueOzauJr+fs7O2hjViK8pIH1XtQSmPToh1jED+UIw0CnJ
+UC5Hdi4QRvlpsih9T8zJ
+=P+pl
+-----END PGP SIGNATURE-----
+
+--3MwIy2ne0vdjdPXF--
