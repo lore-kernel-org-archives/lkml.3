@@ -1,87 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751368AbaAEQ1M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 11:27:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10163 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751112AbaAEQ1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 11:27:10 -0500
-Date: Sun, 5 Jan 2014 17:26:50 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: Re: [PATCH 03/21] perf hists: Add support for accumulated stat of
- hist entry
-Message-ID: <20140105162650.GC10018@krava.brq.redhat.com>
-References: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
- <1387873347-28838-4-git-send-email-namhyung@kernel.org>
+	id S1751420AbaAEQ27 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 11:28:59 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:64356 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112AbaAEQ26 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jan 2014 11:28:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387873347-28838-4-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140105094639.GA7423@localhost>
+References: <20140102053101.GA29352@localhost>
+	<CAFR8uee-WTy6cj8bB4aMuGP1B0sZkc70sq1Drg7uhHS49EqHcg@mail.gmail.com>
+	<20140105094639.GA7423@localhost>
+Date: Sun, 5 Jan 2014 08:28:57 -0800
+Message-ID: <CAFR8uefqY95-_unXGOTj6Q5FKV0ZvHh48YxM73WeN-aeNC4o_g@mail.gmail.com>
+Subject: Re: [block:for-3.14/core] kernel BUG at fs/bio.c:1748
+From: Muthu Kumar <muthu.lkml@gmail.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 24, 2013 at 05:22:09PM +0900, Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> Maintain accumulated stat information in hist_entry->stat_acc if
-> symbol_conf.cumulate_callchain is set.  Fields in ->stat_acc have same
-> vaules initially, and will be updated as callchain is processed later.
-> 
-> Cc: Arun Sharma <asharma@fb.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/util/hist.c   | 18 ++++++++++++++++++
->  tools/perf/util/sort.h   |  1 +
->  tools/perf/util/symbol.h |  1 +
->  3 files changed, 20 insertions(+)
-> 
-> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-> index 283aa1972b4f..b61e2fa42412 100644
-> --- a/tools/perf/util/hist.c
-> +++ b/tools/perf/util/hist.c
-> @@ -237,6 +237,8 @@ static bool hists__decay_entry(struct hists *hists, struct hist_entry *he)
->  		return true;
->  
->  	he_stat__decay(&he->stat);
-> +	if (symbol_conf.cumulate_callchain)
-> +		he_stat__decay(he->stat_acc);
->  
->  	if (!he->filtered)
->  		hists->stats.total_period -= prev_period - he->stat.period;
-> @@ -284,6 +286,15 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
->  	if (he != NULL) {
->  		*he = *template;
->  
-> +		if (symbol_conf.cumulate_callchain) {
-> +			he->stat_acc = malloc(sizeof(he->stat));
-> +			if (he->stat_acc == NULL) {
-> +				free(he);
-> +				return NULL;
-> +			}
-> +			memcpy(he->stat_acc, &he->stat, sizeof(he->stat));
-> +		}
-> +
->  		if (he->ms.map)
->  			he->ms.map->referenced = true;
->  
-> @@ -295,6 +306,7 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
->  			 */
->  			he->branch_info = malloc(sizeof(*he->branch_info));
->  			if (he->branch_info == NULL) {
-> +				free(he->stat_acc);
+Fengguang,
+Instead of rebooting, can you trigger a crash dump when this happens
+and send us the backtrace (to start with)?
 
-probably not big deal but above free should be under
-symbol_conf.cumulate_callchain check..
+Kent,
+Did you do any btrfs test with your changes?
 
-jirka
+Regards,
+Muthu
+
+On Sun, Jan 5, 2014 at 1:46 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> Hi Muthu,
+>
+> On Fri, Jan 03, 2014 at 11:51:31AM -0800, Muthu Kumar wrote:
+>> Looks like Kent missed the btrfs endio in the original commit. How
+>> about this patch:
+>>
+>> ---------
+>>
+>> In btrfs_end_bio, call bio_endio_nodec on the restored bio so the
+>> bi_remaining is accounted for correctly.
+>>
+>> Reported-by: fengguang.wu@intel.com
+>> Cc: Kent Overstreet <kmo@daterainc.com>
+>> CC: Jens Axboe <axboe@kernel.dk>
+>> Signed-off-by: Muthukumar Ratty <muthur@gmail.com>
+>> --------
+>>
+>>  fs/btrfs/volumes.c |    6 +++++-
+>>  1 files changed, 5 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+>> index f2130de..edfed52 100644
+>> --- a/fs/btrfs/volumes.c
+>> +++ b/fs/btrfs/volumes.c
+>> @@ -5316,7 +5316,11 @@ static void btrfs_end_bio(struct bio *bio, int err)
+>>                 }
+>>                 kfree(bbio);
+>>
+>> -               bio_endio(bio, err);
+>> +                /*
+>> +                 * Call endio_nodec on the restored bio so the bi_remaining is
+>> +                 * accounted for correctly
+>> +                 */
+>> +               bio_endio_nodec(bio, err);
+>>         } else if (!is_orig_bio) {
+>>                 bio_put(bio);
+>>         }
+>
+> Interestingly, the BUG message disappeared but it blocks the test run.
+> In the end, the test watchdog reboots the machine with SysRq:
+>
+>         2014-01-04 23:13:02 mount -t btrfs /dev/vda /fs/vda
+>         [   20.184264] btrfs: device fsid f0e06999-0518-47e0-a622-21b8749438be devid 1 transid 4 /dev/vda
+>         [   20.186552] btrfs: disk space caching is enabled
+>         [  131.360457] random: nonblocking pool is initialized
+> ==>     [ 1465.069342] SysRq : Emergency Sync
+> ==>     [ 1475.071055] SysRq : Resetting
+>
+> Attached is the full dmesg for a good run (v3.13-rc7) and a bad run
+> (this patch).
+>
+> Thanks,
+> Fengguang
