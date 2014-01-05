@@ -1,81 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750932AbaAEFjM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 00:39:12 -0500
-Received: from exprod5og119.obsmtp.com ([64.18.0.189]:44247 "HELO
-	exprod5og119.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750815AbaAEFjK (ORCPT
+	id S1750992AbaAEFqS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 00:46:18 -0500
+Received: from mail-ie0-f195.google.com ([209.85.223.195]:42761 "EHLO
+	mail-ie0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747AbaAEFqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 00:39:10 -0500
+	Sun, 5 Jan 2014 00:46:03 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140105033848.GA22595@kroah.com>
-References: <1387594651-25771-1-git-send-email-rapatel@apm.com>
-	<201312212111.40576.arnd@arndb.de>
-	<CAPw-ZTnsu_EmOW3aZTVKAVjQsdi8qMy95y2ZcYxzgVrjGkirTA@mail.gmail.com>
-	<1441245.xPZLG2iNZ6@wuerfel>
-	<CAN1v_PtFz42crHW5=cUgw-fAnPn3rQht=o0t3nmjJRamYSLDMg@mail.gmail.com>
-	<20140105033848.GA22595@kroah.com>
-Date: Sat, 4 Jan 2014 21:39:08 -0800
-Message-ID: <CAPw-ZT=noCwc+3o_762ewTcn2J3SjZ5u11V=Aa8RrZZf4DT5Yw@mail.gmail.com>
-Subject: Re: [PATCH V2 0/4] misc: xgene: Add support for APM X-Gene SoC Queue
- Manager/Traffic Manager
-From: Loc Ho <lho@apm.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Ravi Patel <rapatel@apm.com>, Arnd Bergmann <arnd@arndb.de>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jon Masters <jcm@redhat.com>, "patches@apm.com" <patches@apm.com>,
-        Keyur Chudgar <kchudgar@apm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Sun, 5 Jan 2014 00:46:00 -0500
+Message-ID: <CAM__s2Bk=Hgzm3-f7N=A032PxUV6N87=42qZ=7kt7u8d_Ny5gg@mail.gmail.com>
+Subject: Propose for LINUX kernel and PERL
+From: Antti Heikkinen <antti.heikkinen.4@gmail.com>
+To: linux-kernel@vger.kernel.org, advocacy@perl.org, beginners@perl.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+To Dear Perl and LINUX kernel development community:
 
->> >> >> This patch adds support for APM X-Gene SoC Queue Manager/Traffic Manager.
->> >> >>  QMTM is required by APM X-Gene SoC Ethernet, PktDMA (XOR Engine) and
->> >> >>  Security Engine subsystems. All subsystems communicate with QMTM using
->> >> >>  messages which include information about the work to be performed and
->> >> >>  the location of associated data buffers.
->> >> >
->> >> > Please describe here what the purpose of the qmtm is, as this is not
->> >> > entirely clear from the code.
->> >> >
->> >> > In particular, please describe how this differs from a dmaengine driver
->> >> > and why it is not possible to extend the dma slave API to describe qmtm
->> >> > as a dma engine.
->> >> >
->> >> [Loc Ho]
->> >> If the QM driver implements the DMA API, what about the actual DMA
->> >> engine driver which interfaces with this QM driver. We would have DMA
->> >> client interfaces with the X-Gene DMA driver (not available yet) via
->> >> DMA API which in turn interfaces with this QM driver via DMA API.
->> >> Won't this be kind of awkward? Also, the QM only manage messages (or
->> >> descriptors) which are 32-bytes or 64-bytes. It doesn't actually do
->> >> any data transfer of various sizes.
->> >
->> > Please describe here what the purpose of the qmtm is, as this is not
->> > entirely clear from the code or from your reply.
->> >
->> > Greg was guessing that it's a bus controller, my best guess is a DMA
->> > engine. If it's something completely different, you have to let
->> > us know what it is so we can do a proper review rather than guessing.
->> >
->> > Please provide a link to the data sheet if you are unable to explain.
->>
->> Here is URL to a text document explaining role of QMTM device with CPU, Ethernet
->> subsystem.
->>
->> https://drive.google.com/file/d/0B28TgQZ3JLoRRGNnbjJoUGNHWW8/edit?usp=sharing
->
-> There is nothing at this link :(
+My propose to you at your list: is possible to write operate system in
+PERL? I am student in university, looked for interest project to
+conclude my study on LINUX kernel.
 
-I tried click on the txt file link from web site
-http://www.spinics.net/lists/netdev/msg264628.html and don't see any
-problem with accessing the txt file.
+This semester, I take beginner PERL course and learn power of
+procedural language. I automate many daily task with use of it. Very
+impressive ability to make many thing work, interpret or can compile
+also.
 
--Loc
+Also about LINUX, I talk to much fellow students and professors, and
+take a operate system course use FreeBSD and LINUX. FreeBSD okay, but
+they say LINUX kernel is too big and bloat, run poor with too many
+developer. And too much quick decision from leader with ego is too big
+and bloat too, kekeke.
+
+LINUX kernel can perform more good if written in not C and C++ but
+Perl? Just certain portion of LINUX kernel to rewrite? For instant,
+schedule or support of multithread? If so, should use Perl5 or Perl6,
+focus to x86 or x86-64? Can you want to join me this my project? But
+to hear your expertise.
+
+Am excited to learn and begin study project. Can you want to join this
+my project? Please direct reply of email to myself.
+
+Much thank to you,
+Antti Heikkinen
