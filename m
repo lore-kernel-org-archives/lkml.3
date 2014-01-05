@@ -1,92 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751420AbaAEQ27 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 11:28:59 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:64356 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751112AbaAEQ26 (ORCPT
+	id S1751434AbaAEQdO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 11:33:14 -0500
+Received: from host-200-75-140-234.cliente-234-net-uno.net ([200.75.140.234]:58852
+	"EHLO mail.inder.gob.ve" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751112AbaAEQdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 11:28:58 -0500
+	Sun, 5 Jan 2014 11:33:13 -0500
+X-Greylist: delayed 892 seconds by postgrey-1.27 at vger.kernel.org; Sun, 05 Jan 2014 11:33:12 EST
+Date: Sun, 5 Jan 2014 11:37:50 -0430 (VET)
+From: Ali =?utf-8?B?UGXDsWE=?= <apena@inder.gob.ve>
+Message-ID: <657101926.339004.1388938070077.JavaMail.zimbra@inder.gob.ve>
+Subject: Urgent Response Please.
 MIME-Version: 1.0
-In-Reply-To: <20140105094639.GA7423@localhost>
-References: <20140102053101.GA29352@localhost>
-	<CAFR8uee-WTy6cj8bB4aMuGP1B0sZkc70sq1Drg7uhHS49EqHcg@mail.gmail.com>
-	<20140105094639.GA7423@localhost>
-Date: Sun, 5 Jan 2014 08:28:57 -0800
-Message-ID: <CAFR8uefqY95-_unXGOTj6Q5FKV0ZvHh48YxM73WeN-aeNC4o_g@mail.gmail.com>
-Subject: Re: [block:for-3.14/core] kernel BUG at fs/bio.c:1748
-From: Muthu Kumar <muthu.lkml@gmail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [188.29.214.8]
+X-Mailer: Zimbra 8.0.4_GA_5737 (zclient/8.0.4_GA_5737)
+Thread-Topic: Urgent Response Please.
+Thread-Index: 1EPOhZBDB5kiqW4SWFU8JNJ6/3zuqA==
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fengguang,
-Instead of rebooting, can you trigger a crash dump when this happens
-and send us the backtrace (to start with)?
-
-Kent,
-Did you do any btrfs test with your changes?
-
-Regards,
-Muthu
-
-On Sun, Jan 5, 2014 at 1:46 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> Hi Muthu,
->
-> On Fri, Jan 03, 2014 at 11:51:31AM -0800, Muthu Kumar wrote:
->> Looks like Kent missed the btrfs endio in the original commit. How
->> about this patch:
->>
->> ---------
->>
->> In btrfs_end_bio, call bio_endio_nodec on the restored bio so the
->> bi_remaining is accounted for correctly.
->>
->> Reported-by: fengguang.wu@intel.com
->> Cc: Kent Overstreet <kmo@daterainc.com>
->> CC: Jens Axboe <axboe@kernel.dk>
->> Signed-off-by: Muthukumar Ratty <muthur@gmail.com>
->> --------
->>
->>  fs/btrfs/volumes.c |    6 +++++-
->>  1 files changed, 5 insertions(+), 1 deletions(-)
->>
->> diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
->> index f2130de..edfed52 100644
->> --- a/fs/btrfs/volumes.c
->> +++ b/fs/btrfs/volumes.c
->> @@ -5316,7 +5316,11 @@ static void btrfs_end_bio(struct bio *bio, int err)
->>                 }
->>                 kfree(bbio);
->>
->> -               bio_endio(bio, err);
->> +                /*
->> +                 * Call endio_nodec on the restored bio so the bi_remaining is
->> +                 * accounted for correctly
->> +                 */
->> +               bio_endio_nodec(bio, err);
->>         } else if (!is_orig_bio) {
->>                 bio_put(bio);
->>         }
->
-> Interestingly, the BUG message disappeared but it blocks the test run.
-> In the end, the test watchdog reboots the machine with SysRq:
->
->         2014-01-04 23:13:02 mount -t btrfs /dev/vda /fs/vda
->         [   20.184264] btrfs: device fsid f0e06999-0518-47e0-a622-21b8749438be devid 1 transid 4 /dev/vda
->         [   20.186552] btrfs: disk space caching is enabled
->         [  131.360457] random: nonblocking pool is initialized
-> ==>     [ 1465.069342] SysRq : Emergency Sync
-> ==>     [ 1475.071055] SysRq : Resetting
->
-> Attached is the full dmesg for a good run (v3.13-rc7) and a bad run
-> (this patch).
->
-> Thanks,
-> Fengguang
+Good Day.
+My name is Mr. Song Lile, I am the credit officer in Hang Seng Bank, Hong Kong. I have a business proposal in the tune of $19.5m to be transferred to an offshore account with your assistance. After the successful transfer, we shall share in ratio of 30% for you and 70% for me. Should you be interested, please respond to my letter immediately, so we can commence all arrangements and I will give you more information on the project and how we would handle it. Please treat this business with utmost confidentiality. You can contact me on my private email: (lilesong440@yahoo.com.hk) and send me the following information for documentation purpose: (1)Full names: (2)private phone number: (3)current residential address: (4)Occupation: (5)Age and Sex:
+ I look forward to hearing from you. 
+Kind Regards,
+Mr. Song Lile. 
