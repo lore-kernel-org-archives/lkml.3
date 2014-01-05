@@ -1,27 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751878AbaAEUsm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 15:48:42 -0500
-Received: from exprod5og116.obsmtp.com ([64.18.0.147]:33065 "HELO
-	exprod5og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751428AbaAEUsj (ORCPT
+	id S1751913AbaAEUwK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 15:52:10 -0500
+Received: from exprod5og106.obsmtp.com ([64.18.0.182]:37595 "HELO
+	exprod5og106.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751629AbaAEUwH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 15:48:39 -0500
+	Sun, 5 Jan 2014 15:52:07 -0500
 MIME-Version: 1.0
-In-Reply-To: <201401051911.12349.arnd@arndb.de>
+In-Reply-To: <20140105180122.GB980@kroah.com>
 References: <1387594651-25771-1-git-send-email-rapatel@apm.com>
+	<201312212111.40576.arnd@arndb.de>
+	<CAPw-ZTnsu_EmOW3aZTVKAVjQsdi8qMy95y2ZcYxzgVrjGkirTA@mail.gmail.com>
 	<1441245.xPZLG2iNZ6@wuerfel>
 	<CAN1v_PtFz42crHW5=cUgw-fAnPn3rQht=o0t3nmjJRamYSLDMg@mail.gmail.com>
-	<201401051911.12349.arnd@arndb.de>
-Date: Sun, 5 Jan 2014 12:48:36 -0800
-Message-ID: <CAN1v_PsaAeDiLaiP7FfTHFbNRG=UHuom6-2L6NMwzyOOyB+5cA@mail.gmail.com>
+	<20140105033848.GA22595@kroah.com>
+	<CAPw-ZT=noCwc+3o_762ewTcn2J3SjZ5u11V=Aa8RrZZf4DT5Yw@mail.gmail.com>
+	<20140105180122.GB980@kroah.com>
+Date: Sun, 5 Jan 2014 12:52:05 -0800
+Message-ID: <CAN1v_PsE2mevK4-2D3MTevtwQF4XkaMzVGHpDZUoqR+a6uMUyg@mail.gmail.com>
 Subject: Re: [PATCH V2 0/4] misc: xgene: Add support for APM X-Gene SoC Queue
  Manager/Traffic Manager
 From: Ravi Patel <rapatel@apm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Loc Ho <lho@apm.com>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Loc Ho <lho@apm.com>, Arnd Bergmann <arnd@arndb.de>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
@@ -32,71 +35,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 5, 2014 at 10:11 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Sunday 05 January 2014, Ravi Patel wrote:
->> On Sat, Dec 21, 2013 at 11:03 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> > On Saturday 21 December 2013 17:00:51 Loc Ho wrote:
->> >> On Sat, Dec 21, 2013 at 12:11 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> >
->> > Please describe here what the purpose of the qmtm is, as this is not
->> > entirely clear from the code or from your reply.
->> >
->> > Greg was guessing that it's a bus controller, my best guess is a DMA
->> > engine. If it's something completely different, you have to let
->> > us know what it is so we can do a proper review rather than guessing.
->> >
->> > Please provide a link to the data sheet if you are unable to explain.
+On Sun, Jan 5, 2014 at 10:01 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Sat, Jan 04, 2014 at 09:39:08PM -0800, Loc Ho wrote:
+>> Hi,
 >>
->> Here is URL to a text document explaining role of QMTM device with CPU, Ethernet
->> subsystem.
+>> >> >> >> This patch adds support for APM X-Gene SoC Queue Manager/Traffic Manager.
+>> >> >> >>  QMTM is required by APM X-Gene SoC Ethernet, PktDMA (XOR Engine) and
+>> >> >> >>  Security Engine subsystems. All subsystems communicate with QMTM using
+>> >> >> >>  messages which include information about the work to be performed and
+>> >> >> >>  the location of associated data buffers.
+>> >> >> >
+>> >> >> > Please describe here what the purpose of the qmtm is, as this is not
+>> >> >> > entirely clear from the code.
+>> >> >> >
+>> >> >> > In particular, please describe how this differs from a dmaengine driver
+>> >> >> > and why it is not possible to extend the dma slave API to describe qmtm
+>> >> >> > as a dma engine.
+>> >> >> >
+>> >> >> [Loc Ho]
+>> >> >> If the QM driver implements the DMA API, what about the actual DMA
+>> >> >> engine driver which interfaces with this QM driver. We would have DMA
+>> >> >> client interfaces with the X-Gene DMA driver (not available yet) via
+>> >> >> DMA API which in turn interfaces with this QM driver via DMA API.
+>> >> >> Won't this be kind of awkward? Also, the QM only manage messages (or
+>> >> >> descriptors) which are 32-bytes or 64-bytes. It doesn't actually do
+>> >> >> any data transfer of various sizes.
+>> >> >
+>> >> > Please describe here what the purpose of the qmtm is, as this is not
+>> >> > entirely clear from the code or from your reply.
+>> >> >
+>> >> > Greg was guessing that it's a bus controller, my best guess is a DMA
+>> >> > engine. If it's something completely different, you have to let
+>> >> > us know what it is so we can do a proper review rather than guessing.
+>> >> >
+>> >> > Please provide a link to the data sheet if you are unable to explain.
+>> >>
+>> >> Here is URL to a text document explaining role of QMTM device with CPU, Ethernet
+>> >> subsystem.
+>> >>
+>> >> https://drive.google.com/file/d/0B28TgQZ3JLoRRGNnbjJoUGNHWW8/edit?usp=sharing
+>> >
+>> > There is nothing at this link :(
 >>
->> https://drive.google.com/file/d/0B28TgQZ3JLoRRGNnbjJoUGNHWW8/edit?usp=sharing
->>
->> For simplicity, I have shown only Ethernet.
->> PktDMA and Security subsystem interfaces with QMTM in the same way as Ethernet.
+>> I tried click on the txt file link from web site
+>> http://www.spinics.net/lists/netdev/msg264628.html and don't see any
+>> problem with accessing the txt file.
 >
-> Thanks, that helps a lot. Please add this file to an appropriate place
-> in the Documentation directory in the next version of your patches.
+> Now it's working :)
 >
-> There is still one central aspect that remains unclear to me, which is
-> what the QMTM is actually good for, as opposed to how it gets used from
-> the OS.
+> Anyway, as this is a .txt file, why wasn't it just sent in email, and
+> added to the patch series as a documentation file?
 
-The document shows the run-time flow of messages between CPU, QMTM and Ethernet.
-QMTM is a centralized resource manager/driver which exports APIs to
-1. Initialize & allocate queue & pbn to the Ethernet, PktDMA and
-Security subsystem.
-2. Read queue state so that subsystems driver knows how much more work
-it can offload
-    to its subsystem.
-3. Apply QoS for subsystems on their queues.
-
-> In the text description, it sounds like the ethernet is the DMA
-> master and performs DMA all by itself but from that it's not clear why
-> a message to and from the QMTM is needed. From your drawing on the other
-> hand, it seems like the QMTM is really the DMA master and performs the
-> DMA on behalf of the ethernet device, which isn't connected to the
-> coherent interface itself. If this is correct, it seems that QMTM is more
-> like a DMA engine after all that should use the existing slave API to
-> provide services to slave drivers.
-
-Each subsystem defines their own format of work message.
-A message (or queue descriptor) has attribute fields (QMTM specific)
-which is common
- for all subsystem work messages.
-The remaining fields of a message are specific to subsystem.
-QMTM device doesn't have any knowledge of these subsystem specific
-fields and the data
-operation which subsystem is going to perform using these fields.
-e.g.
-1. Ethernet work message includes data address & length which is used
-by Ethernet
-DMA engine for copying the data to/from its internal FIFO
-2. PktDMA work message includes multiple data addresses & lengths for
-doing scatter/gather,
-XOR operations and result data address/es to give back result to the
-CPU (driver)
-3. Security work message includes data address & length for doing
-encryption or decryption,
-the type of encryption or decryption and result data address to give
-back result to the CPU (driver)
+Sure I will include the text documentation to an appropriate place in the
+Documentation directory in my next version of QMTM patch.
