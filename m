@@ -1,97 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051AbaAEWXq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 17:23:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34823 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751935AbaAEWXo (ORCPT
+	id S1752101AbaAEWXw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 17:23:52 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33401 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935AbaAEWXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 17:23:44 -0500
-Date: Sun, 5 Jan 2014 14:23:56 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Jeff Mahoney <jeffm@suse.com>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com, tglx@linutronix.de,
-        paulmck@linux.vnet.ibm.com, mingo@kernel.org
-Subject: Re: [PATCH] kobject: provide kobject_put_wait to fix module unload
- race
-Message-ID: <20140105222356.GA22084@kroah.com>
-References: <alpine.LRH.2.02.1401021733250.27775@file01.intranet.prod.int.rdu2.redhat.com>
- <20140104181620.GA2087@kroah.com>
- <alpine.LRH.2.02.1401041456070.21108@file01.intranet.prod.int.rdu2.redhat.com>
- <20140105034228.GC22595@kroah.com>
- <alpine.LRH.2.02.1401051655430.18406@file01.intranet.prod.int.rdu2.redhat.com>
+	Sun, 5 Jan 2014 17:23:48 -0500
+Date: Sun, 5 Jan 2014 23:23:46 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>, pali.rohar@gmail.com,
+        sre@ring0.de, milo.kim@ti.com, linus.walleij@linaro.org
+Cc: Bryan Wu <cooloney@gmail.com>, David Lang <david@lang.hm>,
+        Joe Xue <lgxue@hotmail.com>, "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "rob@landley.net" <rob@landley.net>,
+        "milo.kim@ti.com" <milo.kim@ti.com>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: n900 led compiler (was Re: [PATCH] Add LED pattern trigger)
+Message-ID: <20140105222346.GA25152@amd.pavel.ucw.cz>
+References: <1388362275-1618-1-git-send-email-lgxue@hotmail.com>
+ <20131230162158.7420e811@alan.etchedpixels.co.uk>
+ <BLU172-W451DF59115DB2B0A7F694AACC90@phx.gbl>
+ <20140101201053.12be7d27@alan.etchedpixels.co.uk>
+ <alpine.DEB.2.02.1401011423180.27645@nftneq.ynat.uz>
+ <20140101230135.48f6f781@alan.etchedpixels.co.uk>
+ <alpine.DEB.2.02.1401011547340.27645@nftneq.ynat.uz>
+ <CAK5ve-KTQvJeLXmJt-NgPy6Ju+kBzWVoSQB7TKR9TW+mfD=bxg@mail.gmail.com>
+ <20140103152313.4fd5c48f@alan.etchedpixels.co.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.02.1401051655430.18406@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140103152313.4fd5c48f@alan.etchedpixels.co.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 05, 2014 at 05:04:31PM -0500, Mikulas Patocka wrote:
-> 
-> 
-> On Sat, 4 Jan 2014, Greg Kroah-Hartman wrote:
-> 
-> > On Sat, Jan 04, 2014 at 03:35:39PM -0500, Mikulas Patocka wrote:
-> > > 
-> > > 
-> > > On Sat, 4 Jan 2014, Greg Kroah-Hartman wrote:
-> > > 
-> > > > On Sat, Jan 04, 2014 at 01:06:01PM -0500, Mikulas Patocka wrote:
-> > > > > Hi
-> > > > > 
-> > > > > I noticed that Jeff Mahoney added a new structure kobj_completion, defined 
-> > > > > in include/linux/kobj_completion.h to the kernel 3.13-rc1 in the patch 
-> > > > > eee031649707db3c9920d9498f8d03819b74fc23. In the current upstream kernel, 
-> > > > > this interface is still unused.
-> > > > 
-> > > > There are pending btrfs patches to use this interface.
-> > > > 
-> > > > > However, converting the drivers to use kobj_completion is not trivial 
-> > > > > (note that all users of the original kobject interface are buggy - so all 
-> > > > > of them need to be converted).
-> > > > 
-> > > > Wait, what?  How are "all users" buggy?  Please explain this in detail.
-> > > 
-> > > 1) some code takes a reference to a kobject
-> > > 2) the user unloads the device
-> > > 3) the device driver unload routine calls kobject_put (but there is still 
-> > >    reference, so the kobject is not destroyed)
-> > 
-> > A driver should never be messing around with "raw" kobjects, they should
-> > be using a 'struct device' which is created/managed by the subsystem
-> > they belong to.  See Dmitry's example of input and serio as ways to do
-> > this, also USB and PCI do this properly.
-> > 
-> > Perhaps your sybsystem isn't doing this properly?  What code do you have
-> > that creates raw kobjects and has this problem?
-> > 
-> > thanks,
-> > 
-> > greg k-h
-> 
-> So, are you saying that a module shouldn't ever be able to create a 
-> kobject type?
-> 
-> Do "grep -rw kobj_type drivers/ fs/* net/bridge/" to see how much code 
-> uses kobjects. There are 77 line. Majority of them may be compiled as 
-> modules.
-> 
-> What do you want to do with all those kobject users? Hide them behind 
-> another interface that doesn't exists yet?
+Hi!
 
-Most of them should be using the driver/device interface to sysfs (the
-drivers/* files, with the exception of the driver core code).  I'll look
-at the others later.
+> > IMHO, firstly we should take this trigger into kernel, most time it
+> > works as a module. But we need to define a good interface between
+> > kernel and user space.
+> 
+> You need the interface defined first. To do that it needs to reflect the
+> actual hardware accelerated devices, and also to deal with resource
+> management for those devices if necessary (eg if they can only manage one
+> led of a set at a time).
 
-And note, as module unloading can only happen by the root user, and
-never happens "automatically", this is an issue, but a very minor one,
-and can usually be solved by having a central "place" that handles the
-kobject lifetimes.
+Hardware can do quite a lot:
 
-thanks,
+http://wiki.maemo.org/LED_patterns#Lysti_Format_Engine_Patterns_and_Commands
 
-greg k-h
+(and more).
+
+I implemented compiler for it (should we put it into tools/ somewhere?)
+
+https://gitorious.org/tui/tui/source/5b3f5cacf8e208d3ea50d6066e549940d85e55be:maemo/notcc.py
+
+It can do quite a lot, including prime number computation. This uses
+33% of program memory and only one of three execution units; but it
+does not work, maybe I made mistake somewhere or maybe our kernel
+can't take program this long. It only has 3 writable variables, which
+is quite limiting.
+
+start()
+a = 1
+next_number: a += 1
+b = 1
+next_divisor: b += 1
+br = b
+if (b==a) goto is_prime
+c = 0
+c = c+b
+test_prime: if (c==a) goto not_prime
+if (a<c) goto not_divisor
+c = c+b
+goto test_prime
+not_divisor: goto next_divisor
+not_prime: goto next_number
+is_prime: b = 0
+show_prime: c = 255
+br = c
+ramp_up_long(30,0)
+c = 0
+br = c
+ramp_up_long(30,0)
+b += 1
+if (b == a) goto next_number2
+goto show_prime
+next_number2: goto next_number
+
+> So the starting point has to be the hardware accelerated devices, whether
+> you then support software emulation in kernel or user space is a follow
+> on discussion. What the kernel/user API is also has to be a follow on
+
+Well... this one is turing complete, and I have a compiler, but I
+don't think it is good interface, either for library or kernel.
+
+I believe series of RGB values might be good interface, maybe with
+additional "want interpolation between these".
+     		      	  	      	     	      	      	     Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
