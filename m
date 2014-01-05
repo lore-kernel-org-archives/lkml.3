@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751955AbaAEUjD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 15:39:03 -0500
-Received: from smtpfb1-g21.free.fr ([212.27.42.9]:59467 "EHLO
+	id S1751985AbaAEUjO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 15:39:14 -0500
+Received: from smtpfb1-g21.free.fr ([212.27.42.9]:59476 "EHLO
 	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751920AbaAEUjA (ORCPT
+	with ESMTP id S1751920AbaAEUjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 15:39:00 -0500
+	Sun, 5 Jan 2014 15:39:10 -0500
 From: Yann Droneaud <ydroneaud@opteya.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
+To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
+Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCHv5 3/7] binfmt_misc: use get_unused_fd_flags(0) instead of get_unused_fd()
-Date: Sun,  5 Jan 2014 21:36:30 +0100
-Message-Id: <c2bc1bfaabdb2b1ac207037550bc61e656938b97.1388952061.git.ydroneaud@opteya.com>
+Subject: [PATCHv5 1/7] ia64: use get_unused_fd_flags(0) instead of get_unused_fd()
+Date: Sun,  5 Jan 2014 21:36:28 +0100
+Message-Id: <d8999c560d6348e40b5f037bc73f4e48bc3ad977.1388952061.git.ydroneaud@opteya.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <cover.1388952061.git.ydroneaud@opteya.com>
 References: <cover.1388952061.git.ydroneaud@opteya.com>
@@ -48,22 +48,22 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
 Link: http://lkml.kernel.org/r/cover.1388952061.git.ydroneaud@opteya.com
 ---
- fs/binfmt_misc.c | 2 +-
+ arch/ia64/kernel/perfmon.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
-index 1c740e152f38..052f6dc8e549 100644
---- a/fs/binfmt_misc.c
-+++ b/fs/binfmt_misc.c
-@@ -138,7 +138,7 @@ static int load_misc_binary(struct linux_binprm *bprm)
- 		/* if the binary should be opened on behalf of the
- 		 * interpreter than keep it open and assign descriptor
- 		 * to it */
-- 		fd_binary = get_unused_fd();
-+		fd_binary = get_unused_fd_flags(0);
-  		if (fd_binary < 0) {
-  			retval = fd_binary;
-  			goto _ret;
+diff --git a/arch/ia64/kernel/perfmon.c b/arch/ia64/kernel/perfmon.c
+index cb592773c78b..44b148fbb560 100644
+--- a/arch/ia64/kernel/perfmon.c
++++ b/arch/ia64/kernel/perfmon.c
+@@ -2662,7 +2662,7 @@ pfm_context_create(pfm_context_t *ctx, void *arg, int count, struct pt_regs *reg
+ 
+ 	ret = -ENOMEM;
+ 
+-	fd = get_unused_fd();
++	fd = get_unused_fd_flags(0);
+ 	if (fd < 0)
+ 		return fd;
+ 
 -- 
 1.8.4.2
 
