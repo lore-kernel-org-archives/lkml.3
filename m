@@ -1,174 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751473AbaAERkw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 12:40:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33076 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751262AbaAERkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 12:40:51 -0500
-Date: Sun, 5 Jan 2014 18:40:33 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: Re: [PATCH 12/21] perf tools: Apply percent-limit to cumulative
- percentage
-Message-ID: <20140105174033.GK10018@krava.brq.redhat.com>
-References: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
- <1387873347-28838-13-git-send-email-namhyung@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387873347-28838-13-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751502AbaAERuK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 12:50:10 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:46253 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262AbaAERuI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jan 2014 12:50:08 -0500
+From: Guenter Roeck <linux@roeck-us.net>
+To: Karsten Keil <isdn@linux-pingi.de>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] isdn: Build telespci and hfc_pci only for little endian CPUs
+Date: Sun,  5 Jan 2014 09:50:04 -0800
+Message-Id: <1388944204-13008-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 24, 2013 at 05:22:18PM +0900, Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> If -g cumulative option is given, it needs to show entries which don't
-> have self overhead.  So apply percent-limit to accumulated overhead
-> percentage in this case.
-> 
-> Cc: Arun Sharma <asharma@fb.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/ui/browsers/hists.c | 34 ++++++++++++++++++++++++++--------
->  tools/perf/ui/gtk/hists.c      | 11 +++++++++--
->  tools/perf/ui/stdio/hist.c     | 11 +++++++++--
->  3 files changed, 44 insertions(+), 12 deletions(-)
-> 
-> diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-> index efa78894f70d..b02e71ecc5fe 100644
-> --- a/tools/perf/ui/browsers/hists.c
-> +++ b/tools/perf/ui/browsers/hists.c
-> @@ -828,12 +828,19 @@ static unsigned int hist_browser__refresh(struct ui_browser *browser)
->  
->  	for (nd = browser->top; nd; nd = rb_next(nd)) {
->  		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
-> -		float percent = h->stat.period * 100.0 /
-> -					hb->hists->stats.total_period;
-> +		float percent;
->  
->  		if (h->filtered)
->  			continue;
->  
-> +		if (symbol_conf.cumulate_callchain) {
-> +			percent = h->stat_acc->period * 100.0 /
-> +					hb->hists->stats.total_period;
-> +		} else {
-> +			percent = h->stat.period * 100.0 /
-> +					hb->hists->stats.total_period;
-> +		}
+With arm:allmodconfig, building the Teles PCI driver fails with
 
-seems like above code (7 lines) should go to function
+telespci.c:294:2: error: #error "not running on big endian machines now"
 
-jirka
+Similar, building the driver for HFC PCI-Bus cards fails with
 
-> +
->  		if (percent < hb->min_pcnt)
->  			continue;
->  
-> @@ -851,13 +858,17 @@ static struct rb_node *hists__filter_entries(struct rb_node *nd,
->  {
->  	while (nd != NULL) {
->  		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
-> -		float percent = h->stat.period * 100.0 /
-> -					hists->stats.total_period;
-> +		float percent;
->  
-> -		if (percent < min_pcnt)
-> -			return NULL;
-> +		if (symbol_conf.cumulate_callchain) {
-> +			percent = h->stat_acc->period * 100.0 /
-> +					hists->stats.total_period;
-> +		} else {
-> +			percent = h->stat.period * 100.0 /
-> +					hists->stats.total_period;
-> +		}
->  
-> -		if (!h->filtered)
-> +		if (!h->filtered && percent >= min_pcnt)
->  			return nd;
->  
->  		nd = rb_next(nd);
-> @@ -872,8 +883,15 @@ static struct rb_node *hists__filter_prev_entries(struct rb_node *nd,
->  {
->  	while (nd != NULL) {
->  		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
-> -		float percent = h->stat.period * 100.0 /
-> +		float percent;
-> +
-> +		if (symbol_conf.cumulate_callchain) {
-> +			percent = h->stat_acc->period * 100.0 /
-> +					hists->stats.total_period;
-> +		} else {
-> +			percent = h->stat.period * 100.0 /
->  					hists->stats.total_period;
-> +		}
->  
->  		if (!h->filtered && percent >= min_pcnt)
->  			return nd;
-> diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-> index 70ed0d5e1b94..06ae3342e14f 100644
-> --- a/tools/perf/ui/gtk/hists.c
-> +++ b/tools/perf/ui/gtk/hists.c
-> @@ -296,12 +296,19 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
->  	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
->  		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
->  		GtkTreeIter iter;
-> -		float percent = h->stat.period * 100.0 /
-> -					hists->stats.total_period;
-> +		float percent;
->  
->  		if (h->filtered)
->  			continue;
->  
-> +		if (symbol_conf.cumulate_callchain) {
-> +			percent = h->stat_acc->period * 100.0 /
-> +					hists->stats.total_period;
-> +		} else {
-> +			percent = h->stat.period * 100.0 /
-> +					hists->stats.total_period;
-> +		}
-> +
->  		if (percent < min_pcnt)
->  			continue;
->  
-> diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-> index 4c4986e809d8..7ea8502192b0 100644
-> --- a/tools/perf/ui/stdio/hist.c
-> +++ b/tools/perf/ui/stdio/hist.c
-> @@ -487,12 +487,19 @@ print_entries:
->  
->  	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
->  		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
-> -		float percent = h->stat.period * 100.0 /
-> -					hists->stats.total_period;
-> +		float percent;
->  
->  		if (h->filtered)
->  			continue;
->  
-> +		if (symbol_conf.cumulate_callchain) {
-> +			percent = h->stat_acc->period * 100.0 /
-> +					hists->stats.total_period;
-> +		} else {
-> +			percent = h->stat.period * 100.0 /
-> +					hists->stats.total_period;
-> +		}
-> +
->  		if (percent < min_pcnt)
->  			continue;
->  
-> -- 
-> 1.7.11.7
-> 
+hfc_pci.c:1647:2: error: #error "not running on big endian machines now"
+
+Limit both drivers to only build on little endian machines.
+
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ drivers/isdn/hisax/Kconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/isdn/hisax/Kconfig b/drivers/isdn/hisax/Kconfig
+index d9edcc9..5e4f67d 100644
+--- a/drivers/isdn/hisax/Kconfig
++++ b/drivers/isdn/hisax/Kconfig
+@@ -109,7 +109,7 @@ config HISAX_16_3
+ 
+ config HISAX_TELESPCI
+ 	bool "Teles PCI"
+-	depends on PCI && (BROKEN || !(SPARC || PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN)))
++	depends on CPU_LITTLE_ENDIAN && PCI && (BROKEN || !(SPARC || PPC || PARISC || M68K || MIPS || FRV || XTENSA))
+ 	help
+ 	  This enables HiSax support for the Teles PCI.
+ 	  See <file:Documentation/isdn/README.HiSax> on how to configure it.
+@@ -318,7 +318,7 @@ config HISAX_GAZEL
+ 
+ config HISAX_HFC_PCI
+ 	bool "HFC PCI-Bus cards"
+-	depends on PCI && (BROKEN || !(SPARC || PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN)))
++	depends on CPU_LITTLE_ENDIAN && PCI && (BROKEN || !(SPARC || PPC || PARISC || M68K || MIPS || FRV || XTENSA))
+ 	help
+ 	  This enables HiSax support for the HFC-S PCI 2BDS0 based cards.
+ 
+-- 
+1.7.9.7
+
