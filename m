@@ -1,227 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162AbaAEUmX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 15:42:23 -0500
-Received: from fieldses.org ([174.143.236.118]:52444 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751405AbaAEUmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 15:42:22 -0500
-Date: Sun, 5 Jan 2014 15:42:21 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nfs-ganesha-devel@lists.sourceforge.net,
-        samba-technical@lists.samba.org
-Subject: [PATCH] locks: fix posix lock range overflow handling
-Message-ID: <20140105204220.GE22918@fieldses.org>
-References: <1386703055-22308-2-git-send-email-jlayton@redhat.com>
- <20131210212253.GC20831@fieldses.org>
- <20131210232204.GD20831@fieldses.org>
- <20131211061856.615c39ba@tlielax.poochiereds.net>
- <20131211143724.GA29300@fieldses.org>
- <20131211151931.GC29300@fieldses.org>
- <20131211140741.292028e8@tlielax.poochiereds.net>
- <20131211225616.GA3483@fieldses.org>
- <20131212054406.4360d79e@tlielax.poochiereds.net>
- <20140105203934.GD22918@fieldses.org>
+	id S1751878AbaAEUsm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 15:48:42 -0500
+Received: from exprod5og116.obsmtp.com ([64.18.0.147]:33065 "HELO
+	exprod5og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751428AbaAEUsj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jan 2014 15:48:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140105203934.GD22918@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201401051911.12349.arnd@arndb.de>
+References: <1387594651-25771-1-git-send-email-rapatel@apm.com>
+	<1441245.xPZLG2iNZ6@wuerfel>
+	<CAN1v_PtFz42crHW5=cUgw-fAnPn3rQht=o0t3nmjJRamYSLDMg@mail.gmail.com>
+	<201401051911.12349.arnd@arndb.de>
+Date: Sun, 5 Jan 2014 12:48:36 -0800
+Message-ID: <CAN1v_PsaAeDiLaiP7FfTHFbNRG=UHuom6-2L6NMwzyOOyB+5cA@mail.gmail.com>
+Subject: Re: [PATCH V2 0/4] misc: xgene: Add support for APM X-Gene SoC Queue
+ Manager/Traffic Manager
+From: Ravi Patel <rapatel@apm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Loc Ho <lho@apm.com>,
+        davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jon Masters <jcm@redhat.com>, "patches@apm.com" <patches@apm.com>,
+        Keyur Chudgar <kchudgar@apm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+On Sun, Jan 5, 2014 at 10:11 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Sunday 05 January 2014, Ravi Patel wrote:
+>> On Sat, Dec 21, 2013 at 11:03 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> > On Saturday 21 December 2013 17:00:51 Loc Ho wrote:
+>> >> On Sat, Dec 21, 2013 at 12:11 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> >
+>> > Please describe here what the purpose of the qmtm is, as this is not
+>> > entirely clear from the code or from your reply.
+>> >
+>> > Greg was guessing that it's a bus controller, my best guess is a DMA
+>> > engine. If it's something completely different, you have to let
+>> > us know what it is so we can do a proper review rather than guessing.
+>> >
+>> > Please provide a link to the data sheet if you are unable to explain.
+>>
+>> Here is URL to a text document explaining role of QMTM device with CPU, Ethernet
+>> subsystem.
+>>
+>> https://drive.google.com/file/d/0B28TgQZ3JLoRRGNnbjJoUGNHWW8/edit?usp=sharing
+>>
+>> For simplicity, I have shown only Ethernet.
+>> PktDMA and Security subsystem interfaces with QMTM in the same way as Ethernet.
+>
+> Thanks, that helps a lot. Please add this file to an appropriate place
+> in the Documentation directory in the next version of your patches.
+>
+> There is still one central aspect that remains unclear to me, which is
+> what the QMTM is actually good for, as opposed to how it gets used from
+> the OS.
 
-In the 32-bit case fcntl assigns the 64-bit f_pos and i_size to a 32-bit
-off_t.
+The document shows the run-time flow of messages between CPU, QMTM and Ethernet.
+QMTM is a centralized resource manager/driver which exports APIs to
+1. Initialize & allocate queue & pbn to the Ethernet, PktDMA and
+Security subsystem.
+2. Read queue state so that subsystems driver knows how much more work
+it can offload
+    to its subsystem.
+3. Apply QoS for subsystems on their queues.
 
-The existing range checks also seem to depend on signed arithmetic
-wrapping when it overflows.  In practice maybe that works, but we can be
-more careful.  That also allows us to make a more reliable distinction
-between -EINVAL and -EOVERFLOW.
+> In the text description, it sounds like the ethernet is the DMA
+> master and performs DMA all by itself but from that it's not clear why
+> a message to and from the QMTM is needed. From your drawing on the other
+> hand, it seems like the QMTM is really the DMA master and performs the
+> DMA on behalf of the ethernet device, which isn't connected to the
+> coherent interface itself. If this is correct, it seems that QMTM is more
+> like a DMA engine after all that should use the existing slave API to
+> provide services to slave drivers.
 
-Note that in the 32-bit case SEEK_CUR or SEEK_END might allow the caller
-to set a lock with starting point no longer representable as a 32-bit
-value.  We could return -EOVERFLOW in such cases, but the locks code is
-capable of handling such ranges, so we choose to be lenient here.  The
-only problem is that subsequent GETLK calls on such a lock will fail
-with EOVERFLOW.
-
-While we're here, do some cleanup including consolidating code for the
-flock and flock64 cases.
-
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
----
- fs/locks.c                       | 100 +++++++++++++--------------------------
- include/uapi/asm-generic/fcntl.h |   3 --
- 2 files changed, 32 insertions(+), 71 deletions(-)
-
-Here's the updated patch.  Could probably use another read-through, I'm
-tired of looking at it....
-
---b.
-
-diff --git a/fs/locks.c b/fs/locks.c
-index 92a0f0a..f017280 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -344,48 +344,43 @@ static int assign_type(struct file_lock *fl, long type)
- 	return 0;
- }
- 
--/* Verify a "struct flock" and copy it to a "struct file_lock" as a POSIX
-- * style lock.
-- */
--static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
--			       struct flock *l)
-+static int flock64_to_posix_lock(struct file *filp, struct file_lock *fl,
-+				 struct flock64 *l)
- {
--	off_t start, end;
--
- 	switch (l->l_whence) {
- 	case SEEK_SET:
--		start = 0;
-+		fl->fl_start = 0;
- 		break;
- 	case SEEK_CUR:
--		start = filp->f_pos;
-+		fl->fl_start = filp->f_pos;
- 		break;
- 	case SEEK_END:
--		start = i_size_read(file_inode(filp));
-+		fl->fl_start = i_size_read(file_inode(filp));
- 		break;
- 	default:
- 		return -EINVAL;
- 	}
-+	if (l->l_start > OFFSET_MAX - fl->fl_start)
-+		return -EOVERFLOW;
-+	fl->fl_start += l->l_start;
-+	if (fl->fl_start < 0)
-+		return -EINVAL;
- 
- 	/* POSIX-1996 leaves the case l->l_len < 0 undefined;
- 	   POSIX-2001 defines it. */
--	start += l->l_start;
--	if (start < 0)
--		return -EINVAL;
--	fl->fl_end = OFFSET_MAX;
- 	if (l->l_len > 0) {
--		end = start + l->l_len - 1;
--		fl->fl_end = end;
-+		if (l->l_len - 1 > OFFSET_MAX - fl->fl_start)
-+			return -EOVERFLOW;
-+		fl->fl_end = fl->fl_start + l->l_len - 1;
-+
- 	} else if (l->l_len < 0) {
--		end = start - 1;
--		fl->fl_end = end;
--		start += l->l_len;
--		if (start < 0)
-+		if (fl->fl_start + l->l_len < 0)
- 			return -EINVAL;
--	}
--	fl->fl_start = start;	/* we record the absolute position */
--	if (fl->fl_end < fl->fl_start)
--		return -EOVERFLOW;
--	
-+		fl->fl_end = fl->fl_start - 1;
-+		fl->fl_start += l->l_len;
-+	} else
-+		fl->fl_end = OFFSET_MAX;
-+
- 	fl->fl_owner = current->files;
- 	fl->fl_pid = current->tgid;
- 	fl->fl_file = filp;
-@@ -396,52 +391,21 @@ static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
- 	return assign_type(fl, l->l_type);
- }
- 
--#if BITS_PER_LONG == 32
--static int flock64_to_posix_lock(struct file *filp, struct file_lock *fl,
--				 struct flock64 *l)
-+/* Verify a "struct flock" and copy it to a "struct file_lock" as a POSIX
-+ * style lock.
-+ */
-+static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
-+			       struct flock *l)
- {
--	loff_t start;
--
--	switch (l->l_whence) {
--	case SEEK_SET:
--		start = 0;
--		break;
--	case SEEK_CUR:
--		start = filp->f_pos;
--		break;
--	case SEEK_END:
--		start = i_size_read(file_inode(filp));
--		break;
--	default:
--		return -EINVAL;
--	}
-+	struct flock64 ll = {
-+		.l_type = l->l_type,
-+		.l_whence = l->l_whence,
-+		.l_start = l->l_start,
-+		.l_len = l->l_len,
-+	};
- 
--	start += l->l_start;
--	if (start < 0)
--		return -EINVAL;
--	fl->fl_end = OFFSET_MAX;
--	if (l->l_len > 0) {
--		fl->fl_end = start + l->l_len - 1;
--	} else if (l->l_len < 0) {
--		fl->fl_end = start - 1;
--		start += l->l_len;
--		if (start < 0)
--			return -EINVAL;
--	}
--	fl->fl_start = start;	/* we record the absolute position */
--	if (fl->fl_end < fl->fl_start)
--		return -EOVERFLOW;
--	
--	fl->fl_owner = current->files;
--	fl->fl_pid = current->tgid;
--	fl->fl_file = filp;
--	fl->fl_flags = FL_POSIX;
--	fl->fl_ops = NULL;
--	fl->fl_lmops = NULL;
--
--	return assign_type(fl, l->l_type);
-+	return flock64_to_posix_lock(filp, fl, &ll);
- }
--#endif
- 
- /* default lease lock manager operations */
- static void lease_break_callback(struct file_lock *fl)
-diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
-index 95e46c8..36025f7 100644
---- a/include/uapi/asm-generic/fcntl.h
-+++ b/include/uapi/asm-generic/fcntl.h
-@@ -186,8 +186,6 @@ struct flock {
- };
- #endif
- 
--#ifndef CONFIG_64BIT
--
- #ifndef HAVE_ARCH_STRUCT_FLOCK64
- #ifndef __ARCH_FLOCK64_PAD
- #define __ARCH_FLOCK64_PAD
-@@ -202,6 +200,5 @@ struct flock64 {
- 	__ARCH_FLOCK64_PAD
- };
- #endif
--#endif /* !CONFIG_64BIT */
- 
- #endif /* _ASM_GENERIC_FCNTL_H */
--- 
-1.8.3.1
-
+Each subsystem defines their own format of work message.
+A message (or queue descriptor) has attribute fields (QMTM specific)
+which is common
+ for all subsystem work messages.
+The remaining fields of a message are specific to subsystem.
+QMTM device doesn't have any knowledge of these subsystem specific
+fields and the data
+operation which subsystem is going to perform using these fields.
+e.g.
+1. Ethernet work message includes data address & length which is used
+by Ethernet
+DMA engine for copying the data to/from its internal FIFO
+2. PktDMA work message includes multiple data addresses & lengths for
+doing scatter/gather,
+XOR operations and result data address/es to give back result to the
+CPU (driver)
+3. Security work message includes data address & length for doing
+encryption or decryption,
+the type of encryption or decryption and result data address to give
+back result to the CPU (driver)
