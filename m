@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849AbaAETtm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 14:49:42 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:61838 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448AbaAETtk (ORCPT
+	id S1751698AbaAEUL5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 15:11:57 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:48997 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276AbaAEUL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 14:49:40 -0500
-From: Guenter Roeck <linux@roeck-us.net>
-To: Karsten Keil <isdn@linux-pingi.de>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v2] isdn: Mark build for telespci and hfc_pci as broken for big endian ARM
-Date: Sun,  5 Jan 2014 11:49:27 -0800
-Message-Id: <1388951367-7411-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	Sun, 5 Jan 2014 15:11:56 -0500
+Date: Mon, 6 Jan 2014 01:41:51 +0530
+From: MonamAgarwal <monamagarwal123@gmail.com>
+To: gregkh@linuxfoundation.org, rashika.kheria@gmail.com,
+        peter.p.waskiewicz.jr@intel.com, andreas.dilger@intel.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        monamagarwal123@gmail.com
+Subject: [PATCH 1/2] Staging: lustre: Fix line length exceeding 80 characters
+Message-ID: <52c9bc8b.ca41420a.775b.ffff98ce@mx.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With arm:allmodconfig, building the Teles PCI driver fails with
+This patch fixes the following checkpatch.pl warning in
+lustre/ldlm/interval_tree.c
+WARNING: line over 80 characters in the file
 
-telespci.c:294:2: error: #error "not running on big endian machines now"
-
-Similar, building the driver for HFC PCI-Bus cards fails with
-
-hfc_pci.c:1647:2: error: #error "not running on big endian machines now"
-
-Mark build as broken for big endian ARM machines.
-
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: MonamAgarwal <monamagarwal123@gmail.com>
 ---
-v2: Turns out CPU_LITTLE_ENDIAN is not defined for little-endian-only
-    architectures. Instead of messing with the overall Kconfig architecture,
-    mark build as broken for big endian ARM machines.
-    Also updated headline accordingly.
+ drivers/staging/lustre/lustre/ldlm/interval_tree.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
- drivers/isdn/hisax/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/isdn/hisax/Kconfig b/drivers/isdn/hisax/Kconfig
-index d9edcc9..53dbb75 100644
---- a/drivers/isdn/hisax/Kconfig
-+++ b/drivers/isdn/hisax/Kconfig
-@@ -109,7 +109,7 @@ config HISAX_16_3
- 
- config HISAX_TELESPCI
- 	bool "Teles PCI"
--	depends on PCI && (BROKEN || !(SPARC || PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN)))
-+	depends on PCI && (BROKEN || !(SPARC || PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN) || (ARM && !CPU_LITTLE_ENDIAN)))
- 	help
- 	  This enables HiSax support for the Teles PCI.
- 	  See <file:Documentation/isdn/README.HiSax> on how to configure it.
-@@ -318,7 +318,7 @@ config HISAX_GAZEL
- 
- config HISAX_HFC_PCI
- 	bool "HFC PCI-Bus cards"
--	depends on PCI && (BROKEN || !(SPARC || PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN)))
-+	depends on PCI && (BROKEN || !(SPARC || PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN) || (ARM && !CPU_LITTLE_ENDIAN)))
- 	help
- 	  This enables HiSax support for the HFC-S PCI 2BDS0 based cards.
- 
--- 
-1.7.9.7
+diff --git a/drivers/staging/lustre/lustre/ldlm/interval_tree.c b/drivers/staging/lustre/lustre/ldlm/interval_tree.c
+index 1de1d8e..f61bf19 100644
+--- a/drivers/staging/lustre/lustre/ldlm/interval_tree.c
++++ b/drivers/staging/lustre/lustre/ldlm/interval_tree.c
+@@ -429,7 +429,8 @@ static void interval_erase_color(struct interval_node *node,
+ 					struct interval_node *o_left;
+ 					o_left = tmp->in_left;
+ 					if (o_left)
+-						o_left->in_color = INTERVAL_BLACK;
++						o_left->in_color =
++							INTERVAL_BLACK;
+ 					tmp->in_color = INTERVAL_RED;
+ 					__rotate_right(tmp, root);
+ 					tmp = parent->in_right;
+@@ -437,7 +438,8 @@ static void interval_erase_color(struct interval_node *node,
+ 				tmp->in_color = parent->in_color;
+ 				parent->in_color = INTERVAL_BLACK;
+ 				if (tmp->in_right)
+-					tmp->in_right->in_color = INTERVAL_BLACK;
++					tmp->in_right->in_color =
++						INTERVAL_BLACK;
+ 				__rotate_left(parent, root);
+ 				node = *root;
+ 				break;
+@@ -460,7 +462,8 @@ static void interval_erase_color(struct interval_node *node,
+ 					struct interval_node *o_right;
+ 					o_right = tmp->in_right;
+ 					if (o_right)
+-						o_right->in_color = INTERVAL_BLACK;
++						o_right->in_color =
++							INTERVAL_BLACK;
+ 					tmp->in_color = INTERVAL_RED;
+ 					__rotate_left(tmp, root);
+-- 					tmp = parent->in_left;
+1.7.9.5
 
