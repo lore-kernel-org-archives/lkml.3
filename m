@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128AbaAEXmr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 18:42:47 -0500
-Received: from ozlabs.org ([203.10.76.45]:39131 "EHLO ozlabs.org"
+	id S1752177AbaAEXnM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 18:43:12 -0500
+Received: from imap.thunk.org ([74.207.234.97]:46133 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751407AbaAEXmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 18:42:46 -0500
-Date: Mon, 6 Jan 2014 10:42:27 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Shawn Guo <shawn.guo@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Alexander Shiyan <shc_work@mail.ru>
-Subject: linux-next: manual merge of the imx-mxs tree with the arm-soc tree
-Message-Id: <20140106104227.6cbe4b16e2fe4120a7e1c51a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__6_Jan_2014_10_42_27_+1100_R8U9A1sr.g.Q9gpd"
+	id S1752003AbaAEXnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jan 2014 18:43:11 -0500
+Date: Sun, 5 Jan 2014 18:43:07 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: bulk88 <bulk88@hotmail.com>
+Cc: Antti Heikkinen <antti.heikkinen.4@gmail.com>,
+        linux-kernel@vger.kernel.org, advocacy@perl.org, beginners@perl.org
+Subject: Re: Propose for LINUX kernel and PERL
+Message-ID: <20140105234307.GA16071@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	bulk88 <bulk88@hotmail.com>,
+	Antti Heikkinen <antti.heikkinen.4@gmail.com>,
+	linux-kernel@vger.kernel.org, advocacy@perl.org, beginners@perl.org
+References: <CAM__s2Bk=Hgzm3-f7N=A032PxUV6N87=42qZ=7kt7u8d_Ny5gg@mail.gmail.com>
+ <BLU0-SMTP270AA353C093297F94C7B85DFB40@phx.gbl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BLU0-SMTP270AA353C093297F94C7B85DFB40@phx.gbl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__6_Jan_2014_10_42_27_+1100_R8U9A1sr.g.Q9gpd
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, Jan 05, 2014 at 03:12:17AM -0500, bulk88 wrote:
+> I agree, Linux kernel is hacks on hacks with no top to bottom
+> architecture. Linux had the BKL longer than its competitors. Linux
+> was never whiteboarded before the project began. FreeBSD is more
+> organized and uniform. There is also NT Kernel whose API was speced
+> out before the kernel was written.
 
-Hi Shawn,
+For the record, Linux had the BKL longer because it has had SMP longer
+than its competitors.  Linux got rid of the last of the BKL in
+mid-2012.  As of 2013, FreeBSD, NetBSD, and OpenBSD still has the
+giant lock (BSD's equivalent of the BKL) in some of their subsystems.
+And of course, in general Linux has had much better scalability than
+the *BSD's for much of the past couple of years, with SGI using Linux
+on systems with hundreds of processors, and with people using Linux on
+32 and 64 processors systems for the past decade.  In contrast,
+FreeBSD was boasting in 2013 of improving its 16 processor
+scalability...
 
-Today's linux-next merge of the imx-mxs tree got a conflict in
-arch/arm/boot/dts/imx51-apf51.dts between commit 8f568b496dd9 ("ARM: imx:
-Explicitly pass the active level of the PHY reset") from the arm-soc tree
-and commit 756c8d5762c2 ("ARM: dts: i.MX51 boards: Switch to use standard
-GPIO flags definitions") from the imx-mxs tree.
+> Since Perl is Turing complete you can run the Linux kernel inside
+> Perl. Although Perl doesn't run in kernel mode ATM, I don't see why
+> I can't be ported to be a LKM, maybe with RPC to glibc. You could
+> also have Perl running as user mode driver or some kind daemon with
+> calls from a kernel driver to the user space daemon Perl. You can
+> use Perl version 5 or 6.
 
-I fixed it up (again, I arbitrarily chose to go with the latter) and can
-carry the fix as necessary (no action is required).
+My favorite suggestion, going back several decades to the early 90's,
+was those who suggested porting BSD 4.3 to Emacs LISP, so that you
+could run your entire system under GNU Emacs.  :-)
 
---=20
-Cheers,
-Stephen Rothwell <sfr@canb.auug.org.au>
-
---Signature=_Mon__6_Jan_2014_10_42_27_+1100_R8U9A1sr.g.Q9gpd
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSye3nAAoJEMDTa8Ir7ZwVWrIP/2mZMnlGc87oUOPiEVz8eCsM
-AkCC0wVId0+J+EebWJoD2OYnC2BTu+IfCuSNY2wDI9flvqKTMzzV5w8Mp7imq0BX
-jiFbYVNtfgipSvZtkogc758mIeh+pnJ7ZD6vWAXwFLFZLkTgCrIwtBtSu7MulCnK
-rg17kSKZjJiUUGesUdgT3ToDYHOMwg0Yq0c6hQaoeplaRlfAyqGJv0ZcLya19CKz
-GTBvkUPfRv+PCsY7/sDOlYwrzCj4DSVtXCSlODMa7NCd5JYp1tFcL27Oypx2YEEX
-0fg9txHc5ZlZNZg0bKHd7UIH7Xnj4bvW0B8cS/Wj/NoVAtTPCCXoGPLcjbGy07ZW
-CUBSsp4JQVgOZzjyqZllj3jDv9ULTx9oWa/7yaGulTYbRLakyDRPBo9CXjNmX+H+
-mFFtZXSPbulTJjQZh/NGQU0EnK/qzmXlYFdo3LalStDy7ss7sNGDQB4MgQ8m682O
-iqDia5lQr2hadQZEkOdJp2JVil/aHWW/N8YuCJKuuS8yN2DMkO1xNN9PRrNygFpi
-IXXnOjpbaeUaKOI1h41R/BeoQuwny/FMmGHnvtM1mVcWgX5BopaHhpZbxK/gdoqj
-heuNXCNysmLUhorQ7qEwlH2Mb2ZjbvALcz+P1IADrXjO2eAJigicqrAqiGLiXu8x
-Ep3bYFaJ+hLrDbMu5xnl
-=sxYX
------END PGP SIGNATURE-----
-
---Signature=_Mon__6_Jan_2014_10_42_27_+1100_R8U9A1sr.g.Q9gpd--
+      	       	      	     	       	       - Ted
