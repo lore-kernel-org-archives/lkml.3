@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751384AbaAEQIi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 11:08:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44195 "EHLO mx1.redhat.com"
+	id S1751411AbaAEQJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 11:09:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27424 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751112AbaAEQIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 11:08:37 -0500
-Message-ID: <52C9837A.3060308@redhat.com>
-Date: Sun, 05 Jan 2014 11:08:26 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1751112AbaAEQJ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jan 2014 11:09:27 -0500
+Date: Sun, 5 Jan 2014 17:09:06 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>
+Subject: Re: [PATCH 02/21] perf hists: Convert hist entry functions to use
+ struct he_stat
+Message-ID: <20140105160906.GA10018@krava.brq.redhat.com>
+References: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
+ <1387873347-28838-3-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-To: Prarit Bhargava <prarit@redhat.com>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Michel Lespinasse <walken@google.com>,
-        Andi Kleen <ak@linux.intel.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        Yang Zhang <yang.z.zhang@Intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>, janet.morgan@Intel.com,
-        tony.luck@Intel.com, ruiv.wang@gmail.com
-Subject: Re: [PATCH] x86, Fix do_IRQ interrupt warning for cpu hotplug retriggered
- irqs [v2]
-References: <1388938030-16434-1-git-send-email-prarit@redhat.com>
-In-Reply-To: <1388938030-16434-1-git-send-email-prarit@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387873347-28838-3-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 24, 2013 at 05:22:08PM +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> hist_entry__add_cpumode_period() and hist_entry__decay() are dealing
+> with hist_entry's stat fields only.  So make them use the struct
+> directly.
+> 
+> Cc: Arun Sharma <asharma@fb.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/util/hist.c | 22 +++++++++++-----------
+>  1 file changed, 11 insertions(+), 11 deletions(-)
 
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 
-On 01/05/2014 11:07 AM, Prarit Bhargava wrote:
-> I tested this by doing a continuous loop of booting a system, downing all
-> cpus, and then rebooting.  Before every reboot I grepped the dmesg log for
-> the do_IRQ warning to see if there were any additional do_IRQ warnings and
-> I do not see any after applying this patch.  I also tested on several
-> small and medium sized boxes to confirm that cpu hotplug still works there
-> too and do not see any issues.  Please note that this patchset was tested
-> in conjunction with 
-> 
-> http://marc.info/?l=linux-edac&m=138783131400902&w=2
-> 
-> and
-> 
-> http://marc.info/?l=linux-kernel&m=138871006718478&w=2
-> 
-> in order to get cpu hotplug working.
-> 
-> I'm redoing some additional stability testing (with the additional 2 line
-> change in this version of the patch) after down'ing all cpus and
-> bringing them back into service, however, I don't expect to see any new issues.
-> 
-> P.
-> 
-> ----8<----
-> 
-> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64831
-
-Oops.  I neglected to update the version in the subject.  Will resend with
-appropriate [v3] in a few seconds ...
-
-P.
+jirka
