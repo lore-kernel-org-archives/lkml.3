@@ -1,104 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929AbaAEWjb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 17:39:31 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:38092 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335AbaAEWja (ORCPT
+	id S1751941AbaAEWt0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 17:49:26 -0500
+Received: from smtprelay0083.hostedemail.com ([216.40.44.83]:50799 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751371AbaAEWtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 17:39:30 -0500
-Date: Sun, 5 Jan 2014 14:39:26 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jeff Mahoney <jeffm@suse.com>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com, tglx@linutronix.de,
-        paulmck@linux.vnet.ibm.com, mingo@kernel.org
-Subject: Re: [PATCH] kobject: provide kobject_put_wait to fix module unload
- race
-Message-ID: <20140105223926.GA31541@core.coreip.homeip.net>
-References: <alpine.LRH.2.02.1401021733250.27775@file01.intranet.prod.int.rdu2.redhat.com>
- <20140104181620.GA2087@kroah.com>
- <20140104183403.GG10323@ZenIV.linux.org.uk>
- <20140104224206.GC18213@core.coreip.homeip.net>
- <alpine.LRH.2.02.1401051706040.18406@file01.intranet.prod.int.rdu2.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.02.1401051706040.18406@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 5 Jan 2014 17:49:25 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3868:4250:4321:5007:7652:8957:10004:10400:10848:11026:11232:11473:11658:11914:12438:12517:12519:12555:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: curve98_178b158f55d09
+X-Filterd-Recvd-Size: 2462
+Message-ID: <1388962160.5808.33.camel@joe-AO722>
+Subject: Re: [PATCH] Staging: rtl8187se: fix styling issues in r8180_wx.c
+From: Joe Perches <joe@perches.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Dan LaManna <dan.lamanna@gmail.com>, gregkh@linuxfoundation.org,
+        teobaluta@gmail.com, andrea.merello@gmail.com, linville@tuxdriver.com,
+        rusty@rustcorp.com.au, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Date: Sun, 05 Jan 2014 14:49:20 -0800
+In-Reply-To: <20140105214555.GH30234@mwanda>
+References: <1388956656-10790-1-git-send-email-dan.lamanna@gmail.com>
+	 <20140105214555.GH30234@mwanda>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 05, 2014 at 05:11:23PM -0500, Mikulas Patocka wrote:
+On Mon, 2014-01-06 at 00:45 +0300, Dan Carpenter wrote:
+> On Sun, Jan 05, 2014 at 04:17:36PM -0500, Dan LaManna wrote:
+> > @@ -1358,22 +1358,22 @@ static inline int is_same_network(struct ieee80211_network *src,
+> >  		 * We treat all <hidden> with the same BSSID and channel
+> >  		 * as one network
+> >  		 */
+> > -		return (((src->ssid_len == dst->ssid_len) || (ieee->iw_mode == IW_MODE_INFRA)) && /* YJ,mod, 080819,for hidden ap */
+> > +		return ((src->ssid_len == dst->ssid_len) || (ieee->iw_mode == IW_MODE_INFRA)) && /* YJ,mod, 080819,for hidden ap */
+> >  			(src->channel == dst->channel) &&
+> >  			!memcmp(src->bssid, dst->bssid, ETH_ALEN) &&
+> >  			(!memcmp(src->ssid, dst->ssid, src->ssid_len) || (ieee->iw_mode == IW_MODE_INFRA)) &&  /* YJ,mod, 080819,for hidden ap */
+> >  			((src->capability & WLAN_CAPABILITY_IBSS) ==
+> >  			(dst->capability & WLAN_CAPABILITY_IBSS)) &&
+> >  			((src->capability & WLAN_CAPABILITY_BSS) ==
+> > -			(dst->capability & WLAN_CAPABILITY_BSS)));
+> > +			(dst->capability & WLAN_CAPABILITY_BSS));
+> >  }
+> >  
 > 
-> 
-> On Sat, 4 Jan 2014, Dmitry Torokhov wrote:
-> 
-> > On Sat, Jan 04, 2014 at 06:34:03PM +0000, Al Viro wrote:
-> > > On Sat, Jan 04, 2014 at 10:16:20AM -0800, Greg Kroah-Hartman wrote:
-> > > 
-> > > > > I came up with a simpler patch to achieve the same purpose - this patch 
-> > > > > makes fixing the drivers easy - the driver is fixed just by replacing 
-> > > > > "kobject_put" with "kobject_put_wait" in the unload routine.
-> > > > 
-> > > > No, that's not ok at all.
-> > > 
-> > > Agreed - all it takes is one cargo-culter who religoiusly does such
-> > > conversion and drops a ref to parent before that to child.
-> > > 
-> > > > > However, this pattern is buggy with respect to modules. The release method
-> > > > > is placed in the driver's module. When the driver exits, the module
-> > > > > reference count is zero, thus the module may be freed. However, there may
-> > > > > still be references to the kobject. If the module is unloaded and then the
-> > > > > release method is called, a crash happens.
-> > > > 
-> > > > Yes, module unloading while a kobject is still "active" is not a good
-> > > > thing, what modules do you have that cause this problem?  Why not just
-> > > > grab the module reference in your kobject if you need this type of
-> > > > protection?  It's not the kobject's code fault that this issue is there,
-> > > > or that we now have a "delayed release" function to expose this type of
-> > > > thing, it's the user of the kobject.
-> > > > 
-> > > > Please fix the broken users of the kobject first.
-> > > 
-> > > <snide> Are you saying that there is another kind? </snide>
-> > > 
-> > > When would you grab that reference to module?  More to the point, when
-> > > would you *drop* it?  Doing so from module_exit is not going to work,
-> > > obviously...
-> > 
-> > You normally have subsystem core module that does handle release of its
-> > objects and users of said objects so it is usually OK for objects to
-> > outlive the users, you just need to make sure the core stays around.
-> > 
-> > In input we grab module reference to input core when we allocate input
-> > device and drop it when input device is freed. This way we can be sure
-> > that input core stays around until all input devices are gone. The same
-> > for serio.
-> > 
-> > Thanks. 
-> > 
-> > -- 
-> > Dmitry
-> 
-> But sometimes, the driver itself needs to create nodes in the sysfs 
-> filesystem (for example drivers/md/dm-sysfs.c). I don't quite see how 
-> would you push all driver-specific sysfs nodes into the generic non-module 
-> code.
+> Break this up.
 
-Then you need to make sure your driver does not allow unloading while
-its objects are active. I.e. require that all your devices are gone
-(by increasing module count when you create a DM object and decreasing
-it when you release DM object) before you allow unloading the driver.
+[]
 
-Basically we should avoid kobject_put() in exit paths of the module.
-Then we are left with that tiny race with release being preempted and
-module getting unloaded.
+> 	if (src->capability & WLAN_CAPABILITY_IBSS !=
+> 	    dst->capability & WLAN_CAPABILITY_IBSS)
 
-Thanks.
+Needs parentheses
 
--- 
-Dmitry
+	if ((src->capability & WLAN_CAPABILITY_IBSS) !=
+	    (dst->capability & WLAN_CAPABILITY_IBSS))
+
+> 		return 0;
+> 	if (src->capability & WLAN_CAPABILITY_BSS !=
+> 	    dst->capability & WLAN_CAPABILITY_BSS)
+> 	    	return 0;
+
+here too.
+
+
