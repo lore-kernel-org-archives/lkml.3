@@ -1,92 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751682AbaAESBN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 13:01:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33193 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281AbaAESBL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 13:01:11 -0500
-Date: Sun, 5 Jan 2014 10:01:22 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Loc Ho <lho@apm.com>
-Cc: Ravi Patel <rapatel@apm.com>, Arnd Bergmann <arnd@arndb.de>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jon Masters <jcm@redhat.com>, "patches@apm.com" <patches@apm.com>,
-        Keyur Chudgar <kchudgar@apm.com>
-Subject: Re: [PATCH V2 0/4] misc: xgene: Add support for APM X-Gene SoC Queue
- Manager/Traffic Manager
-Message-ID: <20140105180122.GB980@kroah.com>
-References: <1387594651-25771-1-git-send-email-rapatel@apm.com>
- <201312212111.40576.arnd@arndb.de>
- <CAPw-ZTnsu_EmOW3aZTVKAVjQsdi8qMy95y2ZcYxzgVrjGkirTA@mail.gmail.com>
- <1441245.xPZLG2iNZ6@wuerfel>
- <CAN1v_PtFz42crHW5=cUgw-fAnPn3rQht=o0t3nmjJRamYSLDMg@mail.gmail.com>
- <20140105033848.GA22595@kroah.com>
- <CAPw-ZT=noCwc+3o_762ewTcn2J3SjZ5u11V=Aa8RrZZf4DT5Yw@mail.gmail.com>
+	id S1751760AbaAESCS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 13:02:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21816 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751345AbaAESCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jan 2014 13:02:17 -0500
+Date: Sun, 5 Jan 2014 19:01:54 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>
+Subject: Re: [PATCH 18/21] perf top: Support callchain accumulation
+Message-ID: <20140105180154.GM10018@krava.brq.redhat.com>
+References: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
+ <1387873347-28838-19-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPw-ZT=noCwc+3o_762ewTcn2J3SjZ5u11V=Aa8RrZZf4DT5Yw@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1387873347-28838-19-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 04, 2014 at 09:39:08PM -0800, Loc Ho wrote:
-> Hi,
+On Tue, Dec 24, 2013 at 05:22:24PM +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
 > 
-> >> >> >> This patch adds support for APM X-Gene SoC Queue Manager/Traffic Manager.
-> >> >> >>  QMTM is required by APM X-Gene SoC Ethernet, PktDMA (XOR Engine) and
-> >> >> >>  Security Engine subsystems. All subsystems communicate with QMTM using
-> >> >> >>  messages which include information about the work to be performed and
-> >> >> >>  the location of associated data buffers.
-> >> >> >
-> >> >> > Please describe here what the purpose of the qmtm is, as this is not
-> >> >> > entirely clear from the code.
-> >> >> >
-> >> >> > In particular, please describe how this differs from a dmaengine driver
-> >> >> > and why it is not possible to extend the dma slave API to describe qmtm
-> >> >> > as a dma engine.
-> >> >> >
-> >> >> [Loc Ho]
-> >> >> If the QM driver implements the DMA API, what about the actual DMA
-> >> >> engine driver which interfaces with this QM driver. We would have DMA
-> >> >> client interfaces with the X-Gene DMA driver (not available yet) via
-> >> >> DMA API which in turn interfaces with this QM driver via DMA API.
-> >> >> Won't this be kind of awkward? Also, the QM only manage messages (or
-> >> >> descriptors) which are 32-bytes or 64-bytes. It doesn't actually do
-> >> >> any data transfer of various sizes.
-> >> >
-> >> > Please describe here what the purpose of the qmtm is, as this is not
-> >> > entirely clear from the code or from your reply.
-> >> >
-> >> > Greg was guessing that it's a bus controller, my best guess is a DMA
-> >> > engine. If it's something completely different, you have to let
-> >> > us know what it is so we can do a proper review rather than guessing.
-> >> >
-> >> > Please provide a link to the data sheet if you are unable to explain.
-> >>
-> >> Here is URL to a text document explaining role of QMTM device with CPU, Ethernet
-> >> subsystem.
-> >>
-> >> https://drive.google.com/file/d/0B28TgQZ3JLoRRGNnbjJoUGNHWW8/edit?usp=sharing
-> >
-> > There is nothing at this link :(
+> Enable cumulation of callchain of children in perf top.
 > 
-> I tried click on the txt file link from web site
-> http://www.spinics.net/lists/netdev/msg264628.html and don't see any
-> problem with accessing the txt file.
+> Cc: Arun Sharma <asharma@fb.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/builtin-top.c | 106 +++++++++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 103 insertions(+), 3 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+> index 48c527a0f4c8..6a7a76496c94 100644
+> --- a/tools/perf/builtin-top.c
+> +++ b/tools/perf/builtin-top.c
+> @@ -657,6 +657,99 @@ static int symbol_filter(struct map *map __maybe_unused, struct symbol *sym)
+>  	return 0;
+>  }
+>  
+> +static int process_cumulative_entry(struct perf_top *top,
+> +				    struct hist_entry *he,
+> +				    struct perf_evsel *evsel,
+> +				    struct addr_location *al,
+> +				    struct perf_sample *sample,
+> +				    struct symbol *parent)
+> +{
 
-Now it's working :)
+hum, I wonder how hard would it be to export the iterator
+stuff out of the report command and export it to be usable
+from here as well.. to much code dusplicated below :-\
 
-Anyway, as this is a .txt file, why wasn't it just sent in email, and
-added to the patch series as a documentation file?
+jirka
 
-thanks,
-
-greg k-h
+> +	struct hist_entry **he_cache;
+> +	struct callchain_cursor_node *node;
+> +	int idx = 0, err;
+> +
+> +	he_cache = malloc(sizeof(*he_cache) * (PERF_MAX_STACK_DEPTH + 1));
+> +	if (he_cache == NULL)
+> +		return -ENOMEM;
+> +
+> +	pthread_mutex_lock(&evsel->hists.lock);
+> +
+> +	he_cache[idx++] = he;
+> +
+> +	/*
+> +	 * This is for putting parents upward during output resort iff
+> +	 * only a child gets sampled.  See hist_entry__sort_on_period().
+> +	 */
+> +	he->callchain->max_depth = PERF_MAX_STACK_DEPTH + 1;
+> +
+> +	callchain_cursor_commit(&callchain_cursor);
+> +
+> +	node = callchain_cursor_current(&callchain_cursor);
+> +	while (node) {
+> +		int i;
+> +		struct hist_entry he_tmp = {
+> +			.cpu = al->cpu,
+> +			.thread = al->thread,
+> +			.comm = thread__comm(al->thread),
+> +			.parent = parent,
+> +		};
+> +
+> +		fill_callchain_info(al, node, false);
+> +
+> +		he_tmp.ip = al->addr;
+> +		he_tmp.ms.map = al->map;
+> +		he_tmp.ms.sym = al->sym;
+> +
+> +		if (al->sym && al->sym->ignore)
+> +			goto next;
+> +
+> +		/*
+> +		 * Check if there's duplicate entries in the callchain.
+> +		 * It's possible that it has cycles or recursive calls.
+> +		 */
+> +		for (i = 0; i < idx; i++) {
+> +			if (hist_entry__cmp(he_cache[i], &he_tmp) == 0)
+> +				goto next;
+> +		}
+> +
+> +		he = __hists__add_entry(&evsel->hists, al, parent, NULL, NULL,
+> +					sample->period, sample->weight,
+> +					sample->transaction, false);
+> +		if (he == NULL) {
+> +			err = -ENOMEM;
+> +			break;;
+> +		}
+> +
+> +		he_cache[idx++] = he;
+> +
+> +		/*
+> +		 * This is for putting parents upward during output resort iff
+> +		 * only a child gets sampled.  See hist_entry__sort_on_period().
+> +		 */
+> +		he->callchain->max_depth = callchain_cursor.nr - callchain_cursor.pos;
+> +
+> +		if (sort__has_sym) {
+> +			u64 ip;
+> +
+> +			if (al->map)
+> +				ip = al->map->unmap_ip(al->map, al->addr);
+> +			else
+> +				ip = al->addr;
+> +
+> +			perf_top__record_precise_ip(top, he, evsel->idx, ip);
+> +		}
+> +
+> +next:
+> +		callchain_cursor_advance(&callchain_cursor);
+> +		node = callchain_cursor_current(&callchain_cursor);
+> +	}
+> +
+> +	pthread_mutex_unlock(&evsel->hists.lock);
+> +
+> +	free(he_cache);
+> +	return err;
+> +}
+> +
+>  static void perf_event__process_sample(struct perf_tool *tool,
+>  				       const union perf_event *event,
+>  				       struct perf_evsel *evsel,
+> @@ -754,9 +847,16 @@ static void perf_event__process_sample(struct perf_tool *tool,
+>  			return;
+>  		}
+>  
+> -		err = hist_entry__append_callchain(he, sample);
+> -		if (err)
+> -			return;
+> +		if (symbol_conf.cumulate_callchain) {
+> +			err = process_cumulative_entry(top, he, evsel, &al,
+> +						       sample, parent);
+> +			if (err)
+> +				return;
+> +		} else {
+> +			err = hist_entry__append_callchain(he, sample);
+> +			if (err)
+> +				return;
+> +		}
+>  
+>  		if (sort__has_sym)
+>  			perf_top__record_precise_ip(top, he, evsel->idx, ip);
+> -- 
+> 1.7.11.7
+> 
