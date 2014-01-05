@@ -1,71 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751151AbaAEJKM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 04:10:12 -0500
-Received: from balrog.mythic-beasts.com ([93.93.130.6]:45068 "EHLO
-	balrog.mythic-beasts.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102AbaAEJKJ (ORCPT
+	id S1751112AbaAEJca (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 04:32:30 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:53273 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915AbaAEJc2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 04:10:09 -0500
-X-Greylist: delayed 1147 seconds by postgrey-1.27 at vger.kernel.org; Sun, 05 Jan 2014 04:10:08 EST
-Date: Sun, 5 Jan 2014 09:50:55 +0100
-From: Richard Foley <richard.foley@rfi.net>
-To: Antti Heikkinen <antti.heikkinen.4@gmail.com>
-Cc: linux-kernel@vger.kernel.org, advocacy@perl.org, beginners@perl.org
-Subject: Re: Propose for LINUX kernel and PERL
-Message-ID: <20140105085055.GB15882@thpad.site>
-Reply-To: Richard Foley <richard.foley@rfi.net>
-References: <CAM__s2Bk=Hgzm3-f7N=A032PxUV6N87=42qZ=7kt7u8d_Ny5gg@mail.gmail.com>
+	Sun, 5 Jan 2014 04:32:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAM__s2Bk=Hgzm3-f7N=A032PxUV6N87=42qZ=7kt7u8d_Ny5gg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140104213654.0f0b34f2@neptune.home>
+References: <CAPNrq4yXdbdfq4hrtZdZn_5UDPduGoTCNJb1-9u-Qf1nf2RgXQ@mail.gmail.com>
+	<20140104213654.0f0b34f2@neptune.home>
+Date: Sun, 5 Jan 2014 10:32:27 +0100
+X-Google-Sender-Auth: O6_1zFzINRXGqVADPnzH294RXHg
+Message-ID: <CAMuHMdXU3TGfLec3H6JqLv4yrUVzHN-POMRMBEJvi9-KvBu1mw@mail.gmail.com>
+Subject: Re: How does a newbie find work?
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Gideon D'souza" <gidisrael@gmail.com>
+Cc: =?UTF-8?Q?Bruno_Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A useful Monks link here:
+On Sat, Jan 4, 2014 at 9:36 PM, Bruno Prémont <bonbons@linux-vserver.org> wrote:
+>> Is there some simple work a newbie like me can take up? Any maintainer
+>> need some grunt work done? Or perhaps someone could suggest a pet
+>> project I could try to understand things better? (Should I be learning
+>> how to write device drivers?)
+>>
+>> Things that are very interesting to me so far are the KVM and the Scheduler.
+>
+> Starting with writing some driver (or improving existing drivers) is one
+> option, though that wont get you doing work in relation with the scheduler
+> (maybe there is some minor driver-like work for KVM though, don't know).
+>
+> A better start, and at least as useful is to read and review patches
+> flowing by that affect your areas of interest, test them and provide
+> feedback about possible bugs or improvements (proposing patches to fix
+> those if applicable or even just providing performance data [what
+> workloads benefit or suffer from given feature-patches and by how much]
+> for things like scheduler changes).
+>
+> This way you will get to know the development process, maintainers
+> and the internals of the kernel in those areas - don't forget to subscribe
+> to the specific mailing lists!
 
-    http://www.perlmonks.org/?node=339754
+Yep, all very good advices. And while following the above, you will hopefully
+notice things that need bug fixes, cleanups, or other work.
 
-and:
+E.g. one thing I just noticed: while include/linux/compiler-gcc.h provides
+shorthands (e.g. "__printf()") for various gcc __attribute__ macros, there
+are still many places that don't use the shorthands, cfr. e.g.
+"git grep 'attribute.*printf'".
 
-    http://www.foo.be/docs/tpj/issues/vol5_2/tpj0502-0009.html
+As some of these are in architecture-specific header files, and need build
+testing there, this is an opportunity to get some cross-compilers going (you
+can download binaries from https://www.kernel.org/pub/tools/crosstool/) as
+well.
 
--- 
-Ciao
+Good luck, thanks, and welcome to the team! ;-)
 
-Richard Foley
+Gr{oetje,eeting}s,
 
-http://www.rfi.net/books.html
+                        Geert
 
-On Sun, Jan 05, 2014 at 12:46:00AM -0500, Antti Heikkinen wrote:
-> To Dear Perl and LINUX kernel development community:
-> 
-> My propose to you at your list: is possible to write operate system in
-> PERL? I am student in university, looked for interest project to
-> conclude my study on LINUX kernel.
-> 
-> This semester, I take beginner PERL course and learn power of
-> procedural language. I automate many daily task with use of it. Very
-> impressive ability to make many thing work, interpret or can compile
-> also.
-> 
-> Also about LINUX, I talk to much fellow students and professors, and
-> take a operate system course use FreeBSD and LINUX. FreeBSD okay, but
-> they say LINUX kernel is too big and bloat, run poor with too many
-> developer. And too much quick decision from leader with ego is too big
-> and bloat too, kekeke.
-> 
-> LINUX kernel can perform more good if written in not C and C++ but
-> Perl? Just certain portion of LINUX kernel to rewrite? For instant,
-> schedule or support of multithread? If so, should use Perl5 or Perl6,
-> focus to x86 or x86-64? Can you want to join me this my project? But
-> to hear your expertise.
-> 
-> Am excited to learn and begin study project. Can you want to join this
-> my project? Please direct reply of email to myself.
-> 
-> Much thank to you,
-> Antti Heikkinen
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
