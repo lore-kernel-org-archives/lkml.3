@@ -1,38 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751682AbaAESzH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 13:55:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56611 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751304AbaAESzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 13:55:06 -0500
-Date: Sun, 5 Jan 2014 19:55:02 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Andreas Hollmann <hollmann@in.tum.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Linux 3.12 spreads memory allocation across all NUMA nodes
- instead of local allocation?
-Message-ID: <20140105185502.GA25160@dhcp22.suse.cz>
-References: <CAGz0_-2WsqMQLqyoPJ4ncoMJ7-XhYYt_cns7Mzq0CET0=1R4SQ@mail.gmail.com>
+	id S1751805AbaAES50 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 13:57:26 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:51068 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751502AbaAES5Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jan 2014 13:57:24 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <52C9AB14.8060603@roeck-us.net>
+Date: Sun, 05 Jan 2014 10:57:24 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGz0_-2WsqMQLqyoPJ4ncoMJ7-XhYYt_cns7Mzq0CET0=1R4SQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Karsten Keil <isdn@linux-pingi.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Subject: Re: [PATCH] isdn: Build telespci and hfc_pci only for little endian
+ CPUs
+References: <1388944204-13008-1-git-send-email-linux@roeck-us.net> <CAMuHMdVfr0ExtrU7bNUttJwkMXv-ZRo0A=j3gJ-=9nakP0uP+g@mail.gmail.com>
+In-Reply-To: <CAMuHMdVfr0ExtrU7bNUttJwkMXv-ZRo0A=j3gJ-=9nakP0uP+g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 05-01-14 13:48:23, Andreas Hollmann wrote:
-> Hi,
-> 
-> it seems that my system (4-socket system) is
-> interleaving pages across all numa nodes.
+On 01/05/2014 10:30 AM, Geert Uytterhoeven wrote:
+> On Sun, Jan 5, 2014 at 6:50 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> -       depends on PCI && (BROKEN || !(SPARC || PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN)))
+>> +       depends on CPU_LITTLE_ENDIAN && PCI && (BROKEN || !(SPARC || PPC || PARISC || M68K || MIPS || FRV || XTENSA))
+>
+> Unfortunately CPU_LITTLE_ENDIAN is only available on architectures
+> that support two endiannesses. So the above will preclude e.g. x86, which is
+> where most ISDN users are.
+>
+> One solution is to move CPU_LITTLE_ENDIAN and CPU_BIG_ENDIAN to the
+> common Kconfig parts. After that, the dependency above can just become
+>
+>      depends on CPU_LITTLE_ENDIAN && PCI.
+>
 
-Should be fixed by fff4068cba (mm: page_alloc: revert NUMA aspect of
-fair allocation policy)
- 
-[...]
--- 
-Michal Hocko
-SUSE Labs
+Excellent idea, but more invasive than I want to get into. I'll mark the build for the drivers
+as broken for big endian ARM machines instead. The cleanup you suggested can then go in as
+separate patch (if wanted).
+
+Thanks,
+Guenter
+
