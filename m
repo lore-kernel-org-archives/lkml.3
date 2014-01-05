@@ -1,31 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434AbaAEQdO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 11:33:14 -0500
-Received: from host-200-75-140-234.cliente-234-net-uno.net ([200.75.140.234]:58852
-	"EHLO mail.inder.gob.ve" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751112AbaAEQdN (ORCPT
+	id S1751395AbaAEQoR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 11:44:17 -0500
+Received: from smtp03.stone-is.org ([87.238.162.66]:51071 "EHLO
+	smtpgw.stone-is.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112AbaAEQoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 11:33:13 -0500
-X-Greylist: delayed 892 seconds by postgrey-1.27 at vger.kernel.org; Sun, 05 Jan 2014 11:33:12 EST
-Date: Sun, 5 Jan 2014 11:37:50 -0430 (VET)
-From: Ali =?utf-8?B?UGXDsWE=?= <apena@inder.gob.ve>
-Message-ID: <657101926.339004.1388938070077.JavaMail.zimbra@inder.gob.ve>
-Subject: Urgent Response Please.
+	Sun, 5 Jan 2014 11:44:15 -0500
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+Message-ID: <52C98BCC.9040900@acm.org>
+Date: Sun, 05 Jan 2014 17:43:56 +0100
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Mikulas Patocka <mpatocka@redhat.com>, Jeff Mahoney <jeffm@suse.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org,
+        device-mapper development <dm-devel@redhat.com>
+CC: paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, mingo@kernel.org
+Subject: Re: [dm-devel] [PATCH] kobject: provide kobject_put_wait to fix module
+ unload race
+References: <alpine.LRH.2.02.1401021733250.27775@file01.intranet.prod.int.rdu2.redhat.com>
+In-Reply-To: <alpine.LRH.2.02.1401021733250.27775@file01.intranet.prod.int.rdu2.redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [188.29.214.8]
-X-Mailer: Zimbra 8.0.4_GA_5737 (zclient/8.0.4_GA_5737)
-Thread-Topic: Urgent Response Please.
-Thread-Index: 1EPOhZBDB5kiqW4SWFU8JNJ6/3zuqA==
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good Day.
-My name is Mr. Song Lile, I am the credit officer in Hang Seng Bank, Hong Kong. I have a business proposal in the tune of $19.5m to be transferred to an offshore account with your assistance. After the successful transfer, we shall share in ratio of 30% for you and 70% for me. Should you be interested, please respond to my letter immediately, so we can commence all arrangements and I will give you more information on the project and how we would handle it. Please treat this business with utmost confidentiality. You can contact me on my private email: (lilesong440@yahoo.com.hk) and send me the following information for documentation purpose: (1)Full names: (2)private phone number: (3)current residential address: (4)Occupation: (5)Age and Sex:
- I look forward to hearing from you. 
-Kind Regards,
-Mr. Song Lile. 
+On 01/04/14 19:06, Mikulas Patocka wrote:
+> -	if (t && !t->release)
+> -		pr_debug("kobject: '%s' (%p): does not have a release() "
+> -			 "function, it is broken and must be fixed.\n",
+> -			 kobject_name(kobj), kobj);
+> -
+
+Has it been considered to issue a warning if no release function has
+been defined and free_completion == NULL instead of removing the above
+debug message entirely ? I think even with this patch applied it is
+still wrong to invoke kobject_put() on an object without defining a
+release function.
+
+Thanks,
+
+Bart.
+
