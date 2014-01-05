@@ -1,95 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751758AbaAETec (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 14:34:32 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:16478 "EHLO
+	id S1751550AbaAETnG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 14:43:06 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:17372 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751592AbaAETeV (ORCPT
+	with ESMTP id S1751119AbaAETnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 14:34:21 -0500
-Date: Sun, 5 Jan 2014 14:33:12 -0500
+	Sun, 5 Jan 2014 14:43:03 -0500
+Date: Sun, 5 Jan 2014 14:41:55 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com, hpa@zytor.com
-Subject: Re: [PATCH v13 15/19] xen/grant-table: Refactor gnttab_init
-Message-ID: <20140105193312.GB12263@phenom.dumpdata.com>
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com, hpa@zytor.com,
+        Mukesh Rathor <mukesh.rathor@oracle.com>
+Subject: Re: [PATCH v13 08/19] xen/pvh/mmu: Use PV TLB instead of native.
+Message-ID: <20140105194155.GC12263@phenom.dumpdata.com>
 References: <1388777916-1328-1-git-send-email-konrad.wilk@oracle.com>
- <1388777916-1328-16-git-send-email-konrad.wilk@oracle.com>
- <alpine.DEB.2.02.1401051817150.8667@kaball.uk.xensource.com>
+ <1388777916-1328-9-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.02.1401051757260.8667@kaball.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1401051817150.8667@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1401051757260.8667@kaball.uk.xensource.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 05, 2014 at 06:18:03PM +0000, Stefano Stabellini wrote:
+On Sun, Jan 05, 2014 at 06:11:39PM +0000, Stefano Stabellini wrote:
 > On Fri, 3 Jan 2014, Konrad Rzeszutek Wilk wrote:
-> > We have this odd scenario of where for PV paths we take a shortcut
-> > but for the HVM paths we first ioremap xen_hvm_resume_frames, then
-> > assign it to gnttab_shared.addr. This is needed because gnttab_map
-> > uses gnttab_shared.addr.
+> > From: Mukesh Rathor <mukesh.rathor@oracle.com>
 > > 
-> > Instead of having:
-> > 	if (pv)
-> > 		return gnttab_map
-> > 	if (hvm)
-> > 		...
+> > We also optimize one - the TLB flush. The native operation would
+> > needlessly IPI offline VCPUs causing extra wakeups. Using the
+> > Xen one avoids that and lets the hypervisor determine which
+> > VCPU needs the TLB flush.
 > > 
-> > 	gnttab_map
-> > 
-> > Lets move the HVM part before the gnttab_map and remove the
-> > first call to gnttab_map.
-> > 
+> > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
 > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-> 
-> As I wrote in my reply to the previous version of the patch, you can
-> have my acked-by, except for the spurious code style fix mixed-up with
-> the other changes.
-
-Thanks. I fixed it up (removed the code style fix).
-
-> 
-> 
-> >  drivers/xen/grant-table.c | 13 ++++---------
-> >  1 file changed, 4 insertions(+), 9 deletions(-)
+> > ---
+> >  arch/x86/xen/mmu.c | 9 +++++++++
+> >  1 file changed, 9 insertions(+)
 > > 
-> > diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-> > index 99399cb..cc1b4fa 100644
-> > --- a/drivers/xen/grant-table.c
-> > +++ b/drivers/xen/grant-table.c
-> > @@ -1173,22 +1173,17 @@ static int gnttab_setup(void)
-> >  	if (max_nr_gframes < nr_grant_frames)
-> >  		return -ENOSYS;
+> > diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> > index 490ddb3..c1d406f 100644
+> > --- a/arch/x86/xen/mmu.c
+> > +++ b/arch/x86/xen/mmu.c
+> > @@ -2222,6 +2222,15 @@ static const struct pv_mmu_ops xen_mmu_ops __initconst = {
+> >  void __init xen_init_mmu_ops(void)
+> >  {
+> >  	x86_init.paging.pagetable_init = xen_pagetable_init;
+> > +
+> > +	/* Optimization - we can use the HVM one but it has no idea which
+> > +	 * VCPUs are descheduled - which means that it will needlessly IPI
+> > +	 * them. Xen knows so let it do the job.
+> > +	 */
+> > +	if (xen_feature(XENFEAT_auto_translated_physmap)) {
+> > +		pv_mmu_ops.flush_tlb_others = xen_flush_tlb_others;
+> > +		return;
+> > +	}
+> >  	pv_mmu_ops = xen_mmu_ops;
 > >  
-> > -	if (xen_pv_domain())
-> > -		return gnttab_map(0, nr_grant_frames - 1);
-> > -
-> > -	if (gnttab_shared.addr == NULL) {
-> > +	if (xen_feature(XENFEAT_auto_translated_physmap) && gnttab_shared.addr == NULL)
-> > +	{
-> >  		gnttab_shared.addr = xen_remap(xen_hvm_resume_frames,
-> > -						PAGE_SIZE * max_nr_gframes);
-> > +					       PAGE_SIZE * max_nr_gframes);
-> >  		if (gnttab_shared.addr == NULL) {
-> >  			pr_warn("Failed to ioremap gnttab share frames (addr=0x%08lx)!\n",
-> >  					xen_hvm_resume_frames);
-> >  			return -ENOMEM;
-> >  		}
-> >  	}
-> > -
-> > -	gnttab_map(0, nr_grant_frames - 1);
-> > -
-> > -	return 0;
-> > +	return gnttab_map(0, nr_grant_frames - 1);
-> >  }
-> >  
-> >  int gnttab_resume(void)
-> > -- 
-> > 1.8.3.1
-> > 
+> >  	memset(dummy_mapping, 0xff, PAGE_SIZE);
+> 
+> Regarding this patch, the next one and the other changes to
+> xen_setup_shared_info, xen_setup_mfn_list_list,
+> xen_setup_vcpu_info_placement, etc: considering that the mmu related
+> stuff is very different between PV and PVH guests, I wonder if it makes
+> any sense to keep calling xen_init_mmu_ops on PVH.
+> 
+> I would introduce a new function, xen_init_pvh_mmu_ops, that sets
+> pv_mmu_ops.flush_tlb_others and only calls whatever is needed for PVH
+> under a new xen_pvh_pagetable_init.
+> Just to give you an idea, not even compiled tested:
+
+There is something to be said about sharing the same code path
+that "old-style" PV is using with the new-style - code coverage.
+
+That is the code gets tested under both platforms and if I (or
+anybody else) introduce a bug in the "common-PV-paths" it will
+be immediately obvious as hopefully the regression tests
+will pick it up.
+
+It is not nice - as low-level code is sprinkled with the one-offs
+for the PVH - which mostly is doing _less_.
+
+What I was thinking is to flip this around. Make the PVH paths
+the default and then have something like 'if (!xen_pvh_domain())'
+... the big code.
+
+Would you be OK with this line of thinking going forward say
+after this patchset?
+
+Thanks!
