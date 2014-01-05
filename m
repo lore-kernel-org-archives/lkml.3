@@ -1,76 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750832AbaAEBSF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jan 2014 20:18:05 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:45370 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719AbaAEBSE (ORCPT
+	id S1750831AbaAEBcv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jan 2014 20:32:51 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:44807 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734AbaAEBcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jan 2014 20:18:04 -0500
-From: Ethan Zhao <ethan.kernel@gmail.com>
-To: hans.verkuil@cisco.com, m.chehab@samsung.com, gregkh@linuxfoundation.org,
-        mchehab@redhat.com
-Cc: linux-kernel@vger.kernel.org, Ethan Zhao <ethan.kernel@gmail.com>
-Subject: [PATCH] [media] cx18: introduce a helper function to void array overrun
-Date: Sun,  5 Jan 2014 09:17:39 +0800
-Message-Id: <1388884659-693-1-git-send-email-ethan.kernel@gmail.com>
-X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
+	Sat, 4 Jan 2014 20:32:50 -0500
+Date: Sat, 04 Jan 2014 20:32:49 -0500 (EST)
+Message-Id: <20140104.203249.1100084640435359350.davem@davemloft.net>
+To: allen.pais@oracle.com
+Cc: bigeasy@linutronix.de, linux-kernel@vger.kernel.org,
+        sparclinux@vger.kernel.org
+Subject: Re: [PATCH 2/3] sparc64: convert spinlock_t to raw_spinlock_t in
+ mmu_context_t
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <52AEDCFD.9020402@oracle.com>
+References: <1387166853-10782-3-git-send-email-allen.pais@oracle.com>
+	<52AED5BB.1060002@linutronix.de>
+	<52AEDCFD.9020402@oracle.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Sat, 04 Jan 2014 17:32:50 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cx18_i2c_register() is called in cx18_init_subdevs() with index
-greater than length of hw_bus array, that will cause array overrun,
-introduce a helper cx18_get_max_bus_num() to void it.
+From: Allen Pais <allen.pais@oracle.com>
+Date: Mon, 16 Dec 2013 16:29:09 +0530
 
-Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
----
- drivers/media/pci/cx18/cx18-driver.c | 2 +-
- drivers/media/pci/cx18/cx18-i2c.c    | 5 +++++
- drivers/media/pci/cx18/cx18-i2c.h    | 1 +
- 3 files changed, 7 insertions(+), 1 deletion(-)
+> I did not think it'd be nice to put the call trace in the commit message.
+> But if needed I can re-send them.
 
-diff --git a/drivers/media/pci/cx18/cx18-driver.c b/drivers/media/pci/cx18/cx18-driver.c
-index 6386ced..dadcd4a 100644
---- a/drivers/media/pci/cx18/cx18-driver.c
-+++ b/drivers/media/pci/cx18/cx18-driver.c
-@@ -856,7 +856,7 @@ static void cx18_init_subdevs(struct cx18 *cx)
- 	u32 device;
- 	int i;
- 
--	for (i = 0, device = 1; i < 32; i++, device <<= 1) {
-+	for (i = 0, device = 1; i < cx18_get_max_bus_num(); i++, device <<= 1) {
- 
- 		if (!(device & hw))
- 			continue;
-diff --git a/drivers/media/pci/cx18/cx18-i2c.c b/drivers/media/pci/cx18/cx18-i2c.c
-index 4af8cd6..e0e8193 100644
---- a/drivers/media/pci/cx18/cx18-i2c.c
-+++ b/drivers/media/pci/cx18/cx18-i2c.c
-@@ -108,6 +108,11 @@ static int cx18_i2c_new_ir(struct cx18 *cx, struct i2c_adapter *adap, u32 hw,
- 	       -1 : 0;
- }
- 
-+int cx18_get_max_bus_num()
-+{
-+	return sizeof(hw_bus);
-+}
-+
- int cx18_i2c_register(struct cx18 *cx, unsigned idx)
- {
- 	struct v4l2_subdev *sd;
-diff --git a/drivers/media/pci/cx18/cx18-i2c.h b/drivers/media/pci/cx18/cx18-i2c.h
-index 1180fdc..8cce205 100644
---- a/drivers/media/pci/cx18/cx18-i2c.h
-+++ b/drivers/media/pci/cx18/cx18-i2c.h
-@@ -21,6 +21,7 @@
-  *  02111-1307  USA
-  */
- 
-+int cx18_get_max_bus_num();
- int cx18_i2c_register(struct cx18 *cx, unsigned idx);
- struct v4l2_subdev *cx18_find_hw(struct cx18 *cx, u32 hw);
- 
--- 
-1.8.3.4 (Apple Git-47)
+The more information you provide in a commit message, the better.
 
+Please add those traces to the commit messages, and then you can add
+my:
+
+Acked-by: David S. Miller <davem@davemloft.net>
