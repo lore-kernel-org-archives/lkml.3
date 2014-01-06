@@ -1,68 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253AbaAFIly (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 03:41:54 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:39796 "EHLO song.cn.fujitsu.com"
+	id S1753305AbaAFIn5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 03:43:57 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:15880 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751063AbaAFIlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 03:41:52 -0500
+	id S1751799AbaAFIn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 03:43:56 -0500
 X-IronPort-AV: E=Sophos;i="4.95,611,1384272000"; 
-   d="scan'208";a="9378055"
-Message-ID: <52CA6C80.9060002@cn.fujitsu.com>
-Date: Mon, 06 Jan 2014 16:42:40 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Libo Chen <clbchenlibo.chen@huawei.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>
-CC: David Miller <davem@davemloft.net>, Jamal Hadi Salim <jhs@mojatatu.com>,
-        Li Zefan <lizefan@huawei.com>, Eric Dumazet <edumazet@google.com>,
-        pshelar@nicira.com, jasowang@redhat.com,
-        Simon Horman <horms@verge.net.au>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Linux Kernel Network Developers <netdev@vger.kernel.org>,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        Patrick McHardy <kaber@trash.net>, xemul@openvz.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH net-next 0/4] net_cls for sys container
-References: <52C62A44.4070304@huawei.com> <CAM_iQpW0+Ftvk=QBE+0yMNW00VkBee1+yAEmbPkT+zjij9RX-Q@mail.gmail.com> <52CA614D.6040702@huawei.com>
-In-Reply-To: <52CA614D.6040702@huawei.com>
+   d="scan'208";a="9378071"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: mingo@elte.hu, hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org,
+        rjw@sisk.pl, lenb@kernel.org, toshi.kani@hp.com
+Cc: tangchen@cn.fujitsu.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] acpi, numa, mem_hotplug: Kill save_add_info().
+Date: Mon, 6 Jan 2014 16:46:20 +0800
+Message-Id: <1388997980-28099-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/06 16:40:45,
+ 2014/01/06 16:42:51,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/06 16:40:51,
-	Serialize complete at 2014/01/06 16:40:51
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+ 2014/01/06 16:42:55,
+	Serialize complete at 2014/01/06 16:42:55
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2014 03:54 PM, Libo Chen wrote:
-> On 2014/1/3 13:20, Cong Wang wrote:
->> On Thu, Jan 2, 2014 at 7:11 PM, Libo Chen <clbchenlibo.chen@huawei.com> wrote:
->>> Hi guys,
->>>
->>> Now, lxc created with veth can not be under control by
->>> cls_cgroup.
->>>
->>> the former discussion:
->>> http://lkml.indiana.edu/hypermail/linux/kernel/1312.1/00214.html
->>>
->>> In short, because cls_cgroup relys classid attached to sock
->>> filter skb, but sock will be cleared inside dev_forward_skb()
->>> in veth_xmit().
->>
->>
->> So what are you trying to achieve here?
-> 
-> sys container using veth can be controlled by cls_cgroup basing on physic network interface
-> 
+save_add_info() is defined as:
 
-It's a problem about virtual nic, not container/net namespace.
+        #ifdef CONFIG_MEMORY_HOTPLUG
+        static inline int save_add_info(void) {return 1;}
+        #else
+        static inline int save_add_info(void) {return 0;}
+        #endif
 
-If veth device is running in host. the skb is transmitted firstly by veth device and then delivered
-by physical device. if you set both qdisc rule on veth and physical device. which qdisc rule will take
-effect?
+which means it is true when memory hotplug is configured.
 
-In your patch, both qdisc rule are effective. it looks strange.
+In acpi_numa_memory_affinity_init(), it checks the memory hotplug
+flag in SRAT memory affinity and save_add_info() like this:
+
+	hotpluggable = ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE;
+	if (hotpluggable && !save_add_info())
+		goto out_err;
+        ......
+        node = setup_node(pxm);
+        numa_add_memblk(node, start, end);
+        ......
+
+which means if the memory range is hotpluggable, but memory hotplug is not
+configured, it won't add these memory to numa_meminfo.
+
+After this, numa_meminfo_cover_memory() will fail, which will finally cause
+numa_init() to fail.
+
+numa_init()
+ |->numa_register_memblks()
+     |->numa_meminfo_cover_memory()
+
+When numa_init() fails, it will fallback to numa_init(dummy_numa_init), and
+all numa architecture will not be setup.
+
+This is nonsense. Even if memory hotplug is not configured, we can also use
+numa architecture.
+
+Actually, save_add_info() is added by commit 71efa8fdc55e70ec6687c897a30759f0a2c2ad7e
+in 2006. And now it is useless.
+
+So this patch kill save_add_info() and the nonsense checking.
+
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Acked-by: Toshi Kani <toshi.kani@hp.com>
+---
+ arch/x86/mm/srat.c | 8 --------
+ 1 file changed, 8 deletions(-)
+
+diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+index 266ca91..1df90dd 100644
+--- a/arch/x86/mm/srat.c
++++ b/arch/x86/mm/srat.c
+@@ -135,12 +135,6 @@ acpi_numa_processor_affinity_init(struct acpi_srat_cpu_affinity *pa)
+ 	       pxm, apic_id, node);
+ }
+ 
+-#ifdef CONFIG_MEMORY_HOTPLUG
+-static inline int save_add_info(void) {return 1;}
+-#else
+-static inline int save_add_info(void) {return 0;}
+-#endif
+-
+ /* Callback for parsing of the Proximity Domain <-> Memory Area mappings */
+ int __init
+ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+@@ -156,8 +150,6 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ 	if ((ma->flags & ACPI_SRAT_MEM_ENABLED) == 0)
+ 		goto out_err;
+ 	hotpluggable = ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE;
+-	if (hotpluggable && !save_add_info())
+-		goto out_err;
+ 
+ 	start = ma->base_address;
+ 	end = start + ma->length;
+-- 
+1.7.11.7
+
