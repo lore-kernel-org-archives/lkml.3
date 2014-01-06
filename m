@@ -1,63 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509AbaAFQKc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 11:10:32 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:43216 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753883AbaAFQK1 (ORCPT
+	id S1755523AbaAFQK6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 11:10:58 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:26701 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754557AbaAFQK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 11:10:27 -0500
-Date: Mon, 6 Jan 2014 21:40:19 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        dri-devel@lists.freedesktop.org, josh@joshtriplett.org
-Subject: [PATCH 55/85] drivers: gpu: Include appropriate header file in
- cypress_dpm.c
-Message-ID: <20f3f9f240e40b8e1c7db87d9f10d48db25b29db.1389018325.git.rashika.kheria@gmail.com>
-References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 6 Jan 2014 11:10:57 -0500
+Date: Mon, 6 Jan 2014 11:10:55 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tom Zanussi <tom.zanussi@linux.intel.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] tracing/kprobes: Add trace event trigger invocations
+Message-ID: <20140106111055.2cf828f7@gandalf.local.home>
+In-Reply-To: <1388283848.3048.1.camel@empanada>
+References: <1388283848.3048.1.camel@empanada>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include header file drm/radeon/radeon_asic.h in drm/radeon/cypress_dpm.c
-because it uses function declared in the header file.
+On Sat, 28 Dec 2013 20:24:08 -0600
+Tom Zanussi <tom.zanussi@linux.intel.com> wrote:
 
-This eliminates the following warnings in drm/radeon/cypress_dpm.c:
-drivers/gpu/drm/radeon/cypress_dpm.c:1782:6: warning: no previous prototype for ‘cypress_dpm_setup_asic’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/cypress_dpm.c:1802:5: warning: no previous prototype for ‘cypress_dpm_enable’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/cypress_dpm.c:1928:6: warning: no previous prototype for ‘cypress_dpm_disable’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/cypress_dpm.c:1968:5: warning: no previous prototype for ‘cypress_dpm_set_power_state’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/cypress_dpm.c:2028:6: warning: no previous prototype for ‘cypress_dpm_display_configuration_changed’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/cypress_dpm.c:2033:5: warning: no previous prototype for ‘cypress_dpm_init’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/cypress_dpm.c:2150:6: warning: no previous prototype for ‘cypress_dpm_fini’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/cypress_dpm.c:2161:6: warning: no previous prototype for ‘cypress_dpm_vblank_too_short’ [-Wmissing-prototypes]
+> Add code to the kprobe/kretprobe event functions that will invoke any
+> event triggers associated with a probe's ftrace_event_file.
+> 
+> The code to do this is very similar to the invocation code already
+> used to invoke the triggers associated with static events and
+> essentially replaces the existing soft-disable checks with a superset
+> that preserves the original behavior but adds the bits needed to
+> support event triggers.
+> 
+> Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
+> ---
+>  kernel/trace/trace_kprobe.c | 42 ++++++++++++++++++++++++++++++++++++------
+>  1 file changed, 36 insertions(+), 6 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+> index dae9541..1ee13eb 100644
+> --- a/kernel/trace/trace_kprobe.c
+> +++ b/kernel/trace/trace_kprobe.c
+> @@ -812,12 +812,20 @@ __kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs,
+>  	struct ring_buffer *buffer;
+>  	int size, dsize, pc;
+>  	unsigned long irq_flags;
+> +	unsigned long eflags;
+> +	enum event_trigger_type __tt = ETT_NONE;
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- drivers/gpu/drm/radeon/cypress_dpm.c |    1 +
- 1 file changed, 1 insertion(+)
+What's the significance of the "__" in the variable?
 
-diff --git a/drivers/gpu/drm/radeon/cypress_dpm.c b/drivers/gpu/drm/radeon/cypress_dpm.c
-index 75dc1d8..8b9e033 100644
---- a/drivers/gpu/drm/radeon/cypress_dpm.c
-+++ b/drivers/gpu/drm/radeon/cypress_dpm.c
-@@ -24,6 +24,7 @@
- 
- #include "drmP.h"
- #include "radeon.h"
-+#include "radeon_asic.h"
- #include "evergreend.h"
- #include "r600_dpm.h"
- #include "cypress_dpm.h"
--- 
-1.7.9.5
+Looks as if you copied it from the ftrace_raw_event_* macro. The "__"
+there is usually recommended because it is a macro and we try to avoid
+namespace collisions by adding the "__".
 
+This is a proper function, please remove the "__" from it.
+
+Thanks,
+
+-- Steve
+
+
+>  	struct ftrace_event_call *call = &tp->call;
+>  
+>  	WARN_ON(call != ftrace_file->event_call);
+>  
+> -	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
+> -		return;
+> +	eflags = ftrace_file->flags;
+> +
+> +	if (!(eflags & FTRACE_EVENT_FL_TRIGGER_COND)) {
+> +		if (eflags & FTRACE_EVENT_FL_TRIGGER_MODE)
+> +			event_triggers_call(ftrace_file, NULL);
+> +		if (eflags & FTRACE_EVENT_FL_SOFT_DISABLED)
+> +			return;
+> +	}
+>  
+>  	local_save_flags(irq_flags);
+>  	pc = preempt_count();
