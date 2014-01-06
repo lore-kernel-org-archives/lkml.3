@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933075AbaAFWlj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:41:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48427 "EHLO
+	id S933114AbaAFWlp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:41:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48451 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933057AbaAFWlg (ORCPT
+	with ESMTP id S933095AbaAFWll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:36 -0500
+	Mon, 6 Jan 2014 17:41:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Janak Desai <Janak.Desai@gtri.gatech.edu>,
-        Paul Moore <pmoore@redhat.com>
-Subject: [PATCH 3.10 090/129] selinux: process labeled IPsec TCP SYN-ACK packets properly in selinux_ip_postroute()
-Date: Mon,  6 Jan 2014 14:38:39 -0800
-Message-Id: <20140106223902.180825406@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>, Sage Weil <sage@inktank.com>,
+        Alex Elder <alex.elder@linaro.org>
+Subject: [PATCH 3.10 104/129] ceph: cleanup types in striped_read()
+Date: Mon,  6 Jan 2014 14:38:53 -0800
+Message-Id: <20140106223902.577022022@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -29,90 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Moore <pmoore@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit c0828e50485932b7e019df377a6b0a8d1ebd3080 upstream.
+commit 688bac461ba3e9d221a879ab40b687f5d7b5b19c upstream.
 
-Due to difficulty in arriving at the proper security label for
-TCP SYN-ACK packets in selinux_ip_postroute(), we need to check packets
-while/before they are undergoing XFRM transforms instead of waiting
-until afterwards so that we can determine the correct security label.
+We pass in a u64 value for "len" and then immediately truncate away the
+upper 32 bits.
 
-Reported-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Alex Elder <alex.elder@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/selinux/hooks.c |   43 ++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 36 insertions(+), 7 deletions(-)
+ fs/ceph/file.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -4742,22 +4742,32 @@ static unsigned int selinux_ip_postroute
- 	 * as fast and as clean as possible. */
- 	if (!selinux_policycap_netpeer)
- 		return selinux_ip_postroute_compat(skb, ifindex, family);
-+
-+	secmark_active = selinux_secmark_enabled();
-+	peerlbl_active = netlbl_enabled() || selinux_xfrm_enabled();
-+	if (!secmark_active && !peerlbl_active)
-+		return NF_ACCEPT;
-+
-+	sk = skb->sk;
-+
- #ifdef CONFIG_XFRM
- 	/* If skb->dst->xfrm is non-NULL then the packet is undergoing an IPsec
- 	 * packet transformation so allow the packet to pass without any checks
- 	 * since we'll have another chance to perform access control checks
- 	 * when the packet is on it's final way out.
- 	 * NOTE: there appear to be some IPv6 multicast cases where skb->dst
--	 *       is NULL, in this case go ahead and apply access control. */
--	if (skb_dst(skb) != NULL && skb_dst(skb)->xfrm != NULL)
-+	 *       is NULL, in this case go ahead and apply access control.
-+	 *       is NULL, in this case go ahead and apply access control.
-+	 * NOTE: if this is a local socket (skb->sk != NULL) that is in the
-+	 *       TCP listening state we cannot wait until the XFRM processing
-+	 *       is done as we will miss out on the SA label if we do;
-+	 *       unfortunately, this means more work, but it is only once per
-+	 *       connection. */
-+	if (skb_dst(skb) != NULL && skb_dst(skb)->xfrm != NULL &&
-+	    !(sk != NULL && sk->sk_state == TCP_LISTEN))
- 		return NF_ACCEPT;
- #endif
--	secmark_active = selinux_secmark_enabled();
--	peerlbl_active = netlbl_enabled() || selinux_xfrm_enabled();
--	if (!secmark_active && !peerlbl_active)
--		return NF_ACCEPT;
+--- a/fs/ceph/file.c
++++ b/fs/ceph/file.c
+@@ -313,9 +313,9 @@ static int striped_read(struct inode *in
+ {
+ 	struct ceph_fs_client *fsc = ceph_inode_to_client(inode);
+ 	struct ceph_inode_info *ci = ceph_inode(inode);
+-	u64 pos, this_len;
++	u64 pos, this_len, left;
+ 	int io_align, page_align;
+-	int left, pages_left;
++	int pages_left;
+ 	int read;
+ 	struct page **page_pos;
+ 	int ret;
+@@ -346,7 +346,7 @@ more:
+ 		ret = 0;
+ 	hit_stripe = this_len < left;
+ 	was_short = ret >= 0 && ret < this_len;
+-	dout("striped_read %llu~%u (read %u) got %d%s%s\n", pos, left, read,
++	dout("striped_read %llu~%llu (read %u) got %d%s%s\n", pos, left, read,
+ 	     ret, hit_stripe ? " HITSTRIPE" : "", was_short ? " SHORT" : "");
  
--	sk = skb->sk;
- 	if (sk == NULL) {
- 		/* Without an associated socket the packet is either coming
- 		 * from the kernel or it is being forwarded; check the packet
-@@ -4785,6 +4795,25 @@ static unsigned int selinux_ip_postroute
- 		struct sk_security_struct *sksec = sk->sk_security;
- 		if (selinux_skb_peerlbl_sid(skb, family, &skb_sid))
- 			return NF_DROP;
-+		/* At this point, if the returned skb peerlbl is SECSID_NULL
-+		 * and the packet has been through at least one XFRM
-+		 * transformation then we must be dealing with the "final"
-+		 * form of labeled IPsec packet; since we've already applied
-+		 * all of our access controls on this packet we can safely
-+		 * pass the packet. */
-+		if (skb_sid == SECSID_NULL) {
-+			switch (family) {
-+			case PF_INET:
-+				if (IPCB(skb)->flags & IPSKB_XFRM_TRANSFORMED)
-+					return NF_ACCEPT;
-+				break;
-+			case PF_INET6:
-+				if (IP6CB(skb)->flags & IP6SKB_XFRM_TRANSFORMED)
-+					return NF_ACCEPT;
-+			default:
-+				return NF_DROP_ERR(-ECONNREFUSED);
-+			}
-+		}
- 		if (selinux_conn_sid(sksec->sid, skb_sid, &peer_sid))
- 			return NF_DROP;
- 		secmark_perm = PACKET__SEND;
+ 	if (ret > 0) {
+@@ -378,7 +378,7 @@ more:
+ 			if (pos + left > inode->i_size)
+ 				left = inode->i_size - pos;
+ 
+-			dout("zero tail %d\n", left);
++			dout("zero tail %llu\n", left);
+ 			ceph_zero_page_vector_range(page_align + read, left,
+ 						    pages);
+ 			read += left;
 
 
