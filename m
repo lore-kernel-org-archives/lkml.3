@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906AbaAFQu3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 11:50:29 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:64348 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755717AbaAFQu1 (ORCPT
+	id S1755744AbaAFQv2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 11:51:28 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:55464 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754662AbaAFQv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 11:50:27 -0500
-Date: Mon, 6 Jan 2014 22:20:21 +0530
+	Mon, 6 Jan 2014 11:51:26 -0500
+Date: Mon, 6 Jan 2014 22:21:21 +0530
 From: Rashika Kheria <rashika.kheria@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: David Airlie <airlied@linux.ie>, Jakob Bornecrantz <jakob@vmware.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
+Cc: David Airlie <airlied@linux.ie>, Rashika Kheria <rashika.kheria@gmail.com>,
         dri-devel@lists.freedesktop.org, josh@joshtriplett.org
-Subject: [PATCH 84/85] drivers: gpu: Mark functions as static in
- vmwgfx_buffer.c
-Message-ID: <4802e571f4c4d3f3b82b3ba7ec40b690ee62ea23.1389018325.git.rashika.kheria@gmail.com>
+Subject: [PATCH 85/85] drivers: gpu: Mark functions as static in
+ vmwgfx_fence.c
+Message-ID: <d81293e7879c5ae27dabc33cdf5b3c3f56630a48.1389018325.git.rashika.kheria@gmail.com>
 References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -29,57 +27,50 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Mark functions as static because they are not used outside the file
-drm/vmwgfx/vmwgfx_buffer.c.
+drm/vmwgfx/vmwgfx_fence.c.
 
-This eliminates the following warnings in drm/vmwgfx/vmwgfx_buffer.c:
-drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c:520:16: warning: no previous prototype for ‘vmw_ttm_tt_create’ [-Wmissing-prototypes]
-drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c:549:5: warning: no previous prototype for ‘vmw_invalidate_caches’ [-Wmissing-prototypes]
-drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c:554:5: warning: no previous prototype for ‘vmw_init_mem_type’ [-Wmissing-prototypes]
-drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c:592:6: warning: no previous prototype for ‘vmw_evict_flags’ [-Wmissing-prototypes]
+This eliminates the following warnings in drm/vmwgfx/vmwgfx_fence.c:
+drivers/gpu/drm/vmwgfx/vmwgfx_fence.c:274:6: warning: no previous prototype for ‘vmw_fences_perform_actions’ [-Wmissing-prototypes]
+drivers/gpu/drm/vmwgfx/vmwgfx_fence.c:900:6: warning: no previous prototype for ‘vmw_fence_obj_add_action’ [-Wmissing-prototypes]
+drivers/gpu/drm/vmwgfx/vmwgfx_fence.c:996:5: warning: no previous prototype for ‘vmw_event_fence_action_create’ [-Wmissing-prototypes]
 
 Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/vmwgfx/vmwgfx_fence.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c b/drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c
-index 0489c61..2d61a2d 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c
-@@ -517,7 +517,7 @@ static struct ttm_backend_func vmw_ttm_func = {
- 	.destroy = vmw_ttm_destroy,
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c b/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
+index c62d20e..79c060d 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
+@@ -271,7 +271,7 @@ void vmw_fence_obj_unreference(struct vmw_fence_obj **fence_p)
+ 	spin_unlock_irq(&fman->lock);
+ }
+ 
+-void vmw_fences_perform_actions(struct vmw_fence_manager *fman,
++static void vmw_fences_perform_actions(struct vmw_fence_manager *fman,
+ 				struct list_head *list)
+ {
+ 	struct vmw_fence_action *action, *next_action;
+@@ -897,7 +897,7 @@ static void vmw_event_fence_action_cleanup(struct vmw_fence_action *action)
+  * Note that the action callbacks may be executed before this function
+  * returns.
+  */
+-void vmw_fence_obj_add_action(struct vmw_fence_obj *fence,
++static void vmw_fence_obj_add_action(struct vmw_fence_obj *fence,
+ 			      struct vmw_fence_action *action)
+ {
+ 	struct vmw_fence_manager *fman = fence->fman;
+@@ -993,7 +993,7 @@ struct vmw_event_fence_pending {
+ 	struct drm_vmw_event_fence event;
  };
  
--struct ttm_tt *vmw_ttm_tt_create(struct ttm_bo_device *bdev,
-+static struct ttm_tt *vmw_ttm_tt_create(struct ttm_bo_device *bdev,
- 				 unsigned long size, uint32_t page_flags,
- 				 struct page *dummy_read_page)
- {
-@@ -546,12 +546,12 @@ out_no_init:
- 	return NULL;
- }
- 
--int vmw_invalidate_caches(struct ttm_bo_device *bdev, uint32_t flags)
-+static int vmw_invalidate_caches(struct ttm_bo_device *bdev, uint32_t flags)
- {
- 	return 0;
- }
- 
--int vmw_init_mem_type(struct ttm_bo_device *bdev, uint32_t type,
-+static int vmw_init_mem_type(struct ttm_bo_device *bdev, uint32_t type,
- 		      struct ttm_mem_type_manager *man)
- {
- 	switch (type) {
-@@ -589,7 +589,7 @@ int vmw_init_mem_type(struct ttm_bo_device *bdev, uint32_t type,
- 	return 0;
- }
- 
--void vmw_evict_flags(struct ttm_buffer_object *bo,
-+static void vmw_evict_flags(struct ttm_buffer_object *bo,
- 		     struct ttm_placement *placement)
- {
- 	*placement = vmw_sys_placement;
+-int vmw_event_fence_action_create(struct drm_file *file_priv,
++static int vmw_event_fence_action_create(struct drm_file *file_priv,
+ 				  struct vmw_fence_obj *fence,
+ 				  uint32_t flags,
+ 				  uint64_t user_data,
 -- 
 1.7.9.5
 
