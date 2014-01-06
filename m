@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933086AbaAFX6W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:58:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47628 "EHLO
+	id S932311AbaAFWjH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:39:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47577 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932319AbaAFWjK (ORCPT
+	with ESMTP id S932192AbaAFWjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:39:10 -0500
+	Mon, 6 Jan 2014 17:39:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Li Wang <liwang@ubuntukylin.com>, Sage Weil <sage@inktank.com>
-Subject: [PATCH 3.12 082/144] ceph: Avoid data inconsistency due to d-cache aliasing in readpage()
-Date: Mon,  6 Jan 2014 14:37:23 -0800
-Message-Id: <20140106223747.708728592@linuxfoundation.org>
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Lukas Czerner <lczerner@redhat.com>, Jan Kara <jack@suse.cz>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [PATCH 3.12 054/144] ext4: Do not reserve clusters when fs doesnt support extents
+Date: Mon,  6 Jan 2014 14:36:55 -0800
+Message-Id: <20140106223746.890457135@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -28,40 +30,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Wang <liwang@ubuntukylin.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 56f91aad69444d650237295f68c195b74d888d95 upstream.
+commit 30fac0f75da24dd5bb43c9e911d2039a984ac815 upstream.
 
-If the length of data to be read in readpage() is exactly
-PAGE_CACHE_SIZE, the original code does not flush d-cache
-for data consistency after finishing reading. This patches fixes
-this.
+When the filesystem doesn't support extents (like in ext2/3
+compatibility modes), there is no need to reserve any clusters. Space
+estimates for writing are exact, hole punching doesn't need new
+metadata, and there are no unwritten extents to convert.
 
-Signed-off-by: Li Wang <liwang@ubuntukylin.com>
-Signed-off-by: Sage Weil <sage@inktank.com>
+This fixes a problem when filesystem still having some free space when
+accessed with a native ext2/3 driver suddently reports ENOSPC when
+accessed with ext4 driver.
+
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Tested-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Reviewed-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ceph/addr.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ fs/ext4/super.c |   17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
 
---- a/fs/ceph/addr.c
-+++ b/fs/ceph/addr.c
-@@ -210,9 +210,13 @@ static int readpage_nounlock(struct file
- 	if (err < 0) {
- 		SetPageError(page);
- 		goto out;
--	} else if (err < PAGE_CACHE_SIZE) {
-+	} else {
-+		if (err < PAGE_CACHE_SIZE) {
- 		/* zero fill remainder of page */
--		zero_user_segment(page, err, PAGE_CACHE_SIZE);
-+			zero_user_segment(page, err, PAGE_CACHE_SIZE);
-+		} else {
-+			flush_dcache_page(page);
-+		}
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -3288,11 +3288,19 @@ int ext4_calculate_overhead(struct super
+ }
+ 
+ 
+-static ext4_fsblk_t ext4_calculate_resv_clusters(struct ext4_sb_info *sbi)
++static ext4_fsblk_t ext4_calculate_resv_clusters(struct super_block *sb)
+ {
+ 	ext4_fsblk_t resv_clusters;
+ 
+ 	/*
++	 * There's no need to reserve anything when we aren't using extents.
++	 * The space estimates are exact, there are no unwritten extents,
++	 * hole punching doesn't need new metadata... This is needed especially
++	 * to keep ext2/3 backward compatibility.
++	 */
++	if (!EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_EXTENTS))
++		return 0;
++	/*
+ 	 * By default we reserve 2% or 4096 clusters, whichever is smaller.
+ 	 * This should cover the situations where we can not afford to run
+ 	 * out of space like for example punch hole, or converting
+@@ -3300,7 +3308,8 @@ static ext4_fsblk_t ext4_calculate_resv_
+ 	 * allocation would require 1, or 2 blocks, higher numbers are
+ 	 * very rare.
+ 	 */
+-	resv_clusters = ext4_blocks_count(sbi->s_es) >> sbi->s_cluster_bits;
++	resv_clusters = ext4_blocks_count(EXT4_SB(sb)->s_es) >>
++			EXT4_SB(sb)->s_cluster_bits;
+ 
+ 	do_div(resv_clusters, 50);
+ 	resv_clusters = min_t(ext4_fsblk_t, resv_clusters, 4096);
+@@ -4043,10 +4052,10 @@ no_journal:
+ 			 "available");
  	}
- 	SetPageUptodate(page);
+ 
+-	err = ext4_reserve_clusters(sbi, ext4_calculate_resv_clusters(sbi));
++	err = ext4_reserve_clusters(sbi, ext4_calculate_resv_clusters(sb));
+ 	if (err) {
+ 		ext4_msg(sb, KERN_ERR, "failed to reserve %llu clusters for "
+-			 "reserved pool", ext4_calculate_resv_clusters(sbi));
++			 "reserved pool", ext4_calculate_resv_clusters(sb));
+ 		goto failed_mount4a;
+ 	}
  
 
 
