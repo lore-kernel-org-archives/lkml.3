@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756303AbaAFVak (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 16:30:40 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:34822 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755354AbaAFVaj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 16:30:39 -0500
-Date: Mon, 06 Jan 2014 16:30:36 -0500 (EST)
-Message-Id: <20140106.163036.1031013112322786.davem@davemloft.net>
-To: dcbw@redhat.com
-Cc: hns@goldelico.com, j.dumon@option.com, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        marek.belisko@gmail.com, e.verdonck@option.com
-Subject: Re: [PATCH] hso: fix handling of modem port SERIAL_STATE
- notifications
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1389024449.1866.3.camel@dcbw.local>
-References: <1387388963.5549.11.camel@dcbw.local>
-	<874B65AE-8B15-4427-8EF4-F0CA2BC55062@goldelico.com>
-	<1389024449.1866.3.camel@dcbw.local>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 06 Jan 2014 13:30:39 -0800 (PST)
+	id S1756379AbaAFVb1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 16:31:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43217 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755924AbaAFVbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 16:31:25 -0500
+Date: Mon, 6 Jan 2014 16:31:11 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bart Van Assche <bvanassche@acm.org>, Jeff Mahoney <jeffm@suse.com>,
+        linux-kernel@vger.kernel.org,
+        device-mapper development <dm-devel@redhat.com>, tglx@linutronix.de,
+        paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
+        mingo@kernel.org
+Subject: Re: kobject: provide kobject_put_wait to fix module unload race
+Message-ID: <20140106213111.GA2536@redhat.com>
+References: <alpine.LRH.2.02.1401021733250.27775@file01.intranet.prod.int.rdu2.redhat.com>
+ <52C98BCC.9040900@acm.org>
+ <20140105182640.GA2522@kroah.com>
+ <alpine.LRH.2.02.1401061347120.15626@file01.intranet.prod.int.rdu2.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.02.1401061347120.15626@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Williams <dcbw@redhat.com>
-Date: Mon, 06 Jan 2014 10:07:29 -0600
+On Mon, Jan 06 2014 at  1:55pm -0500,
+Mikulas Patocka <mpatocka@redhat.com> wrote:
 
-> The existing serial state notification handling expected older Option
-> devices, having a hardcoded assumption that the Modem port was always
-> USB interface #2.  That isn't true for devices from the past few years.
 > 
-> hso_serial_state_notification is a local cache of a USB Communications
-> Interface Class SERIAL_STATE notification from the device, and the
-> USB CDC specification (section 6.3, table 67 "Class-Specific Notifications")
-> defines wIndex as the USB interface the event applies to.  For hso
-> devices this will always be the Modem port, as the Modem port is the
-> only port which is set up to receive them by the driver.
 > 
-> So instead of always expecting USB interface #2, instead validate the
-> notification with the actual USB interface number of the Modem port.
+> On Sun, 5 Jan 2014, Greg Kroah-Hartman wrote:
 > 
-> Signed-off-by: Dan Williams <dcbw@redhat.com>
-> Tested-by: H. Nikolaus Schaller <hns@goldelico.com>
+> > On Sun, Jan 05, 2014 at 05:43:56PM +0100, Bart Van Assche wrote:
+> > > On 01/04/14 19:06, Mikulas Patocka wrote:
+> > > > -	if (t && !t->release)
+> > > > -		pr_debug("kobject: '%s' (%p): does not have a release() "
+> > > > -			 "function, it is broken and must be fixed.\n",
+> > > > -			 kobject_name(kobj), kobj);
+> > > > -
+> > > 
+> > > Has it been considered to issue a warning if no release function has
+> > > been defined and free_completion == NULL instead of removing the above
+> > > debug message entirely ? I think even with this patch applied it is
+> > > still wrong to invoke kobject_put() on an object without defining a
+> > > release function.
+> > 
+> > This patch isn't going to be applied, and I've reverted the original
+> > commit, so there shouldn't be any issues anymore with this code.
+> 
+> Why? This patch does the same thing as 
+> eee031649707db3c9920d9498f8d03819b74fc23, but it's smaller. So why did you 
+> accept eee031649707db3c9920d9498f8d03819b74fc23 and not this?
+> 
+> The code to wait for kobject destruction using completion already exists 
+> in cpufreq_sysfs_release, cpuidle_sysfs_release, 
+> cpuidle_state_sysfs_release, cpuidle_driver_sysfs_release, 
+> ext4_sb_release, ext4_feat_release, f2fs_sb_release (these are the only 
+> kobject users that are correct w.r.t. module unloading), so if you accept 
+> this patch, you can simplify them to use kobject_put_wait.
 
-Applied, although that BUG_ON() is a bit harsh.  It might have been
-cleaner to just dev_warn() ratelimited or similar and return.
+Hi Mikulas,
+
+Please just submit a DM-only patch that follows the same racey pattern
+of firing a completion from the kobj_type .release method in dm_mod.
+I'll get it queued up for 3.14.
+
+If/when we gets reports of a crash due to dm_mod unload racing with
+kobject_put we can revisit this.
+
+Thanks,
+Mike
