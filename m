@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932895AbaAFWkq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:40:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48109 "EHLO
+	id S1756918AbaAFWlE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:41:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48207 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932814AbaAFWkj (ORCPT
+	with ESMTP id S1756879AbaAFWk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:39 -0500
+	Mon, 6 Jan 2014 17:40:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        PaX Team <pageexec@freemail.hu>, Emese Revfy <re.emese@gmail.com>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.10 034/129] ext4: add explicit casts when masking cluster sizes
-Date: Mon,  6 Jan 2014 14:37:43 -0800
-Message-Id: <20140106223900.579963521@linuxfoundation.org>
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: [PATCH 3.10 057/129] KVM: x86: Fix APIC map calculation after re-enabling
+Date: Mon,  6 Jan 2014 14:38:06 -0800
+Message-Id: <20140106223901.233525541@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -29,173 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Jan Kiszka <jan.kiszka@siemens.com>
 
-commit f5a44db5d2d677dfbf12deee461f85e9ec633961 upstream.
+commit e66d2ae7c67bd9ac982a3d1890564de7f7eabf4b upstream.
 
-The missing casts can cause the high 64-bits of the physical blocks to
-be lost.  Set up new macros which allows us to make sure the right
-thing happen, even if at some point we end up supporting larger
-logical block numbers.
+Update arch.apic_base before triggering recalculate_apic_map. Otherwise
+the recalculation will work against the previous state of the APIC and
+will fail to build the correct map when an APIC is hardware-enabled
+again.
 
-Thanks to the Emese Revfy and the PaX security team for reporting this
-issue.
+This fixes a regression of 1e08ec4a13.
 
-Reported-by: PaX Team <pageexec@freemail.hu>
-Reported-by: Emese Revfy <re.emese@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ext4.h    |   10 ++++++++++
- fs/ext4/extents.c |   24 +++++++++++-------------
- fs/ext4/mballoc.c |    6 +++---
- 3 files changed, 24 insertions(+), 16 deletions(-)
+ arch/x86/kvm/lapic.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -280,6 +280,16 @@ struct ext4_io_submit {
- /* Translate # of blks to # of clusters */
- #define EXT4_NUM_B2C(sbi, blks)	(((blks) + (sbi)->s_cluster_ratio - 1) >> \
- 				 (sbi)->s_cluster_bits)
-+/* Mask out the low bits to get the starting block of the cluster */
-+#define EXT4_PBLK_CMASK(s, pblk) ((pblk) &				\
-+				  ~((ext4_fsblk_t) (s)->s_cluster_ratio - 1))
-+#define EXT4_LBLK_CMASK(s, lblk) ((lblk) &				\
-+				  ~((ext4_lblk_t) (s)->s_cluster_ratio - 1))
-+/* Get the cluster offset */
-+#define EXT4_PBLK_COFF(s, pblk) ((pblk) &				\
-+				 ((ext4_fsblk_t) (s)->s_cluster_ratio - 1))
-+#define EXT4_LBLK_COFF(s, lblk) ((lblk) &				\
-+				 ((ext4_lblk_t) (s)->s_cluster_ratio - 1))
- 
- /*
-  * Structure of a blocks group descriptor
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -1772,8 +1772,7 @@ static unsigned int ext4_ext_check_overl
- 	depth = ext_depth(inode);
- 	if (!path[depth].p_ext)
- 		goto out;
--	b2 = le32_to_cpu(path[depth].p_ext->ee_block);
--	b2 &= ~(sbi->s_cluster_ratio - 1);
-+	b2 = EXT4_LBLK_CMASK(sbi, le32_to_cpu(path[depth].p_ext->ee_block));
- 
- 	/*
- 	 * get the next allocated block if the extent in the path
-@@ -1783,7 +1782,7 @@ static unsigned int ext4_ext_check_overl
- 		b2 = ext4_ext_next_allocated_block(path);
- 		if (b2 == EXT_MAX_BLOCKS)
- 			goto out;
--		b2 &= ~(sbi->s_cluster_ratio - 1);
-+		b2 = EXT4_LBLK_CMASK(sbi, b2);
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -1364,6 +1364,10 @@ void kvm_lapic_set_base(struct kvm_vcpu
+ 		return;
  	}
  
- 	/* check for wrap through zero on extent logical start block*/
-@@ -2444,7 +2443,7 @@ static int ext4_remove_blocks(handle_t *
- 		 * truncate operation has removed all of the blocks in
- 		 * the cluster.
- 		 */
--		if (pblk & (sbi->s_cluster_ratio - 1) &&
-+		if (EXT4_PBLK_COFF(sbi, pblk) &&
- 		    (ee_len == num))
- 			*partial_cluster = EXT4_B2C(sbi, pblk);
- 		else
-@@ -3675,7 +3674,7 @@ int ext4_find_delalloc_cluster(struct in
- {
- 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
- 	ext4_lblk_t lblk_start, lblk_end;
--	lblk_start = lblk & (~(sbi->s_cluster_ratio - 1));
-+	lblk_start = EXT4_LBLK_CMASK(sbi, lblk);
- 	lblk_end = lblk_start + sbi->s_cluster_ratio - 1;
- 
- 	return ext4_find_delalloc_range(inode, lblk_start, lblk_end);
-@@ -3734,9 +3733,9 @@ get_reserved_cluster_alloc(struct inode
- 	trace_ext4_get_reserved_cluster_alloc(inode, lblk_start, num_blks);
- 
- 	/* Check towards left side */
--	c_offset = lblk_start & (sbi->s_cluster_ratio - 1);
-+	c_offset = EXT4_LBLK_COFF(sbi, lblk_start);
- 	if (c_offset) {
--		lblk_from = lblk_start & (~(sbi->s_cluster_ratio - 1));
-+		lblk_from = EXT4_LBLK_CMASK(sbi, lblk_start);
- 		lblk_to = lblk_from + c_offset - 1;
- 
- 		if (ext4_find_delalloc_range(inode, lblk_from, lblk_to))
-@@ -3744,7 +3743,7 @@ get_reserved_cluster_alloc(struct inode
++	if (!kvm_vcpu_is_bsp(apic->vcpu))
++		value &= ~MSR_IA32_APICBASE_BSP;
++	vcpu->arch.apic_base = value;
++
+ 	/* update jump label if enable bit changes */
+ 	if ((vcpu->arch.apic_base ^ value) & MSR_IA32_APICBASE_ENABLE) {
+ 		if (value & MSR_IA32_APICBASE_ENABLE)
+@@ -1373,10 +1377,6 @@ void kvm_lapic_set_base(struct kvm_vcpu
+ 		recalculate_apic_map(vcpu->kvm);
  	}
  
- 	/* Now check towards right. */
--	c_offset = (lblk_start + num_blks) & (sbi->s_cluster_ratio - 1);
-+	c_offset = EXT4_LBLK_COFF(sbi, lblk_start + num_blks);
- 	if (allocated_clusters && c_offset) {
- 		lblk_from = lblk_start + num_blks;
- 		lblk_to = lblk_from + (sbi->s_cluster_ratio - c_offset) - 1;
-@@ -3952,7 +3951,7 @@ static int get_implied_cluster_alloc(str
- 				     struct ext4_ext_path *path)
- {
- 	struct ext4_sb_info *sbi = EXT4_SB(sb);
--	ext4_lblk_t c_offset = map->m_lblk & (sbi->s_cluster_ratio-1);
-+	ext4_lblk_t c_offset = EXT4_LBLK_COFF(sbi, map->m_lblk);
- 	ext4_lblk_t ex_cluster_start, ex_cluster_end;
- 	ext4_lblk_t rr_cluster_start;
- 	ext4_lblk_t ee_block = le32_to_cpu(ex->ee_block);
-@@ -3970,8 +3969,7 @@ static int get_implied_cluster_alloc(str
- 	    (rr_cluster_start == ex_cluster_start)) {
- 		if (rr_cluster_start == ex_cluster_end)
- 			ee_start += ee_len - 1;
--		map->m_pblk = (ee_start & ~(sbi->s_cluster_ratio - 1)) +
--			c_offset;
-+		map->m_pblk = EXT4_PBLK_CMASK(sbi, ee_start) + c_offset;
- 		map->m_len = min(map->m_len,
- 				 (unsigned) sbi->s_cluster_ratio - c_offset);
- 		/*
-@@ -4125,7 +4123,7 @@ int ext4_ext_map_blocks(handle_t *handle
- 	 */
- 	map->m_flags &= ~EXT4_MAP_FROM_CLUSTER;
- 	newex.ee_block = cpu_to_le32(map->m_lblk);
--	cluster_offset = map->m_lblk & (sbi->s_cluster_ratio-1);
-+	cluster_offset = EXT4_LBLK_CMASK(sbi, map->m_lblk);
- 
- 	/*
- 	 * If we are doing bigalloc, check to see if the extent returned
-@@ -4193,7 +4191,7 @@ int ext4_ext_map_blocks(handle_t *handle
- 	 * needed so that future calls to get_implied_cluster_alloc()
- 	 * work correctly.
- 	 */
--	offset = map->m_lblk & (sbi->s_cluster_ratio - 1);
-+	offset = EXT4_LBLK_COFF(sbi, map->m_lblk);
- 	ar.len = EXT4_NUM_B2C(sbi, offset+allocated);
- 	ar.goal -= offset;
- 	ar.logical -= offset;
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -4107,7 +4107,7 @@ ext4_mb_initialize_context(struct ext4_a
- 	ext4_get_group_no_and_offset(sb, goal, &group, &block);
- 
- 	/* set up allocation goals */
--	ac->ac_b_ex.fe_logical = ar->logical & ~(sbi->s_cluster_ratio - 1);
-+	ac->ac_b_ex.fe_logical = EXT4_LBLK_CMASK(sbi, ar->logical);
- 	ac->ac_status = AC_STATUS_CONTINUE;
- 	ac->ac_sb = sb;
- 	ac->ac_inode = ar->inode;
-@@ -4644,7 +4644,7 @@ void ext4_free_blocks(handle_t *handle,
- 	 * blocks at the beginning or the end unless we are explicitly
- 	 * requested to avoid doing so.
- 	 */
--	overflow = block & (sbi->s_cluster_ratio - 1);
-+	overflow = EXT4_PBLK_COFF(sbi, block);
- 	if (overflow) {
- 		if (flags & EXT4_FREE_BLOCKS_NOFREE_FIRST_CLUSTER) {
- 			overflow = sbi->s_cluster_ratio - overflow;
-@@ -4658,7 +4658,7 @@ void ext4_free_blocks(handle_t *handle,
- 			count += overflow;
- 		}
- 	}
--	overflow = count & (sbi->s_cluster_ratio - 1);
-+	overflow = EXT4_LBLK_COFF(sbi, count);
- 	if (overflow) {
- 		if (flags & EXT4_FREE_BLOCKS_NOFREE_LAST_CLUSTER) {
- 			if (count > overflow)
+-	if (!kvm_vcpu_is_bsp(apic->vcpu))
+-		value &= ~MSR_IA32_APICBASE_BSP;
+-
+-	vcpu->arch.apic_base = value;
+ 	if ((old_value ^ value) & X2APIC_ENABLE) {
+ 		if (value & X2APIC_ENABLE) {
+ 			u32 id = kvm_apic_id(apic);
 
 
