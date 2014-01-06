@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933761AbaAFXZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:25:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48192 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755548AbaAFWkz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932936AbaAFWkz (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 Jan 2014 17:40:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48162 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932898AbaAFWkt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 17:40:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.10 001/129] USB: serial: fix race in generic write
-Date: Mon,  6 Jan 2014 14:37:10 -0800
-Message-Id: <20140106223859.633364054@linuxfoundation.org>
+        Eric Anholt <eric@anholt.net>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.10 044/129] drm/i915: Hold mutex across i915_gem_release
+Date: Mon,  6 Jan 2014 14:37:53 -0800
+Message-Id: <20140106223900.858579766@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -28,47 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 6f6485463aada1ec6a0f3db6a03eb8e393d6bb55 upstream.
+commit 0d1430a3f4b7cfd8779b78740a4182321f3ca7f3 upstream.
 
-Fix race in generic write implementation, which could lead to
-temporarily degraded throughput.
+Inorder to serialise the closing of the file descriptor and its
+subsequent release of client requests with i915_gem_free_request(), we
+need to hold the struct_mutex in i915_gem_release(). Failing to do so
+has the potential to trigger an OOPS, later with a use-after-free.
 
-The current generic write implementation introduced by commit
-27c7acf22047 ("USB: serial: reimplement generic fifo-based writes") has
-always had this bug, although it's fairly hard to trigger and the
-consequences are not likely to be noticed.
-
-Specifically, a write() on one CPU while the completion handler is
-running on another could result in only one of the two write urbs being
-utilised to empty the remainder of the write fifo (unless there is a
-second write() that doesn't race during that time).
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Testcase: igt/gem_close_race
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=70874
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=71029
+Reported-by: Eric Anholt <eric@anholt.net>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/generic.c |    9 +--------
- 1 file changed, 1 insertion(+), 8 deletions(-)
+ drivers/gpu/drm/i915/i915_dma.c         |    2 ++
+ drivers/gpu/drm/i915/i915_gem_context.c |    2 --
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/generic.c
-+++ b/drivers/usb/serial/generic.c
-@@ -176,14 +176,7 @@ retry:
- 		return result;
- 	}
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1847,8 +1847,10 @@ void i915_driver_lastclose(struct drm_de
  
--	/* Try sending off another urb, unless in irq context (in which case
--	 * there will be no free urb). */
--	if (!in_irq())
--		goto retry;
--
--	clear_bit_unlock(USB_SERIAL_WRITE_BUSY, &port->flags);
--
--	return 0;
-+	goto retry;	/* try sending off another urb */
+ void i915_driver_preclose(struct drm_device * dev, struct drm_file *file_priv)
+ {
++	mutex_lock(&dev->struct_mutex);
+ 	i915_gem_context_close(dev, file_priv);
+ 	i915_gem_release(dev, file_priv);
++	mutex_unlock(&dev->struct_mutex);
  }
  
- /**
+ void i915_driver_postclose(struct drm_device *dev, struct drm_file *file)
+--- a/drivers/gpu/drm/i915/i915_gem_context.c
++++ b/drivers/gpu/drm/i915/i915_gem_context.c
+@@ -291,10 +291,8 @@ void i915_gem_context_close(struct drm_d
+ {
+ 	struct drm_i915_file_private *file_priv = file->driver_priv;
+ 
+-	mutex_lock(&dev->struct_mutex);
+ 	idr_for_each(&file_priv->context_idr, context_idr_cleanup, NULL);
+ 	idr_destroy(&file_priv->context_idr);
+-	mutex_unlock(&dev->struct_mutex);
+ }
+ 
+ static struct i915_hw_context *
 
 
