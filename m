@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933002AbaAFWlT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:41:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48314 "EHLO
+	id S933055AbaAFWlf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:41:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48411 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932968AbaAFWlQ (ORCPT
+	with ESMTP id S932968AbaAFWlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:16 -0500
+	Mon, 6 Jan 2014 17:41:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.10 049/129] drm/radeon: 0x9649 is SUMO2 not SUMO
-Date: Mon,  6 Jan 2014 14:37:58 -0800
-Message-Id: <20140106223901.010141957@linuxfoundation.org>
+        Peter Korsgaard <peter@korsgaard.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 053/129] dm9601: fix reception of full size ethernet frames on dm9620/dm9621a
+Date: Mon,  6 Jan 2014 14:38:02 -0800
+Message-Id: <20140106223901.124016868@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -28,33 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Peter Korsgaard <peter@korsgaard.com>
 
-commit d00adcc8ae9e22eca9d8af5f66c59ad9a74c90ec upstream.
+commit 407900cfb54bdb2cfa228010b6697305f66b2948 upstream.
 
-Fixes rendering corruption due to incorrect
-gfx configuration.
+dm9620/dm9621a require room for 4 byte padding even in dm9601 (3 byte
+header) mode.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=63599
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Peter Korsgaard <peter@korsgaard.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/drm/drm_pciids.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/usb/dm9601.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -559,7 +559,7 @@
- 	{0x1002, 0x9645, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO2|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x9647, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
- 	{0x1002, 0x9648, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
--	{0x1002, 0x9649, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
-+	{0x1002, 0x9649, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO2|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
- 	{0x1002, 0x964a, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x964b, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x964c, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+--- a/drivers/net/usb/dm9601.c
++++ b/drivers/net/usb/dm9601.c
+@@ -364,7 +364,12 @@ static int dm9601_bind(struct usbnet *de
+ 	dev->net->ethtool_ops = &dm9601_ethtool_ops;
+ 	dev->net->hard_header_len += DM_TX_OVERHEAD;
+ 	dev->hard_mtu = dev->net->mtu + dev->net->hard_header_len;
+-	dev->rx_urb_size = dev->net->mtu + ETH_HLEN + DM_RX_OVERHEAD;
++
++	/* dm9620/21a require room for 4 byte padding, even in dm9601
++	 * mode, so we need +1 to be able to receive full size
++	 * ethernet frames.
++	 */
++	dev->rx_urb_size = dev->net->mtu + ETH_HLEN + DM_RX_OVERHEAD + 1;
+ 
+ 	dev->mii.dev = dev->net;
+ 	dev->mii.mdio_read = dm9601_mdio_read;
 
 
