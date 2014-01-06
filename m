@@ -1,78 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644AbaAFQkJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 11:40:09 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:55067 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753298AbaAFQkH (ORCPT
+	id S1755803AbaAFQkZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 11:40:25 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35590 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755788AbaAFQkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 11:40:07 -0500
-Date: Mon, 6 Jan 2014 22:10:01 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        dri-devel@lists.freedesktop.org, josh@joshtriplett.org
-Subject: [PATCH 75/85] drivers: gpu: Move prototype declaration to header
- file radeon_asic.h from cik.c
-Message-ID: <52ed4e77abebcc7b9f81ce1a5b81c18940ca1069.1389018325.git.rashika.kheria@gmail.com>
-References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
+	Mon, 6 Jan 2014 11:40:19 -0500
+Date: Mon, 6 Jan 2014 17:39:50 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Yann Droneaud <ydroneaud@opteya.com>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf tools: enable close-on-exec flag on perf file
+ descriptor
+Message-ID: <20140106163950.GP31570@twins.programming.kicks-ass.net>
+References: <cover.1388952061.git.ydroneaud@opteya.com>
+ <8c03f54e1598b1727c19706f3af03f98685d9fe6.1388952061.git.ydroneaud@opteya.com>
+ <20140106092929.GA31570@twins.programming.kicks-ass.net>
+ <1389005485-12778-1-git-send-email-ydroneaud@opteya.com>
+ <20140106162754.GE27909@tassilo.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140106162754.GE27909@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move prototype declaration of functions cik_sdma_resume(),
-cik_sdma_enable() and cik_sdma_fini() to header file
-drm/radeon/radeon_asic.h because they are used by more than one file.
+On Mon, Jan 06, 2014 at 08:27:54AM -0800, Andi Kleen wrote:
+> On Mon, Jan 06, 2014 at 11:51:25AM +0100, Yann Droneaud wrote:
+> > In a previous patch [1][2], flag PERF_FLAG_FD_CLOEXEC was
+> > added to perf_event_open(2) syscall to allows userspace
+> > to enable close-on-exec behavor atomically when creating
+> > the file descriptor.
+> > 
+> > This patch makes perf tools use the new flag.
+> 
+> What is that good for? I can see why for a threaded program, but 
+> "perf" is not threaded.
 
-This eliminates the following warnings in drm/radeon/cik_sdma.c:
-drivers/gpu/drm/radeon/cik_sdma.c:194:6: warning: no previous prototype for ‘cik_sdma_enable’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/cik_sdma.c:360:5: warning: no previous prototype for ‘cik_sdma_resume’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/cik_sdma.c:396:6: warning: no previous prototype for ‘cik_sdma_fini’ [-Wmissing-prototypes]
+AFAICT its got nothing to do with threaded or not, but only with exec()
+and we do in fact call exec() quite a lot in perf.
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- drivers/gpu/drm/radeon/cik.c         |    3 ---
- drivers/gpu/drm/radeon/radeon_asic.h |    3 +++
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
-index 76902ca..fd9029c 100644
---- a/drivers/gpu/drm/radeon/cik.c
-+++ b/drivers/gpu/drm/radeon/cik.c
-@@ -62,9 +62,6 @@ MODULE_FIRMWARE("radeon/KABINI_mec.bin");
- MODULE_FIRMWARE("radeon/KABINI_rlc.bin");
- MODULE_FIRMWARE("radeon/KABINI_sdma.bin");
- 
--extern int cik_sdma_resume(struct radeon_device *rdev);
--extern void cik_sdma_enable(struct radeon_device *rdev, bool enable);
--extern void cik_sdma_fini(struct radeon_device *rdev);
- static void cik_rlc_stop(struct radeon_device *rdev);
- static void cik_pcie_gen3_enable(struct radeon_device *rdev);
- static void cik_program_aspm(struct radeon_device *rdev);
-diff --git a/drivers/gpu/drm/radeon/radeon_asic.h b/drivers/gpu/drm/radeon/radeon_asic.h
-index 1d631cd..7091d09 100644
---- a/drivers/gpu/drm/radeon/radeon_asic.h
-+++ b/drivers/gpu/drm/radeon/radeon_asic.h
-@@ -712,6 +712,9 @@ void dce8_bandwidth_update(struct radeon_device *rdev);
- /*
-  * cik
-  */
-+int cik_sdma_resume(struct radeon_device *rdev);
-+void cik_sdma_enable(struct radeon_device *rdev, bool enable);
-+void cik_sdma_fini(struct radeon_device *rdev);
- u32 cik_gpu_check_soft_reset(struct radeon_device *rdev);
- void cik_enter_rlc_safe_mode(struct radeon_device *rdev);
- void cik_exit_rlc_safe_mode(struct radeon_device *rdev);
--- 
-1.7.9.5
-
+It ensures we do not leak open perf FDs into our child processes. Now
+I'm not entirely sure how we do the exec these days but I think we were
+good about not not leaking them anyway, but more paranoia never really
+hurts.
