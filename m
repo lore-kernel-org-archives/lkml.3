@@ -1,80 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933634AbaAFXSp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:18:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48308 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932984AbaAFWlQ (ORCPT
+	id S933654AbaAFXSz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:18:55 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:58749 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932989AbaAFXSo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:16 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Rafael Aquini <aquini@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Vlastimil Babka <vbabka@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 075/129] mm/mempolicy: correct putback method for isolate pages if failed
-Date: Mon,  6 Jan 2014 14:38:24 -0800
-Message-Id: <20140106223901.757315615@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
-References: <20140106223859.589799655@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Mon, 6 Jan 2014 18:18:44 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PNPBIOS: check return value of pnp_add_device()
+Date: Tue, 07 Jan 2014 00:32:30 +0100
+Message-ID: <3555521.XezuyqRU3a@vostro.rjw.lan>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <20140106223501.GB17357@core.coreip.homeip.net>
+References: <20131215121102.GA509@core.coreip.homeip.net> <20140106223501.GB17357@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Hi Dmitry,
 
-------------------
+I've just queued up your patch for 3.14 (the other one has already been in
+my tree for a while).
 
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-commit b0e5fd7359f1ce8db4ccb862b3aa80d2f2cbf4d0 upstream.
-
-queue_pages_range() isolates hugetlbfs pages and putback_lru_pages()
-can't handle these.  We should change it to putback_movable_pages().
-
-Naoya said that it is worth going into stable, because it can break
-in-use hugepage list.
-
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Acked-by: Rafael Aquini <aquini@redhat.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Vlastimil Babka <vbabka@suse.cz>
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Vlastimil Babka <vbabka@suse.cz>
-Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- mm/mempolicy.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1271,7 +1271,7 @@ static long do_mbind(unsigned long start
- 		if (nr_failed && (flags & MPOL_MF_STRICT))
- 			err = -EIO;
- 	} else
--		putback_lru_pages(&pagelist);
-+		putback_movable_pages(&pagelist);
- 
- 	up_write(&mm->mmap_sem);
-  mpol_out:
-
+Thanks,
+Rafael
 
