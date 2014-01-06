@@ -1,126 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522AbaAFNmW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 08:42:22 -0500
-Received: from mout.gmx.net ([212.227.15.18]:55101 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753979AbaAFNmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 08:42:20 -0500
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: James Morris <jmorris@namei.org>
-Subject: [GIT PULL]TPM Changes for 3.14
-Date: Mon, 6 Jan 2014 14:44:37 +0100
-User-Agent: KMail/1.13.7 (Linux/3.12.6+; KDE/4.10.5; x86_64; ; )
-Cc: Ashley Lai <ashley@ashleylai.com>, Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-References: <201401040335.04980.PeterHuewe@gmx.de> <201401060424.50738.PeterHuewe@gmx.de> <alpine.LRH.2.02.1401062227080.4512@tundra.namei.org>
-In-Reply-To: <alpine.LRH.2.02.1401062227080.4512@tundra.namei.org>
+	id S1754526AbaAFNoq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 08:44:46 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:36457 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990AbaAFNoo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 08:44:44 -0500
+Message-ID: <52CAB344.9050208@linaro.org>
+Date: Mon, 06 Jan 2014 21:44:36 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1809225.oza6CIR56N";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: paulmck@linux.vnet.ibm.com
+CC: Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Linaro Kernel <linaro-kernel@lists.linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Mark Brown <broonie@linaro.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [discussion] simpler load balance in scheduler
+References: <52A95588.5040905@linaro.org> <52AADCEB.50105@linaro.org> <20131217163232.GI5919@linux.vnet.ibm.com>
+In-Reply-To: <20131217163232.GI5919@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201401061444.48889.PeterHuewe@gmx.de>
-X-Provags-ID: V03:K0:BjfCkKLWbI3fwdLJhK428j/0Tw3yHbNYBGBA8H6FFNC0Wyy5PvJ
- VUrqdW3xxoDS1XQZtE/xanwu+7kVsYeEkTygVltQ159dSWD1I65yE5BOw4aU4fCE5H7PVdd
- o7B32cES9KEJWzJrCa1qJC9ZJKPyHDmnwlRFxDNJ0Y6pVV5SORSPahCZNB3NO6d4xwxPiDQ
- Jp7+/TX9lKp491Voboggw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1809225.oza6CIR56N
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+On 12/18/2013 12:32 AM, Paul E. McKenney wrote:
+> On Fri, Dec 13, 2013 at 06:09:47PM +0800, Alex Shi wrote:
+>> Hi Paul,
+>>
+>> Would you like to give some comments when you'r free? Especially for the
+>> 3rd point.
+>>
+>> Appreciate for your any input!
+> 
+> Hello, Alex,
+> 
+> I guess my main question is why we are discussing this internally rather
+> than on LKML.  Is this to be some writeup somewhere?  (That would be
+> a good thing.)
 
-Hi James,
+Thanks Paul!
+I very appreciate your great comments and suggestions!
 
-The following changes since commit 38fd2c202a3d82bc12430bce5789fa2c2a406f71:
+I thought it could be better to collect more comments before send to
+Peter and LKML. But since the main idea has no much change, and Paul had
+give very valuable suggestions. Rewrite/resend may cover the Paul's wise
+comments. So, I'd forward this email to LKML. sorry if the format
+doesn't looks good.
+> 
+> On to #3 below...
+> 
+>> On 12/12/2013 02:19 PM, Alex Shi wrote:
+>>> Paul & Vincent & Morten,
+>>>
+>>> The following rough idea get during this KS. I want to have internal
+>>> review before send to LKML. Would you like to give some comments?
+>>>
+>>> ==========================
+>>> 1, Current scheduler load balance is bottom-up mode, each CPU need
+>>> initiate the balance by self. Like in a integrate computer system, it
+>>> has smt/core/cpu/numa, 4 level scheduler domains.
+>>> If there is just 2 tasks in whole system that both running on cpu0.
+>>> Current load balance need to pull task to another smt in smt domain,
+>>> then pull task to another core, then pull task to another cpu, finally
+>>> pull task to another numa. Totally it is need 4 times task moving to get
+>>> system balance.
 
-  Merge to v3.13-rc7 for prerequisite changes in the Xen code for TPM (2014-01-06 22:23:01 +1100)
+As Vincent pointed out, idle balance may help a little for this task
+moving. But it depends on the CPU topology and which cpu is just idle in
+chance, so can not help much.
 
-are available in the git repository at:
+>>> Generally, the task moving complexity is
+>>> 	O(nm log n),  n := nr_cpus, m := nr_tasks
+>>>
+>>> PeterZ has a excellent summary and explanation for this in
+>>> kernel/sched/fair.c:4605
+>>>
+>>> Another weakness of current LB is that every cpu need to get the other
+>>> cpus' load info repeatedly and try to figure out busiest sched
+>>> group/queue on every sched domain level. but may not conduct a task
+>>> moving, one of reasons is that cpu can only pull task, not pushing.
+>>>
+>>> 2, Consider huge cost of task moving: CS, tlb/cache refill, and the
+>>> useless remote cpu load info getting. If we can have better solution for
+>>> load balance, like reduce the balance times to.
+>>> 	O(m) m := nr_tasks
+>>>
+>>> It will be a great win on performance. like above example, we can move
+>>> task from cpu0 direct to another numa. that only need 1 task moving,
+>>> save 3 CS and tlb/cache refill.
+>>>
+>>> To get this point, a rough idea is changing the load balance behaviour
+>>> to top-down mode. Say let each of cpu report self load status on per-cpu
+>>> memory. And a baby-sitter in system to collect these cpus load info,
+>>> then decide how to move task centralize, finally send IPI to each hungry
+>>> cpu to let them pull load quota from appointed cpus.
+>>>
+>>> Like in above example, the baby-sitter will fetch each cpus' load info,
+>>> then send a pull task IPI to let a cpu in another numa pull one task
+>>> from cpu0. So in the task pulling, we still just involved 2 cpus, can
+>>> reuse move_tasks functions.
+>>>
+>>> BTW, the baby-sitter can care all kind of balance, regular balance, idle
+>>> balance, wake up balance.
+>>>
+>>> 3, One of concern of top-down mode is that baby-sitter need remote
 
+The new mode is more like a flat mode balance. But if numa access is
+really unbearable, we may give a baby-sitter for each of NUMA node, then
+reduce the numa balance frequency, and do more frequency internal numa
+node balance. -- I hope that's not needed.
+>>> access cpu load info on top domain level every times. But the fact is
+>>> current load balance also need to get remote cpu load info for top level
+>>> domain balance. and more worse, such remote accessing maybe useless.
+>>> -- since there is just one thread reading the info, no competitor
+>>> writer, Paul, do you think it is worthy concern?
+> 
+> Might be -- key thing is to measure it on a big system.  If it is a
+> problem, here are some workarounds with varying degrees of sanity:
+> 
+> 1.	Reduce cache misses by keeping three values:
+> 
+> 	a.	Current load value.
+> 	b.	Last exported value.  (Should be in same cache line
+> 		as a.)
+> 	c.	Exported value.  (Should be in separate cache line.)
+> 
+> 	The avoid writing to c unless a has deviated sufficiently from a.
+> 	If the load values stay constant for long time periods, this
+> 	can reduce the number of cache misses.  On the other hand,
+> 	it introduces an extra compare and branch -- though this should
+> 	not be a problem if the load value is computed relatively
+> 	infrequently.
+> 
+> 2.	As above, but provide additional information to allow the
+> 	other CPU to extrapolate values.  For example, if a CPU goes
+> 	idle, some of its values will decay exponentially.  The
+> 	remote CPU could compute the decay rate, removing the need
+> 	for the subject CPU to wake up to recompute its value.
+> 	(Maybe you already do this?)
 
-  https://github.com/PeterHuewe/linux-tpmdd for-james
+The idle_cpus_mask should be one of additional info to allow
+extrapolation action. As Vincent explained, this variable set when CPU
+enter idle and cleared during next tick. So we mayn't need to look at
+the cpu load for idle cpu.
 
-for you to fetch changes up to 5f64822d63efa20cee9efe8766b3a62ab6a1f6c3:
+And yes, current scheduler has similar behaviour.
+> 
+> 	Similarly if a CPU remains CPU-bound with given runqueue
+> 	loading for some time.
+> 
+> 3.	Allow the exported values to become inaccurate, and resample
+> 	the actual values remotely if extrapolated values indicate
+> 	that action is warranted.
 
-  tpm/tpm-sysfs: active_show() can be static (2014-01-06 14:37:25 +0100)
+It is a very heuristic idea! Could you give a bit more hints/clues to
+get remote cpu load by extrapolated value? I know RCU use this way
+wonderfully. but still no much idea to get live cpu load...
+> 
+> There are probably other approaches.  I am being quite general here
+> because I don't have the full picture of the scheduler statistics
+> in my head.  It is likely possible to obtain a much better approach
+> by considering the scheduler's specifics.
+> 
+>>> BTW, to reduce unnecessary remote info fetching, we can use current
+>>> idle_cpus_mask in nohz, we just skip the idle cpu in this cpumask simply.
 
-----------------------------------------------------------------
-Fengguang Wu (2):
-      tpm/tpm_i2c_atmel: fix coccinelle warnings
-      tpm/tpm-sysfs: active_show() can be static
+[..]
+> 
+> 							Thanx, Paul
+> 
+>>> 4, From power saving POV, top-down give the whole system cpu topology
+>>> info directly. So beside the CS reducing, it can reduce the idle cpu
+>>> interfere by a transition task. and let idle cpu sleep better.
 
-Jason Gunthorpe (7):
-      tpm: Pull everything related to /dev/tpmX into tpm-dev.c
-      tpm: Move sysfs functions from tpm-interface to tpm-sysfs
-      tpm: Pull all driver sysfs code into tpm-sysfs.c
-      tpm: Create a tpm_class_ops structure and use it in the drivers
-      tpm: Use the ops structure instead of a copy in tpm_vendor_specific
-      tpm: Make tpm-dev allocate a per-file structure
-      tpm: tpm_tis: Fix compile problems with CONFIG_PM_SLEEP/CONFIG_PNP
-
-Michal Nazarewicz (1):
-      char: tpm: nuvoton: remove unused variable
-
-Peter Huewe (5):
-      tpm/tpm_ppi: Do not compare strcmp(a,b) == -1
-      tpm/tpm_ppi: Check return value of acpi_get_name
-      tpm/tpm_i2c_stm_st33: Check return code of get_burstcount
-      tpm/tpm_ibmvtpm: fix unreachable code warning (smatch warning)
-      tpm: MAINTAINERS: Cleanup TPM Maintainers file
-
- MAINTAINERS                         |   8 +-
- drivers/char/tpm/Makefile           |   2 +-
- drivers/char/tpm/tpm-dev.c          | 213 ++++++++++++++++
- drivers/char/tpm/tpm-interface.c    | 488 +++---------------------------------
- drivers/char/tpm/tpm-sysfs.c        | 318 +++++++++++++++++++++++
- drivers/char/tpm/tpm.h              |  83 +++---
- drivers/char/tpm/tpm_atmel.c        |  28 +--
- drivers/char/tpm/tpm_i2c_atmel.c    |  44 +---
- drivers/char/tpm/tpm_i2c_infineon.c |  42 +---
- drivers/char/tpm/tpm_i2c_nuvoton.c  |  43 +---
- drivers/char/tpm/tpm_i2c_stm_st33.c |  48 +---
- drivers/char/tpm/tpm_ibmvtpm.c      |  41 +--
- drivers/char/tpm/tpm_infineon.c     |  28 +--
- drivers/char/tpm/tpm_nsc.c          |  28 +--
- drivers/char/tpm/tpm_ppi.c          |  11 +-
- drivers/char/tpm/tpm_tis.c          |  49 +---
- drivers/char/tpm/xen-tpmfront.c     |  45 +---
- include/linux/tpm.h                 |  12 +
- 18 files changed, 640 insertions(+), 891 deletions(-)
- create mode 100644 drivers/char/tpm/tpm-dev.c
- create mode 100644 drivers/char/tpm/tpm-sysfs.c
-
-
-Thanks,
-Peter
-
---nextPart1809225.oza6CIR56N
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAABAgAGBQJSyrNQAAoJEEAiHBCPCedzU58P/3twKTRxCkogjtFMzx8k8CnW
-a9o4uLKw3mBvFoOjOe5rBW/SWsX13kYeE1QdlDVLElhvBQooVFArxf1VMu6zyEIl
-k70sR4SlYCjNSYegqTTbhZCOZzEQb8b4eQ43PPPbQ1oYFDA3eino845faIwmBBKn
-zOpyYxF1S0SLpoCKd0+1+ZfhP8OLT7mm2PhIwS1VWWk/DgNIUoc6wJLMeKGKPon6
-ajZi3p7PivOQKCXIO9EVapkesIQiK48Wppww/t+UPOtwEShajQWueSO7cq/gUg1Q
-336s3wjb2KiiJaPkihZRhF3EeeX8NRdWmepLxYpjObUuRQqYCbl+YzCOU731kN/H
-22HgyQKccFvOWvqQ0wABX0qcQxDy2WNRMpAPFywfrvdHS4ZYW2FJQCFR1BKWhYL2
-TkRqRpxwk/6SOdvfratv71mwCdK1Y10H2+ML/v01XfBi7Zo/co3liYRYqvH3PAmd
-ZSCFvfL6HKxpD7UIVA++OTdWXYiOcGS06W7cYa4VOljdswaRscSRBM0HEa+vPSnD
-xl1YV1fOda983P9dP0e/kzTDjeSK/Ek5BR+yAODL5O7cDBtGr6IxQd4aq1qDaslz
-/5tWa8pILlWhZNd6+tq1EL3gFHjouGUKhCaLSXve9WgQo6yLVElpy9SHd71nI03u
-J7vMYfW45hiMSN8SQj8G
-=/q4J
------END PGP SIGNATURE-----
-
---nextPart1809225.oza6CIR56N--
+-- 
+Thanks
+    Alex
