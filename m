@@ -1,73 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291AbaAFQzT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 11:55:19 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:53390 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753767AbaAFQzR (ORCPT
+	id S1755579AbaAFQz1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 11:55:27 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35921 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753767AbaAFQzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 11:55:17 -0500
-From: Jesper Falk <jesperfalk94@gmail.com>
-To: anton@enomsg.org
-Cc: dwmw2@infradead.org, markus@trippelsdorf.de, akpm@linux-foundation.org,
-        kyungsik.lee@lge.com, linux-kernel@vger.kernel.org,
-        Jesper Falk <jesperfalk94@gmail.com>
-Subject: [PATCH] Power: da9030 and da9059 Fixed coding style
-Date: Mon,  6 Jan 2014 17:54:57 +0100
-Message-Id: <1389027297-14419-1-git-send-email-jesperfalk94@gmail.com>
-X-Mailer: git-send-email 1.8.5.2
+	Mon, 6 Jan 2014 11:55:23 -0500
+Date: Mon, 6 Jan 2014 17:54:58 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, pjt@google.com,
+        Morten.Rasmussen@arm.com, cmetcalf@tilera.com, tony.luck@intel.com,
+        alex.shi@linaro.org, linaro-kernel@lists.linaro.org, rjw@sisk.pl,
+        paulmck@linux.vnet.ibm.com, corbet@lwn.net, tglx@linutronix.de,
+        len.brown@intel.com, amit.kucheria@linaro.org, james.hogan@imgtec.com,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        Dietmar.Eggemann@arm.com
+Subject: Re: [RFC] sched: CPU topology try
+Message-ID: <20140106165458.GV3694@twins.programming.kicks-ass.net>
+References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
+ <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
+ <52C3A0F1.3040803@linux.vnet.ibm.com>
+ <20140106163341.GO31570@twins.programming.kicks-ass.net>
+ <52CADBB9.1010704@linux.intel.com>
+ <20140106164838.GR31570@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140106164838.GR31570@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed coding style in da9030_battery and da9052-battery
+On Mon, Jan 06, 2014 at 05:48:38PM +0100, Peter Zijlstra wrote:
+> On Mon, Jan 06, 2014 at 08:37:13AM -0800, Arjan van de Ven wrote:
+> > On 1/6/2014 8:33 AM, Peter Zijlstra wrote:
+> > >On Wed, Jan 01, 2014 at 10:30:33AM +0530, Preeti U Murthy wrote:
+> > >>The design looks good to me. In my opinion information like P-states and
+> > >>C-states dependency can be kept separate from the topology levels, it
+> > >>might get too complicated unless the information is tightly coupled to
+> > >>the topology.
+> > >
+> > >I'm not entirely convinced we can keep them separated, the moment we
+> > >have multiple CPUs sharing a P or C state we need somewhere to manage
+> > >the shared state and the domain tree seems like the most natural place
+> > >for this.
+> > >
+> > >Now it might well be both P and C states operate at 'natural' domains
+> > >which we already have so it might be 'easy'.
+> > 
+> > more than that though.. P and C state sharing is mostly hidden from the OS
+> > (because the OS does not have the ability to do this; e.g. there are things
+> > that do "if THIS cpu goes idle, the OTHER cpu P state changes automatic".
+> > 
+> > that's not just on x86, the ARM guys (iirc at least the latest snapdragon)  are going in that
+> > direction as well.....
+> > 
+> > for those systems, the OS really should just make local decisions and let the hardware
+> > cope with hardware grouping.
+> 
+> AFAICT this is a chicken-egg problem, the OS never did anything useful
+> with it so the hardware guys are now trying to do something with it, but
+> this also means that if we cannot predict what the hardware will do
+> under certain circumstances the OS really cannot do anything smart
+> anymore.
+> 
+> So yes, for certain hardware we'll just have to give up and not do
+> anything.
+> 
+> That said, some hardware still does allow us to do something and for
+> those we do need some of this.
+> 
+> Maybe if the OS becomes smart enough the hardware guys will give us some
+> control again, who knows.
+> 
+> So yes, I'm entirely fine saying that some chips are fucked and we can't
+> do anything sane with them.. Fine they get to sort things themselves.
 
-Signed-off-by: Jesper Falk <jesperfalk94@gmail.com>
----
- .gitignore                     | 2 +-
- drivers/power/da9030_battery.c | 2 +-
- drivers/power/da9052-battery.c | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+That is; you're entirely unhelpful and I'm tempting to stop listening
+to whatever you have to say on the subject.
 
-diff --git a/.gitignore b/.gitignore
-index 7e9932e..681849a 100644
---- a/.gitignore
-+++ b/.gitignore
-@@ -44,7 +44,7 @@ modules.builtin
- /vmlinuz
- /System.map
- /Module.markers
--/Module.symvers
-+*/Module.symvers
- 
- #
- # Debian directory (make deb-pkg)
-diff --git a/drivers/power/da9030_battery.c b/drivers/power/da9030_battery.c
-index ae6c418..82316ad 100644
---- a/drivers/power/da9030_battery.c
-+++ b/drivers/power/da9030_battery.c
-@@ -2,7 +2,7 @@
-  * Battery charger driver for Dialog Semiconductor DA9030
-  *
-  * Copyright (C) 2008 Compulab, Ltd.
-- * 	Mike Rapoport <mike@compulab.co.il>
-+ *	Mike Rapoport <mike@compulab.co.il>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-diff --git a/drivers/power/da9052-battery.c b/drivers/power/da9052-battery.c
-index f8f4c0f..9972085 100644
---- a/drivers/power/da9052-battery.c
-+++ b/drivers/power/da9052-battery.c
-@@ -484,7 +484,7 @@ static int da9052_USB_current_notifier(struct notifier_block *nb,
- 	    *current_mA > da9052_chg_current_lim[row][DA9052_CHG_LIM_COLS - 1])
- 		return -EINVAL;
- 
--	for (col = 0; col <= DA9052_CHG_LIM_COLS - 1 ; col++) {
-+	for (col = 0; col <= DA9052_CHG_LIM_COLS - 1; col++) {
- 		if (*current_mA <= da9052_chg_current_lim[row][col])
- 			break;
- 	}
--- 
-1.8.5.2
+Most of your emails are about how stuff cannot possibly work; without
+saying how things can work.
 
+The entire point of adding P and C state information to the scheduler is
+so that we CAN do cross cpu decisions, but if you're saying we shouldn't
+attempt because you can't say how the hardware will react anyway; fine
+we'll ignore Intel hardware from now on.
+
+So bloody stop saying what cannot work and start telling how we can make
+useful cross cpu decisions.
