@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933308AbaAFXI5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:08:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48473 "EHLO
+	id S933329AbaAFXJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:09:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48464 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933117AbaAFWlq (ORCPT
+	with ESMTP id S933100AbaAFWlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:46 -0500
+	Mon, 6 Jan 2014 17:41:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: [PATCH 3.10 091/129] clocksource: dw_apb_timer_of: Fix read_sched_clock
-Date: Mon,  6 Jan 2014 14:38:40 -0800
-Message-Id: <20140106223902.207957203@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>, Sage Weil <sage@inktank.com>
+Subject: [PATCH 3.10 107/129] libceph: potential NULL dereference in ceph_osdc_handle_map()
+Date: Mon,  6 Jan 2014 14:38:56 -0800
+Message-Id: <20140106223902.661155175@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -29,32 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dinh Nguyen <dinguyen@altera.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 85dc6ee1237c8a4a7742e6abab96a20389b7d682 upstream.
+commit b72e19b9225d4297a18715b0998093d843d170fa upstream.
 
-The read_sched_clock should return the ~value because the clock is a
-countdown implementation. read_sched_clock() should be the same as
- __apbt_read_clocksource().
+There are two places where we read "nr_maps" if both of them are set to
+zero then we would hit a NULL dereference here.
 
-Signed-off-by: Dinh Nguyen <dinguyen@altera.com>
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clocksource/dw_apb_timer_of.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ceph/osd_client.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/clocksource/dw_apb_timer_of.c
-+++ b/drivers/clocksource/dw_apb_timer_of.c
-@@ -77,7 +77,7 @@ static void __iomem *sched_io_base;
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -1786,6 +1786,8 @@ void ceph_osdc_handle_map(struct ceph_os
+ 		nr_maps--;
+ 	}
  
- static u32 read_sched_clock(void)
- {
--	return __raw_readl(sched_io_base);
-+	return ~__raw_readl(sched_io_base);
- }
- 
- static const struct of_device_id sptimer_ids[] __initconst = {
++	if (!osdc->osdmap)
++		goto bad;
+ done:
+ 	downgrade_write(&osdc->map_sem);
+ 	ceph_monc_got_osdmap(&osdc->client->monc, osdc->osdmap->epoch);
 
 
