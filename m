@@ -1,92 +1,392 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277AbaAFAhS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 19:37:18 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55718 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752018AbaAFAhQ (ORCPT
+	id S1752171AbaAFAua (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 19:50:30 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:62614 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460AbaAFAu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 19:37:16 -0500
-Date: Mon, 6 Jan 2014 01:37:14 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Bryan Wu <cooloney@gmail.com>
-Cc: Greg KH <greg@kroah.com>, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Joe Xue <lgxue@hotmail.com>, "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "rob@landley.net" <rob@landley.net>,
-        "milo.kim@ti.com" <milo.kim@ti.com>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: how to represent sequence of brightnesses in /sys (was Re:
- [PATCH] Add the LED burst trigger)
-Message-ID: <20140106003714.GD27517@amd.pavel.ucw.cz>
-References: <20131228101622.GA13564@amd.pavel.ucw.cz>
- <CAMuHMdVz7FWgYZRVHy6pK+g_2QKxTW00N8jmjWHe05m5CJvPOw@mail.gmail.com>
- <20131228192935.GA28119@amd.pavel.ucw.cz>
- <CAMuHMdXDJ6uhe6srV-+0a8=cpBUgP+VakG+_wyLwAuiQSRVhqQ@mail.gmail.com>
- <20131228212523.GA8733@amd.pavel.ucw.cz>
- <20131228215042.GA7048@kroah.com>
- <20131228235045.GA8786@amd.pavel.ucw.cz>
- <20131229014324.GB18455@kroah.com>
- <20131229112101.GB26295@amd.pavel.ucw.cz>
- <CAK5ve-LOFE6h5w=+pSgfYMaW5GZQfayVfpRzP0NAfMPWZkk5iw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK5ve-LOFE6h5w=+pSgfYMaW5GZQfayVfpRzP0NAfMPWZkk5iw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 5 Jan 2014 19:50:29 -0500
+From: Jesper Falk <jesperfalk94@gmail.com>
+To: anton@enomsg.org
+Cc: dwmw2@infradead.org, linux-kernel@vger.kernel.org,
+        Jesper Falk <jesperfalk94@gmail.com>
+Subject: [PATCH] Power: ab8500: Fixed coding style issues
+Date: Mon,  6 Jan 2014 01:50:18 +0100
+Message-Id: <1388969418-30376-1-git-send-email-jesperfalk94@gmail.com>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Fixed coding style.
 
-> >> > Reason to do it in kernel is that some machines actually have
-> >> > "coprocessor" on i2c that can do it while main CPU is suspended. (For
-> >> > more reasons, see beggining of thread).
-> >>
-> >> Ick ick.
-> >>
-> >> > Binary attribute with array of bytes should be acceptable, rights?
-> >>
-> >> Not at all.
-> >>
-> >> > (IOW write(..., buf, size) )
-> >> >
-> >> > Ascii array of decimal integers -- no so, right?
-> >> >
-> >> > (IOW printf("%d %d ..", buf[0], buf[1]) )
-> >>
-> >> Use an ioctl with a structure to get things correct as a character
-> >> device.  As odds are, you aren't going to be able to create a "generic"
-> >> format for all of this for all types of devices that support such a
-> >> "co-processor".
-> >
-> > Well, we already do have hw-specific driver in the tree,
-> > drivers/leds/leds-lp55xx-common.c . But the interface is
-> > "interesting" and I believe we should have generic interface and it
-> > should use existing trigger framework -- array of brightnesses does
-> > not seem too complicated.
-> >
-> > Do you have suggestion how to pass the brightnesses over sysfs?
-> >
-> 
-> What about send those binary stuff as firmware through kernel firmware
-> interface and LED trigger sysfs is just for parameters setup and
-> enable/disable controlling.
+Signed-off-by: Jesper Falk <jesperfalk94@gmail.com>
+---
+ drivers/power/ab8500_bmdata.c  | 114 ++++++++++++++++++++---------------------
+ drivers/power/ab8500_btemp.c   |   8 ++-
+ drivers/power/ab8500_charger.c |  10 ++--
+ drivers/power/ab8500_fg.c      |  38 +++++++++-----
+ 4 files changed, 88 insertions(+), 82 deletions(-)
 
-That might be a bit too heavy. LED patterns do change quite often.
-
-lp5523 driver uses this to push binary data through /sys. (It is code
-for lp5523 processor in this case). Something like that would still be
-better than firmware loader... 
-
-cd /sys/class/i2c-adapter/i2c-2/2-0032 
-echo load > engine1_mode 
-echo cd /sys/class/i2c-adapter/i2c-2/2-0032 
-echo 9d804000427f0d7f7f007f0042000000  > engine1_load 
-echo run > engine1_mode
-									Pavel
+diff --git a/drivers/power/ab8500_bmdata.c b/drivers/power/ab8500_bmdata.c
+index d298645..570c87e 100644
+--- a/drivers/power/ab8500_bmdata.c
++++ b/drivers/power/ab8500_bmdata.c
+@@ -430,10 +430,10 @@ static const struct abx500_maxim_parameters ab8500_maxi_params = {
+ };
+ 
+ static const struct abx500_maxim_parameters abx540_maxi_params = {
+-        .ena_maxi = true,
+-        .chg_curr = 3000,
+-        .wait_cycles = 10,
+-        .charger_curr_step = 200,
++	.ena_maxi = true,
++	.chg_curr = 3000,
++	.wait_cycles = 10,
++	.charger_curr_step = 200,
+ };
+ 
+ static const struct abx500_bm_charger_parameters chg = {
+@@ -448,19 +448,19 @@ static const struct abx500_bm_charger_parameters chg = {
+  * AB8500 values
+  */
+ static int ab8500_charge_output_curr_map[] = {
+-        100,    200,    300,    400,    500,    600,    700,    800,
+-        900,    1000,   1100,   1200,   1300,   1400,   1500,   1500,
++	100,    200,    300,    400,    500,    600,    700,    800,
++	900,    1000,   1100,   1200,   1300,   1400,   1500,   1500,
+ };
+ 
+ static int ab8540_charge_output_curr_map[] = {
+-        0,      0,      0,      75,     100,    125,    150,    175,
+-        200,    225,    250,    275,    300,    325,    350,    375,
+-        400,    425,    450,    475,    500,    525,    550,    575,
+-        600,    625,    650,    675,    700,    725,    750,    775,
+-        800,    825,    850,    875,    900,    925,    950,    975,
+-        1000,   1025,   1050,   1075,   1100,   1125,   1150,   1175,
+-        1200,   1225,   1250,   1275,   1300,   1325,   1350,   1375,
+-        1400,   1425,   1450,   1500,   1600,   1700,   1900,   2000,
++	0,      0,      0,      75,     100,    125,    150,    175,
++	200,    225,    250,    275,    300,    325,    350,    375,
++	400,    425,    450,    475,    500,    525,    550,    575,
++	600,    625,    650,    675,    700,    725,    750,    775,
++	800,    825,    850,    875,    900,    925,    950,    975,
++	1000,   1025,   1050,   1075,   1100,   1125,   1150,   1175,
++	1200,   1225,   1250,   1275,   1300,   1325,   1350,   1375,
++	1400,   1425,   1450,   1500,   1600,   1700,   1900,   2000,
+ };
+ 
+ /*
+@@ -468,19 +468,19 @@ static int ab8540_charge_output_curr_map[] = {
+  * AB8500 values
+  */
+ static int ab8500_charge_input_curr_map[] = {
+-        50,     98,     193,    290,    380,    450,    500,    600,
+-        700,    800,    900,    1000,   1100,   1300,   1400,   1500,
++	50,     98,     193,    290,    380,    450,    500,    600,
++	700,    800,    900,    1000,   1100,   1300,   1400,   1500,
+ };
+ 
+ static int ab8540_charge_input_curr_map[] = {
+-        25,     50,     75,     100,    125,    150,    175,    200,
+-        225,    250,    275,    300,    325,    350,    375,    400,
+-        425,    450,    475,    500,    525,    550,    575,    600,
+-        625,    650,    675,    700,    725,    750,    775,    800,
+-        825,    850,    875,    900,    925,    950,    975,    1000,
+-        1025,   1050,   1075,   1100,   1125,   1150,   1175,   1200,
+-        1225,   1250,   1275,   1300,   1325,   1350,   1375,   1400,
+-        1425,   1450,   1475,   1500,   1500,   1500,   1500,   1500,
++	25,     50,     75,     100,    125,    150,    175,    200,
++	225,    250,    275,    300,    325,    350,    375,    400,
++	425,    450,    475,    500,    525,    550,    575,    600,
++	625,    650,    675,    700,    725,    750,    775,    800,
++	825,    850,    875,    900,    925,    950,    975,    1000,
++	1025,   1050,   1075,   1100,   1125,   1150,   1175,   1200,
++	1225,   1250,   1275,   1300,   1325,   1350,   1375,   1400,
++	1425,   1450,   1475,   1500,   1500,   1500,   1500,   1500,
+ };
+ 
+ struct abx500_bm_data ab8500_bm_data = {
+@@ -513,42 +513,42 @@ struct abx500_bm_data ab8500_bm_data = {
+ 	.maxi                   = &ab8500_maxi_params,
+ 	.chg_params             = &chg,
+ 	.fg_params              = &fg,
+-        .chg_input_curr         = ab8500_charge_input_curr_map,
+-        .n_chg_in_curr          = ARRAY_SIZE(ab8500_charge_input_curr_map),
++	.chg_input_curr         = ab8500_charge_input_curr_map,
++	.n_chg_in_curr          = ARRAY_SIZE(ab8500_charge_input_curr_map),
+ };
+ 
+ struct abx500_bm_data ab8540_bm_data = {
+-        .temp_under             = 3,
+-        .temp_low               = 8,
+-        .temp_high              = 43,
+-        .temp_over              = 48,
+-        .main_safety_tmr_h      = 4,
+-        .temp_interval_chg      = 20,
+-        .temp_interval_nochg    = 120,
+-        .usb_safety_tmr_h       = 4,
+-        .bkup_bat_v             = BUP_VCH_SEL_2P6V,
+-        .bkup_bat_i             = BUP_ICH_SEL_150UA,
+-        .no_maintenance         = false,
+-        .capacity_scaling       = false,
+-        .adc_therm              = ABx500_ADC_THERM_BATCTRL,
+-        .chg_unknown_bat        = false,
+-        .enable_overshoot       = false,
+-        .fg_res                 = 100,
+-        .cap_levels             = &cap_levels,
+-        .bat_type               = bat_type_thermistor,
+-        .n_btypes               = ARRAY_SIZE(bat_type_thermistor),
+-        .batt_id                = 0,
+-        .interval_charging      = 5,
+-        .interval_not_charging  = 120,
+-        .temp_hysteresis        = 3,
+-        .gnd_lift_resistance    = 0,
+-        .maxi                   = &abx540_maxi_params,
+-        .chg_params             = &chg,
+-        .fg_params              = &fg,
+-        .chg_output_curr        = ab8540_charge_output_curr_map,
+-        .n_chg_out_curr         = ARRAY_SIZE(ab8540_charge_output_curr_map),
+-        .chg_input_curr         = ab8540_charge_input_curr_map,
+-        .n_chg_in_curr          = ARRAY_SIZE(ab8540_charge_input_curr_map),
++	.temp_under             = 3,
++	.temp_low               = 8,
++	.temp_high              = 43,
++	.temp_over              = 48,
++	.main_safety_tmr_h      = 4,
++	.temp_interval_chg      = 20,
++	.temp_interval_nochg    = 120,
++	.usb_safety_tmr_h       = 4,
++	.bkup_bat_v             = BUP_VCH_SEL_2P6V,
++	.bkup_bat_i             = BUP_ICH_SEL_150UA,
++	.no_maintenance         = false,
++	.capacity_scaling       = false,
++	.adc_therm              = ABx500_ADC_THERM_BATCTRL,
++	.chg_unknown_bat        = false,
++	.enable_overshoot       = false,
++	.fg_res                 = 100,
++	.cap_levels             = &cap_levels,
++	.bat_type               = bat_type_thermistor,
++	.n_btypes               = ARRAY_SIZE(bat_type_thermistor),
++	.batt_id                = 0,
++	.interval_charging      = 5,
++	.interval_not_charging  = 120,
++	.temp_hysteresis        = 3,
++	.gnd_lift_resistance    = 0,
++	.maxi                   = &abx540_maxi_params,
++	.chg_params             = &chg,
++	.fg_params              = &fg,
++	.chg_output_curr        = ab8540_charge_output_curr_map,
++	.n_chg_out_curr         = ARRAY_SIZE(ab8540_charge_output_curr_map),
++	.chg_input_curr         = ab8540_charge_input_curr_map,
++	.n_chg_in_curr          = ARRAY_SIZE(ab8540_charge_input_curr_map),
+ };
+ 
+ int ab8500_bm_of_probe(struct device *dev,
+diff --git a/drivers/power/ab8500_btemp.c b/drivers/power/ab8500_btemp.c
+index 7f9a454..6ef7d92 100644
+--- a/drivers/power/ab8500_btemp.c
++++ b/drivers/power/ab8500_btemp.c
+@@ -84,7 +84,7 @@ struct ab8500_btemp_ranges {
+  * @parent:		Pointer to the struct ab8500
+  * @gpadc:		Pointer to the struct gpadc
+  * @fg:			Pointer to the struct fg
+- * @bm:           	Platform specific battery management information
++ * @bm:			Platform specific battery management information
+  * @btemp_psy:		Structure for BTEMP specific battery properties
+  * @events:		Structure for information about events triggered
+  * @btemp_ranges:	Battery temperature range structure
+@@ -946,9 +946,8 @@ static int ab8500_btemp_get_ext_psy_data(struct device *dev, void *data)
+ 			switch (ext->type) {
+ 			case POWER_SUPPLY_TYPE_MAINS:
+ 				/* AC disconnected */
+-				if (!ret.intval && di->events.ac_conn) {
++				if (!ret.intval && di->events.ac_conn)
+ 					di->events.ac_conn = false;
+-				}
+ 				/* AC connected */
+ 				else if (ret.intval && !di->events.ac_conn) {
+ 					di->events.ac_conn = true;
+@@ -958,9 +957,8 @@ static int ab8500_btemp_get_ext_psy_data(struct device *dev, void *data)
+ 				break;
+ 			case POWER_SUPPLY_TYPE_USB:
+ 				/* USB disconnected */
+-				if (!ret.intval && di->events.usb_conn) {
++				if (!ret.intval && di->events.usb_conn)
+ 					di->events.usb_conn = false;
+-				}
+ 				/* USB connected */
+ 				else if (ret.intval && !di->events.usb_conn) {
+ 					di->events.usb_conn = true;
+diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
+index 19110aa..481e304 100644
+--- a/drivers/power/ab8500_charger.c
++++ b/drivers/power/ab8500_charger.c
+@@ -236,7 +236,7 @@ struct ab8500_charger_max_usb_in_curr {
+  *			Counter for current stepping sessions
+  * @parent:		Pointer to the struct ab8500
+  * @gpadc:		Pointer to the struct gpadc
+- * @bm:           	Platform specific battery management information
++ * @bm:			Platform specific battery management information
+  * @flags:		Structure for information about events triggered
+  * @usb_state:		Structure for usb stack information
+  * @max_usb_in_curr:	Max USB charger input current
+@@ -385,17 +385,15 @@ static void ab8500_enable_disable_sw_fallback(struct ab8500_charger *di,
+ 
+ 	/* write back the changed fallback bit value to register */
+ 	ret = abx500_set_register_interruptible(di->dev, bank, reg, val);
+-	if (ret) {
++	if (ret)
+ 		dev_err(di->dev, "%d write failed\n", __LINE__);
+-	}
+ 
+ disable_otp:
+ 	if (is_ab8500(di->parent)) {
+ 		/* disable the set OTP registers again */
+ 		ret = abx500_set_register_interruptible(di->dev, 0x11, 0x00, 0x0);
+-		if (ret) {
++		if (ret)
+ 			dev_err(di->dev, "%d write failed\n", __LINE__);
+-		}
+ 	}
+ }
+ 
+@@ -2397,7 +2395,7 @@ static void ab8500_charger_usb_link_status_work(struct work_struct *work)
+ 		return;
+ 	}
+ 
+-	dev_dbg(di->dev,"%s di->vbus_detected = true\n",__func__);
++	dev_dbg(di->dev, "%s di->vbus_detected = true\n", __func__);
+ 	di->vbus_detected = true;
+ 	ret = ab8500_charger_read_usb_type(di);
+ 	if (ret) {
+diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
+index 3cb4178..13d6903 100644
+--- a/drivers/power/ab8500_fg.c
++++ b/drivers/power/ab8500_fg.c
+@@ -185,7 +185,7 @@ struct inst_curr_result_list {
+  * @avg_cap:		Average capacity filter
+  * @parent:		Pointer to the struct ab8500
+  * @gpadc:		Pointer to the struct gpadc
+- * @bm:           	Platform specific battery management information
++ * @bm:			Platform specific battery management information
+  * @fg_psy:		Structure that holds the FG specific battery properties
+  * @fg_wq:		Work queue for running the FG algorithm
+  * @fg_periodic_work:	Work to run the FG algorithm periodically
+@@ -821,7 +821,8 @@ static void ab8500_fg_acc_cur_work(struct work_struct *work)
+ 	queue_work(di->fg_wq, &di->fg_work);
+ 
+ 	dev_dbg(di->dev, "fg_res: %d, fg_samples: %d, gasg: %d, accu_charge: %d\n",
+-				di->bm->fg_res, di->fg_samples, val, di->accu_charge);
++				di->bm->fg_res, di->fg_samples, val,
++				di->accu_charge);
+ 	return;
+ exit:
+ 	dev_err(di->dev,
+@@ -1884,9 +1885,9 @@ static void ab8500_fg_low_bat_work(struct work_struct *work)
+ 			dev_warn(di->dev, "Shut down pending...\n");
+ 		} else {
+ 			/*
+-			* Else we need to re-schedule this check to be able to detect
+-			* if the voltage increases again during charging or
+-			* due to decreasing load.
++			* Else we need to re-schedule this check to be able to
++			* detect if the voltage increases again during charging
++			* or due to decreasing load.
+ 			*/
+ 			di->low_bat_cnt--;
+ 			dev_warn(di->dev, "Battery voltage still LOW\n");
+@@ -2735,7 +2736,8 @@ static ssize_t ab8505_powercut_restart_write(struct device *dev,
+ 	}
+ 
+ 	ret = abx500_set_register_interruptible(di->dev, AB8500_RTC,
+-						AB8505_RTC_PCUT_RESTART_REG, (u8)reg_value);
++						AB8505_RTC_PCUT_RESTART_REG,
++						(u8)reg_value);
+ 
+ 	if (ret < 0)
+ 		dev_err(dev, "Failed to set AB8505_RTC_PCUT_RESTART_REG\n");
+@@ -2757,7 +2759,8 @@ static ssize_t ab8505_powercut_timer_read(struct device *dev,
+ 	di = to_ab8500_fg_device_info(psy);
+ 
+ 	ret = abx500_get_register_interruptible(di->dev, AB8500_RTC,
+-						AB8505_RTC_PCUT_TIME_REG, &reg_value);
++						AB8505_RTC_PCUT_TIME_REG,
++						&reg_value);
+ 
+ 	if (ret < 0) {
+ 		dev_err(dev, "Failed to read AB8505_RTC_PCUT_TIME_REG\n");
+@@ -2782,7 +2785,8 @@ static ssize_t ab8505_powercut_restart_counter_read(struct device *dev,
+ 	di = to_ab8500_fg_device_info(psy);
+ 
+ 	ret = abx500_get_register_interruptible(di->dev, AB8500_RTC,
+-						AB8505_RTC_PCUT_RESTART_REG, &reg_value);
++						AB8505_RTC_PCUT_RESTART_REG,
++						&reg_value);
+ 
+ 	if (ret < 0) {
+ 		dev_err(dev, "Failed to read AB8505_RTC_PCUT_RESTART_REG\n");
+@@ -2807,7 +2811,8 @@ static ssize_t ab8505_powercut_read(struct device *dev,
+ 	di = to_ab8500_fg_device_info(psy);
+ 
+ 	ret = abx500_get_register_interruptible(di->dev, AB8500_RTC,
+-						AB8505_RTC_PCUT_CTL_STATUS_REG, &reg_value);
++						AB8505_RTC_PCUT_CTL_STATUS_REG,
++						&reg_value);
+ 
+ 	if (ret < 0)
+ 		goto fail;
+@@ -2836,7 +2841,8 @@ static ssize_t ab8505_powercut_write(struct device *dev,
+ 	}
+ 
+ 	ret = abx500_set_register_interruptible(di->dev, AB8500_RTC,
+-						AB8505_RTC_PCUT_CTL_STATUS_REG, (u8)reg_value);
++						AB8505_RTC_PCUT_CTL_STATUS_REG,
++						(u8)reg_value);
+ 
+ 	if (ret < 0)
+ 		dev_err(dev, "Failed to set AB8505_RTC_PCUT_CTL_STATUS_REG\n");
+@@ -2858,7 +2864,8 @@ static ssize_t ab8505_powercut_flag_read(struct device *dev,
+ 	di = to_ab8500_fg_device_info(psy);
+ 
+ 	ret = abx500_get_register_interruptible(di->dev, AB8500_RTC,
+-						AB8505_RTC_PCUT_CTL_STATUS_REG,  &reg_value);
++						AB8505_RTC_PCUT_CTL_STATUS_REG,
++						&reg_value);
+ 
+ 	if (ret < 0) {
+ 		dev_err(dev, "Failed to read AB8505_RTC_PCUT_CTL_STATUS_REG\n");
+@@ -2883,7 +2890,8 @@ static ssize_t ab8505_powercut_debounce_read(struct device *dev,
+ 	di = to_ab8500_fg_device_info(psy);
+ 
+ 	ret = abx500_get_register_interruptible(di->dev, AB8500_RTC,
+-						AB8505_RTC_PCUT_DEBOUNCE_REG,  &reg_value);
++						AB8505_RTC_PCUT_DEBOUNCE_REG,
++						&reg_value);
+ 
+ 	if (ret < 0) {
+ 		dev_err(dev, "Failed to read AB8505_RTC_PCUT_DEBOUNCE_REG\n");
+@@ -2914,7 +2922,8 @@ static ssize_t ab8505_powercut_debounce_write(struct device *dev,
+ 	}
+ 
+ 	ret = abx500_set_register_interruptible(di->dev, AB8500_RTC,
+-						AB8505_RTC_PCUT_DEBOUNCE_REG, (u8)reg_value);
++						AB8505_RTC_PCUT_DEBOUNCE_REG,
++						(u8)reg_value);
+ 
+ 	if (ret < 0)
+ 		dev_err(dev, "Failed to set AB8505_RTC_PCUT_DEBOUNCE_REG\n");
+@@ -2935,7 +2944,8 @@ static ssize_t ab8505_powercut_enable_status_read(struct device *dev,
+ 	di = to_ab8500_fg_device_info(psy);
+ 
+ 	ret = abx500_get_register_interruptible(di->dev, AB8500_RTC,
+-						AB8505_RTC_PCUT_CTL_STATUS_REG, &reg_value);
++						AB8505_RTC_PCUT_CTL_STATUS_REG,
++						&reg_value);
+ 
+ 	if (ret < 0) {
+ 		dev_err(dev, "Failed to read AB8505_RTC_PCUT_CTL_STATUS_REG\n");
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.8.5.2
+
