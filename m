@@ -1,60 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509AbaAFKFy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 05:05:54 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:17363 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752743AbaAFKFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 05:05:53 -0500
-Message-ID: <52CA7FFE.9070405@imgtec.com>
-Date: Mon, 6 Jan 2014 10:05:50 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1753606AbaAFKHa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 05:07:30 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:52903 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751782AbaAFKH2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 05:07:28 -0500
+Message-ID: <52CA8026.4010106@huawei.com>
+Date: Mon, 6 Jan 2014 18:06:30 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: <linux-metag@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Geert Uytterhoeven" <geert+renesas@linux-m68k.org>
-Subject: Re: [PATCH] metag/smp: Make boot_secondary() static
-References: <1388763831-27357-1-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1388763831-27357-1-git-send-email-geert@linux-m68k.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Gao feng <gaofeng@cn.fujitsu.com>, Cong Wang <xiyou.wangcong@gmail.com>
+CC: David Miller <davem@davemloft.net>, Jamal Hadi Salim <jhs@mojatatu.com>,
+        Li Zefan <lizefan@huawei.com>, Eric Dumazet <edumazet@google.com>,
+        <pshelar@nicira.com>, <jasowang@redhat.com>,
+        Simon Horman <horms@verge.net.au>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Linux Kernel Network Developers" <netdev@vger.kernel.org>,
+        <cgroups@vger.kernel.org>, <containers@lists.linux-foundation.org>,
+        Patrick McHardy <kaber@trash.net>, <xemul@openvz.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH net-next 0/4] net_cls for sys container
+References: <52C62A44.4070304@huawei.com> <CAM_iQpW0+Ftvk=QBE+0yMNW00VkBee1+yAEmbPkT+zjij9RX-Q@mail.gmail.com> <52CA614D.6040702@huawei.com> <52CA6C80.9060002@cn.fujitsu.com>
+In-Reply-To: <52CA6C80.9060002@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2014_01_06_10_05_51
+X-Originating-IP: [10.177.22.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/14 15:43, Geert Uytterhoeven wrote:
-> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-> 
-> boot_secondary() is not used outside arch/metag/kernel/smp.c, hence make it
-> static.
-> 
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-Thanks, applied.
 
-Cheers
-James
 
-> ---
->  arch/metag/kernel/smp.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+yes
+On 2014/1/6 16:42, Gao feng wrote:
+> On 01/06/2014 03:54 PM, Libo Chen wrote:
+>> On 2014/1/3 13:20, Cong Wang wrote:
+>>> On Thu, Jan 2, 2014 at 7:11 PM, Libo Chen <clbchenlibo.chen@huawei.com> wrote:
+>>>> Hi guys,
+>>>>
+>>>> Now, lxc created with veth can not be under control by
+>>>> cls_cgroup.
+>>>>
+>>>> the former discussion:
+>>>> http://lkml.indiana.edu/hypermail/linux/kernel/1312.1/00214.html
+>>>>
+>>>> In short, because cls_cgroup relys classid attached to sock
+>>>> filter skb, but sock will be cleared inside dev_forward_skb()
+>>>> in veth_xmit().
+>>>
+>>>
+>>> So what are you trying to achieve here?
+>>
+>> sys container using veth can be controlled by cls_cgroup basing on physic network interface
+>>
 > 
-> diff --git a/arch/metag/kernel/smp.c b/arch/metag/kernel/smp.c
-> index 7c0113142981..fc4b80e1e06a 100644
-> --- a/arch/metag/kernel/smp.c
-> +++ b/arch/metag/kernel/smp.c
-> @@ -68,7 +68,7 @@ static DECLARE_COMPLETION(cpu_running);
->  /*
->   * "thread" is assumed to be a valid Meta hardware thread ID.
->   */
-> -int boot_secondary(unsigned int thread, struct task_struct *idle)
-> +static int boot_secondary(unsigned int thread, struct task_struct *idle)
->  {
->  	u32 val;
->  
+> It's a problem about virtual nic, not container/net namespace.
+
+yes
+
 > 
+> If veth device is running in host. the skb is transmitted firstly by veth device and then delivered
+> by physical device. if you set both qdisc rule on veth and physical device. which qdisc rule will take
+> effect?
+
+both, the end result depends on a smaller.
+
+> 
+> In your patch, both qdisc rule are effective. it looks strange.
+> 
+
+qdisc is based nic, does not distinguish virtual or physics. if you are all set,
+it means that what you want.  so the logic is not the problemI and this appears to be normal.
+
+
+thanks,
+Libo
+
+> .
+> 
+
 
