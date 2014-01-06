@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411AbaAFW6I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:58:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48585 "EHLO
+	id S1754103AbaAFW6f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:58:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48581 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933268AbaAFWmK (ORCPT
+	with ESMTP id S933152AbaAFWmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:42:10 -0500
+	Mon, 6 Jan 2014 17:42:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, Sage Weil <sage@inktank.com>
-Subject: [PATCH 3.10 097/129] libceph: fix safe completion
-Date: Mon,  6 Jan 2014 14:38:46 -0800
-Message-Id: <20140106223902.377823891@linuxfoundation.org>
+        Alex Elder <elder@inktank.com>, Josh Durgin <josh.durgin@inktank.com>
+Subject: [PATCH 3.10 096/129] rbd: protect against concurrent unmaps
+Date: Mon,  6 Jan 2014 14:38:45 -0800
+Message-Id: <20140106223902.349996992@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -28,73 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+From: Alex Elder <elder@inktank.com>
 
-commit eb845ff13a44477f8a411baedbf11d678b9daf0a upstream.
+commit 82a442d239695a242c4d584464c9606322cd02aa upstream.
 
-handle_reply() calls complete_request() only if the first OSD reply
-has ONDISK flag.
+Make sure two concurrent unmap operations on the same rbd device
+won't collide, by only proceeding with the removal and cleanup of a
+device if is not already underway.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Josh Durgin <josh.durgin@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/ceph/osd_client.h |    1 -
- net/ceph/osd_client.c           |   17 ++++++++---------
- 2 files changed, 8 insertions(+), 10 deletions(-)
+ drivers/block/rbd.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/include/linux/ceph/osd_client.h
-+++ b/include/linux/ceph/osd_client.h
-@@ -145,7 +145,6 @@ struct ceph_osd_request {
- 	s32               r_reply_op_result[CEPH_OSD_MAX_OP];
- 	int               r_got_reply;
- 	int		  r_linger;
--	int		  r_completed;
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -5108,6 +5108,7 @@ static ssize_t rbd_remove(struct bus_typ
+ 	struct list_head *tmp;
+ 	int dev_id;
+ 	unsigned long ul;
++	bool already = false;
+ 	int ret;
  
- 	struct ceph_osd_client *r_osdc;
- 	struct kref       r_kref;
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -1522,6 +1522,8 @@ static void handle_reply(struct ceph_osd
- 	for (i = 0; i < numops; i++)
- 		req->r_reply_op_result[i] = ceph_decode_32(&p);
+ 	ret = strict_strtoul(buf, 10, &ul);
+@@ -5135,11 +5136,12 @@ static ssize_t rbd_remove(struct bus_typ
+ 		if (rbd_dev->open_count)
+ 			ret = -EBUSY;
+ 		else
+-			set_bit(RBD_DEV_FLAG_REMOVING, &rbd_dev->flags);
++			already = test_and_set_bit(RBD_DEV_FLAG_REMOVING,
++							&rbd_dev->flags);
+ 		spin_unlock_irq(&rbd_dev->lock);
+ 	}
+ 	spin_unlock(&rbd_dev_list_lock);
+-	if (ret < 0)
++	if (ret < 0 || already)
+ 		goto done;
  
-+	already_completed = req->r_got_reply;
-+
- 	if (!req->r_got_reply) {
- 
- 		req->r_result = result;
-@@ -1552,16 +1554,14 @@ static void handle_reply(struct ceph_osd
- 	    ((flags & CEPH_OSD_FLAG_WRITE) == 0))
- 		__unregister_request(osdc, req);
- 
--	already_completed = req->r_completed;
--	req->r_completed = 1;
- 	mutex_unlock(&osdc->request_mutex);
--	if (already_completed)
--		goto done;
- 
--	if (req->r_callback)
--		req->r_callback(req, msg);
--	else
--		complete_all(&req->r_completion);
-+	if (!already_completed) {
-+		if (req->r_callback)
-+			req->r_callback(req, msg);
-+		else
-+			complete_all(&req->r_completion);
-+	}
- 
- 	if (flags & CEPH_OSD_FLAG_ONDISK)
- 		complete_request(req);
-@@ -2121,7 +2121,6 @@ int ceph_osdc_start_request(struct ceph_
- 	__register_request(osdc, req);
- 	req->r_sent = 0;
- 	req->r_got_reply = 0;
--	req->r_completed = 0;
- 	rc = __map_request(osdc, req, 0);
- 	if (rc < 0) {
- 		if (nofail) {
+ 	rbd_bus_del_dev(rbd_dev);
 
 
