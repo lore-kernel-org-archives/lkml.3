@@ -1,72 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359AbaAFPU7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 10:20:59 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:55940 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755328AbaAFPU5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755339AbaAFPU5 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 Jan 2014 10:20:57 -0500
-From: Jesper Falk <jesperfalk94@gmail.com>
-To: anton@enomsg.org
-Cc: dwmw2@infradead.org, linux-kernel@vger.kernel.org,
-        Jesper Falk <jesperfalk94@gmail.com>
-Subject: [PATCH] Power: abx500: Fixed coding style issues
-Date: Mon,  6 Jan 2014 16:20:39 +0100
-Message-Id: <1389021639-10326-1-git-send-email-jesperfalk94@gmail.com>
-X-Mailer: git-send-email 1.8.5.2
+Received: from mx1.redhat.com ([209.132.183.28]:43616 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755218AbaAFPUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 10:20:55 -0500
+Date: Mon, 6 Jan 2014 15:30:12 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>
+Subject: Re: [PATCH 09/21] perf ui/hist: Add support to accumulated hist stat
+Message-ID: <20140106143012.GC1183@krava.brq.redhat.com>
+References: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
+ <1387873347-28838-10-git-send-email-namhyung@kernel.org>
+ <20140105173113.GH10018@krava.brq.redhat.com>
+ <8738l1ecj3.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8738l1ecj3.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed else on new line and made tabs instead of spaces
+On Mon, Jan 06, 2014 at 05:32:16PM +0900, Namhyung Kim wrote:
+> On Sun, 5 Jan 2014 18:31:13 +0100, Jiri Olsa wrote:
+> > On Tue, Dec 24, 2013 at 05:22:15PM +0900, Namhyung Kim wrote:
+> >> +#define __HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
+> >> +static u64 he_get_acc_##_field(struct hist_entry *he)				\
+> >> +{										\
+> >> +	return he->stat_acc->_field;						\
+> >> +}										\
+> >> +										\
+> >> +static int hpp__color_acc_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
+> >> +			      struct perf_hpp *hpp, struct hist_entry *he) 	\
+> >> +{										\
+> >> +	return __hpp__fmt(hpp, he, he_get_acc_##_field, " %6.2f%%",		\
+> >> +			  (hpp_snprint_fn)percent_color_snprintf, true);	\
+> >> +}
+> >> +
+> >> +#define __HPP_ENTRY_ACC_PERCENT_FN(_type, _field)				\
+> >> +static int hpp__entry_acc_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,	\
+> >> +			      struct perf_hpp *hpp, struct hist_entry *he) 	\
+> >> +{										\
+> >> +	const char *fmt = symbol_conf.field_sep ? " %.2f" : " %6.2f%%";		\
+> >> +	return __hpp__fmt(hpp, he, he_get_acc_##_field, fmt,			\
+> >> +			  scnprintf, true);					\
+> >> +}
+> >> +
+> >>  #define __HPP_ENTRY_RAW_FN(_type, _field)					\
+> >>  static u64 he_get_raw_##_field(struct hist_entry *he)				\
+> >>  {										\
+> >> @@ -148,17 +170,25 @@ __HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
+> >>  __HPP_COLOR_PERCENT_FN(_type, _field)					\
+> >>  __HPP_ENTRY_PERCENT_FN(_type, _field)
+> >>  
+> >> +#define HPP_PERCENT_ACC_FNS(_type, _str, _field, _min_width, _unit_width)\
+> >> +__HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
+> >> +__HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
+> >> +__HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
+> >> +__HPP_ENTRY_ACC_PERCENT_FN(_type, _field)
+> >
+> > how about add 'stat|stat_acc' parameter to the HPP_PERCENT_FNS
+> > macro and use it like:
+> >
+> > #define __HPP_COLOR_PERCENT_FN(_type, _field, _stat)                            \
+> > static u64 he_get_##_stat##_field(struct hist_entry *he)                        \
+> > {                                                                               \
+> >         return he->##_stat._field;                                              \
+> > }                                                                               \
+> >
+> >
+> > and use 'he_get_##_stat##_field' in __HPP_ENTRY_PERCENT_FN
+> >
+> > This way you dont need to duplicate the code, that differs
+> > only in the used stat data.. but it's possible I missed
+> > something ;-)
+> 
+> The problem is that he->stat is a in-struct data but ->stat_acc is
+> dynamically allocated.  So it should be 
+> 
+>   "he->stat. ## _field"
+>            ~
+> vs.
+> 
+>   "he->stat_acc-> ## _field"
+>                ~~
 
-Signed-off-by: Jesper Falk <jesperfalk94@gmail.com>
----
- drivers/power/abx500_chargalg.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+I see.. maybe some other 'is_pointer' parameter is better
+then duplicating the code.. but it's not that big anyway.. nevermind ;-)
 
-diff --git a/drivers/power/abx500_chargalg.c b/drivers/power/abx500_chargalg.c
-index 6d27236..a1ab145 100644
---- a/drivers/power/abx500_chargalg.c
-+++ b/drivers/power/abx500_chargalg.c
-@@ -227,7 +227,7 @@ enum maxim_ret {
-  * @chg_info:		information about connected charger types
-  * @batt_data:		data of the battery
-  * @susp_status:	current charger suspension status
-- * @bm:           	Platform specific battery management information
-+ * @bm:			Platform specific battery management information
-  * @curr_status:	Current step status for over-current protection
-  * @parent:		pointer to the struct abx500
-  * @chargalg_psy:	structure that holds the battery properties exposed by
-@@ -362,13 +362,13 @@ static int abx500_chargalg_check_charger_enable(struct abx500_chargalg *di)
- 
- 	if (di->chg_info.charger_type & USB_CHG) {
- 		return di->usb_chg->ops.check_enable(di->usb_chg,
--                         di->bm->bat_type[di->bm->batt_id].normal_vol_lvl,
--                         di->bm->bat_type[di->bm->batt_id].normal_cur_lvl);
-+			di->bm->bat_type[di->bm->batt_id].normal_vol_lvl,
-+			di->bm->bat_type[di->bm->batt_id].normal_cur_lvl);
- 	} else if ((di->chg_info.charger_type & AC_CHG) &&
- 		   !(di->ac_chg->external)) {
- 		return di->ac_chg->ops.check_enable(di->ac_chg,
--                         di->bm->bat_type[di->bm->batt_id].normal_vol_lvl,
--                         di->bm->bat_type[di->bm->batt_id].normal_cur_lvl);
-+			di->bm->bat_type[di->bm->batt_id].normal_vol_lvl,
-+			di->bm->bat_type[di->bm->batt_id].normal_cur_lvl);
- 	}
- 	return 0;
- }
-@@ -532,8 +532,7 @@ static int abx500_chargalg_kick_watchdog(struct abx500_chargalg *di)
- 			di->usb_chg->ops.kick_wd(di->usb_chg);
- 
- 		return di->ac_chg->ops.kick_wd(di->ac_chg);
--	}
--	else if (di->usb_chg && di->usb_chg->ops.kick_wd &&
-+	} else if (di->usb_chg && di->usb_chg->ops.kick_wd &&
- 			di->chg_info.online_chg & USB_CHG)
- 		return di->usb_chg->ops.kick_wd(di->usb_chg);
- 
--- 
-1.8.5.2
+> >
+> > btw just noticed __HPP_COLOR_PERCENT_FN does not use _type
+> 
+> ???  It's used in hpp__color_##_type().
 
+aah ok, missed that
+
+thanks,
+jirka
