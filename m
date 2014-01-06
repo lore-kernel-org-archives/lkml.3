@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932619AbaAFWjz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:39:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47878 "EHLO
+	id S933476AbaAFXnn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:43:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47900 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932582AbaAFWju (ORCPT
+	with ESMTP id S932615AbaAFWjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:39:50 -0500
+	Mon, 6 Jan 2014 17:39:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bob Peterson <rpeterso@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 3.12 126/144] GFS2: Fix use-after-free race when calling gfs2_remove_from_ail
-Date: Mon,  6 Jan 2014 14:38:07 -0800
-Message-Id: <20140106223748.961639944@linuxfoundation.org>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [PATCH 3.12 131/144] s390/3270: fix allocation of tty3270_screen structure
+Date: Mon,  6 Jan 2014 14:38:12 -0800
+Message-Id: <20140106223749.100721934@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,43 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bob Peterson <rpeterso@redhat.com>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit 9290a9a7c0bcf5400e8dbfbf9707fa68ea3fb338 upstream.
+commit 36d9f4d3b68c7035ead3850dc85f310a579ed0eb upstream.
 
-Function gfs2_remove_from_ail drops the reference on the bh via
-brelse. This patch fixes a race condition whereby bh is deferenced
-after the brelse when setting bd->bd_blkno = bh->b_blocknr;
-Under certain rare circumstances, bh might be gone or reused,
-and bd->bd_blkno is set to whatever that memory happens to be,
-which is often 0. Later, in gfs2_trans_add_unrevoke, that bd fails
-the test "bd->bd_blkno >= blkno" which causes it to never be freed.
-The end result is that the bd is never freed from the bufdata cache,
-which results in this error:
-slab error in kmem_cache_destroy(): cache `gfs2_bufdata': Can't free all objects
+The tty3270_alloc_screen function is called from tty3270_install with
+swapped arguments, the number of columns instead of rows and vice versa.
+The number of rows is typically smaller than the number of columns which
+makes the screen array too big but the individual cell arrays for the
+lines too small. Creating lines longer than the number of rows will
+clobber the memory after the end of the cell array.
+The fix is simple, call tty3270_alloc_screen with the correct argument
+order.
 
-Signed-off-by: Bob Peterson <rpeterso@redhat.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/gfs2/log.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/s390/char/tty3270.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/gfs2/log.c
-+++ b/fs/gfs2/log.c
-@@ -551,10 +551,10 @@ void gfs2_add_revoke(struct gfs2_sbd *sd
- 	struct buffer_head *bh = bd->bd_bh;
- 	struct gfs2_glock *gl = bd->bd_gl;
+--- a/drivers/s390/char/tty3270.c
++++ b/drivers/s390/char/tty3270.c
+@@ -942,7 +942,7 @@ static int tty3270_install(struct tty_dr
+ 		return rc;
+ 	}
  
--	gfs2_remove_from_ail(bd);
--	bd->bd_bh = NULL;
- 	bh->b_private = NULL;
- 	bd->bd_blkno = bh->b_blocknr;
-+	gfs2_remove_from_ail(bd); /* drops ref on bh */
-+	bd->bd_bh = NULL;
- 	bd->bd_ops = &gfs2_revoke_lops;
- 	sdp->sd_log_num_revoke++;
- 	atomic_inc(&gl->gl_revokes);
+-	tp->screen = tty3270_alloc_screen(tp->view.cols, tp->view.rows);
++	tp->screen = tty3270_alloc_screen(tp->view.rows, tp->view.cols);
+ 	if (IS_ERR(tp->screen)) {
+ 		rc = PTR_ERR(tp->screen);
+ 		raw3270_put_view(&tp->view);
 
 
