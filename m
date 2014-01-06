@@ -1,119 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331AbaAFWYt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:24:49 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:47724 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756049AbaAFWYn (ORCPT
+	id S1756491AbaAFWZu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:25:50 -0500
+Received: from smtprelay0160.hostedemail.com ([216.40.44.160]:60058 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755870AbaAFWZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:24:43 -0500
-Message-ID: <52CB2D29.3050107@codeaurora.org>
-Date: Mon, 06 Jan 2014 14:24:41 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH v2 02/10] genirq: Add devm_request_any_context_irq()
-References: <1388709460-19222-1-git-send-email-sboyd@codeaurora.org> <1388709460-19222-3-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1388709460-19222-3-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 6 Jan 2014 17:25:48 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2110:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3866:3867:3868:3870:3871:3872:3874:4250:4321:5007:6119:7652:8603:10004:10400:10848:11026:11232:11658:11914:12295:12296:12517:12519:12533:12740:13069:13311:13357:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: week65_152e3d2abd50b
+X-Filterd-Recvd-Size: 2364
+Message-ID: <1389047143.2433.14.camel@joe-AO722>
+Subject: Re: [PATCH] lib/vsprintf: add %pT[C012] format specifier
+From: Joe Perches <joe@perches.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: keescook@chromium.org, pavel@ucw.cz, akpm@linux-foundation.org,
+        geert@linux-m68k.org, jkosina@suse.cz, viro@zeniv.linux.org.uk,
+        davem@davemloft.net, linux-kernel@vger.kernel.org
+Date: Mon, 06 Jan 2014 14:25:43 -0800
+In-Reply-To: <201401070641.HAC18733.VOFMFOLOJQSFHt@I-love.SAKURA.ne.jp>
+References: <201401041126.BHJ81291.VOHLOtMFOJFQFS@I-love.SAKURA.ne.jp>
+	 <201401051215.ACJ30759.MJSHtFFFVOOOQL@I-love.SAKURA.ne.jp>
+	 <1388945392.5808.19.camel@joe-AO722>
+	 <201401062300.GFE12908.FOQLFFJOSOMVHt@I-love.SAKURA.ne.jp>
+	 <1389029698.2433.3.camel@joe-AO722>
+	 <201401070641.HAC18733.VOFMFOLOJQSFHt@I-love.SAKURA.ne.jp>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/14 16:37, Stephen Boyd wrote:
-> Some drivers use request_any_context_irq() but there isn't a
-> devm_* function for it. Add one so that these drivers don't need
-> to explicitly free the irq on driver detach.
->
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+On Tue, 2014-01-07 at 06:41 +0900, Tetsuo Handa wrote:
+> Joe Perches wrote:
+> > On Mon, 2014-01-06 at 23:00 +0900, Tetsuo Handa wrote:
+> > > Joe Perches wrote:
+> > > > Is this really necessary?
+> > > No problem. %pT[012] are simply optimization (reducing number of function
+> > > arguments for saving text size) and therefore I can drop them.
+> > > What about below patch?
+> > 
+> > Hi Tetsuo.  Just a nit.
+> > 
+> > > diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+> > []
+> > > @@ -1232,7 +1248,7 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+> > >  {
+> > >  	int default_width = 2 * sizeof(void *) + (spec.flags & SPECIAL ? 2 : 0);
+> > >  
+> > > -	if (!ptr && *fmt != 'K') {
+> > > +	if (!ptr && *fmt != 'K' && *fmt != 'T') {
+> > 
+> > I think this new 'T' comparison isn't necessary.
+> 
+> This is needed for allowing comm_name() to accept NULL instead of current.
 
-Thomas, can you please review this patch?
+Yeah, that's what I think isn't necessary.
 
-> ---
->  include/linux/interrupt.h |  5 +++++
->  kernel/irq/devres.c       | 45 +++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 50 insertions(+)
->
-> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-> index 0053adde0ed9..a2678d35b5a2 100644
-> --- a/include/linux/interrupt.h
-> +++ b/include/linux/interrupt.h
-> @@ -158,6 +158,11 @@ devm_request_irq(struct device *dev, unsigned int irq, irq_handler_t handler,
->  					 devname, dev_id);
->  }
->  
-> +extern int __must_check
-> +devm_request_any_context_irq(struct device *dev, unsigned int irq,
-> +		 irq_handler_t handler, unsigned long irqflags,
-> +		 const char *devname, void *dev_id);
-> +
->  extern void devm_free_irq(struct device *dev, unsigned int irq, void *dev_id);
->  
->  /*
-> diff --git a/kernel/irq/devres.c b/kernel/irq/devres.c
-> index bd8e788d71e0..1ef0606797c9 100644
-> --- a/kernel/irq/devres.c
-> +++ b/kernel/irq/devres.c
-> @@ -73,6 +73,51 @@ int devm_request_threaded_irq(struct device *dev, unsigned int irq,
->  EXPORT_SYMBOL(devm_request_threaded_irq);
->  
->  /**
-> + *	devm_request_any_context_irq - allocate an interrupt line for a managed device
-> + *	@dev: device to request interrupt for
-> + *	@irq: Interrupt line to allocate
-> + *	@handler: Function to be called when the IRQ occurs
-> + *	@thread_fn: function to be called in a threaded interrupt context. NULL
-> + *		    for devices which handle everything in @handler
-> + *	@irqflags: Interrupt type flags
-> + *	@devname: An ascii name for the claiming device
-> + *	@dev_id: A cookie passed back to the handler function
-> + *
-> + *	Except for the extra @dev argument, this function takes the
-> + *	same arguments and performs the same function as
-> + *	request_any_context_irq().  IRQs requested with this function will be
-> + *	automatically freed on driver detach.
-> + *
-> + *	If an IRQ allocated with this function needs to be freed
-> + *	separately, devm_free_irq() must be used.
-> + */
-> +int devm_request_any_context_irq(struct device *dev, unsigned int irq,
-> +			      irq_handler_t handler, unsigned long irqflags,
-> +			      const char *devname, void *dev_id)
-> +{
-> +	struct irq_devres *dr;
-> +	int rc;
-> +
-> +	dr = devres_alloc(devm_irq_release, sizeof(struct irq_devres),
-> +			  GFP_KERNEL);
-> +	if (!dr)
-> +		return -ENOMEM;
-> +
-> +	rc = request_any_context_irq(irq, handler, irqflags, devname, dev_id);
-> +	if (rc) {
-> +		devres_free(dr);
-> +		return rc;
-> +	}
-> +
-> +	dr->irq = irq;
-> +	dr->dev_id = dev_id;
-> +	devres_add(dev, dr);
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(devm_request_any_context_irq);
-> +
-> +/**
->   *	devm_free_irq - free an interrupt
->   *	@dev: device to free interrupt for
->   *	@irq: Interrupt line to free
+current is current_thread_info()->task.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+I think it's pretty lightweight in all arches and
+it'd be simpler/more intelligible to not use NULL.
+
+Andrew?  Any opinion?  Anyone else?
+
+cheers, Joe
 
