@@ -1,97 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317AbaAFXEt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:04:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48499 "EHLO
+	id S1757338AbaAFXFU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:05:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49048 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933166AbaAFWlw (ORCPT
+	with ESMTP id S1757322AbaAFXFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:52 -0500
+	Mon, 6 Jan 2014 18:05:13 -0500
+Date: Mon, 6 Jan 2014 15:05:39 -0800
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josh Durgin <josh.durgin@inktank.com>, Alex Elder <elder@linaro.org>
-Subject: [PATCH 3.10 115/129] rbd: make rbd_obj_notify_ack() synchronous
-Date: Mon,  6 Jan 2014 14:39:04 -0800
-Message-Id: <20140106223902.882047287@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
-References: <20140106223859.589799655@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Nithin Nayak Sujir <nsujir@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 3.4 22/43] tg3: Expand 4g_overflow_test workaround to skb
+ fragments of any size.
+Message-ID: <20140106230539.GA27291@kroah.com>
+References: <20140106223942.259651490@linuxfoundation.org>
+ <20140106223942.884336164@linuxfoundation.org>
+ <1389049135.26646.14.camel@edumazet-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389049135.26646.14.camel@edumazet-glaptop2.roam.corp.google.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Jan 06, 2014 at 02:58:55PM -0800, Eric Dumazet wrote:
+> On Mon, 2014-01-06 at 14:39 -0800, Greg Kroah-Hartman wrote:
+> > 3.4-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Nithin Sujir <nsujir@broadcom.com>
+> > 
+> > commit 375679104ab3ccfd18dcbd7ba503734fb9a2c63a upstream.
+> > 
+> > The current driver assumes that an skb fragment can only be upto jumbo
+> > size. Presumably this was a fast-path optimization. This assumption is
+> > no longer true as fragments can be upto 32k.
+> > 
+> > v2: Remove unnecessary parantheses per Eric Dumazet.
+> > 
+> > Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+> > Signed-off-by: Michael Chan <mchan@broadcom.com>
+> > Signed-off-by: David S. Miller <davem@davemloft.net>
+> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > 
+> > ---
+> >  drivers/net/ethernet/broadcom/tg3.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > --- a/drivers/net/ethernet/broadcom/tg3.c
+> > +++ b/drivers/net/ethernet/broadcom/tg3.c
+> > @@ -6619,7 +6619,7 @@ static inline int tg3_4g_overflow_test(d
+> >  {
+> >  	u32 base = (u32) mapping & 0xffffffff;
+> >  
+> > -	return (base > 0xffffdcc0) && (base + len + 8 < base);
+> > +	return base + len + 8 < base;
+> >  }
+> >  
+> 
+> Minor comment :
+> 
+> 32KB frags were added later, in 3.7.
+> 
+> This patch makes no harm, so no worries.
 
-------------------
+Ah, thanks, I'll go drop it anyway.
 
-From: Josh Durgin <josh.durgin@inktank.com>
-
-commit 20e0af67ce88c657d0601977b9941a2256afbdaa upstream.
-
-The only user of rbd_obj_notify_ack() is rbd_watch_cb(). It used
-asynchronously with no tracking of when the notify ack completes, so
-it may still be in progress when the osd_client is shut down.  This
-results in a BUG() since the osd client assumes no requests are in
-flight when it stops. Since all notifies are flushed before the
-osd_client is stopped, waiting for the notify ack to complete before
-returning from the watch callback ensures there are no notify acks in
-flight during shutdown.
-
-Rename rbd_obj_notify_ack() to rbd_obj_notify_ack_sync() to reflect
-its new synchronous nature.
-
-Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
-Reviewed-by: Alex Elder <elder@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/block/rbd.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
-
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -2819,7 +2819,7 @@ out_err:
- 	obj_request_done_set(obj_request);
- }
- 
--static int rbd_obj_notify_ack(struct rbd_device *rbd_dev, u64 notify_id)
-+static int rbd_obj_notify_ack_sync(struct rbd_device *rbd_dev, u64 notify_id)
- {
- 	struct rbd_obj_request *obj_request;
- 	struct ceph_osd_client *osdc = &rbd_dev->rbd_client->client->osdc;
-@@ -2834,16 +2834,17 @@ static int rbd_obj_notify_ack(struct rbd
- 	obj_request->osd_req = rbd_osd_req_create(rbd_dev, false, obj_request);
- 	if (!obj_request->osd_req)
- 		goto out;
--	obj_request->callback = rbd_obj_request_put;
- 
- 	osd_req_op_watch_init(obj_request->osd_req, 0, CEPH_OSD_OP_NOTIFY_ACK,
- 					notify_id, 0, 0);
- 	rbd_osd_req_format_read(obj_request);
- 
- 	ret = rbd_obj_request_submit(osdc, obj_request);
--out:
- 	if (ret)
--		rbd_obj_request_put(obj_request);
-+		goto out;
-+	ret = rbd_obj_request_wait(obj_request);
-+out:
-+	rbd_obj_request_put(obj_request);
- 
- 	return ret;
- }
-@@ -2863,7 +2864,7 @@ static void rbd_watch_cb(u64 ver, u64 no
- 	if (ret)
- 		rbd_warn(rbd_dev, ": header refresh error (%d)\n", ret);
- 
--	rbd_obj_notify_ack(rbd_dev, notify_id);
-+	rbd_obj_notify_ack_sync(rbd_dev, notify_id);
- }
- 
- /*
-
-
+greg k-h
