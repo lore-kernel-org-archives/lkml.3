@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757890AbaAFXsE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:48:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47825 "EHLO
+	id S932512AbaAFWjl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:39:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47766 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932516AbaAFWjm (ORCPT
+	with ESMTP id S932470AbaAFWjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:39:42 -0500
+	Mon, 6 Jan 2014 17:39:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jianguo Wu <wujianguo@huawei.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Mel Gorman <mgorman@suse.de>, qiuxishi <qiuxishi@huawei.com>,
-        Hanjun Guo <guohanjun@huawei.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Alex Thorlton <athorlton@sgi.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 118/144] mm/hugetlb: check for pte NULL pointer in __page_check_address()
-Date: Mon,  6 Jan 2014 14:37:59 -0800
-Message-Id: <20140106223748.729904553@linuxfoundation.org>
+Subject: [PATCH 3.12 111/144] mm: numa: ensure anon_vma is locked to prevent parallel THP splits
+Date: Mon,  6 Jan 2014 14:37:52 -0800
+Message-Id: <20140106223748.534665506@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -34,40 +31,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jianguo Wu <wujianguo@huawei.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 98398c32f6687ee1e1f3ae084effb4b75adb0747 upstream.
+commit c3a489cac38d43ea6dc4ac240473b44b46deecf7 upstream.
 
-In __page_check_address(), if address's pud is not present,
-huge_pte_offset() will return NULL, we should check the return value.
+The anon_vma lock prevents parallel THP splits and any associated
+complexity that arises when handling splits during THP migration.  This
+patch checks if the lock was successfully acquired and bails from THP
+migration if it failed for any reason.
 
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: qiuxishi <qiuxishi@huawei.com>
-Cc: Hanjun Guo <guohanjun@huawei.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Alex Thorlton <athorlton@sgi.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/rmap.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ mm/huge_memory.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -600,7 +600,11 @@ pte_t *__page_check_address(struct page
- 	spinlock_t *ptl;
- 
- 	if (unlikely(PageHuge(page))) {
-+		/* when pud is not present, pte will be NULL */
- 		pte = huge_pte_offset(mm, address);
-+		if (!pte)
-+			return NULL;
-+
- 		ptl = &mm->page_table_lock;
- 		goto check;
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1334,6 +1334,13 @@ int do_huge_pmd_numa_page(struct mm_stru
+ 		goto out_unlock;
  	}
+ 
++	/* Bail if we fail to protect against THP splits for any reason */
++	if (unlikely(!anon_vma)) {
++		put_page(page);
++		page_nid = -1;
++		goto clear_pmdnuma;
++	}
++
+ 	/*
+ 	 * Migrate the THP to the requested node, returns with page unlocked
+ 	 * and pmd_numa cleared.
 
 
