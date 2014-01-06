@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932105AbaAFWif (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:38:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47437 "EHLO
+	id S932128AbaAFWii (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:38:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47441 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756825AbaAFWi2 (ORCPT
+	with ESMTP id S1756738AbaAFWi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:28 -0500
+	Mon, 6 Jan 2014 17:38:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Or Gerlitz <ogerlitz@mellanox.com>,
+        Henrik Goldman <hg@x-formation.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.12 038/144] iser-target: Move INIT_WORK setup into isert_create_device_ib_res
-Date: Mon,  6 Jan 2014 14:36:39 -0800
-Message-Id: <20140106223746.412399469@linuxfoundation.org>
+Subject: [PATCH 3.12 039/144] target/file: Update hw_max_sectors based on current block_size
+Date: Mon,  6 Jan 2014 14:36:40 -0800
+Message-Id: <20140106223746.441449952@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -31,67 +31,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 2853c2b6671509591be09213954d7249ca6ff224 upstream.
+commit 95cadace8f3959282e76ebf8b382bd0930807d2c upstream.
 
-This patch moves INIT_WORK setup for cq_desc->cq_[rx,tx]_work into
-isert_create_device_ib_res(), instead of being done each callback
-invocation in isert_cq_[rx,tx]_callback().
+This patch allows FILEIO to update hw_max_sectors based on the current
+max_bytes_per_io.  This is required because vfs_[writev,readv]() can accept
+a maximum of 2048 iovecs per call, so the enforced hw_max_sectors really
+needs to be calculated based on block_size.
 
-This also fixes a 'INFO: trying to register non-static key' warning
-when cancel_work_sync() is called before INIT_WORK has setup the
-struct work_struct.
+This addresses a >= v3.5 bug where block_size=512 was rejecting > 1M
+sized I/O requests, because FD_MAX_SECTORS was hardcoded to 2048 for
+the block_size=4096 case.
 
-Reported-by: Or Gerlitz <ogerlitz@mellanox.com>
+(v2: Use max_bytes_per_io instead of ->update_hw_max_sectors)
+
+Reported-by: Henrik Goldman <hg@x-formation.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/target/target_core_device.c |    5 +++++
+ drivers/target/target_core_file.c   |    8 ++++----
+ drivers/target/target_core_file.h   |    5 ++++-
+ include/target/target_core_base.h   |    1 +
+ 4 files changed, 14 insertions(+), 5 deletions(-)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -206,7 +206,9 @@ isert_free_rx_descriptors(struct isert_c
- 	isert_conn->conn_rx_descs = NULL;
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -1107,6 +1107,11 @@ int se_dev_set_block_size(struct se_devi
+ 	dev->dev_attrib.block_size = block_size;
+ 	pr_debug("dev[%p]: SE Device block_size changed to %u\n",
+ 			dev, block_size);
++
++	if (dev->dev_attrib.max_bytes_per_io)
++		dev->dev_attrib.hw_max_sectors =
++			dev->dev_attrib.max_bytes_per_io / block_size;
++
+ 	return 0;
  }
  
-+static void isert_cq_tx_work(struct work_struct *);
- static void isert_cq_tx_callback(struct ib_cq *, void *);
-+static void isert_cq_rx_work(struct work_struct *);
- static void isert_cq_rx_callback(struct ib_cq *, void *);
+--- a/drivers/target/target_core_file.c
++++ b/drivers/target/target_core_file.c
+@@ -66,9 +66,8 @@ static int fd_attach_hba(struct se_hba *
+ 	pr_debug("CORE_HBA[%d] - TCM FILEIO HBA Driver %s on Generic"
+ 		" Target Core Stack %s\n", hba->hba_id, FD_VERSION,
+ 		TARGET_CORE_MOD_VERSION);
+-	pr_debug("CORE_HBA[%d] - Attached FILEIO HBA: %u to Generic"
+-		" MaxSectors: %u\n",
+-		hba->hba_id, fd_host->fd_host_id, FD_MAX_SECTORS);
++	pr_debug("CORE_HBA[%d] - Attached FILEIO HBA: %u to Generic\n",
++		hba->hba_id, fd_host->fd_host_id);
  
- static int
-@@ -258,6 +260,7 @@ isert_create_device_ib_res(struct isert_
- 		cq_desc[i].device = device;
- 		cq_desc[i].cq_index = i;
- 
-+		INIT_WORK(&cq_desc[i].cq_rx_work, isert_cq_rx_work);
- 		device->dev_rx_cq[i] = ib_create_cq(device->ib_device,
- 						isert_cq_rx_callback,
- 						isert_cq_event_callback,
-@@ -269,6 +272,7 @@ isert_create_device_ib_res(struct isert_
- 			goto out_cq;
- 		}
- 
-+		INIT_WORK(&cq_desc[i].cq_tx_work, isert_cq_tx_work);
- 		device->dev_tx_cq[i] = ib_create_cq(device->ib_device,
- 						isert_cq_tx_callback,
- 						isert_cq_event_callback,
-@@ -1694,7 +1698,6 @@ isert_cq_tx_callback(struct ib_cq *cq, v
- {
- 	struct isert_cq_desc *cq_desc = (struct isert_cq_desc *)context;
- 
--	INIT_WORK(&cq_desc->cq_tx_work, isert_cq_tx_work);
- 	queue_work(isert_comp_wq, &cq_desc->cq_tx_work);
+ 	return 0;
  }
+@@ -220,7 +219,8 @@ static int fd_configure_device(struct se
+ 	}
  
-@@ -1738,7 +1741,6 @@ isert_cq_rx_callback(struct ib_cq *cq, v
- {
- 	struct isert_cq_desc *cq_desc = (struct isert_cq_desc *)context;
+ 	dev->dev_attrib.hw_block_size = fd_dev->fd_block_size;
+-	dev->dev_attrib.hw_max_sectors = FD_MAX_SECTORS;
++	dev->dev_attrib.max_bytes_per_io = FD_MAX_BYTES;
++	dev->dev_attrib.hw_max_sectors = FD_MAX_BYTES / fd_dev->fd_block_size;
+ 	dev->dev_attrib.hw_queue_depth = FD_MAX_DEVICE_QUEUE_DEPTH;
  
--	INIT_WORK(&cq_desc->cq_rx_work, isert_cq_rx_work);
- 	queue_work(isert_rx_wq, &cq_desc->cq_rx_work);
- }
+ 	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) {
+--- a/drivers/target/target_core_file.h
++++ b/drivers/target/target_core_file.h
+@@ -7,7 +7,10 @@
+ #define FD_DEVICE_QUEUE_DEPTH	32
+ #define FD_MAX_DEVICE_QUEUE_DEPTH 128
+ #define FD_BLOCKSIZE		512
+-#define FD_MAX_SECTORS		2048
++/*
++ * Limited by the number of iovecs (2048) per vfs_[writev,readv] call
++ */
++#define FD_MAX_BYTES		8388608
  
+ #define RRF_EMULATE_CDB		0x01
+ #define RRF_GOT_LBA		0x02
+--- a/include/target/target_core_base.h
++++ b/include/target/target_core_base.h
+@@ -624,6 +624,7 @@ struct se_dev_attrib {
+ 	u32		unmap_granularity;
+ 	u32		unmap_granularity_alignment;
+ 	u32		max_write_same_len;
++	u32		max_bytes_per_io;
+ 	struct se_device *da_dev;
+ 	struct config_group da_group;
+ };
 
 
