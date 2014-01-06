@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756367AbaAFVja (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 16:39:30 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:34894 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754992AbaAFVj2 (ORCPT
+	id S1756270AbaAFVmm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 16:42:42 -0500
+Received: from www262.sakura.ne.jp ([202.181.97.72]:61119 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754664AbaAFVmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 16:39:28 -0500
-Date: Mon, 06 Jan 2014 16:39:26 -0500 (EST)
-Message-Id: <20140106.163926.1801604023600319341.davem@davemloft.net>
-To: dcbw@redhat.com
-Cc: hns@goldelico.com, j.dumon@option.com, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        marek.belisko@gmail.com, e.verdonck@option.com
-Subject: Re: [PATCH] hso: fix handling of modem port SERIAL_STATE
- notifications
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1389044380.15419.4.camel@dcbw.local>
-References: <1389024449.1866.3.camel@dcbw.local>
-	<20140106.163036.1031013112322786.davem@davemloft.net>
-	<1389044380.15419.4.camel@dcbw.local>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 6 Jan 2014 16:42:40 -0500
+X-Nat-Received: from [202.181.97.72]:59933 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1389044509.30194
+To: joe@perches.com
+Cc: keescook@chromium.org, pavel@ucw.cz, akpm@linux-foundation.org,
+        geert@linux-m68k.org, jkosina@suse.cz, viro@zeniv.linux.org.uk,
+        davem@davemloft.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lib/vsprintf: add %pT[C012] format specifier
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201401041126.BHJ81291.VOHLOtMFOJFQFS@I-love.SAKURA.ne.jp>
+	<201401051215.ACJ30759.MJSHtFFFVOOOQL@I-love.SAKURA.ne.jp>
+	<1388945392.5808.19.camel@joe-AO722>
+	<201401062300.GFE12908.FOQLFFJOSOMVHt@I-love.SAKURA.ne.jp>
+	<1389029698.2433.3.camel@joe-AO722>
+In-Reply-To: <1389029698.2433.3.camel@joe-AO722>
+Message-Id: <201401070641.HAC18733.VOFMFOLOJQSFHt@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Tue, 7 Jan 2014 06:41:44 +0900
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 06 Jan 2014 13:39:28 -0800 (PST)
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 06012014 #7267303, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Williams <dcbw@redhat.com>
-Date: Mon, 06 Jan 2014 15:39:40 -0600
+Joe Perches wrote:
+> On Mon, 2014-01-06 at 23:00 +0900, Tetsuo Handa wrote:
+> > Joe Perches wrote:
+> > > Is this really necessary?
+> > No problem. %pT[012] are simply optimization (reducing number of function
+> > arguments for saving text size) and therefore I can drop them.
+> > What about below patch?
+> 
+> Hi Tetsuo.  Just a nit.
+> 
+> > diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+> []
+> > @@ -1232,7 +1248,7 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+> >  {
+> >  	int default_width = 2 * sizeof(void *) + (spec.flags & SPECIAL ? 2 : 0);
+> >  
+> > -	if (!ptr && *fmt != 'K') {
+> > +	if (!ptr && *fmt != 'K' && *fmt != 'T') {
+> 
+> I think this new 'T' comparison isn't necessary.
 
-> If the driver ever gets to that callback for any !Modem port, something
-> is horribly wrong, which the BUG_ON() was attempting to make explicit.
-> The driver only enables that callback for the Modem port, so yeah, it's
-> somewhat defensive.  I'm happy to send a fixup if you like?
-
-You don't have to if you think the BUG_ON() is warranted.
+This is needed for allowing comm_name() to accept NULL instead of current.
