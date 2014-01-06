@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757324AbaAFXMQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:12:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48425 "EHLO
+	id S933401AbaAFXMp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:12:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48420 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933045AbaAFWlf (ORCPT
+	with ESMTP id S933038AbaAFWle (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:35 -0500
+	Mon, 6 Jan 2014 17:41:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.10 046/129] drm/radeon: fix asic gfx values for scrapper asics
-Date: Mon,  6 Jan 2014 14:37:55 -0800
-Message-Id: <20140106223900.920943048@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 055/129] ath9k: Fix interrupt handling for the AR9002 family
+Date: Mon,  6 Jan 2014 14:38:04 -0800
+Message-Id: <20140106223901.177979189@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -28,74 +30,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-commit e2f6c88fb903e123edfd1106b0b8310d5117f774 upstream.
+commit 73f0b56a1ff64e7fb6c3a62088804bab93bcedc2 upstream.
 
-Fixes gfx corruption on certain TN/RL parts.
+This patch adds a driver workaround for a HW issue.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=60389
+A race condition in the HW results in missing interrupts,
+which can be avoided by a read/write with the ISR register.
+All chips in the AR9002 series are affected by this bug - AR9003
+and above do not have this problem.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Cc: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/ni.c |   20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9002_mac.c |   52 +++++++++++++++++++++++-----
+ 1 file changed, 43 insertions(+), 9 deletions(-)
 
---- a/drivers/gpu/drm/radeon/ni.c
-+++ b/drivers/gpu/drm/radeon/ni.c
-@@ -753,6 +753,10 @@ static void cayman_gpu_init(struct radeo
- 		    (rdev->pdev->device == 0x999C)) {
- 			rdev->config.cayman.max_simds_per_se = 6;
- 			rdev->config.cayman.max_backends_per_se = 2;
-+			rdev->config.cayman.max_hw_contexts = 8;
-+			rdev->config.cayman.sx_max_export_size = 256;
-+			rdev->config.cayman.sx_max_export_pos_size = 64;
-+			rdev->config.cayman.sx_max_export_smx_size = 192;
- 		} else if ((rdev->pdev->device == 0x9903) ||
- 			   (rdev->pdev->device == 0x9904) ||
- 			   (rdev->pdev->device == 0x990A) ||
-@@ -763,6 +767,10 @@ static void cayman_gpu_init(struct radeo
- 			   (rdev->pdev->device == 0x999D)) {
- 			rdev->config.cayman.max_simds_per_se = 4;
- 			rdev->config.cayman.max_backends_per_se = 2;
-+			rdev->config.cayman.max_hw_contexts = 8;
-+			rdev->config.cayman.sx_max_export_size = 256;
-+			rdev->config.cayman.sx_max_export_pos_size = 64;
-+			rdev->config.cayman.sx_max_export_smx_size = 192;
- 		} else if ((rdev->pdev->device == 0x9919) ||
- 			   (rdev->pdev->device == 0x9990) ||
- 			   (rdev->pdev->device == 0x9991) ||
-@@ -773,9 +781,17 @@ static void cayman_gpu_init(struct radeo
- 			   (rdev->pdev->device == 0x99A0)) {
- 			rdev->config.cayman.max_simds_per_se = 3;
- 			rdev->config.cayman.max_backends_per_se = 1;
-+			rdev->config.cayman.max_hw_contexts = 4;
-+			rdev->config.cayman.sx_max_export_size = 128;
-+			rdev->config.cayman.sx_max_export_pos_size = 32;
-+			rdev->config.cayman.sx_max_export_smx_size = 96;
- 		} else {
- 			rdev->config.cayman.max_simds_per_se = 2;
- 			rdev->config.cayman.max_backends_per_se = 1;
-+			rdev->config.cayman.max_hw_contexts = 4;
-+			rdev->config.cayman.sx_max_export_size = 128;
-+			rdev->config.cayman.sx_max_export_pos_size = 32;
-+			rdev->config.cayman.sx_max_export_smx_size = 96;
+--- a/drivers/net/wireless/ath/ath9k/ar9002_mac.c
++++ b/drivers/net/wireless/ath/ath9k/ar9002_mac.c
+@@ -76,9 +76,16 @@ static bool ar9002_hw_get_isr(struct ath
+ 				mask2 |= ATH9K_INT_CST;
+ 			if (isr2 & AR_ISR_S2_TSFOOR)
+ 				mask2 |= ATH9K_INT_TSFOOR;
++
++			if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
++				REG_WRITE(ah, AR_ISR_S2, isr2);
++				isr &= ~AR_ISR_BCNMISC;
++			}
  		}
- 		rdev->config.cayman.max_texture_channel_caches = 2;
- 		rdev->config.cayman.max_gprs = 256;
-@@ -783,10 +799,6 @@ static void cayman_gpu_init(struct radeo
- 		rdev->config.cayman.max_gs_threads = 32;
- 		rdev->config.cayman.max_stack_entries = 512;
- 		rdev->config.cayman.sx_num_of_sets = 8;
--		rdev->config.cayman.sx_max_export_size = 256;
--		rdev->config.cayman.sx_max_export_pos_size = 64;
--		rdev->config.cayman.sx_max_export_smx_size = 192;
--		rdev->config.cayman.max_hw_contexts = 8;
- 		rdev->config.cayman.sq_num_cf_insts = 2;
  
- 		rdev->config.cayman.sc_prim_fifo_size = 0x40;
+-		isr = REG_READ(ah, AR_ISR_RAC);
++		if (pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)
++			isr = REG_READ(ah, AR_ISR_RAC);
++
+ 		if (isr == 0xffffffff) {
+ 			*masked = 0;
+ 			return false;
+@@ -97,11 +104,23 @@ static bool ar9002_hw_get_isr(struct ath
+ 
+ 			*masked |= ATH9K_INT_TX;
+ 
+-			s0_s = REG_READ(ah, AR_ISR_S0_S);
++			if (pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED) {
++				s0_s = REG_READ(ah, AR_ISR_S0_S);
++				s1_s = REG_READ(ah, AR_ISR_S1_S);
++			} else {
++				s0_s = REG_READ(ah, AR_ISR_S0);
++				REG_WRITE(ah, AR_ISR_S0, s0_s);
++				s1_s = REG_READ(ah, AR_ISR_S1);
++				REG_WRITE(ah, AR_ISR_S1, s1_s);
++
++				isr &= ~(AR_ISR_TXOK |
++					 AR_ISR_TXDESC |
++					 AR_ISR_TXERR |
++					 AR_ISR_TXEOL);
++			}
++
+ 			ah->intr_txqs |= MS(s0_s, AR_ISR_S0_QCU_TXOK);
+ 			ah->intr_txqs |= MS(s0_s, AR_ISR_S0_QCU_TXDESC);
+-
+-			s1_s = REG_READ(ah, AR_ISR_S1_S);
+ 			ah->intr_txqs |= MS(s1_s, AR_ISR_S1_QCU_TXERR);
+ 			ah->intr_txqs |= MS(s1_s, AR_ISR_S1_QCU_TXEOL);
+ 		}
+@@ -114,13 +133,15 @@ static bool ar9002_hw_get_isr(struct ath
+ 		*masked |= mask2;
+ 	}
+ 
+-	if (AR_SREV_9100(ah))
+-		return true;
+-
+-	if (isr & AR_ISR_GENTMR) {
++	if (!AR_SREV_9100(ah) && (isr & AR_ISR_GENTMR)) {
+ 		u32 s5_s;
+ 
+-		s5_s = REG_READ(ah, AR_ISR_S5_S);
++		if (pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED) {
++			s5_s = REG_READ(ah, AR_ISR_S5_S);
++		} else {
++			s5_s = REG_READ(ah, AR_ISR_S5);
++		}
++
+ 		ah->intr_gen_timer_trigger =
+ 				MS(s5_s, AR_ISR_S5_GENTIMER_TRIG);
+ 
+@@ -133,8 +154,21 @@ static bool ar9002_hw_get_isr(struct ath
+ 		if ((s5_s & AR_ISR_S5_TIM_TIMER) &&
+ 		    !(pCap->hw_caps & ATH9K_HW_CAP_AUTOSLEEP))
+ 			*masked |= ATH9K_INT_TIM_TIMER;
++
++		if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
++			REG_WRITE(ah, AR_ISR_S5, s5_s);
++			isr &= ~AR_ISR_GENTMR;
++		}
++	}
++
++	if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
++		REG_WRITE(ah, AR_ISR, isr);
++		REG_READ(ah, AR_ISR);
+ 	}
+ 
++	if (AR_SREV_9100(ah))
++		return true;
++
+ 	if (sync_cause) {
+ 		ath9k_debug_sync_cause(common, sync_cause);
+ 		fatal_int =
 
 
