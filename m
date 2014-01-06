@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757090AbaAFW7t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:59:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48573 "EHLO
+	id S1757126AbaAFXAH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:00:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48570 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933245AbaAFWmH (ORCPT
+	with ESMTP id S933094AbaAFWmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:42:07 -0500
+	Mon, 6 Jan 2014 17:42:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Elder <elder@inktank.com>, Josh Durgin <josh.durgin@inktank.com>
-Subject: [PATCH 3.10 094/129] rbd: flush dcache after zeroing page data
-Date: Mon,  6 Jan 2014 14:38:43 -0800
-Message-Id: <20140106223902.292912045@linuxfoundation.org>
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.10 129/129] arm64: Use Normal NonCacheable memory for writecombine
+Date: Mon,  6 Jan 2014 14:39:18 -0800
+Message-Id: <20140106223903.284682378@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -28,43 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Elder <elder@inktank.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit e215605417b87732c6debf65da6d953016a1e5bc upstream.
+commit 4f00130b70e5eee813cc7bc298e0f3fdf79673cc upstream.
 
-Neither zero_bio_chain() nor zero_pages() contains a call to flush
-caches after zeroing a portion of a page.  This can cause problems
-on architectures that have caches that allow virtual address
-aliasing.
+This provides better performance compared to Device GRE and also allows
+unaligned accesses. Such memory is intended to be used with standard RAM
+(e.g. framebuffers) and not I/O.
 
-This resolves:
-    http://tracker.ceph.com/issues/4777
-
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Josh Durgin <josh.durgin@inktank.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/rbd.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm64/include/asm/pgtable.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -1126,6 +1126,7 @@ static void zero_bio_chain(struct bio *c
- 				buf = bvec_kmap_irq(bv, &flags);
- 				memset(buf + remainder, 0,
- 				       bv->bv_len - remainder);
-+				flush_dcache_page(bv->bv_page);
- 				bvec_kunmap_irq(buf, &flags);
- 			}
- 			pos += bv->bv_len;
-@@ -1158,6 +1159,7 @@ static void zero_pages(struct page **pag
- 		local_irq_save(flags);
- 		kaddr = kmap_atomic(*page);
- 		memset(kaddr + page_offset, 0, length);
-+		flush_dcache_page(*page);
- 		kunmap_atomic(kaddr);
- 		local_irq_restore(flags);
- 
+--- a/arch/arm64/include/asm/pgtable.h
++++ b/arch/arm64/include/asm/pgtable.h
+@@ -184,7 +184,7 @@ static inline void set_pte_at(struct mm_
+ #define pgprot_noncached(prot) \
+ 	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_DEVICE_nGnRnE))
+ #define pgprot_writecombine(prot) \
+-	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_DEVICE_GRE))
++	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_NORMAL_NC))
+ #define pgprot_dmacoherent(prot) \
+ 	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_NORMAL_NC))
+ #define __HAVE_PHYS_MEM_ACCESS_PROT
 
 
