@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775AbaAFKTh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 05:19:37 -0500
-Received: from smtp.mei.co.jp ([133.183.100.20]:57902 "EHLO smtp.mei.co.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752491AbaAFKTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 05:19:35 -0500
-Date: Mon, 06 Jan 2014 19:19:10 +0900
-From: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: [PATCH 3.2 056/185] mm: ensure get_unmapped_area() returns higher address than mmap_min_addr
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <1388723203.22017.36.camel@deadeye.wl.decadent.org.uk>
-References: <lsq.1388282923.51724079@decadent.org.uk> <1388723203.22017.36.camel@deadeye.wl.decadent.org.uk>
-X-BkSecure-Plugin: BkSecure.dll Ver 1, 2, 7, 0
-Message-Id: <20140106191910.7155.38390934@jp.panasonic.com>
+	id S1753938AbaAFKUM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 05:20:12 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:56113 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752935AbaAFKUK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 05:20:10 -0500
+Date: Mon, 6 Jan 2014 10:20:04 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jon Medhurst <tixy@linaro.org>, arm@kernel.org,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [RFC 01/18] mfd: syscon: Consider platform data a regmap config
+ name
+Message-ID: <20140106102004.GH23772@lee--X1>
+References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com>
+ <1387815830-8794-2-git-send-email-pawel.moll@arm.com>
+ <20140106094808.GG23772@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.64.06 [ja]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140106094808.GG23772@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 03 Jan 2014 04:26:43 +0000
-Ben Hutchings <ben@decadent.org.uk> wrote:
+On Mon, 06 Jan 2014, Lee Jones wrote:
 
-> On Sun, 2013-12-29 at 03:08 +0100, Ben Hutchings wrote:
-> > 3.2.54-rc1 review patch.  If anyone has any objections, please let me know.
+> > Use the device platform data as a regmap config
+> > name. This is particularly useful in the regmap
+> > debugfs when there is more than one syscon device
+> > registered, to distinguish the register blocks.
 > > 
-> > ------------------
+> > Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+> > Cc: Samuel Ortiz <sameo@linux.intel.com>
+> > Cc: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  drivers/mfd/syscon.c | 1 +
+> >  1 file changed, 1 insertion(+)
 > > 
-> > From: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
-> > 
-> > commit 2afc745f3e3079ab16c826be4860da2529054dd2 upstream.
-> [...]
-> > [bwh: Backported to 3.2:
-> >  As we do not have vm_unmapped_area(), make arch_get_unmapped_area_topdown()
-> >  calculate the lower limit for the new area's end address and then compare
-> >  addresses with this instead of with len.  In the process, fix an off-by-one
-> >  error which could result in returning 0 if mm->mmap_base == len.]
+> > diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+> > index 71841f9..ea1770b 100644
+> > --- a/drivers/mfd/syscon.c
+> > +++ b/drivers/mfd/syscon.c
+> > @@ -143,6 +143,7 @@ static int syscon_probe(struct platform_device *pdev)
+> >  		return -ENOMEM;
+> >  
+> >  	syscon_regmap_config.max_register = res->end - res->start - 3;
+> > +	syscon_regmap_config.name = dev_get_platdata(&pdev->dev);
+> >  	syscon->regmap = devm_regmap_init_mmio(dev, base,
+> >  					&syscon_regmap_config);
+> >  	if (IS_ERR(syscon->regmap)) {
 > 
-> I'm dropping this as I have no good way to test the backport (it's not
-> used on x86) and I didn't get any confirmation that it's right.
+> This smells a bit fishy to me. Can you point me to the piece of code
+> or patch where you set the platform_data pointer as a string?
 
-I'm sorry for delayed reply.
+Scrap that, I see it.
 
-Your backport seems right.
-Additionally, I've confirmed the problem is resolved by your backport patch.
-
-
-Best regards,
-Akira Takeuchi
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
