@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933187AbaAFWlz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:41:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48503 "EHLO
+	id S1757312AbaAFXEY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:04:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48511 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933111AbaAFWlx (ORCPT
+	with ESMTP id S933179AbaAFWlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:53 -0500
+	Mon, 6 Jan 2014 17:41:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alex Elder <alex.elder@linaro.org>,
         Josh Durgin <josh.durgin@inktank.com>, Alex Elder <elder@linaro.org>
-Subject: [PATCH 3.10 116/129] rbd: fix use-after free of rbd_dev->disk
-Date: Mon,  6 Jan 2014 14:39:05 -0800
-Message-Id: <20140106223902.909305873@linuxfoundation.org>
+Subject: [PATCH 3.10 118/129] rbd: fix error handling from rbd_snap_name()
+Date: Mon,  6 Jan 2014 14:39:07 -0800
+Message-Id: <20140106223902.971848371@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -30,101 +31,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Josh Durgin <josh.durgin@inktank.com>
 
-commit 9875201e10496612080e7d164acc8f625c18725c upstream.
+commit da6a6b63978d45f9ae582d1f362f182012da3a22 upstream.
 
-Removing a device deallocates the disk, unschedules the watch, and
-finally cleans up the rbd_dev structure. rbd_dev_refresh(), called
-from the watch callback, updates the disk size and rbd_dev
-structure. With no locking between them, rbd_dev_refresh() may use the
-device or rbd_dev after they've been freed.
+rbd_snap_name() calls rbd_dev_v{1,2}_snap_name() depending on the
+format of the image. The format 1 version returns NULL on error, which
+is handled by the caller. The format 2 version returns an ERR_PTR,
+which the caller of rbd_snap_name() does not expect.
 
-To fix this, check whether RBD_DEV_FLAG_REMOVING is set before
-updating the disk size in rbd_dev_refresh(). In order to prevent a
-race where rbd_dev_refresh() is already revalidating the disk when
-rbd_remove() is called, move the call to rbd_bus_del_dev() after the
-watch is unregistered and all notifies are complete. It's safe to
-defer deleting this structure because no new requests can be submitted
-once the RBD_DEV_FLAG_REMOVING is set, since the device cannot be
-opened.
+Fortunately this is unlikely to occur in practice because
+rbd_snap_id_by_name() is called before rbd_snap_name(). This would hit
+similar errors to rbd_snap_name() (like the snapshot not existing) and
+return early, so rbd_snap_name() would not hit an error unless the
+snapshot was removed between the two calls or memory was exhausted.
 
-Fixes: http://tracker.ceph.com/issues/5636
+Use an ERR_PTR in rbd_dev_v1_snap_name() so that the specific error
+can be propagated, and it is consistent with rbd_dev_v2_snap_name().
+Handle the ERR_PTR in the only rbd_snap_name() caller.
+
+Suggested-by: Alex Elder <alex.elder@linaro.org>
 Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
 Reviewed-by: Alex Elder <elder@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/rbd.c |   40 +++++++++++++++++++++++++++++++++-------
- 1 file changed, 33 insertions(+), 7 deletions(-)
+ drivers/block/rbd.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
 --- a/drivers/block/rbd.c
 +++ b/drivers/block/rbd.c
-@@ -3336,6 +3336,31 @@ static void rbd_exists_validate(struct r
- 		clear_bit(RBD_DEV_FLAG_EXISTS, &rbd_dev->flags);
+@@ -937,12 +937,14 @@ static const char *rbd_dev_v1_snap_name(
+ 					u64 snap_id)
+ {
+ 	u32 which;
++	const char *snap_name;
+ 
+ 	which = rbd_dev_snap_index(rbd_dev, snap_id);
+ 	if (which == BAD_SNAP_INDEX)
+-		return NULL;
++		return ERR_PTR(-ENOENT);
+ 
+-	return _rbd_dev_v1_snap_name(rbd_dev, which);
++	snap_name = _rbd_dev_v1_snap_name(rbd_dev, which);
++	return snap_name ? snap_name : ERR_PTR(-ENOMEM);
  }
  
-+static void rbd_dev_update_size(struct rbd_device *rbd_dev)
-+{
-+	sector_t size;
-+	bool removing;
-+
-+	/*
-+	 * Don't hold the lock while doing disk operations,
-+	 * or lock ordering will conflict with the bdev mutex via:
-+	 * rbd_add() -> blkdev_get() -> rbd_open()
-+	 */
-+	spin_lock_irq(&rbd_dev->lock);
-+	removing = test_bit(RBD_DEV_FLAG_REMOVING, &rbd_dev->flags);
-+	spin_unlock_irq(&rbd_dev->lock);
-+	/*
-+	 * If the device is being removed, rbd_dev->disk has
-+	 * been destroyed, so don't try to update its size
-+	 */
-+	if (!removing) {
-+		size = (sector_t)rbd_dev->mapping.size / SECTOR_SIZE;
-+		dout("setting size to %llu sectors", (unsigned long long)size);
-+		set_capacity(rbd_dev->disk, size);
-+		revalidate_disk(rbd_dev->disk);
-+	}
-+}
-+
- static int rbd_dev_refresh(struct rbd_device *rbd_dev)
- {
- 	u64 mapping_size;
-@@ -3354,12 +3379,7 @@ static int rbd_dev_refresh(struct rbd_de
- 	rbd_exists_validate(rbd_dev);
- 	mutex_unlock(&ctl_mutex);
- 	if (mapping_size != rbd_dev->mapping.size) {
--		sector_t size;
--
--		size = (sector_t)rbd_dev->mapping.size / SECTOR_SIZE;
--		dout("setting size to %llu sectors", (unsigned long long)size);
--		set_capacity(rbd_dev->disk, size);
--		revalidate_disk(rbd_dev->disk);
-+		rbd_dev_update_size(rbd_dev);
+ static const char *rbd_snap_name(struct rbd_device *rbd_dev, u64 snap_id)
+@@ -4140,8 +4142,8 @@ static int rbd_dev_spec_update(struct rb
+ 	/* Look up the snapshot name, and make a copy */
+ 
+ 	snap_name = rbd_snap_name(rbd_dev, spec->snap_id);
+-	if (!snap_name) {
+-		ret = -ENOMEM;
++	if (IS_ERR(snap_name)) {
++		ret = PTR_ERR(snap_name);
+ 		goto out_err;
  	}
  
- 	return ret;
-@@ -5147,7 +5167,6 @@ static ssize_t rbd_remove(struct bus_typ
- 	if (ret < 0 || already)
- 		goto done;
- 
--	rbd_bus_del_dev(rbd_dev);
- 	ret = rbd_dev_header_watch_sync(rbd_dev, false);
- 	if (ret)
- 		rbd_warn(rbd_dev, "failed to cancel watch event (%d)\n", ret);
-@@ -5158,6 +5177,13 @@ static ssize_t rbd_remove(struct bus_typ
- 	 */
- 	dout("%s: flushing notifies", __func__);
- 	ceph_osdc_flush_notifies(&rbd_dev->rbd_client->client->osdc);
-+	/*
-+	 * Don't free anything from rbd_dev->disk until after all
-+	 * notifies are completely processed. Otherwise
-+	 * rbd_bus_del_dev() will race with rbd_watch_cb(), resulting
-+	 * in a potential use after free of rbd_dev->disk or rbd_dev.
-+	 */
-+	rbd_bus_del_dev(rbd_dev);
- 	rbd_dev_image_release(rbd_dev);
- 	module_put(THIS_MODULE);
- 	ret = count;
 
 
