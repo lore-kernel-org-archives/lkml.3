@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462AbaAFWja (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:39:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47716 "EHLO
+	id S932674AbaAFWkF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:40:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47921 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932441AbaAFWj1 (ORCPT
+	with ESMTP id S932640AbaAFWj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:39:27 -0500
+	Mon, 6 Jan 2014 17:39:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [PATCH 3.12 060/144] firewire: sbp2: bring back WRITE SAME support
-Date: Mon,  6 Jan 2014 14:37:01 -0800
-Message-Id: <20140106223747.064087046@linuxfoundation.org>
+        Marc Carino <marc.ceeeee@gmail.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.12 100/144] libata: implement ATA_HORKAGE_NO_NCQ_TRIM and apply it to Micro M500 SSDs
+Date: Mon,  6 Jan 2014 14:37:41 -0800
+Message-Id: <20140106223748.223686165@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -28,34 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+From: Marc Carino <marc.ceeeee@gmail.com>
 
-commit ce027ed98fd176710fb14be9d6015697b62436f0 upstream.
+commit f78dea064c5f7de07de4912a6e5136dbc443d614 upstream.
 
-Commit 54b2b50c20a6 "[SCSI] Disable WRITE SAME for RAID and virtual
-host adapter drivers" disabled WRITE SAME support for all SBP-2 attached
-targets.  But as described in the changelog of commit b0ea5f19d3d8
-"firewire: sbp2: allow WRITE SAME and REPORT SUPPORTED OPERATION CODES",
-it is not required to blacklist WRITE SAME.
+Certain drives cannot handle queued TRIM commands properly, even
+though support is indicated in the IDENTIFY DEVICE buffer.  This patch
+allows for disabling the commands for the affected drives and apply it
+to the Micron/Crucial M500 SSDs which exhibit incorrect protocol
+behavior when issued queued TRIM commands, which could lead to silent
+data corruption.
 
-Bring the feature back by reverting the sbp2.c hunk of commit 54b2b50c20a6.
+tj: Merged two unnecessarily split patches and made minor edits
+    including shortening horkage name.
 
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Link: http://lkml.kernel.org/g/1387246554-7311-1-git-send-email-marc.ceeeee@gmail.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firewire/sbp2.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/ata/libata-core.c |   15 +++++++++++++--
+ include/linux/libata.h    |    1 +
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
---- a/drivers/firewire/sbp2.c
-+++ b/drivers/firewire/sbp2.c
-@@ -1623,7 +1623,6 @@ static struct scsi_host_template scsi_dr
- 	.cmd_per_lun		= 1,
- 	.can_queue		= 1,
- 	.sdev_attrs		= sbp2_scsi_sysfs_attrs,
--	.no_write_same		= 1,
- };
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -2149,9 +2149,16 @@ static int ata_dev_config_ncq(struct ata
+ 				    "failed to get NCQ Send/Recv Log Emask 0x%x\n",
+ 				    err_mask);
+ 		} else {
++			u8 *cmds = dev->ncq_send_recv_cmds;
++
+ 			dev->flags |= ATA_DFLAG_NCQ_SEND_RECV;
+-			memcpy(dev->ncq_send_recv_cmds, ap->sector_buf,
+-				ATA_LOG_NCQ_SEND_RECV_SIZE);
++			memcpy(cmds, ap->sector_buf, ATA_LOG_NCQ_SEND_RECV_SIZE);
++
++			if (dev->horkage & ATA_HORKAGE_NO_NCQ_TRIM) {
++				ata_dev_dbg(dev, "disabling queued TRIM support\n");
++				cmds[ATA_LOG_NCQ_SEND_RECV_DSM_OFFSET] &=
++					~ATA_LOG_NCQ_SEND_RECV_DSM_TRIM;
++			}
+ 		}
+ 	}
  
- MODULE_AUTHOR("Kristian Hoegsberg <krh@bitplanet.net>");
+@@ -4205,6 +4212,10 @@ static const struct ata_blacklist_entry
+ 	{ "PIONEER DVD-RW  DVR-212D",	NULL,	ATA_HORKAGE_NOSETXFER },
+ 	{ "PIONEER DVD-RW  DVR-216D",	NULL,	ATA_HORKAGE_NOSETXFER },
+ 
++	/* devices that don't properly handle queued TRIM commands */
++	{ "Micron_M500*",		NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
++	{ "Crucial_CT???M500SSD1",	NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
++
+ 	/* End Marker */
+ 	{ }
+ };
+--- a/include/linux/libata.h
++++ b/include/linux/libata.h
+@@ -418,6 +418,7 @@ enum {
+ 	ATA_HORKAGE_DUMP_ID	= (1 << 16),	/* dump IDENTIFY data */
+ 	ATA_HORKAGE_MAX_SEC_LBA48 = (1 << 17),	/* Set max sects to 65535 */
+ 	ATA_HORKAGE_ATAPI_DMADIR = (1 << 18),	/* device requires dmadir */
++	ATA_HORKAGE_NO_NCQ_TRIM	= (1 << 19),	/* don't use queued TRIM */
+ 
+ 	 /* DMA mask for user DMA control: User visible values; DO NOT
+ 	    renumber */
 
 
