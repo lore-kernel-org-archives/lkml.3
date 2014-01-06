@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757446AbaAFXPo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:15:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48380 "EHLO
+	id S933022AbaAFWlW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:41:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48337 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756954AbaAFWl0 (ORCPT
+	with ESMTP id S932968AbaAFWlT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:26 -0500
+	Mon, 6 Jan 2014 17:41:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Li Wang <liwang@ubuntukylin.com>, Sage Weil <sage@inktank.com>
-Subject: [PATCH 3.10 050/129] ceph: Avoid data inconsistency due to d-cache aliasing in readpage()
-Date: Mon,  6 Jan 2014 14:37:59 -0800
-Message-Id: <20140106223901.037782789@linuxfoundation.org>
+        Rik van Riel <riel@redhat.com>, Dmitry Vyukov <dvyukov@google.com>,
+        PaX Team <pageexec@freemail.hu>, Kees Cook <keescook@chromium.org>,
+        Michel Lespinasse <walken@google.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 078/129] mm: fix use-after-free in sys_remap_file_pages
+Date: Mon,  6 Jan 2014 14:38:27 -0800
+Message-Id: <20140106223901.841497300@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -28,40 +33,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Wang <liwang@ubuntukylin.com>
+From: Rik van Riel <riel@redhat.com>
 
-commit 56f91aad69444d650237295f68c195b74d888d95 upstream.
+commit 4eb919825e6c3c7fb3630d5621f6d11e98a18b3a upstream.
 
-If the length of data to be read in readpage() is exactly
-PAGE_CACHE_SIZE, the original code does not flush d-cache
-for data consistency after finishing reading. This patches fixes
-this.
+remap_file_pages calls mmap_region, which may merge the VMA with other
+existing VMAs, and free "vma".  This can lead to a use-after-free bug.
+Avoid the bug by remembering vm_flags before calling mmap_region, and
+not trying to dereference vma later.
 
-Signed-off-by: Li Wang <liwang@ubuntukylin.com>
-Signed-off-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Reported-by: Dmitry Vyukov <dvyukov@google.com>
+Cc: PaX Team <pageexec@freemail.hu>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ceph/addr.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ mm/fremap.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/fs/ceph/addr.c
-+++ b/fs/ceph/addr.c
-@@ -213,9 +213,13 @@ static int readpage_nounlock(struct file
- 	if (err < 0) {
- 		SetPageError(page);
- 		goto out;
--	} else if (err < PAGE_CACHE_SIZE) {
-+	} else {
-+		if (err < PAGE_CACHE_SIZE) {
- 		/* zero fill remainder of page */
--		zero_user_segment(page, err, PAGE_CACHE_SIZE);
-+			zero_user_segment(page, err, PAGE_CACHE_SIZE);
-+		} else {
-+			flush_dcache_page(page);
-+		}
- 	}
- 	SetPageUptodate(page);
+--- a/mm/fremap.c
++++ b/mm/fremap.c
+@@ -203,9 +203,10 @@ get_write_lock:
+ 		if (mapping_cap_account_dirty(mapping)) {
+ 			unsigned long addr;
+ 			struct file *file = get_file(vma->vm_file);
++			/* mmap_region may free vma; grab the info now */
++			vm_flags = vma->vm_flags;
  
+-			addr = mmap_region(file, start, size,
+-					vma->vm_flags, pgoff);
++			addr = mmap_region(file, start, size, vm_flags, pgoff);
+ 			fput(file);
+ 			if (IS_ERR_VALUE(addr)) {
+ 				err = addr;
+@@ -213,7 +214,7 @@ get_write_lock:
+ 				BUG_ON(addr != start);
+ 				err = 0;
+ 			}
+-			goto out;
++			goto out_freed;
+ 		}
+ 		mutex_lock(&mapping->i_mmap_mutex);
+ 		flush_dcache_mmap_lock(mapping);
+@@ -248,6 +249,7 @@ get_write_lock:
+ out:
+ 	if (vma)
+ 		vm_flags = vma->vm_flags;
++out_freed:
+ 	if (likely(!has_write_lock))
+ 		up_read(&mm->mmap_sem);
+ 	else
 
 
