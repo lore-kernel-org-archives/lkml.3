@@ -1,95 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280AbaAFLQq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 06:16:46 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56205 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751934AbaAFLQo (ORCPT
+	id S1753951AbaAFLRr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 06:17:47 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:51071 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753298AbaAFLRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 06:16:44 -0500
-Date: Mon, 6 Jan 2014 12:16:24 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
-Cc: Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Li Zefan <lizefan@huawei.com>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] x86: Add Cache QoS Monitoring (CQM) support
-Message-ID: <20140106111624.GB5623@twins.programming.kicks-ass.net>
-References: <1388781285-18067-1-git-send-email-peter.p.waskiewicz.jr@intel.com>
- <20140104161050.GA24306@htj.dyndns.org>
- <1388875369.9761.25.camel@ppwaskie-mobl.amr.corp.intel.com>
- <20140104225058.GC24306@htj.dyndns.org>
- <1388899376.9761.45.camel@ppwaskie-mobl.amr.corp.intel.com>
+	Mon, 6 Jan 2014 06:17:45 -0500
+X-IronPort-AV: E=Sophos;i="4.95,612,1384297200"; 
+   d="scan'208";a="51891774"
+Date: Mon, 6 Jan 2014 12:17:26 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Lee Jones <lee.jones@linaro.org>
+cc: Julia Lawall <Julia.Lawall@lip6.fr>, Samuel Ortiz <sameo@linux.intel.com>,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] mfd: sta2x11-mfd: use named constants for pci_power_t
+ values
+In-Reply-To: <20140106110145.GM23772@lee--X1>
+Message-ID: <alpine.DEB.2.10.1401061215560.2079@hadrien>
+References: <1388706031-22180-1-git-send-email-Julia.Lawall@lip6.fr> <1388706031-22180-2-git-send-email-Julia.Lawall@lip6.fr> <20140106110145.GM23772@lee--X1>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1388899376.9761.45.camel@ppwaskie-mobl.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-2104864807-1389007046=:2079"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 05, 2014 at 05:23:07AM +0000, Waskiewicz Jr, Peter P wrote:
-> The processor doesn't need to understand the grouping at all, but it
-> also isn't tracking things per-process that are rolled up later.
-> They're tracked via the RMID resource in the hardware, which could
-> correspond to a single process, or 500 processes.  It really comes down
-> to the ease of management of grouping tasks in groups for two consumers,
-> 1) the end user, and 2) the process scheduler.
-> 
-> I think I still may not be explaining how the CPU side works well
-> enough, in order to better understand what I'm trying to do with the
-> cgroup.  Let me try to be a bit more clear, and if I'm still sounding
-> vague or not making sense, please tell me what isn't clear and I'll try
-> to be more specific.  The new Documentation addition in patch 4 also has
-> a good overview, but let's try this:
-> 
-> A CPU may have 32 RMID's in hardware.  This is for the platform, not per
-> core.  I may want to have a single process assigned to an RMID for
-> tracking, say qemu to monitor cache usage of a specific VM.  But I also
-> may want to monitor cache usage of all MySQL database processes with
-> another RMID, or even split specific processes of that database between
-> different RMID's.  It all comes down to how the end-user wants to
-> monitor their specific workloads, and how those workloads are impacting
-> cache usage and occupancy.
-> 
-> With this implementation I've sent, all tasks are in RMID 0 by default.
-> Then one can create a subdirectory, just like the cpuacct cgroup, and
-> then add tasks to that subdirectory's task list.  Once that
-> subdirectory's task list is enabled (through the cacheqos.monitor_cache
-> handle), then a free RMID is assigned from the CPU, and when the
-> scheduler switches to any of the tasks in that cgroup under that RMID,
-> the RMID begins monitoring the usage.
-> 
-> The CPU side is easy and clean.  When something in the software wants to
-> monitor when a particular task is scheduled and started, write whatever
-> RMID that task is assigned to (through some mechanism) to the proper MSR
-> in the CPU.  When that task is swapped out, clear the MSR to stop
-> monitoring of that RMID.  When that RMID's statistics are requested by
-> the software (through some mechanism), then the CPU's MSRs are written
-> with the RMID in question, and the value is read of what has been
-> collected so far.  In my case, I decided to use a cgroup for this
-> "mechanism" since so much of the grouping and task/group association
-> already exists and doesn't need to be rebuilt or re-invented.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-This still doesn't explain why you can't use perf-cgroup for this.
+--8323329-2104864807-1389007046=:2079
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 
-> > In general, I'm quite strongly opposed against using cgroup as
-> > arbitrary grouping mechanism for anything other than resource control,
-> > especially given that we're moving away from multiple hierarchies.
-> 
-> Just to clarify then, would the mechanism in the cpuacct cgroup to
-> create a group off the root subsystem be considered multi-hierarchical?
-> If not, then the intent for this new cacheqos subsystem is to be
-> identical in that regard to cpuacct in the behavior.
-> 
-> This is a resource controller, it just happens to be tied to a hardware
-> resource instead of an OS resource.
+On Mon, 6 Jan 2014, Lee Jones wrote:
 
-No, cpuacct and perf-cgroup aren't actually controllers at all. They're
-resource monitors at best. Same with your Cache QoS Monitor, it doesn't
-control anything.
+> On Fri, 03 Jan 2014, Julia Lawall wrote:
+>
+> > From: Julia Lawall <Julia.Lawall@lip6.fr>
+> >
+> > The semantic patch that makes this change is as follows:
+> > (http://coccinelle.lip6.fr/)
+> >
+> > // <smpl>
+> > @@
+> > expression pdev;
+> > @@
+> >
+> > pci_set_power_state(pdev,
+> > - 0
+> > + PCI_D0
+> >  )
+> > // </smpl>
+>
+> I'm happy with the code and that you used Coccinelle to discover the
+> issue, but I feel a little more explanation would be helpful to
+> readers.
+>
+> Why is (pci_power_t __force) 0 better than 0?
+
+I wasn't particularly attached to the cast, and I don't know if it is an
+issue.  But in trying to understand the code, I found PCI_D0 more
+understandable than 0.
+
+julia
+
+> > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> >
+> > ---
+> >  drivers/mfd/sta2x11-mfd.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/mfd/sta2x11-mfd.c b/drivers/mfd/sta2x11-mfd.c
+> > index 0d42e40..5b72db0 100644
+> > --- a/drivers/mfd/sta2x11-mfd.c
+> > +++ b/drivers/mfd/sta2x11-mfd.c
+> > @@ -529,7 +529,7 @@ static int sta2x11_mfd_resume(struct pci_dev *pdev)
+> >  {
+> >  	int err;
+> >
+> > -	pci_set_power_state(pdev, 0);
+> > +	pci_set_power_state(pdev, PCI_D0);
+> >  	err = pci_enable_device(pdev);
+> >  	if (err)
+> >  		return err;
+> >
+>
+> --
+> Lee Jones
+> Linaro STMicroelectronics Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+--8323329-2104864807-1389007046=:2079--
