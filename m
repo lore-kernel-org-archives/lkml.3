@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933128AbaAFXYx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:24:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48212 "EHLO
+	id S1756876AbaAFWk6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:40:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48151 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756882AbaAFWk7 (ORCPT
+	with ESMTP id S932814AbaAFWkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:59 -0500
+	Mon, 6 Jan 2014 17:40:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.10 058/129] powerpc: Fix bad stack check in exception entry
-Date: Mon,  6 Jan 2014 14:38:07 -0800
-Message-Id: <20140106223901.261137530@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.10 041/129] drm/radeon: Fix sideport problems on certain RS690 boards
+Date: Mon,  6 Jan 2014 14:37:50 -0800
+Message-Id: <20140106223900.775903259@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -29,42 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 90ff5d688e61f49f23545ffab6228bd7e87e6dc7 upstream.
+commit 8333f0fe133be420ce3fcddfd568c3a559ab274e upstream.
 
-In EXCEPTION_PROLOG_COMMON() we check to see if the stack pointer (r1)
-is valid when coming from the kernel.  If it's not valid, we die but
-with a nice oops message.
+Some RS690 boards with 64MB of sideport memory show up as
+having 128MB sideport + 256MB of UMA.  In this case,
+just skip the sideport memory and use UMA.  This fixes
+rendering corruption and should improve performance.
 
-Currently we allocate a stack frame (subtract INT_FRAME_SIZE) before we
-check to see if the stack pointer is negative.  Unfortunately, this
-won't detect a bad stack where r1 is less than INT_FRAME_SIZE.
+bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=35457
 
-This patch fixes the check to compare the modified r1 with
--INT_FRAME_SIZE.  With this, bad kernel stack pointers (including NULL
-pointers) are correctly detected again.
-
-Kudos to Paulus for finding this.
-
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/exception-64s.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/rs690.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/arch/powerpc/include/asm/exception-64s.h
-+++ b/arch/powerpc/include/asm/exception-64s.h
-@@ -264,7 +264,7 @@ do_kvm_##n:								\
- 	subi	r1,r1,INT_FRAME_SIZE;	/* alloc frame on kernel stack	*/ \
- 	beq-	1f;							   \
- 	ld	r1,PACAKSAVE(r13);	/* kernel stack to use		*/ \
--1:	cmpdi	cr1,r1,0;		/* check if r1 is in userspace	*/ \
-+1:	cmpdi	cr1,r1,-INT_FRAME_SIZE;	/* check if r1 is in userspace	*/ \
- 	blt+	cr1,3f;			/* abort if it is		*/ \
- 	li	r1,(n);			/* will be reloaded later	*/ \
- 	sth	r1,PACA_TRAP_SAVE(r13);					   \
+--- a/drivers/gpu/drm/radeon/rs690.c
++++ b/drivers/gpu/drm/radeon/rs690.c
+@@ -162,6 +162,16 @@ static void rs690_mc_init(struct radeon_
+ 	base = RREG32_MC(R_000100_MCCFG_FB_LOCATION);
+ 	base = G_000100_MC_FB_START(base) << 16;
+ 	rdev->mc.igp_sideport_enabled = radeon_atombios_sideport_present(rdev);
++	/* Some boards seem to be configured for 128MB of sideport memory,
++	 * but really only have 64MB.  Just skip the sideport and use
++	 * UMA memory.
++	 */
++	if (rdev->mc.igp_sideport_enabled &&
++	    (rdev->mc.real_vram_size == (384 * 1024 * 1024))) {
++		base += 128 * 1024 * 1024;
++		rdev->mc.real_vram_size -= 128 * 1024 * 1024;
++		rdev->mc.mc_vram_size = rdev->mc.real_vram_size;
++	}
+ 
+ 	/* Use K8 direct mapping for fast fb access. */ 
+ 	rdev->fastfb_working = false;
 
 
