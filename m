@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527AbaAFEZn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 23:25:43 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:63779 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752113AbaAFEZl (ORCPT
+	id S1752507AbaAFEca (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 23:32:30 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:59206 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752113AbaAFEc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 23:25:41 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <52CA3045.80807@roeck-us.net>
-Date: Sun, 05 Jan 2014 20:25:41 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sun, 5 Jan 2014 23:32:29 -0500
+X-AuditID: 9c93016f-b7b4eae000000985-fa-52ca31db319b
+Date: Mon, 6 Jan 2014 13:32:37 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Hansen <dave@sr71.net>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, penberg@kernel.org,
+        cl@linux-foundation.org
+Subject: Re: [PATCH 0/9] re-shrink 'struct page' when SLUB is on.
+Message-ID: <20140106043237.GE696@lge.com>
+References: <20140103180147.6566F7C1@viggo.jf.intel.com>
+ <20140103141816.20ef2a24c8adffae040e53dc@linux-foundation.org>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: isdn@linux-pingi.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] isdn: Mark build for telespci and hfc_pci as broken
- for big endian ARM
-References: <1388951367-7411-1-git-send-email-linux@roeck-us.net> <20140105.203959.962622308205839285.davem@davemloft.net>
-In-Reply-To: <20140105.203959.962622308205839285.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140103141816.20ef2a24c8adffae040e53dc@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2014 05:39 PM, David Miller wrote:
-> From: Guenter Roeck <linux@roeck-us.net>
-> Date: Sun,  5 Jan 2014 11:49:27 -0800
->
->> With arm:allmodconfig, building the Teles PCI driver fails with
->>
->> telespci.c:294:2: error: #error "not running on big endian machines now"
->>
->> Similar, building the driver for HFC PCI-Bus cards fails with
->>
->> hfc_pci.c:1647:2: error: #error "not running on big endian machines now"
->>
->> Mark build as broken for big endian ARM machines.
->>
->> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->
-> Let's not start getting into the habit of doing this, please.
->
-> The reason this isn't easy to do generically from Kconfig is
-> probably because it almost never makes any sense to do so.
->
-> In fact, if you look at telespci.c there are no DMA descriptors,
-> everything is read using MMIO acccesses via the chips FIFO.  There
-> really can't be any endianness problems that I see.
->
-> Please just remove the CPP checks, that's the best fix.
->
+On Fri, Jan 03, 2014 at 02:18:16PM -0800, Andrew Morton wrote:
+> On Fri, 03 Jan 2014 10:01:47 -0800 Dave Hansen <dave@sr71.net> wrote:
+> 
+> > This is a minor update from the last version.  The most notable
+> > thing is that I was able to demonstrate that maintaining the
+> > cmpxchg16 optimization has _some_ value.
+> > 
+> > Otherwise, the code changes are just a few minor cleanups.
+> > 
+> > ---
+> > 
+> > SLUB depends on a 16-byte cmpxchg for an optimization which
+> > allows it to not disable interrupts in its fast path.  This
+> > optimization has some small but measurable benefits:
+> > 
+> > 	http://lkml.kernel.org/r/52B345A3.6090700@sr71.net
+> 
+> So really the only significant benefit from the cmpxchg16 is with
+> cache-cold eight-byte kmalloc/kfree?  8% faster in this case?  But with
+> cache-hot kmalloc/kfree the benefit of cmpxchg16 is precisely zero.
 
-Both drivers build with arm:allmodconfig if I remove the check,
-so I am fine with that. I'll send an updated patch.
+Hello,
 
-Thanks,
-Guenter
+I guess that cmpxchg16 is not used in this cache-hot kmalloc/kfree test,
+because kfree would be done in free fast-path. In this case,
+this_cpu_cmpxchg_double() would be called, so you cannot find any effect
+of cmpxchg16.
 
+Thanks.
 
+> 
+> This is really weird and makes me suspect a measurement glitch.
+> 
+> Even if this 8% is real, it's unclear that it's worth all the
+> complexity the cmpxchg16 adds.
+> 
+> It would be really useful (hint :)) if we were to know exactly where
+> that 8% is coming from - perhaps it's something which is not directly
+> related to the cmpxchg16, and we can fix it separately.
+> 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
