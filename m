@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933564AbaAFXSO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:18:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48330 "EHLO
+	id S933602AbaAFXSn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:18:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48323 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932997AbaAFWlS (ORCPT
+	with ESMTP id S932989AbaAFWlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:18 -0500
+	Mon, 6 Jan 2014 17:41:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jianguo Wu <wujianguo@huawei.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Vlastimil Babka <vbabka@suse.cz>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Mel Gorman <mgorman@suse.de>, qiuxishi <qiuxishi@huawei.com>,
-        Hanjun Guo <guohanjun@huawei.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Rafael Aquini <aquini@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 077/129] mm/hugetlb: check for pte NULL pointer in __page_check_address()
-Date: Mon,  6 Jan 2014 14:38:26 -0800
-Message-Id: <20140106223901.813477187@linuxfoundation.org>
+Subject: [PATCH 3.10 076/129] mm/compaction: respect ignore_skip_hint in update_pageblock_skip
+Date: Mon,  6 Jan 2014 14:38:25 -0800
+Message-Id: <20140106223901.785350898@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -34,40 +35,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jianguo Wu <wujianguo@huawei.com>
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-commit 98398c32f6687ee1e1f3ae084effb4b75adb0747 upstream.
+commit 6815bf3f233e0b10c99a758497d5d236063b010b upstream.
 
-In __page_check_address(), if address's pud is not present,
-huge_pte_offset() will return NULL, we should check the return value.
+update_pageblock_skip() only fits to compaction which tries to isolate
+by pageblock unit.  If isolate_migratepages_range() is called by CMA, it
+try to isolate regardless of pageblock unit and it don't reference
+get_pageblock_skip() by ignore_skip_hint.  We should also respect it on
+update_pageblock_skip() to prevent from setting the wrong information.
 
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rafael Aquini <aquini@redhat.com>
+Cc: Vlastimil Babka <vbabka@suse.cz>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 Cc: Mel Gorman <mgorman@suse.de>
-Cc: qiuxishi <qiuxishi@huawei.com>
-Cc: Hanjun Guo <guohanjun@huawei.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/rmap.c |    4 ++++
+ mm/compaction.c |    4 ++++
  1 file changed, 4 insertions(+)
 
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -600,7 +600,11 @@ pte_t *__page_check_address(struct page
- 	spinlock_t *ptl;
- 
- 	if (unlikely(PageHuge(page))) {
-+		/* when pud is not present, pte will be NULL */
- 		pte = huge_pte_offset(mm, address);
-+		if (!pte)
-+			return NULL;
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -134,6 +134,10 @@ static void update_pageblock_skip(struct
+ 			bool migrate_scanner)
+ {
+ 	struct zone *zone = cc->zone;
 +
- 		ptl = &mm->page_table_lock;
- 		goto check;
- 	}
++	if (cc->ignore_skip_hint)
++		return;
++
+ 	if (!page)
+ 		return;
+ 
 
 
