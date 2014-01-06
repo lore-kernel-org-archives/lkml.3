@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932822AbaAFWke (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:40:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48052 "EHLO
+	id S1757421AbaAFXbT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:31:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48081 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932764AbaAFWk2 (ORCPT
+	with ESMTP id S932764AbaAFWke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:28 -0500
+	Mon, 6 Jan 2014 17:40:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Henrik Goldman <hg@x-formation.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 023/129] target/file: Update hw_max_sectors based on current block_size
-Date: Mon,  6 Jan 2014 14:37:32 -0800
-Message-Id: <20140106223900.266668393@linuxfoundation.org>
+        Junho Ryu <jayr@google.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [PATCH 3.10 030/129] ext4: fix use-after-free in ext4_mb_new_blocks
+Date: Mon,  6 Jan 2014 14:37:39 -0800
+Message-Id: <20140106223900.468443410@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -29,93 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Junho Ryu <jayr@google.com>
 
-commit 95cadace8f3959282e76ebf8b382bd0930807d2c upstream.
+commit 4e8d2139802ce4f41936a687f06c560b12115247 upstream.
 
-This patch allows FILEIO to update hw_max_sectors based on the current
-max_bytes_per_io.  This is required because vfs_[writev,readv]() can accept
-a maximum of 2048 iovecs per call, so the enforced hw_max_sectors really
-needs to be calculated based on block_size.
+ext4_mb_put_pa should hold pa->pa_lock before accessing pa->pa_count.
+While ext4_mb_use_preallocated checks pa->pa_deleted first and then
+increments pa->count later, ext4_mb_put_pa decrements pa->pa_count
+before holding pa->pa_lock and then sets pa->pa_deleted.
 
-This addresses a >= v3.5 bug where block_size=512 was rejecting > 1M
-sized I/O requests, because FD_MAX_SECTORS was hardcoded to 2048 for
-the block_size=4096 case.
+* Free sequence
+ext4_mb_put_pa (1):		atomic_dec_and_test pa->pa_count
+ext4_mb_put_pa (2):		lock pa->pa_lock
+ext4_mb_put_pa (3):			check pa->pa_deleted
+ext4_mb_put_pa (4):			set pa->pa_deleted=1
+ext4_mb_put_pa (5):		unlock pa->pa_lock
+ext4_mb_put_pa (6):		remove pa from a list
+ext4_mb_pa_callback:		free pa
 
-(v2: Use max_bytes_per_io instead of ->update_hw_max_sectors)
+* Use sequence
+ext4_mb_use_preallocated (1):	iterate over preallocation
+ext4_mb_use_preallocated (2):	lock pa->pa_lock
+ext4_mb_use_preallocated (3):		check pa->pa_deleted
+ext4_mb_use_preallocated (4):		increase pa->pa_count
+ext4_mb_use_preallocated (5):	unlock pa->pa_lock
+ext4_mb_release_context:	access pa
 
-Reported-by: Henrik Goldman <hg@x-formation.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+* Use-after-free sequence
+[initial status]		<pa->pa_deleted = 0, pa_count = 1>
+ext4_mb_use_preallocated (1):	iterate over preallocation
+ext4_mb_use_preallocated (2):	lock pa->pa_lock
+ext4_mb_use_preallocated (3):		check pa->pa_deleted
+ext4_mb_put_pa (1):		atomic_dec_and_test pa->pa_count
+[pa_count decremented]		<pa->pa_deleted = 0, pa_count = 0>
+ext4_mb_use_preallocated (4):		increase pa->pa_count
+[pa_count incremented]		<pa->pa_deleted = 0, pa_count = 1>
+ext4_mb_use_preallocated (5):	unlock pa->pa_lock
+ext4_mb_put_pa (2):		lock pa->pa_lock
+ext4_mb_put_pa (3):			check pa->pa_deleted
+ext4_mb_put_pa (4):			set pa->pa_deleted=1
+[race condition!]		<pa->pa_deleted = 1, pa_count = 1>
+ext4_mb_put_pa (5):		unlock pa->pa_lock
+ext4_mb_put_pa (6):		remove pa from a list
+ext4_mb_pa_callback:		free pa
+ext4_mb_release_context:	access pa
+
+AddressSanitizer has detected use-after-free in ext4_mb_new_blocks
+Bug report: http://goo.gl/rG1On3
+
+Signed-off-by: Junho Ryu <jayr@google.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_device.c |    5 +++++
- drivers/target/target_core_file.c   |    8 ++++----
- drivers/target/target_core_file.h   |    5 ++++-
- include/target/target_core_base.h   |    1 +
- 4 files changed, 14 insertions(+), 5 deletions(-)
+ fs/ext4/mballoc.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -1078,6 +1078,11 @@ int se_dev_set_block_size(struct se_devi
- 	dev->dev_attrib.block_size = block_size;
- 	pr_debug("dev[%p]: SE Device block_size changed to %u\n",
- 			dev, block_size);
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -3423,6 +3423,9 @@ static void ext4_mb_pa_callback(struct r
+ {
+ 	struct ext4_prealloc_space *pa;
+ 	pa = container_of(head, struct ext4_prealloc_space, u.pa_rcu);
 +
-+	if (dev->dev_attrib.max_bytes_per_io)
-+		dev->dev_attrib.hw_max_sectors =
-+			dev->dev_attrib.max_bytes_per_io / block_size;
-+
- 	return 0;
++	BUG_ON(atomic_read(&pa->pa_count));
++	BUG_ON(pa->pa_deleted == 0);
+ 	kmem_cache_free(ext4_pspace_cachep, pa);
  }
  
---- a/drivers/target/target_core_file.c
-+++ b/drivers/target/target_core_file.c
-@@ -66,9 +66,8 @@ static int fd_attach_hba(struct se_hba *
- 	pr_debug("CORE_HBA[%d] - TCM FILEIO HBA Driver %s on Generic"
- 		" Target Core Stack %s\n", hba->hba_id, FD_VERSION,
- 		TARGET_CORE_MOD_VERSION);
--	pr_debug("CORE_HBA[%d] - Attached FILEIO HBA: %u to Generic"
--		" MaxSectors: %u\n",
--		hba->hba_id, fd_host->fd_host_id, FD_MAX_SECTORS);
-+	pr_debug("CORE_HBA[%d] - Attached FILEIO HBA: %u to Generic\n",
-+		hba->hba_id, fd_host->fd_host_id);
+@@ -3436,11 +3439,13 @@ static void ext4_mb_put_pa(struct ext4_a
+ 	ext4_group_t grp;
+ 	ext4_fsblk_t grp_blk;
  
- 	return 0;
- }
-@@ -220,7 +219,8 @@ static int fd_configure_device(struct se
- 	}
- 
- 	dev->dev_attrib.hw_block_size = fd_dev->fd_block_size;
--	dev->dev_attrib.hw_max_sectors = FD_MAX_SECTORS;
-+	dev->dev_attrib.max_bytes_per_io = FD_MAX_BYTES;
-+	dev->dev_attrib.hw_max_sectors = FD_MAX_BYTES / fd_dev->fd_block_size;
- 	dev->dev_attrib.hw_queue_depth = FD_MAX_DEVICE_QUEUE_DEPTH;
- 
- 	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) {
---- a/drivers/target/target_core_file.h
-+++ b/drivers/target/target_core_file.h
-@@ -7,7 +7,10 @@
- #define FD_DEVICE_QUEUE_DEPTH	32
- #define FD_MAX_DEVICE_QUEUE_DEPTH 128
- #define FD_BLOCKSIZE		512
--#define FD_MAX_SECTORS		2048
-+/*
-+ * Limited by the number of iovecs (2048) per vfs_[writev,readv] call
-+ */
-+#define FD_MAX_BYTES		8388608
- 
- #define RRF_EMULATE_CDB		0x01
- #define RRF_GOT_LBA		0x02
---- a/include/target/target_core_base.h
-+++ b/include/target/target_core_base.h
-@@ -614,6 +614,7 @@ struct se_dev_attrib {
- 	u32		unmap_granularity;
- 	u32		unmap_granularity_alignment;
- 	u32		max_write_same_len;
-+	u32		max_bytes_per_io;
- 	struct se_device *da_dev;
- 	struct config_group da_group;
- };
+-	if (!atomic_dec_and_test(&pa->pa_count) || pa->pa_free != 0)
+-		return;
+-
+ 	/* in this short window concurrent discard can set pa_deleted */
+ 	spin_lock(&pa->pa_lock);
++	if (!atomic_dec_and_test(&pa->pa_count) || pa->pa_free != 0) {
++		spin_unlock(&pa->pa_lock);
++		return;
++	}
++
+ 	if (pa->pa_deleted == 1) {
+ 		spin_unlock(&pa->pa_lock);
+ 		return;
 
 
