@@ -1,107 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354AbaAFAap (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 19:30:45 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:57169 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454AbaAFAao (ORCPT
+	id S1752277AbaAFAhS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 19:37:18 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55718 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752018AbaAFAhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 19:30:44 -0500
-X-AuditID: 9c93016f-b7b4eae000000985-ff-52c9f932b009
-Date: Mon, 6 Jan 2014 09:30:52 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: fengguang.wu@intel.com
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@linux.intel.com
-Subject: Re: [sched] 23f0d2093c: -12.6% regression on sparse file copy
-Message-ID: <20140106003052.GD696@lge.com>
-References: <20140105090456.GE28257@localhost>
+	Sun, 5 Jan 2014 19:37:16 -0500
+Date: Mon, 6 Jan 2014 01:37:14 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Bryan Wu <cooloney@gmail.com>
+Cc: Greg KH <greg@kroah.com>, Geert Uytterhoeven <geert@linux-m68k.org>,
+        Joe Xue <lgxue@hotmail.com>, "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "rob@landley.net" <rob@landley.net>,
+        "milo.kim@ti.com" <milo.kim@ti.com>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: how to represent sequence of brightnesses in /sys (was Re:
+ [PATCH] Add the LED burst trigger)
+Message-ID: <20140106003714.GD27517@amd.pavel.ucw.cz>
+References: <20131228101622.GA13564@amd.pavel.ucw.cz>
+ <CAMuHMdVz7FWgYZRVHy6pK+g_2QKxTW00N8jmjWHe05m5CJvPOw@mail.gmail.com>
+ <20131228192935.GA28119@amd.pavel.ucw.cz>
+ <CAMuHMdXDJ6uhe6srV-+0a8=cpBUgP+VakG+_wyLwAuiQSRVhqQ@mail.gmail.com>
+ <20131228212523.GA8733@amd.pavel.ucw.cz>
+ <20131228215042.GA7048@kroah.com>
+ <20131228235045.GA8786@amd.pavel.ucw.cz>
+ <20131229014324.GB18455@kroah.com>
+ <20131229112101.GB26295@amd.pavel.ucw.cz>
+ <CAK5ve-LOFE6h5w=+pSgfYMaW5GZQfayVfpRzP0NAfMPWZkk5iw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140105090456.GE28257@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <CAK5ve-LOFE6h5w=+pSgfYMaW5GZQfayVfpRzP0NAfMPWZkk5iw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 05, 2014 at 05:04:56PM +0800, fengguang.wu@intel.com wrote:
-> Hi Joonsoo,
-> 
-> We noticed the below changes for commit 23f0d2093c ("sched: Factor out
-> code to should_we_balance()") in test vm-scalability/300s-lru-file-readtwice
+Hi!
 
-Hello, Fengguang.
+> >> > Reason to do it in kernel is that some machines actually have
+> >> > "coprocessor" on i2c that can do it while main CPU is suspended. (For
+> >> > more reasons, see beggining of thread).
+> >>
+> >> Ick ick.
+> >>
+> >> > Binary attribute with array of bytes should be acceptable, rights?
+> >>
+> >> Not at all.
+> >>
+> >> > (IOW write(..., buf, size) )
+> >> >
+> >> > Ascii array of decimal integers -- no so, right?
+> >> >
+> >> > (IOW printf("%d %d ..", buf[0], buf[1]) )
+> >>
+> >> Use an ioctl with a structure to get things correct as a character
+> >> device.  As odds are, you aren't going to be able to create a "generic"
+> >> format for all of this for all types of devices that support such a
+> >> "co-processor".
+> >
+> > Well, we already do have hw-specific driver in the tree,
+> > drivers/leds/leds-lp55xx-common.c . But the interface is
+> > "interesting" and I believe we should have generic interface and it
+> > should use existing trigger framework -- array of brightnesses does
+> > not seem too complicated.
+> >
+> > Do you have suggestion how to pass the brightnesses over sysfs?
+> >
+> 
+> What about send those binary stuff as firmware through kernel firmware
+> interface and LED trigger sysfs is just for parameters setup and
+> enable/disable controlling.
 
-There was a mistake in this patch and there was a fix and it was already merged
-into mainline.
+That might be a bit too heavy. LED patterns do change quite often.
 
-Could you test again with the commit (b0cff9d sched: Fix load balancing
-performance regression in should_we_balance())?
+lp5523 driver uses this to push binary data through /sys. (It is code
+for lp5523 processor in this case). Something like that would still be
+better than firmware loader... 
 
-Thanks.
-
-> 
->         95a79b805b935f4  23f0d2093c789e612185180c4
->         ---------------  -------------------------
-> ==>           4.45 ~ 5%   +1777.7%      83.60 ~ 5%  vm-scalability.stddev
-> ==>       14966511 ~ 0%     -12.6%   13084545 ~ 2%  vm-scalability.throughput
->                 38 ~ 9%    +406.3%        193 ~ 7%  proc-vmstat.kswapd_low_wmark_hit_quickly
->             610823 ~ 0%     -41.4%     357990 ~ 0%  softirqs.SCHED
->          5.424e+08 ~ 0%     -38.5%  3.338e+08 ~ 6%  proc-vmstat.pgdeactivate
->           4.68e+08 ~ 0%     -37.5%  2.924e+08 ~ 6%  proc-vmstat.pgrefill_normal
->          5.549e+08 ~ 0%     -37.1%  3.491e+08 ~ 6%  proc-vmstat.pgactivate
->           14938509 ~ 1%     +27.0%   18974176 ~ 1%  vmstat.memory.free
->             978771 ~ 1%     +23.9%    1212704 ~ 3%  numa-vmstat.node2.nr_free_pages
->            3747434 ~ 0%     +21.7%    4560196 ~ 2%  proc-vmstat.nr_free_pages
-> ==>      1.353e+08 ~ 0%     +18.8%  1.607e+08 ~ 0%  proc-vmstat.numa_foreign
->          1.353e+08 ~ 0%     +18.8%  1.607e+08 ~ 0%  proc-vmstat.numa_miss
->          1.353e+08 ~ 0%     +18.8%  1.607e+08 ~ 0%  proc-vmstat.numa_other
->            3936842 ~ 1%     +22.2%    4812045 ~ 4%  numa-meminfo.node2.MemFree
->           21803812 ~ 0%     +17.7%   25661536 ~ 4%  numa-vmstat.node3.numa_foreign
->           73701524 ~ 0%     +15.0%   84769542 ~ 0%  proc-vmstat.pgscan_direct_dma32
->           73700683 ~ 0%     +15.0%   84768687 ~ 0%  proc-vmstat.pgsteal_direct_dma32
->          3.101e+08 ~ 0%     +11.2%  3.448e+08 ~ 0%  proc-vmstat.pgsteal_direct_normal
->          3.103e+08 ~ 0%     +11.2%  3.449e+08 ~ 0%  proc-vmstat.pgscan_direct_normal
->           45613907 ~ 0%     +12.6%   51342974 ~ 3%  numa-vmstat.node0.numa_other
->             795639 ~ 0%     -48.6%     409113 ~13%  time.voluntary_context_switches
->                375 ~ 0%      +6.1%        398 ~ 0%  time.elapsed_time
->               9427 ~ 0%      -5.8%       8880 ~ 0%  time.percent_of_cpu_this_job_got
-> 
-> The test case basically does
-> 
-> for i in `seq 1 $nr_cpu`
-> do      
->         create_sparse_file huge-$i
->         dd if=huge-$i of=/dev/null &
->         dd if=huge-$i of=/dev/null &
-> done
-> 
-> where nr_cpu=120 (test box is a 4-socket ivybridge system).
-> 
-> The change looks stable, each point below is a sample run:
-> 
->                                vm-scalability.stddev
-> 
->    120 ++-------------------------------------------------------------------+
->        |                                                                    |
->    100 ++             *            *                                        |
->        | *.***        :    **      :     *    *  *     *     *              |
->        **     * *.** * :  *  :*.*  :: .* :   : * :*   * :  .* :   .*   * .**|
->     80 ++      *    *  *. :  *   *: ** : ::  :  *  :.*  * *   * ** :   :*   *
->        |                 *        *     : ***      *     *     *    :**     |
->     60 ++                               *                           *       |
->        |                                                                    |
->     40 ++                                                                   |
->        |                                                                    |
->        |                                                                    |
->     20 ++                                                                   |
->        | O  OO OO OOO  O OO  O                                              |
->      0 OO--O--O------OO----OO-----------------------------------------------+
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+cd /sys/class/i2c-adapter/i2c-2/2-0032 
+echo load > engine1_mode 
+echo cd /sys/class/i2c-adapter/i2c-2/2-0032 
+echo 9d804000427f0d7f7f007f0042000000  > engine1_load 
+echo run > engine1_mode
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
