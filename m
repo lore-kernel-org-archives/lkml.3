@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933774AbaAFX2c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:28:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48146 "EHLO
+	id S932877AbaAFWko (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:40:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48120 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932887AbaAFWkp (ORCPT
+	with ESMTP id S932784AbaAFWkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:45 -0500
+	Mon, 6 Jan 2014 17:40:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Finn Thain <fthain@telegraphics.com.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.10 005/129] TTY: pmac_zilog, check existence of ports in pmz_console_init()
-Date: Mon,  6 Jan 2014 14:37:14 -0800
-Message-Id: <20140106223859.743240993@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Alex Thorlton <athorlton@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 036/129] sched: numa: skip inaccessible VMAs
+Date: Mon,  6 Jan 2014 14:37:45 -0800
+Message-Id: <20140106223900.635387958@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -30,47 +31,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: Mel Gorman <mgorman@suse.de>
 
-commit dc1dc2f8a5dd863bf2e79f338fc3ae29e99c683a upstream.
+commit 3c67f474558748b604e247d92b55dfe89654c81d upstream.
 
-When booting a multi-platform m68k kernel on a non-Mac with "console=ttyS0"
-on the kernel command line, it crashes with:
+Inaccessible VMA should not be trapping NUMA hint faults. Skip them.
 
-Unable to handle kernel NULL pointer dereference at virtual address   (null)
-Oops: 00000000
-PC: [<0013ad28>] __pmz_startup+0x32/0x2a0
-...
-Call Trace: [<002c5d3e>] pmz_console_setup+0x64/0xe4
-
-The normal tty driver doesn't crash, because init_pmz() checks
-pmz_ports_count again after calling pmz_probe().
-
-In the serial console initialization path, pmz_console_init() doesn't do
-this, causing the driver to crash later.
-
-Add a check for pmz_ports_count to fix this.
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Finn Thain <fthain@telegraphics.com.au>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Alex Thorlton <athorlton@sgi.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/pmac_zilog.c |    3 +++
- 1 file changed, 3 insertions(+)
+ kernel/sched/fair.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/tty/serial/pmac_zilog.c
-+++ b/drivers/tty/serial/pmac_zilog.c
-@@ -2051,6 +2051,9 @@ static int __init pmz_console_init(void)
- 	/* Probe ports */
- 	pmz_probe();
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -936,6 +936,13 @@ void task_numa_work(struct callback_head
+ 		if (vma->vm_end - vma->vm_start < HPAGE_SIZE)
+ 			continue;
  
-+	if (pmz_ports_count == 0)
-+		return -ENODEV;
++		/*
++		 * Skip inaccessible VMAs to avoid any confusion between
++		 * PROT_NONE and NUMA hinting ptes
++		 */
++		if (!(vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE)))
++			continue;
 +
- 	/* TODO: Autoprobe console based on OF */
- 	/* pmz_console.index = i; */
- 	register_console(&pmz_console);
+ 		do {
+ 			start = max(start, vma->vm_start);
+ 			end = ALIGN(start + (pages << PAGE_SHIFT), HPAGE_SIZE);
 
 
