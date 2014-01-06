@@ -1,87 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756116AbaAFUaR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 15:30:17 -0500
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:62138 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755870AbaAFUaP (ORCPT
+	id S1756142AbaAFUai (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 15:30:38 -0500
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:47547 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755479AbaAFUaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 15:30:15 -0500
-Message-ID: <1389040212.2562.3.camel@x41>
-Subject: [PATCH] cpufreq: speedstep: remove unused speedstep_get_state
-From: Paul Bolle <pebolle@tiscali.nl>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 06 Jan 2014 21:30:12 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Jan 2014 20:30:13.0631 (UTC) FILETIME=[1A5DC0F0:01CF0B1E]
-X-RcptDomain: vger.kernel.org
+	Mon, 6 Jan 2014 15:30:35 -0500
+X-AuditID: cbfec37c-b7f0d6d0000057bc-ed-52cb1269fa4e
+Message-id: <52CB1267.1000502@samsung.com>
+Date: Mon, 06 Jan 2014 13:30:31 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: rjw@rjwysocki.net, shuahkhan@gmail.com, linux-kernel@vger.kernel.org,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH v2 1/3] drivers/bus: Add Legacy PM OPS usage check and
+ warning to bus_register()
+References: <cover.1389034060.git.shuah.kh@samsung.com>
+ <1b1d24cd7140784f96b9d1fee9cace9da04a88f5.1389034060.git.shuah.kh@samsung.com>
+ <20140106201755.GA7339@kroah.com>
+In-reply-to: <20140106201755.GA7339@kroah.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.21.63]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBLMWRmVeSWpSXmKPExsVy+t9hX90sodNBBi+CLZoXr2ezuLxrDpvF
+	mdOXWC2+/nRwYPHYOesuu8f+uWvYPbZcbWfx+LxJLoAlissmJTUnsyy1SN8ugSvjxsdNrAUv
+	BCqWdU9jbGDcw9vFyMkhIWAisWflW3YIW0ziwr31bCC2kMAyRomXDfxdjFxAdi+TxOEjMxgh
+	EhsZJS780AGxeQW0JKYfecYMYrMIqEq0bOhgAbHZBNQlPr/ewQ5RLyfRtGQ1WI2oQITEq7MT
+	WSB6BSV+TL4HZosIaEi8PHoLzGYWyJV48roJbJewQJrEpykr2SCOWMMo0bH7LStIglNAT6J5
+	4RVmiAZriZWTtjFC2PISm9e8ZYZYrCzx5/Ippi5GDqDPFCW2r7aawCgyC8nqWUi6ZyHpXsDI
+	vIpRrLQ4uaA4KT21wlivODG3uDQvXS85P3cTIyQ2anYw3vtqc4hRgINRiYf3xd5TQUKsiWXF
+	lbmHGCU4mJVEeGdwnQ4S4k1JrKxKLcqPLyrNSS0+xMjEwSnVwGhg6c1Q3OD7f6VZkfnSm84z
+	F6eKLlWbnl1Xn+r7PpX/yePclVO3m+WwH3z3/4Sg5V3zCjv2H4eWXD3fP+sqB3vJBfbYGrPK
+	0ujo/w92c1tLbDV2OhnOIWA7Q3wBtzK/44uqaqdVy7WDSoIdjsWXRekK5YaYGFXHdXyOuds5
+	e0f4LJOiTW8PKbEUZyQaajEXFScCAB/mD8RrAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only caller of speedstep_get_state() was removed in commit d4019f0a92ab
-("cpufreq: move freq change notifications to cpufreq core"). So building
-speedstep-smi.o now triggers a GCC warning:
-    drivers/cpufreq/speedstep-smi.c:148:12: warning: 'speedstep_get_state' defined but not used [-Wunused-function]
+On 01/06/2014 01:17 PM, Greg KH wrote:
+> On Mon, Jan 06, 2014 at 01:03:21PM -0700, Shuah Khan wrote:
+>> Add Legacy PM OPS usage checks to bus_register() function. If Legacy PM OPS
+>> usage is found, print warning message to indicate that the driver code needs
+>> updating to use Dev PM OPS interfaces. This will help serve as a way to track
+>> drivers that still use Legacy PM OPS and fix them.
+>>
+>> The Legacy PM OPS check looks for suspend(struct device *, pm_message_t) or
+>> resume(struct device *) bus level interfaces.
+>>
+>> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+>> ---
+>>   drivers/base/bus.c | 3 +++
+>>   1 file changed, 3 insertions(+)
+>>
+>> diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+>> index 73f6c29..e8753a7 100644
+>> --- a/drivers/base/bus.c
+>> +++ b/drivers/base/bus.c
+>> @@ -916,6 +916,9 @@ int bus_register(struct bus_type *bus)
+>>   		goto bus_groups_fail;
+>>
+>>   	pr_debug("bus: '%s': registered\n", bus->name);
+>> +	if (bus->suspend || bus->resume)
+>> +		pr_warn("bus '%s' needs updating - use pm pointer.\n",
+>> +			bus->name);
+>
+> Why can't we just sweep the tree for all of these now, fix them up, and
+> then delete these fields and be done with it?
+>
+> Same for the other ones, putting warnings in the kernel log files
+> doesn't work at all for getting people to fix up their code (see
+> examples of scsi log messages being there for _years_ about obsolete
+> driver interfaces being used.)
 
-Remove this unused function.
+This change is not a simple case of replacing legacy with pm ops. I have 
+been working on changing drivers that use legacy, in some cases it is an 
+easy change, however in some cases it requires adding new interfaces to 
+port over from legacy to pm ops. Legacy suspend/resume is more course 
+grain and pm ops offer fine grain control over suspend, hibernate etc. 
+Also it has been a challenge without the hardware to test.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-This seems to be a rather obvious fix. Hasn't it been submitted before?
+My thinking is adding warning might get the attention of individual 
+driver owners.
 
- drivers/cpufreq/speedstep-smi.c | 32 --------------------------------
- 1 file changed, 32 deletions(-)
+-- Shuah
 
-diff --git a/drivers/cpufreq/speedstep-smi.c b/drivers/cpufreq/speedstep-smi.c
-index 0f5326d..998c17b 100644
---- a/drivers/cpufreq/speedstep-smi.c
-+++ b/drivers/cpufreq/speedstep-smi.c
-@@ -141,38 +141,6 @@ static int speedstep_smi_get_freqs(unsigned int *low, unsigned int *high)
- }
- 
- /**
-- * speedstep_get_state - set the SpeedStep state
-- * @state: processor frequency state (SPEEDSTEP_LOW or SPEEDSTEP_HIGH)
-- *
-- */
--static int speedstep_get_state(void)
--{
--	u32 function = GET_SPEEDSTEP_STATE;
--	u32 result, state, edi, command, dummy;
--
--	command = (smi_sig & 0xffffff00) | (smi_cmd & 0xff);
--
--	pr_debug("trying to determine current setting with command %x "
--		"at port %x\n", command, smi_port);
--
--	__asm__ __volatile__(
--		"push %%ebp\n"
--		"out %%al, (%%dx)\n"
--		"pop %%ebp\n"
--		: "=a" (result),
--		  "=b" (state), "=D" (edi),
--		  "=c" (dummy), "=d" (dummy), "=S" (dummy)
--		: "a" (command), "b" (function), "c" (0),
--		  "d" (smi_port), "S" (0), "D" (0)
--	);
--
--	pr_debug("state is %x, result is %x\n", state, result);
--
--	return state & 1;
--}
--
--
--/**
-  * speedstep_set_state - set the SpeedStep state
-  * @state: new processor frequency state (SPEEDSTEP_LOW or SPEEDSTEP_HIGH)
-  *
 -- 
-1.8.1.4
-
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
