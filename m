@@ -1,43 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199AbaAFKyM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 05:54:12 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:57323 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753655AbaAFKyK convert rfc822-to-8bit (ORCPT
+	id S1754240AbaAFKzh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 05:55:37 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:31217 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247AbaAFKzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 05:54:10 -0500
+	Mon, 6 Jan 2014 05:55:36 -0500
+X-IronPort-AV: E=Sophos;i="4.95,612,1384300800"; 
+   d="scan'208";a="87836971"
+Message-ID: <52CA8BA6.5040305@citrix.com>
+Date: Mon, 6 Jan 2014 10:55:34 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <87a9f92xnn.fsf@nemi.mork.no>
-References: <f9d7b0d5424e4443597d2ed39bec3fedd2b10d1e.1387848958.git.viresh.kumar@linaro.org>
-	<5562479.pVWRuDL0y6@vostro.rjw.lan>
-	<87zjne7f75.fsf@nemi.mork.no>
-	<2302938.b8tymqrMEz@vostro.rjw.lan>
-	<878uuxquxu.fsf@nemi.mork.no>
-	<871u0po0gx.fsf@nemi.mork.no>
-	<CAKohpo=9p8ArfWyyWkdQm_BWtyWbWe_dsg6VAUP60VUFcAjFSw@mail.gmail.com>
-	<87wqihmg9a.fsf@nemi.mork.no>
-	<CAKohpo=3s6=gw8OJTrUdLH8o2ouA=8a8MhrgNRXwHmOf0si5Pw@mail.gmail.com>
-	<87iotx32mx.fsf@nemi.mork.no>
-	<CAKohpo=KgHqz0KYv7h0EYP3=8h7T3ZfPpFTMS6qVoEb6dXGnSQ@mail.gmail.com>
-	<87a9f92xnn.fsf@nemi.mork.no>
-Date: Mon, 6 Jan 2014 16:24:09 +0530
-Message-ID: <CAKohpon7u_1h+9rKQeC8J4Pqd_6bSajn7Ag8=COqczhbSPEgMA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] cpufreq: try to resume policies which failed on last resume
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: =?ISO-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        <boris.ostrovsky@oracle.com>, <stefano.stabellini@eu.citrix.com>,
+        <hpa@zytor.com>
+Subject: Re: [PATCH v13] Linux Xen PVH support (v13)
+References: <1388777916-1328-1-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1388777916-1328-1-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 January 2014 16:19, Bjørn Mork <bjorn@mork.no> wrote:
-> I cancelled by pressing backspace while the image was being written.
+On 03/01/14 19:38, Konrad Rzeszutek Wilk wrote:
+> The patches, also available at
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git devel/pvh.v13
 
-I will answer other queries on next mail, but a quick question:
-Do you get these warnings even if you don't cancel hibernation?
+A minor nit with a comment but consider the complete series:
+
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+
+I'm happy for this to go into 3.14.
+
+David
