@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575AbaAFMiz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 07:38:55 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:40353 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539AbaAFMiy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 07:38:54 -0500
+	id S1754624AbaAFMjP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 07:39:15 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:45582 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752776AbaAFMjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 07:39:12 -0500
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <rui.zhang@intel.com>
 CC: <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
@@ -19,9 +18,9 @@ CC: <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Russell King <linux@arm.linux.org.uk>,
         <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCHv2 1/7] arm: dts: add dra7 DSPEVE thermal data
-Date: Mon, 6 Jan 2014 08:36:45 -0400
-Message-ID: <1389011811-13004-2-git-send-email-eduardo.valentin@ti.com>
+Subject: [PATCHv2 2/7] arm: dts: add dra7 IVA thermal data
+Date: Mon, 6 Jan 2014 08:36:46 -0400
+Message-ID: <1389011811-13004-3-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1389011811-13004-1-git-send-email-eduardo.valentin@ti.com>
 References: <1389011811-13004-1-git-send-email-eduardo.valentin@ti.com>
@@ -33,7 +32,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This patch introduces a dtsi file to contain the thermal data
-for DSPEVE domain on DRA7 and later SoCs. This data will
+for IVA domain on DRA7 and later SoCs. This data will
 enable a thermal shutdown at 125C.
 
 Cc: Benoît Cousson <bcousson@baylibre.com>
@@ -49,18 +48,18 @@ Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- arch/arm/boot/dts/dra7-dspeve-thermal.dtsi | 28 ++++++++++++++++++++++++++++
+ arch/arm/boot/dts/dra7-iva-thermal.dtsi | 28 ++++++++++++++++++++++++++++
  1 file changed, 28 insertions(+)
- create mode 100644 arch/arm/boot/dts/dra7-dspeve-thermal.dtsi
+ create mode 100644 arch/arm/boot/dts/dra7-iva-thermal.dtsi
 
-diff --git a/arch/arm/boot/dts/dra7-dspeve-thermal.dtsi b/arch/arm/boot/dts/dra7-dspeve-thermal.dtsi
+diff --git a/arch/arm/boot/dts/dra7-iva-thermal.dtsi b/arch/arm/boot/dts/dra7-iva-thermal.dtsi
 new file mode 100644
-index 0000000..50e78b6
+index 0000000..4895f65
 --- /dev/null
-+++ b/arch/arm/boot/dts/dra7-dspeve-thermal.dtsi
++++ b/arch/arm/boot/dts/dra7-iva-thermal.dtsi
 @@ -0,0 +1,28 @@
 +/*
-+ * Device Tree Source for DRA7 SoC DSPEVE thermal
++ * Device Tree Source for DRA7 SoC IVA thermal
 + *
 + * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
 + * Contact: Eduardo Valentin <eduardo.valentin@ti.com>
@@ -72,15 +71,15 @@ index 0000000..50e78b6
 +
 +#include <dt-bindings/thermal/thermal.h>
 +
-+dspeve_thermal: dspeve_thermal {
++iva_thermal: iva_thermal {
 +	polling-delay-passive = <250>; /* milliseconds */
 +	polling-delay = <1000>; /* milliseconds */
 +
 +			/* sensor       ID */
-+	thermal-sensors = <&bandgap     3>;
++	thermal-sensors = <&bandgap     4>;
 +
 +	trips {
-+		dspeve_crit: dspeve_crit {
++		iva_crit: iva_crit {
 +			temperature = <125000>; /* milliCelsius */
 +			hysteresis = <2000>; /* milliCelsius */
 +			type = "critical";
