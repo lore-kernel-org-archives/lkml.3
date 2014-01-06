@@ -1,44 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764AbaAFHv3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 02:51:29 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:48944 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052AbaAFHv2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 02:51:28 -0500
-Date: Mon, 6 Jan 2014 10:51:17 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Joe Perches <joe@perches.com>
-Cc: devel@driverdev.osuosl.org, andrea.merello@gmail.com,
-        gregkh@linuxfoundation.org, rusty@rustcorp.com.au,
-        linville@tuxdriver.com, linux-kernel@vger.kernel.org,
-        teobaluta@gmail.com, Dan LaManna <dan.lamanna@gmail.com>
-Subject: Re: [PATCH] Staging: rtl8187se: fix styling issues in r8180_wx.c
-Message-ID: <20140106075117.GJ30234@mwanda>
-References: <1388956656-10790-1-git-send-email-dan.lamanna@gmail.com>
- <20140105214555.GH30234@mwanda>
- <1388962160.5808.33.camel@joe-AO722>
+	id S1752746AbaAFHyp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 02:54:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55993 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750875AbaAFHyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 02:54:44 -0500
+Message-ID: <52CA612D.2000902@redhat.com>
+Date: Mon, 06 Jan 2014 15:54:21 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1388962160.5808.33.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: John Fastabend <john.fastabend@gmail.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, John Fastabend <john.r.fastabend@intel.com>,
+        Neil Horman <nhorman@tuxdriver.com>
+Subject: Re: [PATCH net 1/2] macvlan: forbid L2 fowarding offload for macvtap
+References: <1388978467-2075-1-git-send-email-jasowang@redhat.com> <52CA5CDA.1020503@gmail.com>
+In-Reply-To: <52CA5CDA.1020503@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 05, 2014 at 02:49:20PM -0800, Joe Perches wrote:
-> 
-> Needs parentheses
-> 
-> 	if ((src->capability & WLAN_CAPABILITY_IBSS) !=
-> 	    (dst->capability & WLAN_CAPABILITY_IBSS))
-> 
+On 01/06/2014 03:35 PM, John Fastabend wrote:
+> On 01/05/2014 07:21 PM, Jason Wang wrote:
+>> L2 fowarding offload will bypass the rx handler of real device. This
+>> will make
+>> the packet could not be forwarded to macvtap device. Another problem
+>> is the
+>> dev_hard_start_xmit() called for macvtap does not have any
+>> synchronization.
+>>
+>> Fix this by forbidding L2 forwarding for macvtap.
+>>
+>> Cc: John Fastabend <john.r.fastabend@intel.com>
+>> Cc: Neil Horman <nhorman@tuxdriver.com>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> ---
+>>   drivers/net/macvlan.c |    5 ++++-
+>>   1 files changed, 4 insertions(+), 1 deletions(-)
+>>
+>
+> I must be missing something.
+>
+> The lower layer device should set skb->dev to the correct macvtap
+> device on receive so that in netif_receive_skb_core() the macvtap
+> handler is hit. Skipping the macvlan receive handler should be OK
+> because the switching was done by the hardware. If I read macvtap.c
+> correctly macvlan_common_newlink() is called with 'dev' where 'dev'
+> is the macvtap device. Any idea what I'm missing? I guess I'll need
+> to setup a macvtap test case.
 
-Yeah.  You are right.
+Unlike macvlan, macvtap depends on rx handler on the lower device to
+work. In this case macvlan_handle_frame() will call macvtap_receive().
+So doing netif_receive_skb_core() for macvtap device directly won't work
+since we need to forward the packet to userspace instead of kernel.
 
-regards,
-dan carpenter
+For net-next.git, it may work since commit
+6acf54f1cf0a6747bac9fea26f34cfc5a9029523 let macvtap device register an
+rx handler for itself.
+>
+> And what synchronization are you worried about on dev_hard_start_xmit()?
+> In the L2 forwarding offload case macvlan_open() clears the NETIF_F_LLTX
+> flag so HARD_TX_LOCK protects the driver txq. We might hit this warning
+> in dev_queue_xmit() though,
+>
+>   net_crit_ratelimited("Virtual device %s asks to queue packet!\n",
+>
+> Perhaps we can remove it.
+
+The problem is macvtap does not call dev_queue_xmit() for macvlan
+device. It calls macvlan_start_xmit() directly from macvtap_get_user().
+So HARD_TX_LOCK was not done for the txq.
+>
+>> diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
+>> index 60406b0..5360f73 100644
+>> --- a/drivers/net/macvlan.c
+>> +++ b/drivers/net/macvlan.c
+>> @@ -338,6 +338,8 @@ static const struct header_ops
+>> macvlan_hard_header_ops = {
+>>       .cache_update    = eth_header_cache_update,
+>>   };
+>>
+>> +static struct rtnl_link_ops macvlan_link_ops;
+>> +
+>>   static int macvlan_open(struct net_device *dev)
+>>   {
+>>       struct macvlan_dev *vlan = netdev_priv(dev);
+>> @@ -353,7 +355,8 @@ static int macvlan_open(struct net_device *dev)
+>>           goto hash_add;
+>>       }
+>>
+>> -    if (lowerdev->features & NETIF_F_HW_L2FW_DOFFLOAD) {
+>> +    if (lowerdev->features & NETIF_F_HW_L2FW_DOFFLOAD &&
+>> +        dev->rtnl_link_ops == &macvlan_link_ops) {
+>>           vlan->fwd_priv =
+>>                 lowerdev->netdev_ops->ndo_dfwd_add_station(lowerdev,
+>> dev);
+>>
+>>
+>
+>
 
