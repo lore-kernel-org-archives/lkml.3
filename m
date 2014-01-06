@@ -1,55 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708AbaAFOSb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 09:18:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39344 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750902AbaAFOSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 09:18:30 -0500
-Date: Mon, 6 Jan 2014 15:18:27 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Bob Liu <lliubbo@gmail.com>
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bob Liu <bob.liu@oracle.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: could you clarify mm/mempolicy: fix !vma in new_vma_page()
-Message-ID: <20140106141827.GB27602@dhcp22.suse.cz>
-References: <20140106112422.GA27602@dhcp22.suse.cz>
- <CAA_GA1dNdrG9aQ3UKDA0O=BY721rvseORVkc2+RxUpzysp3rYw@mail.gmail.com>
+	id S1753844AbaAFOSx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 09:18:53 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:64525 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750902AbaAFOSu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 09:18:50 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Leandro Dorileo <l@dorileo.org>, lenb@kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        fcr@adinet.com.uy, "3.8+" <stable@vger.kernel.org>
+Subject: Re: [PATCH] ACPI/Battery: Add a _BIX quirk for NEC LZ750/LS
+Date: Mon, 06 Jan 2014 15:32:37 +0100
+Message-ID: <6301126.1BZJn0NGqy@vostro.rjw.lan>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <52CAB8A7.1070002@intel.com>
+References: <1388648277-23453-1-git-send-email-tianyu.lan@intel.com> <20140103231250.GD13489@core.coreip.homeip.net> <52CAB8A7.1070002@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAA_GA1dNdrG9aQ3UKDA0O=BY721rvseORVkc2+RxUpzysp3rYw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 06-01-14 20:45:54, Bob Liu wrote:
-[...]
->  544         if (PageAnon(page)) {
->  545                 struct anon_vma *page__anon_vma = page_anon_vma(page);
->  546                 /*
->  547                  * Note: swapoff's unuse_vma() is more efficient with this
->  548                  * check, and needs it to match anon_vma when KSM is active.
->  549                  */
->  550                 if (!vma->anon_vma || !page__anon_vma ||
->  551                     vma->anon_vma->root != page__anon_vma->root)
->  552                         return -EFAULT;
->  553         } else if (page->mapping && !(vma->vm_flags & VM_NONLINEAR)) {
->  554                 if (!vma->vm_file ||
->  555                     vma->vm_file->f_mapping != page->mapping)
->  556                         return -EFAULT;
->  557         } else
->  558                 return -EFAULT;
+On Monday, January 06, 2014 10:07:35 PM Lan Tianyu wrote:
+> On 01/04/2014 07:12 AM, Dmitry Torokhov wrote:
+> > On Fri, Jan 03, 2014 at 05:01:11PM -0200, Leandro Dorileo wrote:
+> >> On Thu, Jan 02, 2014 at 03:37:57PM +0800, Lan Tianyu wrote:
+> >>> The aml method _BIX of NEC LZ750/LS returns a broken package which
+> >>> skip the first member "Revision" according ACPI 5.0 spec Table 10-234.
+> >>>
+> >>> This patch is to add a quirk for this machine to skip member "Revision"
+> >>> during parsing _BIX returned package.
+> >>>
+> >>> Reported-and-tested-by: Francisco Castro <fcr@adinet.com.uy>
+> >>> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=67351
+> >>> Cc: 3.8+ <stable@vger.kernel.org>
+> >>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> >>> ---
+> >>>   drivers/acpi/battery.c |   28 +++++++++++++++++++++++++++-
+> >>>   1 file changed, 27 insertions(+), 1 deletion(-)
+> >>>
+> >>> diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+> >>> index fbf1ace..3d64a87 100644
+> >>> --- a/drivers/acpi/battery.c
+> >>> +++ b/drivers/acpi/battery.c
+> >>> @@ -62,6 +62,7 @@ MODULE_AUTHOR("Alexey Starikovskiy <astarikovskiy@suse.de>");
+> >>>   MODULE_DESCRIPTION("ACPI Battery Driver");
+> >>>   MODULE_LICENSE("GPL");
+> >>>
+> >>> +static int battery_bix_broken_package;
+> >>>   static unsigned int cache_time = 1000;
+> >>>   module_param(cache_time, uint, 0644);
+> >>>   MODULE_PARM_DESC(cache_time, "cache time in milliseconds");
+> >>> @@ -416,7 +417,12 @@ static int acpi_battery_get_info(struct acpi_battery *battery)
+> >>>   		ACPI_EXCEPTION((AE_INFO, status, "Evaluating %s", name));
+> >>>   		return -ENODEV;
+> >>>   	}
+> >>> -	if (test_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags))
+> >>> +
+> >>> +	if (battery_bix_broken_package)
+> >>> +		result = extract_package(battery, buffer.pointer,
+> >>> +				extended_info_offsets + 1,
+> >>> +				ARRAY_SIZE(extended_info_offsets) - 1);
+> >>> +	else if (test_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags))
+> >>>   		result = extract_package(battery, buffer.pointer,
+> >>>   				extended_info_offsets,
+> >>>   				ARRAY_SIZE(extended_info_offsets));
+> >>> @@ -754,6 +760,24 @@ static int battery_notify(struct notifier_block *nb,
+> >>>   	return 0;
+> >>>   }
+> >>>
+> >>> +static int battery_bix_package_quirk(const struct dmi_system_id *id)
+> >>> +{
+> >>> +	battery_bix_broken_package = 1;
+> >>> +	return 0;
+> >>> +}
+> >>> +
+> >>
+> >>
+> >> Do you really need this callback? Why don't you just do:
+> >>
+> >> if (dmi_check_system(bat_dmi_table))
+> >>         battery_bix_broken_package = 1;
+> >>
+> >
+> > Callback would be useful if we were to print the DMI data of the match,
+> > otherwise not so much.
+> >
 > 
-> That's the "other conditions" and the reason why we can't use
-> BUG_ON(!vma) in new_vma_page().
+> Hi Leandro & Dmitry:
+> 	Thanks for your review. I select to callback mode as it's convenient to 
+> add a new quirk for other machines if need. This Just likes what we have 
+> done for the other ACPI drivers(E,G ac, processor_idle, video, thermal 
+> and so on.).
 
-Sorry, I wasn't clear with my question. I was interested in which of
-these triggered and why only for hugetlb pages?
+We can switch to callbacks when we actually need them.  Please keep things
+as simple as reasonably possible.
+
+Thanks!
 
 -- 
-Michal Hocko
-SUSE Labs
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
