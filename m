@@ -1,72 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752515AbaAFBN0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 20:13:26 -0500
-Received: from ozlabs.org ([203.10.76.45]:33234 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752164AbaAFBNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 20:13:25 -0500
-Date: Mon, 6 Jan 2014 12:13:17 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Mundt <lethal@linux-sh.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bastian Hecht <hechtb@gmail.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Subject: linux-next: manual merge of the sh tree with the  tree
-Message-Id: <20140106121317.bada4233ec3fec40f79735cc@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__6_Jan_2014_12_13_17_+1100_SGsrsE/AfAwa8sY1"
+	id S1752533AbaAFBQh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 20:16:37 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:45632 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318AbaAFBQg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jan 2014 20:16:36 -0500
+Message-ID: <52CA03EB.6020107@hitachi.com>
+Date: Mon, 06 Jan 2014 10:16:27 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Tom Zanussi <tom.zanussi@linux.intel.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] tracing/kprobes: Add trace event trigger invocations
+References: <1388283848.3048.1.camel@empanada>
+In-Reply-To: <1388283848.3048.1.camel@empanada>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__6_Jan_2014_12_13_17_+1100_SGsrsE/AfAwa8sY1
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+(2013/12/29 11:24), Tom Zanussi wrote:
+> Add code to the kprobe/kretprobe event functions that will invoke any
+> event triggers associated with a probe's ftrace_event_file.
+> 
+> The code to do this is very similar to the invocation code already
+> used to invoke the triggers associated with static events and
+> essentially replaces the existing soft-disable checks with a superset
+> that preserves the original behavior but adds the bits needed to
+> support event triggers.
+> 
+> Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
 
-Hi Paul,
+Looks good for me :)
 
-Today's linux-next merge of the sh tree got conflicts in
-drivers/tty/serial/sh-sci.c and include/linux/serial_sci.h between
-commits 8fb9631c517b ("serial: sh-sci: Sort headers alphabetically"),
-20bdcab8268c ("serial: sh-sci: Add OF support") and probably others from
-the arm-soc tree and commits ada80ee7fa60 ("serial: sh-sci: Add OF
-support") and b19ef75c56e9 ("serial: sh-sci: OF definitions need
-linux/of.h") from the sh tree.
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-The arm-soc tree version is dated much more recently than
-the sh tree version and conflicts badly, so for today I have just dropped
-the sh tree (everything in there was committed before April 2013).  Please
-figure this out.
+Thank you!
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> ---
+>  kernel/trace/trace_kprobe.c | 42 ++++++++++++++++++++++++++++++++++++------
+>  1 file changed, 36 insertions(+), 6 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+> index dae9541..1ee13eb 100644
+> --- a/kernel/trace/trace_kprobe.c
+> +++ b/kernel/trace/trace_kprobe.c
+> @@ -812,12 +812,20 @@ __kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs,
+>  	struct ring_buffer *buffer;
+>  	int size, dsize, pc;
+>  	unsigned long irq_flags;
+> +	unsigned long eflags;
+> +	enum event_trigger_type __tt = ETT_NONE;
+>  	struct ftrace_event_call *call = &tp->call;
+>  
+>  	WARN_ON(call != ftrace_file->event_call);
+>  
+> -	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
+> -		return;
+> +	eflags = ftrace_file->flags;
+> +
+> +	if (!(eflags & FTRACE_EVENT_FL_TRIGGER_COND)) {
+> +		if (eflags & FTRACE_EVENT_FL_TRIGGER_MODE)
+> +			event_triggers_call(ftrace_file, NULL);
+> +		if (eflags & FTRACE_EVENT_FL_SOFT_DISABLED)
+> +			return;
+> +	}
+>  
+>  	local_save_flags(irq_flags);
+>  	pc = preempt_count();
+> @@ -835,9 +843,16 @@ __kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs,
+>  	entry->ip = (unsigned long)tp->rp.kp.addr;
+>  	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
+>  
+> -	if (!filter_check_discard(ftrace_file, entry, buffer, event))
+> +	if (eflags & FTRACE_EVENT_FL_TRIGGER_COND)
+> +		__tt = event_triggers_call(ftrace_file, entry);
+> +
+> +	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
+> +		ring_buffer_discard_commit(buffer, event);
+> +	else if (!filter_check_discard(ftrace_file, entry, buffer, event))
+>  		trace_buffer_unlock_commit_regs(buffer, event,
+>  						irq_flags, pc, regs);
+> +	if (__tt)
+> +		event_triggers_post_call(ftrace_file, __tt);
+>  }
+>  
+>  static __kprobes void
+> @@ -860,12 +875,20 @@ __kretprobe_trace_func(struct trace_probe *tp, struct kretprobe_instance *ri,
+>  	struct ring_buffer *buffer;
+>  	int size, pc, dsize;
+>  	unsigned long irq_flags;
+> +	unsigned long eflags;
+> +	enum event_trigger_type __tt = ETT_NONE;
+>  	struct ftrace_event_call *call = &tp->call;
+>  
+>  	WARN_ON(call != ftrace_file->event_call);
+>  
+> -	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
+> -		return;
+> +	eflags = ftrace_file->flags;
+> +
+> +	if (!(eflags & FTRACE_EVENT_FL_TRIGGER_COND)) {
+> +		if (eflags & FTRACE_EVENT_FL_TRIGGER_MODE)
+> +			event_triggers_call(ftrace_file, NULL);
+> +		if (eflags & FTRACE_EVENT_FL_SOFT_DISABLED)
+> +			return;
+> +	}
+>  
+>  	local_save_flags(irq_flags);
+>  	pc = preempt_count();
+> @@ -884,9 +907,16 @@ __kretprobe_trace_func(struct trace_probe *tp, struct kretprobe_instance *ri,
+>  	entry->ret_ip = (unsigned long)ri->ret_addr;
+>  	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
+>  
+> -	if (!filter_check_discard(ftrace_file, entry, buffer, event))
+> +	if (eflags & FTRACE_EVENT_FL_TRIGGER_COND)
+> +		__tt = event_triggers_call(ftrace_file, entry);
+> +
+> +	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
+> +		ring_buffer_discard_commit(buffer, event);
+> +	else if (!filter_check_discard(ftrace_file, entry, buffer, event))
+>  		trace_buffer_unlock_commit_regs(buffer, event,
+>  						irq_flags, pc, regs);
+> +	if (__tt)
+> +		event_triggers_post_call(ftrace_file, __tt);
+>  }
+>  
+>  static __kprobes void
+> 
 
---Signature=_Mon__6_Jan_2014_12_13_17_+1100_SGsrsE/AfAwa8sY1
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-iQIcBAEBCAAGBQJSygMyAAoJEMDTa8Ir7ZwVikkP+wdSxBZ+oTWuZIkr1qabm69b
-HYjk97O0HvXr/bgppF3CFzHWm1g7vqtK3UwXjp0Z8H+VpmaoTc0IVn99+wQKZ9/d
-yBenqdPSMAlYDUZD68RfOCmBIQIf9sHIvtLiXN2Q49sDu5syiaA6Xt+WDHhxYIdq
-dIhpktSptG8LbT3H/2EtqTibzIqA5UmaNnou9Y5D2xFJYHXFOAkPWgJXQyeBmrAD
-HJPaNiWQXWkQqs8vyCuHuI3QM8jW6BHFqnXMbJGGr8rZ/Olim+IqCuMAFhVL9M+B
-Cnzyo4g2S1n7RIZXRl4ig+SxN2Fr8EMa1ulp9yH7U7qFIMEeYO9KL5HTLUv+M1TA
-sS486GihwjStbYeXjwNBUduqw6MuCMdUPK0Gmvgtoc+mfbaN8A3vPBJ4n3J3DY35
-to9kG9imBDhiKjHcs5qQeqhaRr417olMiOoFzCTBWQ8GLzw1GUqOS/CdPwYoLj8v
-JyOoHjpbcrEyk5Smq1Rfc46jX7wOVk0kVn7R6RLfZrRDc9TeDPMUp4T6N1XxVwE0
-VqnBPBrdJsDVyR9NGkQaGVaLV/OYUCqE5JgLYPm5w8y6ofnE3Go27XiN0Vsk+WYh
-JoMsEwPEmiC7aqDwInztBX9OYiGJ8T2lEFE/bU0wfWOHjHkf4MHpcbZiMjwIJSOJ
-QIUP7tc8LTBEBQesF7JK
-=11Oh
------END PGP SIGNATURE-----
 
---Signature=_Mon__6_Jan_2014_12_13_17_+1100_SGsrsE/AfAwa8sY1--
