@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752925AbaAFGkC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 01:40:02 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:43073 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752732AbaAFGjn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752803AbaAFGjn (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 Jan 2014 01:39:43 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s066deRF019011, This message is accepted by code: ctloc85258
+Received: from rtits2.realtek.com ([60.250.210.242]:43070 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875AbaAFGjl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 01:39:41 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s066db0q018984, This message is accepted by code: ctloc85258
 From: Hayes Wang <hayeswang@realtek.com>
 To: <netdev@vger.kernel.org>
 CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 3/3] r8152: replace the return value of rtl_ops_init
-Date: Mon, 6 Jan 2014 14:39:26 +0800
-Message-ID: <1388990366-8508-4-git-send-email-hayeswang@realtek.com>
+Subject: [PATCH net-next 0/3] adjust the code of r8152
+Date: Mon, 6 Jan 2014 14:39:23 +0800
+Message-ID: <1388990366-8508-1-git-send-email-hayeswang@realtek.com>
 X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1388990366-8508-1-git-send-email-hayeswang@realtek.com>
-References: <1388990366-8508-1-git-send-email-hayeswang@realtek.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [172.21.71.44]
@@ -25,87 +23,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace the boolean value with the error code for the return value
-of the rtl_ops_init().
+Replace some tabs and modify the return value of rtl_ops_init().
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 20 +++++++++++---------
- 1 file changed, 11 insertions(+), 9 deletions(-)
+Hayes Wang (3):
+  r8152: replace some tabs with spaces
+  r8152: move the actions of saving the information of the device
+  r8152: replace the return value of rtl_ops_init
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 8615681..06ed043 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -2685,10 +2685,10 @@ static void rtl8153_unload(struct r8152 *tp)
- 	r8153_power_cut_en(tp, 1);
- }
- 
--static bool rtl_ops_init(struct r8152 *tp, const struct usb_device_id *id)
-+static int rtl_ops_init(struct r8152 *tp, const struct usb_device_id *id)
- {
- 	struct rtl_ops *ops = &tp->rtl_ops;
--	bool ret = true;
-+	int ret = -ENODEV;
- 
- 	switch (id->idVendor) {
- 	case VENDOR_ID_REALTEK:
-@@ -2699,6 +2699,7 @@ static bool rtl_ops_init(struct r8152 *tp, const struct usb_device_id *id)
- 			ops->disable		= rtl8152_disable;
- 			ops->down		= rtl8152_down;
- 			ops->unload		= rtl8152_unload;
-+			ret = 0;
- 			break;
- 		case PRODUCT_ID_RTL8153:
- 			ops->init		= r8153_init;
-@@ -2706,9 +2707,9 @@ static bool rtl_ops_init(struct r8152 *tp, const struct usb_device_id *id)
- 			ops->disable		= rtl8152_disable;
- 			ops->down		= rtl8153_down;
- 			ops->unload		= rtl8153_unload;
-+			ret = 0;
- 			break;
- 		default:
--			ret = false;
- 			break;
- 		}
- 		break;
-@@ -2721,18 +2722,20 @@ static bool rtl_ops_init(struct r8152 *tp, const struct usb_device_id *id)
- 			ops->disable		= rtl8152_disable;
- 			ops->down		= rtl8153_down;
- 			ops->unload		= rtl8153_unload;
-+			ret = 0;
- 			break;
- 		default:
--			ret = false;
- 			break;
- 		}
- 		break;
- 
- 	default:
--		ret = false;
- 		break;
- 	}
- 
-+	if (ret)
-+		netif_err(tp, probe, tp->netdev, "Unknown Device");
-+
- 	return ret;
- }
- 
-@@ -2763,10 +2766,9 @@ static int rtl8152_probe(struct usb_interface *intf,
- 	tp->netdev = netdev;
- 	tp->intf = intf;
- 
--	if (!rtl_ops_init(tp, id)) {
--		netif_err(tp, probe, netdev, "Unknown Device");
--		return -ENODEV;
--	}
-+	ret = rtl_ops_init(tp, id);
-+	if (ret)
-+		goto out;
- 
- 	tasklet_init(&tp->tl, bottom_half, (unsigned long)tp);
- 	INIT_DELAYED_WORK(&tp->schedule, rtl_work_func_t);
+ drivers/net/usb/r8152.c | 43 +++++++++++++++++++++++--------------------
+ 1 file changed, 23 insertions(+), 20 deletions(-)
+
 -- 
 1.8.4.2
 
