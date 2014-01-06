@@ -1,31 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757351AbaAFXFt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:05:49 -0500
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:33287 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755924AbaAFXFp (ORCPT
+	id S1757365AbaAFXGJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:06:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48495 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933158AbaAFWlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 18:05:45 -0500
-X-Greylist: delayed 6465 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Jan 2014 18:05:45 EST
+	Mon, 6 Jan 2014 17:41:51 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Josh Durgin <josh.durgin@inktank.com>, Alex Elder <elder@linaro.org>
+Subject: [PATCH 3.10 114/129] rbd: complete notifies before cleaning up osd_client and rbd_dev
+Date: Mon,  6 Jan 2014 14:39:03 -0800
+Message-Id: <20140106223902.854306282@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
+References: <20140106223859.589799655@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-In-Reply-To: <20140106213630.GC14927@amd.pavel.ucw.cz>
-References: <CALkWK0n0q+a9EmMbJXsgo6eO1B+0Lq6tqsN3moLbXz+Y0GGu0g@mail.gmail.com>
- <20140106211115.GA23421@amd.pavel.ucw.cz> <CALkWK0nLg9D+4=_eNe3cgmnuzzZgk+E5U_OK9vh6_3XTZSX12w@mail.gmail.com>
- <20140106213630.GC14927@amd.pavel.ucw.cz>
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Tue, 7 Jan 2014 04:35:04 +0530
-Message-ID: <CALkWK0kFRS2ZhsNdmBLms-XzpJ-5mc+--NFhx-tM==H2qrfXmQ@mail.gmail.com>
-Subject: Re: [QUERY] Power consumption on a 2013 MBP
-To: Pavel Machek <pavel@ucw.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pavel Machek wrote:
-> "Should not". Exactly. Your machine should not consume 20W. It does,
-> so try rmmoding USB modules, and probably AHCI...
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-My system freezes if I remove modules like usbhci, ahci, ehci_hcd.
+------------------
+
+From: Josh Durgin <josh.durgin@inktank.com>
+
+commit 9abc59908e0c5f983aaa91150da32d5b62cf60b7 upstream.
+
+To ensure rbd_dev is not used after it's released, flush all pending
+notify callbacks before calling rbd_dev_image_release(). No new
+notifies can be added to the queue at this point because the watch has
+already be unregistered with the osd_client.
+
+Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
+Reviewed-by: Alex Elder <elder@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/block/rbd.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -5150,6 +5150,13 @@ static ssize_t rbd_remove(struct bus_typ
+ 	ret = rbd_dev_header_watch_sync(rbd_dev, false);
+ 	if (ret)
+ 		rbd_warn(rbd_dev, "failed to cancel watch event (%d)\n", ret);
++
++	/*
++	 * flush remaining watch callbacks - these must be complete
++	 * before the osd_client is shutdown
++	 */
++	dout("%s: flushing notifies", __func__);
++	ceph_osdc_flush_notifies(&rbd_dev->rbd_client->client->osdc);
+ 	rbd_dev_image_release(rbd_dev);
+ 	module_put(THIS_MODULE);
+ 	ret = count;
+
+
