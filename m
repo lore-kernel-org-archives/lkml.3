@@ -1,81 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779AbaAFMkx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 07:40:53 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:40402 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753655AbaAFMkv (ORCPT
+	id S1754787AbaAFMln (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 07:41:43 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:38972 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751243AbaAFMlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 07:40:51 -0500
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-To: <rui.zhang@intel.com>
-CC: <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCHv2 7/7] arm: dts: add thermal zones info on tmp102 for DRA7-EVM
-Date: Mon, 6 Jan 2014 08:36:51 -0400
-Message-ID: <1389011811-13004-8-git-send-email-eduardo.valentin@ti.com>
-X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
-In-Reply-To: <1389011811-13004-1-git-send-email-eduardo.valentin@ti.com>
-References: <1389011811-13004-1-git-send-email-eduardo.valentin@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+	Mon, 6 Jan 2014 07:41:42 -0500
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: hans.verkuil@cisco.com, m.chehab@samsung.com, gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, Ethan Zhao <ethan.kernel@gmail.com>
+Subject: [PATCH] [media] saa7146: check return value of saa7146_format_by_fourcc() to avoid NULL pointer
+Date: Mon,  6 Jan 2014 20:41:26 +0800
+Message-Id: <1389012086-454-1-git-send-email-ethan.kernel@gmail.com>
+X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add simple thermal zone on tmp102.
+Function saa7146_format_by_fourcc() may return NULL, reference of the returned
+result would cause NULL pointer issue without checking.
 
-Cc: Benoît Cousson <bcousson@baylibre.com>
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: devicetree@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
 ---
- arch/arm/boot/dts/dra7-evm.dts | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ drivers/media/common/saa7146/saa7146_hlp.c | 22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
-index 36e2c9e..1ea9c3d 100644
---- a/arch/arm/boot/dts/dra7-evm.dts
-+++ b/arch/arm/boot/dts/dra7-evm.dts
-@@ -95,6 +95,21 @@
- 	};
- };
+diff --git a/drivers/media/common/saa7146/saa7146_hlp.c b/drivers/media/common/saa7146/saa7146_hlp.c
+index be746d1..1c9518b 100644
+--- a/drivers/media/common/saa7146/saa7146_hlp.c
++++ b/drivers/media/common/saa7146/saa7146_hlp.c
+@@ -575,6 +575,7 @@ static void saa7146_set_position(struct saa7146_dev *dev, int w_x, int w_y, int
+ 	 */
+ 	u32 base = (u32)(unsigned long)vv->ov_fb.base;
  
-+&thermal_zones {
-+	pcb_thermal: pcb_thermal {
-+		polling-delay-passive = <250>; /* milliseconds */
-+		polling-delay = <1000>; /* milliseconds */
-+		thermal-sensors = <&tmp102>;
-+		trips {
-+			crit@80000 {
-+			temperature = <80000>;
-+				hysteresis = <1000>;
-+				type = "critical";
-+			};
-+		};
-+	};
-+};
++	int which = 1;
+ 	struct	saa7146_video_dma vdma1;
+ 
+ 	/* calculate memory offsets for picture, look if we shall top-down-flip */
+@@ -608,10 +609,14 @@ static void saa7146_set_position(struct saa7146_dev *dev, int w_x, int w_y, int
+ 		vdma1.pitch *= -1;
+ 	}
+ 
+-	vdma1.base_page = sfmt->swap;
++	if (sfmt)
++		vdma1.base_page = sfmt->swap;
++	else
++		which = 0;
 +
- &i2c1 {
- 	status = "okay";
- 	pinctrl-names = "default";
+ 	vdma1.num_line_byte = (vv->standard->v_field<<16)+vv->standard->h_pixels;
+ 
+-	saa7146_write_out_dma(dev, 1, &vdma1);
++	saa7146_write_out_dma(dev, which, &vdma1);
+ }
+ 
+ static void saa7146_set_output_format(struct saa7146_dev *dev, unsigned long palette)
+@@ -713,7 +718,12 @@ static int calculate_video_dma_grab_packed(struct saa7146_dev* dev, struct saa71
+ 	int bytesperline = buf->fmt->bytesperline;
+ 	enum v4l2_field field = buf->fmt->field;
+ 
+-	int depth = sfmt->depth;
++	int depth;
++
++	if (sfmt)
++		depth = sfmt->depth;
++	else
++		return -EINVAL;
+ 
+ 	DEB_CAP("[size=%dx%d,fields=%s]\n",
+ 		width, height, v4l2_field_names[field]);
+@@ -837,6 +847,9 @@ static int calculate_video_dma_grab_planar(struct saa7146_dev* dev, struct saa71
+ 	int height = buf->fmt->height;
+ 	enum v4l2_field field = buf->fmt->field;
+ 
++	if (!sfmt)
++		return -EINVAL;
++
+ 	BUG_ON(0 == buf->pt[0].dma);
+ 	BUG_ON(0 == buf->pt[1].dma);
+ 	BUG_ON(0 == buf->pt[2].dma);
+@@ -1004,6 +1017,9 @@ void saa7146_set_capture(struct saa7146_dev *dev, struct saa7146_buf *buf, struc
+ 
+ 	DEB_CAP("buf:%p, next:%p\n", buf, next);
+ 
++	if (!sfmt)
++		return;
++
+ 	vdma1_prot_addr = saa7146_read(dev, PROT_ADDR1);
+ 	if( 0 == vdma1_prot_addr ) {
+ 		/* clear out beginning of streaming bit (rps register 0)*/
 -- 
-1.8.2.1.342.gfa7285d
+1.8.3.4 (Apple Git-47)
 
