@@ -1,104 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757668AbaAFXlp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:41:45 -0500
-Received: from utopia.booyaka.com ([74.50.51.50]:53589 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757637AbaAFXlm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757647AbaAFXlm (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 Jan 2014 18:41:42 -0500
-Date: Mon, 6 Jan 2014 23:41:40 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Tony Lindgren <tony@atomide.com>, Rob Herring <robherring2@gmail.com>
-cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] of/platform: Fix no irq domain found errors when populating
- interrupts
-In-Reply-To: <CAL_Jsq+X5G94DUn-zFKQkhEy91cdjCyeciny+kDjr=V6EiBHfQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1401062340240.31394@utopia.booyaka.com>
-References: <20131123004334.GJ10023@atomide.com> <20131123010850.GN10023@atomide.com> <20131123015034.GP10023@atomide.com> <20131124212757.7D224C402A3@trevor.secretlab.ca> <alpine.DEB.2.02.1312100331460.32309@utopia.booyaka.com>
- <alpine.DEB.2.02.1312302209200.8869@utopia.booyaka.com> <CAL_Jsq+X5G94DUn-zFKQkhEy91cdjCyeciny+kDjr=V6EiBHfQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47927 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932642AbaAFWkA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 17:40:00 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 136/144] sh: always link in helper functions extracted from libgcc
+Date: Mon,  6 Jan 2014 14:38:17 -0800
+Message-Id: <20140106223749.246930000@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
+References: <20140106223745.326293132@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony, Rob,
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-On Tue, 31 Dec 2013, Rob Herring wrote:
+------------------
 
-> On Mon, Dec 30, 2013 at 4:10 PM, Paul Walmsley <paul@pwsan.com> wrote:
-> > Hi Grant, Rob,
-> >
-> > On Tue, 10 Dec 2013, Paul Walmsley wrote:
-> >
-> >> On Sun, 24 Nov 2013, Grant Likely wrote:
-> >>
-> >> > On Fri, 22 Nov 2013 17:50:35 -0800, Tony Lindgren <tony@atomide.com> wrote:
-> >> > > * Tony Lindgren <tony@atomide.com> [131122 17:16]:
-> >> > > > * Tony Lindgren <tony@atomide.com> [131122 17:09]:
-> >> > > > > * Russell King - ARM Linux <linux@arm.linux.org.uk> [131122 16:56]:
-> >> > > > > > On Fri, Nov 22, 2013 at 04:43:35PM -0800, Tony Lindgren wrote:
-> >> > > > > > > +         /* See of_device_resource_notify for populating interrupts */
-> >> > > > > > > +         for (i = 0; i < num_irq; i++, res++) {
-> >> > > > > > > +                 res->flags = IORESOURCE_IRQ;
-> >> > > > > > > +                 res->start = -EPROBE_DEFER;
-> >> > > > > > > +                 res->end = -EPROBE_DEFER;
-> >> > > > > >
-> >> > > > > > NAK.  Definitely a bad idea to start introducing magic values other into
-> >> > > > > > resources.  Please don't do this.
-> >> > > > >
-> >> > > > > Do you have any better ideas on how to sort out this issue then?
-> >> > > >
-> >> > > > I guess we could allocate all the resources lazily here, I'll take a look
-> >> > > > at that.
-> >> > >
-> >> > > Here's a version that allocates the resources lazily with the notifier.
-> >> > > Seems to boot, need to play with it a bit more though to make sure we're
-> >> > > not overwriting resources for any legacy devices.
-> >> >
-> >> > Blurg. Using a notifier really feels like we don't have a good handle on
-> >> > a reasonable solution yet. Basically it means we're hooking into the
-> >> > driver core without /looking/ like we're hooking into the driver core. I
-> >> > don't think this is any better, but I don't have a better suggestion at
-> >> > the moment.   :-(
-> >>
-> >> Unfortunately this patch, or something that accomplishes the same results,
-> >> is somewhat high-priority for us on OMAP.  OMAP37xx got prematurely
-> >> converted to DT booting, and now dynamic power management is broken:
-> >>
-> >>     http://marc.info/?l=linux-arm-kernel&m=138658294830408&w=2
-> >>
-> >> Tony writes that this patch is one of the two patches needed to get things
-> >> working again:
-> >>
-> >>     http://marc.info/?l=linux-arm-kernel&m=138660942506846&w=2
-> >>
-> >> Is it possible to get this patch, or something similar, merged for
-> >> v3.13-rc?
-> >>
-> >> Once something like PM is broken, it's pretty easy for other broken
-> >> patches to make it into the tree, since it becomes very difficult to test
-> >> without turning into a maintainer denial-of-service attack.
-> >
-> > Ping.  Could you please provide some guidance here about what you'd need
-> > to get this solved for v3.13-rc?
-> 
-> I agree with doing the platform_get_irq modification and feel free to
-> add my ack. I'm going to be offline for the next week.
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-Thanks Rob!
+commit 84ed8a99058e61567f495cc43118344261641c5f upstream.
 
-Tony, would you consider sending this patch upstream for v3.13-rc along 
-with your 37xxevm fix patches?
+E.g. landisk_defconfig, which has CONFIG_NTFS_FS=m:
+
+  ERROR: "__ashrdi3" [fs/ntfs/ntfs.ko] undefined!
+
+For "lib-y", if no symbols in a compilation unit are referenced by other
+units, the compilation unit will not be included in vmlinux.  This
+breaks modules that do reference those symbols.
+
+Use "obj-y" instead to fix this.
+
+http://kisskb.ellerman.id.au/kisskb/buildresult/8838077/
+
+This doesn't fix all cases. There are others, e.g. udivsi3.
+This is also not limited to sh, many architectures handle this in the
+same way.
+
+A simple solution is to unconditionally include all helper functions.
+A more complex solution is to make the choice of "lib-y" or "obj-y" depend
+on CONFIG_MODULES:
+
+  obj-$(CONFIG_MODULES) += ...
+  lib-y($CONFIG_MODULES) += ...
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Tested-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Reviewed-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/sh/lib/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/arch/sh/lib/Makefile
++++ b/arch/sh/lib/Makefile
+@@ -6,7 +6,7 @@ lib-y  = delay.o memmove.o memchr.o \
+ 	 checksum.o strlen.o div64.o div64-generic.o
+ 
+ # Extracted from libgcc
+-lib-y += movmem.o ashldi3.o ashrdi3.o lshrdi3.o \
++obj-y += movmem.o ashldi3.o ashrdi3.o lshrdi3.o \
+ 	 ashlsi3.o ashrsi3.o ashiftrt.o lshrsi3.o \
+ 	 udiv_qrnnd.o
+ 
 
 
-- Paul
