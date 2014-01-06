@@ -1,125 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138AbaAFU6i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 15:58:38 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:51111 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753979AbaAFU6f (ORCPT
+	id S1756236AbaAFVAJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 16:00:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45639 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755092AbaAFVAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 15:58:35 -0500
-Date: Tue, 7 Jan 2014 00:54:15 +0400
-From: Andrew Vagin <avagin@gmail.com>
-To: Florian Westphal <fw@strlen.de>
-Cc: Andrey Vagin <avagin@openvz.org>, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, vvs@openvz.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: Re: [PATCH] netfilter: nf_conntrack: release conntrack from rcu
- callback
-Message-ID: <20140106205414.GA19788@gmail.com>
-References: <1389023672-14351-1-git-send-email-avagin@openvz.org>
- <20140106170235.GJ28854@breakpoint.cc>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=koi8-r
-Content-Disposition: inline
-In-Reply-To: <20140106170235.GJ28854@breakpoint.cc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 6 Jan 2014 16:00:05 -0500
+Date: Mon, 6 Jan 2014 13:00:03 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>,
+        Rashika Kheria <rashika.kheria@gmail.com>
+Subject: Re: #pragma once?
+Message-Id: <20140106130003.4eea0893605369a8fd9336ac@linux-foundation.org>
+In-Reply-To: <20140106204706.GA16924@leaf>
+References: <20140106204706.GA16924@leaf>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 06:02:35PM +0100, Florian Westphal wrote:
-> Andrey Vagin <avagin@openvz.org> wrote:
-> > Lets look at destroy_conntrack:
-> > 
-> > hlist_nulls_del_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode);
-> > ...
-> > nf_conntrack_free(ct)
-> > 	kmem_cache_free(net->ct.nf_conntrack_cachep, ct);
-> > 
-> > The hash is protected by rcu, so readers look up conntracks without
-> > locks.
-> > A conntrack is removed from the hash, but in this moment a few readers
-> > still can use the conntrack, so if we call kmem_cache_free now, all
-> > readers will read released object.
-> > 
-> > Bellow you can find more tricky race condition of three tasks.
-> > 
-> > task 1			task 2			task 3
-> > 			nf_conntrack_find_get
-> > 			 ____nf_conntrack_find
-> > destroy_conntrack
-> >  hlist_nulls_del_rcu
-> >  nf_conntrack_free
-> >  kmem_cache_free
-> > 						__nf_conntrack_alloc
-> > 						 kmem_cache_alloc
-> > 						 memset(&ct->tuplehash[IP_CT_DIR_MAX],
-> > 			 if (nf_ct_is_dying(ct))
-> > 
-> > In this case the task 2 will not understand, that it uses a wrong
-> > conntrack.
-> 
-> Can you elaborate?
-> Yes, nf_ct_is_dying(ct) might be called for the wrong conntrack.
-> 
-> But, in case we _think_ that its the right one we call
-> nf_ct_tuple_equal() to verify we indeed found the right one:
+On Mon, 6 Jan 2014 12:47:07 -0800 Josh Triplett <josh@joshtriplett.org> wrote:
 
-Ok. task3 creates a new contrack and nf_ct_tuple_equal() returns true on
-it. Looks like it's possible. In this case we have two threads with one
-unitialized contrack. It's really bad, because the code supposes that
-conntrack can not be initialized in two threads concurrently. For
-example BUG can be triggered from nf_nat_setup_info():
+> Does anyone have any objection to the use of "#pragma once" instead of
+> the usual #ifndef-#define-...-#endif include guard?
 
-BUG_ON(nf_nat_initialized(ct, maniptype));
+Sounds OK to me.  gcc has supported this for quite a long time, yes?  I
+wonder if ICC supports it.
 
-
-> 
->        h = ____nf_conntrack_find(net, zone, tuple, hash);
->        if (h) { // might be released right now, but page won't go away (SLAB_BY_RCU)
-
-I did not take SLAB_BY_RCU into account. Thank you. But it doesn't say,
-that we don't have the race condition here. It explains why we don't
-have really bad situations, when a completely wrong contract is
-used. We always use a "right" conntrack, but sometimes it is
-uninitialized and here is a problem.
-
-The race window is tiny, because usually we check that conntrack is not
-initialized and only then we execute its initialization. We don't hold
-any locks in these moments.
-
-Task2					| Task3
-if (!nf_nat_initialized(ct))		|
-					| if (!nf_nat_initialized(ct)
- alloc_null_binding			|
-					|  alloc_null_binding
-  nf_nat_setup_info			|
-   ct->status |= IPS_SRC_NAT_DONE	|
-					|   nf_nat_setup_info
-					|    BUG_ON(nf_nat_initialized(ct));
-
->                 ct = nf_ct_tuplehash_to_ctrack(h);
->                 if (unlikely(nf_ct_is_dying(ct) ||
->                              !atomic_inc_not_zero(&ct->ct_general.use)))
-> 			// which means we should hit this path (0 ref).
->                         h = NULL;
->                 else {
-> 			// otherwise, it cannot go away from under us, since
-> 			// we own a reference now.
->                         if (unlikely(!nf_ct_tuple_equal(tuple, &h->tuple) ||
->                                      nf_ct_zone(ct) != zone)) {
-> 			// if we get here, the entry got recycled on other cpu
-> 			// for a different tuple, we can bail out and drop
-> 			// the reference safely and re-try the lookup
->                                 nf_ct_put(ct);
->                                 goto begin;
->                         }
->                 }
-
-Thanks,
-Andrey
+(I haven't heard anything of ICC-for-kernel in a long time - is it still
+a living thing?)
