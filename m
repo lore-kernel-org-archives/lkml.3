@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756876AbaAFWk6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:40:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48151 "EHLO
+	id S933343AbaAFXZW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:25:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48203 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932814AbaAFWkq (ORCPT
+	with ESMTP id S1756871AbaAFWk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:46 -0500
+	Mon, 6 Jan 2014 17:40:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.10 041/129] drm/radeon: Fix sideport problems on certain RS690 boards
-Date: Mon,  6 Jan 2014 14:37:50 -0800
-Message-Id: <20140106223900.775903259@linuxfoundation.org>
+        Mathy Vanhoef <vanhoefm@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 056/129] ath9k_htc: properly set MAC address and BSSID mask
+Date: Mon,  6 Jan 2014 14:38:05 -0800
+Message-Id: <20140106223901.205715393@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -28,43 +29,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Mathy Vanhoef <vanhoefm@gmail.com>
 
-commit 8333f0fe133be420ce3fcddfd568c3a559ab274e upstream.
+commit 657eb17d87852c42b55c4b06d5425baa08b2ddb3 upstream.
 
-Some RS690 boards with 64MB of sideport memory show up as
-having 128MB sideport + 256MB of UMA.  In this case,
-just skip the sideport memory and use UMA.  This fixes
-rendering corruption and should improve performance.
+Pick the MAC address of the first virtual interface as the new hardware MAC
+address. Set BSSID mask according to this MAC address. This fixes CVE-2013-4579.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=35457
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Mathy Vanhoef <vanhoefm@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/rs690.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/net/wireless/ath/ath9k/htc_drv_main.c |   25 +++++++++++++++++--------
+ drivers/net/wireless/ath/ath9k/main.c         |    5 +++--
+ 2 files changed, 20 insertions(+), 10 deletions(-)
 
---- a/drivers/gpu/drm/radeon/rs690.c
-+++ b/drivers/gpu/drm/radeon/rs690.c
-@@ -162,6 +162,16 @@ static void rs690_mc_init(struct radeon_
- 	base = RREG32_MC(R_000100_MCCFG_FB_LOCATION);
- 	base = G_000100_MC_FB_START(base) << 16;
- 	rdev->mc.igp_sideport_enabled = radeon_atombios_sideport_present(rdev);
-+	/* Some boards seem to be configured for 128MB of sideport memory,
-+	 * but really only have 64MB.  Just skip the sideport and use
-+	 * UMA memory.
-+	 */
-+	if (rdev->mc.igp_sideport_enabled &&
-+	    (rdev->mc.real_vram_size == (384 * 1024 * 1024))) {
-+		base += 128 * 1024 * 1024;
-+		rdev->mc.real_vram_size -= 128 * 1024 * 1024;
-+		rdev->mc.mc_vram_size = rdev->mc.real_vram_size;
-+	}
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_main.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
+@@ -145,21 +145,26 @@ static void ath9k_htc_bssid_iter(void *d
+ 	struct ath9k_vif_iter_data *iter_data = data;
+ 	int i;
  
- 	/* Use K8 direct mapping for fast fb access. */ 
- 	rdev->fastfb_working = false;
+-	for (i = 0; i < ETH_ALEN; i++)
+-		iter_data->mask[i] &= ~(iter_data->hw_macaddr[i] ^ mac[i]);
++	if (iter_data->hw_macaddr != NULL) {
++		for (i = 0; i < ETH_ALEN; i++)
++			iter_data->mask[i] &= ~(iter_data->hw_macaddr[i] ^ mac[i]);
++	} else {
++		iter_data->hw_macaddr = mac;
++	}
+ }
+ 
+-static void ath9k_htc_set_bssid_mask(struct ath9k_htc_priv *priv,
++static void ath9k_htc_set_mac_bssid_mask(struct ath9k_htc_priv *priv,
+ 				     struct ieee80211_vif *vif)
+ {
+ 	struct ath_common *common = ath9k_hw_common(priv->ah);
+ 	struct ath9k_vif_iter_data iter_data;
+ 
+ 	/*
+-	 * Use the hardware MAC address as reference, the hardware uses it
+-	 * together with the BSSID mask when matching addresses.
++	 * Pick the MAC address of the first interface as the new hardware
++	 * MAC address. The hardware will use it together with the BSSID mask
++	 * when matching addresses.
+ 	 */
+-	iter_data.hw_macaddr = common->macaddr;
++	iter_data.hw_macaddr = NULL;
+ 	memset(&iter_data.mask, 0xff, ETH_ALEN);
+ 
+ 	if (vif)
+@@ -171,6 +176,10 @@ static void ath9k_htc_set_bssid_mask(str
+ 		ath9k_htc_bssid_iter, &iter_data);
+ 
+ 	memcpy(common->bssidmask, iter_data.mask, ETH_ALEN);
++
++	if (iter_data.hw_macaddr)
++		memcpy(common->macaddr, iter_data.hw_macaddr, ETH_ALEN);
++
+ 	ath_hw_setbssidmask(common);
+ }
+ 
+@@ -1076,7 +1085,7 @@ static int ath9k_htc_add_interface(struc
+ 		goto out;
+ 	}
+ 
+-	ath9k_htc_set_bssid_mask(priv, vif);
++	ath9k_htc_set_mac_bssid_mask(priv, vif);
+ 
+ 	priv->vif_slot |= (1 << avp->index);
+ 	priv->nvifs++;
+@@ -1139,7 +1148,7 @@ static void ath9k_htc_remove_interface(s
+ 
+ 	ath9k_htc_set_opmode(priv);
+ 
+-	ath9k_htc_set_bssid_mask(priv, vif);
++	ath9k_htc_set_mac_bssid_mask(priv, vif);
+ 
+ 	/*
+ 	 * Stop ANI only if there are no associated station interfaces.
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -889,8 +889,9 @@ void ath9k_calculate_iter_data(struct ie
+ 	struct ath_common *common = ath9k_hw_common(ah);
+ 
+ 	/*
+-	 * Use the hardware MAC address as reference, the hardware uses it
+-	 * together with the BSSID mask when matching addresses.
++	 * Pick the MAC address of the first interface as the new hardware
++	 * MAC address. The hardware will use it together with the BSSID mask
++	 * when matching addresses.
+ 	 */
+ 	memset(iter_data, 0, sizeof(*iter_data));
+ 	memset(&iter_data->mask, 0xff, ETH_ALEN);
 
 
