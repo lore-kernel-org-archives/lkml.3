@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182AbaAFA0m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 19:26:42 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42554 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752014AbaAFA0k (ORCPT
+	id S1752290AbaAFA16 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 19:27:58 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54242 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752170AbaAFA15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 19:26:40 -0500
-X-AuditID: 9c93016f-b7b4eae000000985-e6-52c9f83e229a
-Date: Mon, 6 Jan 2014 09:26:48 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>
-Subject: Re: possible regression on 3.13 when calling flush_dcache_page
-Message-ID: <20140106002648.GC696@lge.com>
-References: <20131212143149.GI12099@ldesroches-Latitude-E6320>
- <20131212143618.GJ12099@ldesroches-Latitude-E6320>
- <20131213015909.GA8845@lge.com>
- <20131216144343.GD9627@ldesroches-Latitude-E6320>
- <20131218072117.GA2383@lge.com>
- <20131220080851.GC16592@ldesroches-Latitude-E6320>
- <20131223224435.GD16592@ldesroches-Latitude-E6320>
- <20131224063837.GA27156@lge.com>
- <20140103145404.GC18002@ldesroches-Latitude-E6320>
+	Sun, 5 Jan 2014 19:27:57 -0500
+Date: Mon, 6 Jan 2014 01:27:55 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Marcel Holtmann <marcel@holtmann.org>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org development" 
+	<linux-bluetooth@vger.kernel.org>,
+        Ville Tervo <ville.tervo@nokia.com>
+Subject: Re: [PATCH v4] Bluetooth: Add hci_h4p driver
+Message-ID: <20140106002755.GC27517@amd.pavel.ucw.cz>
+References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com>
+ <1727897.LBX8128hIo@izba>
+ <20140102161824.GA8204@amd.pavel.ucw.cz>
+ <A5B72277-42D4-4A24-8A29-9BE18762E8C4@holtmann.org>
+ <20140103001753.GA21023@amd.pavel.ucw.cz>
+ <20140103010519.GA27678@earth.universe>
+ <20140105223250.GB27517@amd.pavel.ucw.cz>
+ <20140105230155.GA2681@earth.universe>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140103145404.GC18002@ldesroches-Latitude-E6320>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20140105230155.GA2681@earth.universe>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 03, 2014 at 03:54:04PM +0100, Ludovic Desroches wrote:
-> Hi,
-> 
-> On Tue, Dec 24, 2013 at 03:38:37PM +0900, Joonsoo Kim wrote:
-> 
-> [...]
-> 
-> > > > > > > I think that this commit may not introduce a bug. This patch remove one
-> > > > > > > variable on slab management structure and replace variable name. So there
-> > > > > > > is no functional change.
-> 
-> You are right, the commit given by git bisect was not the good one...
-> Since I removed other patches done on top of it, I thought it really was
-> this one but in fact it is 8456a64.
 
-Okay. It seems more reasonable to me.
-I guess that this is the same issue with following link.
-http://lkml.org/lkml/2014/1/4/81
+> > > The drivers can still be initialized the old way using pdata quirks
+> > > until all drivers are converted, but I think this driver can simply
+> > > be prepared for DT directly:
+> > 
+> > Well, normally DT support means a bit of argumentation and bikeshed
+> > painting... I believe it would be better to get the driver in as-is
+> > and then work on adding DT support.
+> 
+> Maybe. Especially the UART reference may result in some discussion.
+> But having the discussion early means its finished earlier :)
 
-And, perhaps, that patch solves your problem. But I'm not sure that it is the
-best solution for this problem. I should discuss with slab maintainers.
+Well, merging the basic driver does not mean discussion can't start
+early. If it is going to be complex, that's a very good reason to do
+it in separate step. That is, have a working driver, then add device
+tree support.
 
-I will think about this problem more deeply and report the solution to you
-as soon as possible.
-
-Thanks.
-
-> 
->  dd0f774  Fri Jan 3 12:33:55 2014 +0100  Revert "slab: remove useless
-> statement for checking pfmemalloc"  Ludovic Desroches 
->  ff7487d  Fri Jan 3 12:32:33 2014 +0100  Revert "slab: rename
-> slab_bufctl to slab_freelist"  Ludovic Desroches 
->  b963564  Fri Jan 3 12:32:13 2014 +0100  Revert "slab: fix to calm down
-> kmemleak warning"  Ludovic Desroches 
->  3fcfe50  Fri Jan 3 12:30:32 2014 +0100  Revert "slab: replace
-> non-existing 'struct freelist *' with 'void *'"  Ludovic Desroches 
->  750a795  Fri Jan 3 12:30:16 2014 +0100  Revert "memcg, kmem: rename
-> cache_from_memcg to cache_from_memcg_idx"  Ludovic Desroches 
->  7e2de8a  Fri Jan 3 12:30:10 2014 +0100  mmc: atmel-mci: disable pdc
-> Ludovic Desroches
-> 
-> In this case I have the kernel oops. If I revert 8456a64 too, it
-> disappears.
-> 
-> I will try to test it on other devices because I couldn't reproduce it
-> with newer ones (but it's not the same ARM architecture so I would like
-> to see if it's also related to the device itself).
-> 
-> In attachment, there are the results of /proc/slabinfo before inserted the
-> sdio wifi module causing the oops.
-> 
-> Regards
-> 
-> Ludovic
-
+Thanks,
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
