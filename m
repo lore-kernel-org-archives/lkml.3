@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933090AbaAFXG7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:06:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48487 "EHLO
+	id S1757406AbaAFXHf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:07:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48483 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933143AbaAFWlt (ORCPT
+	with ESMTP id S932968AbaAFWls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:49 -0500
+	Mon, 6 Jan 2014 17:41:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josh Durgin <josh.durgin@inktank.com>, Sage Weil <sage@inktank.com>,
-        Alex Elder <alex.elder@linaro.org>
-Subject: [PATCH 3.10 112/129] rbd: fix null dereference in dout
-Date: Mon,  6 Jan 2014 14:39:01 -0800
-Message-Id: <20140106223902.799208515@linuxfoundation.org>
+        Alex Elder <alex.elder@linaro.org>,
+        Josh Durgin <josh.durgin@inktank.com>
+Subject: [PATCH 3.10 111/129] rbd: fix buffer size for writes to images with snapshots
+Date: Mon,  6 Jan 2014 14:39:00 -0800
+Message-Id: <20140106223902.771752301@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -31,40 +31,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Josh Durgin <josh.durgin@inktank.com>
 
-commit c35455791c1131e7ccbf56ea6fbdd562401c2ce2 upstream.
+commit 03507db631c94a48e316c7f638ffb2991544d617 upstream.
 
-The order parameter is sometimes NULL in _rbd_dev_v2_snap_size(), but
-the dout() always derefences it. Move this to another dout() protected
-by a check that order is non-NULL.
+rbd_osd_req_create() needs to know the snapshot context size to create
+a buffer large enough to send it with the message front. It gets this
+from the img_request, which was not set for the obj_request yet. This
+resulted in trying to write past the end of the front payload, hitting
+this BUG:
 
+libceph: BUG_ON(p > msg->front.iov_base + msg->front.iov_len);
+
+Fix this by associating the obj_request with its img_request
+immediately after it's created, before the osd request is created.
+
+Fixes: http://tracker.ceph.com/issues/5760
+Suggested-by: Alex Elder <alex.elder@linaro.org>
 Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
 Reviewed-by: Alex Elder <alex.elder@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/rbd.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/block/rbd.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
 --- a/drivers/block/rbd.c
 +++ b/drivers/block/rbd.c
-@@ -3712,12 +3712,14 @@ static int _rbd_dev_v2_snap_size(struct
- 	if (ret < sizeof (size_buf))
- 		return -ERANGE;
+@@ -2213,6 +2213,11 @@ static int rbd_img_request_fill(struct r
+ 		rbd_segment_name_free(object_name);
+ 		if (!obj_request)
+ 			goto out_unwind;
++		/*
++		 * set obj_request->img_request before creating the
++		 * osd_request so that it gets the right snapc
++		 */
++		rbd_img_obj_request_add(img_request, obj_request);
  
--	if (order)
-+	if (order) {
- 		*order = size_buf.order;
-+		dout("  order %u", (unsigned int)*order);
-+	}
- 	*snap_size = le64_to_cpu(size_buf.size);
+ 		if (type == OBJ_REQUEST_BIO) {
+ 			unsigned int clone_size;
+@@ -2254,11 +2259,6 @@ static int rbd_img_request_fill(struct r
+ 					obj_request->pages, length,
+ 					offset & ~PAGE_MASK, false, false);
  
--	dout("  snap_id 0x%016llx order = %u, snap_size = %llu\n",
--		(unsigned long long)snap_id, (unsigned int)*order,
-+	dout("  snap_id 0x%016llx snap_size = %llu\n",
-+		(unsigned long long)snap_id,
- 		(unsigned long long)*snap_size);
- 
- 	return 0;
+-		/*
+-		 * set obj_request->img_request before formatting
+-		 * the osd_request so that it gets the right snapc
+-		 */
+-		rbd_img_obj_request_add(img_request, obj_request);
+ 		if (write_request)
+ 			rbd_osd_req_format_write(obj_request);
+ 		else
 
 
