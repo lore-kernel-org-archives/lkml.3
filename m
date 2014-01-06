@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756963AbaAFWl2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:41:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48359 "EHLO
+	id S1757438AbaAFXPK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:15:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48384 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932968AbaAFWlX (ORCPT
+	with ESMTP id S1756961AbaAFWl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:23 -0500
+	Mon, 6 Jan 2014 17:41:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 3.10 082/129] GFS2: Fix incorrect invalidation for DIO/buffered I/O
-Date: Mon,  6 Jan 2014 14:38:31 -0800
-Message-Id: <20140106223901.954596421@linuxfoundation.org>
+        Roger Quadros <rogerq@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.10 086/129] gpio: twl4030: Fix regression for twl gpio LED output
+Date: Mon,  6 Jan 2014 14:38:35 -0800
+Message-Id: <20140106223902.069967119@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -28,72 +29,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Whitehouse <swhiteho@redhat.com>
+From: Roger Quadros <rogerq@ti.com>
 
-commit dfd11184d894cd0a92397b25cac18831a1a6a5bc upstream.
+commit f5837ec11f8cfa6d53ebc5806582771b2c9988c6 upstream.
 
-In patch 209806aba9d540dde3db0a5ce72307f85f33468f we allowed
-local deferred locks to be granted against a cached exclusive
-lock. That opened up a corner case which this patch now
-fixes.
+Commit 0b2aa8be introduced a regression that causes failure
+in setting LED GPO direction to OUT.
 
-The solution to the problem is to check whether we have cached
-pages each time we do direct I/O and if so to unmap, flush
-and invalidate those pages. Since the glock state machine
-normally does that for us, mostly the code will be a no-op.
+This causes USB host probe failures for Beagleboard C4.
 
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+platform usb_phy_gen_xceiv.2: Driver usb_phy_gen_xceiv requests probe deferral
+hsusb2_vcc: Failed to request enable GPIO510: -22
+reg-fixed-voltage reg-fixed-voltage.0.auto: Failed to register regulator: -22
+reg-fixed-voltage: probe of reg-fixed-voltage.0.auto failed with error -22
+
+direction_out/direction_in must return 0 if the operation succeeded.
+
+Also, don't update direction flag and output data if twl4030_set_gpio_direction()
+failed inside twl_direction_out();
+
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Acked-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/gfs2/aops.c |   30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
+ drivers/gpio/gpio-twl4030.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
---- a/fs/gfs2/aops.c
-+++ b/fs/gfs2/aops.c
-@@ -999,6 +999,7 @@ static ssize_t gfs2_direct_IO(int rw, st
- {
- 	struct file *file = iocb->ki_filp;
- 	struct inode *inode = file->f_mapping->host;
-+	struct address_space *mapping = inode->i_mapping;
- 	struct gfs2_inode *ip = GFS2_I(inode);
- 	struct gfs2_holder gh;
- 	int rv;
-@@ -1019,6 +1020,35 @@ static ssize_t gfs2_direct_IO(int rw, st
- 	if (rv != 1)
- 		goto out; /* dio not valid, fall back to buffered i/o */
+--- a/drivers/gpio/gpio-twl4030.c
++++ b/drivers/gpio/gpio-twl4030.c
+@@ -300,7 +300,7 @@ static int twl_direction_in(struct gpio_
+ 	if (offset < TWL4030_GPIO_MAX)
+ 		ret = twl4030_set_gpio_direction(offset, 1);
+ 	else
+-		ret = -EINVAL;
++		ret = -EINVAL;	/* LED outputs can't be set as input */
  
-+	/*
-+	 * Now since we are holding a deferred (CW) lock at this point, you
-+	 * might be wondering why this is ever needed. There is a case however
-+	 * where we've granted a deferred local lock against a cached exclusive
-+	 * glock. That is ok provided all granted local locks are deferred, but
-+	 * it also means that it is possible to encounter pages which are
-+	 * cached and possibly also mapped. So here we check for that and sort
-+	 * them out ahead of the dio. The glock state machine will take care of
-+	 * everything else.
-+	 *
-+	 * If in fact the cached glock state (gl->gl_state) is deferred (CW) in
-+	 * the first place, mapping->nr_pages will always be zero.
-+	 */
-+	if (mapping->nrpages) {
-+		loff_t lstart = offset & (PAGE_CACHE_SIZE - 1);
-+		loff_t len = iov_length(iov, nr_segs);
-+		loff_t end = PAGE_ALIGN(offset + len) - 1;
-+
-+		rv = 0;
-+		if (len == 0)
-+			goto out;
-+		if (test_and_clear_bit(GIF_SW_PAGED, &ip->i_flags))
-+			unmap_shared_mapping_range(ip->i_inode.i_mapping, offset, len);
-+		rv = filemap_write_and_wait_range(mapping, lstart, end);
-+		if (rv)
-+			return rv;
-+		truncate_inode_pages_range(mapping, lstart, end);
+ 	if (!ret)
+ 		priv->direction &= ~BIT(offset);
+@@ -354,11 +354,20 @@ static void twl_set(struct gpio_chip *ch
+ static int twl_direction_out(struct gpio_chip *chip, unsigned offset, int value)
+ {
+ 	struct gpio_twl4030_priv *priv = to_gpio_twl4030(chip);
+-	int ret = -EINVAL;
++	int ret = 0;
+ 
+ 	mutex_lock(&priv->mutex);
+-	if (offset < TWL4030_GPIO_MAX)
++	if (offset < TWL4030_GPIO_MAX) {
+ 		ret = twl4030_set_gpio_direction(offset, 0);
++		if (ret) {
++			mutex_unlock(&priv->mutex);
++			return ret;
++		}
 +	}
 +
- 	rv = __blockdev_direct_IO(rw, iocb, inode, inode->i_sb->s_bdev, iov,
- 				  offset, nr_segs, gfs2_get_block_direct,
- 				  NULL, NULL, 0);
++	/*
++	 *  LED gpios i.e. offset >= TWL4030_GPIO_MAX are always output
++	 */
+ 
+ 	priv->direction |= BIT(offset);
+ 	mutex_unlock(&priv->mutex);
 
 
