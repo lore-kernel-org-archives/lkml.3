@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972AbaAFO5y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 09:57:54 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:40528 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341AbaAFO5x (ORCPT
+	id S1755037AbaAFO7V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 09:59:21 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:62712 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754604AbaAFO7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 09:57:53 -0500
-Date: Mon, 6 Jan 2014 20:27:48 +0530
+	Mon, 6 Jan 2014 09:59:19 -0500
+Date: Mon, 6 Jan 2014 20:29:12 +0530
 From: Rashika Kheria <rashika.kheria@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: David Airlie <airlied@linux.ie>, Dave Airlie <airlied@redhat.com>,
+Cc: David Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@redhat.com>,
         David Herrmann <dh.herrmann@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Rashika Kheria <rashika.kheria@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
         dri-devel@lists.freedesktop.org, josh@joshtriplett.org
-Subject: [PATCH 04/85] drivers: gpu: Mark functions as static in ast_ttm.c
-Message-ID: <a622093ba82d67cb5905fb7aa16e4cdf8415fdf7.1389018324.git.rashika.kheria@gmail.com>
+Subject: [PATCH 05/85] drivers: gpu: Mark function as static in cirrus_main.c
+Message-ID: <36eefa68c6748af85046b76f763afd332057da8f.1389018324.git.rashika.kheria@gmail.com>
 References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -29,55 +29,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark functions ast_ttm_global_release(), ast_ttm_bo_is_ast_bo() and
-ast_ttm_tt_create() as static in drm/ast/ast_ttm.c because they are not
-used outside this file.
+Mark function cirrus_bo_unref() as static in drm/cirrus/cirrus_main.c
+because it is not used outside this file.
 
-This eliminates the following warnings in drm/ast/ast_ttm.c:
-drivers/gpu/drm/ast/ast_ttm.c:84:1: warning: no previous prototype for
-‘ast_ttm_global_release’ [-Wmissing-prototypes]
-drivers/gpu/drm/ast/ast_ttm.c:105:6: warning: no previous prototype for
-‘ast_ttm_bo_is_ast_bo’ [-Wmissing-prototypes]
-drivers/gpu/drm/ast/ast_ttm.c:211:16: warning: no previous prototype for
-‘ast_ttm_tt_create’ [-Wmissing-prototypes]
+This eliminates the following warning in drm/cirrus/cirrus_main.c:
+drivers/gpu/drm/cirrus/cirrus_main.c:258:6: warning: no previous
+prototype for ‘cirrus_bo_unref’ [-Wmissing-prototypes]
 
 Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/gpu/drm/ast/ast_ttm.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/cirrus/cirrus_main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/ast/ast_ttm.c b/drivers/gpu/drm/ast/ast_ttm.c
-index 32aecb3..4ea9b17 100644
---- a/drivers/gpu/drm/ast/ast_ttm.c
-+++ b/drivers/gpu/drm/ast/ast_ttm.c
-@@ -80,7 +80,7 @@ static int ast_ttm_global_init(struct ast_private *ast)
+diff --git a/drivers/gpu/drm/cirrus/cirrus_main.c b/drivers/gpu/drm/cirrus/cirrus_main.c
+index 78e76f2..4b0170c 100644
+--- a/drivers/gpu/drm/cirrus/cirrus_main.c
++++ b/drivers/gpu/drm/cirrus/cirrus_main.c
+@@ -255,7 +255,7 @@ int cirrus_dumb_create(struct drm_file *file,
  	return 0;
  }
  
--void
-+static void
- ast_ttm_global_release(struct ast_private *ast)
+-void cirrus_bo_unref(struct cirrus_bo **bo)
++static void cirrus_bo_unref(struct cirrus_bo **bo)
  {
- 	if (ast->ttm.mem_global_ref.release == NULL)
-@@ -102,7 +102,7 @@ static void ast_bo_ttm_destroy(struct ttm_buffer_object *tbo)
- 	kfree(bo);
- }
+ 	struct ttm_buffer_object *tbo;
  
--bool ast_ttm_bo_is_ast_bo(struct ttm_buffer_object *bo)
-+static bool ast_ttm_bo_is_ast_bo(struct ttm_buffer_object *bo)
- {
- 	if (bo->destroy == &ast_bo_ttm_destroy)
- 		return true;
-@@ -208,7 +208,7 @@ static struct ttm_backend_func ast_tt_backend_func = {
- };
- 
- 
--struct ttm_tt *ast_ttm_tt_create(struct ttm_bo_device *bdev,
-+static struct ttm_tt *ast_ttm_tt_create(struct ttm_bo_device *bdev,
- 				 unsigned long size, uint32_t page_flags,
- 				 struct page *dummy_read_page)
- {
 -- 
 1.7.9.5
 
