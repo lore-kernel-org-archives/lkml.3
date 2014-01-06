@@ -1,72 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755842AbaAFUqq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 15:46:46 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:63041 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753702AbaAFUqo (ORCPT
+	id S1756162AbaAFUrS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 15:47:18 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:52668 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755860AbaAFUrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 15:46:44 -0500
-Date: Mon, 6 Jan 2014 12:46:41 -0800
-From: Kent Overstreet <kmo@daterainc.com>
-To: Shaohua Li <shli@kernel.org>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, hch@infradead.org
-Subject: Re: [patch 1/2]percpu_ida: fix a live lock
-Message-ID: <20140106204641.GB9037@kmo>
-References: <20131231033827.GA31994@kernel.org>
- <20140104210804.GA24199@kmo-pixel>
- <20140105131300.GB4186@kernel.org>
+	Mon, 6 Jan 2014 15:47:17 -0500
+X-Originating-IP: 50.43.14.201
+Date: Mon, 6 Jan 2014 12:47:07 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>,
+        Rashika Kheria <rashika.kheria@gmail.com>
+Subject: #pragma once?
+Message-ID: <20140106204706.GA16924@leaf>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140105131300.GB4186@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 05, 2014 at 09:13:00PM +0800, Shaohua Li wrote:
-> On Sat, Jan 04, 2014 at 01:08:04PM -0800, Kent Overstreet wrote:
-> > On Tue, Dec 31, 2013 at 11:38:27AM +0800, Shaohua Li wrote:
-> > > 
-> > > steal_tags only happens when free tags is more than half of the total tags.
-> > > This is too restrict and can cause live lock. I found one cpu has free tags,
-> > > but other cpu can't steal (thread is bound to specific cpus), threads which
-> > > wants to allocate tags are always sleeping. I found this when I run next patch,
-> > > but this could happen without it I think.
-> > > 
-> > > I did performance test too with null_blk. Two cases (each cpu has enough percpu
-> > > tags, or total tags are limited) haven't performance changes.
-> > 
-> > This doesn't appear to me to fix anything wrong with the current code
-> > (and it'll hurt performance)
-> 
-> I suspects this hurts performance too, but it doesn't actually in my test.
-> 
-> > - we explicitly don't guarantee that all
-> > the tags will be available for allocation at any given time, only half
-> > of them. 
-> 
-> only half of the tags can be used? this is scaring. Of course we hope all tags
-> are available.
+[CCing build-system folks and others likely to know about potential
+issues.]
 
-No: that behaviour is explicitly documented and it's the behaviour we want.
+Does anyone have any objection to the use of "#pragma once" instead of
+the usual #ifndef-#define-...-#endif include guard?  GCC, LLVM/clang,
+and the latest Sparse all support either method just fine.  (I added
+support to Sparse myself.)  Both have equivalent performance.  "#pragma
+once" is simpler, and avoids the possibility of a typo in the defined
+guard symbol.
 
-There is an inherent performance tradeoff here between internal fragmentation
-and performance: your patch tries to drive internal fragmentation to 0, but
-under workloads that hit this, running on enough cores, this will have a VERY
-high performance cost.
+That's not a theoretical concern: I've found quite a few headers in the
+kernel with typoed (and thus non-functional) include guards.  Rashika
+Kheria (CCed) ran into one such header when attempting to add some
+includes to fix some warnings (resulting in the broken header being
+included twice), and that prompted me to look for other headers with
+broken guards.  I've included a Python script at the end of this mail
+that finds many such issues, though it does have a few false positives
+on files that don't have include guards at all.
 
-> > Can you explain more how this is being used where you're seeing
-> > the issue? And I don't see the other patch in your patch series.
-> 
-> tasks are bound to specific cpus. And I saw one cpu has a lot of free (but less
-> than half of total tags), but other cpus can't allocate tags, so I saw a live
-> lock.
+I'm not suggesting a mass conversion from include guards to "#pragma
+once", though that *would* be fairly easy to script and review if
+desired.  I'd just like to verify that "#pragma once" seems acceptable
+before, for instance, converting the headers that already have broken
+include guards, adding recommendations in Documentation to standardize
+on the pragma for new headers, and possibly adding checks in checkpatch
+or similar if I can come up with one that has minimal false positives.
 
-You're using it wrong - don't assume all nr_tags can be allocated. If you need
-to guarantee that you'll always be able to allocate a certain number of tags,
-you pass twice that to percpu_ida_init() instead.
+Python script to check header guards (run with $(find -name '*.h') as
+arguments, and grep for "mismatch" in the output if you don't care about
+files without guards):
 
-Nacking this patch (and if you want me to look at it more you still to send me
-the other patch in the series and show me your code that's using it).
+#!/usr/bin/python
+import re
+import sys
+
+start = re.compile("[ \t]*#[ \t]*(ifndef|define)[ \t]+([a-zA-Z0-9_]*)")
+
+def main(args):
+    for header in args[1:]:
+        symbol = None
+        for line in open(header):
+            m = start.match(line)
+            if not m:
+                if symbol:
+                    print "{}: does not appear to use ifndef-based include guard".format(header)
+                    break
+                continue
+            if m.group(1) == "ifndef":
+                if symbol is not None:
+                    print "{}: does not appear to use ifndef-based include guard".format(header)
+                    break
+                symbol = m.group(2)
+            elif m.group(1) == "define":
+                if symbol is None:
+                    print "{}: does not appear to use ifndef-based include guard".format(header)
+                    break
+                if symbol != m.group(2):
+                    print "{}: include guard symbol mismatch: #ifndef {} with #define {}".format(header, symbol, m.group(2))
+                break
+        else:
+            if symbol:
+                print "{}: ifndef {} with no subsequent define".format(header, symbol)
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
