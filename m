@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407AbaAFWjX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:39:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47681 "EHLO
+	id S932469AbaAFXyB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:54:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47688 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932314AbaAFWjU (ORCPT
+	with ESMTP id S932390AbaAFWjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:39:20 -0500
+	Mon, 6 Jan 2014 17:39:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.12 092/144] powerpc: Fix bad stack check in exception entry
-Date: Mon,  6 Jan 2014 14:37:33 -0800
-Message-Id: <20140106223747.999893326@linuxfoundation.org>
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Thomas Renninger <trenn@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 094/144] cpupower: Fix segfault due to incorrect getopt_long arugments
+Date: Mon,  6 Jan 2014 14:37:35 -0800
+Message-Id: <20140106223748.056005956@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,42 +31,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Josh Boyer <jwboyer@redhat.com>
 
-commit 90ff5d688e61f49f23545ffab6228bd7e87e6dc7 upstream.
+commit f447ef4a56dee4b68a91460bcdfe06b5011085f2 upstream.
 
-In EXCEPTION_PROLOG_COMMON() we check to see if the stack pointer (r1)
-is valid when coming from the kernel.  If it's not valid, we die but
-with a nice oops message.
+If a user calls 'cpupower set --perf-bias 15', the process will end with
+a SIGSEGV in libc because cpupower-set passes a NULL optarg to the atoi
+call.  This is because the getopt_long structure currently has all of
+the options as having an optional_argument when they really have a
+required argument.  We change the structure to use required_argument to
+match the short options and it resolves the issue.
 
-Currently we allocate a stack frame (subtract INT_FRAME_SIZE) before we
-check to see if the stack pointer is negative.  Unfortunately, this
-won't detect a bad stack where r1 is less than INT_FRAME_SIZE.
+This fixes https://bugzilla.redhat.com/show_bug.cgi?id=1000439
 
-This patch fixes the check to compare the modified r1 with
--INT_FRAME_SIZE.  With this, bad kernel stack pointers (including NULL
-pointers) are correctly detected again.
-
-Kudos to Paulus for finding this.
-
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>
+Cc: Thomas Renninger <trenn@suse.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/exception-64s.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/power/cpupower/utils/cpupower-set.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/powerpc/include/asm/exception-64s.h
-+++ b/arch/powerpc/include/asm/exception-64s.h
-@@ -265,7 +265,7 @@ do_kvm_##n:								\
- 	subi	r1,r1,INT_FRAME_SIZE;	/* alloc frame on kernel stack	*/ \
- 	beq-	1f;							   \
- 	ld	r1,PACAKSAVE(r13);	/* kernel stack to use		*/ \
--1:	cmpdi	cr1,r1,0;		/* check if r1 is in userspace	*/ \
-+1:	cmpdi	cr1,r1,-INT_FRAME_SIZE;	/* check if r1 is in userspace	*/ \
- 	blt+	cr1,3f;			/* abort if it is		*/ \
- 	li	r1,(n);			/* will be reloaded later	*/ \
- 	sth	r1,PACA_TRAP_SAVE(r13);					   \
+--- a/tools/power/cpupower/utils/cpupower-set.c
++++ b/tools/power/cpupower/utils/cpupower-set.c
+@@ -18,9 +18,9 @@
+ #include "helpers/bitmask.h"
+ 
+ static struct option set_opts[] = {
+-	{ .name = "perf-bias",	.has_arg = optional_argument,	.flag = NULL,	.val = 'b'},
+-	{ .name = "sched-mc",	.has_arg = optional_argument,	.flag = NULL,	.val = 'm'},
+-	{ .name = "sched-smt",	.has_arg = optional_argument,	.flag = NULL,	.val = 's'},
++	{ .name = "perf-bias",	.has_arg = required_argument,	.flag = NULL,	.val = 'b'},
++	{ .name = "sched-mc",	.has_arg = required_argument,	.flag = NULL,	.val = 'm'},
++	{ .name = "sched-smt",	.has_arg = required_argument,	.flag = NULL,	.val = 's'},
+ 	{ },
+ };
+ 
 
 
