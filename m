@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932995AbaAFXkw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:40:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47943 "EHLO
+	id S932658AbaAFWkC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:40:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47918 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932535AbaAFWkD (ORCPT
+	with ESMTP id S932535AbaAFWj6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:03 -0500
+	Mon, 6 Jan 2014 17:39:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sachin Prabhu <sprabhu@redhat.com>, Jeff Layton <jlayton@redhat.com>,
-        Steve French <smfrench@gmail.com>
-Subject: [PATCH 3.12 102/144] cifs: We do not drop reference to tlink in CIFSCheckMFSymlink()
-Date: Mon,  6 Jan 2014 14:37:43 -0800
-Message-Id: <20140106223748.278816472@linuxfoundation.org>
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.12 135/144] gpio: msm: Fix irq mask/unmask by writing bits instead of numbers
+Date: Mon,  6 Jan 2014 14:38:16 -0800
+Message-Id: <20140106223749.218446861@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,119 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sachin Prabhu <sprabhu@redhat.com>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-commit 750b8de6c4277d7034061e1da50663aa1b0479e4 upstream.
+commit 4cc629b7a20945ce35628179180329b6bc9e552b upstream.
 
-When we obtain tcon from cifs_sb, we use cifs_sb_tlink() to first obtain
-tlink which also grabs a reference to it. We do not drop this reference
-to tlink once we are done with the call.
+We should be writing bits here but instead we're writing the
+numbers that correspond to the bits we want to write. Fix it by
+wrapping the numbers in the BIT() macro. This fixes gpios acting
+as interrupts.
 
-The patch fixes this issue by instead passing tcon as a parameter and
-avoids having to obtain a reference to the tlink. A lookup for the tcon
-is already made in the calling functions and this way we avoid having to
-re-run the lookup. This is also consistent with the argument list for
-other similar calls for M-F symlinks.
-
-We should also return an ENOSYS when we do not find a protocol specific
-function to lookup the MF Symlink data.
-
-Signed-off-by: Sachin Prabhu <sprabhu@redhat.com>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/cifsproto.h |    7 ++++---
- fs/cifs/inode.c     |    6 ++++--
- fs/cifs/link.c      |   26 +++++++++++---------------
- 3 files changed, 19 insertions(+), 20 deletions(-)
+ drivers/gpio/gpio-msm-v2.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/cifs/cifsproto.h
-+++ b/fs/cifs/cifsproto.h
-@@ -475,9 +475,10 @@ extern int CIFSGetExtAttr(const unsigned
- 			const int netfid, __u64 *pExtAttrBits, __u64 *pMask);
- extern void cifs_autodisable_serverino(struct cifs_sb_info *cifs_sb);
- extern bool CIFSCouldBeMFSymlink(const struct cifs_fattr *fattr);
--extern int CIFSCheckMFSymlink(struct cifs_fattr *fattr,
--		const unsigned char *path,
--		struct cifs_sb_info *cifs_sb, unsigned int xid);
-+extern int CIFSCheckMFSymlink(unsigned int xid, struct cifs_tcon *tcon,
-+			      struct cifs_sb_info *cifs_sb,
-+			      struct cifs_fattr *fattr,
-+			      const unsigned char *path);
- extern int mdfour(unsigned char *, unsigned char *, int);
- extern int E_md4hash(const unsigned char *passwd, unsigned char *p16,
- 			const struct nls_table *codepage);
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -383,7 +383,8 @@ int cifs_get_inode_info_unix(struct inod
+--- a/drivers/gpio/gpio-msm-v2.c
++++ b/drivers/gpio/gpio-msm-v2.c
+@@ -252,7 +252,7 @@ static void msm_gpio_irq_mask(struct irq
  
- 	/* check for Minshall+French symlinks */
- 	if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MF_SYMLINKS) {
--		int tmprc = CIFSCheckMFSymlink(&fattr, full_path, cifs_sb, xid);
-+		int tmprc = CIFSCheckMFSymlink(xid, tcon, cifs_sb, &fattr,
-+					       full_path);
- 		if (tmprc)
- 			cifs_dbg(FYI, "CIFSCheckMFSymlink: %d\n", tmprc);
- 	}
-@@ -799,7 +800,8 @@ cifs_get_inode_info(struct inode **inode
+ 	spin_lock_irqsave(&tlmm_lock, irq_flags);
+ 	writel(TARGET_PROC_NONE, GPIO_INTR_CFG_SU(gpio));
+-	clear_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
++	clear_gpio_bits(BIT(INTR_RAW_STATUS_EN) | BIT(INTR_ENABLE), GPIO_INTR_CFG(gpio));
+ 	__clear_bit(gpio, msm_gpio.enabled_irqs);
+ 	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
+ }
+@@ -264,7 +264,7 @@ static void msm_gpio_irq_unmask(struct i
  
- 	/* check for Minshall+French symlinks */
- 	if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MF_SYMLINKS) {
--		tmprc = CIFSCheckMFSymlink(&fattr, full_path, cifs_sb, xid);
-+		tmprc = CIFSCheckMFSymlink(xid, tcon, cifs_sb, &fattr,
-+					   full_path);
- 		if (tmprc)
- 			cifs_dbg(FYI, "CIFSCheckMFSymlink: %d\n", tmprc);
- 	}
---- a/fs/cifs/link.c
-+++ b/fs/cifs/link.c
-@@ -354,34 +354,30 @@ open_query_close_cifs_symlink(const unsi
- 
- 
- int
--CIFSCheckMFSymlink(struct cifs_fattr *fattr,
--		   const unsigned char *path,
--		   struct cifs_sb_info *cifs_sb, unsigned int xid)
-+CIFSCheckMFSymlink(unsigned int xid, struct cifs_tcon *tcon,
-+		   struct cifs_sb_info *cifs_sb, struct cifs_fattr *fattr,
-+		   const unsigned char *path)
- {
--	int rc = 0;
-+	int rc;
- 	u8 *buf = NULL;
- 	unsigned int link_len = 0;
- 	unsigned int bytes_read = 0;
--	struct cifs_tcon *ptcon;
- 
- 	if (!CIFSCouldBeMFSymlink(fattr))
- 		/* it's not a symlink */
- 		return 0;
- 
- 	buf = kmalloc(CIFS_MF_SYMLINK_FILE_SIZE, GFP_KERNEL);
--	if (!buf) {
--		rc = -ENOMEM;
--		goto out;
--	}
-+	if (!buf)
-+		return -ENOMEM;
- 
--	ptcon = tlink_tcon(cifs_sb_tlink(cifs_sb));
--	if ((ptcon->ses) && (ptcon->ses->server->ops->query_mf_symlink))
--		rc = ptcon->ses->server->ops->query_mf_symlink(path, buf,
--						 &bytes_read, cifs_sb, xid);
-+	if (tcon->ses->server->ops->query_mf_symlink)
-+		rc = tcon->ses->server->ops->query_mf_symlink(path, buf,
-+						&bytes_read, cifs_sb, xid);
- 	else
--		goto out;
-+		rc = -ENOSYS;
- 
--	if (rc != 0)
-+	if (rc)
- 		goto out;
- 
- 	if (bytes_read == 0) /* not a symlink */
+ 	spin_lock_irqsave(&tlmm_lock, irq_flags);
+ 	__set_bit(gpio, msm_gpio.enabled_irqs);
+-	set_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
++	set_gpio_bits(BIT(INTR_RAW_STATUS_EN) | BIT(INTR_ENABLE), GPIO_INTR_CFG(gpio));
+ 	writel(TARGET_PROC_SCORPION, GPIO_INTR_CFG_SU(gpio));
+ 	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
+ }
 
 
