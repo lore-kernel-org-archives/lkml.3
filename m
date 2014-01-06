@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755790AbaAFTUR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 14:20:17 -0500
-Received: from smtp.domeneshop.no ([194.63.252.54]:60250 "EHLO
-	smtp.domeneshop.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755044AbaAFTUP (ORCPT
+	id S1755981AbaAFTX1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 14:23:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44997 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755070AbaAFTX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 14:20:15 -0500
-Message-ID: <52CB0132.2050705@ovekarlsen.com>
-Date: Mon, 06 Jan 2014 20:17:06 +0100
-From: Ove Karlsen <mail@ovekarlsen.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 6 Jan 2014 14:23:26 -0500
+Date: Mon, 6 Jan 2014 11:23:53 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Bart Van Assche <bvanassche@acm.org>, Jeff Mahoney <jeffm@suse.com>,
+        torvalds@linux-foundation.org,
+        device-mapper development <dm-devel@redhat.com>,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, mingo@kernel.org
+Subject: Re: [dm-devel] [PATCH] kobject: provide kobject_put_wait to fix
+ module unload race
+Message-ID: <20140106192353.GA32664@kroah.com>
+References: <alpine.LRH.2.02.1401021733250.27775@file01.intranet.prod.int.rdu2.redhat.com>
+ <52C98BCC.9040900@acm.org>
+ <20140105182640.GA2522@kroah.com>
+ <alpine.LRH.2.02.1401061347120.15626@file01.intranet.prod.int.rdu2.redhat.com>
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@infradead.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Gnu - censorship
-References: <52CAFCC6.3070504@ovekarlsen.com> <52CAFE7A.9090106@infradead.org>
-In-Reply-To: <52CAFE7A.9090106@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.02.1401061347120.15626@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/6/2014 8:05 PM, Randy Dunlap wrote:
-> On 01/06/14 10:58, Ove Karlsen wrote:
->> https://lkml.org/lkml/2013/12/28/50
->>
->> This post is empty. I do not know if this is deliberate, but..
->>
->> Facism and censorhip goes hand in hand. Hopefully people here start to understand the problem that needs to be solved. Or complaints about Microsoft, will really the same as complaints againt ill-behaving "free software" advocates. Same irrational behaviour, by people whose pride is far more than their ability, and a block to natural developments and true excellence.
->>
->> Simple people whose life revolves around this: http://www.youtube.com/watch?v=xm2S5uxO01E
->>
->> PBWY.
->>
-> or it could be related to this message that I get:
->
-> XSLT error or server overload; admin notified. The system should heal itself, please try again in a few minutes
->
-> Think Occam's Razor.
-I guess time will tell. Occams Razor here, if you have read anything I 
-wrote, is clearly that people are brainwashed, starts behaving like 
-facists, and symbolic idols are used to manipulate people. Recently I 
-was censored at "linux-musicians.org" also where supposedly mentioning a 
-windows plugin was not ok, even it it was open-source, EVEN if it is the 
-worlds best, and would benefit the audio community much, having no such 
-thing, making people turn to Mac because Waves plugins are there, for 
-instance. And criticising the GPL was not ok, even thought it is 
-irrational, and coupled to a phallic idol. I do not put an obscure 
-licence, coupled to obscure statements and a symbolic representation of 
-Stallmans genitals. The pride of symbolically recieving semen, seems to 
-fit their brat behaviour. That is all they are, and what a Satan is. It 
-is completely irrational, and people like these no doubt, are like 
-brainwashed sectarians, greeting sieg heil in semenworship, and no doubt 
-is open to gay sex sooner or later. Sex Drugs And rock And Roll dude. 
-Who knew Hitler was a rockstar. Or lets us not swear in church - 
-BEATLES. They can also not be criticised many places. Their one song 
-about the fly in the cornflakes. what was it.. "sitting on a cornflake", 
-is actually them being flies, probably from LSD. How high STATUS has a 
-FLY in your CORNFLAKES? That is what they thought were cool.
+On Mon, Jan 06, 2014 at 01:55:11PM -0500, Mikulas Patocka wrote:
+> 
+> 
+> On Sun, 5 Jan 2014, Greg Kroah-Hartman wrote:
+> 
+> > On Sun, Jan 05, 2014 at 05:43:56PM +0100, Bart Van Assche wrote:
+> > > On 01/04/14 19:06, Mikulas Patocka wrote:
+> > > > -	if (t && !t->release)
+> > > > -		pr_debug("kobject: '%s' (%p): does not have a release() "
+> > > > -			 "function, it is broken and must be fixed.\n",
+> > > > -			 kobject_name(kobj), kobj);
+> > > > -
+> > > 
+> > > Has it been considered to issue a warning if no release function has
+> > > been defined and free_completion == NULL instead of removing the above
+> > > debug message entirely ? I think even with this patch applied it is
+> > > still wrong to invoke kobject_put() on an object without defining a
+> > > release function.
+> > 
+> > This patch isn't going to be applied, and I've reverted the original
+> > commit, so there shouldn't be any issues anymore with this code.
+> 
+> Why? This patch does the same thing as 
+> eee031649707db3c9920d9498f8d03819b74fc23, but it's smaller. So why did you 
+> accept eee031649707db3c9920d9498f8d03819b74fc23 and not this?
 
-Think about it. LSD still is the same.
+I have now reverted that commit, it will not be in 3.14, so consider it
+rejected as well :)
 
+thanks,
 
-
--- 
-Peace Be With You
-Ove Karlsen,
-www.ovekarlsen.com
-
+greg k-h
