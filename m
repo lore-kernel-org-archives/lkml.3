@@ -1,61 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753842AbaAFJfc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 04:35:32 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:42164 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753441AbaAFJfa (ORCPT
+	id S1754462AbaAFJfh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 04:35:37 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:46843
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753916AbaAFJfd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 04:35:30 -0500
-Date: Mon, 6 Jan 2014 09:35:25 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Jonathan Cameron <jic23@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] mfd: ti_am335x_tscadc: Don't read back REG_SE
-Message-ID: <20140106093525.GE23772@lee--X1>
-References: <1387466911-3732-1-git-send-email-bigeasy@linutronix.de>
- <1387466911-3732-4-git-send-email-bigeasy@linutronix.de>
+	Mon, 6 Jan 2014 04:35:33 -0500
+X-IronPort-AV: E=Sophos;i="4.95,611,1384297200"; 
+   d="scan'208";a="43662580"
+Date: Mon, 6 Jan 2014 10:35:14 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: Emmanuel Grumbach <egrumbach@gmail.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Julia Lawall <julia.lawall@lip6.fr>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/11] use ether_addr_equal_64bits
+In-Reply-To: <CAMuHMdXZQO7jj+V2mMyyLgDoz6iSLJ25+55Yow-Acb1=tE5sMg@mail.gmail.com>
+Message-ID: <alpine.DEB.2.10.1401061033370.2079@hadrien>
+References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr> <1388427307-8691-5-git-send-email-Julia.Lawall@lip6.fr> <1388429761.4410.1.camel@jlt4.sipsolutions.net> <alpine.DEB.2.02.1312302057420.2209@localhost6.localdomain6>
+ <1388438724.4573.2.camel@jlt4.sipsolutions.net> <20131230215701.GA4938@khazad-dum.debian.net> <1388445188.18164.0.camel@jlt4.sipsolutions.net> <CANUX_P0PX1g8uHJUHYoB4UyMMgbtLas0_pf4TYrLTgND5V37rg@mail.gmail.com>
+ <CAMuHMdXZQO7jj+V2mMyyLgDoz6iSLJ25+55Yow-Acb1=tE5sMg@mail.gmail.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1387466911-3732-4-git-send-email-bigeasy@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Dec 2013, Sebastian Andrzej Siewior wrote:
+On Mon, 6 Jan 2014, Geert Uytterhoeven wrote:
 
-> The purpose of reg_se_cache has been defeated. It should avoid the
-> read-back of the register to avoid the latency and the fact that the
-> bits are reset to 0 after the individual conversation took place.
-> 
-> The reason why this is required like this to work, is that read-back of
-> the register removes the bits of the ADC so they do not start another
-> conversation after the register is re-written from the TSC side for the
-> update.
-> To avoid the not required read-back I introduce a "set once" variant which
-> does not update the cache mask. After the conversation completes, the
-> bit is removed from the SE register anyway and we don't plan a new
-> conversation "any time soon". The current set function is renamed to
-> set_cache to distinguish the two operations.
-> This is a small preparation for a larger sync-rework.
-> 
-> Acked-by: Lee Jones <lee.jones@linaro.org>
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> ---
->  drivers/iio/adc/ti_am335x_adc.c           |  4 ++--
->  drivers/input/touchscreen/ti_am335x_tsc.c |  4 ++--
+> On Tue, Dec 31, 2013 at 7:26 AM, Emmanuel Grumbach <egrumbach@gmail.com> wrote:
+> > On Tue, Dec 31, 2013 at 1:13 AM, Johannes Berg
+> > <johannes@sipsolutions.net> wrote:
+> >>
+> >> On Mon, 2013-12-30 at 19:57 -0200, Henrique de Moraes Holschuh wrote:
+> >> > On Mon, 30 Dec 2013, Johannes Berg wrote:
+> >> > > On Mon, 2013-12-30 at 20:58 +0100, Julia Lawall wrote:
+> >> > > > > Is there any way we could catch (sparse, or some other script?) that
+> >> > > > > struct reorganising won't break the condition needed ("within a
+> >> > > > > structure that contains at least two more bytes")?
+> >> > > >
+> >> > > > What kind of reorganizing could happen?  Do you mean that the programmer
+> >> > > > might do at some time in the future, or something the compiler might do?
+> >> > >
+> >> > > I'm just thinking of a programmer, e.g. changing a struct like this:
+> >> > >
+> >> > >  struct foo {
+> >> > >    u8 addr[ETH_ALEN];
+> >> > > -  u16 dummy;
+> >> > >  };
+> >> > >
+> >> > > for example.
+> >> >
+> >> > That is easily resolved by:
+> >> >
+> >> > struct foo {
+> >> >       u8 addr[ETH_ALEN];
+> >> >       u16 required_padding;   /* do not remove upon pain of death */
+> >> > };
+>
+> Adding the u16 also changes the alignment of the whole struct. So it may
+> cost one additional byte _in front of_ the struct.
+>
+> <asking-stupid-question-see-answer-below>
+> While you're at it, why not just making a new 64-bit aligned type for
+> Ethernet addresses, so it'll also work for
+> !CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS?
+> </asking-stupid-question-see-answer-below>
+>
+> >> That'd be a stupid waste of struct space. If anything, there should be
+> >> *only* a comment saying that at least two bytes are needed - I'd still
+> >> prefer an automated check.
+> >
+> > Frankly I am not sure I like the patch. This flow is not a fast path
+>
+> I also don't like it. To me this sounds like wasting space for nothing.
+> BTW, would it be that more expensive to always do a 32+16 bit
+> comparison?
 
-Just need Dmitry's Ack now.
+No space is wasted by the patch.  The patch is only generated in the case
+where there is currently enough space.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+julia
+
+> > at all. While I don't really care for the waste in iwlwifi (because
+> > there isn't), I don't see the real point is make the code more
+> > sensitive to changes to earn basically nothing.
+>
+> Thanks to this discussion, my eye fell on:
+>
+> static inline unsigned compare_ether_addr(const u8 *addr1, const u8 *addr2)
+> {
+>         const u16 *a = (const u16 *) addr1;
+>         const u16 *b = (const u16 *) addr2;
+>
+>         BUILD_BUG_ON(ETH_ALEN != 6);
+>         return ((a[0] ^ b[0]) | (a[1] ^ b[1]) | (a[2] ^ b[2])) != 0;
+> }
+>
+> What if addr1 or addr2 are odd, and this is running on an architecture that
+> doesn't support unaligned accesses at all?? Have we been lucky forever?
+>
+> Gr{oetje,eeting}s,
+>
+>                         Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
