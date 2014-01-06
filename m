@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755496AbaAFQKX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 11:10:23 -0500
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:33721
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753883AbaAFQKT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 11:10:19 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VPS-5(zzbb2dI98dI9371Ic89bh1431J1432Izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h906i1155h)
-Date: Mon, 6 Jan 2014 08:10:03 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <monstr@monstr.eu>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH] devicetree: macb: Document clock properties
-References: <1386972205-32733-1-git-send-email-soren.brinkmann@xilinx.com>
- <52AECBFC.5000207@atmel.com>
- <52B2CC2D.9070902@monstr.eu>
+	id S1755509AbaAFQKc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 11:10:32 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:43216 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753883AbaAFQK1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 11:10:27 -0500
+Date: Mon, 6 Jan 2014 21:40:19 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        dri-devel@lists.freedesktop.org, josh@joshtriplett.org
+Subject: [PATCH 55/85] drivers: gpu: Include appropriate header file in
+ cypress_dpm.c
+Message-ID: <20f3f9f240e40b8e1c7db87d9f10d48db25b29db.1389018325.git.rashika.kheria@gmail.com>
+References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <52B2CC2D.9070902@monstr.eu>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <031a1a70-93f4-42aa-b7d9-268e3e6624a6@CO9EHSMHS004.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Include header file drm/radeon/radeon_asic.h in drm/radeon/cypress_dpm.c
+because it uses function declared in the header file.
 
-On Thu, Dec 19, 2013 at 11:36:29AM +0100, Michal Simek wrote:
-> On 12/16/2013 10:46 AM, Nicolas Ferre wrote:
-> > On 13/12/2013 23:03, Soren Brinkmann :
-> >> The macb driver uses the clock bindings. Document the required
-> >> properties, especially the driver specific clock-names.
-> >>
-> >> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> > 
-> > Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> 
-> Has someone taken this patch?
-> If not, Rob can you please add it to your tree?
+This eliminates the following warnings in drm/radeon/cypress_dpm.c:
+drivers/gpu/drm/radeon/cypress_dpm.c:1782:6: warning: no previous prototype for ‘cypress_dpm_setup_asic’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/cypress_dpm.c:1802:5: warning: no previous prototype for ‘cypress_dpm_enable’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/cypress_dpm.c:1928:6: warning: no previous prototype for ‘cypress_dpm_disable’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/cypress_dpm.c:1968:5: warning: no previous prototype for ‘cypress_dpm_set_power_state’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/cypress_dpm.c:2028:6: warning: no previous prototype for ‘cypress_dpm_display_configuration_changed’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/cypress_dpm.c:2033:5: warning: no previous prototype for ‘cypress_dpm_init’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/cypress_dpm.c:2150:6: warning: no previous prototype for ‘cypress_dpm_fini’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/cypress_dpm.c:2161:6: warning: no previous prototype for ‘cypress_dpm_vblank_too_short’ [-Wmissing-prototypes]
 
-Since nobody responded to Michal's question and I also don't see this in
-next yet, I just wanted to check in on the status. Does anybody take
-this for 3.14?
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ drivers/gpu/drm/radeon/cypress_dpm.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-	Sören
-
+diff --git a/drivers/gpu/drm/radeon/cypress_dpm.c b/drivers/gpu/drm/radeon/cypress_dpm.c
+index 75dc1d8..8b9e033 100644
+--- a/drivers/gpu/drm/radeon/cypress_dpm.c
++++ b/drivers/gpu/drm/radeon/cypress_dpm.c
+@@ -24,6 +24,7 @@
+ 
+ #include "drmP.h"
+ #include "radeon.h"
++#include "radeon_asic.h"
+ #include "evergreend.h"
+ #include "r600_dpm.h"
+ #include "cypress_dpm.h"
+-- 
+1.7.9.5
 
