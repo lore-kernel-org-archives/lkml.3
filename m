@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756037AbaAFUnB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 15:43:01 -0500
-Received: from mga02.intel.com ([134.134.136.20]:16492 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755191AbaAFUnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 15:43:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,614,1384329600"; 
-   d="scan'208";a="462491402"
-Subject: [PATCH] mm: slub: fix ALLOC_SLOWPATH stat
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, cl@linux-foundation.org,
-        akpm@linux-foundation.org, penberg@kernel.org,
-        Dave Hansen <dave@sr71.net>
-From: Dave Hansen <dave@sr71.net>
-Date: Mon, 06 Jan 2014 12:43:00 -0800
-Message-Id: <20140106204300.DE79BA86@viggo.jf.intel.com>
+	id S1755842AbaAFUqq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 15:46:46 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:63041 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753702AbaAFUqo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 15:46:44 -0500
+Date: Mon, 6 Jan 2014 12:46:41 -0800
+From: Kent Overstreet <kmo@daterainc.com>
+To: Shaohua Li <shli@kernel.org>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, hch@infradead.org
+Subject: Re: [patch 1/2]percpu_ida: fix a live lock
+Message-ID: <20140106204641.GB9037@kmo>
+References: <20131231033827.GA31994@kernel.org>
+ <20140104210804.GA24199@kmo-pixel>
+ <20140105131300.GB4186@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140105131300.GB4186@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jan 05, 2014 at 09:13:00PM +0800, Shaohua Li wrote:
+> On Sat, Jan 04, 2014 at 01:08:04PM -0800, Kent Overstreet wrote:
+> > On Tue, Dec 31, 2013 at 11:38:27AM +0800, Shaohua Li wrote:
+> > > 
+> > > steal_tags only happens when free tags is more than half of the total tags.
+> > > This is too restrict and can cause live lock. I found one cpu has free tags,
+> > > but other cpu can't steal (thread is bound to specific cpus), threads which
+> > > wants to allocate tags are always sleeping. I found this when I run next patch,
+> > > but this could happen without it I think.
+> > > 
+> > > I did performance test too with null_blk. Two cases (each cpu has enough percpu
+> > > tags, or total tags are limited) haven't performance changes.
+> > 
+> > This doesn't appear to me to fix anything wrong with the current code
+> > (and it'll hurt performance)
+> 
+> I suspects this hurts performance too, but it doesn't actually in my test.
+> 
+> > - we explicitly don't guarantee that all
+> > the tags will be available for allocation at any given time, only half
+> > of them. 
+> 
+> only half of the tags can be used? this is scaring. Of course we hope all tags
+> are available.
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+No: that behaviour is explicitly documented and it's the behaviour we want.
 
-There used to be only one path out of __slab_alloc(), and
-ALLOC_SLOWPATH got bumped in that exit path.  Now there are two,
-and a bunch of gotos.  ALLOC_SLOWPATH can now get set more than once
-during a single call to __slab_alloc() which is pretty bogus.
-Here's the sequence:
+There is an inherent performance tradeoff here between internal fragmentation
+and performance: your patch tries to drive internal fragmentation to 0, but
+under workloads that hit this, running on enough cores, this will have a VERY
+high performance cost.
 
-1. Enter __slab_alloc(), fall through all the way to the
-   stat(s, ALLOC_SLOWPATH);
-2. hit 'if (!freelist)', and bump DEACTIVATE_BYPASS, jump to
-   new_slab (goto #1)
-3. Hit 'if (c->partial)', bump CPU_PARTIAL_ALLOC, goto redo
-   (goto #2)
-4. Fall through in the same path we did before all the way to
-   stat(s, ALLOC_SLOWPATH)
-5. bump ALLOC_REFILL stat, then return
+> > Can you explain more how this is being used where you're seeing
+> > the issue? And I don't see the other patch in your patch series.
+> 
+> tasks are bound to specific cpus. And I saw one cpu has a lot of free (but less
+> than half of total tags), but other cpus can't allocate tags, so I saw a live
+> lock.
 
-Doing this is obviously bogus.  It keeps us from being able to
-accurately compare ALLOC_SLOWPATH vs. ALLOC_FASTPATH.  It also
-means that the total number of allocs always exceeds the total
-number of frees.
+You're using it wrong - don't assume all nr_tags can be allocated. If you need
+to guarantee that you'll always be able to allocate a certain number of tags,
+you pass twice that to percpu_ida_init() instead.
 
-This patch moves stat(s, ALLOC_SLOWPATH) to be called from the
-same place that __slab_alloc() is.  This makes it much less
-likely that ALLOC_SLOWPATH will get botched again in the
-spaghetti-code inside __slab_alloc().
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
----
-
- linux.git-davehans/mm/slub.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
-
-diff -puN mm/slub.c~slub-ALLOC_SLOWPATH-stat mm/slub.c
---- linux.git/mm/slub.c~slub-ALLOC_SLOWPATH-stat	2014-01-06 12:39:28.148072544 -0800
-+++ linux.git-davehans/mm/slub.c	2014-01-06 12:39:28.155072860 -0800
-@@ -2301,8 +2301,6 @@ redo:
- 	if (freelist)
- 		goto load_freelist;
- 
--	stat(s, ALLOC_SLOWPATH);
--
- 	freelist = get_freelist(s, page);
- 
- 	if (!freelist) {
-@@ -2409,10 +2407,10 @@ redo:
- 
- 	object = c->freelist;
- 	page = c->page;
--	if (unlikely(!object || !node_match(page, node)))
-+	if (unlikely(!object || !node_match(page, node))) {
- 		object = __slab_alloc(s, gfpflags, node, addr, c);
--
--	else {
-+		stat(s, ALLOC_SLOWPATH);
-+	} else {
- 		void *next_object = get_freepointer_safe(s, object);
- 
- 		/*
-_
+Nacking this patch (and if you want me to look at it more you still to send me
+the other patch in the series and show me your code that's using it).
