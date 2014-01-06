@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756773AbaAFWiU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:38:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47370 "EHLO
+	id S932726AbaAGAKh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:10:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47412 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756719AbaAFWiO (ORCPT
+	with ESMTP id S1756778AbaAFWiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:14 -0500
+	Mon, 6 Jan 2014 17:38:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>, <dashing.meng@gmail.com>,
-        Niklas Schnelle <niklas@komani.de>, Giorgos <ganastasiouGR@gmail.com>,
-        <art1@vhex.net>
-Subject: [PATCH 3.12 024/144] xhci: Limit the spurious wakeup fix only to HP machines
-Date: Mon,  6 Jan 2014 14:36:25 -0800
-Message-Id: <20140106223746.019488475@linuxfoundation.org>
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: [PATCH 3.12 033/144] aio: fix kioctx leak introduced by "aio: Fix a trinity splat"
+Date: Mon,  6 Jan 2014 14:36:34 -0800
+Message-Id: <20140106223746.274506932@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -31,51 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Benjamin LaHaise <bcrl@kvack.org>
 
-commit 6962d914f317b119e0db7189199b21ec77a4b3e0 upstream.
+commit 1881686f842065d2f92ec9c6424830ffc17d23b0 upstream.
 
-We've got regression reports that my previous fix for spurious wakeups
-after S5 on HP Haswell machines leads to the automatic reboot at
-shutdown on some machines.  It turned out that the fix for one side
-triggers another BIOS bug in other side.  So, it's exclusive.
+e34ecee2ae791df674dfb466ce40692ca6218e43 reworked the percpu reference
+counting to correct a bug trinity found.  Unfortunately, the change lead
+to kioctxes being leaked because there was no final reference count to
+put.  Add that reference count back in to fix things.
 
-Since the original S5 wakeups have been confirmed only on HP machines,
-it'd be safer to apply it only to limited machines.  As a wild guess,
-limiting to machines with HP PCI SSID should suffice.
-
-This patch should be backported to kernels as old as 3.12, that
-contain the commit 638298dc66ea36623dbc2757a24fc2c4ab41b016 "xhci: Fix
-spurious wakeups after S5 on Haswell".
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66171
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Tested-by: <dashing.meng@gmail.com>
-Reported-by: Niklas Schnelle <niklas@komani.de>
-Reported-by: Giorgos <ganastasiouGR@gmail.com>
-Reported-by: <art1@vhex.net>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-pci.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ fs/aio.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -128,7 +128,12 @@ static void xhci_pci_quirks(struct devic
- 		 * any other sleep) on Haswell machines with LPT and LPT-LP
- 		 * with the new Intel BIOS
- 		 */
--		xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
-+		/* Limit the quirk to only known vendors, as this triggers
-+		 * yet another BIOS bug on some other machines
-+		 * https://bugzilla.kernel.org/show_bug.cgi?id=66171
-+		 */
-+		if (pdev->subsystem_vendor == PCI_VENDOR_ID_HP)
-+			xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
- 	}
- 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
- 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -652,7 +652,8 @@ static struct kioctx *ioctx_alloc(unsign
+ 	aio_nr += ctx->max_reqs;
+ 	spin_unlock(&aio_nr_lock);
+ 
+-	percpu_ref_get(&ctx->users); /* io_setup() will drop this ref */
++	percpu_ref_get(&ctx->users);	/* io_setup() will drop this ref */
++	percpu_ref_get(&ctx->reqs);	/* free_ioctx_users() will drop this */
+ 
+ 	err = ioctx_add_table(ctx, mm);
+ 	if (err)
 
 
