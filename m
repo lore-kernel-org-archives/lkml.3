@@ -1,55 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917AbaAFKqt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 05:46:49 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:56711 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247AbaAFKqs (ORCPT
+	id S1753811AbaAFKsT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 05:48:19 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:49089 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752082AbaAFKsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 05:46:48 -0500
-Date: Mon, 6 Jan 2014 10:46:40 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Anton Vorontsov <anton@enomsg.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: [PATCH v7 3/3] mfd: max14577: Add device tree bindings document
-Message-ID: <20140106104640.GK23772@lee--X1>
-References: <1386329534-14186-1-git-send-email-k.kozlowski@samsung.com>
- <1386329534-14186-4-git-send-email-k.kozlowski@samsung.com>
+	Mon, 6 Jan 2014 05:48:17 -0500
+Date: Mon, 6 Jan 2014 13:48:02 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Julia Lawall <julia.lawall@lip6.fr>, kernel-janitors@vger.kernel.org,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/11]  use ether_addr_equal_64bits
+Message-ID: <20140106104802.GN30234@mwanda>
+References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>
+ <1388427307-8691-5-git-send-email-Julia.Lawall@lip6.fr>
+ <1388429761.4410.1.camel@jlt4.sipsolutions.net>
+ <alpine.DEB.2.02.1312302057420.2209@localhost6.localdomain6>
+ <1388438724.4573.2.camel@jlt4.sipsolutions.net>
+ <20131230215701.GA4938@khazad-dum.debian.net>
+ <1388445188.18164.0.camel@jlt4.sipsolutions.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1386329534-14186-4-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <1388445188.18164.0.camel@jlt4.sipsolutions.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Add document describing device tree bindings for MAX14577 MFD driver.
+On Tue, Dec 31, 2013 at 12:13:08AM +0100, Johannes Berg wrote:
+> On Mon, 2013-12-30 at 19:57 -0200, Henrique de Moraes Holschuh wrote:
+> > On Mon, 30 Dec 2013, Johannes Berg wrote:
+> > > On Mon, 2013-12-30 at 20:58 +0100, Julia Lawall wrote:
+> > > > > Is there any way we could catch (sparse, or some other script?) that
+> > > > > struct reorganising won't break the condition needed ("within a
+> > > > > structure that contains at least two more bytes")?
+> > > > 
+> > > > What kind of reorganizing could happen?  Do you mean that the programmer 
+> > > > might do at some time in the future, or something the compiler might do?
+> > > 
+> > > I'm just thinking of a programmer, e.g. changing a struct like this:
+> > > 
+> > >  struct foo {
+> > >    u8 addr[ETH_ALEN];
+> > > -  u16 dummy;
+> > >  };
+> > > 
+> > > for example.
+> > 
+> > That is easily resolved by:
+> > 
+> > struct foo {
+> > 	u8 addr[ETH_ALEN];
+> > 	u16 required_padding;	/* do not remove upon pain of death */
+> > };
 > 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  Documentation/devicetree/bindings/mfd/max14577.txt |   65 ++++++++++++++++++++
->  1 file changed, 65 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
+> That'd be a stupid waste of struct space. If anything, there should be
+> *only* a comment saying that at least two bytes are needed - I'd still
+> prefer an automated check.
+> 
 
-You still need a DT Ack before I can apply this.
+This is the sort of thing where Smatch is probably the right tool.  I'll
+let you know how it turns out.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+My guess is that it would be rare to run into this bug in real life.
+Most structs have 4 or 8 byte alignment and most times the addr is not
+at the end of the struct.  But I also agree that this function should
+only be used in a fast path.
+
+regards,
+dan carpenter
+
