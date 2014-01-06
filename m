@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757782AbaAFXpm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:45:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47869 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932566AbaAFWjs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932563AbaAFWjs (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 Jan 2014 17:39:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47749 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932467AbaAFWjc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 17:39:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 3.12 125/144] GFS2: dont hold s_umount over blkdev_put
-Date: Mon,  6 Jan 2014 14:38:06 -0800
-Message-Id: <20140106223748.934405277@linuxfoundation.org>
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.12 108/144] intel_pstate: Fail initialization if P-state information is missing
+Date: Mon,  6 Jan 2014 14:37:49 -0800
+Message-Id: <20140106223748.450927984@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,47 +29,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Whitehouse <swhiteho@redhat.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit dfe5b9ad83a63180f358b27d1018649a27b394a9 upstream.
+commit 98a947abdd54e5de909bebadfced1696ccad30cf upstream.
 
-This is a GFS2 version of Tejun's patch:
-4f331f01b9c43bf001d3ffee578a97a1e0633eac
-vfs: don't hold s_umount over close_bdev_exclusive() call
+If pstate.current_pstate is 0 after the initial
+intel_pstate_get_cpu_pstates(), this means that we were unable to
+obtain any useful P-state information and there is no reason to
+continue, so free memory and return an error in that case.
 
-In this case its blkdev_put itself that is the issue and this
-patch uses the same solution of dropping and retaking s_umount.
+This fixes the following divide error occuring in a nested KVM
+guest:
 
-Reported-by: Tejun Heo <tj@kernel.org>
-Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+Intel P-state driver initializing.
+Intel pstate controlling: cpu 0
+cpufreq: __cpufreq_add_dev: ->get() failed
+divide error: 0000 [#1] SMP
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.13.0-0.rc4.git5.1.fc21.x86_64 #1
+Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+task: ffff88001ea20000 ti: ffff88001e9bc000 task.ti: ffff88001e9bc000
+RIP: 0010:[<ffffffff815c551d>]  [<ffffffff815c551d>] intel_pstate_timer_func+0x11d/0x2b0
+RSP: 0000:ffff88001ee03e18  EFLAGS: 00010246
+RAX: 0000000000000000 RBX: ffff88001a454348 RCX: 0000000000006100
+RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
+RBP: ffff88001ee03e38 R08: 0000000000000000 R09: 0000000000000000
+R10: ffff88001ea20000 R11: 0000000000000000 R12: 00000c0a1ea20000
+R13: 1ea200001ea20000 R14: ffffffff815c5400 R15: ffff88001a454348
+FS:  0000000000000000(0000) GS:ffff88001ee00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000000 CR3: 0000000001c0c000 CR4: 00000000000006f0
+Stack:
+ fffffffb1a454390 ffffffff821a4500 ffff88001a454390 0000000000000100
+ ffff88001ee03ea8 ffffffff81083e9a ffffffff81083e15 ffffffff82d5ed40
+ ffffffff8258cc60 0000000000000000 ffffffff81ac39de 0000000000000000
+Call Trace:
+ <IRQ>
+ [<ffffffff81083e9a>] call_timer_fn+0x8a/0x310
+ [<ffffffff81083e15>] ? call_timer_fn+0x5/0x310
+ [<ffffffff815c5400>] ? pid_param_set+0x130/0x130
+ [<ffffffff81084354>] run_timer_softirq+0x234/0x380
+ [<ffffffff8107aee4>] __do_softirq+0x104/0x430
+ [<ffffffff8107b5fd>] irq_exit+0xcd/0xe0
+ [<ffffffff81770645>] smp_apic_timer_interrupt+0x45/0x60
+ [<ffffffff8176efb2>] apic_timer_interrupt+0x72/0x80
+ <EOI>
+ [<ffffffff810e15cd>] ? vprintk_emit+0x1dd/0x5e0
+ [<ffffffff81757719>] printk+0x67/0x69
+ [<ffffffff815c1493>] __cpufreq_add_dev.isra.13+0x883/0x8d0
+ [<ffffffff815c14f0>] cpufreq_add_dev+0x10/0x20
+ [<ffffffff814a14d1>] subsys_interface_register+0xb1/0xf0
+ [<ffffffff815bf5cf>] cpufreq_register_driver+0x9f/0x210
+ [<ffffffff81fb19af>] intel_pstate_init+0x27d/0x3be
+ [<ffffffff81761e3e>] ? mutex_unlock+0xe/0x10
+ [<ffffffff81fb1732>] ? cpufreq_gov_dbs_init+0x12/0x12
+ [<ffffffff8100214a>] do_one_initcall+0xfa/0x1b0
+ [<ffffffff8109dbf5>] ? parse_args+0x225/0x3f0
+ [<ffffffff81f64193>] kernel_init_freeable+0x1fc/0x287
+ [<ffffffff81f638d0>] ? do_early_param+0x88/0x88
+ [<ffffffff8174b530>] ? rest_init+0x150/0x150
+ [<ffffffff8174b53e>] kernel_init+0xe/0x130
+ [<ffffffff8176e27c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff8174b530>] ? rest_init+0x150/0x150
+Code: c1 e0 05 48 63 bc 03 10 01 00 00 48 63 83 d0 00 00 00 48 63 d6 48 c1 e2 08 c1 e1 08 4c 63 c2 48 c1 e0 08 48 98 48 c1 e0 08 48 99 <49> f7 f8 48 98 48 0f af f8 48 c1 ff 08 29 f9 89 ca c1 fa 1f 89
+RIP  [<ffffffff815c551d>] intel_pstate_timer_func+0x11d/0x2b0
+ RSP <ffff88001ee03e18>
+---[ end trace f166110ed22cc37a ]---
+Kernel panic - not syncing: Fatal exception in interrupt
+
+Reported-and-tested-by: Kashyap Chamarthy <kchamart@redhat.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/gfs2/ops_fstype.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/cpufreq/intel_pstate.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/fs/gfs2/ops_fstype.c
-+++ b/fs/gfs2/ops_fstype.c
-@@ -1366,8 +1366,18 @@ static struct dentry *gfs2_mount(struct
- 	if (IS_ERR(s))
- 		goto error_bdev;
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -550,6 +550,11 @@ static int intel_pstate_init_cpu(unsigne
+ 	cpu = all_cpu_data[cpunum];
  
--	if (s->s_root)
-+	if (s->s_root) {
-+		/*
-+		 * s_umount nests inside bd_mutex during
-+		 * __invalidate_device().  blkdev_put() acquires
-+		 * bd_mutex and can't be called under s_umount.  Drop
-+		 * s_umount temporarily.  This is safe as we're
-+		 * holding an active reference.
-+		 */
-+		up_write(&s->s_umount);
- 		blkdev_put(bdev, mode);
-+		down_write(&s->s_umount);
+ 	intel_pstate_get_cpu_pstates(cpu);
++	if (!cpu->pstate.current_pstate) {
++		all_cpu_data[cpunum] = NULL;
++		kfree(cpu);
++		return -ENODATA;
 +	}
  
- 	memset(&args, 0, sizeof(args));
- 	args.ar_quota = GFS2_QUOTA_DEFAULT;
+ 	cpu->cpu = cpunum;
+ 	cpu->pstate_policy =
 
 
