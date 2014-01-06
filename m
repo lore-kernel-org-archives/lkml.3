@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298AbaAFPSr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 10:18:47 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:55961 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755033AbaAFPSo (ORCPT
+	id S1755286AbaAFPTk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 10:19:40 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:50761 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753292AbaAFPTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 10:18:44 -0500
-Message-ID: <1389021522.12212.174.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH 4/11] use ether_addr_equal_64bits
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Emmanuel Grumbach <egrumbach@gmail.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Julia Lawall <julia.lawall@lip6.fr>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 06 Jan 2014 07:18:42 -0800
-In-Reply-To: <CAMuHMdXZQO7jj+V2mMyyLgDoz6iSLJ25+55Yow-Acb1=tE5sMg@mail.gmail.com>
-References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>
-	 <1388427307-8691-5-git-send-email-Julia.Lawall@lip6.fr>
-	 <1388429761.4410.1.camel@jlt4.sipsolutions.net>
-	 <alpine.DEB.2.02.1312302057420.2209@localhost6.localdomain6>
-	 <1388438724.4573.2.camel@jlt4.sipsolutions.net>
-	 <20131230215701.GA4938@khazad-dum.debian.net>
-	 <1388445188.18164.0.camel@jlt4.sipsolutions.net>
-	 <CANUX_P0PX1g8uHJUHYoB4UyMMgbtLas0_pf4TYrLTgND5V37rg@mail.gmail.com>
-	 <CAMuHMdXZQO7jj+V2mMyyLgDoz6iSLJ25+55Yow-Acb1=tE5sMg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 6 Jan 2014 10:19:39 -0500
+Date: Mon, 6 Jan 2014 20:49:34 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Airlie <airlied@linux.ie>, Dave Airlie <airlied@redhat.com>,
+        Gerd Hoffmann <kraxel@redhat.com>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        Alon Levy <alevy@redhat.com>, dri-devel@lists.freedesktop.org,
+        josh@joshtriplett.org
+Subject: [PATCH 20/85] drivers: gpu: Mark function as static in qxl_kms.c
+Message-ID: <14c6291e2f7d77bed4fc26dd6a46e197ce2f30f9.1389018324.git.rashika.kheria@gmail.com>
+References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-06 at 10:24 +0100, Geert Uytterhoeven wrote:
+Mark function qxl_device_init() as static in drm/qxl/qxl_kms.c because
+it is not used outside this file.
 
-> Thanks to this discussion, my eye fell on:
-> 
-> static inline unsigned compare_ether_addr(const u8 *addr1, const u8 *addr2)
-> {
->         const u16 *a = (const u16 *) addr1;
->         const u16 *b = (const u16 *) addr2;
-> 
->         BUILD_BUG_ON(ETH_ALEN != 6);
->         return ((a[0] ^ b[0]) | (a[1] ^ b[1]) | (a[2] ^ b[2])) != 0;
-> }
-> 
-> What if addr1 or addr2 are odd, and this is running on an architecture that
-> doesn't support unaligned accesses at all?? Have we been lucky forever?
+This eliminates the following warning in drm/qxl/qxl_kms.c:
+drivers/gpu/drm/qxl/qxl_kms.c:118:5: warning: no previous prototype for ‘qxl_device_init’ [-Wmissing-prototypes]
 
-This function always had the guarantee of u16 alignment.
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ drivers/gpu/drm/qxl/qxl_kms.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-No protocol ever included an ether address at an odd alignment, and
-drivers always make sure a frame is at least 2-byte aligned.
-
-Its kind of obvious for networking people, Stephen did not mention this
-property in commit 360ac8e2f1a38c34
-
-
+diff --git a/drivers/gpu/drm/qxl/qxl_kms.c b/drivers/gpu/drm/qxl/qxl_kms.c
+index e5ca498..fd88eb4 100644
+--- a/drivers/gpu/drm/qxl/qxl_kms.c
++++ b/drivers/gpu/drm/qxl/qxl_kms.c
+@@ -115,7 +115,7 @@ static void qxl_gc_work(struct work_struct *work)
+ 	qxl_garbage_collect(qdev);
+ }
+ 
+-int qxl_device_init(struct qxl_device *qdev,
++static int qxl_device_init(struct qxl_device *qdev,
+ 		    struct drm_device *ddev,
+ 		    struct pci_dev *pdev,
+ 		    unsigned long flags)
+-- 
+1.7.9.5
 
