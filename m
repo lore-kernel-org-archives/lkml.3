@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933179AbaAFX0x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:26:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49154 "EHLO
+	id S932841AbaAFWkw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:40:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48153 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757463AbaAFX0v (ORCPT
+	with ESMTP id S932807AbaAFWkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 18:26:51 -0500
-Date: Mon, 6 Jan 2014 15:27:17 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Alexander Duyck <alexander.h.duyck@intel.com>
-Cc: joe@perches.com, josh@joshtriplett.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] checkpatch: Only flag FSF address, not gnu.org URL
-Message-ID: <20140106232717.GA22336@kroah.com>
-References: <20140106231534.23578.11475.stgit@ahduyck-cp2.jf.intel.com>
+	Mon, 6 Jan 2014 17:40:47 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.10 042/129] drm/radeon: add missing display tiling setup for oland
+Date: Mon,  6 Jan 2014 14:37:51 -0800
+Message-Id: <20140106223900.804123162@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
+References: <20140106223859.589799655@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140106231534.23578.11475.stgit@ahduyck-cp2.jf.intel.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 03:16:24PM -0800, Alexander Duyck wrote:
-> This change restricts the check for the for the FSF address in the GPL
-> copyright statement so that it only flags the address, not the references to
-> the gnu.org/licenses URL which appear in numerous drivers.
-> 
-> So for example this statement will still return an error:
->   You should have received a copy of the GNU General Public License
->   along with this program; if not, write to the Free Software
->   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-> 
-> However, this statement will not return an error after this patch:
->   You should have received a copy of the GNU General Public License
->   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Why is this paragraph needed?  The kernel does come with a copy of the
-GPL, so it's not an issue for kernel files, right?
+------------------
 
-thanks,
+From: Alex Deucher <alexander.deucher@amd.com>
 
-greg k-h
+commit 227ae10f17a5f2fd1307b7e582b603ef7bbb7e97 upstream.
+
+Fixes improperly set up display params for 2D tiling on
+oland.
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/radeon/atombios_crtc.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -1176,7 +1176,9 @@ static int dce4_crtc_do_set_base(struct
+ 	if ((rdev->family == CHIP_TAHITI) ||
+ 	    (rdev->family == CHIP_PITCAIRN))
+ 		fb_format |= SI_GRPH_PIPE_CONFIG(SI_ADDR_SURF_P8_32x32_8x16);
+-	else if (rdev->family == CHIP_VERDE)
++	else if ((rdev->family == CHIP_VERDE) ||
++		 (rdev->family == CHIP_OLAND) ||
++		 (rdev->family == CHIP_HAINAN)) /* for completeness.  HAINAN has no display hw */
+ 		fb_format |= SI_GRPH_PIPE_CONFIG(SI_ADDR_SURF_P4_8x16);
+ 
+ 	switch (radeon_crtc->crtc_id) {
+
+
