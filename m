@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965AbaAFOrs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 09:47:48 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:61780 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243AbaAFOrr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 09:47:47 -0500
-Date: Mon, 6 Jan 2014 14:47:41 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/7] mfd: Move pm8xxx-irq.c contents into only driver
- that uses it
-Message-ID: <20140106144741.GH30156@lee--X1>
-References: <1387831563-13535-1-git-send-email-sboyd@codeaurora.org>
- <1387831563-13535-2-git-send-email-sboyd@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1387831563-13535-2-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754824AbaAFOte (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 09:49:34 -0500
+Received: from mga09.intel.com ([134.134.136.24]:60375 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751057AbaAFOtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 09:49:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,613,1384329600"; 
+   d="scan'208";a="434515943"
+Message-ID: <1389019761.5853.18.camel@rzhang1-mobl4>
+Subject: Re: [PATCH 1/1] thermal: remove const flag from .ops of imx thermal
+From: Zhang Rui <rui.zhang@intel.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Date: Mon, 06 Jan 2014 22:49:21 +0800
+In-Reply-To: <1389012874-13871-1-git-send-email-eduardo.valentin@ti.com>
+References: <1389012874-13871-1-git-send-email-eduardo.valentin@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Dec 2013, Stephen Boyd wrote:
-
-> The pm8xxx-irq.c code is practically mandatory given that the
-> pm8921-core driver will WARN about it missing and the Kconfig
-> marks it as default y when a PM8xxx chips is enabled. The only
-> reason the file was split out was because we planned to support
-> other pm8xxx chips with different pm8xxx-core.c files. Now that
-> we have DT on ARM this isn't necessary because we should be able
-> to support all the ssbi based PM8xxx chips in one driver and one
-> file with no data bloat. Let's move this code into the only
-> driver that uses it right now (pm8921) so that it's always compiled when
-> needed. In the future we can rename pm8921-core.c to something
-> more generic.
+On Mon, 2014-01-06 at 08:54 -0400, Eduardo Valentin wrote:
+> As per previous changes on thermal framework API,
+> registering a new thermal zone does not require
+> a const thermal zone ops.
 > 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> Thus, this patch removes the flag from imx thermal zone ops.
+> 
+> Cc: Zhang Rui <rui.zhang@intel.com>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: linux-pm@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: devicetree@vger.kernel.org
+> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+
+applied.
+
+thanks,
+rui
 > ---
->  drivers/mfd/Kconfig            |  10 --
->  drivers/mfd/pm8921-core.c      | 348 ++++++++++++++++++++++++++++++++++++++
->  drivers/mfd/pm8xxx-irq.c       | 371 -----------------------------------------
->  include/linux/mfd/pm8xxx/irq.h |  23 ---
->  4 files changed, 348 insertions(+), 404 deletions(-)
->  delete mode 100644 drivers/mfd/pm8xxx-irq.c
+>  drivers/thermal/imx_thermal.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/thermal/imx_thermal.c b/drivers/thermal/imx_thermal.c
+> index 77a962f..43d2f77 100644
+> --- a/drivers/thermal/imx_thermal.c
+> +++ b/drivers/thermal/imx_thermal.c
+> @@ -284,7 +284,7 @@ static int imx_unbind(struct thermal_zone_device *tz,
+>  	return 0;
+>  }
+>  
+> -static const struct thermal_zone_device_ops imx_tz_ops = {
+> +static struct thermal_zone_device_ops imx_tz_ops = {
+>  	.bind = imx_bind,
+>  	.unbind = imx_unbind,
+>  	.get_temp = imx_get_temp,
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
