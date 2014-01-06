@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757834AbaAFXqh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:46:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47861 "EHLO
+	id S1757876AbaAFXrD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:47:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47837 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932543AbaAFWjq (ORCPT
+	with ESMTP id S932530AbaAFWjo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:39:46 -0500
+	Mon, 6 Jan 2014 17:39:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Andi Kleen <andi@firstfloor.org>,
+        Vlastimil Babka <vbabka@suse.cz>, Sasha Levin <sasha.levin@oracle.com>,
+        Michel Lespinasse <walken@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Bob Liu <bob.liu@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 123/144] mm/memory-failure.c: transfer page count from head page to tail page after split thp
-Date: Mon,  6 Jan 2014 14:38:04 -0800
-Message-Id: <20140106223748.871600300@linuxfoundation.org>
+Subject: [PATCH 3.12 120/144] mm: munlock: fix a bug where THP tail page is encountered
+Date: Mon,  6 Jan 2014 14:38:01 -0800
+Message-Id: <20140106223748.786372734@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -32,90 +34,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Vlastimil Babka <vbabka@suse.cz>
 
-commit a3e0f9e47d5ef7858a26cc12d90ad5146e802d47 upstream.
+commit c424be1cbbf852e46acc84d73162af3066cd2c86 upstream.
 
-Memory failures on thp tail pages cause kernel panic like below:
+Since commit ff6a6da60b89 ("mm: accelerate munlock() treatment of THP
+pages") munlock skips tail pages of a munlocked THP page.  However, when
+the head page already has PageMlocked unset, it will not skip the tail
+pages.
 
-   mce: [Hardware Error]: Machine check events logged
-   MCE exception done on CPU 7
-   BUG: unable to handle kernel NULL pointer dereference at 0000000000000058
-   IP: [<ffffffff811b7cd1>] dequeue_hwpoisoned_huge_page+0x131/0x1e0
-   PGD bae42067 PUD ba47d067 PMD 0
-   Oops: 0000 [#1] SMP
-  ...
-   CPU: 7 PID: 128 Comm: kworker/7:2 Tainted: G   M       O 3.13.0-rc4-131217-1558-00003-g83b7df08e462 #25
-  ...
-   Call Trace:
-     me_huge_page+0x3e/0x50
-     memory_failure+0x4bb/0xc20
-     mce_process_work+0x3e/0x70
-     process_one_work+0x171/0x420
-     worker_thread+0x11b/0x3a0
-     ? manage_workers.isra.25+0x2b0/0x2b0
-     kthread+0xe4/0x100
-     ? kthread_create_on_node+0x190/0x190
-     ret_from_fork+0x7c/0xb0
-     ? kthread_create_on_node+0x190/0x190
-  ...
-   RIP   dequeue_hwpoisoned_huge_page+0x131/0x1e0
-   CR2: 0000000000000058
+Commit 7225522bb429 ("mm: munlock: batch non-THP page isolation and
+munlock+putback using pagevec") has added a PageTransHuge() check which
+contains VM_BUG_ON(PageTail(page)).  Sasha Levin found this triggered
+using trinity, on the first tail page of a THP page without PageMlocked
+flag.
 
-The reasoning of this problem is shown below:
- - when we have a memory error on a thp tail page, the memory error
-   handler grabs a refcount of the head page to keep the thp under us.
- - Before unmapping the error page from processes, we split the thp,
-   where page refcounts of both of head/tail pages don't change.
- - Then we call try_to_unmap() over the error page (which was a tail
-   page before). We didn't pin the error page to handle the memory error,
-   this error page is freed and removed from LRU list.
- - We never have the error page on LRU list, so the first page state
-   check returns "unknown page," then we move to the second check
-   with the saved page flag.
- - The saved page flag have PG_tail set, so the second page state check
-   returns "hugepage."
- - We call me_huge_page() for freed error page, then we hit the above panic.
+This patch fixes the issue by skipping tail pages also in the case when
+PageMlocked flag is unset.  There is still a possibility of race with
+THP page split between clearing PageMlocked and determining how many
+pages to skip.  The race might result in former tail pages not being
+skipped, which is however no longer a bug, as during the skip the
+PageTail flags are cleared.
 
-The root cause is that we didn't move refcount from the head page to the
-tail page after split thp.  So this patch suggests to do this.
+However this race also affects correctness of NR_MLOCK accounting, which
+is to be fixed in a separate patch.
 
-This panic was introduced by commit 524fca1e73 ("HWPOISON: fix
-misjudgement of page_action() for errors on mlocked pages").  Note that we
-did have the same refcount problem before this commit, but it was just
-ignored because we had only first page state check which returned "unknown
-page." The commit changed the refcount problem from "doesn't work" to
-"kernel panic."
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Bob Liu <bob.liu@oracle.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memory-failure.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ mm/mlock.c |   29 ++++++++++++++++++++++-------
+ 1 file changed, 22 insertions(+), 7 deletions(-)
 
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -938,6 +938,16 @@ static int hwpoison_user_mappings(struct
- 				BUG_ON(!PageHWPoison(p));
- 				return SWAP_FAIL;
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -133,7 +133,10 @@ static void __munlock_isolation_failed(s
+ 
+ /**
+  * munlock_vma_page - munlock a vma page
+- * @page - page to be unlocked
++ * @page - page to be unlocked, either a normal page or THP page head
++ *
++ * returns the size of the page as a page mask (0 for normal page,
++ *         HPAGE_PMD_NR - 1 for THP head page)
+  *
+  * called from munlock()/munmap() path with page supposedly on the LRU.
+  * When we munlock a page, because the vma where we found the page is being
+@@ -148,21 +151,30 @@ static void __munlock_isolation_failed(s
+  */
+ unsigned int munlock_vma_page(struct page *page)
+ {
+-	unsigned int page_mask = 0;
++	unsigned int nr_pages;
+ 
+ 	BUG_ON(!PageLocked(page));
+ 
+ 	if (TestClearPageMlocked(page)) {
+-		unsigned int nr_pages = hpage_nr_pages(page);
++		nr_pages = hpage_nr_pages(page);
+ 		mod_zone_page_state(page_zone(page), NR_MLOCK, -nr_pages);
+-		page_mask = nr_pages - 1;
+ 		if (!isolate_lru_page(page))
+ 			__munlock_isolated_page(page);
+ 		else
+ 			__munlock_isolation_failed(page);
++	} else {
++		nr_pages = hpage_nr_pages(page);
+ 	}
+ 
+-	return page_mask;
++	/*
++	 * Regardless of the original PageMlocked flag, we determine nr_pages
++	 * after touching the flag. This leaves a possible race with a THP page
++	 * split, such that a whole THP page was munlocked, but nr_pages == 1.
++	 * Returning a smaller mask due to that is OK, the worst that can
++	 * happen is subsequent useless scanning of the former tail pages.
++	 * The NR_MLOCK accounting can however become broken.
++	 */
++	return nr_pages - 1;
+ }
+ 
+ /**
+@@ -440,7 +452,8 @@ void munlock_vma_pages_range(struct vm_a
+ 
+ 	while (start < end) {
+ 		struct page *page = NULL;
+-		unsigned int page_mask, page_increm;
++		unsigned int page_mask;
++		unsigned long page_increm;
+ 		struct pagevec pvec;
+ 		struct zone *zone;
+ 		int zoneid;
+@@ -490,7 +503,9 @@ void munlock_vma_pages_range(struct vm_a
+ 				goto next;
  			}
-+			/*
-+			 * We pinned the head page for hwpoison handling,
-+			 * now we split the thp and we are interested in
-+			 * the hwpoisoned raw page, so move the refcount
-+			 * to it.
-+			 */
-+			if (hpage != p) {
-+				put_page(hpage);
-+				get_page(p);
-+			}
- 			/* THP is split, so ppage should be the real poisoned page. */
- 			ppage = p;
  		}
+-		page_increm = 1 + (~(start >> PAGE_SHIFT) & page_mask);
++		/* It's a bug to munlock in the middle of a THP page */
++		VM_BUG_ON((start >> PAGE_SHIFT) & page_mask);
++		page_increm = 1 + page_mask;
+ 		start += page_increm * PAGE_SIZE;
+ next:
+ 		cond_resched();
 
 
