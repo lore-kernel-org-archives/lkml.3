@@ -1,114 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827AbaAFHKN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 02:10:13 -0500
-Received: from mga03.intel.com ([143.182.124.21]:23881 "EHLO mga03.intel.com"
+	id S1752885AbaAFHNQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 02:13:16 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:57136 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752750AbaAFHKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 02:10:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,611,1384329600"; 
-   d="scan'208";a="454122160"
-Date: Mon, 6 Jan 2014 15:10:07 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@linux.intel.com
-Subject: Re: [sched] 23f0d2093c: -12.6% regression on sparse file copy
-Message-ID: <20140106071007.GB23042@localhost>
-References: <20140105090456.GE28257@localhost>
- <20140106003052.GD696@lge.com>
+	id S1751373AbaAFHNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 02:13:14 -0500
+Message-ID: <52CA5772.1010300@ti.com>
+Date: Mon, 6 Jan 2014 12:42:50 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140106003052.GD696@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kamil Debski <k.debski@samsung.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <kyungmin.park@samsung.com>, <t.figa@samsung.com>,
+        <s.nawrocki@samsung.com>, <m.szyprowski@samsung.com>,
+        <gautam.vivek@samsung.com>, <mat.krawczuk@gmail.com>,
+        <yulgon.kim@samsung.com>, <p.paneri@samsung.com>,
+        <av.tikhomirov@samsung.com>, <jg1.han@samsung.com>,
+        <galak@codeaurora.org>, <matt.porter@linaro.org>,
+        <tjakobi@math.uni-bielefeld.de>, <stern@rowland.harvard.edu>
+Subject: Re: [PATCH v4 1/9] phy: core: Add an exported of_phy_get function
+References: <1387545857-9472-1-git-send-email-k.debski@samsung.com> <1387545857-9472-2-git-send-email-k.debski@samsung.com>
+In-Reply-To: <1387545857-9472-2-git-send-email-k.debski@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joonsoo,
+Hi,
 
-On Mon, Jan 06, 2014 at 09:30:52AM +0900, Joonsoo Kim wrote:
-> On Sun, Jan 05, 2014 at 05:04:56PM +0800, fengguang.wu@intel.com wrote:
-> > Hi Joonsoo,
-> > 
-> > We noticed the below changes for commit 23f0d2093c ("sched: Factor out
-> > code to should_we_balance()") in test vm-scalability/300s-lru-file-readtwice
-> 
-> Hello, Fengguang.
-> 
-> There was a mistake in this patch and there was a fix and it was already merged
-> into mainline.
-> 
-> Could you test again with the commit (b0cff9d sched: Fix load balancing
-> performance regression in should_we_balance())?
+On Friday 20 December 2013 06:54 PM, Kamil Debski wrote:
+> Previously the of_phy_get function took a struct device * and
+> was declared static. It was impossible to call it from
+> another driver and thus it was impossible to get phy defined
+> for a given node. The old function was renamed to _of_phy_get
+> and was left for internal use. of_phy_get function was added
+> and it was exported. The function enables to get a phy for
+> a given device tree node.
+>
+> Signed-off-by: Kamil Debski <k.debski@samsung.com>
+> ---
+>   drivers/phy/phy-core.c  |   45 ++++++++++++++++++++++++++++++++++++---------
+>   include/linux/phy/phy.h |    1 +
+>   2 files changed, 37 insertions(+), 9 deletions(-)
+>
+> diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+> index 03cf8fb..d6f8c34 100644
+> --- a/drivers/phy/phy-core.c
+> +++ b/drivers/phy/phy-core.c
+> @@ -240,8 +240,8 @@ out:
+>   EXPORT_SYMBOL_GPL(phy_power_off);
+>
+>   /**
+> - * of_phy_get() - lookup and obtain a reference to a phy by phandle
+> - * @dev: device that requests this phy
+> + * _of_phy_get() - lookup and obtain a reference to a phy by phandle
+> + * @np: device_node for which to get the phy
+>    * @index: the index of the phy
+>    *
+>    * Returns the phy associated with the given phandle value,
+> @@ -250,20 +250,17 @@ EXPORT_SYMBOL_GPL(phy_power_off);
+>    * not yet loaded. This function uses of_xlate call back function provided
+>    * while registering the phy_provider to find the phy instance.
+>    */
+> -static struct phy *of_phy_get(struct device *dev, int index)
+> +static struct phy *_of_phy_get(struct device_node *np, int index)
+>   {
+>   	int ret;
+>   	struct phy_provider *phy_provider;
+>   	struct phy *phy = NULL;
+>   	struct of_phandle_args args;
+>
+> -	ret = of_parse_phandle_with_args(dev->of_node, "phys", "#phy-cells",
+> +	ret = of_parse_phandle_with_args(np, "phys", "#phy-cells",
+>   		index, &args);
+> -	if (ret) {
+> -		dev_dbg(dev, "failed to get phy in %s node\n",
+> -			dev->of_node->full_name);
+> +	if (ret)
+>   		return ERR_PTR(-ENODEV);
+> -	}
+>
+>   	mutex_lock(&phy_provider_mutex);
+>   	phy_provider = of_phy_provider_lookup(args.np);
+> @@ -283,6 +280,36 @@ err0:
+>   }
+>
+>   /**
+> + * of_phy_get() - lookup and obtain a reference to a phy using a device_node.
+> + * @np: device_node for which to get the phy
+> + * @con_id: name of the phy from device's point of view
+> + *
+> + * Returns the phy driver, after getting a refcount to it; or
+> + * -ENODEV if there is no such phy. The caller is responsible for
+> + * calling phy_put() to release that count.
+> + */
+> +struct phy *of_phy_get(struct device_node *np, const char *con_id)
+> +{
+> +	struct phy *phy = NULL;
+> +	int index = 0;
+> +
+> +	if (con_id)
+> +		index = of_property_match_string(np, "phy-names", con_id);
+> +
+> +	phy = _of_phy_get(np, index);
+> +	if (IS_ERR(phy))
+> +		return phy;
+> +
+> +	if (!try_module_get(phy->ops->owner))
+> +		return ERR_PTR(-EPROBE_DEFER);
+> +
+> +	get_device(&phy->dev);
+> +
+> +	return phy;
+> +}
+> +EXPORT_SYMBOL_GPL(of_phy_get);
+> +
+> +/**
+>    * phy_put() - release the PHY
+>    * @phy: the phy returned by phy_get()
+>    *
+> @@ -370,7 +397,7 @@ struct phy *phy_get(struct device *dev, const char *string)
+>   	if (dev->of_node) {
+>   		index = of_property_match_string(dev->of_node, "phy-names",
+>   			string);
+> -		phy = of_phy_get(dev, index);
+> +		phy = _of_phy_get(dev->of_node, index);
+>   		if (IS_ERR(phy)) {
+>   			dev_err(dev, "unable to find phy\n");
+>   			return phy;
+> diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
+> index 6d72269..bcb6274 100644
+> --- a/include/linux/phy/phy.h
+> +++ b/include/linux/phy/phy.h
+> @@ -131,6 +131,7 @@ struct phy *phy_get(struct device *dev, const char *string);
+>   struct phy *devm_phy_get(struct device *dev, const char *string);
+>   void phy_put(struct phy *phy);
+>   void devm_phy_put(struct device *dev, struct phy *phy);
+> +struct phy *of_phy_get(struct device_node *np, const char *con_id);
 
-Yes, b0cff9d completely restores the performance. Sorry for the noise!
+Add a stub for of_phy_get if CONFIG_GENERIC_PHY is not set and this 
+patch should be ready for merge.
 
-Thanks,
-Fengguang
-
-> > 
-> >         95a79b805b935f4  23f0d2093c789e612185180c4
-> >         ---------------  -------------------------
-> > ==>           4.45 ~ 5%   +1777.7%      83.60 ~ 5%  vm-scalability.stddev
-> > ==>       14966511 ~ 0%     -12.6%   13084545 ~ 2%  vm-scalability.throughput
-> >                 38 ~ 9%    +406.3%        193 ~ 7%  proc-vmstat.kswapd_low_wmark_hit_quickly
-> >             610823 ~ 0%     -41.4%     357990 ~ 0%  softirqs.SCHED
-> >          5.424e+08 ~ 0%     -38.5%  3.338e+08 ~ 6%  proc-vmstat.pgdeactivate
-> >           4.68e+08 ~ 0%     -37.5%  2.924e+08 ~ 6%  proc-vmstat.pgrefill_normal
-> >          5.549e+08 ~ 0%     -37.1%  3.491e+08 ~ 6%  proc-vmstat.pgactivate
-> >           14938509 ~ 1%     +27.0%   18974176 ~ 1%  vmstat.memory.free
-> >             978771 ~ 1%     +23.9%    1212704 ~ 3%  numa-vmstat.node2.nr_free_pages
-> >            3747434 ~ 0%     +21.7%    4560196 ~ 2%  proc-vmstat.nr_free_pages
-> > ==>      1.353e+08 ~ 0%     +18.8%  1.607e+08 ~ 0%  proc-vmstat.numa_foreign
-> >          1.353e+08 ~ 0%     +18.8%  1.607e+08 ~ 0%  proc-vmstat.numa_miss
-> >          1.353e+08 ~ 0%     +18.8%  1.607e+08 ~ 0%  proc-vmstat.numa_other
-> >            3936842 ~ 1%     +22.2%    4812045 ~ 4%  numa-meminfo.node2.MemFree
-> >           21803812 ~ 0%     +17.7%   25661536 ~ 4%  numa-vmstat.node3.numa_foreign
-> >           73701524 ~ 0%     +15.0%   84769542 ~ 0%  proc-vmstat.pgscan_direct_dma32
-> >           73700683 ~ 0%     +15.0%   84768687 ~ 0%  proc-vmstat.pgsteal_direct_dma32
-> >          3.101e+08 ~ 0%     +11.2%  3.448e+08 ~ 0%  proc-vmstat.pgsteal_direct_normal
-> >          3.103e+08 ~ 0%     +11.2%  3.449e+08 ~ 0%  proc-vmstat.pgscan_direct_normal
-> >           45613907 ~ 0%     +12.6%   51342974 ~ 3%  numa-vmstat.node0.numa_other
-> >             795639 ~ 0%     -48.6%     409113 ~13%  time.voluntary_context_switches
-> >                375 ~ 0%      +6.1%        398 ~ 0%  time.elapsed_time
-> >               9427 ~ 0%      -5.8%       8880 ~ 0%  time.percent_of_cpu_this_job_got
-> > 
-> > The test case basically does
-> > 
-> > for i in `seq 1 $nr_cpu`
-> > do      
-> >         create_sparse_file huge-$i
-> >         dd if=huge-$i of=/dev/null &
-> >         dd if=huge-$i of=/dev/null &
-> > done
-> > 
-> > where nr_cpu=120 (test box is a 4-socket ivybridge system).
-> > 
-> > The change looks stable, each point below is a sample run:
-> > 
-> >                                vm-scalability.stddev
-> > 
-> >    120 ++-------------------------------------------------------------------+
-> >        |                                                                    |
-> >    100 ++             *            *                                        |
-> >        | *.***        :    **      :     *    *  *     *     *              |
-> >        **     * *.** * :  *  :*.*  :: .* :   : * :*   * :  .* :   .*   * .**|
-> >     80 ++      *    *  *. :  *   *: ** : ::  :  *  :.*  * *   * ** :   :*   *
-> >        |                 *        *     : ***      *     *     *    :**     |
-> >     60 ++                               *                           *       |
-> >        |                                                                    |
-> >     40 ++                                                                   |
-> >        |                                                                    |
-> >        |                                                                    |
-> >     20 ++                                                                   |
-> >        | O  OO OO OOO  O OO  O                                              |
-> >      0 OO--O--O------OO----OO-----------------------------------------------+
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+Thanks
+Kishon
