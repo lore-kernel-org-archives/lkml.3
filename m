@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758272AbaAGAHu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 19:07:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47449 "EHLO
+	id S932175AbaAGAIL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:08:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47445 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756841AbaAFWib (ORCPT
+	with ESMTP id S1756830AbaAFWia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:31 -0500
+	Mon, 6 Jan 2014 17:38:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Miao Xie <miaox@cn.fujitsu.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.12 041/144] ftrace: Initialize the ftrace profiler for each possible cpu
-Date: Mon,  6 Jan 2014 14:36:42 -0800
-Message-Id: <20140106223746.503925322@linuxfoundation.org>
+        Jie Liu <jeff.liu@oracle.com>, Dave Chinner <dchinner@redhat.com>,
+        Ben Myers <bpm@sgi.com>
+Subject: [PATCH 3.12 040/144] xfs: fix infinite loop by detaching the group/project hints from user dquot
+Date: Mon,  6 Jan 2014 14:36:41 -0800
+Message-Id: <20140106223746.469514730@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -28,60 +29,179 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miao Xie <miaox@cn.fujitsu.com>
+From: Jie Liu <jeff.liu@oracle.com>
 
-commit c4602c1c818bd6626178d6d3fcc152d9f2f48ac0 upstream.
+commit 718cc6f88cbfc4fbd39609f28c4c86883945f90d upstream.
 
-Ftrace currently initializes only the online CPUs. This implementation has
-two problems:
-- If we online a CPU after we enable the function profile, and then run the
-  test, we will lose the trace information on that CPU.
-  Steps to reproduce:
-  # echo 0 > /sys/devices/system/cpu/cpu1/online
-  # cd <debugfs>/tracing/
-  # echo <some function name> >> set_ftrace_filter
-  # echo 1 > function_profile_enabled
-  # echo 1 > /sys/devices/system/cpu/cpu1/online
-  # run test
-- If we offline a CPU before we enable the function profile, we will not clear
-  the trace information when we enable the function profile. It will trouble
-  the users.
-  Steps to reproduce:
-  # cd <debugfs>/tracing/
-  # echo <some function name> >> set_ftrace_filter
-  # echo 1 > function_profile_enabled
-  # run test
-  # cat trace_stat/function*
-  # echo 0 > /sys/devices/system/cpu/cpu1/online
-  # echo 0 > function_profile_enabled
-  # echo 1 > function_profile_enabled
-  # cat trace_stat/function*
-  # run test
-  # cat trace_stat/function*
+xfs_quota(8) will hang up if trying to turn group/project quota off
+before the user quota is off, this could be 100% reproduced by:
+  # mount -ouquota,gquota /dev/sda7 /xfs
+  # mkdir /xfs/test
+  # xfs_quota -xc 'off -g' /xfs <-- hangs up
+  # echo w > /proc/sysrq-trigger
+  # dmesg
 
-So it is better that we initialize the ftrace profiler for each possible cpu
-every time we enable the function profile instead of just the online ones.
+  SysRq : Show Blocked State
+  task                        PC stack   pid father
+  xfs_quota       D 0000000000000000     0 27574   2551 0x00000000
+  [snip]
+  Call Trace:
+  [<ffffffff81aaa21d>] schedule+0xad/0xc0
+  [<ffffffff81aa327e>] schedule_timeout+0x35e/0x3c0
+  [<ffffffff8114b506>] ? mark_held_locks+0x176/0x1c0
+  [<ffffffff810ad6c0>] ? call_timer_fn+0x2c0/0x2c0
+  [<ffffffffa0c25380>] ? xfs_qm_shrink_count+0x30/0x30 [xfs]
+  [<ffffffff81aa3306>] schedule_timeout_uninterruptible+0x26/0x30
+  [<ffffffffa0c26155>] xfs_qm_dquot_walk+0x235/0x260 [xfs]
+  [<ffffffffa0c059d8>] ? xfs_perag_get+0x1d8/0x2d0 [xfs]
+  [<ffffffffa0c05805>] ? xfs_perag_get+0x5/0x2d0 [xfs]
+  [<ffffffffa0b7707e>] ? xfs_inode_ag_iterator+0xae/0xf0 [xfs]
+  [<ffffffffa0c22280>] ? xfs_trans_free_dqinfo+0x50/0x50 [xfs]
+  [<ffffffffa0b7709f>] ? xfs_inode_ag_iterator+0xcf/0xf0 [xfs]
+  [<ffffffffa0c261e6>] xfs_qm_dqpurge_all+0x66/0xb0 [xfs]
+  [<ffffffffa0c2497a>] xfs_qm_scall_quotaoff+0x20a/0x5f0 [xfs]
+  [<ffffffffa0c2b8f6>] xfs_fs_set_xstate+0x136/0x180 [xfs]
+  [<ffffffff8136cf7a>] do_quotactl+0x53a/0x6b0
+  [<ffffffff812fba4b>] ? iput+0x5b/0x90
+  [<ffffffff8136d257>] SyS_quotactl+0x167/0x1d0
+  [<ffffffff814cf2ee>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+  [<ffffffff81abcd19>] system_call_fastpath+0x16/0x1b
 
-Link: http://lkml.kernel.org/r/1387178401-10619-1-git-send-email-miaox@cn.fujitsu.com
+It's fine if we turn user quota off at first, then turn off other
+kind of quotas if they are enabled since the group/project dquot
+refcount is decreased to zero once the user quota if off. Otherwise,
+those dquots refcount is non-zero due to the user dquot might refer
+to them as hint(s).  Hence, above operation cause an infinite loop
+at xfs_qm_dquot_walk() while trying to purge dquot cache.
 
-Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+This problem has been around since Linux 3.4, it was introduced by:
+  [ b84a3a9675 xfs: remove the per-filesystem list of dquots ]
+
+Originally we will release the group dquot pointers because the user
+dquots maybe carrying around as a hint via xfs_qm_detach_gdquots().
+However, with above change, there is no such work to be done before
+purging group/project dquot cache.
+
+In order to solve this problem, this patch introduces a special routine
+xfs_qm_dqpurge_hints(), and it would release the group/project dquot
+pointers the user dquots maybe carrying around as a hint, and then it
+will proceed to purge the user dquot cache if requested.
+
+(cherry picked from commit df8052e7dae00bde6f21b40b6e3e1099770f3afc)
+
+Signed-off-by: Jie Liu <jeff.liu@oracle.com>
+Reviewed-by: Dave Chinner <dchinner@redhat.com>
+Signed-off-by: Ben Myers <bpm@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- kernel/trace/ftrace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -775,7 +775,7 @@ static int ftrace_profile_init(void)
- 	int cpu;
- 	int ret = 0;
+---
+ fs/xfs/xfs_qm.c |   71 +++++++++++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 50 insertions(+), 21 deletions(-)
+
+--- a/fs/xfs/xfs_qm.c
++++ b/fs/xfs/xfs_qm.c
+@@ -137,8 +137,6 @@ xfs_qm_dqpurge(
+ {
+ 	struct xfs_mount	*mp = dqp->q_mount;
+ 	struct xfs_quotainfo	*qi = mp->m_quotainfo;
+-	struct xfs_dquot	*gdqp = NULL;
+-	struct xfs_dquot	*pdqp = NULL;
  
--	for_each_online_cpu(cpu) {
-+	for_each_possible_cpu(cpu) {
- 		ret = ftrace_profile_init_cpu(cpu);
- 		if (ret)
- 			break;
+ 	xfs_dqlock(dqp);
+ 	if ((dqp->dq_flags & XFS_DQ_FREEING) || dqp->q_nrefs != 0) {
+@@ -146,21 +144,6 @@ xfs_qm_dqpurge(
+ 		return EAGAIN;
+ 	}
+ 
+-	/*
+-	 * If this quota has a hint attached, prepare for releasing it now.
+-	 */
+-	gdqp = dqp->q_gdquot;
+-	if (gdqp) {
+-		xfs_dqlock(gdqp);
+-		dqp->q_gdquot = NULL;
+-	}
+-
+-	pdqp = dqp->q_pdquot;
+-	if (pdqp) {
+-		xfs_dqlock(pdqp);
+-		dqp->q_pdquot = NULL;
+-	}
+-
+ 	dqp->dq_flags |= XFS_DQ_FREEING;
+ 
+ 	xfs_dqflock(dqp);
+@@ -209,11 +192,47 @@ xfs_qm_dqpurge(
+ 	XFS_STATS_DEC(xs_qm_dquot_unused);
+ 
+ 	xfs_qm_dqdestroy(dqp);
++	return 0;
++}
++
++/*
++ * Release the group or project dquot pointers the user dquots maybe carrying
++ * around as a hint, and proceed to purge the user dquot cache if requested.
++*/
++STATIC int
++xfs_qm_dqpurge_hints(
++	struct xfs_dquot	*dqp,
++	void			*data)
++{
++	struct xfs_dquot	*gdqp = NULL;
++	struct xfs_dquot	*pdqp = NULL;
++	uint			flags = *((uint *)data);
++
++	xfs_dqlock(dqp);
++	if (dqp->dq_flags & XFS_DQ_FREEING) {
++		xfs_dqunlock(dqp);
++		return EAGAIN;
++	}
++
++	/* If this quota has a hint attached, prepare for releasing it now */
++	gdqp = dqp->q_gdquot;
++	if (gdqp)
++		dqp->q_gdquot = NULL;
++
++	pdqp = dqp->q_pdquot;
++	if (pdqp)
++		dqp->q_pdquot = NULL;
++
++	xfs_dqunlock(dqp);
+ 
+ 	if (gdqp)
+-		xfs_qm_dqput(gdqp);
++		xfs_qm_dqrele(gdqp);
+ 	if (pdqp)
+-		xfs_qm_dqput(pdqp);
++		xfs_qm_dqrele(pdqp);
++
++	if (flags & XFS_QMOPT_UQUOTA)
++		return xfs_qm_dqpurge(dqp, NULL);
++
+ 	return 0;
+ }
+ 
+@@ -225,8 +244,18 @@ xfs_qm_dqpurge_all(
+ 	struct xfs_mount	*mp,
+ 	uint			flags)
+ {
+-	if (flags & XFS_QMOPT_UQUOTA)
+-		xfs_qm_dquot_walk(mp, XFS_DQ_USER, xfs_qm_dqpurge, NULL);
++	/*
++	 * We have to release group/project dquot hint(s) from the user dquot
++	 * at first if they are there, otherwise we would run into an infinite
++	 * loop while walking through radix tree to purge other type of dquots
++	 * since their refcount is not zero if the user dquot refers to them
++	 * as hint.
++	 *
++	 * Call the special xfs_qm_dqpurge_hints() will end up go through the
++	 * general xfs_qm_dqpurge() against user dquot cache if requested.
++	 */
++	xfs_qm_dquot_walk(mp, XFS_DQ_USER, xfs_qm_dqpurge_hints, &flags);
++
+ 	if (flags & XFS_QMOPT_GQUOTA)
+ 		xfs_qm_dquot_walk(mp, XFS_DQ_GROUP, xfs_qm_dqpurge, NULL);
+ 	if (flags & XFS_QMOPT_PQUOTA)
 
 
