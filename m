@@ -1,67 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824AbaAFOte (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 09:49:34 -0500
-Received: from mga09.intel.com ([134.134.136.24]:60375 "EHLO mga09.intel.com"
+	id S1754899AbaAFOuv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 09:50:51 -0500
+Received: from mga11.intel.com ([192.55.52.93]:34022 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751057AbaAFOtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 09:49:32 -0500
+	id S1751580AbaAFOut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 09:50:49 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,613,1384329600"; 
-   d="scan'208";a="434515943"
-Message-ID: <1389019761.5853.18.camel@rzhang1-mobl4>
-Subject: Re: [PATCH 1/1] thermal: remove const flag from .ops of imx thermal
-From: Zhang Rui <rui.zhang@intel.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Date: Mon, 06 Jan 2014 22:49:21 +0800
-In-Reply-To: <1389012874-13871-1-git-send-email-eduardo.valentin@ti.com>
-References: <1389012874-13871-1-git-send-email-eduardo.valentin@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+   d="scan'208";a="460755713"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: lenb@kernel.org, rjw@rjwysocki.net
+Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fcr@adinet.com.uy, l@dorileo.org,
+        dmitry.torokhov@gmail.com, "3.8+" <stable@vger.kernel.org>
+Subject: [PATCH V2] ACPI/Battery: Add a _BIX quirk for NEC LZ750/LS
+Date: Mon,  6 Jan 2014 22:50:37 +0800
+Message-Id: <1389019837-13619-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-06 at 08:54 -0400, Eduardo Valentin wrote:
-> As per previous changes on thermal framework API,
-> registering a new thermal zone does not require
-> a const thermal zone ops.
-> 
-> Thus, this patch removes the flag from imx thermal zone ops.
-> 
-> Cc: Zhang Rui <rui.zhang@intel.com>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: linux-pm@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: devicetree@vger.kernel.org
-> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+The aml method _BIX of NEC LZ750/LS returns a broken package which
+skip the first member "Revision" according ACPI 5.0 spec Table 10-234.
 
-applied.
+This patch is to add a quirk for this machine to skip member "Revision"
+during parsing _BIX returned package.
 
-thanks,
-rui
-> ---
->  drivers/thermal/imx_thermal.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/thermal/imx_thermal.c b/drivers/thermal/imx_thermal.c
-> index 77a962f..43d2f77 100644
-> --- a/drivers/thermal/imx_thermal.c
-> +++ b/drivers/thermal/imx_thermal.c
-> @@ -284,7 +284,7 @@ static int imx_unbind(struct thermal_zone_device *tz,
->  	return 0;
->  }
->  
-> -static const struct thermal_zone_device_ops imx_tz_ops = {
-> +static struct thermal_zone_device_ops imx_tz_ops = {
->  	.bind = imx_bind,
->  	.unbind = imx_unbind,
->  	.get_temp = imx_get_temp,
+Reported-and-tested-by: Francisco Castro <fcr@adinet.com.uy>
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=67351
+Cc: 3.8+ <stable@vger.kernel.org>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+---
+Change since v1:
+	Remove battery_bix_package_quirk() function and set
+battery_bix_broken_package flag according the returned value
+of dmi_check_system().
 
+ drivers/acpi/battery.c | 22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+index e90ef8b..d21cc1a 100644
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -61,6 +61,7 @@ MODULE_AUTHOR("Alexey Starikovskiy <astarikovskiy@suse.de>");
+ MODULE_DESCRIPTION("ACPI Battery Driver");
+ MODULE_LICENSE("GPL");
+ 
++static int battery_bix_broken_package;
+ static unsigned int cache_time = 1000;
+ module_param(cache_time, uint, 0644);
+ MODULE_PARM_DESC(cache_time, "cache time in milliseconds");
+@@ -415,7 +416,12 @@ static int acpi_battery_get_info(struct acpi_battery *battery)
+ 		ACPI_EXCEPTION((AE_INFO, status, "Evaluating %s", name));
+ 		return -ENODEV;
+ 	}
+-	if (test_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags))
++
++	if (battery_bix_broken_package)
++		result = extract_package(battery, buffer.pointer,
++				extended_info_offsets + 1,
++				ARRAY_SIZE(extended_info_offsets) - 1);
++	else if (test_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags))
+ 		result = extract_package(battery, buffer.pointer,
+ 				extended_info_offsets,
+ 				ARRAY_SIZE(extended_info_offsets));
+@@ -753,6 +759,17 @@ static int battery_notify(struct notifier_block *nb,
+ 	return 0;
+ }
+ 
++static struct dmi_system_id bat_dmi_table[] = {
++	{
++	.ident = "NEC LZ750/LS",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "NEC"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "PC-LZ750LS"),
++		},
++	},
++	{},
++};
++
+ static int acpi_battery_add(struct acpi_device *device)
+ {
+ 	int result = 0;
+@@ -845,6 +862,9 @@ static void __init acpi_battery_init_async(void *unused, async_cookie_t cookie)
+ {
+ 	if (acpi_disabled)
+ 		return;
++
++	if (dmi_check_system(bat_dmi_table))
++		battery_bix_broken_package = 1;
+ 	acpi_bus_register_driver(&acpi_battery_driver);
+ }
+ 
+-- 
+1.8.2.1
 
