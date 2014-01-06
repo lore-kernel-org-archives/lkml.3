@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663AbaAFKOu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 05:14:50 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:35541 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752776AbaAFKOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 05:14:48 -0500
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, jack@suse.cz,
-        Linus <torvalds@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Subject: [RFC PATCH V3] mm readahead: Fix the readahead fail in case of empty numa node
-Date: Mon,  6 Jan 2014 15:51:55 +0530
-Message-Id: <1389003715-29733-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.7
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14010610-0320-0000-0000-0000021BFAF7
+	id S1753715AbaAFKSO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 05:18:14 -0500
+Received: from s3.sipsolutions.net ([144.76.43.152]:42173 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752491AbaAFKSM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 05:18:12 -0500
+Message-ID: <1389003467.5891.5.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH 4/11]  use ether_addr_equal_64bits
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: Ben Greear <greearb@candelatech.com>, Joe Perches <joe@perches.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        kernel-janitors@vger.kernel.org,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 06 Jan 2014 11:17:47 +0100
+In-Reply-To: <alpine.DEB.2.10.1401061007160.2079@hadrien>
+References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>
+	   <1388427307-8691-5-git-send-email-Julia.Lawall@lip6.fr>
+	   <1388429761.4410.1.camel@jlt4.sipsolutions.net>
+	   <alpine.DEB.2.02.1312302057420.2209@localhost6.localdomain6>
+	   <1388438724.4573.2.camel@jlt4.sipsolutions.net>
+	   <20131230215701.GA4938@khazad-dum.debian.net>
+	   <1388445188.18164.0.camel@jlt4.sipsolutions.net>
+	  <1388445422.26796.38.camel@joe-AO722>
+	  <alpine.DEB.2.02.1312310726540.1930@localhost6.localdomain6>
+	  <52C2E8BA.6000800@candelatech.com>
+	  <alpine.DEB.2.10.1312311704320.2074@hadrien>
+	  <52C2F056.1020005@candelatech.com>
+	  <alpine.DEB.2.10.1312311732080.2074@hadrien>
+	 <1388999147.5891.2.camel@jlt4.sipsolutions.net>
+	 <alpine.DEB.2.10.1401061007160.2079@hadrien>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, max_sane_readahead returns zero on the cpu with empty numa node,
-fix this by checking for potential empty numa node case during calculation.
-We also limit the number of readahead pages to 4k.
+On Mon, 2014-01-06 at 10:09 +0100, Julia Lawall wrote:
 
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
----
-The current patch limits the readahead into 4k pages (16MB was suggested by Linus).
-and also handles the case of memoryless cpu issuing readahead failures.
-We still do not consider [fm]advise() specific calculations here.
-I have dropped the iterating over numa node to calculate free page idea.
-I do not have much idea whether there is any impact on big streaming apps..
-Comments/suggestions ?
+> > BUILD_BUG_ON(sizeof(struct foo) - offsetof(struct foo, addr) < 8);
+> >
+> > with the user(s?) and that should catch the scenario I was worrying
+> > about?
+> 
+> OK, thanks.  That is what I had in mind.  But I was hoping to be able to
+> put it with the structure.  
 
- mm/readahead.c | 15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+Right - you might be able to do that with BUILD_BUG_ON_ZERO() as you
+pointed out, I haven't looked at these macros in a while.
 
-diff --git a/mm/readahead.c b/mm/readahead.c
-index 7cdbb44..be4d205 100644
---- a/mm/readahead.c
-+++ b/mm/readahead.c
-@@ -237,14 +237,25 @@ int force_page_cache_readahead(struct address_space *mapping, struct file *filp,
- 	return ret;
- }
- 
-+#define MAX_REMOTE_READAHEAD   4096UL
- /*
-  * Given a desired number of PAGE_CACHE_SIZE readahead pages, return a
-  * sensible upper limit.
-  */
- unsigned long max_sane_readahead(unsigned long nr)
- {
--	return min(nr, (node_page_state(numa_node_id(), NR_INACTIVE_FILE)
--		+ node_page_state(numa_node_id(), NR_FREE_PAGES)) / 2);
-+	unsigned long local_free_page;
-+	unsigned long sane_nr = min(nr, MAX_REMOTE_READAHEAD);
-+
-+	local_free_page = node_page_state(numa_node_id(), NR_INACTIVE_FILE)
-+			  + node_page_state(numa_node_id(), NR_FREE_PAGES);
-+
-+	/*
-+	 * Readahead onto remote memory is better than no readahead when local
-+	 * numa node does not have memory. We sanitize readahead size depending
-+	 * on free memory in the local node but limiting to 4k pages.
-+	 */
-+	return local_free_page ? min(sane_nr, local_free_page / 2) : sane_nr;
- }
- 
- /*
--- 
-1.7.11.7
+> Perhaps there is a way to make a macro that
+> expands to a dummy function that contains the BUILD_BUG_ON?  But I guess
+> that would waste space?
+> 
+> I think that 8 should be 16?
+
+No, that should be ETH_ALEN+2 really, I guess - it's not taking into
+account the size of the address member itself at all.
+
+johannes
+
 
