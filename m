@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756367AbaAGAOV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 19:14:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47348 "EHLO
+	id S1756612AbaAFWiH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:38:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47314 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756623AbaAFWiI (ORCPT
+	with ESMTP id S1755253AbaAFWiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:08 -0500
+	Mon, 6 Jan 2014 17:38:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 018/144] ALSA: hda - Add enable_msi=0 workaround for four HP machines
-Date: Mon,  6 Jan 2014 14:36:19 -0800
-Message-Id: <20140106223745.849700524@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.12 001/144] USB: serial: fix race in generic write
+Date: Mon,  6 Jan 2014 14:36:02 -0800
+Message-Id: <20140106223745.371471131@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,40 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 693e0cb052c607e2d41edf9e9f1fa99ff8c266c1 upstream.
+commit 6f6485463aada1ec6a0f3db6a03eb8e393d6bb55 upstream.
 
-While enabling these machines, we found we would sometimes lose an
-interrupt if we change hardware volume during playback, and that
-disabling msi fixed this issue. (Losing the interrupt caused underruns
-and crackling audio, as the one second timeout is usually bigger than
-the period size.)
+Fix race in generic write implementation, which could lead to
+temporarily degraded throughput.
 
-The machines were all machines from HP, running AMD Hudson controller,
-and Realtek ALC282 codec.
+The current generic write implementation introduced by commit
+27c7acf22047 ("USB: serial: reimplement generic fifo-based writes") has
+always had this bug, although it's fairly hard to trigger and the
+consequences are not likely to be noticed.
 
-BugLink: https://bugs.launchpad.net/bugs/1260225
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Specifically, a write() on one CPU while the completion handler is
+running on another could result in only one of the two write urbs being
+utilised to empty the remainder of the write fifo (unless there is a
+second write() that doesn't race during that time).
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_intel.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/serial/generic.c |    9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -3430,6 +3430,10 @@ static void check_probe_mask(struct azx
-  * white/black-list for enable_msi
-  */
- static struct snd_pci_quirk msi_black_list[] = {
-+	SND_PCI_QUIRK(0x103c, 0x2191, "HP", 0), /* AMD Hudson */
-+	SND_PCI_QUIRK(0x103c, 0x2192, "HP", 0), /* AMD Hudson */
-+	SND_PCI_QUIRK(0x103c, 0x21f7, "HP", 0), /* AMD Hudson */
-+	SND_PCI_QUIRK(0x103c, 0x21fa, "HP", 0), /* AMD Hudson */
- 	SND_PCI_QUIRK(0x1043, 0x81f2, "ASUS", 0), /* Athlon64 X2 + nvidia */
- 	SND_PCI_QUIRK(0x1043, 0x81f6, "ASUS", 0), /* nvidia */
- 	SND_PCI_QUIRK(0x1043, 0x822d, "ASUS", 0), /* Athlon64 X2 + nvidia MCP55 */
+--- a/drivers/usb/serial/generic.c
++++ b/drivers/usb/serial/generic.c
+@@ -176,14 +176,7 @@ retry:
+ 		return result;
+ 	}
+ 
+-	/* Try sending off another urb, unless in irq context (in which case
+-	 * there will be no free urb). */
+-	if (!in_irq())
+-		goto retry;
+-
+-	clear_bit_unlock(USB_SERIAL_WRITE_BUSY, &port->flags);
+-
+-	return 0;
++	goto retry;	/* try sending off another urb */
+ }
+ 
+ /**
 
 
