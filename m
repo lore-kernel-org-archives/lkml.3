@@ -1,126 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755867AbaAFQsB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 11:48:01 -0500
-Received: from mga09.intel.com ([134.134.136.24]:47727 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753592AbaAFQr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 11:47:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,613,1384329600"; 
-   d="scan'208";a="454332619"
-From: "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "Ingo Molnar" <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Li Zefan <lizefan@huawei.com>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] x86: Add Cache QoS Monitoring (CQM) support
-Thread-Topic: [PATCH 0/4] x86: Add Cache QoS Monitoring (CQM) support
-Thread-Index: AQHPCMNUDB9LRbk7GE+jzVKI+L/oYZp1Q6cAgABthYCAAAJHAIAAbYMAgAH1FwCAAFi3gIAAAjYAgAABqYA=
-Date: Mon, 6 Jan 2014 16:47:57 +0000
-Message-ID: <1389026867.32504.16.camel@ppwaskie-mobl.amr.corp.intel.com>
-References: <1388781285-18067-1-git-send-email-peter.p.waskiewicz.jr@intel.com>
-	 <20140104161050.GA24306@htj.dyndns.org>
-	 <1388875369.9761.25.camel@ppwaskie-mobl.amr.corp.intel.com>
-	 <20140104225058.GC24306@htj.dyndns.org>
-	 <1388899376.9761.45.camel@ppwaskie-mobl.amr.corp.intel.com>
-	 <20140106111624.GB5623@twins.programming.kicks-ass.net>
-	 <1389026035.32504.3.camel@ppwaskie-mobl.amr.corp.intel.com>
-	 <20140106164150.GQ31570@twins.programming.kicks-ass.net>
-In-Reply-To: <20140106164150.GQ31570@twins.programming.kicks-ass.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.15.231]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <4E3A1884C0FEAD4E9927FF129C94CA01@intel.com>
+	id S1755892AbaAFQsT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 11:48:19 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:51565 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754899AbaAFQsQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 11:48:16 -0500
+Date: Mon, 6 Jan 2014 22:18:10 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@redhat.com>,
+        Ville =?iso-8859-1?Q?Syrj=E4l=E4?= 
+	<ville.syrjala@linux.intel.com>,
+        Rob Clark <rob@ti.com>, Jakob Bornecrantz <jakob@vmware.com>,
+        dri-devel@lists.freedesktop.org, josh@joshtriplett.org
+Subject: [PATCH 82/85] drivers: gpu: Mark functions as static in vmwgfx_kms.c
+Message-ID: <477dcfde0b9247c91030dedcbf71af7dafdb7bf4.1389018325.git.rashika.kheria@gmail.com>
+References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s06Gm8nE008031
 
-On Mon, 2014-01-06 at 17:41 +0100, Peter Zijlstra wrote:
-> On Mon, Jan 06, 2014 at 04:34:04PM +0000, Waskiewicz Jr, Peter P wrote:
-> > On Mon, 2014-01-06 at 12:16 +0100, Peter Zijlstra wrote:
-> > > On Sun, Jan 05, 2014 at 05:23:07AM +0000, Waskiewicz Jr, Peter P wrote:
-> > > > The CPU side is easy and clean.  When something in the software wants to
-> > > > monitor when a particular task is scheduled and started, write whatever
-> > > > RMID that task is assigned to (through some mechanism) to the proper MSR
-> > > > in the CPU.  When that task is swapped out, clear the MSR to stop
-> > > > monitoring of that RMID.  When that RMID's statistics are requested by
-> > > > the software (through some mechanism), then the CPU's MSRs are written
-> > > > with the RMID in question, and the value is read of what has been
-> > > > collected so far.  In my case, I decided to use a cgroup for this
-> > > > "mechanism" since so much of the grouping and task/group association
-> > > > already exists and doesn't need to be rebuilt or re-invented.
-> > > 
-> > > This still doesn't explain why you can't use perf-cgroup for this.
-> > 
-> > I'm not completely familiar with perf-cgroup, so I looked for some
-> > documentation for it to better understand it.  Are you referring to perf
-> > -G to monitor an existing cgroup/all cgroups?  Or something else?  If
-> > it's the former, I'm not following you how this would fit.
-> 
-> All the bits under CONFIG_CGROUP_PERF, I've no idea how userspace looks.
+Mark functions as static because they are not used outside the file
+drm/vmwgfx/vmwgfx_kms.c.
 
-Ah ok.  Yes, the userspace side of perf really doesn't fit controlling
-the CQM bits at all from what I see.
+This eliminates the following warnings in drm/vmwgfx/vmwgfx_kms.c:
+drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:43:6: warning: no previous prototype for â€˜vmw_clip_cliprectsâ€™ [-Wmissing-prototypes]
+drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:426:6: warning: no previous prototype for â€˜vmw_framebuffer_surface_destroyâ€™ [-Wmissing-prototypes]
+drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:592:5: warning: no previous prototype for â€˜vmw_framebuffer_surface_dirtyâ€™ [-Wmissing-prototypes]
+drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:757:6: warning: no previous prototype for â€˜vmw_framebuffer_dmabuf_destroyâ€™ [-Wmissing-prototypes]
+drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:943:5: warning: no previous prototype for â€˜vmw_framebuffer_dmabuf_dirtyâ€™ [-Wmissing-prototypes]
+drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:1666:5: warning: no previous prototype for â€˜vmw_du_update_layoutâ€™ [-Wmissing-prototypes]
 
-> > > > > In general, I'm quite strongly opposed against using cgroup as
-> > > > > arbitrary grouping mechanism for anything other than resource control,
-> > > > > especially given that we're moving away from multiple hierarchies.
-> > > > 
-> > > > Just to clarify then, would the mechanism in the cpuacct cgroup to
-> > > > create a group off the root subsystem be considered multi-hierarchical?
-> > > > If not, then the intent for this new cacheqos subsystem is to be
-> > > > identical in that regard to cpuacct in the behavior.
-> > > > 
-> > > > This is a resource controller, it just happens to be tied to a hardware
-> > > > resource instead of an OS resource.
-> > > 
-> > > No, cpuacct and perf-cgroup aren't actually controllers at all. They're
-> > > resource monitors at best. Same with your Cache QoS Monitor, it doesn't
-> > > control anything.
-> > 
-> > I may be using controller in a different way than you are.  Yes, the
-> > Cache QoS Monitor is monitoring cache data.  But it is also controlling
-> > the allocation and deallocation of RMIDs to tasks/task groups as
-> > monitoring is enabled and disabled for those groups.  That's why I
-> > called it a controller.  If that's not accurate, I apologize.
-> 
-> Yeah that's not accurate, nor desired I think, because you get into
-> horrible problems with hierarchies, do child groups belong to your RMID
-> or not?
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ drivers/gpu/drm/vmwgfx/vmwgfx_kms.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-I'd rather not support a child group of a child group.  Only groups off
-the root, and each group would be assigned an RMID when it's activated
-for monitoring.
-
-> As is I don't really see a good use for RMIDs and I would simply not use
-> them.
-
-If you want to use CQM in the hardware, then the RMID is how you get the
-cache usage data from the CPU.  If you don't want to use CQM, then you
-can ignore RMIDs.
-
-One of the best use cases for using RMIDs is in virtualization.  A VM
-may be a heavy cache user, or a light cache user.  Tracing different VMs
-on different RMIDs can allow an admin to identify which VM may be
-causing high levels of eviction, and either migrate it to another host,
-or move other tasks/VMs to other hosts.  Without CQM, it's much harder
-to find which process is eating the cache up.
-
-Cheers,
--PJ
-
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
+index 03f1c20..6af4816 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
+@@ -40,7 +40,7 @@ struct vmw_clip_rect {
+  * Clip @num_rects number of @rects against @clip storing the
+  * results in @out_rects and the number of passed rects in @out_num.
+  */
+-void vmw_clip_cliprects(struct drm_clip_rect *rects,
++static void vmw_clip_cliprects(struct drm_clip_rect *rects,
+ 			int num_rects,
+ 			struct vmw_clip_rect clip,
+ 			SVGASignedRect *out_rects,
+@@ -423,7 +423,7 @@ struct vmw_framebuffer_surface {
+ 	struct drm_master *master;
+ };
+ 
+-void vmw_framebuffer_surface_destroy(struct drm_framebuffer *framebuffer)
++static void vmw_framebuffer_surface_destroy(struct drm_framebuffer *framebuffer)
+ {
+ 	struct vmw_framebuffer_surface *vfbs =
+ 		vmw_framebuffer_to_vfbs(framebuffer);
+@@ -589,7 +589,7 @@ out_free_tmp:
+ 	return ret;
+ }
+ 
+-int vmw_framebuffer_surface_dirty(struct drm_framebuffer *framebuffer,
++static int vmw_framebuffer_surface_dirty(struct drm_framebuffer *framebuffer,
+ 				  struct drm_file *file_priv,
+ 				  unsigned flags, unsigned color,
+ 				  struct drm_clip_rect *clips,
+@@ -754,7 +754,7 @@ struct vmw_framebuffer_dmabuf {
+ 	struct vmw_dma_buffer *buffer;
+ };
+ 
+-void vmw_framebuffer_dmabuf_destroy(struct drm_framebuffer *framebuffer)
++static void vmw_framebuffer_dmabuf_destroy(struct drm_framebuffer *framebuffer)
+ {
+ 	struct vmw_framebuffer_dmabuf *vfbd =
+ 		vmw_framebuffer_to_vfbd(framebuffer);
+@@ -940,7 +940,7 @@ static int do_dmabuf_dirty_sou(struct drm_file *file_priv,
+ 	return ret;
+ }
+ 
+-int vmw_framebuffer_dmabuf_dirty(struct drm_framebuffer *framebuffer,
++static int vmw_framebuffer_dmabuf_dirty(struct drm_framebuffer *framebuffer,
+ 				 struct drm_file *file_priv,
+ 				 unsigned flags, unsigned color,
+ 				 struct drm_clip_rect *clips,
+@@ -1663,7 +1663,7 @@ void vmw_disable_vblank(struct drm_device *dev, int crtc)
+  * Small shared kms functions.
+  */
+ 
+-int vmw_du_update_layout(struct vmw_private *dev_priv, unsigned num,
++static int vmw_du_update_layout(struct vmw_private *dev_priv, unsigned num,
+ 			 struct drm_vmw_rect *rects)
+ {
+ 	struct drm_device *dev = dev_priv->dev;
 -- 
-PJ Waskiewicz				Open Source Technology Center
-peter.p.waskiewicz.jr@intel.com		Intel Corp.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+1.7.9.5
+
