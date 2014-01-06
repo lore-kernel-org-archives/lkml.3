@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562AbaAFWKq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:10:46 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:53894 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756530AbaAFWKl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:10:41 -0500
-Date: Mon, 6 Jan 2014 14:10:36 -0800
-From: Kent Overstreet <kmo@daterainc.com>
-To: Muthu Kumar <muthu.lkml@gmail.com>, Chris Mason <clm@fb.com>
-Cc: fengguang.wu@intel.com, Jens Axboe <axboe@kernel.dk>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@linux.intel.com
-Subject: Re: [block:for-3.14/core] kernel BUG at fs/bio.c:1748
-Message-ID: <20140106221036.GE9037@kmo>
-References: <20140102053101.GA29352@localhost>
- <CAFR8uee-WTy6cj8bB4aMuGP1B0sZkc70sq1Drg7uhHS49EqHcg@mail.gmail.com>
+	id S1756494AbaAFWKh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:10:37 -0500
+Received: from blu0-omc1-s33.blu0.hotmail.com ([65.55.116.44]:32509 "EHLO
+	blu0-omc1-s33.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756042AbaAFWKf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 17:10:35 -0500
+X-TMN: [GxtLce+RhdFuY/o9SqpWxqF5DVS7RIWA]
+X-Originating-Email: [lgxue@hotmail.com]
+Message-ID: <BLU172-W27FA5477DF3AA1C93A75C0ACB70@phx.gbl>
+From: Joe Xue <lgxue@hotmail.com>
+To: "cooloney@gmail.com" <cooloney@gmail.com>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "rob@landley.net" <rob@landley.net>,
+        "milo.kim@ti.com" <milo.kim@ti.com>, "pavel@ucw.cz" <pavel@ucw.cz>
+CC: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: RE: [PATCH v3 1/1] leds: Add LED pattern trigger
+Date: Mon, 6 Jan 2014 17:10:34 -0500
+Importance: Normal
+In-Reply-To: <1389044834-22870-1-git-send-email-lgxue@hotmail.com>
+References: <1388362275-1618-1-git-send-email-lgxue@hotmail.com>,<1389044834-22870-1-git-send-email-lgxue@hotmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFR8uee-WTy6cj8bB4aMuGP1B0sZkc70sq1Drg7uhHS49EqHcg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 06 Jan 2014 22:10:34.0623 (UTC) FILETIME=[1F2838F0:01CF0B2C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris, the patch below seems to be incorrect - with it we get hangs, so
-bi_remaining (probably) isn't getting decremented when it should be. You sent
-Jens fixes for btrfs which I somehow lost when I rebased, do you remember how
-this is supposed to work? Looking at the code I'm not quite sure what's going on
-here.
+> From: Joe Xue <lgxue@hotmail.com>
+>
+> The LED pattern trigger allows LEDs blink in user defined pattern.
+>
+> v2: Change the pattern memory from fixed static to malloc
+> Change the timer schedule way to save cpu time
+> Add the mutex to protect the pattern operation
+>
+> v3: Tiny fix, add the missed parameter in example of document
+>
+> new file: Documentation/leds/ledtrig-pattern.txt
+> modified: drivers/leds/trigger/Kconfig
+> modified: drivers/leds/trigger/Makefile
+> new file: drivers/leds/trigger/ledtrig-pattern.c
+>
+> Signed-off-by: Joe Xue <lgxue@hotmail.com>
+> ---
 
-On Fri, Jan 03, 2014 at 11:51:31AM -0800, Muthu Kumar wrote:
-> Looks like Kent missed the btrfs endio in the original commit. How
-> about this patch:
-> 
-> ---------
-> 
-> In btrfs_end_bio, call bio_endio_nodec on the restored bio so the
-> bi_remaining is accounted for correctly.
-> 
-> Reported-by: fengguang.wu@intel.com
-> Cc: Kent Overstreet <kmo@daterainc.com>
-> CC: Jens Axboe <axboe@kernel.dk>
-> Signed-off-by: Muthukumar Ratty <muthur@gmail.com>
-> --------
-> 
->  fs/btrfs/volumes.c |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-> index f2130de..edfed52 100644
-> --- a/fs/btrfs/volumes.c
-> +++ b/fs/btrfs/volumes.c
-> @@ -5316,7 +5316,11 @@ static void btrfs_end_bio(struct bio *bio, int err)
->                 }
->                 kfree(bbio);
-> 
-> -               bio_endio(bio, err);
-> +                /*
-> +                 * Call endio_nodec on the restored bio so the bi_remaining is
-> +                 * accounted for correctly
-> +                 */
-> +               bio_endio_nodec(bio, err);
->         } else if (!is_orig_bio) {
->                 bio_put(bio);
->         }
+Forgot to add suggested-by line:
+
+Suggested-by: Pavel Machek <pavel@ucw.cz>
+
+I would like to give too much credit to this buddy.
+
+Joe 		 	   		  
