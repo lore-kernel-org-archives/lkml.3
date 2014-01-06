@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932337AbaAFWjL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:39:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47615 "EHLO
+	id S932443AbaAFWj1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:39:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47685 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932192AbaAFWjI (ORCPT
+	with ESMTP id S932387AbaAFWjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:39:08 -0500
+	Mon, 6 Jan 2014 17:39:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.12 080/144] drm/radeon: 0x9649 is SUMO2 not SUMO
-Date: Mon,  6 Jan 2014 14:37:21 -0800
-Message-Id: <20140106223747.651398341@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.12 093/144] powerpc: Align p_end
+Date: Mon,  6 Jan 2014 14:37:34 -0800
+Message-Id: <20140106223748.028379072@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -28,33 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit d00adcc8ae9e22eca9d8af5f66c59ad9a74c90ec upstream.
+commit 286e4f90a72c0b0621dde0294af6ed4b0baddabb upstream.
 
-Fixes rendering corruption due to incorrect
-gfx configuration.
+p_end is an 8 byte value embedded in the text section. This means it
+is only 4 byte aligned when it should be 8 byte aligned. Fix this
+by adding an explicit alignment.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=63599
+This fixes an issue where POWER7 little endian builds with
+CONFIG_RELOCATABLE=y fail to boot.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/drm/drm_pciids.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/kernel/head_64.S |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -588,7 +588,7 @@
- 	{0x1002, 0x9645, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO2|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x9647, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
- 	{0x1002, 0x9648, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
--	{0x1002, 0x9649, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
-+	{0x1002, 0x9649, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO2|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
- 	{0x1002, 0x964a, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x964b, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x964c, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+--- a/arch/powerpc/kernel/head_64.S
++++ b/arch/powerpc/kernel/head_64.S
+@@ -467,6 +467,7 @@ _STATIC(__after_prom_start)
+ 	mtctr	r8
+ 	bctr
+ 
++.balign 8
+ p_end:	.llong	_end - _stext
+ 
+ 4:	/* Now copy the rest of the kernel up to _end */
 
 
