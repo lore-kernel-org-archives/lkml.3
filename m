@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733AbaAFLfJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 06:35:09 -0500
-Received: from mail-we0-f176.google.com ([74.125.82.176]:44061 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754697AbaAFLfF (ORCPT
+	id S1754773AbaAFLf2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 06:35:28 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:64956 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754177AbaAFLfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 06:35:05 -0500
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-To: mingo@redhat.com, peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        preeti.lkml@gmail.com
-Subject: [PATCH V2 7/8] sched: pass struct rq to nohz_idle_balance function
-Date: Mon,  6 Jan 2014 12:34:44 +0100
-Message-Id: <1389008085-9069-8-git-send-email-daniel.lezcano@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1389008085-9069-1-git-send-email-daniel.lezcano@linaro.org>
-References: <1389008085-9069-1-git-send-email-daniel.lezcano@linaro.org>
+	Mon, 6 Jan 2014 06:35:25 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: rjw@sisk.pl, lenb@kernel.org, toshi.kani@hp.com,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] acpi: Check if @id is NULL in acpi_table_parse()
+Date: Mon, 06 Jan 2014 12:49:11 +0100
+Message-ID: <1613518.D6bOWsShm6@vostro.rjw.lan>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <1388997834-28028-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1388997834-28028-1-git-send-email-tangchen@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cpu information is stored in the struct rq. Pass the struct rq to
-nohz_idle_balance, so all the functions called in run_rebalance_domains have
-the same parameters and the 'this_cpu' variable becomes pointless.
+On Monday, January 06, 2014 04:43:54 PM Tang Chen wrote:
+> strncmp() does not check if the params are NULL. In acpi_table_parse(),
+> if @id is NULL, the kernel will panic.
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Acked-by: Toshi Kani <toshi.kani@hp.com>
 
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
----
- kernel/sched/fair.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+Queued up for 3.14 (but please use the e-mail address from MAINTAINERS next
+time).  Thanks!
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 0fbd8d0..59c57e7 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -6733,9 +6733,9 @@ out:
-  * In CONFIG_NO_HZ_COMMON case, the idle balance kickee will do the
-  * rebalancing for all the cpus for whom scheduler ticks are stopped.
-  */
--static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle)
-+static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle)
- {
--	struct rq *this_rq = cpu_rq(this_cpu);
-+	int this_cpu = this_rq->cpu;
- 	struct rq *rq;
- 	int balance_cpu;
- 
-@@ -6846,8 +6846,7 @@ static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle) { }
-  */
- static void run_rebalance_domains(struct softirq_action *h)
- {
--	int this_cpu = smp_processor_id();
--	struct rq *this_rq = cpu_rq(this_cpu);
-+	struct rq *this_rq = this_rq();
- 	enum cpu_idle_type idle = this_rq->idle_balance ?
- 						CPU_IDLE : CPU_NOT_IDLE;
- 
-@@ -6858,7 +6857,7 @@ static void run_rebalance_domains(struct softirq_action *h)
- 	 * balancing on behalf of the other idle cpus whose ticks are
- 	 * stopped.
- 	 */
--	nohz_idle_balance(this_cpu, idle);
-+	nohz_idle_balance(this_rq, idle);
- }
- 
- static inline int on_null_domain(struct rq *rq)
+> ---
+>  drivers/acpi/tables.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+> index d67a1fe..5a5263b 100644
+> --- a/drivers/acpi/tables.c
+> +++ b/drivers/acpi/tables.c
+> @@ -293,7 +293,7 @@ int __init acpi_table_parse(char *id, acpi_tbl_table_handler handler)
+>  	if (acpi_disabled)
+>  		return -ENODEV;
+>  
+> -	if (!handler)
+> +	if (!id || !handler)
+>  		return -EINVAL;
+>  
+>  	if (strncmp(id, ACPI_SIG_MADT, 4) == 0)
+> 
+
 -- 
-1.7.9.5
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
