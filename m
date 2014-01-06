@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933511AbaAFXQd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:16:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48367 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755796AbaAFWlY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:24 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Michal Hocko <mhocko@suse.cz>, Glauber Costa <glommer@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 083/129] memcg: fix memcg_size() calculation
-Date: Mon,  6 Jan 2014 14:38:32 -0800
-Message-Id: <20140106223901.985021376@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
-References: <20140106223859.589799655@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	id S933492AbaAFXQa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:16:30 -0500
+Received: from mga02.intel.com ([134.134.136.20]:14453 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933197AbaAFXQ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 18:16:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,615,1384329600"; 
+   d="scan'208";a="434756185"
+Subject: [PATCH] checkpatch: Only flag FSF address, not gnu.org URL
+To: joe@perches.com, gregkh@linuxfoundation.org, josh@joshtriplett.org
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Mon, 06 Jan 2014 15:16:24 -0800
+Message-ID: <20140106231534.23578.11475.stgit@ahduyck-cp2.jf.intel.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+This change restricts the check for the for the FSF address in the GPL
+copyright statement so that it only flags the address, not the references to
+the gnu.org/licenses URL which appear in numerous drivers.
 
-------------------
+So for example this statement will still return an error:
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-From: Vladimir Davydov <vdavydov@parallels.com>
+However, this statement will not return an error after this patch:
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-commit 695c60830764945cf61a2cc623eb1392d137223e upstream.
-
-The mem_cgroup structure contains nr_node_ids pointers to
-mem_cgroup_per_node objects, not the objects themselves.
-
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Cc: Glauber Costa <glommer@openvz.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
 ---
- mm/memcontrol.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ scripts/checkpatch.pl |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -379,7 +379,7 @@ struct mem_cgroup {
- static size_t memcg_size(void)
- {
- 	return sizeof(struct mem_cgroup) +
--		nr_node_ids * sizeof(struct mem_cgroup_per_node);
-+		nr_node_ids * sizeof(struct mem_cgroup_per_node *);
- }
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 9c98100..ba3c9c3 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1963,8 +1963,7 @@ sub process {
+ 		}
  
- /* internal only representation about the status of kmem accounting. */
-
+ # Check for FSF mailing addresses.
+-		if ($rawline =~ /You should have received a copy/ ||
+-		    $rawline =~ /write to the Free Software/ ||
++		if ($rawline =~ /write to the Free Software/ ||
+ 		    $rawline =~ /59 Temple Place/ ||
+ 		    $rawline =~ /51 Franklin Street/) {
+ 			my $herevet = "$here\n" . cat_vet($rawline) . "\n";
 
