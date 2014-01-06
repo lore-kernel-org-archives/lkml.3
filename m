@@ -1,101 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933365AbaAFXK0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:10:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48441 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933057AbaAFWlj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:39 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, Sage Weil <sage@inktank.com>
-Subject: [PATCH 3.10 102/129] libceph: call r_unsafe_callback when unsafe reply is received
-Date: Mon,  6 Jan 2014 14:38:51 -0800
-Message-Id: <20140106223902.521897294@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
-References: <20140106223859.589799655@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	id S933388AbaAFXKg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:10:36 -0500
+Received: from mga09.intel.com ([134.134.136.24]:28149 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933057AbaAFXK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 18:10:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,615,1384329600"; 
+   d="scan'208";a="462559361"
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow tracing units
+References: <87zjnys0gj.fsf@ashishki-desk.ger.corp.intel.com>
+	<20131218150900.GU21999@twins.programming.kicks-ass.net>
+	<87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
+	<20131219103134.GD30183@twins.programming.kicks-ass.net>
+	<87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com>
+	<20131219112812.GY21999@twins.programming.kicks-ass.net>
+	<20131219123955.GA18186@gmail.com>
+	<87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
+	<20131219151024.GI16438@laptop.programming.kicks-ass.net>
+	<87iotw6bwx.fsf@tassilo.jf.intel.com>
+	<20140106221528.GK30183@twins.programming.kicks-ass.net>
+Date: Mon, 06 Jan 2014 15:10:28 -0800
+In-Reply-To: <20140106221528.GK30183@twins.programming.kicks-ass.net> (Peter
+	Zijlstra's message of "Mon, 6 Jan 2014 23:15:28 +0100")
+Message-ID: <8761pw6717.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Peter Zijlstra <peterz@infradead.org> writes:
 
-------------------
+Can you please clarify your position on the interleaved buffer?
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+I still can't see how it is a efficient design.
 
-commit 61c5d6bf7074ee32d014dcdf7698dc8c59eb712d upstream.
+It's generally true in scather-gather (be it software or hardware) 
+that each additional SG entry increases the cost. So to make things
+efficient you always want to minimize entries as much as possible.
 
-We can't use !req->r_sent to check if OSD request is sent for the
-first time, this is because __cancel_request() zeros req->r_sent
-when OSD map changes. Rather than adding a new variable to struct
-ceph_osd_request to indicate if it's sent for the first time, We
-can call the unsafe callback only when unsafe OSD reply is received.
-If OSD's first reply is safe, just skip calling the unsafe callback.
+>> I don't think the PT design is broken in any way, it's straight 
+>> forward and simple.
+>
+> Also, do clarify the other points I asked about. Esp. the non
+> FREEZE_ON_PMI behaviour of the PT PMI is worrying me immensely.
 
-The purpose of unsafe callback is adding unsafe request to a list,
-so that fsync(2) can wait for the safe reply. fsync(2) doesn't need
-to wait for a write(2) that hasn't returned yet. So it's OK to add
-request to the unsafe list when the first OSD reply is received.
-(ceph_sync_write() returns after receiving the first OSD reply)
+The only reason for hardware freeze is when you have a few entries (like
+with LBRs) so the interrupt entry code could overwhelm it.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+But PT is not small, it's gigantic: even with the smallest buffer you
+have many thousands of entries.
 
----
- net/ceph/osd_client.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+So you will get a few branches in the interrupt entry, but it's not a problem
+because everything you really wanted to trace is still there.
 
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -1337,10 +1337,6 @@ static void __send_request(struct ceph_o
- 
- 	ceph_msg_get(req->r_request); /* send consumes a ref */
- 
--	/* Mark the request unsafe if this is the first timet's being sent. */
--
--	if (!req->r_sent && req->r_unsafe_callback)
--		req->r_unsafe_callback(req, true);
- 	req->r_sent = req->r_osd->o_incarnation;
- 
- 	ceph_con_send(&req->r_osd->o_con, req->r_request);
-@@ -1431,8 +1427,6 @@ static void handle_osds_timeout(struct w
- 
- static void complete_request(struct ceph_osd_request *req)
- {
--	if (req->r_unsafe_callback)
--		req->r_unsafe_callback(req, false);
- 	complete_all(&req->r_safe_completion);  /* fsync waiter */
- }
- 
-@@ -1559,14 +1553,20 @@ static void handle_reply(struct ceph_osd
- 	mutex_unlock(&osdc->request_mutex);
- 
- 	if (!already_completed) {
-+		if (req->r_unsafe_callback &&
-+		    result >= 0 && !(flags & CEPH_OSD_FLAG_ONDISK))
-+			req->r_unsafe_callback(req, true);
- 		if (req->r_callback)
- 			req->r_callback(req, msg);
- 		else
- 			complete_all(&req->r_completion);
- 	}
- 
--	if (flags & CEPH_OSD_FLAG_ONDISK)
-+	if (flags & CEPH_OSD_FLAG_ONDISK) {
-+		if (req->r_unsafe_callback && already_completed)
-+			req->r_unsafe_callback(req, false);
- 		complete_request(req);
-+	}
- 
- done:
- 	dout("req=%p req->r_linger=%d\n", req, req->r_linger);
+Eventually the handler disables PT, so there's no risk of racing with
+the update or anything like that.
 
+Did I miss anything?
 
+> To me it seems very weird that PT is hooked to the same PMI as the
+> normal PMU, it really should have been a different interrupt.
+
+It's in the same STATUS register, so it's cheap to check both.
+
+It shouldn't add any new spurious problems (or at least nothing
+worse than what we already have)
+
+I understand that it would be nice to separate other NMI users
+from all of PMI, but that would be an orthogonal problem.
+
+Any other issues?
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
