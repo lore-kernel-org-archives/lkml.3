@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932128AbaAFWii (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:38:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47441 "EHLO
+	id S932150AbaAFWim (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:38:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47481 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756738AbaAFWi3 (ORCPT
+	with ESMTP id S932132AbaAFWii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:29 -0500
+	Mon, 6 Jan 2014 17:38:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Henrik Goldman <hg@x-formation.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.12 039/144] target/file: Update hw_max_sectors based on current block_size
-Date: Mon,  6 Jan 2014 14:36:40 -0800
-Message-Id: <20140106223746.441449952@linuxfoundation.org>
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3.12 047/144] ARM: OMAP2+: Fix LCD panel backlight regression for LDP legacy booting
+Date: Mon,  6 Jan 2014 14:36:48 -0800
+Message-Id: <20140106223746.695222852@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,93 +30,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Tony Lindgren <tony@atomide.com>
 
-commit 95cadace8f3959282e76ebf8b382bd0930807d2c upstream.
+commit 7e367c18c059c638bf6fb540f1decec18d64cb55 upstream.
 
-This patch allows FILEIO to update hw_max_sectors based on the current
-max_bytes_per_io.  This is required because vfs_[writev,readv]() can accept
-a maximum of 2048 iovecs per call, so the enforced hw_max_sectors really
-needs to be calculated based on block_size.
+Looks like the LCD panel on LDP has been broken quite a while, and
+recently got fixed by commit 0b2aa8bed3e1 (gpio: twl4030: Fix regression
+for twl gpio output). However, there's still an issue left where the panel
+backlight does not come on if the LCD drivers are built into the
+kernel.
 
-This addresses a >= v3.5 bug where block_size=512 was rejecting > 1M
-sized I/O requests, because FD_MAX_SECTORS was hardcoded to 2048 for
-the block_size=4096 case.
+Fix the issue by registering the DPI LCD panel only after the twl4030
+GPIO has probed.
 
-(v2: Use max_bytes_per_io instead of ->update_hw_max_sectors)
-
-Reported-by: Henrik Goldman <hg@x-formation.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+[tony@atomide.com: updated per Tomi's comments]
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_device.c |    5 +++++
- drivers/target/target_core_file.c   |    8 ++++----
- drivers/target/target_core_file.h   |    5 ++++-
- include/target/target_core_base.h   |    1 +
- 4 files changed, 14 insertions(+), 5 deletions(-)
+ arch/arm/mach-omap2/board-ldp.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -1107,6 +1107,11 @@ int se_dev_set_block_size(struct se_devi
- 	dev->dev_attrib.block_size = block_size;
- 	pr_debug("dev[%p]: SE Device block_size changed to %u\n",
- 			dev, block_size);
+--- a/arch/arm/mach-omap2/board-ldp.c
++++ b/arch/arm/mach-omap2/board-ldp.c
+@@ -243,12 +243,18 @@ static void __init ldp_display_init(void
+ 
+ static int ldp_twl_gpio_setup(struct device *dev, unsigned gpio, unsigned ngpio)
+ {
++	int res;
 +
-+	if (dev->dev_attrib.max_bytes_per_io)
-+		dev->dev_attrib.hw_max_sectors =
-+			dev->dev_attrib.max_bytes_per_io / block_size;
+ 	/* LCD enable GPIO */
+ 	ldp_lcd_pdata.enable_gpio = gpio + 7;
+ 
+ 	/* Backlight enable GPIO */
+ 	ldp_lcd_pdata.backlight_gpio = gpio + 15;
+ 
++	res = platform_device_register(&ldp_lcd_device);
++	if (res)
++		pr_err("Unable to register LCD: %d\n", res);
 +
  	return 0;
  }
  
---- a/drivers/target/target_core_file.c
-+++ b/drivers/target/target_core_file.c
-@@ -66,9 +66,8 @@ static int fd_attach_hba(struct se_hba *
- 	pr_debug("CORE_HBA[%d] - TCM FILEIO HBA Driver %s on Generic"
- 		" Target Core Stack %s\n", hba->hba_id, FD_VERSION,
- 		TARGET_CORE_MOD_VERSION);
--	pr_debug("CORE_HBA[%d] - Attached FILEIO HBA: %u to Generic"
--		" MaxSectors: %u\n",
--		hba->hba_id, fd_host->fd_host_id, FD_MAX_SECTORS);
-+	pr_debug("CORE_HBA[%d] - Attached FILEIO HBA: %u to Generic\n",
-+		hba->hba_id, fd_host->fd_host_id);
+@@ -347,7 +353,6 @@ static struct omap2_hsmmc_info mmc[] __i
  
- 	return 0;
- }
-@@ -220,7 +219,8 @@ static int fd_configure_device(struct se
- 	}
- 
- 	dev->dev_attrib.hw_block_size = fd_dev->fd_block_size;
--	dev->dev_attrib.hw_max_sectors = FD_MAX_SECTORS;
-+	dev->dev_attrib.max_bytes_per_io = FD_MAX_BYTES;
-+	dev->dev_attrib.hw_max_sectors = FD_MAX_BYTES / fd_dev->fd_block_size;
- 	dev->dev_attrib.hw_queue_depth = FD_MAX_DEVICE_QUEUE_DEPTH;
- 
- 	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) {
---- a/drivers/target/target_core_file.h
-+++ b/drivers/target/target_core_file.h
-@@ -7,7 +7,10 @@
- #define FD_DEVICE_QUEUE_DEPTH	32
- #define FD_MAX_DEVICE_QUEUE_DEPTH 128
- #define FD_BLOCKSIZE		512
--#define FD_MAX_SECTORS		2048
-+/*
-+ * Limited by the number of iovecs (2048) per vfs_[writev,readv] call
-+ */
-+#define FD_MAX_BYTES		8388608
- 
- #define RRF_EMULATE_CDB		0x01
- #define RRF_GOT_LBA		0x02
---- a/include/target/target_core_base.h
-+++ b/include/target/target_core_base.h
-@@ -624,6 +624,7 @@ struct se_dev_attrib {
- 	u32		unmap_granularity;
- 	u32		unmap_granularity_alignment;
- 	u32		max_write_same_len;
-+	u32		max_bytes_per_io;
- 	struct se_device *da_dev;
- 	struct config_group da_group;
+ static struct platform_device *ldp_devices[] __initdata = {
+ 	&ldp_gpio_keys_device,
+-	&ldp_lcd_device,
  };
+ 
+ #ifdef CONFIG_OMAP_MUX
 
 
