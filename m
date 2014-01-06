@@ -1,110 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486AbaAFQWB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 11:22:01 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:39135 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754824AbaAFQV7 (ORCPT
+	id S1755520AbaAFQWU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 11:22:20 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35078 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754824AbaAFQWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 11:21:59 -0500
-Date: Mon, 6 Jan 2014 21:51:54 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        dri-devel@lists.freedesktop.org, josh@joshtriplett.org
-Subject: [PATCH 62/85] drivers: gpu: Mark functions as static and remove
- unused function in trinity_dpm.c
-Message-ID: <25591711af682e7c6814b1ce9df76009f0fb5f8f.1389018325.git.rashika.kheria@gmail.com>
-References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
+	Mon, 6 Jan 2014 11:22:18 -0500
+Date: Mon, 6 Jan 2014 17:21:45 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, pjt@google.com,
+        Morten.Rasmussen@arm.com, cmetcalf@tilera.com, tony.luck@intel.com,
+        alex.shi@linaro.org, preeti@linux.vnet.ibm.com,
+        linaro-kernel@lists.linaro.org, rjw@sisk.pl,
+        paulmck@linux.vnet.ibm.com, corbet@lwn.net, tglx@linutronix.de,
+        len.brown@intel.com, arjan@linux.intel.com, amit.kucheria@linaro.org,
+        james.hogan@imgtec.com, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, Dietmar.Eggemann@arm.com
+Subject: Re: [RFC] sched: CPU topology try
+Message-ID: <20140106162145.GL31570@twins.programming.kicks-ass.net>
+References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
+ <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark function trinity_get_ps() and trinity_get_pi() as static because
-they are not used outside this file and remove unused function
-trinity_dpm_reset_asic() from file drm/radeon/trinity_dpm.c.
+On Wed, Dec 18, 2013 at 02:13:51PM +0100, Vincent Guittot wrote:
+> This patch applies on top of the two patches [1][2] that have been proposed by
+> Peter for creating a new way to initialize sched_domain. It includes some minor
+> compilation fixes and a trial of using this new method on ARM platform.
+> [1] https://lkml.org/lkml/2013/11/5/239
+> [2] https://lkml.org/lkml/2013/11/5/449
+> 
+> Based on the results of this tests, my feeling about this new way to init the
+> sched_domain is a bit mitigated.
 
-Also remove prototype declarations of functions trinity_get_ps() and
-trinity_get_pi() from drm/radeon/trinity_smc.c because they are not used
-in this file.
+Yay :-)
 
-This eliminates the following warnings in drm/radeon/trinity_dpm.c:
-drivers/gpu/drm/radeon/trinity_dpm.c:345:20: warning: no previous prototype for ‘trinity_get_ps’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/trinity_dpm.c:352:28: warning: no previous prototype for ‘trinity_get_pi’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/trinity_dpm.c:1262:6: warning: no previous prototype for ‘trinity_dpm_reset_asic’ [-Wmissing-prototypes]
+> We can add more levels that will describe other dependency/independency like
+> the frequency scaling dependency and as a result the final sched_domain
+> topology will have additional levels (if they have not been removed during
+> the degenerate sequence)
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- drivers/gpu/drm/radeon/trinity_dpm.c |   20 ++------------------
- drivers/gpu/drm/radeon/trinity_smc.c |    3 ---
- 2 files changed, 2 insertions(+), 21 deletions(-)
+Yeah, this 'creative' use of degenerate domains is pretty neat ;-)
 
-diff --git a/drivers/gpu/drm/radeon/trinity_dpm.c b/drivers/gpu/drm/radeon/trinity_dpm.c
-index d700698..83778b6 100644
---- a/drivers/gpu/drm/radeon/trinity_dpm.c
-+++ b/drivers/gpu/drm/radeon/trinity_dpm.c
-@@ -342,14 +342,14 @@ static void trinity_apply_state_adjust_rules(struct radeon_device *rdev,
- 					     struct radeon_ps *new_rps,
- 					     struct radeon_ps *old_rps);
- 
--struct trinity_ps *trinity_get_ps(struct radeon_ps *rps)
-+static struct trinity_ps *trinity_get_ps(struct radeon_ps *rps)
- {
- 	struct trinity_ps *ps = rps->ps_priv;
- 
- 	return ps;
- }
- 
--struct trinity_power_info *trinity_get_pi(struct radeon_device *rdev)
-+static struct trinity_power_info *trinity_get_pi(struct radeon_device *rdev)
- {
- 	struct trinity_power_info *pi = rdev->pm.dpm.priv;
- 
-@@ -1259,22 +1259,6 @@ void trinity_dpm_setup_asic(struct radeon_device *rdev)
- 	trinity_release_mutex(rdev);
- }
- 
--void trinity_dpm_reset_asic(struct radeon_device *rdev)
--{
--	struct trinity_power_info *pi = trinity_get_pi(rdev);
--
--	trinity_acquire_mutex(rdev);
--	if (pi->enable_dpm) {
--		trinity_enable_power_level_0(rdev);
--		trinity_force_level_0(rdev);
--		trinity_wait_for_level_0(rdev);
--		trinity_program_bootup_state(rdev);
--		trinity_force_level_0(rdev);
--		trinity_unforce_levels(rdev);
--	}
--	trinity_release_mutex(rdev);
--}
--
- static u16 trinity_convert_voltage_index_to_value(struct radeon_device *rdev,
- 						  u32 vid_2bit)
- {
-diff --git a/drivers/gpu/drm/radeon/trinity_smc.c b/drivers/gpu/drm/radeon/trinity_smc.c
-index 9672bcb..99dd045 100644
---- a/drivers/gpu/drm/radeon/trinity_smc.c
-+++ b/drivers/gpu/drm/radeon/trinity_smc.c
-@@ -27,9 +27,6 @@
- #include "trinity_dpm.h"
- #include "ppsmc.h"
- 
--struct trinity_ps *trinity_get_ps(struct radeon_ps *rps);
--struct trinity_power_info *trinity_get_pi(struct radeon_device *rdev);
--
- static int trinity_notify_message_to_smu(struct radeon_device *rdev, u32 id)
- {
- 	int i;
--- 
-1.7.9.5
+> My concern is about the configuration of the table that is used to create the
+> sched_domain. Some levels are "duplicated" with different flags configuration
+> which make the table not easily readable and we must also take care of the
+> order  because parents have to gather all cpus of its childs. So we must
+> choose which capabilities will be a subset of the other one. The order is
+> almost straight forward when we describe 1 or 2 kind of capabilities
+> (package ressource sharing and power sharing) but it can become complex if we
+> want to add more.
 
+I think I see what you're saying, although I hope that won't actually
+happen in real hardware -- that said, people do tend to do crazy with
+these ARM chips :/
+
+We should also try and be conservative in the topology flags we want to
+add, which should further reduce the amount of pain here.
+
+For now I do think this is a viable approach.. Yes its a bit cumbersome
+for these asymmetric systems but it does give us enough to start
+playing.
+
+I yet have to read Morton's emails on the P and C states, will try to
+have a look at those tomorrow with a hopefully fresher brain -- somehow
+its the end of the day already..
