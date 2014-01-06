@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753624AbaAFJUO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 04:20:14 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:54009 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218AbaAFJUM (ORCPT
+	id S1753756AbaAFJUt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 04:20:49 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:23227 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753353AbaAFJUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 04:20:12 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s069K9pg028139, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net] r8152: add terminating newline
-Date: Mon, 6 Jan 2014 17:19:59 +0800
-Message-ID: <1388999999-9218-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.4.2
+	Mon, 6 Jan 2014 04:20:45 -0500
+X-IronPort-AV: E=Sophos;i="4.95,611,1384297200"; 
+   d="scan'208";a="51861160"
+Date: Mon, 6 Jan 2014 10:20:25 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Johannes Berg <johannes@sipsolutions.net>
+cc: Julia Lawall <julia.lawall@lip6.fr>, Joe Perches <joe@perches.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        kernel-janitors@vger.kernel.org,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/11]  use ether_addr_equal_64bits
+In-Reply-To: <1388999220.5891.3.camel@jlt4.sipsolutions.net>
+Message-ID: <alpine.DEB.2.10.1401061014430.2079@hadrien>
+References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>   <1388427307-8691-5-git-send-email-Julia.Lawall@lip6.fr>   <1388429761.4410.1.camel@jlt4.sipsolutions.net>   <alpine.DEB.2.02.1312302057420.2209@localhost6.localdomain6>  
+ <1388438724.4573.2.camel@jlt4.sipsolutions.net>   <20131230215701.GA4938@khazad-dum.debian.net>   <1388445188.18164.0.camel@jlt4.sipsolutions.net>   <1388445422.26796.38.camel@joe-AO722>   <alpine.DEB.2.10.1401060947550.2079@hadrien>  <1388998750.5808.43.camel@joe-AO722>
+  <alpine.DEB.2.10.1401061001340.2079@hadrien> <1388999220.5891.3.camel@jlt4.sipsolutions.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The netif_err() and netif_info() should have the terminating newline
-at the end of the message.
+On Mon, 6 Jan 2014, Johannes Berg wrote:
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> On Mon, 2014-01-06 at 10:04 +0100, Julia Lawall wrote:
+>
+> > OK, the question was expressed badly.  Is there any way to use the value
+> > to trigger an action at build time?  The only way I kow to trigger an
+> > action is with #error, but #error is processed by cpp, which doesn't know
+> > about the size of types.
+>
+> That's exactly BUILD_BUG_ON(), I believe.
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 5107372..3d8a565 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -2135,11 +2135,11 @@ static int rtl8152_probe(struct usb_interface *intf,
- 
- 	ret = register_netdev(netdev);
- 	if (ret != 0) {
--		netif_err(tp, probe, netdev, "couldn't register the device");
-+		netif_err(tp, probe, netdev, "couldn't register the device\n");
- 		goto out1;
- 	}
- 
--	netif_info(tp, probe, netdev, "%s", DRIVER_VERSION);
-+	netif_info(tp, probe, netdev, "%s\n", DRIVER_VERSION);
- 
- 	return 0;
- 
--- 
-1.8.4.2
+Maybe BUILD_BUG_ON_ZERO?  It's goal seems to be to return an integer,
+which could then be used as an array size in a dummy structure.  The
+structure declaration would not generate any code.  The structure would
+have to have a name, thoough.
 
+julia
