@@ -1,104 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752292AbaAFFmE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 00:42:04 -0500
-Received: from mail-by2lp0242.outbound.protection.outlook.com ([207.46.163.242]:28632
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750810AbaAFFmD convert rfc822-to-8bit (ORCPT
+	id S1752182AbaAFFrG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 00:47:06 -0500
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:40505 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875AbaAFFrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 00:42:03 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: "broonie@kernel.org" <broonie@kernel.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>
-CC: "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-Subject: RE: [PATCH v2] ASoC: soc-core: add snd_soc_of_parse_master_clkdir()
- for dt
-Thread-Topic: [PATCH v2] ASoC: soc-core: add
- snd_soc_of_parse_master_clkdir() for dt
-Thread-Index: AQHPB20FBDU3KsnZwkq1MPUZG+B5i5p3M+oQ
-Date: Mon, 6 Jan 2014 05:41:59 +0000
-Message-ID: <23375d0ac7734f37be9928d6add885f7@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1388630905-1321-1-git-send-email-Li.Xiubo@freescale.com>
-In-Reply-To: <1388630905-1321-1-git-send-email-Li.Xiubo@freescale.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 0083A7F08A
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(51704005)(45074003)(189002)(164054003)(199002)(33646001)(47976001)(50986001)(77982001)(46102001)(2656002)(74876001)(56816005)(31966008)(87266001)(74662001)(74502001)(47446002)(74706001)(90146001)(4396001)(87936001)(85306002)(85852003)(76576001)(76786001)(76796001)(74316001)(79102001)(54356001)(51856001)(59766001)(80976001)(65816001)(76482001)(80022001)(66066001)(74366001)(83322001)(81816001)(47736001)(81342001)(81542001)(49866001)(69226001)(83072002)(81686001)(54316002)(19580395003)(56776001)(19580405001)(63696002)(53806001)(24736002)(309714004);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB507;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 6 Jan 2014 00:47:04 -0500
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20140105061413.GF18213@core.coreip.homeip.net>
+References: <1388887680-942-1-git-send-email-ethan.kernel@gmail.com>
+	<20140105061413.GF18213@core.coreip.homeip.net>
+Date: Mon, 6 Jan 2014 13:47:03 +0800
+Message-ID: <CABawtvOJ7aV=QP2SwYpPJTgJKgngiHY0Oqu=UmxH8yP9TCkuSg@mail.gmail.com>
+Subject: Re: [PATCH] [media] saa7146: fix a possible NULL pointer reference in saa7146_set_position
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: hans.verkuil@cisco.com, m.chehab@samsung.com,
+        Greg KH <gregkh@linuxfoundation.org>, mchehab@redhat.com,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-I would like to know the current status of this patch, and there are some
-other patches that for simple-card are depended on this one.
+Dmitry,
+   Yup,thank you point out that, need NULL pointer checking in
+calculate_video_dma_grab_packed() ,  I am not familiar with saa7146
+too. wouldn't paper over it, just a fix to pass code review.
 
 Thanks,
+Ethan
 
-
---
-> This patch adds snd_soc_of_parse_master_clkdir() and supports below
-> style on dt:
-> 
-> master-clkdir-out;
-> 
-> If this property is absent 0 will be returned, 1 otherwise.
-> 0 : SND_SOC_CLOCK_IN
-> 1 : SND_SOC_CLOCK_OUT
-> 
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> ---
->  include/sound/soc.h  |  1 +
->  sound/soc/soc-core.c | 11 +++++++++++
->  2 files changed, 12 insertions(+)
-> 
-> diff --git a/include/sound/soc.h b/include/sound/soc.h
-> index 5a049d9..690f4f6 100644
-> --- a/include/sound/soc.h
-> +++ b/include/sound/soc.h
-> @@ -1170,6 +1170,7 @@ int snd_soc_of_parse_card_name(struct snd_soc_card *card,
->  			       const char *propname);
->  int snd_soc_of_parse_audio_routing(struct snd_soc_card *card,
->  				   const char *propname);
-> +unsigned int snd_soc_of_parse_master_clkdir(struct device_node *np);
->  unsigned int snd_soc_of_parse_daifmt(struct device_node *np,
->  				     const char *prefix);
->  int snd_soc_of_get_dai_name(struct device_node *of_node,
-> diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
-> index be88df5..f155207 100644
-> --- a/sound/soc/soc-core.c
-> +++ b/sound/soc/soc-core.c
-> @@ -4472,6 +4472,17 @@ int snd_soc_of_parse_audio_routing(struct snd_soc_card
-> *card,
->  }
->  EXPORT_SYMBOL_GPL(snd_soc_of_parse_audio_routing);
-> 
-> +unsigned int snd_soc_of_parse_master_clkdir(struct device_node *np)
-> +{
-> +	/*
-> +	 * check "master-clkdir-out"
-> +	 * false means SND_SOC_CLOCK_IN
-> +	 * true means SND_SOC_CLOCK_OUT
-> +	 */
-> +	return !!of_property_read_bool(np, "master-clkdir-out");
-> +}
-> +EXPORT_SYMBOL_GPL(snd_soc_of_parse_master_clkdir);
-> +
->  unsigned int snd_soc_of_parse_daifmt(struct device_node *np,
->  				     const char *prefix)
->  {
+On Sun, Jan 5, 2014 at 2:14 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Sun, Jan 05, 2014 at 10:08:00AM +0800, Ethan Zhao wrote:
+>> Function saa7146_format_by_fourcc() may return NULL, reference of the returned
+>> result would cause NULL pointer issue without checking.
+>>
+>> Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
+>> ---
+>>  drivers/media/common/saa7146/saa7146_hlp.c | 9 +++++++--
+>>  1 file changed, 7 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/media/common/saa7146/saa7146_hlp.c b/drivers/media/common/saa7146/saa7146_hlp.c
+>> index be746d1..3e23eab 100644
+>> --- a/drivers/media/common/saa7146/saa7146_hlp.c
+>> +++ b/drivers/media/common/saa7146/saa7146_hlp.c
+>> @@ -575,6 +575,7 @@ static void saa7146_set_position(struct saa7146_dev *dev, int w_x, int w_y, int
+>>        */
+>>       u32 base = (u32)(unsigned long)vv->ov_fb.base;
+>>
+>> +     int which = 1;
+>>       struct  saa7146_video_dma vdma1;
+>>
+>>       /* calculate memory offsets for picture, look if we shall top-down-flip */
+>> @@ -608,10 +609,14 @@ static void saa7146_set_position(struct saa7146_dev *dev, int w_x, int w_y, int
+>>               vdma1.pitch *= -1;
+>>       }
+>>
+>> -     vdma1.base_page = sfmt->swap;
+>> +     if (sfmt)
+>> +             vdma1.base_page = sfmt->swap;
+>> +     else
+>> +             which = 0;
+>> +
+>>       vdma1.num_line_byte = (vv->standard->v_field<<16)+vv->standard->h_pixels;
+>>
+>> -     saa7146_write_out_dma(dev, 1, &vdma1);
+>> +     saa7146_write_out_dma(dev, which, &vdma1);
+>
+> If saa7146_format_by_fourcc() returns NULL you'll crash much earlier
+> when trying to do
+>
+>         int depth = sfmt->depth;
+>
+> I am not familiar with the code by it seems you are papering over the
+> problem. Will we ever get here with unknown pixel format?
+>
+> Thanks.
+>
 > --
-> 1.8.4
-> 
-
+> Dmitry
