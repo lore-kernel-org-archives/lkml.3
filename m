@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755831AbaAFR10 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 12:27:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43026 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754982AbaAFR1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 12:27:22 -0500
-Date: Mon, 6 Jan 2014 18:27:20 +0100
-From: David Sterba <dsterba@suse.cz>
-To: Phil Turmel <philip@turmel.org>
-Cc: Andrea Mazzoleni <amadvance@gmail.com>, neilb@suse.de, clm@fb.com,
-        jbacik@fb.com, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, linux-btrfs@vger.kernel.org
-Subject: Re: [RFC v2 0/2] New RAID library supporting up to six parities
-Message-ID: <20140106172720.GA6498@twin.jikos.cz>
-Reply-To: dsterba@suse.cz
-Mail-Followup-To: dsterba@suse.cz, Phil Turmel <philip@turmel.org>,
-	Andrea Mazzoleni <amadvance@gmail.com>, neilb@suse.de, clm@fb.com,
-	jbacik@fb.com, linux-kernel@vger.kernel.org,
-	linux-raid@vger.kernel.org, linux-btrfs@vger.kernel.org
-References: <1389000716-3274-1-git-send-email-amadvance@gmail.com>
- <52CAE18B.8020701@turmel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52CAE18B.8020701@turmel.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S1755935AbaAFR16 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 12:27:58 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:59936 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755916AbaAFR1z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 12:27:55 -0500
+Message-ID: <1389029271.5590.20.camel@pizza.hi.pengutronix.de>
+Subject: Re: [PATCH v2] drivers: reset: Mark function as static and remove
+ unused function in core.c
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Rashika Kheria <rashika.kheria@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
+        Stephen Warren <swarren@nvidia.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Shawn Guo <shawn.guo@linaro.org>, josh@joshtriplett.org
+Date: Mon, 06 Jan 2014 18:27:51 +0100
+In-Reply-To: <20131219084110.GA14098@rashika>
+References: <20131219084110.GA14098@rashika>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 12:02:03PM -0500, Phil Turmel wrote:
-> On 01/06/2014 04:31 AM, Andrea Mazzoleni wrote:
-> FWIW, your patch 1/2 doesn't seem to have gone through on linux-raid,
-> although I saw it on lkml.  Probably a different file size limit, as
-> that's a very large patch.
+Am Donnerstag, den 19.12.2013, 14:11 +0530 schrieb Rashika Kheria:
+> Mark function of_reset_simple_xlate() as static in core.c
+> because it is not used outside this file.
+> Also, remove functions devm_reset_control_put() and
+> devm_reset_control_match() because they are unused.
+> 
+> This eliminates the following warnings in core.c:
+> drivers/reset/core.c:46:5: warning: no previous prototype for ‘of_reset_simple_xlate’ [-Wmissing-prototypes]
+> drivers/reset/core.c:262:6: warning: no previous prototype for ‘devm_reset_control_put’ [-Wmissing-prototypes]
+> 
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> ---
+> 
+> Changes since v1:
+> Incorrect Fix
+[...]
 
-For the reference
+I have overlooked this earlier, will apply it as-is.
 
-http://article.gmane.org/gmane.linux.kernel/1623309
+thanks
+Philipp
+
