@@ -1,129 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082AbaAFWM0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:12:26 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:46379 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756583AbaAFWMX (ORCPT
+	id S1756594AbaAFWNE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:13:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46969 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755704AbaAFWNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:12:23 -0500
-Date: Mon, 6 Jan 2014 14:12:17 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Luigi Semenzato <semenzato@chromium.org>, linux-input@vger.kernel.org,
-        Simon Glass <sjg@chromium.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH] Input: cros_ec_keyb - avoid variable-length arrays on
- stack
-Message-ID: <20140106221217.GA17357@core.coreip.homeip.net>
-References: <20131231193530.GA25261@core.coreip.homeip.net>
- <CAD=FV=VZyXs9b+UyzuWNHBwKWEVcEvSZ4xdtsJLD+TFnRJon6A@mail.gmail.com>
- <20140102194817.GC2025@core.coreip.homeip.net>
- <CAA25o9ScgzY1TbqKoe2KbSCc-DUBFLstDyYWY=LmdL+ioX82Ug@mail.gmail.com>
- <CAD=FV=UCEcTr+X-=yNxo1VnJ1B8kJ=wDbR7H_S3AYvBGLU7tEw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAD=FV=UCEcTr+X-=yNxo1VnJ1B8kJ=wDbR7H_S3AYvBGLU7tEw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 6 Jan 2014 17:13:02 -0500
+Date: Mon, 6 Jan 2014 14:13:00 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Damien Ramonda <damien.ramonda@intel.com>, jack@suse.cz,
+        Linus <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH V3] mm readahead: Fix the readahead fail in case of
+ empty numa node
+Message-Id: <20140106141300.4e1c950d45c614d6c29bdd8f@linux-foundation.org>
+In-Reply-To: <1389003715-29733-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+References: <1389003715-29733-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 10:57:14AM -0800, Doug Anderson wrote:
-> On Thu, Jan 2, 2014 at 4:25 PM, Luigi Semenzato <semenzato@chromium.org> wrote:
-> > On Thu, Jan 2, 2014 at 11:48 AM, Dmitry Torokhov
-> > <dmitry.torokhov@gmail.com> wrote:
-> >> Hi Doug,
-> >>
-> >> On Thu, Jan 02, 2014 at 09:40:44AM -0800, Doug Anderson wrote:
-> >>> Dmitry,
-> >>>
-> >>> Thanks for cleaning up cros_eckeyb.  :)  I'm a little curious about
-> >>> the motivation here.  I can't imagine a keyboard with all that many
-> >>> columns (ours has 13), so it's really not taking a whole lot off of
-> >>> the stack.  Are you trying to make some sort of automated checker
-> >>> happy, or just generally trying to keep the kernel consistent?
-> >>
-> >> I compile most of the code with sparse so I prefer to keep it happy.
-> >>
-> >>>
-> >>> In any case, I'm not opposed to moving these bytes off the stack.
-> >>> Comments below, though...
-> >>>
-> >>> ---
-> >>>
-> >>> On Tue, Dec 31, 2013 at 11:35 AM, Dmitry Torokhov
-> >>> <dmitry.torokhov@gmail.com> wrote:
+On Mon,  6 Jan 2014 15:51:55 +0530 Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
+
+> Currently, max_sane_readahead returns zero on the cpu with empty numa node,
+> fix this by checking for potential empty numa node case during calculation.
+> We also limit the number of readahead pages to 4k.
+> 
 > ...
-> >>> > @@ -217,32 +219,40 @@ static int cros_ec_keyb_probe(struct platform_device *pdev)
-> >>> >         struct cros_ec_keyb *ckdev;
-> >>> >         struct input_dev *idev;
-> >>> >         struct device_node *np;
-> >>> > +       unsigned int rows, cols;
-> >>> > +       size_t size;
-> >>> >         int err;
-> >>> >
-> >>> >         np = pdev->dev.of_node;
-> >>> >         if (!np)
-> >>> >                 return -ENODEV;
-> >>> >
-> >>> > -       ckdev = devm_kzalloc(&pdev->dev, sizeof(*ckdev), GFP_KERNEL);
-> >>> > -       if (!ckdev)
-> >>> > -               return -ENOMEM;
-> >>> > -       err = matrix_keypad_parse_of_params(&pdev->dev, &ckdev->rows,
-> >>> > -                                           &ckdev->cols);
-> >>> > +       err = matrix_keypad_parse_of_params(&pdev->dev, &rows, &cols);
-> >>> >         if (err)
-> >>> >                 return err;
-> >>> > -       ckdev->old_kb_state = devm_kzalloc(&pdev->dev, ckdev->cols, GFP_KERNEL);
-> >>> > -       if (!ckdev->old_kb_state)
-> >>> > -               return -ENOMEM;
-> >>> >
-> >>> > -       idev = devm_input_allocate_device(&pdev->dev);
-> >>> > -       if (!idev)
-> >>> > +       /*
-> >>> > +        * Double memory for keyboard state so we have space for storing
-> >>> > +        * current and previous state.
-> >>> > +        */
-> >>> > +       size = sizeof(*ckdev) + 2 * cols * sizeof(*ckdev->kb_state);
-> >>> > +       ckdev = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
-> >>> > +       if (!ckdev)
-> >>> >                 return -ENOMEM;
-> >>>
-> >>> This change seems like a lot of complexity to save one memory
-> >>> allocation.  If you insist, I'd be OK with having one allocation for
-> >>> both buffers (kb_state and old_kb_state) but trying to jam this onto
-> >>> the end of the structure is non-obvious.  It certainly took me a
-> >>> minute to understand what you were doing and why.
-> >>
-> >> It is not one additional allocation but more as you need to allocate
-> >> devres data structures and add them there. I think we have quite a few
-> >> drivers piggy-backing key tables at the end of data structures.
-> 
-> OK, I will leave this as your call.  To me, piggybacking like this
-> make sense if you've got a single chunk of dynamic memory that you
-> just want to cram onto the end of the structure.  It just gets more
-> complicated when you have two nearly identical chunks of memory and
-> one of them is using this piggybacking technique while the other
-> isn't.
-> 
-> What about a compromise and declaring as:
-> 
->  u8 *kb_state;
->  u8 *old_kb_state;
->  u8 buffers[];
-> 
-> You still have the same number of memory allocations but (to me) it's
-> much clearer what's going on here.  You do pay a penalty of an extra
-> memory dereference and an extra 4 bytes of memory, but clarity should
-> trump that.
+>
+> --- a/mm/readahead.c
+> +++ b/mm/readahead.c
+> @@ -237,14 +237,25 @@ int force_page_cache_readahead(struct address_space *mapping, struct file *filp,
+>  	return ret;
+>  }
+>  
+> +#define MAX_REMOTE_READAHEAD   4096UL
+>  /*
+>   * Given a desired number of PAGE_CACHE_SIZE readahead pages, return a
+>   * sensible upper limit.
+>   */
+>  unsigned long max_sane_readahead(unsigned long nr)
+>  {
+> -	return min(nr, (node_page_state(numa_node_id(), NR_INACTIVE_FILE)
+> -		+ node_page_state(numa_node_id(), NR_FREE_PAGES)) / 2);
+> +	unsigned long local_free_page;
+> +	unsigned long sane_nr = min(nr, MAX_REMOTE_READAHEAD);
+> +
+> +	local_free_page = node_page_state(numa_node_id(), NR_INACTIVE_FILE)
+> +			  + node_page_state(numa_node_id(), NR_FREE_PAGES);
+> +
+> +	/*
+> +	 * Readahead onto remote memory is better than no readahead when local
+> +	 * numa node does not have memory. We sanitize readahead size depending
+> +	 * on free memory in the local node but limiting to 4k pages.
+> +	 */
+> +	return local_free_page ? min(sane_nr, local_free_page / 2) : sane_nr;
+>  }
 
-OK, I can do that.
+So if the local node has two free pages, we do just one page of
+readahead.
 
-Thanks.
+Then the local node has one free page and we do zero pages readahead.
 
--- 
-Dmitry
+Assuming that bug(!) is fixed, the local node now has zero free pages
+and we suddenly resume doing large readahead.
+
+This transition from large readahead to very small readahead then back
+to large readahead is illogical, surely?
+
