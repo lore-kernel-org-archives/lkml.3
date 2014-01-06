@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932771AbaAFWp6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:45:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48753 "EHLO
+	id S933583AbaAFWqS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:46:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48746 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933462AbaAFWmo (ORCPT
+	with ESMTP id S933460AbaAFWmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:42:44 -0500
+	Mon, 6 Jan 2014 17:42:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Finn Thain <fthain@telegraphics.com.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.4 05/43] TTY: pmac_zilog, check existence of ports in pmz_console_init()
-Date: Mon,  6 Jan 2014 14:39:22 -0800
-Message-Id: <20140106223942.412026164@linuxfoundation.org>
+        Liu Ping Fan <pingfank@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>
+Subject: [PATCH 3.4 04/43] powerpc: kvm: fix rare but potential deadlock scene
+Date: Mon,  6 Jan 2014 14:39:21 -0800
+Message-Id: <20140106223942.384564191@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223942.259651490@linuxfoundation.org>
 References: <20140106223942.259651490@linuxfoundation.org>
@@ -30,47 +29,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: pingfan liu <qemulist@gmail.com>
 
-commit dc1dc2f8a5dd863bf2e79f338fc3ae29e99c683a upstream.
+commit 91648ec09c1ef69c4d840ab6dab391bfb452d554 upstream.
 
-When booting a multi-platform m68k kernel on a non-Mac with "console=ttyS0"
-on the kernel command line, it crashes with:
+Since kvmppc_hv_find_lock_hpte() is called from both virtmode and
+realmode, so it can trigger the deadlock.
 
-Unable to handle kernel NULL pointer dereference at virtual address   (null)
-Oops: 00000000
-PC: [<0013ad28>] __pmz_startup+0x32/0x2a0
-...
-Call Trace: [<002c5d3e>] pmz_console_setup+0x64/0xe4
+Suppose the following scene:
 
-The normal tty driver doesn't crash, because init_pmz() checks
-pmz_ports_count again after calling pmz_probe().
+Two physical cpuM, cpuN, two VM instances A, B, each VM has a group of
+vcpus.
 
-In the serial console initialization path, pmz_console_init() doesn't do
-this, causing the driver to crash later.
+If on cpuM, vcpu_A_1 holds bitlock X (HPTE_V_HVLOCK), then is switched
+out, and on cpuN, vcpu_A_2 try to lock X in realmode, then cpuN will be
+caught in realmode for a long time.
 
-Add a check for pmz_ports_count to fix this.
+What makes things even worse if the following happens,
+  On cpuM, bitlockX is hold, on cpuN, Y is hold.
+  vcpu_B_2 try to lock Y on cpuM in realmode
+  vcpu_A_2 try to lock X on cpuN in realmode
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Finn Thain <fthain@telegraphics.com.au>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Oops! deadlock happens
+
+Signed-off-by: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+Reviewed-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Alexander Graf <agraf@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/pmac_zilog.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/powerpc/kvm/book3s_64_mmu_hv.c |    6 +++++-
+ arch/powerpc/kvm/book3s_hv_rm_mmu.c |    4 ++++
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
---- a/drivers/tty/serial/pmac_zilog.c
-+++ b/drivers/tty/serial/pmac_zilog.c
-@@ -2051,6 +2051,9 @@ static int __init pmz_console_init(void)
- 	/* Probe ports */
- 	pmz_probe();
+--- a/arch/powerpc/kvm/book3s_64_mmu_hv.c
++++ b/arch/powerpc/kvm/book3s_64_mmu_hv.c
+@@ -393,11 +393,14 @@ static int kvmppc_mmu_book3s_64_hv_xlate
+ 		slb_v = vcpu->kvm->arch.vrma_slb_v;
+ 	}
  
-+	if (pmz_ports_count == 0)
-+		return -ENODEV;
-+
- 	/* TODO: Autoprobe console based on OF */
- 	/* pmz_console.index = i; */
- 	register_console(&pmz_console);
++	preempt_disable();
+ 	/* Find the HPTE in the hash table */
+ 	index = kvmppc_hv_find_lock_hpte(kvm, eaddr, slb_v,
+ 					 HPTE_V_VALID | HPTE_V_ABSENT);
+-	if (index < 0)
++	if (index < 0) {
++		preempt_enable();
+ 		return -ENOENT;
++	}
+ 	hptep = (unsigned long *)(kvm->arch.hpt_virt + (index << 4));
+ 	v = hptep[0] & ~HPTE_V_HVLOCK;
+ 	gr = kvm->arch.revmap[index].guest_rpte;
+@@ -405,6 +408,7 @@ static int kvmppc_mmu_book3s_64_hv_xlate
+ 	/* Unlock the HPTE */
+ 	asm volatile("lwsync" : : : "memory");
+ 	hptep[0] = v;
++	preempt_enable();
+ 
+ 	gpte->eaddr = eaddr;
+ 	gpte->vpage = ((v & HPTE_V_AVPN) << 4) | ((eaddr >> 12) & 0xfff);
+--- a/arch/powerpc/kvm/book3s_hv_rm_mmu.c
++++ b/arch/powerpc/kvm/book3s_hv_rm_mmu.c
+@@ -649,6 +649,10 @@ static int slb_base_page_shift[4] = {
+ 	20,	/* 1M, unsupported */
+ };
+ 
++/* When called from virtmode, this func should be protected by
++ * preempt_disable(), otherwise, the holding of HPTE_V_HVLOCK
++ * can trigger deadlock issue.
++ */
+ long kvmppc_hv_find_lock_hpte(struct kvm *kvm, gva_t eaddr, unsigned long slb_v,
+ 			      unsigned long valid)
+ {
 
 
