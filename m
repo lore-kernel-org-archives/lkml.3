@@ -1,67 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235AbaAFPhY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 10:37:24 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47908 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335AbaAFPhW (ORCPT
+	id S1755320AbaAFPiN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 10:38:13 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:60140 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335AbaAFPiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 10:37:22 -0500
-Date: Mon, 6 Jan 2014 15:37:15 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: lgirdwood@gmail.com, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, kuninori.morimoto.gx@renesas.com
-Message-ID: <20140106153715.GZ31886@sirena.org.uk>
-References: <1388986906-32139-1-git-send-email-Li.Xiubo@freescale.com>
+	Mon, 6 Jan 2014 10:38:11 -0500
+Date: Mon, 6 Jan 2014 21:08:06 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        Michel =?iso-8859-1?Q?D=E4nzer?= <michel.daenzer@amd.com>,
+        Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
+        Dave Airlie <airlied@redhat.com>,
+        =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        Damien Lespiau <damien.lespiau@intel.com>,
+        dri-devel@lists.freedesktop.org, josh@joshtriplett.org
+Subject: [PATCH 32/85] drivers: gpu: Move prototype declarations to header
+ file atombios.h
+Message-ID: <f4d1b2f307e9ebd14d9f397913298d22ffc464f7.1389018325.git.rashika.kheria@gmail.com>
+References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TKxMeUgs2YHnbgRP"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1388986906-32139-1-git-send-email-Li.Xiubo@freescale.com>
-X-Cookie: Go climb a gravity well!
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: simple-card: fix the DAPM routes map parsing
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Move prototype declarations of functions radeon_atom_get_tv_timings()
+and radeon_atombios_connected_scratch_regs() to header file
+drm/radeon/atombios.h because they are used by more than one file.
 
---TKxMeUgs2YHnbgRP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Include the header file in atombios_encoders.c, radeon_atombios.c and
+radeon_connectors.c because they use the function whose prototype
+declarations are present in it.
 
-On Mon, Jan 06, 2014 at 01:41:46PM +0800, Xiubo Li wrote:
-> The simple-card's DAPM route maping is optional. For example, the spdif has
-> no need of this.
+This eliminates the following warnings in drm/radeon/radeon_atombios.c:
+drivers/gpu/drm/radeon/radeon_atombios.c:1766:6: warning: no previous prototype for ‘radeon_atom_get_tv_timings’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/radeon_atombios.c:4012:1: warning: no previous prototype for ‘radeon_atombios_connected_scratch_regs’ [-Wmissing-prototypes]
 
-This doesn't seem to apply against current code, can you please check
-and resend?
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ drivers/gpu/drm/radeon/atombios.h          |    8 ++++++++
+ drivers/gpu/drm/radeon/atombios_encoders.c |    6 +-----
+ drivers/gpu/drm/radeon/radeon_atombios.c   |    1 +
+ drivers/gpu/drm/radeon/radeon_connectors.c |    5 +----
+ 4 files changed, 11 insertions(+), 9 deletions(-)
 
---TKxMeUgs2YHnbgRP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/drivers/gpu/drm/radeon/atombios.h b/drivers/gpu/drm/radeon/atombios.h
+index 92be50c..72a3aa7c 100644
+--- a/drivers/gpu/drm/radeon/atombios.h
++++ b/drivers/gpu/drm/radeon/atombios.h
+@@ -193,6 +193,14 @@
+ #define	OFFSET_TO_GET_ATOMBIOS_STRINGS_NUMBER		0x002f
+ #define	OFFSET_TO_GET_ATOMBIOS_STRINGS_START		0x006e
+ 
++bool radeon_atom_get_tv_timings(struct radeon_device *rdev, int index,
++				struct drm_display_mode *mode);
++void
++radeon_atombios_connected_scratch_regs(struct drm_connector *connector,
++				       struct drm_encoder *encoder,
++				       bool connected);
++
++
+ /* Common header for all ROM Data tables.
+   Every table pointed  _ATOM_MASTER_DATA_TABLE has this common header. 
+   And the pointer actually points to this header. */
+diff --git a/drivers/gpu/drm/radeon/atombios_encoders.c b/drivers/gpu/drm/radeon/atombios_encoders.c
+index a42d615..641298d 100644
+--- a/drivers/gpu/drm/radeon/atombios_encoders.c
++++ b/drivers/gpu/drm/radeon/atombios_encoders.c
+@@ -28,6 +28,7 @@
+ #include <drm/radeon_drm.h>
+ #include "radeon.h"
+ #include "atom.h"
++#include "atombios.h"
+ #include <linux/backlight.h>
+ 
+ extern int atom_debug;
+@@ -283,11 +284,6 @@ static void radeon_atom_backlight_exit(struct radeon_encoder *encoder)
+ 
+ #endif
+ 
+-/* evil but including atombios.h is much worse */
+-bool radeon_atom_get_tv_timings(struct radeon_device *rdev, int index,
+-				struct drm_display_mode *mode);
+-
+-
+ static inline bool radeon_encoder_is_digital(struct drm_encoder *encoder)
+ {
+ 	struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
+diff --git a/drivers/gpu/drm/radeon/radeon_atombios.c b/drivers/gpu/drm/radeon/radeon_atombios.c
+index 5c39bf7..39f1fd6 100644
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -28,6 +28,7 @@
+ #include "radeon.h"
+ 
+ #include "atom.h"
++#include "atombios.h"
+ #include "atom-bits.h"
+ 
+ /* from radeon_encoder.c */
+diff --git a/drivers/gpu/drm/radeon/radeon_connectors.c b/drivers/gpu/drm/radeon/radeon_connectors.c
+index 20a768a..9070487 100644
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -30,6 +30,7 @@
+ #include <drm/radeon_drm.h>
+ #include "radeon.h"
+ #include "atom.h"
++#include "atombios.h"
+ 
+ #include <linux/pm_runtime.h>
+ 
+@@ -37,10 +38,6 @@ extern void
+ radeon_combios_connected_scratch_regs(struct drm_connector *connector,
+ 				      struct drm_encoder *encoder,
+ 				      bool connected);
+-extern void
+-radeon_atombios_connected_scratch_regs(struct drm_connector *connector,
+-				       struct drm_encoder *encoder,
+-				       bool connected);
+ 
+ void radeon_connector_hotplug(struct drm_connector *connector)
+ {
+-- 
+1.7.9.5
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSys2oAAoJELSic+t+oim9jDQP/04lsa/nZ5ocRvhAF82oxeWf
-FpwS8R3s554lbmtGJciZBTgDcJc58Mby5lYhjwbcAahqVeFi8vdnbfZhj7J5RVpP
-8SKA4ufNc5QmQzMN3xvFsL42zIWZF9d3+hXYd5Iz4TbGJy9O03S0l2SqNBv8RWAu
-t8qxtnnYpUPAL0VoK76laOOlNf8kZf7qOLZ+D8Pm4afCJYjZtGDOtszDJ5aPJSdP
-Dtsf2BP5Xpu4yh/YwXsnGH5KLA8oqFKoQAGmxEDiARGXxXhVLCCQR15ujjh++dH7
-o0ABlaE23fsvVqej2ztvnuQFo6mB2UvfppxpQQqwmnP3p2yW4Pzp97/dqT3j4UcE
-ccwdurzym1PS7ceIIbCSbVpX0XMAIgRZfPbVqEjs2OKL8eAfzBYeDfXoxwq/dMPy
-BsGZcGJ7d2LOcp2KKW02686wGjUqBgdT/7xnAWnYlBjQYx5IHHW8hA5s0pEAEwAu
-W6H5wiK+EYH3p/82Ew+6HowA2hvcOgez3IWAcKhKPWtmErsX1qgabBYwfDpVi95k
-7f8+iSav96EvvIiq8+XT0kCFxvJiIbK/7fwv+71tVkpHNi+6KV3MsS0qPx1O9bVq
-QSUTMPIBfeRTSHF3RW46ahagBAXePjYTkfq0oAiX1z4vTQXSmS7jpPckqBox3cuR
-2vn64W5y9oBVW9UPSO5x
-=+bUx
------END PGP SIGNATURE-----
-
---TKxMeUgs2YHnbgRP--
