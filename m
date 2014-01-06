@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756755AbaAFWiR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:38:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47376 "EHLO
+	id S933133AbaAGAMC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:12:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47385 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756689AbaAFWiP (ORCPT
+	with ESMTP id S1756746AbaAFWiR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:15 -0500
+	Mon, 6 Jan 2014 17:38:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephane Grosjean <s.grosjean@peak-system.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.12 025/144] can: peak_usb: fix mem leak in pcan_usb_pro_init()
-Date: Mon,  6 Jan 2014 14:36:26 -0800
-Message-Id: <20140106223746.047732477@linuxfoundation.org>
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Finn Thain <fthain@telegraphics.com.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.12 009/144] TTY: pmac_zilog, check existence of ports in pmz_console_init()
+Date: Mon,  6 Jan 2014 14:36:10 -0800
+Message-Id: <20140106223745.596321111@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,39 +30,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit 20fb4eb96fb0350d28fc4d7cbfd5506711079592 upstream.
+commit dc1dc2f8a5dd863bf2e79f338fc3ae29e99c683a upstream.
 
-This patch fixes a memory leak in pcan_usb_pro_init(). In patch
+When booting a multi-platform m68k kernel on a non-Mac with "console=ttyS0"
+on the kernel command line, it crashes with:
 
-    f14e224 net: can: peak_usb: Do not do dma on the stack
+Unable to handle kernel NULL pointer dereference at virtual address   (null)
+Oops: 00000000
+PC: [<0013ad28>] __pmz_startup+0x32/0x2a0
+...
+Call Trace: [<002c5d3e>] pmz_console_setup+0x64/0xe4
 
-the struct pcan_usb_pro_fwinfo *fi and struct pcan_usb_pro_blinfo *bi were
-converted from stack to dynamic allocation va kmalloc(). However the
-corresponding kfree() was not introduced.
+The normal tty driver doesn't crash, because init_pmz() checks
+pmz_ports_count again after calling pmz_probe().
 
-This patch adds the missing kfree().
+In the serial console initialization path, pmz_console_init() doesn't do
+this, causing the driver to crash later.
 
-Reported-by: Stephane Grosjean <s.grosjean@peak-system.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Add a check for pmz_ports_count to fix this.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Finn Thain <fthain@telegraphics.com.au>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/usb/peak_usb/pcan_usb_pro.c |    3 +++
+ drivers/tty/serial/pmac_zilog.c |    3 +++
  1 file changed, 3 insertions(+)
 
---- a/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
-+++ b/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
-@@ -927,6 +927,9 @@ static int pcan_usb_pro_init(struct peak
- 	/* set LED in default state (end of init phase) */
- 	pcan_usb_pro_set_led(dev, 0, 1);
+--- a/drivers/tty/serial/pmac_zilog.c
++++ b/drivers/tty/serial/pmac_zilog.c
+@@ -2050,6 +2050,9 @@ static int __init pmz_console_init(void)
+ 	/* Probe ports */
+ 	pmz_probe();
  
-+	kfree(bi);
-+	kfree(fi);
++	if (pmz_ports_count == 0)
++		return -ENODEV;
 +
- 	return 0;
- 
-  err_out:
+ 	/* TODO: Autoprobe console based on OF */
+ 	/* pmz_console.index = i; */
+ 	register_console(&pmz_console);
 
 
