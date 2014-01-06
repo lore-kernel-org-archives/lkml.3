@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757385AbaAFXGg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:06:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48491 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933153AbaAFWlu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933150AbaAFWlu (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 Jan 2014 17:41:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48460 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933024AbaAFWln (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 17:41:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josh Durgin <josh.durgin@inktank.com>, Sage Weil <sage@inktank.com>,
-        Alex Elder <elder@linaro.org>
-Subject: [PATCH 3.10 113/129] libceph: add function to ensure notifies are complete
-Date: Mon,  6 Jan 2014 14:39:02 -0800
-Message-Id: <20140106223902.826868994@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>, Sage Weil <sage@inktank.com>
+Subject: [PATCH 3.10 106/129] libceph: fix error handling in handle_reply()
+Date: Mon,  6 Jan 2014 14:38:55 -0800
+Message-Id: <20140106223902.632665179@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -29,60 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Durgin <josh.durgin@inktank.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit dd935f44a40f8fb02aff2cc0df2269c92422df1c upstream.
+commit 1874119664dafda3ef2ed9b51b4759a9540d4a1a upstream.
 
-Without a way to flush the osd client's notify workqueue, a watch
-event that is unregistered could continue receiving callbacks
-indefinitely.
+We've tried to fix the error paths in this function before, but there
+is still a hidden goto in the ceph_decode_need() macro which goes to the
+wrong place.  We need to release the "req" and unlock a mutex before
+returning.
 
-Unregistering the event simply means no new notifies are added to the
-queue, but there may still be events in the queue that will call the
-watch callback for the event. If the queue is flushed after the event
-is unregistered, the caller can be sure no more watch callbacks will
-occur for the canceled watch.
-
-Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Reviewed-by: Sage Weil <sage@inktank.com>
-Reviewed-by: Alex Elder <elder@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/ceph/osd_client.h |    2 ++
- net/ceph/osd_client.c           |   11 +++++++++++
- 2 files changed, 13 insertions(+)
+ net/ceph/osd_client.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/include/linux/ceph/osd_client.h
-+++ b/include/linux/ceph/osd_client.h
-@@ -335,6 +335,8 @@ extern int ceph_osdc_wait_request(struct
- 				  struct ceph_osd_request *req);
- extern void ceph_osdc_sync(struct ceph_osd_client *osdc);
- 
-+extern void ceph_osdc_flush_notifies(struct ceph_osd_client *osdc);
-+
- extern int ceph_osdc_readpages(struct ceph_osd_client *osdc,
- 			       struct ceph_vino vino,
- 			       struct ceph_file_layout *layout,
 --- a/net/ceph/osd_client.c
 +++ b/net/ceph/osd_client.c
-@@ -2209,6 +2209,17 @@ void ceph_osdc_sync(struct ceph_osd_clie
- EXPORT_SYMBOL(ceph_osdc_sync);
+@@ -1488,14 +1488,14 @@ static void handle_reply(struct ceph_osd
+ 	dout("handle_reply %p tid %llu req %p result %d\n", msg, tid,
+ 	     req, result);
  
- /*
-+ * Call all pending notify callbacks - for use after a watch is
-+ * unregistered, to make sure no more callbacks for it will be invoked
-+ */
-+extern void ceph_osdc_flush_notifies(struct ceph_osd_client *osdc)
-+{
-+	flush_workqueue(osdc->notify_wq);
-+}
-+EXPORT_SYMBOL(ceph_osdc_flush_notifies);
-+
-+
-+/*
-  * init, shutdown
-  */
- int ceph_osdc_init(struct ceph_osd_client *osdc, struct ceph_client *client)
+-	ceph_decode_need(&p, end, 4, bad);
++	ceph_decode_need(&p, end, 4, bad_put);
+ 	numops = ceph_decode_32(&p);
+ 	if (numops > CEPH_OSD_MAX_OP)
+ 		goto bad_put;
+ 	if (numops != req->r_num_ops)
+ 		goto bad_put;
+ 	payload_len = 0;
+-	ceph_decode_need(&p, end, numops * sizeof(struct ceph_osd_op), bad);
++	ceph_decode_need(&p, end, numops * sizeof(struct ceph_osd_op), bad_put);
+ 	for (i = 0; i < numops; i++) {
+ 		struct ceph_osd_op *op = p;
+ 		int len;
+@@ -1513,7 +1513,7 @@ static void handle_reply(struct ceph_osd
+ 		goto bad_put;
+ 	}
+ 
+-	ceph_decode_need(&p, end, 4 + numops * 4, bad);
++	ceph_decode_need(&p, end, 4 + numops * 4, bad_put);
+ 	retry_attempt = ceph_decode_32(&p);
+ 	for (i = 0; i < numops; i++)
+ 		req->r_reply_op_result[i] = ceph_decode_32(&p);
 
 
