@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824AbaAFMnJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 07:43:09 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:46668 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816AbaAFMnH (ORCPT
+	id S1754855AbaAFMnR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 07:43:17 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:57752 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816AbaAFMnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 07:43:07 -0500
-Date: Mon, 6 Jan 2014 07:42:48 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, John Fastabend <john.r.fastabend@intel.com>,
-        e1000-devel@lists.sourceforge.net
-Subject: Re: [PATCH net 2/2] net: core: explicitly select a txq before doing
- l2 forwarding
-Message-ID: <20140106124248.GB24280@hmsreliant.think-freely.org>
-References: <1388978467-2075-1-git-send-email-jasowang@redhat.com>
- <1388978467-2075-2-git-send-email-jasowang@redhat.com>
+	Mon, 6 Jan 2014 07:43:14 -0500
+Date: Mon, 6 Jan 2014 15:40:26 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH -next] check: use NUMA_NO_NODE in
+ setup_bios_corruption_check()
+Message-ID: <20140106124026.GA2247@swordfish>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1388978467-2075-2-git-send-email-jasowang@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 11:21:07AM +0800, Jason Wang wrote:
-> Currently, the tx queue were selected implicitly in ndo_dfwd_start_xmit(). The
-> will cause several issues:
-> 
-> - NETIF_F_LLTX was forced for macvlan device in this case which lead extra lock
->   contention.
-> - dev_hard_start_xmit() was called with NULL txq which bypasses the net device
->   watchdog
-> - dev_hard_start_xmit() does not check txq everywhere which will lead a crash
->   when tso is disabled for lower device.
-> 
-> Fix this by explicitly introducing a select queue method just for l2 forwarding
-> offload (ndo_dfwd_select_queue), and introducing dfwd_direct_xmit() to do the
-> queue selecting and transmitting for l2 forwarding.
-> 
-> With this fixes, NETIF_F_LLTX could be preserved for macvlan and there's no need
-> to check txq against NULL in dev_hard_start_xmit().
-> 
-> In the future, it was also required for macvtap l2 forwarding support since it
-> provides a necessary synchronization method.
-> 
-> Cc: John Fastabend <john.r.fastabend@intel.com>
-> Cc: Neil Horman <nhorman@tuxdriver.com>
-> Cc: e1000-devel@lists.sourceforge.net
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+Commit 68abcdf54742a ("mm/memblock: use WARN_ONCE when MAX_NUMNODES
+passed as input parameter") has deprecated usage of MAX_NUMNODES
+in __next_free_mem_range(). Pass NUMA_NO_NODE to for_each_free_mem_range().
 
-Instead of creating another operation here to do special queue selection, why
-not just have ndo_dfwd_start_xmit include a pointer to a pointer in its argument
-list, so it can pass the txq it used back to the caller (dev_hard_start_xmit)?
-ndo_dfwd_start_xmit already knows which queue set to pick from (since their
-reserved for the device doing the transmitting).  It seems more clear to me than
-creating a new netdevice operation.  
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-As for the crash issue, I'm not sure what you mean.  Where in
-dev_hard_start_xmit would we need to check txq that we're not currently, and
-what crash results?
+---
 
-Also, can you elaborate on what you mean by additional lock contention?  What
-contention do you see that goes above and beyond the normal locking required by
-txq access?  I suppose its extra locking above and beyond in the macvtap case,
-where you would otherwise never hit hardware, but that not the only use case,
-and I think the solution there is likely to add some code in the macvlan feature
-set handler so that NETIF_F_LLTX is cleared if you disable the hardware
-forwarding acceleration via ethtool.
+ arch/x86/kernel/check.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Regards
-Neil
+diff --git a/arch/x86/kernel/check.c b/arch/x86/kernel/check.c
+index e2dbcb7..83a7995 100644
+--- a/arch/x86/kernel/check.c
++++ b/arch/x86/kernel/check.c
+@@ -91,7 +91,7 @@ void __init setup_bios_corruption_check(void)
+ 
+ 	corruption_check_size = round_up(corruption_check_size, PAGE_SIZE);
+ 
+-	for_each_free_mem_range(i, MAX_NUMNODES, &start, &end, NULL) {
++	for_each_free_mem_range(i, NUMA_NO_NODE, &start, &end, NULL) {
+ 		start = clamp_t(phys_addr_t, round_up(start, PAGE_SIZE),
+ 				PAGE_SIZE, corruption_check_size);
+ 		end = clamp_t(phys_addr_t, round_down(end, PAGE_SIZE),
 
-> 
