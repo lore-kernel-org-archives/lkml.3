@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933168AbaAFWlw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:41:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48468 "EHLO
+	id S1757317AbaAFXEt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:04:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48499 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933111AbaAFWlp (ORCPT
+	with ESMTP id S933166AbaAFWlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:45 -0500
+	Mon, 6 Jan 2014 17:41:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>, Sage Weil <sage@inktank.com>
-Subject: [PATCH 3.10 108/129] libceph: create_singlethread_workqueue() doesnt return ERR_PTRs
-Date: Mon,  6 Jan 2014 14:38:57 -0800
-Message-Id: <20140106223902.688633581@linuxfoundation.org>
+        Josh Durgin <josh.durgin@inktank.com>, Alex Elder <elder@linaro.org>
+Subject: [PATCH 3.10 115/129] rbd: make rbd_obj_notify_ack() synchronous
+Date: Mon,  6 Jan 2014 14:39:04 -0800
+Message-Id: <20140106223902.882047287@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -28,40 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Josh Durgin <josh.durgin@inktank.com>
 
-commit dbcae088fa660086bde6e10d63bb3c9264832d85 upstream.
+commit 20e0af67ce88c657d0601977b9941a2256afbdaa upstream.
 
-create_singlethread_workqueue() returns NULL on error, and it doesn't
-return ERR_PTRs.
+The only user of rbd_obj_notify_ack() is rbd_watch_cb(). It used
+asynchronously with no tracking of when the notify ack completes, so
+it may still be in progress when the osd_client is shut down.  This
+results in a BUG() since the osd client assumes no requests are in
+flight when it stops. Since all notifies are flushed before the
+osd_client is stopped, waiting for the notify ack to complete before
+returning from the watch callback ensures there are no notify acks in
+flight during shutdown.
 
-I tweaked the error handling a little to be consistent with earlier in
-the function.
+Rename rbd_obj_notify_ack() to rbd_obj_notify_ack_sync() to reflect
+its new synchronous nature.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
+Reviewed-by: Alex Elder <elder@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ceph/osd_client.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/block/rbd.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -2257,12 +2257,10 @@ int ceph_osdc_init(struct ceph_osd_clien
- 	if (err < 0)
- 		goto out_msgpool;
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -2819,7 +2819,7 @@ out_err:
+ 	obj_request_done_set(obj_request);
+ }
  
-+	err = -ENOMEM;
- 	osdc->notify_wq = create_singlethread_workqueue("ceph-watch-notify");
--	if (IS_ERR(osdc->notify_wq)) {
--		err = PTR_ERR(osdc->notify_wq);
--		osdc->notify_wq = NULL;
-+	if (!osdc->notify_wq)
- 		goto out_msgpool;
--	}
- 	return 0;
+-static int rbd_obj_notify_ack(struct rbd_device *rbd_dev, u64 notify_id)
++static int rbd_obj_notify_ack_sync(struct rbd_device *rbd_dev, u64 notify_id)
+ {
+ 	struct rbd_obj_request *obj_request;
+ 	struct ceph_osd_client *osdc = &rbd_dev->rbd_client->client->osdc;
+@@ -2834,16 +2834,17 @@ static int rbd_obj_notify_ack(struct rbd
+ 	obj_request->osd_req = rbd_osd_req_create(rbd_dev, false, obj_request);
+ 	if (!obj_request->osd_req)
+ 		goto out;
+-	obj_request->callback = rbd_obj_request_put;
  
- out_msgpool:
+ 	osd_req_op_watch_init(obj_request->osd_req, 0, CEPH_OSD_OP_NOTIFY_ACK,
+ 					notify_id, 0, 0);
+ 	rbd_osd_req_format_read(obj_request);
+ 
+ 	ret = rbd_obj_request_submit(osdc, obj_request);
+-out:
+ 	if (ret)
+-		rbd_obj_request_put(obj_request);
++		goto out;
++	ret = rbd_obj_request_wait(obj_request);
++out:
++	rbd_obj_request_put(obj_request);
+ 
+ 	return ret;
+ }
+@@ -2863,7 +2864,7 @@ static void rbd_watch_cb(u64 ver, u64 no
+ 	if (ret)
+ 		rbd_warn(rbd_dev, ": header refresh error (%d)\n", ret);
+ 
+-	rbd_obj_notify_ack(rbd_dev, notify_id);
++	rbd_obj_notify_ack_sync(rbd_dev, notify_id);
+ }
+ 
+ /*
 
 
