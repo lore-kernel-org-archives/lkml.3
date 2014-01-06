@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932674AbaAFWkF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:40:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47921 "EHLO
+	id S932839AbaAFWkg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:40:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48077 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932640AbaAFWj7 (ORCPT
+	with ESMTP id S932814AbaAFWkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:39:59 -0500
+	Mon, 6 Jan 2014 17:40:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marc Carino <marc.ceeeee@gmail.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.12 100/144] libata: implement ATA_HORKAGE_NO_NCQ_TRIM and apply it to Micro M500 SSDs
-Date: Mon,  6 Jan 2014 14:37:41 -0800
-Message-Id: <20140106223748.223686165@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.10 029/129] ext4: call ext4_error_inode() if jbd2_journal_dirty_metadata() fails
+Date: Mon,  6 Jan 2014 14:37:38 -0800
+Message-Id: <20140106223900.441069396@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
-References: <20140106223745.326293132@linuxfoundation.org>
+In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
+References: <20140106223859.589799655@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,75 +24,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Marc Carino <marc.ceeeee@gmail.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit f78dea064c5f7de07de4912a6e5136dbc443d614 upstream.
+commit ae1495b12df1897d4f42842a7aa7276d920f6290 upstream.
 
-Certain drives cannot handle queued TRIM commands properly, even
-though support is indicated in the IDENTIFY DEVICE buffer.  This patch
-allows for disabling the commands for the affected drives and apply it
-to the Micron/Crucial M500 SSDs which exhibit incorrect protocol
-behavior when issued queued TRIM commands, which could lead to silent
-data corruption.
+While it's true that errors can only happen if there is a bug in
+jbd2_journal_dirty_metadata(), if a bug does happen, we need to halt
+the kernel or remount the file system read-only in order to avoid
+further data loss.  The ext4_journal_abort_handle() function doesn't
+do any of this, and while it's likely that this call (since it doesn't
+adjust refcounts) will likely result in the file system eventually
+deadlocking since the current transaction will never be able to close,
+it's much cleaner to call let ext4's error handling system deal with
+this situation.
 
-tj: Merged two unnecessarily split patches and made minor edits
-    including shortening horkage name.
+There's a separate bug here which is that if certain jbd2 errors
+errors occur and file system is mounted errors=continue, the file
+system will probably eventually end grind to a halt as described
+above.  But things have been this way in a long time, and usually when
+we have these sorts of errors it's pretty much a disaster --- and
+that's why the jbd2 layer aggressively retries memory allocations,
+which is the most likely cause of these jbd2 errors.
 
-Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Link: http://lkml.kernel.org/g/1387246554-7311-1-git-send-email-marc.ceeeee@gmail.com
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-core.c |   15 +++++++++++++--
- include/linux/libata.h    |    1 +
- 2 files changed, 14 insertions(+), 2 deletions(-)
+ fs/ext4/ext4_jbd2.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -2149,9 +2149,16 @@ static int ata_dev_config_ncq(struct ata
- 				    "failed to get NCQ Send/Recv Log Emask 0x%x\n",
- 				    err_mask);
- 		} else {
-+			u8 *cmds = dev->ncq_send_recv_cmds;
-+
- 			dev->flags |= ATA_DFLAG_NCQ_SEND_RECV;
--			memcpy(dev->ncq_send_recv_cmds, ap->sector_buf,
--				ATA_LOG_NCQ_SEND_RECV_SIZE);
-+			memcpy(cmds, ap->sector_buf, ATA_LOG_NCQ_SEND_RECV_SIZE);
-+
-+			if (dev->horkage & ATA_HORKAGE_NO_NCQ_TRIM) {
-+				ata_dev_dbg(dev, "disabling queued TRIM support\n");
-+				cmds[ATA_LOG_NCQ_SEND_RECV_DSM_OFFSET] &=
-+					~ATA_LOG_NCQ_SEND_RECV_DSM_TRIM;
-+			}
+--- a/fs/ext4/ext4_jbd2.c
++++ b/fs/ext4/ext4_jbd2.c
+@@ -223,6 +223,15 @@ int __ext4_handle_dirty_metadata(const c
+ 		if (WARN_ON_ONCE(err)) {
+ 			ext4_journal_abort_handle(where, line, __func__, bh,
+ 						  handle, err);
++			ext4_error_inode(inode, where, line,
++					 bh->b_blocknr,
++					 "journal_dirty_metadata failed: "
++					 "handle type %u started at line %u, "
++					 "credits %u/%u, errcode %d",
++					 handle->h_type,
++					 handle->h_line_no,
++					 handle->h_requested_credits,
++					 handle->h_buffer_credits, err);
  		}
- 	}
- 
-@@ -4205,6 +4212,10 @@ static const struct ata_blacklist_entry
- 	{ "PIONEER DVD-RW  DVR-212D",	NULL,	ATA_HORKAGE_NOSETXFER },
- 	{ "PIONEER DVD-RW  DVR-216D",	NULL,	ATA_HORKAGE_NOSETXFER },
- 
-+	/* devices that don't properly handle queued TRIM commands */
-+	{ "Micron_M500*",		NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
-+	{ "Crucial_CT???M500SSD1",	NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
-+
- 	/* End Marker */
- 	{ }
- };
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -418,6 +418,7 @@ enum {
- 	ATA_HORKAGE_DUMP_ID	= (1 << 16),	/* dump IDENTIFY data */
- 	ATA_HORKAGE_MAX_SEC_LBA48 = (1 << 17),	/* Set max sects to 65535 */
- 	ATA_HORKAGE_ATAPI_DMADIR = (1 << 18),	/* device requires dmadir */
-+	ATA_HORKAGE_NO_NCQ_TRIM	= (1 << 19),	/* don't use queued TRIM */
- 
- 	 /* DMA mask for user DMA control: User visible values; DO NOT
- 	    renumber */
+ 	} else {
+ 		if (inode)
 
 
