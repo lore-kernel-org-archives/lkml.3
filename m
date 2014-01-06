@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208AbaAFUro (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 15:47:44 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:34517 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755860AbaAFUrn (ORCPT
+	id S1756226AbaAFUsu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 15:48:50 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:57609 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755815AbaAFUss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 15:47:43 -0500
-Date: Mon, 06 Jan 2014 15:47:40 -0500 (EST)
-Message-Id: <20140106.154740.590358835696689785.davem@davemloft.net>
-To: jasowang@redhat.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, mst@redhat.com,
-        john.r.fastabend@intel.com, nhorman@tuxdriver.com
-Subject: Re: [PATCH net 1/2] macvlan: forbid L2 fowarding offload for
- macvtap
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1388978467-2075-1-git-send-email-jasowang@redhat.com>
-References: <1388978467-2075-1-git-send-email-jasowang@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 06 Jan 2014 12:47:42 -0800 (PST)
+	Mon, 6 Jan 2014 15:48:48 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        nicolas.pitre@linaro.org
+Subject: Re: [PATCH 0/4] CPUFreq stats: Bug fixes
+Date: Mon, 06 Jan 2014 22:02:35 +0100
+Message-ID: <1555125.bAi9TgavWd@vostro.rjw.lan>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <cover.1380190886.git.viresh.kumar@linaro.org>
+References: <cover.1380190886.git.viresh.kumar@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Wang <jasowang@redhat.com>
-Date: Mon,  6 Jan 2014 11:21:06 +0800
-
-> L2 fowarding offload will bypass the rx handler of real device. This will make
-> the packet could not be forwarded to macvtap device. Another problem is the
-> dev_hard_start_xmit() called for macvtap does not have any synchronization.
+On Thursday, September 26, 2013 03:59:50 PM Viresh Kumar wrote:
+> Hi Rafael,
 > 
-> Fix this by forbidding L2 forwarding for macvtap.
+> I know you asked me not to send any more patches before the earlier ones get
+> into kernel. I got to this as Nicolas Pitre required to send few CPUFreq patches
+> for ARM's big LITTLE In-Kernel-Switcher. And within linaro we have hacked these
+> bugs in a bad way..
 > 
-> Cc: John Fastabend <john.r.fastabend@intel.com>
-> Cc: Neil Horman <nhorman@tuxdriver.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> Because of his dependency I am forced to send these.. These aren't introduced
+> recently and so they can be included in 3.13.
+> 
+> There are several problems/bugs in cpufreq-stats specially with cpufreq drivers
+> as modules and suspend/resume path. These are mentioned well in changelogs.
+> 
+> These are tested over my thinkpad (acpi-cpufreq) in following way:
+> [1] offline+online all CPUs except boot cpu in a while loop
+> [2] then do suspend resume
+> [3] repeat [1] and [2] several times.
+> 
+> No issues found..
+> 
+> Also tested on my exynos board:
+> - Added cpufreq_unregister/register while loop in exynos-cpufreq.c so that we
+>   continuously register/unregister driver... Stats were working fine now..
+> - Compile cpufreq-stats as module and insert/remove it several times after
+>   removing above hack (as that doesn't let linux boot :) )..
+> 
+> @Srivatsa: You also have fairly good idea of cpufreq now, so please give some
+> time to review this :)
+> 
+> @Nico: Can you remove the hacky code from IKS tree and test these instead to see
+> if we still have any issues?
 
-I think I agree with Neil that the rx_handler change might be the best
-way to fix this.  That change seems to have a lot of nice unintended
-side effects, no?
+Can you please rebase this series on top of linux-pm.git/bleeding-edge and
+resend it?  Chances are it might make it into 3.14.
+
+Thanks,
+Rafael
+
