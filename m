@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933114AbaAFX6j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:58:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47623 "EHLO
+	id S932295AbaAFWjG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:39:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47566 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932316AbaAFWjJ (ORCPT
+	with ESMTP id S932250AbaAFWi6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:39:09 -0500
+	Mon, 6 Jan 2014 17:38:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zheng Liu <wenqing.lz@taobao.com>, Jan Kara <jack@suse.cz>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.12 055/144] ext4: fix deadlock when writing in ENOSPC conditions
-Date: Mon,  6 Jan 2014 14:36:56 -0800
-Message-Id: <20140106223746.918167443@linuxfoundation.org>
+        Eugene Shatokhin <eugene.shatokhin@rosalab.ru>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.12 070/144] drm/i915: dont update the dri1 breadcrumb with modesetting
+Date: Mon,  6 Jan 2014 14:37:11 -0800
+Message-Id: <20140106223747.358738783@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,86 +30,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 34cf865d54813aab3497838132fb1bbd293f4054 upstream.
+commit 6c719faca2aceca72f1bf5b1645c1734ed3e9447 upstream.
 
-Akira-san has been reporting rare deadlocks of his machine when running
-xfstests test 269 on ext4 filesystem. The problem turned out to be in
-ext4_da_reserve_metadata() and ext4_da_reserve_space() which called
-ext4_should_retry_alloc() while holding i_data_sem. Since
-ext4_should_retry_alloc() can force a transaction commit, this is a
-lock ordering violation and leads to deadlocks.
+The update is horribly racy since it doesn't protect at all against
+concurrent closing of the master fd. And it can't really since that
+requires us to grab a mutex.
 
-Fix the problem by just removing the retry loops. These functions should
-just report ENOSPC to the caller (e.g. ext4_da_write_begin()) and that
-function must take care of retrying after dropping all necessary locks.
+Instead of jumping through hoops and offloading this to a worker
+thread just block this bit of code for the modesetting driver.
 
-Reported-and-tested-by: Akira Fujita <a-fujita@rs.jp.nec.com>
-Reviewed-by: Zheng Liu <wenqing.lz@taobao.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Note that the race is fairly easy to hit since we call the breadcrumb
+function for any interrupt. So the vblank interrupt (which usually
+keeps going for a bit) is enough. But even if we'd block this and only
+update the breadcrumb for user interrupts from the CS we could hit
+this race with kms/gem userspace: If a non-master is waiting somewhere
+(and hence has interrupts enabled) and the master closes its fd
+(probably due to crashing).
+
+v2: Add a code comment to explain why fixing this for real isn't
+really worth it. Also improve the commit message a bit.
+
+v3: Fix the spelling in the comment.
+
+Reported-by: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
+Cc: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
+Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
+Tested-by: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/inode.c |   12 ------------
- 1 file changed, 12 deletions(-)
+ drivers/gpu/drm/i915/i915_dma.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -1206,7 +1206,6 @@ static int ext4_journalled_write_end(str
-  */
- static int ext4_da_reserve_metadata(struct inode *inode, ext4_lblk_t lblock)
- {
--	int retries = 0;
- 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
- 	struct ext4_inode_info *ei = EXT4_I(inode);
- 	unsigned int md_needed;
-@@ -1218,7 +1217,6 @@ static int ext4_da_reserve_metadata(stru
- 	 * in order to allocate nrblocks
- 	 * worse case is one extent per block
- 	 */
--repeat:
- 	spin_lock(&ei->i_block_reservation_lock);
- 	/*
- 	 * ext4_calc_metadata_amount() has side effects, which we have
-@@ -1238,10 +1236,6 @@ repeat:
- 		ei->i_da_metadata_calc_len = save_len;
- 		ei->i_da_metadata_calc_last_lblock = save_last_lblock;
- 		spin_unlock(&ei->i_block_reservation_lock);
--		if (ext4_should_retry_alloc(inode->i_sb, &retries)) {
--			cond_resched();
--			goto repeat;
--		}
- 		return -ENOSPC;
- 	}
- 	ei->i_reserved_meta_blocks += md_needed;
-@@ -1255,7 +1249,6 @@ repeat:
-  */
- static int ext4_da_reserve_space(struct inode *inode, ext4_lblk_t lblock)
- {
--	int retries = 0;
- 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
- 	struct ext4_inode_info *ei = EXT4_I(inode);
- 	unsigned int md_needed;
-@@ -1277,7 +1270,6 @@ static int ext4_da_reserve_space(struct
- 	 * in order to allocate nrblocks
- 	 * worse case is one extent per block
- 	 */
--repeat:
- 	spin_lock(&ei->i_block_reservation_lock);
- 	/*
- 	 * ext4_calc_metadata_amount() has side effects, which we have
-@@ -1297,10 +1289,6 @@ repeat:
- 		ei->i_da_metadata_calc_len = save_len;
- 		ei->i_da_metadata_calc_last_lblock = save_last_lblock;
- 		spin_unlock(&ei->i_block_reservation_lock);
--		if (ext4_should_retry_alloc(inode->i_sb, &retries)) {
--			cond_resched();
--			goto repeat;
--		}
- 		dquot_release_reservation_block(inode, EXT4_C2B(sbi, 1));
- 		return -ENOSPC;
- 	}
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -83,6 +83,14 @@ void i915_update_dri1_breadcrumb(struct
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
+ 	struct drm_i915_master_private *master_priv;
+ 
++	/*
++	 * The dri breadcrumb update races against the drm master disappearing.
++	 * Instead of trying to fix this (this is by far not the only ums issue)
++	 * just don't do the update in kms mode.
++	 */
++	if (drm_core_check_feature(dev, DRIVER_MODESET))
++		return;
++
+ 	if (dev->primary->master) {
+ 		master_priv = dev->primary->master->driver_priv;
+ 		if (master_priv->sarea_priv)
 
 
