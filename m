@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757861AbaAFXrB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:47:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47845 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932468AbaAFWjo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932531AbaAFWjo (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 Jan 2014 17:39:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47752 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932468AbaAFWjd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 17:39:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vlastimil Babka <vbabka@suse.cz>, Sasha Levin <sasha.levin@oracle.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 121/144] mm: munlock: fix deadlock in __munlock_pagevec()
-Date: Mon,  6 Jan 2014 14:38:02 -0800
-Message-Id: <20140106223748.815811640@linuxfoundation.org>
+        Rob Herring <robh@kernel.org>
+Subject: [PATCH 3.12 109/144] Revert "of/address: Handle #address-cells > 2 specially"
+Date: Mon,  6 Jan 2014 14:37:50 -0800
+Message-Id: <20140106223748.478305429@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -33,81 +28,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlastimil Babka <vbabka@suse.cz>
+From: Rob Herring <robh@kernel.org>
 
-commit 3b25df93c6e37e323b86a2a8c1e00c0a2821c6c9 upstream.
+commit 13fcca8f25f4e9ce7f55da9cd353bb743236e212 upstream.
 
-Commit 7225522bb429 ("mm: munlock: batch non-THP page isolation and
-munlock+putback using pagevec" introduced __munlock_pagevec() to speed
-up munlock by holding lru_lock over multiple isolated pages.  Pages that
-fail to be isolated are put_page()d immediately, also within the lock.
+This reverts commit e38c0a1fbc5803cbacdaac0557c70ac8ca5152e7.
 
-This can lead to deadlock when __munlock_pagevec() becomes the holder of
-the last page pin and put_page() leads to __page_cache_release() which
-also locks lru_lock.  The deadlock has been observed by Sasha Levin
-using trinity.
+Nikita Yushchenko reports:
+While trying to make freescale p2020ds and  mpc8572ds boards working
+with mainline kernel, I faced that commit e38c0a1f (Handle
 
-This patch avoids the deadlock by deferring put_page() operations until
-lru_lock is released.  Another pagevec (which is also used by later
-phases of the function is reused to gather the pages for put_page()
-operation.
+Both these boards have uli1575 chip.
+Corresponding part in device tree is something like
 
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+                uli1575@0 {
+                        reg = <0x0 0x0 0x0 0x0 0x0>;
+                        #size-cells = <2>;
+                        #address-cells = <3>;
+                        ranges = <0x2000000 0x0 0x80000000
+                                  0x2000000 0x0 0x80000000
+                                  0x0 0x20000000
+
+                                  0x1000000 0x0 0x0
+                                  0x1000000 0x0 0x0
+                                  0x0 0x10000>;
+                        isa@1e {
+...
+
+I.e. it has #address-cells = <3>
+
+With commit e38c0a1f reverted, devices under uli1575 are registered
+correctly, e.g. for rtc
+
+OF: ** translation for device /pcie@ffe09000/pcie@0/uli1575@0/isa@1e/rtc@70 **
+OF: bus is isa (na=2, ns=1) on /pcie@ffe09000/pcie@0/uli1575@0/isa@1e
+OF: translating address: 00000001 00000070
+OF: parent bus is default (na=3, ns=2) on /pcie@ffe09000/pcie@0/uli1575@0
+OF: walking ranges...
+OF: ISA map, cp=0, s=1000, da=70
+OF: parent translation for: 01000000 00000000 00000000
+OF: with offset: 70
+OF: one level translation: 00000000 00000000 00000070
+OF: parent bus is pci (na=3, ns=2) on /pcie@ffe09000/pcie@0
+OF: walking ranges...
+OF: default map, cp=a0000000, s=20000000, da=70
+OF: default map, cp=0, s=10000, da=70
+OF: parent translation for: 01000000 00000000 00000000
+OF: with offset: 70
+OF: one level translation: 01000000 00000000 00000070
+OF: parent bus is pci (na=3, ns=2) on /pcie@ffe09000
+OF: walking ranges...
+OF: PCI map, cp=0, s=10000, da=70
+OF: parent translation for: 01000000 00000000 00000000
+OF: with offset: 70
+OF: one level translation: 01000000 00000000 00000070
+OF: parent bus is default (na=2, ns=2) on /
+OF: walking ranges...
+OF: PCI map, cp=0, s=10000, da=70
+OF: parent translation for: 00000000 ffc10000
+OF: with offset: 70
+OF: one level translation: 00000000 ffc10070
+OF: reached root node
+
+With commit e38c0a1f in place, address translation fails:
+
+OF: ** translation for device /pcie@ffe09000/pcie@0/uli1575@0/isa@1e/rtc@70 **
+OF: bus is isa (na=2, ns=1) on /pcie@ffe09000/pcie@0/uli1575@0/isa@1e
+OF: translating address: 00000001 00000070
+OF: parent bus is default (na=3, ns=2) on /pcie@ffe09000/pcie@0/uli1575@0
+OF: walking ranges...
+OF: ISA map, cp=0, s=1000, da=70
+OF: parent translation for: 01000000 00000000 00000000
+OF: with offset: 70
+OF: one level translation: 00000000 00000000 00000070
+OF: parent bus is pci (na=3, ns=2) on /pcie@ffe09000/pcie@0
+OF: walking ranges...
+OF: default map, cp=a0000000, s=20000000, da=70
+OF: default map, cp=0, s=10000, da=70
+OF: not found !
+
+Thierry Reding confirmed this commit was not needed after all:
+"We ended up merging a different address representation for Tegra PCIe
+and I've confirmed that reverting this commit doesn't cause any obvious
+regressions. I think all other drivers in drivers/pci/host ended up
+copying what we did on Tegra, so I wouldn't expect any other breakage
+either."
+
+There doesn't appear to be a simple way to support both behaviours, so
+reverting this as nothing should be depending on the new behaviour.
+
+Signed-off-by: Rob Herring <robh@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mlock.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ drivers/of/address.c |    8 --------
+ 1 file changed, 8 deletions(-)
 
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -298,10 +298,12 @@ static void __munlock_pagevec(struct pag
- {
- 	int i;
- 	int nr = pagevec_count(pvec);
--	int delta_munlocked = -nr;
-+	int delta_munlocked;
- 	struct pagevec pvec_putback;
- 	int pgrescued = 0;
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -69,14 +69,6 @@ static u64 of_bus_default_map(__be32 *ad
+ 		 (unsigned long long)cp, (unsigned long long)s,
+ 		 (unsigned long long)da);
  
-+	pagevec_init(&pvec_putback, 0);
-+
- 	/* Phase 1: page isolation */
- 	spin_lock_irq(&zone->lru_lock);
- 	for (i = 0; i < nr; i++) {
-@@ -330,18 +332,21 @@ skip_munlock:
- 			/*
- 			 * We won't be munlocking this page in the next phase
- 			 * but we still need to release the follow_page_mask()
--			 * pin.
-+			 * pin. We cannot do it under lru_lock however. If it's
-+			 * the last pin, __page_cache_release would deadlock.
- 			 */
-+			pagevec_add(&pvec_putback, pvec->pages[i]);
- 			pvec->pages[i] = NULL;
--			put_page(page);
--			delta_munlocked++;
- 		}
- 	}
-+	delta_munlocked = -nr + pagevec_count(&pvec_putback);
- 	__mod_zone_page_state(zone, NR_MLOCK, delta_munlocked);
- 	spin_unlock_irq(&zone->lru_lock);
- 
-+	/* Now we can release pins of pages that we are not munlocking */
-+	pagevec_release(&pvec_putback);
-+
- 	/* Phase 2: page munlock */
--	pagevec_init(&pvec_putback, 0);
- 	for (i = 0; i < nr; i++) {
- 		struct page *page = pvec->pages[i];
- 
+-	/*
+-	 * If the number of address cells is larger than 2 we assume the
+-	 * mapping doesn't specify a physical address. Rather, the address
+-	 * specifies an identifier that must match exactly.
+-	 */
+-	if (na > 2 && memcmp(range, addr, na * 4) != 0)
+-		return OF_BAD_ADDR;
+-
+ 	if (da < cp || da >= (cp + s))
+ 		return OF_BAD_ADDR;
+ 	return da - cp;
 
 
