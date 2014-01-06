@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933065AbaAFX56 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:57:58 -0500
-Received: from mga03.intel.com ([143.182.124.21]:15268 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932192AbaAFX54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 18:57:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,615,1384329600"; 
-   d="scan'208";a="454529401"
-Message-ID: <52CB4303.10207@intel.com>
-Date: Mon, 06 Jan 2014 15:57:55 -0800
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S933086AbaAFX6W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:58:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47628 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932319AbaAFWjK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 17:39:10 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Li Wang <liwang@ubuntukylin.com>, Sage Weil <sage@inktank.com>
+Subject: [PATCH 3.12 082/144] ceph: Avoid data inconsistency due to d-cache aliasing in readpage()
+Date: Mon,  6 Jan 2014 14:37:23 -0800
+Message-Id: <20140106223747.708728592@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
+References: <20140106223745.326293132@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Greg KH <gregkh@linuxfoundation.org>
-CC: joe@perches.com, josh@joshtriplett.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] checkpatch: Only flag FSF address, not gnu.org URL
-References: <20140106231534.23578.11475.stgit@ahduyck-cp2.jf.intel.com> <20140106232717.GA22336@kroah.com> <52CB41CA.8070508@zytor.com>
-In-Reply-To: <52CB41CA.8070508@zytor.com>
-X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2014 03:52 PM, H. Peter Anvin wrote:
-> On 01/06/2014 03:27 PM, Greg KH wrote:
->> On Mon, Jan 06, 2014 at 03:16:24PM -0800, Alexander Duyck wrote:
->>> This change restricts the check for the for the FSF address in the GPL
->>> copyright statement so that it only flags the address, not the references to
->>> the gnu.org/licenses URL which appear in numerous drivers.
->>>
->>> So for example this statement will still return an error:
->>>   You should have received a copy of the GNU General Public License
->>>   along with this program; if not, write to the Free Software
->>>   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
->>>
->>> However, this statement will not return an error after this patch:
->>>   You should have received a copy of the GNU General Public License
->>>   along with this program.  If not, see <http://www.gnu.org/licenses/>.
->>
->> Why is this paragraph needed?  The kernel does come with a copy of the
->> GPL, so it's not an issue for kernel files, right?
->>
-> 
-> (IANAL but...) Presumably some people might be concerned about it
-> because of either patches on mailing lists or otherwise separate from
-> the kernel, or if someone pulls individual files out of the kernel tree
-> for another project.
-> 
-> 	-hpa
-> 
-> 
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-The individual files issue the main concern.  For our driver we have
-bits that are often copied out without the rest of the kernel.  User
-space drivers are a perfect example.  As a result we find a number of
-spots where our driver files are copied and there is no COPYING file.
+------------------
 
-Thanks,
+From: Li Wang <liwang@ubuntukylin.com>
 
-Alex
+commit 56f91aad69444d650237295f68c195b74d888d95 upstream.
+
+If the length of data to be read in readpage() is exactly
+PAGE_CACHE_SIZE, the original code does not flush d-cache
+for data consistency after finishing reading. This patches fixes
+this.
+
+Signed-off-by: Li Wang <liwang@ubuntukylin.com>
+Signed-off-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/ceph/addr.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+--- a/fs/ceph/addr.c
++++ b/fs/ceph/addr.c
+@@ -210,9 +210,13 @@ static int readpage_nounlock(struct file
+ 	if (err < 0) {
+ 		SetPageError(page);
+ 		goto out;
+-	} else if (err < PAGE_CACHE_SIZE) {
++	} else {
++		if (err < PAGE_CACHE_SIZE) {
+ 		/* zero fill remainder of page */
+-		zero_user_segment(page, err, PAGE_CACHE_SIZE);
++			zero_user_segment(page, err, PAGE_CACHE_SIZE);
++		} else {
++			flush_dcache_page(page);
++		}
+ 	}
+ 	SetPageUptodate(page);
+ 
+
+
