@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755960AbaAFR2J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 12:28:09 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:59945 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755942AbaAFR2G (ORCPT
+	id S1755964AbaAFR3E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 12:29:04 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:57455 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755798AbaAFR3C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 12:28:06 -0500
-Message-ID: <1389029284.5590.21.camel@pizza.hi.pengutronix.de>
-Subject: Re: [PATCH v4 01/15] reset: Silence warning in reset-controller.h
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Saravana Kannan <skannan@codeaurora.org>
-Date: Mon, 06 Jan 2014 18:28:04 +0100
-In-Reply-To: <1387847559-18330-2-git-send-email-sboyd@codeaurora.org>
-References: <1387847559-18330-1-git-send-email-sboyd@codeaurora.org>
-	 <1387847559-18330-2-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 6 Jan 2014 12:29:02 -0500
+Date: Mon, 6 Jan 2014 17:28:49 +0000
+From: Russell King <rmk@arm.linux.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Nicolas Pitre <nico@fluxnic.net>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: linux-next: build failure after merge of the akpm-current tree
+Message-ID: <20140106172848.GA9162@flint.arm.linux.org.uk>
+References: <20140106200758.a76bbd94508614b4decabdcd@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140106200758.a76bbd94508614b4decabdcd@canb.auug.org.au>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, den 23.12.2013, 17:12 -0800 schrieb Stephen Boyd:
-> If a user of <linux/reset-controller.h> doesn't include
-> <linux/of.h> before including reset-controller.h they'll get a
-> warning as follows:
+On Mon, Jan 06, 2014 at 08:07:58PM +1100, Stephen Rothwell wrote:
+> Hi Andrew,
 > 
->   include/linux/reset-controller.h:44:17:
->   warning: 'struct of_phandle_args' declared inside parameter list
+> After merging the akpm-current tree, today's linux-next build (arm
+> multi_v7_defconfig) failed like this:
 > 
-> This is because of_phandle_args is not forward declared. Add the
-> declaration to silence this warning.
+> arch/arm/mm/init.c:199:13: error: conflicting types for 'arm_dma_zone_size'
+> include/linux/bootmem.h:259:11: note: previous declaration of 'arm_dma_zone_size' was here
 > 
-> Cc: Philipp Zabel <p.zabel@pengutronix.de>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  include/linux/reset-controller.h | 1 +
->  1 file changed, 1 insertion(+)
+> Caused by commit a3ae9362fafe ("mm/memblock: add memblock memory
+> allocation apis").
 > 
-> diff --git a/include/linux/reset-controller.h b/include/linux/reset-controller.h
-> index 2f61311..41a4695 100644
-> --- a/include/linux/reset-controller.h
-> +++ b/include/linux/reset-controller.h
-> @@ -21,6 +21,7 @@ struct reset_control_ops {
->  
->  struct module;
->  struct device_node;
-> +struct of_phandle_args;
->  
->  /**
->   * struct reset_controller_dev - reset controller entity that might
+> For this build, BOOTMEM_LOW_LIMIT is defined as __pa(MAX_DMA_ADDRESS) and
+> MAX_DMA_ADDRESS is defined as:
+> 
+> #define MAX_DMA_ADDRESS ({ \
+>         extern unsigned long arm_dma_zone_size; \
+>         arm_dma_zone_size ? \
+>                 (PAGE_OFFSET + arm_dma_zone_size) : 0xffffffffUL; })
+> 
+> and in arch/arm/mm/init.c, arm_dma_zone_size is declared as:
+> 
+> phys_addr_t arm_dma_zone_size __read_mostly;
+> 
+> Urk!  :-(
+> 
+> OK, so commit 364230b995214 ("ARM: use phys_addr_t for DMA zone sizes")
+> changed the definition of arm_dma_zone_size except it missed the one in
+> arch/arm/include/asm/dma.h.
+> 
+> I have applied this merge fix patch for today:
 
-Since this is only a warning, I see no need for this to go through the
-clock tree. On the other hand there are no merge conflicts to be
-expected, so that's fine with me either way.
+There's more here than just this change required here.  We also need to
+limit it if PAGE_OFFSET + arm_dma_zone_size is greater than 4GB, as
+MAX_DMA_ADDRESS is a virtual address - we really don't want the 32-bit
+value of this wrapping.
 
-Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
+Exactly how we go about this, I'm not sure at the moment, but maybe
+something like this:
 
-regards
-Philipp
+#define MAX_DMA_ADDRESS ({ \
+        extern phys_addr_t arm_dma_zone_size; \
+        arm_dma_zone_size && arm_dma_zone_size < (0x10000000 - PAGE_OFFSET) ? \
+                (PAGE_OFFSET + arm_dma_zone_size) : 0xffffffffUL; })
 
+-- 
+Russell King
+ARM architecture Linux Kernel maintainer
