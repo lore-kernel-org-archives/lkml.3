@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755528AbaAFUPh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 15:15:37 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:52898 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754620AbaAFUPf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 15:15:35 -0500
-Date: Mon, 6 Jan 2014 15:00:50 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Luciano Coelho <luca@coelho.fi>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        freemangordon@abv.bg, aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
-        joni.lapilainen@gmail.com, Johannes Berg <johannes@sipsolutions.net>,
-        Felipe Contreras <felipe.contreras@gmail.com>
-Subject: Re: [PATCH v2 00/16] wl1251 patches from linux-n900 tree
-Message-ID: <20140106200050.GG10885@tuxdriver.com>
-References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
- <1386494714-21070-1-git-send-email-pali.rohar@gmail.com>
- <201312311047.30147@pali>
+	id S1755952AbaAFURU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 15:17:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8874 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754254AbaAFURS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 15:17:18 -0500
+Date: Mon, 6 Jan 2014 15:17:13 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Viresh Kumar <viresh.kumar@linaro.org>
+cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] powernow-k6: disable cache when changing frequency
+In-Reply-To: <CAKohpok=exdOO-T+SFxsyqCBZ1N8ZFBMcVNn-AYsxxMw74DeJQ@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1401061514450.25034@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1312111751180.9686@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1312111937570.23022@file01.intranet.prod.int.rdu2.redhat.com> <CAKohpo=_0i43EDSoOAm2ROwEmu9__p+MyoObcLPoZWxUB5XmDA@mail.gmail.com>
+ <alpine.LRH.2.02.1401021233280.16351@file01.intranet.prod.int.rdu2.redhat.com> <CAKohpok=exdOO-T+SFxsyqCBZ1N8ZFBMcVNn-AYsxxMw74DeJQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201312311047.30147@pali>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 31, 2013 at 10:47:29AM +0100, Pali Rohár wrote:
-> On Sunday 08 December 2013 10:24:58 Pali Rohár wrote:
-> > Hello, I'm sending wl1251 patches from linux-n900 tree [1] for
-> > comments. More patches come from David's monitor & packet
-> > injection work. Patches are tested with 3.12 rc5 kernel on
-> > Nokia N900.
-> > 
-> > Second version contains new patch for fixing NULL pointer
-> > dereference which sometimes cause kernel panic and fixes code
-> > suggested by Pavel Machek.
- 
-> So far, there are no new comments for patches 01, 03-13 and 16. 
-> Are there any other problems with that patches or can be accepted 
-> for upstream?
- 
-They are probably fine to merge now.  Of course, I was still deleting
-wl12xx patches when they were originally posted, so I'll need someone
-to resend the patches to me...
 
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+
+On Fri, 3 Jan 2014, Viresh Kumar wrote:
+
+> On 2 January 2014 23:08, Mikulas Patocka <mpatocka@redhat.com> wrote:
+> > Flushing the cache and changing frequency takes approximatelly 500us. The
+> > patch increases policy->cpuinfo.transition_latency to that value.
+> 
+> Its not about how fast caches get cleaned but how much time would
+> be wasted to get them filled again as same data could be required again
+> which is just flushed out. That would impact performance more than
+> flushing caches.
+
+I didn't see any performance degradation when I tried changing the 
+frequency manually with or without the cache flush patch - the overhead of 
+running cpufreq (8ms) is far worse than the frequency transition itself.
+
+Mikulas
