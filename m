@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059AbaAFIXG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 03:23:06 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:54347 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218AbaAFIWg (ORCPT
+	id S1753334AbaAFIWd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 03:22:33 -0500
+Received: from mail-we0-f170.google.com ([74.125.82.170]:62332 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758AbaAFIW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 03:22:36 -0500
+	Mon, 6 Jan 2014 03:22:28 -0500
 From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 To: catalin.marinas@arm.com, will.deacon@arm.com, gregkh@linuxfoundation.org,
         akpm@linux-foundation.org, hpa@zytor.com, ak@linux.intel.com
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         herbert@gondor.apana.org.au, mingo@redhat.com, nico@linaro.org,
         x86@kernel.org, Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Subject: [PATCH 7/8] arm64: add support for kernel mode NEON in atomic context
-Date: Mon,  6 Jan 2014 09:22:15 +0100
-Message-Id: <1388996536-27014-8-git-send-email-ard.biesheuvel@linaro.org>
+Subject: [PATCH 3/8] cpu: advertise CPU features over udev in a generic way
+Date: Mon,  6 Jan 2014 09:22:11 +0100
+Message-Id: <1388996536-27014-4-git-send-email-ard.biesheuvel@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388996536-27014-1-git-send-email-ard.biesheuvel@linaro.org>
 References: <1388996536-27014-1-git-send-email-ard.biesheuvel@linaro.org>
@@ -23,214 +23,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modifies kernel_neon_begin() and kernel_neon_end(), so
-they may be called from any context. To address the case where only
-a couple of registers are needed, kernel_neon_begin_partial(u32) is
-introduced which takes as a parameter the number of bottom 'n' NEON
-q-registers required. To mark the end of such a partial section, the
-regular kernel_neon_end() should be used.
+This patch implements a generic modalias 'cpu:type:...:feature:...'
+which enables CPU feature flag based module loading in a generic way.
+All the arch needs to do is enable CONFIG_ARCH_HAS_CPU_AUTOPROBE and
+implement arch_print_cpu_modalias(). The modules need to declare the
+CPU feature they depend on with MODULE_DEVICE_TABLE(cpu, ...)
 
 Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 ---
- arch/arm64/include/asm/fpsimd.h       | 17 ++++++++++++++
- arch/arm64/include/asm/fpsimdmacros.h | 37 ++++++++++++++++++++++++++++++
- arch/arm64/include/asm/neon.h         |  6 ++++-
- arch/arm64/kernel/entry-fpsimd.S      | 24 +++++++++++++++++++
- arch/arm64/kernel/fpsimd.c            | 43 +++++++++++++++++++++++------------
- 5 files changed, 111 insertions(+), 16 deletions(-)
+ include/linux/mod_devicetable.h   | 15 +++++++++++++++
+ scripts/mod/devicetable-offsets.c |  3 +++
+ scripts/mod/file2alias.c          | 10 ++++++++++
+ 3 files changed, 28 insertions(+)
 
-diff --git a/arch/arm64/include/asm/fpsimd.h b/arch/arm64/include/asm/fpsimd.h
-index 609bc44ceb8d..dc9ef741c648 100644
---- a/arch/arm64/include/asm/fpsimd.h
-+++ b/arch/arm64/include/asm/fpsimd.h
-@@ -41,6 +41,19 @@ struct fpsimd_state {
- 	unsigned int last_cpu;
- };
+diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
+index 45e921401b06..3aad3c0f765c 100644
+--- a/include/linux/mod_devicetable.h
++++ b/include/linux/mod_devicetable.h
+@@ -564,6 +564,21 @@ struct x86_cpu_id {
+ #define X86_MODEL_ANY  0
+ #define X86_FEATURE_ANY 0	/* Same as FPU, you can't test for that */
  
 +/*
-+ * Struct for stacking the bottom 'n' FP/SIMD registers.
-+ * Mainly intended for kernel use of v8 Crypto Extensions which only
-+ * needs a few registers and may need to execute in atomic context.
-+ */
-+struct fpsimd_partial_state {
-+	u32		num_regs;
-+	u32		fpsr;
-+	u32		fpcr;
-+	__uint128_t	vregs[32] __aligned(16);
-+} __aligned(16);
-+
-+
- #if defined(__KERNEL__) && defined(CONFIG_COMPAT)
- /* Masks for extracting the FPSR and FPCR from the FPSCR */
- #define VFP_FPSCR_STAT_MASK	0xf800009f
-@@ -57,6 +70,10 @@ struct task_struct;
- extern void fpsimd_save_state(struct fpsimd_state *state);
- extern void fpsimd_load_state(struct fpsimd_state *state);
- 
-+extern void fpsimd_save_partial_state(struct fpsimd_partial_state *state,
-+				      u32 num_regs);
-+extern void fpsimd_load_partial_state(struct fpsimd_partial_state *state);
-+
- extern void fpsimd_thread_switch(struct task_struct *next);
- extern void fpsimd_flush_thread(void);
- extern void fpsimd_reload_fpstate(void);
-diff --git a/arch/arm64/include/asm/fpsimdmacros.h b/arch/arm64/include/asm/fpsimdmacros.h
-index bbec599c96bd..42990a82c671 100644
---- a/arch/arm64/include/asm/fpsimdmacros.h
-+++ b/arch/arm64/include/asm/fpsimdmacros.h
-@@ -62,3 +62,40 @@
- 	ldr	w\tmpnr, [\state, #16 * 2 + 4]
- 	msr	fpcr, x\tmpnr
- .endm
-+
-+.altmacro
-+.macro	q2op, op, q1, q2, state
-+	\op	q\q1, q\q2, [\state, # -16 * \q1 - 16]
-+.endm
-+
-+.macro fpsimd_save_partial state, numnr, tmpnr1, tmpnr2
-+	mrs	x\tmpnr1, fpsr
-+	str	w\numnr, [\state]
-+	mrs	x\tmpnr2, fpcr
-+	stp	w\tmpnr1, w\tmpnr2, [\state, #4]
-+	adr	x\tmpnr1, 0f
-+	add	\state, \state, x\numnr, lsl #4
-+	sub	x\tmpnr1, x\tmpnr1, x\numnr, lsl #1
-+	br	x\tmpnr1
-+	.irp	qa, 30, 28, 26, 24, 22, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2, 0
-+		qb = \qa + 1
-+	q2op	stp, \qa, %qb, \state
-+	.endr
-+0:
-+.endm
-+
-+.macro fpsimd_restore_partial state, tmpnr1, tmpnr2
-+	ldp	w\tmpnr1, w\tmpnr2, [\state, #4]
-+	msr	fpsr, x\tmpnr1
-+	msr	fpcr, x\tmpnr2
-+	adr	x\tmpnr1, 0f
-+	ldr	w\tmpnr2, [\state]
-+	add	\state, \state, x\tmpnr2, lsl #4
-+	sub	x\tmpnr1, x\tmpnr1, x\tmpnr2, lsl #1
-+	br	x\tmpnr1
-+	.irp	qa, 30, 28, 26, 24, 22, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2, 0
-+		qb = \qa + 1
-+	q2op	ldp, \qa, %qb, \state
-+	.endr
-+0:
-+.endm
-diff --git a/arch/arm64/include/asm/neon.h b/arch/arm64/include/asm/neon.h
-index b0cc58a97780..21a9e35655b7 100644
---- a/arch/arm64/include/asm/neon.h
-+++ b/arch/arm64/include/asm/neon.h
-@@ -8,7 +8,11 @@
-  * published by the Free Software Foundation.
-  */
- 
-+#include <linux/types.h>
-+
- #define cpu_has_neon()		(1)
- 
--void kernel_neon_begin(void);
-+#define kernel_neon_begin() 	kernel_neon_begin_partial(32)
-+
-+void kernel_neon_begin_partial(u32 num_regs);
- void kernel_neon_end(void);
-diff --git a/arch/arm64/kernel/entry-fpsimd.S b/arch/arm64/kernel/entry-fpsimd.S
-index 6a27cd6dbfa6..d358ccacfc00 100644
---- a/arch/arm64/kernel/entry-fpsimd.S
-+++ b/arch/arm64/kernel/entry-fpsimd.S
-@@ -41,3 +41,27 @@ ENTRY(fpsimd_load_state)
- 	fpsimd_restore x0, 8
- 	ret
- ENDPROC(fpsimd_load_state)
-+
-+#ifdef CONFIG_KERNEL_MODE_NEON
-+
-+/*
-+ * Save the bottom n FP registers.
++ * Generic table type for matching CPU features.
++ * @feature:	the bit number of the feature (0 - 65535)
 + *
-+ * x0 - pointer to struct fpsimd_partial_state
++ * How the bit numbers map to actual CPU features is entirely up to the arch,
++ * although using the same ID space as hwcaps seems obvious.
 + */
-+ENTRY(fpsimd_save_partial_state)
-+	fpsimd_save_partial x0, 1, 8, 9
-+	ret
-+ENDPROC(fpsimd_load_partial_state)
 +
-+/*
-+ * Load the bottom n FP registers.
-+ *
-+ * x0 - pointer to struct fpsimd_partial_state
-+ */
-+ENTRY(fpsimd_load_partial_state)
-+	fpsimd_restore_partial x0, 8, 9
-+	ret
-+ENDPROC(fpsimd_load_partial_state)
++struct cpu_feature {
++	__u16	feature;
++};
 +
-+#endif
-diff --git a/arch/arm64/kernel/fpsimd.c b/arch/arm64/kernel/fpsimd.c
-index 5b13c17e799f..ac105da56c8c 100644
---- a/arch/arm64/kernel/fpsimd.c
-+++ b/arch/arm64/kernel/fpsimd.c
-@@ -143,30 +143,43 @@ void fpsimd_reload_fpstate(void)
- 
- #ifdef CONFIG_KERNEL_MODE_NEON
- 
-+static DEFINE_PER_CPU(struct fpsimd_partial_state, hardirq_fpsimdstate);
-+static DEFINE_PER_CPU(struct fpsimd_partial_state, softirq_fpsimdstate);
++/* hwcap const are bit masks, so take the log when using them as feature IDs */
++#define CPU_FEATURE_HWCAP(x)	ilog2(x)
 +
- /*
-  * Kernel-side NEON support functions
-  */
--void kernel_neon_begin(void)
-+void kernel_neon_begin_partial(u32 num_regs)
- {
--	/* Avoid using the NEON in interrupt context */
--	BUG_ON(in_interrupt());
--	preempt_disable();
--
--	/*
--	 * Save the userland FPSIMD state if we have one and if we haven't done
--	 * so already. Clear fpsimd_last_cpu to indicate that there is no
--	 * longer userland context in the registers.
--	 */
--	if (current->mm && !test_and_set_thread_flag(TIF_FOREIGN_FPSTATE))
--		fpsimd_save_state(&current->thread.fpsimd_state);
--	__get_cpu_var(fpsimd_last_cpu) = NULL;
-+	if (in_interrupt()) {
-+		struct fpsimd_partial_state *s = this_cpu_ptr(
-+			in_irq() ? &hardirq_fpsimdstate : &softirq_fpsimdstate);
+ #define IPACK_ANY_FORMAT 0xff
+ #define IPACK_ANY_ID (~0)
+ struct ipack_device_id {
+diff --git a/scripts/mod/devicetable-offsets.c b/scripts/mod/devicetable-offsets.c
+index bb5d115ca671..f282516acc7b 100644
+--- a/scripts/mod/devicetable-offsets.c
++++ b/scripts/mod/devicetable-offsets.c
+@@ -174,6 +174,9 @@ int main(void)
+ 	DEVID_FIELD(x86_cpu_id, model);
+ 	DEVID_FIELD(x86_cpu_id, vendor);
  
-+		BUG_ON(num_regs > 32);
-+		fpsimd_save_partial_state(s, roundup(num_regs, 2));
-+	} else {
-+		/*
-+		 * Save the userland FPSIMD state if we have one and if we
-+		 * haven't done so already. Clear fpsimd_last_cpu to indicate
-+		 * that there is no longer userland context in the registers.
-+		 */
-+		preempt_disable();
-+		if (current->mm &&
-+		    !test_and_set_thread_flag(TIF_FOREIGN_FPSTATE))
-+			fpsimd_save_state(&current->thread.fpsimd_state);
-+		__get_cpu_var(fpsimd_last_cpu) = NULL;
-+	}
++	DEVID(cpu_feature);
++	DEVID_FIELD(cpu_feature, feature);
++
+ 	DEVID(mei_cl_device_id);
+ 	DEVID_FIELD(mei_cl_device_id, name);
+ 
+diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
+index 23708636b05c..8a69005228d8 100644
+--- a/scripts/mod/file2alias.c
++++ b/scripts/mod/file2alias.c
+@@ -1135,6 +1135,16 @@ static int do_x86cpu_entry(const char *filename, void *symval,
  }
--EXPORT_SYMBOL(kernel_neon_begin);
-+EXPORT_SYMBOL(kernel_neon_begin_partial);
+ ADD_TO_DEVTABLE("x86cpu", x86_cpu_id, do_x86cpu_entry);
  
- void kernel_neon_end(void)
- {
--	preempt_enable();
-+	if (in_interrupt()) {
-+		struct fpsimd_partial_state *s = this_cpu_ptr(
-+			in_irq() ? &hardirq_fpsimdstate : &softirq_fpsimdstate);
-+		fpsimd_load_partial_state(s);
-+	} else
-+		preempt_enable();
- }
- EXPORT_SYMBOL(kernel_neon_end);
- 
++/* LOOKS like cpu:type:*:feature:*FEAT* */
++static int do_cpu_entry(const char *filename, void *symval, char *alias)
++{
++	DEF_FIELD(symval, cpu_feature, feature);
++
++	sprintf(alias, "cpu:type:*:feature:*%04X*", feature);
++	return 1;
++}
++ADD_TO_DEVTABLE("cpu", cpu_feature, do_cpu_entry);
++
+ /* Looks like: mei:S */
+ static int do_mei_entry(const char *filename, void *symval,
+ 			char *alias)
 -- 
 1.8.3.2
 
