@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269AbaAFJEv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 04:04:51 -0500
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:7149 "EHLO
-	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751218AbaAFJEs (ORCPT
+	id S1753524AbaAFJF1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 04:05:27 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:43707 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752995AbaAFJFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 04:04:48 -0500
-X-IronPort-AV: E=Sophos;i="4.95,611,1384297200"; 
-   d="scan'208";a="43650688"
-Date: Mon, 6 Jan 2014 10:04:28 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Joe Perches <joe@perches.com>
-cc: Julia Lawall <julia.lawall@lip6.fr>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        kernel-janitors@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/11]  use ether_addr_equal_64bits
-In-Reply-To: <1388998750.5808.43.camel@joe-AO722>
-Message-ID: <alpine.DEB.2.10.1401061001340.2079@hadrien>
-References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>  <1388427307-8691-5-git-send-email-Julia.Lawall@lip6.fr>  <1388429761.4410.1.camel@jlt4.sipsolutions.net>  <alpine.DEB.2.02.1312302057420.2209@localhost6.localdomain6> 
- <1388438724.4573.2.camel@jlt4.sipsolutions.net>  <20131230215701.GA4938@khazad-dum.debian.net>  <1388445188.18164.0.camel@jlt4.sipsolutions.net>  <1388445422.26796.38.camel@joe-AO722>  <alpine.DEB.2.10.1401060947550.2079@hadrien>
- <1388998750.5808.43.camel@joe-AO722>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Mon, 6 Jan 2014 04:05:22 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1388998868-31448-1-git-send-email-geert@linux-m68k.org>
+References: <1388998868-31448-1-git-send-email-geert@linux-m68k.org>
+Date: Mon, 6 Jan 2014 10:05:21 +0100
+X-Google-Sender-Auth: qLRvH2b8qolUb-AuehvQEzJWRH4
+Message-ID: <CAMuHMdWfHtGQQ-s1z0u-PKagD0i+_pd4=H02=TyMiFfcJW63og@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.13-rc7
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Linux-sh list <linux-sh@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Jan 2014, Joe Perches wrote:
+On Mon, Jan 6, 2014 at 10:01 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> JFYI, when comparing v3.13-rc7[1] to v3.13-rc6[3], the summaries are:
+>   - build errors: +14/-4
 
-> On Mon, 2014-01-06 at 09:48 +0100, Julia Lawall wrote:
-> > Is there any way to get sizeof evaluated at build time?
->
-> I'm confused a bit by what you want to accomplish.
+  + /scratch/kisskb/src/arch/sh/mm/cache-sh4.c: error:
+'cached_to_uncached' undeclared (first use in this function):  =>
+99:17
+  + /scratch/kisskb/src/arch/sh/mm/cache-sh4.c: error: implicit
+declaration of function 'cpu_context'
+[-Werror=implicit-function-declaration]:  => 192:2
+  + /scratch/kisskb/src/drivers/mtd/maps/vmu-flash.c: error: (near
+initialization for 'vmu_flash_driver.drv'):  => 805:3, 803:3, 804:3
+  + /scratch/kisskb/src/drivers/mtd/maps/vmu-flash.c: error: expected
+declaration specifiers or '...' before string constant:  => 824:20,
+822:16, 823:15
+  + /scratch/kisskb/src/drivers/mtd/maps/vmu-flash.c: error: field
+name not in record or union initializer:  => 805:3, 803:3, 804:3
+  + /scratch/kisskb/src/include/linux/maple.h: error: field 'dev' has
+incomplete type:  => 80:16
+  + /scratch/kisskb/src/include/linux/maple.h: error: field 'drv' has
+incomplete type:  => 85:23
 
-To check that a field that is an argument od ether_addr_equal_64bits is
-a sufficient distance from the end of the structure.
+sh-randconfig
 
-> Except for variable length arrays, isn't sizeof always
-> evaluated at build time?
+  + /scratch/kisskb/src/drivers/tty/serial/nwpserial.c: error:
+implicit declaration of function 'udelay'
+[-Werror=implicit-function-declaration]:  => 53:3
+  + error: No rule to make target drivers/scsi/aic7xxx/aicasm/*.[chyl]:  => N/A
 
-OK, the question was expressed badly.  Is there any way to use the value
-to trigger an action at build time?  The only way I kow to trigger an
-action is with #error, but #error is processed by cpp, which doesn't know
-about the size of types.
+powerpc-randconfig
 
-julia
+  + error: No rule to make target /etc/sound/msndinit.bin:  => N/A
+  + error: No rule to make target /etc/sound/msndperm.bin:  => N/A
+  + error: No rule to make target /etc/sound/pndsperm.bin:  => N/A
+  + error: No rule to make target /etc/sound/pndspini.bin:  => N/A
 
-> 6.5.3.4 The sizeof operator
-> Constraints
-> []
-> 2 The sizeof operator yields the size (in bytes) of its operand, which may be an
-> expression or the parenthesized name of a type. The size is determined from the type of
-> the operand. The result is an integer. If the type of the operand is a variable length array
-> type, the operand is evaluated; otherwise, the operand is not evaluated and the result is an
-> integer constant.
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+i386-randconfig
+
+> [1] http://kisskb.ellerman.id.au/kisskb/head/7037/ (119 out of 120 configs)
+> [3] http://kisskb.ellerman.id.au/kisskb/head/7026/ (119 out of 120 configs)
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
