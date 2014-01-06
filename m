@@ -1,89 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933768AbaAFW5V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:57:21 -0500
-Received: from ring0.de ([91.143.88.219]:52337 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933256AbaAFW5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:57:15 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Mon, 6 Jan 2014 23:57:09 +0100
-From: Sebastian Reichel <sre@ring0.de>
-To: Luciano Coelho <luca@coelho.fi>, Tony Lindgren <tony@atomide.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        linux-omap@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCHv2 0/5] wl1251 device tree support
-Message-ID: <20140106225709.GA23070@earth.universe>
-Mail-Followup-To: Luciano Coelho <luca@coelho.fi>,
-	Tony Lindgren <tony@atomide.com>,
-	"John W. Linville" <linville@tuxdriver.com>,
-	linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-	linux-omap@vger.kernel.org, netdev@vger.kernel.org
-References: <1382890469-25286-1-git-send-email-sre@debian.org>
- <1386289336-26704-1-git-send-email-sre@debian.org>
+	id S1752411AbaAFW6I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:58:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48585 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933268AbaAFWmK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 17:42:10 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, Sage Weil <sage@inktank.com>
+Subject: [PATCH 3.10 097/129] libceph: fix safe completion
+Date: Mon,  6 Jan 2014 14:38:46 -0800
+Message-Id: <20140106223902.377823891@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
+References: <20140106223859.589799655@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="YZ5djTAD1cGYuMQK"
-Content-Disposition: inline
-In-Reply-To: <1386289336-26704-1-git-send-email-sre@debian.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
---YZ5djTAD1cGYuMQK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-Hi John,
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-> The following patchset adds device tree support to
-> the spi variant of the wl1251 driver.
->
-> Luciano Coelho (1):
->   wl1251: split wl251 platform data to a separate structure
->=20
-> Sebastian Reichel (4):
->   wl1251: move power GPIO handling into the driver
->   wl1251: spi: add vio regulator support
->   wl1251: spi: add device tree support
->   Documentation: dt: wireless: Add wl1251
+commit eb845ff13a44477f8a411baedbf11d678b9daf0a upstream.
 
-What's the status of this patchset? Tony prepared an immutable
-branch for patches 1+2 [0]. I think the other patches are also ok
-(at least there were no more complains from the DT binding
-maintainers). It would be nice to have wl1251 DT support in 3.14.
+handle_reply() calls complete_request() only if the first OSD reply
+has ONDISK flag.
 
-[0] http://www.spinics.net/lists/linux-omap/msg101165.html
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
--- Sebastian
+---
+ include/linux/ceph/osd_client.h |    1 -
+ net/ceph/osd_client.c           |   17 ++++++++---------
+ 2 files changed, 8 insertions(+), 10 deletions(-)
 
---YZ5djTAD1cGYuMQK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--- a/include/linux/ceph/osd_client.h
++++ b/include/linux/ceph/osd_client.h
+@@ -145,7 +145,6 @@ struct ceph_osd_request {
+ 	s32               r_reply_op_result[CEPH_OSD_MAX_OP];
+ 	int               r_got_reply;
+ 	int		  r_linger;
+-	int		  r_completed;
+ 
+ 	struct ceph_osd_client *r_osdc;
+ 	struct kref       r_kref;
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -1522,6 +1522,8 @@ static void handle_reply(struct ceph_osd
+ 	for (i = 0; i < numops; i++)
+ 		req->r_reply_op_result[i] = ceph_decode_32(&p);
+ 
++	already_completed = req->r_got_reply;
++
+ 	if (!req->r_got_reply) {
+ 
+ 		req->r_result = result;
+@@ -1552,16 +1554,14 @@ static void handle_reply(struct ceph_osd
+ 	    ((flags & CEPH_OSD_FLAG_WRITE) == 0))
+ 		__unregister_request(osdc, req);
+ 
+-	already_completed = req->r_completed;
+-	req->r_completed = 1;
+ 	mutex_unlock(&osdc->request_mutex);
+-	if (already_completed)
+-		goto done;
+ 
+-	if (req->r_callback)
+-		req->r_callback(req, msg);
+-	else
+-		complete_all(&req->r_completion);
++	if (!already_completed) {
++		if (req->r_callback)
++			req->r_callback(req, msg);
++		else
++			complete_all(&req->r_completion);
++	}
+ 
+ 	if (flags & CEPH_OSD_FLAG_ONDISK)
+ 		complete_request(req);
+@@ -2121,7 +2121,6 @@ int ceph_osdc_start_request(struct ceph_
+ 	__register_request(osdc, req);
+ 	req->r_sent = 0;
+ 	req->r_got_reply = 0;
+-	req->r_completed = 0;
+ 	rc = __map_request(osdc, req, 0);
+ 	if (rc < 0) {
+ 		if (nofail) {
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
 
-iQIcBAEBCAAGBQJSyzTEAAoJENju1/PIO/qaoSsP/2A++jAylp/9jdo77OoJl50B
-s2Bk6i+g3G/G0ZF5prK/eRRDW6anfU7rzrqNowO0RXkEufRn+vviKaKwXGdCtHmJ
-Oa3fi4clbsrFZKvRQjKNdhX8NAoiZsd8wdhXQJXkhS8htenfiGL0Uh7Bs+gVKfyf
-1UVsb1nMvBR+MKRdKKNTO59Odm6NCtzZD+WIL0zAzN684vaYTYaV5dNVGsqt+82P
-+WPxhqZQPuObRb4HWRm1+HDFWs/zVIXgw6HJPZOeKuSN7bYwNtHstC/s76q7SBBR
-m3nkfqOsaAwfiVUVmqla9pac83Gf/2LXdmu8C12Qr4edix1E0KhXTQjVj1MWuR4q
-hzqhGVX1GD9pSbWZFxytf0m4Cl52HTvolj7T1zJyKtC95A4fobQQdqEeWoWy98JO
-j+iojeGq4bWcMcST7UR7rqK26DKFccm4+E6UQHEFtJDRrsjaojT/qM0UUrPnn5d2
-nmseSd9BfC+XGG8Ll6cny1//luCJp9gY4nwg6r/q2mNWaZslTdxKvdmkuP4UsS4m
-4DIpB4mTgKtcwfrt3Ba5T4oLuSpiSFmaZPynb3FekInpXhlkQ0731RZ0pAQANhGY
-IviRwgCYDU6pawzSXpuwaYW/MQPCpbsGXwQlgSUhKPnVK4YHDpRDjy10e7mFtrbD
-119RrTc5DfF/tzCdzboH
-=nadp
------END PGP SIGNATURE-----
-
---YZ5djTAD1cGYuMQK--
