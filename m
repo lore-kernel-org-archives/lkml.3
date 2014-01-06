@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933736AbaAFXUj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:20:39 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:45052 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932962AbaAFXUh (ORCPT
+	id S1757199AbaAFXVP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:21:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48274 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932953AbaAFWlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 18:20:37 -0500
-From: Benjamin Poirier <bpoirier@suse.de>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Eric Dumazet <edumazet@google.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tom Herbert <therbert@google.com>
-Subject: [PATCH] net: Do not enable tx-nocache-copy by default
-Date: Mon,  6 Jan 2014 18:20:19 -0500
-Message-Id: <1389050419-9060-1-git-send-email-bpoirier@suse.de>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1389041855.12212.210.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <1389041855.12212.210.camel@edumazet-glaptop2.roam.corp.google.com>
+	Mon, 6 Jan 2014 17:41:11 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Alex Thorlton <athorlton@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 070/129] mm: numa: ensure anon_vma is locked to prevent parallel THP splits
+Date: Mon,  6 Jan 2014 14:38:19 -0800
+Message-Id: <20140106223901.610572466@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
+References: <20140106223859.589799655@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are many cases where this feature does not improve performance or even
-reduces it. See the following discussion for example perf numbers:
-http://thread.gmane.org/gmane.linux.network/298345
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-CC: Tom Herbert <therbert@google.com>
-Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+------------------
+
+From: Mel Gorman <mgorman@suse.de>
+
+commit c3a489cac38d43ea6dc4ac240473b44b46deecf7 upstream.
+
+The anon_vma lock prevents parallel THP splits and any associated
+complexity that arises when handling splits during THP migration.  This
+patch checks if the lock was successfully acquired and bails from THP
+migration if it failed for any reason.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Alex Thorlton <athorlton@sgi.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- net/core/dev.c | 5 -----
- 1 file changed, 5 deletions(-)
+ mm/huge_memory.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 153ee2f..2e242583 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -5783,13 +5783,8 @@ int register_netdevice(struct net_device *dev)
- 	dev->features |= NETIF_F_SOFT_FEATURES;
- 	dev->wanted_features = dev->features & dev->hw_features;
- 
--	/* Turn on no cache copy if HW is doing checksum */
- 	if (!(dev->flags & IFF_LOOPBACK)) {
- 		dev->hw_features |= NETIF_F_NOCACHE_COPY;
--		if (dev->features & NETIF_F_ALL_CSUM) {
--			dev->wanted_features |= NETIF_F_NOCACHE_COPY;
--			dev->features |= NETIF_F_NOCACHE_COPY;
--		}
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1344,6 +1344,13 @@ int do_huge_pmd_numa_page(struct mm_stru
+ 		goto out_unlock;
  	}
  
- 	/* Make NETIF_F_HIGHDMA inheritable to VLAN devices.
--- 
-1.8.4
++	/* Bail if we fail to protect against THP splits for any reason */
++	if (unlikely(!anon_vma)) {
++		put_page(page);
++		page_nid = -1;
++		goto clear_pmdnuma;
++	}
++
+ 	/*
+ 	 * Migrate the THP to the requested node, returns with page unlocked
+ 	 * and pmd_numa cleared.
+
 
