@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817AbaAFMmh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 07:42:37 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47748 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751320AbaAFMmg (ORCPT
+	id S1754824AbaAFMnJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 07:43:09 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:46668 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816AbaAFMnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 07:42:36 -0500
-Date: Mon, 6 Jan 2014 12:42:25 +0000
-From: Mark Brown <broonie@kernel.org>
-To: David Howells <dhowells@redhat.com>
-Cc: akpm@linux-foundation.org, Laxman Dewangan <ldewangan@nvidia.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140106124225.GQ31886@sirena.org.uk>
-References: <20140103160755.8153.81654.stgit@warthog.procyon.org.uk>
+	Mon, 6 Jan 2014 07:43:07 -0500
+Date: Mon, 6 Jan 2014 07:42:48 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, John Fastabend <john.r.fastabend@intel.com>,
+        e1000-devel@lists.sourceforge.net
+Subject: Re: [PATCH net 2/2] net: core: explicitly select a txq before doing
+ l2 forwarding
+Message-ID: <20140106124248.GB24280@hmsreliant.think-freely.org>
+References: <1388978467-2075-1-git-send-email-jasowang@redhat.com>
+ <1388978467-2075-2-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="y4KCttt5BRl02Fhp"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140103160755.8153.81654.stgit@warthog.procyon.org.uk>
-X-Cookie: Go climb a gravity well!
+In-Reply-To: <1388978467-2075-2-git-send-email-jasowang@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 5/7] Fix up a pointer-integer size mismatch warning in
- tps62360_probe()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 06, 2014 at 11:21:07AM +0800, Jason Wang wrote:
+> Currently, the tx queue were selected implicitly in ndo_dfwd_start_xmit(). The
+> will cause several issues:
+> 
+> - NETIF_F_LLTX was forced for macvlan device in this case which lead extra lock
+>   contention.
+> - dev_hard_start_xmit() was called with NULL txq which bypasses the net device
+>   watchdog
+> - dev_hard_start_xmit() does not check txq everywhere which will lead a crash
+>   when tso is disabled for lower device.
+> 
+> Fix this by explicitly introducing a select queue method just for l2 forwarding
+> offload (ndo_dfwd_select_queue), and introducing dfwd_direct_xmit() to do the
+> queue selecting and transmitting for l2 forwarding.
+> 
+> With this fixes, NETIF_F_LLTX could be preserved for macvlan and there's no need
+> to check txq against NULL in dev_hard_start_xmit().
+> 
+> In the future, it was also required for macvtap l2 forwarding support since it
+> provides a necessary synchronization method.
+> 
+> Cc: John Fastabend <john.r.fastabend@intel.com>
+> Cc: Neil Horman <nhorman@tuxdriver.com>
+> Cc: e1000-devel@lists.sourceforge.net
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
---y4KCttt5BRl02Fhp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Instead of creating another operation here to do special queue selection, why
+not just have ndo_dfwd_start_xmit include a pointer to a pointer in its argument
+list, so it can pass the txq it used back to the caller (dev_hard_start_xmit)?
+ndo_dfwd_start_xmit already knows which queue set to pick from (since their
+reserved for the device doing the transmitting).  It seems more clear to me than
+creating a new netdevice operation.  
 
-On Fri, Jan 03, 2014 at 04:07:55PM +0000, David Howells wrote:
-> Fix up the following pointer-integer size mismatch warning in tps62360_pr=
-obe():
->=20
-> 	drivers/regulator/tps62360-regulator.c: In function 'tps62360_probe':
+As for the crash issue, I'm not sure what you mean.  Where in
+dev_hard_start_xmit would we need to check txq that we're not currently, and
+what crash results?
 
-Applied, but please follow the patch submission process in
-SubmittingPatches - you need to CC things to maintainers and use subject
-lines appropriate to the subsystem.  Things that don't go to people's
-inboxes are likely to be missed, as are things that don't look relevant
-=66rom a scan of the subject line.
+Also, can you elaborate on what you mean by additional lock contention?  What
+contention do you see that goes above and beyond the normal locking required by
+txq access?  I suppose its extra locking above and beyond in the macvtap case,
+where you would otherwise never hit hardware, but that not the only use case,
+and I think the solution there is likely to add some code in the macvlan feature
+set handler so that NETIF_F_LLTX is cleared if you disable the hardware
+forwarding acceleration via ethtool.
 
---y4KCttt5BRl02Fhp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Regards
+Neil
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSyqSuAAoJELSic+t+oim9F24P/Ru6gSrhJG1ZUtmwgmlL8FTk
-v8FQNtsJp0tzEQcDGqJiszZwhzvpn+9AnYs221mBTuKj7fQeBFjCg1dn1f/AQIAN
-xv/j3jyZHHll8mxm5c4If0pJrfYQ0h3lOfIPWhdthU3nmJ6DIDTfEv4pcgxVsOtT
-S8K2notTqFmd28x5Y78Mbvspz3dLnwiV0nzDP9o0BdpjjBEk/ALopaL0YYMmv8mZ
-M7XfWxvpdSVTDFeH+7WXBQNJZdwNeHruLaALbIArImiKpJiCGwr3WJGbotFhKXvD
-ORoIpslM+leZaGv6pxtnnQosYaQp08UNphQ89UY6IvqZDp42utg7iswtTmQAz4bt
-uFc+SqvkIyzkO7M7UAc8oHMrDsZwt7V22swd/FHZdTojwsq3U5MrURjA13JS5vzT
-ldRDqlhUhxDqDnj+H8mSVdSwvtj6uxe+Pxs/pxvDf2FV1s5zKhL2fwBbobREi28X
-FuaTXYJcLJffj3ujgcZG0lyn0XMgZKm4CdmMbPc0UYPGuO89mcPLInNaSYUSDjiU
-qjiAlwWj2vS2J74ajXI7N0o4vmQuaCBjsJY2u6Nnt3UJtFGjkBUnjYJSUiBxOlrH
-8lRWDiQ6SKWel4QYySeG/D4REaEe/p/MzEkKDToMhPZ3tjh0DrOZOeOXTwq9c5rQ
-tWIy1HoXXEkd5WZqeyf+
-=2jeF
------END PGP SIGNATURE-----
-
---y4KCttt5BRl02Fhp--
+> 
