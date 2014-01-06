@@ -1,114 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437AbaAFP3g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 10:29:36 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:48809 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754651AbaAFP3e (ORCPT
+	id S1755444AbaAFP37 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 10:29:59 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:49339 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335AbaAFP36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 10:29:34 -0500
-Date: Mon, 6 Jan 2014 10:29:14 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: John Fastabend <john.fastabend@gmail.com>
-Cc: Jason Wang <jasowang@redhat.com>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, mst@redhat.com,
-        John Fastabend <john.r.fastabend@intel.com>,
-        e1000-devel@lists.sourceforge.net
-Subject: Re: [PATCH net 2/2] net: core: explicitly select a txq before doing
- l2 forwarding
-Message-ID: <20140106152914.GC24280@hmsreliant.think-freely.org>
-References: <1388978467-2075-1-git-send-email-jasowang@redhat.com>
- <1388978467-2075-2-git-send-email-jasowang@redhat.com>
- <20140106124248.GB24280@hmsreliant.think-freely.org>
- <52CAC671.4040208@gmail.com>
+	Mon, 6 Jan 2014 10:29:58 -0500
+Date: Mon, 6 Jan 2014 20:59:53 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>, Alex Ivanov <gnidorah@p0n4ik.tk>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        dri-devel@lists.freedesktop.org, josh@joshtriplett.org
+Subject: [PATCH 29/85] drivers: gpu: Include appropriate header file in
+ radeon_ring.c
+Message-ID: <8d93c99c56055c0336a4284d1e02479d5c25f3e4.1389018325.git.rashika.kheria@gmail.com>
+References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <52CAC671.4040208@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 07:06:25AM -0800, John Fastabend wrote:
-> On 01/06/2014 04:42 AM, Neil Horman wrote:
-> >On Mon, Jan 06, 2014 at 11:21:07AM +0800, Jason Wang wrote:
-> >>Currently, the tx queue were selected implicitly in ndo_dfwd_start_xmit(). The
-> >>will cause several issues:
-> >>
-> >>- NETIF_F_LLTX was forced for macvlan device in this case which lead extra lock
-> >>   contention.
-> >>- dev_hard_start_xmit() was called with NULL txq which bypasses the net device
-> >>   watchdog
-> >>- dev_hard_start_xmit() does not check txq everywhere which will lead a crash
-> >>   when tso is disabled for lower device.
-> >>
-> >>Fix this by explicitly introducing a select queue method just for l2 forwarding
-> >>offload (ndo_dfwd_select_queue), and introducing dfwd_direct_xmit() to do the
-> >>queue selecting and transmitting for l2 forwarding.
-> >>
-> >>With this fixes, NETIF_F_LLTX could be preserved for macvlan and there's no need
-> >>to check txq against NULL in dev_hard_start_xmit().
-> >>
-> >>In the future, it was also required for macvtap l2 forwarding support since it
-> >>provides a necessary synchronization method.
-> >>
-> >>Cc: John Fastabend <john.r.fastabend@intel.com>
-> >>Cc: Neil Horman <nhorman@tuxdriver.com>
-> >>Cc: e1000-devel@lists.sourceforge.net
-> >>Signed-off-by: Jason Wang <jasowang@redhat.com>
-> >
-> >Instead of creating another operation here to do special queue selection, why
-> >not just have ndo_dfwd_start_xmit include a pointer to a pointer in its argument
-> >list, so it can pass the txq it used back to the caller (dev_hard_start_xmit)?
-> >ndo_dfwd_start_xmit already knows which queue set to pick from (since their
-> >reserved for the device doing the transmitting).  It seems more clear to me than
-> >creating a new netdevice operation.
-> >
-> >As for the crash issue, I'm not sure what you mean.  Where in
-> >dev_hard_start_xmit would we need to check txq that we're not currently, and
-> >what crash results?
-> >
-> >Also, can you elaborate on what you mean by additional lock contention?  What
-> >contention do you see that goes above and beyond the normal locking required by
-> >txq access?  I suppose its extra locking above and beyond in the macvtap case,
-> >where you would otherwise never hit hardware, but that not the only use case,
-> >and I think the solution there is likely to add some code in the macvlan feature
-> >set handler so that NETIF_F_LLTX is cleared if you disable the hardware
-> >forwarding acceleration via ethtool.
-> >
-> 
-> NETIF_F_LLTX is cleared in macvlan_open() which should be used in the
-> macvtap case.
-> 
-Thats right, since accelerated hardware tx queue doesn't participate in the
-network stack queue locking, the upper device needs to do it.
+Include appropriate header file drivers/gpu/drm/radeon/radeon_asic.h to
+file drm/radeon/radeon_ring.c because functions
+radeon_ring_generic_set_wptr(), radeon_ring_generic_get_rptr() and
+radeon_ring_generic_get_wptr() have their prototype declarations in the
+header file.
 
-Thanks!
-Neil
+This eliminates the following warnings in drm/radeon/radeon_ring.c:
+drivers/gpu/drm/radeon/radeon_ring.c:335:5: warning: no previous prototype for ‘radeon_ring_generic_get_rptr’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/radeon_ring.c:348:5: warning: no previous prototype for ‘radeon_ring_generic_get_wptr’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/radeon_ring.c:358:6: warning: no previous prototype for ‘radeon_ring_generic_set_wptr’ [-Wmissing-prototypes]
 
->           if (lowerdev->features & NETIF_F_HW_L2FW_DOFFLOAD) {
->                   vlan->fwd_priv =
-> 
-> lowerdev->netdev_ops->ndo_dfwd_add_station(lowerdev, dev);
-> 
->                   /* If we get a NULL pointer back, or if we get an error
->                    * then we should just fall through to the non
-> accelerated path
->                    */
->                   if (IS_ERR_OR_NULL(vlan->fwd_priv)) {
->                           vlan->fwd_priv = NULL;
->                   } else {
->                           dev->features &= ~NETIF_F_LLTX;
->                           return 0;
->                   }
->           }
-> 
-> Thanks,
-> John
-> 
-> 
-> -- 
-> John Fastabend         Intel Corporation
-> 
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ drivers/gpu/drm/radeon/radeon_ring.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/gpu/drm/radeon/radeon_ring.c b/drivers/gpu/drm/radeon/radeon_ring.c
+index 9214403..90bc2b1 100644
+--- a/drivers/gpu/drm/radeon/radeon_ring.c
++++ b/drivers/gpu/drm/radeon/radeon_ring.c
+@@ -33,6 +33,7 @@
+ #include "radeon_reg.h"
+ #include "radeon.h"
+ #include "atom.h"
++#include "radeon_asic.h"
+ 
+ /*
+  * IB
+-- 
+1.7.9.5
+
