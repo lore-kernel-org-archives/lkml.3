@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933401AbaAFXMp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:12:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48420 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933038AbaAFWle (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933037AbaAFWle (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 Jan 2014 17:41:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48399 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756944AbaAFWla (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 17:41:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 055/129] ath9k: Fix interrupt handling for the AR9002 family
-Date: Mon,  6 Jan 2014 14:38:04 -0800
-Message-Id: <20140106223901.177979189@linuxfoundation.org>
+        Nithin Nayak Sujir <nsujir@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 051/129] tg3: Expand 4g_overflow_test workaround to skb fragments of any size.
+Date: Mon,  6 Jan 2014 14:38:00 -0800
+Message-Id: <20140106223901.065495812@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -30,115 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Nithin Sujir <nsujir@broadcom.com>
 
-commit 73f0b56a1ff64e7fb6c3a62088804bab93bcedc2 upstream.
+commit 375679104ab3ccfd18dcbd7ba503734fb9a2c63a upstream.
 
-This patch adds a driver workaround for a HW issue.
+The current driver assumes that an skb fragment can only be upto jumbo
+size. Presumably this was a fast-path optimization. This assumption is
+no longer true as fragments can be upto 32k.
 
-A race condition in the HW results in missing interrupts,
-which can be avoided by a read/write with the ISR register.
-All chips in the AR9002 series are affected by this bug - AR9003
-and above do not have this problem.
+v2: Remove unnecessary parantheses per Eric Dumazet.
 
-Cc: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9002_mac.c |   52 +++++++++++++++++++++++-----
- 1 file changed, 43 insertions(+), 9 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar9002_mac.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9002_mac.c
-@@ -76,9 +76,16 @@ static bool ar9002_hw_get_isr(struct ath
- 				mask2 |= ATH9K_INT_CST;
- 			if (isr2 & AR_ISR_S2_TSFOOR)
- 				mask2 |= ATH9K_INT_TSFOOR;
-+
-+			if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
-+				REG_WRITE(ah, AR_ISR_S2, isr2);
-+				isr &= ~AR_ISR_BCNMISC;
-+			}
- 		}
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -7482,7 +7482,7 @@ static inline int tg3_4g_overflow_test(d
+ {
+ 	u32 base = (u32) mapping & 0xffffffff;
  
--		isr = REG_READ(ah, AR_ISR_RAC);
-+		if (pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)
-+			isr = REG_READ(ah, AR_ISR_RAC);
-+
- 		if (isr == 0xffffffff) {
- 			*masked = 0;
- 			return false;
-@@ -97,11 +104,23 @@ static bool ar9002_hw_get_isr(struct ath
+-	return (base > 0xffffdcc0) && (base + len + 8 < base);
++	return base + len + 8 < base;
+ }
  
- 			*masked |= ATH9K_INT_TX;
- 
--			s0_s = REG_READ(ah, AR_ISR_S0_S);
-+			if (pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED) {
-+				s0_s = REG_READ(ah, AR_ISR_S0_S);
-+				s1_s = REG_READ(ah, AR_ISR_S1_S);
-+			} else {
-+				s0_s = REG_READ(ah, AR_ISR_S0);
-+				REG_WRITE(ah, AR_ISR_S0, s0_s);
-+				s1_s = REG_READ(ah, AR_ISR_S1);
-+				REG_WRITE(ah, AR_ISR_S1, s1_s);
-+
-+				isr &= ~(AR_ISR_TXOK |
-+					 AR_ISR_TXDESC |
-+					 AR_ISR_TXERR |
-+					 AR_ISR_TXEOL);
-+			}
-+
- 			ah->intr_txqs |= MS(s0_s, AR_ISR_S0_QCU_TXOK);
- 			ah->intr_txqs |= MS(s0_s, AR_ISR_S0_QCU_TXDESC);
--
--			s1_s = REG_READ(ah, AR_ISR_S1_S);
- 			ah->intr_txqs |= MS(s1_s, AR_ISR_S1_QCU_TXERR);
- 			ah->intr_txqs |= MS(s1_s, AR_ISR_S1_QCU_TXEOL);
- 		}
-@@ -114,13 +133,15 @@ static bool ar9002_hw_get_isr(struct ath
- 		*masked |= mask2;
- 	}
- 
--	if (AR_SREV_9100(ah))
--		return true;
--
--	if (isr & AR_ISR_GENTMR) {
-+	if (!AR_SREV_9100(ah) && (isr & AR_ISR_GENTMR)) {
- 		u32 s5_s;
- 
--		s5_s = REG_READ(ah, AR_ISR_S5_S);
-+		if (pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED) {
-+			s5_s = REG_READ(ah, AR_ISR_S5_S);
-+		} else {
-+			s5_s = REG_READ(ah, AR_ISR_S5);
-+		}
-+
- 		ah->intr_gen_timer_trigger =
- 				MS(s5_s, AR_ISR_S5_GENTIMER_TRIG);
- 
-@@ -133,8 +154,21 @@ static bool ar9002_hw_get_isr(struct ath
- 		if ((s5_s & AR_ISR_S5_TIM_TIMER) &&
- 		    !(pCap->hw_caps & ATH9K_HW_CAP_AUTOSLEEP))
- 			*masked |= ATH9K_INT_TIM_TIMER;
-+
-+		if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
-+			REG_WRITE(ah, AR_ISR_S5, s5_s);
-+			isr &= ~AR_ISR_GENTMR;
-+		}
-+	}
-+
-+	if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
-+		REG_WRITE(ah, AR_ISR, isr);
-+		REG_READ(ah, AR_ISR);
- 	}
- 
-+	if (AR_SREV_9100(ah))
-+		return true;
-+
- 	if (sync_cause) {
- 		ath9k_debug_sync_cause(common, sync_cause);
- 		fatal_int =
+ /* Test for TSO DMA buffers that cross into regions which are within MSS bytes
 
 
