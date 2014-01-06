@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757984AbaAFXvO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:51:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47736 "EHLO
+	id S1757995AbaAFXvi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:51:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47729 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932459AbaAFWja (ORCPT
+	with ESMTP id S932447AbaAFWj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:39:30 -0500
+	Mon, 6 Jan 2014 17:39:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Theodore Tso" <tytso@mit.edu>, Christoph Hellwig <hch@lst.de>,
-        Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.12 106/144] ext2: Fix oops in ext2_get_block() called from ext2_quota_write()
-Date: Mon,  6 Jan 2014 14:37:47 -0800
-Message-Id: <20140106223748.389829919@linuxfoundation.org>
+        Eric Nelson <eric.nelson@boundarydevices.com>,
+        Marek Vasut <marex@denx.de>, Shawn Guo <shawn.guo@linaro.org>,
+        Richard Zhu <r65037@freescale.com>,
+        Linux-IDE <linux-ide@vger.kernel.org>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.12 097/144] ahci: imx: Explicitly clear IMX6Q_GPR13_SATA_MPLL_CLK_EN
+Date: Mon,  6 Jan 2014 14:37:38 -0800
+Message-Id: <20140106223748.140256754@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,36 +31,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Marek Vasut <marex@denx.de>
 
-commit df4e7ac0bb70abc97fbfd9ef09671fc084b3f9db upstream.
+commit 10becdb402af4fd4808a0491a726b96128c41076 upstream.
 
-ext2_quota_write() doesn't properly setup bh it passes to
-ext2_get_block() and thus we hit assertion BUG_ON(maxblocks == 0) in
-ext2_get_blocks() (or we could actually ask for mapping arbitrary number
-of blocks depending on whatever value was on stack).
+We must clear this IMX6Q_GPR13_SATA_MPLL_CLK_EN bit on i.MX6Q, otherwise
+Linux will fail to find the attached drive on some boards.
 
-Fix ext2_quota_write() to properly fill in number of blocks to map.
+This entire fix was:
+Reported-by: Eric Nelson <eric.nelson@boundarydevices.com>
 
-Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Reported-by: Christoph Hellwig <hch@infradead.org>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Marek Vasut <marex@denx.de>
+Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
+Cc: Richard Zhu <r65037@freescale.com>
+Cc: Linux-IDE <linux-ide@vger.kernel.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext2/super.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/ata/ahci_imx.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/ext2/super.c
-+++ b/fs/ext2/super.c
-@@ -1493,6 +1493,7 @@ static ssize_t ext2_quota_write(struct s
- 				sb->s_blocksize - offset : towrite;
- 
- 		tmp_bh.b_state = 0;
-+		tmp_bh.b_size = sb->s_blocksize;
- 		err = ext2_get_block(inode, blk, &tmp_bh, 1);
- 		if (err < 0)
- 			goto out;
+--- a/drivers/ata/ahci_imx.c
++++ b/drivers/ata/ahci_imx.c
+@@ -60,7 +60,7 @@ static int imx6q_sata_init(struct device
+ 	/*
+ 	 * set PHY Paremeters, two steps to configure the GPR13,
+ 	 * one write for rest of parameters, mask of first write
+-	 * is 0x07fffffd, and the other one write for setting
++	 * is 0x07ffffff, and the other one write for setting
+ 	 * the mpll_clk_en.
+ 	 */
+ 	regmap_update_bits(imxpriv->gpr, 0x34, IMX6Q_GPR13_SATA_RX_EQ_VAL_MASK
+@@ -71,6 +71,7 @@ static int imx6q_sata_init(struct device
+ 			| IMX6Q_GPR13_SATA_TX_ATTEN_MASK
+ 			| IMX6Q_GPR13_SATA_TX_BOOST_MASK
+ 			| IMX6Q_GPR13_SATA_TX_LVL_MASK
++			| IMX6Q_GPR13_SATA_MPLL_CLK_EN
+ 			| IMX6Q_GPR13_SATA_TX_EDGE_RATE
+ 			, IMX6Q_GPR13_SATA_RX_EQ_VAL_3_0_DB
+ 			| IMX6Q_GPR13_SATA_RX_LOS_LVL_SATA2M
 
 
