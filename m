@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753459AbaAFJqO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 04:46:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35308 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751782AbaAFJqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 04:46:12 -0500
-Date: Mon, 6 Jan 2014 10:46:08 +0100
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, pmladek@suse.cz,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 9/9] printk: Hand over printing to console if printing
- too long
-Message-ID: <20140106094608.GA3312@quack.suse.cz>
-References: <1387831171-5264-1-git-send-email-jack@suse.cz>
- <1387831171-5264-10-git-send-email-jack@suse.cz>
- <20140104235743.e6714e29.akpm@linux-foundation.org>
+	id S1753140AbaAFJsO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 04:48:14 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:49655 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751395AbaAFJsN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 04:48:13 -0500
+Date: Mon, 6 Jan 2014 09:48:08 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jon Medhurst <tixy@linaro.org>, arm@kernel.org,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [RFC 01/18] mfd: syscon: Consider platform data a regmap config
+ name
+Message-ID: <20140106094808.GG23772@lee--X1>
+References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com>
+ <1387815830-8794-2-git-send-email-pawel.moll@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140104235743.e6714e29.akpm@linux-foundation.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1387815830-8794-2-git-send-email-pawel.moll@arm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 04-01-14 23:57:43, Andrew Morton wrote:
-> On Mon, 23 Dec 2013 21:39:30 +0100 Jan Kara <jack@suse.cz> wrote:
+> Use the device platform data as a regmap config
+> name. This is particularly useful in the regmap
+> debugfs when there is more than one syscon device
+> registered, to distinguish the register blocks.
 > 
-> > Currently, console_unlock() prints messages from kernel printk buffer to
-> > console while the buffer is non-empty. When serial console is attached,
-> > printing is slow and thus other CPUs in the system have plenty of time
-> > to append new messages to the buffer while one CPU is printing. Thus the
-> > CPU can spend unbounded amount of time doing printing in console_unlock().
-> > This is especially serious problem if the printk() calling
-> > console_unlock() was called with interrupts disabled.
-> > 
-> > In practice users have observed a CPU can spend tens of seconds printing
-> > in console_unlock() (usually during boot when hundreds of SCSI devices
-> > are discovered) resulting in RCU stalls (CPU doing printing doesn't
-> > reach quiescent state for a long time), softlockup reports (IPIs for the
-> > printing CPU don't get served and thus other CPUs are spinning waiting
-> > for the printing CPU to process IPIs), and eventually a machine death
-> > (as messages from stalls and lockups append to printk buffer faster than
-> > we are able to print). So these machines are unable to boot with serial
-> > console attached. Also during artificial stress testing SATA disk
-> > disappears from the system because its interrupts aren't served for too
-> > long.
-> > 
-> > This patch implements a mechanism where after printing specified number
-> > of characters (tunable as a kernel parameter printk.offload_chars), CPU
-> > doing printing asks for help by setting a 'hand over' state. The CPU
-> > still keeps printing until another CPU running printk() or a CPU being
-> > pinged by an IPI comes and takes over printing.  This way no CPU should
-> > spend printing too long if there is heavy printk traffic.
+> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/mfd/syscon.c | 1 +
+>  1 file changed, 1 insertion(+)
 > 
-> It all seems to rely on luck?  If there are 100k characters queued and
-> all the other CPUs stop calling printk(), the CPU which is left in
-> printk is screwed, isn't it?  If so, perhaps it can send an async IPI
-> to ask for help?
-  Let me cite a sentence from the changelog:
-"... until another CPU running printk() or a CPU being pinged by an IPI
-comes and takes over printing."
+> diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+> index 71841f9..ea1770b 100644
+> --- a/drivers/mfd/syscon.c
+> +++ b/drivers/mfd/syscon.c
+> @@ -143,6 +143,7 @@ static int syscon_probe(struct platform_device *pdev)
+>  		return -ENOMEM;
+>  
+>  	syscon_regmap_config.max_register = res->end - res->start - 3;
+> +	syscon_regmap_config.name = dev_get_platdata(&pdev->dev);
+>  	syscon->regmap = devm_regmap_init_mmio(dev, base,
+>  					&syscon_regmap_config);
+>  	if (IS_ERR(syscon->regmap)) {
 
-  So sending IPI (async one) to another CPU to come and take over printing
-is already implemented :). Do you have a better suggestion how to make that
-more obvious in the changelog?
+This smells a bit fishy to me. Can you point me to the piece of code
+or patch where you set the platform_data pointer as a string?
 
-								Honza
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
