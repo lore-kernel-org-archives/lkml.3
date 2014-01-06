@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755528AbaAFTFd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 14:05:33 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:39034 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754601AbaAFTFc (ORCPT
+	id S1755644AbaAFTH4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 14:07:56 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:16331 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755044AbaAFTHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 14:05:32 -0500
-Message-ID: <52CAFE7A.9090106@infradead.org>
-Date: Mon, 06 Jan 2014 11:05:30 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Ove Karlsen <mail@ovekarlsen.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Gnu - censorship
-References: <52CAFCC6.3070504@ovekarlsen.com>
-In-Reply-To: <52CAFCC6.3070504@ovekarlsen.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 6 Jan 2014 14:07:55 -0500
+Date: Mon, 6 Jan 2014 14:07:53 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH trace-cmd 0/1] Makefile: Use CPPFLAGS from the
+ environment
+Message-ID: <20140106140753.55f3f3c7@gandalf.local.home>
+In-Reply-To: <1389030985-26657-1-git-send-email-seth.forshee@canonical.com>
+References: <1389030985-26657-1-git-send-email-seth.forshee@canonical.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/14 10:58, Ove Karlsen wrote:
-> https://lkml.org/lkml/2013/12/28/50
-> 
-> This post is empty. I do not know if this is deliberate, but..
-> 
-> Facism and censorhip goes hand in hand. Hopefully people here start to understand the problem that needs to be solved. Or complaints about Microsoft, will really the same as complaints againt ill-behaving "free software" advocates. Same irrational behaviour, by people whose pride is far more than their ability, and a block to natural developments and true excellence.
-> 
-> Simple people whose life revolves around this: http://www.youtube.com/watch?v=xm2S5uxO01E
-> 
-> PBWY.
-> 
+On Mon,  6 Jan 2014 11:56:24 -0600
+Seth Forshee <seth.forshee@canonical.com> wrote:
 
-or it could be related to this message that I get:
+> Hi Steve,
+> 
+> Here's another patch for trace-cmd that I'm using in Debian. Please
+> consider it for your tree.
+> 
+> It also looks like you haven't applied the patches I sent a few months
+> back [1][2]. I'm guessing you just forgot about them, but please let me
+> know if there's something I need to fix. I also pushed out all of these
+> patches if you'd prefer to do a pull:
 
-XSLT error or server overload; admin notified. The system should heal itself, please try again in a few minutes
+I actually applied everything, and a lot more updates that I never
+pushed.
 
-Think Occam's Razor.
+Anyway, thanks! I applied this too and pushed it up.
 
--- 
-~Randy
+-- Steve
