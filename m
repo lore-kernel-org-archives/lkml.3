@@ -1,78 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099AbaAFWNR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:13:17 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42528 "EHLO
+	id S1756253AbaAFWQC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:16:02 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42580 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755600AbaAFWNP (ORCPT
+	with ESMTP id S1754838AbaAFWQA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:13:15 -0500
-Date: Mon, 6 Jan 2014 23:12:51 +0100
+	Mon, 6 Jan 2014 17:16:00 -0500
+Date: Mon, 6 Jan 2014 23:15:28 +0100
 From: Peter Zijlstra <peterz@infradead.org>
-To: "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
-Cc: Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Li Zefan <lizefan@huawei.com>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] x86: Add Cache QoS Monitoring (CQM) support
-Message-ID: <20140106221251.GJ30183@twins.programming.kicks-ass.net>
-References: <20140104225058.GC24306@htj.dyndns.org>
- <1388899376.9761.45.camel@ppwaskie-mobl.amr.corp.intel.com>
- <20140106111624.GB5623@twins.programming.kicks-ass.net>
- <1389026035.32504.3.camel@ppwaskie-mobl.amr.corp.intel.com>
- <20140106164150.GQ31570@twins.programming.kicks-ass.net>
- <1389026867.32504.16.camel@ppwaskie-mobl.amr.corp.intel.com>
- <20140106180636.GG30183@twins.programming.kicks-ass.net>
- <1389039035.32504.35.camel@ppwaskie-mobl.amr.corp.intel.com>
- <20140106212623.GH30183@twins.programming.kicks-ass.net>
- <1389044899.32504.43.camel@ppwaskie-mobl.amr.corp.intel.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
+ tracing units
+Message-ID: <20140106221528.GK30183@twins.programming.kicks-ass.net>
+References: <87zjnys0gj.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131218150900.GU21999@twins.programming.kicks-ass.net>
+ <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131219103134.GD30183@twins.programming.kicks-ass.net>
+ <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131219112812.GY21999@twins.programming.kicks-ass.net>
+ <20131219123955.GA18186@gmail.com>
+ <87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131219151024.GI16438@laptop.programming.kicks-ass.net>
+ <87iotw6bwx.fsf@tassilo.jf.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389044899.32504.43.camel@ppwaskie-mobl.amr.corp.intel.com>
+In-Reply-To: <87iotw6bwx.fsf@tassilo.jf.intel.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 09:48:29PM +0000, Waskiewicz Jr, Peter P wrote:
-> On Mon, 2014-01-06 at 22:26 +0100, Peter Zijlstra wrote:
-> > On Mon, Jan 06, 2014 at 08:10:45PM +0000, Waskiewicz Jr, Peter P wrote:
-> > > There is one per logical CPU.  However, in the current generation, they
-> > > report on the usage of the same L3 cache.  But the CPU takes care of the
-> > > resolution of which MSR write and read comes from the logical CPU, so
-> > > software doesn't need to lock access to it from different CPUs.
-> > 
-> > What are the rules of RMIDs, I can't seem to find that in the SDM and I
-> > think you're tagging cachelines with them. Which would mean that in
-> > order to (re) use them you need a complete cache (L3) wipe.
-> 
-> The cacheline is tagged internally with the RMID as part of the waymask
-> for the thread in the core.
-> 
-> > Without a wipe you keep having stale entries of the former user and no
-> > clear indication on when your numbers are any good.
-> 
-> That can happen, yes.  If you have leftover cache data from a process
-> that died that hasn't been evicted yet and it's assigned to the RMID
-> you're using, you will see its included cache occupancy to the overall
-> numbers.
-> 
-> > Also, is there any sane way of shooting down the entire L3?
-> 
-> That is a question I'd punt to hpa, but I'll ask him.  Looking around
-> though, a WBINVD would certainly nuke things, but would hurt
-> performance.  We could get creative with INVPCID as a process dies.  Let
-> me ask him though and see if there's a good way to tidy up.
+> I don't think the PT design is broken in any way, it's straight 
+> forward and simple.
 
-You seem to be assuming a RMID is for the entire task lifetime.
+Also, do clarify the other points I asked about. Esp. the non
+FREEZE_ON_PMI behaviour of the PT PMI is worrying me immensely.
 
-Since its a very limited resource that seems like a weird assumption to
-me; there's plenty scenarios in which you'd want to re-use RMIDs that
-belong to a still running context.
-
-At which point you need to force wipe.. otherwise its impossible to tell
-when the number reported makes any kind of sense.
+To me it seems very weird that PT is hooked to the same PMI as the
+normal PMU, it really should have been a different interrupt.
