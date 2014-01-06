@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756612AbaAFWiH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:38:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47314 "EHLO
+	id S1756927AbaAGAOs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:14:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47338 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755253AbaAFWiB (ORCPT
+	with ESMTP id S1756579AbaAFWiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:01 -0500
+	Mon, 6 Jan 2014 17:38:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.12 001/144] USB: serial: fix race in generic write
-Date: Mon,  6 Jan 2014 14:36:02 -0800
-Message-Id: <20140106223745.371471131@linuxfoundation.org>
+        Karl Dahlke <eklhad@comcast.net>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 3.12 008/144] n_tty: Fix apparent order of echoed output
+Date: Mon,  6 Jan 2014 14:36:09 -0800
+Message-Id: <20140106223745.568086451@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -28,47 +30,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-commit 6f6485463aada1ec6a0f3db6a03eb8e393d6bb55 upstream.
+commit 1075a6e2dc7e2a96efc417b98dd98f57fdae985d upstream.
 
-Fix race in generic write implementation, which could lead to
-temporarily degraded throughput.
+With block processing of echoed output, observed output order is still
+required. Push completed echoes and echo commands prior to output.
 
-The current generic write implementation introduced by commit
-27c7acf22047 ("USB: serial: reimplement generic fifo-based writes") has
-always had this bug, although it's fairly hard to trigger and the
-consequences are not likely to be noticed.
+Introduce echo_mark echo buffer index, which tracks completed echo
+commands; ie., those submitted via commit_echoes but which may not
+have been committed. Ensure that completed echoes are output prior
+to subsequent terminal writes in process_echoes().
 
-Specifically, a write() on one CPU while the completion handler is
-running on another could result in only one of the two write urbs being
-utilised to empty the remainder of the write fifo (unless there is a
-second write() that doesn't race during that time).
+Fixes newline/prompt output order in cooked mode shell.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Reported-by: Karl Dahlke <eklhad@comcast.net>
+Reported-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Tested-by: Karl Dahlke <eklhad@comcast.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/generic.c |    9 +--------
- 1 file changed, 1 insertion(+), 8 deletions(-)
+ drivers/tty/n_tty.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/generic.c
-+++ b/drivers/usb/serial/generic.c
-@@ -176,14 +176,7 @@ retry:
- 		return result;
- 	}
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -93,6 +93,7 @@ struct n_tty_data {
+ 	size_t canon_head;
+ 	size_t echo_head;
+ 	size_t echo_commit;
++	size_t echo_mark;
+ 	DECLARE_BITMAP(char_map, 256);
  
--	/* Try sending off another urb, unless in irq context (in which case
--	 * there will be no free urb). */
--	if (!in_irq())
--		goto retry;
--
--	clear_bit_unlock(USB_SERIAL_WRITE_BUSY, &port->flags);
--
--	return 0;
-+	goto retry;	/* try sending off another urb */
+ 	/* private to n_tty_receive_overrun (single-threaded) */
+@@ -336,6 +337,7 @@ static void reset_buffer_flags(struct n_
+ {
+ 	ldata->read_head = ldata->canon_head = ldata->read_tail = 0;
+ 	ldata->echo_head = ldata->echo_tail = ldata->echo_commit = 0;
++	ldata->echo_mark = 0;
+ 	ldata->line_start = 0;
+ 
+ 	ldata->erasing = 0;
+@@ -787,6 +789,7 @@ static void commit_echoes(struct tty_str
+ 	size_t head;
+ 
+ 	head = ldata->echo_head;
++	ldata->echo_mark = head;
+ 	old = ldata->echo_commit - ldata->echo_tail;
+ 
+ 	/* Process committed echoes if the accumulated # of bytes
+@@ -811,10 +814,11 @@ static void process_echoes(struct tty_st
+ 	size_t echoed;
+ 
+ 	if ((!L_ECHO(tty) && !L_ECHONL(tty)) ||
+-	    ldata->echo_commit == ldata->echo_tail)
++	    ldata->echo_mark == ldata->echo_tail)
+ 		return;
+ 
+ 	mutex_lock(&ldata->output_lock);
++	ldata->echo_commit = ldata->echo_mark;
+ 	echoed = __process_echoes(tty);
+ 	mutex_unlock(&ldata->output_lock);
+ 
+@@ -822,6 +826,7 @@ static void process_echoes(struct tty_st
+ 		tty->ops->flush_chars(tty);
  }
  
- /**
++/* NB: echo_mark and echo_head should be equivalent here */
+ static void flush_echoes(struct tty_struct *tty)
+ {
+ 	struct n_tty_data *ldata = tty->disc_data;
 
 
