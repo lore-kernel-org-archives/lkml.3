@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932494AbaAFWji (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:39:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47757 "EHLO
+	id S1757931AbaAFXti (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:49:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47796 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932469AbaAFWje (ORCPT
+	with ESMTP id S932490AbaAFWji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:39:34 -0500
+	Mon, 6 Jan 2014 17:39:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Rafael Aquini <aquini@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Vlastimil Babka <vbabka@suse.cz>,
         Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Alex Thorlton <athorlton@sgi.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 110/144] mm: clear pmd_numa before invalidating
-Date: Mon,  6 Jan 2014 14:37:51 -0800
-Message-Id: <20140106223748.505596137@linuxfoundation.org>
+Subject: [PATCH 3.12 115/144] mm/mempolicy: correct putback method for isolate pages if failed
+Date: Mon,  6 Jan 2014 14:37:56 -0800
+Message-Id: <20140106223748.647616318@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -31,46 +36,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-commit 67f87463d3a3362424efcbe8b40e4772fd34fc61 upstream.
+commit b0e5fd7359f1ce8db4ccb862b3aa80d2f2cbf4d0 upstream.
 
-On x86, PMD entries are similar to _PAGE_PROTNONE protection and are
-handled as NUMA hinting faults.  The following two page table protection
-bits are what defines them
+queue_pages_range() isolates hugetlbfs pages and putback_lru_pages()
+can't handle these.  We should change it to putback_movable_pages().
 
-	_PAGE_NUMA:set	_PAGE_PRESENT:clear
+Naoya said that it is worth going into stable, because it can break
+in-use hugepage list.
 
-A PMD is considered present if any of the _PAGE_PRESENT, _PAGE_PROTNONE,
-_PAGE_PSE or _PAGE_NUMA bits are set.  If pmdp_invalidate encounters a
-pmd_numa, it clears the present bit leaving _PAGE_NUMA which will be
-considered not present by the CPU but present by pmd_present.  The
-existing caller of pmdp_invalidate should handle it but it's an
-inconsistent state for a PMD.  This patch keeps the state consistent
-when calling pmdp_invalidate.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Alex Thorlton <athorlton@sgi.com>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Acked-by: Rafael Aquini <aquini@redhat.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Vlastimil Babka <vbabka@suse.cz>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Vlastimil Babka <vbabka@suse.cz>
+Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/pgtable-generic.c |    3 +++
- 1 file changed, 3 insertions(+)
+ mm/mempolicy.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/pgtable-generic.c
-+++ b/mm/pgtable-generic.c
-@@ -191,6 +191,9 @@ pgtable_t pgtable_trans_huge_withdraw(st
- void pmdp_invalidate(struct vm_area_struct *vma, unsigned long address,
- 		     pmd_t *pmdp)
- {
-+	pmd_t entry = *pmdp;
-+	if (pmd_numa(entry))
-+		entry = pmd_mknonnuma(entry);
- 	set_pmd_at(vma->vm_mm, address, pmdp, pmd_mknotpresent(*pmdp));
- 	flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
- }
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1317,7 +1317,7 @@ static long do_mbind(unsigned long start
+ 		if (nr_failed && (flags & MPOL_MF_STRICT))
+ 			err = -EIO;
+ 	} else
+-		putback_lru_pages(&pagelist);
++		putback_movable_pages(&pagelist);
+ 
+ 	up_write(&mm->mmap_sem);
+  mpol_out:
 
 
