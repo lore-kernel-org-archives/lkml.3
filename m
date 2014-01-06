@@ -1,119 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403AbaAFQFk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 11:05:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58460 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755259AbaAFQFi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 11:05:38 -0500
-Message-ID: <1389024449.1866.3.camel@dcbw.local>
-Subject: [PATCH] hso: fix handling of modem port SERIAL_STATE notifications
-From: Dan Williams <dcbw@redhat.com>
-To: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-Cc: Jan Dumon <j.dumon@option.com>, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Belisko Marek <marek.belisko@gmail.com>, e.verdonck@option.com
-Date: Mon, 06 Jan 2014 10:07:29 -0600
-In-Reply-To: <874B65AE-8B15-4427-8EF4-F0CA2BC55062@goldelico.com>
-References: <B1808224-5850-41E3-9A8F-0F350F84FF89@goldelico.com>
-	 <541AADAC-7D20-4410-90FC-3E354B0C1457@goldelico.com>
-	 <1387222829.2156.51.camel@dcbw.foobar.com>
-	 <174CD81C-6425-4560-A3FA-3BFAA83BA770@goldelico.com>
-	 <1387319242.28943.42.camel@dcbw.local>
-	 <54ED5542-6C9E-4AC6-90CC-ED77972D8CB1@goldelico.com>
-	 <1387388963.5549.11.camel@dcbw.local>
-	 <874B65AE-8B15-4427-8EF4-F0CA2BC55062@goldelico.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755416AbaAFQGL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 11:06:11 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:53254 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754254AbaAFQGJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 11:06:09 -0500
+Date: Mon, 6 Jan 2014 21:36:02 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        dri-devel@lists.freedesktop.org, josh@joshtriplett.org
+Subject: [PATCH 52/85] drivers: gpu: Include appropriate header file in
+ rv770_dpm.c
+Message-ID: <db4524480e90ff7a561e73cc60be4c746695b07f.1389018325.git.rashika.kheria@gmail.com>
+References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The existing serial state notification handling expected older Option
-devices, having a hardcoded assumption that the Modem port was always
-USB interface #2.  That isn't true for devices from the past few years.
+Include header file gpu/drm/radeon/radeon_asic.h in
+drm/radeon/rv770_dpm.c because it uses functions declared in the header
+file.
 
-hso_serial_state_notification is a local cache of a USB Communications
-Interface Class SERIAL_STATE notification from the device, and the
-USB CDC specification (section 6.3, table 67 "Class-Specific Notifications")
-defines wIndex as the USB interface the event applies to.  For hso
-devices this will always be the Modem port, as the Modem port is the
-only port which is set up to receive them by the driver.
+This eliminates the following warning in drm/radeon/rv770_dpm.c:
+drivers/gpu/drm/radeon/rv770_dpm.c:47:18: warning: no previous prototype for ‘rv770_get_ps’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/rv770_dpm.c:54:26: warning: no previous prototype for ‘rv770_get_pi’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/rv770_dpm.c:61:30: warning: no previous prototype for ‘evergreen_get_pi’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/rv770_dpm.c:1891:5: warning: no previous prototype for ‘rv770_dpm_enable’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/rv770_dpm.c:1989:6: warning: no previous prototype for ‘rv770_dpm_disable’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/rv770_dpm.c:2027:5: warning: no previous prototype for ‘rv770_dpm_set_power_state’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/rv770_dpm.c:2083:6: warning: no previous prototype for ‘rv770_dpm_setup_asic’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/rv770_dpm.c:2106:6: warning: no previous prototype for ‘rv770_dpm_display_configuration_changed’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/rv770_dpm.c:2337:5: warning: no previous prototype for ‘rv770_dpm_init’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/rv770_dpm.c:2422:6: warning: no previous prototype for ‘rv770_dpm_print_power_state’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/rv770_dpm.c:2455:6: warning: no previous prototype for ‘rv770_dpm_debugfs_print_current_performance_level’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/rv770_dpm.c:2485:6: warning: no previous prototype for ‘rv770_dpm_fini’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/rv770_dpm.c:2496:5: warning: no previous prototype for ‘rv770_dpm_get_sclk’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/rv770_dpm.c:2506:5: warning: no previous prototype for ‘rv770_dpm_get_mclk’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/rv770_dpm.c:2516:6: warning: no previous prototype for ‘rv770_dpm_vblank_too_short’ [-Wmissing-prototypes]
 
-So instead of always expecting USB interface #2, instead validate the
-notification with the actual USB interface number of the Modem port.
-
-Signed-off-by: Dan Williams <dcbw@redhat.com>
-Tested-by: H. Nikolaus Schaller <hns@goldelico.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/net/usb/hso.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/rv770_dpm.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
-index 86292e6..1a48234 100644
---- a/drivers/net/usb/hso.c
-+++ b/drivers/net/usb/hso.c
-@@ -181,15 +181,14 @@ enum rx_ctrl_state{
- 	RX_SENT,
- 	RX_PENDING
- };
+diff --git a/drivers/gpu/drm/radeon/rv770_dpm.c b/drivers/gpu/drm/radeon/rv770_dpm.c
+index 913b025..cd22549 100644
+--- a/drivers/gpu/drm/radeon/rv770_dpm.c
++++ b/drivers/gpu/drm/radeon/rv770_dpm.c
+@@ -24,6 +24,7 @@
  
- #define BM_REQUEST_TYPE (0xa1)
- #define B_NOTIFICATION  (0x20)
- #define W_VALUE         (0x0)
--#define W_INDEX         (0x2)
- #define W_LENGTH        (0x2)
- 
- #define B_OVERRUN       (0x1<<6)
- #define B_PARITY        (0x1<<5)
- #define B_FRAMING       (0x1<<4)
- #define B_RING_SIGNAL   (0x1<<3)
- #define B_BREAK         (0x1<<2)
-@@ -1483,31 +1482,41 @@ static void tiocmget_intr_callback(struct urb *urb)
- 	struct hso_serial *serial = urb->context;
- 	struct hso_tiocmget *tiocmget;
- 	int status = urb->status;
- 	u16 UART_state_bitmap, prev_UART_state_bitmap;
- 	struct uart_icount *icount;
- 	struct hso_serial_state_notification *serial_state_notification;
- 	struct usb_device *usb;
-+	int if_num;
- 
- 	/* Sanity checks */
- 	if (!serial)
- 		return;
- 	if (status) {
- 		handle_usb_error(status, __func__, serial->parent);
- 		return;
- 	}
-+
-+	/* tiocmget is only supported on HSO_PORT_MODEM */
- 	tiocmget = serial->tiocmget;
- 	if (!tiocmget)
- 		return;
-+	BUG_ON((serial->parent->port_spec & HSO_PORT_MASK) != HSO_PORT_MODEM);
-+
- 	usb = serial->parent->usb;
-+	if_num = serial->parent->interface->altsetting->desc.bInterfaceNumber;
-+
-+	/* wIndex should be the USB interface number of the port to which the
-+	 * notification applies, which should always be the Modem port.
-+	 */
- 	serial_state_notification = &tiocmget->serial_state_notification;
- 	if (serial_state_notification->bmRequestType != BM_REQUEST_TYPE ||
- 	    serial_state_notification->bNotification != B_NOTIFICATION ||
- 	    le16_to_cpu(serial_state_notification->wValue) != W_VALUE ||
--	    le16_to_cpu(serial_state_notification->wIndex) != W_INDEX ||
-+	    le16_to_cpu(serial_state_notification->wIndex) != if_num ||
- 	    le16_to_cpu(serial_state_notification->wLength) != W_LENGTH) {
- 		dev_warn(&usb->dev,
- 			 "hso received invalid serial state notification\n");
- 		DUMP(serial_state_notification,
- 		     sizeof(struct hso_serial_state_notification));
- 	} else {
- 
+ #include "drmP.h"
+ #include "radeon.h"
++#include "radeon_asic.h"
+ #include "rv770d.h"
+ #include "r600_dpm.h"
+ #include "rv770_dpm.h"
 -- 
-1.8.3.1
-
+1.7.9.5
 
