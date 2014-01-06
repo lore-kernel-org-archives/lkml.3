@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756793AbaAFWiZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:38:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47410 "EHLO
+	id S932707AbaAGAKI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:10:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47415 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756777AbaAFWiW (ORCPT
+	with ESMTP id S1754928AbaAFWiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:22 -0500
+	Mon, 6 Jan 2014 17:38:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Evan McNabb <emcnabb@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Paul Moore <pmoore@redhat.com>
-Subject: [PATCH 3.12 032/144] selinux: selinux_setprocattr()->ptrace_parent() needs rcu_read_lock()
-Date: Mon,  6 Jan 2014 14:36:33 -0800
-Message-Id: <20140106223746.244867807@linuxfoundation.org>
+        Shivaram U <shivaram.u@quadstor.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.12 034/144] qla2xxx: Fix schedule_delayed_work() for target timeout calculations
+Date: Mon,  6 Jan 2014 14:36:35 -0800
+Message-Id: <20140106223746.300630915@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,43 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Shivaram Upadhyayula <shivaram.u@quadstor.com>
 
-commit c0c1439541f5305b57a83d599af32b74182933fe upstream.
+commit 63832aabec12a28a41a221773ab3819d30ba0a67 upstream.
 
-selinux_setprocattr() does ptrace_parent(p) under task_lock(p),
-but task_struct->alloc_lock doesn't pin ->parent or ->ptrace,
-this looks confusing and triggers the "suspicious RCU usage"
-warning because ptrace_parent() does rcu_dereference_check().
+This patch fixes two cases in qla_target.c code where the
+schedule_delayed_work() value was being incorrectly calculated
+from sess->expires - jiffies.
 
-And in theory this is wrong, spin_lock()->preempt_disable()
-doesn't necessarily imply rcu_read_lock() we need to access
-the ->parent.
-
-Reported-by: Evan McNabb <emcnabb@redhat.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Signed-off-by: Shivaram U <shivaram.u@quadstor.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/selinux/hooks.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/scsi/qla2xxx/qla_target.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -5523,11 +5523,11 @@ static int selinux_setprocattr(struct ta
- 		/* Check for ptracing, and update the task SID if ok.
- 		   Otherwise, leave SID unchanged and fail. */
- 		ptsid = 0;
--		task_lock(p);
-+		rcu_read_lock();
- 		tracer = ptrace_parent(p);
- 		if (tracer)
- 			ptsid = task_sid(tracer);
--		task_unlock(p);
-+		rcu_read_unlock();
+--- a/drivers/scsi/qla2xxx/qla_target.c
++++ b/drivers/scsi/qla2xxx/qla_target.c
+@@ -471,7 +471,7 @@ static void qlt_schedule_sess_for_deleti
+ 		schedule_delayed_work(&tgt->sess_del_work, 0);
+ 	else
+ 		schedule_delayed_work(&tgt->sess_del_work,
+-		    jiffies - sess->expires);
++		    sess->expires - jiffies);
+ }
  
- 		if (tracer) {
- 			error = avc_has_perm(ptsid, sid, SECCLASS_PROCESS,
+ /* ha->hardware_lock supposed to be held on entry */
+@@ -550,13 +550,14 @@ static void qlt_del_sess_work_fn(struct
+ 	struct scsi_qla_host *vha = tgt->vha;
+ 	struct qla_hw_data *ha = vha->hw;
+ 	struct qla_tgt_sess *sess;
+-	unsigned long flags;
++	unsigned long flags, elapsed;
+ 
+ 	spin_lock_irqsave(&ha->hardware_lock, flags);
+ 	while (!list_empty(&tgt->del_sess_list)) {
+ 		sess = list_entry(tgt->del_sess_list.next, typeof(*sess),
+ 		    del_list_entry);
+-		if (time_after_eq(jiffies, sess->expires)) {
++		elapsed = jiffies;
++		if (time_after_eq(elapsed, sess->expires)) {
+ 			qlt_undelete_sess(sess);
+ 
+ 			ql_dbg(ql_dbg_tgt_mgt, vha, 0xf004,
+@@ -566,7 +567,7 @@ static void qlt_del_sess_work_fn(struct
+ 			ha->tgt.tgt_ops->put_sess(sess);
+ 		} else {
+ 			schedule_delayed_work(&tgt->sess_del_work,
+-			    jiffies - sess->expires);
++			    sess->expires - elapsed);
+ 			break;
+ 		}
+ 	}
 
 
