@@ -1,34 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298AbaAFIhS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 03:37:18 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:49905 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751617AbaAFIhR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 03:37:17 -0500
-MIME-Version: 1.0
-In-Reply-To: <1388388861-7931-1-git-send-email-artagnon@gmail.com>
-References: <1388388861-7931-1-git-send-email-artagnon@gmail.com>
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Mon, 6 Jan 2014 14:06:36 +0530
-Message-ID: <CALkWK0kSvD73Lm2gZwKx2F8cp4M0xLfrQJFkTrPpBGhVU6xH1g@mail.gmail.com>
-Subject: Re: [PATCH v6 0/4] More color in 'perf diff'
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1753024AbaAFIla (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 03:41:30 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:64392 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751063AbaAFIl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 03:41:29 -0500
+X-IronPort-AV: E=Sophos;i="4.95,611,1384272000"; 
+   d="scan'208";a="9378051"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: rjw@sisk.pl, lenb@kernel.org, toshi.kani@hp.com
+Cc: tangchen@cn.fujitsu.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] acpi: Check if @id is NULL in acpi_table_parse()
+Date: Mon, 6 Jan 2014 16:43:54 +0800
+Message-Id: <1388997834-28028-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/01/06 16:40:26,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/01/06 16:40:28,
+	Serialize complete at 2014/01/06 16:40:28
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ramkumar Ramachandra wrote:
-> Ramkumar Ramachandra (4):
->   perf tools: generalize percent_color_snprintf()
->   perf diff: color the Delta column
->   perf diff: color the Ratio column
->   perf diff: color the Weighted Diff column
+strncmp() does not check if the params are NULL. In acpi_table_parse(),
+if @id is NULL, the kernel will panic.
 
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Acked-by: Toshi Kani <toshi.kani@hp.com>
+---
+ drivers/acpi/tables.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Ping?
+diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+index d67a1fe..5a5263b 100644
+--- a/drivers/acpi/tables.c
++++ b/drivers/acpi/tables.c
+@@ -293,7 +293,7 @@ int __init acpi_table_parse(char *id, acpi_tbl_table_handler handler)
+ 	if (acpi_disabled)
+ 		return -ENODEV;
+ 
+-	if (!handler)
++	if (!id || !handler)
+ 		return -EINVAL;
+ 
+ 	if (strncmp(id, ACPI_SIG_MADT, 4) == 0)
+-- 
+1.7.11.7
 
-Any progress on this Arnaldo, Jiri?
