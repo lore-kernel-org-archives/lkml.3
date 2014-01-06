@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182AbaAFFrG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 00:47:06 -0500
-Received: from mail-vb0-f48.google.com ([209.85.212.48]:40505 "EHLO
-	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875AbaAFFrE (ORCPT
+	id S1751993AbaAFGD0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 01:03:26 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:59902 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909AbaAFGDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 00:47:04 -0500
+	Mon, 6 Jan 2014 01:03:25 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140105061413.GF18213@core.coreip.homeip.net>
-References: <1388887680-942-1-git-send-email-ethan.kernel@gmail.com>
-	<20140105061413.GF18213@core.coreip.homeip.net>
-Date: Mon, 6 Jan 2014 13:47:03 +0800
-Message-ID: <CABawtvOJ7aV=QP2SwYpPJTgJKgngiHY0Oqu=UmxH8yP9TCkuSg@mail.gmail.com>
-Subject: Re: [PATCH] [media] saa7146: fix a possible NULL pointer reference in saa7146_set_position
+In-Reply-To: <20140105060920.GE18213@core.coreip.homeip.net>
+References: <1388884659-693-1-git-send-email-ethan.kernel@gmail.com>
+	<20140105060920.GE18213@core.coreip.homeip.net>
+Date: Mon, 6 Jan 2014 14:03:24 +0800
+Message-ID: <CABawtvMAzGR5sPg3dbiu8OpR2Jpo8FAbNXqde5rx9i0oULvyqw@mail.gmail.com>
+Subject: Re: [PATCH] [media] cx18: introduce a helper function to void array overrun
 From: Ethan Zhao <ethan.kernel@gmail.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: hans.verkuil@cisco.com, m.chehab@samsung.com,
@@ -24,59 +24,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry,
-   Yup,thank you point out that, need NULL pointer checking in
-calculate_video_dma_grab_packed() ,  I am not familiar with saa7146
-too. wouldn't paper over it, just a fix to pass code review.
-
-Thanks,
-Ethan
-
-On Sun, Jan 5, 2014 at 2:14 PM, Dmitry Torokhov
+On Sun, Jan 5, 2014 at 2:09 PM, Dmitry Torokhov
 <dmitry.torokhov@gmail.com> wrote:
-> On Sun, Jan 05, 2014 at 10:08:00AM +0800, Ethan Zhao wrote:
->> Function saa7146_format_by_fourcc() may return NULL, reference of the returned
->> result would cause NULL pointer issue without checking.
+> Hi Ethan,
+>
+> On Sun, Jan 05, 2014 at 09:17:39AM +0800, Ethan Zhao wrote:
+>> cx18_i2c_register() is called in cx18_init_subdevs() with index
+>> greater than length of hw_bus array, that will cause array overrun,
+>> introduce a helper cx18_get_max_bus_num() to void it.
+>
+> s/void/avoid/
+
+Oops, typo.
+>
 >>
 >> Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
 >> ---
->>  drivers/media/common/saa7146/saa7146_hlp.c | 9 +++++++--
->>  1 file changed, 7 insertions(+), 2 deletions(-)
+>>  drivers/media/pci/cx18/cx18-driver.c | 2 +-
+>>  drivers/media/pci/cx18/cx18-i2c.c    | 5 +++++
+>>  drivers/media/pci/cx18/cx18-i2c.h    | 1 +
+>>  3 files changed, 7 insertions(+), 1 deletion(-)
 >>
->> diff --git a/drivers/media/common/saa7146/saa7146_hlp.c b/drivers/media/common/saa7146/saa7146_hlp.c
->> index be746d1..3e23eab 100644
->> --- a/drivers/media/common/saa7146/saa7146_hlp.c
->> +++ b/drivers/media/common/saa7146/saa7146_hlp.c
->> @@ -575,6 +575,7 @@ static void saa7146_set_position(struct saa7146_dev *dev, int w_x, int w_y, int
->>        */
->>       u32 base = (u32)(unsigned long)vv->ov_fb.base;
+>> diff --git a/drivers/media/pci/cx18/cx18-driver.c b/drivers/media/pci/cx18/cx18-driver.c
+>> index 6386ced..dadcd4a 100644
+>> --- a/drivers/media/pci/cx18/cx18-driver.c
+>> +++ b/drivers/media/pci/cx18/cx18-driver.c
+>> @@ -856,7 +856,7 @@ static void cx18_init_subdevs(struct cx18 *cx)
+>>       u32 device;
+>>       int i;
 >>
->> +     int which = 1;
->>       struct  saa7146_video_dma vdma1;
+>> -     for (i = 0, device = 1; i < 32; i++, device <<= 1) {
+>> +     for (i = 0, device = 1; i < cx18_get_max_bus_num(); i++, device <<= 1) {
 >>
->>       /* calculate memory offsets for picture, look if we shall top-down-flip */
->> @@ -608,10 +609,14 @@ static void saa7146_set_position(struct saa7146_dev *dev, int w_x, int w_y, int
->>               vdma1.pitch *= -1;
->>       }
+>>               if (!(device & hw))
+>>                       continue;
+>> diff --git a/drivers/media/pci/cx18/cx18-i2c.c b/drivers/media/pci/cx18/cx18-i2c.c
+>> index 4af8cd6..e0e8193 100644
+>> --- a/drivers/media/pci/cx18/cx18-i2c.c
+>> +++ b/drivers/media/pci/cx18/cx18-i2c.c
+>> @@ -108,6 +108,11 @@ static int cx18_i2c_new_ir(struct cx18 *cx, struct i2c_adapter *adap, u32 hw,
+>>              -1 : 0;
+>>  }
 >>
->> -     vdma1.base_page = sfmt->swap;
->> +     if (sfmt)
->> +             vdma1.base_page = sfmt->swap;
->> +     else
->> +             which = 0;
->> +
->>       vdma1.num_line_byte = (vv->standard->v_field<<16)+vv->standard->h_pixels;
->>
->> -     saa7146_write_out_dma(dev, 1, &vdma1);
->> +     saa7146_write_out_dma(dev, which, &vdma1);
+>> +int cx18_get_max_bus_num()
 >
-> If saa7146_format_by_fourcc() returns NULL you'll crash much earlier
-> when trying to do
+> This should be "int cx18_get_max_bus_num(void)" since we are using C and
+> not C++.
+agree, no parameter function, f(void) much clearer than any parameters
+function f() in C.
 >
->         int depth = sfmt->depth;
+>> +{
+>> +     return sizeof(hw_bus);
 >
-> I am not familiar with the code by it seems you are papering over the
-> problem. Will we ever get here with unknown pixel format?
+> I'd rather see
+>
+>         return ARRAY_SIZE(hw_bus);
+
+Yes, looks better ! will send v2, thanks.
 >
 > Thanks.
 >
