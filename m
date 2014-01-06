@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933663AbaAFWtu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:49:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48692 "EHLO
+	id S933668AbaAFWuS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:50:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48688 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933400AbaAFWmd (ORCPT
+	with ESMTP id S933313AbaAFWmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:42:33 -0500
+	Mon, 6 Jan 2014 17:42:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, Sage Weil <sage@inktank.com>
-Subject: [PATCH 3.4 03/43] ceph: wake up safe waiters when unregistering request
-Date: Mon,  6 Jan 2014 14:39:20 -0800
-Message-Id: <20140106223942.357298019@linuxfoundation.org>
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Thomas Renninger <trenn@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 29/43] cpupower: Fix segfault due to incorrect getopt_long arugments
+Date: Mon,  6 Jan 2014 14:39:46 -0800
+Message-Id: <20140106223943.084918748@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223942.259651490@linuxfoundation.org>
 References: <20140106223942.259651490@linuxfoundation.org>
@@ -28,39 +31,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+From: Josh Boyer <jwboyer@redhat.com>
 
-commit fc55d2c9448b34218ca58733a6f51fbede09575b upstream.
+commit f447ef4a56dee4b68a91460bcdfe06b5011085f2 upstream.
 
-We also need to wake up 'safe' waiters if error occurs or request
-aborted. Otherwise sync(2)/fsync(2) may hang forever.
+If a user calls 'cpupower set --perf-bias 15', the process will end with
+a SIGSEGV in libc because cpupower-set passes a NULL optarg to the atoi
+call.  This is because the getopt_long structure currently has all of
+the options as having an optional_argument when they really have a
+required argument.  We change the structure to use required_argument to
+match the short options and it resolves the issue.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Signed-off-by: Sage Weil <sage@inktank.com>
+This fixes https://bugzilla.redhat.com/show_bug.cgi?id=1000439
+
+Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>
+Cc: Thomas Renninger <trenn@suse.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ceph/mds_client.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ tools/power/cpupower/utils/cpupower-set.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/ceph/mds_client.c
-+++ b/fs/ceph/mds_client.c
-@@ -609,6 +609,8 @@ static void __unregister_request(struct
- 		req->r_unsafe_dir = NULL;
- 	}
+--- a/tools/power/cpupower/utils/cpupower-set.c
++++ b/tools/power/cpupower/utils/cpupower-set.c
+@@ -18,9 +18,9 @@
+ #include "helpers/bitmask.h"
  
-+	complete_all(&req->r_safe_completion);
-+
- 	ceph_mdsc_put_request(req);
- }
+ static struct option set_opts[] = {
+-	{ .name = "perf-bias",	.has_arg = optional_argument,	.flag = NULL,	.val = 'b'},
+-	{ .name = "sched-mc",	.has_arg = optional_argument,	.flag = NULL,	.val = 'm'},
+-	{ .name = "sched-smt",	.has_arg = optional_argument,	.flag = NULL,	.val = 's'},
++	{ .name = "perf-bias",	.has_arg = required_argument,	.flag = NULL,	.val = 'b'},
++	{ .name = "sched-mc",	.has_arg = required_argument,	.flag = NULL,	.val = 'm'},
++	{ .name = "sched-smt",	.has_arg = required_argument,	.flag = NULL,	.val = 's'},
+ 	{ },
+ };
  
-@@ -2132,7 +2134,6 @@ static void handle_reply(struct ceph_mds
- 	if (head->safe) {
- 		req->r_got_safe = true;
- 		__unregister_request(mdsc, req);
--		complete_all(&req->r_safe_completion);
- 
- 		if (req->r_got_unsafe) {
- 			/*
 
 
