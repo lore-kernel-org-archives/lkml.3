@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933742AbaAFWyR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:54:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48638 "EHLO
+	id S1756953AbaAFWys (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:54:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48627 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933333AbaAFWmV (ORCPT
+	with ESMTP id S933320AbaAFWmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:42:21 -0500
+	Mon, 6 Jan 2014 17:42:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jiang <dave.jiang@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        David Whipple <whipple@securedatainnovations.ch>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH 3.4 18/43] net_dma: mark broken
-Date: Mon,  6 Jan 2014 14:39:35 -0800
-Message-Id: <20140106223942.772275601@linuxfoundation.org>
+        Kirill Tkhai <tkhai@yandex.ru>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.4 16/43] sched/rt: Fix rqs cpupri leak while enqueue/dequeue child RT entities
+Date: Mon,  6 Jan 2014 14:39:33 -0800
+Message-Id: <20140106223942.717396579@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223942.259651490@linuxfoundation.org>
 References: <20140106223942.259651490@linuxfoundation.org>
@@ -32,91 +29,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Kirill Tkhai <tkhai@yandex.ru>
 
-commit 77873803363c9e831fc1d1e6895c084279090c22 upstream.
+commit 757dfcaa41844595964f1220f1d33182dae49976 upstream.
 
-net_dma can cause data to be copied to a stale mapping if a
-copy-on-write fault occurs during dma.  The application sees missing
-data.
+This patch touches the RT group scheduling case.
 
-The following trace is triggered by modifying the kernel to WARN if it
-ever triggers copy-on-write on a page that is undergoing dma:
+Functions inc_rt_prio_smp() and dec_rt_prio_smp() change (global) rq's
+priority, while rt_rq passed to them may be not the top-level rt_rq.
+This is wrong, because changing of priority on a child level does not
+guarantee that the priority is the highest all over the rq. So, this
+leak makes RT balancing unusable.
 
- WARNING: CPU: 24 PID: 2529 at lib/dma-debug.c:485 debug_dma_assert_idle+0xd2/0x120()
- ioatdma 0000:00:04.0: DMA-API: cpu touching an active dma mapped page [pfn=0x16bcd9]
- Modules linked in: iTCO_wdt iTCO_vendor_support ioatdma lpc_ich pcspkr dca
- CPU: 24 PID: 2529 Comm: linbug Tainted: G        W    3.13.0-rc1+ #353
-  00000000000001e5 ffff88016f45f688 ffffffff81751041 ffff88017ab0ef70
-  ffff88016f45f6d8 ffff88016f45f6c8 ffffffff8104ed9c ffffffff810f3646
-  ffff8801768f4840 0000000000000282 ffff88016f6cca10 00007fa2bb699349
- Call Trace:
-  [<ffffffff81751041>] dump_stack+0x46/0x58
-  [<ffffffff8104ed9c>] warn_slowpath_common+0x8c/0xc0
-  [<ffffffff810f3646>] ? ftrace_pid_func+0x26/0x30
-  [<ffffffff8104ee86>] warn_slowpath_fmt+0x46/0x50
-  [<ffffffff8139c062>] debug_dma_assert_idle+0xd2/0x120
-  [<ffffffff81154a40>] do_wp_page+0xd0/0x790
-  [<ffffffff811582ac>] handle_mm_fault+0x51c/0xde0
-  [<ffffffff813830b9>] ? copy_user_enhanced_fast_string+0x9/0x20
-  [<ffffffff8175fc2c>] __do_page_fault+0x19c/0x530
-  [<ffffffff8175c196>] ? _raw_spin_lock_bh+0x16/0x40
-  [<ffffffff810f3539>] ? trace_clock_local+0x9/0x10
-  [<ffffffff810fa1f4>] ? rb_reserve_next_event+0x64/0x310
-  [<ffffffffa0014c00>] ? ioat2_dma_prep_memcpy_lock+0x60/0x130 [ioatdma]
-  [<ffffffff8175ffce>] do_page_fault+0xe/0x10
-  [<ffffffff8175c862>] page_fault+0x22/0x30
-  [<ffffffff81643991>] ? __kfree_skb+0x51/0xd0
-  [<ffffffff813830b9>] ? copy_user_enhanced_fast_string+0x9/0x20
-  [<ffffffff81388ea2>] ? memcpy_toiovec+0x52/0xa0
-  [<ffffffff8164770f>] skb_copy_datagram_iovec+0x5f/0x2a0
-  [<ffffffff8169d0f4>] tcp_rcv_established+0x674/0x7f0
-  [<ffffffff816a68c5>] tcp_v4_do_rcv+0x2e5/0x4a0
-  [..]
- ---[ end trace e30e3b01191b7617 ]---
- Mapped at:
-  [<ffffffff8139c169>] debug_dma_map_page+0xb9/0x160
-  [<ffffffff8142bf47>] dma_async_memcpy_pg_to_pg+0x127/0x210
-  [<ffffffff8142cce9>] dma_memcpy_pg_to_iovec+0x119/0x1f0
-  [<ffffffff81669d3c>] dma_skb_copy_datagram_iovec+0x11c/0x2b0
-  [<ffffffff8169d1ca>] tcp_rcv_established+0x74a/0x7f0:
+The short example: the task having the highest priority among all rq's
+RT tasks (no one other task has the same priority) are waking on a
+throttle rt_rq.  The rq's cpupri is set to the task's priority
+equivalent, but real rq->rt.highest_prio.curr is less.
 
-...the problem is that the receive path falls back to cpu-copy in
-several locations and this trace is just one of the areas.  A few
-options were considered to fix this:
+The patch below fixes the problem.
 
-1/ sync all dma whenever a cpu copy branch is taken
-
-2/ modify the page fault handler to hold off while dma is in-flight
-
-Option 1 adds yet more cpu overhead to an "offload" that struggles to compete
-with cpu-copy.  Option 2 adds checks for behavior that is already documented as
-broken when using get_user_pages().  At a minimum a debug mode is warranted to
-catch and flag these violations of the dma-api vs get_user_pages().
-
-Thanks to David for his reproducer.
-
-Cc: Dave Jiang <dave.jiang@intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Alexander Duyck <alexander.h.duyck@intel.com>
-Reported-by: David Whipple <whipple@securedatainnovations.ch>
-Acked-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+CC: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/49231385567953@web4m.yandex.ru
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/sched/rt.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -269,6 +269,7 @@ config NET_DMA
- 	bool "Network: TCP receive copy offload"
- 	depends on DMA_ENGINE && NET
- 	default (INTEL_IOATDMA || FSL_DMA)
-+	depends on BROKEN
- 	help
- 	  This enables the use of DMA engines in the network stack to
- 	  offload receive copy-to-user operations, freeing CPU cycles.
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -942,6 +942,13 @@ inc_rt_prio_smp(struct rt_rq *rt_rq, int
+ {
+ 	struct rq *rq = rq_of_rt_rq(rt_rq);
+ 
++#ifdef CONFIG_RT_GROUP_SCHED
++	/*
++	 * Change rq's cpupri only if rt_rq is the top queue.
++	 */
++	if (&rq->rt != rt_rq)
++		return;
++#endif
+ 	if (rq->online && prio < prev_prio)
+ 		cpupri_set(&rq->rd->cpupri, rq->cpu, prio);
+ }
+@@ -951,6 +958,13 @@ dec_rt_prio_smp(struct rt_rq *rt_rq, int
+ {
+ 	struct rq *rq = rq_of_rt_rq(rt_rq);
+ 
++#ifdef CONFIG_RT_GROUP_SCHED
++	/*
++	 * Change rq's cpupri only if rt_rq is the top queue.
++	 */
++	if (&rq->rt != rt_rq)
++		return;
++#endif
+ 	if (rq->online && rt_rq->highest_prio.curr != prev_prio)
+ 		cpupri_set(&rq->rd->cpupri, rq->cpu, rt_rq->highest_prio.curr);
+ }
 
 
