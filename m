@@ -1,90 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755749AbaAFQmd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 11:42:33 -0500
-Received: from mga02.intel.com ([134.134.136.20]:2675 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751446AbaAFQmb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 11:42:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,613,1384329600"; 
-   d="scan'208";a="434565928"
-From: "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] x86: Add Cache QoS Monitoring (CQM) support
-Thread-Topic: [PATCH 0/4] x86: Add Cache QoS Monitoring (CQM) support
-Thread-Index: AQHPCMNUDB9LRbk7GE+jzVKI+L/oYZp4E7iAgABdYwA=
-Date: Mon, 6 Jan 2014 16:42:29 +0000
-Message-ID: <1389026538.32504.11.camel@ppwaskie-mobl.amr.corp.intel.com>
-References: <1388781285-18067-1-git-send-email-peter.p.waskiewicz.jr@intel.com>
-	 <20140106110803.GA5623@twins.programming.kicks-ass.net>
-In-Reply-To: <20140106110803.GA5623@twins.programming.kicks-ass.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.15.231]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <8D57DD7440A0D04186515BF31508FF8E@intel.com>
+	id S1755862AbaAFQmj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 11:42:39 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:53951 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755804AbaAFQmg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 11:42:36 -0500
+Date: Mon, 6 Jan 2014 17:43:19 +0100
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Maxim Patlasov <mpatlasov@parallels.com>
+Cc: dev@parallels.com, xemul@parallels.com, fuse-devel@lists.sourceforge.net,
+        bfoster@redhat.com, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, linux-fsdevel@vger.kernel.org,
+        akpm@linux-foundation.org, fengguang.wu@intel.com, devel@openvz.org
+Subject: Re: [PATCH 07/11] fuse: restructure fuse_readpage()
+Message-ID: <20140106164319.GF16230@tucsk.piliscsaba.szeredi.hu>
+References: <20131010130718.10089.6736.stgit@dhcp-10-30-17-2.sw.ru>
+ <20131010131113.10089.57270.stgit@dhcp-10-30-17-2.sw.ru>
+ <20131112171707.GB10813@tucsk.piliscsaba.szeredi.hu>
+ <52B45A30.10808@parallels.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52B45A30.10808@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s06Gga7b007979
 
-On Mon, 2014-01-06 at 12:08 +0100, Peter Zijlstra wrote:
-> On Fri, Jan 03, 2014 at 12:34:41PM -0800, Peter P Waskiewicz Jr wrote:
-> > The CPU features themselves are relatively straight-forward, but
-> > the presentation of the data is less straight-forward.  Since this
-> > tracks cache usage and occupancy per process (by swapping Resource
-> > Monitor IDs, or RMIDs, when processes are rescheduled), perf would
-> > not be a good fit for this data, which does not report on a
-> > per-process level.  Therefore, a new cgroup subsystem, cacheqos, has
-> > been added.  This operates very similarly to the cpu and cpuacct
-> > cgroup subsystems, where tasks can be grouped into sub-leaves of the
-> > root-level cgroup.
+On Fri, Dec 20, 2013 at 06:54:40PM +0400, Maxim Patlasov wrote:
+> Hi Miklos,
 > 
-> This doesn't make any sense.. From a quick SDM read you can do pretty
-> much whatever with those RMIDs. If you allocate a RMID per task (thread
-> in userspace) you can actually measure things on a task basis.
-
-Exactly.  An RMID can be assigned to a single task or a group of tasks.
-Because the RMID is a hardware resource and is limited, the
-implementation of using it is what we're really discussing here.  Our
-approach is to either monitor per-task, or per group of tasks.
-
-> From then on you can use perf-cgroup to group whatever tasks you want.
+> Sorry for delay, see please inline comments below.
 > 
-> So please be more explicit in why you think this doesn't fit into perf.
+> On 11/12/2013 09:17 PM, Miklos Szeredi wrote:
+> >On Thu, Oct 10, 2013 at 05:11:25PM +0400, Maxim Patlasov wrote:
+> >>Move the code filling and sending read request to a separate function. Future
+> >>patches will use it for .write_begin -- partial modification of a page
+> >>requires reading the page from the storage very similarly to what fuse_readpage
+> >>does.
+> >>
+> >>Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
+> >>---
+> >>  fs/fuse/file.c |   55 +++++++++++++++++++++++++++++++++++++------------------
+> >>  1 file changed, 37 insertions(+), 18 deletions(-)
+> >>
+> >>diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+> >>index b4d4189..77eb849 100644
+> >>--- a/fs/fuse/file.c
+> >>+++ b/fs/fuse/file.c
+> >>@@ -700,21 +700,14 @@ static void fuse_short_read(struct fuse_req *req, struct inode *inode,
+> >>  	}
+> >>  }
+> >>-static int fuse_readpage(struct file *file, struct page *page)
+> >>+static int __fuse_readpage(struct file *file, struct page *page, size_t count,
+> >>+			   int *err, struct fuse_req **req_pp, u64 *attr_ver_p)
+> >Signature of this helper looks really ugly.  A quick look tells me that neither
+> >caller actually needs 'req'.
+> 
+> fuse_readpage() passes 'req' to fuse_short_read(). And the latter
+> uses req->pages[] to nullify a part of request.
 
-I said this in my other reply to the other thread, but I'll ask again
-because I'm not following.  I'm looking for information on perf-cgroup,
-and I all see is a way to monitor CPU events for tasks in a cgroup (perf
--G option).
+I don't get it.  __fuse_readpage() itself call's fuse_short_read(), not callers
+of __fuse_readpage().  Or do they?
 
-The other part I'm not seeing is how to control the RMIDs being
-allocated across to different groups.  There may be 100 task groups to
-monitor, but only 32 RMIDs.  So the RMIDs need to be handed out to
-active tasks and then enabled, data extracted, then disabled.  That was
-the intent of the cacheqos.monitor_cache knob.
+> 
+> >And fuse_get_attr_version() can be moved to the
+> >one caller that needs it.
+> 
+> Yes, it's doable. But this would make attr_version mechanism less
+> efficient (under some loads): suppose the file on server was
+> truncated externally, then fuse_readpage() acquires
+> fc->attr_version, then some innocent write bumps fc->attr_version
+> while we're waiting for fuse writeback, then fuse_read_update_size()
+> would noop. In the other words, it's beneficial to keep the time
+> interval between acquiring fc->attr_version and subsequent
+> comparison as short as possible.
 
-The bottom line is I'm asking for a bit more information from you about
-perf-cgroup, since it sounds like you see a fit for CQM here, and I'm
-not seeing what you're looking at yet.  Any information is much
-appreciated.
+Okay, lets try to keep this the way it is.  I don't like it very much, but I
+fear changing user visible behavior.
 
-Cheers,
--PJ
-
--- 
-PJ Waskiewicz				Open Source Technology Center
-peter.p.waskiewicz.jr@intel.com		Intel Corp.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks,
+Miklos
