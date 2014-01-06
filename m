@@ -1,88 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440AbaAFRAm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 12:00:42 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47977 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755070AbaAFRAl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 12:00:41 -0500
-Date: Mon, 6 Jan 2014 17:00:28 +0000
-From: Mark Brown <broonie@kernel.org>
-To: David Howells <dhowells@redhat.com>
-Cc: akpm@linux-foundation.org, Laxman Dewangan <ldewangan@nvidia.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140106170028.GJ31886@sirena.org.uk>
-References: <20140106124225.GQ31886@sirena.org.uk>
- <20140103160755.8153.81654.stgit@warthog.procyon.org.uk>
- <13465.1389026428@warthog.procyon.org.uk>
+	id S1755691AbaAFRCI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 12:02:08 -0500
+Received: from atl.turmel.org ([74.117.157.138]:48728 "EHLO atl.turmel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754662AbaAFRCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 12:02:06 -0500
+Message-ID: <52CAE18B.8020701@turmel.org>
+Date: Mon, 06 Jan 2014 12:02:03 -0500
+From: Phil Turmel <philip@turmel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Xzwv1pm7hH1NAiSK"
-Content-Disposition: inline
-In-Reply-To: <13465.1389026428@warthog.procyon.org.uk>
-X-Cookie: Go climb a gravity well!
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 5/7] Fix up a pointer-integer size mismatch warning in
- tps62360_probe()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Andrea Mazzoleni <amadvance@gmail.com>, neilb@suse.de
+CC: clm@fb.com, jbacik@fb.com, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org, linux-btrfs@vger.kernel.org
+Subject: Re: [RFC v2 0/2] New RAID library supporting up to six parities
+References: <1389000716-3274-1-git-send-email-amadvance@gmail.com>
+In-Reply-To: <1389000716-3274-1-git-send-email-amadvance@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/06/2014 04:31 AM, Andrea Mazzoleni wrote:
+> Hi,
+> 
+> This is a port to the Linux kernel of a RAID engine that I'm currently using
+> in a hobby project called SnapRAID. This engine supports up to six parities
+> levels and at the same time maintains compatibility with the existing Linux
+> RAID6 one.
 
---Xzwv1pm7hH1NAiSK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+FWIW, your patch 1/2 doesn't seem to have gone through on linux-raid,
+although I saw it on lkml.  Probably a different file size limit, as
+that's a very large patch.
 
-On Mon, Jan 06, 2014 at 04:40:28PM +0000, David Howells wrote:
-> Mark Brown <broonie@kernel.org> wrote:
+You might want to break the next submission into smaller parts.  That
+might help people review it, too.
 
-> > you need to CC things to maintainers
+Thanks for doing this work!
 
-> 	warthog>grep -i tps6 MAINTAINERS=20
-> 	warthog1>
-
-> I cc'd Laxman who is the only person mentioned in the file.
-
-> I cc'd you who is mentioned in the "regulator" section and who appears in
-> sign-offs in the log.
-
-But you didn't CC Liam who comaintains the subsystem and for me you used
-a random address from signoffs on old commits (which you will doubtless
-have noticed bounces) rather than the address in MAINTAINERS.  It looks
-awfully like you only used signoffs here...
-
-> There is no "regulator" list in the MAINTAINERS file.
-
-Right, lkml is fine there - IIRC that was prompted by another patch I
-noticed in the series, or it could just have been part of the
-boilerplate response for these things.
-
---Xzwv1pm7hH1NAiSK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSyuEoAAoJELSic+t+oim91D8P/37cyctgI+Jzva4hycLseYg1
-uLn0QHL6b59ywbB7SeirmiD2hanNU22/LdOaAqVHVNXjxqHZQD8rUQbyJhXOTl8i
-rZ1wrA3a/42rgWVxZct4uWE6grJRVOBhVkluHexnc4q8twICv3XP3sy8va8mEC8G
-TQV2Q4SpRvm/XzuT7Kpa2ERSGuqU8gs7gDFSLxVUzCovPN0x/cfq8DyA0PFmsJHO
-nMHXNG+/5LQtWn0y5MJHMTl/+6SNNH6UHnYR/zhcUNhwCH3yWA/oYtKw1zkWkela
-HdUo2qFW3Q5gjxHjpeMETFO/MlPG3VLlZTWHkGS4/SJf8c8P7Nnzoec4qmy5/nBn
-7JaWoC8g4zlf6zv28uUAoDIykR46VQYtSIc4CMT4ESg0fYq+xbbNbwwKQp1qjGoK
-RZILQtn5F3BjY4ql7mmbPxFSRQbGzC+Dp5uPg9tgxEvOdoTXZoXIoiOVNvVso8FA
-bPoRAbX55a56lFJUgdyQOuNgLhYRFcxtfpIiLWoEIIwpYErv/GLIDNXREWNO5kNM
-J33m46snItZ/6b/+NzGls9lcE0c+BSgacA8qnVK+5wMZrkYD8wZNDlPszxBOJ+Ho
-ovSV5ovP2z84dCqmROa+So/vULKSSQnGZZ0BC2u/kBBU6M8kSlQgT7eYeDveUsod
-tu+ylxDL0KtNN5xiXGIs
-=+dYo
------END PGP SIGNATURE-----
-
---Xzwv1pm7hH1NAiSK--
+Phil
