@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758245AbaAGAFz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 19:05:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47465 "EHLO
+	id S1758229AbaAGAFy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:05:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47471 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932107AbaAFWif (ORCPT
+	with ESMTP id S932109AbaAFWig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:35 -0500
+	Mon, 6 Jan 2014 17:38:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lokesh Vutla <lokeshvutla@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Suman Anna <s-anna@ti.com>, Tony Lindgren <tony@atomide.com>,
         Paul Walmsley <paul@pwsan.com>
-Subject: [PATCH 3.12 045/144] ARM: DRA7: hwmod: Fix boot crash with DEBUG_LL
-Date: Mon,  6 Jan 2014 14:36:46 -0800
-Message-Id: <20140106223746.630763415@linuxfoundation.org>
+Subject: [PATCH 3.12 046/144] ARM: OMAP2+: hwmod_data: fix missing OMAP_INTC_START in irq data
+Date: Mon,  6 Jan 2014 14:36:47 -0800
+Message-Id: <20140106223746.665181879@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,38 +29,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rajendra Nayak <rnayak@ti.com>
+From: Suman Anna <s-anna@ti.com>
 
-commit 38958c15dc640a9249e4f0cd0dfb0ddc7a23464d upstream.
+commit 6d4c88304794442055eaea1c07f3c7b988b8c924 upstream.
 
-With commit '7dedd34: ARM: OMAP2+: hwmod: Fix a crash in _setup_reset() with
- DEBUG_LL' we moved from parsing cmdline to identify uart used for earlycon
-to using the requsite hwmod CONFIG_DEBUG_OMAPxUARTy FLAGS.
+Commit 7d7e1eb (ARM: OMAP2+: Prepare for irqs.h removal) and commit
+ec2c082 (ARM: OMAP2+: Remove hardcoded IRQs and enable SPARSE_IRQ)
+updated the way interrupts for OMAP2/3 devices are defined in the
+HWMOD data structures to being an index plus a fixed offset (defined
+by OMAP_INTC_START).
 
-On DRA7 though, we seem to be missing this flag, and atleast on the DRA7 EVM
-where we use uart1 for console, boot fails with DEBUG_LL enabled.
+Couple of irqs in the OMAP2/3 hwmod data were misconfigured completely
+as they were missing this OMAP_INTC_START relative offset. Add this
+offset back to fix the incorrect irq data for the following modules:
+	OMAP2 - GPMC, RNG
+	OMAP3 - GPMC, ISP MMU & IVA MMU
 
-Reported-by: Lokesh Vutla <lokeshvutla@ti.com>
-Tested-by:  Lokesh Vutla <lokeshvutla@ti.com> # on a different base
-Signed-off-by: Rajendra Nayak <rnayak@ti.com>
-Fixes: 7dedd346941d ("ARM: OMAP2+: hwmod: Fix a crash in _setup_reset() with DEBUG_LL")
+Signed-off-by: Suman Anna <s-anna@ti.com>
+Fixes: 7d7e1eba7e92 ("ARM: OMAP2+: Prepare for irqs.h removal")
+Fixes: ec2c0825ca31 ("ARM: OMAP2+: Remove hardcoded IRQs and enable SPARSE_IRQ")
+Cc: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Paul Walmsley <paul@pwsan.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/omap_hwmod_7xx_data.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-omap2/omap_hwmod_2xxx_ipblock_data.c |    4 ++--
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c         |    6 +++---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
---- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-@@ -1637,7 +1637,7 @@ static struct omap_hwmod dra7xx_uart1_hw
- 	.class		= &dra7xx_uart_hwmod_class,
- 	.clkdm_name	= "l4per_clkdm",
- 	.main_clk	= "uart1_gfclk_mux",
--	.flags		= HWMOD_SWSUP_SIDLE_ACT,
-+	.flags		= HWMOD_SWSUP_SIDLE_ACT | DEBUG_OMAP2UART1_FLAGS,
- 	.prcm = {
- 		.omap4 = {
- 			.clkctrl_offs = DRA7XX_CM_L4PER_UART1_CLKCTRL_OFFSET,
+--- a/arch/arm/mach-omap2/omap_hwmod_2xxx_ipblock_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_2xxx_ipblock_data.c
+@@ -796,7 +796,7 @@ struct omap_hwmod omap2xxx_counter_32k_h
+ 
+ /* gpmc */
+ static struct omap_hwmod_irq_info omap2xxx_gpmc_irqs[] = {
+-	{ .irq = 20 },
++	{ .irq = 20 + OMAP_INTC_START, },
+ 	{ .irq = -1 }
+ };
+ 
+@@ -841,7 +841,7 @@ static struct omap_hwmod_class omap2_rng
+ };
+ 
+ static struct omap_hwmod_irq_info omap2_rng_mpu_irqs[] = {
+-	{ .irq = 52 },
++	{ .irq = 52 + OMAP_INTC_START, },
+ 	{ .irq = -1 }
+ };
+ 
+--- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+@@ -2165,7 +2165,7 @@ static struct omap_hwmod_class omap3xxx_
+ };
+ 
+ static struct omap_hwmod_irq_info omap3xxx_gpmc_irqs[] = {
+-	{ .irq = 20 },
++	{ .irq = 20 + OMAP_INTC_START, },
+ 	{ .irq = -1 }
+ };
+ 
+@@ -2999,7 +2999,7 @@ static struct omap_mmu_dev_attr mmu_isp_
+ 
+ static struct omap_hwmod omap3xxx_mmu_isp_hwmod;
+ static struct omap_hwmod_irq_info omap3xxx_mmu_isp_irqs[] = {
+-	{ .irq = 24 },
++	{ .irq = 24 + OMAP_INTC_START, },
+ 	{ .irq = -1 }
+ };
+ 
+@@ -3041,7 +3041,7 @@ static struct omap_mmu_dev_attr mmu_iva_
+ 
+ static struct omap_hwmod omap3xxx_mmu_iva_hwmod;
+ static struct omap_hwmod_irq_info omap3xxx_mmu_iva_irqs[] = {
+-	{ .irq = 28 },
++	{ .irq = 28 + OMAP_INTC_START, },
+ 	{ .irq = -1 }
+ };
+ 
 
 
