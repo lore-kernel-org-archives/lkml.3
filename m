@@ -1,392 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171AbaAFAua (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 19:50:30 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:62614 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460AbaAFAu3 (ORCPT
+	id S1752327AbaAFAxg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 19:53:36 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:64473 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752231AbaAFAxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 19:50:29 -0500
-From: Jesper Falk <jesperfalk94@gmail.com>
-To: anton@enomsg.org
-Cc: dwmw2@infradead.org, linux-kernel@vger.kernel.org,
-        Jesper Falk <jesperfalk94@gmail.com>
-Subject: [PATCH] Power: ab8500: Fixed coding style issues
-Date: Mon,  6 Jan 2014 01:50:18 +0100
-Message-Id: <1388969418-30376-1-git-send-email-jesperfalk94@gmail.com>
-X-Mailer: git-send-email 1.8.5.2
+	Sun, 5 Jan 2014 19:53:34 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, Jane Li <jiel@marvell.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] cpufreq: Fix timer/workqueue corruption by protecting reading governor_enabled
+Date: Mon, 06 Jan 2014 02:07:19 +0100
+Message-ID: <1538311.12EC6AbbfU@vostro.rjw.lan>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <20140103231023.GC13489@core.coreip.homeip.net>
+References: <1388740661-15011-1-git-send-email-jiel@marvell.com> <CAKohpo=osvNc0rKEsawCE9nggCQdGr7bgT+D8=KhkgpnAyXXaw@mail.gmail.com> <20140103231023.GC13489@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed coding style.
+On Friday, January 03, 2014 03:10:23 PM Dmitry Torokhov wrote:
+> On Fri, Jan 03, 2014 at 03:40:16PM +0530, Viresh Kumar wrote:
+> > On 3 January 2014 14:47,  <jiel@marvell.com> wrote:
+> > > From: Jane Li <jiel@marvell.com>
+> > >
+> > > When a CPU is hot removed we'll cancel all the delayed work items via
+> > > gov_cancel_work(). Sometimes the delayed work function determines that
+> > > it should adjust the delay for all other CPUs that the policy is
+> > > managing. If this scenario occurs, the canceling CPU will cancel its own
+> > > work but queue up the other CPUs works to run.
+> > >
+> > > Commit 3617f2(cpufreq: Fix timer/workqueue corruption due to double
+> > > queueing) has tried to fix this, but reading governor_enabled is not
+> > > protected by cpufreq_governor_lock. Even though od_dbs_timer() checks
+> > > governor_enabled before gov_queue_work(), this scenario may occur. For
+> > > example:
+> > >
+> > >  CPU0                                        CPU1
+> > >  ----                                        ----
+> > >  cpu_down()
+> > >   ...                                        <work runs>
+> > >   __cpufreq_remove_dev()                     od_dbs_timer()
+> > >    __cpufreq_governor()                       policy->governor_enabled
+> > >     policy->governor_enabled = false;
+> > >     cpufreq_governor_dbs()
+> > >      case CPUFREQ_GOV_STOP:
+> > >       gov_cancel_work(dbs_data, policy);
+> > >        cpu0 work is canceled
+> > >         timer is canceled
+> > >         cpu1 work is canceled
+> > >         <waits for cpu1>
+> > >                                               gov_queue_work(*, *, true);
+> > >                                                cpu0 work queued
+> > >                                                cpu1 work queued
+> > >                                                cpu2 work queued
+> > >                                                ...
+> > >         cpu1 work is canceled
+> > >         cpu2 work is canceled
+> > >         ...
+> > >
+> > > At the end of the GOV_STOP case cpu0 still has a work queued to
+> > > run although the code is expecting all of the works to be
+> > > canceled. __cpufreq_remove_dev() will then proceed to
+> > > re-initialize all the other CPUs works except for the CPU that is
+> > > going down. The CPUFREQ_GOV_START case in cpufreq_governor_dbs()
+> > > will trample over the queued work and debugobjects will spit out
+> > > a warning:
+> > >
+> > > WARNING: at lib/debugobjects.c:260 debug_print_object+0x94/0xbc()
+> > > ODEBUG: init active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x14
+> > > Modules linked in:
+> > > CPU: 1 PID: 1205 Comm: sh Tainted: G        W    3.10.0 #200
+> > > [<c01144f0>] (unwind_backtrace+0x0/0xf8) from [<c0111d98>] (show_stack+0x10/0x14)
+> > > [<c0111d98>] (show_stack+0x10/0x14) from [<c01272cc>] (warn_slowpath_common+0x4c/0x68)
+> > > [<c01272cc>] (warn_slowpath_common+0x4c/0x68) from [<c012737c>] (warn_slowpath_fmt+0x30/0x40)
+> > > [<c012737c>] (warn_slowpath_fmt+0x30/0x40) from [<c034c640>] (debug_print_object+0x94/0xbc)
+> > > [<c034c640>] (debug_print_object+0x94/0xbc) from [<c034c7f8>] (__debug_object_init+0xc8/0x3c0)
+> > > [<c034c7f8>] (__debug_object_init+0xc8/0x3c0) from [<c01360e0>] (init_timer_key+0x20/0x104)
+> > > [<c01360e0>] (init_timer_key+0x20/0x104) from [<c04872ac>] (cpufreq_governor_dbs+0x1dc/0x68c)
+> > > [<c04872ac>] (cpufreq_governor_dbs+0x1dc/0x68c) from [<c04833a8>] (__cpufreq_governor+0x80/0x1b0)
+> > > [<c04833a8>] (__cpufreq_governor+0x80/0x1b0) from [<c0483704>] (__cpufreq_remove_dev.isra.12+0x22c/0x380)
+> > > [<c0483704>] (__cpufreq_remove_dev.isra.12+0x22c/0x380) from [<c0692f38>] (cpufreq_cpu_callback+0x48/0x5c)
+> > > [<c0692f38>] (cpufreq_cpu_callback+0x48/0x5c) from [<c014fb40>] (notifier_call_chain+0x44/0x84)
+> > > [<c014fb40>] (notifier_call_chain+0x44/0x84) from [<c012ae44>] (__cpu_notify+0x2c/0x48)
+> > > [<c012ae44>] (__cpu_notify+0x2c/0x48) from [<c068dd40>] (_cpu_down+0x80/0x258)
+> > > [<c068dd40>] (_cpu_down+0x80/0x258) from [<c068df40>] (cpu_down+0x28/0x3c)
+> > > [<c068df40>] (cpu_down+0x28/0x3c) from [<c068e4c0>] (store_online+0x30/0x74)
+> > > [<c068e4c0>] (store_online+0x30/0x74) from [<c03a7308>] (dev_attr_store+0x18/0x24)
+> > > [<c03a7308>] (dev_attr_store+0x18/0x24) from [<c0256fe0>] (sysfs_write_file+0x100/0x180)
+> > > [<c0256fe0>] (sysfs_write_file+0x100/0x180) from [<c01fec9c>] (vfs_write+0xbc/0x184)
+> > > [<c01fec9c>] (vfs_write+0xbc/0x184) from [<c01ff034>] (SyS_write+0x40/0x68)
+> > > [<c01ff034>] (SyS_write+0x40/0x68) from [<c010e200>] (ret_fast_syscall+0x0/0x48)
+> > >
+> > > In gov_queue_work(), lock cpufreq_governor_lock before gov_queue_work,
+> > > and unlock it after __gov_queue_work(). In this way, governor_enabled
+> > > is guaranteed not changed in gov_queue_work().
+> > >
+> > > Signed-off-by: Jane Li <jiel@marvell.com>
+> > > ---
+> > >  drivers/cpufreq/cpufreq.c          |    2 +-
+> > >  drivers/cpufreq/cpufreq_governor.c |    6 +++++-
+> > >  drivers/cpufreq/cpufreq_governor.h |    2 ++
+> > >  3 files changed, 8 insertions(+), 2 deletions(-)
+> > 
+> > Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> 
+> Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-Signed-off-by: Jesper Falk <jesperfalk94@gmail.com>
----
- drivers/power/ab8500_bmdata.c  | 114 ++++++++++++++++++++---------------------
- drivers/power/ab8500_btemp.c   |   8 ++-
- drivers/power/ab8500_charger.c |  10 ++--
- drivers/power/ab8500_fg.c      |  38 +++++++++-----
- 4 files changed, 88 insertions(+), 82 deletions(-)
+Queued up for 3.14, thanks!
 
-diff --git a/drivers/power/ab8500_bmdata.c b/drivers/power/ab8500_bmdata.c
-index d298645..570c87e 100644
---- a/drivers/power/ab8500_bmdata.c
-+++ b/drivers/power/ab8500_bmdata.c
-@@ -430,10 +430,10 @@ static const struct abx500_maxim_parameters ab8500_maxi_params = {
- };
- 
- static const struct abx500_maxim_parameters abx540_maxi_params = {
--        .ena_maxi = true,
--        .chg_curr = 3000,
--        .wait_cycles = 10,
--        .charger_curr_step = 200,
-+	.ena_maxi = true,
-+	.chg_curr = 3000,
-+	.wait_cycles = 10,
-+	.charger_curr_step = 200,
- };
- 
- static const struct abx500_bm_charger_parameters chg = {
-@@ -448,19 +448,19 @@ static const struct abx500_bm_charger_parameters chg = {
-  * AB8500 values
-  */
- static int ab8500_charge_output_curr_map[] = {
--        100,    200,    300,    400,    500,    600,    700,    800,
--        900,    1000,   1100,   1200,   1300,   1400,   1500,   1500,
-+	100,    200,    300,    400,    500,    600,    700,    800,
-+	900,    1000,   1100,   1200,   1300,   1400,   1500,   1500,
- };
- 
- static int ab8540_charge_output_curr_map[] = {
--        0,      0,      0,      75,     100,    125,    150,    175,
--        200,    225,    250,    275,    300,    325,    350,    375,
--        400,    425,    450,    475,    500,    525,    550,    575,
--        600,    625,    650,    675,    700,    725,    750,    775,
--        800,    825,    850,    875,    900,    925,    950,    975,
--        1000,   1025,   1050,   1075,   1100,   1125,   1150,   1175,
--        1200,   1225,   1250,   1275,   1300,   1325,   1350,   1375,
--        1400,   1425,   1450,   1500,   1600,   1700,   1900,   2000,
-+	0,      0,      0,      75,     100,    125,    150,    175,
-+	200,    225,    250,    275,    300,    325,    350,    375,
-+	400,    425,    450,    475,    500,    525,    550,    575,
-+	600,    625,    650,    675,    700,    725,    750,    775,
-+	800,    825,    850,    875,    900,    925,    950,    975,
-+	1000,   1025,   1050,   1075,   1100,   1125,   1150,   1175,
-+	1200,   1225,   1250,   1275,   1300,   1325,   1350,   1375,
-+	1400,   1425,   1450,   1500,   1600,   1700,   1900,   2000,
- };
- 
- /*
-@@ -468,19 +468,19 @@ static int ab8540_charge_output_curr_map[] = {
-  * AB8500 values
-  */
- static int ab8500_charge_input_curr_map[] = {
--        50,     98,     193,    290,    380,    450,    500,    600,
--        700,    800,    900,    1000,   1100,   1300,   1400,   1500,
-+	50,     98,     193,    290,    380,    450,    500,    600,
-+	700,    800,    900,    1000,   1100,   1300,   1400,   1500,
- };
- 
- static int ab8540_charge_input_curr_map[] = {
--        25,     50,     75,     100,    125,    150,    175,    200,
--        225,    250,    275,    300,    325,    350,    375,    400,
--        425,    450,    475,    500,    525,    550,    575,    600,
--        625,    650,    675,    700,    725,    750,    775,    800,
--        825,    850,    875,    900,    925,    950,    975,    1000,
--        1025,   1050,   1075,   1100,   1125,   1150,   1175,   1200,
--        1225,   1250,   1275,   1300,   1325,   1350,   1375,   1400,
--        1425,   1450,   1475,   1500,   1500,   1500,   1500,   1500,
-+	25,     50,     75,     100,    125,    150,    175,    200,
-+	225,    250,    275,    300,    325,    350,    375,    400,
-+	425,    450,    475,    500,    525,    550,    575,    600,
-+	625,    650,    675,    700,    725,    750,    775,    800,
-+	825,    850,    875,    900,    925,    950,    975,    1000,
-+	1025,   1050,   1075,   1100,   1125,   1150,   1175,   1200,
-+	1225,   1250,   1275,   1300,   1325,   1350,   1375,   1400,
-+	1425,   1450,   1475,   1500,   1500,   1500,   1500,   1500,
- };
- 
- struct abx500_bm_data ab8500_bm_data = {
-@@ -513,42 +513,42 @@ struct abx500_bm_data ab8500_bm_data = {
- 	.maxi                   = &ab8500_maxi_params,
- 	.chg_params             = &chg,
- 	.fg_params              = &fg,
--        .chg_input_curr         = ab8500_charge_input_curr_map,
--        .n_chg_in_curr          = ARRAY_SIZE(ab8500_charge_input_curr_map),
-+	.chg_input_curr         = ab8500_charge_input_curr_map,
-+	.n_chg_in_curr          = ARRAY_SIZE(ab8500_charge_input_curr_map),
- };
- 
- struct abx500_bm_data ab8540_bm_data = {
--        .temp_under             = 3,
--        .temp_low               = 8,
--        .temp_high              = 43,
--        .temp_over              = 48,
--        .main_safety_tmr_h      = 4,
--        .temp_interval_chg      = 20,
--        .temp_interval_nochg    = 120,
--        .usb_safety_tmr_h       = 4,
--        .bkup_bat_v             = BUP_VCH_SEL_2P6V,
--        .bkup_bat_i             = BUP_ICH_SEL_150UA,
--        .no_maintenance         = false,
--        .capacity_scaling       = false,
--        .adc_therm              = ABx500_ADC_THERM_BATCTRL,
--        .chg_unknown_bat        = false,
--        .enable_overshoot       = false,
--        .fg_res                 = 100,
--        .cap_levels             = &cap_levels,
--        .bat_type               = bat_type_thermistor,
--        .n_btypes               = ARRAY_SIZE(bat_type_thermistor),
--        .batt_id                = 0,
--        .interval_charging      = 5,
--        .interval_not_charging  = 120,
--        .temp_hysteresis        = 3,
--        .gnd_lift_resistance    = 0,
--        .maxi                   = &abx540_maxi_params,
--        .chg_params             = &chg,
--        .fg_params              = &fg,
--        .chg_output_curr        = ab8540_charge_output_curr_map,
--        .n_chg_out_curr         = ARRAY_SIZE(ab8540_charge_output_curr_map),
--        .chg_input_curr         = ab8540_charge_input_curr_map,
--        .n_chg_in_curr          = ARRAY_SIZE(ab8540_charge_input_curr_map),
-+	.temp_under             = 3,
-+	.temp_low               = 8,
-+	.temp_high              = 43,
-+	.temp_over              = 48,
-+	.main_safety_tmr_h      = 4,
-+	.temp_interval_chg      = 20,
-+	.temp_interval_nochg    = 120,
-+	.usb_safety_tmr_h       = 4,
-+	.bkup_bat_v             = BUP_VCH_SEL_2P6V,
-+	.bkup_bat_i             = BUP_ICH_SEL_150UA,
-+	.no_maintenance         = false,
-+	.capacity_scaling       = false,
-+	.adc_therm              = ABx500_ADC_THERM_BATCTRL,
-+	.chg_unknown_bat        = false,
-+	.enable_overshoot       = false,
-+	.fg_res                 = 100,
-+	.cap_levels             = &cap_levels,
-+	.bat_type               = bat_type_thermistor,
-+	.n_btypes               = ARRAY_SIZE(bat_type_thermistor),
-+	.batt_id                = 0,
-+	.interval_charging      = 5,
-+	.interval_not_charging  = 120,
-+	.temp_hysteresis        = 3,
-+	.gnd_lift_resistance    = 0,
-+	.maxi                   = &abx540_maxi_params,
-+	.chg_params             = &chg,
-+	.fg_params              = &fg,
-+	.chg_output_curr        = ab8540_charge_output_curr_map,
-+	.n_chg_out_curr         = ARRAY_SIZE(ab8540_charge_output_curr_map),
-+	.chg_input_curr         = ab8540_charge_input_curr_map,
-+	.n_chg_in_curr          = ARRAY_SIZE(ab8540_charge_input_curr_map),
- };
- 
- int ab8500_bm_of_probe(struct device *dev,
-diff --git a/drivers/power/ab8500_btemp.c b/drivers/power/ab8500_btemp.c
-index 7f9a454..6ef7d92 100644
---- a/drivers/power/ab8500_btemp.c
-+++ b/drivers/power/ab8500_btemp.c
-@@ -84,7 +84,7 @@ struct ab8500_btemp_ranges {
-  * @parent:		Pointer to the struct ab8500
-  * @gpadc:		Pointer to the struct gpadc
-  * @fg:			Pointer to the struct fg
-- * @bm:           	Platform specific battery management information
-+ * @bm:			Platform specific battery management information
-  * @btemp_psy:		Structure for BTEMP specific battery properties
-  * @events:		Structure for information about events triggered
-  * @btemp_ranges:	Battery temperature range structure
-@@ -946,9 +946,8 @@ static int ab8500_btemp_get_ext_psy_data(struct device *dev, void *data)
- 			switch (ext->type) {
- 			case POWER_SUPPLY_TYPE_MAINS:
- 				/* AC disconnected */
--				if (!ret.intval && di->events.ac_conn) {
-+				if (!ret.intval && di->events.ac_conn)
- 					di->events.ac_conn = false;
--				}
- 				/* AC connected */
- 				else if (ret.intval && !di->events.ac_conn) {
- 					di->events.ac_conn = true;
-@@ -958,9 +957,8 @@ static int ab8500_btemp_get_ext_psy_data(struct device *dev, void *data)
- 				break;
- 			case POWER_SUPPLY_TYPE_USB:
- 				/* USB disconnected */
--				if (!ret.intval && di->events.usb_conn) {
-+				if (!ret.intval && di->events.usb_conn)
- 					di->events.usb_conn = false;
--				}
- 				/* USB connected */
- 				else if (ret.intval && !di->events.usb_conn) {
- 					di->events.usb_conn = true;
-diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
-index 19110aa..481e304 100644
---- a/drivers/power/ab8500_charger.c
-+++ b/drivers/power/ab8500_charger.c
-@@ -236,7 +236,7 @@ struct ab8500_charger_max_usb_in_curr {
-  *			Counter for current stepping sessions
-  * @parent:		Pointer to the struct ab8500
-  * @gpadc:		Pointer to the struct gpadc
-- * @bm:           	Platform specific battery management information
-+ * @bm:			Platform specific battery management information
-  * @flags:		Structure for information about events triggered
-  * @usb_state:		Structure for usb stack information
-  * @max_usb_in_curr:	Max USB charger input current
-@@ -385,17 +385,15 @@ static void ab8500_enable_disable_sw_fallback(struct ab8500_charger *di,
- 
- 	/* write back the changed fallback bit value to register */
- 	ret = abx500_set_register_interruptible(di->dev, bank, reg, val);
--	if (ret) {
-+	if (ret)
- 		dev_err(di->dev, "%d write failed\n", __LINE__);
--	}
- 
- disable_otp:
- 	if (is_ab8500(di->parent)) {
- 		/* disable the set OTP registers again */
- 		ret = abx500_set_register_interruptible(di->dev, 0x11, 0x00, 0x0);
--		if (ret) {
-+		if (ret)
- 			dev_err(di->dev, "%d write failed\n", __LINE__);
--		}
- 	}
- }
- 
-@@ -2397,7 +2395,7 @@ static void ab8500_charger_usb_link_status_work(struct work_struct *work)
- 		return;
- 	}
- 
--	dev_dbg(di->dev,"%s di->vbus_detected = true\n",__func__);
-+	dev_dbg(di->dev, "%s di->vbus_detected = true\n", __func__);
- 	di->vbus_detected = true;
- 	ret = ab8500_charger_read_usb_type(di);
- 	if (ret) {
-diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
-index 3cb4178..13d6903 100644
---- a/drivers/power/ab8500_fg.c
-+++ b/drivers/power/ab8500_fg.c
-@@ -185,7 +185,7 @@ struct inst_curr_result_list {
-  * @avg_cap:		Average capacity filter
-  * @parent:		Pointer to the struct ab8500
-  * @gpadc:		Pointer to the struct gpadc
-- * @bm:           	Platform specific battery management information
-+ * @bm:			Platform specific battery management information
-  * @fg_psy:		Structure that holds the FG specific battery properties
-  * @fg_wq:		Work queue for running the FG algorithm
-  * @fg_periodic_work:	Work to run the FG algorithm periodically
-@@ -821,7 +821,8 @@ static void ab8500_fg_acc_cur_work(struct work_struct *work)
- 	queue_work(di->fg_wq, &di->fg_work);
- 
- 	dev_dbg(di->dev, "fg_res: %d, fg_samples: %d, gasg: %d, accu_charge: %d\n",
--				di->bm->fg_res, di->fg_samples, val, di->accu_charge);
-+				di->bm->fg_res, di->fg_samples, val,
-+				di->accu_charge);
- 	return;
- exit:
- 	dev_err(di->dev,
-@@ -1884,9 +1885,9 @@ static void ab8500_fg_low_bat_work(struct work_struct *work)
- 			dev_warn(di->dev, "Shut down pending...\n");
- 		} else {
- 			/*
--			* Else we need to re-schedule this check to be able to detect
--			* if the voltage increases again during charging or
--			* due to decreasing load.
-+			* Else we need to re-schedule this check to be able to
-+			* detect if the voltage increases again during charging
-+			* or due to decreasing load.
- 			*/
- 			di->low_bat_cnt--;
- 			dev_warn(di->dev, "Battery voltage still LOW\n");
-@@ -2735,7 +2736,8 @@ static ssize_t ab8505_powercut_restart_write(struct device *dev,
- 	}
- 
- 	ret = abx500_set_register_interruptible(di->dev, AB8500_RTC,
--						AB8505_RTC_PCUT_RESTART_REG, (u8)reg_value);
-+						AB8505_RTC_PCUT_RESTART_REG,
-+						(u8)reg_value);
- 
- 	if (ret < 0)
- 		dev_err(dev, "Failed to set AB8505_RTC_PCUT_RESTART_REG\n");
-@@ -2757,7 +2759,8 @@ static ssize_t ab8505_powercut_timer_read(struct device *dev,
- 	di = to_ab8500_fg_device_info(psy);
- 
- 	ret = abx500_get_register_interruptible(di->dev, AB8500_RTC,
--						AB8505_RTC_PCUT_TIME_REG, &reg_value);
-+						AB8505_RTC_PCUT_TIME_REG,
-+						&reg_value);
- 
- 	if (ret < 0) {
- 		dev_err(dev, "Failed to read AB8505_RTC_PCUT_TIME_REG\n");
-@@ -2782,7 +2785,8 @@ static ssize_t ab8505_powercut_restart_counter_read(struct device *dev,
- 	di = to_ab8500_fg_device_info(psy);
- 
- 	ret = abx500_get_register_interruptible(di->dev, AB8500_RTC,
--						AB8505_RTC_PCUT_RESTART_REG, &reg_value);
-+						AB8505_RTC_PCUT_RESTART_REG,
-+						&reg_value);
- 
- 	if (ret < 0) {
- 		dev_err(dev, "Failed to read AB8505_RTC_PCUT_RESTART_REG\n");
-@@ -2807,7 +2811,8 @@ static ssize_t ab8505_powercut_read(struct device *dev,
- 	di = to_ab8500_fg_device_info(psy);
- 
- 	ret = abx500_get_register_interruptible(di->dev, AB8500_RTC,
--						AB8505_RTC_PCUT_CTL_STATUS_REG, &reg_value);
-+						AB8505_RTC_PCUT_CTL_STATUS_REG,
-+						&reg_value);
- 
- 	if (ret < 0)
- 		goto fail;
-@@ -2836,7 +2841,8 @@ static ssize_t ab8505_powercut_write(struct device *dev,
- 	}
- 
- 	ret = abx500_set_register_interruptible(di->dev, AB8500_RTC,
--						AB8505_RTC_PCUT_CTL_STATUS_REG, (u8)reg_value);
-+						AB8505_RTC_PCUT_CTL_STATUS_REG,
-+						(u8)reg_value);
- 
- 	if (ret < 0)
- 		dev_err(dev, "Failed to set AB8505_RTC_PCUT_CTL_STATUS_REG\n");
-@@ -2858,7 +2864,8 @@ static ssize_t ab8505_powercut_flag_read(struct device *dev,
- 	di = to_ab8500_fg_device_info(psy);
- 
- 	ret = abx500_get_register_interruptible(di->dev, AB8500_RTC,
--						AB8505_RTC_PCUT_CTL_STATUS_REG,  &reg_value);
-+						AB8505_RTC_PCUT_CTL_STATUS_REG,
-+						&reg_value);
- 
- 	if (ret < 0) {
- 		dev_err(dev, "Failed to read AB8505_RTC_PCUT_CTL_STATUS_REG\n");
-@@ -2883,7 +2890,8 @@ static ssize_t ab8505_powercut_debounce_read(struct device *dev,
- 	di = to_ab8500_fg_device_info(psy);
- 
- 	ret = abx500_get_register_interruptible(di->dev, AB8500_RTC,
--						AB8505_RTC_PCUT_DEBOUNCE_REG,  &reg_value);
-+						AB8505_RTC_PCUT_DEBOUNCE_REG,
-+						&reg_value);
- 
- 	if (ret < 0) {
- 		dev_err(dev, "Failed to read AB8505_RTC_PCUT_DEBOUNCE_REG\n");
-@@ -2914,7 +2922,8 @@ static ssize_t ab8505_powercut_debounce_write(struct device *dev,
- 	}
- 
- 	ret = abx500_set_register_interruptible(di->dev, AB8500_RTC,
--						AB8505_RTC_PCUT_DEBOUNCE_REG, (u8)reg_value);
-+						AB8505_RTC_PCUT_DEBOUNCE_REG,
-+						(u8)reg_value);
- 
- 	if (ret < 0)
- 		dev_err(dev, "Failed to set AB8505_RTC_PCUT_DEBOUNCE_REG\n");
-@@ -2935,7 +2944,8 @@ static ssize_t ab8505_powercut_enable_status_read(struct device *dev,
- 	di = to_ab8500_fg_device_info(psy);
- 
- 	ret = abx500_get_register_interruptible(di->dev, AB8500_RTC,
--						AB8505_RTC_PCUT_CTL_STATUS_REG, &reg_value);
-+						AB8505_RTC_PCUT_CTL_STATUS_REG,
-+						&reg_value);
- 
- 	if (ret < 0) {
- 		dev_err(dev, "Failed to read AB8505_RTC_PCUT_CTL_STATUS_REG\n");
 -- 
-1.8.5.2
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
