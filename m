@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652AbaAFMxw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 07:53:52 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47756 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750914AbaAFMxu (ORCPT
+	id S1753883AbaAFMyZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 07:54:25 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:63396 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751580AbaAFMyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 07:53:50 -0500
-Date: Mon, 6 Jan 2014 12:53:44 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Daniel Santos <daniel.santos@pobox.com>
-Cc: linux-spi <linux-spi@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Message-ID: <20140106125344.GR31886@sirena.org.uk>
-References: <1388965166-27334-1-git-send-email-daniel.santos@pobox.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2m+IWTtMCMjzK22K"
-Content-Disposition: inline
-In-Reply-To: <1388965166-27334-1-git-send-email-daniel.santos@pobox.com>
-X-Cookie: Go climb a gravity well!
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: spidev: fix hang when transfer_one_message fails
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 6 Jan 2014 07:54:23 -0500
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Linux PM <linux-pm@vger.kernel.org>
+Subject: [PATCH v2] Documentation: add ABI entry for intel_pstate
+Date: Mon,  6 Jan 2014 18:24:26 +0530
+Message-Id: <1389012866-29821-1-git-send-email-artagnon@gmail.com>
+X-Mailer: git-send-email 1.8.5.2.227.g53f3478
+In-Reply-To: <1388997077-25138-1-git-send-email-artagnon@gmail.com>
+References: <1388997077-25138-1-git-send-email-artagnon@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add a Documentation/ABI entry for
+/sys/devices/system/cpu/intel_pstate/max_perf_pct,
+/sys/devices/system/cpu/intel_pstate/min_perf_pct, and
+/sys/devices/system/cpu/intel_pstate/no_turbo.
 
---2m+IWTtMCMjzK22K
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Linux PM <linux-pm@vger.kernel.org>
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+---
+ Documentation/ABI/testing/sysfs-devices-system-cpu | 24 ++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
-On Sun, Jan 05, 2014 at 05:39:26PM -0600, danielfsantos@att.net wrote:
-> This corrects a problem in spi_pump_messages() that leads to an spi
-> message hanging forever when a call to transfer_one_message() fails.
-> This failure occurs in my MCP2210 driver when the cs_change bit is set
-> on the last transfer in a message, an operation which the hardware does
-> not support.
+diff --git a/Documentation/ABI/testing/sysfs-devices-system-cpu b/Documentation/ABI/testing/sysfs-devices-system-cpu
+index 468e4d4..d5a0d33 100644
+--- a/Documentation/ABI/testing/sysfs-devices-system-cpu
++++ b/Documentation/ABI/testing/sysfs-devices-system-cpu
+@@ -200,3 +200,27 @@ Description:	address and size of the percpu note.
+ 		note of cpu#.
+ 
+ 		crash_notes_size: size of the note of cpu#.
++
++
++What:		/sys/devices/system/cpu/intel_pstate/max_perf_pct
++		/sys/devices/system/cpu/intel_pstate/min_perf_pct
++		/sys/devices/system/cpu/intel_pstate/no_turbo
++Date:		February 2013
++Contact:	linux-pm@vger.kernel.org
++Description:	Parameters for the Intel P-state driver
++
++		Logic for selecting the current P-state in Intel
++		Sandybridge+ processors. The three knobs control
++		limits for the P-state that will be requested by the
++		driver.
++
++		max_perf_pct: limits the maximum P state that will be requested by
++		the driver stated as a percentage of the available performance.
++
++		min_perf_pct: limits the minimum P state that will be requested by
++		the driver stated as a percentage of the available performance.
++
++		no_turbo: limits the driver to selecting P states below the turbo
++		frequency range.
++
++		More details can be found in Documentation/cpu-freq/intel-pstate.txt
+-- 
+1.8.5.2.227.g53f3478
 
-Applied, thanks.
-
---2m+IWTtMCMjzK22K
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSyqdUAAoJELSic+t+oim9ulgP/RL2cdeIakKKkM1ZzW/lTpI8
-uTNIu/xa8hLXytBql2o9BirYs/2+4Q5LTkfCAZowYAPYcZHMLIva9JMBbT4n4hLr
-9rpIMrdO3MM5NV3GlvvGXjfXoLK7FFS0yWt0RdhFXMr9ND0b4UZOKKL2r0NwE11V
-yweJp2s96j52UVWGRFY1zmaooZ0HmRoD4AtZAuUjSrozaRPG+UDpzBtG9MF/CGTe
-1d+n6iEFL4ml1LcQ+EOAluZqObpcookNYkhNjxegEhkLfJ40tJoGjtyeXf45W7S9
-84WyX2WfUJuGvNgzMQvXyoQzUIIZ8elzAtPtdV0uQd/fePm+7mPxfaHOtlOLqbTU
-kfFUvQiwdGzxo9CEafdUp2hMmqWDVa2MTzqfaJ8iVil4X4UtxCqMMMoLiT5JK+Ps
-U69f+TqI0FZ0WG5bnbD9OD8BRuYfq82LpZ8s+uXV4beh/K0CpVX8bHkVodNsOZwr
-qeNhXrl6blNMB8y7mhjljVqGTtB+64d8JmYIDOR8jsrHBHOcUD2lJIVeiPbxl2wc
-oVg5ZXFPbg0mlCK31Ps8OdvqnrQZjtJ/Qcv/jYvZ5Uiz/WfDfysDzYz0DemkhTk0
-3vuDnMRya7QVA/2PIy7e4NbT2MhhXEhNNI2hSZp6caHZvRGVKSyjbwtcwfGKd7xU
-fO/aVuZnI/NMK2G9SgHy
-=D+4I
------END PGP SIGNATURE-----
-
---2m+IWTtMCMjzK22K--
