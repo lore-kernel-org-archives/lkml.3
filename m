@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933606AbaAFWrB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:47:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48734 "EHLO
+	id S933611AbaAFWrb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:47:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48732 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933450AbaAFWml (ORCPT
+	with ESMTP id S933442AbaAFWmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:42:41 -0500
+	Mon, 6 Jan 2014 17:42:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.4 38/43] gpio: msm: Fix irq mask/unmask by writing bits instead of numbers
-Date: Mon,  6 Jan 2014 14:39:55 -0800
-Message-Id: <20140106223943.337162489@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>, ocfs2-devel@oss.oracle.com,
+        Joel Becker <jlbec@evilplan.org>
+Subject: [PATCH 3.4 37/43] jbd2: dont BUG but return ENOSPC if a handle runs out of space
+Date: Mon,  6 Jan 2014 14:39:54 -0800
+Message-Id: <20140106223943.310249326@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223942.259651490@linuxfoundation.org>
 References: <20140106223942.259651490@linuxfoundation.org>
@@ -29,42 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 4cc629b7a20945ce35628179180329b6bc9e552b upstream.
+commit f6c07cad081ba222d63623d913aafba5586c1d2c upstream.
 
-We should be writing bits here but instead we're writing the
-numbers that correspond to the bits we want to write. Fix it by
-wrapping the numbers in the BIT() macro. This fixes gpios acting
-as interrupts.
+If a handle runs out of space, we currently stop the kernel with a BUG
+in jbd2_journal_dirty_metadata().  This makes it hard to figure out
+what might be going on.  So return an error of ENOSPC, so we can let
+the file system layer figure out what is going on, to make it more
+likely we can get useful debugging information).  This should make it
+easier to debug problems such as the one which was reported by:
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+    https://bugzilla.kernel.org/show_bug.cgi?id=44731
+
+The only two callers of this function are ext4_handle_dirty_metadata()
+and ocfs2_journal_dirty().  The ocfs2 function will trigger a
+BUG_ON(), which means there will be no change in behavior.  The ext4
+function will call ext4_error_inode() which will print the useful
+debugging information and then handle the situation using ext4's error
+handling mechanisms (i.e., which might mean halting the kernel or
+remounting the file system read-only).
+
+Also, since both file systems already call WARN_ON(), drop the WARN_ON
+from jbd2_journal_dirty_metadata() to avoid two stack traces from
+being displayed.
+
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: ocfs2-devel@oss.oracle.com
+Acked-by: Joel Becker <jlbec@evilplan.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpio/gpio-msm-v2.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/jbd2/transaction.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/gpio/gpio-msm-v2.c
-+++ b/drivers/gpio/gpio-msm-v2.c
-@@ -249,7 +249,7 @@ static void msm_gpio_irq_mask(struct irq
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -1126,7 +1126,10 @@ int jbd2_journal_dirty_metadata(handle_t
+ 		 * once a transaction -bzzz
+ 		 */
+ 		jh->b_modified = 1;
+-		J_ASSERT_JH(jh, handle->h_buffer_credits > 0);
++		if (handle->h_buffer_credits <= 0) {
++			ret = -ENOSPC;
++			goto out_unlock_bh;
++		}
+ 		handle->h_buffer_credits--;
+ 	}
  
- 	spin_lock_irqsave(&tlmm_lock, irq_flags);
- 	writel(TARGET_PROC_NONE, GPIO_INTR_CFG_SU(gpio));
--	clear_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
-+	clear_gpio_bits(BIT(INTR_RAW_STATUS_EN) | BIT(INTR_ENABLE), GPIO_INTR_CFG(gpio));
- 	__clear_bit(gpio, msm_gpio.enabled_irqs);
- 	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
+@@ -1209,7 +1212,6 @@ out_unlock_bh:
+ 	jbd2_journal_put_journal_head(jh);
+ out:
+ 	JBUFFER_TRACE(jh, "exit");
+-	WARN_ON(ret);	/* All errors are bugs, so dump the stack */
+ 	return ret;
  }
-@@ -261,7 +261,7 @@ static void msm_gpio_irq_unmask(struct i
  
- 	spin_lock_irqsave(&tlmm_lock, irq_flags);
- 	__set_bit(gpio, msm_gpio.enabled_irqs);
--	set_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
-+	set_gpio_bits(BIT(INTR_RAW_STATUS_EN) | BIT(INTR_ENABLE), GPIO_INTR_CFG(gpio));
- 	writel(TARGET_PROC_SCORPION, GPIO_INTR_CFG_SU(gpio));
- 	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
- }
 
 
