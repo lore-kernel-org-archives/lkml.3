@@ -1,89 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933611AbaAFWrb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:47:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48732 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933442AbaAFWmk (ORCPT
+	id S933628AbaAFWrw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:47:52 -0500
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:46330 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933327AbaAFWru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:42:40 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Theodore Tso" <tytso@mit.edu>, ocfs2-devel@oss.oracle.com,
-        Joel Becker <jlbec@evilplan.org>
-Subject: [PATCH 3.4 37/43] jbd2: dont BUG but return ENOSPC if a handle runs out of space
-Date: Mon,  6 Jan 2014 14:39:54 -0800
-Message-Id: <20140106223943.310249326@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140106223942.259651490@linuxfoundation.org>
-References: <20140106223942.259651490@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Mon, 6 Jan 2014 17:47:50 -0500
+X-Greylist: delayed 10042 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Jan 2014 17:47:50 EST
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20140103224713.GC18987@google.com>
+References: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
+	<1388707565-16535-26-git-send-email-yinghai@kernel.org>
+	<20140103224713.GC18987@google.com>
+Date: Mon, 6 Jan 2014 14:47:47 -0800
+X-Google-Sender-Auth: bZkpAxcM5AMnr860fjIAgwVqIZQ
+Message-ID: <CAE9FiQXa0RK8ht=91dGFj0mC-KQqJjxHXfnh4Td5EUhxEf8M6g@mail.gmail.com>
+Subject: Re: [PATCH v5 25/33] PCI, x86: Make ioapic hotplug support built-in
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Jan 3, 2014 at 2:47 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> [fixed Rafael's email address; I imagine you got a few bounces :)]
+>
+> On Thu, Jan 02, 2014 at 04:05:57PM -0800, Yinghai Lu wrote:
+>> ioapic hotplug should be built-in like pci root bus hotplug.
+>>
+>> Also need to make it depends on X86_IO_APIC.
+>>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>
+> Most of this series is x86-specific and outside the scope of PCI, so I
+> assume somebody else will deal with it.
 
-------------------
+Yes.
 
-From: Theodore Ts'o <tytso@mit.edu>
+>
+> This particular patch doesn't seem to depend on anything else, so I'll
+> merge it.
 
-commit f6c07cad081ba222d63623d913aafba5586c1d2c upstream.
-
-If a handle runs out of space, we currently stop the kernel with a BUG
-in jbd2_journal_dirty_metadata().  This makes it hard to figure out
-what might be going on.  So return an error of ENOSPC, so we can let
-the file system layer figure out what is going on, to make it more
-likely we can get useful debugging information).  This should make it
-easier to debug problems such as the one which was reported by:
-
-    https://bugzilla.kernel.org/show_bug.cgi?id=44731
-
-The only two callers of this function are ext4_handle_dirty_metadata()
-and ocfs2_journal_dirty().  The ocfs2 function will trigger a
-BUG_ON(), which means there will be no change in behavior.  The ext4
-function will call ext4_error_inode() which will print the useful
-debugging information and then handle the situation using ext4's error
-handling mechanisms (i.e., which might mean halting the kernel or
-remounting the file system read-only).
-
-Also, since both file systems already call WARN_ON(), drop the WARN_ON
-from jbd2_journal_dirty_metadata() to avoid two stack traces from
-being displayed.
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: ocfs2-devel@oss.oracle.com
-Acked-by: Joel Becker <jlbec@evilplan.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/jbd2/transaction.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
---- a/fs/jbd2/transaction.c
-+++ b/fs/jbd2/transaction.c
-@@ -1126,7 +1126,10 @@ int jbd2_journal_dirty_metadata(handle_t
- 		 * once a transaction -bzzz
- 		 */
- 		jh->b_modified = 1;
--		J_ASSERT_JH(jh, handle->h_buffer_credits > 0);
-+		if (handle->h_buffer_credits <= 0) {
-+			ret = -ENOSPC;
-+			goto out_unlock_bh;
-+		}
- 		handle->h_buffer_credits--;
- 	}
- 
-@@ -1209,7 +1212,6 @@ out_unlock_bh:
- 	jbd2_journal_put_journal_head(jh);
- out:
- 	JBUFFER_TRACE(jh, "exit");
--	WARN_ON(ret);	/* All errors are bugs, so dump the stack */
- 	return ret;
- }
- 
-
-
+yes.
