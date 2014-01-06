@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933548AbaAFWnO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:43:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48791 "EHLO
+	id S933558AbaAFWnq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:43:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48778 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933522AbaAFWmw (ORCPT
+	with ESMTP id S933507AbaAFWmv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:42:52 -0500
+	Mon, 6 Jan 2014 17:42:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.4 40/43] sh: always link in helper functions extracted from libgcc
-Date: Mon,  6 Jan 2014 14:39:57 -0800
-Message-Id: <20140106223943.391611314@linuxfoundation.org>
+        Janak Desai <Janak.Desai@gtri.gatech.edu>,
+        Paul Moore <pmoore@redhat.com>
+Subject: [PATCH 3.4 42/43] selinux: process labeled IPsec TCP SYN-ACK packets properly in selinux_ip_postroute()
+Date: Mon,  6 Jan 2014 14:39:59 -0800
+Message-Id: <20140106223943.452939359@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223942.259651490@linuxfoundation.org>
 References: <20140106223942.259651490@linuxfoundation.org>
@@ -32,55 +29,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: Paul Moore <pmoore@redhat.com>
 
-commit 84ed8a99058e61567f495cc43118344261641c5f upstream.
+commit c0828e50485932b7e019df377a6b0a8d1ebd3080 upstream.
 
-E.g. landisk_defconfig, which has CONFIG_NTFS_FS=m:
+Due to difficulty in arriving at the proper security label for
+TCP SYN-ACK packets in selinux_ip_postroute(), we need to check packets
+while/before they are undergoing XFRM transforms instead of waiting
+until afterwards so that we can determine the correct security label.
 
-  ERROR: "__ashrdi3" [fs/ntfs/ntfs.ko] undefined!
-
-For "lib-y", if no symbols in a compilation unit are referenced by other
-units, the compilation unit will not be included in vmlinux.  This
-breaks modules that do reference those symbols.
-
-Use "obj-y" instead to fix this.
-
-http://kisskb.ellerman.id.au/kisskb/buildresult/8838077/
-
-This doesn't fix all cases. There are others, e.g. udivsi3.
-This is also not limited to sh, many architectures handle this in the
-same way.
-
-A simple solution is to unconditionally include all helper functions.
-A more complex solution is to make the choice of "lib-y" or "obj-y" depend
-on CONFIG_MODULES:
-
-  obj-$(CONFIG_MODULES) += ...
-  lib-y($CONFIG_MODULES) += ...
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Tested-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Reviewed-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/sh/lib/Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ security/selinux/hooks.c |   43 ++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 36 insertions(+), 7 deletions(-)
 
---- a/arch/sh/lib/Makefile
-+++ b/arch/sh/lib/Makefile
-@@ -6,7 +6,7 @@ lib-y  = delay.o memmove.o memchr.o \
- 	 checksum.o strlen.o div64.o div64-generic.o
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -4729,22 +4729,32 @@ static unsigned int selinux_ip_postroute
+ 	 * as fast and as clean as possible. */
+ 	if (!selinux_policycap_netpeer)
+ 		return selinux_ip_postroute_compat(skb, ifindex, family);
++
++	secmark_active = selinux_secmark_enabled();
++	peerlbl_active = netlbl_enabled() || selinux_xfrm_enabled();
++	if (!secmark_active && !peerlbl_active)
++		return NF_ACCEPT;
++
++	sk = skb->sk;
++
+ #ifdef CONFIG_XFRM
+ 	/* If skb->dst->xfrm is non-NULL then the packet is undergoing an IPsec
+ 	 * packet transformation so allow the packet to pass without any checks
+ 	 * since we'll have another chance to perform access control checks
+ 	 * when the packet is on it's final way out.
+ 	 * NOTE: there appear to be some IPv6 multicast cases where skb->dst
+-	 *       is NULL, in this case go ahead and apply access control. */
+-	if (skb_dst(skb) != NULL && skb_dst(skb)->xfrm != NULL)
++	 *       is NULL, in this case go ahead and apply access control.
++	 *       is NULL, in this case go ahead and apply access control.
++	 * NOTE: if this is a local socket (skb->sk != NULL) that is in the
++	 *       TCP listening state we cannot wait until the XFRM processing
++	 *       is done as we will miss out on the SA label if we do;
++	 *       unfortunately, this means more work, but it is only once per
++	 *       connection. */
++	if (skb_dst(skb) != NULL && skb_dst(skb)->xfrm != NULL &&
++	    !(sk != NULL && sk->sk_state == TCP_LISTEN))
+ 		return NF_ACCEPT;
+ #endif
+-	secmark_active = selinux_secmark_enabled();
+-	peerlbl_active = netlbl_enabled() || selinux_xfrm_enabled();
+-	if (!secmark_active && !peerlbl_active)
+-		return NF_ACCEPT;
  
- # Extracted from libgcc
--lib-y += movmem.o ashldi3.o ashrdi3.o lshrdi3.o \
-+obj-y += movmem.o ashldi3.o ashrdi3.o lshrdi3.o \
- 	 ashlsi3.o ashrsi3.o ashiftrt.o lshrsi3.o \
- 	 udiv_qrnnd.o
- 
+-	sk = skb->sk;
+ 	if (sk == NULL) {
+ 		/* Without an associated socket the packet is either coming
+ 		 * from the kernel or it is being forwarded; check the packet
+@@ -4772,6 +4782,25 @@ static unsigned int selinux_ip_postroute
+ 		struct sk_security_struct *sksec = sk->sk_security;
+ 		if (selinux_skb_peerlbl_sid(skb, family, &skb_sid))
+ 			return NF_DROP;
++		/* At this point, if the returned skb peerlbl is SECSID_NULL
++		 * and the packet has been through at least one XFRM
++		 * transformation then we must be dealing with the "final"
++		 * form of labeled IPsec packet; since we've already applied
++		 * all of our access controls on this packet we can safely
++		 * pass the packet. */
++		if (skb_sid == SECSID_NULL) {
++			switch (family) {
++			case PF_INET:
++				if (IPCB(skb)->flags & IPSKB_XFRM_TRANSFORMED)
++					return NF_ACCEPT;
++				break;
++			case PF_INET6:
++				if (IP6CB(skb)->flags & IP6SKB_XFRM_TRANSFORMED)
++					return NF_ACCEPT;
++			default:
++				return NF_DROP_ERR(-ECONNREFUSED);
++			}
++		}
+ 		if (selinux_conn_sid(sksec->sid, skb_sid, &peer_sid))
+ 			return NF_DROP;
+ 		secmark_perm = PACKET__SEND;
 
 
