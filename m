@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933583AbaAFWqS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:46:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48746 "EHLO
+	id S933595AbaAFWqo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:46:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48738 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933460AbaAFWmn (ORCPT
+	with ESMTP id S933454AbaAFWmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:42:43 -0500
+	Mon, 6 Jan 2014 17:42:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Liu Ping Fan <pingfank@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>
-Subject: [PATCH 3.4 04/43] powerpc: kvm: fix rare but potential deadlock scene
-Date: Mon,  6 Jan 2014 14:39:21 -0800
-Message-Id: <20140106223942.384564191@linuxfoundation.org>
+        Ben Segall <bsegall@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        pjt@google.com, Ingo Molnar <mingo@kernel.org>,
+        Chris J Arges <chris.j.arges@canonical.com>
+Subject: [PATCH 3.4 39/43] sched: Avoid throttle_cfs_rq() racing with period_timer stopping
+Date: Mon,  6 Jan 2014 14:39:56 -0800
+Message-Id: <20140106223943.364444378@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223942.259651490@linuxfoundation.org>
 References: <20140106223942.259651490@linuxfoundation.org>
@@ -29,77 +30,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: pingfan liu <qemulist@gmail.com>
+From: Ben Segall <bsegall@google.com>
 
-commit 91648ec09c1ef69c4d840ab6dab391bfb452d554 upstream.
+commit f9f9ffc237dd924f048204e8799da74f9ecf40cf upstream.
 
-Since kvmppc_hv_find_lock_hpte() is called from both virtmode and
-realmode, so it can trigger the deadlock.
+throttle_cfs_rq() doesn't check to make sure that period_timer is running,
+and while update_curr/assign_cfs_runtime does, a concurrently running
+period_timer on another cpu could cancel itself between this cpu's
+update_curr and throttle_cfs_rq(). If there are no other cfs_rqs running
+in the tg to restart the timer, this causes the cfs_rq to be stranded
+forever.
 
-Suppose the following scene:
+Fix this by calling __start_cfs_bandwidth() in throttle if the timer is
+inactive.
 
-Two physical cpuM, cpuN, two VM instances A, B, each VM has a group of
-vcpus.
+(Also add some sched_debug lines for cfs_bandwidth.)
 
-If on cpuM, vcpu_A_1 holds bitlock X (HPTE_V_HVLOCK), then is switched
-out, and on cpuN, vcpu_A_2 try to lock X in realmode, then cpuN will be
-caught in realmode for a long time.
+Tested: make a run/sleep task in a cgroup, loop switching the cgroup
+between 1ms/100ms quota and unlimited, checking for timer_active=0 and
+throttled=1 as a failure. With the throttle_cfs_rq() change commented out
+this fails, with the full patch it passes.
 
-What makes things even worse if the following happens,
-  On cpuM, bitlockX is hold, on cpuN, Y is hold.
-  vcpu_B_2 try to lock Y on cpuM in realmode
-  vcpu_A_2 try to lock X on cpuN in realmode
-
-Oops! deadlock happens
-
-Signed-off-by: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
-Reviewed-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Alexander Graf <agraf@suse.de>
+Signed-off-by: Ben Segall <bsegall@google.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: pjt@google.com
+Link: http://lkml.kernel.org/r/20131016181632.22647.84174.stgit@sword-of-the-dawn.mtv.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/powerpc/kvm/book3s_64_mmu_hv.c |    6 +++++-
- arch/powerpc/kvm/book3s_hv_rm_mmu.c |    4 ++++
- 2 files changed, 9 insertions(+), 1 deletion(-)
+ kernel/sched/debug.c |    8 ++++++++
+ kernel/sched/fair.c  |    2 ++
+ 2 files changed, 10 insertions(+)
 
---- a/arch/powerpc/kvm/book3s_64_mmu_hv.c
-+++ b/arch/powerpc/kvm/book3s_64_mmu_hv.c
-@@ -393,11 +393,14 @@ static int kvmppc_mmu_book3s_64_hv_xlate
- 		slb_v = vcpu->kvm->arch.vrma_slb_v;
- 	}
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -215,6 +215,14 @@ void print_cfs_rq(struct seq_file *m, in
+ 	SEQ_printf(m, "  .%-30s: %d\n", "load_tg",
+ 			atomic_read(&cfs_rq->tg->load_weight));
+ #endif
++#ifdef CONFIG_CFS_BANDWIDTH
++	SEQ_printf(m, "  .%-30s: %d\n", "tg->cfs_bandwidth.timer_active",
++			cfs_rq->tg->cfs_bandwidth.timer_active);
++	SEQ_printf(m, "  .%-30s: %d\n", "throttled",
++			cfs_rq->throttled);
++	SEQ_printf(m, "  .%-30s: %d\n", "throttle_count",
++			cfs_rq->throttle_count);
++#endif
  
-+	preempt_disable();
- 	/* Find the HPTE in the hash table */
- 	index = kvmppc_hv_find_lock_hpte(kvm, eaddr, slb_v,
- 					 HPTE_V_VALID | HPTE_V_ABSENT);
--	if (index < 0)
-+	if (index < 0) {
-+		preempt_enable();
- 		return -ENOENT;
-+	}
- 	hptep = (unsigned long *)(kvm->arch.hpt_virt + (index << 4));
- 	v = hptep[0] & ~HPTE_V_HVLOCK;
- 	gr = kvm->arch.revmap[index].guest_rpte;
-@@ -405,6 +408,7 @@ static int kvmppc_mmu_book3s_64_hv_xlate
- 	/* Unlock the HPTE */
- 	asm volatile("lwsync" : : : "memory");
- 	hptep[0] = v;
-+	preempt_enable();
+ 	print_cfs_group_stats(m, cpu, cfs_rq->tg);
+ #endif
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1655,6 +1655,8 @@ static void throttle_cfs_rq(struct cfs_r
+ 	cfs_rq->throttled_timestamp = rq->clock;
+ 	raw_spin_lock(&cfs_b->lock);
+ 	list_add_tail_rcu(&cfs_rq->throttled_list, &cfs_b->throttled_cfs_rq);
++	if (!cfs_b->timer_active)
++		__start_cfs_bandwidth(cfs_b);
+ 	raw_spin_unlock(&cfs_b->lock);
+ }
  
- 	gpte->eaddr = eaddr;
- 	gpte->vpage = ((v & HPTE_V_AVPN) << 4) | ((eaddr >> 12) & 0xfff);
---- a/arch/powerpc/kvm/book3s_hv_rm_mmu.c
-+++ b/arch/powerpc/kvm/book3s_hv_rm_mmu.c
-@@ -649,6 +649,10 @@ static int slb_base_page_shift[4] = {
- 	20,	/* 1M, unsupported */
- };
- 
-+/* When called from virtmode, this func should be protected by
-+ * preempt_disable(), otherwise, the holding of HPTE_V_HVLOCK
-+ * can trigger deadlock issue.
-+ */
- long kvmppc_hv_find_lock_hpte(struct kvm *kvm, gva_t eaddr, unsigned long slb_v,
- 			      unsigned long valid)
- {
 
 
