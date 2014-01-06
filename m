@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578AbaAFL0C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 06:26:02 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:42253 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754407AbaAFL0A (ORCPT
+	id S1754601AbaAFL0e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 06:26:34 -0500
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:34968 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754132AbaAFL0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 06:26:00 -0500
-Message-ID: <52CA92C3.50200@linaro.org>
-Date: Mon, 06 Jan 2014 12:25:55 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 6 Jan 2014 06:26:32 -0500
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mingo@redhat.com, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 0/7] sched: cleanup trigger_load_balance
-References: <1388411093-3413-1-git-send-email-daniel.lezcano@linaro.org> <20131231162821.GE16438@laptop.programming.kicks-ass.net> <52C2FC88.6040903@linaro.org> <20140106110351.GE31570@twins.programming.kicks-ass.net>
-In-Reply-To: <20140106110351.GE31570@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140106104640.GK23772@lee--X1>
+References: <1386329534-14186-1-git-send-email-k.kozlowski@samsung.com>
+	<1386329534-14186-4-git-send-email-k.kozlowski@samsung.com>
+	<20140106104640.GK23772@lee--X1>
+Date: Mon, 6 Jan 2014 20:26:30 +0900
+X-Google-Sender-Auth: -UjwMTcKTWSLn9OG0ec2qcLtoM4
+Message-ID: <CAH9JG2Wcip=5SEmkRBn9KzWajFmn9mQzKma23vk8F67bp9-AkQ@mail.gmail.com>
+Subject: Re: [PATCH v7 3/3] mfd: max14577: Add device tree bindings document
+From: Kyungmin Park <kmpark@infradead.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Anton Vorontsov <anton@enomsg.org>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-doc@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        Chanwoo Choi <cw00.choi@samsung.com>, Mark Brown <broonie@kernel.org>,
+        Rob Landley <rob@landley.net>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2014 12:03 PM, Peter Zijlstra wrote:
-> On Tue, Dec 31, 2013 at 06:19:04PM +0100, Daniel Lezcano wrote:
->> I understand. Happy new year !
+On Mon, Jan 6, 2014 at 7:46 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>> Add document describing device tree bindings for MAX14577 MFD driver.
+>>
+>> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> ---
+>>  Documentation/devicetree/bindings/mfd/max14577.txt |   65 ++++++++++++++++++++
+>>  1 file changed, 65 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
 >
-> Happy new year to you too! :-)
->
->> ps : the patchset is based on tip/sched/core
->
-> Weird; because tip/sched/core as per today looks like:
->
->
-> 029632fbb7b7c kernel/sched_fair.c (Peter Zijlstra       2011-10-25 10:00:11 +0200 6872) void trigger_load_balance(struct rq *rq, int cpu)
->
-> And your patches assume it looks like:
->
-> Patch 1: @@ -6878,7 +6878,7 @@ void trigger_load_balance(struct rq *rq)
-> Patch 2: @@ -6875,10 +6875,10 @@ void trigger_load_balance(struct rq *rq)
-> Patch 4:
->   void trigger_load_balance(struct rq *rq)
->   {
-> -       int cpu = rq->cpu;
-> -
->
-> Which obviously doesn't quite work..
->
->
-> So I can make it fit.. but I do wonder what I'm missing here..
+> You still need a DT Ack before I can apply this.
 
+Tomasz, can you ack it?
 
-Ah, ok. I got it. I missed to send the first patch of my patchset:
-
-sched: reduce trigger_load_balance parameters
-
-Let me resend the patchset with the missing patch.
-
-Sorry for the inconvenience
-
-   -- Daniel
-
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Thank you,
+Kyungmin Park
