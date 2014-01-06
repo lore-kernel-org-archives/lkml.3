@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190AbaAFWir (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:38:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47500 "EHLO
+	id S932278AbaAFWjD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:39:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47571 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932132AbaAFWin (ORCPT
+	with ESMTP id S932193AbaAFWi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:43 -0500
+	Mon, 6 Jan 2014 17:38:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Whitehead <mwhitehe@redhat.com>,
-        Dave Young <dyoung@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Baoquan He <bhe@redhat.com>, WANG Chao <chaowang@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 012/144] kexec: migrate to reboot cpu
-Date: Mon,  6 Jan 2014 14:36:13 -0800
-Message-Id: <20140106223745.680293459@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.12 071/144] drm/radeon/dpm: disable ss on Cayman
+Date: Mon,  6 Jan 2014 14:37:12 -0800
+Message-Id: <20140106223747.384032905@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -33,73 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vivek Goyal <vgoyal@redhat.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit c97102ba96324da330078ad8619ba4dfe840dbe3 upstream.
+commit c745fe611ca42295c9d91d8e305d27983e9132ef upstream.
 
-Commit 1b3a5d02ee07 ("reboot: move arch/x86 reboot= handling to generic
-kernel") moved reboot= handling to generic code.  In the process it also
-removed the code in native_machine_shutdown() which are moving reboot
-process to reboot_cpu/cpu0.
+Spread spectrum seems to cause hangs when dynamic clock
+switching is enabled.  Disable it for now. This does not
+affect performance or the amount of power saved. Tracked
+down by Martin Andersson.
 
-I guess that thought must have been that all reboot paths are calling
-migrate_to_reboot_cpu(), so we don't need this special handling.  But
-kexec reboot path (kernel_kexec()) is not calling
-migrate_to_reboot_cpu() so above change broke kexec.  Now reboot can
-happen on non-boot cpu and when INIT is sent in second kerneo to bring
-up BP, it brings down the machine.
+bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=69723
 
-So start calling migrate_to_reboot_cpu() in kexec reboot path to avoid
-this problem.
-
-Bisected by WANG Chao.
-
-Reported-by: Matthew Whitehead <mwhitehe@redhat.com>
-Reported-by: Dave Young <dyoung@redhat.com>
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-Tested-by: Baoquan He <bhe@redhat.com>
-Tested-by: WANG Chao <chaowang@redhat.com>
-Acked-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/reboot.h |    1 +
- kernel/kexec.c         |    1 +
- kernel/reboot.c        |    2 +-
- 3 files changed, 3 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/rv770_dpm.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/include/linux/reboot.h
-+++ b/include/linux/reboot.h
-@@ -43,6 +43,7 @@ extern int unregister_reboot_notifier(st
-  * Architecture-specific implementations of sys_reboot commands.
-  */
+--- a/drivers/gpu/drm/radeon/rv770_dpm.c
++++ b/drivers/gpu/drm/radeon/rv770_dpm.c
+@@ -2328,6 +2328,12 @@ void rv770_get_engine_memory_ss(struct r
+ 	pi->mclk_ss = radeon_atombios_get_asic_ss_info(rdev, &ss,
+ 						       ASIC_INTERNAL_MEMORY_SS, 0);
  
-+extern void migrate_to_reboot_cpu(void);
- extern void machine_restart(char *cmd);
- extern void machine_halt(void);
- extern void machine_power_off(void);
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -1680,6 +1680,7 @@ int kernel_kexec(void)
- 	{
- 		kexec_in_progress = true;
- 		kernel_restart_prepare(NULL);
-+		migrate_to_reboot_cpu();
- 		printk(KERN_EMERG "Starting new kernel\n");
- 		machine_shutdown();
- 	}
---- a/kernel/reboot.c
-+++ b/kernel/reboot.c
-@@ -104,7 +104,7 @@ int unregister_reboot_notifier(struct no
- }
- EXPORT_SYMBOL(unregister_reboot_notifier);
- 
--static void migrate_to_reboot_cpu(void)
-+void migrate_to_reboot_cpu(void)
- {
- 	/* The boot cpu is always logical cpu 0 */
- 	int cpu = reboot_cpu;
++	/* disable ss, causes hangs on some cayman boards */
++	if (rdev->family == CHIP_CAYMAN) {
++		pi->sclk_ss = false;
++		pi->mclk_ss = false;
++	}
++
+ 	if (pi->sclk_ss || pi->mclk_ss)
+ 		pi->dynamic_ss = true;
+ 	else
 
 
