@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933428AbaAFWmg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:42:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48656 "EHLO
+	id S933503AbaAFWmt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:42:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48757 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933373AbaAFWm0 (ORCPT
+	with ESMTP id S933431AbaAFWmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:42:26 -0500
+	Mon, 6 Jan 2014 17:42:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nithin Nayak Sujir <nsujir@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 22/43] tg3: Expand 4g_overflow_test workaround to skb fragments of any size.
-Date: Mon,  6 Jan 2014 14:39:39 -0800
-Message-Id: <20140106223942.884336164@linuxfoundation.org>
+        Bo Shen <voice.shen@atmel.com>,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.4 06/43] ASoC: wm8904: fix DSP mode B configuration
+Date: Mon,  6 Jan 2014 14:39:23 -0800
+Message-Id: <20140106223942.439378657@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223942.259651490@linuxfoundation.org>
 References: <20140106223942.259651490@linuxfoundation.org>
@@ -30,35 +30,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nithin Sujir <nsujir@broadcom.com>
+From: Bo Shen <voice.shen@atmel.com>
 
-commit 375679104ab3ccfd18dcbd7ba503734fb9a2c63a upstream.
+commit f0199bc5e3a3ec13f9bc938556517ec430b36437 upstream.
 
-The current driver assumes that an skb fragment can only be upto jumbo
-size. Presumably this was a fast-path optimization. This assumption is
-no longer true as fragments can be upto 32k.
+When wm8904 work in DSP mode B, we still need to configure it to
+work in DSP mode. Or else, it will work in Right Justified mode.
 
-v2: Remove unnecessary parantheses per Eric Dumazet.
-
-Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Bo Shen <voice.shen@atmel.com>
+Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/broadcom/tg3.c |    2 +-
+ sound/soc/codecs/wm8904.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -6619,7 +6619,7 @@ static inline int tg3_4g_overflow_test(d
- {
- 	u32 base = (u32) mapping & 0xffffffff;
+--- a/sound/soc/codecs/wm8904.c
++++ b/sound/soc/codecs/wm8904.c
+@@ -1456,7 +1456,7 @@ static int wm8904_set_fmt(struct snd_soc
  
--	return (base > 0xffffdcc0) && (base + len + 8 < base);
-+	return base + len + 8 < base;
- }
- 
- /* Test for DMA addresses > 40-bit */
+ 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
+ 	case SND_SOC_DAIFMT_DSP_B:
+-		aif1 |= WM8904_AIF_LRCLK_INV;
++		aif1 |= 0x3 | WM8904_AIF_LRCLK_INV;
+ 	case SND_SOC_DAIFMT_DSP_A:
+ 		aif1 |= 0x3;
+ 		break;
 
 
