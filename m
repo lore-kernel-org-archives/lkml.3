@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755751AbaAFQhU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 11:37:20 -0500
-Received: from mga03.intel.com ([143.182.124.21]:19444 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754664AbaAFQhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 11:37:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,613,1384329600"; 
-   d="scan'208";a="332352276"
-Message-ID: <52CADBB9.1010704@linux.intel.com>
-Date: Mon, 06 Jan 2014 08:37:13 -0800
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755763AbaAFQhz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 11:37:55 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:46317 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752574AbaAFQhx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 11:37:53 -0500
+Date: Mon, 6 Jan 2014 22:07:48 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
+        Anssi Hannula <anssi.hannula@iki.fi>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        dri-devel@lists.freedesktop.org, josh@joshtriplett.org
+Subject: [PATCH 73/85] drivers: gpu: Include appropriate header file in
+ dce6_afmt.c
+Message-ID: <e46dec2195a3404ed73a240f598dd2180dd0ed34.1389018325.git.rashika.kheria@gmail.com>
+References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-CC: Vincent Guittot <vincent.guittot@linaro.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, pjt@google.com, Morten.Rasmussen@arm.com,
-        cmetcalf@tilera.com, tony.luck@intel.com, alex.shi@linaro.org,
-        linaro-kernel@lists.linaro.org, rjw@sisk.pl,
-        paulmck@linux.vnet.ibm.com, corbet@lwn.net, tglx@linutronix.de,
-        len.brown@intel.com, amit.kucheria@linaro.org, james.hogan@imgtec.com,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        Dietmar.Eggemann@arm.com
-Subject: Re: [RFC] sched: CPU topology try
-References: <20131105222752.GD16117@laptop.programming.kicks-ass.net> <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org> <52C3A0F1.3040803@linux.vnet.ibm.com> <20140106163341.GO31570@twins.programming.kicks-ass.net>
-In-Reply-To: <20140106163341.GO31570@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/6/2014 8:33 AM, Peter Zijlstra wrote:
-> On Wed, Jan 01, 2014 at 10:30:33AM +0530, Preeti U Murthy wrote:
->> The design looks good to me. In my opinion information like P-states and
->> C-states dependency can be kept separate from the topology levels, it
->> might get too complicated unless the information is tightly coupled to
->> the topology.
->
-> I'm not entirely convinced we can keep them separated, the moment we
-> have multiple CPUs sharing a P or C state we need somewhere to manage
-> the shared state and the domain tree seems like the most natural place
-> for this.
->
-> Now it might well be both P and C states operate at 'natural' domains
-> which we already have so it might be 'easy'.
+Include header file drm/radeon/radeon_asic.h in drm/radeon/dce6_afmt.c
+because it uses function declared in the header file.
 
-more than that though.. P and C state sharing is mostly hidden from the OS
-(because the OS does not have the ability to do this; e.g. there are things
-that do "if THIS cpu goes idle, the OTHER cpu P state changes automatic".
+This eliminates the folllowing warning in drm/radeon/dce6_afmt.c:
+drivers/gpu/drm/radeon/dce6_afmt.c:301:5: warning: no previous prototype for ‘dce6_audio_init’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/dce6_afmt.c:330:6: warning: no previous prototype for ‘dce6_audio_fini’ [-Wmissing-prototypes]
 
-that's not just on x86, the ARM guys (iirc at least the latest snapdragon)  are going in that
-direction as well.....
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ drivers/gpu/drm/radeon/dce6_afmt.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-for those systems, the OS really should just make local decisions and let the hardware
-cope with hardware grouping.
->
+diff --git a/drivers/gpu/drm/radeon/dce6_afmt.c b/drivers/gpu/drm/radeon/dce6_afmt.c
+index de86493..2229258 100644
+--- a/drivers/gpu/drm/radeon/dce6_afmt.c
++++ b/drivers/gpu/drm/radeon/dce6_afmt.c
+@@ -23,6 +23,7 @@
+ #include <linux/hdmi.h>
+ #include <drm/drmP.h>
+ #include "radeon.h"
++#include "radeon_asic.h"
+ #include "sid.h"
+ 
+ static u32 dce6_endpoint_rreg(struct radeon_device *rdev,
+-- 
+1.7.9.5
 
