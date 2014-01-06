@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932175AbaAGAIL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 19:08:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47445 "EHLO
+	id S932669AbaAGAIk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:08:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47427 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756830AbaAFWia (ORCPT
+	with ESMTP id S1756806AbaAFWi1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:30 -0500
+	Mon, 6 Jan 2014 17:38:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jie Liu <jeff.liu@oracle.com>, Dave Chinner <dchinner@redhat.com>,
-        Ben Myers <bpm@sgi.com>
-Subject: [PATCH 3.12 040/144] xfs: fix infinite loop by detaching the group/project hints from user dquot
-Date: Mon,  6 Jan 2014 14:36:41 -0800
-Message-Id: <20140106223746.469514730@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>
+Subject: [PATCH 3.12 010/144] staging: comedi: 8255_pci: fix for newer PCI-DIO48H
+Date: Mon,  6 Jan 2014 14:36:11 -0800
+Message-Id: <20140106223745.624215919@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,179 +29,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jie Liu <jeff.liu@oracle.com>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 718cc6f88cbfc4fbd39609f28c4c86883945f90d upstream.
+commit 0283f7a100882684ad32b768f9f1ad81658a0b92 upstream.
 
-xfs_quota(8) will hang up if trying to turn group/project quota off
-before the user quota is off, this could be 100% reproduced by:
-  # mount -ouquota,gquota /dev/sda7 /xfs
-  # mkdir /xfs/test
-  # xfs_quota -xc 'off -g' /xfs <-- hangs up
-  # echo w > /proc/sysrq-trigger
-  # dmesg
+At some point, Measurement Computing / ComputerBoards redesigned the
+PCI-DIO48H to use a PLX PCI interface chip instead of an AMCC chip.
+This meant they had to put their hardware registers in the PCI BAR 2
+region instead of PCI BAR 1.  Unfortunately, they kept the same PCI
+device ID for the new design.  This means the driver recognizes the
+newer cards, but doesn't work (and is likely to screw up the local
+configuration registers of the PLX chip) because it's using the wrong
+region.
 
-  SysRq : Show Blocked State
-  task                        PC stack   pid father
-  xfs_quota       D 0000000000000000     0 27574   2551 0x00000000
-  [snip]
-  Call Trace:
-  [<ffffffff81aaa21d>] schedule+0xad/0xc0
-  [<ffffffff81aa327e>] schedule_timeout+0x35e/0x3c0
-  [<ffffffff8114b506>] ? mark_held_locks+0x176/0x1c0
-  [<ffffffff810ad6c0>] ? call_timer_fn+0x2c0/0x2c0
-  [<ffffffffa0c25380>] ? xfs_qm_shrink_count+0x30/0x30 [xfs]
-  [<ffffffff81aa3306>] schedule_timeout_uninterruptible+0x26/0x30
-  [<ffffffffa0c26155>] xfs_qm_dquot_walk+0x235/0x260 [xfs]
-  [<ffffffffa0c059d8>] ? xfs_perag_get+0x1d8/0x2d0 [xfs]
-  [<ffffffffa0c05805>] ? xfs_perag_get+0x5/0x2d0 [xfs]
-  [<ffffffffa0b7707e>] ? xfs_inode_ag_iterator+0xae/0xf0 [xfs]
-  [<ffffffffa0c22280>] ? xfs_trans_free_dqinfo+0x50/0x50 [xfs]
-  [<ffffffffa0b7709f>] ? xfs_inode_ag_iterator+0xcf/0xf0 [xfs]
-  [<ffffffffa0c261e6>] xfs_qm_dqpurge_all+0x66/0xb0 [xfs]
-  [<ffffffffa0c2497a>] xfs_qm_scall_quotaoff+0x20a/0x5f0 [xfs]
-  [<ffffffffa0c2b8f6>] xfs_fs_set_xstate+0x136/0x180 [xfs]
-  [<ffffffff8136cf7a>] do_quotactl+0x53a/0x6b0
-  [<ffffffff812fba4b>] ? iput+0x5b/0x90
-  [<ffffffff8136d257>] SyS_quotactl+0x167/0x1d0
-  [<ffffffff814cf2ee>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-  [<ffffffff81abcd19>] system_call_fastpath+0x16/0x1b
+Since  the PCI subvendor and subdevice IDs were both zero on the old
+design, but are the same as the vendor and device on the new design, we
+can tell the old design and new design apart easily enough.  Split the
+existing entry for the PCI-DIO48H in `pci_8255_boards[]` into two new
+entries, referenced by different entries in the PCI device ID table
+`pci_8255_pci_table[]`.  Use the same board name for both entries.
 
-It's fine if we turn user quota off at first, then turn off other
-kind of quotas if they are enabled since the group/project dquot
-refcount is decreased to zero once the user quota if off. Otherwise,
-those dquots refcount is non-zero due to the user dquot might refer
-to them as hint(s).  Hence, above operation cause an infinite loop
-at xfs_qm_dquot_walk() while trying to purge dquot cache.
-
-This problem has been around since Linux 3.4, it was introduced by:
-  [ b84a3a9675 xfs: remove the per-filesystem list of dquots ]
-
-Originally we will release the group dquot pointers because the user
-dquots maybe carrying around as a hint via xfs_qm_detach_gdquots().
-However, with above change, there is no such work to be done before
-purging group/project dquot cache.
-
-In order to solve this problem, this patch introduces a special routine
-xfs_qm_dqpurge_hints(), and it would release the group/project dquot
-pointers the user dquots maybe carrying around as a hint, and then it
-will proceed to purge the user dquot cache if requested.
-
-(cherry picked from commit df8052e7dae00bde6f21b40b6e3e1099770f3afc)
-
-Signed-off-by: Jie Liu <jeff.liu@oracle.com>
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- fs/xfs/xfs_qm.c |   71 +++++++++++++++++++++++++++++++++++++++-----------------
- 1 file changed, 50 insertions(+), 21 deletions(-)
+ drivers/staging/comedi/drivers/8255_pci.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
---- a/fs/xfs/xfs_qm.c
-+++ b/fs/xfs/xfs_qm.c
-@@ -137,8 +137,6 @@ xfs_qm_dqpurge(
- {
- 	struct xfs_mount	*mp = dqp->q_mount;
- 	struct xfs_quotainfo	*qi = mp->m_quotainfo;
--	struct xfs_dquot	*gdqp = NULL;
--	struct xfs_dquot	*pdqp = NULL;
- 
- 	xfs_dqlock(dqp);
- 	if ((dqp->dq_flags & XFS_DQ_FREEING) || dqp->q_nrefs != 0) {
-@@ -146,21 +144,6 @@ xfs_qm_dqpurge(
- 		return EAGAIN;
- 	}
- 
--	/*
--	 * If this quota has a hint attached, prepare for releasing it now.
--	 */
--	gdqp = dqp->q_gdquot;
--	if (gdqp) {
--		xfs_dqlock(gdqp);
--		dqp->q_gdquot = NULL;
--	}
--
--	pdqp = dqp->q_pdquot;
--	if (pdqp) {
--		xfs_dqlock(pdqp);
--		dqp->q_pdquot = NULL;
--	}
--
- 	dqp->dq_flags |= XFS_DQ_FREEING;
- 
- 	xfs_dqflock(dqp);
-@@ -209,11 +192,47 @@ xfs_qm_dqpurge(
- 	XFS_STATS_DEC(xs_qm_dquot_unused);
- 
- 	xfs_qm_dqdestroy(dqp);
-+	return 0;
-+}
-+
-+/*
-+ * Release the group or project dquot pointers the user dquots maybe carrying
-+ * around as a hint, and proceed to purge the user dquot cache if requested.
-+*/
-+STATIC int
-+xfs_qm_dqpurge_hints(
-+	struct xfs_dquot	*dqp,
-+	void			*data)
-+{
-+	struct xfs_dquot	*gdqp = NULL;
-+	struct xfs_dquot	*pdqp = NULL;
-+	uint			flags = *((uint *)data);
-+
-+	xfs_dqlock(dqp);
-+	if (dqp->dq_flags & XFS_DQ_FREEING) {
-+		xfs_dqunlock(dqp);
-+		return EAGAIN;
-+	}
-+
-+	/* If this quota has a hint attached, prepare for releasing it now */
-+	gdqp = dqp->q_gdquot;
-+	if (gdqp)
-+		dqp->q_gdquot = NULL;
-+
-+	pdqp = dqp->q_pdquot;
-+	if (pdqp)
-+		dqp->q_pdquot = NULL;
-+
-+	xfs_dqunlock(dqp);
- 
- 	if (gdqp)
--		xfs_qm_dqput(gdqp);
-+		xfs_qm_dqrele(gdqp);
- 	if (pdqp)
--		xfs_qm_dqput(pdqp);
-+		xfs_qm_dqrele(pdqp);
-+
-+	if (flags & XFS_QMOPT_UQUOTA)
-+		return xfs_qm_dqpurge(dqp, NULL);
-+
- 	return 0;
- }
- 
-@@ -225,8 +244,18 @@ xfs_qm_dqpurge_all(
- 	struct xfs_mount	*mp,
- 	uint			flags)
- {
--	if (flags & XFS_QMOPT_UQUOTA)
--		xfs_qm_dquot_walk(mp, XFS_DQ_USER, xfs_qm_dqpurge, NULL);
-+	/*
-+	 * We have to release group/project dquot hint(s) from the user dquot
-+	 * at first if they are there, otherwise we would run into an infinite
-+	 * loop while walking through radix tree to purge other type of dquots
-+	 * since their refcount is not zero if the user dquot refers to them
-+	 * as hint.
-+	 *
-+	 * Call the special xfs_qm_dqpurge_hints() will end up go through the
-+	 * general xfs_qm_dqpurge() against user dquot cache if requested.
-+	 */
-+	xfs_qm_dquot_walk(mp, XFS_DQ_USER, xfs_qm_dqpurge_hints, &flags);
-+
- 	if (flags & XFS_QMOPT_GQUOTA)
- 		xfs_qm_dquot_walk(mp, XFS_DQ_GROUP, xfs_qm_dqpurge, NULL);
- 	if (flags & XFS_QMOPT_PQUOTA)
+--- a/drivers/staging/comedi/drivers/8255_pci.c
++++ b/drivers/staging/comedi/drivers/8255_pci.c
+@@ -63,7 +63,8 @@ enum pci_8255_boardid {
+ 	BOARD_ADLINK_PCI7296,
+ 	BOARD_CB_PCIDIO24,
+ 	BOARD_CB_PCIDIO24H,
+-	BOARD_CB_PCIDIO48H,
++	BOARD_CB_PCIDIO48H_OLD,
++	BOARD_CB_PCIDIO48H_NEW,
+ 	BOARD_CB_PCIDIO96H,
+ 	BOARD_NI_PCIDIO96,
+ 	BOARD_NI_PCIDIO96B,
+@@ -106,11 +107,16 @@ static const struct pci_8255_boardinfo p
+ 		.dio_badr	= 2,
+ 		.n_8255		= 1,
+ 	},
+-	[BOARD_CB_PCIDIO48H] = {
++	[BOARD_CB_PCIDIO48H_OLD] = {
+ 		.name		= "cb_pci-dio48h",
+ 		.dio_badr	= 1,
+ 		.n_8255		= 2,
+ 	},
++	[BOARD_CB_PCIDIO48H_NEW] = {
++		.name		= "cb_pci-dio48h",
++		.dio_badr	= 2,
++		.n_8255		= 2,
++	},
+ 	[BOARD_CB_PCIDIO96H] = {
+ 		.name		= "cb_pci-dio96h",
+ 		.dio_badr	= 2,
+@@ -263,7 +269,10 @@ static DEFINE_PCI_DEVICE_TABLE(pci_8255_
+ 	{ PCI_VDEVICE(ADLINK, 0x7296), BOARD_ADLINK_PCI7296 },
+ 	{ PCI_VDEVICE(CB, 0x0028), BOARD_CB_PCIDIO24 },
+ 	{ PCI_VDEVICE(CB, 0x0014), BOARD_CB_PCIDIO24H },
+-	{ PCI_VDEVICE(CB, 0x000b), BOARD_CB_PCIDIO48H },
++	{ PCI_DEVICE_SUB(PCI_VENDOR_ID_CB, 0x000b, 0x0000, 0x0000),
++	  .driver_data = BOARD_CB_PCIDIO48H_OLD },
++	{ PCI_DEVICE_SUB(PCI_VENDOR_ID_CB, 0x000b, PCI_VENDOR_ID_CB, 0x000b),
++	  .driver_data = BOARD_CB_PCIDIO48H_NEW },
+ 	{ PCI_VDEVICE(CB, 0x0017), BOARD_CB_PCIDIO96H },
+ 	{ PCI_VDEVICE(NI, 0x0160), BOARD_NI_PCIDIO96 },
+ 	{ PCI_VDEVICE(NI, 0x1630), BOARD_NI_PCIDIO96B },
 
 
