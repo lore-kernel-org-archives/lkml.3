@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756935AbaAFWlH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:41:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48246 "EHLO
+	id S933124AbaAFXXA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:23:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48231 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756879AbaAFWlF (ORCPT
+	with ESMTP id S1756905AbaAFWlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:05 -0500
+	Mon, 6 Jan 2014 17:41:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Evan Huus <eapache@gmail.com>, Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.10 065/129] radiotap: fix bitmap-end-finding buffer overrun
-Date: Mon,  6 Jan 2014 14:38:14 -0800
-Message-Id: <20140106223901.465016522@linuxfoundation.org>
+        Vincent Pelletier <plr.vincent@gmail.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.10 062/129] libata: Add atapi_dmadir force flag
+Date: Mon,  6 Jan 2014 14:38:11 -0800
+Message-Id: <20140106223901.381715157@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -28,35 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Vincent Pelletier <plr.vincent@gmail.com>
 
-commit bd02cd2549cfcdfc57cb5ce57ffc3feb94f70575 upstream.
+commit 966fbe193f47c68e70a80ec9991098e88e7959cb upstream.
 
-Evan Huus found (by fuzzing in wireshark) that the radiotap
-iterator code can access beyond the length of the buffer if
-the first bitmap claims an extension but then there's no
-data at all. Fix this.
+Some device require DMADIR to be enabled, but are not detected as such
+by atapi_id_dmadir.  One such example is "Asus Serillel 2"
+SATA-host-to-PATA-device bridge: the bridge itself requires DMADIR,
+even if the bridged device does not.
 
-Reported-by: Evan Huus <eapache@gmail.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+As atapi_dmadir module parameter can cause problems with some devices
+(as per Tejun Heo's memory), enabling it globally may not be possible
+depending on the hardware.
+
+This patch adds atapi_dmadir in the form of a "force" horkage value,
+allowing global, per-bus and per-device control.
+
+Signed-off-by: Vincent Pelletier <plr.vincent@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/radiotap.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ Documentation/kernel-parameters.txt |    2 ++
+ drivers/ata/libata-core.c           |    3 ++-
+ include/linux/libata.h              |    1 +
+ 3 files changed, 5 insertions(+), 1 deletion(-)
 
---- a/net/wireless/radiotap.c
-+++ b/net/wireless/radiotap.c
-@@ -124,6 +124,10 @@ int ieee80211_radiotap_iterator_init(
- 	/* find payload start allowing for extended bitmap(s) */
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1456,6 +1456,8 @@ bytes respectively. Such letter suffixes
  
- 	if (iterator->_bitmap_shifter & (1<<IEEE80211_RADIOTAP_EXT)) {
-+		if ((unsigned long)iterator->_arg -
-+		    (unsigned long)iterator->_rtheader + sizeof(uint32_t) >
-+		    (unsigned long)iterator->_max_length)
-+			return -EINVAL;
- 		while (get_unaligned_le32(iterator->_arg) &
- 					(1 << IEEE80211_RADIOTAP_EXT)) {
- 			iterator->_arg += sizeof(uint32_t);
+ 			* dump_id: dump IDENTIFY data.
+ 
++			* atapi_dmadir: Enable ATAPI DMADIR bridge support
++
+ 			If there are multiple matching configurations changing
+ 			the same attribute, the last one is used.
+ 
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -2401,7 +2401,7 @@ int ata_dev_configure(struct ata_device
+ 			cdb_intr_string = ", CDB intr";
+ 		}
+ 
+-		if (atapi_dmadir || atapi_id_dmadir(dev->id)) {
++		if (atapi_dmadir || (dev->horkage & ATA_HORKAGE_ATAPI_DMADIR) || atapi_id_dmadir(dev->id)) {
+ 			dev->flags |= ATA_DFLAG_DMADIR;
+ 			dma_dir_string = ", DMADIR";
+ 		}
+@@ -6506,6 +6506,7 @@ static int __init ata_parse_force_one(ch
+ 		{ "nosrst",	.lflags		= ATA_LFLAG_NO_SRST },
+ 		{ "norst",	.lflags		= ATA_LFLAG_NO_HRST | ATA_LFLAG_NO_SRST },
+ 		{ "rstonce",	.lflags		= ATA_LFLAG_RST_ONCE },
++		{ "atapi_dmadir", .horkage_on	= ATA_HORKAGE_ATAPI_DMADIR },
+ 	};
+ 	char *start = *cur, *p = *cur;
+ 	char *id, *val, *endp;
+--- a/include/linux/libata.h
++++ b/include/linux/libata.h
+@@ -399,6 +399,7 @@ enum {
+ 	ATA_HORKAGE_BROKEN_FPDMA_AA	= (1 << 15),	/* skip AA */
+ 	ATA_HORKAGE_DUMP_ID	= (1 << 16),	/* dump IDENTIFY data */
+ 	ATA_HORKAGE_MAX_SEC_LBA48 = (1 << 17),	/* Set max sects to 65535 */
++	ATA_HORKAGE_ATAPI_DMADIR = (1 << 18),	/* device requires dmadir */
+ 
+ 	 /* DMA mask for user DMA control: User visible values; DO NOT
+ 	    renumber */
 
 
