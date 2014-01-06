@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757647AbaAFXlm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:41:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47927 "EHLO
+	id S933014AbaAFXmW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:42:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47913 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932642AbaAFWkA (ORCPT
+	with ESMTP id S932636AbaAFWj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:00 -0500
+	Mon, 6 Jan 2014 17:39:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 136/144] sh: always link in helper functions extracted from libgcc
-Date: Mon,  6 Jan 2014 14:38:17 -0800
-Message-Id: <20140106223749.246930000@linuxfoundation.org>
+        Roger Quadros <rogerq@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.12 134/144] gpio: twl4030: Fix regression for twl gpio LED output
+Date: Mon,  6 Jan 2014 14:38:15 -0800
+Message-Id: <20140106223749.190593832@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -32,55 +29,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: Roger Quadros <rogerq@ti.com>
 
-commit 84ed8a99058e61567f495cc43118344261641c5f upstream.
+commit f5837ec11f8cfa6d53ebc5806582771b2c9988c6 upstream.
 
-E.g. landisk_defconfig, which has CONFIG_NTFS_FS=m:
+Commit 0b2aa8be introduced a regression that causes failure
+in setting LED GPO direction to OUT.
 
-  ERROR: "__ashrdi3" [fs/ntfs/ntfs.ko] undefined!
+This causes USB host probe failures for Beagleboard C4.
 
-For "lib-y", if no symbols in a compilation unit are referenced by other
-units, the compilation unit will not be included in vmlinux.  This
-breaks modules that do reference those symbols.
+platform usb_phy_gen_xceiv.2: Driver usb_phy_gen_xceiv requests probe deferral
+hsusb2_vcc: Failed to request enable GPIO510: -22
+reg-fixed-voltage reg-fixed-voltage.0.auto: Failed to register regulator: -22
+reg-fixed-voltage: probe of reg-fixed-voltage.0.auto failed with error -22
 
-Use "obj-y" instead to fix this.
+direction_out/direction_in must return 0 if the operation succeeded.
 
-http://kisskb.ellerman.id.au/kisskb/buildresult/8838077/
+Also, don't update direction flag and output data if twl4030_set_gpio_direction()
+failed inside twl_direction_out();
 
-This doesn't fix all cases. There are others, e.g. udivsi3.
-This is also not limited to sh, many architectures handle this in the
-same way.
-
-A simple solution is to unconditionally include all helper functions.
-A more complex solution is to make the choice of "lib-y" or "obj-y" depend
-on CONFIG_MODULES:
-
-  obj-$(CONFIG_MODULES) += ...
-  lib-y($CONFIG_MODULES) += ...
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Tested-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Reviewed-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Acked-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/sh/lib/Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpio/gpio-twl4030.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
---- a/arch/sh/lib/Makefile
-+++ b/arch/sh/lib/Makefile
-@@ -6,7 +6,7 @@ lib-y  = delay.o memmove.o memchr.o \
- 	 checksum.o strlen.o div64.o div64-generic.o
+--- a/drivers/gpio/gpio-twl4030.c
++++ b/drivers/gpio/gpio-twl4030.c
+@@ -300,7 +300,7 @@ static int twl_direction_in(struct gpio_
+ 	if (offset < TWL4030_GPIO_MAX)
+ 		ret = twl4030_set_gpio_direction(offset, 1);
+ 	else
+-		ret = -EINVAL;
++		ret = -EINVAL;	/* LED outputs can't be set as input */
  
- # Extracted from libgcc
--lib-y += movmem.o ashldi3.o ashrdi3.o lshrdi3.o \
-+obj-y += movmem.o ashldi3.o ashrdi3.o lshrdi3.o \
- 	 ashlsi3.o ashrsi3.o ashiftrt.o lshrsi3.o \
- 	 udiv_qrnnd.o
+ 	if (!ret)
+ 		priv->direction &= ~BIT(offset);
+@@ -354,11 +354,20 @@ static void twl_set(struct gpio_chip *ch
+ static int twl_direction_out(struct gpio_chip *chip, unsigned offset, int value)
+ {
+ 	struct gpio_twl4030_priv *priv = to_gpio_twl4030(chip);
+-	int ret = -EINVAL;
++	int ret = 0;
  
+ 	mutex_lock(&priv->mutex);
+-	if (offset < TWL4030_GPIO_MAX)
++	if (offset < TWL4030_GPIO_MAX) {
+ 		ret = twl4030_set_gpio_direction(offset, 0);
++		if (ret) {
++			mutex_unlock(&priv->mutex);
++			return ret;
++		}
++	}
++
++	/*
++	 *  LED gpios i.e. offset >= TWL4030_GPIO_MAX are always output
++	 */
+ 
+ 	priv->direction |= BIT(offset);
+ 	mutex_unlock(&priv->mutex);
 
 
