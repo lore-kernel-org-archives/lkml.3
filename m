@@ -1,39 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236AbaAFVAJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 16:00:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45639 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755092AbaAFVAF (ORCPT
+	id S1756277AbaAFVAY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 16:00:24 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:53439 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755092AbaAFVAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 16:00:05 -0500
-Date: Mon, 6 Jan 2014 13:00:03 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>,
-        Rashika Kheria <rashika.kheria@gmail.com>
-Subject: Re: #pragma once?
-Message-Id: <20140106130003.4eea0893605369a8fd9336ac@linux-foundation.org>
-In-Reply-To: <20140106204706.GA16924@leaf>
-References: <20140106204706.GA16924@leaf>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 6 Jan 2014 16:00:20 -0500
+Date: Mon, 6 Jan 2014 15:51:43 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Ding Tianhong <dingtianhong@huawei.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        linux-wireless@vger.kernel.org, Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3.5 18/19] rtlwifi: slight optimization of addr compare
+Message-ID: <20140106205143.GH10885@tuxdriver.com>
+References: <52BC15EA.2020603@huawei.com>
+ <52BC2576.3090601@cogentembedded.com>
+ <20140106195302.GF10885@tuxdriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140106195302.GF10885@tuxdriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Jan 2014 12:47:07 -0800 Josh Triplett <josh@joshtriplett.org> wrote:
+On Mon, Jan 06, 2014 at 02:53:02PM -0500, John W. Linville wrote:
+> On Thu, Dec 26, 2013 at 04:47:50PM +0400, Sergei Shtylyov wrote:
+> > Hello.
+> > 
+> > On 26-12-2013 15:41, Ding Tianhong wrote:
+> > 
+> > >Use possibly more efficient ether_addr_equal_unaligned
+> > >instead of memcmp.
+> > 
+> > >Cc: Larry Finger <Larry.Finger@lwfinger.net>
+> > >Cc: Chaoming Li <chaoming_li@realsil.com.cn>
+> > >Cc: John W. Linville <linville@tuxdriver.com>
+> > >Cc: linux-wireless@vger.kernel.org
+> > >Cc: netdev@vger.kernel.org
+> > >Cc: linux-kernel@vger.kernel.org
+> > >Signed-off-by: Weilong Chen <chenweilong@huawei.com>
+> > >Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+> > >---
+> > >  drivers/net/wireless/rtlwifi/cam.c | 4 ++--
+> > >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > >diff --git a/drivers/net/wireless/rtlwifi/cam.c b/drivers/net/wireless/rtlwifi/cam.c
+> > >index 0e510f7..0276153 100644
+> > >--- a/drivers/net/wireless/rtlwifi/cam.c
+> > >+++ b/drivers/net/wireless/rtlwifi/cam.c
+> > [...]
+> > >@@ -335,7 +335,7 @@ void rtl_cam_del_entry(struct ieee80211_hw *hw, u8 *sta_addr)
+> > >  		addr = rtlpriv->sec.hwsec_cam_sta_addr[i];
+> > >  		bitmap = (rtlpriv->sec.hwsec_cam_bitmap) >> i;
+> > >  		if (((bitmap & BIT(0)) == BIT(0)) &&
+> > >-		    (memcmp(addr, sta_addr, ETH_ALEN) == 0)) {
+> > >+		    (ether_addr_equal_unaligned(addr, sta_addr))) {
+> > 
+> >    It's pointless to enclose function call in parens, again.
+> 
+> I'll correct that issue when merging the patch.
 
-> Does anyone have any objection to the use of "#pragma once" instead of
-> the usual #ifndef-#define-...-#endif include guard?
+Well, that was the plan...  But since ether_addr_equal_unaligned
+isn't in the wireless trees at the moment, it will have to wait or go
+through another tree that has that definition.  Feel free to respin
+with the extra parenthesis removed...
 
-Sounds OK to me.  gcc has supported this for quite a long time, yes?  I
-wonder if ICC supports it.
-
-(I haven't heard anything of ICC-for-kernel in a long time - is it still
-a living thing?)
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
