@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292AbaAFMPW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 07:15:22 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:64770 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750914AbaAFMPU (ORCPT
+	id S1753411AbaAFMRj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 07:17:39 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:57698 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879AbaAFMRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 07:15:20 -0500
-Date: Mon, 6 Jan 2014 12:15:13 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Sachin Kamat <sachin.kamat@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Subject: Re: [PATCH 1/2] gpio: lp3943: Remove redundant of_match_ptr helper
-Message-ID: <20140106121513.GF30156@lee--X1>
-References: <1387621661-22128-1-git-send-email-sachin.kamat@linaro.org>
- <CACRpkdb+NQOZXD2iHco+5UoFAt0abc8teFvZV0TayxXMRUZRNw@mail.gmail.com>
- <20140106110750.GO23772@lee--X1>
+	Mon, 6 Jan 2014 07:17:38 -0500
+Date: Mon, 6 Jan 2014 13:17:19 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mike Galbraith <bitbucket@online.de>
+Subject: Re: [PATCH] sched/auto_group: fix consume memory even if add
+ 'noautogroup' in the cmdline
+Message-ID: <20140106121719.GH31570@twins.programming.kicks-ass.net>
+References: <1388139751-19632-1-git-send-email-liwanp@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140106110750.GO23772@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1388139751-19632-1-git-send-email-liwanp@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 06 Jan 2014, Lee Jones wrote:
+On Fri, Dec 27, 2013 at 06:22:31PM +0800, Wanpeng Li wrote:
+> We have a server which have 200 CPUs and 8G memory, there is auto_group creation 
 
-> On Thu, 02 Jan 2014, Linus Walleij wrote:
-> 
-> > On Sat, Dec 21, 2013 at 11:27 AM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
-> > 
-> > > 'lp3943_gpio_of_match' is always compiled in. Hence the
-> > > helper macro is not needed.
-> > >
-> > > Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> > > ---
-> > >  drivers/gpio/gpio-lp3943.c |    2 +-
-> > 
-> > This driver is merged into the MFD tree, you need Lee or
-> > Sam to apply it.
-> > 
-> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> 
-> Applied, thanks.
+I'm hoping that is 8T, otherwise that's a severely under provisioned
+system, that's a mere 40M per cpu, does that even work?
 
-Whoops, jumped ahead of the gun there. I don't have this in my inbox.
+> which will almost consume 12MB memory even if add 'noautogroup' in the kernel 
+> boot parameter. In addtion, SLUB per cpu partial caches freeing that is local to 
+> a processor which requires the taking of locks at the price of more indeterminism 
+> in the latency of the free. This patch fix it by check noautogroup earlier to avoid 
+> free after unnecessary memory consumption.
 
-Sachin, can you send again with Linus' Ack please?
+That's just a bad changelog. It fails to explain the actual problem and
+it babbles about unrelated things like SLUB details.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Also, I'm not entirely sure what the intention was of this code, I've so
+far tried to ignore the entire autogroup fest... 
+
+It looks like it creates and maintains the entire autogroup hierarchy,
+such that if you at runtime enable the sysclt and move tasks 'back' to
+the root cgroup you get the autogroup behaviour.
+
+Was this intended? Mike?
+
+This patch obviously breaks that.
