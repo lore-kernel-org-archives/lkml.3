@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757075AbaAFXaN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:30:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48105 "EHLO
+	id S1757076AbaAFXaw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:30:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48088 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932845AbaAFWki (ORCPT
+	with ESMTP id S932831AbaAFWkf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:38 -0500
+	Mon, 6 Jan 2014 17:40:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zheng Liu <wenqing.lz@taobao.com>, Jan Kara <jack@suse.cz>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.10 033/129] ext4: fix deadlock when writing in ENOSPC conditions
-Date: Mon,  6 Jan 2014 14:37:42 -0800
-Message-Id: <20140106223900.552178150@linuxfoundation.org>
+        Liu Ping Fan <pingfank@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>
+Subject: [PATCH 3.10 004/129] powerpc: kvm: fix rare but potential deadlock scene
+Date: Mon,  6 Jan 2014 14:37:13 -0800
+Message-Id: <20140106223859.715653298@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -29,86 +29,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: pingfan liu <qemulist@gmail.com>
 
-commit 34cf865d54813aab3497838132fb1bbd293f4054 upstream.
+commit 91648ec09c1ef69c4d840ab6dab391bfb452d554 upstream.
 
-Akira-san has been reporting rare deadlocks of his machine when running
-xfstests test 269 on ext4 filesystem. The problem turned out to be in
-ext4_da_reserve_metadata() and ext4_da_reserve_space() which called
-ext4_should_retry_alloc() while holding i_data_sem. Since
-ext4_should_retry_alloc() can force a transaction commit, this is a
-lock ordering violation and leads to deadlocks.
+Since kvmppc_hv_find_lock_hpte() is called from both virtmode and
+realmode, so it can trigger the deadlock.
 
-Fix the problem by just removing the retry loops. These functions should
-just report ENOSPC to the caller (e.g. ext4_da_write_begin()) and that
-function must take care of retrying after dropping all necessary locks.
+Suppose the following scene:
 
-Reported-and-tested-by: Akira Fujita <a-fujita@rs.jp.nec.com>
-Reviewed-by: Zheng Liu <wenqing.lz@taobao.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Two physical cpuM, cpuN, two VM instances A, B, each VM has a group of
+vcpus.
+
+If on cpuM, vcpu_A_1 holds bitlock X (HPTE_V_HVLOCK), then is switched
+out, and on cpuN, vcpu_A_2 try to lock X in realmode, then cpuN will be
+caught in realmode for a long time.
+
+What makes things even worse if the following happens,
+  On cpuM, bitlockX is hold, on cpuN, Y is hold.
+  vcpu_B_2 try to lock Y on cpuM in realmode
+  vcpu_A_2 try to lock X on cpuN in realmode
+
+Oops! deadlock happens
+
+Signed-off-by: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+Reviewed-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Alexander Graf <agraf@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/inode.c |   12 ------------
- 1 file changed, 12 deletions(-)
+ arch/powerpc/kvm/book3s_64_mmu_hv.c |    6 +++++-
+ arch/powerpc/kvm/book3s_hv_rm_mmu.c |    4 ++++
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -1263,7 +1263,6 @@ static int ext4_journalled_write_end(str
-  */
- static int ext4_da_reserve_metadata(struct inode *inode, ext4_lblk_t lblock)
- {
--	int retries = 0;
- 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
- 	struct ext4_inode_info *ei = EXT4_I(inode);
- 	unsigned int md_needed;
-@@ -1275,7 +1274,6 @@ static int ext4_da_reserve_metadata(stru
- 	 * in order to allocate nrblocks
- 	 * worse case is one extent per block
- 	 */
--repeat:
- 	spin_lock(&ei->i_block_reservation_lock);
- 	/*
- 	 * ext4_calc_metadata_amount() has side effects, which we have
-@@ -1295,10 +1293,6 @@ repeat:
- 		ei->i_da_metadata_calc_len = save_len;
- 		ei->i_da_metadata_calc_last_lblock = save_last_lblock;
- 		spin_unlock(&ei->i_block_reservation_lock);
--		if (ext4_should_retry_alloc(inode->i_sb, &retries)) {
--			cond_resched();
--			goto repeat;
--		}
- 		return -ENOSPC;
+--- a/arch/powerpc/kvm/book3s_64_mmu_hv.c
++++ b/arch/powerpc/kvm/book3s_64_mmu_hv.c
+@@ -473,11 +473,14 @@ static int kvmppc_mmu_book3s_64_hv_xlate
+ 		slb_v = vcpu->kvm->arch.vrma_slb_v;
  	}
- 	ei->i_reserved_meta_blocks += md_needed;
-@@ -1312,7 +1306,6 @@ repeat:
-  */
- static int ext4_da_reserve_space(struct inode *inode, ext4_lblk_t lblock)
+ 
++	preempt_disable();
+ 	/* Find the HPTE in the hash table */
+ 	index = kvmppc_hv_find_lock_hpte(kvm, eaddr, slb_v,
+ 					 HPTE_V_VALID | HPTE_V_ABSENT);
+-	if (index < 0)
++	if (index < 0) {
++		preempt_enable();
+ 		return -ENOENT;
++	}
+ 	hptep = (unsigned long *)(kvm->arch.hpt_virt + (index << 4));
+ 	v = hptep[0] & ~HPTE_V_HVLOCK;
+ 	gr = kvm->arch.revmap[index].guest_rpte;
+@@ -485,6 +488,7 @@ static int kvmppc_mmu_book3s_64_hv_xlate
+ 	/* Unlock the HPTE */
+ 	asm volatile("lwsync" : : : "memory");
+ 	hptep[0] = v;
++	preempt_enable();
+ 
+ 	gpte->eaddr = eaddr;
+ 	gpte->vpage = ((v & HPTE_V_AVPN) << 4) | ((eaddr >> 12) & 0xfff);
+--- a/arch/powerpc/kvm/book3s_hv_rm_mmu.c
++++ b/arch/powerpc/kvm/book3s_hv_rm_mmu.c
+@@ -724,6 +724,10 @@ static int slb_base_page_shift[4] = {
+ 	20,	/* 1M, unsupported */
+ };
+ 
++/* When called from virtmode, this func should be protected by
++ * preempt_disable(), otherwise, the holding of HPTE_V_HVLOCK
++ * can trigger deadlock issue.
++ */
+ long kvmppc_hv_find_lock_hpte(struct kvm *kvm, gva_t eaddr, unsigned long slb_v,
+ 			      unsigned long valid)
  {
--	int retries = 0;
- 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
- 	struct ext4_inode_info *ei = EXT4_I(inode);
- 	unsigned int md_needed;
-@@ -1334,7 +1327,6 @@ static int ext4_da_reserve_space(struct
- 	 * in order to allocate nrblocks
- 	 * worse case is one extent per block
- 	 */
--repeat:
- 	spin_lock(&ei->i_block_reservation_lock);
- 	/*
- 	 * ext4_calc_metadata_amount() has side effects, which we have
-@@ -1354,10 +1346,6 @@ repeat:
- 		ei->i_da_metadata_calc_len = save_len;
- 		ei->i_da_metadata_calc_last_lblock = save_last_lblock;
- 		spin_unlock(&ei->i_block_reservation_lock);
--		if (ext4_should_retry_alloc(inode->i_sb, &retries)) {
--			cond_resched();
--			goto repeat;
--		}
- 		dquot_release_reservation_block(inode, EXT4_C2B(sbi, 1));
- 		return -ENOSPC;
- 	}
 
 
