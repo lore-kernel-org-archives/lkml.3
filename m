@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979AbaAFUAb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 15:00:31 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:53829 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754806AbaAFUA3 (ORCPT
+	id S1756015AbaAFUAr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 15:00:47 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:19518 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754806AbaAFUAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 15:00:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1401031749340.8667@kaball.uk.xensource.com>
-References: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
-	<1388707565-16535-17-git-send-email-yinghai@kernel.org>
-	<alpine.DEB.2.02.1401031749340.8667@kaball.uk.xensource.com>
-Date: Mon, 6 Jan 2014 12:00:28 -0800
-X-Google-Sender-Auth: TlH_aYZoagsUgjBq8Okqrxj0u7Y
-Message-ID: <CAE9FiQVba9K_3LDkHTP4YZJ-FzwE_mF3h6iiXEFb1shUUmhGpg@mail.gmail.com>
-Subject: Re: [Xen-devel] [PATCH v5 16/33] xen, irq: Call irq_alloc_reserved_desc_at()
- at first
-From: Yinghai Lu <yinghai@kernel.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 6 Jan 2014 15:00:46 -0500
+Date: Mon, 6 Jan 2014 15:00:44 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Seth Forshee <seth.forshee@canonical.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH trace-cmd 0/1] Makefile: Use CPPFLAGS from the
+ environment
+Message-ID: <20140106150044.2453f841@gandalf.local.home>
+In-Reply-To: <20140106145450.77f7bf86@gandalf.local.home>
+References: <1389030985-26657-1-git-send-email-seth.forshee@canonical.com>
+	<20140106140753.55f3f3c7@gandalf.local.home>
+	<20140106193652.GB1556@thinkpad-t410>
+	<20140106145450.77f7bf86@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 3, 2014 at 9:50 AM, Stefano Stabellini
-<stefano.stabellini@eu.citrix.com> wrote:
+On Mon, 6 Jan 2014 14:54:50 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> Yeah, I screwed up.
+> 
+> This should have been 2.3 and I screwed up the tags here :-/
+> 
+> I'll try to fix things up.
+> 
 
->>  drivers/xen/events.c | 8 ++++++--
->>  1 file changed, 6 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
->> index 4035e83..020cd77 100644
->> --- a/drivers/xen/events.c
->> +++ b/drivers/xen/events.c
->> @@ -508,8 +508,12 @@ static int __must_check xen_allocate_irq_gsi(unsigned gsi)
->>       /* Legacy IRQ descriptors are already allocated by the arch. */
->>       if (gsi < NR_IRQS_LEGACY)
->>               irq = gsi;
->> -     else
->> -             irq = irq_alloc_desc_at(gsi, -1);
->> +     else {
->> +             /* for x86, irq already get reserved for gsi */
->> +             irq = irq_alloc_reserved_desc_at(gsi, -1);
->> +             if (irq < 0)
->> +                     irq = irq_alloc_desc_at(gsi, -1);
->> +     }
->
-> This is common code. On ARM I get:
->
-> drivers/xen/events.c: In function 'xen_allocate_irq_gsi':
-> drivers/xen/events.c:513:3: error: implicit declaration of function 'irq_alloc_reserved_desc_at' [-Werror=implicit-function-declaration]
->    irq = irq_alloc_reserved_desc_at(gsi, -1);
->    ^
-> cc1: some warnings being treated as errors
+I blame too much eggnog over the holiday break. I think I fixed things
+up.
 
-It's strange.
+Thanks!
 
-that is defined with irq_alloc_desc_at in parallel in
-include/linux/irq.h and kernel/irq/irqdesc.c.
-
-Did you try the whole tree, or just this patch?
-
-Thanks
-
-Yinghai
+-- Steve
