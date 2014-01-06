@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755886AbaAFU0P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 15:26:15 -0500
-Received: from s3.sipsolutions.net ([144.76.43.152]:44034 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754752AbaAFU0N (ORCPT
+	id S1756049AbaAFU2E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 15:28:04 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:51199 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754620AbaAFU2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 15:26:13 -0500
-Message-ID: <1389039968.5891.44.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH v2 00/16] wl1251 patches from linux-n900 tree
-From: Johannes Berg <johannes@sipsolutions.net>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Luciano Coelho <luca@coelho.fi>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        freemangordon@abv.bg, aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
-        joni.lapilainen@gmail.com,
-        Felipe Contreras <felipe.contreras@gmail.com>
-Date: Mon, 06 Jan 2014 21:26:08 +0100
-In-Reply-To: <20140106200050.GG10885@tuxdriver.com>
-References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
-	 <1386494714-21070-1-git-send-email-pali.rohar@gmail.com>
-	 <201312311047.30147@pali> <20140106200050.GG10885@tuxdriver.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Mon, 6 Jan 2014 15:28:00 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH][tentative] PCI / ACPI: Rework PCI host bridge removal to avoid sysfs warnings
+Date: Mon, 06 Jan 2014 21:41:46 +0100
+Message-ID: <4679785.iPCX7mECEL@vostro.rjw.lan>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <CAE9FiQV1tui+nHMFF419dpTOKt_x4US6R=3uPhDvUDJ0zoMrEg@mail.gmail.com>
+References: <37552283.kG1L4S8Daa@vostro.rjw.lan> <2459491.HIKjAnF27k@vostro.rjw.lan> <CAE9FiQV1tui+nHMFF419dpTOKt_x4US6R=3uPhDvUDJ0zoMrEg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-06 at 15:00 -0500, John W. Linville wrote:
-> On Tue, Dec 31, 2013 at 10:47:29AM +0100, Pali Rohár wrote:
-> > On Sunday 08 December 2013 10:24:58 Pali Rohár wrote:
-> > > Hello, I'm sending wl1251 patches from linux-n900 tree [1] for
-> > > comments. More patches come from David's monitor & packet
-> > > injection work. Patches are tested with 3.12 rc5 kernel on
-> > > Nokia N900.
-> > > 
-> > > Second version contains new patch for fixing NULL pointer
-> > > dereference which sometimes cause kernel panic and fixes code
-> > > suggested by Pavel Machek.
->  
-> > So far, there are no new comments for patches 01, 03-13 and 16. 
-> > Are there any other problems with that patches or can be accepted 
-> > for upstream?
->  
-> They are probably fine to merge now.  Of course, I was still deleting
-> wl12xx patches when they were originally posted, so I'll need someone
-> to resend the patches to me...
+On Monday, January 06, 2014 11:28:43 AM Yinghai Lu wrote:
+> On Thu, Jan 2, 2014 at 4:45 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > On Thursday, January 02, 2014 02:47:04 PM Yinghai Lu wrote:
+> >>
+> >> No. It should be before removing all root bus devices.
+> >> as they need to access the pci devices during stop ioapic and dmar.
+> >>
+> >> Also ioapic itself could one one pci device.
+> >
+> > Well, if we stop drivers first, then stop ioapic/dmar and *then* remove
+> > devices, it is possible to rebind a driver to a device after ioapic/dmar has
+> > been stopped, which I guess will not lead to anything nice?
+> 
+> Not sure how that could happen.
+> 
+> If it would really happen, we could set dev->match_driver to 0 in pci_stop_dev.
 
-But please please don't CC half the world again!
+Simply, run "modprobe -r driver && modprobe driver" in a loop and
+remove the PCI host bridge the given device is on in parallel to that.  Chances
+are, you'll see some nice breakage.
 
-johannes
+Also what happens if somebody uses the "remove" sysfs attribute on a device
+needed by ioapic/dmar?
+
+Rafael
 
