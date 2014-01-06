@@ -1,94 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756019AbaAFU4s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 15:56:48 -0500
-Received: from mga02.intel.com ([134.134.136.20]:18420 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755437AbaAFU4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 15:56:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,614,1384329600"; 
-   d="scan'208";a="434690625"
-Message-ID: <1389041805.30730.47.camel@dvhart-mobl4.amr.corp.intel.com>
-Subject: Re: [PATCH v5 4/4] futex: Avoid taking hb lock if nothing to wakeup
-From: Darren Hart <dvhart@linux.intel.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, Jeff Mahoney <jeffm@suse.com>,
-        Jason Low <jason.low2@hp.com>, Waiman Long <Waiman.Long@hp.com>,
-        Tom Vaden <tom.vaden@hp.com>, "Norton, Scott J" <scott.norton@hp.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>
-Date: Mon, 06 Jan 2014 12:56:45 -0800
-In-Reply-To: <1388696357.11119.10.camel@buesod1.americas.hpqcorp.net>
-References: <1388675120-8017-1-git-send-email-davidlohr@hp.com>
-	 <1388675120-8017-5-git-send-email-davidlohr@hp.com>
-	 <CA+55aFwNPgzORGyKaziqBGqY9Uubuuo0w=rGQvcHS-Ftz4HQ9g@mail.gmail.com>
-	 <1388696357.11119.10.camel@buesod1.americas.hpqcorp.net>
-Organization: Intel
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756138AbaAFU6i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 15:58:38 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:51111 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753979AbaAFU6f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 15:58:35 -0500
+Date: Tue, 7 Jan 2014 00:54:15 +0400
+From: Andrew Vagin <avagin@gmail.com>
+To: Florian Westphal <fw@strlen.de>
+Cc: Andrey Vagin <avagin@openvz.org>, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, vvs@openvz.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: Re: [PATCH] netfilter: nf_conntrack: release conntrack from rcu
+ callback
+Message-ID: <20140106205414.GA19788@gmail.com>
+References: <1389023672-14351-1-git-send-email-avagin@openvz.org>
+ <20140106170235.GJ28854@breakpoint.cc>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=koi8-r
+Content-Disposition: inline
+In-Reply-To: <20140106170235.GJ28854@breakpoint.cc>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-02 at 12:59 -0800, Davidlohr Bueso wrote:
-> On Thu, 2014-01-02 at 11:23 -0800, Linus Torvalds wrote:
-> > On Thu, Jan 2, 2014 at 7:05 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> > >
-> > > In futex_wake() there is clearly no point in taking the hb->lock if we know
-> > > beforehand that there are no tasks to be woken.
+On Mon, Jan 06, 2014 at 06:02:35PM +0100, Florian Westphal wrote:
+> Andrey Vagin <avagin@openvz.org> wrote:
+> > Lets look at destroy_conntrack:
 > > 
-> > Btw, I think we could optimize this a bit further for the wakeup case.
+> > hlist_nulls_del_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode);
+> > ...
+> > nf_conntrack_free(ct)
+> > 	kmem_cache_free(net->ct.nf_conntrack_cachep, ct);
 > > 
-> > wake_futex() does a get_task_struct(p)/put_task_struct(p) around its
-> > actual waking logic, and I don't think that's necessary. The task
-> > structures are RCU-delayed, and the task cannot go away until the
-> > "q->lock_ptr = NULL" afaik, so you could replace that atomic inc/dec
-> > with just a RCU read region.
-> 
-> I had originally explored making the whole plist thing more rcu aware
-> but never got to anything worth sharing. What you say does make a lot of
-> sense, however, I haven't been able to see any actual improvements. It
-> doesn't hurt however, so I'd have no problem adding such patch to the
-> lot.
-> 
+> > The hash is protected by rcu, so readers look up conntracks without
+> > locks.
+> > A conntrack is removed from the hash, but in this moment a few readers
+> > still can use the conntrack, so if we call kmem_cache_free now, all
+> > readers will read released object.
 > > 
-> > Maybe it's not a big deal ("wake_up_state()" ends up getting the task
-> > struct pi_lock anyway, so it's not like we can avoid toucing the task
-> > structure), but I'm getting the feeling that we're doing a lot of
-> > unnecessary work here.
+> > Bellow you can find more tricky race condition of three tasks.
+> > 
+> > task 1			task 2			task 3
+> > 			nf_conntrack_find_get
+> > 			 ____nf_conntrack_find
+> > destroy_conntrack
+> >  hlist_nulls_del_rcu
+> >  nf_conntrack_free
+> >  kmem_cache_free
+> > 						__nf_conntrack_alloc
+> > 						 kmem_cache_alloc
+> > 						 memset(&ct->tuplehash[IP_CT_DIR_MAX],
+> > 			 if (nf_ct_is_dying(ct))
+> > 
+> > In this case the task 2 will not understand, that it uses a wrong
+> > conntrack.
 > 
-> I passed this idea through my wakeup measuring program and didn't notice
-> hardly any difference, just noise, even for large amounts of futexes.
-> I believe that peterz's idea of lockless batch wakeups is the next step
-> worth looking into for futexes -- even though the spurious wakeup
-> problem can become a real pain.
+> Can you elaborate?
+> Yes, nf_ct_is_dying(ct) might be called for the wrong conntrack.
 > 
-> Thanks,
-> Davidlohr
+> But, in case we _think_ that its the right one we call
+> nf_ct_tuple_equal() to verify we indeed found the right one:
+
+Ok. task3 creates a new contrack and nf_ct_tuple_equal() returns true on
+it. Looks like it's possible. In this case we have two threads with one
+unitialized contrack. It's really bad, because the code supposes that
+conntrack can not be initialized in two threads concurrently. For
+example BUG can be triggered from nf_nat_setup_info():
+
+BUG_ON(nf_nat_initialized(ct, maniptype));
+
+
 > 
-> 
+>        h = ____nf_conntrack_find(net, zone, tuple, hash);
+>        if (h) { // might be released right now, but page won't go away (SLAB_BY_RCU)
 
-While I love to see significant performance improvements to the futex
-hot paths, I am wary of the sort of implicit improvements we've been
-exploring here. At the risk of being a wimp here, this code is
-incredibly complex already, so I would prefer anything along these lines
-have very strong empirical justification first - as Davidlohr's changes
-here have provided.
+I did not take SLAB_BY_RCU into account. Thank you. But it doesn't say,
+that we don't have the race condition here. It explains why we don't
+have really bad situations, when a completely wrong contract is
+used. We always use a "right" conntrack, but sometimes it is
+uninitialized and here is a problem.
 
-Does anyone see any reason to hold off getting them in at this point?
-I've made a couple points on comments and docs to the 4/5 patch, but
-otherwise, I think it's time to get them in and more broadly tested.
+The race window is tiny, because usually we check that conntrack is not
+initialized and only then we execute its initialization. We don't hold
+any locks in these moments.
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+Task2					| Task3
+if (!nf_nat_initialized(ct))		|
+					| if (!nf_nat_initialized(ct)
+ alloc_null_binding			|
+					|  alloc_null_binding
+  nf_nat_setup_info			|
+   ct->status |= IPS_SRC_NAT_DONE	|
+					|   nf_nat_setup_info
+					|    BUG_ON(nf_nat_initialized(ct));
 
+>                 ct = nf_ct_tuplehash_to_ctrack(h);
+>                 if (unlikely(nf_ct_is_dying(ct) ||
+>                              !atomic_inc_not_zero(&ct->ct_general.use)))
+> 			// which means we should hit this path (0 ref).
+>                         h = NULL;
+>                 else {
+> 			// otherwise, it cannot go away from under us, since
+> 			// we own a reference now.
+>                         if (unlikely(!nf_ct_tuple_equal(tuple, &h->tuple) ||
+>                                      nf_ct_zone(ct) != zone)) {
+> 			// if we get here, the entry got recycled on other cpu
+> 			// for a different tuple, we can bail out and drop
+> 			// the reference safely and re-try the lookup
+>                                 nf_ct_put(ct);
+>                                 goto begin;
+>                         }
+>                 }
 
+Thanks,
+Andrey
