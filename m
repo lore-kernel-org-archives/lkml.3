@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231AbaAFXBd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:01:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48545 "EHLO
+	id S1757215AbaAFXBb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:01:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48548 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756167AbaAFWmB (ORCPT
+	with ESMTP id S933202AbaAFWmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:42:01 -0500
+	Mon, 6 Jan 2014 17:42:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Catalin Marinas <catalin.marinas@arm.com>,
         Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.10 124/129] arm64: dts: Reserve the memory used for secondary CPU release address
-Date: Mon,  6 Jan 2014 14:39:13 -0800
-Message-Id: <20140106223903.144985951@linuxfoundation.org>
+Subject: [PATCH 3.10 125/129] arm64: Remove unused cpu_name ascii in arch/arm64/mm/proc.S
+Date: Mon,  6 Jan 2014 14:39:14 -0800
+Message-Id: <20140106223903.173133510@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -31,31 +31,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit df503ba7f653c590b475ab80bde788edf5af70d5 upstream.
+commit f3a1d7d53dccf51959aec16b574617cc6bfeca09 upstream.
 
-With the spin-table SMP booting method, secondary CPUs poll a location
-passed in the DT. The foundation-v8.dts file doesn't have this memory
-reserved and there is a risk of Linux using it before secondary CPUs are
-started.
+This string has been moved to arch/arm64/kernel/cputable.c.
 
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Cc: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/boot/dts/foundation-v8.dts |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm64/mm/proc.S |    4 ----
+ 1 file changed, 4 deletions(-)
 
---- a/arch/arm64/boot/dts/foundation-v8.dts
-+++ b/arch/arm64/boot/dts/foundation-v8.dts
-@@ -6,6 +6,8 @@
+--- a/arch/arm64/mm/proc.S
++++ b/arch/arm64/mm/proc.S
+@@ -95,10 +95,6 @@ ENTRY(cpu_do_switch_mm)
+ 	ret
+ ENDPROC(cpu_do_switch_mm)
  
- /dts-v1/;
+-cpu_name:
+-	.ascii	"AArch64 Processor"
+-	.align
+-
+ 	.section ".text.init", #alloc, #execinstr
  
-+/memreserve/ 0x80000000 0x00010000;
-+
- / {
- 	model = "Foundation-v8A";
- 	compatible = "arm,foundation-aarch64", "arm,vexpress";
+ /*
 
 
