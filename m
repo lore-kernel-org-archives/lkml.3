@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752507AbaAFEca (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 23:32:30 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:59206 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752113AbaAFEc3 (ORCPT
+	id S1752619AbaAFEcu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 23:32:50 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:59078 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752569AbaAFEck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 23:32:29 -0500
-X-AuditID: 9c93016f-b7b4eae000000985-fa-52ca31db319b
-Date: Mon, 6 Jan 2014 13:32:37 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Hansen <dave@sr71.net>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, penberg@kernel.org,
-        cl@linux-foundation.org
-Subject: Re: [PATCH 0/9] re-shrink 'struct page' when SLUB is on.
-Message-ID: <20140106043237.GE696@lge.com>
-References: <20140103180147.6566F7C1@viggo.jf.intel.com>
- <20140103141816.20ef2a24c8adffae040e53dc@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140103141816.20ef2a24c8adffae040e53dc@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 5 Jan 2014 23:32:40 -0500
+From: Guenter Roeck <linux@roeck-us.net>
+To: Karsten Keil <isdn@linux-pingi.de>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH v3] isdn: Drop big endian cpp checks from telespci and hfc_pci drivers
+Date: Sun,  5 Jan 2014 20:31:39 -0800
+Message-Id: <1388982699-11514-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 03, 2014 at 02:18:16PM -0800, Andrew Morton wrote:
-> On Fri, 03 Jan 2014 10:01:47 -0800 Dave Hansen <dave@sr71.net> wrote:
-> 
-> > This is a minor update from the last version.  The most notable
-> > thing is that I was able to demonstrate that maintaining the
-> > cmpxchg16 optimization has _some_ value.
-> > 
-> > Otherwise, the code changes are just a few minor cleanups.
-> > 
-> > ---
-> > 
-> > SLUB depends on a 16-byte cmpxchg for an optimization which
-> > allows it to not disable interrupts in its fast path.  This
-> > optimization has some small but measurable benefits:
-> > 
-> > 	http://lkml.kernel.org/r/52B345A3.6090700@sr71.net
-> 
-> So really the only significant benefit from the cmpxchg16 is with
-> cache-cold eight-byte kmalloc/kfree?  8% faster in this case?  But with
-> cache-hot kmalloc/kfree the benefit of cmpxchg16 is precisely zero.
+With arm:allmodconfig, building the Teles PCI driver fails with
 
-Hello,
+telespci.c:294:2: error: #error "not running on big endian machines now"
 
-I guess that cmpxchg16 is not used in this cache-hot kmalloc/kfree test,
-because kfree would be done in free fast-path. In this case,
-this_cpu_cmpxchg_double() would be called, so you cannot find any effect
-of cmpxchg16.
+Similar, building the driver for HFC PCI-Bus cards fails with
 
-Thanks.
+hfc_pci.c:1647:2: error: #error "not running on big endian machines now"
 
-> 
-> This is really weird and makes me suspect a measurement glitch.
-> 
-> Even if this 8% is real, it's unclear that it's worth all the
-> complexity the cmpxchg16 adds.
-> 
-> It would be really useful (hint :)) if we were to know exactly where
-> that 8% is coming from - perhaps it's something which is not directly
-> related to the cmpxchg16, and we can fix it separately.
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Remove the big endian cpp check from both drivers to fix the build errors.
+
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+v3: Instead of marking build as broken, remove cpp endianness checks.
+    Updated headline to match the changes.
+
+v2: Turns out CPU_LITTLE_ENDIAN is not defined for little-endian-only
+    architectures. Instead of messing with the overall Kconfig architecture,
+    mark build as broken for big endian ARM machines.
+    Also updated headline accordingly.
+
+ drivers/isdn/hisax/hfc_pci.c  |    4 ----
+ drivers/isdn/hisax/telespci.c |    4 ----
+ 2 files changed, 8 deletions(-)
+
+diff --git a/drivers/isdn/hisax/hfc_pci.c b/drivers/isdn/hisax/hfc_pci.c
+index 497bd02..4a48255 100644
+--- a/drivers/isdn/hisax/hfc_pci.c
++++ b/drivers/isdn/hisax/hfc_pci.c
+@@ -1643,10 +1643,6 @@ setup_hfcpci(struct IsdnCard *card)
+ 	int i;
+ 	struct pci_dev *tmp_hfcpci = NULL;
+ 
+-#ifdef __BIG_ENDIAN
+-#error "not running on big endian machines now"
+-#endif
+-
+ 	strcpy(tmp, hfcpci_revision);
+ 	printk(KERN_INFO "HiSax: HFC-PCI driver Rev. %s\n", HiSax_getrev(tmp));
+ 
+diff --git a/drivers/isdn/hisax/telespci.c b/drivers/isdn/hisax/telespci.c
+index f6ab63a..33eeb46 100644
+--- a/drivers/isdn/hisax/telespci.c
++++ b/drivers/isdn/hisax/telespci.c
+@@ -290,10 +290,6 @@ int setup_telespci(struct IsdnCard *card)
+ 	struct IsdnCardState *cs = card->cs;
+ 	char tmp[64];
+ 
+-#ifdef __BIG_ENDIAN
+-#error "not running on big endian machines now"
+-#endif
+-
+ 	strcpy(tmp, telespci_revision);
+ 	printk(KERN_INFO "HiSax: Teles/PCI driver Rev. %s\n", HiSax_getrev(tmp));
+ 	if (cs->typ != ISDN_CTYPE_TELESPCI)
+-- 
+1.7.9.7
+
