@@ -1,272 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563AbaAFQW4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 11:22:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27222 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754992AbaAFQWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 11:22:19 -0500
-Message-ID: <1389025337.3209.60.camel@bling.home>
-Subject: Re: [PATCH] pci: Add "try" reset interfaces
-From: Alex Williamson <alex.williamson@redhat.com>
-To: bhelgaas@google.com
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 06 Jan 2014 09:22:17 -0700
-In-Reply-To: <20131216221229.3393.6171.stgit@bling.home>
-References: <20131216221229.3393.6171.stgit@bling.home>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755326AbaAFQWA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 11:22:00 -0500
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:37169 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754557AbaAFQV6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 11:21:58 -0500
+Date: Mon, 6 Jan 2014 17:22:42 +0100
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Maxim Patlasov <mpatlasov@parallels.com>
+Cc: dev@parallels.com, xemul@parallels.com, fuse-devel@lists.sourceforge.net,
+        bfoster@redhat.com, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, linux-fsdevel@vger.kernel.org,
+        akpm@linux-foundation.org, fengguang.wu@intel.com, devel@openvz.org
+Subject: Re: [PATCH 05/11] fuse: Trust kernel i_mtime only -v2
+Message-ID: <20140106162242.GE16230@tucsk.piliscsaba.szeredi.hu>
+References: <20131010130718.10089.6736.stgit@dhcp-10-30-17-2.sw.ru>
+ <20131010131051.10089.62357.stgit@dhcp-10-30-17-2.sw.ru>
+ <20131112165251.GA10813@tucsk.piliscsaba.szeredi.hu>
+ <52BC4E35.8040503@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52BC4E35.8040503@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bjorn,
-
-As we're approaching the merge window, did you have any thoughts on this
-patch?  Thanks,
-
-Alex
-
-On Mon, 2013-12-16 at 15:14 -0700, Alex Williamson wrote:
-> When doing a function/slot/bus reset PCI grabs the device_lock for
-> each device to block things like suspend and driver probes, which is
-> all well and good, but call paths exist where this lock may already be
-> held.  This creates an opportunity for deadlock.  For instance, vfio
-> allows userspace to issue resets so long as it owns the device(s).
-> If a driver unbind .remove callback races with userspace issuing a
-> reset, we have a deadlock as userspace gets stuck waiting on
-> device_lock while another thread has device_lock and waits for .remove
-> to complete.  To resolve this, we can make a version of the reset
-> interfaces which use trylock.  With this, we can safely attempt a
-> reset and return error to userspace if there is contention.
+On Thu, Dec 26, 2013 at 07:41:41PM +0400, Maxim Patlasov wrote:
+> >>+
+> >>+	if (!err)
+> >>+		clear_bit(FUSE_I_MTIME_DIRTY, &fi->state);
+> >Doing the test and the clear separately opens a huge race window when i_mtime
+> >modifications are bound to get lost.
 > 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> ---
->  drivers/pci/pci.c   |  155 +++++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/pci.h |    3 +
->  2 files changed, 158 insertions(+)
-> 
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index 33120d1..de6416f 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -3445,6 +3445,18 @@ static void pci_dev_lock(struct pci_dev *dev)
->  	device_lock(&dev->dev);
->  }
->  
-> +/* Return 1 on successful lock, 0 on contention */
-> +static int pci_dev_trylock(struct pci_dev *dev)
-> +{
-> +	if (pci_cfg_access_trylock(dev)) {
-> +		if (device_trylock(&dev->dev))
-> +			return 1;
-> +		pci_cfg_access_unlock(dev);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  static void pci_dev_unlock(struct pci_dev *dev)
->  {
->  	device_unlock(&dev->dev);
-> @@ -3588,6 +3600,34 @@ int pci_reset_function(struct pci_dev *dev)
->  }
->  EXPORT_SYMBOL_GPL(pci_reset_function);
->  
-> +/**
-> + * pci_try_reset_function - quiesce and reset a PCI device function
-> + * @dev: PCI device to reset
-> + *
-> + * Same as above, except return -EAGAIN if unable to lock device.
-> + */
-> +int pci_try_reset_function(struct pci_dev *dev)
-> +{
-> +	int rc;
-> +
-> +	rc = pci_dev_reset(dev, 1);
-> +	if (rc)
-> +		return rc;
-> +
-> +	pci_dev_save_and_disable(dev);
-> +
-> +	if (pci_dev_trylock(dev)) {
-> +		rc = __pci_dev_reset(dev, 0);
-> +		pci_dev_unlock(dev);
-> +	} else
-> +		rc = -EAGAIN;
-> +
-> +	pci_dev_restore(dev);
-> +
-> +	return rc;
-> +}
-> +EXPORT_SYMBOL_GPL(pci_try_reset_function);
-> +
->  /* Lock devices from the top of the tree down */
->  static void pci_bus_lock(struct pci_bus *bus)
->  {
-> @@ -3612,6 +3652,32 @@ static void pci_bus_unlock(struct pci_bus *bus)
->  	}
->  }
->  
-> +/* Return 1 on successful lock, 0 on contention */
-> +static int pci_bus_trylock(struct pci_bus *bus)
-> +{
-> +	struct pci_dev *dev;
-> +
-> +	list_for_each_entry(dev, &bus->devices, bus_list) {
-> +		if (!pci_dev_trylock(dev))
-> +			goto unlock;
-> +		if (dev->subordinate) {
-> +			if (!pci_bus_trylock(dev->subordinate)) {
-> +				pci_dev_unlock(dev);
-> +				goto unlock;
-> +			}
-> +		}
-> +	}
-> +	return 1;
-> +
-> +unlock:
-> +	list_for_each_entry_continue_reverse(dev, &bus->devices, bus_list) {
-> +		if (dev->subordinate)
-> +			pci_bus_unlock(dev->subordinate);
-> +		pci_dev_unlock(dev);
-> +	}
-> +	return 0;
-> +}
-> +
->  /* Lock devices from the top of the tree down */
->  static void pci_slot_lock(struct pci_slot *slot)
->  {
-> @@ -3640,6 +3706,37 @@ static void pci_slot_unlock(struct pci_slot *slot)
->  	}
->  }
->  
-> +/* Return 1 on successful lock, 0 on contention */
-> +static int pci_slot_trylock(struct pci_slot *slot)
-> +{
-> +	struct pci_dev *dev;
-> +
-> +	list_for_each_entry(dev, &slot->bus->devices, bus_list) {
-> +		if (!dev->slot || dev->slot != slot)
-> +			continue;
-> +		if (!pci_dev_trylock(dev))
-> +			goto unlock;
-> +		if (dev->subordinate) {
-> +			if (!pci_bus_trylock(dev->subordinate)) {
-> +				pci_dev_unlock(dev);
-> +				goto unlock;
-> +			}
-> +		}
-> +	}
-> +	return 1;
-> +
-> +unlock:
-> +	list_for_each_entry_continue_reverse(dev,
-> +					     &slot->bus->devices, bus_list) {
-> +		if (!dev->slot || dev->slot != slot)
-> +			continue;
-> +		if (dev->subordinate)
-> +			pci_bus_unlock(dev->subordinate);
-> +		pci_dev_unlock(dev);
-> +	}
-> +	return 0;
-> +}
-> +
->  /* Save and disable devices from the top of the tree down */
->  static void pci_bus_save_and_disable(struct pci_bus *bus)
->  {
-> @@ -3763,6 +3860,35 @@ int pci_reset_slot(struct pci_slot *slot)
->  }
->  EXPORT_SYMBOL_GPL(pci_reset_slot);
->  
-> +/**
-> + * pci_try_reset_slot - Try to reset a PCI slot
-> + * @slot: PCI slot to reset
-> + *
-> + * Same as above except return -EAGAIN if the slot cannot be locked
-> + */
-> +int pci_try_reset_slot(struct pci_slot *slot)
-> +{
-> +	int rc;
-> +
-> +	rc = pci_slot_reset(slot, 1);
-> +	if (rc)
-> +		return rc;
-> +
-> +	pci_slot_save_and_disable(slot);
-> +
-> +	if (pci_slot_trylock(slot)) {
-> +		might_sleep();
-> +		rc = pci_reset_hotplug_slot(slot->hotplug, 0);
-> +		pci_slot_unlock(slot);
-> +	} else
-> +		rc = -EAGAIN;
-> +
-> +	pci_slot_restore(slot);
-> +
-> +	return rc;
-> +}
-> +EXPORT_SYMBOL_GPL(pci_try_reset_slot);
-> +
->  static int pci_bus_reset(struct pci_bus *bus, int probe)
->  {
->  	if (!bus->self)
-> @@ -3822,6 +3948,35 @@ int pci_reset_bus(struct pci_bus *bus)
->  EXPORT_SYMBOL_GPL(pci_reset_bus);
->  
->  /**
-> + * pci_try_reset_bus - Try to reset a PCI bus
-> + * @bus: top level PCI bus to reset
-> + *
-> + * Same as above except return -EAGAIN if the bus cannot be locked
-> + */
-> +int pci_try_reset_bus(struct pci_bus *bus)
-> +{
-> +	int rc;
-> +
-> +	rc = pci_bus_reset(bus, 1);
-> +	if (rc)
-> +		return rc;
-> +
-> +	pci_bus_save_and_disable(bus);
-> +
-> +	if (pci_bus_trylock(bus)) {
-> +		might_sleep();
-> +		pci_reset_bridge_secondary_bus(bus->self);
-> +		pci_bus_unlock(bus);
-> +	} else
-> +		rc = -EAGAIN;
-> +
-> +	pci_bus_restore(bus);
-> +
-> +	return rc;
-> +}
-> +EXPORT_SYMBOL_GPL(pci_try_reset_bus);
-> +
-> +/**
->   * pcix_get_max_mmrbc - get PCI-X maximum designed memory read byte count
->   * @dev: PCI device to query
->   *
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 1084a15..34629df 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -951,10 +951,13 @@ int pcie_get_minimum_link(struct pci_dev *dev, enum pci_bus_speed *speed,
->  int __pci_reset_function(struct pci_dev *dev);
->  int __pci_reset_function_locked(struct pci_dev *dev);
->  int pci_reset_function(struct pci_dev *dev);
-> +int pci_try_reset_function(struct pci_dev *dev);
->  int pci_probe_reset_slot(struct pci_slot *slot);
->  int pci_reset_slot(struct pci_slot *slot);
-> +int pci_try_reset_slot(struct pci_slot *slot);
->  int pci_probe_reset_bus(struct pci_bus *bus);
->  int pci_reset_bus(struct pci_bus *bus);
-> +int pci_try_reset_bus(struct pci_bus *bus);
->  void pci_reset_bridge_secondary_bus(struct pci_dev *dev);
->  void pci_update_resource(struct pci_dev *dev, int resno);
->  int __must_check pci_assign_resource(struct pci_dev *dev, int i);
-> 
+> No. Because the whole operation is protected by i_mutex (see
+> fuse_fsync_common()).
 
+fuse_release_common() doesn't have i_mutex.  It's probably safe to acquire it,
+but is that really needed?
 
-
+Thanks,
+Miklos
