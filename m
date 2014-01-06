@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758137AbaAGACG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 19:02:06 -0500
+	id S1758121AbaAGACF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:02:05 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:47530 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932195AbaAFWiu (ORCPT
+	with ESMTP id S932131AbaAFWiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:50 -0500
+	Mon, 6 Jan 2014 17:38:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.12 053/144] ext4: fix del_timer() misuse for ->s_err_report
-Date: Mon,  6 Jan 2014 14:36:54 -0800
-Message-Id: <20140106223746.862339396@linuxfoundation.org>
+        Joseph Dolinak <kanilo2@yahoo.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Jakob Bornecrantz <jakob@vmware.com>
+Subject: [PATCH 3.12 063/144] drm/ttm: Fix accesses through vmas with only partial coverage
+Date: Mon,  6 Jan 2014 14:37:04 -0800
+Message-Id: <20140106223747.155191420@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -28,45 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit 9105bb149bbbc555d2e11ba5166dfe7a24eae09e upstream.
+commit d386735588c3e22129c2bc6eb64fc1d37a8f805c upstream.
 
-That thing should be del_timer_sync(); consider what happens
-if ext4_put_super() call of del_timer() happens to come just as it's
-getting run on another CPU.  Since that timer reschedules itself
-to run next day, you are pretty much guaranteed that you'll end up
-with kfree'd scheduled timer, with usual fun consequences.  AFAICS,
-that's -stable fodder all way back to 2010... [the second del_timer_sync()
-is almost certainly not needed, but it doesn't hurt either]
+VMAs covering a bo but that didn't start at the same address space offset as
+the bo they were mapping were incorrectly generating SEGFAULT errors in
+the fault handler.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reported-by: Joseph Dolinak <kanilo2@yahoo.com>
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/super.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/ttm/ttm_bo_vm.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -773,7 +773,7 @@ static void ext4_put_super(struct super_
+--- a/drivers/gpu/drm/ttm/ttm_bo_vm.c
++++ b/drivers/gpu/drm/ttm/ttm_bo_vm.c
+@@ -116,9 +116,9 @@ static int ttm_bo_vm_fault(struct vm_are
  	}
  
- 	ext4_es_unregister_shrinker(sbi);
--	del_timer(&sbi->s_err_report);
-+	del_timer_sync(&sbi->s_err_report);
- 	ext4_release_system_zone(sb);
- 	ext4_mb_release(sb);
- 	ext4_ext_release(sb);
-@@ -4151,7 +4151,7 @@ failed_mount_wq:
- 	}
- failed_mount3:
- 	ext4_es_unregister_shrinker(sbi);
--	del_timer(&sbi->s_err_report);
-+	del_timer_sync(&sbi->s_err_report);
- 	if (sbi->s_flex_groups)
- 		ext4_kvfree(sbi->s_flex_groups);
- 	percpu_counter_destroy(&sbi->s_freeclusters_counter);
+ 	page_offset = ((address - vma->vm_start) >> PAGE_SHIFT) +
+-	    drm_vma_node_start(&bo->vma_node) - vma->vm_pgoff;
+-	page_last = vma_pages(vma) +
+-	    drm_vma_node_start(&bo->vma_node) - vma->vm_pgoff;
++		vma->vm_pgoff - drm_vma_node_start(&bo->vma_node);
++	page_last = vma_pages(vma) + vma->vm_pgoff -
++		drm_vma_node_start(&bo->vma_node);
+ 
+ 	if (unlikely(page_offset >= bo->num_pages)) {
+ 		retval = VM_FAULT_SIGBUS;
 
 
