@@ -1,93 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806AbaAFOyj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 09:54:39 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41268 "EHLO arroyo.ext.ti.com"
+	id S1754869AbaAFOz5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 09:55:57 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:44212 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754588AbaAFOyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 09:54:37 -0500
-Message-ID: <52CAC376.9090904@ti.com>
-Date: Mon, 6 Jan 2014 10:53:42 -0400
+	id S1754093AbaAFOzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 09:55:55 -0500
+Message-ID: <52CAC3AF.9020401@ti.com>
+Date: Mon, 6 Jan 2014 10:54:39 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Zhang Rui <rui.zhang@intel.com>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>, <linux-pm@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <lm-sensors@lm-sensors.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2 0/7] DRA7: DT thermal support
-References: <1389011811-13004-1-git-send-email-eduardo.valentin@ti.com> <1389019601.5853.17.camel@rzhang1-mobl4>
-In-Reply-To: <1389019601.5853.17.camel@rzhang1-mobl4>
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Matthew Longnecker <mlongnecker@nvidia.com>, Wei Ni <wni@nvidia.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux@roeck-us.net" <linux@roeck-us.net>,
+        "rui.zhang@intel.com" <rui.zhang@intel.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "durgadoss.r@intel.com" <durgadoss.r@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv9 02/20] thermal: introduce device tree parser
+References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com> <1384285582-16933-3-git-send-email-eduardo.valentin@ti.com> <52C4D612.2090808@nvidia.com> <52C5A6CE.5060904@nvidia.com> <20140106135145.GD21906@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20140106135145.GD21906@e106331-lin.cambridge.arm.com>
 X-Enigmail-Version: 1.6
 Content-Type: multipart/signed; micalg=pgp-sha256;
 	protocol="application/pgp-signature";
-	boundary="w6hnwxrXBm0kRrQdU5k1tdEDS4bAT4JMd"
+	boundary="HemHAM6TDENViXwlV0JfG3QCrj3ptvQ4w"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---w6hnwxrXBm0kRrQdU5k1tdEDS4bAT4JMd
-Content-Type: text/plain; charset=UTF-8
+--HemHAM6TDENViXwlV0JfG3QCrj3ptvQ4w
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-On 06-01-2014 10:46, Zhang Rui wrote:
-> On Mon, 2014-01-06 at 08:36 -0400, Eduardo Valentin wrote:
->> Hello all,
+On 06-01-2014 09:51, Mark Rutland wrote:
+> On Thu, Jan 02, 2014 at 05:50:06PM +0000, Matthew Longnecker wrote:
 >>
->> Now that the basic thermal DT support is merged into Rui's tree,
->> I am resending this series, which introduces the DT node entries
->> for DRA7 thermal limits representation.
+>>> I think the platform driver may set governor for the thermal zone,
+>>> so how about to add a property named as "governor",
+>>> and parse it to tzp->governor_name,
+>>> something like:
+>>>                  ret =3D of_property_read_string(child, "governor", &=
+str);
+>>>                  if (ret =3D=3D 0)
+>>>                          if (strlen(str) < THERMAL_NAME_LENGTH)
+>>>                                  strcpy(tzp->governor_name, str);
+>>>
+>>> Thanks.
+>>> Wei.
 >>
->> The series adds two thermal zones, to represent IVA and DSPEVE,
->> respectively. It also adds the support to tmp102 and a corresponding
->> pcb thermal zone.
+>> DT is supposed to describe the hardware, right? The governor isn't=20
+>> hardware -- it's a software control policy. On the other hand, that=20
+>> control policy must be tuned according to the behaviors of the platfor=
+m=20
+>> hardware otherwise the system will be unstable.
 >>
->> There are only cosmetic changes from v1. A couple of spaces and tabula=
-tions
->> have been fixed, and minor changes in sentences present in commit log.=
-
->> One difference from V1 is the fact that now bandgap is introduced unde=
-r
->> OCP, which is also a minor diff.
->>
->> This patch series has been runtime tested on DRA7-evm.
->>
->> All best
->>
->> Eduardo Valentin (7):
->>   arm: dts: add dra7 DSPEVE thermal data
->>   arm: dts: add dra7 IVA thermal data
->>   arm: dts: dra7: add bandgap entry
->>   arm: dts: add cooling properties on dra7 cpu node
->>   arm: dts: dra7: add thermal data
->>   arm: dts: add tmp102 i2c sensor node on dra7-evm
->>   arm: dts: add thermal zones info on tmp102 for DRA7-EVM
->>
->>  arch/arm/boot/dts/dra7-dspeve-thermal.dtsi | 28 +++++++++++++++++++++=
-+++++++
->>  arch/arm/boot/dts/dra7-evm.dts             | 22 +++++++++++++++++++++=
-+
->>  arch/arm/boot/dts/dra7-iva-thermal.dtsi    | 28 +++++++++++++++++++++=
-+++++++
->>  arch/arm/boot/dts/dra7.dtsi                | 26 +++++++++++++++++++++=
-+++++
+>> Is it appropriate to be naming the governor in DT? If so, is it equall=
+y=20
+>> appropriate to describe any governor-specific parameters in DT (even=20
+>> though they are pure software constructs)?
 >=20
-> I'm okay with this patch set. But as long as this patch set does not
-> change any code under drivers/thermal/, I prefer these patches to go to=
+> The dt should be relatively static -- if the hardware doesn't change th=
+e
+> dt shouldn't have to.
+>=20
+> The governers are not static. We can introduce new ones and throw away
+> old ones at any time. Tuning parameters can also change at any time.
+>=20
+> I'd prefer to not have governer details described in the dt, and the
+> choice of governer and configuration of its tuning parameters should be=
 
-> your thermal-soc tree first.
+> made at runtime somehow.
 
-No problem at all. I will be queuing them.
+Agreed.
 
 >=20
-> thanks,
-> rui
->>  4 files changed, 104 insertions(+)
->>  create mode 100644 arch/arm/boot/dts/dra7-dspeve-thermal.dtsi
->>  create mode 100644 arch/arm/boot/dts/dra7-iva-thermal.dtsi
->>
->=20
->=20
+> Thanks,
+> Mark.
 >=20
 >=20
 
@@ -98,7 +95,7 @@ You have got to be excited about what you are doing. (L. Lamport)
 Eduardo Valentin
 
 
---w6hnwxrXBm0kRrQdU5k1tdEDS4bAT4JMd
+--HemHAM6TDENViXwlV0JfG3QCrj3ptvQ4w
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: OpenPGP digital signature
 Content-Disposition: attachment; filename="signature.asc"
@@ -107,9 +104,9 @@ Content-Disposition: attachment; filename="signature.asc"
 Version: GnuPG v1.4.12 (GNU/Linux)
 Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iF4EAREIAAYFAlLKw3YACgkQCXcVR3XQvP2/uAD/bZAlE/r1chLoSmSNEJwIKarW
-hrXPyIVW/uSA8EzXbpQA/Ahtvyl+C33hCCSRuCntJXbU9LXHluIoieQOAJv0Ty45
-=TlPi
+iF4EAREIAAYFAlLKw68ACgkQCXcVR3XQvP0v5AD/U+wQ8Mvydjvc9EysY14REF44
+KKKk8WVNU19Isgnw22oA/j7sBLySG7jp7kbNwn1NF32olLyIT+0GD6Jicf3Igv31
+=L2Gl
 -----END PGP SIGNATURE-----
 
---w6hnwxrXBm0kRrQdU5k1tdEDS4bAT4JMd--
+--HemHAM6TDENViXwlV0JfG3QCrj3ptvQ4w--
