@@ -1,99 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752520AbaAFBCT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 20:02:19 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:56816 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752411AbaAFBCR (ORCPT
+	id S1752385AbaAFBGF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 20:06:05 -0500
+Received: from smtprelay0082.hostedemail.com ([216.40.44.82]:52400 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751318AbaAFBGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 20:02:17 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 1/5] cpufreq: Introduce cpufreq_notify_post_transition()
-Date: Mon, 06 Jan 2014 02:16:03 +0100
-Message-ID: <3190393.X74mkhqobq@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <a6668c7fa63d67ca33b9e59d0189cd99a2ddcd05.1385962178.git.viresh.kumar@linaro.org>
-References: <a6668c7fa63d67ca33b9e59d0189cd99a2ddcd05.1385962178.git.viresh.kumar@linaro.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Sun, 5 Jan 2014 20:06:03 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1544:1593:1594:1605:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3866:3867:3868:3872:4321:4605:5007:6119:7652:7903:10004:10848:11026:11232:11658:11914:12043:12438:12517:12519:12555:12740:13019,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: beds31_347e4e086503d
+X-Filterd-Recvd-Size: 4909
+Message-ID: <1388970358.5808.37.camel@joe-AO722>
+Subject: Re: [PATCH] Power: ab8500: Fixed coding style issues
+From: Joe Perches <joe@perches.com>
+To: Jesper Falk <jesperfalk94@gmail.com>
+Cc: anton@enomsg.org, dwmw2@infradead.org, linux-kernel@vger.kernel.org
+Date: Sun, 05 Jan 2014 17:05:58 -0800
+In-Reply-To: <1388969418-30376-1-git-send-email-jesperfalk94@gmail.com>
+References: <1388969418-30376-1-git-send-email-jesperfalk94@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, December 02, 2013 11:04:12 AM Viresh Kumar wrote:
-> This introduces another routine cpufreq_notify_post_transition() which can be
-> used to send POSTCHANGE notification for new freq with or without both
-> {PRE|POST}CHANGE notifications for last freq. This is useful at multiple places,
-> specially for sending transition failure notifications.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+On Mon, 2014-01-06 at 01:50 +0100, Jesper Falk wrote:
+> Fixed coding style.
 
-I've queued this series up for 3.14, but I folded patches [3-5/5] into [2/5]
-(and needed to rebase the unicore2 changes).
+It'd  be nice to change some of these arrays to const too like:
 
-Every time you want to copy-paste the changelog from one patch to another
-(please don't do that any more) you should rather think about sending a
-combination of the two as one patch.
+diff --git a/include/linux/mfd/abx500.h b/include/linux/mfd/abx500.h
+index 3301b20..9fa8c0c 100644
+--- a/include/linux/mfd/abx500.h
++++ b/include/linux/mfd/abx500.h
+@@ -287,8 +287,8 @@ struct abx500_bm_data {
+ 	int gnd_lift_resistance;
+ 	int n_chg_out_curr;
+ 	int n_chg_in_curr;
+-	int *chg_output_curr;
+-	int *chg_input_curr;
++	const int *chg_output_curr;
++	const int *chg_input_curr;
+ 	const struct abx500_maxim_parameters *maxi;
+ 	const struct abx500_bm_capacity_levels *cap_levels;
+ 	struct abx500_battery_type *bat_type;
 
-Thanks!
 
-> ---
-> 
-> V1->V2:
-> - Not required to push it for 3.13 anymore and can go in 3.14.
-> - Rebased over following patchset as there were conflicts in unicore2 driver if
->   following patchset is applied first (which should be the case):
->   https://lkml.org/lkml/2013/10/30/553 (create cpufreq_generic_get() routine)
-> 
->  drivers/cpufreq/cpufreq.c | 14 ++++++++++++++
->  include/linux/cpufreq.h   |  2 ++
->  2 files changed, 16 insertions(+)
-> 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 5e27def..3b877d4 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -338,6 +338,20 @@ void cpufreq_notify_transition(struct cpufreq_policy *policy,
->  }
->  EXPORT_SYMBOL_GPL(cpufreq_notify_transition);
+
+> diff --git a/drivers/power/ab8500_bmdata.c b/drivers/power/ab8500_bmdata.c
+[]
+> @@ -448,19 +448,19 @@ static const struct abx500_bm_charger_parameters chg = {
+>   * AB8500 values
+>   */
+>  static int ab8500_charge_output_curr_map[] = {
+
+static const int
+
+> -        100,    200,    300,    400,    500,    600,    700,    800,
+> -        900,    1000,   1100,   1200,   1300,   1400,   1500,   1500,
+> +	100,    200,    300,    400,    500,    600,    700,    800,
+> +	900,    1000,   1100,   1200,   1300,   1400,   1500,   1500,
+>  };
 >  
-> +/* Do post notifications when there are chances that transition has failed */
-> +void cpufreq_notify_post_transition(struct cpufreq_policy *policy,
-> +		struct cpufreq_freqs *freqs, int transition_failed)
-> +{
-> +	cpufreq_notify_transition(policy, freqs, CPUFREQ_POSTCHANGE);
-> +	if (!transition_failed)
-> +		return;
-> +
-> +	swap(freqs->old, freqs->new);
-> +	cpufreq_notify_transition(policy, freqs, CPUFREQ_PRECHANGE);
-> +	cpufreq_notify_transition(policy, freqs, CPUFREQ_POSTCHANGE);
-> +}
-> +EXPORT_SYMBOL_GPL(cpufreq_notify_post_transition);
-> +
->  
->  /*********************************************************************
->   *                          SYSFS INTERFACE                          *
-> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-> index 276e646..b26bfab 100644
-> --- a/include/linux/cpufreq.h
-> +++ b/include/linux/cpufreq.h
-> @@ -316,6 +316,8 @@ int cpufreq_unregister_notifier(struct notifier_block *nb, unsigned int list);
->  
->  void cpufreq_notify_transition(struct cpufreq_policy *policy,
->  		struct cpufreq_freqs *freqs, unsigned int state);
-> +void cpufreq_notify_post_transition(struct cpufreq_policy *policy,
-> +		struct cpufreq_freqs *freqs, int transition_failed);
->  
->  #else /* CONFIG_CPU_FREQ */
->  static inline int cpufreq_register_notifier(struct notifier_block *nb,
-> 
+>  static int ab8540_charge_output_curr_map[] = {
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+here too
+
+> -        0,      0,      0,      75,     100,    125,    150,    175,
+> -        200,    225,    250,    275,    300,    325,    350,    375,
+> -        400,    425,    450,    475,    500,    525,    550,    575,
+> -        600,    625,    650,    675,    700,    725,    750,    775,
+> -        800,    825,    850,    875,    900,    925,    950,    975,
+> -        1000,   1025,   1050,   1075,   1100,   1125,   1150,   1175,
+> -        1200,   1225,   1250,   1275,   1300,   1325,   1350,   1375,
+> -        1400,   1425,   1450,   1500,   1600,   1700,   1900,   2000,
+> +	0,      0,      0,      75,     100,    125,    150,    175,
+> +	200,    225,    250,    275,    300,    325,    350,    375,
+> +	400,    425,    450,    475,    500,    525,    550,    575,
+> +	600,    625,    650,    675,    700,    725,    750,    775,
+> +	800,    825,    850,    875,    900,    925,    950,    975,
+> +	1000,   1025,   1050,   1075,   1100,   1125,   1150,   1175,
+> +	1200,   1225,   1250,   1275,   1300,   1325,   1350,   1375,
+> +	1400,   1425,   1450,   1500,   1600,   1700,   1900,   2000,
+>  };
+>  
+>  /*
+> @@ -468,19 +468,19 @@ static int ab8540_charge_output_curr_map[] = {
+>   * AB8500 values
+>   */
+>  static int ab8500_charge_input_curr_map[] = {
+> -        50,     98,     193,    290,    380,    450,    500,    600,
+> -        700,    800,    900,    1000,   1100,   1300,   1400,   1500,
+> +	50,     98,     193,    290,    380,    450,    500,    600,
+> +	700,    800,    900,    1000,   1100,   1300,   1400,   1500,
+>  };
+
+here 3
+ 
+>  static int ab8540_charge_input_curr_map[] = {
+> -        25,     50,     75,     100,    125,    150,    175,    200,
+> -        225,    250,    275,    300,    325,    350,    375,    400,
+> -        425,    450,    475,    500,    525,    550,    575,    600,
+> -        625,    650,    675,    700,    725,    750,    775,    800,
+> -        825,    850,    875,    900,    925,    950,    975,    1000,
+> -        1025,   1050,   1075,   1100,   1125,   1150,   1175,   1200,
+> -        1225,   1250,   1275,   1300,   1325,   1350,   1375,   1400,
+> -        1425,   1450,   1475,   1500,   1500,   1500,   1500,   1500,
+> +	25,     50,     75,     100,    125,    150,    175,    200,
+> +	225,    250,    275,    300,    325,    350,    375,    400,
+> +	425,    450,    475,    500,    525,    550,    575,    600,
+> +	625,    650,    675,    700,    725,    750,    775,    800,
+> +	825,    850,    875,    900,    925,    950,    975,    1000,
+> +	1025,   1050,   1075,   1100,   1125,   1150,   1175,   1200,
+> +	1225,   1250,   1275,   1300,   1325,   1350,   1375,   1400,
+> +	1425,   1450,   1475,   1500,   1500,   1500,   1500,   1500,
+>  };
+
+and here.
+
+
