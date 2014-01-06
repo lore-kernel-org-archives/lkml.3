@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932930AbaAFX4h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:56:37 -0500
-Received: from mail-bn1blp0181.outbound.protection.outlook.com ([207.46.163.181]:31374
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932350AbaAFX4e convert rfc822-to-8bit (ORCPT
+	id S932884AbaAFX40 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:56:26 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:57668 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932347AbaAFWjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 18:56:34 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>
-Subject: RE: [PATCH] ASoC: simple-card: fix the DAPM routes map parsing
-Thread-Topic: [PATCH] ASoC: simple-card: fix the DAPM routes map parsing
-Thread-Index: AQHPCqnhkhktsB+otUONkNvyeu4gq5p31QWAgACK8T0=
-Date: Mon, 6 Jan 2014 23:56:31 +0000
-Message-ID: <e12f227126e64f98bec92d0884cb3d56@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1388986906-32139-1-git-send-email-Li.Xiubo@freescale.com>,<20140106153715.GZ31886@sirena.org.uk>
-In-Reply-To: <20140106153715.GZ31886@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [211.155.113.253]
-x-forefront-prvs: 0083A7F08A
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(164054003)(51704005)(189002)(199002)(85852003)(83072002)(56816005)(81542001)(90146001)(74662001)(31966008)(76786001)(76796001)(76576001)(81342001)(69226001)(47446002)(74502001)(54316002)(63696002)(65816001)(66066001)(80022001)(53806001)(54356001)(46102001)(51856001)(76482001)(59766001)(77982001)(79102001)(47976001)(50986001)(56776001)(47736001)(4396001)(49866001)(74706001)(83322001)(558084003)(33646001)(74876001)(85306002)(74366001)(74316001)(81686001)(2656002)(81816001)(80976001)(87936001)(87266001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB505;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:211.155.113.253;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 6 Jan 2014 17:39:14 -0500
+Date: Mon, 6 Jan 2014 22:39:06 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Krzysztof =?utf-8?Q?Ha=C5=82asa?= <khalasa@piap.pl>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Regression (ARM) arch/arm/mm/init.c doesn't build without
+	CONFIG_ARM_PATCH_PHYS_VIRT.
+Message-ID: <20140106223906.GH27432@n2100.arm.linux.org.uk>
+References: <m38uv1uuzr.fsf@t19.piap.pl> <m3ha9gx63v.fsf@t19.piap.pl>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <m3ha9gx63v.fsf@t19.piap.pl>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> > The simple-card's DAPM route maping is optional. For example, the spdif has
-> > no need of this.
+On Mon, Jan 06, 2014 at 08:28:20PM +0100, Krzysztof Hałasa wrote:
+> Russell, Santosh,
 > 
-> This doesn't seem to apply against current code, can you please check
-> and resend?
->
-Yes, I will.
+> the unneeded commit causing regression is still in place. Please try to
+> compile an ARM kernel without CONFIG_ARM_PATCH_PHYS_VIRT and with
+> CONFIG_ZONE_DMA and see for yourself, if you don't believe me.
+> 
+> Please be aware that this commit fixes nothing, its only function is
+> causing the regression - so we don't lose anything by reverting it.
+> 
+> If the attached wasn't clear, what the defective commit presently does
+> is changing a perfectly valid code into a code referencing a variable
+> which (without CONFIG_ARM_PATCH_PHYS_VIRT set) doesn't at all exist.
+> 
+> With CONFIG_ARM_PATCH_PHYS_VIRT set, this commit does precisely nothing.
 
-Thanks,
+Right, so, with Assabet, which has CONFIG_DMA_ZONE=y and
+CONFIG_ARM_PATCH_PHYS_VIRT=y:
 
---
-Best Regards,
-Xiubo
+$ make O=../build/assabet arch/arm/mm/init.i
+
+gives:
+  arm_dma_limit = __pv_phys_offset + arm_dma_zone_size - 1;
+
+with or without Santosh's patch.  So, with V2P patching in place, there's
+absolutely no functional difference.
+
+With CONFIG_ARM_PATCH_PHYS_VIRT=n, before Santosh's patch:
+
+  arm_dma_limit = (0xc0000000UL) + arm_dma_zone_size - 1;
+
+After:
+
+  arm_dma_limit = __pv_phys_offset + arm_dma_zone_size - 1;
+
+and this breaks the build because there is no __pv_phys_offset symbol.
+
+Now, the case which matters for Santosh is the first case - the one
+where CONFIG_ARM_PATCH_PHYS_VIRT=y.  We can clearly see that after
+preprocessing, the results are 100% identical.
+
+Therefore, I find myself agreeing with Krzysztof that the commit is
+bad, has no functional change for the case it was proposed to solve,
+and needs to be reverted.
+
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
