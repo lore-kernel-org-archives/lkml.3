@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757772AbaAFXpG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:45:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47873 "EHLO
+	id S1757782AbaAFXpm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:45:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47869 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932567AbaAFWjt (ORCPT
+	with ESMTP id S932566AbaAFWjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:39:49 -0500
+	Mon, 6 Jan 2014 17:39:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Robin H. Johnson" <robbat2@gentoo.org>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.12 099/144] libata: disable a disk via libata.force params
-Date: Mon,  6 Jan 2014 14:37:40 -0800
-Message-Id: <20140106223748.196153487@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 3.12 125/144] GFS2: dont hold s_umount over blkdev_put
+Date: Mon,  6 Jan 2014 14:38:06 -0800
+Message-Id: <20140106223748.934405277@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -28,58 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Robin H. Johnson" <robbat2@gentoo.org>
+From: Steven Whitehouse <swhiteho@redhat.com>
 
-commit b8bd6dc36186fe99afa7b73e9e2d9a98ad5c4865 upstream.
+commit dfe5b9ad83a63180f358b27d1018649a27b394a9 upstream.
 
-A user on StackExchange had a failing SSD that's soldered directly
-onto the motherboard of his system. The BIOS does not give any option
-to disable it at all, so he can't just hide it from the OS via the
-BIOS.
+This is a GFS2 version of Tejun's patch:
+4f331f01b9c43bf001d3ffee578a97a1e0633eac
+vfs: don't hold s_umount over close_bdev_exclusive() call
 
-The old IDE layer had hdX=noprobe override for situations like this,
-but that was never ported to the libata layer.
+In this case its blkdev_put itself that is the issue and this
+patch uses the same solution of dropping and retaking s_umount.
 
-This patch implements a disable flag for libata.force.
-
-Example use:
-
- libata.force=2.0:disable
-
-[v2 of the patch, removed the nodisable flag per Tejun Heo]
-
-Signed-off-by: Robin H. Johnson <robbat2@gentoo.org>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Link: http://unix.stackexchange.com/questions/102648/how-to-tell-linux-kernel-3-0-to-completely-ignore-a-failing-disk
-Link: http://askubuntu.com/questions/352836/how-can-i-tell-linux-kernel-to-completely-ignore-a-disk-as-if-it-was-not-even-co
-Link: http://superuser.com/questions/599333/how-to-disable-kernel-probing-for-drive
+Reported-by: Tejun Heo <tj@kernel.org>
+Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/kernel-parameters.txt |    2 ++
- drivers/ata/libata-core.c           |    1 +
- 2 files changed, 3 insertions(+)
+ fs/gfs2/ops_fstype.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1515,6 +1515,8 @@ bytes respectively. Such letter suffixes
+--- a/fs/gfs2/ops_fstype.c
++++ b/fs/gfs2/ops_fstype.c
+@@ -1366,8 +1366,18 @@ static struct dentry *gfs2_mount(struct
+ 	if (IS_ERR(s))
+ 		goto error_bdev;
  
- 			* atapi_dmadir: Enable ATAPI DMADIR bridge support
+-	if (s->s_root)
++	if (s->s_root) {
++		/*
++		 * s_umount nests inside bd_mutex during
++		 * __invalidate_device().  blkdev_put() acquires
++		 * bd_mutex and can't be called under s_umount.  Drop
++		 * s_umount temporarily.  This is safe as we're
++		 * holding an active reference.
++		 */
++		up_write(&s->s_umount);
+ 		blkdev_put(bdev, mode);
++		down_write(&s->s_umount);
++	}
  
-+			* disable: Disable this device.
-+
- 			If there are multiple matching configurations changing
- 			the same attribute, the last one is used.
- 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -6523,6 +6523,7 @@ static int __init ata_parse_force_one(ch
- 		{ "norst",	.lflags		= ATA_LFLAG_NO_HRST | ATA_LFLAG_NO_SRST },
- 		{ "rstonce",	.lflags		= ATA_LFLAG_RST_ONCE },
- 		{ "atapi_dmadir", .horkage_on	= ATA_HORKAGE_ATAPI_DMADIR },
-+		{ "disable",	.horkage_on	= ATA_HORKAGE_DISABLE },
- 	};
- 	char *start = *cur, *p = *cur;
- 	char *id, *val, *endp;
+ 	memset(&args, 0, sizeof(args));
+ 	args.ar_quota = GFS2_QUOTA_DEFAULT;
 
 
