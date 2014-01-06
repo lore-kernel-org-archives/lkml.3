@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755835AbaAFRSn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 12:18:43 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:61968 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755259AbaAFRSl (ORCPT
+	id S1755665AbaAFRVg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 12:21:36 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:45716 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754608AbaAFRVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 12:18:41 -0500
-Message-ID: <52CAE574.3010304@gmail.com>
-Date: Mon, 06 Jan 2014 09:18:44 -0800
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 6 Jan 2014 12:21:34 -0500
+Date: Mon, 6 Jan 2014 21:21:30 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Florian Westphal <fw@strlen.de>
+Cc: Andrey Vagin <avagin@openvz.org>, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, vvs@openvz.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH] netfilter: nf_conntrack: release conntrack from rcu
+ callback
+Message-ID: <20140106172130.GA2360@moon>
+References: <1389023672-14351-1-git-send-email-avagin@openvz.org>
+ <20140106170235.GJ28854@breakpoint.cc>
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: Gleb Natapov <gleb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kashyap Chamarthy <kchamart@redhat.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "Richard W.M. Jones" <rjones@redhat.com>
-Subject: Re: intel_pstate divide error with v3.13-rc4-256-gb7000ad
-References: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com> <4794554.Hmd2RUNYDT@vostro.rjw.lan> <52C18A23.10703@redhat.com> <3710588.K8glfx1cYs@vostro.rjw.lan> <52C6F3B4.3050904@gmail.com> <20140103180435.GK10961@minantech.com> <52C716C1.6070704@gmail.com> <52C7345D.30603@redhat.com>
-In-Reply-To: <52C7345D.30603@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140106170235.GJ28854@breakpoint.cc>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/2014 02:06 PM, Paolo Bonzini wrote:
-> Il 03/01/2014 21:00, Dirk Brandewie ha scritto:
->> +    case MSR_IA32_MPERF:
->> +    case MSR_IA32_APERF:
->
-OK I will spin the patch to only add MSR_PLATFORM_INFO.
+On Mon, Jan 06, 2014 at 06:02:35PM +0100, Florian Westphal wrote:
+> 
+> Can you elaborate?
+> Yes, nf_ct_is_dying(ct) might be called for the wrong conntrack.
+> 
+> But, in case we _think_ that its the right one we call
+> nf_ct_tuple_equal() to verify we indeed found the right one:
+> 
+>        h = ____nf_conntrack_find(net, zone, tuple, hash);
+>        if (h) { // might be released right now, but page won't go away (SLAB_BY_RCU)
+>                 ct = nf_ct_tuplehash_to_ctrack(h);
+>                 if (unlikely(nf_ct_is_dying(ct) ||
+>                              !atomic_inc_not_zero(&ct->ct_general.use)))
+> 			// which means we should hit this path (0 ref).
+>                         h = NULL;
+>                 else {
+> 			// otherwise, it cannot go away from under us, since
+> 			// we own a reference now.
+>                         if (unlikely(!nf_ct_tuple_equal(tuple, &h->tuple) ||
+>                                      nf_ct_zone(ct) != zone)) {
+> 			// if we get here, the entry got recycled on other cpu
+> 			// for a different tuple, we can bail out and drop
+> 			// the reference safely and re-try the lookup
+>                                 nf_ct_put(ct);
+>                                 goto begin;
+>                         }
+>                 }
 
-> These should never be accessed.  A KVM VM will always have
-> CPUID[06H].ECX = 0, and the Intel manual says that the MSRs are only
-> present if CPUID returns that value with bit 0 set.
->
-> I think the actual bug is that intel_pstate_init does not check the
-> feature bits in CPUID (either manually or via x86_match_cpu).
+I think tuple may match if
 
-I will add the feature check.
+task 1                  task 2                  task 3
+                        nf_conntrack_find_get
+                         ____nf_conntrack_find
+destroy_conntrack
+ hlist_nulls_del_rcu
+ nf_conntrack_free
+ kmem_cache_free
+                                                __nf_conntrack_alloc
+                                                 kmem_cache_alloc
+                         if (nf_ct_is_dying(ct))
 
-What are the differences between the first and the nested KVM's?
-At load time intel_pstate checks that APERF and MPERF are incrementing
-and that PLATFORM_INFO has some value.  Somehow these checks pass
-in the nested environment and we fall over when the CPU is being added
-by cpufreq.
+						data is not yet cleaned
 
---Dirk
+                                                 memset(&ct->tuplehash[IP_CT_DIR_MAX],
 
+No? Or there something obvious I'm missing?
