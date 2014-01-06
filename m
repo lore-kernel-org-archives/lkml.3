@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753453AbaAFJ2N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 04:28:13 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:56122 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218AbaAFJ2L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 04:28:11 -0500
-Date: Mon, 6 Jan 2014 09:28:06 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com
-Subject: Re: [PATCH 1/1] mfd: max14577: Remove redundant of_match_ptr helper
-Message-ID: <20140106092806.GB23772@lee--X1>
-References: <1387621216-9745-1-git-send-email-sachin.kamat@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1387621216-9745-1-git-send-email-sachin.kamat@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753704AbaAFJ3F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 04:29:05 -0500
+Received: from ozlabs.org ([203.10.76.45]:32860 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751864AbaAFJ3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 04:29:03 -0500
+Date: Mon, 6 Jan 2014 20:28:56 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        <linuxppc-dev@lists.ozlabs.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+Subject: linux-next: build failure after merge of the final tree
+Message-Id: <20140106202856.5630590efc4bd6a466b7a668@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__6_Jan_2014_20_28_56_+1100_vCtbRul1wB6sgmw1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 21 Dec 2013, Sachin Kamat wrote:
+--Signature=_Mon__6_Jan_2014_20_28_56_+1100_vCtbRul1wB6sgmw1
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 'max14577_dt_match' is always compiled in. Hence the
-> helper macro is not needed.
-> 
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> ---
->  drivers/mfd/max14577.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
-> index a5e1c370c609..ac514fb2b877 100644
-> --- a/drivers/mfd/max14577.c
-> +++ b/drivers/mfd/max14577.c
-> @@ -221,7 +221,7 @@ static struct i2c_driver max14577_i2c_driver = {
->  		.name = "max14577",
->  		.owner = THIS_MODULE,
->  		.pm = &max14577_pm,
-> -		.of_match_table = of_match_ptr(max14577_dt_match),
-> +		.of_match_table = max14577_dt_match,
->  	},
->  	.probe = max14577_i2c_probe,
->  	.remove = max14577_i2c_remove,
+Hi all,
 
-Applied, thanks.
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
+arch/powerpc/kernel/exceptions-64s.S:1312: Error: attempt to move .org back=
+wards
+
+The last time I got this error, I needed to apply patch "powerpc: Fix
+"attempt to move .org backwards" error", but that has been included in
+the powerpc tree now, so I guess something else has added code in a
+critical place. :-(
+
+I have just left this broken for today.
+--=20
+Cheers,
+Stephen Rothwell <sfr@canb.auug.org.au>
+
+--Signature=_Mon__6_Jan_2014_20_28_56_+1100_vCtbRul1wB6sgmw1
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSynddAAoJEMDTa8Ir7ZwVcX4P/3rfUfTUuhHYjgrc55BrVifu
+GiHfPjRESMHFmCXQvXMxlW36FvLi7UUuL9zvx7EuBGERCyKJSavcXJpgAb9amgfW
+Uz/hhPX2pan8584SfIX4W741AGgsycgsgTW55fx0j70XWngHGNEVm5Q+IQyLx/8p
+1zpizXVWwotTsnj/9BtLUqDdQyGZcHLSWfZPGt7ycVTFPbex9nfDtlrKNto2ZG4F
+vcgusyflP94z8y2sxWIUN0V8EetH9j0kcuZXl47vr+tPN52cbyBe13WrOlQuZqDH
+hsXno7yXLUUIexrI12ex9LtFH8NuZnhApRX/ckxwiTaTBhPnpF9Wioiv8MGsAzUe
+KTMoftUgrg8lNIrBwMjqh8dw6AHDFNg8lnz1F8yELWgYyIz80ZEQg9GEuu0gbKjs
+qiJogFqt7N5u28FNSaJc8te48s/+2zqje0+trnacUlPEdOzMeMdRRSjaouWR/+q2
+gpVNuY8GHohNkmAFMBef8huxHPPrOTtE4Lj3zO0x0tpWydcWRNGTTvMyQObrk1Hg
+iLaR5jZL0/oo+b7gNOk+2RWQVWOYpDas1KwzHmGchJ4EOTdBKgCvCqwiTU6gADDR
+lKZYaBHgQql8mS1Bs3Nyaac8UsN7UZR3N8enZRx1k4oncKQjUpLNUqKxPbR0WWHU
+cyb6AhiajJZzw5MrdfsB
+=cLZ0
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__6_Jan_2014_20_28_56_+1100_vCtbRul1wB6sgmw1--
