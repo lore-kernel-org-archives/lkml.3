@@ -1,97 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516AbaAFGWo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 01:22:44 -0500
-Received: from mga14.intel.com ([143.182.124.37]:13062 "EHLO mga14.intel.com"
+	id S1753551AbaAFGWv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 01:22:51 -0500
+Received: from ozlabs.org ([203.10.76.45]:39187 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752768AbaAFGSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 01:18:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,611,1384329600"; 
-   d="scan'208";a="401364858"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Jiri Kosina <trivial@kernel.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
-        Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Subject: [Patch Part1 V3 08/20] iommu/vt-d, trivial: clean up unused code
-Date: Mon,  6 Jan 2014 14:18:15 +0800
-Message-Id: <1388989107-4795-9-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1388989107-4795-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1388989107-4795-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1752737AbaAFGWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 01:22:49 -0500
+Date: Mon, 6 Jan 2014 17:22:43 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dong Aisheng <dongas86@gmail.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>, Chris Ball <cjb@laptop.org>,
+        linux-next@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dong Aisheng <b29396@freescale.com>
+Subject: Re: linux-next: build failure after merge of the mmc tree
+Message-Id: <20140106172243.8067c8e72c666511129a9701@canb.auug.org.au>
+In-Reply-To: <CAA+hA=QU1TApbbohD1iNFiMMMHdQSamRfOsO0r3GpqmCbdiSgw@mail.gmail.com>
+References: <20131213125716.f432c59bf8782a489400a5a7@canb.auug.org.au>
+	<20131217132838.cc16a4dbac2f4d3218bbed1d@canb.auug.org.au>
+	<CAA+hA=Shwn1P25+xB+VogD+9n7gdvCmJ-EG6khgf3a2gjGwTJQ@mail.gmail.com>
+	<20131217031600.GG6691@S2101-09.ap.freescale.net>
+	<CAA+hA=QU1TApbbohD1iNFiMMMHdQSamRfOsO0r3GpqmCbdiSgw@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__6_Jan_2014_17_22_43_+1100_6BXjlNW5VRFzgZdl"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove dead code from VT-d related files.
+--Signature=_Mon__6_Jan_2014_17_22_43_+1100_6BXjlNW5VRFzgZdl
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- drivers/iommu/dmar.c        |    2 --
- drivers/iommu/intel-iommu.c |   25 -------------------------
- 2 files changed, 27 deletions(-)
+Hi all,
 
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index 5e7ba3b..f5f7b7d 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -1113,8 +1113,6 @@ static const char *irq_remap_fault_reasons[] =
- 	"Blocked an interrupt request due to source-id verification failure",
- };
- 
--#define MAX_FAULT_REASON_IDX 	(ARRAY_SIZE(fault_reason_strings) - 1)
--
- const char *dmar_get_fault_reason(u8 fault_reason, int *fault_type)
- {
- 	if (fault_reason >= 0x20 && (fault_reason - 0x20 <
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 3a0cf5d..751db33 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -289,26 +289,6 @@ static inline void dma_clear_pte(struct dma_pte *pte)
- 	pte->val = 0;
- }
- 
--static inline void dma_set_pte_readable(struct dma_pte *pte)
--{
--	pte->val |= DMA_PTE_READ;
--}
--
--static inline void dma_set_pte_writable(struct dma_pte *pte)
--{
--	pte->val |= DMA_PTE_WRITE;
--}
--
--static inline void dma_set_pte_snp(struct dma_pte *pte)
--{
--	pte->val |= DMA_PTE_SNP;
--}
--
--static inline void dma_set_pte_prot(struct dma_pte *pte, unsigned long prot)
--{
--	pte->val = (pte->val & ~3) | (prot & 3);
--}
--
- static inline u64 dma_pte_addr(struct dma_pte *pte)
- {
- #ifdef CONFIG_64BIT
-@@ -319,11 +299,6 @@ static inline u64 dma_pte_addr(struct dma_pte *pte)
- #endif
- }
- 
--static inline void dma_set_pte_pfn(struct dma_pte *pte, unsigned long pfn)
--{
--	pte->val |= (uint64_t)pfn << VTD_PAGE_SHIFT;
--}
--
- static inline bool dma_pte_present(struct dma_pte *pte)
- {
- 	return (pte->val & 3) != 0;
--- 
-1.7.10.4
+On Tue, 17 Dec 2013 16:06:19 +0800 Dong Aisheng <dongas86@gmail.com> wrote:
+>
+> I tested that Chris tree does not have problem.
+> It's caused by IMX tree updates.
+>=20
+> Chris,
+> Is the way Shawn suggested OK for you?
 
+Can we have some resolution of this please?  This failed to build again
+today so I have used the version of the mmc tree from next-20131212
+again.  I tried the obvious fix (s/pinctrl_usdhc4_1/pinctrl_usdhc4/) but
+that didn't work.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__6_Jan_2014_17_22_43_+1100_6BXjlNW5VRFzgZdl
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSyku3AAoJEMDTa8Ir7ZwV/HUP/3huL4YJCLNNqzKLVjkmxzkX
+NdIwCdJEP9Jy9GWqYaYBp2vK2semlvne2N2dt4TWHn49xDgTakIpnC4D5h2pbtqt
+uHhWG6WVwH89l5eA/MbYg3q/+SiUFoyrQsgTBtC3TZaX7Bza1UUY7r0oWCR56Tne
+5ARvLwQesSjIjTP3iWWKOjge/dBoV03q3PoHIwSi8LGLqpArB0U2ktB1sUiMLthw
+kUIqvhYs6m6wBWjbSAP0J/fC/S2/ibk/sy29xi/HmMM4Wl+7Z4S23lEp4aXjRkAr
+5vWdOTIEymDhoOQg9Dgvfh8RBjjNNrafgOdn211YR3xhOfdG2vV17DtPdNoUI4kw
+FTIXo9i8zbuCMNR2bxs3uQUyzuaQBDKHIVSOvNI1bFIggx/ZAL9xQIL6MYaaRsM4
+gVZH7/lecM/oAZMOEIvRSoFTOX6bxivjCBHAqKsF+suHADBwokmVz+wD23SbRmFv
+MK06nR2txLVRfHhtJX6byos/KFXdda8ju0jCfguzYyT5FAHO4JAL+WZ+MZOrGfpq
+dlC+jofB14HnQYbEJGhDseLKnHSSamUgya2PQhk3RTewvCgZVJUNG0hOnqHDBHTS
+jVUxkU9F5BsjxT6g4tPH6yp3b5UcglGMSDyOXSG9Uh7F6TvpYkRd93PZqcNvNWQ3
+1U1F40ug4ezJg9V7thLB
+=6Wk6
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__6_Jan_2014_17_22_43_+1100_6BXjlNW5VRFzgZdl--
