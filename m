@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932744AbaAFWkX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:40:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47996 "EHLO
+	id S1756863AbaAFWkV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:40:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48000 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755548AbaAFWkP (ORCPT
+	with ESMTP id S1755639AbaAFWkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:15 -0500
+	Mon, 6 Jan 2014 17:40:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, Greg Farnum <greg@inktank.com>,
-        Sage Weil <sage@inktank.com>
-Subject: [PATCH 3.10 002/129] ceph: cleanup aborted requests when re-sending requests.
-Date: Mon,  6 Jan 2014 14:37:11 -0800
-Message-Id: <20140106223859.660530942@linuxfoundation.org>
+        JongHo Kim <furmuwon@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 011/129] ALSA: Add SNDRV_PCM_STATE_PAUSED case in wait_for_avail function
+Date: Mon,  6 Jan 2014 14:37:20 -0800
+Message-Id: <20140106223859.910315034@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -29,37 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+From: JongHo Kim <furmuwon@gmail.com>
 
-commit eb1b8af33c2e42a9a57fc0a7588f4a7b255d2e79 upstream.
+commit ed697e1aaf7237b1a62af39f64463b05c262808d upstream.
 
-Aborted requests usually get cleared when the reply is received.
-If MDS crashes, no reply will be received. So we need to cleanup
-aborted requests when re-sending requests.
+When the process is sleeping at the SNDRV_PCM_STATE_PAUSED
+state from the wait_for_avail function, the sleep process will be woken by
+timeout(10 seconds). Even if the sleep process wake up by timeout, by this
+patch, the process will continue with sleep and wait for the other state.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Reviewed-by: Greg Farnum <greg@inktank.com>
-Signed-off-by: Sage Weil <sage@inktank.com>
+Signed-off-by: JongHo Kim <furmuwon@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ceph/mds_client.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ sound/core/pcm_lib.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/ceph/mds_client.c
-+++ b/fs/ceph/mds_client.c
-@@ -1840,8 +1840,11 @@ static int __do_request(struct ceph_mds_
- 	int mds = -1;
- 	int err = -EAGAIN;
- 
--	if (req->r_err || req->r_got_result)
-+	if (req->r_err || req->r_got_result) {
-+		if (req->r_aborted)
-+			__unregister_request(mdsc, req);
- 		goto out;
-+	}
- 
- 	if (req->r_timeout &&
- 	    time_after_eq(jiffies, req->r_started + req->r_timeout)) {
+--- a/sound/core/pcm_lib.c
++++ b/sound/core/pcm_lib.c
+@@ -1936,6 +1936,8 @@ static int wait_for_avail(struct snd_pcm
+ 		case SNDRV_PCM_STATE_DISCONNECTED:
+ 			err = -EBADFD;
+ 			goto _endloop;
++		case SNDRV_PCM_STATE_PAUSED:
++			continue;
+ 		}
+ 		if (!tout) {
+ 			snd_printd("%s write error (DMA or IRQ trouble?)\n",
 
 
