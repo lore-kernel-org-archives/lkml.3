@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933354AbaAFWmY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:42:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48612 "EHLO
+	id S933725AbaAFWwp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:52:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48649 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933282AbaAFWmQ (ORCPT
+	with ESMTP id S933352AbaAFWmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:42:16 -0500
+	Mon, 6 Jan 2014 17:42:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Len Brown <len.brown@intel.com>, Vinson Lee <vlee@twopensource.com>
-Subject: [PATCH 3.4 13/43] intel_idle: enable IVB Xeon support
-Date: Mon,  6 Jan 2014 14:39:30 -0800
-Message-Id: <20140106223942.634080566@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.4 20/43] drm/radeon: 0x9649 is SUMO2 not SUMO
+Date: Mon,  6 Jan 2014 14:39:37 -0800
+Message-Id: <20140106223942.831021582@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223942.259651490@linuxfoundation.org>
 References: <20140106223942.259651490@linuxfoundation.org>
@@ -28,29 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Len Brown <len.brown@intel.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 23795e580cad5d6b73d47d51b9074ce3e58bf334 upstream.
+commit d00adcc8ae9e22eca9d8af5f66c59ad9a74c90ec upstream.
 
-IVB Xeon currently shares the same parameters IVB client.
+Fixes rendering corruption due to incorrect
+gfx configuration.
 
-Signed-off-by: Len Brown <len.brown@intel.com>
-Cc: Vinson Lee <vlee@twopensource.com>
+bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=63599
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/idle/intel_idle.c |    1 +
- 1 file changed, 1 insertion(+)
+ include/drm/drm_pciids.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -399,6 +399,7 @@ static const struct x86_cpu_id intel_idl
- 	ICPU(0x2a, idle_cpu_snb),
- 	ICPU(0x2d, idle_cpu_snb),
- 	ICPU(0x3a, idle_cpu_ivb),
-+	ICPU(0x3e, idle_cpu_ivb),
- 	{}
- };
- MODULE_DEVICE_TABLE(x86cpu, intel_idle_ids);
+--- a/include/drm/drm_pciids.h
++++ b/include/drm/drm_pciids.h
+@@ -544,7 +544,7 @@
+ 	{0x1002, 0x9645, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO2|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x9647, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
+ 	{0x1002, 0x9648, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
+-	{0x1002, 0x9649, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
++	{0x1002, 0x9649, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO2|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
+ 	{0x1002, 0x964a, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x964b, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x964c, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
 
 
