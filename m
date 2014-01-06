@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752445AbaAFD3G (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 22:29:06 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:53607 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752141AbaAFD27 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 22:28:59 -0500
-X-Originating-IP: 50.43.14.201
-Date: Sun, 5 Jan 2014 19:28:49 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org,
-        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 11/11] drivers: acpi: Include header file in debugfs.c
- and rectify prototype declaration in internal.h
-Message-ID: <20140106032849.GA20605@leaf>
-References: <c676af6619fc5a84208740bfc7edcf56bb78ed4e.1387271324.git.rashika.kheria@gmail.com>
- <37de640470c91e2e54ab68a158e19dde3938f18a.1387271324.git.rashika.kheria@gmail.com>
- <1528697.GH1GrQaKgp@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1528697.GH1GrQaKgp@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
+	id S1752558AbaAFDfB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 22:35:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23713 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751460AbaAFDfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jan 2014 22:35:00 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: mst@redhat.com, Jason Wang <jasowang@redhat.com>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        Neil Horman <nhorman@tuxdriver.com>
+Subject: [PATCH net 1/2] macvlan: forbid L2 fowarding offload for macvtap
+Date: Mon,  6 Jan 2014 11:21:06 +0800
+Message-Id: <1388978467-2075-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 12:33:57AM +0100, Rafael J. Wysocki wrote:
-> On Tuesday, December 17, 2013 03:06:54 PM Rashika Kheria wrote:
-> > Include header file internal.h in debugfs.c and change the return
-> > value's type in header file internal.h.
-> > 
-> > This eliminates the following warning in debugfs.c:
-> > drivers/acpi/debugfs.c:16:13: warning: no previous prototype for ‘acpi_debugfs_init’ [-Wmissing-prototypes]
-> > 
-> > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> > ---
-> >  drivers/acpi/debugfs.c  |    3 +++
-> >  drivers/acpi/internal.h |    2 +-
-> >  2 files changed, 4 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/acpi/debugfs.c b/drivers/acpi/debugfs.c
-> > index b55d6a2..96bcaf7 100644
-> > --- a/drivers/acpi/debugfs.c
-> > +++ b/drivers/acpi/debugfs.c
-> > @@ -6,6 +6,7 @@
-> >  #include <linux/init.h>
-> >  #include <linux/debugfs.h>
-> >  #include <acpi/acpi_drivers.h>
-> > +#include "internal.h"
-> >  
-> >  #define _COMPONENT		ACPI_SYSTEM_COMPONENT
-> >  ACPI_MODULE_NAME("debugfs");
-> > @@ -13,7 +14,9 @@ ACPI_MODULE_NAME("debugfs");
-> >  struct dentry *acpi_debugfs_dir;
-> >  EXPORT_SYMBOL_GPL(acpi_debugfs_dir);
-> >  
-> > +#ifdef  CONFIG_DEBUG_FS
-> >  void __init acpi_debugfs_init(void)
-> >  {
-> >  	acpi_debugfs_dir = debugfs_create_dir("acpi", NULL);
-> >  }
-> > +#endif
-> 
-> What about avoiding to build the entire debugfs.c for CONFIG_DEBUG_FS unset?
-> 
-> That surely would make sense? 
+L2 fowarding offload will bypass the rx handler of real device. This will make
+the packet could not be forwarded to macvtap device. Another problem is the
+dev_hard_start_xmit() called for macvtap does not have any synchronization.
 
-It exports the symbol acpi_debugfs_dir, which is used unconditionally.
+Fix this by forbidding L2 forwarding for macvtap.
 
-- Josh Triplett
+Cc: John Fastabend <john.r.fastabend@intel.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/net/macvlan.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
+index 60406b0..5360f73 100644
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -338,6 +338,8 @@ static const struct header_ops macvlan_hard_header_ops = {
+ 	.cache_update	= eth_header_cache_update,
+ };
+ 
++static struct rtnl_link_ops macvlan_link_ops;
++
+ static int macvlan_open(struct net_device *dev)
+ {
+ 	struct macvlan_dev *vlan = netdev_priv(dev);
+@@ -353,7 +355,8 @@ static int macvlan_open(struct net_device *dev)
+ 		goto hash_add;
+ 	}
+ 
+-	if (lowerdev->features & NETIF_F_HW_L2FW_DOFFLOAD) {
++	if (lowerdev->features & NETIF_F_HW_L2FW_DOFFLOAD &&
++	    dev->rtnl_link_ops == &macvlan_link_ops) {
+ 		vlan->fwd_priv =
+ 		      lowerdev->netdev_ops->ndo_dfwd_add_station(lowerdev, dev);
+ 
+-- 
+1.7.1
+
