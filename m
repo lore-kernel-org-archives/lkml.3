@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755665AbaAFRVg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 12:21:36 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:45716 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754608AbaAFRVe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 12:21:34 -0500
-Date: Mon, 6 Jan 2014 21:21:30 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Florian Westphal <fw@strlen.de>
-Cc: Andrey Vagin <avagin@openvz.org>, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, vvs@openvz.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH] netfilter: nf_conntrack: release conntrack from rcu
- callback
-Message-ID: <20140106172130.GA2360@moon>
-References: <1389023672-14351-1-git-send-email-avagin@openvz.org>
- <20140106170235.GJ28854@breakpoint.cc>
+	id S1755894AbaAFRVs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 12:21:48 -0500
+Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:17789
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755799AbaAFRVo convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 12:21:44 -0500
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dIc89bhc3f2I148cI1432I4015Idbb0izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1d7338h177df4h17326ah8275dh1de097h186068hz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h906i1155h)
+Date: Mon, 6 Jan 2014 09:21:34 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Chris Ball <cjb@laptop.org>
+CC: Chris Ball <cjb@laptop.org>, <linux-mmc@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Michal Simek <michal.simek@xilinx.com>
+Subject: Re: [GIT PULL] Xilinx Zynq mmc changes for v3.14
+References: <52B16E05.5080404@monstr.eu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <20140106170235.GJ28854@breakpoint.cc>
+In-Reply-To: <52B16E05.5080404@monstr.eu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <fdedb22e-839e-480c-81d1-e8304a0f4e70@CO9EHSMHS007.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 06:02:35PM +0100, Florian Westphal wrote:
+Hi Chris,
+
+On Wed, Dec 18, 2013 at 10:42:29AM +0100, Michal Simek wrote:
+> Hi Chris,
 > 
-> Can you elaborate?
-> Yes, nf_ct_is_dying(ct) might be called for the wrong conntrack.
+> Soren and I are trying to reach you regarding Arasan driver we sent to mailing list
+> for review. There are no complains about this version 3 that's why I have added
+> to our repo and sending you this pull request.
 > 
-> But, in case we _think_ that its the right one we call
-> nf_ct_tuple_equal() to verify we indeed found the right one:
+> Patches:
+> http://lkml.org/lkml/2013/12/2/413
+> http://lkml.org/lkml/2013/12/2/424
 > 
->        h = ____nf_conntrack_find(net, zone, tuple, hash);
->        if (h) { // might be released right now, but page won't go away (SLAB_BY_RCU)
->                 ct = nf_ct_tuplehash_to_ctrack(h);
->                 if (unlikely(nf_ct_is_dying(ct) ||
->                              !atomic_inc_not_zero(&ct->ct_general.use)))
-> 			// which means we should hit this path (0 ref).
->                         h = NULL;
->                 else {
-> 			// otherwise, it cannot go away from under us, since
-> 			// we own a reference now.
->                         if (unlikely(!nf_ct_tuple_equal(tuple, &h->tuple) ||
->                                      nf_ct_zone(ct) != zone)) {
-> 			// if we get here, the entry got recycled on other cpu
-> 			// for a different tuple, we can bail out and drop
-> 			// the reference safely and re-try the lookup
->                                 nf_ct_put(ct);
->                                 goto begin;
->                         }
->                 }
+> Thanks for pulling these changes to your tree.
+> 
+> This driver was also requested to add LTSI that's why I am CC'ing Greg.
 
-I think tuple may match if
+It would be nice if we could get this driver into linux-next. The merge
+windows is close and I'd appreciate if this driver made it into 3.14.
 
-task 1                  task 2                  task 3
-                        nf_conntrack_find_get
-                         ____nf_conntrack_find
-destroy_conntrack
- hlist_nulls_del_rcu
- nf_conntrack_free
- kmem_cache_free
-                                                __nf_conntrack_alloc
-                                                 kmem_cache_alloc
-                         if (nf_ct_is_dying(ct))
+	Thanks,
+	Sören
 
-						data is not yet cleaned
 
-                                                 memset(&ct->tuplehash[IP_CT_DIR_MAX],
-
-No? Or there something obvious I'm missing?
