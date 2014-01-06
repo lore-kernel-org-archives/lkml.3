@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757466AbaAFX27 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:28:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48134 "EHLO
+	id S1757483AbaAFX32 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:29:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48131 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932875AbaAFWkn (ORCPT
+	with ESMTP id S932863AbaAFWkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Jan 2014 17:40:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jiang <dave.jiang@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        David Whipple <whipple@securedatainnovations.ch>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH 3.10 039/129] net_dma: mark broken
-Date: Mon,  6 Jan 2014 14:37:48 -0800
-Message-Id: <20140106223900.718909610@linuxfoundation.org>
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [PATCH 3.10 038/129] firewire: sbp2: bring back WRITE SAME support
+Date: Mon,  6 Jan 2014 14:37:47 -0800
+Message-Id: <20140106223900.691192410@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -32,91 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
-commit 77873803363c9e831fc1d1e6895c084279090c22 upstream.
+commit ce027ed98fd176710fb14be9d6015697b62436f0 upstream.
 
-net_dma can cause data to be copied to a stale mapping if a
-copy-on-write fault occurs during dma.  The application sees missing
-data.
+Commit 54b2b50c20a6 "[SCSI] Disable WRITE SAME for RAID and virtual
+host adapter drivers" disabled WRITE SAME support for all SBP-2 attached
+targets.  But as described in the changelog of commit b0ea5f19d3d8
+"firewire: sbp2: allow WRITE SAME and REPORT SUPPORTED OPERATION CODES",
+it is not required to blacklist WRITE SAME.
 
-The following trace is triggered by modifying the kernel to WARN if it
-ever triggers copy-on-write on a page that is undergoing dma:
+Bring the feature back by reverting the sbp2.c hunk of commit 54b2b50c20a6.
 
- WARNING: CPU: 24 PID: 2529 at lib/dma-debug.c:485 debug_dma_assert_idle+0xd2/0x120()
- ioatdma 0000:00:04.0: DMA-API: cpu touching an active dma mapped page [pfn=0x16bcd9]
- Modules linked in: iTCO_wdt iTCO_vendor_support ioatdma lpc_ich pcspkr dca
- CPU: 24 PID: 2529 Comm: linbug Tainted: G        W    3.13.0-rc1+ #353
-  00000000000001e5 ffff88016f45f688 ffffffff81751041 ffff88017ab0ef70
-  ffff88016f45f6d8 ffff88016f45f6c8 ffffffff8104ed9c ffffffff810f3646
-  ffff8801768f4840 0000000000000282 ffff88016f6cca10 00007fa2bb699349
- Call Trace:
-  [<ffffffff81751041>] dump_stack+0x46/0x58
-  [<ffffffff8104ed9c>] warn_slowpath_common+0x8c/0xc0
-  [<ffffffff810f3646>] ? ftrace_pid_func+0x26/0x30
-  [<ffffffff8104ee86>] warn_slowpath_fmt+0x46/0x50
-  [<ffffffff8139c062>] debug_dma_assert_idle+0xd2/0x120
-  [<ffffffff81154a40>] do_wp_page+0xd0/0x790
-  [<ffffffff811582ac>] handle_mm_fault+0x51c/0xde0
-  [<ffffffff813830b9>] ? copy_user_enhanced_fast_string+0x9/0x20
-  [<ffffffff8175fc2c>] __do_page_fault+0x19c/0x530
-  [<ffffffff8175c196>] ? _raw_spin_lock_bh+0x16/0x40
-  [<ffffffff810f3539>] ? trace_clock_local+0x9/0x10
-  [<ffffffff810fa1f4>] ? rb_reserve_next_event+0x64/0x310
-  [<ffffffffa0014c00>] ? ioat2_dma_prep_memcpy_lock+0x60/0x130 [ioatdma]
-  [<ffffffff8175ffce>] do_page_fault+0xe/0x10
-  [<ffffffff8175c862>] page_fault+0x22/0x30
-  [<ffffffff81643991>] ? __kfree_skb+0x51/0xd0
-  [<ffffffff813830b9>] ? copy_user_enhanced_fast_string+0x9/0x20
-  [<ffffffff81388ea2>] ? memcpy_toiovec+0x52/0xa0
-  [<ffffffff8164770f>] skb_copy_datagram_iovec+0x5f/0x2a0
-  [<ffffffff8169d0f4>] tcp_rcv_established+0x674/0x7f0
-  [<ffffffff816a68c5>] tcp_v4_do_rcv+0x2e5/0x4a0
-  [..]
- ---[ end trace e30e3b01191b7617 ]---
- Mapped at:
-  [<ffffffff8139c169>] debug_dma_map_page+0xb9/0x160
-  [<ffffffff8142bf47>] dma_async_memcpy_pg_to_pg+0x127/0x210
-  [<ffffffff8142cce9>] dma_memcpy_pg_to_iovec+0x119/0x1f0
-  [<ffffffff81669d3c>] dma_skb_copy_datagram_iovec+0x11c/0x2b0
-  [<ffffffff8169d1ca>] tcp_rcv_established+0x74a/0x7f0:
-
-...the problem is that the receive path falls back to cpu-copy in
-several locations and this trace is just one of the areas.  A few
-options were considered to fix this:
-
-1/ sync all dma whenever a cpu copy branch is taken
-
-2/ modify the page fault handler to hold off while dma is in-flight
-
-Option 1 adds yet more cpu overhead to an "offload" that struggles to compete
-with cpu-copy.  Option 2 adds checks for behavior that is already documented as
-broken when using get_user_pages().  At a minimum a debug mode is warranted to
-catch and flag these violations of the dma-api vs get_user_pages().
-
-Thanks to David for his reproducer.
-
-Cc: Dave Jiang <dave.jiang@intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Alexander Duyck <alexander.h.duyck@intel.com>
-Reported-by: David Whipple <whipple@securedatainnovations.ch>
-Acked-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/firewire/sbp2.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -333,6 +333,7 @@ config NET_DMA
- 	bool "Network: TCP receive copy offload"
- 	depends on DMA_ENGINE && NET
- 	default (INTEL_IOATDMA || FSL_DMA)
-+	depends on BROKEN
- 	help
- 	  This enables the use of DMA engines in the network stack to
- 	  offload receive copy-to-user operations, freeing CPU cycles.
+--- a/drivers/firewire/sbp2.c
++++ b/drivers/firewire/sbp2.c
+@@ -1626,7 +1626,6 @@ static struct scsi_host_template scsi_dr
+ 	.cmd_per_lun		= 1,
+ 	.can_queue		= 1,
+ 	.sdev_attrs		= sbp2_scsi_sysfs_attrs,
+-	.no_write_same		= 1,
+ };
+ 
+ MODULE_AUTHOR("Kristian Hoegsberg <krh@bitplanet.net>");
 
 
