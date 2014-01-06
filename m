@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756566AbaAFXy3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:54:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47670 "EHLO
+	id S932443AbaAFXys (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:54:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47668 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932377AbaAFWjS (ORCPT
+	with ESMTP id S932369AbaAFWjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Jan 2014 17:39:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Jan Kiszka <jan.kiszka@siemens.com>,
         Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [PATCH 3.12 091/144] KVM: x86: Fix APIC map calculation after re-enabling
-Date: Mon,  6 Jan 2014 14:37:32 -0800
-Message-Id: <20140106223747.971893192@linuxfoundation.org>
+Subject: [PATCH 3.12 090/144] KVM: nVMX: Unconditionally uninit the MMU on nested vmexit
+Date: Mon,  6 Jan 2014 14:37:31 -0800
+Message-Id: <20140106223747.943589782@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,48 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kiszka <jan.kiszka@siemens.com>
+From: Jan Kiszka <jan.kiszka@web.de>
 
-commit e66d2ae7c67bd9ac982a3d1890564de7f7eabf4b upstream.
+commit 29bf08f12b2fd72b882da0d85b7385e4a438a297 upstream.
 
-Update arch.apic_base before triggering recalculate_apic_map. Otherwise
-the recalculation will work against the previous state of the APIC and
-will fail to build the correct map when an APIC is hardware-enabled
-again.
-
-This fixes a regression of 1e08ec4a13.
+Three reasons for doing this: 1. arch.walk_mmu points to arch.mmu anyway
+in case nested EPT wasn't in use. 2. this aligns VMX with SVM. But 3. is
+most important: nested_cpu_has_ept(vmcs12) queries the VMCS page, and if
+one guest VCPU manipulates the page of another VCPU in L2, we may be
+fooled to skip over the nested_ept_uninit_mmu_context, leaving mmu in
+nested state. That can crash the host later on if nested_ept_get_cr3 is
+invoked while L1 already left vmxon and nested.current_vmcs12 became
+NULL therefore.
 
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/lapic.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/kvm/vmx.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -1350,6 +1350,10 @@ void kvm_lapic_set_base(struct kvm_vcpu
- 		return;
- 	}
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -8218,8 +8218,7 @@ static void load_vmcs12_host_state(struc
+ 	vcpu->arch.cr4_guest_owned_bits = ~vmcs_readl(CR4_GUEST_HOST_MASK);
+ 	kvm_set_cr4(vcpu, vmcs12->host_cr4);
  
-+	if (!kvm_vcpu_is_bsp(apic->vcpu))
-+		value &= ~MSR_IA32_APICBASE_BSP;
-+	vcpu->arch.apic_base = value;
-+
- 	/* update jump label if enable bit changes */
- 	if ((vcpu->arch.apic_base ^ value) & MSR_IA32_APICBASE_ENABLE) {
- 		if (value & MSR_IA32_APICBASE_ENABLE)
-@@ -1359,10 +1363,6 @@ void kvm_lapic_set_base(struct kvm_vcpu
- 		recalculate_apic_map(vcpu->kvm);
- 	}
+-	if (nested_cpu_has_ept(vmcs12))
+-		nested_ept_uninit_mmu_context(vcpu);
++	nested_ept_uninit_mmu_context(vcpu);
  
--	if (!kvm_vcpu_is_bsp(apic->vcpu))
--		value &= ~MSR_IA32_APICBASE_BSP;
--
--	vcpu->arch.apic_base = value;
- 	if ((old_value ^ value) & X2APIC_ENABLE) {
- 		if (value & X2APIC_ENABLE) {
- 			u32 id = kvm_apic_id(apic);
+ 	kvm_set_cr3(vcpu, vmcs12->host_cr3);
+ 	kvm_mmu_reset_context(vcpu);
 
 
