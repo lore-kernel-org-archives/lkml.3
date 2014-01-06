@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933196AbaAFXn2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:43:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47904 "EHLO
+	id S932619AbaAFWjz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:39:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47878 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932582AbaAFWj4 (ORCPT
+	with ESMTP id S932582AbaAFWju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:39:56 -0500
+	Mon, 6 Jan 2014 17:39:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Theodore Tso" <tytso@mit.edu>, ocfs2-devel@oss.oracle.com,
-        Joel Becker <jlbec@evilplan.org>
-Subject: [PATCH 3.12 132/144] jbd2: dont BUG but return ENOSPC if a handle runs out of space
-Date: Mon,  6 Jan 2014 14:38:13 -0800
-Message-Id: <20140106223749.135145858@linuxfoundation.org>
+        Bob Peterson <rpeterso@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 3.12 126/144] GFS2: Fix use-after-free race when calling gfs2_remove_from_ail
+Date: Mon,  6 Jan 2014 14:38:07 -0800
+Message-Id: <20140106223748.961639944@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,61 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Bob Peterson <rpeterso@redhat.com>
 
-commit f6c07cad081ba222d63623d913aafba5586c1d2c upstream.
+commit 9290a9a7c0bcf5400e8dbfbf9707fa68ea3fb338 upstream.
 
-If a handle runs out of space, we currently stop the kernel with a BUG
-in jbd2_journal_dirty_metadata().  This makes it hard to figure out
-what might be going on.  So return an error of ENOSPC, so we can let
-the file system layer figure out what is going on, to make it more
-likely we can get useful debugging information).  This should make it
-easier to debug problems such as the one which was reported by:
+Function gfs2_remove_from_ail drops the reference on the bh via
+brelse. This patch fixes a race condition whereby bh is deferenced
+after the brelse when setting bd->bd_blkno = bh->b_blocknr;
+Under certain rare circumstances, bh might be gone or reused,
+and bd->bd_blkno is set to whatever that memory happens to be,
+which is often 0. Later, in gfs2_trans_add_unrevoke, that bd fails
+the test "bd->bd_blkno >= blkno" which causes it to never be freed.
+The end result is that the bd is never freed from the bufdata cache,
+which results in this error:
+slab error in kmem_cache_destroy(): cache `gfs2_bufdata': Can't free all objects
 
-    https://bugzilla.kernel.org/show_bug.cgi?id=44731
-
-The only two callers of this function are ext4_handle_dirty_metadata()
-and ocfs2_journal_dirty().  The ocfs2 function will trigger a
-BUG_ON(), which means there will be no change in behavior.  The ext4
-function will call ext4_error_inode() which will print the useful
-debugging information and then handle the situation using ext4's error
-handling mechanisms (i.e., which might mean halting the kernel or
-remounting the file system read-only).
-
-Also, since both file systems already call WARN_ON(), drop the WARN_ON
-from jbd2_journal_dirty_metadata() to avoid two stack traces from
-being displayed.
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: ocfs2-devel@oss.oracle.com
-Acked-by: Joel Becker <jlbec@evilplan.org>
+Signed-off-by: Bob Peterson <rpeterso@redhat.com>
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jbd2/transaction.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ fs/gfs2/log.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/jbd2/transaction.c
-+++ b/fs/jbd2/transaction.c
-@@ -1290,7 +1290,10 @@ int jbd2_journal_dirty_metadata(handle_t
- 		 * once a transaction -bzzz
- 		 */
- 		jh->b_modified = 1;
--		J_ASSERT_JH(jh, handle->h_buffer_credits > 0);
-+		if (handle->h_buffer_credits <= 0) {
-+			ret = -ENOSPC;
-+			goto out_unlock_bh;
-+		}
- 		handle->h_buffer_credits--;
- 	}
+--- a/fs/gfs2/log.c
++++ b/fs/gfs2/log.c
+@@ -551,10 +551,10 @@ void gfs2_add_revoke(struct gfs2_sbd *sd
+ 	struct buffer_head *bh = bd->bd_bh;
+ 	struct gfs2_glock *gl = bd->bd_gl;
  
-@@ -1373,7 +1376,6 @@ out_unlock_bh:
- 	jbd2_journal_put_journal_head(jh);
- out:
- 	JBUFFER_TRACE(jh, "exit");
--	WARN_ON(ret);	/* All errors are bugs, so dump the stack */
- 	return ret;
- }
- 
+-	gfs2_remove_from_ail(bd);
+-	bd->bd_bh = NULL;
+ 	bh->b_private = NULL;
+ 	bd->bd_blkno = bh->b_blocknr;
++	gfs2_remove_from_ail(bd); /* drops ref on bh */
++	bd->bd_bh = NULL;
+ 	bd->bd_ops = &gfs2_revoke_lops;
+ 	sdp->sd_log_num_revoke++;
+ 	atomic_inc(&gl->gl_revokes);
 
 
