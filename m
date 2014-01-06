@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753585AbaAFLH6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 06:07:58 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:35585 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751934AbaAFLH4 (ORCPT
+	id S1753990AbaAFLI0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 06:08:26 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:56120 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752857AbaAFLIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 06:07:56 -0500
-Date: Mon, 6 Jan 2014 11:07:50 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Sachin Kamat <sachin.kamat@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Subject: Re: [PATCH 1/2] gpio: lp3943: Remove redundant of_match_ptr helper
-Message-ID: <20140106110750.GO23772@lee--X1>
-References: <1387621661-22128-1-git-send-email-sachin.kamat@linaro.org>
- <CACRpkdb+NQOZXD2iHco+5UoFAt0abc8teFvZV0TayxXMRUZRNw@mail.gmail.com>
+	Mon, 6 Jan 2014 06:08:24 -0500
+Date: Mon, 6 Jan 2014 12:08:03 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] x86: Add Cache QoS Monitoring (CQM) support
+Message-ID: <20140106110803.GA5623@twins.programming.kicks-ass.net>
+References: <1388781285-18067-1-git-send-email-peter.p.waskiewicz.jr@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdb+NQOZXD2iHco+5UoFAt0abc8teFvZV0TayxXMRUZRNw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1388781285-18067-1-git-send-email-peter.p.waskiewicz.jr@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 02 Jan 2014, Linus Walleij wrote:
+On Fri, Jan 03, 2014 at 12:34:41PM -0800, Peter P Waskiewicz Jr wrote:
+> The CPU features themselves are relatively straight-forward, but
+> the presentation of the data is less straight-forward.  Since this
+> tracks cache usage and occupancy per process (by swapping Resource
+> Monitor IDs, or RMIDs, when processes are rescheduled), perf would
+> not be a good fit for this data, which does not report on a
+> per-process level.  Therefore, a new cgroup subsystem, cacheqos, has
+> been added.  This operates very similarly to the cpu and cpuacct
+> cgroup subsystems, where tasks can be grouped into sub-leaves of the
+> root-level cgroup.
 
-> On Sat, Dec 21, 2013 at 11:27 AM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
-> 
-> > 'lp3943_gpio_of_match' is always compiled in. Hence the
-> > helper macro is not needed.
-> >
-> > Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> > ---
-> >  drivers/gpio/gpio-lp3943.c |    2 +-
-> 
-> This driver is merged into the MFD tree, you need Lee or
-> Sam to apply it.
-> 
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+This doesn't make any sense.. From a quick SDM read you can do pretty
+much whatever with those RMIDs. If you allocate a RMID per task (thread
+in userspace) you can actually measure things on a task basis.
 
-Applied, thanks.
+>From then on you can use perf-cgroup to group whatever tasks you want.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+So please be more explicit in why you think this doesn't fit into perf.
