@@ -1,120 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756040AbaAFS5R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 13:57:17 -0500
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:54194 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754699AbaAFS5P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 13:57:15 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAA25o9ScgzY1TbqKoe2KbSCc-DUBFLstDyYWY=LmdL+ioX82Ug@mail.gmail.com>
-References: <20131231193530.GA25261@core.coreip.homeip.net>
-	<CAD=FV=VZyXs9b+UyzuWNHBwKWEVcEvSZ4xdtsJLD+TFnRJon6A@mail.gmail.com>
-	<20140102194817.GC2025@core.coreip.homeip.net>
-	<CAA25o9ScgzY1TbqKoe2KbSCc-DUBFLstDyYWY=LmdL+ioX82Ug@mail.gmail.com>
-Date: Mon, 6 Jan 2014 10:57:14 -0800
-X-Google-Sender-Auth: rFI0c7-HalNqfdW_lM9h40SjEIo
-Message-ID: <CAD=FV=UCEcTr+X-=yNxo1VnJ1B8kJ=wDbR7H_S3AYvBGLU7tEw@mail.gmail.com>
-Subject: Re: [PATCH] Input: cros_ec_keyb - avoid variable-length arrays on stack
-From: Doug Anderson <dianders@chromium.org>
-To: Luigi Semenzato <semenzato@chromium.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        Simon Glass <sjg@chromium.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=UTF-8
+	id S1755956AbaAFS70 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 13:59:26 -0500
+Received: from mga02.intel.com ([134.134.136.20]:43674 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755470AbaAFS7Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 13:59:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,614,1384329600"; 
+   d="scan'208";a="462444686"
+Message-ID: <1389034693.30730.33.camel@dvhart-mobl4.amr.corp.intel.com>
+Subject: Re: [PATCH v5 3/4] futex: Document ordering guarantees
+From: Darren Hart <dvhart@linux.intel.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, peterz@infradead.org,
+        tglx@linutronix.de, paulmck@linux.vnet.ibm.com, efault@gmx.de,
+        jeffm@suse.com, torvalds@linux-foundation.org, jason.low2@hp.com,
+        Waiman.Long@hp.com, tom.vaden@hp.com, scott.norton@hp.com,
+        aswin@hp.com, Randy Dunlap <rdunlap@infradead.org>
+Date: Mon, 06 Jan 2014 10:58:13 -0800
+In-Reply-To: <1388675120-8017-4-git-send-email-davidlohr@hp.com>
+References: <1388675120-8017-1-git-send-email-davidlohr@hp.com>
+	 <1388675120-8017-4-git-send-email-davidlohr@hp.com>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 2, 2014 at 4:25 PM, Luigi Semenzato <semenzato@chromium.org> wrote:
-> On Thu, Jan 2, 2014 at 11:48 AM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
->> Hi Doug,
->>
->> On Thu, Jan 02, 2014 at 09:40:44AM -0800, Doug Anderson wrote:
->>> Dmitry,
->>>
->>> Thanks for cleaning up cros_eckeyb.  :)  I'm a little curious about
->>> the motivation here.  I can't imagine a keyboard with all that many
->>> columns (ours has 13), so it's really not taking a whole lot off of
->>> the stack.  Are you trying to make some sort of automated checker
->>> happy, or just generally trying to keep the kernel consistent?
->>
->> I compile most of the code with sparse so I prefer to keep it happy.
->>
->>>
->>> In any case, I'm not opposed to moving these bytes off the stack.
->>> Comments below, though...
->>>
->>> ---
->>>
->>> On Tue, Dec 31, 2013 at 11:35 AM, Dmitry Torokhov
->>> <dmitry.torokhov@gmail.com> wrote:
-...
->>> > @@ -217,32 +219,40 @@ static int cros_ec_keyb_probe(struct platform_device *pdev)
->>> >         struct cros_ec_keyb *ckdev;
->>> >         struct input_dev *idev;
->>> >         struct device_node *np;
->>> > +       unsigned int rows, cols;
->>> > +       size_t size;
->>> >         int err;
->>> >
->>> >         np = pdev->dev.of_node;
->>> >         if (!np)
->>> >                 return -ENODEV;
->>> >
->>> > -       ckdev = devm_kzalloc(&pdev->dev, sizeof(*ckdev), GFP_KERNEL);
->>> > -       if (!ckdev)
->>> > -               return -ENOMEM;
->>> > -       err = matrix_keypad_parse_of_params(&pdev->dev, &ckdev->rows,
->>> > -                                           &ckdev->cols);
->>> > +       err = matrix_keypad_parse_of_params(&pdev->dev, &rows, &cols);
->>> >         if (err)
->>> >                 return err;
->>> > -       ckdev->old_kb_state = devm_kzalloc(&pdev->dev, ckdev->cols, GFP_KERNEL);
->>> > -       if (!ckdev->old_kb_state)
->>> > -               return -ENOMEM;
->>> >
->>> > -       idev = devm_input_allocate_device(&pdev->dev);
->>> > -       if (!idev)
->>> > +       /*
->>> > +        * Double memory for keyboard state so we have space for storing
->>> > +        * current and previous state.
->>> > +        */
->>> > +       size = sizeof(*ckdev) + 2 * cols * sizeof(*ckdev->kb_state);
->>> > +       ckdev = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
->>> > +       if (!ckdev)
->>> >                 return -ENOMEM;
->>>
->>> This change seems like a lot of complexity to save one memory
->>> allocation.  If you insist, I'd be OK with having one allocation for
->>> both buffers (kb_state and old_kb_state) but trying to jam this onto
->>> the end of the structure is non-obvious.  It certainly took me a
->>> minute to understand what you were doing and why.
->>
->> It is not one additional allocation but more as you need to allocate
->> devres data structures and add them there. I think we have quite a few
->> drivers piggy-backing key tables at the end of data structures.
+On Thu, 2014-01-02 at 07:05 -0800, Davidlohr Bueso wrote:
+> From: Thomas Gleixner <tglx@linutronix.de>
+> 
+> That's essential, if you want to hack on futexes.
+> 
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Darren Hart <dvhart@linux.intel.com>
 
-OK, I will leave this as your call.  To me, piggybacking like this
-make sense if you've got a single chunk of dynamic memory that you
-just want to cram onto the end of the structure.  It just gets more
-complicated when you have two nearly identical chunks of memory and
-one of them is using this piggybacking technique while the other
-isn't.
+Reviewed-by: Darren Hart <dvhart@linux.intel.com>
 
-What about a compromise and declaring as:
+> Acked-by: Peter Zijlstra <peterz@infradead.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Jeff Mahoney <jeffm@suse.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Randy Dunlap <rdunlap@infradead.org>
+> Cc: Scott Norton <scott.norton@hp.com>
+> Cc: Tom Vaden <tom.vaden@hp.com>
+> Cc: Aswin Chandramouleeswaran <aswin@hp.com>
+> Cc: Waiman Long <Waiman.Long@hp.com>
+> Cc: Jason Low <jason.low2@hp.com>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> ---
+>  kernel/futex.c | 57 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 57 insertions(+)
+> 
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index 577481d..fcc6850 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -69,6 +69,63 @@
+>  
+>  #include "locking/rtmutex_common.h"
+>  
+> +/*
+> + * Basic futex operation and ordering guarantees:
+> + *
+> + * The waiter reads the futex value in user space and calls
+> + * futex_wait(). This function computes the hash bucket and acquires
+> + * the hash bucket lock. After that it reads the futex user space value
+> + * again and verifies that the data has not changed. If it has not
+> + * changed it enqueues itself into the hash bucket, releases the hash
+> + * bucket lock and schedules.
+> + *
+> + * The waker side modifies the user space value of the futex and calls
+> + * futex_wake(). This functions computes the hash bucket and acquires
+> + * the hash bucket lock. Then it looks for waiters on that futex in the
+> + * hash bucket and wakes them.
+> + *
+> + * Note that the spin_lock serializes waiters and wakers, so that the
+> + * following scenario is avoided:
+> + *
+> + * CPU 0                               CPU 1
+> + * val = *futex;
+> + * sys_futex(WAIT, futex, val);
+> + *   futex_wait(futex, val);
+> + *   uval = *futex;
+> + *                                     *futex = newval;
+> + *                                     sys_futex(WAKE, futex);
+> + *                                       futex_wake(futex);
+> + *                                       if (queue_empty())
+> + *                                         return;
+> + *   if (uval == val)
+> + *      lock(hash_bucket(futex));
+> + *      queue();
+> + *     unlock(hash_bucket(futex));
+> + *     schedule();
+> + *
+> + * This would cause the waiter on CPU 0 to wait forever because it
+> + * missed the transition of the user space value from val to newval
+> + * and the waker did not find the waiter in the hash bucket queue.
+> + * The spinlock serializes that:
+> + *
+> + * CPU 0                               CPU 1
+> + * val = *futex;
+> + * sys_futex(WAIT, futex, val);
+> + *   futex_wait(futex, val);
+> + *   lock(hash_bucket(futex));
+> + *   uval = *futex;
+> + *                                     *futex = newval;
+> + *                                     sys_futex(WAKE, futex);
+> + *                                       futex_wake(futex);
+> + *                                       lock(hash_bucket(futex));
+> + *   if (uval == val)
+> + *      queue();
+> + *     unlock(hash_bucket(futex));
+> + *     schedule();                       if (!queue_empty())
+> + *                                         wake_waiters(futex);
+> + *                                       unlock(hash_bucket(futex));
+> + */
+> +
+>  int __read_mostly futex_cmpxchg_enabled;
+>  
+>  /*
 
- u8 *kb_state;
- u8 *old_kb_state;
- u8 buffers[];
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
 
-You still have the same number of memory allocations but (to me) it's
-much clearer what's going on here.  You do pay a penalty of an extra
-memory dereference and an extra 4 bytes of memory, but clarity should
-trump that.
 
--Doug
