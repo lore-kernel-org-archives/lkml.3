@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002AbaAFIWc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 03:22:32 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:63679 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753253AbaAFIW3 (ORCPT
+	id S1753531AbaAFIYe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 03:24:34 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:40405 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751881AbaAFIWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 03:22:29 -0500
+	Mon, 6 Jan 2014 03:22:25 -0500
 From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 To: catalin.marinas@arm.com, will.deacon@arm.com, gregkh@linuxfoundation.org,
         akpm@linux-foundation.org, hpa@zytor.com, ak@linux.intel.com
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         herbert@gondor.apana.org.au, mingo@redhat.com, nico@linaro.org,
         x86@kernel.org, Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Subject: [PATCH 4/8] x86: align with generic cpu modalias
-Date: Mon,  6 Jan 2014 09:22:12 +0100
-Message-Id: <1388996536-27014-5-git-send-email-ard.biesheuvel@linaro.org>
+Subject: [PATCH 1/8] arm64: add kernel emulation for AES instructions
+Date: Mon,  6 Jan 2014 09:22:09 +0100
+Message-Id: <1388996536-27014-2-git-send-email-ard.biesheuvel@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388996536-27014-1-git-send-email-ard.biesheuvel@linaro.org>
 References: <1388996536-27014-1-git-send-email-ard.biesheuvel@linaro.org>
@@ -23,58 +23,488 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Align with the new generic 'cpu:type:...:features:...' modalias
-by moving the 'x86' prefix and the vendor/family/model IDs into
-the 'type' field.
+NOTE: this patch is not intended for merging upstream, but is only
+included as a bonus so mere mortals (i.e., those whose ARMv8 system
+does not support the AES crypto instructions) can test the series
+if they like.
 
 Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 ---
- arch/x86/kernel/cpu/match.c |  3 +--
- scripts/mod/file2alias.c    | 10 +++++-----
- 2 files changed, 6 insertions(+), 7 deletions(-)
+ arch/arm64/Makefile            |   1 +
+ arch/arm64/emu/Makefile        |  11 ++
+ arch/arm64/emu/ce-aes.c        | 331 +++++++++++++++++++++++++++++++++++++++++
+ arch/arm64/include/asm/traps.h |  10 ++
+ arch/arm64/kernel/entry.S      |   4 +-
+ arch/arm64/kernel/traps.c      |  49 ++++++
+ 6 files changed, 405 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm64/emu/Makefile
+ create mode 100644 arch/arm64/emu/ce-aes.c
 
-diff --git a/arch/x86/kernel/cpu/match.c b/arch/x86/kernel/cpu/match.c
-index ab6082a9020e..82e92b2185f6 100644
---- a/arch/x86/kernel/cpu/match.c
-+++ b/arch/x86/kernel/cpu/match.c
-@@ -56,8 +56,7 @@ ssize_t arch_print_cpu_modalias(struct device *dev,
- 	int i, n;
- 	char *buf = bufptr;
+diff --git a/arch/arm64/Makefile b/arch/arm64/Makefile
+index 2fceb71ac3b7..e0b75464b7f1 100644
+--- a/arch/arm64/Makefile
++++ b/arch/arm64/Makefile
+@@ -42,6 +42,7 @@ TEXT_OFFSET := 0x00080000
  
--	n = snprintf(buf, size, "x86cpu:vendor:%04X:family:%04X:"
--		     "model:%04X:feature:",
-+	n = snprintf(buf, size, "cpu:type:x86,ven%04Xfam%04Xmod%04X:feature:",
- 		boot_cpu_data.x86_vendor,
- 		boot_cpu_data.x86,
- 		boot_cpu_data.x86_model);
-diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
-index 8a69005228d8..5fdad833f951 100644
---- a/scripts/mod/file2alias.c
-+++ b/scripts/mod/file2alias.c
-@@ -1110,7 +1110,7 @@ static int do_amba_entry(const char *filename,
+ export	TEXT_OFFSET GZFLAGS
+ 
++core-y		+= arch/arm64/emu/
+ core-y		+= arch/arm64/kernel/ arch/arm64/mm/
+ core-$(CONFIG_KVM) += arch/arm64/kvm/
+ core-$(CONFIG_XEN) += arch/arm64/xen/
+diff --git a/arch/arm64/emu/Makefile b/arch/arm64/emu/Makefile
+new file mode 100644
+index 000000000000..224b4e19ff6f
+--- /dev/null
++++ b/arch/arm64/emu/Makefile
+@@ -0,0 +1,11 @@
++#
++# linux/arch/arm64/emu/Makefile
++#
++# Copyright (C) 2013 Linaro Ltd <ard.biesheuvel@linaro.org>
++#
++# This program is free software; you can redistribute it and/or modify
++# it under the terms of the GNU General Public License version 2 as
++# published by the Free Software Foundation.
++#
++
++obj-y += ce-aes.o
+diff --git a/arch/arm64/emu/ce-aes.c b/arch/arm64/emu/ce-aes.c
+new file mode 100644
+index 000000000000..d50fadbd7336
+--- /dev/null
++++ b/arch/arm64/emu/ce-aes.c
+@@ -0,0 +1,331 @@
++/*
++ * ce-aes.c - emulate aese/aesd/aesmc/aesimc instructions
++ *
++ * Copyright (C) 2013 Linaro Ltd <ard.biesheuvel@linaro.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/init.h>
++#include <linux/printk.h>
++#include <linux/ptrace.h>
++#include <linux/types.h>
++#include <linux/uaccess.h>
++#include <asm/traps.h>
++#include <asm/hwcap.h>
++
++union AES_STATE {
++	u8	bytes[16];
++	u32	cols[4];
++	u64	l[2];
++} __aligned(8);
++
++static void add_sub_shift(union AES_STATE *st, union AES_STATE *rk, int inv);
++static void mix_columns(union AES_STATE *out, union AES_STATE *in, int inv);
++
++#define REG_ACCESS(op, r, mem) \
++	do { case r: asm(#op " {v" #r ".16b}, [%0]" : : "r"(mem)); goto out; \
++	} while (0)
++
++#define REG_SWITCH(reg, op, m) do { switch (reg) { \
++	REG_ACCESS(op,  0, m);	REG_ACCESS(op,  1, m);	REG_ACCESS(op,  2, m); \
++	REG_ACCESS(op,  3, m);	REG_ACCESS(op,  4, m);	REG_ACCESS(op,  5, m); \
++	REG_ACCESS(op,  6, m);	REG_ACCESS(op,  7, m);	REG_ACCESS(op,  8, m); \
++	REG_ACCESS(op,  9, m);	REG_ACCESS(op, 10, m);	REG_ACCESS(op, 11, m); \
++	REG_ACCESS(op, 12, m);	REG_ACCESS(op, 13, m);	REG_ACCESS(op, 14, m); \
++	REG_ACCESS(op, 15, m);	REG_ACCESS(op, 16, m);	REG_ACCESS(op, 17, m); \
++	REG_ACCESS(op, 18, m);	REG_ACCESS(op, 19, m);	REG_ACCESS(op, 20, m); \
++	REG_ACCESS(op, 21, m);	REG_ACCESS(op, 22, m);	REG_ACCESS(op, 23, m); \
++	REG_ACCESS(op, 24, m);	REG_ACCESS(op, 25, m);	REG_ACCESS(op, 26, m); \
++	REG_ACCESS(op, 27, m);	REG_ACCESS(op, 28, m);	REG_ACCESS(op, 29, m); \
++	REG_ACCESS(op, 30, m);	REG_ACCESS(op, 31, m); \
++	} out:; } while (0)
++
++static void load_neon_reg(union AES_STATE *st, int reg)
++{
++	REG_SWITCH(reg, st1, st->bytes);
++}
++
++static void save_neon_reg(union AES_STATE *st, int reg)
++{
++	REG_SWITCH(reg, ld1, st->bytes);
++}
++
++static void aesce_do_emulate(unsigned int instr)
++{
++	enum { AESE, AESD, AESMC, AESIMC } kind = (instr >> 12) & 3;
++	int rn = (instr >> 5) & 0x1f;
++	int rd = instr & 0x1f;
++	union AES_STATE in, out;
++
++	load_neon_reg(&in, rn);
++
++	switch (kind) {
++	case AESE:
++	case AESD:
++		load_neon_reg(&out, rd);
++		add_sub_shift(&out, &in, kind & 1);
++		break;
++	case AESMC:
++	case AESIMC:
++		mix_columns(&out, &in, kind & 1);
++		break;
++	}
++	save_neon_reg(&out, rd);
++}
++
++static int aesce_emu_instr(struct pt_regs *regs, unsigned int instr);
++
++static struct undef_hook aesce_emu_uh = {
++	.instr_val	= 0x4e284800,
++	.instr_mask	= 0xffffcc00,
++	.fn		= aesce_emu_instr,
++};
++
++static int aesce_emu_instr(struct pt_regs *regs, unsigned int instr)
++{
++	do {
++		aesce_do_emulate(instr);
++		regs->pc += 4;
++		get_user(instr, (u32 __user *)regs->pc);
++	} while ((instr & aesce_emu_uh.instr_mask) == aesce_emu_uh.instr_val);
++
++	return 0;
++}
++
++static int aesce_emu_init(void)
++{
++	register_undef_hook(&aesce_emu_uh);
++	elf_hwcap |= HWCAP_AES;
++	return 0;
++}
++
++arch_initcall(aesce_emu_init);
++
++static void add_sub_shift(union AES_STATE *st, union AES_STATE *rk, int inv)
++{
++	static u8 const sbox[][256] = { {
++		0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5,
++		0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
++		0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0,
++		0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
++		0xb7, 0xfd, 0x93, 0x26, 0x36, 0x3f, 0xf7, 0xcc,
++		0x34, 0xa5, 0xe5, 0xf1, 0x71, 0xd8, 0x31, 0x15,
++		0x04, 0xc7, 0x23, 0xc3, 0x18, 0x96, 0x05, 0x9a,
++		0x07, 0x12, 0x80, 0xe2, 0xeb, 0x27, 0xb2, 0x75,
++		0x09, 0x83, 0x2c, 0x1a, 0x1b, 0x6e, 0x5a, 0xa0,
++		0x52, 0x3b, 0xd6, 0xb3, 0x29, 0xe3, 0x2f, 0x84,
++		0x53, 0xd1, 0x00, 0xed, 0x20, 0xfc, 0xb1, 0x5b,
++		0x6a, 0xcb, 0xbe, 0x39, 0x4a, 0x4c, 0x58, 0xcf,
++		0xd0, 0xef, 0xaa, 0xfb, 0x43, 0x4d, 0x33, 0x85,
++		0x45, 0xf9, 0x02, 0x7f, 0x50, 0x3c, 0x9f, 0xa8,
++		0x51, 0xa3, 0x40, 0x8f, 0x92, 0x9d, 0x38, 0xf5,
++		0xbc, 0xb6, 0xda, 0x21, 0x10, 0xff, 0xf3, 0xd2,
++		0xcd, 0x0c, 0x13, 0xec, 0x5f, 0x97, 0x44, 0x17,
++		0xc4, 0xa7, 0x7e, 0x3d, 0x64, 0x5d, 0x19, 0x73,
++		0x60, 0x81, 0x4f, 0xdc, 0x22, 0x2a, 0x90, 0x88,
++		0x46, 0xee, 0xb8, 0x14, 0xde, 0x5e, 0x0b, 0xdb,
++		0xe0, 0x32, 0x3a, 0x0a, 0x49, 0x06, 0x24, 0x5c,
++		0xc2, 0xd3, 0xac, 0x62, 0x91, 0x95, 0xe4, 0x79,
++		0xe7, 0xc8, 0x37, 0x6d, 0x8d, 0xd5, 0x4e, 0xa9,
++		0x6c, 0x56, 0xf4, 0xea, 0x65, 0x7a, 0xae, 0x08,
++		0xba, 0x78, 0x25, 0x2e, 0x1c, 0xa6, 0xb4, 0xc6,
++		0xe8, 0xdd, 0x74, 0x1f, 0x4b, 0xbd, 0x8b, 0x8a,
++		0x70, 0x3e, 0xb5, 0x66, 0x48, 0x03, 0xf6, 0x0e,
++		0x61, 0x35, 0x57, 0xb9, 0x86, 0xc1, 0x1d, 0x9e,
++		0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94,
++		0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf,
++		0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68,
++		0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
++	}, {
++		0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38,
++		0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
++		0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87,
++		0x34, 0x8e, 0x43, 0x44, 0xc4, 0xde, 0xe9, 0xcb,
++		0x54, 0x7b, 0x94, 0x32, 0xa6, 0xc2, 0x23, 0x3d,
++		0xee, 0x4c, 0x95, 0x0b, 0x42, 0xfa, 0xc3, 0x4e,
++		0x08, 0x2e, 0xa1, 0x66, 0x28, 0xd9, 0x24, 0xb2,
++		0x76, 0x5b, 0xa2, 0x49, 0x6d, 0x8b, 0xd1, 0x25,
++		0x72, 0xf8, 0xf6, 0x64, 0x86, 0x68, 0x98, 0x16,
++		0xd4, 0xa4, 0x5c, 0xcc, 0x5d, 0x65, 0xb6, 0x92,
++		0x6c, 0x70, 0x48, 0x50, 0xfd, 0xed, 0xb9, 0xda,
++		0x5e, 0x15, 0x46, 0x57, 0xa7, 0x8d, 0x9d, 0x84,
++		0x90, 0xd8, 0xab, 0x00, 0x8c, 0xbc, 0xd3, 0x0a,
++		0xf7, 0xe4, 0x58, 0x05, 0xb8, 0xb3, 0x45, 0x06,
++		0xd0, 0x2c, 0x1e, 0x8f, 0xca, 0x3f, 0x0f, 0x02,
++		0xc1, 0xaf, 0xbd, 0x03, 0x01, 0x13, 0x8a, 0x6b,
++		0x3a, 0x91, 0x11, 0x41, 0x4f, 0x67, 0xdc, 0xea,
++		0x97, 0xf2, 0xcf, 0xce, 0xf0, 0xb4, 0xe6, 0x73,
++		0x96, 0xac, 0x74, 0x22, 0xe7, 0xad, 0x35, 0x85,
++		0xe2, 0xf9, 0x37, 0xe8, 0x1c, 0x75, 0xdf, 0x6e,
++		0x47, 0xf1, 0x1a, 0x71, 0x1d, 0x29, 0xc5, 0x89,
++		0x6f, 0xb7, 0x62, 0x0e, 0xaa, 0x18, 0xbe, 0x1b,
++		0xfc, 0x56, 0x3e, 0x4b, 0xc6, 0xd2, 0x79, 0x20,
++		0x9a, 0xdb, 0xc0, 0xfe, 0x78, 0xcd, 0x5a, 0xf4,
++		0x1f, 0xdd, 0xa8, 0x33, 0x88, 0x07, 0xc7, 0x31,
++		0xb1, 0x12, 0x10, 0x59, 0x27, 0x80, 0xec, 0x5f,
++		0x60, 0x51, 0x7f, 0xa9, 0x19, 0xb5, 0x4a, 0x0d,
++		0x2d, 0xe5, 0x7a, 0x9f, 0x93, 0xc9, 0x9c, 0xef,
++		0xa0, 0xe0, 0x3b, 0x4d, 0xae, 0x2a, 0xf5, 0xb0,
++		0xc8, 0xeb, 0xbb, 0x3c, 0x83, 0x53, 0x99, 0x61,
++		0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26,
++		0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d
++	} };
++	static u8 const permute[][16] = {
++		{ 0,  5, 10, 15, 4, 9, 14,  3, 8, 13, 2,  7, 12, 1, 6, 11 },
++		{ 0, 13, 10,  7, 4, 1, 14, 11, 8,  5, 2, 15, 12, 9, 6,  3 },
++	};
++	int i;
++
++	rk->l[0] ^= st->l[0];
++	rk->l[1] ^= st->l[1];
++
++	for (i = 0; i < 16; i++)
++		st->bytes[i] = sbox[inv][rk->bytes[permute[inv][i]]];
++}
++
++static void mix_columns(union AES_STATE *out, union AES_STATE *in, int inv)
++{
++	static u32 const mc[][256] = { {
++		0x00000000, 0x03010102, 0x06020204, 0x05030306,
++		0x0c040408, 0x0f05050a, 0x0a06060c, 0x0907070e,
++		0x18080810, 0x1b090912, 0x1e0a0a14, 0x1d0b0b16,
++		0x140c0c18, 0x170d0d1a, 0x120e0e1c, 0x110f0f1e,
++		0x30101020, 0x33111122, 0x36121224, 0x35131326,
++		0x3c141428, 0x3f15152a, 0x3a16162c, 0x3917172e,
++		0x28181830, 0x2b191932, 0x2e1a1a34, 0x2d1b1b36,
++		0x241c1c38, 0x271d1d3a, 0x221e1e3c, 0x211f1f3e,
++		0x60202040, 0x63212142, 0x66222244, 0x65232346,
++		0x6c242448, 0x6f25254a, 0x6a26264c, 0x6927274e,
++		0x78282850, 0x7b292952, 0x7e2a2a54, 0x7d2b2b56,
++		0x742c2c58, 0x772d2d5a, 0x722e2e5c, 0x712f2f5e,
++		0x50303060, 0x53313162, 0x56323264, 0x55333366,
++		0x5c343468, 0x5f35356a, 0x5a36366c, 0x5937376e,
++		0x48383870, 0x4b393972, 0x4e3a3a74, 0x4d3b3b76,
++		0x443c3c78, 0x473d3d7a, 0x423e3e7c, 0x413f3f7e,
++		0xc0404080, 0xc3414182, 0xc6424284, 0xc5434386,
++		0xcc444488, 0xcf45458a, 0xca46468c, 0xc947478e,
++		0xd8484890, 0xdb494992, 0xde4a4a94, 0xdd4b4b96,
++		0xd44c4c98, 0xd74d4d9a, 0xd24e4e9c, 0xd14f4f9e,
++		0xf05050a0, 0xf35151a2, 0xf65252a4, 0xf55353a6,
++		0xfc5454a8, 0xff5555aa, 0xfa5656ac, 0xf95757ae,
++		0xe85858b0, 0xeb5959b2, 0xee5a5ab4, 0xed5b5bb6,
++		0xe45c5cb8, 0xe75d5dba, 0xe25e5ebc, 0xe15f5fbe,
++		0xa06060c0, 0xa36161c2, 0xa66262c4, 0xa56363c6,
++		0xac6464c8, 0xaf6565ca, 0xaa6666cc, 0xa96767ce,
++		0xb86868d0, 0xbb6969d2, 0xbe6a6ad4, 0xbd6b6bd6,
++		0xb46c6cd8, 0xb76d6dda, 0xb26e6edc, 0xb16f6fde,
++		0x907070e0, 0x937171e2, 0x967272e4, 0x957373e6,
++		0x9c7474e8, 0x9f7575ea, 0x9a7676ec, 0x997777ee,
++		0x887878f0, 0x8b7979f2, 0x8e7a7af4, 0x8d7b7bf6,
++		0x847c7cf8, 0x877d7dfa, 0x827e7efc, 0x817f7ffe,
++		0x9b80801b, 0x98818119, 0x9d82821f, 0x9e83831d,
++		0x97848413, 0x94858511, 0x91868617, 0x92878715,
++		0x8388880b, 0x80898909, 0x858a8a0f, 0x868b8b0d,
++		0x8f8c8c03, 0x8c8d8d01, 0x898e8e07, 0x8a8f8f05,
++		0xab90903b, 0xa8919139, 0xad92923f, 0xae93933d,
++		0xa7949433, 0xa4959531, 0xa1969637, 0xa2979735,
++		0xb398982b, 0xb0999929, 0xb59a9a2f, 0xb69b9b2d,
++		0xbf9c9c23, 0xbc9d9d21, 0xb99e9e27, 0xba9f9f25,
++		0xfba0a05b, 0xf8a1a159, 0xfda2a25f, 0xfea3a35d,
++		0xf7a4a453, 0xf4a5a551, 0xf1a6a657, 0xf2a7a755,
++		0xe3a8a84b, 0xe0a9a949, 0xe5aaaa4f, 0xe6abab4d,
++		0xefacac43, 0xecadad41, 0xe9aeae47, 0xeaafaf45,
++		0xcbb0b07b, 0xc8b1b179, 0xcdb2b27f, 0xceb3b37d,
++		0xc7b4b473, 0xc4b5b571, 0xc1b6b677, 0xc2b7b775,
++		0xd3b8b86b, 0xd0b9b969, 0xd5baba6f, 0xd6bbbb6d,
++		0xdfbcbc63, 0xdcbdbd61, 0xd9bebe67, 0xdabfbf65,
++		0x5bc0c09b, 0x58c1c199, 0x5dc2c29f, 0x5ec3c39d,
++		0x57c4c493, 0x54c5c591, 0x51c6c697, 0x52c7c795,
++		0x43c8c88b, 0x40c9c989, 0x45caca8f, 0x46cbcb8d,
++		0x4fcccc83, 0x4ccdcd81, 0x49cece87, 0x4acfcf85,
++		0x6bd0d0bb, 0x68d1d1b9, 0x6dd2d2bf, 0x6ed3d3bd,
++		0x67d4d4b3, 0x64d5d5b1, 0x61d6d6b7, 0x62d7d7b5,
++		0x73d8d8ab, 0x70d9d9a9, 0x75dadaaf, 0x76dbdbad,
++		0x7fdcdca3, 0x7cdddda1, 0x79dedea7, 0x7adfdfa5,
++		0x3be0e0db, 0x38e1e1d9, 0x3de2e2df, 0x3ee3e3dd,
++		0x37e4e4d3, 0x34e5e5d1, 0x31e6e6d7, 0x32e7e7d5,
++		0x23e8e8cb, 0x20e9e9c9, 0x25eaeacf, 0x26ebebcd,
++		0x2fececc3, 0x2cededc1, 0x29eeeec7, 0x2aefefc5,
++		0x0bf0f0fb, 0x08f1f1f9, 0x0df2f2ff, 0x0ef3f3fd,
++		0x07f4f4f3, 0x04f5f5f1, 0x01f6f6f7, 0x02f7f7f5,
++		0x13f8f8eb, 0x10f9f9e9, 0x15fafaef, 0x16fbfbed,
++		0x1ffcfce3, 0x1cfdfde1, 0x19fefee7, 0x1affffe5,
++	}, {
++		0x00000000, 0x0b0d090e, 0x161a121c, 0x1d171b12,
++		0x2c342438, 0x27392d36, 0x3a2e3624, 0x31233f2a,
++		0x58684870, 0x5365417e, 0x4e725a6c, 0x457f5362,
++		0x745c6c48, 0x7f516546, 0x62467e54, 0x694b775a,
++		0xb0d090e0, 0xbbdd99ee, 0xa6ca82fc, 0xadc78bf2,
++		0x9ce4b4d8, 0x97e9bdd6, 0x8afea6c4, 0x81f3afca,
++		0xe8b8d890, 0xe3b5d19e, 0xfea2ca8c, 0xf5afc382,
++		0xc48cfca8, 0xcf81f5a6, 0xd296eeb4, 0xd99be7ba,
++		0x7bbb3bdb, 0x70b632d5, 0x6da129c7, 0x66ac20c9,
++		0x578f1fe3, 0x5c8216ed, 0x41950dff, 0x4a9804f1,
++		0x23d373ab, 0x28de7aa5, 0x35c961b7, 0x3ec468b9,
++		0x0fe75793, 0x04ea5e9d, 0x19fd458f, 0x12f04c81,
++		0xcb6bab3b, 0xc066a235, 0xdd71b927, 0xd67cb029,
++		0xe75f8f03, 0xec52860d, 0xf1459d1f, 0xfa489411,
++		0x9303e34b, 0x980eea45, 0x8519f157, 0x8e14f859,
++		0xbf37c773, 0xb43ace7d, 0xa92dd56f, 0xa220dc61,
++		0xf66d76ad, 0xfd607fa3, 0xe07764b1, 0xeb7a6dbf,
++		0xda595295, 0xd1545b9b, 0xcc434089, 0xc74e4987,
++		0xae053edd, 0xa50837d3, 0xb81f2cc1, 0xb31225cf,
++		0x82311ae5, 0x893c13eb, 0x942b08f9, 0x9f2601f7,
++		0x46bde64d, 0x4db0ef43, 0x50a7f451, 0x5baafd5f,
++		0x6a89c275, 0x6184cb7b, 0x7c93d069, 0x779ed967,
++		0x1ed5ae3d, 0x15d8a733, 0x08cfbc21, 0x03c2b52f,
++		0x32e18a05, 0x39ec830b, 0x24fb9819, 0x2ff69117,
++		0x8dd64d76, 0x86db4478, 0x9bcc5f6a, 0x90c15664,
++		0xa1e2694e, 0xaaef6040, 0xb7f87b52, 0xbcf5725c,
++		0xd5be0506, 0xdeb30c08, 0xc3a4171a, 0xc8a91e14,
++		0xf98a213e, 0xf2872830, 0xef903322, 0xe49d3a2c,
++		0x3d06dd96, 0x360bd498, 0x2b1ccf8a, 0x2011c684,
++		0x1132f9ae, 0x1a3ff0a0, 0x0728ebb2, 0x0c25e2bc,
++		0x656e95e6, 0x6e639ce8, 0x737487fa, 0x78798ef4,
++		0x495ab1de, 0x4257b8d0, 0x5f40a3c2, 0x544daacc,
++		0xf7daec41, 0xfcd7e54f, 0xe1c0fe5d, 0xeacdf753,
++		0xdbeec879, 0xd0e3c177, 0xcdf4da65, 0xc6f9d36b,
++		0xafb2a431, 0xa4bfad3f, 0xb9a8b62d, 0xb2a5bf23,
++		0x83868009, 0x888b8907, 0x959c9215, 0x9e919b1b,
++		0x470a7ca1, 0x4c0775af, 0x51106ebd, 0x5a1d67b3,
++		0x6b3e5899, 0x60335197, 0x7d244a85, 0x7629438b,
++		0x1f6234d1, 0x146f3ddf, 0x097826cd, 0x02752fc3,
++		0x335610e9, 0x385b19e7, 0x254c02f5, 0x2e410bfb,
++		0x8c61d79a, 0x876cde94, 0x9a7bc586, 0x9176cc88,
++		0xa055f3a2, 0xab58faac, 0xb64fe1be, 0xbd42e8b0,
++		0xd4099fea, 0xdf0496e4, 0xc2138df6, 0xc91e84f8,
++		0xf83dbbd2, 0xf330b2dc, 0xee27a9ce, 0xe52aa0c0,
++		0x3cb1477a, 0x37bc4e74, 0x2aab5566, 0x21a65c68,
++		0x10856342, 0x1b886a4c, 0x069f715e, 0x0d927850,
++		0x64d90f0a, 0x6fd40604, 0x72c31d16, 0x79ce1418,
++		0x48ed2b32, 0x43e0223c, 0x5ef7392e, 0x55fa3020,
++		0x01b79aec, 0x0aba93e2, 0x17ad88f0, 0x1ca081fe,
++		0x2d83bed4, 0x268eb7da, 0x3b99acc8, 0x3094a5c6,
++		0x59dfd29c, 0x52d2db92, 0x4fc5c080, 0x44c8c98e,
++		0x75ebf6a4, 0x7ee6ffaa, 0x63f1e4b8, 0x68fcedb6,
++		0xb1670a0c, 0xba6a0302, 0xa77d1810, 0xac70111e,
++		0x9d532e34, 0x965e273a, 0x8b493c28, 0x80443526,
++		0xe90f427c, 0xe2024b72, 0xff155060, 0xf418596e,
++		0xc53b6644, 0xce366f4a, 0xd3217458, 0xd82c7d56,
++		0x7a0ca137, 0x7101a839, 0x6c16b32b, 0x671bba25,
++		0x5638850f, 0x5d358c01, 0x40229713, 0x4b2f9e1d,
++		0x2264e947, 0x2969e049, 0x347efb5b, 0x3f73f255,
++		0x0e50cd7f, 0x055dc471, 0x184adf63, 0x1347d66d,
++		0xcadc31d7, 0xc1d138d9, 0xdcc623cb, 0xd7cb2ac5,
++		0xe6e815ef, 0xede51ce1, 0xf0f207f3, 0xfbff0efd,
++		0x92b479a7, 0x99b970a9, 0x84ae6bbb, 0x8fa362b5,
++		0xbe805d9f, 0xb58d5491, 0xa89a4f83, 0xa397468d,
++	} };
++
++	int i;
++
++	for (i = 0; i < 16; i += 4)
++		out->cols[i >> 2] = cpu_to_le32(
++			mc[inv][in->bytes[i]] ^
++			rol32(mc[inv][in->bytes[i + 1]], 8) ^
++			rol32(mc[inv][in->bytes[i + 2]], 16) ^
++			rol32(mc[inv][in->bytes[i + 3]], 24));
++}
+diff --git a/arch/arm64/include/asm/traps.h b/arch/arm64/include/asm/traps.h
+index 10ca8ff93cc2..781e50cb2f03 100644
+--- a/arch/arm64/include/asm/traps.h
++++ b/arch/arm64/include/asm/traps.h
+@@ -27,4 +27,14 @@ static inline int in_exception_text(unsigned long ptr)
+ 	       ptr < (unsigned long)&__exception_text_end;
  }
- ADD_TO_DEVTABLE("amba", amba_id, do_amba_entry);
  
--/* LOOKS like x86cpu:vendor:VVVV:family:FFFF:model:MMMM:feature:*,FEAT,*
-+/* LOOKS like cpu:type:x86,venVVVVfamFFFFmodMMMM:feature:*,FEAT,*
-  * All fields are numbers. It would be nicer to use strings for vendor
-  * and feature, but getting those out of the build system here is too
-  * complicated.
-@@ -1124,10 +1124,10 @@ static int do_x86cpu_entry(const char *filename, void *symval,
- 	DEF_FIELD(symval, x86_cpu_id, model);
- 	DEF_FIELD(symval, x86_cpu_id, vendor);
++struct undef_hook {
++	struct list_head node;
++	u32 instr_mask;
++	u32 instr_val;
++	int (*fn)(struct pt_regs *regs, unsigned int instr);
++};
++
++void register_undef_hook(struct undef_hook *hook);
++void unregister_undef_hook(struct undef_hook *hook);
++
+ #endif
+diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+index 32d7fe6c3d6a..7cfbb65f6aa9 100644
+--- a/arch/arm64/kernel/entry.S
++++ b/arch/arm64/kernel/entry.S
+@@ -283,7 +283,9 @@ el1_undef:
+ 	 * Undefined instruction
+ 	 */
+ 	mov	x0, sp
+-	b	do_undefinstr
++	bl	do_undefinstr
++
++	kernel_exit 1
+ el1_dbg:
+ 	/*
+ 	 * Debug exception handling
+diff --git a/arch/arm64/kernel/traps.c b/arch/arm64/kernel/traps.c
+index 7ffadddb645d..3cc4c915b73f 100644
+--- a/arch/arm64/kernel/traps.c
++++ b/arch/arm64/kernel/traps.c
+@@ -257,11 +257,60 @@ void arm64_notify_die(const char *str, struct pt_regs *regs,
+ 		die(str, regs, err);
+ }
  
--	strcpy(alias, "x86cpu:");
--	ADD(alias, "vendor:",  vendor != X86_VENDOR_ANY, vendor);
--	ADD(alias, ":family:", family != X86_FAMILY_ANY, family);
--	ADD(alias, ":model:",  model  != X86_MODEL_ANY,  model);
-+	strcpy(alias, "cpu:type:x86,");
-+	ADD(alias, "ven", vendor != X86_VENDOR_ANY, vendor);
-+	ADD(alias, "fam", family != X86_FAMILY_ANY, family);
-+	ADD(alias, "mod", model  != X86_MODEL_ANY,  model);
- 	strcat(alias, ":feature:*");
- 	if (feature != X86_FEATURE_ANY)
- 		sprintf(alias + strlen(alias), "%04X*", feature);
++static LIST_HEAD(undef_hook);
++static DEFINE_RAW_SPINLOCK(undef_lock);
++
++void register_undef_hook(struct undef_hook *hook)
++{
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&undef_lock, flags);
++	list_add(&hook->node, &undef_hook);
++	raw_spin_unlock_irqrestore(&undef_lock, flags);
++}
++
++void unregister_undef_hook(struct undef_hook *hook)
++{
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&undef_lock, flags);
++	list_del(&hook->node);
++	raw_spin_unlock_irqrestore(&undef_lock, flags);
++}
++
++static int call_undef_hook(struct pt_regs *regs, void __user *pc)
++{
++	struct undef_hook *hook;
++	unsigned long flags;
++	int (*fn)(struct pt_regs *regs, unsigned int instr) = NULL;
++	unsigned int instr;
++	mm_segment_t fs;
++	int ret;
++
++	fs = get_fs();
++	set_fs(KERNEL_DS);
++
++	get_user(instr, (u32 __user *)pc);
++
++	raw_spin_lock_irqsave(&undef_lock, flags);
++	list_for_each_entry(hook, &undef_hook, node)
++		if ((instr & hook->instr_mask) == hook->instr_val)
++			fn = hook->fn;
++	raw_spin_unlock_irqrestore(&undef_lock, flags);
++
++	ret = fn ? fn(regs, instr) : 1;
++	set_fs(fs);
++	return ret;
++}
++
+ asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
+ {
+ 	siginfo_t info;
+ 	void __user *pc = (void __user *)instruction_pointer(regs);
+ 
++	if (call_undef_hook(regs, pc) == 0)
++		return;
++
+ 	/* check for AArch32 breakpoint instructions */
+ 	if (!aarch32_break_handler(regs))
+ 		return;
 -- 
 1.8.3.2
 
