@@ -1,130 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167AbaAFTo3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 14:44:29 -0500
-Received: from mga02.intel.com ([134.134.136.20]:23596 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756131AbaAFTo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 14:44:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,614,1384329600"; 
-   d="scan'208";a="462466504"
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
-To: rostedt@goodmis.org
-Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
-        Tom Zanussi <tom.zanussi@linux.intel.com>
-Subject: [PATCH 1/2 v2] tracing/kprobes: Add trace event trigger invocations
-Date: Mon,  6 Jan 2014 13:44:19 -0600
-Message-Id: <f2d49f157b608070045fdb26c9564d5a05a5a7d0.1389036657.git.tom.zanussi@linux.intel.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <cover.1389036657.git.tom.zanussi@linux.intel.com>
-References: <cover.1389036657.git.tom.zanussi@linux.intel.com>
-In-Reply-To: <cover.1389036657.git.tom.zanussi@linux.intel.com>
-References: <cover.1389036657.git.tom.zanussi@linux.intel.com>
+	id S1755886AbaAFTrF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 14:47:05 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:39910 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753844AbaAFTrC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 14:47:02 -0500
+Message-ID: <52CB0835.4010602@infradead.org>
+Date: Mon, 06 Jan 2014 11:47:01 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Ove Karlsen <mail@ovekarlsen.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Gnu - censorship
+References: <52CAFCC6.3070504@ovekarlsen.com> <52CAFE7A.9090106@infradead.org> <52CB0132.2050705@ovekarlsen.com> <52CB03BA.2070508@infradead.org> <52CB054B.6070504@ovekarlsen.com> <52CB0659.1070906@infradead.org> <52CB0683.3030704@ovekarlsen.com>
+In-Reply-To: <52CB0683.3030704@ovekarlsen.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add code to the kprobe/kretprobe event functions that will invoke any
-event triggers associated with a probe's ftrace_event_file.
+On 01/06/14 11:39, Ove Karlsen wrote:
+> On 1/6/2014 8:39 PM, Randy Dunlap wrote:
+>> On 01/06/14 11:34, Ove Karlsen wrote:
+>>> On 1/6/2014 8:27 PM, Randy Dunlap wrote:
+>>>> On 01/06/14 11:17, Ove Karlsen wrote:
+>>>>> On 1/6/2014 8:05 PM, Randy Dunlap wrote:
+>>>>>> On 01/06/14 10:58, Ove Karlsen wrote:
+>>>>>>> https://lkml.org/lkml/2013/12/28/50
+>>>>>>>
+>>>>>>> This post is empty. I do not know if this is deliberate, but..
+>>>>>>>
+>>>>>>> Facism and censorhip goes hand in hand. Hopefully people here start to understand the problem that needs to be solved. Or complaints about Microsoft, will really the same as complaints againt ill-behaving "free software" advocates. Same irrational behaviour, by people whose pride is far more than their ability, and a block to natural developments and true excellence.
+>>>>>>>
+>>>>>>> Simple people whose life revolves around this: http://www.youtube.com/watch?v=xm2S5uxO01E
+>>>>>>>
+>>>>>>> PBWY.
+>>>>>>>
+>>>>>> or it could be related to this message that I get:
+>>>>>>
+>>>>>> XSLT error or server overload; admin notified. The system should heal itself, please try again in a few minutes
+>>>>>>
+>>>>>> Think Occam's Razor.
+>>>> Occam's Razor here is that the server is having problems.
+>>>>
+>>>> No, I haven't read anything that you wrote.  You are much too verbose for me to read.
+>>>>
+>>>>> I guess time will tell. Occams Razor here, if you have read anything I wrote, is clearly that people are brainwashed, starts behaving like facists, and symbolic idols are used to manipulate people. Recently I was censored at "linux-musicians.org" also where supposedly mentioning a windows plugin was not ok, even it it was open-source, EVEN if it is the worlds best, and would benefit the audio community much, having no such thing, making people turn to Mac because Waves plugins are there, for instance. And criticising the GPL was not ok, even thought it is irrational, and coupled to a phallic idol. I do not put an obscure licence, coupled to obscure statements and a symbolic representation of Stallmans genitals. The pride of symbolically recieving semen, seems to fit their brat behaviour. That is all they are, and what a Satan is. It is completely irrational, and people like these no doubt, are like brainwashed sectarians, greeting sieg heil in semenworship, and no doubt is
+>>>>> open to gay sex sooner or later. Sex Drugs And rock And Roll dude. Who knew Hitler was a rockstar. Or lets us not swear in church - BEATLES. They can also not be criticised many places. Their one song about the fly in the cornflakes. what was it.. "sitting on a cornflake", is actually them being flies, probably from LSD. How high STATUS has a FLY in your CORNFLAKES? That is what they thought were cool.
+>>>>>
+>>>>> Think about it. LSD still is the same.
+>>>> Good day (sunshine).
+>>> The message is still not up. Maybe you should run with your useless dick and fix it, so that nobody gets a suspicion? Occams Razor and all. Fuck why not mention astrology while you´re at it, will be about the same level.
+>>>
+>> I still get that same useless server error message.
+>>
+>> Are you always so grumpy?
+> The whole problem really seems to be about irrationality. And btw, I doubt Stallmans dick is that useful. So worshipping it, as some kind of feeling of lack of dick yourself, is probably quite vain. Have you seen squirrels fucking? Its more that kind of activity I guess. Excercises of bodily functions without much finesse.
+> 
 
-The code to do this is very similar to the invocation code already
-used to invoke the triggers associated with static events and
-essentially replaces the existing soft-disable checks with a superset
-that preserves the original behavior but adds the bits needed to
-support event triggers.
+I don't get all of this rambling.
+I won't reply to it any more.
 
-Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
----
- kernel/trace/trace_kprobe.c | 42 ++++++++++++++++++++++++++++++++++++------
- 1 file changed, 36 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index ce0ed8a..3afa716 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -929,12 +929,20 @@ __kprobe_trace_func(struct trace_kprobe *tk, struct pt_regs *regs,
- 	struct ring_buffer *buffer;
- 	int size, dsize, pc;
- 	unsigned long irq_flags;
-+	unsigned long eflags;
-+	enum event_trigger_type tt = ETT_NONE;
- 	struct ftrace_event_call *call = &tk->tp.call;
- 
- 	WARN_ON(call != ftrace_file->event_call);
- 
--	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
--		return;
-+	eflags = ftrace_file->flags;
-+
-+	if (!(eflags & FTRACE_EVENT_FL_TRIGGER_COND)) {
-+		if (eflags & FTRACE_EVENT_FL_TRIGGER_MODE)
-+			event_triggers_call(ftrace_file, NULL);
-+		if (eflags & FTRACE_EVENT_FL_SOFT_DISABLED)
-+			return;
-+	}
- 
- 	local_save_flags(irq_flags);
- 	pc = preempt_count();
-@@ -952,9 +960,16 @@ __kprobe_trace_func(struct trace_kprobe *tk, struct pt_regs *regs,
- 	entry->ip = (unsigned long)tk->rp.kp.addr;
- 	store_trace_args(sizeof(*entry), &tk->tp, regs, (u8 *)&entry[1], dsize);
- 
--	if (!filter_check_discard(ftrace_file, entry, buffer, event))
-+	if (eflags & FTRACE_EVENT_FL_TRIGGER_COND)
-+		tt = event_triggers_call(ftrace_file, entry);
-+
-+	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
-+		ring_buffer_discard_commit(buffer, event);
-+	else if (!filter_check_discard(ftrace_file, entry, buffer, event))
- 		trace_buffer_unlock_commit_regs(buffer, event,
- 						irq_flags, pc, regs);
-+	if (tt)
-+		event_triggers_post_call(ftrace_file, tt);
- }
- 
- static __kprobes void
-@@ -977,12 +992,20 @@ __kretprobe_trace_func(struct trace_kprobe *tk, struct kretprobe_instance *ri,
- 	struct ring_buffer *buffer;
- 	int size, pc, dsize;
- 	unsigned long irq_flags;
-+	unsigned long eflags;
-+	enum event_trigger_type tt = ETT_NONE;
- 	struct ftrace_event_call *call = &tk->tp.call;
- 
- 	WARN_ON(call != ftrace_file->event_call);
- 
--	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
--		return;
-+	eflags = ftrace_file->flags;
-+
-+	if (!(eflags & FTRACE_EVENT_FL_TRIGGER_COND)) {
-+		if (eflags & FTRACE_EVENT_FL_TRIGGER_MODE)
-+			event_triggers_call(ftrace_file, NULL);
-+		if (eflags & FTRACE_EVENT_FL_SOFT_DISABLED)
-+			return;
-+	}
- 
- 	local_save_flags(irq_flags);
- 	pc = preempt_count();
-@@ -1001,9 +1024,16 @@ __kretprobe_trace_func(struct trace_kprobe *tk, struct kretprobe_instance *ri,
- 	entry->ret_ip = (unsigned long)ri->ret_addr;
- 	store_trace_args(sizeof(*entry), &tk->tp, regs, (u8 *)&entry[1], dsize);
- 
--	if (!filter_check_discard(ftrace_file, entry, buffer, event))
-+	if (eflags & FTRACE_EVENT_FL_TRIGGER_COND)
-+		tt = event_triggers_call(ftrace_file, entry);
-+
-+	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
-+		ring_buffer_discard_commit(buffer, event);
-+	else if (!filter_check_discard(ftrace_file, entry, buffer, event))
- 		trace_buffer_unlock_commit_regs(buffer, event,
- 						irq_flags, pc, regs);
-+	if (tt)
-+		event_triggers_post_call(ftrace_file, tt);
- }
- 
- static __kprobes void
 -- 
-1.8.3.1
-
+~Randy
