@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758121AbaAGACF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 19:02:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47530 "EHLO
+	id S1758149AbaAGACk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:02:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47525 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932131AbaAFWiv (ORCPT
+	with ESMTP id S932194AbaAFWit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:51 -0500
+	Mon, 6 Jan 2014 17:38:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joseph Dolinak <kanilo2@yahoo.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Jakob Bornecrantz <jakob@vmware.com>
-Subject: [PATCH 3.12 063/144] drm/ttm: Fix accesses through vmas with only partial coverage
-Date: Mon,  6 Jan 2014 14:37:04 -0800
-Message-Id: <20140106223747.155191420@linuxfoundation.org>
+        Junho Ryu <jayr@google.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [PATCH 3.12 051/144] ext4: fix use-after-free in ext4_mb_new_blocks
+Date: Mon,  6 Jan 2014 14:36:52 -0800
+Message-Id: <20140106223746.806974076@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -30,37 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Junho Ryu <jayr@google.com>
 
-commit d386735588c3e22129c2bc6eb64fc1d37a8f805c upstream.
+commit 4e8d2139802ce4f41936a687f06c560b12115247 upstream.
 
-VMAs covering a bo but that didn't start at the same address space offset as
-the bo they were mapping were incorrectly generating SEGFAULT errors in
-the fault handler.
+ext4_mb_put_pa should hold pa->pa_lock before accessing pa->pa_count.
+While ext4_mb_use_preallocated checks pa->pa_deleted first and then
+increments pa->count later, ext4_mb_put_pa decrements pa->pa_count
+before holding pa->pa_lock and then sets pa->pa_deleted.
 
-Reported-by: Joseph Dolinak <kanilo2@yahoo.com>
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+* Free sequence
+ext4_mb_put_pa (1):		atomic_dec_and_test pa->pa_count
+ext4_mb_put_pa (2):		lock pa->pa_lock
+ext4_mb_put_pa (3):			check pa->pa_deleted
+ext4_mb_put_pa (4):			set pa->pa_deleted=1
+ext4_mb_put_pa (5):		unlock pa->pa_lock
+ext4_mb_put_pa (6):		remove pa from a list
+ext4_mb_pa_callback:		free pa
+
+* Use sequence
+ext4_mb_use_preallocated (1):	iterate over preallocation
+ext4_mb_use_preallocated (2):	lock pa->pa_lock
+ext4_mb_use_preallocated (3):		check pa->pa_deleted
+ext4_mb_use_preallocated (4):		increase pa->pa_count
+ext4_mb_use_preallocated (5):	unlock pa->pa_lock
+ext4_mb_release_context:	access pa
+
+* Use-after-free sequence
+[initial status]		<pa->pa_deleted = 0, pa_count = 1>
+ext4_mb_use_preallocated (1):	iterate over preallocation
+ext4_mb_use_preallocated (2):	lock pa->pa_lock
+ext4_mb_use_preallocated (3):		check pa->pa_deleted
+ext4_mb_put_pa (1):		atomic_dec_and_test pa->pa_count
+[pa_count decremented]		<pa->pa_deleted = 0, pa_count = 0>
+ext4_mb_use_preallocated (4):		increase pa->pa_count
+[pa_count incremented]		<pa->pa_deleted = 0, pa_count = 1>
+ext4_mb_use_preallocated (5):	unlock pa->pa_lock
+ext4_mb_put_pa (2):		lock pa->pa_lock
+ext4_mb_put_pa (3):			check pa->pa_deleted
+ext4_mb_put_pa (4):			set pa->pa_deleted=1
+[race condition!]		<pa->pa_deleted = 1, pa_count = 1>
+ext4_mb_put_pa (5):		unlock pa->pa_lock
+ext4_mb_put_pa (6):		remove pa from a list
+ext4_mb_pa_callback:		free pa
+ext4_mb_release_context:	access pa
+
+AddressSanitizer has detected use-after-free in ext4_mb_new_blocks
+Bug report: http://goo.gl/rG1On3
+
+Signed-off-by: Junho Ryu <jayr@google.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/ttm/ttm_bo_vm.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/ext4/mballoc.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/ttm/ttm_bo_vm.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo_vm.c
-@@ -116,9 +116,9 @@ static int ttm_bo_vm_fault(struct vm_are
- 	}
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -3442,6 +3442,9 @@ static void ext4_mb_pa_callback(struct r
+ {
+ 	struct ext4_prealloc_space *pa;
+ 	pa = container_of(head, struct ext4_prealloc_space, u.pa_rcu);
++
++	BUG_ON(atomic_read(&pa->pa_count));
++	BUG_ON(pa->pa_deleted == 0);
+ 	kmem_cache_free(ext4_pspace_cachep, pa);
+ }
  
- 	page_offset = ((address - vma->vm_start) >> PAGE_SHIFT) +
--	    drm_vma_node_start(&bo->vma_node) - vma->vm_pgoff;
--	page_last = vma_pages(vma) +
--	    drm_vma_node_start(&bo->vma_node) - vma->vm_pgoff;
-+		vma->vm_pgoff - drm_vma_node_start(&bo->vma_node);
-+	page_last = vma_pages(vma) + vma->vm_pgoff -
-+		drm_vma_node_start(&bo->vma_node);
+@@ -3455,11 +3458,13 @@ static void ext4_mb_put_pa(struct ext4_a
+ 	ext4_group_t grp;
+ 	ext4_fsblk_t grp_blk;
  
- 	if (unlikely(page_offset >= bo->num_pages)) {
- 		retval = VM_FAULT_SIGBUS;
+-	if (!atomic_dec_and_test(&pa->pa_count) || pa->pa_free != 0)
+-		return;
+-
+ 	/* in this short window concurrent discard can set pa_deleted */
+ 	spin_lock(&pa->pa_lock);
++	if (!atomic_dec_and_test(&pa->pa_count) || pa->pa_free != 0) {
++		spin_unlock(&pa->pa_lock);
++		return;
++	}
++
+ 	if (pa->pa_deleted == 1) {
+ 		spin_unlock(&pa->pa_lock);
+ 		return;
 
 
