@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679AbaAFMj1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 07:39:27 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:39544 "EHLO comal.ext.ti.com"
+	id S1754719AbaAFMja (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 07:39:30 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:45586 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750902AbaAFMjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 07:39:19 -0500
+	id S1754685AbaAFMj1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 07:39:27 -0500
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <rui.zhang@intel.com>
 CC: <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
@@ -18,9 +18,9 @@ CC: <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Russell King <linux@arm.linux.org.uk>,
         <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCHv2 4/7] arm: dts: add cooling properties on dra7 cpu node
-Date: Mon, 6 Jan 2014 08:36:48 -0400
-Message-ID: <1389011811-13004-5-git-send-email-eduardo.valentin@ti.com>
+Subject: [PATCHv2 5/7] arm: dts: dra7: add thermal data
+Date: Mon, 6 Jan 2014 08:36:49 -0400
+Message-ID: <1389011811-13004-6-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1389011811-13004-1-git-send-email-eduardo.valentin@ti.com>
 References: <1389011811-13004-1-git-send-email-eduardo.valentin@ti.com>
@@ -31,11 +31,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DRA7 devices can reach high temperatures and thus
-needs to have cpufreq-cooling on systems running on it.
-
-This patch adds the required cooling device properties
-so that cpufreq-cpu0 driver loads the cooling device.
+This patch adds thermal data for DRA7 SoCs. Cpufreq cooling
+will be enabled for MPU domain whenever it crosses 100C.
+GPU, CORE, DSPEVE, IVA will be exposed and system shall
+shutdown when they cross 125C.
 
 Cc: Benoît Cousson <bcousson@baylibre.com>
 Cc: Zhang Rui <rui.zhang@intel.com>
@@ -50,25 +49,29 @@ Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- arch/arm/boot/dts/dra7.dtsi | 5 +++++
- 1 file changed, 5 insertions(+)
+ arch/arm/boot/dts/dra7.dtsi | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
 diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
-index 8f21157..139472c 100644
+index 139472c..4784c0c 100644
 --- a/arch/arm/boot/dts/dra7.dtsi
 +++ b/arch/arm/boot/dts/dra7.dtsi
-@@ -47,6 +47,11 @@
- 				1000000	1060000
- 				1176000	1160000
- 				>;
+@@ -68,6 +68,15 @@
+ 			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(2) | IRQ_TYPE_LEVEL_LOW)>;
+ 	};
+ 
++	thermal_zones: thermal-zones {
++		/* SoC thermal zones */
++		#include "omap4-cpu-thermal.dtsi"
++		#include "omap5-gpu-thermal.dtsi"
++		#include "omap5-core-thermal.dtsi"
++		#include "dra7-dspeve-thermal.dtsi"
++		#include "dra7-iva-thermal.dtsi"
++	};
 +
-+			/* cooling properties */
-+			#cooling-cells = <2>; /* min and max */
-+			#cooling-min-level = <0>;
-+			#cooling-max-level = <1>;
- 		};
- 		cpu@1 {
- 			device_type = "cpu";
+ 	gic: interrupt-controller@48211000 {
+ 		compatible = "arm,cortex-a15-gic";
+ 		interrupt-controller;
 -- 
 1.8.2.1.342.gfa7285d
 
