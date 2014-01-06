@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547AbaAFIFx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 03:05:53 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:18265 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052AbaAFIFw (ORCPT
+	id S1752652AbaAFIJN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 03:09:13 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42311 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751373AbaAFIJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 03:05:52 -0500
-Date: Mon, 6 Jan 2014 11:05:20 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Andreas Frembs <andreas.frembs@studium.uni-erlangen.de>
-Cc: devel@driverdev.osuosl.org, lisa@xenapiadmin.com,
-        linux-kernel@i4.cs.fau.de, andrea.merello@gmail.com,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        matthias.schoepe@studium.uni-erlangen.de, dhowells@redhat.com,
-        valentina.manea.m@gmail.com, viro@zeniv.linux.org.uk,
-        linville@tuxdriver.com
-Subject: Re: [PATCH 2/3] Staging rtl8192e: Fixing checkpatch error in
- rtllib_debug.h
-Message-ID: <20140106080520.GK30234@mwanda>
-References: <1388924737-1412-1-git-send-email-andreas.frembs@studium.uni-erlangen.de>
- <1388924737-1412-3-git-send-email-andreas.frembs@studium.uni-erlangen.de>
+	Mon, 6 Jan 2014 03:09:11 -0500
+X-AuditID: 9c930197-b7c4aae000003d84-5a-52ca64a5f412
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>
+Subject: Re: [PATCH 03/21] perf hists: Add support for accumulated stat of hist entry
+References: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
+	<1387873347-28838-4-git-send-email-namhyung@kernel.org>
+	<20140105162650.GC10018@krava.brq.redhat.com>
+Date: Mon, 06 Jan 2014 17:09:09 +0900
+In-Reply-To: <20140105162650.GC10018@krava.brq.redhat.com> (Jiri Olsa's
+	message of "Sun, 5 Jan 2014 17:26:50 +0100")
+Message-ID: <87k3ededlm.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1388924737-1412-3-git-send-email-andreas.frembs@studium.uni-erlangen.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 05, 2014 at 01:25:36PM +0100, Andreas Frembs wrote:
-> In rtllib_debug.h we fixed the following checkpatch error:
-> 	ERROR: Macros with complex values should be enclosed in parenthesis
-> 
-> We fixed this with a do {} while (0), because otherwise the compiler complained.
-> 
-> Signed-off-by: Andreas Frembs <andreas.frembs@studium.uni-erlangen.de>
-> Signed-off-by: Matthias Schoepe <matthias.schoepe@studium.uni-erlangen.de>
+On Sun, 5 Jan 2014 17:26:50 +0100, Jiri Olsa wrote:
+> On Tue, Dec 24, 2013 at 05:22:09PM +0900, Namhyung Kim wrote:
+>> @@ -295,6 +306,7 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
+>>  			 */
+>>  			he->branch_info = malloc(sizeof(*he->branch_info));
+>>  			if (he->branch_info == NULL) {
+>> +				free(he->stat_acc);
+>
+> probably not big deal but above free should be under
+> symbol_conf.cumulate_callchain check..
 
-It would be better to replace these with WARN_ON().  I haven't looked
-but I also suspect that some of these asserts might be bogus and should
-be removed.
+The he->stat_acc will be NULL if !symbol_conf.cumulate_callchain so it's
+safe to call free().
 
-regards,
-dan carpenter
+And I'll add the call to free() into hist_entry__free() anyway.
 
+Thanks,
+Namhyung
