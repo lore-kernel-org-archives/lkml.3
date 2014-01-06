@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918AbaAFWlE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:41:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48207 "EHLO
+	id S932945AbaAFWlI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:41:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48235 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756879AbaAFWk6 (ORCPT
+	with ESMTP id S1756915AbaAFWlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:58 -0500
+	Mon, 6 Jan 2014 17:41:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [PATCH 3.10 057/129] KVM: x86: Fix APIC map calculation after re-enabling
-Date: Mon,  6 Jan 2014 14:38:06 -0800
-Message-Id: <20140106223901.233525541@linuxfoundation.org>
+        "Robin H. Johnson" <robbat2@gentoo.org>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.10 063/129] libata: disable a disk via libata.force params
+Date: Mon,  6 Jan 2014 14:38:12 -0800
+Message-Id: <20140106223901.409988496@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -29,48 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kiszka <jan.kiszka@siemens.com>
+From: "Robin H. Johnson" <robbat2@gentoo.org>
 
-commit e66d2ae7c67bd9ac982a3d1890564de7f7eabf4b upstream.
+commit b8bd6dc36186fe99afa7b73e9e2d9a98ad5c4865 upstream.
 
-Update arch.apic_base before triggering recalculate_apic_map. Otherwise
-the recalculation will work against the previous state of the APIC and
-will fail to build the correct map when an APIC is hardware-enabled
-again.
+A user on StackExchange had a failing SSD that's soldered directly
+onto the motherboard of his system. The BIOS does not give any option
+to disable it at all, so he can't just hide it from the OS via the
+BIOS.
 
-This fixes a regression of 1e08ec4a13.
+The old IDE layer had hdX=noprobe override for situations like this,
+but that was never ported to the libata layer.
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+This patch implements a disable flag for libata.force.
+
+Example use:
+
+ libata.force=2.0:disable
+
+[v2 of the patch, removed the nodisable flag per Tejun Heo]
+
+Signed-off-by: Robin H. Johnson <robbat2@gentoo.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Link: http://unix.stackexchange.com/questions/102648/how-to-tell-linux-kernel-3-0-to-completely-ignore-a-failing-disk
+Link: http://askubuntu.com/questions/352836/how-can-i-tell-linux-kernel-to-completely-ignore-a-disk-as-if-it-was-not-even-co
+Link: http://superuser.com/questions/599333/how-to-disable-kernel-probing-for-drive
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/lapic.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ Documentation/kernel-parameters.txt |    2 ++
+ drivers/ata/libata-core.c           |    1 +
+ 2 files changed, 3 insertions(+)
 
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -1364,6 +1364,10 @@ void kvm_lapic_set_base(struct kvm_vcpu
- 		return;
- 	}
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1458,6 +1458,8 @@ bytes respectively. Such letter suffixes
  
-+	if (!kvm_vcpu_is_bsp(apic->vcpu))
-+		value &= ~MSR_IA32_APICBASE_BSP;
-+	vcpu->arch.apic_base = value;
+ 			* atapi_dmadir: Enable ATAPI DMADIR bridge support
+ 
++			* disable: Disable this device.
 +
- 	/* update jump label if enable bit changes */
- 	if ((vcpu->arch.apic_base ^ value) & MSR_IA32_APICBASE_ENABLE) {
- 		if (value & MSR_IA32_APICBASE_ENABLE)
-@@ -1373,10 +1377,6 @@ void kvm_lapic_set_base(struct kvm_vcpu
- 		recalculate_apic_map(vcpu->kvm);
- 	}
+ 			If there are multiple matching configurations changing
+ 			the same attribute, the last one is used.
  
--	if (!kvm_vcpu_is_bsp(apic->vcpu))
--		value &= ~MSR_IA32_APICBASE_BSP;
--
--	vcpu->arch.apic_base = value;
- 	if ((old_value ^ value) & X2APIC_ENABLE) {
- 		if (value & X2APIC_ENABLE) {
- 			u32 id = kvm_apic_id(apic);
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -6507,6 +6507,7 @@ static int __init ata_parse_force_one(ch
+ 		{ "norst",	.lflags		= ATA_LFLAG_NO_HRST | ATA_LFLAG_NO_SRST },
+ 		{ "rstonce",	.lflags		= ATA_LFLAG_RST_ONCE },
+ 		{ "atapi_dmadir", .horkage_on	= ATA_HORKAGE_ATAPI_DMADIR },
++		{ "disable",	.horkage_on	= ATA_HORKAGE_DISABLE },
+ 	};
+ 	char *start = *cur, *p = *cur;
+ 	char *id, *val, *endp;
 
 
