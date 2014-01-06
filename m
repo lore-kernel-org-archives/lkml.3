@@ -1,92 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756352AbaAFWfI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:35:08 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:35551 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755470AbaAFWfG (ORCPT
+	id S1756736AbaAFWiO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:38:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47359 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756689AbaAFWiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:35:06 -0500
-Date: Mon, 6 Jan 2014 14:35:01 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PNPBIOS: check return value of pnp_add_device()
-Message-ID: <20140106223501.GB17357@core.coreip.homeip.net>
-References: <20131215121102.GA509@core.coreip.homeip.net>
+	Mon, 6 Jan 2014 17:38:11 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jonathan Cameron <jic23@kernel.org>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 3.12 021/144] iio:adc:ad7887 Fix channel reported endianness from cpu to big endian
+Date: Mon,  6 Jan 2014 14:36:22 -0800
+Message-Id: <20140106223745.932998748@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
+References: <20140106223745.326293132@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131215121102.GA509@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-On Sun, Dec 15, 2013 at 04:11:05AM -0800, Dmitry Torokhov wrote:
-> pnp_add_device() may fail so we need to handle errors and avoid leaking
-> memory.
-> 
-> Also, when pnp_alloc_dev fails, return -ENOMEM rather than -1.
-> 
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+------------------
 
-Any issues with this patch and a similar one to PNPACPI?
+From: Jonathan Cameron <jic23@kernel.org>
 
-Thanks!
+commit e39d99059ad7f75d7ae2d3c59055d3c476cdb0d9 upstream.
 
-> ---
->  drivers/pnp/pnpbios/core.c | 12 +++++++++---
->  1 file changed, 9 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/pnp/pnpbios/core.c b/drivers/pnp/pnpbios/core.c
-> index 9b86a01..074569e 100644
-> --- a/drivers/pnp/pnpbios/core.c
-> +++ b/drivers/pnp/pnpbios/core.c
-> @@ -312,18 +312,19 @@ static int __init insert_device(struct pnp_bios_node *node)
->  	struct list_head *pos;
->  	struct pnp_dev *dev;
->  	char id[8];
-> +	int error;
->  
->  	/* check if the device is already added */
->  	list_for_each(pos, &pnpbios_protocol.devices) {
->  		dev = list_entry(pos, struct pnp_dev, protocol_list);
->  		if (dev->number == node->handle)
-> -			return -1;
-> +			return -EEXIST;
->  	}
->  
->  	pnp_eisa_id_to_string(node->eisa_id & PNP_EISA_ID_MASK, id);
->  	dev = pnp_alloc_dev(&pnpbios_protocol, node->handle, id);
->  	if (!dev)
-> -		return -1;
-> +		return -ENOMEM;
->  
->  	pnpbios_parse_data_stream(dev, node);
->  	dev->active = pnp_is_active(dev);
-> @@ -342,7 +343,12 @@ static int __init insert_device(struct pnp_bios_node *node)
->  	if (!dev->active)
->  		pnp_init_resources(dev);
->  
-> -	pnp_add_device(dev);
-> +	error = pnp_add_device(dev);
-> +	if (error) {
-> +		put_device(&dev->dev);
-> +		return error;
-> +	}
-> +
->  	pnpbios_interface_attach_device(node);
->  
->  	return 0;
-> -- 
-> 1.8.3.1
-> 
-> 
-> -- 
-> Dmitry
+Note this also sets the endianness to big endian whereas it would
+previously have defaulted to the cpu endian.  Hence technically
+this is a bug fix on LE platforms.
 
--- 
-Dmitry
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/iio/adc/ad7887.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
+
+--- a/drivers/iio/adc/ad7887.c
++++ b/drivers/iio/adc/ad7887.c
+@@ -211,7 +211,13 @@ static const struct ad7887_chip_info ad7
+ 			.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
+ 			.address = 1,
+ 			.scan_index = 1,
+-			.scan_type = IIO_ST('u', 12, 16, 0),
++			.scan_type = {
++				.sign = 'u',
++				.realbits = 12,
++				.storagebits = 16,
++				.shift = 0,
++				.endianness = IIO_BE,
++			},
+ 		},
+ 		.channel[1] = {
+ 			.type = IIO_VOLTAGE,
+@@ -221,7 +227,13 @@ static const struct ad7887_chip_info ad7
+ 			.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
+ 			.address = 0,
+ 			.scan_index = 0,
+-			.scan_type = IIO_ST('u', 12, 16, 0),
++			.scan_type = {
++				.sign = 'u',
++				.realbits = 12,
++				.storagebits = 16,
++				.shift = 0,
++				.endianness = IIO_BE,
++			},
+ 		},
+ 		.channel[2] = IIO_CHAN_SOFT_TIMESTAMP(2),
+ 		.int_vref_mv = 2500,
+
+
