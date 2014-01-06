@@ -1,62 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752290AbaAFA16 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 19:27:58 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54242 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752170AbaAFA15 (ORCPT
+	id S1752354AbaAFAap (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 19:30:45 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:57169 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751454AbaAFAao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 19:27:57 -0500
-Date: Mon, 6 Jan 2014 01:27:55 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Marcel Holtmann <marcel@holtmann.org>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org development" 
-	<linux-bluetooth@vger.kernel.org>,
-        Ville Tervo <ville.tervo@nokia.com>
-Subject: Re: [PATCH v4] Bluetooth: Add hci_h4p driver
-Message-ID: <20140106002755.GC27517@amd.pavel.ucw.cz>
-References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com>
- <1727897.LBX8128hIo@izba>
- <20140102161824.GA8204@amd.pavel.ucw.cz>
- <A5B72277-42D4-4A24-8A29-9BE18762E8C4@holtmann.org>
- <20140103001753.GA21023@amd.pavel.ucw.cz>
- <20140103010519.GA27678@earth.universe>
- <20140105223250.GB27517@amd.pavel.ucw.cz>
- <20140105230155.GA2681@earth.universe>
+	Sun, 5 Jan 2014 19:30:44 -0500
+X-AuditID: 9c93016f-b7b4eae000000985-ff-52c9f932b009
+Date: Mon, 6 Jan 2014 09:30:52 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: fengguang.wu@intel.com
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@linux.intel.com
+Subject: Re: [sched] 23f0d2093c: -12.6% regression on sparse file copy
+Message-ID: <20140106003052.GD696@lge.com>
+References: <20140105090456.GE28257@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140105230155.GA2681@earth.universe>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140105090456.GE28257@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> > > The drivers can still be initialized the old way using pdata quirks
-> > > until all drivers are converted, but I think this driver can simply
-> > > be prepared for DT directly:
-> > 
-> > Well, normally DT support means a bit of argumentation and bikeshed
-> > painting... I believe it would be better to get the driver in as-is
-> > and then work on adding DT support.
+On Sun, Jan 05, 2014 at 05:04:56PM +0800, fengguang.wu@intel.com wrote:
+> Hi Joonsoo,
 > 
-> Maybe. Especially the UART reference may result in some discussion.
-> But having the discussion early means its finished earlier :)
+> We noticed the below changes for commit 23f0d2093c ("sched: Factor out
+> code to should_we_balance()") in test vm-scalability/300s-lru-file-readtwice
 
-Well, merging the basic driver does not mean discussion can't start
-early. If it is going to be complex, that's a very good reason to do
-it in separate step. That is, have a working driver, then add device
-tree support.
+Hello, Fengguang.
 
-Thanks,
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+There was a mistake in this patch and there was a fix and it was already merged
+into mainline.
+
+Could you test again with the commit (b0cff9d sched: Fix load balancing
+performance regression in should_we_balance())?
+
+Thanks.
+
+> 
+>         95a79b805b935f4  23f0d2093c789e612185180c4
+>         ---------------  -------------------------
+> ==>           4.45 ~ 5%   +1777.7%      83.60 ~ 5%  vm-scalability.stddev
+> ==>       14966511 ~ 0%     -12.6%   13084545 ~ 2%  vm-scalability.throughput
+>                 38 ~ 9%    +406.3%        193 ~ 7%  proc-vmstat.kswapd_low_wmark_hit_quickly
+>             610823 ~ 0%     -41.4%     357990 ~ 0%  softirqs.SCHED
+>          5.424e+08 ~ 0%     -38.5%  3.338e+08 ~ 6%  proc-vmstat.pgdeactivate
+>           4.68e+08 ~ 0%     -37.5%  2.924e+08 ~ 6%  proc-vmstat.pgrefill_normal
+>          5.549e+08 ~ 0%     -37.1%  3.491e+08 ~ 6%  proc-vmstat.pgactivate
+>           14938509 ~ 1%     +27.0%   18974176 ~ 1%  vmstat.memory.free
+>             978771 ~ 1%     +23.9%    1212704 ~ 3%  numa-vmstat.node2.nr_free_pages
+>            3747434 ~ 0%     +21.7%    4560196 ~ 2%  proc-vmstat.nr_free_pages
+> ==>      1.353e+08 ~ 0%     +18.8%  1.607e+08 ~ 0%  proc-vmstat.numa_foreign
+>          1.353e+08 ~ 0%     +18.8%  1.607e+08 ~ 0%  proc-vmstat.numa_miss
+>          1.353e+08 ~ 0%     +18.8%  1.607e+08 ~ 0%  proc-vmstat.numa_other
+>            3936842 ~ 1%     +22.2%    4812045 ~ 4%  numa-meminfo.node2.MemFree
+>           21803812 ~ 0%     +17.7%   25661536 ~ 4%  numa-vmstat.node3.numa_foreign
+>           73701524 ~ 0%     +15.0%   84769542 ~ 0%  proc-vmstat.pgscan_direct_dma32
+>           73700683 ~ 0%     +15.0%   84768687 ~ 0%  proc-vmstat.pgsteal_direct_dma32
+>          3.101e+08 ~ 0%     +11.2%  3.448e+08 ~ 0%  proc-vmstat.pgsteal_direct_normal
+>          3.103e+08 ~ 0%     +11.2%  3.449e+08 ~ 0%  proc-vmstat.pgscan_direct_normal
+>           45613907 ~ 0%     +12.6%   51342974 ~ 3%  numa-vmstat.node0.numa_other
+>             795639 ~ 0%     -48.6%     409113 ~13%  time.voluntary_context_switches
+>                375 ~ 0%      +6.1%        398 ~ 0%  time.elapsed_time
+>               9427 ~ 0%      -5.8%       8880 ~ 0%  time.percent_of_cpu_this_job_got
+> 
+> The test case basically does
+> 
+> for i in `seq 1 $nr_cpu`
+> do      
+>         create_sparse_file huge-$i
+>         dd if=huge-$i of=/dev/null &
+>         dd if=huge-$i of=/dev/null &
+> done
+> 
+> where nr_cpu=120 (test box is a 4-socket ivybridge system).
+> 
+> The change looks stable, each point below is a sample run:
+> 
+>                                vm-scalability.stddev
+> 
+>    120 ++-------------------------------------------------------------------+
+>        |                                                                    |
+>    100 ++             *            *                                        |
+>        | *.***        :    **      :     *    *  *     *     *              |
+>        **     * *.** * :  *  :*.*  :: .* :   : * :*   * :  .* :   .*   * .**|
+>     80 ++      *    *  *. :  *   *: ** : ::  :  *  :.*  * *   * ** :   :*   *
+>        |                 *        *     : ***      *     *     *    :**     |
+>     60 ++                               *                           *       |
+>        |                                                                    |
+>     40 ++                                                                   |
+>        |                                                                    |
+>        |                                                                    |
+>     20 ++                                                                   |
+>        | O  OO OO OOO  O OO  O                                              |
+>      0 OO--O--O------OO----OO-----------------------------------------------+
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
