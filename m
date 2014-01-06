@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601AbaAFL0e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 06:26:34 -0500
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:34968 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754132AbaAFL0c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 06:26:32 -0500
+	id S1754051AbaAFL26 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 06:28:58 -0500
+Received: from tundra.namei.org ([65.99.196.166]:60301 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752652AbaAFL25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 06:28:57 -0500
+Date: Mon, 6 Jan 2014 22:28:44 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: =?ISO-8859-15?Q?Peter_H=FCwe?= <PeterHuewe@gmx.de>
+cc: Ashley Lai <ashley@ashleylai.com>, Marcel Selhorst <tpmdd@selhorst.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: TPM Changes for 3.14
+In-Reply-To: <201401060424.50738.PeterHuewe@gmx.de>
+Message-ID: <alpine.LRH.2.02.1401062227080.4512@tundra.namei.org>
+References: <201401040335.04980.PeterHuewe@gmx.de> <alpine.LRH.2.02.1401061321510.31564@tundra.namei.org> <201401060424.50738.PeterHuewe@gmx.de>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20140106104640.GK23772@lee--X1>
-References: <1386329534-14186-1-git-send-email-k.kozlowski@samsung.com>
-	<1386329534-14186-4-git-send-email-k.kozlowski@samsung.com>
-	<20140106104640.GK23772@lee--X1>
-Date: Mon, 6 Jan 2014 20:26:30 +0900
-X-Google-Sender-Auth: -UjwMTcKTWSLn9OG0ec2qcLtoM4
-Message-ID: <CAH9JG2Wcip=5SEmkRBn9KzWajFmn9mQzKma23vk8F67bp9-AkQ@mail.gmail.com>
-Subject: Re: [PATCH v7 3/3] mfd: max14577: Add device tree bindings document
-From: Kyungmin Park <kmpark@infradead.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Anton Vorontsov <anton@enomsg.org>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-doc@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        Chanwoo Choi <cw00.choi@samsung.com>, Mark Brown <broonie@kernel.org>,
-        Rob Landley <rob@landley.net>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 6, 2014 at 7:46 PM, Lee Jones <lee.jones@linaro.org> wrote:
->> Add document describing device tree bindings for MAX14577 MFD driver.
->>
->> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
->>  Documentation/devicetree/bindings/mfd/max14577.txt |   65 ++++++++++++++++++++
->>  1 file changed, 65 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
->
-> You still need a DT Ack before I can apply this.
+On Mon, 6 Jan 2014, Peter H?we wrote:
 
-Tomasz, can you ack it?
+> Hi James,
+> 
+> > Please generate this against my next branch.
+> Here it is - note:
+> I cherry-picked the changes that went through the xen tree before applying my changes.
+> 
+> The following changes since commit dcf4e392867bf98d50ad108ed7c2bfb941e8c33d:
+> 
+>   ima: remove unneeded size_limit argument from ima_eventdigest_init_common() (2014-01-03 07:43:00 -0500)
+> 
+> are available in the git repository at:
+> 
+>   https://github.com/PeterHuewe/linux-tpmdd for-james
+> 
 
-Thank you,
-Kyungmin Park
+I need to resync my tree to recent Linus to bring in the prerequiste 
+changes in the Xen code.  Then I can pull the original branch, once you 
+publish it again.
+
+Also, please cc the LSM list.
+
+
+-- 
+James Morris
+<jmorris@namei.org>
