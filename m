@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758102AbaAGABn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 19:01:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47541 "EHLO
+	id S1758137AbaAGACG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:02:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47530 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932205AbaAFWiw (ORCPT
+	with ESMTP id S932195AbaAFWiu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:52 -0500
+	Mon, 6 Jan 2014 17:38:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.12 064/144] drm/radeon: Fix sideport problems on certain RS690 boards
-Date: Mon,  6 Jan 2014 14:37:05 -0800
-Message-Id: <20140106223747.183236267@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>, "Theodore Tso" <tytso@mit.edu>
+Subject: [PATCH 3.12 053/144] ext4: fix del_timer() misuse for ->s_err_report
+Date: Mon,  6 Jan 2014 14:36:54 -0800
+Message-Id: <20140106223746.862339396@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -28,43 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit 8333f0fe133be420ce3fcddfd568c3a559ab274e upstream.
+commit 9105bb149bbbc555d2e11ba5166dfe7a24eae09e upstream.
 
-Some RS690 boards with 64MB of sideport memory show up as
-having 128MB sideport + 256MB of UMA.  In this case,
-just skip the sideport memory and use UMA.  This fixes
-rendering corruption and should improve performance.
+That thing should be del_timer_sync(); consider what happens
+if ext4_put_super() call of del_timer() happens to come just as it's
+getting run on another CPU.  Since that timer reschedules itself
+to run next day, you are pretty much guaranteed that you'll end up
+with kfree'd scheduled timer, with usual fun consequences.  AFAICS,
+that's -stable fodder all way back to 2010... [the second del_timer_sync()
+is almost certainly not needed, but it doesn't hurt either]
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=35457
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/rs690.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ fs/ext4/super.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/rs690.c
-+++ b/drivers/gpu/drm/radeon/rs690.c
-@@ -162,6 +162,16 @@ static void rs690_mc_init(struct radeon_
- 	base = RREG32_MC(R_000100_MCCFG_FB_LOCATION);
- 	base = G_000100_MC_FB_START(base) << 16;
- 	rdev->mc.igp_sideport_enabled = radeon_atombios_sideport_present(rdev);
-+	/* Some boards seem to be configured for 128MB of sideport memory,
-+	 * but really only have 64MB.  Just skip the sideport and use
-+	 * UMA memory.
-+	 */
-+	if (rdev->mc.igp_sideport_enabled &&
-+	    (rdev->mc.real_vram_size == (384 * 1024 * 1024))) {
-+		base += 128 * 1024 * 1024;
-+		rdev->mc.real_vram_size -= 128 * 1024 * 1024;
-+		rdev->mc.mc_vram_size = rdev->mc.real_vram_size;
-+	}
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -773,7 +773,7 @@ static void ext4_put_super(struct super_
+ 	}
  
- 	/* Use K8 direct mapping for fast fb access. */ 
- 	rdev->fastfb_working = false;
+ 	ext4_es_unregister_shrinker(sbi);
+-	del_timer(&sbi->s_err_report);
++	del_timer_sync(&sbi->s_err_report);
+ 	ext4_release_system_zone(sb);
+ 	ext4_mb_release(sb);
+ 	ext4_ext_release(sb);
+@@ -4151,7 +4151,7 @@ failed_mount_wq:
+ 	}
+ failed_mount3:
+ 	ext4_es_unregister_shrinker(sbi);
+-	del_timer(&sbi->s_err_report);
++	del_timer_sync(&sbi->s_err_report);
+ 	if (sbi->s_flex_groups)
+ 		ext4_kvfree(sbi->s_flex_groups);
+ 	percpu_counter_destroy(&sbi->s_freeclusters_counter);
 
 
