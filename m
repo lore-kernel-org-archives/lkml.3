@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989AbaAFUI0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 15:08:26 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:52312 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470AbaAFUIZ (ORCPT
+	id S1756155AbaAFUJh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 15:09:37 -0500
+Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:60050 "EHLO
+	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754806AbaAFUJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 15:08:25 -0500
-Date: Mon, 6 Jan 2014 14:08:23 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH trace-cmd 0/1] Makefile: Use CPPFLAGS from the environment
-Message-ID: <20140106200823.GC1556@thinkpad-t410>
-Mail-Followup-To: Steven Rostedt <rostedt@goodmis.org>,
-	linux-kernel@vger.kernel.org
-References: <1389030985-26657-1-git-send-email-seth.forshee@canonical.com>
- <20140106140753.55f3f3c7@gandalf.local.home>
- <20140106193652.GB1556@thinkpad-t410>
- <20140106145450.77f7bf86@gandalf.local.home>
- <20140106150044.2453f841@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140106150044.2453f841@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 6 Jan 2014 15:09:35 -0500
+From: Shuah Khan <shuah.kh@samsung.com>
+To: gregkh@linuxfoundation.org, rjw@rjwysocki.net
+Cc: Shuah Khan <shuah.kh@samsung.com>, shuahkhan@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 2/3] drivers/class: Add Legacy PM OPS usage check and warning to __class_register()
+Date: Mon,  6 Jan 2014 13:03:22 -0700
+Message-Id: <480191469165334594d1027fb2ccae68d7fb71a9.1389034060.git.shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <cover.1389034060.git.shuah.kh@samsung.com>
+References: <cover.1389034060.git.shuah.kh@samsung.com>
+In-Reply-To: <cover.1389034060.git.shuah.kh@samsung.com>
+References: <cover.1389034060.git.shuah.kh@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 03:00:44PM -0500, Steven Rostedt wrote:
-> On Mon, 6 Jan 2014 14:54:50 -0500
-> Steven Rostedt <rostedt@goodmis.org> wrote:
-> > 
-> > Yeah, I screwed up.
-> > 
-> > This should have been 2.3 and I screwed up the tags here :-/
-> > 
-> > I'll try to fix things up.
-> > 
-> 
-> I blame too much eggnog over the holiday break. I think I fixed things
-> up.
+Add Legacy PM OPS usage checks to __class_register() function. If Legacy PM OPS
+usage is found, print warning message to indicate that the driver code needs
+updating to use Dev PM OPS interfaces. This will help serve as a way to track
+drivers that still use Legacy PM OPS and fix them.
 
-Looks right to me now. Thanks!
+The Legacy PM OPS check looks for suspend(struct device *, pm_message_t) or
+resume(struct device *) class level interfaces.
+
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+---
+ drivers/base/class.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/base/class.c b/drivers/base/class.c
+index f96f704..2f20be5 100644
+--- a/drivers/base/class.c
++++ b/drivers/base/class.c
+@@ -169,6 +169,10 @@ int __class_register(struct class *cls, struct lock_class_key *key)
+ 
+ 	pr_debug("device class '%s': registering\n", cls->name);
+ 
++	if (cls->suspend || cls->resume)
++		pr_warn("device class '%s' needs updating - use pm pointer.\n",
++			cls->name);
++
+ 	cp = kzalloc(sizeof(*cp), GFP_KERNEL);
+ 	if (!cp)
+ 		return -ENOMEM;
+-- 
+1.8.3.2
 
