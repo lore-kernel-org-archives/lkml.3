@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756092AbaAFURb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 15:17:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45495 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446AbaAFUR2 (ORCPT
+	id S1755886AbaAFU0P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 15:26:15 -0500
+Received: from s3.sipsolutions.net ([144.76.43.152]:44034 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754752AbaAFU0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 15:17:28 -0500
-Date: Mon, 6 Jan 2014 12:17:55 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: rjw@rjwysocki.net, shuahkhan@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] drivers/bus: Add Legacy PM OPS usage check and
- warning to bus_register()
-Message-ID: <20140106201755.GA7339@kroah.com>
-References: <cover.1389034060.git.shuah.kh@samsung.com>
- <1b1d24cd7140784f96b9d1fee9cace9da04a88f5.1389034060.git.shuah.kh@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1b1d24cd7140784f96b9d1fee9cace9da04a88f5.1389034060.git.shuah.kh@samsung.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Mon, 6 Jan 2014 15:26:13 -0500
+Message-ID: <1389039968.5891.44.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH v2 00/16] wl1251 patches from linux-n900 tree
+From: Johannes Berg <johannes@sipsolutions.net>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Luciano Coelho <luca@coelho.fi>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        freemangordon@abv.bg, aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
+        joni.lapilainen@gmail.com,
+        Felipe Contreras <felipe.contreras@gmail.com>
+Date: Mon, 06 Jan 2014 21:26:08 +0100
+In-Reply-To: <20140106200050.GG10885@tuxdriver.com>
+References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
+	 <1386494714-21070-1-git-send-email-pali.rohar@gmail.com>
+	 <201312311047.30147@pali> <20140106200050.GG10885@tuxdriver.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 01:03:21PM -0700, Shuah Khan wrote:
-> Add Legacy PM OPS usage checks to bus_register() function. If Legacy PM OPS
-> usage is found, print warning message to indicate that the driver code needs
-> updating to use Dev PM OPS interfaces. This will help serve as a way to track
-> drivers that still use Legacy PM OPS and fix them.
-> 
-> The Legacy PM OPS check looks for suspend(struct device *, pm_message_t) or
-> resume(struct device *) bus level interfaces.
-> 
-> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
-> ---
->  drivers/base/bus.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/base/bus.c b/drivers/base/bus.c
-> index 73f6c29..e8753a7 100644
-> --- a/drivers/base/bus.c
-> +++ b/drivers/base/bus.c
-> @@ -916,6 +916,9 @@ int bus_register(struct bus_type *bus)
->  		goto bus_groups_fail;
+On Mon, 2014-01-06 at 15:00 -0500, John W. Linville wrote:
+> On Tue, Dec 31, 2013 at 10:47:29AM +0100, Pali Rohár wrote:
+> > On Sunday 08 December 2013 10:24:58 Pali Rohár wrote:
+> > > Hello, I'm sending wl1251 patches from linux-n900 tree [1] for
+> > > comments. More patches come from David's monitor & packet
+> > > injection work. Patches are tested with 3.12 rc5 kernel on
+> > > Nokia N900.
+> > > 
+> > > Second version contains new patch for fixing NULL pointer
+> > > dereference which sometimes cause kernel panic and fixes code
+> > > suggested by Pavel Machek.
 >  
->  	pr_debug("bus: '%s': registered\n", bus->name);
-> +	if (bus->suspend || bus->resume)
-> +		pr_warn("bus '%s' needs updating - use pm pointer.\n",
-> +			bus->name);
+> > So far, there are no new comments for patches 01, 03-13 and 16. 
+> > Are there any other problems with that patches or can be accepted 
+> > for upstream?
+>  
+> They are probably fine to merge now.  Of course, I was still deleting
+> wl12xx patches when they were originally posted, so I'll need someone
+> to resend the patches to me...
 
-Why can't we just sweep the tree for all of these now, fix them up, and
-then delete these fields and be done with it?
+But please please don't CC half the world again!
 
-Same for the other ones, putting warnings in the kernel log files
-doesn't work at all for getting people to fix up their code (see
-examples of scsi log messages being there for _years_ about obsolete
-driver interfaces being used.)
+johannes
 
-thanks,
-
-greg k-h
