@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755812AbaAFRCm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 12:02:42 -0500
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:51362 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753572AbaAFRCj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 12:02:39 -0500
-Date: Mon, 6 Jan 2014 18:02:35 +0100
-From: Florian Westphal <fw@strlen.de>
-To: Andrey Vagin <avagin@openvz.org>
-Cc: netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vvs@openvz.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: Re: [PATCH] netfilter: nf_conntrack: release conntrack from rcu
- callback
-Message-ID: <20140106170235.GJ28854@breakpoint.cc>
-References: <1389023672-14351-1-git-send-email-avagin@openvz.org>
+	id S1754752AbaAFRJI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 12:09:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18154 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751115AbaAFRJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 12:09:07 -0500
+Date: Mon, 6 Jan 2014 18:08:56 +0100
+From: Mateusz Guzik <mguzik@redhat.com>
+To: William Roberts <bill.c.roberts@gmail.com>
+Cc: linux-audit@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        rgb@redhat.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        sds@tycho.nsa.gov, William Roberts <wroberts@tresys.com>
+Subject: Re: [RFC][PATCH 3/3] audit: Audit proc cmdline value
+Message-ID: <20140106170855.GA1828@mguzik.redhat.com>
+References: <1389022230-24664-1-git-send-email-wroberts@tresys.com>
+ <1389022230-24664-3-git-send-email-wroberts@tresys.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1389023672-14351-1-git-send-email-avagin@openvz.org>
+In-Reply-To: <1389022230-24664-3-git-send-email-wroberts@tresys.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrey Vagin <avagin@openvz.org> wrote:
-> Lets look at destroy_conntrack:
-> 
-> hlist_nulls_del_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode);
-> ...
-> nf_conntrack_free(ct)
-> 	kmem_cache_free(net->ct.nf_conntrack_cachep, ct);
-> 
-> The hash is protected by rcu, so readers look up conntracks without
-> locks.
-> A conntrack is removed from the hash, but in this moment a few readers
-> still can use the conntrack, so if we call kmem_cache_free now, all
-> readers will read released object.
-> 
-> Bellow you can find more tricky race condition of three tasks.
-> 
-> task 1			task 2			task 3
-> 			nf_conntrack_find_get
-> 			 ____nf_conntrack_find
-> destroy_conntrack
->  hlist_nulls_del_rcu
->  nf_conntrack_free
->  kmem_cache_free
-> 						__nf_conntrack_alloc
-> 						 kmem_cache_alloc
-> 						 memset(&ct->tuplehash[IP_CT_DIR_MAX],
-> 			 if (nf_ct_is_dying(ct))
-> 
-> In this case the task 2 will not understand, that it uses a wrong
-> conntrack.
+I can't comment on the concept, but have one nit.
 
-Can you elaborate?
-Yes, nf_ct_is_dying(ct) might be called for the wrong conntrack.
+On Mon, Jan 06, 2014 at 07:30:30AM -0800, William Roberts wrote:
+> +static void audit_log_cmdline(struct audit_buffer *ab, struct task_struct *tsk,
+> +			 struct audit_context *context)
+> +{
+> +	int res;
+> +	char *buf;
+> +	char *msg = "(null)";
+> +	audit_log_format(ab, " cmdline=");
+> +
+> +	/* Not  cached */
+> +	if (!context->cmdline) {
+> +		buf = kmalloc(PATH_MAX, GFP_KERNEL);
+> +		if (!buf)
+> +			goto out;
+> +		res = get_cmdline(tsk, buf, PATH_MAX);
+> +		/* Ensure NULL terminated */
+> +		if (buf[res-1] != '\0')
+> +			buf[res-1] = '\0';
 
-But, in case we _think_ that its the right one we call
-nf_ct_tuple_equal() to verify we indeed found the right one:
+This accesses memory below the buffer if get_cmdline returned 0, which I
+believe will be the case when someone jokingly unmaps the area (all
+maybe when it is swapped out but can't be swapped in due to I/O errors).
 
-       h = ____nf_conntrack_find(net, zone, tuple, hash);
-       if (h) { // might be released right now, but page won't go away (SLAB_BY_RCU)
-                ct = nf_ct_tuplehash_to_ctrack(h);
-                if (unlikely(nf_ct_is_dying(ct) ||
-                             !atomic_inc_not_zero(&ct->ct_general.use)))
-			// which means we should hit this path (0 ref).
-                        h = NULL;
-                else {
-			// otherwise, it cannot go away from under us, since
-			// we own a reference now.
-                        if (unlikely(!nf_ct_tuple_equal(tuple, &h->tuple) ||
-                                     nf_ct_zone(ct) != zone)) {
-			// if we get here, the entry got recycled on other cpu
-			// for a different tuple, we can bail out and drop
-			// the reference safely and re-try the lookup
-                                nf_ct_put(ct);
-                                goto begin;
-                        }
-                }
+Also since you are just putting 0 in there anyway I don't see much point
+in testing for it.
+
+> +		context->cmdline = buf;
+> +	}
+> +	msg = context->cmdline;
+> +out:
+> +	audit_log_untrustedstring(ab, msg);
+> +}
+> +
+
+
+
+-- 
+Mateusz Guzik
