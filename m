@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057AbaAFLJh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 06:09:37 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:50424 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752652AbaAFLJf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 06:09:35 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Linux PM <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] Documentation: add ABI entry for intel_pstate
-Date: Mon, 06 Jan 2014 12:23:21 +0100
-Message-ID: <7285568.L7MucgKD21@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1388997077-25138-1-git-send-email-artagnon@gmail.com>
-References: <1388997077-25138-1-git-send-email-artagnon@gmail.com>
+	id S1754221AbaAFLKE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 06:10:04 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:60047 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752652AbaAFLKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 06:10:01 -0500
+X-IronPort-AV: E=Sophos;i="4.95,612,1384300800"; 
+   d="scan'208";a="90017803"
+Message-ID: <1389006598.13274.49.camel@kazak.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 26/38] xen: xenbus: add missing put_device
+ call
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: David Vrabel <david.vrabel@citrix.com>
+CC: Levente Kurusa <levex@linux.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Date: Mon, 6 Jan 2014 11:09:58 +0000
+In-Reply-To: <52CA8CD1.6080003@citrix.com>
+References: <1387465429-3568-2-git-send-email-levex@linux.com>
+		 <1387465429-3568-27-git-send-email-levex@linux.com>
+		 <52C56F43.6030804@citrix.com>
+	 <1389002445.13274.23.camel@kazak.uk.xensource.com>
+	 <52CA8CD1.6080003@citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 06, 2014 02:01:17 PM Ramkumar Ramachandra wrote:
-> Add a Documentation/ABI entry for
-> /sys/devices/system/cpu/intel_pstate/max_perf_pct,
-> /sys/devices/system/cpu/intel_pstate/min_perf_pct, and
-> /sys/devices/system/cpu/intel_pstate/no_turbo.
+On Mon, 2014-01-06 at 11:00 +0000, David Vrabel wrote:
+> On 06/01/14 10:00, Ian Campbell wrote:
+> > On Thu, 2014-01-02 at 13:53 +0000, David Vrabel wrote:
+> >> On 19/12/13 15:03, Levente Kurusa wrote:
+> >>> This is required so that we give up the last reference to the device.
+> >>>
+> >>> Signed-off-by: Levente Kurusa <levex@linux.com>
+> >>> ---
+> >>>  drivers/xen/xenbus/xenbus_probe.c | 4 +++-
+> >>>  1 file changed, 3 insertions(+), 1 deletion(-)
+> >>>
+> >>> diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
+> >>> index 3c0a74b..4abb9ee 100644
+> >>> --- a/drivers/xen/xenbus/xenbus_probe.c
+> >>> +++ b/drivers/xen/xenbus/xenbus_probe.c
+> >>> @@ -465,8 +465,10 @@ int xenbus_probe_node(struct xen_bus_type *bus,
+> >>>  
+> >>>  	/* Register with generic device framework. */
+> >>>  	err = device_register(&xendev->dev);
+> >>> -	if (err)
+> >>> +	if (err) {
+> >>> +		put_device(&xendev->dev);
+> >>>  		goto fail;
+> >>> +	}
+> >>>  
+> >>>  	return 0;
+> >>>  fail:
+> >>
+> >> There is a kfree(xendev) here so this introduces a double-free.
+> > 
+> > How? put_device doesn't touch xendev itself, does it? It just drops the
+> > ref on the dev member which is not separately dynamically allocated and
+> > so not freed either.
 > 
-> Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
-> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-> Cc: Randy Dunlap <rdunlap@infradead.org>
-> Cc: Linux PM <linux-pm@vger.kernel.org>
-> Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-> ---
->  Documentation/ABI/testing/sysfs-devices-system-cpu | 15 +++++++++++++++
->  1 file changed, 15 insertions(+)
-> 
-> diff --git a/Documentation/ABI/testing/sysfs-devices-system-cpu b/Documentation/ABI/testing/sysfs-devices-system-cpu
-> index 468e4d4..7080718 100644
-> --- a/Documentation/ABI/testing/sysfs-devices-system-cpu
-> +++ b/Documentation/ABI/testing/sysfs-devices-system-cpu
-> @@ -200,3 +200,18 @@ Description:	address and size of the percpu note.
->  		note of cpu#.
->  
->  		crash_notes_size: size of the note of cpu#.
-> +
-> +
-> +What:		/sys/devices/system/cpu/intel_pstate/max_perf_pct
-> +		/sys/devices/system/cpu/intel_pstate/min_perf_pct
-> +		/sys/devices/system/cpu/intel_pstate/no_turbo
+> Releasing all references to the struct device frees the containing
+> structure via xenbus->dev.release. i.e., xenbus_dev_release() which does
+> kfree(xendev).
 
-Well, can you please describe each of them separately?  Like what each of them
-actually does?
+Ooh, twisty, well spotted ;-)
 
-> +Date:		February 2013
-> +Contact:	linux-pm@vger.kernel.org
-> +Description:	Parameters for the Intel P-state driver
-> +
-> +		Logic for selecting the current P-state in Intel
-> +		Sandybridge+ processors. The three knobs control
-> +		limits for the P-state that will be requested by the
-> +		driver.
-> +
-> +		More details can be found in Documentation/cpu-freq/intel-pstate.txt
+Ian.
 
-No, that's not enough.
-
-Thanks!
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
