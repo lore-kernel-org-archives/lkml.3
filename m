@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752327AbaAFAxg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 19:53:36 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:64473 "HELO
+	id S1752425AbaAFAyG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 19:54:06 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:64986 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752231AbaAFAxe (ORCPT
+	with SMTP id S1752389AbaAFAyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 19:53:34 -0500
+	Sun, 5 Jan 2014 19:54:04 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, Jane Li <jiel@marvell.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] cpufreq: Fix timer/workqueue corruption by protecting reading governor_enabled
-Date: Mon, 06 Jan 2014 02:07:19 +0100
-Message-ID: <1538311.12EC6AbbfU@vostro.rjw.lan>
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Linux PM <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH v3] Documentation/cpu-freq: add intel-pstate.txt
+Date: Mon, 06 Jan 2014 02:07:49 +0100
+Message-ID: <1574366.rBToHPL5dG@vostro.rjw.lan>
 User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <20140103231023.GC13489@core.coreip.homeip.net>
-References: <1388740661-15011-1-git-send-email-jiel@marvell.com> <CAKohpo=osvNc0rKEsawCE9nggCQdGr7bgT+D8=KhkgpnAyXXaw@mail.gmail.com> <20140103231023.GC13489@core.coreip.homeip.net>
+In-Reply-To: <1388917274-19241-1-git-send-email-artagnon@gmail.com>
+References: <1388917274-19241-1-git-send-email-artagnon@gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -26,95 +26,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 03, 2014 03:10:23 PM Dmitry Torokhov wrote:
-> On Fri, Jan 03, 2014 at 03:40:16PM +0530, Viresh Kumar wrote:
-> > On 3 January 2014 14:47,  <jiel@marvell.com> wrote:
-> > > From: Jane Li <jiel@marvell.com>
-> > >
-> > > When a CPU is hot removed we'll cancel all the delayed work items via
-> > > gov_cancel_work(). Sometimes the delayed work function determines that
-> > > it should adjust the delay for all other CPUs that the policy is
-> > > managing. If this scenario occurs, the canceling CPU will cancel its own
-> > > work but queue up the other CPUs works to run.
-> > >
-> > > Commit 3617f2(cpufreq: Fix timer/workqueue corruption due to double
-> > > queueing) has tried to fix this, but reading governor_enabled is not
-> > > protected by cpufreq_governor_lock. Even though od_dbs_timer() checks
-> > > governor_enabled before gov_queue_work(), this scenario may occur. For
-> > > example:
-> > >
-> > >  CPU0                                        CPU1
-> > >  ----                                        ----
-> > >  cpu_down()
-> > >   ...                                        <work runs>
-> > >   __cpufreq_remove_dev()                     od_dbs_timer()
-> > >    __cpufreq_governor()                       policy->governor_enabled
-> > >     policy->governor_enabled = false;
-> > >     cpufreq_governor_dbs()
-> > >      case CPUFREQ_GOV_STOP:
-> > >       gov_cancel_work(dbs_data, policy);
-> > >        cpu0 work is canceled
-> > >         timer is canceled
-> > >         cpu1 work is canceled
-> > >         <waits for cpu1>
-> > >                                               gov_queue_work(*, *, true);
-> > >                                                cpu0 work queued
-> > >                                                cpu1 work queued
-> > >                                                cpu2 work queued
-> > >                                                ...
-> > >         cpu1 work is canceled
-> > >         cpu2 work is canceled
-> > >         ...
-> > >
-> > > At the end of the GOV_STOP case cpu0 still has a work queued to
-> > > run although the code is expecting all of the works to be
-> > > canceled. __cpufreq_remove_dev() will then proceed to
-> > > re-initialize all the other CPUs works except for the CPU that is
-> > > going down. The CPUFREQ_GOV_START case in cpufreq_governor_dbs()
-> > > will trample over the queued work and debugobjects will spit out
-> > > a warning:
-> > >
-> > > WARNING: at lib/debugobjects.c:260 debug_print_object+0x94/0xbc()
-> > > ODEBUG: init active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x14
-> > > Modules linked in:
-> > > CPU: 1 PID: 1205 Comm: sh Tainted: G        W    3.10.0 #200
-> > > [<c01144f0>] (unwind_backtrace+0x0/0xf8) from [<c0111d98>] (show_stack+0x10/0x14)
-> > > [<c0111d98>] (show_stack+0x10/0x14) from [<c01272cc>] (warn_slowpath_common+0x4c/0x68)
-> > > [<c01272cc>] (warn_slowpath_common+0x4c/0x68) from [<c012737c>] (warn_slowpath_fmt+0x30/0x40)
-> > > [<c012737c>] (warn_slowpath_fmt+0x30/0x40) from [<c034c640>] (debug_print_object+0x94/0xbc)
-> > > [<c034c640>] (debug_print_object+0x94/0xbc) from [<c034c7f8>] (__debug_object_init+0xc8/0x3c0)
-> > > [<c034c7f8>] (__debug_object_init+0xc8/0x3c0) from [<c01360e0>] (init_timer_key+0x20/0x104)
-> > > [<c01360e0>] (init_timer_key+0x20/0x104) from [<c04872ac>] (cpufreq_governor_dbs+0x1dc/0x68c)
-> > > [<c04872ac>] (cpufreq_governor_dbs+0x1dc/0x68c) from [<c04833a8>] (__cpufreq_governor+0x80/0x1b0)
-> > > [<c04833a8>] (__cpufreq_governor+0x80/0x1b0) from [<c0483704>] (__cpufreq_remove_dev.isra.12+0x22c/0x380)
-> > > [<c0483704>] (__cpufreq_remove_dev.isra.12+0x22c/0x380) from [<c0692f38>] (cpufreq_cpu_callback+0x48/0x5c)
-> > > [<c0692f38>] (cpufreq_cpu_callback+0x48/0x5c) from [<c014fb40>] (notifier_call_chain+0x44/0x84)
-> > > [<c014fb40>] (notifier_call_chain+0x44/0x84) from [<c012ae44>] (__cpu_notify+0x2c/0x48)
-> > > [<c012ae44>] (__cpu_notify+0x2c/0x48) from [<c068dd40>] (_cpu_down+0x80/0x258)
-> > > [<c068dd40>] (_cpu_down+0x80/0x258) from [<c068df40>] (cpu_down+0x28/0x3c)
-> > > [<c068df40>] (cpu_down+0x28/0x3c) from [<c068e4c0>] (store_online+0x30/0x74)
-> > > [<c068e4c0>] (store_online+0x30/0x74) from [<c03a7308>] (dev_attr_store+0x18/0x24)
-> > > [<c03a7308>] (dev_attr_store+0x18/0x24) from [<c0256fe0>] (sysfs_write_file+0x100/0x180)
-> > > [<c0256fe0>] (sysfs_write_file+0x100/0x180) from [<c01fec9c>] (vfs_write+0xbc/0x184)
-> > > [<c01fec9c>] (vfs_write+0xbc/0x184) from [<c01ff034>] (SyS_write+0x40/0x68)
-> > > [<c01ff034>] (SyS_write+0x40/0x68) from [<c010e200>] (ret_fast_syscall+0x0/0x48)
-> > >
-> > > In gov_queue_work(), lock cpufreq_governor_lock before gov_queue_work,
-> > > and unlock it after __gov_queue_work(). In this way, governor_enabled
-> > > is guaranteed not changed in gov_queue_work().
-> > >
-> > > Signed-off-by: Jane Li <jiel@marvell.com>
-> > > ---
-> > >  drivers/cpufreq/cpufreq.c          |    2 +-
-> > >  drivers/cpufreq/cpufreq_governor.c |    6 +++++-
-> > >  drivers/cpufreq/cpufreq_governor.h |    2 ++
-> > >  3 files changed, 8 insertions(+), 2 deletions(-)
-> > 
-> > Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+On Sunday, January 05, 2014 03:51:14 PM Ramkumar Ramachandra wrote:
+> The Intel P-state driver is currently undocumented. Add some
+> documentation based on the cover-letter sent with the original series.
 > 
-> Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
+> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+> Cc: Randy Dunlap <rdunlap@infradead.org>
+> Cc: Linux PM <linux-pm@vger.kernel.org>
+> Acked-by: Randy Dunlap <rdunlap@infradead.org>
+> Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
 
 Queued up for 3.14, thanks!
+
+> ---
+>  Documentation/cpu-freq/intel-pstate.txt | 40 +++++++++++++++++++++++++++++++++
+>  1 file changed, 40 insertions(+)
+>  create mode 100644 Documentation/cpu-freq/intel-pstate.txt
+> 
+> diff --git a/Documentation/cpu-freq/intel-pstate.txt b/Documentation/cpu-freq/intel-pstate.txt
+> new file mode 100644
+> index 0000000..e742d21
+> --- /dev/null
+> +++ b/Documentation/cpu-freq/intel-pstate.txt
+> @@ -0,0 +1,40 @@
+> +Intel P-state driver
+> +--------------------
+> +
+> +This driver implements a scaling driver with an internal governor for
+> +Intel Core processors.  The driver follows the same model as the
+> +Transmeta scaling driver (longrun.c) and implements the setpolicy()
+> +instead of target().  Scaling drivers that implement setpolicy() are
+> +assumed to implement internal governors by the cpufreq core. All the
+> +logic for selecting the current P state is contained within the
+> +driver; no external governor is used by the cpufreq core.
+> +
+> +Intel SandyBridge+ processors are supported.
+> +
+> +New sysfs files for controlling P state selection have been added to
+> +/sys/devices/system/cpu/intel_pstate/
+> +
+> +      max_perf_pct: limits the maximum P state that will be requested by
+> +      the driver stated as a percentage of the available performance.
+> +
+> +      min_perf_pct: limits the minimum P state that will be  requested by
+> +      the driver stated as a percentage of the available performance.
+> +
+> +      no_turbo: limits the driver to selecting P states below the turbo
+> +      frequency range.
+> +
+> +For contemporary Intel processors, the frequency is controlled by the
+> +processor itself and the P-states exposed to software are related to
+> +performance levels.  The idea that frequency can be set to a single
+> +frequency is fiction for Intel Core processors. Even if the scaling
+> +driver selects a single P state the actual frequency the processor
+> +will run at is selected by the processor itself.
+> +
+> +New debugfs files have also been added to /sys/kernel/debug/pstate_snb/
+> +
+> +      deadband
+> +      d_gain_pct
+> +      i_gain_pct
+> +      p_gain_pct
+> +      sample_rate_ms
+> +      setpoint
+> 
 
 -- 
 I speak only for myself.
