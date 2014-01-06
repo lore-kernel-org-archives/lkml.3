@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932150AbaAFWim (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:38:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47481 "EHLO
+	id S932190AbaAFWir (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:38:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47500 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932132AbaAFWii (ORCPT
+	with ESMTP id S932132AbaAFWin (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:38 -0500
+	Mon, 6 Jan 2014 17:38:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.12 047/144] ARM: OMAP2+: Fix LCD panel backlight regression for LDP legacy booting
-Date: Mon,  6 Jan 2014 14:36:48 -0800
-Message-Id: <20140106223746.695222852@linuxfoundation.org>
+        Matthew Whitehead <mwhitehe@redhat.com>,
+        Dave Young <dyoung@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Baoquan He <bhe@redhat.com>, WANG Chao <chaowang@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 012/144] kexec: migrate to reboot cpu
+Date: Mon,  6 Jan 2014 14:36:13 -0800
+Message-Id: <20140106223745.680293459@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -30,57 +33,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Lindgren <tony@atomide.com>
+From: Vivek Goyal <vgoyal@redhat.com>
 
-commit 7e367c18c059c638bf6fb540f1decec18d64cb55 upstream.
+commit c97102ba96324da330078ad8619ba4dfe840dbe3 upstream.
 
-Looks like the LCD panel on LDP has been broken quite a while, and
-recently got fixed by commit 0b2aa8bed3e1 (gpio: twl4030: Fix regression
-for twl gpio output). However, there's still an issue left where the panel
-backlight does not come on if the LCD drivers are built into the
-kernel.
+Commit 1b3a5d02ee07 ("reboot: move arch/x86 reboot= handling to generic
+kernel") moved reboot= handling to generic code.  In the process it also
+removed the code in native_machine_shutdown() which are moving reboot
+process to reboot_cpu/cpu0.
 
-Fix the issue by registering the DPI LCD panel only after the twl4030
-GPIO has probed.
+I guess that thought must have been that all reboot paths are calling
+migrate_to_reboot_cpu(), so we don't need this special handling.  But
+kexec reboot path (kernel_kexec()) is not calling
+migrate_to_reboot_cpu() so above change broke kexec.  Now reboot can
+happen on non-boot cpu and when INIT is sent in second kerneo to bring
+up BP, it brings down the machine.
 
-Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-[tony@atomide.com: updated per Tomi's comments]
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+So start calling migrate_to_reboot_cpu() in kexec reboot path to avoid
+this problem.
+
+Bisected by WANG Chao.
+
+Reported-by: Matthew Whitehead <mwhitehe@redhat.com>
+Reported-by: Dave Young <dyoung@redhat.com>
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+Tested-by: Baoquan He <bhe@redhat.com>
+Tested-by: WANG Chao <chaowang@redhat.com>
+Acked-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/board-ldp.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ include/linux/reboot.h |    1 +
+ kernel/kexec.c         |    1 +
+ kernel/reboot.c        |    2 +-
+ 3 files changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/arm/mach-omap2/board-ldp.c
-+++ b/arch/arm/mach-omap2/board-ldp.c
-@@ -243,12 +243,18 @@ static void __init ldp_display_init(void
+--- a/include/linux/reboot.h
++++ b/include/linux/reboot.h
+@@ -43,6 +43,7 @@ extern int unregister_reboot_notifier(st
+  * Architecture-specific implementations of sys_reboot commands.
+  */
  
- static int ldp_twl_gpio_setup(struct device *dev, unsigned gpio, unsigned ngpio)
- {
-+	int res;
-+
- 	/* LCD enable GPIO */
- 	ldp_lcd_pdata.enable_gpio = gpio + 7;
- 
- 	/* Backlight enable GPIO */
- 	ldp_lcd_pdata.backlight_gpio = gpio + 15;
- 
-+	res = platform_device_register(&ldp_lcd_device);
-+	if (res)
-+		pr_err("Unable to register LCD: %d\n", res);
-+
- 	return 0;
++extern void migrate_to_reboot_cpu(void);
+ extern void machine_restart(char *cmd);
+ extern void machine_halt(void);
+ extern void machine_power_off(void);
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -1680,6 +1680,7 @@ int kernel_kexec(void)
+ 	{
+ 		kexec_in_progress = true;
+ 		kernel_restart_prepare(NULL);
++		migrate_to_reboot_cpu();
+ 		printk(KERN_EMERG "Starting new kernel\n");
+ 		machine_shutdown();
+ 	}
+--- a/kernel/reboot.c
++++ b/kernel/reboot.c
+@@ -104,7 +104,7 @@ int unregister_reboot_notifier(struct no
  }
+ EXPORT_SYMBOL(unregister_reboot_notifier);
  
-@@ -347,7 +353,6 @@ static struct omap2_hsmmc_info mmc[] __i
- 
- static struct platform_device *ldp_devices[] __initdata = {
- 	&ldp_gpio_keys_device,
--	&ldp_lcd_device,
- };
- 
- #ifdef CONFIG_OMAP_MUX
+-static void migrate_to_reboot_cpu(void)
++void migrate_to_reboot_cpu(void)
+ {
+ 	/* The boot cpu is always logical cpu 0 */
+ 	int cpu = reboot_cpu;
 
 
