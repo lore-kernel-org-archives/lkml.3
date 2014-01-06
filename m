@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522AbaAFXhr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:37:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47988 "EHLO
+	id S932715AbaAFWkL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:40:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47959 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932724AbaAFWkN (ORCPT
+	with ESMTP id S932679AbaAFWkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:13 -0500
+	Mon, 6 Jan 2014 17:40:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Janak Desai <Janak.Desai@gtri.gatech.edu>,
-        Paul Moore <pmoore@redhat.com>
-Subject: [PATCH 3.12 138/144] selinux: process labeled IPsec TCP SYN-ACK packets properly in selinux_ip_postroute()
-Date: Mon,  6 Jan 2014 14:38:19 -0800
-Message-Id: <20140106223749.303313710@linuxfoundation.org>
+        Stefan Lippers-Hollmann <s.l-h@gmx.de>,
+        Ilia Mirkin <imirkin@alum.mit.edu>, Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.12 096/144] drm/nouveau: only runtime suspend by default in optimus configuration
+Date: Mon,  6 Jan 2014 14:37:37 -0800
+Message-Id: <20140106223748.112280191@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,90 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Moore <pmoore@redhat.com>
+From: Ilia Mirkin <imirkin@alum.mit.edu>
 
-commit c0828e50485932b7e019df377a6b0a8d1ebd3080 upstream.
+commit b25b4427e9dfba073cf9bc86603956ed395eb6e3 upstream.
 
-Due to difficulty in arriving at the proper security label for
-TCP SYN-ACK packets in selinux_ip_postroute(), we need to check packets
-while/before they are undergoing XFRM transforms instead of waiting
-until afterwards so that we can determine the correct security label.
+The intent was to only enable it by default for optimus, e.g. see the
+runtime_idle callback. The suspend callback may be called directly, e.g.
+as a result of nouveau_crtc_set_config.
 
-Reported-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Reported-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
+Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
+Tested-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/selinux/hooks.c |   43 ++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 36 insertions(+), 7 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_drm.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -4811,22 +4811,32 @@ static unsigned int selinux_ip_postroute
- 	 * as fast and as clean as possible. */
- 	if (!selinux_policycap_netpeer)
- 		return selinux_ip_postroute_compat(skb, ifindex, family);
-+
-+	secmark_active = selinux_secmark_enabled();
-+	peerlbl_active = netlbl_enabled() || selinux_xfrm_enabled();
-+	if (!secmark_active && !peerlbl_active)
-+		return NF_ACCEPT;
-+
-+	sk = skb->sk;
-+
- #ifdef CONFIG_XFRM
- 	/* If skb->dst->xfrm is non-NULL then the packet is undergoing an IPsec
- 	 * packet transformation so allow the packet to pass without any checks
- 	 * since we'll have another chance to perform access control checks
- 	 * when the packet is on it's final way out.
- 	 * NOTE: there appear to be some IPv6 multicast cases where skb->dst
--	 *       is NULL, in this case go ahead and apply access control. */
--	if (skb_dst(skb) != NULL && skb_dst(skb)->xfrm != NULL)
-+	 *       is NULL, in this case go ahead and apply access control.
-+	 *       is NULL, in this case go ahead and apply access control.
-+	 * NOTE: if this is a local socket (skb->sk != NULL) that is in the
-+	 *       TCP listening state we cannot wait until the XFRM processing
-+	 *       is done as we will miss out on the SA label if we do;
-+	 *       unfortunately, this means more work, but it is only once per
-+	 *       connection. */
-+	if (skb_dst(skb) != NULL && skb_dst(skb)->xfrm != NULL &&
-+	    !(sk != NULL && sk->sk_state == TCP_LISTEN))
- 		return NF_ACCEPT;
- #endif
--	secmark_active = selinux_secmark_enabled();
--	peerlbl_active = netlbl_enabled() || selinux_xfrm_enabled();
--	if (!secmark_active && !peerlbl_active)
--		return NF_ACCEPT;
+--- a/drivers/gpu/drm/nouveau/nouveau_drm.c
++++ b/drivers/gpu/drm/nouveau/nouveau_drm.c
+@@ -879,6 +879,12 @@ static int nouveau_pmops_runtime_suspend
+ 	if (nouveau_runtime_pm == 0)
+ 		return -EINVAL;
  
--	sk = skb->sk;
- 	if (sk == NULL) {
- 		/* Without an associated socket the packet is either coming
- 		 * from the kernel or it is being forwarded; check the packet
-@@ -4854,6 +4864,25 @@ static unsigned int selinux_ip_postroute
- 		struct sk_security_struct *sksec = sk->sk_security;
- 		if (selinux_skb_peerlbl_sid(skb, family, &skb_sid))
- 			return NF_DROP;
-+		/* At this point, if the returned skb peerlbl is SECSID_NULL
-+		 * and the packet has been through at least one XFRM
-+		 * transformation then we must be dealing with the "final"
-+		 * form of labeled IPsec packet; since we've already applied
-+		 * all of our access controls on this packet we can safely
-+		 * pass the packet. */
-+		if (skb_sid == SECSID_NULL) {
-+			switch (family) {
-+			case PF_INET:
-+				if (IPCB(skb)->flags & IPSKB_XFRM_TRANSFORMED)
-+					return NF_ACCEPT;
-+				break;
-+			case PF_INET6:
-+				if (IP6CB(skb)->flags & IP6SKB_XFRM_TRANSFORMED)
-+					return NF_ACCEPT;
-+			default:
-+				return NF_DROP_ERR(-ECONNREFUSED);
-+			}
-+		}
- 		if (selinux_conn_sid(sksec->sid, skb_sid, &peer_sid))
- 			return NF_DROP;
- 		secmark_perm = PACKET__SEND;
++	/* are we optimus enabled? */
++	if (nouveau_runtime_pm == -1 && !nouveau_is_optimus() && !nouveau_is_v1_dsm()) {
++		DRM_DEBUG_DRIVER("failing to power off - not optimus\n");
++		return -EINVAL;
++	}
++
+ 	drm_kms_helper_poll_disable(drm_dev);
+ 	vga_switcheroo_set_dynamic_switch(pdev, VGA_SWITCHEROO_OFF);
+ 	nouveau_switcheroo_optimus_dsm();
 
 
