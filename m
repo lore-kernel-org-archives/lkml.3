@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757579AbaAGAGe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 19:06:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47461 "EHLO
+	id S1758261AbaAGAGw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:06:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47457 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932097AbaAFWie (ORCPT
+	with ESMTP id S932088AbaAFWid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:34 -0500
+	Mon, 6 Jan 2014 17:38:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        William Towle <william.towle@codethink.co.uk>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Simon Horman <horms+renesas@verge.net.au>
-Subject: [PATCH 3.12 044/144] ARM: shmobile: r8a7790: fix shdi resource sizes
-Date: Mon,  6 Jan 2014 14:36:45 -0800
-Message-Id: <20140106223746.601770096@linuxfoundation.org>
+        Aaron Liu <liucy214@gmail.com>, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH 3.12 043/144] arm64: ptrace: avoid using HW_BREAKPOINT_EMPTY for disabled events
+Date: Mon,  6 Jan 2014 14:36:44 -0800
+Message-Id: <20140106223746.567305828@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -31,51 +29,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Dooks <ben.dooks@codethink.co.uk>
+From: Will Deacon <will.deacon@arm.com>
 
-commit d721a15c300c5f638a11573a6dd492158e737d6a upstream.
+commit cdc27c27843248ae7eb0df5fc261dd004eaa5670 upstream.
 
-The r8a7790.dtsi file has four sdhi nodes which the first two have the wrong
-resource size for their register block. This causes the sh_modbile_sdhi driver
-to fail to communicate with card at-all.
+Commit 8f34a1da35ae ("arm64: ptrace: use HW_BREAKPOINT_EMPTY type for
+disabled breakpoints") fixed an issue with GDB trying to zero breakpoint
+control registers. The problem there is that the arch hw_breakpoint code
+will attempt to create a (disabled), execute breakpoint of length 0.
 
-Change sdhi{0,1} node size from 0x100 to 0x200 to correct these nodes
-as per Kuninori Morimoto's response to the original patch where all four
-nodes where changed. sdhi{2,3} are the correct size.
+This will fail validation and report unexpected failure to GDB. To avoid
+this, we treated disabled breakpoints as HW_BREAKPOINT_EMPTY, but that
+seems to have broken with recent kernels, causing watchpoints to be
+treated as TYPE_INST in the core code and returning ENOSPC for any
+further breakpoints.
 
-This bug has been present since sdhi resources were added to the r8a7790 by
-8c9b1aa41853272a ("ARM: shmobile: r8a7790: add MMCIF and SDHI DT
-templates") in v3.11-rc2.
+This patch fixes the problem by prioritising the `enable' field of the
+breakpoint: if it is cleared, we simply update the perf_event_attr to
+indicate that the thing is disabled and don't bother changing either the
+type or the length. This reinforces the behaviour that the breakpoint
+control register is essentially read-only apart from the enable bit
+when disabling a breakpoint.
 
-Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
-Tested-by: William Towle <william.towle@codethink.co.uk>
-Acked-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
+Reported-by: Aaron Liu <liucy214@gmail.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/r8a7790.dtsi |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm64/kernel/ptrace.c |   36 +++++++++++++++++-------------------
+ 1 file changed, 17 insertions(+), 19 deletions(-)
 
---- a/arch/arm/boot/dts/r8a7790.dtsi
-+++ b/arch/arm/boot/dts/r8a7790.dtsi
-@@ -152,7 +152,7 @@
+--- a/arch/arm64/kernel/ptrace.c
++++ b/arch/arm64/kernel/ptrace.c
+@@ -214,31 +214,29 @@ static int ptrace_hbp_fill_attr_ctrl(uns
+ {
+ 	int err, len, type, disabled = !ctrl.enabled;
  
- 	sdhi0: sdhi@ee100000 {
- 		compatible = "renesas,sdhi-r8a7790";
--		reg = <0 0xee100000 0 0x100>;
-+		reg = <0 0xee100000 0 0x200>;
- 		interrupt-parent = <&gic>;
- 		interrupts = <0 165 4>;
- 		cap-sd-highspeed;
-@@ -161,7 +161,7 @@
+-	if (disabled) {
+-		len = 0;
+-		type = HW_BREAKPOINT_EMPTY;
+-	} else {
+-		err = arch_bp_generic_fields(ctrl, &len, &type);
+-		if (err)
+-			return err;
++	attr->disabled = disabled;
++	if (disabled)
++		return 0;
  
- 	sdhi1: sdhi@ee120000 {
- 		compatible = "renesas,sdhi-r8a7790";
--		reg = <0 0xee120000 0 0x100>;
-+		reg = <0 0xee120000 0 0x200>;
- 		interrupt-parent = <&gic>;
- 		interrupts = <0 166 4>;
- 		cap-sd-highspeed;
+-		switch (note_type) {
+-		case NT_ARM_HW_BREAK:
+-			if ((type & HW_BREAKPOINT_X) != type)
+-				return -EINVAL;
+-			break;
+-		case NT_ARM_HW_WATCH:
+-			if ((type & HW_BREAKPOINT_RW) != type)
+-				return -EINVAL;
+-			break;
+-		default:
++	err = arch_bp_generic_fields(ctrl, &len, &type);
++	if (err)
++		return err;
++
++	switch (note_type) {
++	case NT_ARM_HW_BREAK:
++		if ((type & HW_BREAKPOINT_X) != type)
++			return -EINVAL;
++		break;
++	case NT_ARM_HW_WATCH:
++		if ((type & HW_BREAKPOINT_RW) != type)
+ 			return -EINVAL;
+-		}
++		break;
++	default:
++		return -EINVAL;
+ 	}
+ 
+ 	attr->bp_len	= len;
+ 	attr->bp_type	= type;
+-	attr->disabled	= disabled;
+ 
+ 	return 0;
+ }
 
 
