@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933398AbaAFXLT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:11:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48438 "EHLO
+	id S1757058AbaAFXLq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:11:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48434 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933069AbaAFWli (ORCPT
+	with ESMTP id S933004AbaAFWlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:38 -0500
+	Mon, 6 Jan 2014 17:41:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>, Sage Weil <sage@inktan.com>
-Subject: [PATCH 3.10 101/129] ceph: avoid accessing invalid memory
-Date: Mon,  6 Jan 2014 14:38:50 -0800
-Message-Id: <20140106223902.494687036@linuxfoundation.org>
+        Jianpeng Ma <majianpeng@gmail.com>, Sage Weil <sage@inktank.com>
+Subject: [PATCH 3.10 100/129] ceph: Free mdsc if alloc mdsc->mdsmap failed.
+Date: Mon,  6 Jan 2014 14:38:49 -0800
+Message-Id: <20140106223902.467516861@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -28,74 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: majianpeng <majianpeng@gmail.com>
 
-commit 5446429630257f4723829409337a26c076907d5d upstream.
+commit fb3101b6f0db9ae3f35dc8e6ec908d0af8cdf12e upstream.
 
-when mounting ceph with a dev name that starts with a slash, ceph
-would attempt to access the character before that slash. Since we
-don't actually own that byte of memory, we would trigger an
-invalid access:
-
-[   43.499934] BUG: unable to handle kernel paging request at ffff880fa3a97fff
-[   43.500984] IP: [<ffffffff818f3884>] parse_mount_options+0x1a4/0x300
-[   43.501491] PGD 743b067 PUD 10283c4067 PMD 10282a6067 PTE 8000000fa3a97060
-[   43.502301] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[   43.503006] Dumping ftrace buffer:
-[   43.503596]    (ftrace buffer empty)
-[   43.504046] CPU: 0 PID: 10879 Comm: mount Tainted: G        W    3.10.0-sasha #1129
-[   43.504851] task: ffff880fa625b000 ti: ffff880fa3412000 task.ti: ffff880fa3412000
-[   43.505608] RIP: 0010:[<ffffffff818f3884>]  [<ffffffff818f3884>] parse_mount_options$
-[   43.506552] RSP: 0018:ffff880fa3413d08  EFLAGS: 00010286
-[   43.507133] RAX: ffff880fa3a98000 RBX: ffff880fa3a98000 RCX: 0000000000000000
-[   43.507893] RDX: ffff880fa3a98001 RSI: 000000000000002f RDI: ffff880fa3a98000
-[   43.508610] RBP: ffff880fa3413d58 R08: 0000000000001f99 R09: ffff880fa3fe64c0
-[   43.509426] R10: ffff880fa3413d98 R11: ffff880fa38710d8 R12: ffff880fa3413da0
-[   43.509792] R13: ffff880fa3a97fff R14: 0000000000000000 R15: ffff880fa3413d90
-[   43.509792] FS:  00007fa9c48757e0(0000) GS:ffff880fd2600000(0000) knlGS:000000000000$
-[   43.509792] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   43.509792] CR2: ffff880fa3a97fff CR3: 0000000fa3bb9000 CR4: 00000000000006b0
-[   43.509792] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   43.509792] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   43.509792] Stack:
-[   43.509792]  0000e5180000000e ffffffff85ca1900 ffff880fa38710d8 ffff880fa3413d98
-[   43.509792]  0000000000000120 0000000000000000 ffff880fa3a98000 0000000000000000
-[   43.509792]  ffffffff85cf32a0 0000000000000000 ffff880fa3413dc8 ffffffff818f3c72
-[   43.509792] Call Trace:
-[   43.509792]  [<ffffffff818f3c72>] ceph_mount+0xa2/0x390
-[   43.509792]  [<ffffffff81226314>] ? pcpu_alloc+0x334/0x3c0
-[   43.509792]  [<ffffffff81282f8d>] mount_fs+0x8d/0x1a0
-[   43.509792]  [<ffffffff812263d0>] ? __alloc_percpu+0x10/0x20
-[   43.509792]  [<ffffffff8129f799>] vfs_kern_mount+0x79/0x100
-[   43.509792]  [<ffffffff812a224d>] do_new_mount+0xcd/0x1c0
-[   43.509792]  [<ffffffff812a2e8d>] do_mount+0x15d/0x210
-[   43.509792]  [<ffffffff81220e55>] ? strndup_user+0x45/0x60
-[   43.509792]  [<ffffffff812a2fdd>] SyS_mount+0x9d/0xe0
-[   43.509792]  [<ffffffff83fd816c>] tracesys+0xdd/0xe2
-[   43.509792] Code: 4c 8b 5d c0 74 0a 48 8d 50 01 49 89 14 24 eb 17 31 c0 48 83 c9 ff $
-[   43.509792] RIP  [<ffffffff818f3884>] parse_mount_options+0x1a4/0x300
-[   43.509792]  RSP <ffff880fa3413d08>
-[   43.509792] CR2: ffff880fa3a97fff
-[   43.509792] ---[ end trace 22469cd81e93af51 ]---
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Reviewed-by: Sage Weil <sage@inktan.com>
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ceph/super.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ceph/mds_client.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/fs/ceph/super.c
-+++ b/fs/ceph/super.c
-@@ -357,7 +357,7 @@ static int parse_mount_options(struct ce
- 	}
- 	err = -EINVAL;
- 	dev_name_end--;		/* back up to ':' separator */
--	if (*dev_name_end != ':') {
-+	if (dev_name_end < dev_name || *dev_name_end != ':') {
- 		pr_err("device name is missing path (no : separator in %s)\n",
- 				dev_name);
- 		goto out;
+--- a/fs/ceph/mds_client.c
++++ b/fs/ceph/mds_client.c
+@@ -3044,8 +3044,10 @@ int ceph_mdsc_init(struct ceph_fs_client
+ 	fsc->mdsc = mdsc;
+ 	mutex_init(&mdsc->mutex);
+ 	mdsc->mdsmap = kzalloc(sizeof(*mdsc->mdsmap), GFP_NOFS);
+-	if (mdsc->mdsmap == NULL)
++	if (mdsc->mdsmap == NULL) {
++		kfree(mdsc);
+ 		return -ENOMEM;
++	}
+ 
+ 	init_completion(&mdsc->safe_umount_waiters);
+ 	init_waitqueue_head(&mdsc->session_close_wq);
 
 
