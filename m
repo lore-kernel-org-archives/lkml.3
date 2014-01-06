@@ -1,130 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603AbaAFSwN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 13:52:13 -0500
-Received: from mo3.mail-out.ovh.net ([178.32.228.3]:56010 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470AbaAFSwL (ORCPT
+	id S1755998AbaAFSw0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 13:52:26 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35295 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754093AbaAFSwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 13:52:11 -0500
-Message-ID: <52CAFB42.1060501@overkiz.com>
-Date: Mon, 06 Jan 2014 19:51:46 +0100
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Douglas Gilbert <dgilbert@interlog.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Mon, 6 Jan 2014 13:52:12 -0500
+Date: Mon, 6 Jan 2014 18:51:39 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 1/3] usb: ohci-at91: replace request_mem_region + ioremap
- by devm_ioremap_resource
-References: <1386579115-4324-1-git-send-email-b.brezillon@overkiz.com>	<1386579115-4324-2-git-send-email-b.brezillon@overkiz.com> <CAOesGMhtg0vqVaRekfCE3-RZL644xEWBn4oVN22DtZR6L5WTxw@mail.gmail.com>
-In-Reply-To: <CAOesGMhtg0vqVaRekfCE3-RZL644xEWBn4oVN22DtZR6L5WTxw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 18114322127244130351
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrvdekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrvdekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v7 6/7] arm64, jump label: optimize jump label
+ implementation
+Message-ID: <20140106185139.GK1096@mudshark.cambridge.arm.com>
+References: <1387725944-810-1-git-send-email-liuj97@gmail.com>
+ <1387725944-810-7-git-send-email-liuj97@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387725944-810-7-git-send-email-liuj97@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Olof,
+On Sun, Dec 22, 2013 at 03:25:42PM +0000, Jiang Liu wrote:
+> Optimize jump label implementation for ARM64 by dynamically patching
+> kernel text.
 
-On 06/01/2014 19:08, Olof Johansson wrote:
-> Boris,
->
-> On Mon, Dec 9, 2013 at 12:51 AM, Boris BREZILLON
-> <b.brezillon@overkiz.com> wrote:
->> Replace the request_mem_region + ioremap calls by the
->> devm_ioremap_resource call which does the same things but with device
->> managed resources.
->>
->> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
->> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->> Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-> Did you build these patches?
+Almost!
 
-Yes, I did.
+> diff --git a/arch/arm64/include/asm/jump_label.h b/arch/arm64/include/asm/jump_label.h
+> new file mode 100644
+> index 0000000..47cd130
+> --- /dev/null
+> +++ b/arch/arm64/include/asm/jump_label.h
+> @@ -0,0 +1,51 @@
+> +/*
+> + * Copyright (C) 2013 Huawei Ltd.
+> + * Author: Jiang Liu <liuj97@gmail.com>
+> + *
+> + * Based on arch/arm/include/asm/jump_label.h
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +#ifndef _ASM_JUMP_LABEL_H
+> +#define _ASM_JUMP_LABEL_H
 
-> There's several breakages due to them in
-> last night's next. I'm a little puzzled how they passed testing before
-> you submitted?
-> This one fails with:
->
-> drivers/usb/host/ohci-at91.c: In function 'usb_hcd_at91_probe':
-> drivers/usb/host/ohci-at91.c:157:36: error: 'dev' undeclared (first
-> use in this function)
->    hcd->regs = devm_ioremap_resource(dev, res);
->                                      ^
-> drivers/usb/host/ohci-at91.c:157:36: note: each undeclared identifier
-> is reported only once for each function it appears in
-> drivers/usb/host/ohci-at91.c:157:41: error: 'res' undeclared (first
-> use in this function)
->    hcd->regs = devm_ioremap_resource(dev, res);
+It's actually prefixed with double-underscore in our other headers.
 
-Actually this patch series depends on another patch :
-"usb: ohci-at91: fix irq and iomem resource retrieval"
-commit fb5f1834c3221e459324c6885eaad75429f722a5.
+> +#include <linux/types.h>
+> +
+> +#ifdef __KERNEL__
+> +
+> +#define JUMP_LABEL_NOP_SIZE		4
 
-This patch was taken out to ease integration in 3.13-rc5.
+I know you didn't like including asm/insn.h, but I don't see why that's such
+a problem. Does it cause a circular dependency or something?
 
-Sorry, I should have stated it in my cover letter.
-
-Which next are you using ?
-I took a look at linux-next and the dev variable is declared.
-
-> There are more too, the original one I was bisecting for was the below
-> one, but the above hit first:
->
-> drivers/usb/host/ohci-at91.c: In function 'usb_hcd_at91_probe':
-> drivers/usb/host/ohci-at91.c:190:4: error: label 'err' used but not defined
-> drivers/usb/host/ohci-at91.c: At top level:
-> drivers/usb/host/ohci-at91.c:206:2: warning: data definition has no
-> type or storage class [enabled by default]
-> drivers/usb/host/ohci-at91.c:206:2: error: type defaults to 'int' in
-> declaration of 'at91_stop_hc' [-Werror=implicit-int]
-> drivers/usb/host/ohci-at91.c:206:2: warning: parameter names (without
-> types) in function declaration [enabled by default]
-> drivers/usb/host/ohci-at91.c:206:2: error: conflicting types for 'at91_stop_hc'
-> drivers/usb/host/ohci-at91.c:97:13: note: previous definition of
-> 'at91_stop_hc' was here
-> drivers/usb/host/ohci-at91.c:208:5: error: expected '=', ',', ';',
-> 'asm' or '__attribute__' before ':' token
-> drivers/usb/host/ohci-at91.c:210:2: error: expected identifier or '('
-> before 'return'
-> drivers/usb/host/ohci-at91.c:211:1: error: expected identifier or '('
-> before '}' token
-> drivers/usb/host/ohci-at91.c:97:13: warning: 'at91_stop_hc' defined
-> but not used [-Wunused-function]
->   static void at91_stop_hc(struct platform_device *pdev)
-
-These errors come from merge commit 
-99f14bd4d1b2a1b1b6cd508e08efdbc5e3919198.
-
-There is a missing brace on the last retval test.
-
-Best Regards,
-
-Boris
-> Somewhat spectacular.  Greg, can you please drop these until he's
-> sorted out his submission? :(
->
->
-> -Olof
-
+Will
