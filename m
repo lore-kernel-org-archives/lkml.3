@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757495AbaAFX3q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:29:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48126 "EHLO
+	id S1757075AbaAFXaN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:30:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48105 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932860AbaAFWkm (ORCPT
+	with ESMTP id S932845AbaAFWki (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:42 -0500
+	Mon, 6 Jan 2014 17:40:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kirill Tkhai <tkhai@yandex.ru>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.10 037/129] sched/rt: Fix rqs cpupri leak while enqueue/dequeue child RT entities
-Date: Mon,  6 Jan 2014 14:37:46 -0800
-Message-Id: <20140106223900.663301734@linuxfoundation.org>
+        Zheng Liu <wenqing.lz@taobao.com>, Jan Kara <jack@suse.cz>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [PATCH 3.10 033/129] ext4: fix deadlock when writing in ENOSPC conditions
+Date: Mon,  6 Jan 2014 14:37:42 -0800
+Message-Id: <20140106223900.552178150@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -29,65 +29,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kirill Tkhai <tkhai@yandex.ru>
+From: Jan Kara <jack@suse.cz>
 
-commit 757dfcaa41844595964f1220f1d33182dae49976 upstream.
+commit 34cf865d54813aab3497838132fb1bbd293f4054 upstream.
 
-This patch touches the RT group scheduling case.
+Akira-san has been reporting rare deadlocks of his machine when running
+xfstests test 269 on ext4 filesystem. The problem turned out to be in
+ext4_da_reserve_metadata() and ext4_da_reserve_space() which called
+ext4_should_retry_alloc() while holding i_data_sem. Since
+ext4_should_retry_alloc() can force a transaction commit, this is a
+lock ordering violation and leads to deadlocks.
 
-Functions inc_rt_prio_smp() and dec_rt_prio_smp() change (global) rq's
-priority, while rt_rq passed to them may be not the top-level rt_rq.
-This is wrong, because changing of priority on a child level does not
-guarantee that the priority is the highest all over the rq. So, this
-leak makes RT balancing unusable.
+Fix the problem by just removing the retry loops. These functions should
+just report ENOSPC to the caller (e.g. ext4_da_write_begin()) and that
+function must take care of retrying after dropping all necessary locks.
 
-The short example: the task having the highest priority among all rq's
-RT tasks (no one other task has the same priority) are waking on a
-throttle rt_rq.  The rq's cpupri is set to the task's priority
-equivalent, but real rq->rt.highest_prio.curr is less.
-
-The patch below fixes the problem.
-
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-CC: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/49231385567953@web4m.yandex.ru
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Reported-and-tested-by: Akira Fujita <a-fujita@rs.jp.nec.com>
+Reviewed-by: Zheng Liu <wenqing.lz@taobao.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/rt.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ fs/ext4/inode.c |   12 ------------
+ 1 file changed, 12 deletions(-)
 
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -964,6 +964,13 @@ inc_rt_prio_smp(struct rt_rq *rt_rq, int
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -1263,7 +1263,6 @@ static int ext4_journalled_write_end(str
+  */
+ static int ext4_da_reserve_metadata(struct inode *inode, ext4_lblk_t lblock)
  {
- 	struct rq *rq = rq_of_rt_rq(rt_rq);
- 
-+#ifdef CONFIG_RT_GROUP_SCHED
-+	/*
-+	 * Change rq's cpupri only if rt_rq is the top queue.
-+	 */
-+	if (&rq->rt != rt_rq)
-+		return;
-+#endif
- 	if (rq->online && prio < prev_prio)
- 		cpupri_set(&rq->rd->cpupri, rq->cpu, prio);
- }
-@@ -973,6 +980,13 @@ dec_rt_prio_smp(struct rt_rq *rt_rq, int
+-	int retries = 0;
+ 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+ 	struct ext4_inode_info *ei = EXT4_I(inode);
+ 	unsigned int md_needed;
+@@ -1275,7 +1274,6 @@ static int ext4_da_reserve_metadata(stru
+ 	 * in order to allocate nrblocks
+ 	 * worse case is one extent per block
+ 	 */
+-repeat:
+ 	spin_lock(&ei->i_block_reservation_lock);
+ 	/*
+ 	 * ext4_calc_metadata_amount() has side effects, which we have
+@@ -1295,10 +1293,6 @@ repeat:
+ 		ei->i_da_metadata_calc_len = save_len;
+ 		ei->i_da_metadata_calc_last_lblock = save_last_lblock;
+ 		spin_unlock(&ei->i_block_reservation_lock);
+-		if (ext4_should_retry_alloc(inode->i_sb, &retries)) {
+-			cond_resched();
+-			goto repeat;
+-		}
+ 		return -ENOSPC;
+ 	}
+ 	ei->i_reserved_meta_blocks += md_needed;
+@@ -1312,7 +1306,6 @@ repeat:
+  */
+ static int ext4_da_reserve_space(struct inode *inode, ext4_lblk_t lblock)
  {
- 	struct rq *rq = rq_of_rt_rq(rt_rq);
- 
-+#ifdef CONFIG_RT_GROUP_SCHED
-+	/*
-+	 * Change rq's cpupri only if rt_rq is the top queue.
-+	 */
-+	if (&rq->rt != rt_rq)
-+		return;
-+#endif
- 	if (rq->online && rt_rq->highest_prio.curr != prev_prio)
- 		cpupri_set(&rq->rd->cpupri, rq->cpu, rt_rq->highest_prio.curr);
- }
+-	int retries = 0;
+ 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+ 	struct ext4_inode_info *ei = EXT4_I(inode);
+ 	unsigned int md_needed;
+@@ -1334,7 +1327,6 @@ static int ext4_da_reserve_space(struct
+ 	 * in order to allocate nrblocks
+ 	 * worse case is one extent per block
+ 	 */
+-repeat:
+ 	spin_lock(&ei->i_block_reservation_lock);
+ 	/*
+ 	 * ext4_calc_metadata_amount() has side effects, which we have
+@@ -1354,10 +1346,6 @@ repeat:
+ 		ei->i_da_metadata_calc_len = save_len;
+ 		ei->i_da_metadata_calc_last_lblock = save_last_lblock;
+ 		spin_unlock(&ei->i_block_reservation_lock);
+-		if (ext4_should_retry_alloc(inode->i_sb, &retries)) {
+-			cond_resched();
+-			goto repeat;
+-		}
+ 		dquot_release_reservation_block(inode, EXT4_C2B(sbi, 1));
+ 		return -ENOSPC;
+ 	}
 
 
