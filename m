@@ -1,72 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419AbaAFKhF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 05:37:05 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:49360 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751395AbaAFKhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 05:37:02 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'walt'" <w41ter@gmail.com>, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Mark Lord <mlord@pobox.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
- a USB payload burst
-Thread-Topic: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
- a USB payload burst
-Thread-Index: AQHPBmhf5d97FnYUxUSD3GhphkgfRJpx0RcAgAFWX4CABF08EA==
-Date: Mon, 6 Jan 2014 10:35:26 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D29D4F9@AcuExch.aculab.com>
-References: <20131218211219.461663463@linuxfoundation.org>
- <20131218211220.412278148@linuxfoundation.org> <52C32BB0.90600@gmail.com>
- <20140102191510.GA9621@xanatos> <52C6D9F1.9000709@gmail.com>
-In-Reply-To: <52C6D9F1.9000709@gmail.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+	id S1753792AbaAFKkj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 05:40:39 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:58404 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144AbaAFKkh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 05:40:37 -0500
+Date: Mon, 6 Jan 2014 10:40:30 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jon Medhurst <tixy@linaro.org>, arm@kernel.org,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [RFC 18/18] mfd: vexpress: Split sysreg functions into MFD cells
+Message-ID: <20140106104030.GI23772@lee--X1>
+References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com>
+ <1387815830-8794-19-git-send-email-pawel.moll@arm.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1387815830-8794-19-git-send-email-pawel.moll@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s06AbEUj032058
 
-> From: walt
-...
->         /* Accept arbitrarily long scatter-gather lists */
-> -       hcd->self.sg_tablesize = ~0;
-> +       hcd->self.sg_tablesize = 31;
+> This patch splits individual sysreg functions into
+> separate MFD cells, which then become individual
+> platform devices with their own drivers.
+> 
+> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+> ---
+>  .../devicetree/bindings/arm/vexpress-sysreg.txt    |  37 ++-
+>  arch/arm/boot/dts/vexpress-v2m-rs1.dtsi            |  76 ++++++-
+>  arch/arm/boot/dts/vexpress-v2m.dtsi                |  76 ++++++-
+>  arch/arm/mach-vexpress/v2m.c                       |  23 +-
+>  drivers/mfd/Kconfig                                |  11 +
+>  drivers/mfd/Makefile                               |   2 +-
+>  drivers/mfd/vexpress-sysreg.c                      | 247 +++++++++++++++------
+>  include/linux/vexpress.h                           |  16 +-
+>  8 files changed, 377 insertions(+), 111 deletions(-)
 
-Even if that reduces the number of fragments passed to the xhci driver
-it may not be enough to limit the actual number of fragments that
-need to be placed in the ring itself.
-The xhci driver has to split every fragment on any 64k address boundary.
+<snip>
 
-One possibility is to scan long SG lists to see it they are actually
-problematic. If all the fragments are suitably aligned let them through
-(without any nops).
+> +static struct mfd_cell vexpress_sysreg_cells[] = {
+> +	{
+> +		.name = "syscon",
+> +		.of_compatible = "arm,vexpress-sysreg,sys_id",
+> +		.num_resources = 1,
+> +		.resources = (struct resource []) {
+> +			DEFINE_RES_MEM(SYS_ID, 0x4),
+> +		},
+> +		.platform_data = &vexpress_sysreg_sys_id_pdata,
+> +		.pdata_size = sizeof(vexpress_sysreg_sys_id_pdata),
 
-My gut feeling is that problems only arise when the ring end isn't at
-a 1k boundary in the data.
+Not sure how comfortable I am with using Device Tree and populating
+platform_data with information which by the looks of it you're
+planning to make persistent. What's stopping you from using a DT
+property to name the block, or better yet, just use the compatible
+string? Also, won't naming these blocks in DT also aid other OSes?
 
-So provided all the fragments are multiples of 1k (after splitting on 64k
-boundaries) the transfer will be processed correctly.
-Alternatively, if the fragments are all longer than 1k (after the 64k split),
-the one that crosses the ring end can be split in two.
+<snip>
 
-A quick 'fix' would be to assume that anything with too many fragments is
-probably ok - maybe check the first fragment is suitably aligned.
-That would recover the old behaviour for usb disk transfers with a lot
-of fragments - yes it is a hack...
+> +static int vexpress_sysreg_probe(struct platform_device *pdev)
+>  {
+> -	vexpress_sysreg_base = base;
+> -	vexpress_sysreg_setup(NULL);
+> +	struct resource *mem;
+> +	void __iomem *base;
+> +	struct bgpio_chip *mmc_gpio_chip;
+> +
+> +	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!mem)
+> +		return -EINVAL;
+> +
+> +	base = devm_ioremap(&pdev->dev, mem->start, resource_size(mem));
+> +	if (!base)
+> +		return -ENOMEM;
+> +
+> +	vexpress_config_set_master(vexpress_sysreg_get_master(base));
+> +
+> +	/*
+> +	 * Duplicated SYS_MCI pseudo-GPIO controller for compatibility with
+> +	 * older trees using sysreg node for MMC control lines.
+> +	 */
+> +	mmc_gpio_chip = devm_kzalloc(&pdev->dev, sizeof(*mmc_gpio_chip),
+> +			GFP_KERNEL);
+> +	if (!mmc_gpio_chip)
+> +		return -ENOMEM;
+> +	bgpio_init(mmc_gpio_chip, &pdev->dev, 0x4, base + SYS_MCI, NULL,
+> +			NULL, NULL, NULL, 0);
+> +	mmc_gpio_chip->gc.ngpio = 2;
+> +	gpiochip_add(&mmc_gpio_chip->gc);
+> +
+> +	return mfd_add_devices(&pdev->dev, PLATFORM_DEVID_AUTO,
+> +			vexpress_sysreg_cells,
+> +			ARRAY_SIZE(vexpress_sysreg_cells), mem, 0, 0);
 
-	David
+Don't use 0 as NULL, you will cause a sparse error.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+<snip>
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
