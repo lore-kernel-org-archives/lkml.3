@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933492AbaAFXQa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:16:30 -0500
-Received: from mga02.intel.com ([134.134.136.20]:14453 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933197AbaAFXQ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 18:16:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,615,1384329600"; 
-   d="scan'208";a="434756185"
-Subject: [PATCH] checkpatch: Only flag FSF address, not gnu.org URL
-To: joe@perches.com, gregkh@linuxfoundation.org, josh@joshtriplett.org
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 06 Jan 2014 15:16:24 -0800
-Message-ID: <20140106231534.23578.11475.stgit@ahduyck-cp2.jf.intel.com>
-User-Agent: StGit/0.16
+	id S933525AbaAFXRd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:17:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48350 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933010AbaAFWlV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 17:41:21 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.10 080/129] Input: allocate absinfo data when setting ABS capability
+Date: Mon,  6 Jan 2014 14:38:29 -0800
+Message-Id: <20140106223901.899338293@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
+References: <20140106223859.589799655@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change restricts the check for the for the FSF address in the GPL
-copyright statement so that it only flags the address, not the references to
-the gnu.org/licenses URL which appear in numerous drivers.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-So for example this statement will still return an error:
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+------------------
 
-However, this statement will not return an error after this patch:
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+commit 28a2a2e1aedbe2d8b2301e6e0e4e63f6e4177aca upstream.
+
+We need to make sure we allocate absinfo data when we are setting one of
+EV_ABS/ABS_XXX capabilities, otherwise we may bomb when we try to emit this
+event.
+
+Rested-by: Paul Cercueil <pcercuei@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- scripts/checkpatch.pl |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ drivers/input/input.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 9c98100..ba3c9c3 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -1963,8 +1963,7 @@ sub process {
- 		}
+--- a/drivers/input/input.c
++++ b/drivers/input/input.c
+@@ -1866,6 +1866,10 @@ void input_set_capability(struct input_d
+ 		break;
  
- # Check for FSF mailing addresses.
--		if ($rawline =~ /You should have received a copy/ ||
--		    $rawline =~ /write to the Free Software/ ||
-+		if ($rawline =~ /write to the Free Software/ ||
- 		    $rawline =~ /59 Temple Place/ ||
- 		    $rawline =~ /51 Franklin Street/) {
- 			my $herevet = "$here\n" . cat_vet($rawline) . "\n";
+ 	case EV_ABS:
++		input_alloc_absinfo(dev);
++		if (!dev->absinfo)
++			return;
++
+ 		__set_bit(code, dev->absbit);
+ 		break;
+ 
+
 
