@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103AbaAFW6f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:58:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48581 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933152AbaAFWmJ (ORCPT
+	id S1755919AbaAFW6r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:58:47 -0500
+Received: from mailuogwdur.emc.com ([128.221.224.79]:16126 "EHLO
+	mailuogwdur.emc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754756AbaAFW6m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:42:09 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Elder <elder@inktank.com>, Josh Durgin <josh.durgin@inktank.com>
-Subject: [PATCH 3.10 096/129] rbd: protect against concurrent unmaps
-Date: Mon,  6 Jan 2014 14:38:45 -0800
-Message-Id: <20140106223902.349996992@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
-References: <20140106223859.589799655@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Mon, 6 Jan 2014 17:58:42 -0500
+X-Greylist: delayed 1516 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Jan 2014 17:58:41 EST
+X-DKIM: OpenDKIM Filter v2.4.3 mailuogwprd51.lss.emc.com s06MXD1b001671
+X-DKIM: OpenDKIM Filter v2.4.3 mailuogwprd51.lss.emc.com s06MXD1b001671
+From: "faibish, sorin" <faibish_sorin@emc.com>
+To: Ric Wheeler <ricwheeler@gmail.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "lsf-pc@lists.linux-foundation.org" 
+	<lsf-pc@lists.linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 6 Jan 2014 17:32:56 -0500
+Subject: RE: [LSF/MM TOPIC] [ATTEND] persistent memory progress, management
+ of storage & file systems
+Thread-Topic: [LSF/MM TOPIC] [ATTEND] persistent memory progress, management
+ of storage & file systems
+Thread-Index: Ac8LLo/YzlWvLrjoTLS8qnNu3ha0bAAAB+YA
+Message-ID: <2512424DBC01FD48843E938C780FA97C02B002A583@MX23A.corp.emc.com>
+References: <20131220093022.GV11295@suse.de> <52CB2C3A.3010207@gmail.com>
+In-Reply-To: <52CB2C3A.3010207@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+X-Sentrion-Hostname: mailusrhubprd53.lss.emc.com
+X-RSA-Classifications: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Speaking of persistent memory I would like to discuss the PMFS as well as RDMA aspects of the persistent memory model. Also I would like to discuss KV stores and object stores on persistent memory. I was involved in the PMFS as a tester and I found several issues that I would like to discuss with the community. I assume that maybe others from Intel could join this discussion except for Andy and Matt which already asked for this topic. Thanks
 
-------------------
+./Sorin
 
-From: Alex Elder <elder@inktank.com>
+-----Original Message-----
+From: linux-fsdevel-owner@vger.kernel.org [mailto:linux-fsdevel-owner@vger.kernel.org] On Behalf Of Ric Wheeler
+Sent: Monday, January 06, 2014 5:21 PM
+To: linux-scsi@vger.kernel.org; linux-ide@vger.kernel.org; linux-mm@kvack.org; linux-fsdevel@vger.kernel.org; lsf-pc@lists.linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [LSF/MM TOPIC] [ATTEND] persistent memory progress, management of storage & file systems
 
-commit 82a442d239695a242c4d584464c9606322cd02aa upstream.
 
-Make sure two concurrent unmap operations on the same rbd device
-won't collide, by only proceeding with the removal and cleanup of a
-device if is not already underway.
+I would like to attend this year and continue to talk about the work on enabling the new class of persistent memory devices. Specifically, very interested in talking about both using a block driver under our existing stack and also progress at the file system layer (adding xip/mmap tweaks to existing file systems and looking at new file systems).
 
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Josh Durgin <josh.durgin@inktank.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+We also have a lot of work left to do on unifying management, it would be good to resync on that.
 
----
- drivers/block/rbd.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+Regards,
 
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -5108,6 +5108,7 @@ static ssize_t rbd_remove(struct bus_typ
- 	struct list_head *tmp;
- 	int dev_id;
- 	unsigned long ul;
-+	bool already = false;
- 	int ret;
- 
- 	ret = strict_strtoul(buf, 10, &ul);
-@@ -5135,11 +5136,12 @@ static ssize_t rbd_remove(struct bus_typ
- 		if (rbd_dev->open_count)
- 			ret = -EBUSY;
- 		else
--			set_bit(RBD_DEV_FLAG_REMOVING, &rbd_dev->flags);
-+			already = test_and_set_bit(RBD_DEV_FLAG_REMOVING,
-+							&rbd_dev->flags);
- 		spin_unlock_irq(&rbd_dev->lock);
- 	}
- 	spin_unlock(&rbd_dev_list_lock);
--	if (ret < 0)
-+	if (ret < 0 || already)
- 		goto done;
- 
- 	rbd_bus_del_dev(rbd_dev);
+Ric
 
+--
+To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
