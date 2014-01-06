@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226AbaAFUsu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 15:48:50 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:57609 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755815AbaAFUss (ORCPT
+	id S1756238AbaAFUur (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 15:50:47 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56976 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755253AbaAFUuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 15:48:48 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
-        nicolas.pitre@linaro.org
-Subject: Re: [PATCH 0/4] CPUFreq stats: Bug fixes
-Date: Mon, 06 Jan 2014 22:02:35 +0100
-Message-ID: <1555125.bAi9TgavWd@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <cover.1380190886.git.viresh.kumar@linaro.org>
-References: <cover.1380190886.git.viresh.kumar@linaro.org>
+	Mon, 6 Jan 2014 15:50:46 -0500
+Message-ID: <52CB1722.70306@wwwdotorg.org>
+Date: Mon, 06 Jan 2014 13:50:42 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Olof Johansson <olof@lixom.net>, Danny Huang <dahuang@nvidia.com>
+Subject: Re: [PATCH v2 4/6] ARM: tegra: rework fuse.c
+References: <1387891931-9854-1-git-send-email-pdeschrijver@nvidia.com> <1387891931-9854-5-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1387891931-9854-5-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 26, 2013 03:59:50 PM Viresh Kumar wrote:
-> Hi Rafael,
-> 
-> I know you asked me not to send any more patches before the earlier ones get
-> into kernel. I got to this as Nicolas Pitre required to send few CPUFreq patches
-> for ARM's big LITTLE In-Kernel-Switcher. And within linaro we have hacked these
-> bugs in a bad way..
-> 
-> Because of his dependency I am forced to send these.. These aren't introduced
-> recently and so they can be included in 3.13.
-> 
-> There are several problems/bugs in cpufreq-stats specially with cpufreq drivers
-> as modules and suspend/resume path. These are mentioned well in changelogs.
-> 
-> These are tested over my thinkpad (acpi-cpufreq) in following way:
-> [1] offline+online all CPUs except boot cpu in a while loop
-> [2] then do suspend resume
-> [3] repeat [1] and [2] several times.
-> 
-> No issues found..
-> 
-> Also tested on my exynos board:
-> - Added cpufreq_unregister/register while loop in exynos-cpufreq.c so that we
->   continuously register/unregister driver... Stats were working fine now..
-> - Compile cpufreq-stats as module and insert/remove it several times after
->   removing above hack (as that doesn't let linux boot :) )..
-> 
-> @Srivatsa: You also have fairly good idea of cpufreq now, so please give some
-> time to review this :)
-> 
-> @Nico: Can you remove the hacky code from IKS tree and test these instead to see
-> if we still have any issues?
+On 12/24/2013 06:32 AM, Peter De Schrijver wrote:
+> Reduce fuse.c to the minimum functionality required for the early bootstages.
+>
+> Also export tegra_read_straps() for use by the fuse driver.
 
-Can you please rebase this series on top of linux-pm.git/bleeding-edge and
-resend it?  Chances are it might make it into 3.14.
+Since the fuse driver is tristate, it could be a module. Doesn't it
+literally need to be EXPORT_SYMBOL'd, not simply not static?
 
-Thanks,
-Rafael
+I'm rather worried that this series isn't bisectable, since this patch
+removes a bunch of code that's replaced by code in the fuse driver which
+can't be built/linked at this point in the series. I'm also worried
+about initialization ordering, since a lot of the fuse code could be a
+module...
 
+> diff --git a/arch/arm/mach-tegra/fuse.c b/arch/arm/mach-tegra/fuse.c
+
+> -/* Tegra20 only */
+>  #define FUSE_UID_LOW		0x108
+>  #define FUSE_UID_HIGH		0x10c
+
+Why remove that comment but leave the two defines it applies to?
+
+>  #define TEGRA20_FUSE_SPARE_BIT		0x200
+
+That define, and tegra_spare_fuse() which uses it, are no longer used
+after patch 5/6, but aren't removed in patch 5/6. Perhaps it'd be better
+to squash or re-order the two patches, so this dead code can be removed?
+
+> -int tegra_sku_id;
+> -int tegra_cpu_process_id;
+> -int tegra_core_process_id;
+>  int tegra_chip_id;
+> -int tegra_cpu_speedo_id;		/* only exist in Tegra30 and later */
+> -int tegra_soc_speedo_id;
+>  enum tegra_revision tegra_revision;
+
+It's a bit odd to remove most of this, but leave a few parts hanging
+around. Wouldn't it be better to the drivers/misc/fuse code to export
+this, so that /all/ the fuse logic was there, rather than part of it
+being left over in arch/arm/? We'll need to fix that up anyway when we
+start using these globals on ARMv8, so may as well get it right now.
+Also, I rather think that the new drivers/misc/fuse code shouldn't be a
+module or driver, so that we can guarantee it's always there to provide
+the globals and that they are initialized early enough...
