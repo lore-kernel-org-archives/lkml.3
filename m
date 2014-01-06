@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182AbaAFIKt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 03:10:49 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59662 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753135AbaAFIKq (ORCPT
+	id S1752600AbaAFIRt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 03:17:49 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:48643 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063AbaAFIRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 03:10:46 -0500
-X-AuditID: 9c930197-b7c4aae000003d84-44-52ca6505e17c
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: Re: [PATCH 03/21] perf hists: Add support for accumulated stat of hist entry
-References: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
-	<1387873347-28838-4-git-send-email-namhyung@kernel.org>
-	<20140105164546.GD10018@krava.brq.redhat.com>
-Date: Mon, 06 Jan 2014 17:10:45 +0900
-In-Reply-To: <20140105164546.GD10018@krava.brq.redhat.com> (Jiri Olsa's
-	message of "Sun, 5 Jan 2014 17:45:46 +0100")
-Message-ID: <87fvp1ediy.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 6 Jan 2014 03:17:47 -0500
+Message-ID: <52CA667B.4090606@huawei.com>
+Date: Mon, 6 Jan 2014 16:16:59 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: John Fastabend <john.fastabend@gmail.com>
+CC: David Miller <davem@davemloft.net>, <edumazet@google.com>,
+        <jasowang@redhat.com>, <horms@verge.net.au>, <serge.hallyn@ubuntu.com>,
+        <netdev@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <containers@lists.linux-foundation.org>, <kaber@trash.net>,
+        <xemul@openvz.org>, <ebiederm@xmission.com>,
+        <linux-kernel@vger.kernel.org>, <jhs@mojatatu.com>,
+        <lizefan@huawei.com>
+Subject: Re: [RFC PATCH net-next 1/4] net: introduce backup_classid to struct
+ skbuff
+References: <52C62A48.1050604@huawei.com> <20140103.003404.1439874071277993396.davem@davemloft.net> <52C656F2.8060803@gmail.com>
+In-Reply-To: <52C656F2.8060803@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.22.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 5 Jan 2014 17:45:46 +0100, Jiri Olsa wrote:
-> On Tue, Dec 24, 2013 at 05:22:09PM +0900, Namhyung Kim wrote:
->> From: Namhyung Kim <namhyung.kim@lge.com>
->> 
->> Maintain accumulated stat information in hist_entry->stat_acc if
->> symbol_conf.cumulate_callchain is set.  Fields in ->stat_acc have same
->> vaules initially, and will be updated as callchain is processed later.
->> 
->> Cc: Arun Sharma <asharma@fb.com>
->> Cc: Frederic Weisbecker <fweisbec@gmail.com>
->> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
->> ---
->>  tools/perf/util/hist.c   | 18 ++++++++++++++++++
->>  tools/perf/util/sort.h   |  1 +
->>  tools/perf/util/symbol.h |  1 +
->>  3 files changed, 20 insertions(+)
->> 
->> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
->> index 283aa1972b4f..b61e2fa42412 100644
->> --- a/tools/perf/util/hist.c
->> +++ b/tools/perf/util/hist.c
->> @@ -237,6 +237,8 @@ static bool hists__decay_entry(struct hists *hists, struct hist_entry *he)
->>  		return true;
->>  
->>  	he_stat__decay(&he->stat);
->> +	if (symbol_conf.cumulate_callchain)
->> +		he_stat__decay(he->stat_acc);
->>  
->>  	if (!he->filtered)
->>  		hists->stats.total_period -= prev_period - he->stat.period;
->> @@ -284,6 +286,15 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
->
-> there's callchain size computation in here:
->         size_t callchain_size = symbol_conf.use_callchain ?  sizeof(struct callchain_root) : 0;
->
-> I wonder we could make it zero for symbol_conf.cumulate_callchain
+On 2014/1/3 14:21, John Fastabend wrote:
+> On 01/02/2014 09:34 PM, David Miller wrote:
+>> From: Libo Chen <clbchenlibo.chen@huawei.com>
+>> Date: Fri, 3 Jan 2014 11:11:04 +0800
+>>
+>>>
+>>> introduce backup_classid to struct skbuff,
+>>> we can use it to backup sk_classid when net_ns switch.
+>>>
+>>> Signed-off-by: Libo Chen <clbchenlibo.chen@huawei.com>
+>>
+>> Sorry, no new sk_buff members unless there is absolutely not other
+>> possible implementation.
+>>
+>> sk_buff is too big as-is.
+> 
+> To get what you want fix the dev_forward_skb() call. But its
+> not clear to me why you would expect the sock info to be propagated
+> like this. It seems like an incorrect assumption or a misunderstanding
+> somewhere. If the virtual link was a physical link you wouldn't expect
+> to know anything about the senders socket.
 
-The plan is to support callchain with --children enabled. :)
+AFAIK, once the sock is created, sock->sk_classid will be set, see sk_alloc()
+so I think it is safe.
 
-Thanks,
-Namhyung
+thanks,
+Libo
+
+> 
+> Thanks,
+> John
+> 
+
+
