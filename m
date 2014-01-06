@@ -1,82 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643AbaAFQtI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 11:49:08 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35765 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753411AbaAFQtF (ORCPT
+	id S1755877AbaAFQt0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 11:49:26 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:64852 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755795AbaAFQtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 11:49:05 -0500
-Date: Mon, 6 Jan 2014 17:48:38 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, pjt@google.com,
-        Morten.Rasmussen@arm.com, cmetcalf@tilera.com, tony.luck@intel.com,
-        alex.shi@linaro.org, linaro-kernel@lists.linaro.org, rjw@sisk.pl,
-        paulmck@linux.vnet.ibm.com, corbet@lwn.net, tglx@linutronix.de,
-        len.brown@intel.com, amit.kucheria@linaro.org, james.hogan@imgtec.com,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        Dietmar.Eggemann@arm.com
-Subject: Re: [RFC] sched: CPU topology try
-Message-ID: <20140106164838.GR31570@twins.programming.kicks-ass.net>
-References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
- <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
- <52C3A0F1.3040803@linux.vnet.ibm.com>
- <20140106163341.GO31570@twins.programming.kicks-ass.net>
- <52CADBB9.1010704@linux.intel.com>
+	Mon, 6 Jan 2014 11:49:24 -0500
+Date: Mon, 6 Jan 2014 22:19:19 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Airlie <airlied@linux.ie>, Thomas Hellstrom <thellstrom@vmware.com>,
+        Jakob Bornecrantz <jakob@vmware.com>, Dave Airlie <airlied@redhat.com>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        dri-devel@lists.freedesktop.org, josh@joshtriplett.org
+Subject: [PATCH 83/85] drivers: gpu: Mark functions as static and remove
+ unused function in vmwgfx_resource.c
+Message-ID: <c978c014a4b7f62c875b2bb53f55cb288cc72cb9.1389018325.git.rashika.kheria@gmail.com>
+References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <52CADBB9.1010704@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 08:37:13AM -0800, Arjan van de Ven wrote:
-> On 1/6/2014 8:33 AM, Peter Zijlstra wrote:
-> >On Wed, Jan 01, 2014 at 10:30:33AM +0530, Preeti U Murthy wrote:
-> >>The design looks good to me. In my opinion information like P-states and
-> >>C-states dependency can be kept separate from the topology levels, it
-> >>might get too complicated unless the information is tightly coupled to
-> >>the topology.
-> >
-> >I'm not entirely convinced we can keep them separated, the moment we
-> >have multiple CPUs sharing a P or C state we need somewhere to manage
-> >the shared state and the domain tree seems like the most natural place
-> >for this.
-> >
-> >Now it might well be both P and C states operate at 'natural' domains
-> >which we already have so it might be 'easy'.
-> 
-> more than that though.. P and C state sharing is mostly hidden from the OS
-> (because the OS does not have the ability to do this; e.g. there are things
-> that do "if THIS cpu goes idle, the OTHER cpu P state changes automatic".
-> 
-> that's not just on x86, the ARM guys (iirc at least the latest snapdragon)  are going in that
-> direction as well.....
-> 
-> for those systems, the OS really should just make local decisions and let the hardware
-> cope with hardware grouping.
+Mark functions as static because they are not used outside the file
+drm/vmwgfx/vmwgfx_resource.c. Also, remove unused function
+vmw_user_dmabuf_reference() from drm/vmwgfx/vmwgfx_resource.c.
 
-AFAICT this is a chicken-egg problem, the OS never did anything useful
-with it so the hardware guys are now trying to do something with it, but
-this also means that if we cannot predict what the hardware will do
-under certain circumstances the OS really cannot do anything smart
-anymore.
+This eliminates the following warnings in drm/vmwgfx/vmwgfx_resource.c:
+drivers/gpu/drm/vmwgfx/vmwgfx_resource.c:252:22: warning: no previous prototype for ‘vmw_resource_lookup’ [-Wmissing-prototypes]
+drivers/gpu/drm/vmwgfx/vmwgfx_resource.c:456:5: warning: no previous prototype for ‘vmw_user_dmabuf_alloc’ [-Wmissing-prototypes]
+drivers/gpu/drm/vmwgfx/vmwgfx_resource.c:593:5: warning: no previous prototype for ‘vmw_user_dmabuf_reference’ [-Wmissing-prototypes]
+drivers/gpu/drm/vmwgfx/vmwgfx_resource.c:1145:5: warning: no previous prototype for ‘vmw_resource_do_evict’ [-Wmissing-prototypes]
 
-So yes, for certain hardware we'll just have to give up and not do
-anything.
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ drivers/gpu/drm/vmwgfx/vmwgfx_resource.c |   19 +++----------------
+ 1 file changed, 3 insertions(+), 16 deletions(-)
 
-That said, some hardware still does allow us to do something and for
-those we do need some of this.
-
-Maybe if the OS becomes smart enough the hardware guys will give us some
-control again, who knows.
-
-So yes, I'm entirely fine saying that some chips are fucked and we can't
-do anything sane with them.. Fine they get to sort things themselves.
-
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c b/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
+index 9b5ea2a..5fefc65 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
+@@ -249,7 +249,7 @@ void vmw_resource_activate(struct vmw_resource *res,
+ 	write_unlock(&dev_priv->resource_lock);
+ }
+ 
+-struct vmw_resource *vmw_resource_lookup(struct vmw_private *dev_priv,
++static struct vmw_resource *vmw_resource_lookup(struct vmw_private *dev_priv,
+ 					 struct idr *idr, int id)
+ {
+ 	struct vmw_resource *res;
+@@ -453,7 +453,7 @@ static void vmw_user_dmabuf_release(struct ttm_base_object **p_base)
+  * @p_dma_buf: Pointer to where the refcounted struct vmw_dma_buffer pointer
+  * should be assigned.
+  */
+-int vmw_user_dmabuf_alloc(struct vmw_private *dev_priv,
++static int vmw_user_dmabuf_alloc(struct vmw_private *dev_priv,
+ 			  struct ttm_object_file *tfile,
+ 			  uint32_t size,
+ 			  bool shareable,
+@@ -590,19 +590,6 @@ int vmw_user_dmabuf_lookup(struct ttm_object_file *tfile,
+ 	return 0;
+ }
+ 
+-int vmw_user_dmabuf_reference(struct ttm_object_file *tfile,
+-			      struct vmw_dma_buffer *dma_buf)
+-{
+-	struct vmw_user_dma_buffer *user_bo;
+-
+-	if (dma_buf->base.destroy != vmw_user_dmabuf_destroy)
+-		return -EINVAL;
+-
+-	user_bo = container_of(dma_buf, struct vmw_user_dma_buffer, dma);
+-	return ttm_ref_object_add(tfile, &user_bo->prime.base,
+-				  TTM_REF_USAGE, NULL);
+-}
+-
+ /*
+  * Stream management
+  */
+@@ -1142,7 +1129,7 @@ vmw_resource_backoff_reservation(struct ttm_validate_buffer *val_buf)
+  * @res:            The resource to evict.
+  * @interruptible:  Whether to wait interruptible.
+  */
+-int vmw_resource_do_evict(struct vmw_resource *res, bool interruptible)
++static int vmw_resource_do_evict(struct vmw_resource *res, bool interruptible)
+ {
+ 	struct ttm_validate_buffer val_buf;
+ 	const struct vmw_res_func *func = res->func;
+-- 
+1.7.9.5
 
