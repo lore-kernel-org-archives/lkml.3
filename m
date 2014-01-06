@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933348AbaAFXJy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:09:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48447 "EHLO
+	id S933365AbaAFXK0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:10:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48441 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933085AbaAFWlk (ORCPT
+	with ESMTP id S933057AbaAFWlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:40 -0500
+	Mon, 6 Jan 2014 17:41:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>,
-        Sage Weil <sage@inktank.com>
-Subject: [PATCH 3.10 103/129] ceph: fix null pointer dereference
-Date: Mon,  6 Jan 2014 14:38:52 -0800
-Message-Id: <20140106223902.549622631@linuxfoundation.org>
+        "Yan, Zheng" <zheng.z.yan@intel.com>, Sage Weil <sage@inktank.com>
+Subject: [PATCH 3.10 102/129] libceph: call r_unsafe_callback when unsafe reply is received
+Date: Mon,  6 Jan 2014 14:38:51 -0800
+Message-Id: <20140106223902.521897294@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -29,34 +28,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-commit c338c07c51e3106711fad5eb599e375eadb6855d upstream.
+commit 61c5d6bf7074ee32d014dcdf7698dc8c59eb712d upstream.
 
-When register_session() is given an out-of-range argument for mds,
-ceph_mdsmap_get_addr() will return a null pointer, which would be given to
-ceph_con_open() & be dereferenced, causing a kernel oops. This fixes bug #4685
-in the Ceph bug tracker <http://tracker.ceph.com/issues/4685>.
+We can't use !req->r_sent to check if OSD request is sent for the
+first time, this is because __cancel_request() zeros req->r_sent
+when OSD map changes. Rather than adding a new variable to struct
+ceph_osd_request to indicate if it's sent for the first time, We
+can call the unsafe callback only when unsafe OSD reply is received.
+If OSD's first reply is safe, just skip calling the unsafe callback.
 
-Signed-off-by: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
+The purpose of unsafe callback is adding unsafe request to a list,
+so that fsync(2) can wait for the safe reply. fsync(2) doesn't need
+to wait for a write(2) that hasn't returned yet. So it's OK to add
+request to the unsafe list when the first OSD reply is received.
+(ceph_sync_write() returns after receiving the first OSD reply)
+
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ceph/mds_client.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/ceph/osd_client.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/fs/ceph/mds_client.c
-+++ b/fs/ceph/mds_client.c
-@@ -414,6 +414,9 @@ static struct ceph_mds_session *register
- {
- 	struct ceph_mds_session *s;
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -1337,10 +1337,6 @@ static void __send_request(struct ceph_o
  
-+	if (mds >= mdsc->mdsmap->m_max_mds)
-+		return ERR_PTR(-EINVAL);
-+
- 	s = kzalloc(sizeof(*s), GFP_NOFS);
- 	if (!s)
- 		return ERR_PTR(-ENOMEM);
+ 	ceph_msg_get(req->r_request); /* send consumes a ref */
+ 
+-	/* Mark the request unsafe if this is the first timet's being sent. */
+-
+-	if (!req->r_sent && req->r_unsafe_callback)
+-		req->r_unsafe_callback(req, true);
+ 	req->r_sent = req->r_osd->o_incarnation;
+ 
+ 	ceph_con_send(&req->r_osd->o_con, req->r_request);
+@@ -1431,8 +1427,6 @@ static void handle_osds_timeout(struct w
+ 
+ static void complete_request(struct ceph_osd_request *req)
+ {
+-	if (req->r_unsafe_callback)
+-		req->r_unsafe_callback(req, false);
+ 	complete_all(&req->r_safe_completion);  /* fsync waiter */
+ }
+ 
+@@ -1559,14 +1553,20 @@ static void handle_reply(struct ceph_osd
+ 	mutex_unlock(&osdc->request_mutex);
+ 
+ 	if (!already_completed) {
++		if (req->r_unsafe_callback &&
++		    result >= 0 && !(flags & CEPH_OSD_FLAG_ONDISK))
++			req->r_unsafe_callback(req, true);
+ 		if (req->r_callback)
+ 			req->r_callback(req, msg);
+ 		else
+ 			complete_all(&req->r_completion);
+ 	}
+ 
+-	if (flags & CEPH_OSD_FLAG_ONDISK)
++	if (flags & CEPH_OSD_FLAG_ONDISK) {
++		if (req->r_unsafe_callback && already_completed)
++			req->r_unsafe_callback(req, false);
+ 		complete_request(req);
++	}
+ 
+ done:
+ 	dout("req=%p req->r_linger=%d\n", req, req->r_linger);
 
 
