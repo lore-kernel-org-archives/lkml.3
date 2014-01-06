@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933261AbaAFWmJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:42:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48565 "EHLO
+	id S933315AbaAFWmP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:42:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48595 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933241AbaAFWmF (ORCPT
+	with ESMTP id S933282AbaAFWmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:42:05 -0500
+	Mon, 6 Jan 2014 17:42:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Elder <elder@inktank.com>, Josh Durgin <josh.durgin@inktank.com>
-Subject: [PATCH 3.10 093/129] libceph: add lingering request reference when registered
-Date: Mon,  6 Jan 2014 14:38:42 -0800
-Message-Id: <20140106223902.265845139@linuxfoundation.org>
+        Janak Desai <Janak.Desai@gtri.gatech.edu>,
+        Paul Moore <pmoore@redhat.com>
+Subject: [PATCH 3.10 089/129] selinux: look for IPsec labels on both inbound and outbound packets
+Date: Mon,  6 Jan 2014 14:38:38 -0800
+Message-Id: <20140106223902.152826690@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -28,99 +29,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Elder <elder@inktank.com>
+From: Paul Moore <pmoore@redhat.com>
 
-commit 96e4dac66f69d28af2b736e723364efbbdf9fdee upstream.
+commit 817eff718dca4e54d5721211ddde0914428fbb7c upstream.
 
-When an osd request is set to linger, the osd client holds onto the
-request so it can be re-submitted following certain osd map changes.
-The osd client holds a reference to the request until it is
-unregistered.  This is used by rbd for watch requests.
+Previously selinux_skb_peerlbl_sid() would only check for labeled
+IPsec security labels on inbound packets, this patch enables it to
+check both inbound and outbound traffic for labeled IPsec security
+labels.
 
-Currently, the reference is taken when the request is marked with
-the linger flag.  This means that if an error occurs after that
-time but before the the request completes successfully, that
-reference is leaked.
-
-There's really no reason to take the reference until the request is
-registered in the the osd client's list of lingering requests, and
-that only happens when the lingering (watch) request completes
-successfully.
-
-So take that reference only when it gets registered following
-succesful completion, and drop it (as before) when the request
-gets unregistered.  This avoids the reference problem on error
-in rbd.
-
-Rearrange ceph_osdc_unregister_linger_request() to avoid using
-the request pointer after it may have been freed.
-
-And hold an extra reference in kick_requests() while handling
-a linger request that has not yet been registered, to ensure
-it doesn't go away.
-
-This resolves:
-    http://tracker.ceph.com/issues/3859
-
-Signed-off-by: Alex Elder <elder@inktank.com>
-Reviewed-by: Josh Durgin <josh.durgin@inktank.com>
+Reported-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ceph/osd_client.c |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ security/selinux/hooks.c        |    2 -
+ security/selinux/include/xfrm.h |    9 +++---
+ security/selinux/xfrm.c         |   53 +++++++++++++++++++++++++++++++---------
+ 3 files changed, 48 insertions(+), 16 deletions(-)
 
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -1174,6 +1174,7 @@ static void __register_linger_request(st
- 				    struct ceph_osd_request *req)
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -3723,7 +3723,7 @@ static int selinux_skb_peerlbl_sid(struc
+ 	u32 nlbl_sid;
+ 	u32 nlbl_type;
+ 
+-	selinux_skb_xfrm_sid(skb, &xfrm_sid);
++	selinux_xfrm_skb_sid(skb, &xfrm_sid);
+ 	selinux_netlbl_skbuff_getsid(skb, family, &nlbl_type, &nlbl_sid);
+ 
+ 	err = security_net_peersid_resolve(nlbl_sid, nlbl_type, xfrm_sid, sid);
+--- a/security/selinux/include/xfrm.h
++++ b/security/selinux/include/xfrm.h
+@@ -47,6 +47,7 @@ int selinux_xfrm_sock_rcv_skb(u32 sid, s
+ int selinux_xfrm_postroute_last(u32 isec_sid, struct sk_buff *skb,
+ 			struct common_audit_data *ad, u8 proto);
+ int selinux_xfrm_decode_session(struct sk_buff *skb, u32 *sid, int ckall);
++int selinux_xfrm_skb_sid(struct sk_buff *skb, u32 *sid);
+ 
+ static inline void selinux_xfrm_notify_policyload(void)
  {
- 	dout("__register_linger_request %p\n", req);
-+	ceph_osdc_get_request(req);
- 	list_add_tail(&req->r_linger_item, &osdc->req_linger);
- 	if (req->r_osd)
- 		list_add_tail(&req->r_linger_osd,
-@@ -1196,6 +1197,7 @@ static void __unregister_linger_request(
- 		if (list_empty(&req->r_osd_item))
- 			req->r_osd = NULL;
- 	}
-+	ceph_osdc_put_request(req);
+@@ -80,12 +81,12 @@ static inline int selinux_xfrm_decode_se
+ static inline void selinux_xfrm_notify_policyload(void)
+ {
+ }
+-#endif
+ 
+-static inline void selinux_skb_xfrm_sid(struct sk_buff *skb, u32 *sid)
++static inline int selinux_xfrm_skb_sid(struct sk_buff *skb, u32 *sid)
+ {
+-	int err = selinux_xfrm_decode_session(skb, sid, 0);
+-	BUG_ON(err);
++	*sid = SECSID_NULL;
++	return 0;
+ }
++#endif
+ 
+ #endif /* _SELINUX_XFRM_H_ */
+--- a/security/selinux/xfrm.c
++++ b/security/selinux/xfrm.c
+@@ -152,21 +152,13 @@ int selinux_xfrm_state_pol_flow_match(st
+ 	return rc;
  }
  
- void ceph_osdc_unregister_linger_request(struct ceph_osd_client *osdc,
-@@ -1203,9 +1205,8 @@ void ceph_osdc_unregister_linger_request
+-/*
+- * LSM hook implementation that checks and/or returns the xfrm sid for the
+- * incoming packet.
+- */
+-
+-int selinux_xfrm_decode_session(struct sk_buff *skb, u32 *sid, int ckall)
++static int selinux_xfrm_skb_sid_ingress(struct sk_buff *skb,
++					u32 *sid, int ckall)
  {
- 	mutex_lock(&osdc->request_mutex);
- 	if (req->r_linger) {
--		__unregister_linger_request(osdc, req);
- 		req->r_linger = 0;
--		ceph_osdc_put_request(req);
-+		__unregister_linger_request(osdc, req);
- 	}
- 	mutex_unlock(&osdc->request_mutex);
- }
-@@ -1217,11 +1218,6 @@ void ceph_osdc_set_request_linger(struct
- 	if (!req->r_linger) {
- 		dout("set_request_linger %p\n", req);
- 		req->r_linger = 1;
--		/*
--		 * caller is now responsible for calling
--		 * unregister_linger_request
--		 */
--		ceph_osdc_get_request(req);
- 	}
- }
- EXPORT_SYMBOL(ceph_osdc_set_request_linger);
-@@ -1633,8 +1629,10 @@ static void kick_requests(struct ceph_os
- 			dout("%p tid %llu restart on osd%d\n",
- 			     req, req->r_tid,
- 			     req->r_osd ? req->r_osd->o_osd : -1);
-+			ceph_osdc_get_request(req);
- 			__unregister_request(osdc, req);
- 			__register_linger_request(osdc, req);
-+			ceph_osdc_put_request(req);
- 			continue;
- 		}
+-	struct sec_path *sp;
++	struct sec_path *sp = skb->sp;
  
+ 	*sid = SECSID_NULL;
+ 
+-	if (skb == NULL)
+-		return 0;
+-
+-	sp = skb->sp;
+ 	if (sp) {
+ 		int i, sid_set = 0;
+ 
+@@ -190,6 +182,45 @@ int selinux_xfrm_decode_session(struct s
+ 	return 0;
+ }
+ 
++static u32 selinux_xfrm_skb_sid_egress(struct sk_buff *skb)
++{
++	struct dst_entry *dst = skb_dst(skb);
++	struct xfrm_state *x;
++
++	if (dst == NULL)
++		return SECSID_NULL;
++	x = dst->xfrm;
++	if (x == NULL || !selinux_authorizable_xfrm(x))
++		return SECSID_NULL;
++
++	return x->security->ctx_sid;
++}
++
++/*
++ * LSM hook implementation that checks and/or returns the xfrm sid for the
++ * incoming packet.
++ */
++
++int selinux_xfrm_decode_session(struct sk_buff *skb, u32 *sid, int ckall)
++{
++	if (skb == NULL) {
++		*sid = SECSID_NULL;
++		return 0;
++	}
++	return selinux_xfrm_skb_sid_ingress(skb, sid, ckall);
++}
++
++int selinux_xfrm_skb_sid(struct sk_buff *skb, u32 *sid)
++{
++	int rc;
++
++	rc = selinux_xfrm_skb_sid_ingress(skb, sid, 0);
++	if (rc == 0 && *sid == SECSID_NULL)
++		*sid = selinux_xfrm_skb_sid_egress(skb);
++
++	return rc;
++}
++
+ /*
+  * Security blob allocation for xfrm_policy and xfrm_state
+  * CTX does not have a meaningful value on input
 
 
