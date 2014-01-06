@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752957AbaAFHzy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 02:55:54 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:34048 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063AbaAFHzw (ORCPT
+	id S1751934AbaAFIDZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 03:03:25 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:64398 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052AbaAFIDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 02:55:52 -0500
-Message-ID: <52CA614D.6040702@huawei.com>
-Date: Mon, 6 Jan 2014 15:54:53 +0800
-From: Libo Chen <clbchenlibo.chen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Mon, 6 Jan 2014 03:03:24 -0500
+X-AuditID: 9c93016f-b7b4eae000000985-70-52ca634a3eac
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 01/21] perf tools: Introduce struct add_entry_iter
+References: <1387873347-28838-1-git-send-email-namhyung@kernel.org>
+	<1387873347-28838-2-git-send-email-namhyung@kernel.org>
+	<20140105155510.GA9441@krava.brq.redhat.com>
+Date: Mon, 06 Jan 2014 17:03:22 +0900
+In-Reply-To: <20140105155510.GA9441@krava.brq.redhat.com> (Jiri Olsa's message
+	of "Sun, 5 Jan 2014 16:55:10 +0100")
+Message-ID: <87ob3pedv9.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Cong Wang <xiyou.wangcong@gmail.com>
-CC: David Miller <davem@davemloft.net>, Jamal Hadi Salim <jhs@mojatatu.com>,
-        Li Zefan <lizefan@huawei.com>, Eric Dumazet <edumazet@google.com>,
-        <pshelar@nicira.com>, <jasowang@redhat.com>,
-        Simon Horman <horms@verge.net.au>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Linux Kernel Network Developers" <netdev@vger.kernel.org>,
-        <cgroups@vger.kernel.org>, <containers@lists.linux-foundation.org>,
-        Patrick McHardy <kaber@trash.net>, <xemul@openvz.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH net-next 0/4] net_cls for sys container
-References: <52C62A44.4070304@huawei.com> <CAM_iQpW0+Ftvk=QBE+0yMNW00VkBee1+yAEmbPkT+zjij9RX-Q@mail.gmail.com>
-In-Reply-To: <CAM_iQpW0+Ftvk=QBE+0yMNW00VkBee1+yAEmbPkT+zjij9RX-Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.22.241]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/1/3 13:20, Cong Wang wrote:
-> On Thu, Jan 2, 2014 at 7:11 PM, Libo Chen <clbchenlibo.chen@huawei.com> wrote:
->> Hi guys,
->>
->> Now, lxc created with veth can not be under control by
->> cls_cgroup.
->>
->> the former discussion:
->> http://lkml.indiana.edu/hypermail/linux/kernel/1312.1/00214.html
->>
->> In short, because cls_cgroup relys classid attached to sock
->> filter skb, but sock will be cleared inside dev_forward_skb()
->> in veth_xmit().
-> 
-> 
-> So what are you trying to achieve here?
+On Sun, 5 Jan 2014 16:55:10 +0100, Jiri Olsa wrote:
+> On Tue, Dec 24, 2013 at 05:22:07PM +0900, Namhyung Kim wrote:
+>> From: Namhyung Kim <namhyung.kim@lge.com>
+>
+> SNIP
+>
+>> +
+>> +out:
+>> +	iter->curr++;
+>> +	return err;
+>> +}
+>> +
+>> +static int
+>> +iter_finish_branch_entry(struct add_entry_iter *iter,
+>> +			 struct addr_location *al __maybe_unused)
+>> +{
+>> +	free(iter->priv);
+>> +	iter->priv = NULL;
+>
+> so branch_info is duplicated in the hist_entry__new.. it's not
+> easy to find why this one gets freed while mem_info stays ;-)
 
-sys container using veth can be controlled by cls_cgroup basing on physic network interface
+The branch_info is an array and each entry gets its own part in the
+array - so entries alloc & copy the (part of) branch info as the branch
+info iterated.  But mem info is a single data for a single entry so a
+new entry steals ownership of the mem info when created and not freed.
 
-thanks,
-Libo
+Maybe we can alloc & copy another mem info when adds an entry and free
+the original at iter->finish_entry(), but I felt it's unnecessary..
 
-> 
-> .
-> 
+>
+> some comment about that here would help
+
+How about this?
+
+  /*
+   * The mem_info was either already freed in add_hist_entry() or
+   * passed to a new hist entry by hist_entry__new().
+   */
 
 
+Thanks,
+Namhyung
