@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755744AbaAFQv2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 11:51:28 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:55464 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754662AbaAFQv0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 11:51:26 -0500
-Date: Mon, 6 Jan 2014 22:21:21 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Airlie <airlied@linux.ie>, Rashika Kheria <rashika.kheria@gmail.com>,
-        dri-devel@lists.freedesktop.org, josh@joshtriplett.org
-Subject: [PATCH 85/85] drivers: gpu: Mark functions as static in
- vmwgfx_fence.c
-Message-ID: <d81293e7879c5ae27dabc33cdf5b3c3f56630a48.1389018325.git.rashika.kheria@gmail.com>
-References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
+	id S1755800AbaAFQwe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 11:52:34 -0500
+Received: from mga09.intel.com ([134.134.136.24]:1969 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753592AbaAFQwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 11:52:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,613,1384329600"; 
+   d="scan'208";a="454334584"
+Date: Mon, 6 Jan 2014 08:52:31 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Yann Droneaud <ydroneaud@opteya.com>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf tools: enable close-on-exec flag on perf file
+ descriptor
+Message-ID: <20140106165231.GF27909@tassilo.jf.intel.com>
+References: <cover.1388952061.git.ydroneaud@opteya.com>
+ <8c03f54e1598b1727c19706f3af03f98685d9fe6.1388952061.git.ydroneaud@opteya.com>
+ <20140106092929.GA31570@twins.programming.kicks-ass.net>
+ <1389005485-12778-1-git-send-email-ydroneaud@opteya.com>
+ <20140106162754.GE27909@tassilo.jf.intel.com>
+ <20140106163950.GP31570@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
+In-Reply-To: <20140106163950.GP31570@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark functions as static because they are not used outside the file
-drm/vmwgfx/vmwgfx_fence.c.
+> AFAICT its got nothing to do with threaded or not, but only with exec()
+> and we do in fact call exec() quite a lot in perf.
+> 
+> It ensures we do not leak open perf FDs into our child processes. Now
+> I'm not entirely sure how we do the exec these days but I think we were
+> good about not not leaking them anyway, but more paranoia never really
+> hurts.
 
-This eliminates the following warnings in drm/vmwgfx/vmwgfx_fence.c:
-drivers/gpu/drm/vmwgfx/vmwgfx_fence.c:274:6: warning: no previous prototype for ‘vmw_fences_perform_actions’ [-Wmissing-prototypes]
-drivers/gpu/drm/vmwgfx/vmwgfx_fence.c:900:6: warning: no previous prototype for ‘vmw_fence_obj_add_action’ [-Wmissing-prototypes]
-drivers/gpu/drm/vmwgfx/vmwgfx_fence.c:996:5: warning: no previous prototype for ‘vmw_event_fence_action_create’ [-Wmissing-prototypes]
+Then you can just set it with fcntl, which works everywhere, 
+instead of doing extra feature tests.
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- drivers/gpu/drm/vmwgfx/vmwgfx_fence.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+The atomic setup is only needed for threaded programs to avoid
+races with other threads doing exec.
 
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c b/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
-index c62d20e..79c060d 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
-@@ -271,7 +271,7 @@ void vmw_fence_obj_unreference(struct vmw_fence_obj **fence_p)
- 	spin_unlock_irq(&fman->lock);
- }
- 
--void vmw_fences_perform_actions(struct vmw_fence_manager *fman,
-+static void vmw_fences_perform_actions(struct vmw_fence_manager *fman,
- 				struct list_head *list)
- {
- 	struct vmw_fence_action *action, *next_action;
-@@ -897,7 +897,7 @@ static void vmw_event_fence_action_cleanup(struct vmw_fence_action *action)
-  * Note that the action callbacks may be executed before this function
-  * returns.
-  */
--void vmw_fence_obj_add_action(struct vmw_fence_obj *fence,
-+static void vmw_fence_obj_add_action(struct vmw_fence_obj *fence,
- 			      struct vmw_fence_action *action)
- {
- 	struct vmw_fence_manager *fman = fence->fman;
-@@ -993,7 +993,7 @@ struct vmw_event_fence_pending {
- 	struct drm_vmw_event_fence event;
- };
- 
--int vmw_event_fence_action_create(struct drm_file *file_priv,
-+static int vmw_event_fence_action_create(struct drm_file *file_priv,
- 				  struct vmw_fence_obj *fence,
- 				  uint32_t flags,
- 				  uint64_t user_data,
+-Andi
+
 -- 
-1.7.9.5
-
+ak@linux.intel.com -- Speaking for myself only
