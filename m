@@ -1,58 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755826AbaAFT14 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 14:27:56 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:39460 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645AbaAFT1z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 14:27:55 -0500
-Message-ID: <52CB03BA.2070508@infradead.org>
-Date: Mon, 06 Jan 2014 11:27:54 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1756049AbaAFT2X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 14:28:23 -0500
+Received: from ni.piap.pl ([195.187.100.4]:56146 "EHLO ni.piap.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755837AbaAFT2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 14:28:22 -0500
+From: khalasa@piap.pl (Krzysztof =?utf-8?Q?Ha=C5=82asa?=)
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+References: <m38uv1uuzr.fsf@t19.piap.pl>
+Date: Mon, 06 Jan 2014 20:28:20 +0100
+In-Reply-To: <m38uv1uuzr.fsf@t19.piap.pl> ("Krzysztof =?utf-8?Q?Ha=C5=82as?=
+ =?utf-8?Q?a=22's?= message of
+	"Tue, 31 Dec 2013 12:20:56 +0100")
 MIME-Version: 1.0
-To: Ove Karlsen <mail@ovekarlsen.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Gnu - censorship
-References: <52CAFCC6.3070504@ovekarlsen.com> <52CAFE7A.9090106@infradead.org> <52CB0132.2050705@ovekarlsen.com>
-In-Reply-To: <52CB0132.2050705@ovekarlsen.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Message-ID: <m3ha9gx63v.fsf@t19.piap.pl>
+Content-Type: text/plain
+Subject: Re: Regression (ARM) arch/arm/mm/init.c doesn't build without CONFIG_ARM_PATCH_PHYS_VIRT.
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE,
+	 bases: 20140106 #7262385, check: 20140106 clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/14 11:17, Ove Karlsen wrote:
-> On 1/6/2014 8:05 PM, Randy Dunlap wrote:
->> On 01/06/14 10:58, Ove Karlsen wrote:
->>> https://lkml.org/lkml/2013/12/28/50
->>>
->>> This post is empty. I do not know if this is deliberate, but..
->>>
->>> Facism and censorhip goes hand in hand. Hopefully people here start to understand the problem that needs to be solved. Or complaints about Microsoft, will really the same as complaints againt ill-behaving "free software" advocates. Same irrational behaviour, by people whose pride is far more than their ability, and a block to natural developments and true excellence.
->>>
->>> Simple people whose life revolves around this: http://www.youtube.com/watch?v=xm2S5uxO01E
->>>
->>> PBWY.
->>>
->> or it could be related to this message that I get:
->>
->> XSLT error or server overload; admin notified. The system should heal itself, please try again in a few minutes
->>
->> Think Occam's Razor.
+Russell, Santosh,
 
-Occam's Razor here is that the server is having problems.
+the unneeded commit causing regression is still in place. Please try to
+compile an ARM kernel without CONFIG_ARM_PATCH_PHYS_VIRT and with
+CONFIG_ZONE_DMA and see for yourself, if you don't believe me.
 
-No, I haven't read anything that you wrote.  You are much too verbose for me to read.
+Please be aware that this commit fixes nothing, its only function is
+causing the regression - so we don't lose anything by reverting it.
 
-> I guess time will tell. Occams Razor here, if you have read anything I wrote, is clearly that people are brainwashed, starts behaving like facists, and symbolic idols are used to manipulate people. Recently I was censored at "linux-musicians.org" also where supposedly mentioning a windows plugin was not ok, even it it was open-source, EVEN if it is the worlds best, and would benefit the audio community much, having no such thing, making people turn to Mac because Waves plugins are there, for instance. And criticising the GPL was not ok, even thought it is irrational, and coupled to a phallic idol. I do not put an obscure licence, coupled to obscure statements and a symbolic representation of Stallmans genitals. The pride of symbolically recieving semen, seems to fit their brat behaviour. That is all they are, and what a Satan is. It is completely irrational, and people like these no doubt, are like brainwashed sectarians, greeting sieg heil in semenworship, and no doubt is
-> open to gay sex sooner or later. Sex Drugs And rock And Roll dude. Who knew Hitler was a rockstar. Or lets us not swear in church - BEATLES. They can also not be criticised many places. Their one song about the fly in the cornflakes. what was it.. "sitting on a cornflake", is actually them being flies, probably from LSD. How high STATUS has a FLY in your CORNFLAKES? That is what they thought were cool.
-> 
-> Think about it. LSD still is the same.
+If the attached wasn't clear, what the defective commit presently does
+is changing a perfectly valid code into a code referencing a variable
+which (without CONFIG_ARM_PATCH_PHYS_VIRT set) doesn't at all exist.
 
+With CONFIG_ARM_PATCH_PHYS_VIRT set, this commit does precisely nothing.
 
-Good day (sunshine).
+grep __pv_phys_offset * -r gives:
 
+Broken by the commit in question:
 
+arch/arm/mm/init.c:             arm_dma_limit = __pv_phys_offset + arm_dma_zone_size - 1;
+
+All of the following are only compiled/assembled with
+CONFIG_ARM_PATCH_PHYS_VIRT set:
+
+arch/arm/include/asm/memory.h:extern u64 __pv_phys_offset;
+arch/arm/include/asm/memory.h:#define PHYS_OFFSET __pv_phys_offset
+arch/arm/kernel/armksyms.c:EXPORT_SYMBOL(__pv_phys_offset);
+arch/arm/kernel/head.S: add     r6, r6, r3      @ adjust
+__pv_phys_offset address
+arch/arm/kernel/head.S: str     r8, [r6, #LOW_OFFSET]   @ save computed
+PHYS_OFFSET to __pv_phys_offset
+arch/arm/kernel/head.S:2:       .long   __pv_phys_offset
+arch/arm/kernel/head.S: .globl  __pv_phys_offset
+arch/arm/kernel/head.S: .type   __pv_phys_offset, %object
+arch/arm/kernel/head.S:__pv_phys_offset:
+arch/arm/kernel/head.S: .size   __pv_phys_offset, . -__pv_phys_offset
+
+In short, please revert 787b0d5c1ca7ff24feb6f92e4c7f4410ee7d81a8.
+Or, do you want me to send a patch which does that?
+
+HTH and TIA.
+
+> arch/arm/mm/init.c: In function 'setup_dma_zone':
+> arch/arm/mm/init.c:232:19: error: '__pv_phys_offset' undeclared (first use in this function)
+>
+> Reverting the following commit fixes it:
+>
+> commit 787b0d5c1ca7ff24feb6f92e4c7f4410ee7d81a8
+> Author: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Date:   Mon Dec 2 20:29:12 2013 +0100
+>
+>     ARM: 7908/1: mm: Fix the arm_dma_limit calculation
+>
+>     Current code is using PHYS_OFFSET to calculate the arm_dma_limit which
+>     will lead to wrong calculations in cases where PHYS_OFFSET is updated
+>     runtime.
+>
+>     So fix the code by using __pv_phys_offset instead of PHYS_OFFSET.
+>
+> It seems PHYS_OFFSET is equal to __pv_phys_offset if the latter is
+> available:
+>
+> arch/arm/include/asm/memory.h:#define PHYS_OFFSET __pv_phys_offset
+>
+> Otherwise (without CONFIG_ARM_PATCH_PHYS_VIRT) PHYS_OFFSET is a
+> hard-coded CONFIG value, or whatever the platform/CPU code needs:
+>
+> arch/arm/include/asm/memory.h:#define PHYS_OFFSET     PLAT_PHYS_OFFSET
+>
+> Perhaps the patch in question was needed at some point but I think the
+> situation had changed before it was commited.
 -- 
-~Randy
+Krzysztof Halasa
+
+Research Institute for Automation and Measurements PIAP
+Al. Jerozolimskie 202, 02-486 Warsaw, Poland
