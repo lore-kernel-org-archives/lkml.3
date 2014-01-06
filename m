@@ -1,113 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756470AbaAFWRw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:17:52 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:58332 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755299AbaAFWRv (ORCPT
+	id S1756581AbaAFWTP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:19:15 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:47270 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755289AbaAFWTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:17:51 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Kristen Carlson Accardi <kristen@linux.intel.com>
-Subject: Re: [PATCH] turbostat, servers do not support uncore power register
-Date: Mon, 06 Jan 2014 23:31:38 +0100
-Message-ID: <1715797.v2zpxSt0AQ@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1387499242-30364-1-git-send-email-prarit@redhat.com>
-References: <1387499242-30364-1-git-send-email-prarit@redhat.com>
+	Mon, 6 Jan 2014 17:19:12 -0500
+Message-ID: <52CB2BDF.9040208@codeaurora.org>
+Date: Mon, 06 Jan 2014 14:19:11 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <linux@arm.linux.org.uk>
+CC: David Brown <davidb@codeaurora.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v2 0/9] CPU enable method based SMP/hotplug + MSM conversion
+References: <1387845593-10050-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1387845593-10050-1-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, December 19, 2013 07:27:22 PM Prarit Bhargava wrote:
-> From the Intel Software Developer's Manual section 14.7.4,
-> 
-> "For server platforms, PP1 domain is not supported, but its PP0 domain
-> supports the MSR_PP0_PERF_STATUS interface."
-> 
-> When I run 'turbostat ls' I see the following error:
-> 
-> /dev/cpu/0/msr offset 0x641 read failed
-> 
-> because the server doesn't support the MSR_PP1_ENERGY_STATUS
-> register (0x641).  This patch implements a get_msr_nowarn() which suppresses the
-> above warning and then sets !RAPL_GFX.
-> 
-> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-> Cc: Len Brown <len.brown@intel.com>
-> Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-> Cc: Josh Triplett <josh@joshtriplett.org>
-> Cc: Kristen Carlson Accardi <kristen@linux.intel.com>
+Ping? Can anyone take a look at the generic ARM and DT binding patches
+and provide acks/reviews? I'd like to send this through arm-soc via the
+MSM tree if possible.
 
-Queued up for 3.14, thanks!
+On 12/23/13 16:39, Stephen Boyd wrote:
+> This is a rework of patches sent a months back by Rohit[1].
+> The goal of these patches is to add support for SMP and (basic)
+> hotplug on MSM based SoCs. To get there, we add support for a
+> generic way to hook in SMP/hotplug support code based on DT. To
+> show how it's used, we convert the MSM8660 SMP support code over
+> to the new method. After that we add support for the rest of the
+> upstream MSM SoCs (note these patches are piled high on top of
+> Rohit's patches to add 8074 support to MSM[2] and my follow ups[3,4],
+> but this should only matter to the MSM maintainers).
+>
+> This is one of the last items of code that still requires us to have
+> a mach directory and a machine descriptor. We should be able to move
+> the hotplug/smp code out of mach directories if this approach is
+> accepted.
+>
+> Changes since v1:
+>  * Added pointers from cpu nodes to saw and acc nodes
+>  * Squashed nr_cpus removal into reorganization patch
+>  * Reworked bindings/documentation
+>  * Rebased onto v3.13-rc4
+>
+> [1] https://lkml.org/lkml/2013/8/1/770
+> [2] https://lkml.org/lkml/2013/10/17/520
+> [3] https://lkml.org/lkml/2013/10/18/406
+> [4] http://lkml.org/lkml/2013/10/28/501
+>  
+>
+> Rohit Vaswani (6):
+>   devicetree: bindings: Document Krait/Scorpion cpus and enable-method
+>   ARM: msm: Remove pen_release usage
+>   ARM: msm: Re-organize platsmp to make it extensible
+>   ARM: msm: Add SMP support for KPSSv1
+>   ARM: msm: Add SMP support for KPSSv2
+>   ARM: dts: msm: Add nodes necessary for SMP boot
+>
+> Stephen Boyd (3):
+>   devicetree: bindings: Document qcom,kpss-acc
+>   devicetree: bindings: Document qcom,saw2 node
+>   ARM: Introduce CPU_METHOD_OF_DECLARE() for cpu hotplug/smp
+>
+>  Documentation/devicetree/bindings/arm/cpus.txt     |  25 +-
+>  .../devicetree/bindings/arm/msm/qcom,kpss-acc.txt  |  30 ++
+>  .../devicetree/bindings/arm/msm/qcom,saw2.txt      |  35 ++
+>  arch/arm/boot/dts/qcom-msm8660-surf.dts            |  24 ++
+>  arch/arm/boot/dts/qcom-msm8960-cdp.dts             |  52 +++
+>  arch/arm/boot/dts/qcom-msm8974.dtsi                |  69 ++++
+>  arch/arm/include/asm/smp.h                         |   9 +
+>  arch/arm/kernel/devtree.c                          |  40 +++
+>  arch/arm/mach-msm/Makefile                         |   2 +-
+>  arch/arm/mach-msm/board-dt.c                       |  14 -
+>  arch/arm/mach-msm/common.h                         |   1 -
+>  arch/arm/mach-msm/headsmp.S                        |  39 ---
+>  arch/arm/mach-msm/hotplug.c                        |  31 +-
+>  arch/arm/mach-msm/platsmp.c                        | 371 ++++++++++++++++-----
+>  arch/arm/mach-msm/scm-boot.h                       |   8 +-
+>  include/asm-generic/vmlinux.lds.h                  |  10 +
+>  16 files changed, 595 insertions(+), 165 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/arm/msm/qcom,kpss-acc.txt
+>  create mode 100644 Documentation/devicetree/bindings/arm/msm/qcom,saw2.txt
+>  delete mode 100644 arch/arm/mach-msm/headsmp.S
+>
 
-> ---
->  tools/power/x86/turbostat/turbostat.c |   23 ++++++++++++++++++-----
->  1 file changed, 18 insertions(+), 5 deletions(-)
-> 
-> diff --git a/tools/power/x86/turbostat/turbostat.c b/tools/power/x86/turbostat/turbostat.c
-> index 9d77f13..ff505c2 100644
-> --- a/tools/power/x86/turbostat/turbostat.c
-> +++ b/tools/power/x86/turbostat/turbostat.c
-> @@ -219,7 +219,7 @@ int cpu_migrate(int cpu)
->  		return 0;
->  }
->  
-> -int get_msr(int cpu, off_t offset, unsigned long long *msr)
-> +int _get_msr(int cpu, off_t offset, unsigned long long *msr, int warn)
->  {
->  	ssize_t retval;
->  	char pathname[32];
-> @@ -234,13 +234,25 @@ int get_msr(int cpu, off_t offset, unsigned long long *msr)
->  	close(fd);
->  
->  	if (retval != sizeof *msr) {
-> -		fprintf(stderr, "%s offset 0x%zx read failed\n", pathname, offset);
-> +		if (warn)
-> +			fprintf(stderr, "%s offset 0x%zx read failed\n",
-> +				pathname, offset);
->  		return -1;
->  	}
->  
->  	return 0;
->  }
->  
-> +int get_msr(int cpu, off_t offset, unsigned long long *msr)
-> +{
-> +	return _get_msr(cpu, offset, msr, 1);
-> +}
-> +
-> +int get_msr_nowarn(int cpu, off_t offset, unsigned long long *msr)
-> +{
-> +	return _get_msr(cpu, offset, msr, 0);
-> +}
-> +
->  void print_header(void)
->  {
->  	if (show_pkg)
-> @@ -953,9 +965,10 @@ int get_counters(struct thread_data *t, struct core_data *c, struct pkg_data *p)
->  		p->energy_dram = msr & 0xFFFFFFFF;
->  	}
->  	if (do_rapl & RAPL_GFX) {
-> -		if (get_msr(cpu, MSR_PP1_ENERGY_STATUS, &msr))
-> -			return -16;
-> -		p->energy_gfx = msr & 0xFFFFFFFF;
-> +		if (get_msr_nowarn(cpu, MSR_PP1_ENERGY_STATUS, &msr))
-> +			do_rapl &= ~RAPL_GFX; /* unsupported on servers */
-> +		else
-> +			p->energy_gfx = msr & 0xFFFFFFFF;
->  	}
->  	if (do_rapl & RAPL_PKG_PERF_STATUS) {
->  		if (get_msr(cpu, MSR_PKG_PERF_STATUS, &msr))
-> 
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
