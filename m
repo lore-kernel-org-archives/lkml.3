@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753938AbaAFKUM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 05:20:12 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:56113 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752935AbaAFKUK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 05:20:10 -0500
-Date: Mon, 6 Jan 2014 10:20:04 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jon Medhurst <tixy@linaro.org>, arm@kernel.org,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [RFC 01/18] mfd: syscon: Consider platform data a regmap config
- name
-Message-ID: <20140106102004.GH23772@lee--X1>
-References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com>
- <1387815830-8794-2-git-send-email-pawel.moll@arm.com>
- <20140106094808.GG23772@lee--X1>
+	id S1753477AbaAFKYs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 05:24:48 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34300 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752292AbaAFKYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 05:24:45 -0500
+Message-ID: <52CA845C.5080308@ti.com>
+Date: Mon, 6 Jan 2014 15:54:28 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140106094808.GG23772@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kamil Debski <k.debski@samsung.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <kyungmin.park@samsung.com>, <t.figa@samsung.com>,
+        <s.nawrocki@samsung.com>, <m.szyprowski@samsung.com>,
+        <gautam.vivek@samsung.com>, <mat.krawczuk@gmail.com>,
+        <yulgon.kim@samsung.com>, <p.paneri@samsung.com>,
+        <av.tikhomirov@samsung.com>, <jg1.han@samsung.com>,
+        <galak@codeaurora.org>, <matt.porter@linaro.org>,
+        <tjakobi@math.uni-bielefeld.de>, <stern@rowland.harvard.edu>
+Subject: Re: [PATCH RFC alternative ver 1] phy: Exynos 421x USB 2.0 PHY support
+References: <1387545857-9472-1-git-send-email-k.debski@samsung.com> <1387545857-9472-11-git-send-email-k.debski@samsung.com>
+In-Reply-To: <1387545857-9472-11-git-send-email-k.debski@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 06 Jan 2014, Lee Jones wrote:
+Hi,
 
-> > Use the device platform data as a regmap config
-> > name. This is particularly useful in the regmap
-> > debugfs when there is more than one syscon device
-> > registered, to distinguish the register blocks.
-> > 
-> > Signed-off-by: Pawel Moll <pawel.moll@arm.com>
-> > Cc: Samuel Ortiz <sameo@linux.intel.com>
-> > Cc: Lee Jones <lee.jones@linaro.org>
-> > ---
-> >  drivers/mfd/syscon.c | 1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
-> > index 71841f9..ea1770b 100644
-> > --- a/drivers/mfd/syscon.c
-> > +++ b/drivers/mfd/syscon.c
-> > @@ -143,6 +143,7 @@ static int syscon_probe(struct platform_device *pdev)
-> >  		return -ENOMEM;
-> >  
-> >  	syscon_regmap_config.max_register = res->end - res->start - 3;
-> > +	syscon_regmap_config.name = dev_get_platdata(&pdev->dev);
-> >  	syscon->regmap = devm_regmap_init_mmio(dev, base,
-> >  					&syscon_regmap_config);
-> >  	if (IS_ERR(syscon->regmap)) {
-> 
-> This smells a bit fishy to me. Can you point me to the piece of code
-> or patch where you set the platform_data pointer as a string?
+On Friday 20 December 2013 06:54 PM, Kamil Debski wrote:
+> This the alternative version of the support for Exynos 421x USB 2.0 PHY
+> in the Generic PHY framework. In this version the support for Exynos
+> 4210 and 4212 was joined into one file.
+>
+> Signed-off-by: Kamil Debski <k.debski@samsung.com>
+> ---
+> Hi,
+>
+> Me and Kishon were discussing for quite a long time the way how Exynos 4
+> should be handled. I have decided to post the original patches and try
+> to make an alternative version with support for Exynos 4210 and 4212 joined
+> in one file. I have prepared two versions. The first one has 506 lines (vs
+> 563 when two files are used). When doing the second version I was a little
+> more aggresive in removing code. This was done at a cost of adding if's
+> deciding which SoC version the driver is dealing with in some internal functions.
+> This resulted in a better number of removed lines - the second version has
+> only 452 lines (vs 563 original and 506 version 1).
 
-Scrap that, I see it.
+Alright.. If the alternate approach doesn't give too much of advantage, 
+lets stick with the original one. I would recommend creating a 
+documentation (Documentation/phy/?) for the samsung PHY since that 
+actually creates a layer on top of generic PHY framework. That would 
+help while adding new samsung PHY drivers.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Btw thank you for preparing alternate versions for your original patches.
+
+Cheers
+Kishon
