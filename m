@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933133AbaAGAMC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 19:12:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47385 "EHLO
+	id S933153AbaAGAMm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:12:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47366 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756746AbaAFWiR (ORCPT
+	with ESMTP id S1756717AbaAFWiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:17 -0500
+	Mon, 6 Jan 2014 17:38:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Finn Thain <fthain@telegraphics.com.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.12 009/144] TTY: pmac_zilog, check existence of ports in pmz_console_init()
-Date: Mon,  6 Jan 2014 14:36:10 -0800
-Message-Id: <20140106223745.596321111@linuxfoundation.org>
+        Dmitry Kunilov <dmitry.kunilov@gmail.com>
+Subject: [PATCH 3.12 023/144] usb: serial: zte_ev: move support for ZTE AC2726 from zte_ev back to option
+Date: Mon,  6 Jan 2014 14:36:24 -0800
+Message-Id: <20140106223745.991807342@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -30,47 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: Dmitry Kunilov <dmitry.kunilov@gmail.com>
 
-commit dc1dc2f8a5dd863bf2e79f338fc3ae29e99c683a upstream.
+commit 52d0dc7597c89b2ab779f3dcb9b9bf0800dd9218 upstream.
 
-When booting a multi-platform m68k kernel on a non-Mac with "console=ttyS0"
-on the kernel command line, it crashes with:
+ZTE AC2726 EVDO modem drops ppp connection every minute when driven by
+zte_ev but works fine when driven by option. Move the support for AC2726
+back to option driver.
 
-Unable to handle kernel NULL pointer dereference at virtual address   (null)
-Oops: 00000000
-PC: [<0013ad28>] __pmz_startup+0x32/0x2a0
-...
-Call Trace: [<002c5d3e>] pmz_console_setup+0x64/0xe4
-
-The normal tty driver doesn't crash, because init_pmz() checks
-pmz_ports_count again after calling pmz_probe().
-
-In the serial console initialization path, pmz_console_init() doesn't do
-this, causing the driver to crash later.
-
-Add a check for pmz_ports_count to fix this.
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Finn Thain <fthain@telegraphics.com.au>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Dmitry Kunilov <dmitry.kunilov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/pmac_zilog.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/serial/option.c |    2 ++
+ drivers/usb/serial/zte_ev.c |    3 +--
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/tty/serial/pmac_zilog.c
-+++ b/drivers/tty/serial/pmac_zilog.c
-@@ -2050,6 +2050,9 @@ static int __init pmz_console_init(void)
- 	/* Probe ports */
- 	pmz_probe();
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -251,6 +251,7 @@ static void option_instat_callback(struc
+ #define ZTE_PRODUCT_MF628			0x0015
+ #define ZTE_PRODUCT_MF626			0x0031
+ #define ZTE_PRODUCT_MC2718			0xffe8
++#define ZTE_PRODUCT_AC2726			0xfff1
  
-+	if (pmz_ports_count == 0)
-+		return -ENODEV;
-+
- 	/* TODO: Autoprobe console based on OF */
- 	/* pmz_console.index = i; */
- 	register_console(&pmz_console);
+ #define BENQ_VENDOR_ID				0x04a5
+ #define BENQ_PRODUCT_H10			0x4068
+@@ -1453,6 +1454,7 @@ static const struct usb_device_id option
+ 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x02, 0x01) },
+ 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x02, 0x05) },
+ 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x86, 0x10) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC2726, 0xff, 0xff, 0xff) },
+ 
+ 	{ USB_DEVICE(BENQ_VENDOR_ID, BENQ_PRODUCT_H10) },
+ 	{ USB_DEVICE(DLINK_VENDOR_ID, DLINK_PRODUCT_DWM_652) },
+--- a/drivers/usb/serial/zte_ev.c
++++ b/drivers/usb/serial/zte_ev.c
+@@ -281,8 +281,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x19d2, 0xfffd) },
+ 	{ USB_DEVICE(0x19d2, 0xfffc) },
+ 	{ USB_DEVICE(0x19d2, 0xfffb) },
+-	/* AC2726, AC8710_V3 */
+-	{ USB_DEVICE_AND_INTERFACE_INFO(0x19d2, 0xfff1, 0xff, 0xff, 0xff) },
++	/* AC8710_V3 */
+ 	{ USB_DEVICE(0x19d2, 0xfff6) },
+ 	{ USB_DEVICE(0x19d2, 0xfff7) },
+ 	{ USB_DEVICE(0x19d2, 0xfff8) },
 
 
