@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798AbaAFOee (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 09:34:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13676 "EHLO mx1.redhat.com"
+	id S1754838AbaAFOfI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 09:35:08 -0500
+Received: from mail.tu-berlin.de ([130.149.7.33]:61558 "EHLO mail.tu-berlin.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750902AbaAFOed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 09:34:33 -0500
-Date: Mon, 6 Jan 2014 15:34:30 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH v6 0/4] More color in 'perf diff'
-Message-ID: <20140106143429.GE1183@krava.brq.redhat.com>
-References: <1388388861-7931-1-git-send-email-artagnon@gmail.com>
- <CALkWK0kSvD73Lm2gZwKx2F8cp4M0xLfrQJFkTrPpBGhVU6xH1g@mail.gmail.com>
+	id S1750902AbaAFOfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 09:35:05 -0500
+X-Greylist: delayed 1131 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Jan 2014 09:35:05 EST
+X-tubIT-Incoming-IP: 141.23.85.24
+Message-ID: <52CABAAA.6060306@mailbox.tu-berlin.de>
+Date: Mon, 06 Jan 2014 15:16:10 +0100
+From: =?ISO-8859-15?Q?Marcel_K=FChn?= <marcelkuehn@mail.tu-berlin.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALkWK0kSvD73Lm2gZwKx2F8cp4M0xLfrQJFkTrPpBGhVU6xH1g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: kde-community@kde.org, gnome-list@gnome.org, linux-kernel@vger.kernel.org,
+        general@lists.mozilla.org
+Subject: Questionnaire: Rating of contributions to FLOSS
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 02:06:36PM +0530, Ramkumar Ramachandra wrote:
-> Ramkumar Ramachandra wrote:
-> > Ramkumar Ramachandra (4):
-> >   perf tools: generalize percent_color_snprintf()
-> >   perf diff: color the Delta column
-> >   perf diff: color the Ratio column
-> >   perf diff: color the Weighted Diff column
-> 
-> 
-> Ping?
-> 
-> Any progress on this Arnaldo, Jiri?
+Hello everybody,
 
-I'll get to it this week, sry for delay
+first of all; happy new year!
 
-jirka
+I'm a masters student at the TU Berlin and currently doing a course 
+about Open Source and Intellectual Property. I am investigating the 
+rating of different contributions to FLOSS projects and to that end 
+prepared a short questionnaire, which you can find at:
+
+srv.bplaced.net
+
+If you have 3 minutes spare, you'd do my a big favor with your 
+participation.
+
+Thanks a lot in advance and all the best!
+
+Regards,
+
+Marcel
