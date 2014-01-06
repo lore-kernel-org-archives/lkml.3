@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257AbaAFPUo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 10:20:44 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:57647 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753292AbaAFPUn (ORCPT
+	id S1755359AbaAFPU7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 10:20:59 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:55940 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755328AbaAFPU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 10:20:43 -0500
-Date: Mon, 6 Jan 2014 20:50:38 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Airlie <airlied@linux.ie>, Rashika Kheria <rashika.kheria@gmail.com>,
-        dri-devel@lists.freedesktop.org, josh@joshtriplett.org
-Subject: [PATCH 21/85] drivers: gpu: Include appropriate header file in
- r128_ioc32.c
-Message-ID: <d32adbc513aecf213c586096d37b70677825e436.1389018324.git.rashika.kheria@gmail.com>
-References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 6 Jan 2014 10:20:57 -0500
+From: Jesper Falk <jesperfalk94@gmail.com>
+To: anton@enomsg.org
+Cc: dwmw2@infradead.org, linux-kernel@vger.kernel.org,
+        Jesper Falk <jesperfalk94@gmail.com>
+Subject: [PATCH] Power: abx500: Fixed coding style issues
+Date: Mon,  6 Jan 2014 16:20:39 +0100
+Message-Id: <1389021639-10326-1-git-send-email-jesperfalk94@gmail.com>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include appropriate header file drm/r128/r128_drv.h in
-drm/r128/r128_ioc32.c because function r128_compat_ioctl() has its
-prototype declaration in the header file.
+Fixed else on new line and made tabs instead of spaces
 
-This eliminates the following warning in drm/r128/r128_ioc32.c:
-drivers/gpu/drm/r128/r128_ioc32.c:196:6: warning: no previous prototype for ‘r128_compat_ioctl’ [-Wmissing-prototypes]
-
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Jesper Falk <jesperfalk94@gmail.com>
 ---
- drivers/gpu/drm/r128/r128_ioc32.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/power/abx500_chargalg.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/gpu/drm/r128/r128_ioc32.c b/drivers/gpu/drm/r128/r128_ioc32.c
-index a954c54..b0d0fd3 100644
---- a/drivers/gpu/drm/r128/r128_ioc32.c
-+++ b/drivers/gpu/drm/r128/r128_ioc32.c
-@@ -33,6 +33,7 @@
+diff --git a/drivers/power/abx500_chargalg.c b/drivers/power/abx500_chargalg.c
+index 6d27236..a1ab145 100644
+--- a/drivers/power/abx500_chargalg.c
++++ b/drivers/power/abx500_chargalg.c
+@@ -227,7 +227,7 @@ enum maxim_ret {
+  * @chg_info:		information about connected charger types
+  * @batt_data:		data of the battery
+  * @susp_status:	current charger suspension status
+- * @bm:           	Platform specific battery management information
++ * @bm:			Platform specific battery management information
+  * @curr_status:	Current step status for over-current protection
+  * @parent:		pointer to the struct abx500
+  * @chargalg_psy:	structure that holds the battery properties exposed by
+@@ -362,13 +362,13 @@ static int abx500_chargalg_check_charger_enable(struct abx500_chargalg *di)
  
- #include <drm/drmP.h>
- #include <drm/r128_drm.h>
-+#include "r128_drv.h"
+ 	if (di->chg_info.charger_type & USB_CHG) {
+ 		return di->usb_chg->ops.check_enable(di->usb_chg,
+-                         di->bm->bat_type[di->bm->batt_id].normal_vol_lvl,
+-                         di->bm->bat_type[di->bm->batt_id].normal_cur_lvl);
++			di->bm->bat_type[di->bm->batt_id].normal_vol_lvl,
++			di->bm->bat_type[di->bm->batt_id].normal_cur_lvl);
+ 	} else if ((di->chg_info.charger_type & AC_CHG) &&
+ 		   !(di->ac_chg->external)) {
+ 		return di->ac_chg->ops.check_enable(di->ac_chg,
+-                         di->bm->bat_type[di->bm->batt_id].normal_vol_lvl,
+-                         di->bm->bat_type[di->bm->batt_id].normal_cur_lvl);
++			di->bm->bat_type[di->bm->batt_id].normal_vol_lvl,
++			di->bm->bat_type[di->bm->batt_id].normal_cur_lvl);
+ 	}
+ 	return 0;
+ }
+@@ -532,8 +532,7 @@ static int abx500_chargalg_kick_watchdog(struct abx500_chargalg *di)
+ 			di->usb_chg->ops.kick_wd(di->usb_chg);
  
- typedef struct drm_r128_init32 {
- 	int func;
+ 		return di->ac_chg->ops.kick_wd(di->ac_chg);
+-	}
+-	else if (di->usb_chg && di->usb_chg->ops.kick_wd &&
++	} else if (di->usb_chg && di->usb_chg->ops.kick_wd &&
+ 			di->chg_info.online_chg & USB_CHG)
+ 		return di->usb_chg->ops.kick_wd(di->usb_chg);
+ 
 -- 
-1.7.9.5
+1.8.5.2
 
