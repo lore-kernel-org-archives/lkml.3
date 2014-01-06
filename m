@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932910AbaAFX41 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:56:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47649 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932350AbaAFWjO (ORCPT
+	id S932930AbaAFX4h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:56:37 -0500
+Received: from mail-bn1blp0181.outbound.protection.outlook.com ([207.46.163.181]:31374
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932350AbaAFX4e convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:39:14 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Korsgaard <peter@korsgaard.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 086/144] dm9601: fix reception of full size ethernet frames on dm9620/dm9621a
-Date: Mon,  6 Jan 2014 14:37:27 -0800
-Message-Id: <20140106223747.831175768@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
-References: <20140106223745.326293132@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Mon, 6 Jan 2014 18:56:34 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>
+Subject: RE: [PATCH] ASoC: simple-card: fix the DAPM routes map parsing
+Thread-Topic: [PATCH] ASoC: simple-card: fix the DAPM routes map parsing
+Thread-Index: AQHPCqnhkhktsB+otUONkNvyeu4gq5p31QWAgACK8T0=
+Date: Mon, 6 Jan 2014 23:56:31 +0000
+Message-ID: <e12f227126e64f98bec92d0884cb3d56@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1388986906-32139-1-git-send-email-Li.Xiubo@freescale.com>,<20140106153715.GZ31886@sirena.org.uk>
+In-Reply-To: <20140106153715.GZ31886@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [211.155.113.253]
+x-forefront-prvs: 0083A7F08A
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(164054003)(51704005)(189002)(199002)(85852003)(83072002)(56816005)(81542001)(90146001)(74662001)(31966008)(76786001)(76796001)(76576001)(81342001)(69226001)(47446002)(74502001)(54316002)(63696002)(65816001)(66066001)(80022001)(53806001)(54356001)(46102001)(51856001)(76482001)(59766001)(77982001)(79102001)(47976001)(50986001)(56776001)(47736001)(4396001)(49866001)(74706001)(83322001)(558084003)(33646001)(74876001)(85306002)(74366001)(74316001)(81686001)(2656002)(81816001)(80976001)(87936001)(87266001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB505;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:211.155.113.253;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Peter Korsgaard <peter@korsgaard.com>
-
-commit 407900cfb54bdb2cfa228010b6697305f66b2948 upstream.
-
-dm9620/dm9621a require room for 4 byte padding even in dm9601 (3 byte
-header) mode.
-
-Signed-off-by: Peter Korsgaard <peter@korsgaard.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/net/usb/dm9601.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
---- a/drivers/net/usb/dm9601.c
-+++ b/drivers/net/usb/dm9601.c
-@@ -364,7 +364,12 @@ static int dm9601_bind(struct usbnet *de
- 	dev->net->ethtool_ops = &dm9601_ethtool_ops;
- 	dev->net->hard_header_len += DM_TX_OVERHEAD;
- 	dev->hard_mtu = dev->net->mtu + dev->net->hard_header_len;
--	dev->rx_urb_size = dev->net->mtu + ETH_HLEN + DM_RX_OVERHEAD;
-+
-+	/* dm9620/21a require room for 4 byte padding, even in dm9601
-+	 * mode, so we need +1 to be able to receive full size
-+	 * ethernet frames.
-+	 */
-+	dev->rx_urb_size = dev->net->mtu + ETH_HLEN + DM_RX_OVERHEAD + 1;
- 
- 	dev->mii.dev = dev->net;
- 	dev->mii.mdio_read = dm9601_mdio_read;
 
 
+> > The simple-card's DAPM route maping is optional. For example, the spdif has
+> > no need of this.
+> 
+> This doesn't seem to apply against current code, can you please check
+> and resend?
+>
+Yes, I will.
+
+Thanks,
+
+--
+Best Regards,
+Xiubo
