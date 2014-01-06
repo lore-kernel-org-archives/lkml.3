@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755909AbaAFUAS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 15:00:18 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:52694 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755576AbaAFUAQ (ORCPT
+	id S1755979AbaAFUAb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 15:00:31 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:53829 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754806AbaAFUA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 15:00:16 -0500
-Date: Mon, 6 Jan 2014 14:53:03 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Ding Tianhong <dingtianhong@huawei.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        linux-wireless@vger.kernel.org, Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3.5 18/19] rtlwifi: slight optimization of addr compare
-Message-ID: <20140106195302.GF10885@tuxdriver.com>
-References: <52BC15EA.2020603@huawei.com>
- <52BC2576.3090601@cogentembedded.com>
+	Mon, 6 Jan 2014 15:00:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52BC2576.3090601@cogentembedded.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.02.1401031749340.8667@kaball.uk.xensource.com>
+References: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
+	<1388707565-16535-17-git-send-email-yinghai@kernel.org>
+	<alpine.DEB.2.02.1401031749340.8667@kaball.uk.xensource.com>
+Date: Mon, 6 Jan 2014 12:00:28 -0800
+X-Google-Sender-Auth: TlH_aYZoagsUgjBq8Okqrxj0u7Y
+Message-ID: <CAE9FiQVba9K_3LDkHTP4YZJ-FzwE_mF3h6iiXEFb1shUUmhGpg@mail.gmail.com>
+Subject: Re: [Xen-devel] [PATCH v5 16/33] xen, irq: Call irq_alloc_reserved_desc_at()
+ at first
+From: Yinghai Lu <yinghai@kernel.org>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 26, 2013 at 04:47:50PM +0400, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 26-12-2013 15:41, Ding Tianhong wrote:
-> 
-> >Use possibly more efficient ether_addr_equal_unaligned
-> >instead of memcmp.
-> 
-> >Cc: Larry Finger <Larry.Finger@lwfinger.net>
-> >Cc: Chaoming Li <chaoming_li@realsil.com.cn>
-> >Cc: John W. Linville <linville@tuxdriver.com>
-> >Cc: linux-wireless@vger.kernel.org
-> >Cc: netdev@vger.kernel.org
-> >Cc: linux-kernel@vger.kernel.org
-> >Signed-off-by: Weilong Chen <chenweilong@huawei.com>
-> >Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
-> >---
-> >  drivers/net/wireless/rtlwifi/cam.c | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> >diff --git a/drivers/net/wireless/rtlwifi/cam.c b/drivers/net/wireless/rtlwifi/cam.c
-> >index 0e510f7..0276153 100644
-> >--- a/drivers/net/wireless/rtlwifi/cam.c
-> >+++ b/drivers/net/wireless/rtlwifi/cam.c
-> [...]
-> >@@ -335,7 +335,7 @@ void rtl_cam_del_entry(struct ieee80211_hw *hw, u8 *sta_addr)
-> >  		addr = rtlpriv->sec.hwsec_cam_sta_addr[i];
-> >  		bitmap = (rtlpriv->sec.hwsec_cam_bitmap) >> i;
-> >  		if (((bitmap & BIT(0)) == BIT(0)) &&
-> >-		    (memcmp(addr, sta_addr, ETH_ALEN) == 0)) {
-> >+		    (ether_addr_equal_unaligned(addr, sta_addr))) {
-> 
->    It's pointless to enclose function call in parens, again.
+On Fri, Jan 3, 2014 at 9:50 AM, Stefano Stabellini
+<stefano.stabellini@eu.citrix.com> wrote:
 
-I'll correct that issue when merging the patch.
+>>  drivers/xen/events.c | 8 ++++++--
+>>  1 file changed, 6 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+>> index 4035e83..020cd77 100644
+>> --- a/drivers/xen/events.c
+>> +++ b/drivers/xen/events.c
+>> @@ -508,8 +508,12 @@ static int __must_check xen_allocate_irq_gsi(unsigned gsi)
+>>       /* Legacy IRQ descriptors are already allocated by the arch. */
+>>       if (gsi < NR_IRQS_LEGACY)
+>>               irq = gsi;
+>> -     else
+>> -             irq = irq_alloc_desc_at(gsi, -1);
+>> +     else {
+>> +             /* for x86, irq already get reserved for gsi */
+>> +             irq = irq_alloc_reserved_desc_at(gsi, -1);
+>> +             if (irq < 0)
+>> +                     irq = irq_alloc_desc_at(gsi, -1);
+>> +     }
+>
+> This is common code. On ARM I get:
+>
+> drivers/xen/events.c: In function 'xen_allocate_irq_gsi':
+> drivers/xen/events.c:513:3: error: implicit declaration of function 'irq_alloc_reserved_desc_at' [-Werror=implicit-function-declaration]
+>    irq = irq_alloc_reserved_desc_at(gsi, -1);
+>    ^
+> cc1: some warnings being treated as errors
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+It's strange.
+
+that is defined with irq_alloc_desc_at in parallel in
+include/linux/irq.h and kernel/irq/irqdesc.c.
+
+Did you try the whole tree, or just this patch?
+
+Thanks
+
+Yinghai
