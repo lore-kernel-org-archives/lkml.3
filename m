@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932972AbaAFXj5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:39:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47964 "EHLO
+	id S1757596AbaAFXk1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:40:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47947 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932639AbaAFWkI (ORCPT
+	with ESMTP id S932664AbaAFWkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:08 -0500
+	Mon, 6 Jan 2014 17:40:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: [PATCH 3.12 139/144] clocksource: dw_apb_timer_of: Fix read_sched_clock
-Date: Mon,  6 Jan 2014 14:38:20 -0800
-Message-Id: <20140106223749.330976222@linuxfoundation.org>
+        Shirish Pargaonkar <spargaonkar@suse.com>,
+        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
+Subject: [PATCH 3.12 103/144] cifs: set FILE_CREATED
+Date: Mon,  6 Jan 2014 14:37:44 -0800
+Message-Id: <20140106223748.306174882@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,32 +29,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dinh Nguyen <dinguyen@altera.com>
+From: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
 
-commit 85dc6ee1237c8a4a7742e6abab96a20389b7d682 upstream.
+commit f1e3268126a35b9d3cb8bf67487fcc6cd13991d8 upstream.
 
-The read_sched_clock should return the ~value because the clock is a
-countdown implementation. read_sched_clock() should be the same as
- __apbt_read_clocksource().
+Set FILE_CREATED on O_CREAT|O_EXCL.
 
-Signed-off-by: Dinh Nguyen <dinguyen@altera.com>
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+cifs code didn't change during commit 116cc0225381415b96551f725455d067f63a76a0
+
+Kernel bugzilla 66251
+
+Signed-off-by: Shirish Pargaonkar <spargaonkar@suse.com>
+Acked-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clocksource/dw_apb_timer_of.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/cifs/dir.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/clocksource/dw_apb_timer_of.c
-+++ b/drivers/clocksource/dw_apb_timer_of.c
-@@ -108,7 +108,7 @@ static void add_clocksource(struct devic
- 
- static u32 read_sched_clock(void)
+--- a/fs/cifs/dir.c
++++ b/fs/cifs/dir.c
+@@ -193,7 +193,7 @@ check_name(struct dentry *direntry)
+ static int
+ cifs_do_create(struct inode *inode, struct dentry *direntry, unsigned int xid,
+ 	       struct tcon_link *tlink, unsigned oflags, umode_t mode,
+-	       __u32 *oplock, struct cifs_fid *fid, int *created)
++	       __u32 *oplock, struct cifs_fid *fid)
  {
--	return __raw_readl(sched_io_base);
-+	return ~__raw_readl(sched_io_base);
- }
+ 	int rc = -ENOENT;
+ 	int create_options = CREATE_NOT_DIR;
+@@ -349,7 +349,6 @@ cifs_do_create(struct inode *inode, stru
+ 				.device	= 0,
+ 		};
  
- static const struct of_device_id sptimer_ids[] __initconst = {
+-		*created |= FILE_CREATED;
+ 		if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_SET_UID) {
+ 			args.uid = current_fsuid();
+ 			if (inode->i_mode & S_ISGID)
+@@ -480,13 +479,16 @@ cifs_atomic_open(struct inode *inode, st
+ 	cifs_add_pending_open(&fid, tlink, &open);
+ 
+ 	rc = cifs_do_create(inode, direntry, xid, tlink, oflags, mode,
+-			    &oplock, &fid, opened);
++			    &oplock, &fid);
+ 
+ 	if (rc) {
+ 		cifs_del_pending_open(&open);
+ 		goto out;
+ 	}
+ 
++	if ((oflags & (O_CREAT | O_EXCL)) == (O_CREAT | O_EXCL))
++		*opened |= FILE_CREATED;
++
+ 	rc = finish_open(file, direntry, generic_file_open, opened);
+ 	if (rc) {
+ 		if (server->ops->close)
+@@ -529,7 +531,6 @@ int cifs_create(struct inode *inode, str
+ 	struct TCP_Server_Info *server;
+ 	struct cifs_fid fid;
+ 	__u32 oplock;
+-	int created = FILE_CREATED;
+ 
+ 	cifs_dbg(FYI, "cifs_create parent inode = 0x%p name is: %s and dentry = 0x%p\n",
+ 		 inode, direntry->d_name.name, direntry);
+@@ -546,7 +547,7 @@ int cifs_create(struct inode *inode, str
+ 		server->ops->new_lease_key(&fid);
+ 
+ 	rc = cifs_do_create(inode, direntry, xid, tlink, oflags, mode,
+-			    &oplock, &fid, &created);
++			    &oplock, &fid);
+ 	if (!rc && server->ops->close)
+ 		server->ops->close(xid, tcon, &fid);
+ 
 
 
