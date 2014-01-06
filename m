@@ -1,106 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746AbaAFHyp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 02:54:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55993 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750875AbaAFHyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 02:54:44 -0500
-Message-ID: <52CA612D.2000902@redhat.com>
-Date: Mon, 06 Jan 2014 15:54:21 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752957AbaAFHzy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 02:55:54 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:34048 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063AbaAFHzw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 02:55:52 -0500
+Message-ID: <52CA614D.6040702@huawei.com>
+Date: Mon, 6 Jan 2014 15:54:53 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: John Fastabend <john.fastabend@gmail.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, John Fastabend <john.r.fastabend@intel.com>,
-        Neil Horman <nhorman@tuxdriver.com>
-Subject: Re: [PATCH net 1/2] macvlan: forbid L2 fowarding offload for macvtap
-References: <1388978467-2075-1-git-send-email-jasowang@redhat.com> <52CA5CDA.1020503@gmail.com>
-In-Reply-To: <52CA5CDA.1020503@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Cong Wang <xiyou.wangcong@gmail.com>
+CC: David Miller <davem@davemloft.net>, Jamal Hadi Salim <jhs@mojatatu.com>,
+        Li Zefan <lizefan@huawei.com>, Eric Dumazet <edumazet@google.com>,
+        <pshelar@nicira.com>, <jasowang@redhat.com>,
+        Simon Horman <horms@verge.net.au>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Linux Kernel Network Developers" <netdev@vger.kernel.org>,
+        <cgroups@vger.kernel.org>, <containers@lists.linux-foundation.org>,
+        Patrick McHardy <kaber@trash.net>, <xemul@openvz.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH net-next 0/4] net_cls for sys container
+References: <52C62A44.4070304@huawei.com> <CAM_iQpW0+Ftvk=QBE+0yMNW00VkBee1+yAEmbPkT+zjij9RX-Q@mail.gmail.com>
+In-Reply-To: <CAM_iQpW0+Ftvk=QBE+0yMNW00VkBee1+yAEmbPkT+zjij9RX-Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.22.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2014 03:35 PM, John Fastabend wrote:
-> On 01/05/2014 07:21 PM, Jason Wang wrote:
->> L2 fowarding offload will bypass the rx handler of real device. This
->> will make
->> the packet could not be forwarded to macvtap device. Another problem
->> is the
->> dev_hard_start_xmit() called for macvtap does not have any
->> synchronization.
+On 2014/1/3 13:20, Cong Wang wrote:
+> On Thu, Jan 2, 2014 at 7:11 PM, Libo Chen <clbchenlibo.chen@huawei.com> wrote:
+>> Hi guys,
 >>
->> Fix this by forbidding L2 forwarding for macvtap.
+>> Now, lxc created with veth can not be under control by
+>> cls_cgroup.
 >>
->> Cc: John Fastabend <john.r.fastabend@intel.com>
->> Cc: Neil Horman <nhorman@tuxdriver.com>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->> ---
->>   drivers/net/macvlan.c |    5 ++++-
->>   1 files changed, 4 insertions(+), 1 deletions(-)
+>> the former discussion:
+>> http://lkml.indiana.edu/hypermail/linux/kernel/1312.1/00214.html
 >>
->
-> I must be missing something.
->
-> The lower layer device should set skb->dev to the correct macvtap
-> device on receive so that in netif_receive_skb_core() the macvtap
-> handler is hit. Skipping the macvlan receive handler should be OK
-> because the switching was done by the hardware. If I read macvtap.c
-> correctly macvlan_common_newlink() is called with 'dev' where 'dev'
-> is the macvtap device. Any idea what I'm missing? I guess I'll need
-> to setup a macvtap test case.
+>> In short, because cls_cgroup relys classid attached to sock
+>> filter skb, but sock will be cleared inside dev_forward_skb()
+>> in veth_xmit().
+> 
+> 
+> So what are you trying to achieve here?
 
-Unlike macvlan, macvtap depends on rx handler on the lower device to
-work. In this case macvlan_handle_frame() will call macvtap_receive().
-So doing netif_receive_skb_core() for macvtap device directly won't work
-since we need to forward the packet to userspace instead of kernel.
+sys container using veth can be controlled by cls_cgroup basing on physic network interface
 
-For net-next.git, it may work since commit
-6acf54f1cf0a6747bac9fea26f34cfc5a9029523 let macvtap device register an
-rx handler for itself.
->
-> And what synchronization are you worried about on dev_hard_start_xmit()?
-> In the L2 forwarding offload case macvlan_open() clears the NETIF_F_LLTX
-> flag so HARD_TX_LOCK protects the driver txq. We might hit this warning
-> in dev_queue_xmit() though,
->
->   net_crit_ratelimited("Virtual device %s asks to queue packet!\n",
->
-> Perhaps we can remove it.
+thanks,
+Libo
 
-The problem is macvtap does not call dev_queue_xmit() for macvlan
-device. It calls macvlan_start_xmit() directly from macvtap_get_user().
-So HARD_TX_LOCK was not done for the txq.
->
->> diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
->> index 60406b0..5360f73 100644
->> --- a/drivers/net/macvlan.c
->> +++ b/drivers/net/macvlan.c
->> @@ -338,6 +338,8 @@ static const struct header_ops
->> macvlan_hard_header_ops = {
->>       .cache_update    = eth_header_cache_update,
->>   };
->>
->> +static struct rtnl_link_ops macvlan_link_ops;
->> +
->>   static int macvlan_open(struct net_device *dev)
->>   {
->>       struct macvlan_dev *vlan = netdev_priv(dev);
->> @@ -353,7 +355,8 @@ static int macvlan_open(struct net_device *dev)
->>           goto hash_add;
->>       }
->>
->> -    if (lowerdev->features & NETIF_F_HW_L2FW_DOFFLOAD) {
->> +    if (lowerdev->features & NETIF_F_HW_L2FW_DOFFLOAD &&
->> +        dev->rtnl_link_ops == &macvlan_link_ops) {
->>           vlan->fwd_priv =
->>                 lowerdev->netdev_ops->ndo_dfwd_add_station(lowerdev,
->> dev);
->>
->>
->
->
+> 
+> .
+> 
+
 
