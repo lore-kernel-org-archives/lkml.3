@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932857AbaAFWkj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:40:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48099 "EHLO
+	id S1757495AbaAFX3q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:29:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48126 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932814AbaAFWkh (ORCPT
+	with ESMTP id S932860AbaAFWkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:37 -0500
+	Mon, 6 Jan 2014 17:40:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Lukas Czerner <lczerner@redhat.com>, Jan Kara <jack@suse.cz>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.10 032/129] ext4: Do not reserve clusters when fs doesnt support extents
-Date: Mon,  6 Jan 2014 14:37:41 -0800
-Message-Id: <20140106223900.523823835@linuxfoundation.org>
+        Kirill Tkhai <tkhai@yandex.ru>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.10 037/129] sched/rt: Fix rqs cpupri leak while enqueue/dequeue child RT entities
+Date: Mon,  6 Jan 2014 14:37:46 -0800
+Message-Id: <20140106223900.663301734@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -30,75 +29,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Kirill Tkhai <tkhai@yandex.ru>
 
-commit 30fac0f75da24dd5bb43c9e911d2039a984ac815 upstream.
+commit 757dfcaa41844595964f1220f1d33182dae49976 upstream.
 
-When the filesystem doesn't support extents (like in ext2/3
-compatibility modes), there is no need to reserve any clusters. Space
-estimates for writing are exact, hole punching doesn't need new
-metadata, and there are no unwritten extents to convert.
+This patch touches the RT group scheduling case.
 
-This fixes a problem when filesystem still having some free space when
-accessed with a native ext2/3 driver suddently reports ENOSPC when
-accessed with ext4 driver.
+Functions inc_rt_prio_smp() and dec_rt_prio_smp() change (global) rq's
+priority, while rt_rq passed to them may be not the top-level rt_rq.
+This is wrong, because changing of priority on a child level does not
+guarantee that the priority is the highest all over the rq. So, this
+leak makes RT balancing unusable.
 
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Tested-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Reviewed-by: Lukas Czerner <lczerner@redhat.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+The short example: the task having the highest priority among all rq's
+RT tasks (no one other task has the same priority) are waking on a
+throttle rt_rq.  The rq's cpupri is set to the task's priority
+equivalent, but real rq->rt.highest_prio.curr is less.
+
+The patch below fixes the problem.
+
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+CC: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/49231385567953@web4m.yandex.ru
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/super.c |   17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+ kernel/sched/rt.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -3213,11 +3213,19 @@ int ext4_calculate_overhead(struct super
- }
- 
- 
--static ext4_fsblk_t ext4_calculate_resv_clusters(struct ext4_sb_info *sbi)
-+static ext4_fsblk_t ext4_calculate_resv_clusters(struct super_block *sb)
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -964,6 +964,13 @@ inc_rt_prio_smp(struct rt_rq *rt_rq, int
  {
- 	ext4_fsblk_t resv_clusters;
+ 	struct rq *rq = rq_of_rt_rq(rt_rq);
  
- 	/*
-+	 * There's no need to reserve anything when we aren't using extents.
-+	 * The space estimates are exact, there are no unwritten extents,
-+	 * hole punching doesn't need new metadata... This is needed especially
-+	 * to keep ext2/3 backward compatibility.
-+	 */
-+	if (!EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_EXTENTS))
-+		return 0;
++#ifdef CONFIG_RT_GROUP_SCHED
 +	/*
- 	 * By default we reserve 2% or 4096 clusters, whichever is smaller.
- 	 * This should cover the situations where we can not afford to run
- 	 * out of space like for example punch hole, or converting
-@@ -3225,7 +3233,8 @@ static ext4_fsblk_t ext4_calculate_resv_
- 	 * allocation would require 1, or 2 blocks, higher numbers are
- 	 * very rare.
- 	 */
--	resv_clusters = ext4_blocks_count(sbi->s_es) >> sbi->s_cluster_bits;
-+	resv_clusters = ext4_blocks_count(EXT4_SB(sb)->s_es) >>
-+			EXT4_SB(sb)->s_cluster_bits;
++	 * Change rq's cpupri only if rt_rq is the top queue.
++	 */
++	if (&rq->rt != rt_rq)
++		return;
++#endif
+ 	if (rq->online && prio < prev_prio)
+ 		cpupri_set(&rq->rd->cpupri, rq->cpu, prio);
+ }
+@@ -973,6 +980,13 @@ dec_rt_prio_smp(struct rt_rq *rt_rq, int
+ {
+ 	struct rq *rq = rq_of_rt_rq(rt_rq);
  
- 	do_div(resv_clusters, 50);
- 	resv_clusters = min_t(ext4_fsblk_t, resv_clusters, 4096);
-@@ -3969,10 +3978,10 @@ no_journal:
- 			 "available");
- 	}
- 
--	err = ext4_reserve_clusters(sbi, ext4_calculate_resv_clusters(sbi));
-+	err = ext4_reserve_clusters(sbi, ext4_calculate_resv_clusters(sb));
- 	if (err) {
- 		ext4_msg(sb, KERN_ERR, "failed to reserve %llu clusters for "
--			 "reserved pool", ext4_calculate_resv_clusters(sbi));
-+			 "reserved pool", ext4_calculate_resv_clusters(sb));
- 		goto failed_mount4a;
- 	}
- 
++#ifdef CONFIG_RT_GROUP_SCHED
++	/*
++	 * Change rq's cpupri only if rt_rq is the top queue.
++	 */
++	if (&rq->rt != rt_rq)
++		return;
++#endif
+ 	if (rq->online && rt_rq->highest_prio.curr != prev_prio)
+ 		cpupri_set(&rq->rd->cpupri, rq->cpu, rt_rq->highest_prio.curr);
+ }
 
 
