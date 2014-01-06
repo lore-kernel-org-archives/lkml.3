@@ -1,101 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755800AbaAFWFp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:05:45 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42293 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470AbaAFWFn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:05:43 -0500
-Date: Mon, 6 Jan 2014 23:05:09 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
- tracing units
-Message-ID: <20140106220509.GI30183@twins.programming.kicks-ass.net>
-References: <87zjnys0gj.fsf@ashishki-desk.ger.corp.intel.com>
- <20131218150900.GU21999@twins.programming.kicks-ass.net>
- <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219103134.GD30183@twins.programming.kicks-ass.net>
- <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219112812.GY21999@twins.programming.kicks-ass.net>
- <20131219123955.GA18186@gmail.com>
- <87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219151024.GI16438@laptop.programming.kicks-ass.net>
- <87iotw6bwx.fsf@tassilo.jf.intel.com>
+	id S1756005AbaAFWIy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:08:54 -0500
+Received: from ni.piap.pl ([195.187.100.4]:59545 "EHLO ni.piap.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751446AbaAFWIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 17:08:52 -0500
+From: khalasa@piap.pl (Krzysztof =?utf-8?Q?Ha=C5=82asa?=)
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+References: <m38uv1uuzr.fsf@t19.piap.pl> <m3ha9gx63v.fsf@t19.piap.pl>
+	<52CB051B.1040808@ti.com>
+Date: Mon, 06 Jan 2014 23:08:50 +0100
+In-Reply-To: <52CB051B.1040808@ti.com> (Santosh Shilimkar's message of "Mon, 6
+	Jan 2014 14:33:47 -0500")
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87iotw6bwx.fsf@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Message-ID: <m3ppo4sqz1.fsf@t19.piap.pl>
+Content-Type: text/plain
+Subject: Re: Regression (ARM) arch/arm/mm/init.c doesn't build without CONFIG_ARM_PATCH_PHYS_VIRT.
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE,
+	 bases: 20140106 #7262385, check: 20140106 clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 01:25:02PM -0800, Andi Kleen wrote:
-> Peter Zijlstra <peterz@infradead.org> writes:
-> 
-> > On Thu, Dec 19, 2013 at 04:30:53PM +0200, Alexander Shishkin wrote:
-> >> So I'd like to steer away from the ways in which hardware can be broken
-> >> and talk about a usable interface, to begin with.
-> >
-> > Just dump it into the regular one buffer like I outlined.
-> 
-> Just getting back to this. 
-> 
-> Do you realize that PT buffers have to be page aligned. 
-> 
-> So to mix it with a regular perf buffer would need padding every PT
-> message by 4K, which wastes a lot of memory. The side band messages
-> are usually only a few bytes (e.g. context switch).
-> 
-> If the sideband is mfrequent it could even take up >half of the buffer,
-> but mostly only with padding.
-> 
-> Is that what you intended?
-> 
-> perf doesn't support gaps today, so your proposal wouldn't even
-> seem to fit into the current perf design.
+Santosh Shilimkar <santosh.shilimkar@ti.com> writes:
 
-That would a really trivial addition.
+> I am afraid you didn't understood what the fix is if you say above.
+> arm_dma_limit is broken without this fix for LPAE machines with
+> memory starting 4 GB physical boundary.
 
-> Also of course it requires disabling/enabling PT explicitly for 
-> every perf message, which is slow. So you add at least 2*WRMSR cost
-> (thousands of cycles).
+I wonder what CONFIG_ARM_PATCH_PHYS_VIRT and CONFIG_ZONE_DMA do they
+use?
 
-That's just dumb, no flush the entire PT buffer into a few large
-records.
+Of course, CONFIG_ZONE_DMA must be set, because otherwise the patch
+changes a part disabled with #ifdef. CONFIG_ARM_PATCH_PHYS_VIRT must be
+set because otherwise the kernel will not compile at all.
 
-> > That said; we very much need to have at least two architectures
-> > implemented for any of this code to move.
-> >
-> > But we cannot ignore the hardware trainwreck; we cannot shape our
-> > interface around something that's utterly broken.
-> >
-> > Some hardware is just too broken to support.
-> 
-> I don't think the PT design is broken in any way, it's straight 
-> forward and simple.
+Do you accept the fact the configurations with CONFIG_ZONE_DMA and
+without CONFIG_ARM_PATCH_PHYS_VIRT are now broken - by this very commit?
 
-If it were actually implemented like the spec says and not have this
-crappy S/G limitation, then maybe.
+Now, what "fix" does this commit in its entirety do:
 
-> Trying to mix hardware tracing and software tracing in the same buffer
-> on the other hand ...
-> 
-> Anyways if perf is not flexible enough to support this I suppose
-> it could switch to a simple device driver, and only run perf with
-> separate fds for side band purposes. 
-> 
-> Would you prefer that?
+-     arm_dma_limit = PHYS_OFFSET + arm_dma_zone_size - 1;
++     arm_dma_limit = __pv_phys_offset + arm_dma_zone_size - 1;
 
-Don't be stupid.
+if under the above circumstances (CONFIG_*) in
+arch/arm/include/asm/memory.h we have:
+
+extern u64 __pv_phys_offset;
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the only usable declaration of this variable
+extern u64 __pv_offset;
+extern void fixup_pv_table(const void *, unsigned long);
+extern const void *__pv_table_begin, *__pv_table_end;
+
+#define PHYS_OFFSET __pv_phys_offset
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-- 
+Krzysztof Halasa
+
+Research Institute for Automation and Measurements PIAP
+Al. Jerozolimskie 202, 02-486 Warsaw, Poland
