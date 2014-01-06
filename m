@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540AbaAFQ2r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 11:28:47 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35287 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753298AbaAFQ2q (ORCPT
+	id S1755448AbaAFQ3e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 11:29:34 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:39690 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417AbaAFQ3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 11:28:46 -0500
-Date: Mon, 6 Jan 2014 17:28:13 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "pjt@google.com" <pjt@google.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "alex.shi@linaro.org" <alex.shi@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "amit.kucheria@linaro.org" <amit.kucheria@linaro.org>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>
-Subject: Re: [RFC] sched: CPU topology try
-Message-ID: <20140106162813.GM31570@twins.programming.kicks-ass.net>
-References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
- <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
- <52B87149.4010801@arm.com>
+	Mon, 6 Jan 2014 11:29:32 -0500
+Date: Mon, 6 Jan 2014 21:59:27 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        dri-devel@lists.freedesktop.org, josh@joshtriplett.org
+Subject: [PATCH 66/85] drivers: gpu: Move prototype declarations to header
+ file ni_dpm.h
+Message-ID: <bcee335453b754ab22869ae13c0024c9a20ba31b.1389018325.git.rashika.kheria@gmail.com>
+References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <52B87149.4010801@arm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 23, 2013 at 06:22:17PM +0100, Dietmar Eggemann wrote:
-> I'm not sure if the idea to create a dedicated sched_domain level for every
-> topology flag representing a specific functionality will scale. From the
-> perspective of energy-aware scheduling we need e.g. energy costs (P and C
-> state) which can only be populated towards the scheduler via an additional
-> sub-struct and additional function arch_sd_energy() like depicted in
-> Morten's email:
-> 
-> [2] lkml.org/lkml/2013/11/14/102
+Move prototype declarations of functions ni_get_pi() and ni_get_ps() to
+header file drm/radeon/ni_dpm.h because it is used by more than one
+file.
 
-That lkml.org link is actually not working for me (blank page -- maybe
-lkml.org is on the blink again).
+This eliminates the following warnings in drm/radeon/ni_dpm.c:
+drivers/gpu/drm/radeon/ni_dpm.c:723:23: warning: no previous prototype for ‘ni_get_pi’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/ni_dpm.c:730:15: warning: no previous prototype for ‘ni_get_ps’ [-Wmissing-prototypes]
 
-That said, I yet have to sit down and think about the P state stuff, but
-I was thinking we need some rudimentary domain support for that.
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ drivers/gpu/drm/radeon/ni_dpm.h |    2 ++
+ drivers/gpu/drm/radeon/si_dpm.c |    3 ---
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-For instance, the big-little thingies seem share their P state per
-cluster, so we need a domain at that level to hang some state off of --
-which we actually have in this case. But we need to ensure we do have
-it -- somehow.
+diff --git a/drivers/gpu/drm/radeon/ni_dpm.h b/drivers/gpu/drm/radeon/ni_dpm.h
+index 6bbee91..876aaf2 100644
+--- a/drivers/gpu/drm/radeon/ni_dpm.h
++++ b/drivers/gpu/drm/radeon/ni_dpm.h
+@@ -231,6 +231,8 @@ struct ni_power_info {
+ #define NISLANDS_DPM2_SQ_RAMP_STI_SIZE                  0x1E
+ #define NISLANDS_DPM2_SQ_RAMP_LTI_RATIO                 0xF
+ 
++struct ni_power_info *ni_get_pi(struct radeon_device *rdev);
++struct ni_ps *ni_get_ps(struct radeon_ps *rps);
+ int ni_copy_and_switch_arb_sets(struct radeon_device *rdev,
+ 				u32 arb_freq_src, u32 arb_freq_dest);
+ void ni_update_current_ps(struct radeon_device *rdev,
+diff --git a/drivers/gpu/drm/radeon/si_dpm.c b/drivers/gpu/drm/radeon/si_dpm.c
+index 8732005..8ce849e 100644
+--- a/drivers/gpu/drm/radeon/si_dpm.c
++++ b/drivers/gpu/drm/radeon/si_dpm.c
+@@ -1734,9 +1734,6 @@ static const struct si_powertune_data powertune_data_hainan =
+ 	true
+ };
+ 
+-struct ni_power_info *ni_get_pi(struct radeon_device *rdev);
+-struct ni_ps *ni_get_ps(struct radeon_ps *rps);
+-
+ static int si_populate_voltage_value(struct radeon_device *rdev,
+ 				     const struct atom_voltage_table *table,
+ 				     u16 value, SISLANDS_SMC_VOLTAGE_VALUE *voltage);
+-- 
+1.7.9.5
 
