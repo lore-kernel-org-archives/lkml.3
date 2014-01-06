@@ -1,72 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757459AbaAFX0o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:26:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48184 "EHLO
+	id S933179AbaAFX0x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:26:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49154 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932922AbaAFWky (ORCPT
+	with ESMTP id S1757463AbaAFX0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:54 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 009/129] ASoC: wm_adsp: Add small delay while polling DSP RAM start
-Date: Mon,  6 Jan 2014 14:37:18 -0800
-Message-Id: <20140106223859.854488659@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
-References: <20140106223859.589799655@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Mon, 6 Jan 2014 18:26:51 -0500
+Date: Mon, 6 Jan 2014 15:27:17 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Alexander Duyck <alexander.h.duyck@intel.com>
+Cc: joe@perches.com, josh@joshtriplett.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] checkpatch: Only flag FSF address, not gnu.org URL
+Message-ID: <20140106232717.GA22336@kroah.com>
+References: <20140106231534.23578.11475.stgit@ahduyck-cp2.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140106231534.23578.11475.stgit@ahduyck-cp2.jf.intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Jan 06, 2014 at 03:16:24PM -0800, Alexander Duyck wrote:
+> This change restricts the check for the for the FSF address in the GPL
+> copyright statement so that it only flags the address, not the references to
+> the gnu.org/licenses URL which appear in numerous drivers.
+> 
+> So for example this statement will still return an error:
+>   You should have received a copy of the GNU General Public License
+>   along with this program; if not, write to the Free Software
+>   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+> 
+> However, this statement will not return an error after this patch:
+>   You should have received a copy of the GNU General Public License
+>   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-------------------
+Why is this paragraph needed?  The kernel does come with a copy of the
+GPL, so it's not an issue for kernel files, right?
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+thanks,
 
-commit 939fd1e8d9deff206f12bd9d4e54aa7a4bd0ffd6 upstream.
-
-Some devices are getting very close to the limit whilst polling the RAM
-start, this patch adds a small delay to this loop to give a longer
-startup timeout.
-
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/soc/codecs/wm_adsp.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
-
---- a/sound/soc/codecs/wm_adsp.c
-+++ b/sound/soc/codecs/wm_adsp.c
-@@ -1073,13 +1073,17 @@ static int wm_adsp2_ena(struct wm_adsp *
- 		return ret;
- 
- 	/* Wait for the RAM to start, should be near instantaneous */
--	count = 0;
--	do {
-+	for (count = 0; count < 10; ++count) {
- 		ret = regmap_read(dsp->regmap, dsp->base + ADSP2_STATUS1,
- 				  &val);
- 		if (ret != 0)
- 			return ret;
--	} while (!(val & ADSP2_RAM_RDY) && ++count < 10);
-+
-+		if (val & ADSP2_RAM_RDY)
-+			break;
-+
-+		msleep(1);
-+	}
- 
- 	if (!(val & ADSP2_RAM_RDY)) {
- 		adsp_err(dsp, "Failed to start DSP RAM\n");
-
-
+greg k-h
