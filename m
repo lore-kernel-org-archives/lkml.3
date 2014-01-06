@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425AbaAFAyG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 19:54:06 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:64986 "HELO
+	id S1752487AbaAFAyi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 19:54:38 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:54556 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752389AbaAFAyE (ORCPT
+	with SMTP id S1752015AbaAFAyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 19:54:04 -0500
+	Sun, 5 Jan 2014 19:54:35 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Linux PM <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH v3] Documentation/cpu-freq: add intel-pstate.txt
-Date: Mon, 06 Jan 2014 02:07:49 +0100
-Message-ID: <1574366.rBToHPL5dG@vostro.rjw.lan>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk
+Subject: Re: [PATCH] cpufreq: arm-big-little: Make driver dependent on CONFIG_BIG_LITTLE
+Date: Mon, 06 Jan 2014 02:08:21 +0100
+Message-ID: <39696841.2xGCnmPGdl@vostro.rjw.lan>
 User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1388917274-19241-1-git-send-email-artagnon@gmail.com>
-References: <1388917274-19241-1-git-send-email-artagnon@gmail.com>
+In-Reply-To: <a76f7b6a290d9174a24e15b13df21f53e3f5655f.1388736624.git.viresh.kumar@linaro.org>
+References: <a76f7b6a290d9174a24e15b13df21f53e3f5655f.1388736624.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -26,70 +25,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, January 05, 2014 03:51:14 PM Ramkumar Ramachandra wrote:
-> The Intel P-state driver is currently undocumented. Add some
-> documentation based on the cover-letter sent with the original series.
+On Friday, January 03, 2014 03:51:39 PM Viresh Kumar wrote:
+> arm_big_little cpufreq driver is only used for ARM bigLITTLE platforms and hence
+> must be dependent on CONFIG_BIG_LITTLE.
 > 
-> Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
-> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-> Cc: Randy Dunlap <rdunlap@infradead.org>
-> Cc: Linux PM <linux-pm@vger.kernel.org>
-> Acked-by: Randy Dunlap <rdunlap@infradead.org>
-> Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+> This was highlighted by Russell earlier when he reported this issue:
+> 
+> drivers/built-in.o: In function `bL_cpufreq_set_rate':
+> powercap_sys.c:(.text+0x5ed9a0): undefined reference to `bL_switch_request_cb'
+> 
+> Reported-by: Russell King <linux@arm.linux.org.uk>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
 Queued up for 3.14, thanks!
 
 > ---
->  Documentation/cpu-freq/intel-pstate.txt | 40 +++++++++++++++++++++++++++++++++
->  1 file changed, 40 insertions(+)
->  create mode 100644 Documentation/cpu-freq/intel-pstate.txt
+>  drivers/cpufreq/Kconfig.arm | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/Documentation/cpu-freq/intel-pstate.txt b/Documentation/cpu-freq/intel-pstate.txt
-> new file mode 100644
-> index 0000000..e742d21
-> --- /dev/null
-> +++ b/Documentation/cpu-freq/intel-pstate.txt
-> @@ -0,0 +1,40 @@
-> +Intel P-state driver
-> +--------------------
-> +
-> +This driver implements a scaling driver with an internal governor for
-> +Intel Core processors.  The driver follows the same model as the
-> +Transmeta scaling driver (longrun.c) and implements the setpolicy()
-> +instead of target().  Scaling drivers that implement setpolicy() are
-> +assumed to implement internal governors by the cpufreq core. All the
-> +logic for selecting the current P state is contained within the
-> +driver; no external governor is used by the cpufreq core.
-> +
-> +Intel SandyBridge+ processors are supported.
-> +
-> +New sysfs files for controlling P state selection have been added to
-> +/sys/devices/system/cpu/intel_pstate/
-> +
-> +      max_perf_pct: limits the maximum P state that will be requested by
-> +      the driver stated as a percentage of the available performance.
-> +
-> +      min_perf_pct: limits the minimum P state that will be  requested by
-> +      the driver stated as a percentage of the available performance.
-> +
-> +      no_turbo: limits the driver to selecting P states below the turbo
-> +      frequency range.
-> +
-> +For contemporary Intel processors, the frequency is controlled by the
-> +processor itself and the P-states exposed to software are related to
-> +performance levels.  The idea that frequency can be set to a single
-> +frequency is fiction for Intel Core processors. Even if the scaling
-> +driver selects a single P state the actual frequency the processor
-> +will run at is selected by the processor itself.
-> +
-> +New debugfs files have also been added to /sys/kernel/debug/pstate_snb/
-> +
-> +      deadband
-> +      d_gain_pct
-> +      i_gain_pct
-> +      p_gain_pct
-> +      sample_rate_ms
-> +      setpoint
+> diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+> index 456ba5e..3275e9c 100644
+> --- a/drivers/cpufreq/Kconfig.arm
+> +++ b/drivers/cpufreq/Kconfig.arm
+> @@ -4,7 +4,7 @@
+>  
+>  config ARM_BIG_LITTLE_CPUFREQ
+>  	tristate "Generic ARM big LITTLE CPUfreq driver"
+> -	depends on ARM && ARM_CPU_TOPOLOGY && HAVE_CLK
+> +	depends on ARM && BIG_LITTLE && ARM_CPU_TOPOLOGY && HAVE_CLK
+>  	select PM_OPP
+>  	help
+>  	  This enables the Generic CPUfreq driver for ARM big.LITTLE platforms.
 > 
 
 -- 
