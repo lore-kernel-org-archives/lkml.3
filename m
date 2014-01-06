@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933251AbaAGANy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 19:13:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47353 "EHLO
+	id S1756367AbaAGAOV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:14:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47348 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756648AbaAFWiJ (ORCPT
+	with ESMTP id S1756623AbaAFWiI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:09 -0500
+	Mon, 6 Jan 2014 17:38:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         David Henningsson <david.henningsson@canonical.com>,
-        Hui Wang <hui.wang@canonical.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 019/144] ALSA: hda - Add Dell headset detection quirk for three laptop models
-Date: Mon,  6 Jan 2014 14:36:20 -0800
-Message-Id: <20140106223745.877617621@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.12 018/144] ALSA: hda - Add enable_msi=0 workaround for four HP machines
+Date: Mon,  6 Jan 2014 14:36:19 -0800
+Message-Id: <20140106223745.849700524@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,42 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hui Wang <hui.wang@canonical.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit c29cb5eb8157a0049c882672a7f941261f23ea34 upstream.
+commit 693e0cb052c607e2d41edf9e9f1fa99ff8c266c1 upstream.
 
-On the Dell machines with codec whose Subsystem Id is 0x10280610,
-0x10280629 or 0x1028063e, no external microphone can be detected when
-plugging a 3-ring headset. If we add "model=dell-headset-multi" for
-the snd-hda-intel.ko, the problem will disappear.
+While enabling these machines, we found we would sometimes lose an
+interrupt if we change hardware volume during playback, and that
+disabling msi fixed this issue. (Losing the interrupt caused underruns
+and crackling audio, as the one second timeout is usually bigger than
+the period size.)
 
-The codecs on these machines belong to alc_269 family.
+The machines were all machines from HP, running AMD Hudson controller,
+and Realtek ALC282 codec.
 
-BugLink: https://bugs.launchpad.net/bugs/1260303
-Cc: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Hui Wang <hui.wang@canonical.com>
+BugLink: https://bugs.launchpad.net/bugs/1260225
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    3 +++
- 1 file changed, 3 insertions(+)
+ sound/pci/hda/hda_intel.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -4004,10 +4004,13 @@ static const struct snd_pci_quirk alc269
- 	SND_PCI_QUIRK(0x1028, 0x0606, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0608, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0609, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
-+	SND_PCI_QUIRK(0x1028, 0x0610, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0613, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0614, "Dell Inspiron 3135", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0616, "Dell Vostro 5470", ALC290_FIXUP_MONO_SPEAKERS),
-+	SND_PCI_QUIRK(0x1028, 0x0629, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0638, "Dell Inspiron 5439", ALC290_FIXUP_MONO_SPEAKERS),
-+	SND_PCI_QUIRK(0x1028, 0x063e, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x15cc, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x15cd, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x103c, 0x1586, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC2),
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -3430,6 +3430,10 @@ static void check_probe_mask(struct azx
+  * white/black-list for enable_msi
+  */
+ static struct snd_pci_quirk msi_black_list[] = {
++	SND_PCI_QUIRK(0x103c, 0x2191, "HP", 0), /* AMD Hudson */
++	SND_PCI_QUIRK(0x103c, 0x2192, "HP", 0), /* AMD Hudson */
++	SND_PCI_QUIRK(0x103c, 0x21f7, "HP", 0), /* AMD Hudson */
++	SND_PCI_QUIRK(0x103c, 0x21fa, "HP", 0), /* AMD Hudson */
+ 	SND_PCI_QUIRK(0x1043, 0x81f2, "ASUS", 0), /* Athlon64 X2 + nvidia */
+ 	SND_PCI_QUIRK(0x1043, 0x81f6, "ASUS", 0), /* nvidia */
+ 	SND_PCI_QUIRK(0x1043, 0x822d, "ASUS", 0), /* Athlon64 X2 + nvidia MCP55 */
 
 
