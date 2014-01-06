@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933734AbaAFWxx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:53:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48641 "EHLO
+	id S933336AbaAFWmV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:42:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48616 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933318AbaAFWmW (ORCPT
+	with ESMTP id S933318AbaAFWmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:42:22 -0500
+	Mon, 6 Jan 2014 17:42:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.4 19/43] drm/radeon: fix asic gfx values for scrapper asics
-Date: Mon,  6 Jan 2014 14:39:36 -0800
-Message-Id: <20140106223942.799589341@linuxfoundation.org>
+        Junho Ryu <jayr@google.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [PATCH 3.4 14/43] ext4: fix use-after-free in ext4_mb_new_blocks
+Date: Mon,  6 Jan 2014 14:39:31 -0800
+Message-Id: <20140106223942.658575846@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223942.259651490@linuxfoundation.org>
 References: <20140106223942.259651490@linuxfoundation.org>
@@ -28,74 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Junho Ryu <jayr@google.com>
 
-commit e2f6c88fb903e123edfd1106b0b8310d5117f774 upstream.
+commit 4e8d2139802ce4f41936a687f06c560b12115247 upstream.
 
-Fixes gfx corruption on certain TN/RL parts.
+ext4_mb_put_pa should hold pa->pa_lock before accessing pa->pa_count.
+While ext4_mb_use_preallocated checks pa->pa_deleted first and then
+increments pa->count later, ext4_mb_put_pa decrements pa->pa_count
+before holding pa->pa_lock and then sets pa->pa_deleted.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=60389
+* Free sequence
+ext4_mb_put_pa (1):		atomic_dec_and_test pa->pa_count
+ext4_mb_put_pa (2):		lock pa->pa_lock
+ext4_mb_put_pa (3):			check pa->pa_deleted
+ext4_mb_put_pa (4):			set pa->pa_deleted=1
+ext4_mb_put_pa (5):		unlock pa->pa_lock
+ext4_mb_put_pa (6):		remove pa from a list
+ext4_mb_pa_callback:		free pa
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+* Use sequence
+ext4_mb_use_preallocated (1):	iterate over preallocation
+ext4_mb_use_preallocated (2):	lock pa->pa_lock
+ext4_mb_use_preallocated (3):		check pa->pa_deleted
+ext4_mb_use_preallocated (4):		increase pa->pa_count
+ext4_mb_use_preallocated (5):	unlock pa->pa_lock
+ext4_mb_release_context:	access pa
+
+* Use-after-free sequence
+[initial status]		<pa->pa_deleted = 0, pa_count = 1>
+ext4_mb_use_preallocated (1):	iterate over preallocation
+ext4_mb_use_preallocated (2):	lock pa->pa_lock
+ext4_mb_use_preallocated (3):		check pa->pa_deleted
+ext4_mb_put_pa (1):		atomic_dec_and_test pa->pa_count
+[pa_count decremented]		<pa->pa_deleted = 0, pa_count = 0>
+ext4_mb_use_preallocated (4):		increase pa->pa_count
+[pa_count incremented]		<pa->pa_deleted = 0, pa_count = 1>
+ext4_mb_use_preallocated (5):	unlock pa->pa_lock
+ext4_mb_put_pa (2):		lock pa->pa_lock
+ext4_mb_put_pa (3):			check pa->pa_deleted
+ext4_mb_put_pa (4):			set pa->pa_deleted=1
+[race condition!]		<pa->pa_deleted = 1, pa_count = 1>
+ext4_mb_put_pa (5):		unlock pa->pa_lock
+ext4_mb_put_pa (6):		remove pa from a list
+ext4_mb_pa_callback:		free pa
+ext4_mb_release_context:	access pa
+
+AddressSanitizer has detected use-after-free in ext4_mb_new_blocks
+Bug report: http://goo.gl/rG1On3
+
+Signed-off-by: Junho Ryu <jayr@google.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/ni.c |   20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
+ fs/ext4/mballoc.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/radeon/ni.c
-+++ b/drivers/gpu/drm/radeon/ni.c
-@@ -672,6 +672,10 @@ static void cayman_gpu_init(struct radeo
- 		    (rdev->pdev->device == 0x999C)) {
- 			rdev->config.cayman.max_simds_per_se = 6;
- 			rdev->config.cayman.max_backends_per_se = 2;
-+			rdev->config.cayman.max_hw_contexts = 8;
-+			rdev->config.cayman.sx_max_export_size = 256;
-+			rdev->config.cayman.sx_max_export_pos_size = 64;
-+			rdev->config.cayman.sx_max_export_smx_size = 192;
- 		} else if ((rdev->pdev->device == 0x9903) ||
- 			   (rdev->pdev->device == 0x9904) ||
- 			   (rdev->pdev->device == 0x990A) ||
-@@ -682,6 +686,10 @@ static void cayman_gpu_init(struct radeo
- 			   (rdev->pdev->device == 0x999D)) {
- 			rdev->config.cayman.max_simds_per_se = 4;
- 			rdev->config.cayman.max_backends_per_se = 2;
-+			rdev->config.cayman.max_hw_contexts = 8;
-+			rdev->config.cayman.sx_max_export_size = 256;
-+			rdev->config.cayman.sx_max_export_pos_size = 64;
-+			rdev->config.cayman.sx_max_export_smx_size = 192;
- 		} else if ((rdev->pdev->device == 0x9919) ||
- 			   (rdev->pdev->device == 0x9990) ||
- 			   (rdev->pdev->device == 0x9991) ||
-@@ -692,9 +700,17 @@ static void cayman_gpu_init(struct radeo
- 			   (rdev->pdev->device == 0x99A0)) {
- 			rdev->config.cayman.max_simds_per_se = 3;
- 			rdev->config.cayman.max_backends_per_se = 1;
-+			rdev->config.cayman.max_hw_contexts = 4;
-+			rdev->config.cayman.sx_max_export_size = 128;
-+			rdev->config.cayman.sx_max_export_pos_size = 32;
-+			rdev->config.cayman.sx_max_export_smx_size = 96;
- 		} else {
- 			rdev->config.cayman.max_simds_per_se = 2;
- 			rdev->config.cayman.max_backends_per_se = 1;
-+			rdev->config.cayman.max_hw_contexts = 4;
-+			rdev->config.cayman.sx_max_export_size = 128;
-+			rdev->config.cayman.sx_max_export_pos_size = 32;
-+			rdev->config.cayman.sx_max_export_smx_size = 96;
- 		}
- 		rdev->config.cayman.max_texture_channel_caches = 2;
- 		rdev->config.cayman.max_gprs = 256;
-@@ -702,10 +718,6 @@ static void cayman_gpu_init(struct radeo
- 		rdev->config.cayman.max_gs_threads = 32;
- 		rdev->config.cayman.max_stack_entries = 512;
- 		rdev->config.cayman.sx_num_of_sets = 8;
--		rdev->config.cayman.sx_max_export_size = 256;
--		rdev->config.cayman.sx_max_export_pos_size = 64;
--		rdev->config.cayman.sx_max_export_smx_size = 192;
--		rdev->config.cayman.max_hw_contexts = 8;
- 		rdev->config.cayman.sq_num_cf_insts = 2;
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -3326,6 +3326,9 @@ static void ext4_mb_pa_callback(struct r
+ {
+ 	struct ext4_prealloc_space *pa;
+ 	pa = container_of(head, struct ext4_prealloc_space, u.pa_rcu);
++
++	BUG_ON(atomic_read(&pa->pa_count));
++	BUG_ON(pa->pa_deleted == 0);
+ 	kmem_cache_free(ext4_pspace_cachep, pa);
+ }
  
- 		rdev->config.cayman.sc_prim_fifo_size = 0x40;
+@@ -3339,11 +3342,13 @@ static void ext4_mb_put_pa(struct ext4_a
+ 	ext4_group_t grp;
+ 	ext4_fsblk_t grp_blk;
+ 
+-	if (!atomic_dec_and_test(&pa->pa_count) || pa->pa_free != 0)
+-		return;
+-
+ 	/* in this short window concurrent discard can set pa_deleted */
+ 	spin_lock(&pa->pa_lock);
++	if (!atomic_dec_and_test(&pa->pa_count) || pa->pa_free != 0) {
++		spin_unlock(&pa->pa_lock);
++		return;
++	}
++
+ 	if (pa->pa_deleted == 1) {
+ 		spin_unlock(&pa->pa_lock);
+ 		return;
 
 
