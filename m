@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933014AbaAFXmW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:42:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47913 "EHLO
+	id S1757699AbaAFXmV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:42:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47909 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932636AbaAFWj5 (ORCPT
+	with ESMTP id S932632AbaAFWj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Jan 2014 17:39:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roger Quadros <rogerq@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.12 134/144] gpio: twl4030: Fix regression for twl gpio LED output
-Date: Mon,  6 Jan 2014 14:38:15 -0800
-Message-Id: <20140106223749.190593832@linuxfoundation.org>
+Subject: [PATCH 3.12 133/144] sh-pfc: Fix PINMUX_GPIO macro
+Date: Mon,  6 Jan 2014 14:38:14 -0800
+Message-Id: <20140106223749.162768784@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,67 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Quadros <rogerq@ti.com>
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-commit f5837ec11f8cfa6d53ebc5806582771b2c9988c6 upstream.
+commit 8620f394c4f9abd13e4fdf927d9c2bbeda74cde7 upstream.
 
-Commit 0b2aa8be introduced a regression that causes failure
-in setting LED GPO direction to OUT.
+Commit 7cbb0e55e27e ("sh-pfc: Don't duplicate argument to PINMUX_GPIO
+macro") erronesouly modified the PINMUX_GPIO macro in a way that
+resulted in all pins being named "name". Fix the macro to name the pins
+correctly.
 
-This causes USB host probe failures for Beagleboard C4.
-
-platform usb_phy_gen_xceiv.2: Driver usb_phy_gen_xceiv requests probe deferral
-hsusb2_vcc: Failed to request enable GPIO510: -22
-reg-fixed-voltage reg-fixed-voltage.0.auto: Failed to register regulator: -22
-reg-fixed-voltage: probe of reg-fixed-voltage.0.auto failed with error -22
-
-direction_out/direction_in must return 0 if the operation succeeded.
-
-Also, don't update direction flag and output data if twl4030_set_gpio_direction()
-failed inside twl_direction_out();
-
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpio/gpio-twl4030.c |   15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ drivers/pinctrl/sh-pfc/sh_pfc.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpio/gpio-twl4030.c
-+++ b/drivers/gpio/gpio-twl4030.c
-@@ -300,7 +300,7 @@ static int twl_direction_in(struct gpio_
- 	if (offset < TWL4030_GPIO_MAX)
- 		ret = twl4030_set_gpio_direction(offset, 1);
- 	else
--		ret = -EINVAL;
-+		ret = -EINVAL;	/* LED outputs can't be set as input */
+--- a/drivers/pinctrl/sh-pfc/sh_pfc.h
++++ b/drivers/pinctrl/sh-pfc/sh_pfc.h
+@@ -254,7 +254,7 @@ struct sh_pfc_soc_info {
+ #define PINMUX_GPIO(_pin)						\
+ 	[GPIO_##_pin] = {						\
+ 		.pin = (u16)-1,						\
+-		.name = __stringify(name),				\
++		.name = __stringify(GPIO_##_pin),			\
+ 		.enum_id = _pin##_DATA,					\
+ 	}
  
- 	if (!ret)
- 		priv->direction &= ~BIT(offset);
-@@ -354,11 +354,20 @@ static void twl_set(struct gpio_chip *ch
- static int twl_direction_out(struct gpio_chip *chip, unsigned offset, int value)
- {
- 	struct gpio_twl4030_priv *priv = to_gpio_twl4030(chip);
--	int ret = -EINVAL;
-+	int ret = 0;
- 
- 	mutex_lock(&priv->mutex);
--	if (offset < TWL4030_GPIO_MAX)
-+	if (offset < TWL4030_GPIO_MAX) {
- 		ret = twl4030_set_gpio_direction(offset, 0);
-+		if (ret) {
-+			mutex_unlock(&priv->mutex);
-+			return ret;
-+		}
-+	}
-+
-+	/*
-+	 *  LED gpios i.e. offset >= TWL4030_GPIO_MAX are always output
-+	 */
- 
- 	priv->direction |= BIT(offset);
- 	mutex_unlock(&priv->mutex);
 
 
