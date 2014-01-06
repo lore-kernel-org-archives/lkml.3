@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883AbaAFMyZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 07:54:25 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:63396 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751580AbaAFMyX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 07:54:23 -0500
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Linux PM <linux-pm@vger.kernel.org>
-Subject: [PATCH v2] Documentation: add ABI entry for intel_pstate
-Date: Mon,  6 Jan 2014 18:24:26 +0530
-Message-Id: <1389012866-29821-1-git-send-email-artagnon@gmail.com>
-X-Mailer: git-send-email 1.8.5.2.227.g53f3478
-In-Reply-To: <1388997077-25138-1-git-send-email-artagnon@gmail.com>
-References: <1388997077-25138-1-git-send-email-artagnon@gmail.com>
+	id S1754212AbaAFMyq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 07:54:46 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:40029 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753917AbaAFMyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 07:54:44 -0500
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: <rui.zhang@intel.com>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
+Subject: [PATCH 1/1] thermal: remove const flag from .ops of imx thermal
+Date: Mon, 6 Jan 2014 08:54:34 -0400
+Message-ID: <1389012874-13871-1-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a Documentation/ABI entry for
-/sys/devices/system/cpu/intel_pstate/max_perf_pct,
-/sys/devices/system/cpu/intel_pstate/min_perf_pct, and
-/sys/devices/system/cpu/intel_pstate/no_turbo.
+As per previous changes on thermal framework API,
+registering a new thermal zone does not require
+a const thermal zone ops.
 
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Linux PM <linux-pm@vger.kernel.org>
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+Thus, this patch removes the flag from imx thermal zone ops.
+
+Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: devicetree@vger.kernel.org
+Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- Documentation/ABI/testing/sysfs-devices-system-cpu | 24 ++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ drivers/thermal/imx_thermal.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-devices-system-cpu b/Documentation/ABI/testing/sysfs-devices-system-cpu
-index 468e4d4..d5a0d33 100644
---- a/Documentation/ABI/testing/sysfs-devices-system-cpu
-+++ b/Documentation/ABI/testing/sysfs-devices-system-cpu
-@@ -200,3 +200,27 @@ Description:	address and size of the percpu note.
- 		note of cpu#.
+diff --git a/drivers/thermal/imx_thermal.c b/drivers/thermal/imx_thermal.c
+index 77a962f..43d2f77 100644
+--- a/drivers/thermal/imx_thermal.c
++++ b/drivers/thermal/imx_thermal.c
+@@ -284,7 +284,7 @@ static int imx_unbind(struct thermal_zone_device *tz,
+ 	return 0;
+ }
  
- 		crash_notes_size: size of the note of cpu#.
-+
-+
-+What:		/sys/devices/system/cpu/intel_pstate/max_perf_pct
-+		/sys/devices/system/cpu/intel_pstate/min_perf_pct
-+		/sys/devices/system/cpu/intel_pstate/no_turbo
-+Date:		February 2013
-+Contact:	linux-pm@vger.kernel.org
-+Description:	Parameters for the Intel P-state driver
-+
-+		Logic for selecting the current P-state in Intel
-+		Sandybridge+ processors. The three knobs control
-+		limits for the P-state that will be requested by the
-+		driver.
-+
-+		max_perf_pct: limits the maximum P state that will be requested by
-+		the driver stated as a percentage of the available performance.
-+
-+		min_perf_pct: limits the minimum P state that will be requested by
-+		the driver stated as a percentage of the available performance.
-+
-+		no_turbo: limits the driver to selecting P states below the turbo
-+		frequency range.
-+
-+		More details can be found in Documentation/cpu-freq/intel-pstate.txt
+-static const struct thermal_zone_device_ops imx_tz_ops = {
++static struct thermal_zone_device_ops imx_tz_ops = {
+ 	.bind = imx_bind,
+ 	.unbind = imx_unbind,
+ 	.get_temp = imx_get_temp,
 -- 
-1.8.5.2.227.g53f3478
+1.8.2.1.342.gfa7285d
 
