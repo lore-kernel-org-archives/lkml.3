@@ -1,36 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756322AbaAFVPm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 16:15:42 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:34723 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755924AbaAFVPl (ORCPT
+	id S1756184AbaAFVSy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 16:18:54 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:51708 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755523AbaAFVSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 16:15:41 -0500
-Date: Mon, 06 Jan 2014 16:15:38 -0500 (EST)
-Message-Id: <20140106.161538.1950437782278389932.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH net-next v2 0/3] adjust the code of r8152
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1388999323-9059-1-git-send-email-hayeswang@realtek.com>
-References: <1388990366-8508-1-git-send-email-hayeswang@realtek.com>
-	<1388999323-9059-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 06 Jan 2014 13:15:40 -0800 (PST)
+	Mon, 6 Jan 2014 16:18:52 -0500
+From: Kent Overstreet <kmo@daterainc.com>
+To: tj@kernel.org
+Cc: linux-kernel@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>
+Subject: [PATCH] percpu-refcount: Add a WARN() for ref going negative
+Date: Mon,  6 Jan 2014 13:13:26 -0800
+Message-Id: <1389042806-23967-1-git-send-email-kmo@daterainc.com>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Mon, 6 Jan 2014 17:08:40 +0800
+AIO had a missing get, which led to an ioctx leak - after percpu_ref_kill() the
+ref was 0 so percpu_ref_put() never saw it hit 0.
 
-> Replace some tabs and modify the return value of rtl_ops_init().
-> 
-> v2: add the terminating newline for the message of patch #3.
+This wasn't noticed at the time because it all happened completely silently,
+this adds a WARN() which would've caught the aio bug.
 
-Series applied.
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Cc: Tejun Heo <tj@kernel.org>
+---
+ lib/percpu-refcount.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/lib/percpu-refcount.c b/lib/percpu-refcount.c
+index 1a53d497a8..32538f12f8 100644
+--- a/lib/percpu-refcount.c
++++ b/lib/percpu-refcount.c
+@@ -120,6 +120,9 @@ static void percpu_ref_kill_rcu(struct rcu_head *rcu)
+ 
+ 	atomic_add((int) count - PCPU_COUNT_BIAS, &ref->count);
+ 
++	WARN(atomic_read(&ref->count) <= 0,
++	     "percpu ref <= 0 (%i)", atomic_read(&ref->count));
++
+ 	/* @ref is viewed as dead on all CPUs, send out kill confirmation */
+ 	if (ref->confirm_kill)
+ 		ref->confirm_kill(ref);
+-- 
+1.8.5.2
+
