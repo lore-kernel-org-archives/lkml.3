@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932749AbaAGAK5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 19:10:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47399 "EHLO
+	id S932960AbaAGALY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:11:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47394 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756768AbaAFWiT (ORCPT
+	with ESMTP id S1756763AbaAFWiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:19 -0500
+	Mon, 6 Jan 2014 17:38:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.12 029/144] usb: musb: core: Call dma_controller_destroy() in error path only once.
-Date: Mon,  6 Jan 2014 14:36:30 -0800
-Message-Id: <20140106223746.161040806@linuxfoundation.org>
+        Michael Grzeschik <mgr@pengutronix.de>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Peter Chen <peter.chen@freescale.com>
+Subject: [PATCH 3.12 028/144] usb: chipidea: fix nobody cared IRQ when booting with host role
+Date: Mon,  6 Jan 2014 14:36:29 -0800
+Message-Id: <20140106223746.132695732@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,44 +30,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: Peter Chen <peter.chen@freescale.com>
 
-commit 8d1aad7485e653c2c5fd985b326096f680f7d918 upstream.
+commit 5a1e1456fc633da5291285b1fff75d2a7507375b upstream.
 
-In commit f3ce4d5 ("usb: musb: core: call dma_controller_destroy() in the err path")
-I erroneously assumed that the dma controller is not removed in the
-error patch. This was wrong because it happens later via musb_free().
-That means the original commit can be reverted because it is wrong or we
-do this, so it is more obvious.
+If we connect Male-A-To-Male-A cable between otg-host and host pc,
+the ci->vbus_active is set wrongly, and cause the controller run
+at peripheral mode when we load gadget module (ci_udc_start will be run),
+but the software runs at host mode due to id = 0. The ehci_irq
+can't handle suspend (USBi_SLI) interrupt which is enabled for
+peripheral mode, it causes no one will handle irq error.
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+This patch is needed for 3.12 stable
+
+Acked-by: Michael Grzeschik <mgr@pengutronix.de>
+Reported-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Tested-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/musb/musb_core.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/usb/chipidea/core.c |    4 ++++
+ drivers/usb/chipidea/udc.c  |    3 ---
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -1810,8 +1810,6 @@ static void musb_free(struct musb *musb)
- 		free_irq(musb->nIrq, musb);
+--- a/drivers/usb/chipidea/core.c
++++ b/drivers/usb/chipidea/core.c
+@@ -575,6 +575,10 @@ static int ci_hdrc_probe(struct platform
+ 			: CI_ROLE_GADGET;
  	}
- 	cancel_work_sync(&musb->irq_work);
--	if (musb->dma_controller)
--		dma_controller_destroy(musb->dma_controller);
  
- 	musb_host_free(musb);
- }
-@@ -2036,6 +2034,9 @@ static int musb_remove(struct platform_d
- 	musb_exit_debugfs(musb);
- 	musb_shutdown(pdev);
- 
-+	if (musb->dma_controller)
-+		dma_controller_destroy(musb->dma_controller);
++	/* only update vbus status for peripheral */
++	if (ci->role == CI_ROLE_GADGET)
++		ci_handle_vbus_change(ci);
 +
- 	musb_free(musb);
- 	device_init_wakeup(dev, 0);
- 	return 0;
+ 	ret = ci_role_start(ci, ci->role);
+ 	if (ret) {
+ 		dev_err(dev, "can't start %s role\n", ci_role(ci)->name);
+--- a/drivers/usb/chipidea/udc.c
++++ b/drivers/usb/chipidea/udc.c
+@@ -1818,9 +1818,6 @@ static int udc_start(struct ci_hdrc *ci)
+ 	pm_runtime_no_callbacks(&ci->gadget.dev);
+ 	pm_runtime_enable(&ci->gadget.dev);
+ 
+-	/* Update ci->vbus_active */
+-	ci_handle_vbus_change(ci);
+-
+ 	return retval;
+ 
+ remove_trans:
 
 
