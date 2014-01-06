@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757365AbaAFXGJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:06:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48495 "EHLO
+	id S1757385AbaAFXGg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:06:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48491 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933158AbaAFWlv (ORCPT
+	with ESMTP id S933153AbaAFWlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:51 -0500
+	Mon, 6 Jan 2014 17:41:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josh Durgin <josh.durgin@inktank.com>, Alex Elder <elder@linaro.org>
-Subject: [PATCH 3.10 114/129] rbd: complete notifies before cleaning up osd_client and rbd_dev
-Date: Mon,  6 Jan 2014 14:39:03 -0800
-Message-Id: <20140106223902.854306282@linuxfoundation.org>
+        Josh Durgin <josh.durgin@inktank.com>, Sage Weil <sage@inktank.com>,
+        Alex Elder <elder@linaro.org>
+Subject: [PATCH 3.10 113/129] libceph: add function to ensure notifies are complete
+Date: Mon,  6 Jan 2014 14:39:02 -0800
+Message-Id: <20140106223902.826868994@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -30,36 +31,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Josh Durgin <josh.durgin@inktank.com>
 
-commit 9abc59908e0c5f983aaa91150da32d5b62cf60b7 upstream.
+commit dd935f44a40f8fb02aff2cc0df2269c92422df1c upstream.
 
-To ensure rbd_dev is not used after it's released, flush all pending
-notify callbacks before calling rbd_dev_image_release(). No new
-notifies can be added to the queue at this point because the watch has
-already be unregistered with the osd_client.
+Without a way to flush the osd client's notify workqueue, a watch
+event that is unregistered could continue receiving callbacks
+indefinitely.
+
+Unregistering the event simply means no new notifies are added to the
+queue, but there may still be events in the queue that will call the
+watch callback for the event. If the queue is flushed after the event
+is unregistered, the caller can be sure no more watch callbacks will
+occur for the canceled watch.
 
 Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Reviewed-by: Alex Elder <elder@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/rbd.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ include/linux/ceph/osd_client.h |    2 ++
+ net/ceph/osd_client.c           |   11 +++++++++++
+ 2 files changed, 13 insertions(+)
 
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -5150,6 +5150,13 @@ static ssize_t rbd_remove(struct bus_typ
- 	ret = rbd_dev_header_watch_sync(rbd_dev, false);
- 	if (ret)
- 		rbd_warn(rbd_dev, "failed to cancel watch event (%d)\n", ret);
+--- a/include/linux/ceph/osd_client.h
++++ b/include/linux/ceph/osd_client.h
+@@ -335,6 +335,8 @@ extern int ceph_osdc_wait_request(struct
+ 				  struct ceph_osd_request *req);
+ extern void ceph_osdc_sync(struct ceph_osd_client *osdc);
+ 
++extern void ceph_osdc_flush_notifies(struct ceph_osd_client *osdc);
 +
-+	/*
-+	 * flush remaining watch callbacks - these must be complete
-+	 * before the osd_client is shutdown
-+	 */
-+	dout("%s: flushing notifies", __func__);
-+	ceph_osdc_flush_notifies(&rbd_dev->rbd_client->client->osdc);
- 	rbd_dev_image_release(rbd_dev);
- 	module_put(THIS_MODULE);
- 	ret = count;
+ extern int ceph_osdc_readpages(struct ceph_osd_client *osdc,
+ 			       struct ceph_vino vino,
+ 			       struct ceph_file_layout *layout,
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -2209,6 +2209,17 @@ void ceph_osdc_sync(struct ceph_osd_clie
+ EXPORT_SYMBOL(ceph_osdc_sync);
+ 
+ /*
++ * Call all pending notify callbacks - for use after a watch is
++ * unregistered, to make sure no more callbacks for it will be invoked
++ */
++extern void ceph_osdc_flush_notifies(struct ceph_osd_client *osdc)
++{
++	flush_workqueue(osdc->notify_wq);
++}
++EXPORT_SYMBOL(ceph_osdc_flush_notifies);
++
++
++/*
+  * init, shutdown
+  */
+ int ceph_osdc_init(struct ceph_osd_client *osdc, struct ceph_client *client)
 
 
