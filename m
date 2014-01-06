@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933315AbaAFWmP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:42:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48595 "EHLO
+	id S933428AbaAFWmg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:42:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48656 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933282AbaAFWmM (ORCPT
+	with ESMTP id S933373AbaAFWm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:42:12 -0500
+	Mon, 6 Jan 2014 17:42:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Janak Desai <Janak.Desai@gtri.gatech.edu>,
-        Paul Moore <pmoore@redhat.com>
-Subject: [PATCH 3.10 089/129] selinux: look for IPsec labels on both inbound and outbound packets
-Date: Mon,  6 Jan 2014 14:38:38 -0800
-Message-Id: <20140106223902.152826690@linuxfoundation.org>
+        Nithin Nayak Sujir <nsujir@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 22/43] tg3: Expand 4g_overflow_test workaround to skb fragments of any size.
+Date: Mon,  6 Jan 2014 14:39:39 -0800
+Message-Id: <20140106223942.884336164@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
-References: <20140106223859.589799655@linuxfoundation.org>
+In-Reply-To: <20140106223942.259651490@linuxfoundation.org>
+References: <20140106223942.259651490@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,139 +26,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Paul Moore <pmoore@redhat.com>
+From: Nithin Sujir <nsujir@broadcom.com>
 
-commit 817eff718dca4e54d5721211ddde0914428fbb7c upstream.
+commit 375679104ab3ccfd18dcbd7ba503734fb9a2c63a upstream.
 
-Previously selinux_skb_peerlbl_sid() would only check for labeled
-IPsec security labels on inbound packets, this patch enables it to
-check both inbound and outbound traffic for labeled IPsec security
-labels.
+The current driver assumes that an skb fragment can only be upto jumbo
+size. Presumably this was a fast-path optimization. This assumption is
+no longer true as fragments can be upto 32k.
 
-Reported-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+v2: Remove unnecessary parantheses per Eric Dumazet.
+
+Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/selinux/hooks.c        |    2 -
- security/selinux/include/xfrm.h |    9 +++---
- security/selinux/xfrm.c         |   53 +++++++++++++++++++++++++++++++---------
- 3 files changed, 48 insertions(+), 16 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -3723,7 +3723,7 @@ static int selinux_skb_peerlbl_sid(struc
- 	u32 nlbl_sid;
- 	u32 nlbl_type;
- 
--	selinux_skb_xfrm_sid(skb, &xfrm_sid);
-+	selinux_xfrm_skb_sid(skb, &xfrm_sid);
- 	selinux_netlbl_skbuff_getsid(skb, family, &nlbl_type, &nlbl_sid);
- 
- 	err = security_net_peersid_resolve(nlbl_sid, nlbl_type, xfrm_sid, sid);
---- a/security/selinux/include/xfrm.h
-+++ b/security/selinux/include/xfrm.h
-@@ -47,6 +47,7 @@ int selinux_xfrm_sock_rcv_skb(u32 sid, s
- int selinux_xfrm_postroute_last(u32 isec_sid, struct sk_buff *skb,
- 			struct common_audit_data *ad, u8 proto);
- int selinux_xfrm_decode_session(struct sk_buff *skb, u32 *sid, int ckall);
-+int selinux_xfrm_skb_sid(struct sk_buff *skb, u32 *sid);
- 
- static inline void selinux_xfrm_notify_policyload(void)
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -6619,7 +6619,7 @@ static inline int tg3_4g_overflow_test(d
  {
-@@ -80,12 +81,12 @@ static inline int selinux_xfrm_decode_se
- static inline void selinux_xfrm_notify_policyload(void)
- {
- }
--#endif
+ 	u32 base = (u32) mapping & 0xffffffff;
  
--static inline void selinux_skb_xfrm_sid(struct sk_buff *skb, u32 *sid)
-+static inline int selinux_xfrm_skb_sid(struct sk_buff *skb, u32 *sid)
- {
--	int err = selinux_xfrm_decode_session(skb, sid, 0);
--	BUG_ON(err);
-+	*sid = SECSID_NULL;
-+	return 0;
- }
-+#endif
- 
- #endif /* _SELINUX_XFRM_H_ */
---- a/security/selinux/xfrm.c
-+++ b/security/selinux/xfrm.c
-@@ -152,21 +152,13 @@ int selinux_xfrm_state_pol_flow_match(st
- 	return rc;
+-	return (base > 0xffffdcc0) && (base + len + 8 < base);
++	return base + len + 8 < base;
  }
  
--/*
-- * LSM hook implementation that checks and/or returns the xfrm sid for the
-- * incoming packet.
-- */
--
--int selinux_xfrm_decode_session(struct sk_buff *skb, u32 *sid, int ckall)
-+static int selinux_xfrm_skb_sid_ingress(struct sk_buff *skb,
-+					u32 *sid, int ckall)
- {
--	struct sec_path *sp;
-+	struct sec_path *sp = skb->sp;
- 
- 	*sid = SECSID_NULL;
- 
--	if (skb == NULL)
--		return 0;
--
--	sp = skb->sp;
- 	if (sp) {
- 		int i, sid_set = 0;
- 
-@@ -190,6 +182,45 @@ int selinux_xfrm_decode_session(struct s
- 	return 0;
- }
- 
-+static u32 selinux_xfrm_skb_sid_egress(struct sk_buff *skb)
-+{
-+	struct dst_entry *dst = skb_dst(skb);
-+	struct xfrm_state *x;
-+
-+	if (dst == NULL)
-+		return SECSID_NULL;
-+	x = dst->xfrm;
-+	if (x == NULL || !selinux_authorizable_xfrm(x))
-+		return SECSID_NULL;
-+
-+	return x->security->ctx_sid;
-+}
-+
-+/*
-+ * LSM hook implementation that checks and/or returns the xfrm sid for the
-+ * incoming packet.
-+ */
-+
-+int selinux_xfrm_decode_session(struct sk_buff *skb, u32 *sid, int ckall)
-+{
-+	if (skb == NULL) {
-+		*sid = SECSID_NULL;
-+		return 0;
-+	}
-+	return selinux_xfrm_skb_sid_ingress(skb, sid, ckall);
-+}
-+
-+int selinux_xfrm_skb_sid(struct sk_buff *skb, u32 *sid)
-+{
-+	int rc;
-+
-+	rc = selinux_xfrm_skb_sid_ingress(skb, sid, 0);
-+	if (rc == 0 && *sid == SECSID_NULL)
-+		*sid = selinux_xfrm_skb_sid_egress(skb);
-+
-+	return rc;
-+}
-+
- /*
-  * Security blob allocation for xfrm_policy and xfrm_state
-  * CTX does not have a meaningful value on input
+ /* Test for DMA addresses > 40-bit */
 
 
