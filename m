@@ -1,45 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504AbaAFBt5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 20:49:57 -0500
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:51850 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890AbaAFBt4 (ORCPT
+	id S1752492AbaAFCSY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 21:18:24 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:55159 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751782AbaAFCSX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 20:49:56 -0500
+	Sun, 5 Jan 2014 21:18:23 -0500
+Message-ID: <52CA11FE.1090608@huawei.com>
+Date: Mon, 6 Jan 2014 10:16:30 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-In-Reply-To: <20140105223208.GB13710@home.goodmis.org>
-References: <CAM__s2Bk=Hgzm3-f7N=A032PxUV6N87=42qZ=7kt7u8d_Ny5gg@mail.gmail.com>
-	<20140105223208.GB13710@home.goodmis.org>
-Date: Mon, 6 Jan 2014 09:49:55 +0800
-Message-ID: <CAGdX0WH2vHq8esj105fheCaUUBEijgQf0ZSZD4oEEFv=CXV6hg@mail.gmail.com>
-Subject: Re: Propose for LINUX kernel and PERL
-From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Antti Heikkinen <antti.heikkinen.4@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, advocacy@perl.org,
-        beginners@perl.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        David Miller <davem@davemloft.net>
+CC: <edumazet@google.com>, <kaber@trash.net>, <peterz@infradead.org>,
+        <honkiko@gmail.com>, <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <containers@lists.linux-foundation.org>, <jhs@mojatatu.com>,
+        Li Zefan <lizefan@huawei.com>, Serge Hallyn <serge.hallyn@ubuntu.com>
+Subject: Re: [RFC PATCH net-next 3/4] veth: backup classid befor switch net_ns
+References: <52C62A52.8050003@huawei.com> <52C694BF.3020903@cogentembedded.com>
+In-Reply-To: <52C694BF.3020903@cogentembedded.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.22.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 6, 2014 at 6:32 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Sun, Jan 05, 2014 at 12:46:00AM -0500, Antti Heikkinen wrote:
+On 2014/1/3 18:45, Sergei Shtylyov wrote:
+> Hello.
+> 
+> On 03-01-2014 7:11, Libo Chen wrote:
+> 
+>> dev_forward_skb will clear skb->sk, so we need save classid
+>> before that, otherwise the skb can not be under control by
+>> net_cls.
+> 
+>> Signed-off-by: Libo Chen <clbchenlibo.chen@huawei.com>
+>> ---
+>>   drivers/net/veth.c | 7 +++++++
+>>   1 file changed, 7 insertions(+)
+> 
+>> diff --git a/drivers/net/veth.c b/drivers/net/veth.c
+>> index 2ec2041..ce43a2d 100644
+>> --- a/drivers/net/veth.c
+>> +++ b/drivers/net/veth.c
+> [...]
+>> @@ -123,6 +124,12 @@ static netdev_tx_t veth_xmit(struct sk_buff *skb, struct net_device *dev)
+>>           rcv->features & NETIF_F_RXCSUM)
+>>           skb->ip_summed = CHECKSUM_UNNECESSARY;
 >>
->> LINUX kernel can perform more good if written in not C and C++ but
->> Perl? Just certain portion of LINUX kernel to rewrite? For instant,
->> schedule or support of multithread? If so, should use Perl5 or Perl6,
->> focus to x86 or x86-64? Can you want to join me this my project? But
->> to hear your expertise.
->
-> OMFG! You are my idol!
->
-> I've been trying hard for years to just get a Perl interpreter into the kernel,
+>> +    /**
+> 
+>    Why you're using kernel-doc style comments out of place? The format of multi-line comments  in the networking code is this:
+> 
+> /* bla
+>  * bla
+>  */
 
-Steven, I'm so curious on this kernel Perl interpreter, would you please share
-some info to me? what's the main usecases?:)
+thank you
 
-Thanks,
+Libo
 
-Jovi
+> 
+>> +     * dev_forward_sbk will clear skb->sk, so save
+>> +     * skb->sk->sk_classid for Qos
+>> +     */
+>> +    bk_cls_classid(skb);
+>> +
+> 
+> WBR, Sergei
+> 
+> 
+> 
+> .
+> 
+
+
