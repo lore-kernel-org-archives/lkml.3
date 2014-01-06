@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049AbaAFU2E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 15:28:04 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:51199 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754620AbaAFU2A (ORCPT
+	id S1756116AbaAFUaR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 15:30:17 -0500
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:62138 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755870AbaAFUaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 15:28:00 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH][tentative] PCI / ACPI: Rework PCI host bridge removal to avoid sysfs warnings
-Date: Mon, 06 Jan 2014 21:41:46 +0100
-Message-ID: <4679785.iPCX7mECEL@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <CAE9FiQV1tui+nHMFF419dpTOKt_x4US6R=3uPhDvUDJ0zoMrEg@mail.gmail.com>
-References: <37552283.kG1L4S8Daa@vostro.rjw.lan> <2459491.HIKjAnF27k@vostro.rjw.lan> <CAE9FiQV1tui+nHMFF419dpTOKt_x4US6R=3uPhDvUDJ0zoMrEg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 6 Jan 2014 15:30:15 -0500
+Message-ID: <1389040212.2562.3.camel@x41>
+Subject: [PATCH] cpufreq: speedstep: remove unused speedstep_get_state
+From: Paul Bolle <pebolle@tiscali.nl>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 06 Jan 2014 21:30:12 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 06 Jan 2014 20:30:13.0631 (UTC) FILETIME=[1A5DC0F0:01CF0B1E]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 06, 2014 11:28:43 AM Yinghai Lu wrote:
-> On Thu, Jan 2, 2014 at 4:45 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > On Thursday, January 02, 2014 02:47:04 PM Yinghai Lu wrote:
-> >>
-> >> No. It should be before removing all root bus devices.
-> >> as they need to access the pci devices during stop ioapic and dmar.
-> >>
-> >> Also ioapic itself could one one pci device.
-> >
-> > Well, if we stop drivers first, then stop ioapic/dmar and *then* remove
-> > devices, it is possible to rebind a driver to a device after ioapic/dmar has
-> > been stopped, which I guess will not lead to anything nice?
-> 
-> Not sure how that could happen.
-> 
-> If it would really happen, we could set dev->match_driver to 0 in pci_stop_dev.
+The only caller of speedstep_get_state() was removed in commit d4019f0a92ab
+("cpufreq: move freq change notifications to cpufreq core"). So building
+speedstep-smi.o now triggers a GCC warning:
+    drivers/cpufreq/speedstep-smi.c:148:12: warning: 'speedstep_get_state' defined but not used [-Wunused-function]
 
-Simply, run "modprobe -r driver && modprobe driver" in a loop and
-remove the PCI host bridge the given device is on in parallel to that.  Chances
-are, you'll see some nice breakage.
+Remove this unused function.
 
-Also what happens if somebody uses the "remove" sysfs attribute on a device
-needed by ioapic/dmar?
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+This seems to be a rather obvious fix. Hasn't it been submitted before?
 
-Rafael
+ drivers/cpufreq/speedstep-smi.c | 32 --------------------------------
+ 1 file changed, 32 deletions(-)
+
+diff --git a/drivers/cpufreq/speedstep-smi.c b/drivers/cpufreq/speedstep-smi.c
+index 0f5326d..998c17b 100644
+--- a/drivers/cpufreq/speedstep-smi.c
++++ b/drivers/cpufreq/speedstep-smi.c
+@@ -141,38 +141,6 @@ static int speedstep_smi_get_freqs(unsigned int *low, unsigned int *high)
+ }
+ 
+ /**
+- * speedstep_get_state - set the SpeedStep state
+- * @state: processor frequency state (SPEEDSTEP_LOW or SPEEDSTEP_HIGH)
+- *
+- */
+-static int speedstep_get_state(void)
+-{
+-	u32 function = GET_SPEEDSTEP_STATE;
+-	u32 result, state, edi, command, dummy;
+-
+-	command = (smi_sig & 0xffffff00) | (smi_cmd & 0xff);
+-
+-	pr_debug("trying to determine current setting with command %x "
+-		"at port %x\n", command, smi_port);
+-
+-	__asm__ __volatile__(
+-		"push %%ebp\n"
+-		"out %%al, (%%dx)\n"
+-		"pop %%ebp\n"
+-		: "=a" (result),
+-		  "=b" (state), "=D" (edi),
+-		  "=c" (dummy), "=d" (dummy), "=S" (dummy)
+-		: "a" (command), "b" (function), "c" (0),
+-		  "d" (smi_port), "S" (0), "D" (0)
+-	);
+-
+-	pr_debug("state is %x, result is %x\n", state, result);
+-
+-	return state & 1;
+-}
+-
+-
+-/**
+  * speedstep_set_state - set the SpeedStep state
+  * @state: new processor frequency state (SPEEDSTEP_LOW or SPEEDSTEP_HIGH)
+  *
+-- 
+1.8.1.4
 
