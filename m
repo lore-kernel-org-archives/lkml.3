@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962AbaAFTjI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 14:39:08 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:39814 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754899AbaAFTjH (ORCPT
+	id S932082AbaAFTkZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 14:40:25 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:58199 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755567AbaAFTkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 14:39:07 -0500
-Message-ID: <52CB0659.1070906@infradead.org>
-Date: Mon, 06 Jan 2014 11:39:05 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 6 Jan 2014 14:40:23 -0500
+Message-ID: <52CB069B.9050302@ti.com>
+Date: Mon, 6 Jan 2014 14:40:11 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Ove Karlsen <mail@ovekarlsen.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Gnu - censorship
-References: <52CAFCC6.3070504@ovekarlsen.com> <52CAFE7A.9090106@infradead.org> <52CB0132.2050705@ovekarlsen.com> <52CB03BA.2070508@infradead.org> <52CB054B.6070504@ovekarlsen.com>
-In-Reply-To: <52CB054B.6070504@ovekarlsen.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+To: Russell King <rmk@arm.linux.org.uk>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Nicolas Pitre <nico@fluxnic.net>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: linux-next: build failure after merge of the akpm-current tree
+References: <20140106200758.a76bbd94508614b4decabdcd@canb.auug.org.au> <20140106172848.GA9162@flint.arm.linux.org.uk>
+In-Reply-To: <20140106172848.GA9162@flint.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/14 11:34, Ove Karlsen wrote:
-> On 1/6/2014 8:27 PM, Randy Dunlap wrote:
->> On 01/06/14 11:17, Ove Karlsen wrote:
->>> On 1/6/2014 8:05 PM, Randy Dunlap wrote:
->>>> On 01/06/14 10:58, Ove Karlsen wrote:
->>>>> https://lkml.org/lkml/2013/12/28/50
->>>>>
->>>>> This post is empty. I do not know if this is deliberate, but..
->>>>>
->>>>> Facism and censorhip goes hand in hand. Hopefully people here start to understand the problem that needs to be solved. Or complaints about Microsoft, will really the same as complaints againt ill-behaving "free software" advocates. Same irrational behaviour, by people whose pride is far more than their ability, and a block to natural developments and true excellence.
->>>>>
->>>>> Simple people whose life revolves around this: http://www.youtube.com/watch?v=xm2S5uxO01E
->>>>>
->>>>> PBWY.
->>>>>
->>>> or it could be related to this message that I get:
->>>>
->>>> XSLT error or server overload; admin notified. The system should heal itself, please try again in a few minutes
->>>>
->>>> Think Occam's Razor.
->> Occam's Razor here is that the server is having problems.
+On Monday 06 January 2014 12:28 PM, Russell King wrote:
+> On Mon, Jan 06, 2014 at 08:07:58PM +1100, Stephen Rothwell wrote:
+>> Hi Andrew,
 >>
->> No, I haven't read anything that you wrote.  You are much too verbose for me to read.
+>> After merging the akpm-current tree, today's linux-next build (arm
+>> multi_v7_defconfig) failed like this:
 >>
->>> I guess time will tell. Occams Razor here, if you have read anything I wrote, is clearly that people are brainwashed, starts behaving like facists, and symbolic idols are used to manipulate people. Recently I was censored at "linux-musicians.org" also where supposedly mentioning a windows plugin was not ok, even it it was open-source, EVEN if it is the worlds best, and would benefit the audio community much, having no such thing, making people turn to Mac because Waves plugins are there, for instance. And criticising the GPL was not ok, even thought it is irrational, and coupled to a phallic idol. I do not put an obscure licence, coupled to obscure statements and a symbolic representation of Stallmans genitals. The pride of symbolically recieving semen, seems to fit their brat behaviour. That is all they are, and what a Satan is. It is completely irrational, and people like these no doubt, are like brainwashed sectarians, greeting sieg heil in semenworship, and no doubt is
->>> open to gay sex sooner or later. Sex Drugs And rock And Roll dude. Who knew Hitler was a rockstar. Or lets us not swear in church - BEATLES. They can also not be criticised many places. Their one song about the fly in the cornflakes. what was it.. "sitting on a cornflake", is actually them being flies, probably from LSD. How high STATUS has a FLY in your CORNFLAKES? That is what they thought were cool.
->>>
->>> Think about it. LSD still is the same.
+>> arch/arm/mm/init.c:199:13: error: conflicting types for 'arm_dma_zone_size'
+>> include/linux/bootmem.h:259:11: note: previous declaration of 'arm_dma_zone_size' was here
 >>
->> Good day (sunshine).
-> The message is still not up. Maybe you should run with your useless dick and fix it, so that nobody gets a suspicion? Occams Razor and all. Fuck why not mention astrology while you´re at it, will be about the same level.
+>> Caused by commit a3ae9362fafe ("mm/memblock: add memblock memory
+>> allocation apis").
+>>
+>> For this build, BOOTMEM_LOW_LIMIT is defined as __pa(MAX_DMA_ADDRESS) and
+>> MAX_DMA_ADDRESS is defined as:
+>>
+>> #define MAX_DMA_ADDRESS ({ \
+>>         extern unsigned long arm_dma_zone_size; \
+>>         arm_dma_zone_size ? \
+>>                 (PAGE_OFFSET + arm_dma_zone_size) : 0xffffffffUL; })
+>>
+>> and in arch/arm/mm/init.c, arm_dma_zone_size is declared as:
+>>
+>> phys_addr_t arm_dma_zone_size __read_mostly;
+>>
+>> Urk!  :-(
+>>
+>> OK, so commit 364230b995214 ("ARM: use phys_addr_t for DMA zone sizes")
+>> changed the definition of arm_dma_zone_size except it missed the one in
+>> arch/arm/include/asm/dma.h.
+>>
+>> I have applied this merge fix patch for today:
 > 
+> There's more here than just this change required here.  We also need to
+> limit it if PAGE_OFFSET + arm_dma_zone_size is greater than 4GB, as
+> MAX_DMA_ADDRESS is a virtual address - we really don't want the 32-bit
+> value of this wrapping.
+> 
+> Exactly how we go about this, I'm not sure at the moment, but maybe
+> something like this:
+> 
+> #define MAX_DMA_ADDRESS ({ \
+>         extern phys_addr_t arm_dma_zone_size; \
+>         arm_dma_zone_size && arm_dma_zone_size < (0x10000000 - PAGE_OFFSET) ? \
+>                 (PAGE_OFFSET + arm_dma_zone_size) : 0xffffffffUL; })
+> 
+Looks good to me. Will you create a patch or you want me to create based
+on above ?
 
-I still get that same useless server error message.
+Regards,
+Santosh
 
-Are you always so grumpy?
-
-
--- 
-~Randy
