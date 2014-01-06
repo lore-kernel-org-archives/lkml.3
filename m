@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757995AbaAFXvi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:51:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47729 "EHLO
+	id S1758010AbaAFXvz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:51:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47719 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932447AbaAFWj3 (ORCPT
+	with ESMTP id S932446AbaAFWj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:39:29 -0500
+	Mon, 6 Jan 2014 17:39:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Nelson <eric.nelson@boundarydevices.com>,
-        Marek Vasut <marex@denx.de>, Shawn Guo <shawn.guo@linaro.org>,
-        Richard Zhu <r65037@freescale.com>,
-        Linux-IDE <linux-ide@vger.kernel.org>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.12 097/144] ahci: imx: Explicitly clear IMX6Q_GPR13_SATA_MPLL_CLK_EN
-Date: Mon,  6 Jan 2014 14:37:38 -0800
-Message-Id: <20140106223748.140256754@linuxfoundation.org>
+        Dave Jiang <dave.jiang@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        David Whipple <whipple@securedatainnovations.ch>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: [PATCH 3.12 061/144] net_dma: mark broken
+Date: Mon,  6 Jan 2014 14:37:02 -0800
+Message-Id: <20140106223747.091950449@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -31,45 +32,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Vasut <marex@denx.de>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit 10becdb402af4fd4808a0491a726b96128c41076 upstream.
+commit 77873803363c9e831fc1d1e6895c084279090c22 upstream.
 
-We must clear this IMX6Q_GPR13_SATA_MPLL_CLK_EN bit on i.MX6Q, otherwise
-Linux will fail to find the attached drive on some boards.
+net_dma can cause data to be copied to a stale mapping if a
+copy-on-write fault occurs during dma.  The application sees missing
+data.
 
-This entire fix was:
-Reported-by: Eric Nelson <eric.nelson@boundarydevices.com>
+The following trace is triggered by modifying the kernel to WARN if it
+ever triggers copy-on-write on a page that is undergoing dma:
 
-Signed-off-by: Marek Vasut <marex@denx.de>
-Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
-Cc: Richard Zhu <r65037@freescale.com>
-Cc: Linux-IDE <linux-ide@vger.kernel.org>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+ WARNING: CPU: 24 PID: 2529 at lib/dma-debug.c:485 debug_dma_assert_idle+0xd2/0x120()
+ ioatdma 0000:00:04.0: DMA-API: cpu touching an active dma mapped page [pfn=0x16bcd9]
+ Modules linked in: iTCO_wdt iTCO_vendor_support ioatdma lpc_ich pcspkr dca
+ CPU: 24 PID: 2529 Comm: linbug Tainted: G        W    3.13.0-rc1+ #353
+  00000000000001e5 ffff88016f45f688 ffffffff81751041 ffff88017ab0ef70
+  ffff88016f45f6d8 ffff88016f45f6c8 ffffffff8104ed9c ffffffff810f3646
+  ffff8801768f4840 0000000000000282 ffff88016f6cca10 00007fa2bb699349
+ Call Trace:
+  [<ffffffff81751041>] dump_stack+0x46/0x58
+  [<ffffffff8104ed9c>] warn_slowpath_common+0x8c/0xc0
+  [<ffffffff810f3646>] ? ftrace_pid_func+0x26/0x30
+  [<ffffffff8104ee86>] warn_slowpath_fmt+0x46/0x50
+  [<ffffffff8139c062>] debug_dma_assert_idle+0xd2/0x120
+  [<ffffffff81154a40>] do_wp_page+0xd0/0x790
+  [<ffffffff811582ac>] handle_mm_fault+0x51c/0xde0
+  [<ffffffff813830b9>] ? copy_user_enhanced_fast_string+0x9/0x20
+  [<ffffffff8175fc2c>] __do_page_fault+0x19c/0x530
+  [<ffffffff8175c196>] ? _raw_spin_lock_bh+0x16/0x40
+  [<ffffffff810f3539>] ? trace_clock_local+0x9/0x10
+  [<ffffffff810fa1f4>] ? rb_reserve_next_event+0x64/0x310
+  [<ffffffffa0014c00>] ? ioat2_dma_prep_memcpy_lock+0x60/0x130 [ioatdma]
+  [<ffffffff8175ffce>] do_page_fault+0xe/0x10
+  [<ffffffff8175c862>] page_fault+0x22/0x30
+  [<ffffffff81643991>] ? __kfree_skb+0x51/0xd0
+  [<ffffffff813830b9>] ? copy_user_enhanced_fast_string+0x9/0x20
+  [<ffffffff81388ea2>] ? memcpy_toiovec+0x52/0xa0
+  [<ffffffff8164770f>] skb_copy_datagram_iovec+0x5f/0x2a0
+  [<ffffffff8169d0f4>] tcp_rcv_established+0x674/0x7f0
+  [<ffffffff816a68c5>] tcp_v4_do_rcv+0x2e5/0x4a0
+  [..]
+ ---[ end trace e30e3b01191b7617 ]---
+ Mapped at:
+  [<ffffffff8139c169>] debug_dma_map_page+0xb9/0x160
+  [<ffffffff8142bf47>] dma_async_memcpy_pg_to_pg+0x127/0x210
+  [<ffffffff8142cce9>] dma_memcpy_pg_to_iovec+0x119/0x1f0
+  [<ffffffff81669d3c>] dma_skb_copy_datagram_iovec+0x11c/0x2b0
+  [<ffffffff8169d1ca>] tcp_rcv_established+0x74a/0x7f0:
+
+...the problem is that the receive path falls back to cpu-copy in
+several locations and this trace is just one of the areas.  A few
+options were considered to fix this:
+
+1/ sync all dma whenever a cpu copy branch is taken
+
+2/ modify the page fault handler to hold off while dma is in-flight
+
+Option 1 adds yet more cpu overhead to an "offload" that struggles to compete
+with cpu-copy.  Option 2 adds checks for behavior that is already documented as
+broken when using get_user_pages().  At a minimum a debug mode is warranted to
+catch and flag these violations of the dma-api vs get_user_pages().
+
+Thanks to David for his reproducer.
+
+Cc: Dave Jiang <dave.jiang@intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Alexander Duyck <alexander.h.duyck@intel.com>
+Reported-by: David Whipple <whipple@securedatainnovations.ch>
+Acked-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ahci_imx.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/dma/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/ata/ahci_imx.c
-+++ b/drivers/ata/ahci_imx.c
-@@ -60,7 +60,7 @@ static int imx6q_sata_init(struct device
- 	/*
- 	 * set PHY Paremeters, two steps to configure the GPR13,
- 	 * one write for rest of parameters, mask of first write
--	 * is 0x07fffffd, and the other one write for setting
-+	 * is 0x07ffffff, and the other one write for setting
- 	 * the mpll_clk_en.
- 	 */
- 	regmap_update_bits(imxpriv->gpr, 0x34, IMX6Q_GPR13_SATA_RX_EQ_VAL_MASK
-@@ -71,6 +71,7 @@ static int imx6q_sata_init(struct device
- 			| IMX6Q_GPR13_SATA_TX_ATTEN_MASK
- 			| IMX6Q_GPR13_SATA_TX_BOOST_MASK
- 			| IMX6Q_GPR13_SATA_TX_LVL_MASK
-+			| IMX6Q_GPR13_SATA_MPLL_CLK_EN
- 			| IMX6Q_GPR13_SATA_TX_EDGE_RATE
- 			, IMX6Q_GPR13_SATA_RX_EQ_VAL_3_0_DB
- 			| IMX6Q_GPR13_SATA_RX_LOS_LVL_SATA2M
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -339,6 +339,7 @@ config NET_DMA
+ 	bool "Network: TCP receive copy offload"
+ 	depends on DMA_ENGINE && NET
+ 	default (INTEL_IOATDMA || FSL_DMA)
++	depends on BROKEN
+ 	help
+ 	  This enables the use of DMA engines in the network stack to
+ 	  offload receive copy-to-user operations, freeing CPU cycles.
 
 
