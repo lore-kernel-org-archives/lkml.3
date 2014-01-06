@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341AbaAFKEo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 05:04:44 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55048 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395AbaAFKEn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 05:04:43 -0500
-Date: Mon, 6 Jan 2014 11:04:08 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC 1/2] mm: additional page lock debugging
-Message-ID: <20140106100408.GC31570@twins.programming.kicks-ass.net>
-References: <1388281504-11453-1-git-send-email-sasha.levin@oracle.com>
- <20131230114317.GA8117@node.dhcp.inet.fi>
- <52C1A06B.4070605@oracle.com>
- <20131230224808.GA11674@node.dhcp.inet.fi>
- <52C2385A.8020608@oracle.com>
- <20131231162636.GD16438@laptop.programming.kicks-ass.net>
- <52C2F3DC.2020106@oracle.com>
+	id S1753509AbaAFKFy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 05:05:54 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:17363 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752743AbaAFKFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 05:05:53 -0500
+Message-ID: <52CA7FFE.9070405@imgtec.com>
+Date: Mon, 6 Jan 2014 10:05:50 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52C2F3DC.2020106@oracle.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: <linux-metag@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Geert Uytterhoeven" <geert+renesas@linux-m68k.org>
+Subject: Re: [PATCH] metag/smp: Make boot_secondary() static
+References: <1388763831-27357-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1388763831-27357-1-git-send-email-geert@linux-m68k.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2014_01_06_10_05_51
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 31, 2013 at 11:42:04AM -0500, Sasha Levin wrote:
-> On 12/31/2013 11:26 AM, Peter Zijlstra wrote:
-> >On Mon, Dec 30, 2013 at 10:22:02PM -0500, Sasha Levin wrote:
-> >
-> >>I really want to use lockdep here, but I'm not really sure how to handle locks which live
-> >>for a rather long while instead of being locked and unlocked in the same function like
-> >>most of the rest of the kernel. (Cc Ingo, PeterZ).
-> >
-> >Uh what? Lockdep doesn't care about which function locks and unlocks a
-> >particular lock. Nor does it care how long its held for.
+On 03/01/14 15:43, Geert Uytterhoeven wrote:
+> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 > 
-> Sorry, I messed up trying to explain that.
+> boot_secondary() is not used outside arch/metag/kernel/smp.c, hence make it
+> static.
 > 
-> There are several places in the code which lock a large amount of pages, something like:
-> 
-> 	for (i = 0; i < (1 << order); i++)
-> 		lock_page(&pages[i]);
-> 
-> 
-> This triggers two problems:
-> 
->  - lockdep complains about deadlock since we try to lock another page while one is already
-> locked. I can clear that by allowing page locks to nest within each other, but that seems
-> wrong and we'll miss actual deadlock cases.
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-Right,.. I think we can cobble something together like requiring we
-always lock pages in pfn order or somesuch.
+Thanks, applied.
 
->  - We may leave back to userspace with pages still locked. This is valid behaviour but lockdep
-> doesn't like that.
+Cheers
+James
 
-Where do we actually do this? BTW its not only lockdep not liking that,
-Linus was actually a big fan of that check.
+> ---
+>  arch/metag/kernel/smp.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/metag/kernel/smp.c b/arch/metag/kernel/smp.c
+> index 7c0113142981..fc4b80e1e06a 100644
+> --- a/arch/metag/kernel/smp.c
+> +++ b/arch/metag/kernel/smp.c
+> @@ -68,7 +68,7 @@ static DECLARE_COMPLETION(cpu_running);
+>  /*
+>   * "thread" is assumed to be a valid Meta hardware thread ID.
+>   */
+> -int boot_secondary(unsigned int thread, struct task_struct *idle)
+> +static int boot_secondary(unsigned int thread, struct task_struct *idle)
+>  {
+>  	u32 val;
+>  
+> 
 
-ISTR there being some filesystem freezer issues with that too, where the
-freeze ioctl would return to userspace with 'locks' held and that's
-cobbled around (or maybe gone by now -- who knows).
-
-My initial guess would be that this is AIO/DIO again, those two seem to
-be responsible for the majority of ugly around there.
