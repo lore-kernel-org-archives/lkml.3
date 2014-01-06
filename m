@@ -1,138 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204AbaAFP5S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 10:57:18 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:64361 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754221AbaAFP5Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 10:57:16 -0500
-Date: Mon, 6 Jan 2014 21:27:09 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH 47/85] drivers: gpu: Move prototype declarations to
- appropriate header file radeon_asic.h
-Message-ID: <98067785396b84ed3b6f0c5832fc74d4b27cd63c.1389018325.git.rashika.kheria@gmail.com>
-References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755226AbaAFP7b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 10:59:31 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:8719 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751417AbaAFP73 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 10:59:29 -0500
+From: Andrey Vagin <avagin@openvz.org>
+To: netfilter-devel@vger.kernel.org
+Cc: netfilter@vger.kernel.org, coreteam@netfilter.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vvs@openvz.org,
+        Andrey Vagin <avagin@openvz.org>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: [PATCH] netfilter: nf_conntrack: release conntrack from rcu callback
+Date: Mon,  6 Jan 2014 19:54:32 +0400
+Message-Id: <1389023672-14351-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move prototype declarations of functions si_vram_gtt_location(),
-si_rlc_reset(), si_init_uvd_internal_cg(), si_get_csb_size(),
-si_get_csb_buffer(), si_gpu_check_soft_reset() and si_update_cg() to
-header file drm/radeon/radeon_asic.h because they are used by more than
-one file.
+Lets look at destroy_conntrack:
 
-Also, include the header file in drm/radeon/si_dpm.c because it uses the
-functions declared in the header file.
+hlist_nulls_del_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode);
+...
+nf_conntrack_free(ct)
+	kmem_cache_free(net->ct.nf_conntrack_cachep, ct);
 
-This eliminates the following warnings in drm/radeon/si.c:
-drivers/gpu/drm/radeon/si.c:3510:5: warning: no previous prototype for ‘si_gpu_check_soft_reset’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/si.c:3818:6: warning: no previous prototype for ‘si_vram_gtt_location’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/si.c:4786:6: warning: no previous prototype for ‘si_init_uvd_internal_cg’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/si.c:5211:6: warning: no previous prototype for ‘si_update_cg’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/si.c:5277:5: warning: no previous prototype for ‘si_get_csb_size’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/si.c:5309:6: warning: no previous prototype for ‘si_get_csb_buffer’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/si.c:5398:6: warning: no previous prototype for ‘si_rlc_reset’ [-Wmissing-prototypes]
+The hash is protected by rcu, so readers look up conntracks without
+locks.
+A conntrack is removed from the hash, but in this moment a few readers
+still can use the conntrack, so if we call kmem_cache_free now, all
+readers will read released object.
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Bellow you can find more tricky race condition of three tasks.
+
+task 1			task 2			task 3
+			nf_conntrack_find_get
+			 ____nf_conntrack_find
+destroy_conntrack
+ hlist_nulls_del_rcu
+ nf_conntrack_free
+ kmem_cache_free
+						__nf_conntrack_alloc
+						 kmem_cache_alloc
+						 memset(&ct->tuplehash[IP_CT_DIR_MAX],
+			 if (nf_ct_is_dying(ct))
+
+In this case the task 2 will not understand, that it uses a wrong
+conntrack.
+
+I'm not sure, that I have ever seen this race condition in a real life.
+Currently we are investigating a bug, which is reproduced on a few node.
+In our case one conntrack is initialized from a few tasks concurrently,
+we don't have any other explanation for this.
+
+<2>[46267.083061] kernel BUG at net/ipv4/netfilter/nf_nat_core.c:322!
+...
+<4>[46267.083951] RIP: 0010:[<ffffffffa01e00a4>]  [<ffffffffa01e00a4>] nf_nat_setup_info+0x564/0x590 [nf_nat]
+...
+<4>[46267.085549] Call Trace:
+<4>[46267.085622]  [<ffffffffa023421b>] alloc_null_binding+0x5b/0xa0 [iptable_nat]
+<4>[46267.085697]  [<ffffffffa02342bc>] nf_nat_rule_find+0x5c/0x80 [iptable_nat]
+<4>[46267.085770]  [<ffffffffa0234521>] nf_nat_fn+0x111/0x260 [iptable_nat]
+<4>[46267.085843]  [<ffffffffa0234798>] nf_nat_out+0x48/0xd0 [iptable_nat]
+<4>[46267.085919]  [<ffffffff814841b9>] nf_iterate+0x69/0xb0
+<4>[46267.085991]  [<ffffffff81494e70>] ? ip_finish_output+0x0/0x2f0
+<4>[46267.086063]  [<ffffffff81484374>] nf_hook_slow+0x74/0x110
+<4>[46267.086133]  [<ffffffff81494e70>] ? ip_finish_output+0x0/0x2f0
+<4>[46267.086207]  [<ffffffff814b5890>] ? dst_output+0x0/0x20
+<4>[46267.086277]  [<ffffffff81495204>] ip_output+0xa4/0xc0
+<4>[46267.086346]  [<ffffffff814b65a4>] raw_sendmsg+0x8b4/0x910
+<4>[46267.086419]  [<ffffffff814c10fa>] inet_sendmsg+0x4a/0xb0
+<4>[46267.086491]  [<ffffffff814459aa>] ? sock_update_classid+0x3a/0x50
+<4>[46267.086562]  [<ffffffff81444d67>] sock_sendmsg+0x117/0x140
+<4>[46267.086638]  [<ffffffff8151997b>] ? _spin_unlock_bh+0x1b/0x20
+<4>[46267.086712]  [<ffffffff8109d370>] ? autoremove_wake_function+0x0/0x40
+<4>[46267.086785]  [<ffffffff81495e80>] ? do_ip_setsockopt+0x90/0xd80
+<4>[46267.086858]  [<ffffffff8100be0e>] ? call_function_interrupt+0xe/0x20
+<4>[46267.086936]  [<ffffffff8118cb10>] ? ub_slab_ptr+0x20/0x90
+<4>[46267.087006]  [<ffffffff8118cb10>] ? ub_slab_ptr+0x20/0x90
+<4>[46267.087081]  [<ffffffff8118f2e8>] ? kmem_cache_alloc+0xd8/0x1e0
+<4>[46267.087151]  [<ffffffff81445599>] sys_sendto+0x139/0x190
+<4>[46267.087229]  [<ffffffff81448c0d>] ? sock_setsockopt+0x16d/0x6f0
+<4>[46267.087303]  [<ffffffff810efa47>] ? audit_syscall_entry+0x1d7/0x200
+<4>[46267.087378]  [<ffffffff810ef795>] ? __audit_syscall_exit+0x265/0x290
+<4>[46267.087454]  [<ffffffff81474885>] ? compat_sys_setsockopt+0x75/0x210
+<4>[46267.087531]  [<ffffffff81474b5f>] compat_sys_socketcall+0x13f/0x210
+<4>[46267.087607]  [<ffffffff8104dea3>] ia32_sysret+0x0/0x5
+<4>[46267.087676] Code: 91 20 e2 01 75 29 48 89 de 4c 89 f7 e8 56 fa ff ff 85 c0 0f 84 68 fc ff ff 0f b6 4d c6 41 8b 45 00 e9 4d fb ff ff e8 7c 19 e9 e0 <0f> 0b eb fe f6 05 17 91 20 e2 80 74 ce 80 3d 5f 2e 00 00 00 74
+<1>[46267.088023] RIP  [<ffffffffa01e00a4>] nf_nat_setup_info+0x564/0x590
+
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
 ---
- drivers/gpu/drm/radeon/cik.c         |    3 ---
- drivers/gpu/drm/radeon/evergreen.c   |    2 --
- drivers/gpu/drm/radeon/radeon_asic.h |    8 ++++++++
- drivers/gpu/drm/radeon/si_dma.c      |    2 --
- drivers/gpu/drm/radeon/si_dpm.c      |    4 +---
- 5 files changed, 9 insertions(+), 10 deletions(-)
+ include/net/netfilter/nf_conntrack.h |  2 ++
+ net/netfilter/nf_conntrack_core.c    | 11 +++++++++--
+ 2 files changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
-index bc21542..76902ca 100644
---- a/drivers/gpu/drm/radeon/cik.c
-+++ b/drivers/gpu/drm/radeon/cik.c
-@@ -62,9 +62,6 @@ MODULE_FIRMWARE("radeon/KABINI_mec.bin");
- MODULE_FIRMWARE("radeon/KABINI_rlc.bin");
- MODULE_FIRMWARE("radeon/KABINI_sdma.bin");
+diff --git a/include/net/netfilter/nf_conntrack.h b/include/net/netfilter/nf_conntrack.h
+index 01ea6ee..492e857 100644
+--- a/include/net/netfilter/nf_conntrack.h
++++ b/include/net/netfilter/nf_conntrack.h
+@@ -76,6 +76,8 @@ struct nf_conn {
+            plus 1 for any connection(s) we are `master' for */
+ 	struct nf_conntrack ct_general;
  
--extern void si_vram_gtt_location(struct radeon_device *rdev, struct radeon_mc *mc);
--extern void si_rlc_reset(struct radeon_device *rdev);
--extern void si_init_uvd_internal_cg(struct radeon_device *rdev);
- extern int cik_sdma_resume(struct radeon_device *rdev);
- extern void cik_sdma_enable(struct radeon_device *rdev, bool enable);
- extern void cik_sdma_fini(struct radeon_device *rdev);
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index f4806ed..534a2fa 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -138,8 +138,6 @@ void evergreen_pcie_gen2_enable(struct radeon_device *rdev);
- void evergreen_program_aspm(struct radeon_device *rdev);
- void cik_init_cp_pg_table(struct radeon_device *rdev);
++	struct rcu_head rcu;
++
+ 	spinlock_t lock;
  
--extern u32 si_get_csb_size(struct radeon_device *rdev);
--extern void si_get_csb_buffer(struct radeon_device *rdev, volatile u32 *buffer);
- extern u32 cik_get_csb_size(struct radeon_device *rdev);
- extern void cik_get_csb_buffer(struct radeon_device *rdev, volatile u32 *buffer);
+ 	/* XXX should I move this to the tail ? - Y.K */
+diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
+index 43549eb..40e0d61 100644
+--- a/net/netfilter/nf_conntrack_core.c
++++ b/net/netfilter/nf_conntrack_core.c
+@@ -198,6 +198,14 @@ clean_from_lists(struct nf_conn *ct)
+ 	nf_ct_remove_expectations(ct);
+ }
  
-diff --git a/drivers/gpu/drm/radeon/radeon_asic.h b/drivers/gpu/drm/radeon/radeon_asic.h
-index 732fb6c..51ec129c 100644
---- a/drivers/gpu/drm/radeon/radeon_asic.h
-+++ b/drivers/gpu/drm/radeon/radeon_asic.h
-@@ -697,6 +697,14 @@ void si_dpm_debugfs_print_current_performance_level(struct radeon_device *rdev,
- 						    struct seq_file *m);
- int si_dpm_force_performance_level(struct radeon_device *rdev,
- 				   enum radeon_dpm_forced_level level);
-+u32 si_gpu_check_soft_reset(struct radeon_device *rdev);
-+void si_vram_gtt_location(struct radeon_device *rdev, struct radeon_mc *mc);
-+void si_rlc_reset(struct radeon_device *rdev);
-+void si_init_uvd_internal_cg(struct radeon_device *rdev);
-+void si_update_cg(struct radeon_device *rdev,
-+		  u32 block, bool enable);
-+u32 si_get_csb_size(struct radeon_device *rdev);
-+void si_get_csb_buffer(struct radeon_device *rdev, volatile u32 *buffer);
- 
- /* DCE8 - CIK */
- void dce8_bandwidth_update(struct radeon_device *rdev);
-diff --git a/drivers/gpu/drm/radeon/si_dma.c b/drivers/gpu/drm/radeon/si_dma.c
-index 59be2cf..cc15f59 100644
---- a/drivers/gpu/drm/radeon/si_dma.c
-+++ b/drivers/gpu/drm/radeon/si_dma.c
-@@ -27,8 +27,6 @@
- #include "radeon_trace.h"
- #include "sid.h"
- 
--u32 si_gpu_check_soft_reset(struct radeon_device *rdev);
--
- /**
-  * si_dma_is_lockup - Check if the DMA engine is locked up
-  *
-diff --git a/drivers/gpu/drm/radeon/si_dpm.c b/drivers/gpu/drm/radeon/si_dpm.c
-index 0b00c79..a3a5866 100644
---- a/drivers/gpu/drm/radeon/si_dpm.c
-+++ b/drivers/gpu/drm/radeon/si_dpm.c
-@@ -23,6 +23,7 @@
- 
- #include "drmP.h"
- #include "radeon.h"
-+#include "radeon_asic.h"
- #include "sid.h"
- #include "r600_dpm.h"
- #include "si_dpm.h"
-@@ -1753,9 +1754,6 @@ static int si_calculate_sclk_params(struct radeon_device *rdev,
- 				    u32 engine_clock,
- 				    SISLANDS_SMC_SCLK_VALUE *sclk);
- 
--extern void si_update_cg(struct radeon_device *rdev,
--			 u32 block, bool enable);
--
- static struct si_power_info *si_get_pi(struct radeon_device *rdev)
++static void nf_conntrack_free_rcu(struct rcu_head *head)
++{
++	struct nf_conn *ct = container_of(head, struct nf_conn, rcu);
++
++	pr_debug("destroy_conntrack: returning ct=%p to slab\n", ct);
++	nf_conntrack_free(ct);
++}
++
+ static void
+ destroy_conntrack(struct nf_conntrack *nfct)
  {
-         struct si_power_info *pi = rdev->pm.dpm.priv;
+@@ -236,8 +244,7 @@ destroy_conntrack(struct nf_conntrack *nfct)
+ 	if (ct->master)
+ 		nf_ct_put(ct->master);
+ 
+-	pr_debug("destroy_conntrack: returning ct=%p to slab\n", ct);
+-	nf_conntrack_free(ct);
++	call_rcu(&ct->rcu, nf_conntrack_free_rcu);
+ }
+ 
+ static void nf_ct_delete_from_lists(struct nf_conn *ct)
 -- 
-1.7.9.5
+1.8.4.2
 
