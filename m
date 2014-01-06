@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932383AbaAFWjT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:39:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47642 "EHLO
+	id S1756566AbaAFXy3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:54:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47670 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932342AbaAFWjN (ORCPT
+	with ESMTP id S932377AbaAFWjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:39:13 -0500
+	Mon, 6 Jan 2014 17:39:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Michael Neuling <michael@neuling.org>,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 085/144] auxvec.h: account for AT_HWCAP2 in AT_VECTOR_SIZE_BASE
-Date: Mon,  6 Jan 2014 14:37:26 -0800
-Message-Id: <20140106223747.802764119@linuxfoundation.org>
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: [PATCH 3.12 091/144] KVM: x86: Fix APIC map calculation after re-enabling
+Date: Mon,  6 Jan 2014 14:37:32 -0800
+Message-Id: <20140106223747.971893192@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -32,35 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+From: Jan Kiszka <jan.kiszka@siemens.com>
 
-commit f60900f2609e893c7f8d0bccc7ada4947dac4cd5 upstream.
+commit e66d2ae7c67bd9ac982a3d1890564de7f7eabf4b upstream.
 
-Commit 2171364d1a92 ("powerpc: Add HWCAP2 aux entry") introduced a new
-AT_ auxv entry type AT_HWCAP2 but failed to update AT_VECTOR_SIZE_BASE
-accordingly.
+Update arch.apic_base before triggering recalculate_apic_map. Otherwise
+the recalculation will work against the previous state of the APIC and
+will fail to build the correct map when an APIC is hardware-enabled
+again.
 
-Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Fixes: 2171364d1a92 (powerpc: Add HWCAP2 aux entry)
-Acked-by: Michael Neuling <michael@neuling.org>
-Cc: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This fixes a regression of 1e08ec4a13.
+
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/auxvec.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kvm/lapic.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/include/linux/auxvec.h
-+++ b/include/linux/auxvec.h
-@@ -3,6 +3,6 @@
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -1350,6 +1350,10 @@ void kvm_lapic_set_base(struct kvm_vcpu
+ 		return;
+ 	}
  
- #include <uapi/linux/auxvec.h>
++	if (!kvm_vcpu_is_bsp(apic->vcpu))
++		value &= ~MSR_IA32_APICBASE_BSP;
++	vcpu->arch.apic_base = value;
++
+ 	/* update jump label if enable bit changes */
+ 	if ((vcpu->arch.apic_base ^ value) & MSR_IA32_APICBASE_ENABLE) {
+ 		if (value & MSR_IA32_APICBASE_ENABLE)
+@@ -1359,10 +1363,6 @@ void kvm_lapic_set_base(struct kvm_vcpu
+ 		recalculate_apic_map(vcpu->kvm);
+ 	}
  
--#define AT_VECTOR_SIZE_BASE 19 /* NEW_AUX_ENT entries in auxiliary table */
-+#define AT_VECTOR_SIZE_BASE 20 /* NEW_AUX_ENT entries in auxiliary table */
-   /* number of "#define AT_.*" above, minus {AT_NULL, AT_IGNORE, AT_NOTELF} */
- #endif /* _LINUX_AUXVEC_H */
+-	if (!kvm_vcpu_is_bsp(apic->vcpu))
+-		value &= ~MSR_IA32_APICBASE_BSP;
+-
+-	vcpu->arch.apic_base = value;
+ 	if ((old_value ^ value) & X2APIC_ENABLE) {
+ 		if (value & X2APIC_ENABLE) {
+ 			u32 id = kvm_apic_id(apic);
 
 
