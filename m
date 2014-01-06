@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757279AbaAFXVw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:21:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48259 "EHLO
+	id S1757306AbaAFXWV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:22:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48255 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932942AbaAFWlI (ORCPT
+	with ESMTP id S1756879AbaAFWlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:08 -0500
+	Mon, 6 Jan 2014 17:41:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.10 067/129] intel_pstate: Fail initialization if P-state information is missing
-Date: Mon,  6 Jan 2014 14:38:16 -0800
-Message-Id: <20140106223901.526730295@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 066/129] rtlwifi: pci: Fix oops on driver unload
+Date: Mon,  6 Jan 2014 14:38:15 -0800
+Message-Id: <20140106223901.492691799@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -29,96 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 98a947abdd54e5de909bebadfced1696ccad30cf upstream.
+commit 9278db6279e28d4d433bc8a848e10b4ece8793ed upstream.
 
-If pstate.current_pstate is 0 after the initial
-intel_pstate_get_cpu_pstates(), this means that we were unable to
-obtain any useful P-state information and there is no reason to
-continue, so free memory and return an error in that case.
+On Fedora systems, unloading rtl8192ce causes an oops. This patch fixes the
+problem reported at https://bugzilla.redhat.com/show_bug.cgi?id=852761.
 
-This fixes the following divide error occuring in a nested KVM
-guest:
-
-Intel P-state driver initializing.
-Intel pstate controlling: cpu 0
-cpufreq: __cpufreq_add_dev: ->get() failed
-divide error: 0000 [#1] SMP
-Modules linked in:
-CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.13.0-0.rc4.git5.1.fc21.x86_64 #1
-Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-task: ffff88001ea20000 ti: ffff88001e9bc000 task.ti: ffff88001e9bc000
-RIP: 0010:[<ffffffff815c551d>]  [<ffffffff815c551d>] intel_pstate_timer_func+0x11d/0x2b0
-RSP: 0000:ffff88001ee03e18  EFLAGS: 00010246
-RAX: 0000000000000000 RBX: ffff88001a454348 RCX: 0000000000006100
-RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
-RBP: ffff88001ee03e38 R08: 0000000000000000 R09: 0000000000000000
-R10: ffff88001ea20000 R11: 0000000000000000 R12: 00000c0a1ea20000
-R13: 1ea200001ea20000 R14: ffffffff815c5400 R15: ffff88001a454348
-FS:  0000000000000000(0000) GS:ffff88001ee00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000000 CR3: 0000000001c0c000 CR4: 00000000000006f0
-Stack:
- fffffffb1a454390 ffffffff821a4500 ffff88001a454390 0000000000000100
- ffff88001ee03ea8 ffffffff81083e9a ffffffff81083e15 ffffffff82d5ed40
- ffffffff8258cc60 0000000000000000 ffffffff81ac39de 0000000000000000
-Call Trace:
- <IRQ>
- [<ffffffff81083e9a>] call_timer_fn+0x8a/0x310
- [<ffffffff81083e15>] ? call_timer_fn+0x5/0x310
- [<ffffffff815c5400>] ? pid_param_set+0x130/0x130
- [<ffffffff81084354>] run_timer_softirq+0x234/0x380
- [<ffffffff8107aee4>] __do_softirq+0x104/0x430
- [<ffffffff8107b5fd>] irq_exit+0xcd/0xe0
- [<ffffffff81770645>] smp_apic_timer_interrupt+0x45/0x60
- [<ffffffff8176efb2>] apic_timer_interrupt+0x72/0x80
- <EOI>
- [<ffffffff810e15cd>] ? vprintk_emit+0x1dd/0x5e0
- [<ffffffff81757719>] printk+0x67/0x69
- [<ffffffff815c1493>] __cpufreq_add_dev.isra.13+0x883/0x8d0
- [<ffffffff815c14f0>] cpufreq_add_dev+0x10/0x20
- [<ffffffff814a14d1>] subsys_interface_register+0xb1/0xf0
- [<ffffffff815bf5cf>] cpufreq_register_driver+0x9f/0x210
- [<ffffffff81fb19af>] intel_pstate_init+0x27d/0x3be
- [<ffffffff81761e3e>] ? mutex_unlock+0xe/0x10
- [<ffffffff81fb1732>] ? cpufreq_gov_dbs_init+0x12/0x12
- [<ffffffff8100214a>] do_one_initcall+0xfa/0x1b0
- [<ffffffff8109dbf5>] ? parse_args+0x225/0x3f0
- [<ffffffff81f64193>] kernel_init_freeable+0x1fc/0x287
- [<ffffffff81f638d0>] ? do_early_param+0x88/0x88
- [<ffffffff8174b530>] ? rest_init+0x150/0x150
- [<ffffffff8174b53e>] kernel_init+0xe/0x130
- [<ffffffff8176e27c>] ret_from_fork+0x7c/0xb0
- [<ffffffff8174b530>] ? rest_init+0x150/0x150
-Code: c1 e0 05 48 63 bc 03 10 01 00 00 48 63 83 d0 00 00 00 48 63 d6 48 c1 e2 08 c1 e1 08 4c 63 c2 48 c1 e0 08 48 98 48 c1 e0 08 48 99 <49> f7 f8 48 98 48 0f af f8 48 c1 ff 08 29 f9 89 ca c1 fa 1f 89
-RIP  [<ffffffff815c551d>] intel_pstate_timer_func+0x11d/0x2b0
- RSP <ffff88001ee03e18>
----[ end trace f166110ed22cc37a ]---
-Kernel panic - not syncing: Fatal exception in interrupt
-
-Reported-and-tested-by: Kashyap Chamarthy <kchamart@redhat.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/intel_pstate.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/net/wireless/rtlwifi/pci.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -543,6 +543,11 @@ static int intel_pstate_init_cpu(unsigne
- 	cpu = all_cpu_data[cpunum];
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -734,6 +734,8 @@ static void _rtl_pci_rx_interrupt(struct
+ 	};
+ 	int index = rtlpci->rx_ring[rx_queue_idx].idx;
  
- 	intel_pstate_get_cpu_pstates(cpu);
-+	if (!cpu->pstate.current_pstate) {
-+		all_cpu_data[cpunum] = NULL;
-+		kfree(cpu);
-+		return -ENODATA;
-+	}
++	if (rtlpci->driver_is_goingto_unload)
++		return;
+ 	/*RX NORMAL PKT */
+ 	while (count--) {
+ 		/*rx descriptor */
+@@ -1630,6 +1632,7 @@ static void rtl_pci_stop(struct ieee8021
+ 	 */
+ 	set_hal_stop(rtlhal);
  
- 	cpu->cpu = cpunum;
- 	cpu->pstate_policy =
++	rtlpci->driver_is_goingto_unload = true;
+ 	rtlpriv->cfg->ops->disable_interrupt(hw);
+ 	cancel_work_sync(&rtlpriv->works.lps_change_work);
+ 
+@@ -1647,7 +1650,6 @@ static void rtl_pci_stop(struct ieee8021
+ 	ppsc->rfchange_inprogress = true;
+ 	spin_unlock_irqrestore(&rtlpriv->locks.rf_ps_lock, flags);
+ 
+-	rtlpci->driver_is_goingto_unload = true;
+ 	rtlpriv->cfg->ops->hw_disable(hw);
+ 	/* some things are not needed if firmware not available */
+ 	if (!rtlpriv->max_fw_size)
 
 
