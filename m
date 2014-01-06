@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932804AbaAFWkc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:40:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48057 "EHLO
+	id S1757144AbaAFXcf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:32:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48065 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932785AbaAFWk3 (ORCPT
+	with ESMTP id S932798AbaAFWkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:29 -0500
+	Mon, 6 Jan 2014 17:40:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Miao Xie <miaox@cn.fujitsu.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.10 024/129] ftrace: Initialize the ftrace profiler for each possible cpu
-Date: Mon,  6 Jan 2014 14:37:33 -0800
-Message-Id: <20140106223900.301069786@linuxfoundation.org>
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Tony Thompson <anthony.thompson@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.10 026/129] arm64: spinlock: retry trylock operation if strex fails on free lock
+Date: Mon,  6 Jan 2014 14:37:35 -0800
+Message-Id: <20140106223900.357217694@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -28,60 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miao Xie <miaox@cn.fujitsu.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit c4602c1c818bd6626178d6d3fcc152d9f2f48ac0 upstream.
+commit 4ecf7ccb1973fd826456b6ab1e6dfafe9023c753 upstream.
 
-Ftrace currently initializes only the online CPUs. This implementation has
-two problems:
-- If we online a CPU after we enable the function profile, and then run the
-  test, we will lose the trace information on that CPU.
-  Steps to reproduce:
-  # echo 0 > /sys/devices/system/cpu/cpu1/online
-  # cd <debugfs>/tracing/
-  # echo <some function name> >> set_ftrace_filter
-  # echo 1 > function_profile_enabled
-  # echo 1 > /sys/devices/system/cpu/cpu1/online
-  # run test
-- If we offline a CPU before we enable the function profile, we will not clear
-  the trace information when we enable the function profile. It will trouble
-  the users.
-  Steps to reproduce:
-  # cd <debugfs>/tracing/
-  # echo <some function name> >> set_ftrace_filter
-  # echo 1 > function_profile_enabled
-  # run test
-  # cat trace_stat/function*
-  # echo 0 > /sys/devices/system/cpu/cpu1/online
-  # echo 0 > function_profile_enabled
-  # echo 1 > function_profile_enabled
-  # cat trace_stat/function*
-  # run test
-  # cat trace_stat/function*
+An exclusive store instruction may fail for reasons other than lock
+contention (e.g. a cache eviction during the critical section) so, in
+line with other architectures using similar exclusive instructions
+(alpha, mips, powerpc), retry the trylock operation if the lock appears
+to be free but the strex reported failure.
 
-So it is better that we initialize the ftrace profiler for each possible cpu
-every time we enable the function profile instead of just the online ones.
-
-Link: http://lkml.kernel.org/r/1387178401-10619-1-git-send-email-miaox@cn.fujitsu.com
-
-Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Reported-by: Tony Thompson <anthony.thompson@arm.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Cc: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ftrace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm64/include/asm/spinlock.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -750,7 +750,7 @@ static int ftrace_profile_init(void)
- 	int cpu;
- 	int ret = 0;
+--- a/arch/arm64/include/asm/spinlock.h
++++ b/arch/arm64/include/asm/spinlock.h
+@@ -59,9 +59,10 @@ static inline int arch_spin_trylock(arch
+ 	unsigned int tmp;
  
--	for_each_online_cpu(cpu) {
-+	for_each_possible_cpu(cpu) {
- 		ret = ftrace_profile_init_cpu(cpu);
- 		if (ret)
- 			break;
+ 	asm volatile(
+-	"	ldaxr	%w0, %1\n"
++	"2:	ldaxr	%w0, %1\n"
+ 	"	cbnz	%w0, 1f\n"
+ 	"	stxr	%w0, %w2, %1\n"
++	"	cbnz	%w0, 2b\n"
+ 	"1:\n"
+ 	: "=&r" (tmp), "+Q" (lock->lock)
+ 	: "r" (1)
 
 
