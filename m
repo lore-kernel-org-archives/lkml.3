@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932966AbaAFWlN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:41:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48262 "EHLO
+	id S933697AbaAFXT6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:19:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48294 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932948AbaAFWlJ (ORCPT
+	with ESMTP id S932948AbaAFWlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:09 -0500
+	Mon, 6 Jan 2014 17:41:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rob Herring <robh@kernel.org>
-Subject: [PATCH 3.10 068/129] Revert "of/address: Handle #address-cells > 2 specially"
-Date: Mon,  6 Jan 2014 14:38:17 -0800
-Message-Id: <20140106223901.555343422@linuxfoundation.org>
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Alex Thorlton <athorlton@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 073/129] mm: fix TLB flush race between migration, and change_protection_range
+Date: Mon,  6 Jan 2014 14:38:22 -0800
+Message-Id: <20140106223901.700174649@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -28,118 +31,242 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rob Herring <robh@kernel.org>
+From: Rik van Riel <riel@redhat.com>
 
-commit 13fcca8f25f4e9ce7f55da9cd353bb743236e212 upstream.
+commit 20841405940e7be0617612d521e206e4b6b325db upstream.
 
-This reverts commit e38c0a1fbc5803cbacdaac0557c70ac8ca5152e7.
+There are a few subtle races, between change_protection_range (used by
+mprotect and change_prot_numa) on one side, and NUMA page migration and
+compaction on the other side.
 
-Nikita Yushchenko reports:
-While trying to make freescale p2020ds and  mpc8572ds boards working
-with mainline kernel, I faced that commit e38c0a1f (Handle
+The basic race is that there is a time window between when the PTE gets
+made non-present (PROT_NONE or NUMA), and the TLB is flushed.
 
-Both these boards have uli1575 chip.
-Corresponding part in device tree is something like
+During that time, a CPU may continue writing to the page.
 
-                uli1575@0 {
-                        reg = <0x0 0x0 0x0 0x0 0x0>;
-                        #size-cells = <2>;
-                        #address-cells = <3>;
-                        ranges = <0x2000000 0x0 0x80000000
-                                  0x2000000 0x0 0x80000000
-                                  0x0 0x20000000
+This is fine most of the time, however compaction or the NUMA migration
+code may come in, and migrate the page away.
 
-                                  0x1000000 0x0 0x0
-                                  0x1000000 0x0 0x0
-                                  0x0 0x10000>;
-                        isa@1e {
-...
+When that happens, the CPU may continue writing, through the cached
+translation, to what is no longer the current memory location of the
+process.
 
-I.e. it has #address-cells = <3>
+This only affects x86, which has a somewhat optimistic pte_accessible.
+All other architectures appear to be safe, and will either always flush,
+or flush whenever there is a valid mapping, even with no permissions
+(SPARC).
 
-With commit e38c0a1f reverted, devices under uli1575 are registered
-correctly, e.g. for rtc
+The basic race looks like this:
 
-OF: ** translation for device /pcie@ffe09000/pcie@0/uli1575@0/isa@1e/rtc@70 **
-OF: bus is isa (na=2, ns=1) on /pcie@ffe09000/pcie@0/uli1575@0/isa@1e
-OF: translating address: 00000001 00000070
-OF: parent bus is default (na=3, ns=2) on /pcie@ffe09000/pcie@0/uli1575@0
-OF: walking ranges...
-OF: ISA map, cp=0, s=1000, da=70
-OF: parent translation for: 01000000 00000000 00000000
-OF: with offset: 70
-OF: one level translation: 00000000 00000000 00000070
-OF: parent bus is pci (na=3, ns=2) on /pcie@ffe09000/pcie@0
-OF: walking ranges...
-OF: default map, cp=a0000000, s=20000000, da=70
-OF: default map, cp=0, s=10000, da=70
-OF: parent translation for: 01000000 00000000 00000000
-OF: with offset: 70
-OF: one level translation: 01000000 00000000 00000070
-OF: parent bus is pci (na=3, ns=2) on /pcie@ffe09000
-OF: walking ranges...
-OF: PCI map, cp=0, s=10000, da=70
-OF: parent translation for: 01000000 00000000 00000000
-OF: with offset: 70
-OF: one level translation: 01000000 00000000 00000070
-OF: parent bus is default (na=2, ns=2) on /
-OF: walking ranges...
-OF: PCI map, cp=0, s=10000, da=70
-OF: parent translation for: 00000000 ffc10000
-OF: with offset: 70
-OF: one level translation: 00000000 ffc10070
-OF: reached root node
+CPU A			CPU B			CPU C
 
-With commit e38c0a1f in place, address translation fails:
+						load TLB entry
+make entry PTE/PMD_NUMA
+			fault on entry
+						read/write old page
+			start migrating page
+			change PTE/PMD to new page
+						read/write old page [*]
+flush TLB
+						reload TLB from new entry
+						read/write new page
+						lose data
 
-OF: ** translation for device /pcie@ffe09000/pcie@0/uli1575@0/isa@1e/rtc@70 **
-OF: bus is isa (na=2, ns=1) on /pcie@ffe09000/pcie@0/uli1575@0/isa@1e
-OF: translating address: 00000001 00000070
-OF: parent bus is default (na=3, ns=2) on /pcie@ffe09000/pcie@0/uli1575@0
-OF: walking ranges...
-OF: ISA map, cp=0, s=1000, da=70
-OF: parent translation for: 01000000 00000000 00000000
-OF: with offset: 70
-OF: one level translation: 00000000 00000000 00000070
-OF: parent bus is pci (na=3, ns=2) on /pcie@ffe09000/pcie@0
-OF: walking ranges...
-OF: default map, cp=a0000000, s=20000000, da=70
-OF: default map, cp=0, s=10000, da=70
-OF: not found !
+[*] the old page may belong to a new user at this point!
 
-Thierry Reding confirmed this commit was not needed after all:
-"We ended up merging a different address representation for Tegra PCIe
-and I've confirmed that reverting this commit doesn't cause any obvious
-regressions. I think all other drivers in drivers/pci/host ended up
-copying what we did on Tegra, so I wouldn't expect any other breakage
-either."
+The obvious fix is to flush remote TLB entries, by making sure that
+pte_accessible aware of the fact that PROT_NONE and PROT_NUMA memory may
+still be accessible if there is a TLB flush pending for the mm.
 
-There doesn't appear to be a simple way to support both behaviours, so
-reverting this as nothing should be depending on the new behaviour.
+This should fix both NUMA migration and compaction.
 
-Signed-off-by: Rob Herring <robh@kernel.org>
+[mgorman@suse.de: fix build]
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Cc: Alex Thorlton <athorlton@sgi.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/of/address.c |    8 --------
- 1 file changed, 8 deletions(-)
+ arch/sparc/include/asm/pgtable_64.h |    4 +--
+ arch/x86/include/asm/pgtable.h      |   11 +++++++--
+ include/asm-generic/pgtable.h       |    2 -
+ include/linux/mm_types.h            |   44 ++++++++++++++++++++++++++++++++++++
+ kernel/fork.c                       |    1 
+ mm/huge_memory.c                    |    7 +++++
+ mm/mprotect.c                       |    2 +
+ mm/pgtable-generic.c                |    5 ++--
+ 8 files changed, 69 insertions(+), 7 deletions(-)
 
---- a/drivers/of/address.c
-+++ b/drivers/of/address.c
-@@ -69,14 +69,6 @@ static u64 of_bus_default_map(__be32 *ad
- 		 (unsigned long long)cp, (unsigned long long)s,
- 		 (unsigned long long)da);
+--- a/arch/sparc/include/asm/pgtable_64.h
++++ b/arch/sparc/include/asm/pgtable_64.h
+@@ -616,7 +616,7 @@ static inline unsigned long pte_present(
+ }
  
--	/*
--	 * If the number of address cells is larger than 2 we assume the
--	 * mapping doesn't specify a physical address. Rather, the address
--	 * specifies an identifier that must match exactly.
--	 */
--	if (na > 2 && memcmp(range, addr, na * 4) != 0)
--		return OF_BAD_ADDR;
--
- 	if (da < cp || da >= (cp + s))
- 		return OF_BAD_ADDR;
- 	return da - cp;
+ #define pte_accessible pte_accessible
+-static inline unsigned long pte_accessible(pte_t a)
++static inline unsigned long pte_accessible(struct mm_struct *mm, pte_t a)
+ {
+ 	return pte_val(a) & _PAGE_VALID;
+ }
+@@ -806,7 +806,7 @@ static inline void __set_pte_at(struct m
+ 	 * SUN4V NOTE: _PAGE_VALID is the same value in both the SUN4U
+ 	 *             and SUN4V pte layout, so this inline test is fine.
+ 	 */
+-	if (likely(mm != &init_mm) && pte_accessible(orig))
++	if (likely(mm != &init_mm) && pte_accessible(mm, orig))
+ 		tlb_batch_add(mm, addr, ptep, orig, fullmm);
+ }
+ 
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -415,9 +415,16 @@ static inline int pte_present(pte_t a)
+ }
+ 
+ #define pte_accessible pte_accessible
+-static inline int pte_accessible(pte_t a)
++static inline bool pte_accessible(struct mm_struct *mm, pte_t a)
+ {
+-	return pte_flags(a) & _PAGE_PRESENT;
++	if (pte_flags(a) & _PAGE_PRESENT)
++		return true;
++
++	if ((pte_flags(a) & (_PAGE_PROTNONE | _PAGE_NUMA)) &&
++			mm_tlb_flush_pending(mm))
++		return true;
++
++	return false;
+ }
+ 
+ static inline int pte_hidden(pte_t pte)
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -220,7 +220,7 @@ static inline int pmd_same(pmd_t pmd_a,
+ #endif
+ 
+ #ifndef pte_accessible
+-# define pte_accessible(pte)		((void)(pte),1)
++# define pte_accessible(mm, pte)	((void)(pte), 1)
+ #endif
+ 
+ #ifndef flush_tlb_fix_spurious_fault
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -437,6 +437,14 @@ struct mm_struct {
+ 	 */
+ 	int first_nid;
+ #endif
++#if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
++	/*
++	 * An operation with batched TLB flushing is going on. Anything that
++	 * can move process memory needs to flush the TLB when moving a
++	 * PROT_NONE or PROT_NUMA mapped page.
++	 */
++	bool tlb_flush_pending;
++#endif
+ 	struct uprobes_state uprobes_state;
+ };
+ 
+@@ -457,4 +465,40 @@ static inline cpumask_t *mm_cpumask(stru
+ 	return mm->cpu_vm_mask_var;
+ }
+ 
++#if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
++/*
++ * Memory barriers to keep this state in sync are graciously provided by
++ * the page table locks, outside of which no page table modifications happen.
++ * The barriers below prevent the compiler from re-ordering the instructions
++ * around the memory barriers that are already present in the code.
++ */
++static inline bool mm_tlb_flush_pending(struct mm_struct *mm)
++{
++	barrier();
++	return mm->tlb_flush_pending;
++}
++static inline void set_tlb_flush_pending(struct mm_struct *mm)
++{
++	mm->tlb_flush_pending = true;
++	barrier();
++}
++/* Clearing is done after a TLB flush, which also provides a barrier. */
++static inline void clear_tlb_flush_pending(struct mm_struct *mm)
++{
++	barrier();
++	mm->tlb_flush_pending = false;
++}
++#else
++static inline bool mm_tlb_flush_pending(struct mm_struct *mm)
++{
++	return false;
++}
++static inline void set_tlb_flush_pending(struct mm_struct *mm)
++{
++}
++static inline void clear_tlb_flush_pending(struct mm_struct *mm)
++{
++}
++#endif
++
+ #endif /* _LINUX_MM_TYPES_H */
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -544,6 +544,7 @@ static struct mm_struct *mm_init(struct
+ 	mm->cached_hole_size = ~0UL;
+ 	mm_init_aio(mm);
+ 	mm_init_owner(mm, p);
++	clear_tlb_flush_pending(mm);
+ 
+ 	if (likely(!mm_alloc_pgd(mm))) {
+ 		mm->def_flags = 0;
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1352,6 +1352,13 @@ int do_huge_pmd_numa_page(struct mm_stru
+ 	}
+ 
+ 	/*
++	 * The page_table_lock above provides a memory barrier
++	 * with change_protection_range.
++	 */
++	if (mm_tlb_flush_pending(mm))
++		flush_tlb_range(vma, haddr, haddr + HPAGE_PMD_SIZE);
++
++	/*
+ 	 * Migrate the THP to the requested node, returns with page unlocked
+ 	 * and pmd_numa cleared.
+ 	 */
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -206,6 +206,7 @@ static unsigned long change_protection_r
+ 	BUG_ON(addr >= end);
+ 	pgd = pgd_offset(mm, addr);
+ 	flush_cache_range(vma, addr, end);
++	set_tlb_flush_pending(mm);
+ 	do {
+ 		next = pgd_addr_end(addr, end);
+ 		if (pgd_none_or_clear_bad(pgd))
+@@ -217,6 +218,7 @@ static unsigned long change_protection_r
+ 	/* Only flush the TLB if we actually modified any entries: */
+ 	if (pages)
+ 		flush_tlb_range(vma, start, end);
++	clear_tlb_flush_pending(mm);
+ 
+ 	return pages;
+ }
+--- a/mm/pgtable-generic.c
++++ b/mm/pgtable-generic.c
+@@ -86,9 +86,10 @@ int pmdp_clear_flush_young(struct vm_are
+ pte_t ptep_clear_flush(struct vm_area_struct *vma, unsigned long address,
+ 		       pte_t *ptep)
+ {
++	struct mm_struct *mm = (vma)->vm_mm;
+ 	pte_t pte;
+-	pte = ptep_get_and_clear((vma)->vm_mm, address, ptep);
+-	if (pte_accessible(pte))
++	pte = ptep_get_and_clear(mm, address, ptep);
++	if (pte_accessible(mm, pte))
+ 		flush_tlb_page(vma, address);
+ 	return pte;
+ }
 
 
