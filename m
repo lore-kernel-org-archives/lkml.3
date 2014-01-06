@@ -1,77 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756277AbaAFVAY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 16:00:24 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:53439 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755092AbaAFVAU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 16:00:20 -0500
-Date: Mon, 6 Jan 2014 15:51:43 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Ding Tianhong <dingtianhong@huawei.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        linux-wireless@vger.kernel.org, Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3.5 18/19] rtlwifi: slight optimization of addr compare
-Message-ID: <20140106205143.GH10885@tuxdriver.com>
-References: <52BC15EA.2020603@huawei.com>
- <52BC2576.3090601@cogentembedded.com>
- <20140106195302.GF10885@tuxdriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140106195302.GF10885@tuxdriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756122AbaAFVCO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 16:02:14 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:46278 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755092AbaAFVCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 16:02:12 -0500
+Message-ID: <1389042095.13828.30.camel@localhost.localdomain>
+Subject: Re: [PATCH] perf tools: enable close-on-exec flag on perf file
+ descriptor
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <peterz@infradead.org>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        linux-kernel@vger.kernel.org, Yann Droneaud <ydroneaud@opteya.com>
+Date: Mon, 06 Jan 2014 22:01:35 +0100
+In-Reply-To: <20140106144347.GA13500@ghostprotocols.net>
+References: <cover.1388952061.git.ydroneaud@opteya.com>
+	 <8c03f54e1598b1727c19706f3af03f98685d9fe6.1388952061.git.ydroneaud@opteya.com>
+	 <20140106092929.GA31570@twins.programming.kicks-ass.net>
+	 <1389005485-12778-1-git-send-email-ydroneaud@opteya.com>
+	 <20140106112436.GF31570@twins.programming.kicks-ass.net>
+	 <20140106144347.GA13500@ghostprotocols.net>
+Organization: OPTEYA
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 02:53:02PM -0500, John W. Linville wrote:
-> On Thu, Dec 26, 2013 at 04:47:50PM +0400, Sergei Shtylyov wrote:
-> > Hello.
-> > 
-> > On 26-12-2013 15:41, Ding Tianhong wrote:
-> > 
-> > >Use possibly more efficient ether_addr_equal_unaligned
-> > >instead of memcmp.
-> > 
-> > >Cc: Larry Finger <Larry.Finger@lwfinger.net>
-> > >Cc: Chaoming Li <chaoming_li@realsil.com.cn>
-> > >Cc: John W. Linville <linville@tuxdriver.com>
-> > >Cc: linux-wireless@vger.kernel.org
-> > >Cc: netdev@vger.kernel.org
-> > >Cc: linux-kernel@vger.kernel.org
-> > >Signed-off-by: Weilong Chen <chenweilong@huawei.com>
-> > >Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
-> > >---
-> > >  drivers/net/wireless/rtlwifi/cam.c | 4 ++--
-> > >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > >diff --git a/drivers/net/wireless/rtlwifi/cam.c b/drivers/net/wireless/rtlwifi/cam.c
-> > >index 0e510f7..0276153 100644
-> > >--- a/drivers/net/wireless/rtlwifi/cam.c
-> > >+++ b/drivers/net/wireless/rtlwifi/cam.c
-> > [...]
-> > >@@ -335,7 +335,7 @@ void rtl_cam_del_entry(struct ieee80211_hw *hw, u8 *sta_addr)
-> > >  		addr = rtlpriv->sec.hwsec_cam_sta_addr[i];
-> > >  		bitmap = (rtlpriv->sec.hwsec_cam_bitmap) >> i;
-> > >  		if (((bitmap & BIT(0)) == BIT(0)) &&
-> > >-		    (memcmp(addr, sta_addr, ETH_ALEN) == 0)) {
-> > >+		    (ether_addr_equal_unaligned(addr, sta_addr))) {
-> > 
-> >    It's pointless to enclose function call in parens, again.
+Hi,
+
+Le lundi 06 janvier 2014 à 11:43 -0300, Arnaldo Carvalho de Melo a
+écrit :
+> Em Mon, Jan 06, 2014 at 12:24:36PM +0100, Peter Zijlstra escreveu:
+
+> > acme, ACK? I was thinking I'd keep these two patches together so the
+> > entire things lands in tip in one go?
 > 
-> I'll correct that issue when merging the patch.
+> Nope, it should notice the EINVAL, drop the flag that doesn't work on
+> older kernels, retry, so that new tools continue to work on older
+> kernels, with yet another fallback.
+> 
 
-Well, that was the plan...  But since ether_addr_equal_unaligned
-isn't in the wireless trees at the moment, it will have to wait or go
-through another tree that has that definition.  Feel free to respin
-with the extra parenthesis removed...
+But it may be difficult to distinguish the 'origin' of EINVAL: is it
+from FD_CLOEXEC flag or from an unsupported parameter in the attributes.
 
-John
+> Please take a look at __perf_evsel__open(), probably it will be best to
+> add a flag to perf_missing_features, like the one we have for the
+> perf_event_attr.mmap2 flag, so that we fail just once, etc.
+> 
+
+Unfortunately perf_event_open() is called in multiple places, not only
+in __perf_evsel__open(). So a more generic solution should be designed.
+
+Is something like the function proposed in message
+<1389022310.13828.9.camel@localhost.localdomain> [1]
+ok to be added to its own module:
+
+static int cloexec = PERF_FLAG_FD_CLOEXEC;
+
+int perf_flag_fd_cloexec(void)
+{
+    static int probed;
+
+    if (!probed) {
+        struct perf_event_attr attr = { 0 };
+        int fd = perf_event_open(&attr, 0, -1, -1,
+PERF_FLAG_FD_CLOEXEC);
+        probed = 1;
+        if (fd >= 0)
+            close(fd);
+        else
+            cloexec = 0;
+     }
+
+     return cloexec;
+}
+
+This function should be used to build the flag passed to
+perf_event_open().
+
+Regards.
+
+[1] 
+http://lkml.kernel.org/r/1389022310.13828.9.camel@localhost.localdomain
+
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Yann Droneaud
+OPTEYA
+
+
