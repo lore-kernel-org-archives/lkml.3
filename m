@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756417AbaAFVbj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 16:31:39 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:51349 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755983AbaAFVbh (ORCPT
+	id S1756355AbaAFVdy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 16:33:54 -0500
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:45672 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754992AbaAFVdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 16:31:37 -0500
-Date: Mon, 6 Jan 2014 22:31:35 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: rui.zhang@intel.com, Mike Turquette <mturquette@linaro.org>,
-        Nishanth Menon <nm@ti.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC RESEND PATCH 1/1] thermal: introduce clock cooling device
-Message-ID: <20140106213135.GA14927@amd.pavel.ucw.cz>
-References: <1389013458-14719-1-git-send-email-eduardo.valentin@ti.com>
+	Mon, 6 Jan 2014 16:33:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389013458-14719-1-git-send-email-eduardo.valentin@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <52C5D28F.6030008@zytor.com>
+References: <20131121191907.GA26366@srcf.ucam.org>
+	<20131122185706.GK4046@redhat.com>
+	<87vbzju6ql.fsf@xmission.com>
+	<20131125163920.GC23094@redhat.com>
+	<87fvqj2vxz.fsf@xmission.com>
+	<20131126142759.GA5473@redhat.com>
+	<20131219125439.GA6379@lst.de>
+	<20131220141917.GB27063@redhat.com>
+	<87a9fvqfs4.fsf@xmission.com>
+	<CAGXu5jKJ88J-++nvkPVvghkXbN+_mB=T1siSDF7yoXQ-d-ONxg@mail.gmail.com>
+	<20140102203912.GB22822@redhat.com>
+	<52C5D28F.6030008@zytor.com>
+Date: Mon, 6 Jan 2014 16:33:52 -0500
+X-Google-Sender-Auth: _ZyPLk5gVxeVe2nYbTYWUURyMos
+Message-ID: <CA+5PVA60FLTXZxf1hVuzD=_vUdg10Y7sYG9iZCs4voxurV_t0g@mail.gmail.com>
+Subject: Re: [PATCH 4/6] kexec: A new system call, kexec_file_load, for in
+ kernel kexec
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Torsten Duwe <duwe@lst.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
+        kexec <kexec@lists.infradead.org>, Peter Jones <pjones@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Thu, Jan 2, 2014 at 3:56 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 01/02/2014 12:39 PM, Vivek Goyal wrote:
+>>
+>> If secureboot is enabled, it enforces module signature verification. I
+>> think similar will happen for kexec too. How would kernel know that on
+>> a secureboot platform fd original verification will happen and it is
+>> sufficient.
+>>
+>> I personally want to support bzImage as well (apart from ELF) because
+>> distributions has been shipping bzImage for a long time and I don't
+>> want to enforce a change there because of secureboot. It is not necessary.
+>> Right now I am thinking more about storing detached bzImage signatures
+>> and passing those signatures to kexec system call.
+>>
+>
+> Since the secureboot scenario probably means people will be signing
+> those kernels, and those kernels are going to be EFI images, that in
+> order to have "one kernel, one signature" there will be a desire to
+> support signed PE images.  Yes, PE is ugly but it shouldn't be too bad.
+>  However, it is probably one of those things that can be dealt with one
+> bit at a time.
 
-> --- /dev/null
-> +++ b/drivers/thermal/clock_cooling.c
-> @@ -0,0 +1,484 @@
-> +/*
-> + *  drivers/thermal/cpu_cooling.c
+David Howells posted patches to support signed PE binaries early last
+year.  They were rejected rather quickly.
 
-Bit too much copy&paste...
+https://lkml.org/lkml/2013/2/21/196
 
+That was for loading keys via PE binaries, but the parser is needed
+either way.  Unless I'm misunderstanding what you're suggesting?
 
-> + *  Copyright (C) 2013	Texas Instruments Inc.
-> + *  Contact:  Eduardo Valentin <eduardo.valentin@ti.com>
-> + *
-> + *  Highly based on cpu_cooling.c.
-
-Check english. And you should add samsung & linaro copyright here,
-since you copied from it.
-
-> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-can we get rid of ~~~s?
-
-> +static int clock_cooling_get_property(struct clock_cooling_device *ccdev,
-> +				      unsigned long input,
-> +				      unsigned long *output,
-> +				      enum clock_cooling_property property)
-> +{
-> +	int i, j;
-> +	unsigned long max_level = 0, level = 0;
-...
-> +	if (property == GET_MAXL) {
-> +		*output = (unsigned int)max_level;
-
-What is going on with types here? Remove cast?
-
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+josh
