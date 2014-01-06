@@ -1,119 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254AbaAFOat (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 09:30:49 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:49019 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899AbaAFOas (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 09:30:48 -0500
-Date: Mon, 6 Jan 2014 20:00:40 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: josh@joshtriplett.org, David Airlie <airlied@linux.ie>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@redhat.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        dri-devel@lists.freedesktop.org
-Subject: [PATCH 02/85] drivers: gpu: Mark function as static and remove
- unused function in ast_main.c
-Message-ID: <e8cbf4c2d70d1ac3fa8ddba93b0579755f9fb4b6.1389018324.git.rashika.kheria@gmail.com>
-References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
+	id S1754629AbaAFObY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 09:31:24 -0500
+Received: from tundra.namei.org ([65.99.196.166]:54320 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751057AbaAFObX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 09:31:23 -0500
+Date: Tue, 7 Jan 2014 01:31:21 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: =?ISO-8859-15?Q?Peter_H=FCwe?= <PeterHuewe@gmx.de>
+cc: Ashley Lai <ashley@ashleylai.com>, Marcel Selhorst <tpmdd@selhorst.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: Re: [GIT PULL]TPM Changes for 3.14
+In-Reply-To: <201401061444.48889.PeterHuewe@gmx.de>
+Message-ID: <alpine.LRH.2.02.1401070131030.5247@tundra.namei.org>
+References: <201401040335.04980.PeterHuewe@gmx.de> <201401060424.50738.PeterHuewe@gmx.de> <alpine.LRH.2.02.1401062227080.4512@tundra.namei.org> <201401061444.48889.PeterHuewe@gmx.de>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark function ast_bo_unref() as static because it is not used outside
-file ast_main.c and remove unused function ast_get_max_dclk() in
-ast_main.c.
+On Mon, 6 Jan 2014, Peter H?we wrote:
 
-This eliminates the following warning in drm/ast/ast_main.c:
-drivers/gpu/drm/ast/ast_main.c:192:10: warning: no previous prototype
-for ‘ast_get_max_dclk’ [-Wmissing-prototypes]
-drivers/gpu/drm/ast/ast_main.c:452:6: warning: no previous prototype for
-‘ast_bo_unref’ [-Wmissing-prototypes]
+> Hi James,
+> 
+> The following changes since commit 38fd2c202a3d82bc12430bce5789fa2c2a406f71:
+> 
+>   Merge to v3.13-rc7 for prerequisite changes in the Xen code for TPM (2014-01-06 22:23:01 +1100)
+> 
+> are available in the git repository at:
+> 
+> 
+>   https://github.com/PeterHuewe/linux-tpmdd for-james
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- drivers/gpu/drm/ast/ast_main.c |   49 +---------------------------------------
- 1 file changed, 1 insertion(+), 48 deletions(-)
+Thanks, pulled.
 
-diff --git a/drivers/gpu/drm/ast/ast_main.c b/drivers/gpu/drm/ast/ast_main.c
-index af0b868..50535fd 100644
---- a/drivers/gpu/drm/ast/ast_main.c
-+++ b/drivers/gpu/drm/ast/ast_main.c
-@@ -189,53 +189,6 @@ static int ast_get_dram_info(struct drm_device *dev)
- 	return 0;
- }
- 
--uint32_t ast_get_max_dclk(struct drm_device *dev, int bpp)
--{
--	struct ast_private *ast = dev->dev_private;
--	uint32_t dclk, jreg;
--	uint32_t dram_bus_width, mclk, dram_bandwidth, actual_dram_bandwidth, dram_efficency = 500;
--
--	dram_bus_width = ast->dram_bus_width;
--	mclk = ast->mclk;
--
--	if (ast->chip == AST2100 ||
--	    ast->chip == AST1100 ||
--	    ast->chip == AST2200 ||
--	    ast->chip == AST2150 ||
--	    ast->dram_bus_width == 16)
--		dram_efficency = 600;
--	else if (ast->chip == AST2300)
--		dram_efficency = 400;
--
--	dram_bandwidth = mclk * dram_bus_width * 2 / 8;
--	actual_dram_bandwidth = dram_bandwidth * dram_efficency / 1000;
--
--	if (ast->chip == AST1180)
--		dclk = actual_dram_bandwidth / ((bpp + 1) / 8);
--	else {
--		jreg = ast_get_index_reg_mask(ast, AST_IO_CRTC_PORT, 0xd0, 0xff);
--		if ((jreg & 0x08) && (ast->chip == AST2000))
--			dclk = actual_dram_bandwidth / ((bpp + 1 + 16) / 8);
--		else if ((jreg & 0x08) && (bpp == 8))
--			dclk = actual_dram_bandwidth / ((bpp + 1 + 24) / 8);
--		else
--			dclk = actual_dram_bandwidth / ((bpp + 1) / 8);
--	}
--
--	if (ast->chip == AST2100 ||
--	    ast->chip == AST2200 ||
--	    ast->chip == AST2300 ||
--	    ast->chip == AST1180) {
--		if (dclk > 200)
--			dclk = 200;
--	} else {
--		if (dclk > 165)
--			dclk = 165;
--	}
--
--	return dclk;
--}
--
- static void ast_user_framebuffer_destroy(struct drm_framebuffer *fb)
- {
- 	struct ast_framebuffer *ast_fb = to_ast_framebuffer(fb);
-@@ -449,7 +402,7 @@ int ast_dumb_create(struct drm_file *file,
- 	return 0;
- }
- 
--void ast_bo_unref(struct ast_bo **bo)
-+static void ast_bo_unref(struct ast_bo **bo)
- {
- 	struct ttm_buffer_object *tbo;
- 
+
 -- 
-1.7.9.5
-
+James Morris
+<jmorris@namei.org>
