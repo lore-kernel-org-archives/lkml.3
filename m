@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932707AbaAGAKI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 19:10:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47415 "EHLO
+	id S1756773AbaAFWiU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:38:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47370 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754928AbaAFWiY (ORCPT
+	with ESMTP id S1756719AbaAFWiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:24 -0500
+	Mon, 6 Jan 2014 17:38:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shivaram U <shivaram.u@quadstor.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.12 034/144] qla2xxx: Fix schedule_delayed_work() for target timeout calculations
-Date: Mon,  6 Jan 2014 14:36:35 -0800
-Message-Id: <20140106223746.300630915@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>, <dashing.meng@gmail.com>,
+        Niklas Schnelle <niklas@komani.de>, Giorgos <ganastasiouGR@gmail.com>,
+        <art1@vhex.net>
+Subject: [PATCH 3.12 024/144] xhci: Limit the spurious wakeup fix only to HP machines
+Date: Mon,  6 Jan 2014 14:36:25 -0800
+Message-Id: <20140106223746.019488475@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,58 +31,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shivaram Upadhyayula <shivaram.u@quadstor.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 63832aabec12a28a41a221773ab3819d30ba0a67 upstream.
+commit 6962d914f317b119e0db7189199b21ec77a4b3e0 upstream.
 
-This patch fixes two cases in qla_target.c code where the
-schedule_delayed_work() value was being incorrectly calculated
-from sess->expires - jiffies.
+We've got regression reports that my previous fix for spurious wakeups
+after S5 on HP Haswell machines leads to the automatic reboot at
+shutdown on some machines.  It turned out that the fix for one side
+triggers another BIOS bug in other side.  So, it's exclusive.
 
-Signed-off-by: Shivaram U <shivaram.u@quadstor.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Since the original S5 wakeups have been confirmed only on HP machines,
+it'd be safer to apply it only to limited machines.  As a wild guess,
+limiting to machines with HP PCI SSID should suffice.
+
+This patch should be backported to kernels as old as 3.12, that
+contain the commit 638298dc66ea36623dbc2757a24fc2c4ab41b016 "xhci: Fix
+spurious wakeups after S5 on Haswell".
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66171
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: <dashing.meng@gmail.com>
+Reported-by: Niklas Schnelle <niklas@komani.de>
+Reported-by: Giorgos <ganastasiouGR@gmail.com>
+Reported-by: <art1@vhex.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/qla2xxx/qla_target.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/usb/host/xhci-pci.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/scsi/qla2xxx/qla_target.c
-+++ b/drivers/scsi/qla2xxx/qla_target.c
-@@ -471,7 +471,7 @@ static void qlt_schedule_sess_for_deleti
- 		schedule_delayed_work(&tgt->sess_del_work, 0);
- 	else
- 		schedule_delayed_work(&tgt->sess_del_work,
--		    jiffies - sess->expires);
-+		    sess->expires - jiffies);
- }
- 
- /* ha->hardware_lock supposed to be held on entry */
-@@ -550,13 +550,14 @@ static void qlt_del_sess_work_fn(struct
- 	struct scsi_qla_host *vha = tgt->vha;
- 	struct qla_hw_data *ha = vha->hw;
- 	struct qla_tgt_sess *sess;
--	unsigned long flags;
-+	unsigned long flags, elapsed;
- 
- 	spin_lock_irqsave(&ha->hardware_lock, flags);
- 	while (!list_empty(&tgt->del_sess_list)) {
- 		sess = list_entry(tgt->del_sess_list.next, typeof(*sess),
- 		    del_list_entry);
--		if (time_after_eq(jiffies, sess->expires)) {
-+		elapsed = jiffies;
-+		if (time_after_eq(elapsed, sess->expires)) {
- 			qlt_undelete_sess(sess);
- 
- 			ql_dbg(ql_dbg_tgt_mgt, vha, 0xf004,
-@@ -566,7 +567,7 @@ static void qlt_del_sess_work_fn(struct
- 			ha->tgt.tgt_ops->put_sess(sess);
- 		} else {
- 			schedule_delayed_work(&tgt->sess_del_work,
--			    jiffies - sess->expires);
-+			    sess->expires - elapsed);
- 			break;
- 		}
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -128,7 +128,12 @@ static void xhci_pci_quirks(struct devic
+ 		 * any other sleep) on Haswell machines with LPT and LPT-LP
+ 		 * with the new Intel BIOS
+ 		 */
+-		xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
++		/* Limit the quirk to only known vendors, as this triggers
++		 * yet another BIOS bug on some other machines
++		 * https://bugzilla.kernel.org/show_bug.cgi?id=66171
++		 */
++		if (pdev->subsystem_vendor == PCI_VENDOR_ID_HP)
++			xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
  	}
+ 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
+ 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
 
 
