@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755676AbaAFQYk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 11:24:40 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:43737 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754815AbaAFQXZ (ORCPT
+	id S1755704AbaAFQZZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 11:25:25 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:34947 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755362AbaAFQZX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 11:23:25 -0500
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Thomas Renninger <trenn@suse.de>,
-        Dominik Brodowski <linux@dominikbrodowski.net>
-Subject: [PATCH 1/3] cpupower tools: adjust README to reflect rename
-Date: Mon,  6 Jan 2014 21:53:23 +0530
-Message-Id: <1389025405-3463-2-git-send-email-artagnon@gmail.com>
-X-Mailer: git-send-email 1.8.5.2.227.g53f3478
-In-Reply-To: <1389025405-3463-1-git-send-email-artagnon@gmail.com>
-References: <1389025405-3463-1-git-send-email-artagnon@gmail.com>
+	Mon, 6 Jan 2014 11:25:23 -0500
+Date: Mon, 6 Jan 2014 21:55:18 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        dri-devel@lists.freedesktop.org, josh@joshtriplett.org
+Subject: [PATCH 64/85] drivers: gpu: Remove unused function in ni_dpm.c
+Message-ID: <9dbd8ae1b52adafb416244ae4caed9d1032d8cf8.1389018325.git.rashika.kheria@gmail.com>
+References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename cpufrequtils -> cpupower, and libcpufreq -> libcpupower.
+Remove unused function ni_dpm_reset_asic() from drm/radeon/ni_dpm.c.
 
-Cc: Thomas Renninger <trenn@suse.de>
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+This eliminates the following warnings in drm/radeon/ni_dpm.c:
+drivers/gpu/drm/radeon/ni_dpm.c:3897:6: warning: no previous prototype for ‘ni_dpm_reset_asic’ [-Wmissing-prototypes]
+
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- tools/power/cpupower/README | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/radeon/ni_dpm.c |    6 ------
+ 1 file changed, 6 deletions(-)
 
-diff --git a/tools/power/cpupower/README b/tools/power/cpupower/README
-index fd9d4c0..96ff1ff 100644
---- a/tools/power/cpupower/README
-+++ b/tools/power/cpupower/README
-@@ -1,4 +1,4 @@
--The cpufrequtils package (homepage: 
-+The cpupower package (homepage:
- http://www.kernel.org/pub/linux/utils/kernel/cpufreq/cpufrequtils.html ) 
- consists of the following elements:
+diff --git a/drivers/gpu/drm/radeon/ni_dpm.c b/drivers/gpu/drm/radeon/ni_dpm.c
+index 33a1e21..97aa32f 100644
+--- a/drivers/gpu/drm/radeon/ni_dpm.c
++++ b/drivers/gpu/drm/radeon/ni_dpm.c
+@@ -3891,12 +3891,6 @@ void ni_dpm_post_set_power_state(struct radeon_device *rdev)
+ 	ni_update_current_ps(rdev, new_ps);
+ }
  
-@@ -11,10 +11,10 @@ providing cpuid.h is needed.
- For both it's not explicitly checked for (yet).
- 
- 
--libcpufreq
-+libcpupower
- ----------
- 
--"libcpufreq" is a library which offers a unified access method for userspace
-+"libcpupower" is a library which offers a unified access method for userspace
- tools and programs to the cpufreq core and drivers in the Linux kernel. This
- allows for code reduction in userspace tools, a clean implementation of
- the interaction to the cpufreq core, and support for both the sysfs and proc
-@@ -28,7 +28,7 @@ make
- su
- make install
- 
--should suffice on most systems. It builds default libcpufreq,
-+should suffice on most systems. It builds default libcpupower,
- cpufreq-set and cpufreq-info files and installs them in /usr/lib and
- /usr/bin, respectively. If you want to set up the paths differently and/or
- want to configure the package to your specific needs, you need to open
-@@ -39,11 +39,11 @@ CONFIGURATION.
- THANKS
- ------
- Many thanks to Mattia Dongili who wrote the autotoolization and
--libtoolization, the manpages and the italian language file for cpufrequtils;
-+libtoolization, the manpages and the italian language file for cpupower;
- to Dave Jones for his feedback and his dump_psb tool; to Bruno Ducrot for his
- powernow-k8-decode and intel_gsic tools as well as the french language file;
- and to various others commenting on the previous (pre-)releases of 
--cpufrequtils.
-+cpupower.
- 
- 
-         Dominik Brodowski
+-void ni_dpm_reset_asic(struct radeon_device *rdev)
+-{
+-	ni_restrict_performance_levels_before_switch(rdev);
+-	rv770_set_boot_state(rdev);
+-}
+-
+ union power_info {
+ 	struct _ATOM_POWERPLAY_INFO info;
+ 	struct _ATOM_POWERPLAY_INFO_V2 info_2;
 -- 
-1.8.5.2.227.g53f3478
+1.7.9.5
 
