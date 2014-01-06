@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757052AbaAFW7A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:59:00 -0500
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:47491 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756412AbaAFW66 (ORCPT
+	id S1757090AbaAFW7t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:59:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48573 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933245AbaAFWmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:58:58 -0500
-Message-ID: <1389049135.26646.14.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH 3.4 22/43] tg3: Expand 4g_overflow_test workaround to
- skb fragments of any size.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Nithin Nayak Sujir <nsujir@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Mon, 06 Jan 2014 14:58:55 -0800
-In-Reply-To: <20140106223942.884336164@linuxfoundation.org>
-References: <20140106223942.259651490@linuxfoundation.org>
-	 <20140106223942.884336164@linuxfoundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 6 Jan 2014 17:42:07 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alex Elder <elder@inktank.com>, Josh Durgin <josh.durgin@inktank.com>
+Subject: [PATCH 3.10 094/129] rbd: flush dcache after zeroing page data
+Date: Mon,  6 Jan 2014 14:38:43 -0800
+Message-Id: <20140106223902.292912045@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
+References: <20140106223859.589799655@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-06 at 14:39 -0800, Greg Kroah-Hartman wrote:
-> 3.4-stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Nithin Sujir <nsujir@broadcom.com>
-> 
-> commit 375679104ab3ccfd18dcbd7ba503734fb9a2c63a upstream.
-> 
-> The current driver assumes that an skb fragment can only be upto jumbo
-> size. Presumably this was a fast-path optimization. This assumption is
-> no longer true as fragments can be upto 32k.
-> 
-> v2: Remove unnecessary parantheses per Eric Dumazet.
-> 
-> Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
-> Signed-off-by: Michael Chan <mchan@broadcom.com>
-> Signed-off-by: David S. Miller <davem@davemloft.net>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> ---
->  drivers/net/ethernet/broadcom/tg3.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- a/drivers/net/ethernet/broadcom/tg3.c
-> +++ b/drivers/net/ethernet/broadcom/tg3.c
-> @@ -6619,7 +6619,7 @@ static inline int tg3_4g_overflow_test(d
->  {
->  	u32 base = (u32) mapping & 0xffffffff;
->  
-> -	return (base > 0xffffdcc0) && (base + len + 8 < base);
-> +	return base + len + 8 < base;
->  }
->  
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Minor comment :
+------------------
 
-32KB frags were added later, in 3.7.
+From: Alex Elder <elder@inktank.com>
 
-This patch makes no harm, so no worries.
+commit e215605417b87732c6debf65da6d953016a1e5bc upstream.
+
+Neither zero_bio_chain() nor zero_pages() contains a call to flush
+caches after zeroing a portion of a page.  This can cause problems
+on architectures that have caches that allow virtual address
+aliasing.
+
+This resolves:
+    http://tracker.ceph.com/issues/4777
+
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Josh Durgin <josh.durgin@inktank.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/block/rbd.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -1126,6 +1126,7 @@ static void zero_bio_chain(struct bio *c
+ 				buf = bvec_kmap_irq(bv, &flags);
+ 				memset(buf + remainder, 0,
+ 				       bv->bv_len - remainder);
++				flush_dcache_page(bv->bv_page);
+ 				bvec_kunmap_irq(buf, &flags);
+ 			}
+ 			pos += bv->bv_len;
+@@ -1158,6 +1159,7 @@ static void zero_pages(struct page **pag
+ 		local_irq_save(flags);
+ 		kaddr = kmap_atomic(*page);
+ 		memset(kaddr + page_offset, 0, length);
++		flush_dcache_page(*page);
+ 		kunmap_atomic(kaddr);
+ 		local_irq_restore(flags);
+ 
 
 
