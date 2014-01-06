@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757438AbaAFXPK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:15:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48384 "EHLO
+	id S933416AbaAFXPp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:15:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48375 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756961AbaAFWl1 (ORCPT
+	with ESMTP id S1756950AbaAFWl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:27 -0500
+	Mon, 6 Jan 2014 17:41:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roger Quadros <rogerq@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.10 086/129] gpio: twl4030: Fix regression for twl gpio LED output
-Date: Mon,  6 Jan 2014 14:38:35 -0800
-Message-Id: <20140106223902.069967119@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>, ocfs2-devel@oss.oracle.com,
+        Joel Becker <jlbec@evilplan.org>
+Subject: [PATCH 3.10 085/129] jbd2: dont BUG but return ENOSPC if a handle runs out of space
+Date: Mon,  6 Jan 2014 14:38:34 -0800
+Message-Id: <20140106223902.042515684@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -29,67 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Quadros <rogerq@ti.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit f5837ec11f8cfa6d53ebc5806582771b2c9988c6 upstream.
+commit f6c07cad081ba222d63623d913aafba5586c1d2c upstream.
 
-Commit 0b2aa8be introduced a regression that causes failure
-in setting LED GPO direction to OUT.
+If a handle runs out of space, we currently stop the kernel with a BUG
+in jbd2_journal_dirty_metadata().  This makes it hard to figure out
+what might be going on.  So return an error of ENOSPC, so we can let
+the file system layer figure out what is going on, to make it more
+likely we can get useful debugging information).  This should make it
+easier to debug problems such as the one which was reported by:
 
-This causes USB host probe failures for Beagleboard C4.
+    https://bugzilla.kernel.org/show_bug.cgi?id=44731
 
-platform usb_phy_gen_xceiv.2: Driver usb_phy_gen_xceiv requests probe deferral
-hsusb2_vcc: Failed to request enable GPIO510: -22
-reg-fixed-voltage reg-fixed-voltage.0.auto: Failed to register regulator: -22
-reg-fixed-voltage: probe of reg-fixed-voltage.0.auto failed with error -22
+The only two callers of this function are ext4_handle_dirty_metadata()
+and ocfs2_journal_dirty().  The ocfs2 function will trigger a
+BUG_ON(), which means there will be no change in behavior.  The ext4
+function will call ext4_error_inode() which will print the useful
+debugging information and then handle the situation using ext4's error
+handling mechanisms (i.e., which might mean halting the kernel or
+remounting the file system read-only).
 
-direction_out/direction_in must return 0 if the operation succeeded.
+Also, since both file systems already call WARN_ON(), drop the WARN_ON
+from jbd2_journal_dirty_metadata() to avoid two stack traces from
+being displayed.
 
-Also, don't update direction flag and output data if twl4030_set_gpio_direction()
-failed inside twl_direction_out();
-
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: ocfs2-devel@oss.oracle.com
+Acked-by: Joel Becker <jlbec@evilplan.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpio/gpio-twl4030.c |   15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ fs/jbd2/transaction.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/gpio/gpio-twl4030.c
-+++ b/drivers/gpio/gpio-twl4030.c
-@@ -300,7 +300,7 @@ static int twl_direction_in(struct gpio_
- 	if (offset < TWL4030_GPIO_MAX)
- 		ret = twl4030_set_gpio_direction(offset, 1);
- 	else
--		ret = -EINVAL;
-+		ret = -EINVAL;	/* LED outputs can't be set as input */
- 
- 	if (!ret)
- 		priv->direction &= ~BIT(offset);
-@@ -354,11 +354,20 @@ static void twl_set(struct gpio_chip *ch
- static int twl_direction_out(struct gpio_chip *chip, unsigned offset, int value)
- {
- 	struct gpio_twl4030_priv *priv = to_gpio_twl4030(chip);
--	int ret = -EINVAL;
-+	int ret = 0;
- 
- 	mutex_lock(&priv->mutex);
--	if (offset < TWL4030_GPIO_MAX)
-+	if (offset < TWL4030_GPIO_MAX) {
- 		ret = twl4030_set_gpio_direction(offset, 0);
-+		if (ret) {
-+			mutex_unlock(&priv->mutex);
-+			return ret;
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -1151,7 +1151,10 @@ int jbd2_journal_dirty_metadata(handle_t
+ 		 * once a transaction -bzzz
+ 		 */
+ 		jh->b_modified = 1;
+-		J_ASSERT_JH(jh, handle->h_buffer_credits > 0);
++		if (handle->h_buffer_credits <= 0) {
++			ret = -ENOSPC;
++			goto out_unlock_bh;
 +		}
-+	}
-+
-+	/*
-+	 *  LED gpios i.e. offset >= TWL4030_GPIO_MAX are always output
-+	 */
+ 		handle->h_buffer_credits--;
+ 	}
  
- 	priv->direction |= BIT(offset);
- 	mutex_unlock(&priv->mutex);
+@@ -1234,7 +1237,6 @@ out_unlock_bh:
+ 	jbd2_journal_put_journal_head(jh);
+ out:
+ 	JBUFFER_TRACE(jh, "exit");
+-	WARN_ON(ret);	/* All errors are bugs, so dump the stack */
+ 	return ret;
+ }
+ 
 
 
