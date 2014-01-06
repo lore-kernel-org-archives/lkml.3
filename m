@@ -1,61 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076AbaAFUk5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 15:40:57 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:40860 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754620AbaAFUkz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 15:40:55 -0500
-Message-ID: <52CB14D3.2060904@wwwdotorg.org>
-Date: Mon, 06 Jan 2014 13:40:51 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 3/6] ARM: tegra: Add efuse bindings
-References: <1387891931-9854-1-git-send-email-pdeschrijver@nvidia.com> <1387891931-9854-4-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1387891931-9854-4-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756037AbaAFUnB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 15:43:01 -0500
+Received: from mga02.intel.com ([134.134.136.20]:16492 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755191AbaAFUnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 15:43:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,614,1384329600"; 
+   d="scan'208";a="462491402"
+Subject: [PATCH] mm: slub: fix ALLOC_SLOWPATH stat
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, cl@linux-foundation.org,
+        akpm@linux-foundation.org, penberg@kernel.org,
+        Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Mon, 06 Jan 2014 12:43:00 -0800
+Message-Id: <20140106204300.DE79BA86@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/24/2013 06:32 AM, Peter De Schrijver wrote:
-> Add efuse bindings for Tegra20, Tegra30, Tegra114 and Tegra124.
 
-This patch doesn't add bindings, it adds nodes to device trees. Bindings
-are the schemas that dictate how the nodes are to be constructed, not
-the nodes themselves.
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-On that topic, this series needs to create
-Documentation/devicetree/bindings/fuse/nvidia,tegra20-fuse.txt etc.
+There used to be only one path out of __slab_alloc(), and
+ALLOC_SLOWPATH got bumped in that exit path.  Now there are two,
+and a bunch of gotos.  ALLOC_SLOWPATH can now get set more than once
+during a single call to __slab_alloc() which is pretty bogus.
+Here's the sequence:
 
-> diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
+1. Enter __slab_alloc(), fall through all the way to the
+   stat(s, ALLOC_SLOWPATH);
+2. hit 'if (!freelist)', and bump DEACTIVATE_BYPASS, jump to
+   new_slab (goto #1)
+3. Hit 'if (c->partial)', bump CPU_PARTIAL_ALLOC, goto redo
+   (goto #2)
+4. Fall through in the same path we did before all the way to
+   stat(s, ALLOC_SLOWPATH)
+5. bump ALLOC_REFILL stat, then return
 
-> +	efuse@7000f800 {
-...
-> +	};
-> +
->  	cpus {
+Doing this is obviously bogus.  It keeps us from being able to
+accurately compare ALLOC_SLOWPATH vs. ALLOC_FASTPATH.  It also
+means that the total number of allocs always exceeds the total
+number of frees.
 
-This node isn't sorted correctly. It should be between sdhci@700b0600
-and ahub@70300000, not after the ahub.
+This patch moves stat(s, ALLOC_SLOWPATH) to be called from the
+same place that __slab_alloc() is.  This makes it much less
+likely that ALLOC_SLOWPATH will get botched again in the
+spaghetti-code inside __slab_alloc().
 
-> diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+---
 
-> +	efuse@7000F800 {
+ linux.git-davehans/mm/slub.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-"fuse" might be a better node name; "efuse" is presumably the name of
-the instance, not the type of object.
-
-Please use lower-case for hex constants; both here and in the reg property.
+diff -puN mm/slub.c~slub-ALLOC_SLOWPATH-stat mm/slub.c
+--- linux.git/mm/slub.c~slub-ALLOC_SLOWPATH-stat	2014-01-06 12:39:28.148072544 -0800
++++ linux.git-davehans/mm/slub.c	2014-01-06 12:39:28.155072860 -0800
+@@ -2301,8 +2301,6 @@ redo:
+ 	if (freelist)
+ 		goto load_freelist;
+ 
+-	stat(s, ALLOC_SLOWPATH);
+-
+ 	freelist = get_freelist(s, page);
+ 
+ 	if (!freelist) {
+@@ -2409,10 +2407,10 @@ redo:
+ 
+ 	object = c->freelist;
+ 	page = c->page;
+-	if (unlikely(!object || !node_match(page, node)))
++	if (unlikely(!object || !node_match(page, node))) {
+ 		object = __slab_alloc(s, gfpflags, node, addr, c);
+-
+-	else {
++		stat(s, ALLOC_SLOWPATH);
++	} else {
+ 		void *next_object = get_freepointer_safe(s, object);
+ 
+ 		/*
+_
