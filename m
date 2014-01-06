@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932232AbaAFWi4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:38:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47522 "EHLO
+	id S932212AbaAFWix (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:38:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47517 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932132AbaAFWis (ORCPT
+	with ESMTP id S932193AbaAFWis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Jan 2014 17:38:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sami Farin <sami.farin@gmail.com>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 3.12 007/144] tty: Fix hang at ldsem_down_read()
-Date: Mon,  6 Jan 2014 14:36:08 -0800
-Message-Id: <20140106223745.539617860@linuxfoundation.org>
+        Kyung-Kwee Ryu <kyung-kwee.ryu@wolfsonmicro.com>,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.12 016/144] ASoC: wm5110: Correct HPOUT3 DAPM route typo
+Date: Mon,  6 Jan 2014 14:36:17 -0800
+Message-Id: <20140106223745.793016286@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,120 +30,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Hurley <peter@hurleysoftware.com>
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-commit cf872776fc84128bb779ce2b83a37c884c3203ae upstream.
+commit 280484e708a3cc38fe6807718caa460e744c0b20 upstream.
 
-When a controlling tty is being hung up and the hang up is
-waiting for a just-signalled tty reader or writer to exit, and a new tty
-reader/writer tries to acquire an ldisc reference concurrently with the
-ldisc reference release from the signalled reader/writer, the hangup
-can hang. The new reader/writer is sleeping in ldsem_down_read() and the
-hangup is sleeping in ldsem_down_write() [1].
-
-The new reader/writer fails to wakeup the waiting hangup because the
-wrong lock count value is checked (the old lock count rather than the new
-lock count) to see if the lock is unowned.
-
-Change helper function to return the new lock count if the cmpxchg was
-successful; document this behavior.
-
-[1] edited dmesg log from reporter
-
-SysRq : Show Blocked State
-  task                        PC stack   pid father
-systemd         D ffff88040c4f0000     0     1      0 0x00000000
- ffff88040c49fbe0 0000000000000046 ffff88040c4a0000 ffff88040c49ffd8
- 00000000001d3980 00000000001d3980 ffff88040c4a0000 ffff88040593d840
- ffff88040c49fb40 ffffffff810a4cc0 0000000000000006 0000000000000023
-Call Trace:
- [<ffffffff810a4cc0>] ? sched_clock_cpu+0x9f/0xe4
- [<ffffffff810a4cc0>] ? sched_clock_cpu+0x9f/0xe4
- [<ffffffff810a4cc0>] ? sched_clock_cpu+0x9f/0xe4
- [<ffffffff810a4cc0>] ? sched_clock_cpu+0x9f/0xe4
- [<ffffffff817a6649>] schedule+0x24/0x5e
- [<ffffffff817a588b>] schedule_timeout+0x15b/0x1ec
- [<ffffffff810a4cc0>] ? sched_clock_cpu+0x9f/0xe4
- [<ffffffff817aa691>] ? _raw_spin_unlock_irq+0x24/0x26
- [<ffffffff817aa10c>] down_read_failed+0xe3/0x1b9
- [<ffffffff817aa26d>] ldsem_down_read+0x8b/0xa5
- [<ffffffff8142b5ca>] ? tty_ldisc_ref_wait+0x1b/0x44
- [<ffffffff8142b5ca>] tty_ldisc_ref_wait+0x1b/0x44
- [<ffffffff81423f5b>] tty_write+0x7d/0x28a
- [<ffffffff814241f5>] redirected_tty_write+0x8d/0x98
- [<ffffffff81424168>] ? tty_write+0x28a/0x28a
- [<ffffffff8115d03f>] do_loop_readv_writev+0x56/0x79
- [<ffffffff8115e604>] do_readv_writev+0x1b0/0x1ff
- [<ffffffff8116ea0b>] ? do_vfs_ioctl+0x32a/0x489
- [<ffffffff81167d9d>] ? final_putname+0x1d/0x3a
- [<ffffffff8115e6c7>] vfs_writev+0x2e/0x49
- [<ffffffff8115e7d3>] SyS_writev+0x47/0xaa
- [<ffffffff817ab822>] system_call_fastpath+0x16/0x1b
-bash            D ffffffff81c104c0     0  5469   5302 0x00000082
- ffff8800cf817ac0 0000000000000046 ffff8804086b22a0 ffff8800cf817fd8
- 00000000001d3980 00000000001d3980 ffff8804086b22a0 ffff8800cf817a48
- 000000000000b9a0 ffff8800cf817a78 ffffffff81004675 ffff8800cf817a44
-Call Trace:
- [<ffffffff81004675>] ? dump_trace+0x165/0x29c
- [<ffffffff810a4cc0>] ? sched_clock_cpu+0x9f/0xe4
- [<ffffffff8100edda>] ? save_stack_trace+0x26/0x41
- [<ffffffff817a6649>] schedule+0x24/0x5e
- [<ffffffff817a588b>] schedule_timeout+0x15b/0x1ec
- [<ffffffff810a4cc0>] ? sched_clock_cpu+0x9f/0xe4
- [<ffffffff817a9f03>] ? down_write_failed+0xa3/0x1c9
- [<ffffffff817aa691>] ? _raw_spin_unlock_irq+0x24/0x26
- [<ffffffff817a9f0b>] down_write_failed+0xab/0x1c9
- [<ffffffff817aa300>] ldsem_down_write+0x79/0xb1
- [<ffffffff817aada3>] ? tty_ldisc_lock_pair_timeout+0xa5/0xd9
- [<ffffffff817aada3>] tty_ldisc_lock_pair_timeout+0xa5/0xd9
- [<ffffffff8142bf33>] tty_ldisc_hangup+0xc4/0x218
- [<ffffffff81423ab3>] __tty_hangup+0x2e2/0x3ed
- [<ffffffff81424a76>] disassociate_ctty+0x63/0x226
- [<ffffffff81078aa7>] do_exit+0x79f/0xa11
- [<ffffffff81086bdb>] ? get_signal_to_deliver+0x206/0x62f
- [<ffffffff810b4bfb>] ? lock_release_holdtime.part.8+0xf/0x16e
- [<ffffffff81079b05>] do_group_exit+0x47/0xb5
- [<ffffffff81086c16>] get_signal_to_deliver+0x241/0x62f
- [<ffffffff810020a7>] do_signal+0x43/0x59d
- [<ffffffff810f2af7>] ? __audit_syscall_exit+0x21a/0x2a8
- [<ffffffff810b4bfb>] ? lock_release_holdtime.part.8+0xf/0x16e
- [<ffffffff81002655>] do_notify_resume+0x54/0x6c
- [<ffffffff817abaf8>] int_signal+0x12/0x17
-
-Reported-by: Sami Farin <sami.farin@gmail.com>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Reported-by: Kyung-Kwee Ryu <kyung-kwee.ryu@wolfsonmicro.com>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/tty_ldsem.c |   16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+ sound/soc/codecs/wm5110.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/tty/tty_ldsem.c
-+++ b/drivers/tty/tty_ldsem.c
-@@ -86,11 +86,21 @@ static inline long ldsem_atomic_update(l
- 	return atomic_long_add_return(delta, (atomic_long_t *)&sem->count);
- }
+--- a/sound/soc/codecs/wm5110.c
++++ b/sound/soc/codecs/wm5110.c
+@@ -1031,7 +1031,7 @@ static const struct snd_soc_dapm_route w
+ 	{ "HPOUT2R", NULL, "OUT2R" },
  
-+/*
-+ * ldsem_cmpxchg() updates @*old with the last-known sem->count value.
-+ * Returns 1 if count was successfully changed; @*old will have @new value.
-+ * Returns 0 if count was not changed; @*old will have most recent sem->count
-+ */
- static inline int ldsem_cmpxchg(long *old, long new, struct ld_semaphore *sem)
- {
--	long tmp = *old;
--	*old = atomic_long_cmpxchg(&sem->count, *old, new);
--	return *old == tmp;
-+	long tmp = atomic_long_cmpxchg(&sem->count, *old, new);
-+	if (tmp == *old) {
-+		*old = new;
-+		return 1;
-+	} else {
-+		*old = tmp;
-+		return 0;
-+	}
- }
+ 	{ "HPOUT3L", NULL, "OUT3L" },
+-	{ "HPOUT3R", NULL, "OUT3L" },
++	{ "HPOUT3R", NULL, "OUT3R" },
  
- /*
+ 	{ "SPKOUTLN", NULL, "OUT4L" },
+ 	{ "SPKOUTLP", NULL, "OUT4L" },
 
 
