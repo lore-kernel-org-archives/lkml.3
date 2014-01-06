@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755894AbaAFRVs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 12:21:48 -0500
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:17789
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755799AbaAFRVo convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 12:21:44 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dIc89bhc3f2I148cI1432I4015Idbb0izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1d7338h177df4h17326ah8275dh1de097h186068hz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h906i1155h)
-Date: Mon, 6 Jan 2014 09:21:34 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Chris Ball <cjb@laptop.org>
-CC: Chris Ball <cjb@laptop.org>, <linux-mmc@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>
-Subject: Re: [GIT PULL] Xilinx Zynq mmc changes for v3.14
-References: <52B16E05.5080404@monstr.eu>
-MIME-Version: 1.0
+	id S1755232AbaAFR0m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 12:26:42 -0500
+Received: from exchange10.columbia.tresys.com ([216.30.191.171]:17073 "EHLO
+	exchange10.columbia.tresys.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753979AbaAFR0l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 12:26:41 -0500
+From: William Roberts <WRoberts@tresys.com>
+To: Mateusz Guzik <mguzik@redhat.com>,
+        William Roberts <bill.c.roberts@gmail.com>
+CC: "linux-audit@redhat.com" <linux-audit@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rgb@redhat.com" <rgb@redhat.com>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "sds@tycho.nsa.gov" <sds@tycho.nsa.gov>
+Subject: RE: [RFC][PATCH 3/3] audit: Audit proc cmdline value
+Thread-Topic: [RFC][PATCH 3/3] audit: Audit proc cmdline value
+Thread-Index: AQHPCvRJxM9wEjZWtUqVgWBPL+R065p4QeAA//+wiBA=
+Date: Mon, 6 Jan 2014 17:26:15 +0000
+Message-ID: <A8856C6323EFE0459533E910625AB9303DC9C7@Exchange10.columbia.tresys.com>
+References: <1389022230-24664-1-git-send-email-wroberts@tresys.com>
+ <1389022230-24664-3-git-send-email-wroberts@tresys.com>
+ <20140106170855.GA1828@mguzik.redhat.com>
+In-Reply-To: <20140106170855.GA1828@mguzik.redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.143.134]
 Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <52B16E05.5080404@monstr.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <fdedb22e-839e-480c-81d1-e8304a0f4e70@CO9EHSMHS007.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-Hi Chris,
-
-On Wed, Dec 18, 2013 at 10:42:29AM +0100, Michal Simek wrote:
-> Hi Chris,
-> 
-> Soren and I are trying to reach you regarding Arasan driver we sent to mailing list
-> for review. There are no complains about this version 3 that's why I have added
-> to our repo and sending you this pull request.
-> 
-> Patches:
-> http://lkml.org/lkml/2013/12/2/413
-> http://lkml.org/lkml/2013/12/2/424
-> 
-> Thanks for pulling these changes to your tree.
-> 
-> This driver was also requested to add LTSI that's why I am CC'ing Greg.
-
-It would be nice if we could get this driver into linux-next. The merge
-windows is close and I'd appreciate if this driver made it into 3.14.
-
-	Thanks,
-	SÃ¶ren
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s06HQojE008370
 
 
+
+-----Original Message-----
+From: Mateusz Guzik [mailto:mguzik@redhat.com] 
+Sent: Monday, January 06, 2014 9:09 AM
+To: William Roberts
+Cc: linux-audit@redhat.com; linux-mm@kvack.org; linux-kernel@vger.kernel.org; rgb@redhat.com; viro@zeniv.linux.org.uk; akpm@linux-foundation.org; sds@tycho.nsa.gov; William Roberts
+Subject: Re: [RFC][PATCH 3/3] audit: Audit proc cmdline value
+
+I can't comment on the concept, but have one nit.
+
+On Mon, Jan 06, 2014 at 07:30:30AM -0800, William Roberts wrote:
+> +static void audit_log_cmdline(struct audit_buffer *ab, struct task_struct *tsk,
+> +			 struct audit_context *context)
+> +{
+> +	int res;
+> +	char *buf;
+> +	char *msg = "(null)";
+> +	audit_log_format(ab, " cmdline=");
+> +
+> +	/* Not  cached */
+> +	if (!context->cmdline) {
+> +		buf = kmalloc(PATH_MAX, GFP_KERNEL);
+> +		if (!buf)
+> +			goto out;
+> +		res = get_cmdline(tsk, buf, PATH_MAX);
+> +		/* Ensure NULL terminated */
+> +		if (buf[res-1] != '\0')
+> +			buf[res-1] = '\0';
+
+This accesses memory below the buffer if get_cmdline returned 0, which I believe will be the case when someone jokingly unmaps the area (all maybe when it is swapped out but can't be swapped in due to I/O errors).
+[William Roberts] 
+Sorry for the weird inline posting (Thanks MS Outlook of doom). Anyways, this isnâ€™t a nit. This is a major issue that should be dealt with. Thanks.
+
+Also since you are just putting 0 in there anyway I don't see much point in testing for it.
+
+> +		context->cmdline = buf;
+> +	}
+> +	msg = context->cmdline;
+> +out:
+> +	audit_log_untrustedstring(ab, msg);
+> +}
+> +
+
+
+
+--
+Mateusz Guzik
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
