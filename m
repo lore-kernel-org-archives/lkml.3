@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334AbaAFIWd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 03:22:33 -0500
-Received: from mail-we0-f170.google.com ([74.125.82.170]:62332 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758AbaAFIW2 (ORCPT
+	id S1753485AbaAFIXw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 03:23:52 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:62502 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875AbaAFIWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 03:22:28 -0500
+	Mon, 6 Jan 2014 03:22:32 -0500
 From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 To: catalin.marinas@arm.com, will.deacon@arm.com, gregkh@linuxfoundation.org,
         akpm@linux-foundation.org, hpa@zytor.com, ak@linux.intel.com
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         herbert@gondor.apana.org.au, mingo@redhat.com, nico@linaro.org,
         x86@kernel.org, Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Subject: [PATCH 3/8] cpu: advertise CPU features over udev in a generic way
-Date: Mon,  6 Jan 2014 09:22:11 +0100
-Message-Id: <1388996536-27014-4-git-send-email-ard.biesheuvel@linaro.org>
+Subject: [PATCH 5/8] arm64: advertise CPU features for modalias matching
+Date: Mon,  6 Jan 2014 09:22:13 +0100
+Message-Id: <1388996536-27014-6-git-send-email-ard.biesheuvel@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388996536-27014-1-git-send-email-ard.biesheuvel@linaro.org>
 References: <1388996536-27014-1-git-send-email-ard.biesheuvel@linaro.org>
@@ -23,80 +23,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements a generic modalias 'cpu:type:...:feature:...'
-which enables CPU feature flag based module loading in a generic way.
-All the arch needs to do is enable CONFIG_ARCH_HAS_CPU_AUTOPROBE and
-implement arch_print_cpu_modalias(). The modules need to declare the
-CPU feature they depend on with MODULE_DEVICE_TABLE(cpu, ...)
+This enables the generic implementation in drivers/base/cpu.c
+that allows modules to be loaded automatically based on the
+optional features supported (and advertised over udev) by the
+CPU.
 
 Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 ---
- include/linux/mod_devicetable.h   | 15 +++++++++++++++
- scripts/mod/devicetable-offsets.c |  3 +++
- scripts/mod/file2alias.c          | 10 ++++++++++
- 3 files changed, 28 insertions(+)
+ arch/arm64/Kconfig        |  3 +++
+ arch/arm64/kernel/setup.c | 20 ++++++++++++++++++++
+ 2 files changed, 23 insertions(+)
 
-diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
-index 45e921401b06..3aad3c0f765c 100644
---- a/include/linux/mod_devicetable.h
-+++ b/include/linux/mod_devicetable.h
-@@ -564,6 +564,21 @@ struct x86_cpu_id {
- #define X86_MODEL_ANY  0
- #define X86_FEATURE_ANY 0	/* Same as FPU, you can't test for that */
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index cb9421b540c8..74650b68d575 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -214,6 +214,9 @@ config ARCH_WANT_HUGE_PMD_SHARE
+ config HAVE_ARCH_TRANSPARENT_HUGEPAGE
+ 	def_bool y
  
-+/*
-+ * Generic table type for matching CPU features.
-+ * @feature:	the bit number of the feature (0 - 65535)
-+ *
-+ * How the bit numbers map to actual CPU features is entirely up to the arch,
-+ * although using the same ID space as hwcaps seems obvious.
-+ */
++config ARCH_HAS_CPU_AUTOPROBE
++	def_bool y
 +
-+struct cpu_feature {
-+	__u16	feature;
-+};
-+
-+/* hwcap const are bit masks, so take the log when using them as feature IDs */
-+#define CPU_FEATURE_HWCAP(x)	ilog2(x)
-+
- #define IPACK_ANY_FORMAT 0xff
- #define IPACK_ANY_ID (~0)
- struct ipack_device_id {
-diff --git a/scripts/mod/devicetable-offsets.c b/scripts/mod/devicetable-offsets.c
-index bb5d115ca671..f282516acc7b 100644
---- a/scripts/mod/devicetable-offsets.c
-+++ b/scripts/mod/devicetable-offsets.c
-@@ -174,6 +174,9 @@ int main(void)
- 	DEVID_FIELD(x86_cpu_id, model);
- 	DEVID_FIELD(x86_cpu_id, vendor);
+ source "mm/Kconfig"
  
-+	DEVID(cpu_feature);
-+	DEVID_FIELD(cpu_feature, feature);
+ config XEN_DOM0
+diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+index bb33fff09ba2..5ed082bbd61c 100644
+--- a/arch/arm64/kernel/setup.c
++++ b/arch/arm64/kernel/setup.c
+@@ -379,3 +379,23 @@ const struct seq_operations cpuinfo_op = {
+ 	.stop	= c_stop,
+ 	.show	= c_show
+ };
 +
- 	DEVID(mei_cl_device_id);
- 	DEVID_FIELD(mei_cl_device_id, name);
- 
-diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
-index 23708636b05c..8a69005228d8 100644
---- a/scripts/mod/file2alias.c
-+++ b/scripts/mod/file2alias.c
-@@ -1135,6 +1135,16 @@ static int do_x86cpu_entry(const char *filename, void *symval,
- }
- ADD_TO_DEVTABLE("x86cpu", x86_cpu_id, do_x86cpu_entry);
- 
-+/* LOOKS like cpu:type:*:feature:*FEAT* */
-+static int do_cpu_entry(const char *filename, void *symval, char *alias)
++ssize_t arch_print_cpu_modalias(struct device *dev,
++				struct device_attribute *attr,
++				char *buf)
 +{
-+	DEF_FIELD(symval, cpu_feature, feature);
++	unsigned long caps;
++	ssize_t n;
++	int i;
 +
-+	sprintf(alias, "cpu:type:*:feature:*%04X*", feature);
-+	return 1;
++	/*
++	 * With 64 features maximum (taking 5 bytes each to print), we don't
++	 * need to worry about overrunning the PAGE_SIZE sized buffer.
++	 */
++	n = sprintf(buf, "cpu:type:%s:feature:", ELF_PLATFORM);
++	for (caps = elf_hwcap, i = 0; caps; caps >>= 1, i++)
++		if (caps & 1)
++			n += sprintf(&buf[n], ",%04X", i);
++	buf[n++] = '\n';
++	return n;
 +}
-+ADD_TO_DEVTABLE("cpu", cpu_feature, do_cpu_entry);
-+
- /* Looks like: mei:S */
- static int do_mei_entry(const char *filename, void *symval,
- 			char *alias)
 -- 
 1.8.3.2
 
