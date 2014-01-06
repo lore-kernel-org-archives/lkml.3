@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756AbaAFJUt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 04:20:49 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:23227 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753353AbaAFJUp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 04:20:45 -0500
-X-IronPort-AV: E=Sophos;i="4.95,611,1384297200"; 
-   d="scan'208";a="51861160"
-Date: Mon, 6 Jan 2014 10:20:25 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Johannes Berg <johannes@sipsolutions.net>
-cc: Julia Lawall <julia.lawall@lip6.fr>, Joe Perches <joe@perches.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        kernel-janitors@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/11]  use ether_addr_equal_64bits
-In-Reply-To: <1388999220.5891.3.camel@jlt4.sipsolutions.net>
-Message-ID: <alpine.DEB.2.10.1401061014430.2079@hadrien>
-References: <1388427307-8691-1-git-send-email-Julia.Lawall@lip6.fr>   <1388427307-8691-5-git-send-email-Julia.Lawall@lip6.fr>   <1388429761.4410.1.camel@jlt4.sipsolutions.net>   <alpine.DEB.2.02.1312302057420.2209@localhost6.localdomain6>  
- <1388438724.4573.2.camel@jlt4.sipsolutions.net>   <20131230215701.GA4938@khazad-dum.debian.net>   <1388445188.18164.0.camel@jlt4.sipsolutions.net>   <1388445422.26796.38.camel@joe-AO722>   <alpine.DEB.2.10.1401060947550.2079@hadrien>  <1388998750.5808.43.camel@joe-AO722>
-  <alpine.DEB.2.10.1401061001340.2079@hadrien> <1388999220.5891.3.camel@jlt4.sipsolutions.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753703AbaAFJWg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 04:22:36 -0500
+Received: from smtp.nue.novell.com ([195.135.221.5]:34057 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799AbaAFJWd (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Mon, 6 Jan 2014 04:22:33 -0500
+Subject: Re: [RFC PATCH 04/14] ACPI: Add ACPI 5.0 Time and Alarm Device
+ driver
+From: joeyli <jlee@suse.com>
+To: Lan Tianyu <lantianyu1986@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
+        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
+        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
+        "linux-kernel@vger kernel org" <linux-kernel@vger.kernel.org>,
+        rtc-linux@googlegroups.com, x86@kernel.org,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+In-Reply-To: <CAOLK0pynyv2CjA-Jb-0cUMkdnXY8KD2QForsk5ygM1mrRtXOyg@mail.gmail.com>
+References: <1387439515-8926-1-git-send-email-jlee@suse.com>
+	 <1387439515-8926-5-git-send-email-jlee@suse.com>
+	 <CAOLK0pynyv2CjA-Jb-0cUMkdnXY8KD2QForsk5ygM1mrRtXOyg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 06 Jan 2014 17:20:53 +0800
+Message-ID: <1389000053.3539.6078.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Jan 2014, Johannes Berg wrote:
+於 四，2014-01-02 於 16:09 +0800，Lan Tianyu 提到：
+> > diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+> > index bba9b72..3f7a075 100644
+> > --- a/drivers/acpi/bus.c
+> > +++ b/drivers/acpi/bus.c
+> > @@ -689,6 +689,9 @@ static int __init acpi_init(void)
+> >         pci_mmcfg_late_init();
+> >         acpi_scan_init();
+> >         acpi_ec_init();
+> > +#ifdef CONFIG_X86
+> > +       acpi_tad_init();
+> > +#endif
+> 
+> Why calling acpi_tad_init() directly here rather than using
+> module_initcall?
+> Is there dependency?
+> 
 
-> On Mon, 2014-01-06 at 10:04 +0100, Julia Lawall wrote:
->
-> > OK, the question was expressed badly.  Is there any way to use the value
-> > to trigger an action at build time?  The only way I kow to trigger an
-> > action is with #error, but #error is processed by cpp, which doesn't know
-> > about the size of types.
->
-> That's exactly BUILD_BUG_ON(), I believe.
+The rtc-acpitad RTC driver depend on acpi_read/set_time functions in
+acpi_tad.
 
-Maybe BUILD_BUG_ON_ZERO?  It's goal seems to be to return an integer,
-which could then be used as an array size in a dummy structure.  The
-structure declaration would not generate any code.  The structure would
-have to have a name, thoough.
+On the other hand, if we adapt to ACPI time device when "CMOS RTC Not
+Present" set, then acpi_read/set_time will used to replace CMOS
+functions that's called by other drivers. So, I direct call
+acpi_tad_init() here.
 
-julia
+
+Thanks a lot!
+Joey Lee
+
