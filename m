@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933778AbaAFXem (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:34:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48032 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932747AbaAFWkX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932744AbaAFWkX (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 Jan 2014 17:40:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47996 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755548AbaAFWkP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 17:40:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chad Hanson <chanson@trustedcs.com>, Paul Moore <pmoore@redhat.com>
-Subject: [PATCH 3.10 019/129] selinux: fix broken peer recv check
-Date: Mon,  6 Jan 2014 14:37:28 -0800
-Message-Id: <20140106223900.142403683@linuxfoundation.org>
+        "Yan, Zheng" <zheng.z.yan@intel.com>, Greg Farnum <greg@inktank.com>,
+        Sage Weil <sage@inktank.com>
+Subject: [PATCH 3.10 002/129] ceph: cleanup aborted requests when re-sending requests.
+Date: Mon,  6 Jan 2014 14:37:11 -0800
+Message-Id: <20140106223859.660530942@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -28,35 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chad Hanson <chanson@trustedcs.com>
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-commit 46d01d63221c3508421dd72ff9c879f61053cffc upstream.
+commit eb1b8af33c2e42a9a57fc0a7588f4a7b255d2e79 upstream.
 
-Fix a broken networking check. Return an error if peer recv fails.  If
-secmark is active and the packet recv succeeds the peer recv error is
-ignored.
+Aborted requests usually get cleared when the reply is received.
+If MDS crashes, no reply will be received. So we need to cleanup
+aborted requests when re-sending requests.
 
-Signed-off-by: Chad Hanson <chanson@trustedcs.com>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+Reviewed-by: Greg Farnum <greg@inktank.com>
+Signed-off-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/selinux/hooks.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ fs/ceph/mds_client.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -4228,8 +4228,10 @@ static int selinux_socket_sock_rcv_skb(s
- 		}
- 		err = avc_has_perm(sk_sid, peer_sid, SECCLASS_PEER,
- 				   PEER__RECV, &ad);
--		if (err)
-+		if (err) {
- 			selinux_netlbl_err(skb, err, 0);
-+			return err;
-+		}
- 	}
+--- a/fs/ceph/mds_client.c
++++ b/fs/ceph/mds_client.c
+@@ -1840,8 +1840,11 @@ static int __do_request(struct ceph_mds_
+ 	int mds = -1;
+ 	int err = -EAGAIN;
  
- 	if (secmark_active) {
+-	if (req->r_err || req->r_got_result)
++	if (req->r_err || req->r_got_result) {
++		if (req->r_aborted)
++			__unregister_request(mdsc, req);
+ 		goto out;
++	}
+ 
+ 	if (req->r_timeout &&
+ 	    time_after_eq(jiffies, req->r_started + req->r_timeout)) {
 
 
