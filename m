@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756650AbaAFWiJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:38:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47316 "EHLO
+	id S933251AbaAGANy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:13:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47353 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756381AbaAFWiC (ORCPT
+	with ESMTP id S1756648AbaAFWiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:02 -0500
+	Mon, 6 Jan 2014 17:38:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Milosz Tanski <milosz@adfin.com>, Sage Weil <sage@inktank.com>
-Subject: [PATCH 3.12 002/144] ceph: hung on ceph fscache invalidate in some cases
-Date: Mon,  6 Jan 2014 14:36:03 -0800
-Message-Id: <20140106223745.399441955@linuxfoundation.org>
+        David Henningsson <david.henningsson@canonical.com>,
+        Hui Wang <hui.wang@canonical.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.12 019/144] ALSA: hda - Add Dell headset detection quirk for three laptop models
+Date: Mon,  6 Jan 2014 14:36:20 -0800
+Message-Id: <20140106223745.877617621@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -28,53 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Milosz Tanski <milosz@adfin.com>
+From: Hui Wang <hui.wang@canonical.com>
 
-commit ffc79664d15841025d90afdd902c4112ffe168d6 upstream.
+commit c29cb5eb8157a0049c882672a7f941261f23ea34 upstream.
 
-In some cases I'm on my ceph client cluster I'm seeing hunk kernel tasks in
-the invalidate page code path. This is due to the fact that we don't check if
-the page is marked as cache before calling fscache_wait_on_page_write().
+On the Dell machines with codec whose Subsystem Id is 0x10280610,
+0x10280629 or 0x1028063e, no external microphone can be detected when
+plugging a 3-ring headset. If we add "model=dell-headset-multi" for
+the snd-hda-intel.ko, the problem will disappear.
 
-This is the log from the hang
+The codecs on these machines belong to alc_269 family.
 
-INFO: task XXXXXX:12034 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
- ...
-Call Trace:
-[<ffffffff81568d09>] schedule+0x29/0x70
-[<ffffffffa01d4cbd>] __fscache_wait_on_page_write+0x6d/0xb0 [fscache]
-[<ffffffff81083520>] ? add_wait_queue+0x60/0x60
-[<ffffffffa029a3e9>] ceph_invalidate_fscache_page+0x29/0x50 [ceph]
-[<ffffffffa027df00>] ceph_invalidatepage+0x70/0x190 [ceph]
-[<ffffffff8112656f>] ? delete_from_page_cache+0x5f/0x70
-[<ffffffff81133cab>] truncate_inode_page+0x8b/0x90
-[<ffffffff81133ded>] truncate_inode_pages_range.part.12+0x13d/0x620
-[<ffffffff8113431d>] truncate_inode_pages_range+0x4d/0x60
-[<ffffffff811343b5>] truncate_inode_pages+0x15/0x20
-[<ffffffff8119bbf6>] evict+0x1a6/0x1b0
-[<ffffffff8119c3f3>] iput+0x103/0x190
- ...
-
-Signed-off-by: Milosz Tanski <milosz@adfin.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+BugLink: https://bugs.launchpad.net/bugs/1260303
+Cc: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Hui Wang <hui.wang@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ceph/cache.c |    3 +++
+ sound/pci/hda/patch_realtek.c |    3 +++
  1 file changed, 3 insertions(+)
 
---- a/fs/ceph/cache.c
-+++ b/fs/ceph/cache.c
-@@ -324,6 +324,9 @@ void ceph_invalidate_fscache_page(struct
- {
- 	struct ceph_inode_info *ci = ceph_inode(inode);
- 
-+	if (!PageFsCache(page))
-+		return;
-+
- 	fscache_wait_on_page_write(ci->fscache, page);
- 	fscache_uncache_page(ci->fscache, page);
- }
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4004,10 +4004,13 @@ static const struct snd_pci_quirk alc269
+ 	SND_PCI_QUIRK(0x1028, 0x0606, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0608, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0609, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
++	SND_PCI_QUIRK(0x1028, 0x0610, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0613, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0614, "Dell Inspiron 3135", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0616, "Dell Vostro 5470", ALC290_FIXUP_MONO_SPEAKERS),
++	SND_PCI_QUIRK(0x1028, 0x0629, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0638, "Dell Inspiron 5439", ALC290_FIXUP_MONO_SPEAKERS),
++	SND_PCI_QUIRK(0x1028, 0x063e, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x15cc, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x15cd, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x103c, 0x1586, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC2),
 
 
