@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846AbaAFLgj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 06:36:39 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:59165 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754814AbaAFLgi (ORCPT
+	id S1754102AbaAFLgY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 06:36:24 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:51046 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754537AbaAFLfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 06:36:38 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: rjw@sisk.pl, lenb@kernel.org, toshi.kani@hp.com,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] acpi: Return -ENOENT in acpi_table_parse() and fix wrong comment.
-Date: Mon, 06 Jan 2014 12:50:24 +0100
-Message-ID: <2420572.xQX3sn8lDK@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1388998079-28160-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1388998079-28160-1-git-send-email-tangchen@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 6 Jan 2014 06:35:03 -0500
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+To: mingo@redhat.com, peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        preeti.lkml@gmail.com
+Subject: [PATCH V2 6/8] sched: pass struct rq to rebalance_domains function
+Date: Mon,  6 Jan 2014 12:34:43 +0100
+Message-Id: <1389008085-9069-7-git-send-email-daniel.lezcano@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1389008085-9069-1-git-send-email-daniel.lezcano@linaro.org>
+References: <1389008085-9069-1-git-send-email-daniel.lezcano@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 06, 2014 04:47:59 PM Tang Chen wrote:
-> The comment about return value of acpi_table_parse() is incorrect.
-> This patch fix it.
-> 
-> Since all callers only check if the function succeeded or not, this
-> patch simplifies the semantics by returning -errno for all failure
-> cases. This will also simply the comment.
-> 
-> As suggested by Toshi Kani <toshi.kani@hp.com>, also change the stub
-> in linux/acpi.h to return -ENODEV.
-> 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+The cpu information is stored in the struct rq and the caller of the
+rebalance_domains function pass the cpu to retrieve the struct rq but
+it already has the struct rq info. Replace the cpu parameter with the
+struct rq.
 
-Queued up for 3.14 (but please use the e-mail address from MAINTAINERS next
-time) with a modified subject.  Thanks!
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+---
+ kernel/sched/fair.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-> ---
->  drivers/acpi/tables.c | 7 ++++---
->  include/linux/acpi.h  | 2 +-
->  2 files changed, 5 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
-> index 5a5263b..10022ae 100644
-> --- a/drivers/acpi/tables.c
-> +++ b/drivers/acpi/tables.c
-> @@ -278,12 +278,13 @@ acpi_table_parse_madt(enum acpi_madt_type id,
->  
->  /**
->   * acpi_table_parse - find table with @id, run @handler on it
-> - *
->   * @id: table id to find
->   * @handler: handler to run
->   *
->   * Scan the ACPI System Descriptor Table (STD) for a table matching @id,
-> - * run @handler on it.  Return 0 if table found, return on if not.
-> + * run @handler on it.
-> + *
-> + * Return 0 if table found, -errno if not.
->   */
->  int __init acpi_table_parse(char *id, acpi_tbl_table_handler handler)
->  {
-> @@ -306,7 +307,7 @@ int __init acpi_table_parse(char *id, acpi_tbl_table_handler handler)
->  		early_acpi_os_unmap_memory(table, tbl_size);
->  		return 0;
->  	} else
-> -		return 1;
-> +		return -ENODEV;
->  }
->  
->  /* 
-> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-> index d9099b1..fecfbcd 100644
-> --- a/include/linux/acpi.h
-> +++ b/include/linux/acpi.h
-> @@ -460,7 +460,7 @@ struct acpi_table_header;
->  static inline int acpi_table_parse(char *id,
->  				int (*handler)(struct acpi_table_header *))
->  {
-> -	return -1;
-> +	return -ENODEV;
->  }
->  
->  static inline int acpi_nvs_register(__u64 start, __u64 size)
-> 
-
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index c647c45..0fbd8d0 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -6633,10 +6633,10 @@ void update_max_interval(void)
+  *
+  * Balancing parameters are set up in init_sched_domains.
+  */
+-static void rebalance_domains(int cpu, enum cpu_idle_type idle)
++static void rebalance_domains(struct rq *rq, enum cpu_idle_type idle)
+ {
+ 	int continue_balancing = 1;
+-	struct rq *rq = cpu_rq(cpu);
++	int cpu = rq->cpu;
+ 	unsigned long interval;
+ 	struct sched_domain *sd;
+ 	/* Earliest time when we have to do rebalance again */
+@@ -6762,7 +6762,7 @@ static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle)
+ 		update_idle_cpu_load(rq);
+ 		raw_spin_unlock_irq(&rq->lock);
+ 
+-		rebalance_domains(balance_cpu, CPU_IDLE);
++		rebalance_domains(rq, CPU_IDLE);
+ 
+ 		if (time_after(this_rq->next_balance, rq->next_balance))
+ 			this_rq->next_balance = rq->next_balance;
+@@ -6851,7 +6851,7 @@ static void run_rebalance_domains(struct softirq_action *h)
+ 	enum cpu_idle_type idle = this_rq->idle_balance ?
+ 						CPU_IDLE : CPU_NOT_IDLE;
+ 
+-	rebalance_domains(this_cpu, idle);
++	rebalance_domains(this_rq, idle);
+ 
+ 	/*
+ 	 * If this cpu has a pending nohz_balance_kick, then do the
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.9.5
+
