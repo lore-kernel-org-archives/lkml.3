@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754424AbaAFLUi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 06:20:38 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:61308 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751934AbaAFLUg (ORCPT
+	id S1754091AbaAFLWU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 06:22:20 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:61309 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752652AbaAFLWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 06:20:36 -0500
-Message-ID: <52CA9180.1020106@redhat.com>
-Date: Mon, 06 Jan 2014 12:20:32 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
+	Mon, 6 Jan 2014 06:22:18 -0500
+Date: Mon, 6 Jan 2014 11:22:12 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, mturquette@linaro.org,
+        kgene.kim@samsung.com, patches@linaro.org
+Subject: Re: [PATCH RESEND 3/4] mfd: sec-core: Add cells for S5M8767-clocks
+Message-ID: <20140106112212.GP23772@lee--X1>
+References: <1383202124-1775-1-git-send-email-tushar.behera@linaro.org>
+ <1388053141-30085-1-git-send-email-tushar.behera@linaro.org>
+ <1388053141-30085-4-git-send-email-tushar.behera@linaro.org>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Gleb Natapov <gleb@minantech.com>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Kashyap Chamarthy <kchamart@redhat.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "Richard W.M. Jones" <rjones@redhat.com>
-Subject: Re: intel_pstate divide error with v3.13-rc4-256-gb7000ad
-References: <CA+5PVA6YpKc6kYK5UiTnGLZpB8uts=-QPtyhotAyZ2kuoG8PPQ@mail.gmail.com> <52C84733.1090507@redhat.com> <20140104174813.GL10961@minantech.com> <4410803.FiVxaMNxvJ@vostro.rjw.lan>
-In-Reply-To: <4410803.FiVxaMNxvJ@vostro.rjw.lan>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1388053141-30085-4-git-send-email-tushar.behera@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 04/01/2014 22:38, Rafael J. Wysocki ha scritto:
-> On Saturday, January 04, 2014 07:48:13 PM Gleb Natapov wrote:
->> On Sat, Jan 04, 2014 at 06:38:59PM +0100, Paolo Bonzini wrote:
->>> Il 04/01/2014 15:38, Rafael J. Wysocki ha scritto:
->>>> Well, it's just a sanity check and it makes the problem go away for the reporter.
->>>>
->>>>>> Your patch is welcome but perhaps it should have a WARN_ON too.
->>>> It has been pulled in already, so the WARN_ON() can only be added via a separate
->>>> patch now.  Would you like to prepare that patch?
->>>
->>> Yes, I'll add it together with the CPUID check.  I'll send the patch so
->>> that it can get into 3.14.
->>>
->> CPUID check, while correct, will sweep the problem under the rug. Current
->> Linux logic should detect non working pstate in KVM. We should look into
->> why this is not happening for nested.
+On Thu, 26 Dec 2013, Tushar Behera wrote:
+
+> S5M8767 chip has 3 crystal oscillators running at 32KHz. These are
+> supported by s2mps11-clk driver.
 > 
-> I agree.  It's better not to use CPUID for that in my opinion.
+> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+> CC: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/mfd/sec-core.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
 
-Among hypervisors, RHEL5's Xen is probably one of the oldest in actual
-use with new hardware and new kernels, and the CPUID bit has been fixed
-in 2011.  Older versions wouldn't run new kernels due to other CPUID
-bits not being cleared properly in VMs.
+Applied, thanks.
 
-Is there real hardware that has the CPUID bit set and non-working
-pstate?  If there's no such real hardware, CPUID is what the SDM says
-you should use to detect presence of the APERF/MPERF msrs.
-
-Having extra safety checks is fine on top of what the SDM says, but IMO
-they should be WARN_ONs.  Otherwise you are sweeping bugs under the rug
-just as much.
-
-Paolo
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
