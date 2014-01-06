@@ -1,76 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755964AbaAFR3E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 12:29:04 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:57455 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755798AbaAFR3C (ORCPT
+	id S1755972AbaAFRad (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 12:30:33 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:65505 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755401AbaAFRac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 12:29:02 -0500
-Date: Mon, 6 Jan 2014 17:28:49 +0000
-From: Russell King <rmk@arm.linux.org.uk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Nicolas Pitre <nico@fluxnic.net>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: linux-next: build failure after merge of the akpm-current tree
-Message-ID: <20140106172848.GA9162@flint.arm.linux.org.uk>
-References: <20140106200758.a76bbd94508614b4decabdcd@canb.auug.org.au>
+	Mon, 6 Jan 2014 12:30:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140106200758.a76bbd94508614b4decabdcd@canb.auug.org.au>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20140106170855.GA1828@mguzik.redhat.com>
+References: <1389022230-24664-1-git-send-email-wroberts@tresys.com>
+	<1389022230-24664-3-git-send-email-wroberts@tresys.com>
+	<20140106170855.GA1828@mguzik.redhat.com>
+Date: Mon, 6 Jan 2014 09:30:31 -0800
+Message-ID: <CAFftDdpoV9S5VO6Ozt3nOF+bnJDeomeOR5k8ri8eRBm3JrkXGQ@mail.gmail.com>
+Subject: Re: [RFC][PATCH 3/3] audit: Audit proc cmdline value
+From: William Roberts <bill.c.roberts@gmail.com>
+To: Mateusz Guzik <mguzik@redhat.com>
+Cc: "linux-audit@redhat.com" <linux-audit@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Guy Briggs <rgb@redhat.com>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        akpm@linux-foundation.org, Stephen Smalley <sds@tycho.nsa.gov>,
+        William Roberts <wroberts@tresys.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 08:07:58PM +1100, Stephen Rothwell wrote:
-> Hi Andrew,
-> 
-> After merging the akpm-current tree, today's linux-next build (arm
-> multi_v7_defconfig) failed like this:
-> 
-> arch/arm/mm/init.c:199:13: error: conflicting types for 'arm_dma_zone_size'
-> include/linux/bootmem.h:259:11: note: previous declaration of 'arm_dma_zone_size' was here
-> 
-> Caused by commit a3ae9362fafe ("mm/memblock: add memblock memory
-> allocation apis").
-> 
-> For this build, BOOTMEM_LOW_LIMIT is defined as __pa(MAX_DMA_ADDRESS) and
-> MAX_DMA_ADDRESS is defined as:
-> 
-> #define MAX_DMA_ADDRESS ({ \
->         extern unsigned long arm_dma_zone_size; \
->         arm_dma_zone_size ? \
->                 (PAGE_OFFSET + arm_dma_zone_size) : 0xffffffffUL; })
-> 
-> and in arch/arm/mm/init.c, arm_dma_zone_size is declared as:
-> 
-> phys_addr_t arm_dma_zone_size __read_mostly;
-> 
-> Urk!  :-(
-> 
-> OK, so commit 364230b995214 ("ARM: use phys_addr_t for DMA zone sizes")
-> changed the definition of arm_dma_zone_size except it missed the one in
-> arch/arm/include/asm/dma.h.
-> 
-> I have applied this merge fix patch for today:
+On Mon, Jan 6, 2014 at 9:08 AM, Mateusz Guzik <mguzik@redhat.com> wrote:
+> I can't comment on the concept, but have one nit.
 
-There's more here than just this change required here.  We also need to
-limit it if PAGE_OFFSET + arm_dma_zone_size is greater than 4GB, as
-MAX_DMA_ADDRESS is a virtual address - we really don't want the 32-bit
-value of this wrapping.
+FYI: The concept is something that has been in the works and at least ackd on
+by the current maintainer of audit:
+http://marc.info/?l=linux-kernel&m=138660320704580&w=2
 
-Exactly how we go about this, I'm not sure at the moment, but maybe
-something like this:
+>
+> On Mon, Jan 06, 2014 at 07:30:30AM -0800, William Roberts wrote:
+>> +static void audit_log_cmdline(struct audit_buffer *ab, struct task_struct *tsk,
+>> +                      struct audit_context *context)
+>> +{
+>> +     int res;
+>> +     char *buf;
+>> +     char *msg = "(null)";
+>> +     audit_log_format(ab, " cmdline=");
+>> +
+>> +     /* Not  cached */
+>> +     if (!context->cmdline) {
+>> +             buf = kmalloc(PATH_MAX, GFP_KERNEL);
+>> +             if (!buf)
+>> +                     goto out;
+>> +             res = get_cmdline(tsk, buf, PATH_MAX);
+>> +             /* Ensure NULL terminated */
+>> +             if (buf[res-1] != '\0')
+>> +                     buf[res-1] = '\0';
+>
+> This accesses memory below the buffer if get_cmdline returned 0, which I
+> believe will be the case when someone jokingly unmaps the area (all
+> maybe when it is swapped out but can't be swapped in due to I/O errors).
+>
 
-#define MAX_DMA_ADDRESS ({ \
-        extern phys_addr_t arm_dma_zone_size; \
-        arm_dma_zone_size && arm_dma_zone_size < (0x10000000 - PAGE_OFFSET) ? \
-                (PAGE_OFFSET + arm_dma_zone_size) : 0xffffffffUL; })
+Yeah that's not a nit, that's a serious issue and I will correct. Thanks.
+
+> Also since you are just putting 0 in there anyway I don't see much point
+> in testing for it.
+>
+>> +             context->cmdline = buf;
+>> +     }
+>> +     msg = context->cmdline;
+>> +out:
+>> +     audit_log_untrustedstring(ab, msg);
+>> +}
+>> +
+>
+>
+>
+> --
+> Mateusz Guzik
+
+
 
 -- 
-Russell King
-ARM architecture Linux Kernel maintainer
+Respectfully,
+
+William C Roberts
