@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855AbaAFMnR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 07:43:17 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:57752 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816AbaAFMnO (ORCPT
+	id S1753592AbaAFMpa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 07:45:30 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:56627 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750902AbaAFMp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 07:43:14 -0500
-Date: Mon, 6 Jan 2014 15:40:26 +0300
+	Mon, 6 Jan 2014 07:45:29 -0500
+Date: Mon, 6 Jan 2014 15:42:39 +0300
 From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 To: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Yinghai Lu <yinghai@kernel.org>, Pekka Enberg <penberg@kernel.org>,
         x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -next] check: use NUMA_NO_NODE in
- setup_bios_corruption_check()
-Message-ID: <20140106124026.GA2247@swordfish>
+Subject: [PATCH -next] e820: use NUMA_NO_NODE in memblock_find_dma_reserve()
+Message-ID: <20140106124239.GB2247@swordfish>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -31,20 +31,20 @@ Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
 ---
 
- arch/x86/kernel/check.c | 2 +-
+ arch/x86/kernel/e820.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/check.c b/arch/x86/kernel/check.c
-index e2dbcb7..83a7995 100644
---- a/arch/x86/kernel/check.c
-+++ b/arch/x86/kernel/check.c
-@@ -91,7 +91,7 @@ void __init setup_bios_corruption_check(void)
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 174da5f..988c00a 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -1120,7 +1120,7 @@ void __init memblock_find_dma_reserve(void)
+ 		nr_pages += end_pfn - start_pfn;
+ 	}
  
- 	corruption_check_size = round_up(corruption_check_size, PAGE_SIZE);
- 
--	for_each_free_mem_range(i, MAX_NUMNODES, &start, &end, NULL) {
-+	for_each_free_mem_range(i, NUMA_NO_NODE, &start, &end, NULL) {
- 		start = clamp_t(phys_addr_t, round_up(start, PAGE_SIZE),
- 				PAGE_SIZE, corruption_check_size);
- 		end = clamp_t(phys_addr_t, round_down(end, PAGE_SIZE),
+-	for_each_free_mem_range(u, MAX_NUMNODES, &start, &end, NULL) {
++	for_each_free_mem_range(u, NUMA_NO_NODE, &start, &end, NULL) {
+ 		start_pfn = min_t(unsigned long, PFN_UP(start), MAX_DMA_PFN);
+ 		end_pfn = min_t(unsigned long, PFN_DOWN(end), MAX_DMA_PFN);
+ 		if (start_pfn < end_pfn)
 
