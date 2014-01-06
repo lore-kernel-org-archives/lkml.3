@@ -1,109 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892AbaAFQsT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 11:48:19 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:51565 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754899AbaAFQsQ (ORCPT
+	id S1755643AbaAFQtI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 11:49:08 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35765 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753411AbaAFQtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 11:48:16 -0500
-Date: Mon, 6 Jan 2014 22:18:10 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@redhat.com>,
-        Ville =?iso-8859-1?Q?Syrj=E4l=E4?= 
-	<ville.syrjala@linux.intel.com>,
-        Rob Clark <rob@ti.com>, Jakob Bornecrantz <jakob@vmware.com>,
-        dri-devel@lists.freedesktop.org, josh@joshtriplett.org
-Subject: [PATCH 82/85] drivers: gpu: Mark functions as static in vmwgfx_kms.c
-Message-ID: <477dcfde0b9247c91030dedcbf71af7dafdb7bf4.1389018325.git.rashika.kheria@gmail.com>
-References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
+	Mon, 6 Jan 2014 11:49:05 -0500
+Date: Mon, 6 Jan 2014 17:48:38 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, pjt@google.com,
+        Morten.Rasmussen@arm.com, cmetcalf@tilera.com, tony.luck@intel.com,
+        alex.shi@linaro.org, linaro-kernel@lists.linaro.org, rjw@sisk.pl,
+        paulmck@linux.vnet.ibm.com, corbet@lwn.net, tglx@linutronix.de,
+        len.brown@intel.com, amit.kucheria@linaro.org, james.hogan@imgtec.com,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        Dietmar.Eggemann@arm.com
+Subject: Re: [RFC] sched: CPU topology try
+Message-ID: <20140106164838.GR31570@twins.programming.kicks-ass.net>
+References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
+ <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
+ <52C3A0F1.3040803@linux.vnet.ibm.com>
+ <20140106163341.GO31570@twins.programming.kicks-ass.net>
+ <52CADBB9.1010704@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52CADBB9.1010704@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark functions as static because they are not used outside the file
-drm/vmwgfx/vmwgfx_kms.c.
+On Mon, Jan 06, 2014 at 08:37:13AM -0800, Arjan van de Ven wrote:
+> On 1/6/2014 8:33 AM, Peter Zijlstra wrote:
+> >On Wed, Jan 01, 2014 at 10:30:33AM +0530, Preeti U Murthy wrote:
+> >>The design looks good to me. In my opinion information like P-states and
+> >>C-states dependency can be kept separate from the topology levels, it
+> >>might get too complicated unless the information is tightly coupled to
+> >>the topology.
+> >
+> >I'm not entirely convinced we can keep them separated, the moment we
+> >have multiple CPUs sharing a P or C state we need somewhere to manage
+> >the shared state and the domain tree seems like the most natural place
+> >for this.
+> >
+> >Now it might well be both P and C states operate at 'natural' domains
+> >which we already have so it might be 'easy'.
+> 
+> more than that though.. P and C state sharing is mostly hidden from the OS
+> (because the OS does not have the ability to do this; e.g. there are things
+> that do "if THIS cpu goes idle, the OTHER cpu P state changes automatic".
+> 
+> that's not just on x86, the ARM guys (iirc at least the latest snapdragon)  are going in that
+> direction as well.....
+> 
+> for those systems, the OS really should just make local decisions and let the hardware
+> cope with hardware grouping.
 
-This eliminates the following warnings in drm/vmwgfx/vmwgfx_kms.c:
-drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:43:6: warning: no previous prototype for ‘vmw_clip_cliprects’ [-Wmissing-prototypes]
-drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:426:6: warning: no previous prototype for ‘vmw_framebuffer_surface_destroy’ [-Wmissing-prototypes]
-drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:592:5: warning: no previous prototype for ‘vmw_framebuffer_surface_dirty’ [-Wmissing-prototypes]
-drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:757:6: warning: no previous prototype for ‘vmw_framebuffer_dmabuf_destroy’ [-Wmissing-prototypes]
-drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:943:5: warning: no previous prototype for ‘vmw_framebuffer_dmabuf_dirty’ [-Wmissing-prototypes]
-drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:1666:5: warning: no previous prototype for ‘vmw_du_update_layout’ [-Wmissing-prototypes]
+AFAICT this is a chicken-egg problem, the OS never did anything useful
+with it so the hardware guys are now trying to do something with it, but
+this also means that if we cannot predict what the hardware will do
+under certain circumstances the OS really cannot do anything smart
+anymore.
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- drivers/gpu/drm/vmwgfx/vmwgfx_kms.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+So yes, for certain hardware we'll just have to give up and not do
+anything.
 
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
-index 03f1c20..6af4816 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
-@@ -40,7 +40,7 @@ struct vmw_clip_rect {
-  * Clip @num_rects number of @rects against @clip storing the
-  * results in @out_rects and the number of passed rects in @out_num.
-  */
--void vmw_clip_cliprects(struct drm_clip_rect *rects,
-+static void vmw_clip_cliprects(struct drm_clip_rect *rects,
- 			int num_rects,
- 			struct vmw_clip_rect clip,
- 			SVGASignedRect *out_rects,
-@@ -423,7 +423,7 @@ struct vmw_framebuffer_surface {
- 	struct drm_master *master;
- };
- 
--void vmw_framebuffer_surface_destroy(struct drm_framebuffer *framebuffer)
-+static void vmw_framebuffer_surface_destroy(struct drm_framebuffer *framebuffer)
- {
- 	struct vmw_framebuffer_surface *vfbs =
- 		vmw_framebuffer_to_vfbs(framebuffer);
-@@ -589,7 +589,7 @@ out_free_tmp:
- 	return ret;
- }
- 
--int vmw_framebuffer_surface_dirty(struct drm_framebuffer *framebuffer,
-+static int vmw_framebuffer_surface_dirty(struct drm_framebuffer *framebuffer,
- 				  struct drm_file *file_priv,
- 				  unsigned flags, unsigned color,
- 				  struct drm_clip_rect *clips,
-@@ -754,7 +754,7 @@ struct vmw_framebuffer_dmabuf {
- 	struct vmw_dma_buffer *buffer;
- };
- 
--void vmw_framebuffer_dmabuf_destroy(struct drm_framebuffer *framebuffer)
-+static void vmw_framebuffer_dmabuf_destroy(struct drm_framebuffer *framebuffer)
- {
- 	struct vmw_framebuffer_dmabuf *vfbd =
- 		vmw_framebuffer_to_vfbd(framebuffer);
-@@ -940,7 +940,7 @@ static int do_dmabuf_dirty_sou(struct drm_file *file_priv,
- 	return ret;
- }
- 
--int vmw_framebuffer_dmabuf_dirty(struct drm_framebuffer *framebuffer,
-+static int vmw_framebuffer_dmabuf_dirty(struct drm_framebuffer *framebuffer,
- 				 struct drm_file *file_priv,
- 				 unsigned flags, unsigned color,
- 				 struct drm_clip_rect *clips,
-@@ -1663,7 +1663,7 @@ void vmw_disable_vblank(struct drm_device *dev, int crtc)
-  * Small shared kms functions.
-  */
- 
--int vmw_du_update_layout(struct vmw_private *dev_priv, unsigned num,
-+static int vmw_du_update_layout(struct vmw_private *dev_priv, unsigned num,
- 			 struct drm_vmw_rect *rects)
- {
- 	struct drm_device *dev = dev_priv->dev;
--- 
-1.7.9.5
+That said, some hardware still does allow us to do something and for
+those we do need some of this.
+
+Maybe if the OS becomes smart enough the hardware guys will give us some
+control again, who knows.
+
+So yes, I'm entirely fine saying that some chips are fucked and we can't
+do anything sane with them.. Fine they get to sort things themselves.
+
 
