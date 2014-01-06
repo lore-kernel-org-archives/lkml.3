@@ -1,68 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874AbaAFMXR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 07:23:17 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47743 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805AbaAFMXQ (ORCPT
+	id S1753385AbaAFM0o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 07:26:44 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:46360 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057AbaAFM0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 07:23:16 -0500
-Date: Mon, 6 Jan 2014 12:13:18 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Wenyou Yang <wenyou.yang@atmel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Message-ID: <20140106121318.GO31886@sirena.org.uk>
-References: <1388994173.11037.0.camel@phoenix>
+	Mon, 6 Jan 2014 07:26:42 -0500
+Date: Mon, 6 Jan 2014 07:26:28 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: John Fastabend <john.fastabend@gmail.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, mst@redhat.com,
+        John Fastabend <john.r.fastabend@intel.com>
+Subject: Re: [PATCH net 1/2] macvlan: forbid L2 fowarding offload for macvtap
+Message-ID: <20140106122628.GA24280@hmsreliant.think-freely.org>
+References: <1388978467-2075-1-git-send-email-jasowang@redhat.com>
+ <52CA5CDA.1020503@gmail.com>
+ <52CA612D.2000902@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PgOvWPktv68p0YNH"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1388994173.11037.0.camel@phoenix>
-X-Cookie: Go climb a gravity well!
+In-Reply-To: <52CA612D.2000902@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: act8865: Fix build error when !OF
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 06, 2014 at 03:54:21PM +0800, Jason Wang wrote:
+> On 01/06/2014 03:35 PM, John Fastabend wrote:
+> > On 01/05/2014 07:21 PM, Jason Wang wrote:
+> >> L2 fowarding offload will bypass the rx handler of real device. This
+> >> will make
+> >> the packet could not be forwarded to macvtap device. Another problem
+> >> is the
+> >> dev_hard_start_xmit() called for macvtap does not have any
+> >> synchronization.
+> >>
+> >> Fix this by forbidding L2 forwarding for macvtap.
+> >>
+> >> Cc: John Fastabend <john.r.fastabend@intel.com>
+> >> Cc: Neil Horman <nhorman@tuxdriver.com>
+> >> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> >> ---
+> >>   drivers/net/macvlan.c |    5 ++++-
+> >>   1 files changed, 4 insertions(+), 1 deletions(-)
+> >>
+> >
+> > I must be missing something.
+> >
+> > The lower layer device should set skb->dev to the correct macvtap
+> > device on receive so that in netif_receive_skb_core() the macvtap
+> > handler is hit. Skipping the macvlan receive handler should be OK
+> > because the switching was done by the hardware. If I read macvtap.c
+> > correctly macvlan_common_newlink() is called with 'dev' where 'dev'
+> > is the macvtap device. Any idea what I'm missing? I guess I'll need
+> > to setup a macvtap test case.
+> 
+> Unlike macvlan, macvtap depends on rx handler on the lower device to
+> work. In this case macvlan_handle_frame() will call macvtap_receive().
+> So doing netif_receive_skb_core() for macvtap device directly won't work
+> since we need to forward the packet to userspace instead of kernel.
+> 
+> For net-next.git, it may work since commit
+> 6acf54f1cf0a6747bac9fea26f34cfc5a9029523 let macvtap device register an
+> rx handler for itself.
 
---PgOvWPktv68p0YNH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I agree, this seems like it should already be fixed with the above commit.  With
+this the macvlan rx handler should effectively be a no-op as far as the
+reception of frames is concerned.  As long as the driver sets the dev correctly
+to the macvtap device (and it appears to), macvtap will get frames to user
+space, regardless of weather the software or hardware did the switching.  If
+thats the case though, I think the solution is moving that fix to -stable
+(pending testing of course), rather than comming up with a new fix.
 
-On Mon, Jan 06, 2014 at 03:42:53PM +0800, Axel Lin wrote:
-> Fix below build error when !OF:
->   CC [M]  drivers/regulator/act8865-regulator.o
-> drivers/regulator/act8865-regulator.c: In function 'act8865_pmic_probe':
+> >
+> > And what synchronization are you worried about on dev_hard_start_xmit()?
+> > In the L2 forwarding offload case macvlan_open() clears the NETIF_F_LLTX
+> > flag so HARD_TX_LOCK protects the driver txq. We might hit this warning
+> > in dev_queue_xmit() though,
+> >
+> >   net_crit_ratelimited("Virtual device %s asks to queue packet!\n",
+> >
+> > Perhaps we can remove it.
+> 
+> The problem is macvtap does not call dev_queue_xmit() for macvlan
+> device. It calls macvlan_start_xmit() directly from macvtap_get_user().
+> So HARD_TX_LOCK was not done for the txq.
+This seems to also be fixed by 6acf54f1cf0a6747bac9fea26f34cfc5a9029523.
+Macvtap does, as of that commit use dev_queue_xmit for the transmission of
+frames to the lowerdevice.
 
-Applied, thanks.
+Regards
+Neil
 
---PgOvWPktv68p0YNH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSyp3aAAoJELSic+t+oim981EP/02YVU531Oe3p4NHuvkhmEWi
-MyEU/skLd+wjzorRWUivnE2yfU5nxsg1yWAhrEvB5LopgIxl+KT/ZyQgiawisN1+
-PjroTtDWIcbJmgbC1jCrsF4KImK/Pd/qtE0DCn9bc8Tzaxh4hlUltA0zYBo49ZhC
-QfuR0AN10a/h1rvsEZtFlKAqWNTf8PIRkBD4PAKBkioTdV61qBc8MVGUTVpwQZgB
-n8D0mbtr4KjiawRTymFF5Tf1wwZsKw5m05tG3JaDBz1pJ+bseyiBDNFrdem2cwXy
-1om21c6/OYI7mwizA/FaCqQOedaDxYVPhLUAq6nrwwGdJl2lRdc6UjIaewxzcjxP
-fC+Jk4oPvBPygAOHbowUQjNw0H6s4w5hY9ILg2IcpcxDM74bVJNHR5qA6uxyFGmx
-u5FabjB1rcTFvhFXN1PXCaoaoGRTgzpLOU5fVTMSZDtaDorIPTPp4yCalRia444h
-vjhcXsQ4cMHtr1Aok7NDgIJ/+8lE//LEQHH2dqD3JsGVuT1TTtQ0LCGfpJYwQQzg
-AKe8jYWvnrFto5D4OePvXdYJyI+oHdIDRxAzryZ63CTSnEk9wfaCcnm95Njn2mym
-UaP4v3Qc77/BST68po/qcIuwAxIdlh2Z3+Ubz+gt19wqrwnTt8RP4rmKBCkKW2Sm
-rU4VSxmLQP+3du0/vuI7
-=Tepf
------END PGP SIGNATURE-----
-
---PgOvWPktv68p0YNH--
