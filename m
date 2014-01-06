@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933476AbaAFXnn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:43:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47900 "EHLO
+	id S932601AbaAFWjx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:39:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47881 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932615AbaAFWjz (ORCPT
+	with ESMTP id S932535AbaAFWjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:39:55 -0500
+	Mon, 6 Jan 2014 17:39:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 3.12 131/144] s390/3270: fix allocation of tty3270_screen structure
-Date: Mon,  6 Jan 2014 14:38:12 -0800
-Message-Id: <20140106223749.100721934@linuxfoundation.org>
+        Bob Peterson <rpeterso@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 3.12 127/144] GFS2: Fix slab memory leak in gfs2_bufdata
+Date: Mon,  6 Jan 2014 14:38:08 -0800
+Message-Id: <20140106223748.989385032@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -28,36 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Bob Peterson <rpeterso@redhat.com>
 
-commit 36d9f4d3b68c7035ead3850dc85f310a579ed0eb upstream.
+commit 502be2a32f09f388e4ff34ef2e3ebcabbbb261da upstream.
 
-The tty3270_alloc_screen function is called from tty3270_install with
-swapped arguments, the number of columns instead of rows and vice versa.
-The number of rows is typically smaller than the number of columns which
-makes the screen array too big but the individual cell arrays for the
-lines too small. Creating lines longer than the number of rows will
-clobber the memory after the end of the cell array.
-The fix is simple, call tty3270_alloc_screen with the correct argument
-order.
+This patch fixes a slab memory leak that sometimes can occur
+for files with a very short lifespan. The problem occurs when
+a dinode is deleted before it has gotten to the journal properly.
+In the leak scenario, the bd object is pinned for journal
+committment (queued to the metadata buffers queue: sd_log_le_buf)
+but is subsequently unpinned and dequeued before it finds its way
+to the ail or the revoke queue. In this rare circumstance, the bd
+object needs to be freed from slab memory, or it is forgotten.
+We have to be very careful how we do it, though, because
+multiple processes can call gfs2_remove_from_journal. In order to
+avoid double-frees, only the process that does the unpinning is
+allowed to free the bd.
 
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Bob Peterson <rpeterso@redhat.com>
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/s390/char/tty3270.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/gfs2/meta_io.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/s390/char/tty3270.c
-+++ b/drivers/s390/char/tty3270.c
-@@ -942,7 +942,7 @@ static int tty3270_install(struct tty_dr
- 		return rc;
- 	}
+--- a/fs/gfs2/meta_io.c
++++ b/fs/gfs2/meta_io.c
+@@ -258,6 +258,7 @@ void gfs2_remove_from_journal(struct buf
+ 	struct address_space *mapping = bh->b_page->mapping;
+ 	struct gfs2_sbd *sdp = gfs2_mapping2sbd(mapping);
+ 	struct gfs2_bufdata *bd = bh->b_private;
++	int was_pinned = 0;
  
--	tp->screen = tty3270_alloc_screen(tp->view.cols, tp->view.rows);
-+	tp->screen = tty3270_alloc_screen(tp->view.rows, tp->view.cols);
- 	if (IS_ERR(tp->screen)) {
- 		rc = PTR_ERR(tp->screen);
- 		raw3270_put_view(&tp->view);
+ 	if (test_clear_buffer_pinned(bh)) {
+ 		trace_gfs2_pin(bd, 0);
+@@ -273,12 +274,16 @@ void gfs2_remove_from_journal(struct buf
+ 			tr->tr_num_databuf_rm++;
+ 		}
+ 		tr->tr_touched = 1;
++		was_pinned = 1;
+ 		brelse(bh);
+ 	}
+ 	if (bd) {
+ 		spin_lock(&sdp->sd_ail_lock);
+ 		if (bd->bd_tr) {
+ 			gfs2_trans_add_revoke(sdp, bd);
++		} else if (was_pinned) {
++			bh->b_private = NULL;
++			kmem_cache_free(gfs2_bufdata_cachep, bd);
+ 		}
+ 		spin_unlock(&sdp->sd_ail_lock);
+ 	}
 
 
