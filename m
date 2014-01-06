@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757076AbaAFXaw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:30:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48088 "EHLO
+	id S932822AbaAFWke (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:40:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48052 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932831AbaAFWkf (ORCPT
+	with ESMTP id S932764AbaAFWk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:35 -0500
+	Mon, 6 Jan 2014 17:40:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Liu Ping Fan <pingfank@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>
-Subject: [PATCH 3.10 004/129] powerpc: kvm: fix rare but potential deadlock scene
-Date: Mon,  6 Jan 2014 14:37:13 -0800
-Message-Id: <20140106223859.715653298@linuxfoundation.org>
+        Henrik Goldman <hg@x-formation.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.10 023/129] target/file: Update hw_max_sectors based on current block_size
+Date: Mon,  6 Jan 2014 14:37:32 -0800
+Message-Id: <20140106223900.266668393@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -29,77 +29,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: pingfan liu <qemulist@gmail.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 91648ec09c1ef69c4d840ab6dab391bfb452d554 upstream.
+commit 95cadace8f3959282e76ebf8b382bd0930807d2c upstream.
 
-Since kvmppc_hv_find_lock_hpte() is called from both virtmode and
-realmode, so it can trigger the deadlock.
+This patch allows FILEIO to update hw_max_sectors based on the current
+max_bytes_per_io.  This is required because vfs_[writev,readv]() can accept
+a maximum of 2048 iovecs per call, so the enforced hw_max_sectors really
+needs to be calculated based on block_size.
 
-Suppose the following scene:
+This addresses a >= v3.5 bug where block_size=512 was rejecting > 1M
+sized I/O requests, because FD_MAX_SECTORS was hardcoded to 2048 for
+the block_size=4096 case.
 
-Two physical cpuM, cpuN, two VM instances A, B, each VM has a group of
-vcpus.
+(v2: Use max_bytes_per_io instead of ->update_hw_max_sectors)
 
-If on cpuM, vcpu_A_1 holds bitlock X (HPTE_V_HVLOCK), then is switched
-out, and on cpuN, vcpu_A_2 try to lock X in realmode, then cpuN will be
-caught in realmode for a long time.
-
-What makes things even worse if the following happens,
-  On cpuM, bitlockX is hold, on cpuN, Y is hold.
-  vcpu_B_2 try to lock Y on cpuM in realmode
-  vcpu_A_2 try to lock X on cpuN in realmode
-
-Oops! deadlock happens
-
-Signed-off-by: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
-Reviewed-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Alexander Graf <agraf@suse.de>
+Reported-by: Henrik Goldman <hg@x-formation.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kvm/book3s_64_mmu_hv.c |    6 +++++-
- arch/powerpc/kvm/book3s_hv_rm_mmu.c |    4 ++++
- 2 files changed, 9 insertions(+), 1 deletion(-)
+ drivers/target/target_core_device.c |    5 +++++
+ drivers/target/target_core_file.c   |    8 ++++----
+ drivers/target/target_core_file.h   |    5 ++++-
+ include/target/target_core_base.h   |    1 +
+ 4 files changed, 14 insertions(+), 5 deletions(-)
 
---- a/arch/powerpc/kvm/book3s_64_mmu_hv.c
-+++ b/arch/powerpc/kvm/book3s_64_mmu_hv.c
-@@ -473,11 +473,14 @@ static int kvmppc_mmu_book3s_64_hv_xlate
- 		slb_v = vcpu->kvm->arch.vrma_slb_v;
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -1078,6 +1078,11 @@ int se_dev_set_block_size(struct se_devi
+ 	dev->dev_attrib.block_size = block_size;
+ 	pr_debug("dev[%p]: SE Device block_size changed to %u\n",
+ 			dev, block_size);
++
++	if (dev->dev_attrib.max_bytes_per_io)
++		dev->dev_attrib.hw_max_sectors =
++			dev->dev_attrib.max_bytes_per_io / block_size;
++
+ 	return 0;
+ }
+ 
+--- a/drivers/target/target_core_file.c
++++ b/drivers/target/target_core_file.c
+@@ -66,9 +66,8 @@ static int fd_attach_hba(struct se_hba *
+ 	pr_debug("CORE_HBA[%d] - TCM FILEIO HBA Driver %s on Generic"
+ 		" Target Core Stack %s\n", hba->hba_id, FD_VERSION,
+ 		TARGET_CORE_MOD_VERSION);
+-	pr_debug("CORE_HBA[%d] - Attached FILEIO HBA: %u to Generic"
+-		" MaxSectors: %u\n",
+-		hba->hba_id, fd_host->fd_host_id, FD_MAX_SECTORS);
++	pr_debug("CORE_HBA[%d] - Attached FILEIO HBA: %u to Generic\n",
++		hba->hba_id, fd_host->fd_host_id);
+ 
+ 	return 0;
+ }
+@@ -220,7 +219,8 @@ static int fd_configure_device(struct se
  	}
  
-+	preempt_disable();
- 	/* Find the HPTE in the hash table */
- 	index = kvmppc_hv_find_lock_hpte(kvm, eaddr, slb_v,
- 					 HPTE_V_VALID | HPTE_V_ABSENT);
--	if (index < 0)
-+	if (index < 0) {
-+		preempt_enable();
- 		return -ENOENT;
-+	}
- 	hptep = (unsigned long *)(kvm->arch.hpt_virt + (index << 4));
- 	v = hptep[0] & ~HPTE_V_HVLOCK;
- 	gr = kvm->arch.revmap[index].guest_rpte;
-@@ -485,6 +488,7 @@ static int kvmppc_mmu_book3s_64_hv_xlate
- 	/* Unlock the HPTE */
- 	asm volatile("lwsync" : : : "memory");
- 	hptep[0] = v;
-+	preempt_enable();
+ 	dev->dev_attrib.hw_block_size = fd_dev->fd_block_size;
+-	dev->dev_attrib.hw_max_sectors = FD_MAX_SECTORS;
++	dev->dev_attrib.max_bytes_per_io = FD_MAX_BYTES;
++	dev->dev_attrib.hw_max_sectors = FD_MAX_BYTES / fd_dev->fd_block_size;
+ 	dev->dev_attrib.hw_queue_depth = FD_MAX_DEVICE_QUEUE_DEPTH;
  
- 	gpte->eaddr = eaddr;
- 	gpte->vpage = ((v & HPTE_V_AVPN) << 4) | ((eaddr >> 12) & 0xfff);
---- a/arch/powerpc/kvm/book3s_hv_rm_mmu.c
-+++ b/arch/powerpc/kvm/book3s_hv_rm_mmu.c
-@@ -724,6 +724,10 @@ static int slb_base_page_shift[4] = {
- 	20,	/* 1M, unsupported */
- };
- 
-+/* When called from virtmode, this func should be protected by
-+ * preempt_disable(), otherwise, the holding of HPTE_V_HVLOCK
-+ * can trigger deadlock issue.
+ 	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) {
+--- a/drivers/target/target_core_file.h
++++ b/drivers/target/target_core_file.h
+@@ -7,7 +7,10 @@
+ #define FD_DEVICE_QUEUE_DEPTH	32
+ #define FD_MAX_DEVICE_QUEUE_DEPTH 128
+ #define FD_BLOCKSIZE		512
+-#define FD_MAX_SECTORS		2048
++/*
++ * Limited by the number of iovecs (2048) per vfs_[writev,readv] call
 + */
- long kvmppc_hv_find_lock_hpte(struct kvm *kvm, gva_t eaddr, unsigned long slb_v,
- 			      unsigned long valid)
- {
++#define FD_MAX_BYTES		8388608
+ 
+ #define RRF_EMULATE_CDB		0x01
+ #define RRF_GOT_LBA		0x02
+--- a/include/target/target_core_base.h
++++ b/include/target/target_core_base.h
+@@ -614,6 +614,7 @@ struct se_dev_attrib {
+ 	u32		unmap_granularity;
+ 	u32		unmap_granularity_alignment;
+ 	u32		max_write_same_len;
++	u32		max_bytes_per_io;
+ 	struct se_device *da_dev;
+ 	struct config_group da_group;
+ };
 
 
