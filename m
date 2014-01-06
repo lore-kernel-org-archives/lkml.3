@@ -1,95 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754319AbaAFOBZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 09:01:25 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:58836 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990AbaAFOBF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 09:01:05 -0500
-Date: Mon, 6 Jan 2014 15:01:03 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: linux-wireless@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: BUG: build fail due to dependency issue (LIB80211_CRYPT_* failed to
- depend on LIB80211)
-Message-ID: <20140106140103.GA24241@rhlx01.hs-esslingen.de>
+	id S1753411AbaAFOBW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 09:01:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3315 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751099AbaAFOBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 09:01:03 -0500
+Message-ID: <52CAB701.2020505@redhat.com>
+Date: Mon, 06 Jan 2014 09:00:33 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
+CC: Thomas Hellstrom <thellstrom@vmware.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched: Calculate effective load even if local weight
+ is 0
+References: <20140106113912.GC6178@suse.de> <20140106123519.GK31570@twins.programming.kicks-ass.net>
+In-Reply-To: <20140106123519.GK31570@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 01/06/2014 07:35 AM, Peter Zijlstra wrote:
+> On Mon, Jan 06, 2014 at 11:39:12AM +0000, Mel Gorman wrote:
+>> wake_affine uses a weight of 0 for sync wakeups on the grounds that it
+>> is assuming the waking task will sleep and not contribute to load in the
+>> near future. In this case, we still want to calculate the effective load
+>> of the sched entity hierarchy. As effective_load is no longer used by
+>> task_numa_compare since commit fb13c7ee (sched/numa: Use a system-wide
+>> search to find swap/migration candidates), this patch simply restores the
+>> historical behaviour.
+> 
+> Urgh.. yeah. We should merge this. Rik you ok with me adding a from and
+> sob from you?
 
-just had the following non-satisfactory build result here
-(read: caused sizeable waste of time):
+Yes, please do :)
 
+Signed-off-by: Rik van Riel <riel@redhat.com>
 
-  SORTEX  vmlinux
-  SYSMAP  System.map
-  Building modules, stage 2.
-  MODPOST 210 modules
-ERROR: "lib80211_unregister_crypto_ops" [net/wireless/lib80211_crypt_wep.ko] undefined!
-ERROR: "lib80211_register_crypto_ops" [net/wireless/lib80211_crypt_wep.ko] undefined!
-ERROR: "lib80211_unregister_crypto_ops" [net/wireless/lib80211_crypt_tkip.ko] undefined!
-ERROR: "lib80211_register_crypto_ops" [net/wireless/lib80211_crypt_tkip.ko] undefined!
-ERROR: "lib80211_unregister_crypto_ops" [net/wireless/lib80211_crypt_ccmp.ko] undefined!
-ERROR: "lib80211_register_crypto_ops" [net/wireless/lib80211_crypt_ccmp.ko] undefined!
-make[5]: *** [__modpost] Error 1
-make[4]: *** [modules] Error 2
-
-
-
-This is due to net/wireless/Kconfig:
-
-
-config LIB80211
-        tristate
-        default n
-        help
-          This options enables a library of common routines used
-          by IEEE802.11 wireless LAN drivers.
-
-          Drivers should select this themselves if needed.
-
-config LIB80211_CRYPT_WEP
-        tristate
-
-config LIB80211_CRYPT_CCMP
-        tristate
-
-config LIB80211_CRYPT_TKIP
-        tristate
-
-config LIB80211_DEBUG
-        bool "lib80211 debugging messages"
-        depends on LIB80211
-        default n
-        ---help---
-          You can enable this if you want verbose debugging messages
-          from lib80211.
-
-
-A
-    make menuconfig
-showed these three crypt options rather very prominently,
-yet with entry of LIB80211 proper nowhere to be seen,
-thus it was very easy to fall into the trap of "enabling"
-various crypto options, thereby "enabling" nice ultimate build failure.
-
-And as you can see above as well, LIB80211_DEBUG decided to be
-a law-abiding citizen, by caring to announce a proper dependency on LIB80211.
-
-
-Happened on OpenWrt's 3.10.24, and verified Kconfig status to still be identical on linux trunk.
-
-Thanks,
-
-Andreas Mohr
 
 -- 
-GNU/Linux. It's not the software that's free, it's you.
+All rights reversed
