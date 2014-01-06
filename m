@@ -1,88 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755152AbaAFPgv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 10:36:51 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:52333 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751763AbaAFPgt (ORCPT
+	id S1755235AbaAFPhY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 10:37:24 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47908 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335AbaAFPhW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 10:36:49 -0500
-Date: Mon, 6 Jan 2014 21:06:44 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jerome Glisse <jglisse@redhat.com>, dri-devel@lists.freedesktop.org,
-        josh@joshtriplett.org
-Subject: [PATCH 31/85] drivers: gpu: Add static keyword to the definition of
- KMS_INVALID_IOCTL in radeon_kms.c
-Message-ID: <c1f386395d644e456ae1a2ea30e8b97531bc1380.1389018325.git.rashika.kheria@gmail.com>
-References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
+	Mon, 6 Jan 2014 10:37:22 -0500
+Date: Mon, 6 Jan 2014 15:37:15 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: lgirdwood@gmail.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, kuninori.morimoto.gx@renesas.com
+Message-ID: <20140106153715.GZ31886@sirena.org.uk>
+References: <1388986906-32139-1-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TKxMeUgs2YHnbgRP"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
+In-Reply-To: <1388986906-32139-1-git-send-email-Li.Xiubo@freescale.com>
+X-Cookie: Go climb a gravity well!
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: simple-card: fix the DAPM routes map parsing
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add static keyword to the definition of KMS_INVALID_IOCTL(name) in
-radeon_kms.c because the functions passed to it as arguments are not
-used anywhere else.
 
-This eliminates the following warnings in drm/radeon/radeon_kms.c:
-drivers/gpu/drm/radeon/radeon_kms.c:719:1: warning: no previous prototype for ‘radeon_cp_init_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:720:1: warning: no previous prototype for ‘radeon_cp_start_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:721:1: warning: no previous prototype for ‘radeon_cp_stop_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:722:1: warning: no previous prototype for ‘radeon_cp_reset_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:723:1: warning: no previous prototype for ‘radeon_cp_idle_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:724:1: warning: no previous prototype for ‘radeon_cp_resume_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:725:1: warning: no previous prototype for ‘radeon_engine_reset_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:726:1: warning: no previous prototype for ‘radeon_fullscreen_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:727:1: warning: no previous prototype for ‘radeon_cp_swap_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:728:1: warning: no previous rototype for ‘radeon_cp_clear_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:729:1: warning: no previous prototype for ‘radeon_cp_vertex_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:730:1: warning: no previous rototype for ‘radeon_cp_indices_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:731:1: warning: no previous prototype for ‘radeon_cp_texture_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:732:1: warning: no previous prototype for ‘radeon_cp_stipple_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:733:1: warning: no previous prototype for ‘radeon_cp_indirect_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:734:1: warning: no previous prototype for ‘radeon_cp_vertex2_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:735:1: warning: no previous prototype for ‘radeon_cp_cmdbuf_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:736:1: warning: no previous prototype for ‘radeon_cp_getparam_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:737:1: warning: no previous prototype for ‘radeon_cp_flip_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:738:1: warning: no previous prototype for ‘radeon_mem_alloc_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:739:1: warning: no previous prototype for ‘radeon_mem_free_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:740:1: warning: no previous rototype for ‘radeon_mem_init_heap_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:741:1: warning: no previous rototype for ‘radeon_irq_emit_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:742:1: warning: no previous prototype for ‘radeon_irq_wait_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:743:1: warning: no previous rototype for ‘radeon_cp_setparam_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:744:1: warning: no previous prototype for ‘radeon_surface_alloc_kms’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/radeon_kms.c:745:1: warning: no previous prototype for ‘radeon_surface_free_kms’ [-Wmissing-prototypes]
+--TKxMeUgs2YHnbgRP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- drivers/gpu/drm/radeon/radeon_kms.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+On Mon, Jan 06, 2014 at 01:41:46PM +0800, Xiubo Li wrote:
+> The simple-card's DAPM route maping is optional. For example, the spdif has
+> no need of this.
 
-diff --git a/drivers/gpu/drm/radeon/radeon_kms.c b/drivers/gpu/drm/radeon/radeon_kms.c
-index 03cbb6b..4797b41 100644
---- a/drivers/gpu/drm/radeon/radeon_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_kms.c
-@@ -707,7 +707,8 @@ int radeon_get_vblank_timestamp_kms(struct drm_device *dev, int crtc,
- }
- 
- #define KMS_INVALID_IOCTL(name)						\
--int name(struct drm_device *dev, void *data, struct drm_file *file_priv)\
-+static int name(struct drm_device *dev, void *data, struct drm_file	\
-+		*file_priv)						\
- {									\
- 	DRM_ERROR("invalid ioctl with kms %s\n", __func__);		\
- 	return -EINVAL;							\
--- 
-1.7.9.5
+This doesn't seem to apply against current code, can you please check
+and resend?
 
+--TKxMeUgs2YHnbgRP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSys2oAAoJELSic+t+oim9jDQP/04lsa/nZ5ocRvhAF82oxeWf
+FpwS8R3s554lbmtGJciZBTgDcJc58Mby5lYhjwbcAahqVeFi8vdnbfZhj7J5RVpP
+8SKA4ufNc5QmQzMN3xvFsL42zIWZF9d3+hXYd5Iz4TbGJy9O03S0l2SqNBv8RWAu
+t8qxtnnYpUPAL0VoK76laOOlNf8kZf7qOLZ+D8Pm4afCJYjZtGDOtszDJ5aPJSdP
+Dtsf2BP5Xpu4yh/YwXsnGH5KLA8oqFKoQAGmxEDiARGXxXhVLCCQR15ujjh++dH7
+o0ABlaE23fsvVqej2ztvnuQFo6mB2UvfppxpQQqwmnP3p2yW4Pzp97/dqT3j4UcE
+ccwdurzym1PS7ceIIbCSbVpX0XMAIgRZfPbVqEjs2OKL8eAfzBYeDfXoxwq/dMPy
+BsGZcGJ7d2LOcp2KKW02686wGjUqBgdT/7xnAWnYlBjQYx5IHHW8hA5s0pEAEwAu
+W6H5wiK+EYH3p/82Ew+6HowA2hvcOgez3IWAcKhKPWtmErsX1qgabBYwfDpVi95k
+7f8+iSav96EvvIiq8+XT0kCFxvJiIbK/7fwv+71tVkpHNi+6KV3MsS0qPx1O9bVq
+QSUTMPIBfeRTSHF3RW46ahagBAXePjYTkfq0oAiX1z4vTQXSmS7jpPckqBox3cuR
+2vn64W5y9oBVW9UPSO5x
+=+bUx
+-----END PGP SIGNATURE-----
+
+--TKxMeUgs2YHnbgRP--
