@@ -1,97 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756346AbaAFVZI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 16:25:08 -0500
-Received: from mga02.intel.com ([134.134.136.20]:42392 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755124AbaAFVZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 16:25:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,614,1384329600"; 
-   d="scan'208";a="434703667"
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow tracing units
-References: <8738lqtg0v.fsf@ashishki-desk.ger.corp.intel.com>
-	<20131218141125.GT21999@twins.programming.kicks-ass.net>
-	<87zjnys0gj.fsf@ashishki-desk.ger.corp.intel.com>
-	<20131218150900.GU21999@twins.programming.kicks-ass.net>
-	<87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
-	<20131219103134.GD30183@twins.programming.kicks-ass.net>
-	<87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com>
-	<20131219112812.GY21999@twins.programming.kicks-ass.net>
-	<20131219123955.GA18186@gmail.com>
-	<87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
-	<20131219151024.GI16438@laptop.programming.kicks-ass.net>
-Date: Mon, 06 Jan 2014 13:25:02 -0800
-In-Reply-To: <20131219151024.GI16438@laptop.programming.kicks-ass.net> (Peter
-	Zijlstra's message of "Thu, 19 Dec 2013 16:10:24 +0100")
-Message-ID: <87iotw6bwx.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1756370AbaAFV0s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 16:26:48 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:41577 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755102AbaAFV0q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 16:26:46 -0500
+Date: Mon, 6 Jan 2014 22:26:23 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
+Cc: Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Li Zefan <lizefan@huawei.com>,
+        "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] x86: Add Cache QoS Monitoring (CQM) support
+Message-ID: <20140106212623.GH30183@twins.programming.kicks-ass.net>
+References: <20140104161050.GA24306@htj.dyndns.org>
+ <1388875369.9761.25.camel@ppwaskie-mobl.amr.corp.intel.com>
+ <20140104225058.GC24306@htj.dyndns.org>
+ <1388899376.9761.45.camel@ppwaskie-mobl.amr.corp.intel.com>
+ <20140106111624.GB5623@twins.programming.kicks-ass.net>
+ <1389026035.32504.3.camel@ppwaskie-mobl.amr.corp.intel.com>
+ <20140106164150.GQ31570@twins.programming.kicks-ass.net>
+ <1389026867.32504.16.camel@ppwaskie-mobl.amr.corp.intel.com>
+ <20140106180636.GG30183@twins.programming.kicks-ass.net>
+ <1389039035.32504.35.camel@ppwaskie-mobl.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389039035.32504.35.camel@ppwaskie-mobl.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+On Mon, Jan 06, 2014 at 08:10:45PM +0000, Waskiewicz Jr, Peter P wrote:
+> There is one per logical CPU.  However, in the current generation, they
+> report on the usage of the same L3 cache.  But the CPU takes care of the
+> resolution of which MSR write and read comes from the logical CPU, so
+> software doesn't need to lock access to it from different CPUs.
 
-> On Thu, Dec 19, 2013 at 04:30:53PM +0200, Alexander Shishkin wrote:
->> So I'd like to steer away from the ways in which hardware can be broken
->> and talk about a usable interface, to begin with.
->
-> Just dump it into the regular one buffer like I outlined.
+What are the rules of RMIDs, I can't seem to find that in the SDM and I
+think you're tagging cachelines with them. Which would mean that in
+order to (re) use them you need a complete cache (L3) wipe.
 
-Just getting back to this. 
+Without a wipe you keep having stale entries of the former user and no
+clear indication on when your numbers are any good.
 
-Do you realize that PT buffers have to be page aligned. 
-
-So to mix it with a regular perf buffer would need padding every PT
-message by 4K, which wastes a lot of memory. The side band messages
-are usually only a few bytes (e.g. context switch).
-
-If the sideband is mfrequent it could even take up >half of the buffer,
-but mostly only with padding.
-
-Is that what you intended?
-
-perf doesn't support gaps today, so your proposal wouldn't even
-seem to fit into the current perf design.
-
-Also of course it requires disabling/enabling PT explicitly for 
-every perf message, which is slow. So you add at least 2*WRMSR cost
-(thousands of cycles).
-
-> That said; we very much need to have at least two architectures
-> implemented for any of this code to move.
->
-> But we cannot ignore the hardware trainwreck; we cannot shape our
-> interface around something that's utterly broken.
->
-> Some hardware is just too broken to support.
-
-I don't think the PT design is broken in any way, it's straight 
-forward and simple.
-
-Trying to mix hardware tracing and software tracing in the same buffer
-on the other hand ...
-
-Anyways if perf is not flexible enough to support this I suppose
-it could switch to a simple device driver, and only run perf with
-separate fds for side band purposes. 
-
-Would you prefer that?
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+Also, is there any sane way of shooting down the entire L3?
