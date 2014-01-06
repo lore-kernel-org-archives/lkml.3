@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755800AbaAFQwe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 11:52:34 -0500
-Received: from mga09.intel.com ([134.134.136.24]:1969 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753592AbaAFQwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 11:52:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,613,1384329600"; 
-   d="scan'208";a="454334584"
-Date: Mon, 6 Jan 2014 08:52:31 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Yann Droneaud <ydroneaud@opteya.com>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf tools: enable close-on-exec flag on perf file
- descriptor
-Message-ID: <20140106165231.GF27909@tassilo.jf.intel.com>
-References: <cover.1388952061.git.ydroneaud@opteya.com>
- <8c03f54e1598b1727c19706f3af03f98685d9fe6.1388952061.git.ydroneaud@opteya.com>
- <20140106092929.GA31570@twins.programming.kicks-ass.net>
- <1389005485-12778-1-git-send-email-ydroneaud@opteya.com>
- <20140106162754.GE27909@tassilo.jf.intel.com>
- <20140106163950.GP31570@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140106163950.GP31570@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755291AbaAFQzT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 11:55:19 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:53390 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753767AbaAFQzR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 11:55:17 -0500
+From: Jesper Falk <jesperfalk94@gmail.com>
+To: anton@enomsg.org
+Cc: dwmw2@infradead.org, markus@trippelsdorf.de, akpm@linux-foundation.org,
+        kyungsik.lee@lge.com, linux-kernel@vger.kernel.org,
+        Jesper Falk <jesperfalk94@gmail.com>
+Subject: [PATCH] Power: da9030 and da9059 Fixed coding style
+Date: Mon,  6 Jan 2014 17:54:57 +0100
+Message-Id: <1389027297-14419-1-git-send-email-jesperfalk94@gmail.com>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> AFAICT its got nothing to do with threaded or not, but only with exec()
-> and we do in fact call exec() quite a lot in perf.
-> 
-> It ensures we do not leak open perf FDs into our child processes. Now
-> I'm not entirely sure how we do the exec these days but I think we were
-> good about not not leaking them anyway, but more paranoia never really
-> hurts.
+Fixed coding style in da9030_battery and da9052-battery
 
-Then you can just set it with fcntl, which works everywhere, 
-instead of doing extra feature tests.
+Signed-off-by: Jesper Falk <jesperfalk94@gmail.com>
+---
+ .gitignore                     | 2 +-
+ drivers/power/da9030_battery.c | 2 +-
+ drivers/power/da9052-battery.c | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-The atomic setup is only needed for threaded programs to avoid
-races with other threads doing exec.
-
--Andi
-
+diff --git a/.gitignore b/.gitignore
+index 7e9932e..681849a 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -44,7 +44,7 @@ modules.builtin
+ /vmlinuz
+ /System.map
+ /Module.markers
+-/Module.symvers
++*/Module.symvers
+ 
+ #
+ # Debian directory (make deb-pkg)
+diff --git a/drivers/power/da9030_battery.c b/drivers/power/da9030_battery.c
+index ae6c418..82316ad 100644
+--- a/drivers/power/da9030_battery.c
++++ b/drivers/power/da9030_battery.c
+@@ -2,7 +2,7 @@
+  * Battery charger driver for Dialog Semiconductor DA9030
+  *
+  * Copyright (C) 2008 Compulab, Ltd.
+- * 	Mike Rapoport <mike@compulab.co.il>
++ *	Mike Rapoport <mike@compulab.co.il>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+diff --git a/drivers/power/da9052-battery.c b/drivers/power/da9052-battery.c
+index f8f4c0f..9972085 100644
+--- a/drivers/power/da9052-battery.c
++++ b/drivers/power/da9052-battery.c
+@@ -484,7 +484,7 @@ static int da9052_USB_current_notifier(struct notifier_block *nb,
+ 	    *current_mA > da9052_chg_current_lim[row][DA9052_CHG_LIM_COLS - 1])
+ 		return -EINVAL;
+ 
+-	for (col = 0; col <= DA9052_CHG_LIM_COLS - 1 ; col++) {
++	for (col = 0; col <= DA9052_CHG_LIM_COLS - 1; col++) {
+ 		if (*current_mA <= da9052_chg_current_lim[row][col])
+ 			break;
+ 	}
 -- 
-ak@linux.intel.com -- Speaking for myself only
+1.8.5.2
+
