@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756810AbaAFWi1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:38:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47406 "EHLO
+	id S1757628AbaAGAJB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:09:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47425 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756719AbaAFWiV (ORCPT
+	with ESMTP id S1756799AbaAFWi0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:21 -0500
+	Mon, 6 Jan 2014 17:38:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chad Hanson <chanson@trustedcs.com>, Paul Moore <pmoore@redhat.com>
-Subject: [PATCH 3.12 031/144] selinux: fix broken peer recv check
-Date: Mon,  6 Jan 2014 14:36:32 -0800
-Message-Id: <20140106223746.216568171@linuxfoundation.org>
+        Witold Bazakbal <865perl@wp.pl>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.12 036/144] iscsi-target: Fix-up all zero data-length CDBs with R/W_BIT set
+Date: Mon,  6 Jan 2014 14:36:37 -0800
+Message-Id: <20140106223746.356538990@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -28,35 +29,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chad Hanson <chanson@trustedcs.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 46d01d63221c3508421dd72ff9c879f61053cffc upstream.
+commit 4454b66cb67f14c33cd70ddcf0ff4985b26324b7 upstream.
 
-Fix a broken networking check. Return an error if peer recv fails.  If
-secmark is active and the packet recv succeeds the peer recv error is
-ignored.
+This patch changes special case handling for ISCSI_OP_SCSI_CMD
+where an initiator sends a zero length Expected Data Transfer
+Length (EDTL), but still sets the WRITE and/or READ flag bits
+when no payload transfer is requested.
 
-Signed-off-by: Chad Hanson <chanson@trustedcs.com>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Many, many moons ago two special cases where added for an ancient
+version of ESX that has long since been fixed, so instead of adding
+a new special case for the reported bug with a Broadcom 57800 NIC,
+go ahead and always strip off the incorrect WRITE + READ flag bits.
+
+Also, avoid sending a reject here, as RFC-3720 does mandate this
+case be handled without protocol error.
+
+Reported-by: Witold Bazakbal <865perl@wp.pl>
+Tested-by: Witold Bazakbal <865perl@wp.pl>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/selinux/hooks.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/target/iscsi/iscsi_target.c |   26 ++++++++++++--------------
+ 1 file changed, 12 insertions(+), 14 deletions(-)
 
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -4297,8 +4297,10 @@ static int selinux_socket_sock_rcv_skb(s
- 		}
- 		err = avc_has_perm(sk_sid, peer_sid, SECCLASS_PEER,
- 				   PEER__RECV, &ad);
--		if (err)
-+		if (err) {
- 			selinux_netlbl_err(skb, err, 0);
-+			return err;
-+		}
- 	}
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -830,24 +830,22 @@ int iscsit_setup_scsi_cmd(struct iscsi_c
+ 	if (((hdr->flags & ISCSI_FLAG_CMD_READ) ||
+ 	     (hdr->flags & ISCSI_FLAG_CMD_WRITE)) && !hdr->data_length) {
+ 		/*
+-		 * Vmware ESX v3.0 uses a modified Cisco Initiator (v3.4.2)
+-		 * that adds support for RESERVE/RELEASE.  There is a bug
+-		 * add with this new functionality that sets R/W bits when
+-		 * neither CDB carries any READ or WRITE datapayloads.
++		 * From RFC-3720 Section 10.3.1:
++		 *
++		 * "Either or both of R and W MAY be 1 when either the
++		 *  Expected Data Transfer Length and/or Bidirectional Read
++		 *  Expected Data Transfer Length are 0"
++		 *
++		 * For this case, go ahead and clear the unnecssary bits
++		 * to avoid any confusion with ->data_direction.
+ 		 */
+-		if ((hdr->cdb[0] == 0x16) || (hdr->cdb[0] == 0x17)) {
+-			hdr->flags &= ~ISCSI_FLAG_CMD_READ;
+-			hdr->flags &= ~ISCSI_FLAG_CMD_WRITE;
+-			goto done;
+-		}
++		hdr->flags &= ~ISCSI_FLAG_CMD_READ;
++		hdr->flags &= ~ISCSI_FLAG_CMD_WRITE;
  
- 	if (secmark_active) {
+-		pr_err("ISCSI_FLAG_CMD_READ or ISCSI_FLAG_CMD_WRITE"
++		pr_warn("ISCSI_FLAG_CMD_READ or ISCSI_FLAG_CMD_WRITE"
+ 			" set when Expected Data Transfer Length is 0 for"
+-			" CDB: 0x%02x. Bad iSCSI Initiator.\n", hdr->cdb[0]);
+-		return iscsit_add_reject_cmd(cmd,
+-					     ISCSI_REASON_BOOKMARK_INVALID, buf);
++			" CDB: 0x%02x, Fixing up flags\n", hdr->cdb[0]);
+ 	}
+-done:
+ 
+ 	if (!(hdr->flags & ISCSI_FLAG_CMD_READ) &&
+ 	    !(hdr->flags & ISCSI_FLAG_CMD_WRITE) && (hdr->data_length != 0)) {
 
 
