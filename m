@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103AbaAFVKK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 16:10:10 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:51070 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755635AbaAFVKG (ORCPT
+	id S1756232AbaAFVLS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 16:11:18 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47752 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755635AbaAFVLQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 16:10:06 -0500
-X-Originating-IP: 50.43.14.201
-Date: Mon, 6 Jan 2014 13:09:56 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>,
-        Rashika Kheria <rashika.kheria@gmail.com>
-Subject: Re: #pragma once?
-Message-ID: <20140106210956.GA24603@leaf>
-References: <20140106204706.GA16924@leaf>
- <20140106130003.4eea0893605369a8fd9336ac@linux-foundation.org>
+	Mon, 6 Jan 2014 16:11:16 -0500
+Date: Mon, 6 Jan 2014 22:11:15 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [QUERY] Power consumption on a 2013 MBP
+Message-ID: <20140106211115.GA23421@amd.pavel.ucw.cz>
+References: <CALkWK0n0q+a9EmMbJXsgo6eO1B+0Lq6tqsN3moLbXz+Y0GGu0g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140106130003.4eea0893605369a8fd9336ac@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CALkWK0n0q+a9EmMbJXsgo6eO1B+0Lq6tqsN3moLbXz+Y0GGu0g@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 01:00:03PM -0800, Andrew Morton wrote:
-> On Mon, 6 Jan 2014 12:47:07 -0800 Josh Triplett <josh@joshtriplett.org> wrote:
+On Tue 2013-12-31 15:24:00, Ramkumar Ramachandra wrote:
+> Hi,
 > 
-> > Does anyone have any objection to the use of "#pragma once" instead of
-> > the usual #ifndef-#define-...-#endif include guard?
+> On a 2013 Macbook Pro, Linux consumes 21W of power while OS X consumes
+> just 9W. I found this very disturbing; Linux more than halves the
+> battery life of the device. I checked to see that I wasn't running any
+> especially power-hungry applications or drivers (using powertop). I'm
+> using just one proprietary driver: the broadcom-wl wireless driver;
+> otherwise, I'm running the stock 3.12 kernel from Arch's repositories.
 > 
-> Sounds OK to me.  gcc has supported this for quite a long time, yes?  I
-> wonder if ICC supports it.
+> How do I figure out what is consuming power, and what can I do to help
+> minimize consumption?
 
-Yes, ICC supports it as well, if anyone cares.
-
-- Josh Triplett
+USB usually does that. Try rmmoding hcd(s). If that does not help, try
+removing other modules. Oh and try without that broadcom-wl driver.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
