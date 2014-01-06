@@ -1,57 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756602AbaAFW0J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:26:09 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:47903 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756389AbaAFW0H (ORCPT
+	id S1756625AbaAFW1a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:27:30 -0500
+Received: from mail-yh0-f41.google.com ([209.85.213.41]:61226 "EHLO
+	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785AbaAFW12 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:26:07 -0500
-Message-ID: <52CB2D7E.7070505@codeaurora.org>
-Date: Mon, 06 Jan 2014 14:26:06 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Mon, 6 Jan 2014 17:27:28 -0500
+Message-ID: <52CB2C3A.3010207@gmail.com>
+Date: Tue, 07 Jan 2014 06:20:42 +0800
+From: Ric Wheeler <ricwheeler@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 4/7] mfd: ssbi: Add regmap read/write helpers
-References: <1387831563-13535-1-git-send-email-sboyd@codeaurora.org> <1387831563-13535-5-git-send-email-sboyd@codeaurora.org> <20131224125443.GC30815@sirena.org.uk> <20131226194133.GJ31766@codeaurora.org> <20140106115021.GC30156@lee--X1>
-In-Reply-To: <20140106115021.GC30156@lee--X1>
-Content-Type: text/plain; charset=UTF-8
+To: linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, lsf-pc@lists.linux-foundation.org
+CC: linux-kernel@vger.kernel.org
+Subject: [LSF/MM TOPIC] [ATTEND] persistent memory progress, management of
+ storage & file systems
+References: <20131220093022.GV11295@suse.de>
+In-Reply-To: <20131220093022.GV11295@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/14 03:50, Lee Jones wrote:
-> On Thu, 26 Dec 2013, Stephen Boyd wrote:
->
->> On 12/24, Mark Brown wrote:
->>> On Mon, Dec 23, 2013 at 12:46:00PM -0800, Stephen Boyd wrote:
->>>
->>>> +int ssbi_reg_read(void *context, unsigned int reg, unsigned int *val)
->>>> +{
->>>> +	*val = 0;
->>>> +	return ssbi_read(context, reg, (u8 *)val, 1);
->>>> +}
->>>> +EXPORT_SYMBOL_GPL(ssbi_reg_read);
->>>> +
->>>> +int ssbi_reg_write(void *context, unsigned int reg, unsigned int val)
->>>> +{
->>>> +	return ssbi_write(context, reg, (u8 *)&val, 1);
->>>> +}
->>>> +EXPORT_SYMBOL_GPL(ssbi_reg_write);
->>> Not a big deal but could these just be inlined in the headers?
->> Sure, I can do that if I need to resend? The only benefit I see
->> is two less symbols exported.
-> Yes please. After this review.
->
 
-Ok done. Just waiting for you to reply on patch 3 until I resend.
+I would like to attend this year and continue to talk about the work on enabling 
+the new class of persistent memory devices. Specifically, very interested in 
+talking about both using a block driver under our existing stack and also 
+progress at the file system layer (adding xip/mmap tweaks to existing file 
+systems and looking at new file systems).
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+We also have a lot of work left to do on unifying management, it would be good 
+to resync on that.
+
+Regards,
+
+Ric
 
