@@ -1,37 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756194AbaAFUhX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 15:37:23 -0500
-Received: from smtp.domeneshop.no ([194.63.252.54]:38439 "EHLO
-	smtp.domeneshop.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754769AbaAFUhW (ORCPT
+	id S1756069AbaAFUhV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 15:37:21 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:50476 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754769AbaAFUhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 15:37:22 -0500
-Message-ID: <52CB1348.4070304@ovekarlsen.com>
-Date: Mon, 06 Jan 2014 21:34:16 +0100
-From: Ove Karlsen <mail@ovekarlsen.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 6 Jan 2014 15:37:19 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] powernow-k6: fixes for the frequency driver
+Date: Mon, 06 Jan 2014 21:51:05 +0100
+Message-ID: <2372881.ND9u0a4YHW@vostro.rjw.lan>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <alpine.LRH.2.02.1312111751180.9686@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1312111751180.9686@file01.intranet.prod.int.rdu2.redhat.com>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Gnu - censorship
-References: <52CAFCC6.3070504@ovekarlsen.com> <52CAFE7A.9090106@infradead.org> <52CB0132.2050705@ovekarlsen.com> <52CB03BA.2070508@infradead.org> <52CB054B.6070504@ovekarlsen.com> <52CB0659.1070906@infradead.org> <52CB0683.3030704@ovekarlsen.com> <52CB0835.4010602@infradead.org>
-In-Reply-To: <52CB0835.4010602@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And btw I know how irrational LSD-users can be. Someone I had a 
-enthusiasts-studio collaboration with, in the 90s, now has used a lot of 
-hallucinogenic drugs. I have unfortunately witnessed some of his 
-dialouges and talked to him myself, and can only say that it is quite 
-bizarre.
+On Wednesday, December 11, 2013 07:37:48 PM Mikulas Patocka wrote:
+> Hi
+> 
+> Here I'm sending three patches for k6 frequency governor.
+> 
+> 1. the processor doesn't respond to cache snoops when changing the 
+> frequency, so we need to disable cache while doing the change.
+> 
+> 2. it is impossible to read the default multiplier. After reset, the 
+> register always reports zero regardless of the current multiplier. So we 
+> set the multiplier based on current frequency and allow the user to 
+> override it with module parameter.
+> 
+> 3. reorder frequencies from the highest to the lowest.
 
-We can mourn his mental demise by a sample of him, from the 90s period.
+I've queued up this series (and the speedstep-smi patch) for 3.14, but I don't
+want it to go to stable upfront, so I removed the "Cc: stable" tags.  Please
+send a stable inclusion request to Greg & Co after it spends a few weeks in
+the Linus' tree.
 
-http://ovekarlsen.com/tmp/p%e5l-stenbrenden_birds-and-bees(union-studio).mp3
+Thanks!
 
-;)
-
-PBWY.
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
