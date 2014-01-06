@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933763AbaAFX2F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:28:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48171 "EHLO
+	id S933774AbaAFX2c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:28:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48146 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932907AbaAFWkv (ORCPT
+	with ESMTP id S932887AbaAFWkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:51 -0500
+	Mon, 6 Jan 2014 17:40:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>
-Subject: [PATCH 3.10 006/129] staging: comedi: 8255_pci: fix for newer PCI-DIO48H
-Date: Mon,  6 Jan 2014 14:37:15 -0800
-Message-Id: <20140106223859.770925049@linuxfoundation.org>
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Finn Thain <fthain@telegraphics.com.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.10 005/129] TTY: pmac_zilog, check existence of ports in pmz_console_init()
+Date: Mon,  6 Jan 2014 14:37:14 -0800
+Message-Id: <20140106223859.743240993@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -29,75 +30,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit 0283f7a100882684ad32b768f9f1ad81658a0b92 upstream.
+commit dc1dc2f8a5dd863bf2e79f338fc3ae29e99c683a upstream.
 
-At some point, Measurement Computing / ComputerBoards redesigned the
-PCI-DIO48H to use a PLX PCI interface chip instead of an AMCC chip.
-This meant they had to put their hardware registers in the PCI BAR 2
-region instead of PCI BAR 1.  Unfortunately, they kept the same PCI
-device ID for the new design.  This means the driver recognizes the
-newer cards, but doesn't work (and is likely to screw up the local
-configuration registers of the PLX chip) because it's using the wrong
-region.
+When booting a multi-platform m68k kernel on a non-Mac with "console=ttyS0"
+on the kernel command line, it crashes with:
 
-Since  the PCI subvendor and subdevice IDs were both zero on the old
-design, but are the same as the vendor and device on the new design, we
-can tell the old design and new design apart easily enough.  Split the
-existing entry for the PCI-DIO48H in `pci_8255_boards[]` into two new
-entries, referenced by different entries in the PCI device ID table
-`pci_8255_pci_table[]`.  Use the same board name for both entries.
+Unable to handle kernel NULL pointer dereference at virtual address   (null)
+Oops: 00000000
+PC: [<0013ad28>] __pmz_startup+0x32/0x2a0
+...
+Call Trace: [<002c5d3e>] pmz_console_setup+0x64/0xe4
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+The normal tty driver doesn't crash, because init_pmz() checks
+pmz_ports_count again after calling pmz_probe().
+
+In the serial console initialization path, pmz_console_init() doesn't do
+this, causing the driver to crash later.
+
+Add a check for pmz_ports_count to fix this.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Finn Thain <fthain@telegraphics.com.au>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/8255_pci.c |   15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ drivers/tty/serial/pmac_zilog.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/staging/comedi/drivers/8255_pci.c
-+++ b/drivers/staging/comedi/drivers/8255_pci.c
-@@ -66,7 +66,8 @@ enum pci_8255_boardid {
- 	BOARD_ADLINK_PCI7296,
- 	BOARD_CB_PCIDIO24,
- 	BOARD_CB_PCIDIO24H,
--	BOARD_CB_PCIDIO48H,
-+	BOARD_CB_PCIDIO48H_OLD,
-+	BOARD_CB_PCIDIO48H_NEW,
- 	BOARD_CB_PCIDIO96H,
- 	BOARD_NI_PCIDIO96,
- 	BOARD_NI_PCIDIO96B,
-@@ -109,11 +110,16 @@ static const struct pci_8255_boardinfo p
- 		.dio_badr	= 2,
- 		.n_8255		= 1,
- 	},
--	[BOARD_CB_PCIDIO48H] = {
-+	[BOARD_CB_PCIDIO48H_OLD] = {
- 		.name		= "cb_pci-dio48h",
- 		.dio_badr	= 1,
- 		.n_8255		= 2,
- 	},
-+	[BOARD_CB_PCIDIO48H_NEW] = {
-+		.name		= "cb_pci-dio48h",
-+		.dio_badr	= 2,
-+		.n_8255		= 2,
-+	},
- 	[BOARD_CB_PCIDIO96H] = {
- 		.name		= "cb_pci-dio96h",
- 		.dio_badr	= 2,
-@@ -270,7 +276,10 @@ static DEFINE_PCI_DEVICE_TABLE(pci_8255_
- 	{ PCI_VDEVICE(ADLINK, 0x7296), BOARD_ADLINK_PCI7296 },
- 	{ PCI_VDEVICE(CB, 0x0028), BOARD_CB_PCIDIO24 },
- 	{ PCI_VDEVICE(CB, 0x0014), BOARD_CB_PCIDIO24H },
--	{ PCI_VDEVICE(CB, 0x000b), BOARD_CB_PCIDIO48H },
-+	{ PCI_DEVICE_SUB(PCI_VENDOR_ID_CB, 0x000b, 0x0000, 0x0000),
-+	  .driver_data = BOARD_CB_PCIDIO48H_OLD },
-+	{ PCI_DEVICE_SUB(PCI_VENDOR_ID_CB, 0x000b, PCI_VENDOR_ID_CB, 0x000b),
-+	  .driver_data = BOARD_CB_PCIDIO48H_NEW },
- 	{ PCI_VDEVICE(CB, 0x0017), BOARD_CB_PCIDIO96H },
- 	{ PCI_VDEVICE(NI, 0x0160), BOARD_NI_PCIDIO96 },
- 	{ PCI_VDEVICE(NI, 0x1630), BOARD_NI_PCIDIO96B },
+--- a/drivers/tty/serial/pmac_zilog.c
++++ b/drivers/tty/serial/pmac_zilog.c
+@@ -2051,6 +2051,9 @@ static int __init pmz_console_init(void)
+ 	/* Probe ports */
+ 	pmz_probe();
+ 
++	if (pmz_ports_count == 0)
++		return -ENODEV;
++
+ 	/* TODO: Autoprobe console based on OF */
+ 	/* pmz_console.index = i; */
+ 	register_console(&pmz_console);
 
 
