@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764AbaAFGSE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 01:18:04 -0500
-Received: from mga14.intel.com ([143.182.124.37]:8408 "EHLO mga14.intel.com"
+	id S1752903AbaAFGS2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 01:18:28 -0500
+Received: from mga14.intel.com ([143.182.124.37]:13062 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752515AbaAFGSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 01:18:00 -0500
+	id S1752786AbaAFGSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 01:18:23 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,611,1384329600"; 
-   d="scan'208";a="401364825"
+   d="scan'208";a="401364862"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
         Yinghai Lu <yinghai@kernel.org>,
@@ -17,11 +17,10 @@ To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
 Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
         Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
         iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>
-Subject: [Patch Part1 V3 03/20] iommu/vt-d: fix a race window in allocating domain ID for virtual machines
-Date: Mon,  6 Jan 2014 14:18:10 +0800
-Message-Id: <1388989107-4795-4-git-send-email-jiang.liu@linux.intel.com>
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
+Subject: [Patch Part1 V3 09/20] iommu/vt-d: mark internal functions as static
+Date: Mon,  6 Jan 2014 14:18:16 +0800
+Message-Id: <1388989107-4795-10-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1388989107-4795-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1388989107-4795-1-git-send-email-jiang.liu@linux.intel.com>
@@ -29,38 +28,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function intel_iommu_domain_init() may be concurrently called by upper
-layer without serialization, so use atomic_t to protect domain id
-allocation.
+Function detect_intel_iommu()/alloc_iommu()/parse_ioapics_under_ir()
+are only used internally, so mark them as static.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>
 ---
- drivers/iommu/intel-iommu.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/iommu/dmar.c                |    9 ++++++---
+ drivers/iommu/intel_irq_remapping.c |    4 +++-
+ include/linux/dmar.h                |   12 +-----------
+ include/linux/intel-iommu.h         |    1 -
+ 4 files changed, 10 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 43b9bfe..b8e3b48 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -3877,7 +3877,7 @@ static void vm_domain_remove_all_dev_info(struct dmar_domain *domain)
+diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+index f5f7b7d..f02a4fd 100644
+--- a/drivers/iommu/dmar.c
++++ b/drivers/iommu/dmar.c
+@@ -52,6 +52,8 @@ LIST_HEAD(dmar_drhd_units);
+ struct acpi_table_header * __initdata dmar_tbl;
+ static acpi_size dmar_tbl_size;
+ 
++static int alloc_iommu(struct dmar_drhd_unit *drhd);
++
+ static void __init dmar_register_drhd_unit(struct dmar_drhd_unit *drhd)
+ {
+ 	/*
+@@ -498,7 +500,7 @@ static void warn_invalid_dmar(u64 addr, const char *message)
+ 		dmi_get_system_info(DMI_PRODUCT_VERSION));
  }
  
- /* domain id for virtual machine, it won't be set in context */
--static unsigned long vm_domid;
-+static atomic_t vm_domid = ATOMIC_INIT(0);
- 
- static struct dmar_domain *iommu_alloc_vm_domain(void)
+-int __init check_zero_address(void)
++static int __init check_zero_address(void)
  {
-@@ -3887,7 +3887,7 @@ static struct dmar_domain *iommu_alloc_vm_domain(void)
- 	if (!domain)
- 		return NULL;
+ 	struct acpi_table_dmar *dmar;
+ 	struct acpi_dmar_header *entry_header;
+@@ -548,7 +550,7 @@ failed:
+ 	return 0;
+ }
  
--	domain->id = vm_domid++;
-+	domain->id = atomic_inc_return(&vm_domid);
- 	domain->nid = -1;
- 	memset(domain->iommu_bmp, 0, sizeof(domain->iommu_bmp));
- 	domain->flags = DOMAIN_FLAG_VIRTUAL_MACHINE;
+-int __init detect_intel_iommu(void)
++static int __init detect_intel_iommu(void)
+ {
+ 	int ret;
+ 
+@@ -649,7 +651,7 @@ out:
+ 	return err;
+ }
+ 
+-int alloc_iommu(struct dmar_drhd_unit *drhd)
++static int alloc_iommu(struct dmar_drhd_unit *drhd)
+ {
+ 	struct intel_iommu *iommu;
+ 	u32 ver, sts;
+@@ -1366,4 +1368,5 @@ int __init dmar_ir_support(void)
+ 		return 0;
+ 	return dmar->flags & 0x1;
+ }
++
+ IOMMU_INIT_POST(detect_intel_iommu);
+diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
+index 2616e8a..6712f1e 100644
+--- a/drivers/iommu/intel_irq_remapping.c
++++ b/drivers/iommu/intel_irq_remapping.c
+@@ -40,6 +40,8 @@ static int ir_ioapic_num, ir_hpet_num;
+ 
+ static DEFINE_RAW_SPINLOCK(irq_2_ir_lock);
+ 
++static int __init parse_ioapics_under_ir(void);
++
+ static struct irq_2_iommu *irq_2_iommu(unsigned int irq)
+ {
+ 	struct irq_cfg *cfg = irq_get_chip_data(irq);
+@@ -773,7 +775,7 @@ static int ir_parse_ioapic_hpet_scope(struct acpi_dmar_header *header,
+  * Finds the assocaition between IOAPIC's and its Interrupt-remapping
+  * hardware unit.
+  */
+-int __init parse_ioapics_under_ir(void)
++static int __init parse_ioapics_under_ir(void)
+ {
+ 	struct dmar_drhd_unit *drhd;
+ 	int ir_supported = 0;
+diff --git a/include/linux/dmar.h b/include/linux/dmar.h
+index 8adfce0..f614357 100644
+--- a/include/linux/dmar.h
++++ b/include/linux/dmar.h
+@@ -33,6 +33,7 @@ struct acpi_dmar_header;
+ #define DMAR_X2APIC_OPT_OUT	0x2
+ 
+ struct intel_iommu;
++
+ #ifdef CONFIG_DMAR_TABLE
+ extern struct acpi_table_header *dmar_tbl;
+ struct dmar_drhd_unit {
+@@ -62,19 +63,8 @@ extern struct list_head dmar_drhd_units;
+ 
+ extern int dmar_table_init(void);
+ extern int dmar_dev_scope_init(void);
+-
+-/* Intel IOMMU detection */
+-extern int detect_intel_iommu(void);
+ extern int enable_drhd_fault_handling(void);
+-
+-extern int parse_ioapics_under_ir(void);
+-extern int alloc_iommu(struct dmar_drhd_unit *);
+ #else
+-static inline int detect_intel_iommu(void)
+-{
+-	return -ENODEV;
+-}
+-
+ static inline int dmar_table_init(void)
+ {
+ 	return -ENODEV;
+diff --git a/include/linux/intel-iommu.h b/include/linux/intel-iommu.h
+index de1e5e9..f2c4114 100644
+--- a/include/linux/intel-iommu.h
++++ b/include/linux/intel-iommu.h
+@@ -348,7 +348,6 @@ static inline void __iommu_flush_cache(
+ extern struct dmar_drhd_unit * dmar_find_matched_drhd_unit(struct pci_dev *dev);
+ extern int dmar_find_matched_atsr_unit(struct pci_dev *dev);
+ 
+-extern int alloc_iommu(struct dmar_drhd_unit *drhd);
+ extern void free_iommu(struct intel_iommu *iommu);
+ extern int dmar_enable_qi(struct intel_iommu *iommu);
+ extern void dmar_disable_qi(struct intel_iommu *iommu);
 -- 
 1.7.10.4
 
