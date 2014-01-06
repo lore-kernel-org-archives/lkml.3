@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191AbaAFPyx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 10:54:53 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:47388 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470AbaAFPyw (ORCPT
+	id S1755124AbaAFP4T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 10:56:19 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:63484 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753292AbaAFP4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 10:54:52 -0500
-Date: Mon, 6 Jan 2014 21:24:47 +0530
+	Mon, 6 Jan 2014 10:56:18 -0500
+Date: Mon, 6 Jan 2014 21:26:08 +0530
 From: Rashika Kheria <rashika.kheria@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+Cc: David Airlie <airlied@linux.ie>, Rashika Kheria <rashika.kheria@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
         Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Dave Airlie <airlied@redhat.com>,
-        =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
         dri-devel@lists.freedesktop.org, josh@joshtriplett.org
-Subject: [PATCH 45/85] drivers: gpu: Include appropriate header file in
- atombios_encoders.c
-Message-ID: <4bf62fd7c2d35aaeb0ee7968965648c46adf2157.1389018325.git.rashika.kheria@gmail.com>
+Subject: [PATCH 46/85] drivers: gpu: Move prototype declarations to header
+ file radeon_mode.h from radeon_i2c.c
+Message-ID: <52e05a6b4ef0b8ab2b60c01e61c9982f56d40717.1389018325.git.rashika.kheria@gmail.com>
 References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -30,33 +28,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include appropriate header file drm/radeon/radeon_asic.h in
-drm/radeon/atombios_encoders.c because it uses function declared in the
-header file.
+Move prototype declaration of functions radeon_atom_hw_i2c_xfer() and
+radeon_atom_hw_i2c_func() to header file drm/radeon/radeon_mode.h
+because they are used by more than one file.
 
-This eliminates the following warnings in
-drm/radeon/atombios_encoders.c:
-drivers/gpu/drm/radeon/atombios_encoders.c:74:1: warning: no previous prototype for ‘atombios_get_backlight_level’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/atombios_encoders.c:86:1: warning: no previous prototype for ‘atombios_set_backlight_level’ [-Wmissing-prototypes]
+This eliminates the following warnings in drm/radeon/atombios_i2c.c:
+drivers/gpu/drm/radeon/atombios_i2c.c:96:5: warning: no previous prototype for ‘radeon_atom_hw_i2c_xfer’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/atombios_i2c.c:146:5: warning: no previous prototype for ‘radeon_atom_hw_i2c_func’ [-Wmissing-prototypes]
 
 Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/gpu/drm/radeon/atombios_encoders.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/radeon_i2c.c  |    4 ----
+ drivers/gpu/drm/radeon/radeon_mode.h |    4 ++++
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/atombios_encoders.c b/drivers/gpu/drm/radeon/atombios_encoders.c
-index 641298d..595d573 100644
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -27,6 +27,7 @@
- #include <drm/drm_crtc_helper.h>
- #include <drm/radeon_drm.h>
+diff --git a/drivers/gpu/drm/radeon/radeon_i2c.c b/drivers/gpu/drm/radeon/radeon_i2c.c
+index fc60b74..fd07db8 100644
+--- a/drivers/gpu/drm/radeon/radeon_i2c.c
++++ b/drivers/gpu/drm/radeon/radeon_i2c.c
+@@ -31,10 +31,6 @@
  #include "radeon.h"
-+#include "radeon_asic.h"
  #include "atom.h"
- #include "atombios.h"
- #include <linux/backlight.h>
+ 
+-extern int radeon_atom_hw_i2c_xfer(struct i2c_adapter *i2c_adap,
+-				   struct i2c_msg *msgs, int num);
+-extern u32 radeon_atom_hw_i2c_func(struct i2c_adapter *adap);
+-
+ /**
+  * radeon_ddc_probe
+  *
+diff --git a/drivers/gpu/drm/radeon/radeon_mode.h b/drivers/gpu/drm/radeon/radeon_mode.h
+index 8f2f4a3..129f069 100644
+--- a/drivers/gpu/drm/radeon/radeon_mode.h
++++ b/drivers/gpu/drm/radeon/radeon_mode.h
+@@ -628,6 +628,10 @@ struct atom_voltage_table
+ 	struct atom_voltage_table_entry entries[MAX_VOLTAGE_ENTRIES];
+ };
+ 
++int radeon_atom_hw_i2c_xfer(struct i2c_adapter *i2c_adap,
++			    struct i2c_msg *msgs, int num);
++u32 radeon_atom_hw_i2c_func(struct i2c_adapter *adap);
++
+ void
+ radeon_atom_backlight_init(struct radeon_encoder *radeon_encoder,
+ 			   struct drm_connector *drm_connector);
 -- 
 1.7.9.5
 
