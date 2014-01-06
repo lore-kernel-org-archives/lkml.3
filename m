@@ -1,92 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933388AbaAFXKg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:10:36 -0500
-Received: from mga09.intel.com ([134.134.136.24]:28149 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933057AbaAFXK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 18:10:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,615,1384329600"; 
-   d="scan'208";a="462559361"
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow tracing units
-References: <87zjnys0gj.fsf@ashishki-desk.ger.corp.intel.com>
-	<20131218150900.GU21999@twins.programming.kicks-ass.net>
-	<87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
-	<20131219103134.GD30183@twins.programming.kicks-ass.net>
-	<87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com>
-	<20131219112812.GY21999@twins.programming.kicks-ass.net>
-	<20131219123955.GA18186@gmail.com>
-	<87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
-	<20131219151024.GI16438@laptop.programming.kicks-ass.net>
-	<87iotw6bwx.fsf@tassilo.jf.intel.com>
-	<20140106221528.GK30183@twins.programming.kicks-ass.net>
-Date: Mon, 06 Jan 2014 15:10:28 -0800
-In-Reply-To: <20140106221528.GK30183@twins.programming.kicks-ass.net> (Peter
-	Zijlstra's message of "Mon, 6 Jan 2014 23:15:28 +0100")
-Message-ID: <8761pw6717.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S933398AbaAFXLT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:11:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48438 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933069AbaAFWli (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 17:41:38 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>, Sage Weil <sage@inktan.com>
+Subject: [PATCH 3.10 101/129] ceph: avoid accessing invalid memory
+Date: Mon,  6 Jan 2014 14:38:50 -0800
+Message-Id: <20140106223902.494687036@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
+References: <20140106223859.589799655@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Can you please clarify your position on the interleaved buffer?
+------------------
 
-I still can't see how it is a efficient design.
+From: Sasha Levin <sasha.levin@oracle.com>
 
-It's generally true in scather-gather (be it software or hardware) 
-that each additional SG entry increases the cost. So to make things
-efficient you always want to minimize entries as much as possible.
+commit 5446429630257f4723829409337a26c076907d5d upstream.
 
->> I don't think the PT design is broken in any way, it's straight 
->> forward and simple.
->
-> Also, do clarify the other points I asked about. Esp. the non
-> FREEZE_ON_PMI behaviour of the PT PMI is worrying me immensely.
+when mounting ceph with a dev name that starts with a slash, ceph
+would attempt to access the character before that slash. Since we
+don't actually own that byte of memory, we would trigger an
+invalid access:
 
-The only reason for hardware freeze is when you have a few entries (like
-with LBRs) so the interrupt entry code could overwhelm it.
+[   43.499934] BUG: unable to handle kernel paging request at ffff880fa3a97fff
+[   43.500984] IP: [<ffffffff818f3884>] parse_mount_options+0x1a4/0x300
+[   43.501491] PGD 743b067 PUD 10283c4067 PMD 10282a6067 PTE 8000000fa3a97060
+[   43.502301] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[   43.503006] Dumping ftrace buffer:
+[   43.503596]    (ftrace buffer empty)
+[   43.504046] CPU: 0 PID: 10879 Comm: mount Tainted: G        W    3.10.0-sasha #1129
+[   43.504851] task: ffff880fa625b000 ti: ffff880fa3412000 task.ti: ffff880fa3412000
+[   43.505608] RIP: 0010:[<ffffffff818f3884>]  [<ffffffff818f3884>] parse_mount_options$
+[   43.506552] RSP: 0018:ffff880fa3413d08  EFLAGS: 00010286
+[   43.507133] RAX: ffff880fa3a98000 RBX: ffff880fa3a98000 RCX: 0000000000000000
+[   43.507893] RDX: ffff880fa3a98001 RSI: 000000000000002f RDI: ffff880fa3a98000
+[   43.508610] RBP: ffff880fa3413d58 R08: 0000000000001f99 R09: ffff880fa3fe64c0
+[   43.509426] R10: ffff880fa3413d98 R11: ffff880fa38710d8 R12: ffff880fa3413da0
+[   43.509792] R13: ffff880fa3a97fff R14: 0000000000000000 R15: ffff880fa3413d90
+[   43.509792] FS:  00007fa9c48757e0(0000) GS:ffff880fd2600000(0000) knlGS:000000000000$
+[   43.509792] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   43.509792] CR2: ffff880fa3a97fff CR3: 0000000fa3bb9000 CR4: 00000000000006b0
+[   43.509792] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   43.509792] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   43.509792] Stack:
+[   43.509792]  0000e5180000000e ffffffff85ca1900 ffff880fa38710d8 ffff880fa3413d98
+[   43.509792]  0000000000000120 0000000000000000 ffff880fa3a98000 0000000000000000
+[   43.509792]  ffffffff85cf32a0 0000000000000000 ffff880fa3413dc8 ffffffff818f3c72
+[   43.509792] Call Trace:
+[   43.509792]  [<ffffffff818f3c72>] ceph_mount+0xa2/0x390
+[   43.509792]  [<ffffffff81226314>] ? pcpu_alloc+0x334/0x3c0
+[   43.509792]  [<ffffffff81282f8d>] mount_fs+0x8d/0x1a0
+[   43.509792]  [<ffffffff812263d0>] ? __alloc_percpu+0x10/0x20
+[   43.509792]  [<ffffffff8129f799>] vfs_kern_mount+0x79/0x100
+[   43.509792]  [<ffffffff812a224d>] do_new_mount+0xcd/0x1c0
+[   43.509792]  [<ffffffff812a2e8d>] do_mount+0x15d/0x210
+[   43.509792]  [<ffffffff81220e55>] ? strndup_user+0x45/0x60
+[   43.509792]  [<ffffffff812a2fdd>] SyS_mount+0x9d/0xe0
+[   43.509792]  [<ffffffff83fd816c>] tracesys+0xdd/0xe2
+[   43.509792] Code: 4c 8b 5d c0 74 0a 48 8d 50 01 49 89 14 24 eb 17 31 c0 48 83 c9 ff $
+[   43.509792] RIP  [<ffffffff818f3884>] parse_mount_options+0x1a4/0x300
+[   43.509792]  RSP <ffff880fa3413d08>
+[   43.509792] CR2: ffff880fa3a97fff
+[   43.509792] ---[ end trace 22469cd81e93af51 ]---
 
-But PT is not small, it's gigantic: even with the smallest buffer you
-have many thousands of entries.
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Reviewed-by: Sage Weil <sage@inktan.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-So you will get a few branches in the interrupt entry, but it's not a problem
-because everything you really wanted to trace is still there.
+---
+ fs/ceph/super.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Eventually the handler disables PT, so there's no risk of racing with
-the update or anything like that.
+--- a/fs/ceph/super.c
++++ b/fs/ceph/super.c
+@@ -357,7 +357,7 @@ static int parse_mount_options(struct ce
+ 	}
+ 	err = -EINVAL;
+ 	dev_name_end--;		/* back up to ':' separator */
+-	if (*dev_name_end != ':') {
++	if (dev_name_end < dev_name || *dev_name_end != ':') {
+ 		pr_err("device name is missing path (no : separator in %s)\n",
+ 				dev_name);
+ 		goto out;
 
-Did I miss anything?
 
-> To me it seems very weird that PT is hooked to the same PMI as the
-> normal PMU, it really should have been a different interrupt.
-
-It's in the same STATUS register, so it's cheap to check both.
-
-It shouldn't add any new spurious problems (or at least nothing
-worse than what we already have)
-
-I understand that it would be nice to separate other NMI users
-from all of PMI, but that would be an orthogonal problem.
-
-Any other issues?
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
