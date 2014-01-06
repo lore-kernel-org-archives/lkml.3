@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933092AbaAFWll (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:41:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48431 "EHLO
+	id S933348AbaAFXJy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:09:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48447 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932968AbaAFWlg (ORCPT
+	with ESMTP id S933085AbaAFWlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:36 -0500
+	Mon, 6 Jan 2014 17:41:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>,
         Sage Weil <sage@inktank.com>
-Subject: [PATCH 3.10 099/129] rbd: fix a couple warnings
-Date: Mon,  6 Jan 2014 14:38:48 -0800
-Message-Id: <20140106223902.432997808@linuxfoundation.org>
+Subject: [PATCH 3.10 103/129] ceph: fix null pointer dereference
+Date: Mon,  6 Jan 2014 14:38:52 -0800
+Message-Id: <20140106223902.549622631@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -28,39 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sage Weil <sage@inktank.com>
+From: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
 
-commit e976cad0f0dbe5440a4ca38e29e1f932d9319125 upstream.
+commit c338c07c51e3106711fad5eb599e375eadb6855d upstream.
 
-gcc isn't quite smart enough and generates these warnings:
+When register_session() is given an out-of-range argument for mds,
+ceph_mdsmap_get_addr() will return a null pointer, which would be given to
+ceph_con_open() & be dereferenced, causing a kernel oops. This fixes bug #4685
+in the Ceph bug tracker <http://tracker.ceph.com/issues/4685>.
 
-drivers/block/rbd.c: In function 'rbd_img_request_fill':
-drivers/block/rbd.c:1266:22: warning: 'bio_list' may be used uninitialized in this function [-Wmaybe-uninitialized]
-drivers/block/rbd.c:2186:14: note: 'bio_list' was declared here
-drivers/block/rbd.c:2247:10: warning: 'pages' may be used uninitialized in this function [-Wmaybe-uninitialized]
-
-even though they are initialized for their respective code paths.
-
-Signed-off-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/rbd.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/ceph/mds_client.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -2173,9 +2173,9 @@ static int rbd_img_request_fill(struct r
- 	struct rbd_obj_request *obj_request = NULL;
- 	struct rbd_obj_request *next_obj_request;
- 	bool write_request = img_request_write_test(img_request);
--	struct bio *bio_list;
-+	struct bio *bio_list = 0;
- 	unsigned int bio_offset = 0;
--	struct page **pages;
-+	struct page **pages = 0;
- 	u64 img_offset;
- 	u64 resid;
- 	u16 opcode;
+--- a/fs/ceph/mds_client.c
++++ b/fs/ceph/mds_client.c
+@@ -414,6 +414,9 @@ static struct ceph_mds_session *register
+ {
+ 	struct ceph_mds_session *s;
+ 
++	if (mds >= mdsc->mdsmap->m_max_mds)
++		return ERR_PTR(-EINVAL);
++
+ 	s = kzalloc(sizeof(*s), GFP_NOFS);
+ 	if (!s)
+ 		return ERR_PTR(-ENOMEM);
 
 
