@@ -1,42 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077AbaAFLxk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 06:53:40 -0500
-Received: from mail-we0-f175.google.com ([74.125.82.175]:36583 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753057AbaAFLxj (ORCPT
+	id S1753734AbaAFL6d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 06:58:33 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:52040 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752920AbaAFL6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 06:53:39 -0500
-Date: Mon, 6 Jan 2014 11:53:34 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 7/7] devicetree: bindings: Document PM8921/8058 PMICs
-Message-ID: <20140106115334.GE30156@lee--X1>
-References: <1387831563-13535-1-git-send-email-sboyd@codeaurora.org>
- <1387831563-13535-8-git-send-email-sboyd@codeaurora.org>
+	Mon, 6 Jan 2014 06:58:31 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: daniel.lezcano@linaro.org, lenb@kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, kyungmin.park@samsung.com
+Subject: Re: [PATCH v2 0/9] cpuidle: rework device state count handling
+Date: Mon, 06 Jan 2014 13:12:16 +0100
+Message-ID: <2125614.4MjcCLIIsz@vostro.rjw.lan>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <1387565251-7051-1-git-send-email-b.zolnierkie@samsung.com>
+References: <1387565251-7051-1-git-send-email-b.zolnierkie@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1387831563-13535-8-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> PM8921 and PM8058 are PMICs found paired with MSM8960 and MSM8660
-> devices respectively. They contain subdevices such as keypads,
-> RTC, regulators, clocks, etc.
+On Friday, December 20, 2013 07:47:22 PM Bartlomiej Zolnierkiewicz wrote:
+> Hi,
 > 
-> Cc: <devicetree@vger.kernel.org>
+> Some cpuidle drivers assume that cpuidle core will handle cases where
+> device->state_count is smaller than driver->state_count, unfortunately
+> currently this is untrue (device->state_count is used only for handling
+> cpuidle state sysfs entries and driver->state_count is used for all
+> other cases) and will not be fixed in the future as device->state_count
+> is planned to be removed [1].
+> 
+> This patchset fixes such drivers (ARM EXYNOS cpuidle driver and ACPI
+> cpuidle driver), removes superflous device->state_count initialization
+> from drivers for which device->state_count equals driver->state_count
+> (POWERPC pseries cpuidle driver and intel_idle driver) and finally
+> removes state_count field from struct cpuidle_device.
+> 
+> Additionaly (while at it) this patchset fixes C1E promotion disable
+> quirk handling (in intel_idle driver) and converts cpuidle drivers code
+> to use the common cpuidle_[un]register() routines (in POWERPC pseries
+> cpuidle driver and intel_idle driver).
+> 
+> [1] http://permalink.gmane.org/gmane.linux.power-management.general/36908
+> 
+> Reference to v1:
+> 	http://comments.gmane.org/gmane.linux.power-management.general/37390
+> 
+> Changes since v1:
+> - synced patch series with next-20131220
+> - added ACKs from Daniel Lezcano
 
-Still waiting on these guys.
+I've queued up the series for 3.14, thanks!
+
+> Best regards,
+> --
+> Bartlomiej Zolnierkiewicz
+> Samsung R&D Institute Poland
+> Samsung Electronics
+> 
+> 
+> Bartlomiej Zolnierkiewicz (9):
+>   ARM: EXYNOS: cpuidle: fix AFTR mode check
+>   POWERPC: pseries: cpuidle: remove superfluous dev->state_count
+>     initialization
+>   POWERPC: pseries: cpuidle: use the common cpuidle_[un]register()
+>     routines
+>   ACPI / cpuidle: fix max idle state handling with hotplug CPU support
+>   ACPI / cpuidle: remove dev->state_count setting
+>   intel_idle: do C1E promotion disable quirk for hotplugged CPUs
+>   intel_idle: remove superfluous dev->state_count initialization
+>   intel_idle: use the common cpuidle_[un]register() routines
+>   cpuidle: remove state_count field from struct cpuidle_device
+> 
+>  arch/arm/mach-exynos/cpuidle.c                  |   8 +-
+>  arch/powerpc/platforms/pseries/processor_idle.c |  59 +---------
+>  drivers/acpi/processor_idle.c                   |  29 +++--
+>  drivers/cpuidle/cpuidle.c                       |   3 -
+>  drivers/cpuidle/sysfs.c                         |   5 +-
+>  drivers/idle/intel_idle.c                       | 140 +++++-------------------
+>  include/linux/cpuidle.h                         |   1 -
+>  7 files changed, 51 insertions(+), 194 deletions(-)
+> 
+> 
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
