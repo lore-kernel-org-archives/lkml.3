@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933370AbaAFWmZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:42:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48608 "EHLO
+	id S933706AbaAFWvg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:51:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48671 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933313AbaAFWmP (ORCPT
+	with ESMTP id S933374AbaAFWm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:42:15 -0500
+	Mon, 6 Jan 2014 17:42:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Len Brown <len.brown@intel.com>, Vinson Lee <vlee@twopensource.com>
-Subject: [PATCH 3.4 12/43] intel_idle: initial IVB support
-Date: Mon,  6 Jan 2014 14:39:29 -0800
-Message-Id: <20140106223942.603446266@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.4 25/43] ath9k: Fix interrupt handling for the AR9002 family
+Date: Mon,  6 Jan 2014 14:39:42 -0800
+Message-Id: <20140106223942.969011577@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223942.259651490@linuxfoundation.org>
 References: <20140106223942.259651490@linuxfoundation.org>
@@ -28,79 +30,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Len Brown <len.brown@intel.com>
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-commit 6edab08c24f9141d69cfa4683a0a027d86ab303e upstream.
+commit 73f0b56a1ff64e7fb6c3a62088804bab93bcedc2 upstream.
 
->From an OS point of view, IVB looks like SNB, but quicker.
+This patch adds a driver workaround for a HW issue.
 
-Signed-off-by: Len Brown <len.brown@intel.com>
-Cc: Vinson Lee <vlee@twopensource.com>
+A race condition in the HW results in missing interrupts,
+which can be avoided by a read/write with the ISR register.
+All chips in the AR9002 series are affected by this bug - AR9003
+and above do not have this problem.
+
+Cc: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/idle/intel_idle.c |   37 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 37 insertions(+)
+ drivers/net/wireless/ath/ath9k/ar9002_mac.c |   52 +++++++++++++++++++++++-----
+ 1 file changed, 43 insertions(+), 9 deletions(-)
 
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -169,6 +169,38 @@ static struct cpuidle_state snb_cstates[
- 		.enter = &intel_idle },
- };
- 
-+static struct cpuidle_state ivb_cstates[MWAIT_MAX_NUM_CSTATES] = {
-+	{ /* MWAIT C0 */ },
-+	{ /* MWAIT C1 */
-+		.name = "C1-IVB",
-+		.desc = "MWAIT 0x00",
-+		.flags = CPUIDLE_FLAG_TIME_VALID,
-+		.exit_latency = 1,
-+		.target_residency = 1,
-+		.enter = &intel_idle },
-+	{ /* MWAIT C2 */
-+		.name = "C3-IVB",
-+		.desc = "MWAIT 0x10",
-+		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
-+		.exit_latency = 59,
-+		.target_residency = 156,
-+		.enter = &intel_idle },
-+	{ /* MWAIT C3 */
-+		.name = "C6-IVB",
-+		.desc = "MWAIT 0x20",
-+		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
-+		.exit_latency = 80,
-+		.target_residency = 300,
-+		.enter = &intel_idle },
-+	{ /* MWAIT C4 */
-+		.name = "C7-IVB",
-+		.desc = "MWAIT 0x30",
-+		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
-+		.exit_latency = 87,
-+		.target_residency = 300,
-+		.enter = &intel_idle },
-+};
+--- a/drivers/net/wireless/ath/ath9k/ar9002_mac.c
++++ b/drivers/net/wireless/ath/ath9k/ar9002_mac.c
+@@ -76,9 +76,16 @@ static bool ar9002_hw_get_isr(struct ath
+ 				mask2 |= ATH9K_INT_CST;
+ 			if (isr2 & AR_ISR_S2_TSFOOR)
+ 				mask2 |= ATH9K_INT_TSFOOR;
 +
- static struct cpuidle_state atom_cstates[MWAIT_MAX_NUM_CSTATES] = {
- 	{ /* MWAIT C0 */ },
- 	{ /* MWAIT C1 */
-@@ -347,6 +379,10 @@ static const struct idle_cpu idle_cpu_sn
- 	.state_table = snb_cstates,
- };
++			if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
++				REG_WRITE(ah, AR_ISR_S2, isr2);
++				isr &= ~AR_ISR_BCNMISC;
++			}
+ 		}
  
-+static const struct idle_cpu idle_cpu_ivb = {
-+	.state_table = ivb_cstates,
-+};
+-		isr = REG_READ(ah, AR_ISR_RAC);
++		if (pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)
++			isr = REG_READ(ah, AR_ISR_RAC);
 +
- #define ICPU(model, cpu) \
- 	{ X86_VENDOR_INTEL, 6, model, X86_FEATURE_MWAIT, (unsigned long)&cpu }
+ 		if (isr == 0xffffffff) {
+ 			*masked = 0;
+ 			return false;
+@@ -97,11 +104,23 @@ static bool ar9002_hw_get_isr(struct ath
  
-@@ -362,6 +398,7 @@ static const struct x86_cpu_id intel_idl
- 	ICPU(0x2f, idle_cpu_nehalem),
- 	ICPU(0x2a, idle_cpu_snb),
- 	ICPU(0x2d, idle_cpu_snb),
-+	ICPU(0x3a, idle_cpu_ivb),
- 	{}
- };
- MODULE_DEVICE_TABLE(x86cpu, intel_idle_ids);
+ 			*masked |= ATH9K_INT_TX;
+ 
+-			s0_s = REG_READ(ah, AR_ISR_S0_S);
++			if (pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED) {
++				s0_s = REG_READ(ah, AR_ISR_S0_S);
++				s1_s = REG_READ(ah, AR_ISR_S1_S);
++			} else {
++				s0_s = REG_READ(ah, AR_ISR_S0);
++				REG_WRITE(ah, AR_ISR_S0, s0_s);
++				s1_s = REG_READ(ah, AR_ISR_S1);
++				REG_WRITE(ah, AR_ISR_S1, s1_s);
++
++				isr &= ~(AR_ISR_TXOK |
++					 AR_ISR_TXDESC |
++					 AR_ISR_TXERR |
++					 AR_ISR_TXEOL);
++			}
++
+ 			ah->intr_txqs |= MS(s0_s, AR_ISR_S0_QCU_TXOK);
+ 			ah->intr_txqs |= MS(s0_s, AR_ISR_S0_QCU_TXDESC);
+-
+-			s1_s = REG_READ(ah, AR_ISR_S1_S);
+ 			ah->intr_txqs |= MS(s1_s, AR_ISR_S1_QCU_TXERR);
+ 			ah->intr_txqs |= MS(s1_s, AR_ISR_S1_QCU_TXEOL);
+ 		}
+@@ -114,13 +133,15 @@ static bool ar9002_hw_get_isr(struct ath
+ 		*masked |= mask2;
+ 	}
+ 
+-	if (AR_SREV_9100(ah))
+-		return true;
+-
+-	if (isr & AR_ISR_GENTMR) {
++	if (!AR_SREV_9100(ah) && (isr & AR_ISR_GENTMR)) {
+ 		u32 s5_s;
+ 
+-		s5_s = REG_READ(ah, AR_ISR_S5_S);
++		if (pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED) {
++			s5_s = REG_READ(ah, AR_ISR_S5_S);
++		} else {
++			s5_s = REG_READ(ah, AR_ISR_S5);
++		}
++
+ 		ah->intr_gen_timer_trigger =
+ 				MS(s5_s, AR_ISR_S5_GENTIMER_TRIG);
+ 
+@@ -133,8 +154,21 @@ static bool ar9002_hw_get_isr(struct ath
+ 		if ((s5_s & AR_ISR_S5_TIM_TIMER) &&
+ 		    !(pCap->hw_caps & ATH9K_HW_CAP_AUTOSLEEP))
+ 			*masked |= ATH9K_INT_TIM_TIMER;
++
++		if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
++			REG_WRITE(ah, AR_ISR_S5, s5_s);
++			isr &= ~AR_ISR_GENTMR;
++		}
++	}
++
++	if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
++		REG_WRITE(ah, AR_ISR, isr);
++		REG_READ(ah, AR_ISR);
+ 	}
+ 
++	if (AR_SREV_9100(ah))
++		return true;
++
+ 	if (sync_cause) {
+ 		fatal_int =
+ 			(sync_cause &
 
 
