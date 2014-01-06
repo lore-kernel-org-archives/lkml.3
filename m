@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932443AbaAFWj1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:39:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47685 "EHLO
+	id S932462AbaAFWja (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:39:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47716 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932387AbaAFWjV (ORCPT
+	with ESMTP id S932441AbaAFWj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:39:21 -0500
+	Mon, 6 Jan 2014 17:39:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.12 093/144] powerpc: Align p_end
-Date: Mon,  6 Jan 2014 14:37:34 -0800
-Message-Id: <20140106223748.028379072@linuxfoundation.org>
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [PATCH 3.12 060/144] firewire: sbp2: bring back WRITE SAME support
+Date: Mon,  6 Jan 2014 14:37:01 -0800
+Message-Id: <20140106223747.064087046@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,34 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
-commit 286e4f90a72c0b0621dde0294af6ed4b0baddabb upstream.
+commit ce027ed98fd176710fb14be9d6015697b62436f0 upstream.
 
-p_end is an 8 byte value embedded in the text section. This means it
-is only 4 byte aligned when it should be 8 byte aligned. Fix this
-by adding an explicit alignment.
+Commit 54b2b50c20a6 "[SCSI] Disable WRITE SAME for RAID and virtual
+host adapter drivers" disabled WRITE SAME support for all SBP-2 attached
+targets.  But as described in the changelog of commit b0ea5f19d3d8
+"firewire: sbp2: allow WRITE SAME and REPORT SUPPORTED OPERATION CODES",
+it is not required to blacklist WRITE SAME.
 
-This fixes an issue where POWER7 little endian builds with
-CONFIG_RELOCATABLE=y fail to boot.
+Bring the feature back by reverting the sbp2.c hunk of commit 54b2b50c20a6.
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/head_64.S |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/firewire/sbp2.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/arch/powerpc/kernel/head_64.S
-+++ b/arch/powerpc/kernel/head_64.S
-@@ -467,6 +467,7 @@ _STATIC(__after_prom_start)
- 	mtctr	r8
- 	bctr
+--- a/drivers/firewire/sbp2.c
++++ b/drivers/firewire/sbp2.c
+@@ -1623,7 +1623,6 @@ static struct scsi_host_template scsi_dr
+ 	.cmd_per_lun		= 1,
+ 	.can_queue		= 1,
+ 	.sdev_attrs		= sbp2_scsi_sysfs_attrs,
+-	.no_write_same		= 1,
+ };
  
-+.balign 8
- p_end:	.llong	_end - _stext
- 
- 4:	/* Now copy the rest of the kernel up to _end */
+ MODULE_AUTHOR("Kristian Hoegsberg <krh@bitplanet.net>");
 
 
