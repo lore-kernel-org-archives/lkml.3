@@ -1,155 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932962AbaAFX5T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:57:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47636 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932192AbaAFWjM (ORCPT
+	id S933050AbaAFX5a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:57:30 -0500
+Received: from smtprelay0050.hostedemail.com ([216.40.44.50]:46891 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932192AbaAFX50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:39:12 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Vladimir Davydov <vdavydov@parallels.com>
-Subject: [PATCH 3.12 084/144] cgroup: fix cgroup_create() error handling path
-Date: Mon,  6 Jan 2014 14:37:25 -0800
-Message-Id: <20140106223747.774370290@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
-References: <20140106223745.326293132@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Mon, 6 Jan 2014 18:57:26 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:966:973:982:988:989:1042:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2110:2196:2199:2393:2538:2553:2559:2562:2828:2895:3138:3139:3140:3141:3142:3353:3622:3653:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4321:4385:4560:5007:6119:6120:7576:7652:7901:7903:9545:10004:10400:10848:10967:11026:11232:11473:11658:11914:12043:12262:12438:12517:12519:12555:12679:12740:13071:13161:13229,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: chess42_5dabf0e3bf217
+X-Filterd-Recvd-Size: 3429
+Message-ID: <1389052641.2433.16.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch: Only flag FSF address, not gnu.org URL
+From: Joe Perches <joe@perches.com>
+To: Alexander Duyck <alexander.h.duyck@intel.com>
+Cc: gregkh@linuxfoundation.org, josh@joshtriplett.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 06 Jan 2014 15:57:21 -0800
+In-Reply-To: <20140106231534.23578.11475.stgit@ahduyck-cp2.jf.intel.com>
+References: <20140106231534.23578.11475.stgit@ahduyck-cp2.jf.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Mon, 2014-01-06 at 15:16 -0800, Alexander Duyck wrote:
+> This change restricts the check for the for the FSF address in the GPL
+> copyright statement so that it only flags the address, not the references to
+> the gnu.org/licenses URL which appear in numerous drivers.
 
-------------------
+Hello Alexander
 
-From: Tejun Heo <tj@kernel.org>
+There is already a checkpatch fsf patch in -next.
+Please make patches against that.
 
-commit 266ccd505e8acb98717819cef9d91d66c7b237cc upstream.
-
-ae7f164a09 ("cgroup: move cgroup->subsys[] assignment to
-online_css()") moved cgroup->subsys[] assignements later in
-cgroup_create() but didn't update error handling path accordingly
-leading to the following oops and leaking later css's after an
-online_css() failure.  The oops is from cgroup destruction path being
-invoked on the partially constructed cgroup which is not ready to
-handle empty slots in cgrp->subsys[] array.
-
-  BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-  IP: [<ffffffff810eeaa8>] cgroup_destroy_locked+0x118/0x2f0
-  PGD a780a067 PUD aadbe067 PMD 0
-  Oops: 0000 [#1] SMP
-  Modules linked in:
-  CPU: 6 PID: 7360 Comm: mkdir Not tainted 3.13.0-rc2+ #69
-  Hardware name:
-  task: ffff8800b9dbec00 ti: ffff8800a781a000 task.ti: ffff8800a781a000
-  RIP: 0010:[<ffffffff810eeaa8>]  [<ffffffff810eeaa8>] cgroup_destroy_locked+0x118/0x2f0
-  RSP: 0018:ffff8800a781bd98  EFLAGS: 00010282
-  RAX: ffff880586903878 RBX: ffff880586903800 RCX: ffff880586903820
-  RDX: ffff880586903860 RSI: ffff8800a781bdb0 RDI: ffff880586903820
-  RBP: ffff8800a781bde8 R08: ffff88060e0b8048 R09: ffffffff811d7bc1
-  R10: 000000000000008c R11: 0000000000000001 R12: ffff8800a72286c0
-  R13: 0000000000000000 R14: ffffffff81cf7a40 R15: 0000000000000001
-  FS:  00007f60ecda57a0(0000) GS:ffff8806272c0000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-  CR2: 0000000000000008 CR3: 00000000a7a03000 CR4: 00000000000007e0
-  Stack:
-   ffff880586903860 ffff880586903910 ffff8800a72286c0 ffff880586903820
-   ffffffff81cf7a40 ffff880586903800 ffff88060e0b8018 ffffffff81cf7a40
-   ffff8800b9dbec00 ffff8800b9dbf098 ffff8800a781bec8 ffffffff810ef5bf
-  Call Trace:
-   [<ffffffff810ef5bf>] cgroup_mkdir+0x55f/0x5f0
-   [<ffffffff811c90ae>] vfs_mkdir+0xee/0x140
-   [<ffffffff811cb07e>] SyS_mkdirat+0x6e/0xf0
-   [<ffffffff811c6a19>] SyS_mkdir+0x19/0x20
-   [<ffffffff8169e569>] system_call_fastpath+0x16/0x1b
-
-This patch moves reference bumping inside online_css() loop, clears
-css_ar[] as css's are brought online successfully, and updates
-err_destroy path so that either a css is fully online and destroyed by
-cgroup_destroy_locked() or the error path frees it.  This creates a
-duplicate css free logic in the error path but it will be cleaned up
-soon.
-
-v2: Li pointed out that cgroup_destroy_locked() would do NULL-deref if
-    invoked with a cgroup which doesn't have all css's populated.
-    Update cgroup_destroy_locked() so that it skips NULL css's.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Li Zefan <lizefan@huawei.com>
-Reported-by: Vladimir Davydov <vdavydov@parallels.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cheers, Joe
 
 ---
- kernel/cgroup.c |   31 +++++++++++++++++++++----------
- 1 file changed, 21 insertions(+), 10 deletions(-)
 
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4490,14 +4490,6 @@ static long cgroup_create(struct cgroup
- 	list_add_tail_rcu(&cgrp->sibling, &cgrp->parent->children);
- 	root->number_of_cgroups++;
+$ git show --format=email 365b438dd5d
+>From 365b438dd5dbb1cd5f4310efe51a7aada8e481b4 Mon Sep 17 00:00:00 2001
+From: Joe Perches <joe@perches.com>
+Date: Fri, 3 Jan 2014 14:10:18 +1100
+Subject: [PATCH] checkpatch: update the FSF/GPL address check
+
+The FSF address check is a bit too verbose looking for the GPL text.
+Quiet it a bit by requiring --strict for the GPL bit.
+
+Also make the address tests match a few uses of abbreviations for street
+names and make it case insensitive.
+
+Signed-off-by: Joe Perches <joe@perches.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Cc: Manfred Spraul <manfred@colorfullife.com>
+Cc: Andy Whitcroft <apw@canonical.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 7e48d13..59be6d7 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1970,15 +1970,16 @@ sub process {
+ 		}
  
--	/* each css holds a ref to the cgroup's dentry and the parent css */
--	for_each_root_subsys(root, ss) {
--		struct cgroup_subsys_state *css = css_ar[ss->subsys_id];
--
--		dget(dentry);
--		css_get(css->parent);
--	}
--
- 	/* hold a ref to the parent's dentry */
- 	dget(parent->dentry);
+ # Check for FSF mailing addresses.
+-		if ($rawline =~ /You should have received a copy/ ||
+-		    $rawline =~ /write to the Free Software/ ||
+-		    $rawline =~ /59 Temple Place/ ||
+-		    $rawline =~ /51 Franklin Street/) {
++		if ($rawline =~ /\bYou should have received a copy/i ||
++		    $rawline =~ /\bwrite to the Free/i ||
++		    $rawline =~ /\b59\s+Temple\s+Pl/i ||
++		    $rawline =~ /\b51\s+Franklin\s+St/i) {
+ 			my $herevet = "$here\n" . cat_vet($rawline) . "\n";
+ 			my $msg_type = \&ERROR;
+ 			$msg_type = \&CHK if ($file);
++			$msg_type = \&CHK if ($rawline =~ /\bYou should have received a copy/i);
+ 			&{$msg_type}("FSF_MAILING_ADDRESS",
+-				"Do not include the paragraph about writing to the Free Software Foundation's mailing address from the sample GPL notice. The FSF has changed addresses in the past, and may do so again. Linux already includes a copy of the GPL.\n" . $herevet)
++				     "Do not include the paragraph about writing to the Free Software Foundation's mailing address from the sample GPL notice. The FSF has changed addresses in the past, and may do so again. Linux already includes a copy of the GPL.\n" . $herevet)
+ 		}
  
-@@ -4509,6 +4501,13 @@ static long cgroup_create(struct cgroup
- 		if (err)
- 			goto err_destroy;
- 
-+		/* each css holds a ref to the cgroup's dentry and parent css */
-+		dget(dentry);
-+		css_get(css->parent);
-+
-+		/* mark it consumed for error path */
-+		css_ar[ss->subsys_id] = NULL;
-+
- 		if (ss->broken_hierarchy && !ss->warned_broken_hierarchy &&
- 		    parent->parent) {
- 			pr_warning("cgroup: %s (%d) created nested cgroup for controller \"%s\" which has incomplete hierarchy support. Nested cgroups may change behavior in the future.\n",
-@@ -4555,6 +4554,14 @@ err_free_cgrp:
- 	return err;
- 
- err_destroy:
-+	for_each_root_subsys(root, ss) {
-+		struct cgroup_subsys_state *css = css_ar[ss->subsys_id];
-+
-+		if (css) {
-+			percpu_ref_cancel_init(&css->refcnt);
-+			ss->css_free(css);
-+		}
-+	}
- 	cgroup_destroy_locked(cgrp);
- 	mutex_unlock(&cgroup_mutex);
- 	mutex_unlock(&dentry->d_inode->i_mutex);
-@@ -4716,8 +4723,12 @@ static int cgroup_destroy_locked(struct
- 	 * will be invoked to perform the rest of destruction once the
- 	 * percpu refs of all css's are confirmed to be killed.
- 	 */
--	for_each_root_subsys(cgrp->root, ss)
--		kill_css(cgroup_css(cgrp, ss));
-+	for_each_root_subsys(cgrp->root, ss) {
-+		struct cgroup_subsys_state *css = cgroup_css(cgrp, ss);
-+
-+		if (css)
-+			kill_css(css);
-+	}
- 
- 	/*
- 	 * Mark @cgrp dead.  This prevents further task migration and child
+ # check for Kconfig help text having a real description
 
 
