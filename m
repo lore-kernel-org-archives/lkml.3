@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529AbaAFQ15 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 11:27:57 -0500
-Received: from mga02.intel.com ([134.134.136.20]:52633 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754662AbaAFQ14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 11:27:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,613,1384329600"; 
-   d="scan'208";a="434558559"
-Date: Mon, 6 Jan 2014 08:27:54 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Yann Droneaud <ydroneaud@opteya.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] perf tools: enable close-on-exec flag on perf file
- descriptor
-Message-ID: <20140106162754.GE27909@tassilo.jf.intel.com>
-References: <cover.1388952061.git.ydroneaud@opteya.com>
- <8c03f54e1598b1727c19706f3af03f98685d9fe6.1388952061.git.ydroneaud@opteya.com>
- <20140106092929.GA31570@twins.programming.kicks-ass.net>
- <1389005485-12778-1-git-send-email-ydroneaud@opteya.com>
+	id S1755540AbaAFQ2r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 11:28:47 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35287 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753298AbaAFQ2q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 11:28:46 -0500
+Date: Mon, 6 Jan 2014 17:28:13 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dietmar Eggemann <dietmar.eggemann@arm.com>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "pjt@google.com" <pjt@google.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "alex.shi@linaro.org" <alex.shi@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "rjw@sisk.pl" <rjw@sisk.pl>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "amit.kucheria@linaro.org" <amit.kucheria@linaro.org>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>
+Subject: Re: [RFC] sched: CPU topology try
+Message-ID: <20140106162813.GM31570@twins.programming.kicks-ass.net>
+References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
+ <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
+ <52B87149.4010801@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389005485-12778-1-git-send-email-ydroneaud@opteya.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52B87149.4010801@arm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 11:51:25AM +0100, Yann Droneaud wrote:
-> In a previous patch [1][2], flag PERF_FLAG_FD_CLOEXEC was
-> added to perf_event_open(2) syscall to allows userspace
-> to enable close-on-exec behavor atomically when creating
-> the file descriptor.
+On Mon, Dec 23, 2013 at 06:22:17PM +0100, Dietmar Eggemann wrote:
+> I'm not sure if the idea to create a dedicated sched_domain level for every
+> topology flag representing a specific functionality will scale. From the
+> perspective of energy-aware scheduling we need e.g. energy costs (P and C
+> state) which can only be populated towards the scheduler via an additional
+> sub-struct and additional function arch_sd_energy() like depicted in
+> Morten's email:
 > 
-> This patch makes perf tools use the new flag.
+> [2] lkml.org/lkml/2013/11/14/102
 
-What is that good for? I can see why for a threaded program, but 
-"perf" is not threaded.
+That lkml.org link is actually not working for me (blank page -- maybe
+lkml.org is on the blink again).
 
--Andi
+That said, I yet have to sit down and think about the P state stuff, but
+I was thinking we need some rudimentary domain support for that.
+
+For instance, the big-little thingies seem share their P state per
+cluster, so we need a domain at that level to hang some state off of --
+which we actually have in this case. But we need to ensure we do have
+it -- somehow.
+
