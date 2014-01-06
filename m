@@ -1,88 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755909AbaAFTcK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 14:32:10 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:6633 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754517AbaAFTcJ (ORCPT
+	id S1756035AbaAFTdS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 14:33:18 -0500
+Received: from ni.piap.pl ([195.187.100.4]:56259 "EHLO ni.piap.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754899AbaAFTdR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 14:32:09 -0500
-Date: Mon, 6 Jan 2014 14:32:00 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: mmarek <mmarek@suse.cz>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Yang Bai <hamo.by@gmail.com>
-Subject: Re: [PATCH] scripts: Have make TAGS not include structure members
-Message-ID: <20140106143200.207ab91c@gandalf.local.home>
-In-Reply-To: <20140103132432.GA32469@sepie.suse.cz>
-References: <20131115093645.6dc03918@gandalf.local.home>
-	<CAMuHMdXSBSOkfd2MGbn=rpXQRZYw5TKLsR=3SoeSyrcD2CzunA@mail.gmail.com>
-	<20131119155907.11fbdecea0aa40764a3d927a@linux-foundation.org>
-	<20131119190426.27b010e4@gandalf.local.home>
-	<20131119160855.2527630f87d060801d9ee3bb@linux-foundation.org>
-	<20131119191435.4dce1499@gandalf.local.home>
-	<528BFFBF.4050807@codeaurora.org>
-	<20131119193414.48912cbd@gandalf.local.home>
-	<20140103132432.GA32469@sepie.suse.cz>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Mon, 6 Jan 2014 14:33:17 -0500
+From: khalasa@piap.pl (Krzysztof =?utf-8?Q?Ha=C5=82asa?=)
+To: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+References: <m338l6vldf.fsf@t19.piap.pl>
+Date: Mon, 06 Jan 2014 20:33:15 +0100
+In-Reply-To: <m338l6vldf.fsf@t19.piap.pl> ("Krzysztof =?utf-8?Q?Ha=C5=82as?=
+ =?utf-8?Q?a=22's?= message of
+	"Thu, 02 Jan 2014 09:27:56 +0100")
+MIME-Version: 1.0
+Message-ID: <m3d2k4x5vo.fsf@t19.piap.pl>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH REPOST] ARM: Fix regression in IXP4xx network drivers DMA masks.
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE,
+	 bases: 20140106 #7262385, check: 20140106 clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Jan 2014 14:24:32 +0100
-mmarek <mmarek@suse.cz> wrote:
+Russell et al.,
 
+anything wrong with this fix?
 
-> 
-> The logic looks OK, but it is not completely obvious that $@ means
+the following patch is still needed with 3.13-rc6.
+Affected are non-PCI devices using coherent allocations.
 
-Hmm, it $@ is standard shell variable of "all commands". In fact, we
-probably should change all the $1 to that instead. But I don't care how
-we do it.
+Without the patch:
 
-> 'etags --no-members, iff called as etags'. How about using a more
-> descriptive variable like this?
-> 
-> diff --git a/scripts/tags.sh b/scripts/tags.sh
-> index 58c4559..3afc479 100755
-> --- a/scripts/tags.sh
-> +++ b/scripts/tags.sh
-> @@ -219,7 +219,7 @@ exuberant()
->  
->  emacs()
->  {
-> -	all_target_sources | xargs $1 -a                        \
-> +	all_target_sources | xargs $1 $no_members -a            \
->  	--regex='/^\(ENTRY\|_GLOBAL\)(\([^)]*\)).*/\2/'         \
->  	--regex='/^SYSCALL_DEFINE[0-9]?(\([^,)]*\).*/sys_\1/'   \
->  	--regex='/^TRACE_EVENT(\([^,)]*\).*/trace_\1/'		\
-> @@ -308,12 +308,15 @@ case "$1" in
->  
->  	"tags")
->  		rm -f tags
-> +		no_members=
->  		xtags ctags
->  		remove_structs=y
->  		;;
->  
->  	"TAGS")
->  		rm -f TAGS
-> +		# Do not index struct members when generating Emacs TAGS
-> +		no_members=--no-members
->  		xtags etags
+# ifconfig eth0 up
+net eth0: coherent DMA mask is unset
+ifconfig: SIOCSIFFLAGS: Cannot allocate memory
 
-Sure, I'll update this and send another patch.
+IXP4xx: Fix DMA masks.
 
-Thanks,
+Now, devices will have 32-bit default DMA masks (0xFFFFFFFF) as per DMA API.
 
--- Steve
+Signed-off-by: Krzysztof Hałasa <khalasa@piap.pl>
 
+diff --git a/arch/arm/mach-ixp4xx/common-pci.c b/arch/arm/mach-ixp4xx/common-pci.c
+index 6d6bde3..cefb80b 100644
+--- a/arch/arm/mach-ixp4xx/common-pci.c
++++ b/arch/arm/mach-ixp4xx/common-pci.c
+@@ -316,32 +316,6 @@ static int abort_handler(unsigned long addr, unsigned int fsr, struct pt_regs *r
+ }
+ 
+ 
+-static int ixp4xx_needs_bounce(struct device *dev, dma_addr_t dma_addr, size_t size)
+-{
+-	return (dma_addr + size) >= SZ_64M;
+-}
+-
+-/*
+- * Setup DMA mask to 64MB on PCI devices. Ignore all other devices.
+- */
+-static int ixp4xx_pci_platform_notify(struct device *dev)
+-{
+-	if(dev->bus == &pci_bus_type) {
+-		*dev->dma_mask =  SZ_64M - 1;
+-		dev->coherent_dma_mask = SZ_64M - 1;
+-		dmabounce_register_dev(dev, 2048, 4096, ixp4xx_needs_bounce);
+-	}
+-	return 0;
+-}
+-
+-static int ixp4xx_pci_platform_notify_remove(struct device *dev)
+-{
+-	if(dev->bus == &pci_bus_type) {
+-		dmabounce_unregister_dev(dev);
+-	}
+-	return 0;
+-}
+-
+ void __init ixp4xx_pci_preinit(void)
+ {
+ 	unsigned long cpuid = read_cpuid_id();
+@@ -475,20 +449,8 @@ int ixp4xx_setup(int nr, struct pci_sys_data *sys)
+ 	pci_add_resource_offset(&sys->resources, &res[0], sys->io_offset);
+ 	pci_add_resource_offset(&sys->resources, &res[1], sys->mem_offset);
+ 
+-	platform_notify = ixp4xx_pci_platform_notify;
+-	platform_notify_remove = ixp4xx_pci_platform_notify_remove;
+-
+ 	return 1;
+ }
+ 
+-int dma_set_coherent_mask(struct device *dev, u64 mask)
+-{
+-	if (mask >= SZ_64M - 1)
+-		return 0;
+-
+-	return -EIO;
+-}
+-
+ EXPORT_SYMBOL(ixp4xx_pci_read);
+ EXPORT_SYMBOL(ixp4xx_pci_write);
+-EXPORT_SYMBOL(dma_set_coherent_mask);
+diff --git a/arch/arm/mach-ixp4xx/common.c b/arch/arm/mach-ixp4xx/common.c
+index 9edaf47..c03787c 100644
+--- a/arch/arm/mach-ixp4xx/common.c
++++ b/arch/arm/mach-ixp4xx/common.c
+@@ -30,8 +30,8 @@
+ #include <linux/export.h>
+ #include <linux/gpio.h>
+ #include <linux/cpu.h>
++#include <linux/pci.h>
+ #include <linux/sched_clock.h>
+-
+ #include <mach/udc.h>
+ #include <mach/hardware.h>
+ #include <mach/io.h>
+@@ -40,7 +40,6 @@
+ #include <asm/page.h>
+ #include <asm/irq.h>
+ #include <asm/system_misc.h>
+-
+ #include <asm/mach/map.h>
+ #include <asm/mach/irq.h>
+ #include <asm/mach/time.h>
+@@ -578,6 +577,49 @@ void ixp4xx_restart(enum reboot_mode mode, const char *cmd)
+ 	}
+ }
+ 
++#ifdef CONFIG_PCI
++static int ixp4xx_needs_bounce(struct device *dev, dma_addr_t dma_addr, size_t size)
++{
++	return (dma_addr + size) >= SZ_64M;
++}
++
++static int ixp4xx_platform_notify_remove(struct device *dev)
++{
++	if (dev->bus == &pci_bus_type)
++		dmabounce_unregister_dev(dev);
++
++	return 0;
++}
++#endif
++
++/*
++ * Setup DMA mask to 64MB on PCI devices and 4 GB on all other things.
++ */
++static int ixp4xx_platform_notify(struct device *dev)
++{
++#ifdef CONFIG_PCI
++	if (dev->bus == &pci_bus_type) {
++		dev->coherent_dma_mask = DMA_BIT_MASK(28); /* 64 MB */
++		dmabounce_register_dev(dev, 2048, 4096, ixp4xx_needs_bounce);
++	} else
++#endif
++		dev->coherent_dma_mask = DMA_BIT_MASK(32);
++
++	dev->dma_mask = &dev->coherent_dma_mask;
++	return 0;
++}
++
++int dma_set_coherent_mask(struct device *dev, u64 mask)
++{
++	if ((mask & DMA_BIT_MASK(28)) == DMA_BIT_MASK(28)) {
++		dev->coherent_dma_mask = mask;
++		return 0;
++	}
++
++	return -EIO;
++}
++EXPORT_SYMBOL(dma_set_coherent_mask);
++
+ #ifdef CONFIG_IXP4XX_INDIRECT_PCI
+ /*
+  * In the case of using indirect PCI, we simply return the actual PCI
+@@ -600,12 +642,16 @@ static void ixp4xx_iounmap(void __iomem *addr)
+ 	if (!is_pci_memory((__force u32)addr))
+ 		__iounmap(addr);
+ }
++#endif
+ 
+ void __init ixp4xx_init_early(void)
+ {
++	platform_notify = ixp4xx_platform_notify;
++#ifdef CONFIG_PCI
++	platform_notify_remove = ixp4xx_platform_notify_remove;
++#endif
++#ifdef CONFIG_IXP4XX_INDIRECT_PCI
+ 	arch_ioremap_caller = ixp4xx_ioremap_caller;
+ 	arch_iounmap = ixp4xx_iounmap;
+-}
+-#else
+-void __init ixp4xx_init_early(void) {}
+ #endif
++}
+
+-- 
+Krzysztof Halasa
+
+Research Institute for Automation and Measurements PIAP
+Al. Jerozolimskie 202, 02-486 Warsaw, Poland
