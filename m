@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758149AbaAGACk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 19:02:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47525 "EHLO
+	id S1758160AbaAGAC7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:02:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47513 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932194AbaAFWit (ORCPT
+	with ESMTP id S932178AbaAFWiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:49 -0500
+	Mon, 6 Jan 2014 17:38:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Junho Ryu <jayr@google.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.12 051/144] ext4: fix use-after-free in ext4_mb_new_blocks
-Date: Mon,  6 Jan 2014 14:36:52 -0800
-Message-Id: <20140106223746.806974076@linuxfoundation.org>
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.12 015/144] ASoC: wm_adsp: Add small delay while polling DSP RAM start
+Date: Mon,  6 Jan 2014 14:36:16 -0800
+Message-Id: <20140106223745.765372136@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -28,90 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junho Ryu <jayr@google.com>
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-commit 4e8d2139802ce4f41936a687f06c560b12115247 upstream.
+commit 939fd1e8d9deff206f12bd9d4e54aa7a4bd0ffd6 upstream.
 
-ext4_mb_put_pa should hold pa->pa_lock before accessing pa->pa_count.
-While ext4_mb_use_preallocated checks pa->pa_deleted first and then
-increments pa->count later, ext4_mb_put_pa decrements pa->pa_count
-before holding pa->pa_lock and then sets pa->pa_deleted.
+Some devices are getting very close to the limit whilst polling the RAM
+start, this patch adds a small delay to this loop to give a longer
+startup timeout.
 
-* Free sequence
-ext4_mb_put_pa (1):		atomic_dec_and_test pa->pa_count
-ext4_mb_put_pa (2):		lock pa->pa_lock
-ext4_mb_put_pa (3):			check pa->pa_deleted
-ext4_mb_put_pa (4):			set pa->pa_deleted=1
-ext4_mb_put_pa (5):		unlock pa->pa_lock
-ext4_mb_put_pa (6):		remove pa from a list
-ext4_mb_pa_callback:		free pa
-
-* Use sequence
-ext4_mb_use_preallocated (1):	iterate over preallocation
-ext4_mb_use_preallocated (2):	lock pa->pa_lock
-ext4_mb_use_preallocated (3):		check pa->pa_deleted
-ext4_mb_use_preallocated (4):		increase pa->pa_count
-ext4_mb_use_preallocated (5):	unlock pa->pa_lock
-ext4_mb_release_context:	access pa
-
-* Use-after-free sequence
-[initial status]		<pa->pa_deleted = 0, pa_count = 1>
-ext4_mb_use_preallocated (1):	iterate over preallocation
-ext4_mb_use_preallocated (2):	lock pa->pa_lock
-ext4_mb_use_preallocated (3):		check pa->pa_deleted
-ext4_mb_put_pa (1):		atomic_dec_and_test pa->pa_count
-[pa_count decremented]		<pa->pa_deleted = 0, pa_count = 0>
-ext4_mb_use_preallocated (4):		increase pa->pa_count
-[pa_count incremented]		<pa->pa_deleted = 0, pa_count = 1>
-ext4_mb_use_preallocated (5):	unlock pa->pa_lock
-ext4_mb_put_pa (2):		lock pa->pa_lock
-ext4_mb_put_pa (3):			check pa->pa_deleted
-ext4_mb_put_pa (4):			set pa->pa_deleted=1
-[race condition!]		<pa->pa_deleted = 1, pa_count = 1>
-ext4_mb_put_pa (5):		unlock pa->pa_lock
-ext4_mb_put_pa (6):		remove pa from a list
-ext4_mb_pa_callback:		free pa
-ext4_mb_release_context:	access pa
-
-AddressSanitizer has detected use-after-free in ext4_mb_new_blocks
-Bug report: http://goo.gl/rG1On3
-
-Signed-off-by: Junho Ryu <jayr@google.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/mballoc.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ sound/soc/codecs/wm_adsp.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -3442,6 +3442,9 @@ static void ext4_mb_pa_callback(struct r
- {
- 	struct ext4_prealloc_space *pa;
- 	pa = container_of(head, struct ext4_prealloc_space, u.pa_rcu);
+--- a/sound/soc/codecs/wm_adsp.c
++++ b/sound/soc/codecs/wm_adsp.c
+@@ -1466,13 +1466,17 @@ static int wm_adsp2_ena(struct wm_adsp *
+ 		return ret;
+ 
+ 	/* Wait for the RAM to start, should be near instantaneous */
+-	count = 0;
+-	do {
++	for (count = 0; count < 10; ++count) {
+ 		ret = regmap_read(dsp->regmap, dsp->base + ADSP2_STATUS1,
+ 				  &val);
+ 		if (ret != 0)
+ 			return ret;
+-	} while (!(val & ADSP2_RAM_RDY) && ++count < 10);
 +
-+	BUG_ON(atomic_read(&pa->pa_count));
-+	BUG_ON(pa->pa_deleted == 0);
- 	kmem_cache_free(ext4_pspace_cachep, pa);
- }
- 
-@@ -3455,11 +3458,13 @@ static void ext4_mb_put_pa(struct ext4_a
- 	ext4_group_t grp;
- 	ext4_fsblk_t grp_blk;
- 
--	if (!atomic_dec_and_test(&pa->pa_count) || pa->pa_free != 0)
--		return;
--
- 	/* in this short window concurrent discard can set pa_deleted */
- 	spin_lock(&pa->pa_lock);
-+	if (!atomic_dec_and_test(&pa->pa_count) || pa->pa_free != 0) {
-+		spin_unlock(&pa->pa_lock);
-+		return;
++		if (val & ADSP2_RAM_RDY)
++			break;
++
++		msleep(1);
 +	}
-+
- 	if (pa->pa_deleted == 1) {
- 		spin_unlock(&pa->pa_lock);
- 		return;
+ 
+ 	if (!(val & ADSP2_RAM_RDY)) {
+ 		adsp_err(dsp, "Failed to start DSP RAM\n");
 
 
