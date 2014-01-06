@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039AbaAFIrk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 03:47:40 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:62003 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751864AbaAFIpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 03:45:32 -0500
-X-IronPort-AV: E=Sophos;i="4.95,611,1384272000"; 
-   d="scan'208";a="9378089"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: rjw@sisk.pl, lenb@kernel.org, toshi.kani@hp.com
-Cc: tangchen@cn.fujitsu.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] acpi: Return -ENOENT in acpi_table_parse() and fix wrong comment.
-Date: Mon, 6 Jan 2014 16:47:59 +0800
-Message-Id: <1388998079-28160-1-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/06 16:44:30,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/06 16:44:31,
-	Serialize complete at 2014/01/06 16:44:31
+	id S1753536AbaAFIpa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 03:45:30 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:43106 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751864AbaAFIpX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 03:45:23 -0500
+Message-ID: <52CA6D14.4040300@profitbricks.com>
+Date: Mon, 06 Jan 2014 09:45:08 +0100
+From: Jack Wang <jinpu.wang@profitbricks.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: linux-fsdevel@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [BUG]NULL pointer dereference at 0000000000000008 __blkdev_put+0x17f/0x1d0
+References: <52C19767.60000@profitbricks.com> <52C5331E.3050304@profitbricks.com> <20140104060925.GF10323@ZenIV.linux.org.uk>
+In-Reply-To: <20140104060925.GF10323@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The comment about return value of acpi_table_parse() is incorrect.
-This patch fix it.
+On 01/04/2014 07:09 AM, Al Viro wrote:
+> On Thu, Jan 02, 2014 at 10:36:30AM +0100, Jack Wang wrote:
+> 
+>>> Bug happened at line 1486, looks disk->fops is NULL here for some
+>>> reason, is it reasonable to add a check like:
+>>>
+>>> if (disk->fops)
+>>> 	if (disk->fops->release)
+>>> 		ret = disk->fops->release(disk, mode);
+>>>
+>>>
+>>> Happy New Year and Best regards:)
+>>> Jack
+>>>
+>>
+>> Ping, could you share opnions on this, attached with patch I proposaled.
+> 
+> Sorry, had been sick since mid-December ;-/  The patch is not a good idea -
+> in the best case it's papering over a bug (and insufficiently so, at that,
+> since there are other places where disk->fops->some_method is checked).
+> 
+> gendisk->fops should never be assigned NULL; it starts life with NULL
+> ->fops, but that should be assigned a non-NULL value (and never modified
+> afterwards) before anyone can see it.  Moreover, even if some driver has
+> fscked up and forgot to initialize the damn thing, get_gendisk() would've
+> refused to return such a thing to any callers (including __blkdev_get()).
+> Note that __blkdev_get() would oops on such a thing if get_gendisk()
+> somehow returned it.
+> 
+> Looks like something is shitting over bdev->bd_disk or bdev->bd_disk->fops.
+> The offsets in the disassembled code are all wrong (including that from
+> beginning of function to oopsing instruction), but the code match is good,
+> so I agree that we are hitting bdev->bd_disk->fops == NULL here.  The
+> question is how it has happened - that's where the real bug is...
+> 
+> How reproducible it is?  And which kernel, while we are at it?  This area
+> didn't get a lot of changes lately, but still...
+> 
+Thanks Al for reply, and look into this.
+We're using 3.4.71, and this happened in production, we can not
+reproduce it yet. What I could see is: before this happened, we saw scsi
+devices offlined, and multipath failed path, raid1 failed member device.
 
-Since all callers only check if the function succeeded or not, this
-patch simplifies the semantics by returning -errno for all failure
-cases. This will also simply the comment.
+Possible the bug lies in drivers md-raid1, dm-multipath or sd? How could
+I narrow it down? Could you teach me?
 
-As suggested by Toshi Kani <toshi.kani@hp.com>, also change the stub
-in linux/acpi.h to return -ENODEV.
+Thanks, wish you happy and healthy!
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
----
- drivers/acpi/tables.c | 7 ++++---
- include/linux/acpi.h  | 2 +-
- 2 files changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
-index 5a5263b..10022ae 100644
---- a/drivers/acpi/tables.c
-+++ b/drivers/acpi/tables.c
-@@ -278,12 +278,13 @@ acpi_table_parse_madt(enum acpi_madt_type id,
- 
- /**
-  * acpi_table_parse - find table with @id, run @handler on it
-- *
-  * @id: table id to find
-  * @handler: handler to run
-  *
-  * Scan the ACPI System Descriptor Table (STD) for a table matching @id,
-- * run @handler on it.  Return 0 if table found, return on if not.
-+ * run @handler on it.
-+ *
-+ * Return 0 if table found, -errno if not.
-  */
- int __init acpi_table_parse(char *id, acpi_tbl_table_handler handler)
- {
-@@ -306,7 +307,7 @@ int __init acpi_table_parse(char *id, acpi_tbl_table_handler handler)
- 		early_acpi_os_unmap_memory(table, tbl_size);
- 		return 0;
- 	} else
--		return 1;
-+		return -ENODEV;
- }
- 
- /* 
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index d9099b1..fecfbcd 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -460,7 +460,7 @@ struct acpi_table_header;
- static inline int acpi_table_parse(char *id,
- 				int (*handler)(struct acpi_table_header *))
- {
--	return -1;
-+	return -ENODEV;
- }
- 
- static inline int acpi_nvs_register(__u64 start, __u64 size)
--- 
-1.7.11.7
-
+Jack
