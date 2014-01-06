@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756863AbaAFWkV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:40:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48000 "EHLO
+	id S933787AbaAFXfR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:35:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48023 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755639AbaAFWkQ (ORCPT
+	with ESMTP id S1756860AbaAFWkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:16 -0500
+	Mon, 6 Jan 2014 17:40:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        JongHo Kim <furmuwon@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 011/129] ALSA: Add SNDRV_PCM_STATE_PAUSED case in wait_for_avail function
-Date: Mon,  6 Jan 2014 14:37:20 -0800
-Message-Id: <20140106223859.910315034@linuxfoundation.org>
+        Stephane Grosjean <s.grosjean@peak-system.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 3.10 017/129] can: peak_usb: fix mem leak in pcan_usb_pro_init()
+Date: Mon,  6 Jan 2014 14:37:26 -0800
+Message-Id: <20140106223900.083761692@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -28,33 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: JongHo Kim <furmuwon@gmail.com>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit ed697e1aaf7237b1a62af39f64463b05c262808d upstream.
+commit 20fb4eb96fb0350d28fc4d7cbfd5506711079592 upstream.
 
-When the process is sleeping at the SNDRV_PCM_STATE_PAUSED
-state from the wait_for_avail function, the sleep process will be woken by
-timeout(10 seconds). Even if the sleep process wake up by timeout, by this
-patch, the process will continue with sleep and wait for the other state.
+This patch fixes a memory leak in pcan_usb_pro_init(). In patch
 
-Signed-off-by: JongHo Kim <furmuwon@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+    f14e224 net: can: peak_usb: Do not do dma on the stack
+
+the struct pcan_usb_pro_fwinfo *fi and struct pcan_usb_pro_blinfo *bi were
+converted from stack to dynamic allocation va kmalloc(). However the
+corresponding kfree() was not introduced.
+
+This patch adds the missing kfree().
+
+Reported-by: Stephane Grosjean <s.grosjean@peak-system.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/core/pcm_lib.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/can/usb/peak_usb/pcan_usb_pro.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/sound/core/pcm_lib.c
-+++ b/sound/core/pcm_lib.c
-@@ -1936,6 +1936,8 @@ static int wait_for_avail(struct snd_pcm
- 		case SNDRV_PCM_STATE_DISCONNECTED:
- 			err = -EBADFD;
- 			goto _endloop;
-+		case SNDRV_PCM_STATE_PAUSED:
-+			continue;
- 		}
- 		if (!tout) {
- 			snd_printd("%s write error (DMA or IRQ trouble?)\n",
+--- a/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
++++ b/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
+@@ -927,6 +927,9 @@ static int pcan_usb_pro_init(struct peak
+ 	/* set LED in default state (end of init phase) */
+ 	pcan_usb_pro_set_led(dev, 0, 1);
+ 
++	kfree(bi);
++	kfree(fi);
++
+ 	return 0;
+ 
+  err_out:
 
 
