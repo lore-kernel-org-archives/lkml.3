@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933278AbaAFWmL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:42:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48577 "EHLO
+	id S933261AbaAFWmJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:42:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48565 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933256AbaAFWmI (ORCPT
+	with ESMTP id S933241AbaAFWmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:42:08 -0500
+	Mon, 6 Jan 2014 17:42:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Elder <elder@inktank.com>, Josh Durgin <josh.durgin@inktank.com>
-Subject: [PATCH 3.10 095/129] rbd: set removing flag while holding list lock
-Date: Mon,  6 Jan 2014 14:38:44 -0800
-Message-Id: <20140106223902.324063401@linuxfoundation.org>
+Subject: [PATCH 3.10 093/129] libceph: add lingering request reference when registered
+Date: Mon,  6 Jan 2014 14:38:42 -0800
+Message-Id: <20140106223902.265845139@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -30,110 +30,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Elder <elder@inktank.com>
 
-commit 751cc0e3cfabdda87c4c21519253c6751e97a8d4 upstream.
+commit 96e4dac66f69d28af2b736e723364efbbdf9fdee upstream.
 
-When unmapping a device, its id is supplied, and that is used to
-look up which rbd device should be unmapped.  Looking up the
-device involves searching the rbd device list while holding
-a spinlock that protects access to that list.
+When an osd request is set to linger, the osd client holds onto the
+request so it can be re-submitted following certain osd map changes.
+The osd client holds a reference to the request until it is
+unregistered.  This is used by rbd for watch requests.
 
-Currently all of this is done under protection of the control lock,
-but that protection is going away soon.  To ensure the rbd_dev is
-still valid (still on the list) while setting its REMOVING flag, do
-so while still holding the list lock.  To do so, get rid of
-__rbd_get_dev(), and open code what it did in the one place it
-was used.
+Currently, the reference is taken when the request is marked with
+the linger flag.  This means that if an error occurs after that
+time but before the the request completes successfully, that
+reference is leaked.
+
+There's really no reason to take the reference until the request is
+registered in the the osd client's list of lingering requests, and
+that only happens when the lingering (watch) request completes
+successfully.
+
+So take that reference only when it gets registered following
+succesful completion, and drop it (as before) when the request
+gets unregistered.  This avoids the reference problem on error
+in rbd.
+
+Rearrange ceph_osdc_unregister_linger_request() to avoid using
+the request pointer after it may have been freed.
+
+And hold an extra reference in kick_requests() while handling
+a linger request that has not yet been registered, to ensure
+it doesn't go away.
+
+This resolves:
+    http://tracker.ceph.com/issues/3859
 
 Signed-off-by: Alex Elder <elder@inktank.com>
 Reviewed-by: Josh Durgin <josh.durgin@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/rbd.c |   53 +++++++++++++++++++++-------------------------------
- 1 file changed, 22 insertions(+), 31 deletions(-)
+ net/ceph/osd_client.c |   12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -5061,23 +5061,6 @@ err_out_module:
- 	return (ssize_t)rc;
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -1174,6 +1174,7 @@ static void __register_linger_request(st
+ 				    struct ceph_osd_request *req)
+ {
+ 	dout("__register_linger_request %p\n", req);
++	ceph_osdc_get_request(req);
+ 	list_add_tail(&req->r_linger_item, &osdc->req_linger);
+ 	if (req->r_osd)
+ 		list_add_tail(&req->r_linger_osd,
+@@ -1196,6 +1197,7 @@ static void __unregister_linger_request(
+ 		if (list_empty(&req->r_osd_item))
+ 			req->r_osd = NULL;
+ 	}
++	ceph_osdc_put_request(req);
  }
  
--static struct rbd_device *__rbd_get_dev(unsigned long dev_id)
--{
--	struct list_head *tmp;
--	struct rbd_device *rbd_dev;
--
--	spin_lock(&rbd_dev_list_lock);
--	list_for_each(tmp, &rbd_dev_list) {
--		rbd_dev = list_entry(tmp, struct rbd_device, node);
--		if (rbd_dev->dev_id == dev_id) {
--			spin_unlock(&rbd_dev_list_lock);
--			return rbd_dev;
--		}
--	}
--	spin_unlock(&rbd_dev_list_lock);
--	return NULL;
--}
--
- static void rbd_dev_device_release(struct device *dev)
+ void ceph_osdc_unregister_linger_request(struct ceph_osd_client *osdc,
+@@ -1203,9 +1205,8 @@ void ceph_osdc_unregister_linger_request
  {
- 	struct rbd_device *rbd_dev = dev_to_rbd_dev(dev);
-@@ -5122,7 +5105,8 @@ static ssize_t rbd_remove(struct bus_typ
- 			  size_t count)
- {
- 	struct rbd_device *rbd_dev = NULL;
--	int target_id;
-+	struct list_head *tmp;
-+	int dev_id;
- 	unsigned long ul;
- 	int ret;
- 
-@@ -5131,26 +5115,33 @@ static ssize_t rbd_remove(struct bus_typ
- 		return ret;
- 
- 	/* convert to int; abort if we lost anything in the conversion */
--	target_id = (int) ul;
--	if (target_id != ul)
-+	dev_id = (int)ul;
-+	if (dev_id != ul)
- 		return -EINVAL;
- 
- 	mutex_lock_nested(&ctl_mutex, SINGLE_DEPTH_NESTING);
- 
--	rbd_dev = __rbd_get_dev(target_id);
--	if (!rbd_dev) {
--		ret = -ENOENT;
--		goto done;
-+	ret = -ENOENT;
-+	spin_lock(&rbd_dev_list_lock);
-+	list_for_each(tmp, &rbd_dev_list) {
-+		rbd_dev = list_entry(tmp, struct rbd_device, node);
-+		if (rbd_dev->dev_id == dev_id) {
-+			ret = 0;
-+			break;
-+		}
+ 	mutex_lock(&osdc->request_mutex);
+ 	if (req->r_linger) {
+-		__unregister_linger_request(osdc, req);
+ 		req->r_linger = 0;
+-		ceph_osdc_put_request(req);
++		__unregister_linger_request(osdc, req);
  	}
--
--	spin_lock_irq(&rbd_dev->lock);
--	if (rbd_dev->open_count)
--		ret = -EBUSY;
--	else
--		set_bit(RBD_DEV_FLAG_REMOVING, &rbd_dev->flags);
--	spin_unlock_irq(&rbd_dev->lock);
-+	if (!ret) {
-+		spin_lock_irq(&rbd_dev->lock);
-+		if (rbd_dev->open_count)
-+			ret = -EBUSY;
-+		else
-+			set_bit(RBD_DEV_FLAG_REMOVING, &rbd_dev->flags);
-+		spin_unlock_irq(&rbd_dev->lock);
-+	}
-+	spin_unlock(&rbd_dev_list_lock);
- 	if (ret < 0)
- 		goto done;
-+
- 	rbd_bus_del_dev(rbd_dev);
- 	ret = rbd_dev_header_watch_sync(rbd_dev, false);
- 	if (ret)
+ 	mutex_unlock(&osdc->request_mutex);
+ }
+@@ -1217,11 +1218,6 @@ void ceph_osdc_set_request_linger(struct
+ 	if (!req->r_linger) {
+ 		dout("set_request_linger %p\n", req);
+ 		req->r_linger = 1;
+-		/*
+-		 * caller is now responsible for calling
+-		 * unregister_linger_request
+-		 */
+-		ceph_osdc_get_request(req);
+ 	}
+ }
+ EXPORT_SYMBOL(ceph_osdc_set_request_linger);
+@@ -1633,8 +1629,10 @@ static void kick_requests(struct ceph_os
+ 			dout("%p tid %llu restart on osd%d\n",
+ 			     req, req->r_tid,
+ 			     req->r_osd ? req->r_osd->o_osd : -1);
++			ceph_osdc_get_request(req);
+ 			__unregister_request(osdc, req);
+ 			__register_linger_request(osdc, req);
++			ceph_osdc_put_request(req);
+ 			continue;
+ 		}
+ 
 
 
