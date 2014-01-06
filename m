@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056AbaAFPwh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 10:52:37 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:47519 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754541AbaAFPwf (ORCPT
+	id S1755244AbaAFPxp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 10:53:45 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:46078 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417AbaAFPxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 10:52:35 -0500
-Date: Mon, 6 Jan 2014 21:22:30 +0530
+	Mon, 6 Jan 2014 10:53:43 -0500
+Date: Mon, 6 Jan 2014 21:23:37 +0530
 From: Rashika Kheria <rashika.kheria@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>,
         Rashika Kheria <rashika.kheria@gmail.com>,
+        Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
         dri-devel@lists.freedesktop.org, josh@joshtriplett.org
-Subject: [PATCH 43/85] drivers: gpu: Move prototype declarations to header
- file radeon_asic.h from evergreen.c and ni_dma.c
-Message-ID: <85a7133c5c5dc8be2aac2b9116a9f51f8cf3b5e8.1389018325.git.rashika.kheria@gmail.com>
+Subject: [PATCH 44/85] drivers: gpu: Move prototype declaration to header
+ file radeon_mode.h from radeon_atombios.c and radeon_encoders.c
+Message-ID: <357ad7be5b1183a598bb64b8ebb21966d341bc86.1389018325.git.rashika.kheria@gmail.com>
 References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -29,68 +28,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move prototype declarations of function cayman_cp_int_cntl_setup(),
-cayman_vm_decode_fault() and cayman_gpu_check_soft_reset() to header
-file drm/radeon/radeon_asic.h because they are used by more than one
-file.
+Move prototype declarations of function radeon_add_atom_encoder() and
+radeon_atom_backlight_init() to header file drm/radeon/radeon_mode.h
+because they are used by more than one file.
 
-This eliminates the following warnings in drm/radeon/ni.c:
-drivers/gpu/drm/radeon/ni.c:1304:6: warning: no previous prototype for ‘cayman_cp_int_cntl_setup’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/ni.c:1599:5: warning: no previous prototype for ‘cayman_gpu_check_soft_reset’ [-Wmissing-prototypes]
-drivers/gpu/drm/radeon/ni.c:2246:6: warning: no previous prototype for ‘cayman_vm_decode_fault’ [-Wmissing-prototypes]
+This eliminates the following warning in drm/radeon/atombios_encoders.c:
+drivers/gpu/drm/radeon/atombios_encoders.c:177:6: warning: no previous prototype for ‘radeon_atom_backlight_init’ [-Wmissing-prototypes]
+drivers/gpu/drm/radeon/atombios_encoders.c:2600:1: warning: no previous prototype for ‘radeon_add_atom_encoder’ [-Wmissing-prototypes]
 
 Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/gpu/drm/radeon/evergreen.c   |    4 ----
- drivers/gpu/drm/radeon/ni_dma.c      |    2 --
- drivers/gpu/drm/radeon/radeon_asic.h |    5 +++++
- 3 files changed, 5 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c |    4 ----
+ drivers/gpu/drm/radeon/radeon_encoders.c |    4 ----
+ drivers/gpu/drm/radeon/radeon_mode.h     |    7 +++++++
+ 3 files changed, 7 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index 9702e55..f4806ed 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -136,10 +136,6 @@ static void evergreen_gpu_init(struct radeon_device *rdev);
- void evergreen_fini(struct radeon_device *rdev);
- void evergreen_pcie_gen2_enable(struct radeon_device *rdev);
- void evergreen_program_aspm(struct radeon_device *rdev);
--extern void cayman_cp_int_cntl_setup(struct radeon_device *rdev,
--				     int ring, u32 cp_int_cntl);
--extern void cayman_vm_decode_fault(struct radeon_device *rdev,
--				   u32 status, u32 addr);
- void cik_init_cp_pg_table(struct radeon_device *rdev);
+diff --git a/drivers/gpu/drm/radeon/radeon_atombios.c b/drivers/gpu/drm/radeon/radeon_atombios.c
+index a876fae..19a7350 100644
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -32,10 +32,6 @@
+ #include "radeon_asic.h"
+ #include "atom-bits.h"
  
- extern u32 si_get_csb_size(struct radeon_device *rdev);
-diff --git a/drivers/gpu/drm/radeon/ni_dma.c b/drivers/gpu/drm/radeon/ni_dma.c
-index bdeb65e..2897cf1 100644
---- a/drivers/gpu/drm/radeon/ni_dma.c
-+++ b/drivers/gpu/drm/radeon/ni_dma.c
-@@ -27,8 +27,6 @@
- #include "radeon_trace.h"
- #include "nid.h"
- 
--u32 cayman_gpu_check_soft_reset(struct radeon_device *rdev);
+-extern void
+-radeon_add_atom_encoder(struct drm_device *dev, uint32_t encoder_enum,
+-			uint32_t supported_device, u16 caps);
 -
- /*
-  * DMA
-  * Starting with R600, the GPU has an asynchronous
-diff --git a/drivers/gpu/drm/radeon/radeon_asic.h b/drivers/gpu/drm/radeon/radeon_asic.h
-index 5e1f169..732fb6c 100644
---- a/drivers/gpu/drm/radeon/radeon_asic.h
-+++ b/drivers/gpu/drm/radeon/radeon_asic.h
-@@ -577,6 +577,11 @@ int evergreen_rlc_resume(struct radeon_device *rdev);
- /*
-  * cayman
-  */
-+void cayman_cp_int_cntl_setup(struct radeon_device *rdev,
-+			      int ring, u32 cp_int_cntl);
-+void cayman_vm_decode_fault(struct radeon_device *rdev,
-+			    u32 status, u32 addr);
-+u32 cayman_gpu_check_soft_reset(struct radeon_device *rdev);
- void cayman_fence_ring_emit(struct radeon_device *rdev,
- 			    struct radeon_fence *fence);
- void cayman_pcie_gart_tlb_flush(struct radeon_device *rdev);
+ /* from radeon_legacy_encoder.c */
+ extern void
+ radeon_add_legacy_encoder(struct drm_device *dev, uint32_t encoder_enum,
+diff --git a/drivers/gpu/drm/radeon/radeon_encoders.c b/drivers/gpu/drm/radeon/radeon_encoders.c
+index bd4959c..a88ba7a 100644
+--- a/drivers/gpu/drm/radeon/radeon_encoders.c
++++ b/drivers/gpu/drm/radeon/radeon_encoders.c
+@@ -32,10 +32,6 @@
+ extern void
+ radeon_legacy_backlight_init(struct radeon_encoder *radeon_encoder,
+ 			     struct drm_connector *drm_connector);
+-extern void
+-radeon_atom_backlight_init(struct radeon_encoder *radeon_encoder,
+-			   struct drm_connector *drm_connector);
+-
+ 
+ static uint32_t radeon_encoder_clones(struct drm_encoder *encoder)
+ {
+diff --git a/drivers/gpu/drm/radeon/radeon_mode.h b/drivers/gpu/drm/radeon/radeon_mode.h
+index b5f4e52..8f2f4a3 100644
+--- a/drivers/gpu/drm/radeon/radeon_mode.h
++++ b/drivers/gpu/drm/radeon/radeon_mode.h
+@@ -628,6 +628,13 @@ struct atom_voltage_table
+ 	struct atom_voltage_table_entry entries[MAX_VOLTAGE_ENTRIES];
+ };
+ 
++void
++radeon_atom_backlight_init(struct radeon_encoder *radeon_encoder,
++			   struct drm_connector *drm_connector);
++
++void
++radeon_add_atom_encoder(struct drm_device *dev, uint32_t encoder_enum,
++			uint32_t supported_device, u16 caps);
+ 
+ void
+ radeon_add_atom_connector(struct drm_device *dev,
 -- 
 1.7.9.5
 
