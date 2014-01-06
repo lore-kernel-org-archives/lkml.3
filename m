@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933668AbaAFWuS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:50:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48688 "EHLO
+	id S933394AbaAFWmb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:42:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48666 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933313AbaAFWmc (ORCPT
+	with ESMTP id S933313AbaAFWm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:42:32 -0500
+	Mon, 6 Jan 2014 17:42:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Thomas Renninger <trenn@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.4 29/43] cpupower: Fix segfault due to incorrect getopt_long arugments
-Date: Mon,  6 Jan 2014 14:39:46 -0800
-Message-Id: <20140106223943.084918748@linuxfoundation.org>
+        Joseph Chang <joseph_chang@davicom.com.tw>,
+        Peter Korsgaard <peter@korsgaard.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 24/43] dm9601: work around tx fifo sync issue on dm962x
+Date: Mon,  6 Jan 2014 14:39:41 -0800
+Message-Id: <20140106223942.938978345@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223942.259651490@linuxfoundation.org>
 References: <20140106223942.259651490@linuxfoundation.org>
@@ -31,43 +30,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Peter Korsgaard <peter@korsgaard.com>
 
-commit f447ef4a56dee4b68a91460bcdfe06b5011085f2 upstream.
+commit 4263c86dca5198da6bd3ad826d0b2304fbe25776 upstream.
 
-If a user calls 'cpupower set --perf-bias 15', the process will end with
-a SIGSEGV in libc because cpupower-set passes a NULL optarg to the atoi
-call.  This is because the getopt_long structure currently has all of
-the options as having an optional_argument when they really have a
-required argument.  We change the structure to use required_argument to
-match the short options and it resolves the issue.
+Certain dm962x revisions contain an bug, where if a USB bulk transfer retry
+(E.G. if bulk crc mismatch) happens right after a transfer with odd or
+maxpacket length, the internal tx hardware fifo gets out of sync causing
+the interface to stop working.
 
-This fixes https://bugzilla.redhat.com/show_bug.cgi?id=1000439
+Work around it by adding up to 3 bytes of padding to ensure this situation
+cannot trigger.
 
-Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>
-Cc: Thomas Renninger <trenn@suse.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This workaround also means we never pass multiple-of-maxpacket size skb's
+to usbnet, so the length adjustment to handle usbnet's padding of those can
+be removed.
+
+Reported-by: Joseph Chang <joseph_chang@davicom.com.tw>
+Signed-off-by: Peter Korsgaard <peter@korsgaard.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/power/cpupower/utils/cpupower-set.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/usb/dm9601.c |   27 +++++++++++++++++++--------
+ 1 file changed, 19 insertions(+), 8 deletions(-)
 
---- a/tools/power/cpupower/utils/cpupower-set.c
-+++ b/tools/power/cpupower/utils/cpupower-set.c
-@@ -18,9 +18,9 @@
- #include "helpers/bitmask.h"
+--- a/drivers/net/usb/dm9601.c
++++ b/drivers/net/usb/dm9601.c
+@@ -536,7 +536,7 @@ static int dm9601_rx_fixup(struct usbnet
+ static struct sk_buff *dm9601_tx_fixup(struct usbnet *dev, struct sk_buff *skb,
+ 				       gfp_t flags)
+ {
+-	int len;
++	int len, pad;
  
- static struct option set_opts[] = {
--	{ .name = "perf-bias",	.has_arg = optional_argument,	.flag = NULL,	.val = 'b'},
--	{ .name = "sched-mc",	.has_arg = optional_argument,	.flag = NULL,	.val = 'm'},
--	{ .name = "sched-smt",	.has_arg = optional_argument,	.flag = NULL,	.val = 's'},
-+	{ .name = "perf-bias",	.has_arg = required_argument,	.flag = NULL,	.val = 'b'},
-+	{ .name = "sched-mc",	.has_arg = required_argument,	.flag = NULL,	.val = 'm'},
-+	{ .name = "sched-smt",	.has_arg = required_argument,	.flag = NULL,	.val = 's'},
- 	{ },
- };
+ 	/* format:
+ 	   b1: packet length low
+@@ -544,12 +544,23 @@ static struct sk_buff *dm9601_tx_fixup(s
+ 	   b3..n: packet data
+ 	*/
  
+-	len = skb->len;
++	len = skb->len + DM_TX_OVERHEAD;
+ 
+-	if (skb_headroom(skb) < DM_TX_OVERHEAD) {
++	/* workaround for dm962x errata with tx fifo getting out of
++	 * sync if a USB bulk transfer retry happens right after a
++	 * packet with odd / maxpacket length by adding up to 3 bytes
++	 * padding.
++	 */
++	while ((len & 1) || !(len % dev->maxpacket))
++		len++;
++
++	len -= DM_TX_OVERHEAD; /* hw header doesn't count as part of length */
++	pad = len - skb->len;
++
++	if (skb_headroom(skb) < DM_TX_OVERHEAD || skb_tailroom(skb) < pad) {
+ 		struct sk_buff *skb2;
+ 
+-		skb2 = skb_copy_expand(skb, DM_TX_OVERHEAD, 0, flags);
++		skb2 = skb_copy_expand(skb, DM_TX_OVERHEAD, pad, flags);
+ 		dev_kfree_skb_any(skb);
+ 		skb = skb2;
+ 		if (!skb)
+@@ -558,10 +569,10 @@ static struct sk_buff *dm9601_tx_fixup(s
+ 
+ 	__skb_push(skb, DM_TX_OVERHEAD);
+ 
+-	/* usbnet adds padding if length is a multiple of packet size
+-	   if so, adjust length value in header */
+-	if ((skb->len % dev->maxpacket) == 0)
+-		len++;
++	if (pad) {
++		memset(skb->data + skb->len, 0, pad);
++		__skb_put(skb, pad);
++	}
+ 
+ 	skb->data[0] = len;
+ 	skb->data[1] = len >> 8;
 
 
