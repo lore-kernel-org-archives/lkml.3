@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485AbaAFIXw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 03:23:52 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:62502 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875AbaAFIWc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753002AbaAFIWc (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 Jan 2014 03:22:32 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:63679 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753253AbaAFIW3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 03:22:29 -0500
 From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 To: catalin.marinas@arm.com, will.deacon@arm.com, gregkh@linuxfoundation.org,
         akpm@linux-foundation.org, hpa@zytor.com, ak@linux.intel.com
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         herbert@gondor.apana.org.au, mingo@redhat.com, nico@linaro.org,
         x86@kernel.org, Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Subject: [PATCH 5/8] arm64: advertise CPU features for modalias matching
-Date: Mon,  6 Jan 2014 09:22:13 +0100
-Message-Id: <1388996536-27014-6-git-send-email-ard.biesheuvel@linaro.org>
+Subject: [PATCH 4/8] x86: align with generic cpu modalias
+Date: Mon,  6 Jan 2014 09:22:12 +0100
+Message-Id: <1388996536-27014-5-git-send-email-ard.biesheuvel@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1388996536-27014-1-git-send-email-ard.biesheuvel@linaro.org>
 References: <1388996536-27014-1-git-send-email-ard.biesheuvel@linaro.org>
@@ -23,59 +23,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This enables the generic implementation in drivers/base/cpu.c
-that allows modules to be loaded automatically based on the
-optional features supported (and advertised over udev) by the
-CPU.
+Align with the new generic 'cpu:type:...:features:...' modalias
+by moving the 'x86' prefix and the vendor/family/model IDs into
+the 'type' field.
 
 Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 ---
- arch/arm64/Kconfig        |  3 +++
- arch/arm64/kernel/setup.c | 20 ++++++++++++++++++++
- 2 files changed, 23 insertions(+)
+ arch/x86/kernel/cpu/match.c |  3 +--
+ scripts/mod/file2alias.c    | 10 +++++-----
+ 2 files changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index cb9421b540c8..74650b68d575 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -214,6 +214,9 @@ config ARCH_WANT_HUGE_PMD_SHARE
- config HAVE_ARCH_TRANSPARENT_HUGEPAGE
- 	def_bool y
+diff --git a/arch/x86/kernel/cpu/match.c b/arch/x86/kernel/cpu/match.c
+index ab6082a9020e..82e92b2185f6 100644
+--- a/arch/x86/kernel/cpu/match.c
++++ b/arch/x86/kernel/cpu/match.c
+@@ -56,8 +56,7 @@ ssize_t arch_print_cpu_modalias(struct device *dev,
+ 	int i, n;
+ 	char *buf = bufptr;
  
-+config ARCH_HAS_CPU_AUTOPROBE
-+	def_bool y
-+
- source "mm/Kconfig"
+-	n = snprintf(buf, size, "x86cpu:vendor:%04X:family:%04X:"
+-		     "model:%04X:feature:",
++	n = snprintf(buf, size, "cpu:type:x86,ven%04Xfam%04Xmod%04X:feature:",
+ 		boot_cpu_data.x86_vendor,
+ 		boot_cpu_data.x86,
+ 		boot_cpu_data.x86_model);
+diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
+index 8a69005228d8..5fdad833f951 100644
+--- a/scripts/mod/file2alias.c
++++ b/scripts/mod/file2alias.c
+@@ -1110,7 +1110,7 @@ static int do_amba_entry(const char *filename,
+ }
+ ADD_TO_DEVTABLE("amba", amba_id, do_amba_entry);
  
- config XEN_DOM0
-diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-index bb33fff09ba2..5ed082bbd61c 100644
---- a/arch/arm64/kernel/setup.c
-+++ b/arch/arm64/kernel/setup.c
-@@ -379,3 +379,23 @@ const struct seq_operations cpuinfo_op = {
- 	.stop	= c_stop,
- 	.show	= c_show
- };
-+
-+ssize_t arch_print_cpu_modalias(struct device *dev,
-+				struct device_attribute *attr,
-+				char *buf)
-+{
-+	unsigned long caps;
-+	ssize_t n;
-+	int i;
-+
-+	/*
-+	 * With 64 features maximum (taking 5 bytes each to print), we don't
-+	 * need to worry about overrunning the PAGE_SIZE sized buffer.
-+	 */
-+	n = sprintf(buf, "cpu:type:%s:feature:", ELF_PLATFORM);
-+	for (caps = elf_hwcap, i = 0; caps; caps >>= 1, i++)
-+		if (caps & 1)
-+			n += sprintf(&buf[n], ",%04X", i);
-+	buf[n++] = '\n';
-+	return n;
-+}
+-/* LOOKS like x86cpu:vendor:VVVV:family:FFFF:model:MMMM:feature:*,FEAT,*
++/* LOOKS like cpu:type:x86,venVVVVfamFFFFmodMMMM:feature:*,FEAT,*
+  * All fields are numbers. It would be nicer to use strings for vendor
+  * and feature, but getting those out of the build system here is too
+  * complicated.
+@@ -1124,10 +1124,10 @@ static int do_x86cpu_entry(const char *filename, void *symval,
+ 	DEF_FIELD(symval, x86_cpu_id, model);
+ 	DEF_FIELD(symval, x86_cpu_id, vendor);
+ 
+-	strcpy(alias, "x86cpu:");
+-	ADD(alias, "vendor:",  vendor != X86_VENDOR_ANY, vendor);
+-	ADD(alias, ":family:", family != X86_FAMILY_ANY, family);
+-	ADD(alias, ":model:",  model  != X86_MODEL_ANY,  model);
++	strcpy(alias, "cpu:type:x86,");
++	ADD(alias, "ven", vendor != X86_VENDOR_ANY, vendor);
++	ADD(alias, "fam", family != X86_FAMILY_ANY, family);
++	ADD(alias, "mod", model  != X86_MODEL_ANY,  model);
+ 	strcat(alias, ":feature:*");
+ 	if (feature != X86_FEATURE_ANY)
+ 		sprintf(alias + strlen(alias), "%04X*", feature);
 -- 
 1.8.3.2
 
