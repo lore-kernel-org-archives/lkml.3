@@ -1,141 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753531AbaAFKbb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 05:31:31 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:42294 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752611AbaAFKba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 05:31:30 -0500
-Message-ID: <52CA85FF.8050604@imgtec.com>
-Date: Mon, 6 Jan 2014 10:31:27 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1753419AbaAFKhF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 05:37:05 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:49360 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751395AbaAFKhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 05:37:02 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'walt'" <w41ter@gmail.com>, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Mark Lord <mlord@pobox.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: RE: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
+ a USB payload burst
+Thread-Topic: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
+ a USB payload burst
+Thread-Index: AQHPBmhf5d97FnYUxUSD3GhphkgfRJpx0RcAgAFWX4CABF08EA==
+Date: Mon, 6 Jan 2014 10:35:26 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D29D4F9@AcuExch.aculab.com>
+References: <20131218211219.461663463@linuxfoundation.org>
+ <20131218211220.412278148@linuxfoundation.org> <52C32BB0.90600@gmail.com>
+ <20140102191510.GA9621@xanatos> <52C6D9F1.9000709@gmail.com>
+In-Reply-To: <52C6D9F1.9000709@gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-CC: <linux-metag@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Suggest] arch: metag: compiler: Are they compiler's issues?
-References: <52B8F33C.3030808@gmail.com>
-In-Reply-To: <52B8F33C.3030808@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2014_01_06_10_31_28
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s06AbEUj032058
 
-On 24/12/13 02:36, Chen Gang wrote:
-> Helllo Maintainers:
-> 
-> When compile metag with allmodconfig, I met the 2 kinds of issues, I
-> guess they are compiler's issues, please help check, thanks.
-> 
-> 
-> Issue 1: compiler report the issue, but after check the related kernel
-> source code, I can not find any issues.
-> 
->     CC [M]  drivers/isdn/hisax/s0box.o
->   drivers/isdn/hisax/hscx_irq.c: In function 'hscx_fill_fifo':
->   /upstream/linux-next/arch/metag/include/asm/io.h:62: error: 'asm' operand requires impossible reload
->   make[3]: *** [drivers/isdn/hisax/s0box.o] Error 1
->   make[2]: *** [drivers/isdn/hisax] Error 2
->   make[1]: *** [drivers/isdn] Error 2
->   make: *** [drivers] Error 2
+> From: walt
+...
+>         /* Accept arbitrarily long scatter-gather lists */
+> -       hcd->self.sg_tablesize = ~0;
+> +       hcd->self.sg_tablesize = 31;
 
-This was a compiler bug in an old version of the toolchain.
-What does metag-linux-gcc -v give you?
-It should be "gcc version 4.2.4 (IMG-1.4.0.700)"
+Even if that reduces the number of fragments passed to the xhci driver
+it may not be enough to limit the actual number of fragments that
+need to be placed in the ring itself.
+The xhci driver has to split every fragment on any 64k address boundary.
 
-> Issue 2: they are about structure variables alignment, I guess, the
-> compiler can not notice about the "#pragma pack()" correctly.
-> 
->     CC [M]  drivers/staging/lustre/lustre/lov/lov_pack.o
->   drivers/staging/lustre/lustre/lov/lov_pack.c: In function 'lov_getstripe':
->   drivers/staging/lustre/lustre/lov/lov_pack.c:630: error: duplicate case value
->   drivers/staging/lustre/lustre/lov/lov_pack.c:630: error: previously used here
->   make[5]: *** [drivers/staging/lustre/lustre/lov/lov_pack.o] Error 1
->   make[4]: *** [drivers/staging/lustre/lustre/lov] Error 2
->   make[3]: *** [drivers/staging/lustre/lustre] Error 2
->   make[2]: *** [drivers/staging/lustre] Error 2
->   make[1]: *** [drivers/staging] Error 2
->   make: *** [drivers] Error 2
-> 
->     MODPOST 2909 modules
->   ERROR: "__compiletime_assert_426" [net/batman-adv/batman-adv.ko] undefined!
->   ERROR: "__compiletime_assert_429" [net/batman-adv/batman-adv.ko] undefined!
->   ERROR: "__compiletime_assert_425" [net/batman-adv/batman-adv.ko] undefined!
->   ERROR: "__compiletime_assert_428" [net/batman-adv/batman-adv.ko] undefined!
->   ERROR: "__compiletime_assert_427" [net/batman-adv/batman-adv.ko] undefined!
->   ERROR: "__compiletime_assert_430" [net/batman-adv/batman-adv.ko] undefined!
+One possibility is to scan long SG lists to see it they are actually
+problematic. If all the fragments are suitably aligned let them through
+(without any nops).
 
-I suspect this is due to bad assumptions in the code. The metag ABI is
-unusual in padding the size of structs to a 32bit boundary even if all
-members are <32bit. This is actually permitted by the C standard but
-it's a bit of a pain. e.g.
+My gut feeling is that problems only arise when the ring end isn't at
+a 1k boundary in the data.
 
-struct s {
-	short x
-	struct {
-		short x[3];
-	} y;
-	short z;
-};
+So provided all the fragments are multiples of 1k (after splitting on 64k
+boundaries) the transfer will be processed correctly.
+Alternatively, if the fragments are all longer than 1k (after the 64k split),
+the one that crosses the ring end can be split in two.
 
-on x86
-	alignof(s::y) == 2
-	s::y at offset 2
-	sizeof(s::y) == 6
-	s::z at offset 6+2 = 8
-	sizeof(struct s) == 10
+A quick 'fix' would be to assume that anything with too many fragments is
+probably ok - maybe check the first fragment is suitably aligned.
+That would recover the old behaviour for usb disk transfers with a lot
+of fragments - yes it is a hack...
 
-but on metag
-	alignof(s::y) == 4
-	s::y at offset 4
-	sizeof(s::y) == 8 (padding, this is what catches people out)
-	s::z at offset 4+8 = 12
-	sizeof(struct s) == 16 (and here too)
+	David
 
-Adding packed attribute on outer struct reduces sizeof(struct s) to 12
-on metag:
-	alignof(s::y) == 4
-	s::y at offset 2 (packed)
-	sizeof(s::y) == 8 (still padded)
-	s::z at offset 2+8 = 10
-	sizeof(struct s) == 12 (packed)
-
-Also reduced to 12 if only inner struct is marked packed:
-	alignof(s::y) == 2
-	s::y at offset 2
-	sizeof(s::y) == 6 (packed)
-	s::z at offset 2+6 = 8
-	sizeof(struct s) == 12 (still padded)
-
-Adding packed attribute on both outer and inner struct reduces
-sizeof(struct s) to 10 to match x86.
-
-Unfortunately it's years too late to change this ABI, so we're stuck
-with it.
-
-> 
-> 
-> Making cross-compiler:
-> 
->   git clone git://github.com/img-meta/metag-buildroot.git metag-core-2013.11
->   make meta2_defconfig.
-
-That loads the meta2_defconfig. Did you rebuild it? If in doubt you can
-always "rm -fr output" and re-make.
-
-Cheers
-James
-
->   "cd metag-core-2013.11; cp -r output/host/usr/* /usr/"
-> 
-> 
-> Welcome any additional suggestions, discussions or completions.
-> 
-> Thanks.
-> 
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
