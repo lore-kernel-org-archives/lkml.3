@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755842AbaAFQlK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 11:41:10 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:60889 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755785AbaAFQlJ (ORCPT
+	id S1755631AbaAFQmN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 11:42:13 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35616 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751470AbaAFQmL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 11:41:09 -0500
-Date: Mon, 6 Jan 2014 22:11:04 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        dri-devel@lists.freedesktop.org, josh@joshtriplett.org
-Subject: [PATCH 76/85] drivers: gpu: Move prototype declaration to header
- file radeon_drv.h from radeon_drv.c
-Message-ID: <4218b28ed65d616abc33aaf6fcc2424a3b14b03b.1389018325.git.rashika.kheria@gmail.com>
-References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
+	Mon, 6 Jan 2014 11:42:11 -0500
+Date: Mon, 6 Jan 2014 17:41:50 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
+Cc: Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Li Zefan <lizefan@huawei.com>,
+        "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] x86: Add Cache QoS Monitoring (CQM) support
+Message-ID: <20140106164150.GQ31570@twins.programming.kicks-ass.net>
+References: <1388781285-18067-1-git-send-email-peter.p.waskiewicz.jr@intel.com>
+ <20140104161050.GA24306@htj.dyndns.org>
+ <1388875369.9761.25.camel@ppwaskie-mobl.amr.corp.intel.com>
+ <20140104225058.GC24306@htj.dyndns.org>
+ <1388899376.9761.45.camel@ppwaskie-mobl.amr.corp.intel.com>
+ <20140106111624.GB5623@twins.programming.kicks-ass.net>
+ <1389026035.32504.3.camel@ppwaskie-mobl.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1389026035.32504.3.camel@ppwaskie-mobl.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move prototype declaration of function radeon_kms_compat_ioctl() to
-header file drm/radeon/radeon_drv.h because it is used by more than one
-file.
+On Mon, Jan 06, 2014 at 04:34:04PM +0000, Waskiewicz Jr, Peter P wrote:
+> On Mon, 2014-01-06 at 12:16 +0100, Peter Zijlstra wrote:
+> > On Sun, Jan 05, 2014 at 05:23:07AM +0000, Waskiewicz Jr, Peter P wrote:
+> > > The CPU side is easy and clean.  When something in the software wants to
+> > > monitor when a particular task is scheduled and started, write whatever
+> > > RMID that task is assigned to (through some mechanism) to the proper MSR
+> > > in the CPU.  When that task is swapped out, clear the MSR to stop
+> > > monitoring of that RMID.  When that RMID's statistics are requested by
+> > > the software (through some mechanism), then the CPU's MSRs are written
+> > > with the RMID in question, and the value is read of what has been
+> > > collected so far.  In my case, I decided to use a cgroup for this
+> > > "mechanism" since so much of the grouping and task/group association
+> > > already exists and doesn't need to be rebuilt or re-invented.
+> > 
+> > This still doesn't explain why you can't use perf-cgroup for this.
+> 
+> I'm not completely familiar with perf-cgroup, so I looked for some
+> documentation for it to better understand it.  Are you referring to perf
+> -G to monitor an existing cgroup/all cgroups?  Or something else?  If
+> it's the former, I'm not following you how this would fit.
 
-This eliminates the following warning in
-drivers/gpu/drm/radeon/radeon_ioc32.c:413:6: warning: no previous prototype for ‘radeon_kms_compat_ioctl’ [-Wmissing-prototypes]
+All the bits under CONFIG_CGROUP_PERF, I've no idea how userspace looks.
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- drivers/gpu/drm/radeon/radeon_drv.c |    2 --
- drivers/gpu/drm/radeon/radeon_drv.h |    3 ++-
- 2 files changed, 2 insertions(+), 3 deletions(-)
+> > > > In general, I'm quite strongly opposed against using cgroup as
+> > > > arbitrary grouping mechanism for anything other than resource control,
+> > > > especially given that we're moving away from multiple hierarchies.
+> > > 
+> > > Just to clarify then, would the mechanism in the cpuacct cgroup to
+> > > create a group off the root subsystem be considered multi-hierarchical?
+> > > If not, then the intent for this new cacheqos subsystem is to be
+> > > identical in that regard to cpuacct in the behavior.
+> > > 
+> > > This is a resource controller, it just happens to be tied to a hardware
+> > > resource instead of an OS resource.
+> > 
+> > No, cpuacct and perf-cgroup aren't actually controllers at all. They're
+> > resource monitors at best. Same with your Cache QoS Monitor, it doesn't
+> > control anything.
+> 
+> I may be using controller in a different way than you are.  Yes, the
+> Cache QoS Monitor is monitoring cache data.  But it is also controlling
+> the allocation and deallocation of RMIDs to tasks/task groups as
+> monitoring is enabled and disabled for those groups.  That's why I
+> called it a controller.  If that's not accurate, I apologize.
 
-diff --git a/drivers/gpu/drm/radeon/radeon_drv.c b/drivers/gpu/drm/radeon/radeon_drv.c
-index 9f5ff28..7868d4e 100644
---- a/drivers/gpu/drm/radeon/radeon_drv.c
-+++ b/drivers/gpu/drm/radeon/radeon_drv.c
-@@ -127,8 +127,6 @@ int radeon_gem_prime_pin(struct drm_gem_object *obj);
- void radeon_gem_prime_unpin(struct drm_gem_object *obj);
- void *radeon_gem_prime_vmap(struct drm_gem_object *obj);
- void radeon_gem_prime_vunmap(struct drm_gem_object *obj, void *vaddr);
--extern long radeon_kms_compat_ioctl(struct file *filp, unsigned int cmd,
--				    unsigned long arg);
- 
- #if defined(CONFIG_DEBUG_FS)
- int radeon_debugfs_init(struct drm_minor *minor);
-diff --git a/drivers/gpu/drm/radeon/radeon_drv.h b/drivers/gpu/drm/radeon/radeon_drv.h
-index 00e0d44..7e1f2215 100644
---- a/drivers/gpu/drm/radeon/radeon_drv.h
-+++ b/drivers/gpu/drm/radeon/radeon_drv.h
-@@ -425,7 +425,8 @@ extern int radeon_driver_open(struct drm_device *dev,
- 			      struct drm_file *file_priv);
- extern long radeon_compat_ioctl(struct file *filp, unsigned int cmd,
- 				unsigned long arg);
--
-+extern long radeon_kms_compat_ioctl(struct file *filp, unsigned int cmd,
-+				    unsigned long arg);
- extern int radeon_master_create(struct drm_device *dev, struct drm_master *master);
- extern void radeon_master_destroy(struct drm_device *dev, struct drm_master *master);
- extern void radeon_cp_dispatch_flip(struct drm_device *dev, struct drm_master *master);
--- 
-1.7.9.5
+Yeah that's not accurate, nor desired I think, because you get into
+horrible problems with hierarchies, do child groups belong to your RMID
+or not?
 
+As is I don't really see a good use for RMIDs and I would simply not use
+them. 
