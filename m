@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866AbaAFOqt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 09:46:49 -0500
-Received: from mga09.intel.com ([134.134.136.24]:29585 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750899AbaAFOqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 09:46:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,613,1384329600"; 
-   d="scan'208";a="454279911"
-Message-ID: <1389019601.5853.17.camel@rzhang1-mobl4>
-Subject: Re: [PATCHv2 0/7] DRA7: DT thermal support
-From: Zhang Rui <rui.zhang@intel.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Date: Mon, 06 Jan 2014 22:46:41 +0800
-In-Reply-To: <1389011811-13004-1-git-send-email-eduardo.valentin@ti.com>
-References: <1389011811-13004-1-git-send-email-eduardo.valentin@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754965AbaAFOrs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 09:47:48 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:61780 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751243AbaAFOrr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 09:47:47 -0500
+Date: Mon, 6 Jan 2014 14:47:41 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/7] mfd: Move pm8xxx-irq.c contents into only driver
+ that uses it
+Message-ID: <20140106144741.GH30156@lee--X1>
+References: <1387831563-13535-1-git-send-email-sboyd@codeaurora.org>
+ <1387831563-13535-2-git-send-email-sboyd@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1387831563-13535-2-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-06 at 08:36 -0400, Eduardo Valentin wrote:
-> Hello all,
-> 
-> Now that the basic thermal DT support is merged into Rui's tree,
-> I am resending this series, which introduces the DT node entries
-> for DRA7 thermal limits representation.
-> 
-> The series adds two thermal zones, to represent IVA and DSPEVE,
-> respectively. It also adds the support to tmp102 and a corresponding
-> pcb thermal zone.
-> 
-> There are only cosmetic changes from v1. A couple of spaces and tabulations
-> have been fixed, and minor changes in sentences present in commit log.
-> One difference from V1 is the fact that now bandgap is introduced under
-> OCP, which is also a minor diff.
-> 
-> This patch series has been runtime tested on DRA7-evm.
-> 
-> All best
-> 
-> Eduardo Valentin (7):
->   arm: dts: add dra7 DSPEVE thermal data
->   arm: dts: add dra7 IVA thermal data
->   arm: dts: dra7: add bandgap entry
->   arm: dts: add cooling properties on dra7 cpu node
->   arm: dts: dra7: add thermal data
->   arm: dts: add tmp102 i2c sensor node on dra7-evm
->   arm: dts: add thermal zones info on tmp102 for DRA7-EVM
-> 
->  arch/arm/boot/dts/dra7-dspeve-thermal.dtsi | 28 ++++++++++++++++++++++++++++
->  arch/arm/boot/dts/dra7-evm.dts             | 22 ++++++++++++++++++++++
->  arch/arm/boot/dts/dra7-iva-thermal.dtsi    | 28 ++++++++++++++++++++++++++++
->  arch/arm/boot/dts/dra7.dtsi                | 26 ++++++++++++++++++++++++++
+On Mon, 23 Dec 2013, Stephen Boyd wrote:
 
-I'm okay with this patch set. But as long as this patch set does not
-change any code under drivers/thermal/, I prefer these patches to go to
-your thermal-soc tree first.
-
-thanks,
-rui
->  4 files changed, 104 insertions(+)
->  create mode 100644 arch/arm/boot/dts/dra7-dspeve-thermal.dtsi
->  create mode 100644 arch/arm/boot/dts/dra7-iva-thermal.dtsi
+> The pm8xxx-irq.c code is practically mandatory given that the
+> pm8921-core driver will WARN about it missing and the Kconfig
+> marks it as default y when a PM8xxx chips is enabled. The only
+> reason the file was split out was because we planned to support
+> other pm8xxx chips with different pm8xxx-core.c files. Now that
+> we have DT on ARM this isn't necessary because we should be able
+> to support all the ssbi based PM8xxx chips in one driver and one
+> file with no data bloat. Let's move this code into the only
+> driver that uses it right now (pm8921) so that it's always compiled when
+> needed. In the future we can rename pm8921-core.c to something
+> more generic.
 > 
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  drivers/mfd/Kconfig            |  10 --
+>  drivers/mfd/pm8921-core.c      | 348 ++++++++++++++++++++++++++++++++++++++
+>  drivers/mfd/pm8xxx-irq.c       | 371 -----------------------------------------
+>  include/linux/mfd/pm8xxx/irq.h |  23 ---
+>  4 files changed, 348 insertions(+), 404 deletions(-)
+>  delete mode 100644 drivers/mfd/pm8xxx-irq.c
 
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
