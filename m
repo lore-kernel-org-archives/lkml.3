@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932762AbaAFWkZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:40:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48009 "EHLO
+	id S933480AbaAFXeR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:34:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48037 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755931AbaAFWkS (ORCPT
+	with ESMTP id S932754AbaAFWkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:18 -0500
+	Mon, 6 Jan 2014 17:40:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jonathan Cameron <jic23@kernel.org>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 3.10 013/129] iio:imu:adis16400 fix pressure channel scan type
-Date: Mon,  6 Jan 2014 14:37:22 -0800
-Message-Id: <20140106223859.966072051@linuxfoundation.org>
+        Evan McNabb <emcnabb@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Paul Moore <pmoore@redhat.com>
+Subject: [PATCH 3.10 020/129] selinux: selinux_setprocattr()->ptrace_parent() needs rcu_read_lock()
+Date: Mon,  6 Jan 2014 14:37:29 -0800
+Message-Id: <20140106223900.176412629@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -29,39 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jonathan Cameron <jic23@kernel.org>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 3425c0f7ac61f2fcfb7f2728e9b7ba7e27aec429 upstream.
+commit c0c1439541f5305b57a83d599af32b74182933fe upstream.
 
-A single channel in this driver was using the IIO_ST macro.
-This does not provide a parameter for setting the endianness of
-the channel.  Thus this channel will have been reported as whatever
-is the native endianness of the cpu rather than big endian. This
-means it would be incorrect on little endian platforms.
+selinux_setprocattr() does ptrace_parent(p) under task_lock(p),
+but task_struct->alloc_lock doesn't pin ->parent or ->ptrace,
+this looks confusing and triggers the "suspicious RCU usage"
+warning because ptrace_parent() does rcu_dereference_check().
 
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+And in theory this is wrong, spin_lock()->preempt_disable()
+doesn't necessarily imply rcu_read_lock() we need to access
+the ->parent.
+
+Reported-by: Evan McNabb <emcnabb@redhat.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/imu/adis16400_core.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ security/selinux/hooks.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/iio/imu/adis16400_core.c
-+++ b/drivers/iio/imu/adis16400_core.c
-@@ -651,7 +651,12 @@ static const struct iio_chan_spec adis16
- 		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = ADIS16448_BARO_OUT,
- 		.scan_index = ADIS16400_SCAN_BARO,
--		.scan_type = IIO_ST('s', 16, 16, 0),
-+		.scan_type = {
-+			.sign = 's',
-+			.realbits = 16,
-+			.storagebits = 16,
-+			.endianness = IIO_BE,
-+		},
- 	},
- 	ADIS16400_TEMP_CHAN(ADIS16448_TEMP_OUT, 12),
- 	IIO_CHAN_SOFT_TIMESTAMP(11)
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -5454,11 +5454,11 @@ static int selinux_setprocattr(struct ta
+ 		/* Check for ptracing, and update the task SID if ok.
+ 		   Otherwise, leave SID unchanged and fail. */
+ 		ptsid = 0;
+-		task_lock(p);
++		rcu_read_lock();
+ 		tracer = ptrace_parent(p);
+ 		if (tracer)
+ 			ptsid = task_sid(tracer);
+-		task_unlock(p);
++		rcu_read_unlock();
+ 
+ 		if (tracer) {
+ 			error = avc_has_perm(ptsid, sid, SECCLASS_PROCESS,
 
 
