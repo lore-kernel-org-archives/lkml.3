@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757172AbaAFXOZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:14:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48395 "EHLO
+	id S1757429AbaAFXOs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:14:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48389 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756976AbaAFWl3 (ORCPT
+	with ESMTP id S1756966AbaAFWl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:29 -0500
+	Mon, 6 Jan 2014 17:41:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 088/129] sh: always link in helper functions extracted from libgcc
-Date: Mon,  6 Jan 2014 14:38:37 -0800
-Message-Id: <20140106223902.125105673@linuxfoundation.org>
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.10 087/129] gpio: msm: Fix irq mask/unmask by writing bits instead of numbers
+Date: Mon,  6 Jan 2014 14:38:36 -0800
+Message-Id: <20140106223902.097722552@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -32,55 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-commit 84ed8a99058e61567f495cc43118344261641c5f upstream.
+commit 4cc629b7a20945ce35628179180329b6bc9e552b upstream.
 
-E.g. landisk_defconfig, which has CONFIG_NTFS_FS=m:
+We should be writing bits here but instead we're writing the
+numbers that correspond to the bits we want to write. Fix it by
+wrapping the numbers in the BIT() macro. This fixes gpios acting
+as interrupts.
 
-  ERROR: "__ashrdi3" [fs/ntfs/ntfs.ko] undefined!
-
-For "lib-y", if no symbols in a compilation unit are referenced by other
-units, the compilation unit will not be included in vmlinux.  This
-breaks modules that do reference those symbols.
-
-Use "obj-y" instead to fix this.
-
-http://kisskb.ellerman.id.au/kisskb/buildresult/8838077/
-
-This doesn't fix all cases. There are others, e.g. udivsi3.
-This is also not limited to sh, many architectures handle this in the
-same way.
-
-A simple solution is to unconditionally include all helper functions.
-A more complex solution is to make the choice of "lib-y" or "obj-y" depend
-on CONFIG_MODULES:
-
-  obj-$(CONFIG_MODULES) += ...
-  lib-y($CONFIG_MODULES) += ...
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Tested-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Reviewed-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/sh/lib/Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpio/gpio-msm-v2.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/sh/lib/Makefile
-+++ b/arch/sh/lib/Makefile
-@@ -6,7 +6,7 @@ lib-y  = delay.o memmove.o memchr.o \
- 	 checksum.o strlen.o div64.o div64-generic.o
+--- a/drivers/gpio/gpio-msm-v2.c
++++ b/drivers/gpio/gpio-msm-v2.c
+@@ -248,7 +248,7 @@ static void msm_gpio_irq_mask(struct irq
  
- # Extracted from libgcc
--lib-y += movmem.o ashldi3.o ashrdi3.o lshrdi3.o \
-+obj-y += movmem.o ashldi3.o ashrdi3.o lshrdi3.o \
- 	 ashlsi3.o ashrsi3.o ashiftrt.o lshrsi3.o \
- 	 udiv_qrnnd.o
+ 	spin_lock_irqsave(&tlmm_lock, irq_flags);
+ 	writel(TARGET_PROC_NONE, GPIO_INTR_CFG_SU(gpio));
+-	clear_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
++	clear_gpio_bits(BIT(INTR_RAW_STATUS_EN) | BIT(INTR_ENABLE), GPIO_INTR_CFG(gpio));
+ 	__clear_bit(gpio, msm_gpio.enabled_irqs);
+ 	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
+ }
+@@ -260,7 +260,7 @@ static void msm_gpio_irq_unmask(struct i
  
+ 	spin_lock_irqsave(&tlmm_lock, irq_flags);
+ 	__set_bit(gpio, msm_gpio.enabled_irqs);
+-	set_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
++	set_gpio_bits(BIT(INTR_RAW_STATUS_EN) | BIT(INTR_ENABLE), GPIO_INTR_CFG(gpio));
+ 	writel(TARGET_PROC_SCORPION, GPIO_INTR_CFG_SU(gpio));
+ 	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
+ }
 
 
