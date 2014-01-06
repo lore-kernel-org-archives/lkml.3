@@ -1,98 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933124AbaAFXXA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:23:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48231 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756905AbaAFWlD (ORCPT
+	id S933181AbaAFXXI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:23:08 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:44020 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933139AbaAFXXE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:03 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vincent Pelletier <plr.vincent@gmail.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.10 062/129] libata: Add atapi_dmadir force flag
-Date: Mon,  6 Jan 2014 14:38:11 -0800
-Message-Id: <20140106223901.381715157@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
-References: <20140106223859.589799655@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Mon, 6 Jan 2014 18:23:04 -0500
+Date: Mon, 6 Jan 2014 15:22:59 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PNPBIOS: check return value of pnp_add_device()
+Message-ID: <20140106232259.GC17357@core.coreip.homeip.net>
+References: <20131215121102.GA509@core.coreip.homeip.net>
+ <20140106223501.GB17357@core.coreip.homeip.net>
+ <3555521.XezuyqRU3a@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3555521.XezuyqRU3a@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jan 07, 2014 at 12:32:30AM +0100, Rafael J. Wysocki wrote:
+> Hi Dmitry,
+> 
+> I've just queued up your patch for 3.14 (the other one has already been in
+> my tree for a while).
 
-------------------
+Cool, thanks!
 
-From: Vincent Pelletier <plr.vincent@gmail.com>
-
-commit 966fbe193f47c68e70a80ec9991098e88e7959cb upstream.
-
-Some device require DMADIR to be enabled, but are not detected as such
-by atapi_id_dmadir.  One such example is "Asus Serillel 2"
-SATA-host-to-PATA-device bridge: the bridge itself requires DMADIR,
-even if the bridged device does not.
-
-As atapi_dmadir module parameter can cause problems with some devices
-(as per Tejun Heo's memory), enabling it globally may not be possible
-depending on the hardware.
-
-This patch adds atapi_dmadir in the form of a "force" horkage value,
-allowing global, per-bus and per-device control.
-
-Signed-off-by: Vincent Pelletier <plr.vincent@gmail.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- Documentation/kernel-parameters.txt |    2 ++
- drivers/ata/libata-core.c           |    3 ++-
- include/linux/libata.h              |    1 +
- 3 files changed, 5 insertions(+), 1 deletion(-)
-
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1456,6 +1456,8 @@ bytes respectively. Such letter suffixes
- 
- 			* dump_id: dump IDENTIFY data.
- 
-+			* atapi_dmadir: Enable ATAPI DMADIR bridge support
-+
- 			If there are multiple matching configurations changing
- 			the same attribute, the last one is used.
- 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -2401,7 +2401,7 @@ int ata_dev_configure(struct ata_device
- 			cdb_intr_string = ", CDB intr";
- 		}
- 
--		if (atapi_dmadir || atapi_id_dmadir(dev->id)) {
-+		if (atapi_dmadir || (dev->horkage & ATA_HORKAGE_ATAPI_DMADIR) || atapi_id_dmadir(dev->id)) {
- 			dev->flags |= ATA_DFLAG_DMADIR;
- 			dma_dir_string = ", DMADIR";
- 		}
-@@ -6506,6 +6506,7 @@ static int __init ata_parse_force_one(ch
- 		{ "nosrst",	.lflags		= ATA_LFLAG_NO_SRST },
- 		{ "norst",	.lflags		= ATA_LFLAG_NO_HRST | ATA_LFLAG_NO_SRST },
- 		{ "rstonce",	.lflags		= ATA_LFLAG_RST_ONCE },
-+		{ "atapi_dmadir", .horkage_on	= ATA_HORKAGE_ATAPI_DMADIR },
- 	};
- 	char *start = *cur, *p = *cur;
- 	char *id, *val, *endp;
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -399,6 +399,7 @@ enum {
- 	ATA_HORKAGE_BROKEN_FPDMA_AA	= (1 << 15),	/* skip AA */
- 	ATA_HORKAGE_DUMP_ID	= (1 << 16),	/* dump IDENTIFY data */
- 	ATA_HORKAGE_MAX_SEC_LBA48 = (1 << 17),	/* Set max sects to 65535 */
-+	ATA_HORKAGE_ATAPI_DMADIR = (1 << 18),	/* device requires dmadir */
- 
- 	 /* DMA mask for user DMA control: User visible values; DO NOT
- 	    renumber */
-
-
+-- 
+Dmitry
