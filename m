@@ -1,62 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286AbaAFJAI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 04:00:08 -0500
-Received: from smtp.nue.novell.com ([195.135.221.5]:45878 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751799AbaAFJAH (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Mon, 6 Jan 2014 04:00:07 -0500
-Subject: Re: [RFC PATCH 04/14] ACPI: Add ACPI 5.0 Time and Alarm Device
- driver
-From: joeyli <jlee@suse.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
-        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
-        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        x86@kernel.org,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-acpi@vger.kernel.org
-In-Reply-To: <52C3647B.7000708@zytor.com>
-References: <1387439515-8926-1-git-send-email-jlee@suse.com>
-	 <1387439515-8926-5-git-send-email-jlee@suse.com>
-	 <52B30F43.1060306@zytor.com> <1387518099.3539.4453.camel@linux-s257.site>
-	 <52C3647B.7000708@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Jan 2014 16:58:27 +0800
-Message-ID: <1388998707.3539.6070.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1753427AbaAFJAq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 04:00:46 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55122 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753324AbaAFJAp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 04:00:45 -0500
+Message-ID: <52CA70B3.5020004@pengutronix.de>
+Date: Mon, 06 Jan 2014 10:00:35 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+MIME-Version: 1.0
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: can: Disable broken flexcan driver build for big
+ endian CPU on ARM
+References: <1388944283-29990-1-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1388944283-29990-1-git-send-email-linux@roeck-us.net>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="KLRVP1ajhAdnpIXU12PQGGVjt9qLKNMg2"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 二，2013-12-31 於 16:42 -0800，H. Peter Anvin 提到：
-> On 12/19/2013 09:41 PM, joeyli wrote:
-> >>
-> >> What platform do you have that has TAD support?  I am wondering how this
-> >> was tested.
-> >>
-> > 
-> > It's a testing platform that's only support get/set time functions of
-> > ACPI TAD.
-> > 
-> 
-> It would be really, really good to get this into Qemu (either SeaBIOS or
-> OVMF, or ideally both) so we can have anyone test.
-> 
-> 	-hpa
-> 
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--KLRVP1ajhAdnpIXU12PQGGVjt9qLKNMg2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-I will try to add to OVMF first.
+On 01/05/2014 06:51 PM, Guenter Roeck wrote:
+> Building arm:allmodconfig fails with
+>=20
+> flexcan.c: In function 'flexcan_read':
+> flexcan.c:243:2: error: implicit declaration of function 'in_be32'
+> flexcan.c: In function 'flexcan_write':
+> flexcan.c:248:2: error: implicit declaration of function 'out_be32'
+>=20
+> in_be32 and out_be32 do not (or no longer) exist for ARM targets.
+> Mark the build for arm on big endian CPUs as broken.
+
+I think there isn't any ARM with this CAN core that supports BE (at
+least on Linux).
+
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+> If there is a better solution, please let me know and I'll be happy
+> to provide a patch.
+>=20
+>  drivers/net/can/Kconfig |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig
+> index 3c06947..8d202f4 100644
+> --- a/drivers/net/can/Kconfig
+> +++ b/drivers/net/can/Kconfig
+> @@ -104,7 +104,7 @@ config CAN_JANZ_ICAN3
+> =20
+>  config CAN_FLEXCAN
+>  	tristate "Support for Freescale FLEXCAN based chips"
+> -	depends on ARM || PPC
+> +	depends on (ARM || PPC) && (BROKEN || !ARM || CPU_LITTLE_ENDIAN)
+
+Why not make it:
+
+	depends on (ARM && CPU_LITTLE_ENDIAN) || PPC
+
+>  	---help---
+>  	  Say Y here if you want to support for Freescale FlexCAN.
+> =20
+>=20
+
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
-Thanks
-Joey Lee
+--KLRVP1ajhAdnpIXU12PQGGVjt9qLKNMg2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
 
+iEYEARECAAYFAlLKcLMACgkQjTAFq1RaXHOjMgCfaoiOijjMdGb7W7JGoUb/rxqR
+NtEAn2BXIkcFk5/5fkKkGaaliQHVGjix
+=bgyR
+-----END PGP SIGNATURE-----
+
+--KLRVP1ajhAdnpIXU12PQGGVjt9qLKNMg2--
