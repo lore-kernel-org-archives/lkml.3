@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756525AbaAFWKi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:10:38 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:64914 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756019AbaAFWKf (ORCPT
+	id S1756562AbaAFWKq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:10:46 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:53894 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756530AbaAFWKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:10:35 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpufreq: speedstep: remove unused speedstep_get_state
-Date: Mon, 06 Jan 2014 23:24:21 +0100
-Message-ID: <1756077.6t9Ofi9GiT@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1389040212.2562.3.camel@x41>
-References: <1389040212.2562.3.camel@x41>
+	Mon, 6 Jan 2014 17:10:41 -0500
+Date: Mon, 6 Jan 2014 14:10:36 -0800
+From: Kent Overstreet <kmo@daterainc.com>
+To: Muthu Kumar <muthu.lkml@gmail.com>, Chris Mason <clm@fb.com>
+Cc: fengguang.wu@intel.com, Jens Axboe <axboe@kernel.dk>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@linux.intel.com
+Subject: Re: [block:for-3.14/core] kernel BUG at fs/bio.c:1748
+Message-ID: <20140106221036.GE9037@kmo>
+References: <20140102053101.GA29352@localhost>
+ <CAFR8uee-WTy6cj8bB4aMuGP1B0sZkc70sq1Drg7uhHS49EqHcg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFR8uee-WTy6cj8bB4aMuGP1B0sZkc70sq1Drg7uhHS49EqHcg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 06, 2014 09:30:12 PM Paul Bolle wrote:
-> The only caller of speedstep_get_state() was removed in commit d4019f0a92ab
-> ("cpufreq: move freq change notifications to cpufreq core"). So building
-> speedstep-smi.o now triggers a GCC warning:
->     drivers/cpufreq/speedstep-smi.c:148:12: warning: 'speedstep_get_state' defined but not used [-Wunused-function]
-> 
-> Remove this unused function.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Chris, the patch below seems to be incorrect - with it we get hangs, so
+bi_remaining (probably) isn't getting decremented when it should be. You sent
+Jens fixes for btrfs which I somehow lost when I rebased, do you remember how
+this is supposed to work? Looking at the code I'm not quite sure what's going on
+here.
 
-Queued up for 3.14, thanks!
-
-> ---
-> This seems to be a rather obvious fix. Hasn't it been submitted before?
+On Fri, Jan 03, 2014 at 11:51:31AM -0800, Muthu Kumar wrote:
+> Looks like Kent missed the btrfs endio in the original commit. How
+> about this patch:
 > 
->  drivers/cpufreq/speedstep-smi.c | 32 --------------------------------
->  1 file changed, 32 deletions(-)
+> ---------
 > 
-> diff --git a/drivers/cpufreq/speedstep-smi.c b/drivers/cpufreq/speedstep-smi.c
-> index 0f5326d..998c17b 100644
-> --- a/drivers/cpufreq/speedstep-smi.c
-> +++ b/drivers/cpufreq/speedstep-smi.c
-> @@ -141,38 +141,6 @@ static int speedstep_smi_get_freqs(unsigned int *low, unsigned int *high)
->  }
->  
->  /**
-> - * speedstep_get_state - set the SpeedStep state
-> - * @state: processor frequency state (SPEEDSTEP_LOW or SPEEDSTEP_HIGH)
-> - *
-> - */
-> -static int speedstep_get_state(void)
-> -{
-> -	u32 function = GET_SPEEDSTEP_STATE;
-> -	u32 result, state, edi, command, dummy;
-> -
-> -	command = (smi_sig & 0xffffff00) | (smi_cmd & 0xff);
-> -
-> -	pr_debug("trying to determine current setting with command %x "
-> -		"at port %x\n", command, smi_port);
-> -
-> -	__asm__ __volatile__(
-> -		"push %%ebp\n"
-> -		"out %%al, (%%dx)\n"
-> -		"pop %%ebp\n"
-> -		: "=a" (result),
-> -		  "=b" (state), "=D" (edi),
-> -		  "=c" (dummy), "=d" (dummy), "=S" (dummy)
-> -		: "a" (command), "b" (function), "c" (0),
-> -		  "d" (smi_port), "S" (0), "D" (0)
-> -	);
-> -
-> -	pr_debug("state is %x, result is %x\n", state, result);
-> -
-> -	return state & 1;
-> -}
-> -
-> -
-> -/**
->   * speedstep_set_state - set the SpeedStep state
->   * @state: new processor frequency state (SPEEDSTEP_LOW or SPEEDSTEP_HIGH)
->   *
+> In btrfs_end_bio, call bio_endio_nodec on the restored bio so the
+> bi_remaining is accounted for correctly.
 > 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> Reported-by: fengguang.wu@intel.com
+> Cc: Kent Overstreet <kmo@daterainc.com>
+> CC: Jens Axboe <axboe@kernel.dk>
+> Signed-off-by: Muthukumar Ratty <muthur@gmail.com>
+> --------
+> 
+>  fs/btrfs/volumes.c |    6 +++++-
+>  1 files changed, 5 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+> index f2130de..edfed52 100644
+> --- a/fs/btrfs/volumes.c
+> +++ b/fs/btrfs/volumes.c
+> @@ -5316,7 +5316,11 @@ static void btrfs_end_bio(struct bio *bio, int err)
+>                 }
+>                 kfree(bbio);
+> 
+> -               bio_endio(bio, err);
+> +                /*
+> +                 * Call endio_nodec on the restored bio so the bi_remaining is
+> +                 * accounted for correctly
+> +                 */
+> +               bio_endio_nodec(bio, err);
+>         } else if (!is_orig_bio) {
+>                 bio_put(bio);
+>         }
