@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677AbaAFWiL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:38:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47321 "EHLO
+	id S933219AbaAGANj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:13:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47356 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756429AbaAFWiD (ORCPT
+	with ESMTP id S1756381AbaAFWiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:03 -0500
+	Mon, 6 Jan 2014 17:38:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, Greg Farnum <greg@inktank.com>,
-        Sage Weil <sage@inktank.com>
-Subject: [PATCH 3.12 003/144] ceph: cleanup aborted requests when re-sending requests.
-Date: Mon,  6 Jan 2014 14:36:04 -0800
-Message-Id: <20140106223745.427212546@linuxfoundation.org>
+        Jonathan Cameron <jic23@kernel.org>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 3.12 020/144] iio:imu:adis16400 fix pressure channel scan type
+Date: Mon,  6 Jan 2014 14:36:21 -0800
+Message-Id: <20140106223745.905347631@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,37 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+From: Jonathan Cameron <jic23@kernel.org>
 
-commit eb1b8af33c2e42a9a57fc0a7588f4a7b255d2e79 upstream.
+commit 3425c0f7ac61f2fcfb7f2728e9b7ba7e27aec429 upstream.
 
-Aborted requests usually get cleared when the reply is received.
-If MDS crashes, no reply will be received. So we need to cleanup
-aborted requests when re-sending requests.
+A single channel in this driver was using the IIO_ST macro.
+This does not provide a parameter for setting the endianness of
+the channel.  Thus this channel will have been reported as whatever
+is the native endianness of the cpu rather than big endian. This
+means it would be incorrect on little endian platforms.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Reviewed-by: Greg Farnum <greg@inktank.com>
-Signed-off-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ceph/mds_client.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/iio/imu/adis16400_core.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/fs/ceph/mds_client.c
-+++ b/fs/ceph/mds_client.c
-@@ -1875,8 +1875,11 @@ static int __do_request(struct ceph_mds_
- 	int mds = -1;
- 	int err = -EAGAIN;
- 
--	if (req->r_err || req->r_got_result)
-+	if (req->r_err || req->r_got_result) {
-+		if (req->r_aborted)
-+			__unregister_request(mdsc, req);
- 		goto out;
-+	}
- 
- 	if (req->r_timeout &&
- 	    time_after_eq(jiffies, req->r_started + req->r_timeout)) {
+--- a/drivers/iio/imu/adis16400_core.c
++++ b/drivers/iio/imu/adis16400_core.c
+@@ -651,7 +651,12 @@ static const struct iio_chan_spec adis16
+ 		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = ADIS16448_BARO_OUT,
+ 		.scan_index = ADIS16400_SCAN_BARO,
+-		.scan_type = IIO_ST('s', 16, 16, 0),
++		.scan_type = {
++			.sign = 's',
++			.realbits = 16,
++			.storagebits = 16,
++			.endianness = IIO_BE,
++		},
+ 	},
+ 	ADIS16400_TEMP_CHAN(ADIS16448_TEMP_OUT, 12),
+ 	IIO_CHAN_SOFT_TIMESTAMP(11)
 
 
