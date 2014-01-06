@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757429AbaAFXOs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:14:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48389 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756966AbaAFWl2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756963AbaAFWl2 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 Jan 2014 17:41:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48359 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932968AbaAFWlX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 17:41:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.10 087/129] gpio: msm: Fix irq mask/unmask by writing bits instead of numbers
-Date: Mon,  6 Jan 2014 14:38:36 -0800
-Message-Id: <20140106223902.097722552@linuxfoundation.org>
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 3.10 082/129] GFS2: Fix incorrect invalidation for DIO/buffered I/O
+Date: Mon,  6 Jan 2014 14:38:31 -0800
+Message-Id: <20140106223901.954596421@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -29,42 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Steven Whitehouse <swhiteho@redhat.com>
 
-commit 4cc629b7a20945ce35628179180329b6bc9e552b upstream.
+commit dfd11184d894cd0a92397b25cac18831a1a6a5bc upstream.
 
-We should be writing bits here but instead we're writing the
-numbers that correspond to the bits we want to write. Fix it by
-wrapping the numbers in the BIT() macro. This fixes gpios acting
-as interrupts.
+In patch 209806aba9d540dde3db0a5ce72307f85f33468f we allowed
+local deferred locks to be granted against a cached exclusive
+lock. That opened up a corner case which this patch now
+fixes.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+The solution to the problem is to check whether we have cached
+pages each time we do direct I/O and if so to unmap, flush
+and invalidate those pages. Since the glock state machine
+normally does that for us, mostly the code will be a no-op.
+
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpio/gpio-msm-v2.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/gfs2/aops.c |   30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
 
---- a/drivers/gpio/gpio-msm-v2.c
-+++ b/drivers/gpio/gpio-msm-v2.c
-@@ -248,7 +248,7 @@ static void msm_gpio_irq_mask(struct irq
+--- a/fs/gfs2/aops.c
++++ b/fs/gfs2/aops.c
+@@ -999,6 +999,7 @@ static ssize_t gfs2_direct_IO(int rw, st
+ {
+ 	struct file *file = iocb->ki_filp;
+ 	struct inode *inode = file->f_mapping->host;
++	struct address_space *mapping = inode->i_mapping;
+ 	struct gfs2_inode *ip = GFS2_I(inode);
+ 	struct gfs2_holder gh;
+ 	int rv;
+@@ -1019,6 +1020,35 @@ static ssize_t gfs2_direct_IO(int rw, st
+ 	if (rv != 1)
+ 		goto out; /* dio not valid, fall back to buffered i/o */
  
- 	spin_lock_irqsave(&tlmm_lock, irq_flags);
- 	writel(TARGET_PROC_NONE, GPIO_INTR_CFG_SU(gpio));
--	clear_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
-+	clear_gpio_bits(BIT(INTR_RAW_STATUS_EN) | BIT(INTR_ENABLE), GPIO_INTR_CFG(gpio));
- 	__clear_bit(gpio, msm_gpio.enabled_irqs);
- 	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
- }
-@@ -260,7 +260,7 @@ static void msm_gpio_irq_unmask(struct i
- 
- 	spin_lock_irqsave(&tlmm_lock, irq_flags);
- 	__set_bit(gpio, msm_gpio.enabled_irqs);
--	set_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
-+	set_gpio_bits(BIT(INTR_RAW_STATUS_EN) | BIT(INTR_ENABLE), GPIO_INTR_CFG(gpio));
- 	writel(TARGET_PROC_SCORPION, GPIO_INTR_CFG_SU(gpio));
- 	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
- }
++	/*
++	 * Now since we are holding a deferred (CW) lock at this point, you
++	 * might be wondering why this is ever needed. There is a case however
++	 * where we've granted a deferred local lock against a cached exclusive
++	 * glock. That is ok provided all granted local locks are deferred, but
++	 * it also means that it is possible to encounter pages which are
++	 * cached and possibly also mapped. So here we check for that and sort
++	 * them out ahead of the dio. The glock state machine will take care of
++	 * everything else.
++	 *
++	 * If in fact the cached glock state (gl->gl_state) is deferred (CW) in
++	 * the first place, mapping->nr_pages will always be zero.
++	 */
++	if (mapping->nrpages) {
++		loff_t lstart = offset & (PAGE_CACHE_SIZE - 1);
++		loff_t len = iov_length(iov, nr_segs);
++		loff_t end = PAGE_ALIGN(offset + len) - 1;
++
++		rv = 0;
++		if (len == 0)
++			goto out;
++		if (test_and_clear_bit(GIF_SW_PAGED, &ip->i_flags))
++			unmap_shared_mapping_range(ip->i_inode.i_mapping, offset, len);
++		rv = filemap_write_and_wait_range(mapping, lstart, end);
++		if (rv)
++			return rv;
++		truncate_inode_pages_range(mapping, lstart, end);
++	}
++
+ 	rv = __blockdev_direct_IO(rw, iocb, inode, inode->i_sb->s_bdev, iov,
+ 				  offset, nr_segs, gfs2_get_block_direct,
+ 				  NULL, NULL, 0);
 
 
