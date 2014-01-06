@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757535AbaAFXiO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:38:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47978 "EHLO
+	id S1757550AbaAFXio (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:38:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47975 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932713AbaAFWkL (ORCPT
+	with ESMTP id S932703AbaAFWkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:11 -0500
+	Mon, 6 Jan 2014 17:40:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>, Ben Skeggs <bskeggs@redhat.com>,
-        Dave Airlie <airlied@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.12 143/144] nouveau_acpi: convert acpi_get_handle() to acpi_has_method()
-Date: Mon,  6 Jan 2014 14:38:24 -0800
-Message-Id: <20140106223749.447002709@linuxfoundation.org>
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: [PATCH 3.12 142/144] aio/migratepages: make aio migrate pages sane
+Date: Mon,  6 Jan 2014 14:38:23 -0800
+Message-Id: <20140106223749.419761331@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -30,53 +28,178 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhang Rui <rui.zhang@intel.com>
+From: Benjamin LaHaise <bcrl@kvack.org>
 
-commit 187b5b5d520c2318a1f88fb8d8913a9d7fbf7d92 upstream.
+commit 8e321fefb0e60bae4e2a28d20fc4fa30758d27c6 upstream.
 
-acpi_has_method() is a new ACPI API introduced to check
-the existence of an ACPI control method.
+The arbitrary restriction on page counts offered by the core
+migrate_page_move_mapping() code results in rather suspicious looking
+fiddling with page reference counts in the aio_migratepage() operation.
+To fix this, make migrate_page_move_mapping() take an extra_count parameter
+that allows aio to tell the code about its own reference count on the page
+being migrated.
 
-It can be used to replace acpi_get_handle() in the case that
-1. the calling function doesn't need the ACPI handle of the control method.
-and
-2. the calling function doesn't care the reason why the method is unavailable.
+While cleaning up aio_migratepage(), make it validate that the old page
+being passed in is actually what aio_migratepage() expects to prevent
+misbehaviour in the case of races.
 
-Convert acpi_get_handle() to acpi_has_method()
-in drivers/gpu/drm/nouveau/nouveau_acpi.c in this patch.
-
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-CC: Ben Skeggs <bskeggs@redhat.com>
-CC: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nouveau_acpi.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ fs/aio.c                |   52 ++++++++++++++++++++++++++++++++++++++++--------
+ include/linux/migrate.h |    3 +-
+ mm/migrate.c            |   13 ++++++------
+ 3 files changed, 53 insertions(+), 15 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
-@@ -253,18 +253,15 @@ static struct vga_switcheroo_handler nou
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -244,9 +244,14 @@ static void aio_free_ring(struct kioctx
+ 	int i;
  
- static int nouveau_dsm_pci_probe(struct pci_dev *pdev)
+ 	for (i = 0; i < ctx->nr_pages; i++) {
++		struct page *page;
+ 		pr_debug("pid(%d) [%d] page->count=%d\n", current->pid, i,
+ 				page_count(ctx->ring_pages[i]));
+-		put_page(ctx->ring_pages[i]);
++		page = ctx->ring_pages[i];
++		if (!page)
++			continue;
++		ctx->ring_pages[i] = NULL;
++		put_page(page);
+ 	}
+ 
+ 	put_aio_ring_file(ctx);
+@@ -280,18 +285,38 @@ static int aio_migratepage(struct addres
+ 	unsigned long flags;
+ 	int rc;
+ 
++	rc = 0;
++
++	/* Make sure the old page hasn't already been changed */
++	spin_lock(&mapping->private_lock);
++	ctx = mapping->private_data;
++	if (ctx) {
++		pgoff_t idx;
++		spin_lock_irqsave(&ctx->completion_lock, flags);
++		idx = old->index;
++		if (idx < (pgoff_t)ctx->nr_pages) {
++			if (ctx->ring_pages[idx] != old)
++				rc = -EAGAIN;
++		} else
++			rc = -EINVAL;
++		spin_unlock_irqrestore(&ctx->completion_lock, flags);
++	} else
++		rc = -EINVAL;
++	spin_unlock(&mapping->private_lock);
++
++	if (rc != 0)
++		return rc;
++
+ 	/* Writeback must be complete */
+ 	BUG_ON(PageWriteback(old));
+-	put_page(old);
++	get_page(new);
+ 
+-	rc = migrate_page_move_mapping(mapping, new, old, NULL, mode);
++	rc = migrate_page_move_mapping(mapping, new, old, NULL, mode, 1);
+ 	if (rc != MIGRATEPAGE_SUCCESS) {
+-		get_page(old);
++		put_page(new);
+ 		return rc;
+ 	}
+ 
+-	get_page(new);
+-
+ 	/* We can potentially race against kioctx teardown here.  Use the
+ 	 * address_space's private data lock to protect the mapping's
+ 	 * private_data.
+@@ -303,13 +328,24 @@ static int aio_migratepage(struct addres
+ 		spin_lock_irqsave(&ctx->completion_lock, flags);
+ 		migrate_page_copy(new, old);
+ 		idx = old->index;
+-		if (idx < (pgoff_t)ctx->nr_pages)
+-			ctx->ring_pages[idx] = new;
++		if (idx < (pgoff_t)ctx->nr_pages) {
++			/* And only do the move if things haven't changed */
++			if (ctx->ring_pages[idx] == old)
++				ctx->ring_pages[idx] = new;
++			else
++				rc = -EAGAIN;
++		} else
++			rc = -EINVAL;
+ 		spin_unlock_irqrestore(&ctx->completion_lock, flags);
+ 	} else
+ 		rc = -EBUSY;
+ 	spin_unlock(&mapping->private_lock);
+ 
++	if (rc == MIGRATEPAGE_SUCCESS)
++		put_page(old);
++	else
++		put_page(new);
++
+ 	return rc;
+ }
+ #endif
+--- a/include/linux/migrate.h
++++ b/include/linux/migrate.h
+@@ -55,7 +55,8 @@ extern int migrate_huge_page_move_mappin
+ 				  struct page *newpage, struct page *page);
+ extern int migrate_page_move_mapping(struct address_space *mapping,
+ 		struct page *newpage, struct page *page,
+-		struct buffer_head *head, enum migrate_mode mode);
++		struct buffer_head *head, enum migrate_mode mode,
++		int extra_count);
+ #else
+ 
+ static inline void putback_lru_pages(struct list_head *l) {}
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -315,14 +315,15 @@ static inline bool buffer_migrate_lock_b
+  */
+ int migrate_page_move_mapping(struct address_space *mapping,
+ 		struct page *newpage, struct page *page,
+-		struct buffer_head *head, enum migrate_mode mode)
++		struct buffer_head *head, enum migrate_mode mode,
++		int extra_count)
  {
--	acpi_handle dhandle, nvidia_handle;
--	acpi_status status;
-+	acpi_handle dhandle;
- 	int retval = 0;
+-	int expected_count = 0;
++	int expected_count = 1 + extra_count;
+ 	void **pslot;
  
- 	dhandle = DEVICE_ACPI_HANDLE(&pdev->dev);
- 	if (!dhandle)
- 		return false;
+ 	if (!mapping) {
+ 		/* Anonymous page without mapping */
+-		if (page_count(page) != 1)
++		if (page_count(page) != expected_count)
+ 			return -EAGAIN;
+ 		return MIGRATEPAGE_SUCCESS;
+ 	}
+@@ -332,7 +333,7 @@ int migrate_page_move_mapping(struct add
+ 	pslot = radix_tree_lookup_slot(&mapping->page_tree,
+  					page_index(page));
  
--	status = acpi_get_handle(dhandle, "_DSM", &nvidia_handle);
--	if (ACPI_FAILURE(status)) {
-+	if (!acpi_has_method(dhandle, "_DSM"))
- 		return false;
--	}
+-	expected_count = 2 + page_has_private(page);
++	expected_count += 1 + page_has_private(page);
+ 	if (page_count(page) != expected_count ||
+ 		radix_tree_deref_slot_protected(pslot, &mapping->tree_lock) != page) {
+ 		spin_unlock_irq(&mapping->tree_lock);
+@@ -525,7 +526,7 @@ int migrate_page(struct address_space *m
  
- 	if (nouveau_test_dsm(dhandle, nouveau_dsm, NOUVEAU_DSM_POWER))
- 		retval |= NOUVEAU_DSM_HAS_MUX;
+ 	BUG_ON(PageWriteback(page));	/* Writeback must be complete */
+ 
+-	rc = migrate_page_move_mapping(mapping, newpage, page, NULL, mode);
++	rc = migrate_page_move_mapping(mapping, newpage, page, NULL, mode, 0);
+ 
+ 	if (rc != MIGRATEPAGE_SUCCESS)
+ 		return rc;
+@@ -552,7 +553,7 @@ int buffer_migrate_page(struct address_s
+ 
+ 	head = page_buffers(page);
+ 
+-	rc = migrate_page_move_mapping(mapping, newpage, page, head, mode);
++	rc = migrate_page_move_mapping(mapping, newpage, page, head, mode, 0);
+ 
+ 	if (rc != MIGRATEPAGE_SUCCESS)
+ 		return rc;
 
 
