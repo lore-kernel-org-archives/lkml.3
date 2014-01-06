@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933022AbaAFWlW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:41:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48337 "EHLO
+	id S1757128AbaAFXQf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:16:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48356 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932968AbaAFWlT (ORCPT
+	with ESMTP id S933019AbaAFWlW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:19 -0500
+	Mon, 6 Jan 2014 17:41:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>, Dmitry Vyukov <dvyukov@google.com>,
-        PaX Team <pageexec@freemail.hu>, Kees Cook <keescook@chromium.org>,
-        Michel Lespinasse <walken@google.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 078/129] mm: fix use-after-free in sys_remap_file_pages
-Date: Mon,  6 Jan 2014 14:38:27 -0800
-Message-Id: <20140106223901.841497300@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 3.10 081/129] GFS2: dont hold s_umount over blkdev_put
+Date: Mon,  6 Jan 2014 14:38:30 -0800
+Message-Id: <20140106223901.927348045@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -33,61 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rik van Riel <riel@redhat.com>
+From: Steven Whitehouse <swhiteho@redhat.com>
 
-commit 4eb919825e6c3c7fb3630d5621f6d11e98a18b3a upstream.
+commit dfe5b9ad83a63180f358b27d1018649a27b394a9 upstream.
 
-remap_file_pages calls mmap_region, which may merge the VMA with other
-existing VMAs, and free "vma".  This can lead to a use-after-free bug.
-Avoid the bug by remembering vm_flags before calling mmap_region, and
-not trying to dereference vma later.
+This is a GFS2 version of Tejun's patch:
+4f331f01b9c43bf001d3ffee578a97a1e0633eac
+vfs: don't hold s_umount over close_bdev_exclusive() call
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Reported-by: Dmitry Vyukov <dvyukov@google.com>
-Cc: PaX Team <pageexec@freemail.hu>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+In this case its blkdev_put itself that is the issue and this
+patch uses the same solution of dropping and retaking s_umount.
+
+Reported-by: Tejun Heo <tj@kernel.org>
+Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/fremap.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ fs/gfs2/ops_fstype.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/mm/fremap.c
-+++ b/mm/fremap.c
-@@ -203,9 +203,10 @@ get_write_lock:
- 		if (mapping_cap_account_dirty(mapping)) {
- 			unsigned long addr;
- 			struct file *file = get_file(vma->vm_file);
-+			/* mmap_region may free vma; grab the info now */
-+			vm_flags = vma->vm_flags;
+--- a/fs/gfs2/ops_fstype.c
++++ b/fs/gfs2/ops_fstype.c
+@@ -1317,8 +1317,18 @@ static struct dentry *gfs2_mount(struct
+ 	if (IS_ERR(s))
+ 		goto error_bdev;
  
--			addr = mmap_region(file, start, size,
--					vma->vm_flags, pgoff);
-+			addr = mmap_region(file, start, size, vm_flags, pgoff);
- 			fput(file);
- 			if (IS_ERR_VALUE(addr)) {
- 				err = addr;
-@@ -213,7 +214,7 @@ get_write_lock:
- 				BUG_ON(addr != start);
- 				err = 0;
- 			}
--			goto out;
-+			goto out_freed;
- 		}
- 		mutex_lock(&mapping->i_mmap_mutex);
- 		flush_dcache_mmap_lock(mapping);
-@@ -248,6 +249,7 @@ get_write_lock:
- out:
- 	if (vma)
- 		vm_flags = vma->vm_flags;
-+out_freed:
- 	if (likely(!has_write_lock))
- 		up_read(&mm->mmap_sem);
- 	else
+-	if (s->s_root)
++	if (s->s_root) {
++		/*
++		 * s_umount nests inside bd_mutex during
++		 * __invalidate_device().  blkdev_put() acquires
++		 * bd_mutex and can't be called under s_umount.  Drop
++		 * s_umount temporarily.  This is safe as we're
++		 * holding an active reference.
++		 */
++		up_write(&s->s_umount);
+ 		blkdev_put(bdev, mode);
++		down_write(&s->s_umount);
++	}
+ 
+ 	memset(&args, 0, sizeof(args));
+ 	args.ar_quota = GFS2_QUOTA_DEFAULT;
 
 
