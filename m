@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932426AbaAFWjZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:39:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47674 "EHLO
+	id S1758060AbaAFXxK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:53:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47693 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932342AbaAFWjT (ORCPT
+	with ESMTP id S932406AbaAFWjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:39:19 -0500
+	Mon, 6 Jan 2014 17:39:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        PaX Team <pageexec@freemail.hu>, Emese Revfy <re.emese@gmail.com>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.12 056/144] ext4: add explicit casts when masking cluster sizes
-Date: Mon,  6 Jan 2014 14:36:57 -0800
-Message-Id: <20140106223746.951751168@linuxfoundation.org>
+        Shuah Khan <shuah.kh@samsung.com>, Anton Vorontsov <anton@enomsg.org>
+Subject: [PATCH 3.12 095/144] power_supply: Fix Oops from NULL pointer dereference from wakeup_source_activate
+Date: Mon,  6 Jan 2014 14:37:36 -0800
+Message-Id: <20140106223748.084232145@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,182 +28,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Shuah Khan <shuah.kh@samsung.com>
 
-commit f5a44db5d2d677dfbf12deee461f85e9ec633961 upstream.
+commit 80c6463e2fa3377febfc98a6672d92d07f3c26c1 upstream.
 
-The missing casts can cause the high 64-bits of the physical blocks to
-be lost.  Set up new macros which allows us to make sure the right
-thing happen, even if at some point we end up supporting larger
-logical block numbers.
+power_supply_register() calls device_init_wakeup() to register a wakeup
+source before initializing dev_name. As a result, device_wakeup_enable()
+end up registering wakeup source with a null name when
+wakeup_source_register() gets called with dev_name(dev) which is null at
+the time.
 
-Thanks to the Emese Revfy and the PaX security team for reporting this
-issue.
+When kernel is booted with wakeup_source_activate enabled, it will panic
+when the trace point code tries to dereference ws->name.
 
-Reported-by: PaX Team <pageexec@freemail.hu>
-Reported-by: Emese Revfy <re.emese@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Fixed the problem by moving up the kobject_set_name() call prior to
+accesses to dev_name(). Replaced kobject_set_name() with dev_set_name()
+which is the right interface to be called from drivers. Fixed the call to
+device_del() prior to device_add() in for wakeup_init_failed error
+handling code.
+
+Trace after the change:
+
+            bash-2143  [003] d...   132.280697: wakeup_source_activate: BAT1 state=0x20001
+     kworker/3:2-1169  [003] d...   132.281305: wakeup_source_deactivate: BAT1 state=0x30000
+
+Oops message:
+
+[  819.769934] device: 'BAT1': device_add
+[  819.770078] PM: Adding info for No Bus:BAT1
+[  819.770235] BUG: unable to handle kernel NULL pointer dereference at           (null)
+[  819.770435] IP: [<ffffffff813381c0>] skip_spaces+0x30/0x30
+[  819.770572] PGD 3efd90067 PUD 3eff61067 PMD 0
+[  819.770716] Oops: 0000 [#1] SMP
+[  819.770829] Modules linked in: arc4 iwldvm mac80211 x86_pkg_temp_thermal coretemp kvm_intel joydev i915 kvm uvcvideo ghash_clmulni_intel videobuf2_vmalloc aesni_intel videobuf2_memops videobuf2_core aes_x86_64 ablk_helper cryptd videodev iwlwifi lrw rfcomm gf128mul glue_helper bnep btusb media bluetooth parport_pc hid_generic ppdev snd_hda_codec_hdmi drm_kms_helper snd_hda_codec_realtek cfg80211 drm tpm_infineon samsung_laptop snd_hda_intel usbhid snd_hda_codec hid snd_hwdep snd_pcm microcode snd_page_alloc snd_timer psmouse i2c_algo_bit lpc_ich tpm_tis video wmi mac_hid serio_raw ext2 lp parport r8169 mii
+[  819.771802] CPU: 0 PID: 2167 Comm: bash Not tainted 3.12.0+ #25
+[  819.771876] Hardware name: SAMSUNG ELECTRONICS CO., LTD. 900X3C/900X3D/900X4C/900X4D/SAMSUNG_NP1234567890, BIOS P03AAC 07/12/2012
+[  819.772022] task: ffff88002e6ddcc0 ti: ffff8804015ca000 task.ti: ffff8804015ca000
+[  819.772119] RIP: 0010:[<ffffffff813381c0>]  [<ffffffff813381c0>] skip_spaces+0x30/0x30
+[  819.772242] RSP: 0018:ffff8804015cbc70  EFLAGS: 00010046
+[  819.772310] RAX: 0000000000000003 RBX: ffff88040cfd6d40 RCX: 0000000000000018
+[  819.772397] RDX: 0000000000020001 RSI: 0000000000000000 RDI: 0000000000000000
+[  819.772484] RBP: ffff8804015cbcc0 R08: 0000000000000000 R09: ffff8803f0768d40
+[  819.772570] R10: ffffea001033b800 R11: 0000000000000000 R12: ffffffff81c519c0
+[  819.772656] R13: 0000000000020001 R14: 0000000000000000 R15: 0000000000020001
+[  819.772744] FS:  00007ff98309b740(0000) GS:ffff88041f200000(0000) knlGS:0000000000000000
+[  819.772845] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  819.772917] CR2: 0000000000000000 CR3: 00000003f59dc000 CR4: 00000000001407f0
+[  819.773001] Stack:
+[  819.773030]  ffffffff81114003 ffff8804015cbcb0 0000000000000000 0000000000000046
+[  819.773146]  ffff880409757a18 ffff8803f065a160 0000000000000000 0000000000020001
+[  819.773273]  0000000000000000 0000000000000000 ffff8804015cbce8 ffffffff8143e388
+[  819.773387] Call Trace:
+[  819.773434]  [<ffffffff81114003>] ? ftrace_raw_event_wakeup_source+0x43/0xe0
+[  819.773520]  [<ffffffff8143e388>] wakeup_source_report_event+0xb8/0xd0
+[  819.773595]  [<ffffffff8143e3cd>] __pm_stay_awake+0x2d/0x50
+[  819.773724]  [<ffffffff8153395c>] power_supply_changed+0x3c/0x90
+[  819.773795]  [<ffffffff8153407c>] power_supply_register+0x18c/0x250
+[  819.773869]  [<ffffffff813d8d18>] sysfs_add_battery+0x61/0x7b
+[  819.773935]  [<ffffffff813d8d69>] battery_notify+0x37/0x3f
+[  819.774001]  [<ffffffff816ccb7c>] notifier_call_chain+0x4c/0x70
+[  819.774071]  [<ffffffff81073ded>] __blocking_notifier_call_chain+0x4d/0x70
+[  819.774149]  [<ffffffff81073e26>] blocking_notifier_call_chain+0x16/0x20
+[  819.774227]  [<ffffffff8109397a>] pm_notifier_call_chain+0x1a/0x40
+[  819.774316]  [<ffffffff81095b66>] hibernate+0x66/0x1c0
+[  819.774407]  [<ffffffff81093931>] state_store+0x71/0xa0
+[  819.774507]  [<ffffffff81331d8f>] kobj_attr_store+0xf/0x20
+[  819.774613]  [<ffffffff811f8618>] sysfs_write_file+0x128/0x1c0
+[  819.774735]  [<ffffffff8118579d>] vfs_write+0xbd/0x1e0
+[  819.774841]  [<ffffffff811861d9>] SyS_write+0x49/0xa0
+[  819.774939]  [<ffffffff816d1052>] system_call_fastpath+0x16/0x1b
+[  819.775055] Code: 89 f8 48 89 e5 f6 82 c0 a6 84 81 20 74 15 0f 1f 44 00 00 48 83 c0 01 0f b6 10 f6 82 c0 a6 84 81 20 75 f0 5d c3 66 0f 1f 44 00 00 <80> 3f 00 55 48 89 e5 74 15 48 89 f8 0f 1f 40 00 48 83 c0 01 80
+[  819.775760] RIP  [<ffffffff813381c0>] skip_spaces+0x30/0x30
+[  819.775881]  RSP <ffff8804015cbc70>
+[  819.775949] CR2: 0000000000000000
+[  819.794175] ---[ end trace c4ef25127039952e ]---
+
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+Acked-by: Anton Vorontsov <anton@enomsg.org>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Anton Vorontsov <anton@enomsg.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ext4.h    |   10 ++++++++++
- fs/ext4/extents.c |   26 ++++++++++++--------------
- fs/ext4/mballoc.c |    6 +++---
- 3 files changed, 25 insertions(+), 17 deletions(-)
+ drivers/power/power_supply_core.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -267,6 +267,16 @@ struct ext4_io_submit {
- /* Translate # of blks to # of clusters */
- #define EXT4_NUM_B2C(sbi, blks)	(((blks) + (sbi)->s_cluster_ratio - 1) >> \
- 				 (sbi)->s_cluster_bits)
-+/* Mask out the low bits to get the starting block of the cluster */
-+#define EXT4_PBLK_CMASK(s, pblk) ((pblk) &				\
-+				  ~((ext4_fsblk_t) (s)->s_cluster_ratio - 1))
-+#define EXT4_LBLK_CMASK(s, lblk) ((lblk) &				\
-+				  ~((ext4_lblk_t) (s)->s_cluster_ratio - 1))
-+/* Get the cluster offset */
-+#define EXT4_PBLK_COFF(s, pblk) ((pblk) &				\
-+				 ((ext4_fsblk_t) (s)->s_cluster_ratio - 1))
-+#define EXT4_LBLK_COFF(s, lblk) ((lblk) &				\
-+				 ((ext4_lblk_t) (s)->s_cluster_ratio - 1))
+--- a/drivers/power/power_supply_core.c
++++ b/drivers/power/power_supply_core.c
+@@ -511,6 +511,10 @@ int power_supply_register(struct device
+ 	dev_set_drvdata(dev, psy);
+ 	psy->dev = dev;
  
- /*
-  * Structure of a blocks group descriptor
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -1861,8 +1861,7 @@ static unsigned int ext4_ext_check_overl
- 	depth = ext_depth(inode);
- 	if (!path[depth].p_ext)
- 		goto out;
--	b2 = le32_to_cpu(path[depth].p_ext->ee_block);
--	b2 &= ~(sbi->s_cluster_ratio - 1);
-+	b2 = EXT4_LBLK_CMASK(sbi, le32_to_cpu(path[depth].p_ext->ee_block));
++	rc = dev_set_name(dev, "%s", psy->name);
++	if (rc)
++		goto dev_set_name_failed;
++
+ 	INIT_WORK(&psy->changed_work, power_supply_changed_work);
  
- 	/*
- 	 * get the next allocated block if the extent in the path
-@@ -1872,7 +1871,7 @@ static unsigned int ext4_ext_check_overl
- 		b2 = ext4_ext_next_allocated_block(path);
- 		if (b2 == EXT_MAX_BLOCKS)
- 			goto out;
--		b2 &= ~(sbi->s_cluster_ratio - 1);
-+		b2 = EXT4_LBLK_CMASK(sbi, b2);
- 	}
+ 	rc = power_supply_check_supplies(psy);
+@@ -524,10 +528,6 @@ int power_supply_register(struct device
+ 	if (rc)
+ 		goto wakeup_init_failed;
  
- 	/* check for wrap through zero on extent logical start block*/
-@@ -2552,7 +2551,7 @@ static int ext4_remove_blocks(handle_t *
- 		 * extent, we have to mark the cluster as used (store negative
- 		 * cluster number in partial_cluster).
- 		 */
--		unaligned = pblk & (sbi->s_cluster_ratio - 1);
-+		unaligned = EXT4_PBLK_COFF(sbi, pblk);
- 		if (unaligned && (ee_len == num) &&
- 		    (*partial_cluster != -((long long)EXT4_B2C(sbi, pblk))))
- 			*partial_cluster = EXT4_B2C(sbi, pblk);
-@@ -2646,7 +2645,7 @@ ext4_ext_rm_leaf(handle_t *handle, struc
- 			 * accidentally freeing it later on
- 			 */
- 			pblk = ext4_ext_pblock(ex);
--			if (pblk & (sbi->s_cluster_ratio - 1))
-+			if (EXT4_PBLK_COFF(sbi, pblk))
- 				*partial_cluster =
- 					-((long long)EXT4_B2C(sbi, pblk));
- 			ex--;
-@@ -3801,7 +3800,7 @@ int ext4_find_delalloc_cluster(struct in
- {
- 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
- 	ext4_lblk_t lblk_start, lblk_end;
--	lblk_start = lblk & (~(sbi->s_cluster_ratio - 1));
-+	lblk_start = EXT4_LBLK_CMASK(sbi, lblk);
- 	lblk_end = lblk_start + sbi->s_cluster_ratio - 1;
- 
- 	return ext4_find_delalloc_range(inode, lblk_start, lblk_end);
-@@ -3860,9 +3859,9 @@ get_reserved_cluster_alloc(struct inode
- 	trace_ext4_get_reserved_cluster_alloc(inode, lblk_start, num_blks);
- 
- 	/* Check towards left side */
--	c_offset = lblk_start & (sbi->s_cluster_ratio - 1);
-+	c_offset = EXT4_LBLK_COFF(sbi, lblk_start);
- 	if (c_offset) {
--		lblk_from = lblk_start & (~(sbi->s_cluster_ratio - 1));
-+		lblk_from = EXT4_LBLK_CMASK(sbi, lblk_start);
- 		lblk_to = lblk_from + c_offset - 1;
- 
- 		if (ext4_find_delalloc_range(inode, lblk_from, lblk_to))
-@@ -3870,7 +3869,7 @@ get_reserved_cluster_alloc(struct inode
- 	}
- 
- 	/* Now check towards right. */
--	c_offset = (lblk_start + num_blks) & (sbi->s_cluster_ratio - 1);
-+	c_offset = EXT4_LBLK_COFF(sbi, lblk_start + num_blks);
- 	if (allocated_clusters && c_offset) {
- 		lblk_from = lblk_start + num_blks;
- 		lblk_to = lblk_from + (sbi->s_cluster_ratio - c_offset) - 1;
-@@ -4078,7 +4077,7 @@ static int get_implied_cluster_alloc(str
- 				     struct ext4_ext_path *path)
- {
- 	struct ext4_sb_info *sbi = EXT4_SB(sb);
--	ext4_lblk_t c_offset = map->m_lblk & (sbi->s_cluster_ratio-1);
-+	ext4_lblk_t c_offset = EXT4_LBLK_COFF(sbi, map->m_lblk);
- 	ext4_lblk_t ex_cluster_start, ex_cluster_end;
- 	ext4_lblk_t rr_cluster_start;
- 	ext4_lblk_t ee_block = le32_to_cpu(ex->ee_block);
-@@ -4096,8 +4095,7 @@ static int get_implied_cluster_alloc(str
- 	    (rr_cluster_start == ex_cluster_start)) {
- 		if (rr_cluster_start == ex_cluster_end)
- 			ee_start += ee_len - 1;
--		map->m_pblk = (ee_start & ~(sbi->s_cluster_ratio - 1)) +
--			c_offset;
-+		map->m_pblk = EXT4_PBLK_CMASK(sbi, ee_start) + c_offset;
- 		map->m_len = min(map->m_len,
- 				 (unsigned) sbi->s_cluster_ratio - c_offset);
- 		/*
-@@ -4251,7 +4249,7 @@ int ext4_ext_map_blocks(handle_t *handle
- 	 */
- 	map->m_flags &= ~EXT4_MAP_FROM_CLUSTER;
- 	newex.ee_block = cpu_to_le32(map->m_lblk);
--	cluster_offset = map->m_lblk & (sbi->s_cluster_ratio-1);
-+	cluster_offset = EXT4_LBLK_CMASK(sbi, map->m_lblk);
- 
- 	/*
- 	 * If we are doing bigalloc, check to see if the extent returned
-@@ -4319,7 +4317,7 @@ int ext4_ext_map_blocks(handle_t *handle
- 	 * needed so that future calls to get_implied_cluster_alloc()
- 	 * work correctly.
- 	 */
--	offset = map->m_lblk & (sbi->s_cluster_ratio - 1);
-+	offset = EXT4_LBLK_COFF(sbi, map->m_lblk);
- 	ar.len = EXT4_NUM_B2C(sbi, offset+allocated);
- 	ar.goal -= offset;
- 	ar.logical -= offset;
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -4126,7 +4126,7 @@ ext4_mb_initialize_context(struct ext4_a
- 	ext4_get_group_no_and_offset(sb, goal, &group, &block);
- 
- 	/* set up allocation goals */
--	ac->ac_b_ex.fe_logical = ar->logical & ~(sbi->s_cluster_ratio - 1);
-+	ac->ac_b_ex.fe_logical = EXT4_LBLK_CMASK(sbi, ar->logical);
- 	ac->ac_status = AC_STATUS_CONTINUE;
- 	ac->ac_sb = sb;
- 	ac->ac_inode = ar->inode;
-@@ -4668,7 +4668,7 @@ void ext4_free_blocks(handle_t *handle,
- 	 * blocks at the beginning or the end unless we are explicitly
- 	 * requested to avoid doing so.
- 	 */
--	overflow = block & (sbi->s_cluster_ratio - 1);
-+	overflow = EXT4_PBLK_COFF(sbi, block);
- 	if (overflow) {
- 		if (flags & EXT4_FREE_BLOCKS_NOFREE_FIRST_CLUSTER) {
- 			overflow = sbi->s_cluster_ratio - overflow;
-@@ -4682,7 +4682,7 @@ void ext4_free_blocks(handle_t *handle,
- 			count += overflow;
- 		}
- 	}
--	overflow = count & (sbi->s_cluster_ratio - 1);
-+	overflow = EXT4_LBLK_COFF(sbi, count);
- 	if (overflow) {
- 		if (flags & EXT4_FREE_BLOCKS_NOFREE_LAST_CLUSTER) {
- 			if (count > overflow)
+-	rc = kobject_set_name(&dev->kobj, "%s", psy->name);
+-	if (rc)
+-		goto kobject_set_name_failed;
+-
+ 	rc = device_add(dev);
+ 	if (rc)
+ 		goto device_add_failed;
+@@ -553,11 +553,11 @@ create_triggers_failed:
+ register_cooler_failed:
+ 	psy_unregister_thermal(psy);
+ register_thermal_failed:
+-wakeup_init_failed:
+ 	device_del(dev);
+-kobject_set_name_failed:
+ device_add_failed:
++wakeup_init_failed:
+ check_supplies_failed:
++dev_set_name_failed:
+ 	put_device(dev);
+ success:
+ 	return rc;
 
 
