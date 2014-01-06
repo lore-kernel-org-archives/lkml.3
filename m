@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756736AbaAFWiO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:38:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47359 "EHLO
+	id S1756826AbaAFWi2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:38:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47403 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756689AbaAFWiL (ORCPT
+	with ESMTP id S1756775AbaAFWiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:11 -0500
+	Mon, 6 Jan 2014 17:38:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jonathan Cameron <jic23@kernel.org>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 3.12 021/144] iio:adc:ad7887 Fix channel reported endianness from cpu to big endian
-Date: Mon,  6 Jan 2014 14:36:22 -0800
-Message-Id: <20140106223745.932998748@linuxfoundation.org>
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.12 030/144] usb: musb: only cancel work if it is initialized
+Date: Mon,  6 Jan 2014 14:36:31 -0800
+Message-Id: <20140106223746.188761771@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -29,53 +29,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jonathan Cameron <jic23@kernel.org>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-commit e39d99059ad7f75d7ae2d3c59055d3c476cdb0d9 upstream.
+commit 66fadea5b79c07154126bb0db375be915f611246 upstream.
 
-Note this also sets the endianness to big endian whereas it would
-previously have defaulted to the cpu endian.  Hence technically
-this is a bug fix on LE platforms.
+Since commit c5340bd14 ("usb: musb: cancel work on removal") the workqueue
+is cancelled but then if we bail out before the workqueue is setup we
+get this:
 
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+|INFO: trying to register non-static key.
+|the code is fine but needs lockdep annotation.
+|turning off the locking correctness validator.
+|CPU: 0 PID: 708 Comm: modprobe Not tainted 3.12.0+ #435
+|[<c00867bc>] (lock_acquire+0xf0/0x108) from [<c00529d0>] (flush_work+0x38/0x2ec)
+|[<c00529d0>] (flush_work+0x38/0x2ec) from [<c0052d24>] (__cancel_work_timer+0xa0/0x134)
+|[<c0052d24>] (__cancel_work_timer+0xa0/0x134) from [<bf0e4ae4>] (musb_free+0x40/0x60 [musb_hdrc])
+|[<bf0e4ae4>] (musb_free+0x40/0x60 [musb_hdrc]) from [<bf0e5364>] (musb_probe+0x678/0xb78 [musb_hdrc])
+|[<bf0e5364>] (musb_probe+0x678/0xb78 [musb_hdrc]) from [<c0294bf0>] (platform_drv_probe+0x1c/0x24)
+|[<c0294bf0>] (platform_drv_probe+0x1c/0x24) from [<c0293970>] (driver_probe_device+0x90/0x224)
+|[<c0293970>] (driver_probe_device+0x90/0x224) from [<c0291ef0>] (bus_for_each_drv+0x60/0x8c)
+|[<c0291ef0>] (bus_for_each_drv+0x60/0x8c) from [<c02938bc>] (device_attach+0x80/0xa4)
+|[<c02938bc>] (device_attach+0x80/0xa4) from [<c0292b24>] (bus_probe_device+0x88/0xac)
+|[<c0292b24>] (bus_probe_device+0x88/0xac) from [<c0291490>] (device_add+0x388/0x6c8)
+|[<c0291490>] (device_add+0x388/0x6c8) from [<c02952a0>] (platform_device_add+0x188/0x22c)
+|[<c02952a0>] (platform_device_add+0x188/0x22c) from [<bf11ea30>] (dsps_probe+0x294/0x394 [musb_dsps])
+|[<bf11ea30>] (dsps_probe+0x294/0x394 [musb_dsps]) from [<c0294bf0>] (platform_drv_probe+0x1c/0x24)
+|platform musb-hdrc.1.auto: Driver musb-hdrc requests probe deferral
+|musb-hdrc musb-hdrc.1.auto: musb_init_controller failed with status -517
+
+This patch moves the init part to earlier part so it can be cleaned as
+part of the fail3 label because now it is surrounded by the fail4 label.
+Step two is to remove it from musb_free() and add it to the two cleanup
+paths (error path and device removal) separately.
+
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/adc/ad7887.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ drivers/usb/musb/musb_core.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/drivers/iio/adc/ad7887.c
-+++ b/drivers/iio/adc/ad7887.c
-@@ -211,7 +211,13 @@ static const struct ad7887_chip_info ad7
- 			.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 			.address = 1,
- 			.scan_index = 1,
--			.scan_type = IIO_ST('u', 12, 16, 0),
-+			.scan_type = {
-+				.sign = 'u',
-+				.realbits = 12,
-+				.storagebits = 16,
-+				.shift = 0,
-+				.endianness = IIO_BE,
-+			},
- 		},
- 		.channel[1] = {
- 			.type = IIO_VOLTAGE,
-@@ -221,7 +227,13 @@ static const struct ad7887_chip_info ad7
- 			.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 			.address = 0,
- 			.scan_index = 0,
--			.scan_type = IIO_ST('u', 12, 16, 0),
-+			.scan_type = {
-+				.sign = 'u',
-+				.realbits = 12,
-+				.storagebits = 16,
-+				.shift = 0,
-+				.endianness = IIO_BE,
-+			},
- 		},
- 		.channel[2] = IIO_CHAN_SOFT_TIMESTAMP(2),
- 		.int_vref_mv = 2500,
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -1809,7 +1809,6 @@ static void musb_free(struct musb *musb)
+ 			disable_irq_wake(musb->nIrq);
+ 		free_irq(musb->nIrq, musb);
+ 	}
+-	cancel_work_sync(&musb->irq_work);
+ 
+ 	musb_host_free(musb);
+ }
+@@ -1891,6 +1890,9 @@ musb_init_controller(struct device *dev,
+ 	musb_platform_disable(musb);
+ 	musb_generic_disable(musb);
+ 
++	/* Init IRQ workqueue before request_irq */
++	INIT_WORK(&musb->irq_work, musb_irq_work);
++
+ 	/* setup musb parts of the core (especially endpoints) */
+ 	status = musb_core_init(plat->config->multipoint
+ 			? MUSB_CONTROLLER_MHDRC
+@@ -1900,9 +1902,6 @@ musb_init_controller(struct device *dev,
+ 
+ 	setup_timer(&musb->otg_timer, musb_otg_timer_func, (unsigned long) musb);
+ 
+-	/* Init IRQ workqueue before request_irq */
+-	INIT_WORK(&musb->irq_work, musb_irq_work);
+-
+ 	/* attach to the IRQ */
+ 	if (request_irq(nIrq, musb->isr, 0, dev_name(dev), musb)) {
+ 		dev_err(dev, "request_irq %d failed!\n", nIrq);
+@@ -1976,6 +1975,7 @@ fail4:
+ 	musb_host_cleanup(musb);
+ 
+ fail3:
++	cancel_work_sync(&musb->irq_work);
+ 	if (musb->dma_controller)
+ 		dma_controller_destroy(musb->dma_controller);
+ 	pm_runtime_put_sync(musb->controller);
+@@ -2037,6 +2037,7 @@ static int musb_remove(struct platform_d
+ 	if (musb->dma_controller)
+ 		dma_controller_destroy(musb->dma_controller);
+ 
++	cancel_work_sync(&musb->irq_work);
+ 	musb_free(musb);
+ 	device_init_wakeup(dev, 0);
+ 	return 0;
 
 
