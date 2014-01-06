@@ -1,76 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536AbaAFIpa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 03:45:30 -0500
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:43106 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864AbaAFIpX (ORCPT
+	id S1753477AbaAFIp2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 03:45:28 -0500
+Received: from relay.parallels.com ([195.214.232.42]:40048 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753396AbaAFIpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 03:45:23 -0500
-Message-ID: <52CA6D14.4040300@profitbricks.com>
-Date: Mon, 06 Jan 2014 09:45:08 +0100
-From: Jack Wang <jinpu.wang@profitbricks.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Mon, 6 Jan 2014 03:45:25 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <mhocko@suse.cz>, <akpm@linux-foundation.org>
+CC: <glommer@gmail.com>, <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>
+Subject: [PATCH RESEND 01/11] slab: cleanup kmem_cache_create_memcg() error handling
+Date: Mon, 6 Jan 2014 12:44:52 +0400
+Message-ID: <87e5f73bf2acdcdef48dc74180cdeef4f8d0f6c5.1388996525.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1388996525.git.vdavydov@parallels.com>
+References: <cover.1388996525.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: linux-fsdevel@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [BUG]NULL pointer dereference at 0000000000000008 __blkdev_put+0x17f/0x1d0
-References: <52C19767.60000@profitbricks.com> <52C5331E.3050304@profitbricks.com> <20140104060925.GF10323@ZenIV.linux.org.uk>
-In-Reply-To: <20140104060925.GF10323@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.24.24.128]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/2014 07:09 AM, Al Viro wrote:
-> On Thu, Jan 02, 2014 at 10:36:30AM +0100, Jack Wang wrote:
-> 
->>> Bug happened at line 1486, looks disk->fops is NULL here for some
->>> reason, is it reasonable to add a check like:
->>>
->>> if (disk->fops)
->>> 	if (disk->fops->release)
->>> 		ret = disk->fops->release(disk, mode);
->>>
->>>
->>> Happy New Year and Best regards:)
->>> Jack
->>>
->>
->> Ping, could you share opnions on this, attached with patch I proposaled.
-> 
-> Sorry, had been sick since mid-December ;-/  The patch is not a good idea -
-> in the best case it's papering over a bug (and insufficiently so, at that,
-> since there are other places where disk->fops->some_method is checked).
-> 
-> gendisk->fops should never be assigned NULL; it starts life with NULL
-> ->fops, but that should be assigned a non-NULL value (and never modified
-> afterwards) before anyone can see it.  Moreover, even if some driver has
-> fscked up and forgot to initialize the damn thing, get_gendisk() would've
-> refused to return such a thing to any callers (including __blkdev_get()).
-> Note that __blkdev_get() would oops on such a thing if get_gendisk()
-> somehow returned it.
-> 
-> Looks like something is shitting over bdev->bd_disk or bdev->bd_disk->fops.
-> The offsets in the disassembled code are all wrong (including that from
-> beginning of function to oopsing instruction), but the code match is good,
-> so I agree that we are hitting bdev->bd_disk->fops == NULL here.  The
-> question is how it has happened - that's where the real bug is...
-> 
-> How reproducible it is?  And which kernel, while we are at it?  This area
-> didn't get a lot of changes lately, but still...
-> 
-Thanks Al for reply, and look into this.
-We're using 3.4.71, and this happened in production, we can not
-reproduce it yet. What I could see is: before this happened, we saw scsi
-devices offlined, and multipath failed path, raid1 failed member device.
+Currently kmem_cache_create_memcg() backoffs on failure inside
+conditionals, without using gotos. This results in the rollback code
+duplication, which makes the function look cumbersome even though on
+error we should only free the allocated cache. Since in the next patch I
+am going to add yet another rollback function call on error path there,
+let's employ labels instead of conditionals for undoing any changes on
+failure to keep things clean.
 
-Possible the bug lies in drivers md-raid1, dm-multipath or sd? How could
-I narrow it down? Could you teach me?
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Glauber Costa <glommer@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ mm/slab_common.c |   65 ++++++++++++++++++++++++++----------------------------
+ 1 file changed, 31 insertions(+), 34 deletions(-)
 
-Thanks, wish you happy and healthy!
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 0b7bb39..f70df3e 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -171,13 +171,14 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+ 			struct kmem_cache *parent_cache)
+ {
+ 	struct kmem_cache *s = NULL;
+-	int err = 0;
++	int err;
+ 
+ 	get_online_cpus();
+ 	mutex_lock(&slab_mutex);
+ 
+-	if (!kmem_cache_sanity_check(memcg, name, size) == 0)
+-		goto out_locked;
++	err = kmem_cache_sanity_check(memcg, name, size);
++	if (err)
++		goto out_unlock;
+ 
+ 	/*
+ 	 * Some allocators will constraint the set of valid flags to a subset
+@@ -189,45 +190,38 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+ 
+ 	s = __kmem_cache_alias(memcg, name, size, align, flags, ctor);
+ 	if (s)
+-		goto out_locked;
++		goto out_unlock;
+ 
++	err = -ENOMEM;
+ 	s = kmem_cache_zalloc(kmem_cache, GFP_KERNEL);
+-	if (s) {
+-		s->object_size = s->size = size;
+-		s->align = calculate_alignment(flags, align, size);
+-		s->ctor = ctor;
++	if (!s)
++		goto out_unlock;
+ 
+-		if (memcg_register_cache(memcg, s, parent_cache)) {
+-			kmem_cache_free(kmem_cache, s);
+-			err = -ENOMEM;
+-			goto out_locked;
+-		}
++	s->object_size = s->size = size;
++	s->align = calculate_alignment(flags, align, size);
++	s->ctor = ctor;
+ 
+-		s->name = kstrdup(name, GFP_KERNEL);
+-		if (!s->name) {
+-			kmem_cache_free(kmem_cache, s);
+-			err = -ENOMEM;
+-			goto out_locked;
+-		}
++	s->name = kstrdup(name, GFP_KERNEL);
++	if (!s->name)
++		goto out_free_cache;
+ 
+-		err = __kmem_cache_create(s, flags);
+-		if (!err) {
+-			s->refcount = 1;
+-			list_add(&s->list, &slab_caches);
+-			memcg_cache_list_add(memcg, s);
+-		} else {
+-			kfree(s->name);
+-			kmem_cache_free(kmem_cache, s);
+-		}
+-	} else
+-		err = -ENOMEM;
++	err = memcg_register_cache(memcg, s, parent_cache);
++	if (err)
++		goto out_free_cache;
++
++	err = __kmem_cache_create(s, flags);
++	if (err)
++		goto out_free_cache;
++
++	s->refcount = 1;
++	list_add(&s->list, &slab_caches);
++	memcg_cache_list_add(memcg, s);
+ 
+-out_locked:
++out_unlock:
+ 	mutex_unlock(&slab_mutex);
+ 	put_online_cpus();
+ 
+ 	if (err) {
+-
+ 		if (flags & SLAB_PANIC)
+ 			panic("kmem_cache_create: Failed to create slab '%s'. Error %d\n",
+ 				name, err);
+@@ -236,11 +230,14 @@ out_locked:
+ 				name, err);
+ 			dump_stack();
+ 		}
+-
+ 		return NULL;
+ 	}
+-
+ 	return s;
++
++out_free_cache:
++	kfree(s->name);
++	kmem_cache_free(kmem_cache, s);
++	goto out_unlock;
+ }
+ 
+ struct kmem_cache *
+-- 
+1.7.10.4
 
-Jack
