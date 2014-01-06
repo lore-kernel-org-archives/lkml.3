@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933445AbaAFXdv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:33:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48044 "EHLO
+	id S932762AbaAFWkZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:40:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48009 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932767AbaAFWk0 (ORCPT
+	with ESMTP id S1755931AbaAFWkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:26 -0500
+	Mon, 6 Jan 2014 17:40:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 021/129] iser-target: fix error return code in isert_create_device_ib_res()
-Date: Mon,  6 Jan 2014 14:37:30 -0800
-Message-Id: <20140106223900.204147456@linuxfoundation.org>
+        Jonathan Cameron <jic23@kernel.org>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 3.10 013/129] iio:imu:adis16400 fix pressure channel scan type
+Date: Mon,  6 Jan 2014 14:37:22 -0800
+Message-Id: <20140106223859.966072051@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -29,56 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: Jonathan Cameron <jic23@kernel.org>
 
-commit 94a7111043d99819cd0a72d9b3174c7054adb2a0 upstream.
+commit 3425c0f7ac61f2fcfb7f2728e9b7ba7e27aec429 upstream.
 
-Fix to return a negative error code from the error handling
-case instead of 0, as done elsewhere in this function.
+A single channel in this driver was using the IIO_ST macro.
+This does not provide a parameter for setting the endianness of
+the channel.  Thus this channel will have been reported as whatever
+is the native endianness of the cpu rather than big endian. This
+means it would be incorrect on little endian platforms.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ drivers/iio/imu/adis16400_core.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -242,21 +242,29 @@ isert_create_device_ib_res(struct isert_
- 						isert_cq_event_callback,
- 						(void *)&cq_desc[i],
- 						ISER_MAX_RX_CQ_LEN, i);
--		if (IS_ERR(device->dev_rx_cq[i]))
-+		if (IS_ERR(device->dev_rx_cq[i])) {
-+			ret = PTR_ERR(device->dev_rx_cq[i]);
-+			device->dev_rx_cq[i] = NULL;
- 			goto out_cq;
-+		}
- 
- 		device->dev_tx_cq[i] = ib_create_cq(device->ib_device,
- 						isert_cq_tx_callback,
- 						isert_cq_event_callback,
- 						(void *)&cq_desc[i],
- 						ISER_MAX_TX_CQ_LEN, i);
--		if (IS_ERR(device->dev_tx_cq[i]))
-+		if (IS_ERR(device->dev_tx_cq[i])) {
-+			ret = PTR_ERR(device->dev_tx_cq[i]);
-+			device->dev_tx_cq[i] = NULL;
- 			goto out_cq;
-+		}
- 
--		if (ib_req_notify_cq(device->dev_rx_cq[i], IB_CQ_NEXT_COMP))
-+		ret = ib_req_notify_cq(device->dev_rx_cq[i], IB_CQ_NEXT_COMP);
-+		if (ret)
- 			goto out_cq;
- 
--		if (ib_req_notify_cq(device->dev_tx_cq[i], IB_CQ_NEXT_COMP))
-+		ret = ib_req_notify_cq(device->dev_tx_cq[i], IB_CQ_NEXT_COMP);
-+		if (ret)
- 			goto out_cq;
- 	}
- 
+--- a/drivers/iio/imu/adis16400_core.c
++++ b/drivers/iio/imu/adis16400_core.c
+@@ -651,7 +651,12 @@ static const struct iio_chan_spec adis16
+ 		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = ADIS16448_BARO_OUT,
+ 		.scan_index = ADIS16400_SCAN_BARO,
+-		.scan_type = IIO_ST('s', 16, 16, 0),
++		.scan_type = {
++			.sign = 's',
++			.realbits = 16,
++			.storagebits = 16,
++			.endianness = IIO_BE,
++		},
+ 	},
+ 	ADIS16400_TEMP_CHAN(ADIS16448_TEMP_OUT, 12),
+ 	IIO_CHAN_SOFT_TIMESTAMP(11)
 
 
