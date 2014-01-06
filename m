@@ -1,54 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756370AbaAFV0s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 16:26:48 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:41577 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755102AbaAFV0q (ORCPT
+	id S1756200AbaAFV33 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 16:29:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45876 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755379AbaAFV32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 16:26:46 -0500
-Date: Mon, 6 Jan 2014 22:26:23 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
-Cc: Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Li Zefan <lizefan@huawei.com>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] x86: Add Cache QoS Monitoring (CQM) support
-Message-ID: <20140106212623.GH30183@twins.programming.kicks-ass.net>
-References: <20140104161050.GA24306@htj.dyndns.org>
- <1388875369.9761.25.camel@ppwaskie-mobl.amr.corp.intel.com>
- <20140104225058.GC24306@htj.dyndns.org>
- <1388899376.9761.45.camel@ppwaskie-mobl.amr.corp.intel.com>
- <20140106111624.GB5623@twins.programming.kicks-ass.net>
- <1389026035.32504.3.camel@ppwaskie-mobl.amr.corp.intel.com>
- <20140106164150.GQ31570@twins.programming.kicks-ass.net>
- <1389026867.32504.16.camel@ppwaskie-mobl.amr.corp.intel.com>
- <20140106180636.GG30183@twins.programming.kicks-ass.net>
- <1389039035.32504.35.camel@ppwaskie-mobl.amr.corp.intel.com>
+	Mon, 6 Jan 2014 16:29:28 -0500
+Date: Mon, 6 Jan 2014 13:29:54 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: rjw@rjwysocki.net, shuahkhan@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] drivers/bus: Add Legacy PM OPS usage check and
+ warning to bus_register()
+Message-ID: <20140106212954.GA4580@kroah.com>
+References: <cover.1389034060.git.shuah.kh@samsung.com>
+ <1b1d24cd7140784f96b9d1fee9cace9da04a88f5.1389034060.git.shuah.kh@samsung.com>
+ <20140106201755.GA7339@kroah.com>
+ <52CB1267.1000502@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389039035.32504.35.camel@ppwaskie-mobl.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <52CB1267.1000502@samsung.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 08:10:45PM +0000, Waskiewicz Jr, Peter P wrote:
-> There is one per logical CPU.  However, in the current generation, they
-> report on the usage of the same L3 cache.  But the CPU takes care of the
-> resolution of which MSR write and read comes from the logical CPU, so
-> software doesn't need to lock access to it from different CPUs.
+On Mon, Jan 06, 2014 at 01:30:31PM -0700, Shuah Khan wrote:
+> On 01/06/2014 01:17 PM, Greg KH wrote:
+> >On Mon, Jan 06, 2014 at 01:03:21PM -0700, Shuah Khan wrote:
+> >>Add Legacy PM OPS usage checks to bus_register() function. If Legacy PM OPS
+> >>usage is found, print warning message to indicate that the driver code needs
+> >>updating to use Dev PM OPS interfaces. This will help serve as a way to track
+> >>drivers that still use Legacy PM OPS and fix them.
+> >>
+> >>The Legacy PM OPS check looks for suspend(struct device *, pm_message_t) or
+> >>resume(struct device *) bus level interfaces.
+> >>
+> >>Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+> >>---
+> >>  drivers/base/bus.c | 3 +++
+> >>  1 file changed, 3 insertions(+)
+> >>
+> >>diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+> >>index 73f6c29..e8753a7 100644
+> >>--- a/drivers/base/bus.c
+> >>+++ b/drivers/base/bus.c
+> >>@@ -916,6 +916,9 @@ int bus_register(struct bus_type *bus)
+> >>  		goto bus_groups_fail;
+> >>
+> >>  	pr_debug("bus: '%s': registered\n", bus->name);
+> >>+	if (bus->suspend || bus->resume)
+> >>+		pr_warn("bus '%s' needs updating - use pm pointer.\n",
+> >>+			bus->name);
+> >
+> >Why can't we just sweep the tree for all of these now, fix them up, and
+> >then delete these fields and be done with it?
+> >
+> >Same for the other ones, putting warnings in the kernel log files
+> >doesn't work at all for getting people to fix up their code (see
+> >examples of scsi log messages being there for _years_ about obsolete
+> >driver interfaces being used.)
+> 
+> This change is not a simple case of replacing legacy with pm ops. I have
+> been working on changing drivers that use legacy, in some cases it is an
+> easy change, however in some cases it requires adding new interfaces to port
+> over from legacy to pm ops. Legacy suspend/resume is more course grain and
+> pm ops offer fine grain control over suspend, hibernate etc. Also it has
+> been a challenge without the hardware to test.
+> 
+> My thinking is adding warning might get the attention of individual driver
+> owners.
 
-What are the rules of RMIDs, I can't seem to find that in the SDM and I
-think you're tagging cachelines with them. Which would mean that in
-order to (re) use them you need a complete cache (L3) wipe.
+If it's not a trivial change, and takes a lot of work by someone who
+knows this type of thing (i.e. you), then I wouldn't start making kernel
+log warnings about this, it's just going to annoy a bunch of people :)
 
-Without a wipe you keep having stale entries of the former user and no
-clear indication on when your numbers are any good.
+Again, see the SCSI log warnings for examples of this, people just tune
+them out, assuming someone else is going to fix the issue, someday.  And
+that someday never comes...
 
-Also, is there any sane way of shooting down the entire L3?
+thanks,
+
+greg k-h
