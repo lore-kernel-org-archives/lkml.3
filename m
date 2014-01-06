@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758076AbaAFXxN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:53:13 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46815 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758045AbaAFXxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 18:53:11 -0500
-Message-ID: <52CB41CA.8070508@zytor.com>
-Date: Mon, 06 Jan 2014 15:52:42 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S932407AbaAFWjX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 17:39:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47681 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932314AbaAFWjU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 17:39:20 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.12 092/144] powerpc: Fix bad stack check in exception entry
+Date: Mon,  6 Jan 2014 14:37:33 -0800
+Message-Id: <20140106223747.999893326@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
+References: <20140106223745.326293132@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>,
-        Alexander Duyck <alexander.h.duyck@intel.com>
-CC: joe@perches.com, josh@joshtriplett.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] checkpatch: Only flag FSF address, not gnu.org URL
-References: <20140106231534.23578.11475.stgit@ahduyck-cp2.jf.intel.com> <20140106232717.GA22336@kroah.com>
-In-Reply-To: <20140106232717.GA22336@kroah.com>
-X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2014 03:27 PM, Greg KH wrote:
-> On Mon, Jan 06, 2014 at 03:16:24PM -0800, Alexander Duyck wrote:
->> This change restricts the check for the for the FSF address in the GPL
->> copyright statement so that it only flags the address, not the references to
->> the gnu.org/licenses URL which appear in numerous drivers.
->>
->> So for example this statement will still return an error:
->>   You should have received a copy of the GNU General Public License
->>   along with this program; if not, write to the Free Software
->>   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
->>
->> However, this statement will not return an error after this patch:
->>   You should have received a copy of the GNU General Public License
->>   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-> 
-> Why is this paragraph needed?  The kernel does come with a copy of the
-> GPL, so it's not an issue for kernel files, right?
-> 
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-(IANAL but...) Presumably some people might be concerned about it
-because of either patches on mailing lists or otherwise separate from
-the kernel, or if someone pulls individual files out of the kernel tree
-for another project.
+------------------
 
-	-hpa
+From: Michael Neuling <mikey@neuling.org>
+
+commit 90ff5d688e61f49f23545ffab6228bd7e87e6dc7 upstream.
+
+In EXCEPTION_PROLOG_COMMON() we check to see if the stack pointer (r1)
+is valid when coming from the kernel.  If it's not valid, we die but
+with a nice oops message.
+
+Currently we allocate a stack frame (subtract INT_FRAME_SIZE) before we
+check to see if the stack pointer is negative.  Unfortunately, this
+won't detect a bad stack where r1 is less than INT_FRAME_SIZE.
+
+This patch fixes the check to compare the modified r1 with
+-INT_FRAME_SIZE.  With this, bad kernel stack pointers (including NULL
+pointers) are correctly detected again.
+
+Kudos to Paulus for finding this.
+
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/powerpc/include/asm/exception-64s.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/arch/powerpc/include/asm/exception-64s.h
++++ b/arch/powerpc/include/asm/exception-64s.h
+@@ -265,7 +265,7 @@ do_kvm_##n:								\
+ 	subi	r1,r1,INT_FRAME_SIZE;	/* alloc frame on kernel stack	*/ \
+ 	beq-	1f;							   \
+ 	ld	r1,PACAKSAVE(r13);	/* kernel stack to use		*/ \
+-1:	cmpdi	cr1,r1,0;		/* check if r1 is in userspace	*/ \
++1:	cmpdi	cr1,r1,-INT_FRAME_SIZE;	/* check if r1 is in userspace	*/ \
+ 	blt+	cr1,3f;			/* abort if it is		*/ \
+ 	li	r1,(n);			/* will be reloaded later	*/ \
+ 	sth	r1,PACA_TRAP_SAVE(r13);					   \
 
 
