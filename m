@@ -1,116 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205AbaAFIto (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 03:49:44 -0500
-Received: from relay.parallels.com ([195.214.232.42]:40063 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413AbaAFIp0 (ORCPT
+	id S1752812AbaAFI4M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 03:56:12 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:56040 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063AbaAFI4J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 03:45:26 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <mhocko@suse.cz>, <akpm@linux-foundation.org>
-CC: <glommer@gmail.com>, <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH RESEND 07/11] memcg: get rid of kmem_cache_dup
-Date: Mon, 6 Jan 2014 12:44:58 +0400
-Message-ID: <3effdaf677c9daab1d9341a4176fcee9e58557c2.1388996525.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1388996525.git.vdavydov@parallels.com>
-References: <cover.1388996525.git.vdavydov@parallels.com>
+	Mon, 6 Jan 2014 03:56:09 -0500
+Message-ID: <52CA6FA6.2090105@suse.cz>
+Date: Mon, 06 Jan 2014 09:56:06 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.24.24.128]
+To: Wang YanQing <udknight@gmail.com>, gregkh@linuxfoundation.org,
+        airlied@redhat.com, akpm@linux-foundation.org, kilobyte@angband.pl,
+        peter@hurleysoftware.com, rosslagerwall@gmail.com, tiwai@suse.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3]vt: use vc_allocate in con_init
+References: <20140102074812.GA4713@udknight>
+In-Reply-To: <20140102074812.GA4713@udknight>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kmem_cache_dup() is only called from memcg_create_kmem_cache(). The
-latter, in fact, does nothing besides this, so let's fold
-kmem_cache_dup() into memcg_create_kmem_cache().
+On 01/02/2014 08:48 AM, Wang YanQing wrote:
+> After a5f4f52e82114e85aa1a066bd1a450acc19a464d
+> ("vt: use kzalloc() instead of the bootmem allocator"),
+> con_init began to use kzalloc to initialize vc_data, 
+> this patch convert con_init to use vc_allocate.
+> 
+> The benefit we get:
+> 1: reduce code duplication
+> 2: vc_allocate is more robust
+> 3: use kmalloc instead of kzalloc for vc_screenbuf
+> 
+> Signed-off-by: Wang YanQing <udknight@gmail.com>
+> ---
+>  Changes v2-v3:
+>  1: fix warnings reported by checkpatch.pl 
+>  2: clarify changelog
+> 
+>  drivers/tty/vt/vt.c       | 28 ++++++++++++++--------------
+>  drivers/tty/vt/vt_ioctl.c |  8 ++++----
+>  include/linux/vt_kern.h   |  2 +-
+>  3 files changed, 19 insertions(+), 19 deletions(-)
+> 
+> diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+> index 15aaa01..720a8f9 100644
+> --- a/drivers/tty/vt/vt.c
+> +++ b/drivers/tty/vt/vt.c
+> @@ -748,7 +748,8 @@ static void visual_init(struct vc_data *vc, int num, int init)
+>  	vc->vc_screenbuf_size = vc->vc_rows * vc->vc_size_row;
+>  }
+>  
+> -int vc_allocate(unsigned int currcons)	/* return 0 on success */
+> +/* return 0 on success */
+> +int vc_allocate(unsigned int currcons, int early)
 
-This patch also makes the memcg_cache_mutex private to
-memcg_create_kmem_cache(), because it is not used anywhere else.
+Could you use
+  bool/true/false
+instead of
+  int/1/0
+please?
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Glauber Costa <glommer@gmail.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- mm/memcontrol.c |   39 ++++++++-------------------------------
- 1 file changed, 8 insertions(+), 31 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 56fc410..ce25f77 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3391,27 +3391,16 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
- 	schedule_work(&cachep->memcg_params->destroy);
- }
- 
--/*
-- * This lock protects updaters, not readers. We want readers to be as fast as
-- * they can, and they will either see NULL or a valid cache value. Our model
-- * allow them to see NULL, in which case the root memcg will be selected.
-- *
-- * We need this lock because multiple allocations to the same cache from a non
-- * will span more than one worker. Only one of them can create the cache.
-- */
--static DEFINE_MUTEX(memcg_cache_mutex);
--
--/*
-- * Called with memcg_cache_mutex held
-- */
--static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
--					 struct kmem_cache *s)
-+static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
-+						  struct kmem_cache *s)
- {
- 	struct kmem_cache *new;
- 	static char *tmp_name = NULL;
-+	static DEFINE_MUTEX(mutex);	/* protects tmp_name */
- 
--	lockdep_assert_held(&memcg_cache_mutex);
-+	BUG_ON(!memcg_can_account_kmem(memcg));
- 
-+	mutex_lock(&mutex);
- 	/*
- 	 * kmem_cache_create_memcg duplicates the given name and
- 	 * cgroup_name for this name requires RCU context.
-@@ -3434,25 +3423,13 @@ static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
- 
- 	if (new)
- 		new->allocflags |= __GFP_KMEMCG;
-+	else
-+		new = s;
- 
-+	mutex_unlock(&mutex);
- 	return new;
- }
- 
--static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
--						  struct kmem_cache *cachep)
--{
--	struct kmem_cache *new_cachep;
--
--	BUG_ON(!memcg_can_account_kmem(memcg));
--
--	mutex_lock(&memcg_cache_mutex);
--	new_cachep = kmem_cache_dup(memcg, cachep);
--	if (new_cachep == NULL)
--		new_cachep = cachep;
--	mutex_unlock(&memcg_cache_mutex);
--	return new_cachep;
--}
--
- void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
- {
- 	struct kmem_cache *c;
 -- 
-1.7.10.4
-
+js
+suse labs
