@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573AbaAFGXV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 01:23:21 -0500
-Received: from mga14.intel.com ([143.182.124.37]:28563 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752767AbaAFGSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 01:18:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,611,1384329600"; 
-   d="scan'208";a="401364847"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Jiri Kosina <trivial@kernel.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
-        Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Subject: [Patch Part1 V3 06/20] iommu/vt-d, trivial: print correct domain id of static identity domain
-Date: Mon,  6 Jan 2014 14:18:13 +0800
-Message-Id: <1388989107-4795-7-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1388989107-4795-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1388989107-4795-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1752724AbaAFG1V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 01:27:21 -0500
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:61801 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875AbaAFG1U convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 01:27:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <87wqihmg9a.fsf@nemi.mork.no>
+References: <f9d7b0d5424e4443597d2ed39bec3fedd2b10d1e.1387848958.git.viresh.kumar@linaro.org>
+	<5562479.pVWRuDL0y6@vostro.rjw.lan>
+	<87zjne7f75.fsf@nemi.mork.no>
+	<2302938.b8tymqrMEz@vostro.rjw.lan>
+	<878uuxquxu.fsf@nemi.mork.no>
+	<871u0po0gx.fsf@nemi.mork.no>
+	<CAKohpo=9p8ArfWyyWkdQm_BWtyWbWe_dsg6VAUP60VUFcAjFSw@mail.gmail.com>
+	<87wqihmg9a.fsf@nemi.mork.no>
+Date: Mon, 6 Jan 2014 11:57:19 +0530
+Message-ID: <CAKohpo=3s6=gw8OJTrUdLH8o2ouA=8a8MhrgNRXwHmOf0si5Pw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] cpufreq: try to resume policies which failed on last resume
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: =?ISO-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Field si_domain->id is set by iommu_attach_domain(), so we should only
-print domain id for static identity domain after calling
-iommu_attach_domain(si_domain, iommu), otherwise it's always zero.
+On 3 January 2014 17:25, Bjørn Mork <bjorn@mork.no> wrote:
+> Correct. And users not running a lock debugging kernel will of course
+> not even see the warning.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- drivers/iommu/intel-iommu.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Okay..
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index b2e73c2..3a0cf5d 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -2248,8 +2248,6 @@ static int __init si_domain_init(int hw)
- 	if (!si_domain)
- 		return -EFAULT;
- 
--	pr_debug("Identity mapping domain is domain %d\n", si_domain->id);
--
- 	for_each_active_iommu(iommu, drhd) {
- 		ret = iommu_attach_domain(si_domain, iommu);
- 		if (ret) {
-@@ -2264,6 +2262,8 @@ static int __init si_domain_init(int hw)
- 	}
- 
- 	si_domain->flags = DOMAIN_FLAG_STATIC_IDENTITY;
-+	pr_debug("IOMMU: identity mapping domain is domain %d\n",
-+		 si_domain->id);
- 
- 	if (hw)
- 		return 0;
--- 
-1.7.10.4
+>> - It only happens when cpufreq_add_dev() fails during hibernation while
+>> we enable non-boot CPUs again to save image to disk. So, isn't a problem
+>> for a system which doesn't have any issues with add_dev() failing on
+>> hibernation
+>
+> Wrong.  This was my initial assumption but I later found out that the
+> issue is unrelated to hibernation failures.  Sorry about the confusion.
 
+Hmm.. Can we have the latest warning logs you have? Earlier ones were
+related to hibernation..
+
+>> - There is a contention of locks in the order they are taken. And the contention
+>> looks to be between, hotplug lock taken by cpu_online_cpus() and s_active
+>> lock for sysfs files. Don't know what's the role of previous write to
+>> sysfs files.
+>> As that should finish before hibernation starts and so all locks should be back
+>> in place.
+>
+> Yes, that seems logical.  But I guess this is where it fails?
+
+It looked like that.. Though your new logs might indicate something else.
