@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390AbaAFGRf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 01:17:35 -0500
-Received: from mga03.intel.com ([143.182.124.21]:53505 "EHLO mga03.intel.com"
+	id S1752672AbaAFGRs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 01:17:48 -0500
+Received: from mga14.intel.com ([143.182.124.37]:13043 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750810AbaAFGRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 01:17:33 -0500
+	id S1752591AbaAFGRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 01:17:46 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,611,1384329600"; 
-   d="scan'208";a="401364777"
+   d="scan'208";a="401364800"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
         Yinghai Lu <yinghai@kernel.org>,
@@ -18,65 +18,149 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
         Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
         iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Subject: [Patch Part1 V3 00/20] Bugfixes and improvements for Intel IOMMU drivers
-Date: Mon,  6 Jan 2014 14:18:07 +0800
-Message-Id: <1388989107-4795-1-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch Part1 V3 01/20] iommu/vt-d: use dedicated bitmap to track remapping entry allocation status
+Date: Mon,  6 Jan 2014 14:18:08 +0800
+Message-Id: <1388989107-4795-2-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1388989107-4795-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1388989107-4795-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset includes several bugfixes and code improvements for
-Intel DMA remapping and interrupt remapping drivers. It's also a
-preparation for Intel IOMMU device hotplug.
+Currently Intel interrupt remapping drivers uses the "present" flag bit
+in remapping entry to track whether an entry is allocated or not.
+It works as follow:
+1) allocate a remapping entry and set its "present" flag bit to 1
+2) compose other fields for the entry
+3) update the remapping entry with the composed value
 
-It applies to the latest mainstream kernel on top of
-	commit 7e3528c3660a2e8602abc7858b0994d611f74bc3
+The remapping hardware may access the entry between step 1 and step 3,
+which then observers an entry with the "present" flag set but random
+values in all other fields.
 
-It has been tested on Intel SandyBridge and Romley-4S platforms.
+This patch introduces a dedicated bitmap to track remapping entry
+allocation status instead of sharing the "present" flag with hardware,
+thus eliminate the race window. It also simplifies the implementation.
 
-Thanks!
+Tested-and-reviewed-by: Yijing Wang <wangyijing@huawei.com>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ drivers/iommu/intel_irq_remapping.c |   55 +++++++++++++++++------------------
+ include/linux/intel-iommu.h         |    1 +
+ 2 files changed, 27 insertions(+), 29 deletions(-)
 
-V2->V3:
-1) address review comments of last round
-
-Jiang Liu (20):
-  iommu/vt-d: use dedicated bitmap to track remapping entry allocation
-    status
-  iommu/vt-d: fix PCI device reference leakage on error recovery path
-  iommu/vt-d: fix a race window in allocating domain ID for virtual
-    machines
-  iommu/vt-d: fix resource leakage on error recovery path in
-    iommu_init_domains()
-  iommu/vt-d, trivial: refine support of 64bit guest address
-  iommu/vt-d, trivial: print correct domain id of static identity
-    domain
-  iommu/vt-d, trivial: check suitable flag in function
-    detect_intel_iommu()
-  iommu/vt-d, trivial: clean up unused code
-  iommu/vt-d: mark internal functions as static
-  iommu/vt-d, trivial: use defined macro instead of hardcoding
-  iommu/vt-d, trivial: simplify code with existing macros
-  iommu/vt-d: fix invalid memory access when freeing DMAR irq
-  iommu/vt-d: keep shared resources when failed to initialize iommu
-    devices
-  iommu/vt-d: avoid double free in error recovery path
-  iommu/vt-d: fix access after free issue in function free_dmar_iommu()
-  iommu/vt-d: release invalidation queue when destroying IOMMU unit
-  iommu/vt-d: fix wrong return value of dmar_table_init()
-  iommu/vt-d, PCI, trivial: use dev_is_pci() instead of hardcoding
-  iommu/vt-d, trivial: clean sparse warnings
-  iommu/vt-d: free all resources if failed to initialize DMARs
-
- drivers/iommu/dmar.c                |  137 +++++++++++++--------
- drivers/iommu/intel-iommu.c         |  232 ++++++++++++++---------------------
- drivers/iommu/intel_irq_remapping.c |   98 +++++++--------
- drivers/iommu/irq_remapping.c       |    6 +-
- include/linux/dma_remapping.h       |    4 -
- include/linux/dmar.h                |   17 +--
- include/linux/intel-iommu.h         |    3 +-
- 7 files changed, 229 insertions(+), 268 deletions(-)
-
+diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
+index bab10b1..deef3d4 100644
+--- a/drivers/iommu/intel_irq_remapping.c
++++ b/drivers/iommu/intel_irq_remapping.c
+@@ -72,7 +72,6 @@ static int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
+ 	u16 index, start_index;
+ 	unsigned int mask = 0;
+ 	unsigned long flags;
+-	int i;
+ 
+ 	if (!count || !irq_iommu)
+ 		return -1;
+@@ -96,32 +95,17 @@ static int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
+ 	}
+ 
+ 	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
+-	do {
+-		for (i = index; i < index + count; i++)
+-			if  (table->base[i].present)
+-				break;
+-		/* empty index found */
+-		if (i == index + count)
+-			break;
+-
+-		index = (index + count) % INTR_REMAP_TABLE_ENTRIES;
+-
+-		if (index == start_index) {
+-			raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
+-			printk(KERN_ERR "can't allocate an IRTE\n");
+-			return -1;
+-		}
+-	} while (1);
+-
+-	for (i = index; i < index + count; i++)
+-		table->base[i].present = 1;
+-
+-	cfg->remapped = 1;
+-	irq_iommu->iommu = iommu;
+-	irq_iommu->irte_index =  index;
+-	irq_iommu->sub_handle = 0;
+-	irq_iommu->irte_mask = mask;
+-
++	index = bitmap_find_free_region(table->bitmap,
++					INTR_REMAP_TABLE_ENTRIES, mask);
++	if (index < 0) {
++		pr_warn("IR%d: can't allocate an IRTE\n", iommu->seq_id);
++	} else {
++		cfg->remapped = 1;
++		irq_iommu->iommu = iommu;
++		irq_iommu->irte_index =  index;
++		irq_iommu->sub_handle = 0;
++		irq_iommu->irte_mask = mask;
++	}
+ 	raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
+ 
+ 	return index;
+@@ -254,6 +238,8 @@ static int clear_entries(struct irq_2_iommu *irq_iommu)
+ 		set_64bit(&entry->low, 0);
+ 		set_64bit(&entry->high, 0);
+ 	}
++	bitmap_release_region(iommu->ir_table->bitmap, index,
++			      irq_iommu->irte_mask);
+ 
+ 	return qi_flush_iec(iommu, index, irq_iommu->irte_mask);
+ }
+@@ -453,6 +439,7 @@ static int intel_setup_irq_remapping(struct intel_iommu *iommu, int mode)
+ {
+ 	struct ir_table *ir_table;
+ 	struct page *pages;
++	unsigned long *bitmap;
+ 
+ 	ir_table = iommu->ir_table = kzalloc(sizeof(struct ir_table),
+ 					     GFP_ATOMIC);
+@@ -464,13 +451,23 @@ static int intel_setup_irq_remapping(struct intel_iommu *iommu, int mode)
+ 				 INTR_REMAP_PAGE_ORDER);
+ 
+ 	if (!pages) {
+-		printk(KERN_ERR "failed to allocate pages of order %d\n",
+-		       INTR_REMAP_PAGE_ORDER);
++		pr_err("IR%d: failed to allocate pages of order %d\n",
++		       iommu->seq_id, INTR_REMAP_PAGE_ORDER);
+ 		kfree(iommu->ir_table);
+ 		return -ENOMEM;
+ 	}
+ 
++	bitmap = kcalloc(BITS_TO_LONGS(INTR_REMAP_TABLE_ENTRIES),
++			 sizeof(long), GFP_ATOMIC);
++	if (bitmap == NULL) {
++		pr_err("IR%d: failed to allocate bitmap\n", iommu->seq_id);
++		__free_pages(pages, INTR_REMAP_PAGE_ORDER);
++		kfree(ir_table);
++		return -ENOMEM;
++	}
++
+ 	ir_table->base = page_address(pages);
++	ir_table->bitmap = bitmap;
+ 
+ 	iommu_set_irq_remapping(iommu, mode);
+ 	return 0;
+diff --git a/include/linux/intel-iommu.h b/include/linux/intel-iommu.h
+index d380c5e..de1e5e9 100644
+--- a/include/linux/intel-iommu.h
++++ b/include/linux/intel-iommu.h
+@@ -288,6 +288,7 @@ struct q_inval {
+ 
+ struct ir_table {
+ 	struct irte *base;
++	unsigned long *bitmap;
+ };
+ #endif
+ 
 -- 
 1.7.10.4
 
