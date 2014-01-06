@@ -1,146 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533AbaAFBQh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jan 2014 20:16:37 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:45632 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318AbaAFBQg (ORCPT
+	id S1752556AbaAFBSk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jan 2014 20:18:40 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:51662 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752383AbaAFBSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jan 2014 20:16:36 -0500
-Message-ID: <52CA03EB.6020107@hitachi.com>
-Date: Mon, 06 Jan 2014 10:16:27 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Sun, 5 Jan 2014 20:18:39 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpufreq: arm-big-little: Make driver dependent on CONFIG_BIG_LITTLE
+Date: Mon, 06 Jan 2014 02:32:24 +0100
+Message-ID: <2100649.OqVGEpXy07@vostro.rjw.lan>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <20140106011137.GE27432@n2100.arm.linux.org.uk>
+References: <a76f7b6a290d9174a24e15b13df21f53e3f5655f.1388736624.git.viresh.kumar@linaro.org> <126282099.XSjqFqKQFW@vostro.rjw.lan> <20140106011137.GE27432@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Tom Zanussi <tom.zanussi@linux.intel.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tracing/kprobes: Add trace event trigger invocations
-References: <1388283848.3048.1.camel@empanada>
-In-Reply-To: <1388283848.3048.1.camel@empanada>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/29 11:24), Tom Zanussi wrote:
-> Add code to the kprobe/kretprobe event functions that will invoke any
-> event triggers associated with a probe's ftrace_event_file.
+On Monday, January 06, 2014 01:11:37 AM Russell King - ARM Linux wrote:
+> On Mon, Jan 06, 2014 at 02:23:39AM +0100, Rafael J. Wysocki wrote:
+> > On Monday, January 06, 2014 12:58:56 AM Russell King - ARM Linux wrote:
+> > > On Mon, Jan 06, 2014 at 02:08:21AM +0100, Rafael J. Wysocki wrote:
+> > > > On Friday, January 03, 2014 03:51:39 PM Viresh Kumar wrote:
+> > > > > arm_big_little cpufreq driver is only used for ARM bigLITTLE platforms and hence
+> > > > > must be dependent on CONFIG_BIG_LITTLE.
+> > > > > 
+> > > > > This was highlighted by Russell earlier when he reported this issue:
+> > > > > 
+> > > > > drivers/built-in.o: In function `bL_cpufreq_set_rate':
+> > > > > powercap_sys.c:(.text+0x5ed9a0): undefined reference to `bL_switch_request_cb'
+> > > > > 
+> > > > > Reported-by: Russell King <linux@arm.linux.org.uk>
+> > > > > Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> > > > 
+> > > > Queued up for 3.14, thanks!
+> > > 
+> > > This is actually a build fix, not a new feature, so IMHO it should go
+> > > in for 3.13.  Linus has said he's going to do -rc8 anyway next weekend
+> > > so -final is at the earliest two weeks away.
+> > 
+> > Well, it can go into 3.13 too.
+> > 
+> > Thanks!
 > 
-> The code to do this is very similar to the invocation code already
-> used to invoke the triggers associated with static events and
-> essentially replaces the existing soft-disable checks with a superset
-> that preserves the original behavior but adds the bits needed to
-> support event triggers.
-> 
-> Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
+> Thanks.
 
-Looks good for me :)
+Well, actually, I was wrong.  It depends on stuff already queued up for 3.14,
+so either I'd need to drag all that into 3.13, or it needs to wait for 3.14.
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+So it will wait, sorry about that.
 
-Thank you!
-
-> ---
->  kernel/trace/trace_kprobe.c | 42 ++++++++++++++++++++++++++++++++++++------
->  1 file changed, 36 insertions(+), 6 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-> index dae9541..1ee13eb 100644
-> --- a/kernel/trace/trace_kprobe.c
-> +++ b/kernel/trace/trace_kprobe.c
-> @@ -812,12 +812,20 @@ __kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs,
->  	struct ring_buffer *buffer;
->  	int size, dsize, pc;
->  	unsigned long irq_flags;
-> +	unsigned long eflags;
-> +	enum event_trigger_type __tt = ETT_NONE;
->  	struct ftrace_event_call *call = &tp->call;
->  
->  	WARN_ON(call != ftrace_file->event_call);
->  
-> -	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
-> -		return;
-> +	eflags = ftrace_file->flags;
-> +
-> +	if (!(eflags & FTRACE_EVENT_FL_TRIGGER_COND)) {
-> +		if (eflags & FTRACE_EVENT_FL_TRIGGER_MODE)
-> +			event_triggers_call(ftrace_file, NULL);
-> +		if (eflags & FTRACE_EVENT_FL_SOFT_DISABLED)
-> +			return;
-> +	}
->  
->  	local_save_flags(irq_flags);
->  	pc = preempt_count();
-> @@ -835,9 +843,16 @@ __kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs,
->  	entry->ip = (unsigned long)tp->rp.kp.addr;
->  	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
->  
-> -	if (!filter_check_discard(ftrace_file, entry, buffer, event))
-> +	if (eflags & FTRACE_EVENT_FL_TRIGGER_COND)
-> +		__tt = event_triggers_call(ftrace_file, entry);
-> +
-> +	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
-> +		ring_buffer_discard_commit(buffer, event);
-> +	else if (!filter_check_discard(ftrace_file, entry, buffer, event))
->  		trace_buffer_unlock_commit_regs(buffer, event,
->  						irq_flags, pc, regs);
-> +	if (__tt)
-> +		event_triggers_post_call(ftrace_file, __tt);
->  }
->  
->  static __kprobes void
-> @@ -860,12 +875,20 @@ __kretprobe_trace_func(struct trace_probe *tp, struct kretprobe_instance *ri,
->  	struct ring_buffer *buffer;
->  	int size, pc, dsize;
->  	unsigned long irq_flags;
-> +	unsigned long eflags;
-> +	enum event_trigger_type __tt = ETT_NONE;
->  	struct ftrace_event_call *call = &tp->call;
->  
->  	WARN_ON(call != ftrace_file->event_call);
->  
-> -	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
-> -		return;
-> +	eflags = ftrace_file->flags;
-> +
-> +	if (!(eflags & FTRACE_EVENT_FL_TRIGGER_COND)) {
-> +		if (eflags & FTRACE_EVENT_FL_TRIGGER_MODE)
-> +			event_triggers_call(ftrace_file, NULL);
-> +		if (eflags & FTRACE_EVENT_FL_SOFT_DISABLED)
-> +			return;
-> +	}
->  
->  	local_save_flags(irq_flags);
->  	pc = preempt_count();
-> @@ -884,9 +907,16 @@ __kretprobe_trace_func(struct trace_probe *tp, struct kretprobe_instance *ri,
->  	entry->ret_ip = (unsigned long)ri->ret_addr;
->  	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
->  
-> -	if (!filter_check_discard(ftrace_file, entry, buffer, event))
-> +	if (eflags & FTRACE_EVENT_FL_TRIGGER_COND)
-> +		__tt = event_triggers_call(ftrace_file, entry);
-> +
-> +	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
-> +		ring_buffer_discard_commit(buffer, event);
-> +	else if (!filter_check_discard(ftrace_file, entry, buffer, event))
->  		trace_buffer_unlock_commit_regs(buffer, event,
->  						irq_flags, pc, regs);
-> +	if (__tt)
-> +		event_triggers_post_call(ftrace_file, __tt);
->  }
->  
->  static __kprobes void
-> 
-
+Thanks!
 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
