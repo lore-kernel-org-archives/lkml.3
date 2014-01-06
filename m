@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757296AbaAFXDw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 18:03:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48515 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933190AbaAFWlz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933187AbaAFWlz (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 Jan 2014 17:41:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48503 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933111AbaAFWlx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 17:41:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emil Goode <emilgoode@gmail.com>, Sage Weil <sage@inktank.com>
-Subject: [PATCH 3.10 092/129] ceph: improve error handling in ceph_mdsmap_decode
-Date: Mon,  6 Jan 2014 14:38:41 -0800
-Message-Id: <20140106223902.235607416@linuxfoundation.org>
+        Josh Durgin <josh.durgin@inktank.com>, Alex Elder <elder@linaro.org>
+Subject: [PATCH 3.10 116/129] rbd: fix use-after free of rbd_dev->disk
+Date: Mon,  6 Jan 2014 14:39:05 -0800
+Message-Id: <20140106223902.909305873@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -28,43 +28,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emil Goode <emilgoode@gmail.com>
+From: Josh Durgin <josh.durgin@inktank.com>
 
-commit c213b50b7dcbf06abcfbf1e4eee5b76586718bd9 upstream.
+commit 9875201e10496612080e7d164acc8f625c18725c upstream.
 
-This patch makes the following improvements to the error handling
-in the ceph_mdsmap_decode function:
+Removing a device deallocates the disk, unschedules the watch, and
+finally cleans up the rbd_dev structure. rbd_dev_refresh(), called
+from the watch callback, updates the disk size and rbd_dev
+structure. With no locking between them, rbd_dev_refresh() may use the
+device or rbd_dev after they've been freed.
 
-- Add a NULL check for return value from kcalloc
-- Make use of the variable err
+To fix this, check whether RBD_DEV_FLAG_REMOVING is set before
+updating the disk size in rbd_dev_refresh(). In order to prevent a
+race where rbd_dev_refresh() is already revalidating the disk when
+rbd_remove() is called, move the call to rbd_bus_del_dev() after the
+watch is unregistered and all notifies are complete. It's safe to
+defer deleting this structure because no new requests can be submitted
+once the RBD_DEV_FLAG_REMOVING is set, since the device cannot be
+opened.
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
-Signed-off-by: Sage Weil <sage@inktank.com>
+Fixes: http://tracker.ceph.com/issues/5636
+Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
+Reviewed-by: Alex Elder <elder@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ceph/mdsmap.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/block/rbd.c |   40 +++++++++++++++++++++++++++++++++-------
+ 1 file changed, 33 insertions(+), 7 deletions(-)
 
---- a/fs/ceph/mdsmap.c
-+++ b/fs/ceph/mdsmap.c
-@@ -138,6 +138,8 @@ struct ceph_mdsmap *ceph_mdsmap_decode(v
- 				m->m_info[mds].export_targets =
- 					kcalloc(num_export_targets, sizeof(u32),
- 						GFP_NOFS);
-+				if (m->m_info[mds].export_targets == NULL)
-+					goto badmem;
- 				for (j = 0; j < num_export_targets; j++)
- 					m->m_info[mds].export_targets[j] =
- 					       ceph_decode_32(&pexport_targets);
-@@ -170,7 +172,7 @@ bad:
- 		       DUMP_PREFIX_OFFSET, 16, 1,
- 		       start, end - start, true);
- 	ceph_mdsmap_destroy(m);
--	return ERR_PTR(-EINVAL);
-+	return ERR_PTR(err);
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -3336,6 +3336,31 @@ static void rbd_exists_validate(struct r
+ 		clear_bit(RBD_DEV_FLAG_EXISTS, &rbd_dev->flags);
  }
  
- void ceph_mdsmap_destroy(struct ceph_mdsmap *m)
++static void rbd_dev_update_size(struct rbd_device *rbd_dev)
++{
++	sector_t size;
++	bool removing;
++
++	/*
++	 * Don't hold the lock while doing disk operations,
++	 * or lock ordering will conflict with the bdev mutex via:
++	 * rbd_add() -> blkdev_get() -> rbd_open()
++	 */
++	spin_lock_irq(&rbd_dev->lock);
++	removing = test_bit(RBD_DEV_FLAG_REMOVING, &rbd_dev->flags);
++	spin_unlock_irq(&rbd_dev->lock);
++	/*
++	 * If the device is being removed, rbd_dev->disk has
++	 * been destroyed, so don't try to update its size
++	 */
++	if (!removing) {
++		size = (sector_t)rbd_dev->mapping.size / SECTOR_SIZE;
++		dout("setting size to %llu sectors", (unsigned long long)size);
++		set_capacity(rbd_dev->disk, size);
++		revalidate_disk(rbd_dev->disk);
++	}
++}
++
+ static int rbd_dev_refresh(struct rbd_device *rbd_dev)
+ {
+ 	u64 mapping_size;
+@@ -3354,12 +3379,7 @@ static int rbd_dev_refresh(struct rbd_de
+ 	rbd_exists_validate(rbd_dev);
+ 	mutex_unlock(&ctl_mutex);
+ 	if (mapping_size != rbd_dev->mapping.size) {
+-		sector_t size;
+-
+-		size = (sector_t)rbd_dev->mapping.size / SECTOR_SIZE;
+-		dout("setting size to %llu sectors", (unsigned long long)size);
+-		set_capacity(rbd_dev->disk, size);
+-		revalidate_disk(rbd_dev->disk);
++		rbd_dev_update_size(rbd_dev);
+ 	}
+ 
+ 	return ret;
+@@ -5147,7 +5167,6 @@ static ssize_t rbd_remove(struct bus_typ
+ 	if (ret < 0 || already)
+ 		goto done;
+ 
+-	rbd_bus_del_dev(rbd_dev);
+ 	ret = rbd_dev_header_watch_sync(rbd_dev, false);
+ 	if (ret)
+ 		rbd_warn(rbd_dev, "failed to cancel watch event (%d)\n", ret);
+@@ -5158,6 +5177,13 @@ static ssize_t rbd_remove(struct bus_typ
+ 	 */
+ 	dout("%s: flushing notifies", __func__);
+ 	ceph_osdc_flush_notifies(&rbd_dev->rbd_client->client->osdc);
++	/*
++	 * Don't free anything from rbd_dev->disk until after all
++	 * notifies are completely processed. Otherwise
++	 * rbd_bus_del_dev() will race with rbd_watch_cb(), resulting
++	 * in a potential use after free of rbd_dev->disk or rbd_dev.
++	 */
++	rbd_bus_del_dev(rbd_dev);
+ 	rbd_dev_image_release(rbd_dev);
+ 	module_put(THIS_MODULE);
+ 	ret = count;
 
 
