@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933150AbaAFWlu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:41:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48460 "EHLO
+	id S933090AbaAFXG7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:06:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48487 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933024AbaAFWln (ORCPT
+	with ESMTP id S933143AbaAFWlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:43 -0500
+	Mon, 6 Jan 2014 17:41:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>, Sage Weil <sage@inktank.com>
-Subject: [PATCH 3.10 106/129] libceph: fix error handling in handle_reply()
-Date: Mon,  6 Jan 2014 14:38:55 -0800
-Message-Id: <20140106223902.632665179@linuxfoundation.org>
+        Josh Durgin <josh.durgin@inktank.com>, Sage Weil <sage@inktank.com>,
+        Alex Elder <alex.elder@linaro.org>
+Subject: [PATCH 3.10 112/129] rbd: fix null dereference in dout
+Date: Mon,  6 Jan 2014 14:39:01 -0800
+Message-Id: <20140106223902.799208515@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -28,50 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Josh Durgin <josh.durgin@inktank.com>
 
-commit 1874119664dafda3ef2ed9b51b4759a9540d4a1a upstream.
+commit c35455791c1131e7ccbf56ea6fbdd562401c2ce2 upstream.
 
-We've tried to fix the error paths in this function before, but there
-is still a hidden goto in the ceph_decode_need() macro which goes to the
-wrong place.  We need to release the "req" and unlock a mutex before
-returning.
+The order parameter is sometimes NULL in _rbd_dev_v2_snap_size(), but
+the dout() always derefences it. Move this to another dout() protected
+by a check that order is non-NULL.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
 Reviewed-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Alex Elder <alex.elder@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ceph/osd_client.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/block/rbd.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -1488,14 +1488,14 @@ static void handle_reply(struct ceph_osd
- 	dout("handle_reply %p tid %llu req %p result %d\n", msg, tid,
- 	     req, result);
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -3712,12 +3712,14 @@ static int _rbd_dev_v2_snap_size(struct
+ 	if (ret < sizeof (size_buf))
+ 		return -ERANGE;
  
--	ceph_decode_need(&p, end, 4, bad);
-+	ceph_decode_need(&p, end, 4, bad_put);
- 	numops = ceph_decode_32(&p);
- 	if (numops > CEPH_OSD_MAX_OP)
- 		goto bad_put;
- 	if (numops != req->r_num_ops)
- 		goto bad_put;
- 	payload_len = 0;
--	ceph_decode_need(&p, end, numops * sizeof(struct ceph_osd_op), bad);
-+	ceph_decode_need(&p, end, numops * sizeof(struct ceph_osd_op), bad_put);
- 	for (i = 0; i < numops; i++) {
- 		struct ceph_osd_op *op = p;
- 		int len;
-@@ -1513,7 +1513,7 @@ static void handle_reply(struct ceph_osd
- 		goto bad_put;
- 	}
+-	if (order)
++	if (order) {
+ 		*order = size_buf.order;
++		dout("  order %u", (unsigned int)*order);
++	}
+ 	*snap_size = le64_to_cpu(size_buf.size);
  
--	ceph_decode_need(&p, end, 4 + numops * 4, bad);
-+	ceph_decode_need(&p, end, 4 + numops * 4, bad_put);
- 	retry_attempt = ceph_decode_32(&p);
- 	for (i = 0; i < numops; i++)
- 		req->r_reply_op_result[i] = ceph_decode_32(&p);
+-	dout("  snap_id 0x%016llx order = %u, snap_size = %llu\n",
+-		(unsigned long long)snap_id, (unsigned int)*order,
++	dout("  snap_id 0x%016llx snap_size = %llu\n",
++		(unsigned long long)snap_id,
+ 		(unsigned long long)*snap_size);
+ 
+ 	return 0;
 
 
