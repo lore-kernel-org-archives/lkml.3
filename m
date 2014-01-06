@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755870AbaAFSKQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 13:10:16 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48035 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755838AbaAFSKO (ORCPT
+	id S1755882AbaAFSKt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 13:10:49 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:60464 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755320AbaAFSKr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 13:10:14 -0500
-Date: Mon, 6 Jan 2014 18:09:58 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        Vince Hsu <vinceh@nvidia.com>
-Message-ID: <20140106180958.GR31886@sirena.org.uk>
-References: <1388094527-7585-1-git-send-email-abrestic@chromium.org>
+	Mon, 6 Jan 2014 13:10:47 -0500
+Date: Mon, 6 Jan 2014 10:10:43 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] mfd: ti_am335x_tscadc: Don't read back REG_SE
+Message-ID: <20140106181043.GC2754@core.coreip.homeip.net>
+References: <1387466911-3732-1-git-send-email-bigeasy@linutronix.de>
+ <1387466911-3732-4-git-send-email-bigeasy@linutronix.de>
+ <20140106093525.GE23772@lee--X1>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/wUBB1VsywAzobeC"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1388094527-7585-1-git-send-email-abrestic@chromium.org>
-X-Cookie: Go climb a gravity well!
+In-Reply-To: <20140106093525.GE23772@lee--X1>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] regulator: as3722: detect SD0 low-voltage mode
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 06, 2014 at 09:35:25AM +0000, Lee Jones wrote:
+> On Thu, 19 Dec 2013, Sebastian Andrzej Siewior wrote:
+> 
+> > The purpose of reg_se_cache has been defeated. It should avoid the
+> > read-back of the register to avoid the latency and the fact that the
+> > bits are reset to 0 after the individual conversation took place.
+> > 
+> > The reason why this is required like this to work, is that read-back of
+> > the register removes the bits of the ADC so they do not start another
+> > conversation after the register is re-written from the TSC side for the
+> > update.
+> > To avoid the not required read-back I introduce a "set once" variant which
+> > does not update the cache mask. After the conversation completes, the
+> > bit is removed from the SE register anyway and we don't plan a new
+> > conversation "any time soon". The current set function is renamed to
+> > set_cache to distinguish the two operations.
+> > This is a small preparation for a larger sync-rework.
+> > 
+> > Acked-by: Lee Jones <lee.jones@linaro.org>
+> > Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> > ---
+> >  drivers/iio/adc/ti_am335x_adc.c           |  4 ++--
+> >  drivers/input/touchscreen/ti_am335x_tsc.c |  4 ++--
+> 
+> Just need Dmitry's Ack now.
 
---/wUBB1VsywAzobeC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Well, that has nothing to do with input per se but rather inner workings
+of the device. But yes, FWIW:
 
-On Thu, Dec 26, 2013 at 01:48:46PM -0800, Andrew Bresticker wrote:
-> SD0 may operate in low-voltage mode, with a minimum of 0.41V
-> and a maximum of 1.5V.  This is indicated by bit 4 of FUSE7.
+Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-Applied both, thanks.
+Thanks.
 
---/wUBB1VsywAzobeC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSyvFzAAoJELSic+t+oim9TewP/3Afpm5cwpf4p7pCX9wt1ks9
-IDd19TktBze3ZqZ+8RBE6xCcEyfyT5IEK7FVcGzQWsl1LlgcIBlT7h6F6UVf3T1g
-wCa0BH3GbVuyLYD777hOSs61MwwuY3Wawjrq2BuYSgaeGJ0TIBmNJsOF5lbwMyvL
-8q2phBD5zCZx2qdyO3wNLXbGUxzWqN2aridOsyacWQq5RghXT7dpevbf9ZFOcK8M
-2V8Qr5+y63R3uhxtcKVrJzVuy6+lByikCQbA814kuEy0WFC4YipsT6xkGdIjkk7n
-TNaXyAIB/S/wfM4tat6vtjXHi0aMRt9oX59LNYuz9+B8mI5SjmNFmm5oqeyO1ezg
-JvuQ5Y/+7Gp5CcKHnkYz7uq6wlTOGjg7gfkMxqp/wys5K631nlJjrmGZQU4tKafy
-Cfi+I8v8bI9iWoFyttcgOB8AHJm828XVhqBaF96NqRcZRdRXQDxz6KVYLtDc3wdr
-W2T173PPdjFH9UgiI1hrq3+C9ISdsuQW2lPELO+8vtoggMwP+KknPAQ6X66knPRU
-lfJqv+hLf1w5QHhWNN0UbXk3xtibM6D5ds/ddaRHiS77PB8gVwDBXsuZ/om/+8ni
-33BYnaXuLEBoN/QaXeNyLer00f/s8XsWL4Drs+4oqLEkin7kTRpbNfJGQYg5MXJi
-ZCkAOQXkaXUjTmpExnKW
-=o9xp
------END PGP SIGNATURE-----
-
---/wUBB1VsywAzobeC--
+-- 
+Dmitry
