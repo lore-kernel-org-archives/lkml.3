@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932531AbaAFWjo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:39:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47752 "EHLO
+	id S1757880AbaAFXrk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:47:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47831 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932468AbaAFWjd (ORCPT
+	with ESMTP id S932524AbaAFWjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:39:33 -0500
+	Mon, 6 Jan 2014 17:39:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rob Herring <robh@kernel.org>
-Subject: [PATCH 3.12 109/144] Revert "of/address: Handle #address-cells > 2 specially"
-Date: Mon,  6 Jan 2014 14:37:50 -0800
-Message-Id: <20140106223748.478305429@linuxfoundation.org>
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Mel Gorman <mgorman@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 119/144] mm: page_alloc: revert NUMA aspect of fair allocation policy
+Date: Mon,  6 Jan 2014 14:38:00 -0800
+Message-Id: <20140106223748.758385130@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
 References: <20140106223745.326293132@linuxfoundation.org>
@@ -28,118 +30,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rob Herring <robh@kernel.org>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit 13fcca8f25f4e9ce7f55da9cd353bb743236e212 upstream.
+commit fff4068cba484e6b0abe334ed6b15d5a215a3b25 upstream.
 
-This reverts commit e38c0a1fbc5803cbacdaac0557c70ac8ca5152e7.
+Commit 81c0a2bb515f ("mm: page_alloc: fair zone allocator policy") meant
+to bring aging fairness among zones in system, but it was overzealous
+and badly regressed basic workloads on NUMA systems.
 
-Nikita Yushchenko reports:
-While trying to make freescale p2020ds and  mpc8572ds boards working
-with mainline kernel, I faced that commit e38c0a1f (Handle
+Due to the way kswapd and page allocator interacts, we still want to
+make sure that all zones in any given node are used equally for all
+allocations to maximize memory utilization and prevent thrashing on the
+highest zone in the node.
 
-Both these boards have uli1575 chip.
-Corresponding part in device tree is something like
+While the same principle applies to NUMA nodes - memory utilization is
+obviously improved by spreading allocations throughout all nodes -
+remote references can be costly and so many workloads prefer locality
+over memory utilization.  The original change assumed that
+zone_reclaim_mode would be a good enough predictor for that, but it
+turned out to be as indicative as a coin flip.
 
-                uli1575@0 {
-                        reg = <0x0 0x0 0x0 0x0 0x0>;
-                        #size-cells = <2>;
-                        #address-cells = <3>;
-                        ranges = <0x2000000 0x0 0x80000000
-                                  0x2000000 0x0 0x80000000
-                                  0x0 0x20000000
+Revert the NUMA aspect of the fairness until we can find a proper way to
+make it configurable and agree on a sane default.
 
-                                  0x1000000 0x0 0x0
-                                  0x1000000 0x0 0x0
-                                  0x0 0x10000>;
-                        isa@1e {
-...
-
-I.e. it has #address-cells = <3>
-
-With commit e38c0a1f reverted, devices under uli1575 are registered
-correctly, e.g. for rtc
-
-OF: ** translation for device /pcie@ffe09000/pcie@0/uli1575@0/isa@1e/rtc@70 **
-OF: bus is isa (na=2, ns=1) on /pcie@ffe09000/pcie@0/uli1575@0/isa@1e
-OF: translating address: 00000001 00000070
-OF: parent bus is default (na=3, ns=2) on /pcie@ffe09000/pcie@0/uli1575@0
-OF: walking ranges...
-OF: ISA map, cp=0, s=1000, da=70
-OF: parent translation for: 01000000 00000000 00000000
-OF: with offset: 70
-OF: one level translation: 00000000 00000000 00000070
-OF: parent bus is pci (na=3, ns=2) on /pcie@ffe09000/pcie@0
-OF: walking ranges...
-OF: default map, cp=a0000000, s=20000000, da=70
-OF: default map, cp=0, s=10000, da=70
-OF: parent translation for: 01000000 00000000 00000000
-OF: with offset: 70
-OF: one level translation: 01000000 00000000 00000070
-OF: parent bus is pci (na=3, ns=2) on /pcie@ffe09000
-OF: walking ranges...
-OF: PCI map, cp=0, s=10000, da=70
-OF: parent translation for: 01000000 00000000 00000000
-OF: with offset: 70
-OF: one level translation: 01000000 00000000 00000070
-OF: parent bus is default (na=2, ns=2) on /
-OF: walking ranges...
-OF: PCI map, cp=0, s=10000, da=70
-OF: parent translation for: 00000000 ffc10000
-OF: with offset: 70
-OF: one level translation: 00000000 ffc10070
-OF: reached root node
-
-With commit e38c0a1f in place, address translation fails:
-
-OF: ** translation for device /pcie@ffe09000/pcie@0/uli1575@0/isa@1e/rtc@70 **
-OF: bus is isa (na=2, ns=1) on /pcie@ffe09000/pcie@0/uli1575@0/isa@1e
-OF: translating address: 00000001 00000070
-OF: parent bus is default (na=3, ns=2) on /pcie@ffe09000/pcie@0/uli1575@0
-OF: walking ranges...
-OF: ISA map, cp=0, s=1000, da=70
-OF: parent translation for: 01000000 00000000 00000000
-OF: with offset: 70
-OF: one level translation: 00000000 00000000 00000070
-OF: parent bus is pci (na=3, ns=2) on /pcie@ffe09000/pcie@0
-OF: walking ranges...
-OF: default map, cp=a0000000, s=20000000, da=70
-OF: default map, cp=0, s=10000, da=70
-OF: not found !
-
-Thierry Reding confirmed this commit was not needed after all:
-"We ended up merging a different address representation for Tegra PCIe
-and I've confirmed that reverting this commit doesn't cause any obvious
-regressions. I think all other drivers in drivers/pci/host ended up
-copying what we did on Tegra, so I wouldn't expect any other breakage
-either."
-
-There doesn't appear to be a simple way to support both behaviours, so
-reverting this as nothing should be depending on the new behaviour.
-
-Signed-off-by: Rob Herring <robh@kernel.org>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/of/address.c |    8 --------
- 1 file changed, 8 deletions(-)
+ mm/page_alloc.c |   19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
 
---- a/drivers/of/address.c
-+++ b/drivers/of/address.c
-@@ -69,14 +69,6 @@ static u64 of_bus_default_map(__be32 *ad
- 		 (unsigned long long)cp, (unsigned long long)s,
- 		 (unsigned long long)da);
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1822,7 +1822,7 @@ static void zlc_clear_zones_full(struct
  
--	/*
--	 * If the number of address cells is larger than 2 we assume the
--	 * mapping doesn't specify a physical address. Rather, the address
--	 * specifies an identifier that must match exactly.
--	 */
--	if (na > 2 && memcmp(range, addr, na * 4) != 0)
--		return OF_BAD_ADDR;
--
- 	if (da < cp || da >= (cp + s))
- 		return OF_BAD_ADDR;
- 	return da - cp;
+ static bool zone_local(struct zone *local_zone, struct zone *zone)
+ {
+-	return node_distance(local_zone->node, zone->node) == LOCAL_DISTANCE;
++	return local_zone->node == zone->node;
+ }
+ 
+ static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
+@@ -1919,18 +1919,17 @@ zonelist_scan:
+ 		 * page was allocated in should have no effect on the
+ 		 * time the page has in memory before being reclaimed.
+ 		 *
+-		 * When zone_reclaim_mode is enabled, try to stay in
+-		 * local zones in the fastpath.  If that fails, the
+-		 * slowpath is entered, which will do another pass
+-		 * starting with the local zones, but ultimately fall
+-		 * back to remote zones that do not partake in the
+-		 * fairness round-robin cycle of this zonelist.
++		 * Try to stay in local zones in the fastpath.  If
++		 * that fails, the slowpath is entered, which will do
++		 * another pass starting with the local zones, but
++		 * ultimately fall back to remote zones that do not
++		 * partake in the fairness round-robin cycle of this
++		 * zonelist.
+ 		 */
+ 		if (alloc_flags & ALLOC_WMARK_LOW) {
+ 			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
+ 				continue;
+-			if (zone_reclaim_mode &&
+-			    !zone_local(preferred_zone, zone))
++			if (!zone_local(preferred_zone, zone))
+ 				continue;
+ 		}
+ 		/*
+@@ -2396,7 +2395,7 @@ static void prepare_slowpath(gfp_t gfp_m
+ 		 * thrash fairness information for zones that are not
+ 		 * actually part of this zonelist's round-robin cycle.
+ 		 */
+-		if (zone_reclaim_mode && !zone_local(preferred_zone, zone))
++		if (!zone_local(preferred_zone, zone))
+ 			continue;
+ 		mod_zone_page_state(zone, NR_ALLOC_BATCH,
+ 				    high_wmark_pages(zone) -
 
 
