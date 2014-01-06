@@ -1,96 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579AbaAFQz1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 11:55:27 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35921 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753767AbaAFQzX (ORCPT
+	id S1755701AbaAFQ4A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 11:56:00 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:36564 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753592AbaAFQz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 11:55:23 -0500
-Date: Mon, 6 Jan 2014 17:54:58 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, pjt@google.com,
-        Morten.Rasmussen@arm.com, cmetcalf@tilera.com, tony.luck@intel.com,
-        alex.shi@linaro.org, linaro-kernel@lists.linaro.org, rjw@sisk.pl,
-        paulmck@linux.vnet.ibm.com, corbet@lwn.net, tglx@linutronix.de,
-        len.brown@intel.com, amit.kucheria@linaro.org, james.hogan@imgtec.com,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        Dietmar.Eggemann@arm.com
-Subject: Re: [RFC] sched: CPU topology try
-Message-ID: <20140106165458.GV3694@twins.programming.kicks-ass.net>
-References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
- <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
- <52C3A0F1.3040803@linux.vnet.ibm.com>
- <20140106163341.GO31570@twins.programming.kicks-ass.net>
- <52CADBB9.1010704@linux.intel.com>
- <20140106164838.GR31570@twins.programming.kicks-ass.net>
+	Mon, 6 Jan 2014 11:55:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140106164838.GR31570@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <51bdf0e57ba941bf92b1d969631e440b@BLUPR03MB067.namprd03.prod.outlook.com>
+References: <1385703912-12800-1-git-send-email-shh.xie@gmail.com> <51bdf0e57ba941bf92b1d969631e440b@BLUPR03MB067.namprd03.prod.outlook.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Mon, 6 Jan 2014 08:55:16 -0800
+Message-ID: <CAGVrzcZoMC0hCWNspeViZjNmV39K1OuFT=c855WU_hRe6N6_ew@mail.gmail.com>
+Subject: Re: [PATCH 1/6][v3] phylib: Add Clause 45 read/write functions
+To: Shaohui Xie <Shaohui.Xie@freescale.com>
+Cc: "shh.xie@gmail.com" <shh.xie@gmail.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "jg1.han@samsung.com" <jg1.han@samsung.com>,
+        "mugunthanvnm@ti.com" <mugunthanvnm@ti.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 05:48:38PM +0100, Peter Zijlstra wrote:
-> On Mon, Jan 06, 2014 at 08:37:13AM -0800, Arjan van de Ven wrote:
-> > On 1/6/2014 8:33 AM, Peter Zijlstra wrote:
-> > >On Wed, Jan 01, 2014 at 10:30:33AM +0530, Preeti U Murthy wrote:
-> > >>The design looks good to me. In my opinion information like P-states and
-> > >>C-states dependency can be kept separate from the topology levels, it
-> > >>might get too complicated unless the information is tightly coupled to
-> > >>the topology.
-> > >
-> > >I'm not entirely convinced we can keep them separated, the moment we
-> > >have multiple CPUs sharing a P or C state we need somewhere to manage
-> > >the shared state and the domain tree seems like the most natural place
-> > >for this.
-> > >
-> > >Now it might well be both P and C states operate at 'natural' domains
-> > >which we already have so it might be 'easy'.
-> > 
-> > more than that though.. P and C state sharing is mostly hidden from the OS
-> > (because the OS does not have the ability to do this; e.g. there are things
-> > that do "if THIS cpu goes idle, the OTHER cpu P state changes automatic".
-> > 
-> > that's not just on x86, the ARM guys (iirc at least the latest snapdragon)  are going in that
-> > direction as well.....
-> > 
-> > for those systems, the OS really should just make local decisions and let the hardware
-> > cope with hardware grouping.
-> 
-> AFAICT this is a chicken-egg problem, the OS never did anything useful
-> with it so the hardware guys are now trying to do something with it, but
-> this also means that if we cannot predict what the hardware will do
-> under certain circumstances the OS really cannot do anything smart
-> anymore.
-> 
-> So yes, for certain hardware we'll just have to give up and not do
-> anything.
-> 
-> That said, some hardware still does allow us to do something and for
-> those we do need some of this.
-> 
-> Maybe if the OS becomes smart enough the hardware guys will give us some
-> control again, who knows.
-> 
-> So yes, I'm entirely fine saying that some chips are fucked and we can't
-> do anything sane with them.. Fine they get to sort things themselves.
+2014/1/5 Shaohui Xie <Shaohui.Xie@freescale.com>:
+> Hi, All,
+>
+> I saw the state of this patch sets were set to "Deferred", may I know if there is any plan or request for these patches, or is there a big picture for supporting 10G PHYs?
 
-That is; you're entirely unhelpful and I'm tempting to stop listening
-to whatever you have to say on the subject.
+Can you resubmit the latest version of the patchset, I somehow lost
+track of which version is the last one, this would bring a new
+patchset in patchwork for David to review.
 
-Most of your emails are about how stuff cannot possibly work; without
-saying how things can work.
+>
+> Best Regards,
+> Shaohui Xie
+>
+>
+>> -----Original Message-----
+>> From: shh.xie@gmail.com [mailto:shh.xie@gmail.com]
+>> Sent: Friday, November 29, 2013 1:45 PM
+>> To: davem@davemloft.net; jg1.han@samsung.com; mugunthanvnm@ti.com;
+>> f.fainelli@gmail.com; netdev@vger.kernel.org; linux-
+>> kernel@vger.kernel.org
+>> Cc: Xie Shaohui-B21989
+>> Subject: [PATCH 1/6][v3] phylib: Add Clause 45 read/write functions
+>>
+>> From: Andy Fleming <afleming@freescale.com>
+>>
+>> Need an extra parameter to read or write Clause 45 PHYs, so need a
+>> different API with the extra parameter.
+>>
+>> Signed-off-by: Andy Fleming <afleming@freescale.com>
+>> Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
+>> ---
+>> v3 changes: add C45 check.
+>>
+>>  include/linux/phy.h | 39 +++++++++++++++++++++++++++++++++++++++
+>>  1 file changed, 39 insertions(+)
+>>
+>> diff --git a/include/linux/phy.h b/include/linux/phy.h index
+>> 48a4dc3..0ff2476 100644
+>> --- a/include/linux/phy.h
+>> +++ b/include/linux/phy.h
+>> @@ -498,6 +498,24 @@ static inline int phy_read(struct phy_device *phydev,
+>> u32 regnum)  }
+>>
+>>  /**
+>> + * phy_read_mmd - Convenience function for reading a register
+>> + * from an MMD on a given PHY.
+>> + * @phydev: The phy_device struct
+>> + * @devad: The MMD to read from
+>> + * @regnum: The register on the MMD to read
+>> + *
+>> + * Same rules as for phy_read();
+>> + */
+>> +static inline int phy_read_mmd(struct phy_device *phydev, int devad,
+>> +u32 regnum) {
+>> +     if (!phydev->is_c45)
+>> +             return -EOPNOTSUPP;
+>> +
+>> +     return mdiobus_read(phydev->bus, phydev->addr,
+>> +             MII_ADDR_C45 | (devad << 16) | (regnum & 0xffff)); }
+>> +
+>> +/**
+>>   * phy_write - Convenience function for writing a given PHY register
+>>   * @phydev: the phy_device struct
+>>   * @regnum: register number to write
+>> @@ -533,6 +551,27 @@ static inline bool phy_is_internal(struct phy_device
+>> *phydev)
+>>       return phydev->is_internal;
+>>  }
+>>
+>> +/**
+>> + * phy_write_mmd - Convenience function for writing a register
+>> + * on an MMD on a given PHY.
+>> + * @phydev: The phy_device struct
+>> + * @devad: The MMD to read from
+>> + * @regnum: The register on the MMD to read
+>> + * @val: value to write to @regnum
+>> + *
+>> + * Same rules as for phy_write();
+>> + */
+>> +static inline int phy_write_mmd(struct phy_device *phydev, int devad,
+>> +             u32 regnum, u16 val)
+>> +{
+>> +     if (!phydev->is_c45)
+>> +             return -EOPNOTSUPP;
+>> +
+>> +     regnum = MII_ADDR_C45 | ((devad & 0x1f) << 16) | (regnum & 0xffff);
+>> +
+>> +     return mdiobus_write(phydev->bus, phydev->addr, regnum, val); }
+>> +
+>>  struct phy_device *phy_device_create(struct mii_bus *bus, int addr, int
+>> phy_id,
+>>               bool is_c45, struct phy_c45_device_ids *c45_ids);  struct
+>> phy_device *get_phy_device(struct mii_bus *bus, int addr, bool is_c45);
+>> --
+>> 1.8.4.1
+>
 
-The entire point of adding P and C state information to the scheduler is
-so that we CAN do cross cpu decisions, but if you're saying we shouldn't
-attempt because you can't say how the hardware will react anyway; fine
-we'll ignore Intel hardware from now on.
 
-So bloody stop saying what cannot work and start telling how we can make
-useful cross cpu decisions.
+
+-- 
+Florian
