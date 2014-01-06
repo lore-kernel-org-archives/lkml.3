@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933037AbaAFWle (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:41:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48399 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756944AbaAFWla (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:41:30 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nithin Nayak Sujir <nsujir@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 051/129] tg3: Expand 4g_overflow_test workaround to skb fragments of any size.
-Date: Mon,  6 Jan 2014 14:38:00 -0800
-Message-Id: <20140106223901.065495812@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
-References: <20140106223859.589799655@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S933455AbaAFXNS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:13:18 -0500
+Received: from gate.crashing.org ([63.228.1.57]:38194 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933425AbaAFXNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 18:13:15 -0500
+Message-ID: <1389049979.12906.11.camel@pasglop>
+Subject: Re: linux-next: build failure after merge of the final tree
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+Date: Tue, 07 Jan 2014 10:12:59 +1100
+In-Reply-To: <20140106202856.5630590efc4bd6a466b7a668@canb.auug.org.au>
+References: <20140106202856.5630590efc4bd6a466b7a668@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Mon, 2014-01-06 at 20:28 +1100, Stephen Rothwell wrote:
+> Hi all,
+> 
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+> 
+> arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
+> arch/powerpc/kernel/exceptions-64s.S:1312: Error: attempt to move .org backwards
+> 
+> The last time I got this error, I needed to apply patch "powerpc: Fix
+> "attempt to move .org backwards" error", but that has been included in
+> the powerpc tree now, so I guess something else has added code in a
+> critical place. :-(
+> 
+> I have just left this broken for today.
 
-------------------
+I had to modify that patch when applying it, it's possible that the
+"new" version isn't making as much room. Without that change it would
+fail the build on some of my configs due to some of the asm for the
+maskable exception handling being too far from the conditional branches
+that calls it.
 
-From: Nithin Sujir <nsujir@broadcom.com>
+I think it's time we do a bit of re-org of that file to figure out
+precisely what has to be where and move things out more aggressively.
 
-commit 375679104ab3ccfd18dcbd7ba503734fb9a2c63a upstream.
-
-The current driver assumes that an skb fragment can only be upto jumbo
-size. Presumably this was a fast-path optimization. This assumption is
-no longer true as fragments can be upto 32k.
-
-v2: Remove unnecessary parantheses per Eric Dumazet.
-
-Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/net/ethernet/broadcom/tg3.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -7482,7 +7482,7 @@ static inline int tg3_4g_overflow_test(d
- {
- 	u32 base = (u32) mapping & 0xffffffff;
- 
--	return (base > 0xffffdcc0) && (base + len + 8 < base);
-+	return base + len + 8 < base;
- }
- 
- /* Test for TSO DMA buffers that cross into regions which are within MSS bytes
+Cheers,
+Ben.
 
 
