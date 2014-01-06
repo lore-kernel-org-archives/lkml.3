@@ -1,58 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450AbaAFLct (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 06:32:49 -0500
-Received: from www.linutronix.de ([62.245.132.108]:51446 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753933AbaAFLcs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 06:32:48 -0500
-Date: Mon, 6 Jan 2014 12:32:30 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>, 723180@bugs.debian.org,
-        Brian Silverman <bsilver16384@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-rt-users@vger.kernel.org
-Subject: Re: [PATCH] Revert "x86: Disable IST stacks for debug/int 3/stack
- fault for PREEMPT_RT"
-Message-ID: <20140106113230.GA25261@linutronix.de>
-References: <20130917061329.4872.51468.reportbug@dell-inspiron-linux.dlinkrouter>
- <1379427451.23881.48.camel@deadeye.wl.decadent.org.uk>
- <CAP01z6LVxoA6kDJeL8NuO2aA22BjMvXSk9ZY7z9cOK1=k56vpg@mail.gmail.com>
- <1379905562.3913.8.camel@deadeye.wl.decadent.org.uk>
- <CAP01z6+j6moUio9pc3G3iz+ebJCdKEvngddxnxazRP+NXwLkyg@mail.gmail.com>
- <1380115449.4430.21.camel@deadeye.wl.decadent.org.uk>
- <52AE0419.3050103@linutronix.de>
- <20140103135548.GA6327@linutronix.de>
- <20140104181807.GS20765@two.firstfloor.org>
+	id S1754497AbaAFLdx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 06:33:53 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:9818 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752857AbaAFLdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 06:33:52 -0500
+X-IronPort-AV: E=Sophos;i="4.95,612,1384300800"; 
+   d="scan'208";a="87845836"
+Date: Mon, 6 Jan 2014 11:33:00 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
+        <hpa@zytor.com>, Mukesh Rathor <mukesh.rathor@oracle.com>
+Subject: Re: [PATCH v13 08/19] xen/pvh/mmu: Use PV TLB instead of native.
+In-Reply-To: <20140105194155.GC12263@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1401061128130.8667@kaball.uk.xensource.com>
+References: <1388777916-1328-1-git-send-email-konrad.wilk@oracle.com> <1388777916-1328-9-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.02.1401051757260.8667@kaball.uk.xensource.com> <20140105194155.GC12263@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140104181807.GS20765@two.firstfloor.org>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Andi Kleen | 2014-01-04 19:18:07 [+0100]:
+On Sun, 5 Jan 2014, Konrad Rzeszutek Wilk wrote:
+> On Sun, Jan 05, 2014 at 06:11:39PM +0000, Stefano Stabellini wrote:
+> > On Fri, 3 Jan 2014, Konrad Rzeszutek Wilk wrote:
+> > > From: Mukesh Rathor <mukesh.rathor@oracle.com>
+> > > 
+> > > We also optimize one - the TLB flush. The native operation would
+> > > needlessly IPI offline VCPUs causing extra wakeups. Using the
+> > > Xen one avoids that and lets the hypervisor determine which
+> > > VCPU needs the TLB flush.
+> > > 
+> > > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+> > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > > ---
+> > >  arch/x86/xen/mmu.c | 9 +++++++++
+> > >  1 file changed, 9 insertions(+)
+> > > 
+> > > diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> > > index 490ddb3..c1d406f 100644
+> > > --- a/arch/x86/xen/mmu.c
+> > > +++ b/arch/x86/xen/mmu.c
+> > > @@ -2222,6 +2222,15 @@ static const struct pv_mmu_ops xen_mmu_ops __initconst = {
+> > >  void __init xen_init_mmu_ops(void)
+> > >  {
+> > >  	x86_init.paging.pagetable_init = xen_pagetable_init;
+> > > +
+> > > +	/* Optimization - we can use the HVM one but it has no idea which
+> > > +	 * VCPUs are descheduled - which means that it will needlessly IPI
+> > > +	 * them. Xen knows so let it do the job.
+> > > +	 */
+> > > +	if (xen_feature(XENFEAT_auto_translated_physmap)) {
+> > > +		pv_mmu_ops.flush_tlb_others = xen_flush_tlb_others;
+> > > +		return;
+> > > +	}
+> > >  	pv_mmu_ops = xen_mmu_ops;
+> > >  
+> > >  	memset(dummy_mapping, 0xff, PAGE_SIZE);
+> > 
+> > Regarding this patch, the next one and the other changes to
+> > xen_setup_shared_info, xen_setup_mfn_list_list,
+> > xen_setup_vcpu_info_placement, etc: considering that the mmu related
+> > stuff is very different between PV and PVH guests, I wonder if it makes
+> > any sense to keep calling xen_init_mmu_ops on PVH.
+> > 
+> > I would introduce a new function, xen_init_pvh_mmu_ops, that sets
+> > pv_mmu_ops.flush_tlb_others and only calls whatever is needed for PVH
+> > under a new xen_pvh_pagetable_init.
+> > Just to give you an idea, not even compiled tested:
+> 
+> There is something to be said about sharing the same code path
+> that "old-style" PV is using with the new-style - code coverage.
+> 
+> That is the code gets tested under both platforms and if I (or
+> anybody else) introduce a bug in the "common-PV-paths" it will
+> be immediately obvious as hopefully the regression tests
+> will pick it up.
+> 
+> It is not nice - as low-level code is sprinkled with the one-offs
+> for the PVH - which mostly is doing _less_.
 
->On Fri, Jan 03, 2014 at 02:55:48PM +0100, Sebastian Andrzej Siewior wrote:
->> where do I start. Let me explain what is going on here. The code
->> sequence
->
->Yes the IST stacks are needed for correctness, even in more cases than
->the example below. You cannot just disable them, just because you don't
->like them.
+I thought you would say that. However in this specific case the costs
+exceed the benefits. Think of all the times we'll have to debug
+something, we'll be staring at the code, and several dozens of minutes
+later we'll realize that the code we have been looking at all along is
+not actually executed in PVH mode.
 
-Andi, you were the Author of that patch.
-I plan to migrate from the IST stack to the kernel stack so I can enable
-preemption. This is he case on 32bit. You mention more cases than this.
-Could you please give me some examples so I can consider them?
 
->-Andi
-
-Sebastian
+> What I was thinking is to flip this around. Make the PVH paths
+> the default and then have something like 'if (!xen_pvh_domain())'
+> ... the big code.
+> 
+> Would you be OK with this line of thinking going forward say
+> after this patchset?
+ 
+I am not opposed to it in principle but I don't expect that you'll be
+able to improve things significantly.
