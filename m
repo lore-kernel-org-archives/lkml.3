@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932936AbaAFWkz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 17:40:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48162 "EHLO
+	id S1757397AbaAFX0Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 18:26:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48188 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932898AbaAFWkt (ORCPT
+	with ESMTP id S932930AbaAFWky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:40:49 -0500
+	Mon, 6 Jan 2014 17:40:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Anholt <eric@anholt.net>, Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.10 044/129] drm/i915: Hold mutex across i915_gem_release
-Date: Mon,  6 Jan 2014 14:37:53 -0800
-Message-Id: <20140106223900.858579766@linuxfoundation.org>
+        Kyung-Kwee Ryu <kyung-kwee.ryu@wolfsonmicro.com>,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.10 010/129] ASoC: wm5110: Correct HPOUT3 DAPM route typo
+Date: Mon,  6 Jan 2014 14:37:19 -0800
+Message-Id: <20140106223859.882340190@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140106223859.589799655@linuxfoundation.org>
 References: <20140106223859.589799655@linuxfoundation.org>
@@ -29,53 +30,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-commit 0d1430a3f4b7cfd8779b78740a4182321f3ca7f3 upstream.
+commit 280484e708a3cc38fe6807718caa460e744c0b20 upstream.
 
-Inorder to serialise the closing of the file descriptor and its
-subsequent release of client requests with i915_gem_free_request(), we
-need to hold the struct_mutex in i915_gem_release(). Failing to do so
-has the potential to trigger an OOPS, later with a use-after-free.
-
-Testcase: igt/gem_close_race
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=70874
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=71029
-Reported-by: Eric Anholt <eric@anholt.net>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reported-by: Kyung-Kwee Ryu <kyung-kwee.ryu@wolfsonmicro.com>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_dma.c         |    2 ++
- drivers/gpu/drm/i915/i915_gem_context.c |    2 --
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ sound/soc/codecs/wm5110.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1847,8 +1847,10 @@ void i915_driver_lastclose(struct drm_de
+--- a/sound/soc/codecs/wm5110.c
++++ b/sound/soc/codecs/wm5110.c
+@@ -897,7 +897,7 @@ static const struct snd_soc_dapm_route w
+ 	{ "HPOUT2R", NULL, "OUT2R" },
  
- void i915_driver_preclose(struct drm_device * dev, struct drm_file *file_priv)
- {
-+	mutex_lock(&dev->struct_mutex);
- 	i915_gem_context_close(dev, file_priv);
- 	i915_gem_release(dev, file_priv);
-+	mutex_unlock(&dev->struct_mutex);
- }
+ 	{ "HPOUT3L", NULL, "OUT3L" },
+-	{ "HPOUT3R", NULL, "OUT3L" },
++	{ "HPOUT3R", NULL, "OUT3R" },
  
- void i915_driver_postclose(struct drm_device *dev, struct drm_file *file)
---- a/drivers/gpu/drm/i915/i915_gem_context.c
-+++ b/drivers/gpu/drm/i915/i915_gem_context.c
-@@ -291,10 +291,8 @@ void i915_gem_context_close(struct drm_d
- {
- 	struct drm_i915_file_private *file_priv = file->driver_priv;
- 
--	mutex_lock(&dev->struct_mutex);
- 	idr_for_each(&file_priv->context_idr, context_idr_cleanup, NULL);
- 	idr_destroy(&file_priv->context_idr);
--	mutex_unlock(&dev->struct_mutex);
- }
- 
- static struct i915_hw_context *
+ 	{ "SPKOUTLN", NULL, "OUT4L" },
+ 	{ "SPKOUTLP", NULL, "OUT4L" },
 
 
