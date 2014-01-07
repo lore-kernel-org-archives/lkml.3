@@ -1,153 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212AbaAGMwQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 07:52:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21658 "EHLO mx1.redhat.com"
+	id S1752259AbaAGMwU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 07:52:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7542 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751720AbaAGMsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 07:48:08 -0500
+	id S1751673AbaAGMr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 07:47:59 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Ahern <dsahern@gmail.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Jean Pihet <jean.pihet@linaro.org>
-Subject: [PATCH 00/16] perf tools: Add libdw DWARF unwind support
-Date: Tue,  7 Jan 2014 13:47:17 +0100
-Message-Id: <1389098853-14466-1-git-send-email-jolsa@redhat.com>
+        David Ahern <dsahern@gmail.com>, Jean Pihet <jean.pihet@linaro.org>
+Subject: [PATCH 04/16] perf tests x86: Introduce perf_regs_load function
+Date: Tue,  7 Jan 2014 13:47:21 +0100
+Message-Id: <1389098853-14466-5-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1389098853-14466-1-git-send-email-jolsa@redhat.com>
+References: <1389098853-14466-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-adding libdw DWARF unwind support, which is part of just released
-elfutils package 0.158.
+Introducing perf_regs_load function, which is going
+to be used for dwarf unwind test in following patches.
 
-We can now compile perf to have either libunwind DWARF unwind,
-(which is still default) or the new one libdw unwind.
-
-Examples:
-  - compile in libdw unwinder if present:
-    $ make NO_LIBUNWIND=1
-
-  - compile in libdw (with libdw installation directory) unwinder if present:
-    $ make LIBDW_DIR=/opt/elfutils/ NO_LIBUNWIND=1
-
-  - disable post dwarf unwind completely:
-    $ make NO_LIBUNWIND=1 NO_LIBDW_DWARF_UNWIND=1
-
-Performance wise the libdw unwinder seems to be faster.
-Following results are from 2GB perf.data file with 249156
-samples:
-
-  The libdw unwind perf:
-  $ time perf report -i ~/perf.data > perf.data.ldw
-
-  real    0m35.746s
-  user    0m24.211s
-  sys     0m11.214s
-
-  The libunwind unwind perf:
-  $ time perf report -i ~/perf.data > perf.data.unw
-
-  real    1m41.149s
-  user    1m9.694s
-  sys     0m30.595s
-
-In example above I've got 2206 differences (perf.data.ldw and
-perf.data.unw files) in the callchains output out of the 249156
-samples which is below 1%. Together with some other tips for speed
-increase it's on my TODO list for future.
-
-Git tree:
-  https://git.kernel.org/cgit/linux/kernel/git/jolsa/perf.git/
-  perf/core_libdw_unwind
-
-Kudos to Jan Kratochvil for helping me with the new interface.
-
-Jean,
-I haven't tested on arm.. so not sure I broke anything there.
-Any chance you could test for me, and maybe make the automated
-test I added work there? ;-)
-
-thanks,
-jirka
-
+It takes single argument as a pointer to the regs dump
+buffer and populates it with current registers values.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Jan Kratochvil <jan.kratochvil@redhat.com>
 Cc: Jean Pihet <jean.pihet@linaro.org>
 ---
-Jiri Olsa (16):
-      perf tools: Automate setup of FEATURE_CHECK_(C|LD)FLAGS-all variables
-      perf tools: Fix machine initialization
-      perf tools: Make perf_event__synthesize_mmap_events global
-      perf tests x86: Introduce perf_regs_load function
-      perf tests x86: Add dwarf unwind test
-      perf tools: Fix dwarf unwind max_stack processing
-      perf tools: Do not report zero address in unwind
-      perf tools: Add mask into struct regs_dump
-      perf tools: Separate libunwind code to special object
-      perf tools: Rename unwind__arch_reg_id into libunwind__arch_reg_id
-      perf tools: Introduce HAVE_DWARF_UNWIND_SUPPORT macro
-      perf tools: Separate perf_reg_value function in perf_regs object
-      perf tools: Add feature check for libdw dwarf unwind
-      perf tools: Add libdw DWARF post unwind support
-      perf tools: Setup default dwarf post unwinder
-      perf tests: Add NO_LIBDW_DWARF_UNWIND make test
-
- tools/perf/Makefile.perf                                   |  19 ++++++-
- tools/perf/arch/arm/Makefile                               |   2 +-
- tools/perf/arch/arm/util/{unwind.c => unwind-libunwind.c}  |   2 +-
- tools/perf/arch/x86/Makefile                               |   9 +++-
- tools/perf/arch/x86/include/perf_regs.h                    |   6 +++
- tools/perf/arch/x86/tests/dwarf-unwind.c                   |  59 ++++++++++++++++++++
- tools/perf/arch/x86/tests/regs_load.S                      |  92 ++++++++++++++++++++++++++++++++
- tools/perf/arch/x86/util/unwind-libdw.c                    |  51 ++++++++++++++++++
- tools/perf/arch/x86/util/{unwind.c => unwind-libunwind.c}  |   4 +-
- tools/perf/builtin-inject.c                                |   1 -
- tools/perf/builtin-record.c                                |  10 ++--
- tools/perf/config/Makefile                                 |  94 +++++++++++++++++++++++---------
- tools/perf/config/feature-checks/Makefile                  |   6 ++-
- tools/perf/config/feature-checks/test-all.c                |   5 ++
- tools/perf/config/feature-checks/test-libdw-dwarf-unwind.c |  13 +++++
- tools/perf/tests/builtin-test.c                            |   8 +++
- tools/perf/tests/dwarf-unwind.c                            | 144 +++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/make                                      |  63 +++++++++++-----------
- tools/perf/tests/sample-parsing.c                          |  17 +++---
- tools/perf/tests/tests.h                                   |   9 ++++
- tools/perf/util/event.c                                    |  12 ++---
- tools/perf/util/event.h                                    |  12 ++++-
- tools/perf/util/evsel.c                                    |  13 ++---
- tools/perf/util/machine.c                                  |   4 +-
- tools/perf/util/perf_regs.c                                |  19 +++++++
- tools/perf/util/perf_regs.h                                |  13 +++++
- tools/perf/util/session.c                                  |   5 +-
- tools/perf/util/unwind-libdw.c                             | 210 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/unwind-libdw.h                             |  21 ++++++++
- tools/perf/util/{unwind.c => unwind-libunwind.c}           |  50 ++++++-----------
- tools/perf/util/unwind.h                                   |  11 ++--
- 31 files changed, 849 insertions(+), 135 deletions(-)
- rename tools/perf/arch/arm/util/{unwind.c => unwind-libunwind.c} (95%)
- create mode 100644 tools/perf/arch/x86/tests/dwarf-unwind.c
+ tools/perf/arch/x86/Makefile            |  1 +
+ tools/perf/arch/x86/include/perf_regs.h |  2 +
+ tools/perf/arch/x86/tests/regs_load.S   | 92 +++++++++++++++++++++++++++++++++
+ 3 files changed, 95 insertions(+)
  create mode 100644 tools/perf/arch/x86/tests/regs_load.S
- create mode 100644 tools/perf/arch/x86/util/unwind-libdw.c
- rename tools/perf/arch/x86/util/{unwind.c => unwind-libunwind.c} (95%)
- create mode 100644 tools/perf/config/feature-checks/test-libdw-dwarf-unwind.c
- create mode 100644 tools/perf/tests/dwarf-unwind.c
- create mode 100644 tools/perf/util/perf_regs.c
- create mode 100644 tools/perf/util/unwind-libdw.c
- create mode 100644 tools/perf/util/unwind-libdw.h
- rename tools/perf/util/{unwind.c => unwind-libunwind.c} (92%)
+
+diff --git a/tools/perf/arch/x86/Makefile b/tools/perf/arch/x86/Makefile
+index 8801fe0..1cbef73 100644
+--- a/tools/perf/arch/x86/Makefile
++++ b/tools/perf/arch/x86/Makefile
+@@ -4,6 +4,7 @@ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
+ endif
+ ifndef NO_LIBUNWIND
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind.o
++LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/regs_load.o
+ endif
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/tsc.o
+diff --git a/tools/perf/arch/x86/include/perf_regs.h b/tools/perf/arch/x86/include/perf_regs.h
+index e84ca76..f3435d62 100644
+--- a/tools/perf/arch/x86/include/perf_regs.h
++++ b/tools/perf/arch/x86/include/perf_regs.h
+@@ -5,6 +5,8 @@
+ #include "../../util/types.h"
+ #include <asm/perf_regs.h>
+ 
++void perf_regs_load(u64 *regs);
++
+ #ifndef HAVE_ARCH_X86_64_SUPPORT
+ #define PERF_REGS_MASK ((1ULL << PERF_REG_X86_32_MAX) - 1)
+ #else
+diff --git a/tools/perf/arch/x86/tests/regs_load.S b/tools/perf/arch/x86/tests/regs_load.S
+new file mode 100644
+index 0000000..99167bf
+--- /dev/null
++++ b/tools/perf/arch/x86/tests/regs_load.S
+@@ -0,0 +1,92 @@
++
++#include <linux/linkage.h>
++
++#define AX	 0
++#define BX	 1 * 8
++#define CX	 2 * 8
++#define DX	 3 * 8
++#define SI	 4 * 8
++#define DI	 5 * 8
++#define BP	 6 * 8
++#define SP	 7 * 8
++#define IP	 8 * 8
++#define FLAGS	 9 * 8
++#define CS	10 * 8
++#define SS	11 * 8
++#define DS	12 * 8
++#define ES	13 * 8
++#define FS	14 * 8
++#define GS	15 * 8
++#define R8	16 * 8
++#define R9	17 * 8
++#define R10	18 * 8
++#define R11	19 * 8
++#define R12	20 * 8
++#define R13	21 * 8
++#define R14	22 * 8
++#define R15	23 * 8
++
++.text
++#ifdef HAVE_ARCH_X86_64_SUPPORT
++ENTRY(perf_regs_load)
++	movq %rax, AX(%rdi)
++	movq %rbx, BX(%rdi)
++	movq %rcx, CX(%rdi)
++	movq %rdx, DX(%rdi)
++	movq %rsi, SI(%rdi)
++	movq %rdi, DI(%rdi)
++	movq %rbp, BP(%rdi)
++
++	leaq 8(%rsp), %rax /* exclude this call.  */
++	movq %rax, SP(%rdi)
++
++	movq 0(%rsp), %rax
++	movq %rax, IP(%rdi)
++
++	movq $0, FLAGS(%rdi)
++	movq $0, CS(%rdi)
++	movq $0, SS(%rdi)
++	movq $0, DS(%rdi)
++	movq $0, ES(%rdi)
++	movq $0, FS(%rdi)
++	movq $0, GS(%rdi)
++
++	movq %r8,  R8(%rdi)
++	movq %r9,  R9(%rdi)
++	movq %r10, R10(%rdi)
++	movq %r11, R11(%rdi)
++	movq %r12, R12(%rdi)
++	movq %r13, R13(%rdi)
++	movq %r14, R14(%rdi)
++	movq %r15, R15(%rdi)
++	ret
++ENDPROC(perf_regs_load)
++#else
++ENTRY(perf_regs_load)
++	push %edi
++	movl 8(%esp), %edi
++	movl %eax, AX(%edi)
++	movl %ebx, BX(%edi)
++	movl %ecx, CX(%edi)
++	movl %edx, DX(%edi)
++	movl %esi, SI(%edi)
++	pop %eax
++	movl %eax, DI(%edi)
++	movl %ebp, BP(%edi)
++
++	leal 4(%esp), %eax /* exclude this call.  */
++	movl %eax, SP(%edi)
++
++	movl 0(%esp), %eax
++	movl %eax, IP(%edi)
++
++	movl $0, FLAGS(%edi)
++	movl $0, CS(%edi)
++	movl $0, SS(%edi)
++	movl $0, DS(%edi)
++	movl $0, ES(%edi)
++	movl $0, FS(%edi)
++	movl $0, GS(%edi)
++	ret
++ENDPROC(perf_regs_load)
++#endif
+-- 
+1.8.3.1
+
