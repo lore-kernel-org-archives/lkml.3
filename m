@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676AbaAGPnD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 10:43:03 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:36069 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933AbaAGPm5 (ORCPT
+	id S1752780AbaAGPnq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 10:43:46 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48399 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752600AbaAGPnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 10:42:57 -0500
-Date: Tue, 7 Jan 2014 16:42:55 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
- tracing units
-Message-ID: <20140107154255.GB20765@two.firstfloor.org>
-References: <20131219103134.GD30183@twins.programming.kicks-ass.net>
- <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219112812.GY21999@twins.programming.kicks-ass.net>
- <20131219123955.GA18186@gmail.com>
- <87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219151024.GI16438@laptop.programming.kicks-ass.net>
- <87iotw6bwx.fsf@tassilo.jf.intel.com>
- <20140106221528.GK30183@twins.programming.kicks-ass.net>
- <8761pw6717.fsf@tassilo.jf.intel.com>
- <20140107083803.GM30183@twins.programming.kicks-ass.net>
+	Tue, 7 Jan 2014 10:43:37 -0500
+Date: Tue, 7 Jan 2014 15:43:29 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: lgirdwood@gmail.com, kuninori.morimoto.gx@renesas.com,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Message-ID: <20140107154329.GU31886@sirena.org.uk>
+References: <1389057222-16686-1-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2ZSvGCaIhjYEV086"
 Content-Disposition: inline
-In-Reply-To: <20140107083803.GM30183@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1389057222-16686-1-git-send-email-Li.Xiubo@freescale.com>
+X-Cookie: Go climb a gravity well!
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] ASoC: simple-card: fix the DAPM routes map parsing
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Yes; go read this:
-> 
->  lkml.kernel.org/r/20131219125205.GT3694@twins.programming.kicks-ass.net
 
-Hmm, but AFAIK we're not using freeze counters on PMI today.
-We just rely on the explicit disabling in the counters through the global
-ctrl.
+--2ZSvGCaIhjYEV086
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-So it should be the same as with any other PMI which also does not
-automatically freeze. Not true?
+On Tue, Jan 07, 2014 at 09:13:42AM +0800, Xiubo Li wrote:
+> The simple-card's DAPM route maping is optional.
 
-Or do you mean interaction with the LBRs here?
-(currently LBRs and PT are mutually exclusive)
+Applied both, thanks.
 
--Andi
+--2ZSvGCaIhjYEV086
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSzCCeAAoJELSic+t+oim98boQAIP47K4LnmefewL0oCUf+dfY
+swZZ1QJ/arGWFj8upNLBPUyg3hr8WR+QkVfT4CfFtn8mAKlrQFxG9jO3qVUjsZuG
+H3eLGh/B0bc4FsEZELSWaUgy9T+LUm7FMF7oGQVr4B41oIyXeCt4n+m0hxHExs9K
+G5zC6cKZVMrh7CbyJnbKJgzFxlIiIhz1sB2yQd18MucOnLyjgALU5UomKcSygwKH
+bpV1yTZ3Ml4tU+DDgVgCk2q2obXOdD09vPMIF8G+vOk/2ARX+hj6QLP9fw/Kx21v
+Rn4xBS4lyv803jPHpxn3hsAD1bmXUQC5Pc3zq0siZtQ2UhjO5cFmm+PPFAwP8sQt
+tSHBaX9xQB+/UmxU4pAqupRZ2X6n74/NHsTCl7dcaHt7TogC+YYngG6KJs8Plbfj
+/4vtIphsltRmEB0AGuqFP4APVOqW5Bur0v3KF3tgMCThBS5cU1XLGJH5rPvAGEzJ
+mtCcMNwKQBFDLlb4UeiF7UEqvl/XMl9part5Jxx4CbdnshJD1X2+LVj2HuENTAx8
+ffC6aPgPUTmAd/q9c67UiGSXmwE1Nzzj/MTTJTVHxO+z7lkJQGkOQJCZkd9mw8Bv
+98+SqKtpVGRg2iVzSaMn80IFnqwBG88Q9j+LrmpQOs1LYdzzdRPlWGkxiIEqp3nL
+Mg+J34Qf76zcpszRUUhs
+=O638
+-----END PGP SIGNATURE-----
+
+--2ZSvGCaIhjYEV086--
