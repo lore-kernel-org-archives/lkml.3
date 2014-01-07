@@ -1,72 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670AbaAGPZG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 10:25:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55854 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251AbaAGPY4 (ORCPT
+	id S1752712AbaAGPZb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 10:25:31 -0500
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:55862 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751303AbaAGPZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 10:24:56 -0500
-Date: Tue, 7 Jan 2014 07:25:13 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Shen Guang <shenguang10@gmail.com>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb:hub set hub->change_bits when over-current happens
-Message-ID: <20140107152513.GA2504@kroah.com>
-References: <CANthSfZij7=q1azM1wrRNDWjFY972zFpe4njBKr3bzUVsm5m-Q@mail.gmail.com>
- <20140107024050.GA8903@kroah.com>
- <CANthSfb+t53BZSXGe2VUUuHRYzphuT=-3vJtCSoERF_WChUr-A@mail.gmail.com>
- <20140107035312.GA13379@kroah.com>
- <CANthSfZGP1zHd2kog04DT6GO_0NrkyLuAm=oGpKWmQC+onYUBA@mail.gmail.com>
+	Tue, 7 Jan 2014 10:25:24 -0500
+Date: Tue, 7 Jan 2014 16:25:20 +0100
+From: Florian Westphal <fw@strlen.de>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Andrey Vagin <avagin@openvz.org>, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, vvs@openvz.org,
+        Florian Westphal <fw@strlen.de>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: Re: [PATCH] netfilter: nf_conntrack: fix RCU race in
+ nf_conntrack_find_get
+Message-ID: <20140107152520.GF9894@breakpoint.cc>
+References: <1389090711-15843-1-git-send-email-avagin@openvz.org>
+ <1389107305.26646.20.camel@edumazet-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CANthSfZGP1zHd2kog04DT6GO_0NrkyLuAm=oGpKWmQC+onYUBA@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1389107305.26646.20.camel@edumazet-glaptop2.roam.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 02:38:36PM +0800, Shen Guang wrote:
-> On Tue, Jan 7, 2014 at 11:53 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Tue, Jan 07, 2014 at 11:35:50AM +0800, 沈光 wrote:
-> >> On Tue, Jan 7, 2014 at 10:40 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> > On Tue, Jan 07, 2014 at 10:33:14AM +0800, 沈光 wrote:
-> >> >> set hub->change_bits when we plug in a device which causes
-> >> >> over-current condition, so that hub_events() will check it.
-> >> >
-> >> > Why?
-> >> >
-> >> > What does this solve?  Is this a bug with existing devices that needs to
-> >> > be backported to older kernels?
-> >> >
-> >> > thanks,
-> >> >
-> >> > greg k-h
-> >>
-> >> This is something that we found when we are doing compliance test with xHCI.
-> >> If we enable CONFIG_USB_SUSPEND, and plug in a bad device which causes
-> >> over-current condition to the root port, the hub->change_bits will not
-> >> be set in current code in the function of hub_activate.
-> >
-> > Now that's something that should go in the changelog, don't you think?
-> >
-> > thanks,
-> >
-> > greg k-h
+Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
+> > index 43549eb..7a34bb2 100644
+> > --- a/net/netfilter/nf_conntrack_core.c
+> > +++ b/net/netfilter/nf_conntrack_core.c
+> > @@ -387,8 +387,12 @@ begin:
+> >  			     !atomic_inc_not_zero(&ct->ct_general.use)))
+> >  			h = NULL;
+> >  		else {
+> > +			/* A conntrack can be recreated with the equal tuple,
+> > +			 * so we need to check that the conntrack is initialized
+> > +			 */
+> >  			if (unlikely(!nf_ct_tuple_equal(tuple, &h->tuple) ||
+> > -				     nf_ct_zone(ct) != zone)) {
+> > +				     nf_ct_zone(ct) != zone) ||
+> > +				     !nf_ct_is_confirmed(ct)) {
+> >  				nf_ct_put(ct);
+> >  				goto begin;
+> >  			}
 > 
-> Sure, I agree.
-> I am sorry I didn't make it clear enough.
-> And the reason why over-current can be detected if CONFIG_USB_SUSPEND
-> is disabled, is that the interrupt pipe of the hub will report the
-> change and set hub->event_bits, and then hub_events() will check what
-> events happened.
+> I do not think this is the right way to fix this problem (if said
+> problem is confirmed)
+> 
+> Remember the rule about SLAB_DESTROY_BY_RCU :
+> 
+> When a struct is freed, then reused, its important to set the its refcnt
+> (from 0 to 1) only when the structure is fully ready for use.
+> 
+> If a lookup finds a structure which is not yet setup, the
+> atomic_inc_not_zero() will fail.
 
-Great, care to resend the patch with all of this information added to
-it?
+Indeed.  But, the structure itself might be ready (or rather,
+can be ready since the allocation side will set the refcount to one
+after doing the initial work, such as zapping old ->status flags and
+setting tuple information).
 
-thanks,
+The problem is with nat extension area stored in the ct->ext area.
+This extension area is preallocated but the snat/dnat action
+information is only set up after the ct (or rather, the skb that grabbed
+a reference to the nf_conn entry) traverses nat pre/postrouting.
 
-greg k-h
+This will also set up a null-binding when no matching SNAT/DNAT/MASQERUADE
+rule existed.
+
+The manipulations of the skb->nfct->ext nat area are performed without
+a lock.  Concurrent access is supposedly impossible as the conntrack
+should not (yet) be in the hash table.
+
+The confirmed bit is set right before we insert the conntrack into
+the hash table (after we traversed rules, ct is ready to be
+'published').
+
+i.e. when the confirmed bit is NOT set we should not be 'seeing' the nf_conn
+struct when we perform the lookup, as it should still be sitting on the
+'unconfirmed' list, being invisible to readers.
+
+Does that explanation make sense to you?
+
+Thanks for looking into this.
