@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610AbaAGRXE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 12:23:04 -0500
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:25281 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574AbaAGRXB (ORCPT
+	id S1752957AbaAGRXx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 12:23:53 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:46335 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085AbaAGRXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 12:23:01 -0500
-X-AuditID: cbfec37c-b7f0d6d0000057bc-58-52cc37f4f807
-Message-id: <52CC37F1.6080704@samsung.com>
-Date: Tue, 07 Jan 2014 10:22:57 -0700
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.2.0
-MIME-version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-Cc: akpm@linux-foundation.org, alexander.h.duyck@intel.com,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH v2] dma-debug: enhance dma_debug_device_change() to check
- for mapping errors
-References: <1384376168-2148-1-git-send-email-shuah.kh@samsung.com>
- <20131230141511.GC2799@8bytes.org> <52C700BC.1010200@samsung.com>
- <20140107142625.GC2742@8bytes.org> <52CC1691.9040603@samsung.com>
- <20140107151200.GA29041@8bytes.org>
-In-reply-to: <20140107151200.GA29041@8bytes.org>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.21.63]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9hP90v5meCDJ49VraYs34Nm8XJZb+Z
-	LTpnb2C3uLxrDpvF158ODqweTw7OY/LYOesuu8fiPS+ZPE7M+M3i8XmTXABrFJdNSmpOZllq
-	kb5dAlfGzsYm5oLPrBXPj+1kbGC8wtLFyMEhIWAiMeEYVxcjJ5ApJnHh3nq2LkYuDiGBZYwS
-	3e/3Qzm9TBJ37n1hh3A2Mkpc7VrCBtLCK6Al8fH5NCYQm0VAVeLOv/lgNpuAusTn1zvYQWwh
-	ATmJpiWrmUFsUYEIiVdnJ7JA9ApK/Jh8D8wWEVCSuP65lRVkAbPAFEaJ9obprCAJYYEkiWnz
-	QYaCbP7IKLFvxgGwSZwCBhJ/T04D62YWsJZYOWkbI4QtL7F5zVtmiM3KEn8un2KC+FNRYvtq
-	qwmMIrOQ7J6FpHsWku4FjMyrGMVKi5MLipPSUyuM9YoTc4tL89L1kvNzNzFCoqZmB+O9rzaH
-	GAU4GJV4eG+onQkSYk0sK67MPcQowcGsJMK7UQ4oxJuSWFmVWpQfX1Sak1p8iJGJg1OqgdGn
-	9MJutk1rvG4WPmFr5erns5p/vjB1Wo8JN9PupX+cYju75hydnHqwQPz+0e9eV1LiTb2dXuiJ
-	qne53G8PC3jLOTFgX+y00qsXbkTldCgtdWDj+cm6Wv/t/cWP1V7fv7dz6zd9nc9O9V7Vb7cU
-	Ty/6uUQ4XqhV0NGOxa+l6+HTt0tCRA2u5CuxFGckGmoxFxUnAgAd7We2eAIAAA==
+	Tue, 7 Jan 2014 12:23:47 -0500
+Date: Tue, 7 Jan 2014 09:23:42 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1 2/4] firmware loader: simplify holding module for
+ request_firmware
+Message-ID: <20140107172342.GA31842@core.coreip.homeip.net>
+References: <1370520110-32293-1-git-send-email-ming.lei@canonical.com>
+ <1370520110-32293-3-git-send-email-ming.lei@canonical.com>
+ <20140107075600.GC20074@core.coreip.homeip.net>
+ <CACVXFVNMofvYpsiFFxFaCtN7XHAEtBmJEHCW2mJRS4x+O0+utg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVXFVNMofvYpsiFFxFaCtN7XHAEtBmJEHCW2mJRS4x+O0+utg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2014 08:12 AM, Joerg Roedel wrote:
-> On Tue, Jan 07, 2014 at 08:00:33AM -0700, Shuah Khan wrote:
->> This patch and a follow-on cocinelli warning fix patch are in
->> linux-next. Would you like me to send a patch relative to the change
->> in linux-next or cut a new patch against the latest Linus's git. I
->> can go either way. We just have to remember to drop those two
->> patches from linux-next.
->
-> Please do a patch against linus.git and drop the two patches from
-> linux-next. Over which tree did they go into linux-next anyway?
->
->
+On Tue, Jan 07, 2014 at 10:53:57PM +0800, Ming Lei wrote:
+> Hi Dmitry,
+> 
+> On Tue, Jan 7, 2014 at 3:56 PM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+> > Hi Ming,
+> >
+> > On Thu, Jun 06, 2013 at 08:01:48PM +0800, Ming Lei wrote:
+> >> module reference doesn't cover direct loading path, so this patch
+> >> simply holds the module in the whole life time of request_firmware()
+> >> to fix the problem.
+> >
+> > This does not make sense to me. If request_firmware() is executing that
+> > means some other module references it and module refcount already
+> > reflects that.
+> 
+> Yes, you are right, holding this module references in both
+> request_firmware() and request_firmware_direct() shouldn't
+> be necessary.
+> 
+> >
+> > We needed to pin module before Tejun's work ensuring that currently open
+> > sysfs entries won't keep related kobjects pinned after kernel marked
+> > them inactive. We can probably delete __module_get()/module_put() from
+> > firmware_class.c now.
+> 
+> But holding the reference for request_firmware_nowait() is needed.
 
-ok. It went through mm tree.
+Ah, yes, of course.
 
--- Shuah
-
+Thanks.
 
 -- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+Dmitry
