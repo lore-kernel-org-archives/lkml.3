@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858AbaAGN6x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 08:58:53 -0500
-Received: from smtp.domeneshop.no ([194.63.252.54]:38554 "EHLO
-	smtp.domeneshop.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904AbaAGN6r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 08:58:47 -0500
-Message-ID: <52CC075C.3060700@ovekarlsen.com>
-Date: Tue, 07 Jan 2014 14:55:40 +0100
-From: Ove Karlsen <mail@ovekarlsen.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752347AbaAGOAT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 09:00:19 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:42353 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751916AbaAGOAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 09:00:12 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'walt'" <w41ter@gmail.com>, Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: RE: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
+ a USB payload burst
+Thread-Topic: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
+ a USB payload burst
+Thread-Index: AQHPBmhf5d97FnYUxUSD3GhphkgfRJpx0RcAgAFWX4CAAEcRgIAAGCMAgAAj0ICABMhzgIAA2VQAgAAHEPA=
+Date: Tue, 7 Jan 2014 13:58:32 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D453E1A@AcuExch.aculab.com>
+References: <20131218211219.461663463@linuxfoundation.org>
+ <20131218211220.412278148@linuxfoundation.org> <52C32BB0.90600@gmail.com>
+ <20140102191510.GA9621@xanatos> <52C6D9F1.9000709@gmail.com>
+ <20140103195455.GA4193@xanatos> <52C729CE.9050307@gmail.com>
+ <20140103232929.GD4193@xanatos> <20140107003157.GA7963@xanatos>
+ <52CC014C.5060604@gmail.com>
+In-Reply-To: <52CC014C.5060604@gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Gnu - censorship
-References: <52CAFCC6.3070504@ovekarlsen.com> <52CAFE7A.9090106@infradead.org> <52CB0132.2050705@ovekarlsen.com> <52CB03BA.2070508@infradead.org> <52CB054B.6070504@ovekarlsen.com>
-In-Reply-To: <52CB054B.6070504@ovekarlsen.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s07E0MsP018506
 
-Richard Stallmans fanboys in pure brattyness and wish for dicks up their 
-ass, has now contacted my email provider, claiming I am spamming the 
-list. This again censorship.
+The dmesg contains:
 
-If retardation is what you want, you should take their side.
+[  538.728064] EXT4-fs warning (device dm-0): ext4_end_bio:316: I/O error writing to inode 23330865 (offset 0 size 8388608 starting block 812628)
 
-If excellence and brilliance is what you want, you should listen. No 
-doubt a lot of people have chosen the side of pride and retardation. And 
-that is what is commonly known about linux-circles. Arrongant nerds who 
-are very backward, and against any idea of superiority in excellence.
+An 8MB transfer will need at least 128 ring entries (TRB) even if the request
+is a single contiguous memory block.
 
-And that is ofcourse not compatible with what a hacker is either.
+Are you using the patch that increases the ring size from 64 to 256?
 
-More like a bunch of blind sheep, upset unless they get the semenload of 
-Stallman.
+	David
 
-This is the DSP I did, and is the worlds best, and ofcourse not 
-percieved by those blocked in intelligence by pride, and phallos object 
-worship. And neither apebrains.
-
-http://ovekarlsen.com/tmp/clean_mix+master.wav
-
-Open-source. Obviously they are in a very conflict with this. And try to 
-manipulate my email provider too.
-
-Censorship, lack of recognition of intelligence, phallic objects used to 
-manipulate people, the list is quickly getting long, and already after 
-just little discussion, shows how incompetent these people are, and how 
-obviously stupid they are.
-
-So - I guess you will choose the semenoriented fantasyworld, or actual 
-reality and brilliance.
-
-To me, it really matters less. I have what I want, and use open-source 
-as I wish. Rergardless of the apebrains who in their fantasyworld 
-percieved otherwise, in complete patheticness. Go fuck like squirrel, in 
-your fantasyworld, never knowing any reality or true level, or what kind 
-of excellence I am doing.
-
-PBWY :)
-
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
