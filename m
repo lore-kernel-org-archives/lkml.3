@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116AbaAGSCU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 13:02:20 -0500
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:51146 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753811AbaAGSAP (ORCPT
+	id S1754147AbaAGSC1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 13:02:27 -0500
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:57034 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753798AbaAGSAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 13:00:15 -0500
+	Tue, 7 Jan 2014 13:00:13 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
         heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
         JBottomley@parallels.com, bhelgaas@google.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 07/12] kernfs: remove KERNFS_REMOVED
-Date: Tue,  7 Jan 2014 12:59:45 -0500
-Message-Id: <1389117590-25705-8-git-send-email-tj@kernel.org>
+Subject: [PATCH 06/12] kernfs: remove KERNFS_ACTIVE_REF and add kernfs_lockdep()
+Date: Tue,  7 Jan 2014 12:59:44 -0500
+Message-Id: <1389117590-25705-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1389117590-25705-1-git-send-email-tj@kernel.org>
 References: <1389117590-25705-1-git-send-email-tj@kernel.org>
@@ -23,225 +23,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KERNFS_REMOVED is used to mark half-initialized and dying nodes so
-that they don't show up in lookups and deny adding new nodes under or
-renaming it.  Marking half-initialized nodes is unnecessary as linking
-to the hierarchy is always atomic w.r.t. kernfs_mutex as are the
-lookups.
+There currently are two mechanisms gating active ref lockdep
+annotations - KERNFS_LOCKDEP flag and KERNFS_ACTIVE_REF type mask.
+The former disables lockdep annotations in kernfs_get/put_active()
+while the latter disables all of kernfs_deactivate().
 
-It's necessary at least to deny addition of new children while removal
-is in progress; however, this role considerably intersects with
-deactivation - KERNFS_REMOVED prevents new children while deactivation
-prevents new file operations.  There's no reason to have them separate
-making things more complex than necessary.  This patch removes
-KERNFS_REMOVED and gives its function to deactivation.
+While KERNFS_ACTIVE_REF also behaves as an optimization to skip the
+deactivation step for non-file nodes, the benefit is marginal and it
+needlessly diverges code paths.  Let's drop KERNFS_ACTIVE_REF and use
+KERNFS_LOCKDEP in kernfs_deactivate() too.
 
-* KERNFS_REMOVED diddling in the addition path removed.
-
-* A new helper kernfs_active() which tests whether kn->active >= 0 is
-  added for convenience and lockdep annotation.  All KERNFS_REMOVED
-  tests are replaced with negated kernfs_active() tests.
-
-* __kernfs_remove() is updated to deactivate, but not drain, all nodes
-  in the subtree instead of setting KERNFS_REMOVED.  This removes
-  deactivation from kernfs_deactivate(), which is now renamed to
-  kernfs_drain().
-
-* Sanity check on KERNFS_REMOVED in kernfs_put() is replaced with
-  checks on the active ref.
-
-* Some comment style updates in the affected area.
+While at it, add a test helper kernfs_lockdep() to test KERNFS_LOCKDEP
+flag so that it's more convenient and the related code can be compiled
+out when not enabled.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/kernfs/dir.c        | 66 +++++++++++++++++++++++++-------------------------
+ fs/kernfs/dir.c        | 30 ++++++++++++++++++++----------
  include/linux/kernfs.h |  1 -
- 2 files changed, 33 insertions(+), 34 deletions(-)
+ 2 files changed, 20 insertions(+), 11 deletions(-)
 
 diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-index 8abdf07..71faef9 100644
+index 07cf22c..8abdf07 100644
 --- a/fs/kernfs/dir.c
 +++ b/fs/kernfs/dir.c
-@@ -22,6 +22,12 @@ DEFINE_MUTEX(kernfs_mutex);
+@@ -22,6 +22,15 @@ DEFINE_MUTEX(kernfs_mutex);
  
  #define rb_to_kn(X) rb_entry((X), struct kernfs_node, rb)
  
-+static bool kernfs_active(struct kernfs_node *kn)
++static bool kernfs_lockdep(struct kernfs_node *kn)
 +{
-+	lockdep_assert_held(&kernfs_mutex);
-+	return atomic_read(&kn->active) >= 0;
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++	return kn->flags & KERNFS_LOCKDEP;
++#else
++	return false;
++#endif
 +}
 +
- static bool kernfs_lockdep(struct kernfs_node *kn)
- {
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
-@@ -183,25 +189,20 @@ void kernfs_put_active(struct kernfs_node *kn)
- }
- 
  /**
-- *	kernfs_deactivate - deactivate kernfs_node
-- *	@kn: kernfs_node to deactivate
-+ * kernfs_drain - drain kernfs_node
-+ * @kn: kernfs_node to drain
-  *
-- *	Deny new active references, drain existing ones and nuke all
-- *	existing mmaps.  Mutiple removers may invoke this function
-- *	concurrently on @kn and all will return after deactivation and
-- *	draining are complete.
-+ * Drain existing usages and nuke all existing mmaps of @kn.  Mutiple
-+ * removers may invoke this function concurrently on @kn and all will
-+ * return after draining is complete.
-  */
--static void kernfs_deactivate(struct kernfs_node *kn)
-+static void kernfs_drain(struct kernfs_node *kn)
- 	__releases(&kernfs_mutex) __acquires(&kernfs_mutex)
- {
- 	struct kernfs_root *root = kernfs_root(kn);
+  *	kernfs_name_hash
+  *	@name: Null terminated string to hash
+@@ -144,7 +153,7 @@ struct kernfs_node *kernfs_get_active(struct kernfs_node *kn)
+ 	if (!atomic_inc_unless_negative(&kn->active))
+ 		return NULL;
  
- 	lockdep_assert_held(&kernfs_mutex);
--	BUG_ON(!(kn->flags & KERNFS_REMOVED));
--
--	/* only the first invocation on @kn should deactivate it */
--	if (atomic_read(&kn->active) >= 0)
--		atomic_add(KN_DEACTIVATED_BIAS, &kn->active);
-+	WARN_ON_ONCE(kernfs_active(kn));
- 
- 	mutex_unlock(&kernfs_mutex);
- 
-@@ -253,13 +254,16 @@ void kernfs_put(struct kernfs_node *kn)
- 		return;
- 	root = kernfs_root(kn);
-  repeat:
--	/* Moving/renaming is always done while holding reference.
-+	/*
-+	 * Moving/renaming is always done while holding reference.
- 	 * kn->parent won't change beneath us.
- 	 */
- 	parent = kn->parent;
- 
--	WARN(!(kn->flags & KERNFS_REMOVED), "kernfs: free using entry: %s/%s\n",
--	     parent ? parent->name : "", kn->name);
-+	WARN_ONCE(atomic_read(&kn->active) != 0 &&
-+		  atomic_read(&kn->active) != KN_DEACTIVATED_BIAS,
-+		  "kernfs_put: %s/%s: released with incorrect active_ref %d\n",
-+		  parent ? parent->name : "", kn->name, atomic_read(&kn->active));
- 
- 	if (kernfs_type(kn) == KERNFS_LINK)
- 		kernfs_put(kn->symlink.target_kn);
-@@ -301,8 +305,8 @@ static int kernfs_dop_revalidate(struct dentry *dentry, unsigned int flags)
- 	kn = dentry->d_fsdata;
- 	mutex_lock(&kernfs_mutex);
- 
--	/* The kernfs node has been deleted */
--	if (kn->flags & KERNFS_REMOVED)
-+	/* The kernfs node has been deactivated */
-+	if (!kernfs_active(kn))
- 		goto out_bad;
- 
- 	/* The kernfs node has been moved? */
-@@ -375,7 +379,7 @@ struct kernfs_node *kernfs_new_node(struct kernfs_root *root, const char *name,
- 
- 	kn->name = name;
- 	kn->mode = mode;
--	kn->flags = flags | KERNFS_REMOVED;
-+	kn->flags = flags;
- 
+-	if (kn->flags & KERNFS_LOCKDEP)
++	if (kernfs_lockdep(kn))
+ 		rwsem_acquire_read(&kn->dep_map, 0, 1, _RET_IP_);
  	return kn;
+ }
+@@ -164,7 +173,7 @@ void kernfs_put_active(struct kernfs_node *kn)
+ 	if (unlikely(!kn))
+ 		return;
  
-@@ -417,7 +421,7 @@ int kernfs_add_one(struct kernfs_node *kn, struct kernfs_node *parent)
- 		goto out_unlock;
+-	if (kn->flags & KERNFS_LOCKDEP)
++	if (kernfs_lockdep(kn))
+ 		rwsem_release(&kn->dep_map, 1, _RET_IP_);
+ 	v = atomic_dec_return(&kn->active);
+ 	if (likely(v != KN_DEACTIVATED_BIAS))
+@@ -190,25 +199,26 @@ static void kernfs_deactivate(struct kernfs_node *kn)
+ 	lockdep_assert_held(&kernfs_mutex);
+ 	BUG_ON(!(kn->flags & KERNFS_REMOVED));
  
- 	ret = -ENOENT;
--	if (parent->flags & KERNFS_REMOVED)
-+	if (!kernfs_active(parent))
- 		goto out_unlock;
- 
- 	kn->hash = kernfs_name_hash(kn->name, kn->ns);
-@@ -434,9 +438,6 @@ int kernfs_add_one(struct kernfs_node *kn, struct kernfs_node *parent)
- 		struct iattr *ps_iattrs = &ps_iattr->ia_iattr;
- 		ps_iattrs->ia_ctime = ps_iattrs->ia_mtime = CURRENT_TIME;
- 	}
+-	if (!(kernfs_type(kn) & KERNFS_ACTIVE_REF))
+-		return;
 -
--	/* Mark the entry added into directory tree */
--	kn->flags &= ~KERNFS_REMOVED;
- 	ret = 0;
- out_unlock:
+ 	/* only the first invocation on @kn should deactivate it */
+ 	if (atomic_read(&kn->active) >= 0)
+ 		atomic_add(KN_DEACTIVATED_BIAS, &kn->active);
+ 
  	mutex_unlock(&kernfs_mutex);
-@@ -535,7 +536,6 @@ struct kernfs_root *kernfs_create_root(struct kernfs_dir_ops *kdops, void *priv)
- 		return ERR_PTR(-ENOMEM);
- 	}
  
--	kn->flags &= ~KERNFS_REMOVED;
- 	kn->priv = priv;
- 	kn->dir.root = root;
+-	rwsem_acquire(&kn->dep_map, 0, 0, _RET_IP_);
+-	if (atomic_read(&kn->active) != KN_DEACTIVATED_BIAS)
+-		lock_contended(&kn->dep_map, _RET_IP_);
++	if (kernfs_lockdep(kn)) {
++		rwsem_acquire(&kn->dep_map, 0, 0, _RET_IP_);
++		if (atomic_read(&kn->active) != KN_DEACTIVATED_BIAS)
++			lock_contended(&kn->dep_map, _RET_IP_);
++	}
  
-@@ -750,13 +750,13 @@ static void __kernfs_remove(struct kernfs_node *kn)
+ 	/* but everyone should wait for draining */
+ 	wait_event(root->deactivate_waitq,
+ 		   atomic_read(&kn->active) == KN_DEACTIVATED_BIAS);
  
- 	pr_debug("kernfs %s: removing\n", kn->name);
+-	lock_acquired(&kn->dep_map, _RET_IP_);
+-	rwsem_release(&kn->dep_map, 1, _RET_IP_);
++	if (kernfs_lockdep(kn)) {
++		lock_acquired(&kn->dep_map, _RET_IP_);
++		rwsem_release(&kn->dep_map, 1, _RET_IP_);
++	}
  
--	/* disable lookup and node creation under @kn */
-+	/* prevent any new usage under @kn by deactivating all nodes */
- 	next = NULL;
- 	do {
- 		pos = next;
- 		next = kernfs_next_descendant_post(pos, kn);
--		if (pos)
--			pos->flags |= KERNFS_REMOVED;
-+		if (pos && kernfs_active(pos))
-+			atomic_add(KN_DEACTIVATED_BIAS, &pos->active);
- 	} while (next);
+ 	kernfs_unmap_bin_file(kn);
  
- 	/* deactivate and unlink the subtree node-by-node */
-@@ -764,14 +764,14 @@ static void __kernfs_remove(struct kernfs_node *kn)
- 		pos = kernfs_leftmost_descendant(kn);
- 
- 		/*
--		 * kernfs_deactivate() drops kernfs_mutex temporarily and
--		 * @pos's base ref could have been put by someone else by
--		 * the time the function returns.  Make sure it doesn't go
--		 * away underneath us.
-+		 * kernfs_drain() drops kernfs_mutex temporarily and @pos's
-+		 * base ref could have been put by someone else by the time
-+		 * the function returns.  Make sure it doesn't go away
-+		 * underneath us.
- 		 */
- 		kernfs_get(pos);
- 
--		kernfs_deactivate(pos);
-+		kernfs_drain(pos);
- 
- 		/*
- 		 * kernfs_unlink_sibling() succeeds once per node.  Use it
-@@ -855,7 +855,7 @@ int kernfs_rename_ns(struct kernfs_node *kn, struct kernfs_node *new_parent,
- 	mutex_lock(&kernfs_mutex);
- 
- 	error = -ENOENT;
--	if ((kn->flags | new_parent->flags) & KERNFS_REMOVED)
-+	if (!kernfs_active(kn) || !kernfs_active(new_parent))
- 		goto out;
- 
- 	error = 0;
-@@ -915,7 +915,7 @@ static struct kernfs_node *kernfs_dir_pos(const void *ns,
- 	struct kernfs_node *parent, loff_t hash, struct kernfs_node *pos)
- {
- 	if (pos) {
--		int valid = !(pos->flags & KERNFS_REMOVED) &&
-+		int valid = kernfs_active(pos) &&
- 			pos->parent == parent && hash == pos->hash;
- 		kernfs_put(pos);
- 		if (!valid)
 diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index bff6e08..1238a66 100644
+index 4b68b6f..bff6e08 100644
 --- a/include/linux/kernfs.h
 +++ b/include/linux/kernfs.h
-@@ -37,7 +37,6 @@ enum kernfs_node_type {
+@@ -34,7 +34,6 @@ enum kernfs_node_type {
+ };
+ 
+ #define KERNFS_TYPE_MASK	0x000f
+-#define KERNFS_ACTIVE_REF	KERNFS_FILE
  #define KERNFS_FLAG_MASK	~KERNFS_TYPE_MASK
  
  enum kernfs_node_flag {
--	KERNFS_REMOVED		= 0x0010,
- 	KERNFS_NS		= 0x0020,
- 	KERNFS_HAS_SEQ_SHOW	= 0x0040,
- 	KERNFS_HAS_MMAP		= 0x0080,
 -- 
 1.8.4.2
 
