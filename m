@@ -1,41 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752385AbaAGKqE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 05:46:04 -0500
-Received: from mail.fireflyinternet.com ([87.106.93.118]:63418 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751546AbaAGKqA (ORCPT
+	id S1752311AbaAGKqD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 05:46:03 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:40386 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751611AbaAGKqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Jan 2014 05:46:00 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
-Date: Tue, 7 Jan 2014 10:45:53 +0000
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andreas Heider <andreas@meetr.de>,
-        Seth Forshee <seth.forshee@canonical.com>
-Subject: Re: [PATCH 4/4] drm/i915: check LVDS for EDID on GPU switches
-Message-ID: <20140107104553.GC8991@nuc-i3427.alporthouse.com>
-References: <1389088723-30959-1-git-send-email-artagnon@gmail.com>
- <1389088723-30959-5-git-send-email-artagnon@gmail.com>
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <gregkh@linuxfoundation.org>
+CC: Leilei Zhao <leilei.zhao@atmel.com>, <mark.roszko@gmail.com>,
+        <mdeneen@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        <stable@vger.kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 2/4] tty/serial: at91: fix race condition in atmel_serial_remove
+Date: Tue, 7 Jan 2014 11:45:07 +0100
+Message-ID: <671825c81b51d19b435fca8c9cc54b6fbbf51f31.1389090437.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <cover.1389090437.git.nicolas.ferre@atmel.com>
+References: <cover.1389090437.git.nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389088723-30959-5-git-send-email-artagnon@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 03:28:43PM +0530, Ramkumar Ramachandra wrote:
-> If the LVDS panel wasn't connected at boot then we won't have an EDID
-> for it. To fix this, call intel_lvds_get_edid() from the vga_switcheroo
-> reprobe callback.
+From: Marek Roszko <mark.roszko@gmail.com>
 
-I would rather have an iterator over all our connectors (or perhaps
-encoders would be the right semantic, except we have
-connectors==encoders) and a reprobe callback. Saves exporting private
-functions and prevent me asking silly questions like what about eDP?
--Chris
+The _remove callback could be called when a tasklet is scheduled. tasklet_kill
+was called inside the function in order to free up any scheduled tasklets.
+However it was called after uart_remove_one_port which destroys tty references
+needed in the port for atmel_tasklet_func.
+Simply putting the tasklet_kill at the start of the function will prevent this
+conflict.
 
+Signed-off-by: Marek Roszko <mark.roszko@gmail.com>
+Acked-by: Leilei Zhao <leilei.zhao@atmel.com>
+Cc: <stable@vger.kernel.org> # v3.12
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/tty/serial/atmel_serial.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+index 48ea47a32d5f..c421d11b3d4c 100644
+--- a/drivers/tty/serial/atmel_serial.c
++++ b/drivers/tty/serial/atmel_serial.c
+@@ -2447,11 +2447,12 @@ static int atmel_serial_remove(struct platform_device *pdev)
+ 	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
+ 	int ret = 0;
+ 
++	tasklet_kill(&atmel_port->tasklet);
++
+ 	device_init_wakeup(&pdev->dev, 0);
+ 
+ 	ret = uart_remove_one_port(&atmel_uart, port);
+ 
+-	tasklet_kill(&atmel_port->tasklet);
+ 	kfree(atmel_port->rx_ring.buf);
+ 
+ 	/* "port" is allocated statically, so we shouldn't free it */
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+1.8.2.2
+
