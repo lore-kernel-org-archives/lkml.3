@@ -1,89 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691AbaAGSHE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 13:07:04 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38123 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049AbaAGSG4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 13:06:56 -0500
-Message-ID: <52CC4237.5000704@infradead.org>
-Date: Tue, 07 Jan 2014 10:06:47 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1752691AbaAGSNg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 13:13:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26759 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752049AbaAGSN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 13:13:29 -0500
+Date: Tue, 7 Jan 2014 19:12:58 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Dipankar Sarma <dipankar@in.ibm.com>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] rcu_dereference_check_fdtable fix/cleanups
+Message-ID: <20140107181258.GA29288@redhat.com>
 MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-CC: Guenter Roeck <linux@roeck-us.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Frodo Looijaard <frodol@dds.nl>,
-        lm-sensors@lm-sensors.org, Zhang Rui <rui.zhang@intel.com>,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH] hwmon/sensors: fix SENSORS_LM75 dependencies
-References: <20140106204020.b47e53cc3ead8f90164ef5b7@canb.auug.org.au>	<52CB0948.6030702@infradead.org>	<20140106203209.GA21630@roeck-us.net>	<52CB53DC.4030901@infradead.org>	<52CB65DA.2010103@roeck-us.net>	<20140107130401.23bffcd2@endymion.delvare>	<52CBF1CF.2000603@ti.com> <20140107152148.36768345@endymion.delvare>
-In-Reply-To: <20140107152148.36768345@endymion.delvare>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/14 06:21, Jean Delvare wrote:
-> Hi Eduardo,
-> 
+Hello.
 
-> I suppose this works, however I believe there is value in allowing for
-> modular building of as much code as possible.
+I tried to audit the users of thread_group_empty() (we need
+to change it) and found rcu_my_thread_group_empty() which
+looks wrong.
 
-ack, yes, please.
+The patches look simple, but I am not sure it is fine to use
+rcu_lock_acquire() directly. Perhaps it makes sense to add a
+new helper? Note that we have more users which take rcu lock
+only to shut up lockdep. Please review.
 
-> I have an alternative proposal, which lets thermal be built as module,
-> and hopefully also addresses the issue (I can't test...) The only
-> drawback is that the same dependency must be added for every other
-> hwmon driver which optionally uses THERMAL_OF.
-> 
-> From: Jean Delvare <khali@linux-fr.org>
-> 
-> Based on an earlier attempt by Randy Dunlap.
-> 
-> Fix SENSORS_LM75 dependencies to eliminate build errors:
-> 
-> drivers/built-in.o: In function `lm75_remove':
-> lm75.c:(.text+0x12bd8c): undefined reference to `thermal_zone_of_sensor_unregister'
-> drivers/built-in.o: In function `lm75_probe':
-> lm75.c:(.text+0x12c123): undefined reference to `thermal_zone_of_sensor_register'
-> 
-> Add depends on THERMAL since that is what provides the
-> register/unregister functions above, but only if THERMAL_OF was
-> selected as this is an optional feature of the driver.
-> 
-> Signed-off-by: Jean Delvare <khali@linux-fr.org>
-> Cc: Randy Dunlap <rdunlap@infradead.org>
-> Cc: Eduardo Valentin <eduardo.valentin@ti.com>
+And I am a bit confused. Perhaps rcu_lock_acquire() should
+depend on CONFIG_PROVE_RCU, not on CONFIG_DEBUG_LOCK_ALLOC?
+We only need rcu_lock_map/etc for rcu_lockdep_assert().
 
-works for me.
+Oleg.
 
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
+ fs/file.c                |   24 +++++++++++-------------
+ include/linux/fdtable.h  |   19 +++++++++++++------
+ include/linux/rcupdate.h |    2 --
+ kernel/rcu/update.c      |   11 -----------
+ 4 files changed, 24 insertions(+), 32 deletions(-)
 
-Thanks.
-
-> ---
->  drivers/hwmon/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> --- linux-3.13-rc7.orig/drivers/hwmon/Kconfig	2014-01-07 09:01:24.812848091 +0100
-> +++ linux-3.13-rc7/drivers/hwmon/Kconfig	2014-01-07 15:19:11.039472329 +0100
-> @@ -650,6 +650,7 @@ config SENSORS_LM73
->  config SENSORS_LM75
->  	tristate "National Semiconductor LM75 and compatibles"
->  	depends on I2C
-> +	depends on THERMAL || !THERMAL_OF
->  	help
->  	  If you say yes here you get support for one common type of
->  	  temperature sensor chip, with models including:
-> 
-> 
-
-
--- 
-~Randy
