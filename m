@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862AbaAGPpM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 10:45:12 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:50707 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751198AbaAGPpG (ORCPT
+	id S1752770AbaAGPqj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 10:46:39 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:36089 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595AbaAGPqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 10:45:06 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Tanmay Inamdar <tinamdar@apm.com>, devicetree@vger.kernel.org,
-        Jon Masters <jcm@redhat.com>, linux-doc@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>, patches <patches@apm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, Rob Landley <rob@landley.net>,
-        linux-pci@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [RFC PATCH 3/3] dt-bindings: pci: xgene pcie device tree bindings
-Date: Tue, 07 Jan 2014 16:44:30 +0100
-Message-ID: <4687115.Uo6IImEscY@wuerfel>
-User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <201401071635.02006.arnd@arndb.de>
-References: <1387785725-24262-1-git-send-email-tinamdar@apm.com> <CACoXjc=h8W=9jx4d2Y+F9hmgQsuMTgG4080jZGbtddv10OgtMA@mail.gmail.com> <201401071635.02006.arnd@arndb.de>
+	Tue, 7 Jan 2014 10:46:31 -0500
+Date: Tue, 7 Jan 2014 16:46:30 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
+ tracing units
+Message-ID: <20140107154630.GC20765@two.firstfloor.org>
+References: <20131219103134.GD30183@twins.programming.kicks-ass.net>
+ <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131219112812.GY21999@twins.programming.kicks-ass.net>
+ <20131219123955.GA18186@gmail.com>
+ <87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131219151024.GI16438@laptop.programming.kicks-ass.net>
+ <87iotw6bwx.fsf@tassilo.jf.intel.com>
+ <20140106221528.GK30183@twins.programming.kicks-ass.net>
+ <8761pw6717.fsf@tassilo.jf.intel.com>
+ <20140107084113.GN30183@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:qrmNHJgSvKZms1HUR5qCXwYnUKTlKngo+YTBcx0uCET
- yoDKEeE//NROtf0M1VwsuSQjNd2D6Jo3vPy1dPvzSs2VQpdImx
- 3Wai1+9TI6rn0Ge/zbBUz/goi7w0j1HFe1WZVNkj5PCK/ersv0
- uRyrZnT5qmkxTZ+Dj25yPdyDW599dFFeMObRBmczu5d1Wl+fQc
- X9SCQDbRPxmUD7WKNWZKYqW2OHU0R0qjOQpaLO+IjwpSmzMuvf
- KG0/xc62KbAESRN9oExVnT879yoDso3ko9bDKRUhds65PcbB67
- usLavMHg+YlhB54H987DW0TotGajxUd9lOPxMZbnWdC4/CAR7Q
- vmj2Vbv1HtaeAHLAtdx8=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140107084113.GN30183@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 07 January 2014 16:35:01 Arnd Bergmann wrote:
-> > >> +SoC specific DT Entry:
-> > >> +     pcie0: pcie@1f2b0000 {
-> > >> +             status = "disabled";
-> > >> +             device_type = "pci";
-> > >> +             compatible = "xgene,pcie";
-> > >> +             #interrupt-cells = <1>;
-> > >> +             #size-cells = <2>;
-> > >> +             #address-cells = >;
-> > >> +             reg = < 0x00 0x1f2b0000 0x0 0x00010000>;
-> > >> +             ranges = <0x02000000 0x0 0x00000000 0xe0 0x00000000 0x0 0x10000000 /* mem*/
-> > >
-> > >
-> > > Also, do you support no prefetchable memory?
-> > 
-> > HW has either IO or Memory regions for mapping device's memory space.
-> > There is no separate prefetchable memory space.
-> 
-> Are you sure the memory is non-prefetchable then? I would have expected
-> 0x42000000 rather than 0x02000000, but I could be misremembering it.
+> Also, the PT interrupt doesn't actually need to be an NMI; when the
+> proposed S/G implementation would actually work as stated there can be
+> plenty room left when we trigger the interrupt.
 
-Nevermind. I just checked and you are right: if you only have
-one memory range, it has to be non-prefetchable.
+That's true.
 
-	Arnd
+-andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
