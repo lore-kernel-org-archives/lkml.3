@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752226AbaAGOyy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 09:54:54 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:42043 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752092AbaAGOye (ORCPT
+	id S1752298AbaAGOzF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 09:55:05 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:34053 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752061AbaAGOyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 09:54:34 -0500
+	Tue, 7 Jan 2014 09:54:31 -0500
 From: Ramkumar Ramachandra <artagnon@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Chris Wilson <chris@chris-wilson.co.uk>, Andreas Heider <andreas@meetr.de>,
         Seth Forshee <seth.forshee@canonical.com>
-Subject: [PATCH v2 3/4] drm/i915: change intel_sdvo_get_edid() prototype
-Date: Tue,  7 Jan 2014 20:24:31 +0530
-Message-Id: <1389106472-11389-4-git-send-email-artagnon@gmail.com>
+Subject: [PATCH v2 2/4] drm/i915: factor out intel_lvds_get_edid()
+Date: Tue,  7 Jan 2014 20:24:30 +0530
+Message-Id: <1389106472-11389-3-git-send-email-artagnon@gmail.com>
 X-Mailer: git-send-email 1.8.5.2.229.g4448466
 In-Reply-To: <1389106472-11389-1-git-send-email-artagnon@gmail.com>
 References: <1389106472-11389-1-git-send-email-artagnon@gmail.com>
@@ -21,78 +21,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In future patches, we intend to introduce a generic interface to the
-various get_edid() functions. All the other get_edid() functions accept
-two arguments: a struct drm_connector *, and a struct i2c_adapter *. So,
-introduce a second dummy variable in intel_sdvo_get_edid().
+Corresponding to
+
+  intel_crt_get_edid()
+  intel_sdvo_get_edid()
+  intel_dp_get_edid()
+
+add a intel_lvds_get_edid(). We plan to call this during a
+switcheroo-reprobe in later patches.
 
 Cc: Chris Wilson <chris@chris-wilson.co.uk>
 Cc: Andreas Heider <andreas@meetr.de>
 Cc: Seth Forshee <seth.forshee@canonical.com>
 Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
 ---
- drivers/gpu/drm/i915/intel_sdvo.c | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/i915/intel_lvds.c | 100 ++++++++++++++++++++++----------------
+ 1 file changed, 57 insertions(+), 43 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
-index a583e8f..beb40e5 100644
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -1612,7 +1612,8 @@ intel_sdvo_multifunc_encoder(struct intel_sdvo *intel_sdvo)
+diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
+index c3b4da7..e7aa285 100644
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -921,6 +921,60 @@ static bool intel_lvds_supported(struct drm_device *dev)
+ 	return false;
  }
  
- static struct edid *
--intel_sdvo_get_edid(struct drm_connector *connector)
-+intel_sdvo_get_edid(struct drm_connector *connector,
-+		struct i2c_adapter __maybe_unused *dummy)
- {
- 	struct intel_sdvo *sdvo = intel_attached_sdvo(connector);
- 	return drm_get_edid(connector, &sdvo->ddc);
-@@ -1636,7 +1637,7 @@ intel_sdvo_tmds_sink_detect(struct drm_connector *connector)
- 	enum drm_connector_status status;
++static struct edid *intel_lvds_get_edid(struct drm_connector *connector,
++					struct i2c_adapter *i2c)
++{
++	struct edid *edid;
++	struct intel_lvds_connector *lvds_connector = to_lvds_connector(connector);
++	struct drm_device *dev = connector->dev;
++	struct drm_display_mode *scan; /* *modes, *bios_mode; */
++	struct drm_display_mode *fixed_mode = NULL;
++
++	/*
++	 * Attempt to get the fixed panel mode from DDC.  Assume that the
++	 * preferred mode is the right one.
++	 */
++	edid = drm_get_edid(connector, i2c);
++	if (edid) {
++		if (drm_add_edid_modes(connector, edid)) {
++			drm_mode_connector_update_edid_property(connector,
++								edid);
++		} else {
++			kfree(edid);
++			edid = ERR_PTR(-EINVAL);
++		}
++	} else {
++		edid = ERR_PTR(-ENOENT);
++	}
++	lvds_connector->base.edid = edid;
++
++	if (IS_ERR_OR_NULL(edid)) {
++		/* Didn't get an EDID, so
++		 * Set wide sync ranges so we get all modes
++		 * handed to valid_mode for checking
++		 */
++		connector->display_info.min_vfreq = 0;
++		connector->display_info.max_vfreq = 200;
++		connector->display_info.min_hfreq = 0;
++		connector->display_info.max_hfreq = 200;
++	}
++
++	list_for_each_entry(scan, &connector->probed_modes, head) {
++		if (scan->type & DRM_MODE_TYPE_PREFERRED) {
++			DRM_DEBUG_KMS("using preferred mode from EDID: ");
++			drm_mode_debug_printmodeline(scan);
++
++			fixed_mode = drm_mode_duplicate(dev, scan);
++			if (fixed_mode) {
++				intel_find_lvds_downclock(dev, fixed_mode,
++							  connector);
++				return edid;
++			}
++		}
++	}
++	return NULL;
++}
++
+ /**
+  * intel_lvds_init - setup LVDS connectors on this device
+  * @dev: drm device
+@@ -937,7 +991,6 @@ void intel_lvds_init(struct drm_device *dev)
+ 	struct intel_connector *intel_connector;
+ 	struct drm_connector *connector;
+ 	struct drm_encoder *encoder;
+-	struct drm_display_mode *scan; /* *modes, *bios_mode; */
+ 	struct drm_display_mode *fixed_mode = NULL;
  	struct edid *edid;
+ 	struct drm_crtc *crtc;
+@@ -1036,48 +1089,9 @@ void intel_lvds_init(struct drm_device *dev)
+ 	 *    if closed, act like it's not there for now
+ 	 */
  
--	edid = intel_sdvo_get_edid(connector);
-+	edid = intel_sdvo_get_edid(connector, NULL);
+-	/*
+-	 * Attempt to get the fixed panel mode from DDC.  Assume that the
+-	 * preferred mode is the right one.
+-	 */
+-	edid = drm_get_edid(connector, intel_gmbus_get_adapter(dev_priv, pin));
+-	if (edid) {
+-		if (drm_add_edid_modes(connector, edid)) {
+-			drm_mode_connector_update_edid_property(connector,
+-								edid);
+-		} else {
+-			kfree(edid);
+-			edid = ERR_PTR(-EINVAL);
+-		}
+-	} else {
+-		edid = ERR_PTR(-ENOENT);
+-	}
+-	lvds_connector->base.edid = edid;
+-
+-	if (IS_ERR_OR_NULL(edid)) {
+-		/* Didn't get an EDID, so
+-		 * Set wide sync ranges so we get all modes
+-		 * handed to valid_mode for checking
+-		 */
+-		connector->display_info.min_vfreq = 0;
+-		connector->display_info.max_vfreq = 200;
+-		connector->display_info.min_hfreq = 0;
+-		connector->display_info.max_hfreq = 200;
+-	}
+-
+-	list_for_each_entry(scan, &connector->probed_modes, head) {
+-		if (scan->type & DRM_MODE_TYPE_PREFERRED) {
+-			DRM_DEBUG_KMS("using preferred mode from EDID: ");
+-			drm_mode_debug_printmodeline(scan);
+-
+-			fixed_mode = drm_mode_duplicate(dev, scan);
+-			if (fixed_mode) {
+-				intel_find_lvds_downclock(dev, fixed_mode,
+-							  connector);
+-				goto out;
+-			}
+-		}
+-	}
++	edid = intel_lvds_get_edid(connector, intel_gmbus_get_adapter(dev_priv, pin));
++	if (edid)
++		goto out;
  
- 	if (edid == NULL && intel_sdvo_multifunc_encoder(intel_sdvo)) {
- 		u8 ddc, saved_ddc = intel_sdvo->ddc_bus;
-@@ -1647,7 +1648,7 @@ intel_sdvo_tmds_sink_detect(struct drm_connector *connector)
- 		 */
- 		for (ddc = intel_sdvo->ddc_bus >> 1; ddc > 1; ddc >>= 1) {
- 			intel_sdvo->ddc_bus = ddc;
--			edid = intel_sdvo_get_edid(connector);
-+			edid = intel_sdvo_get_edid(connector, NULL);
- 			if (edid)
- 				break;
- 		}
-@@ -1740,7 +1741,7 @@ intel_sdvo_detect(struct drm_connector *connector, bool force)
- 		struct edid *edid;
- 
- 		/* if we have an edid check it matches the connection */
--		edid = intel_sdvo_get_edid(connector);
-+		edid = intel_sdvo_get_edid(connector, NULL);
- 		if (edid == NULL)
- 			edid = intel_sdvo_get_analog_edid(connector);
- 		if (edid != NULL) {
-@@ -1777,7 +1778,7 @@ static void intel_sdvo_get_ddc_modes(struct drm_connector *connector)
- 		      connector->base.id, drm_get_connector_name(connector));
- 
- 	/* set the bus switch and get the modes */
--	edid = intel_sdvo_get_edid(connector);
-+	edid = intel_sdvo_get_edid(connector, NULL);
- 
- 	/*
- 	 * Mac mini hack.  On this device, the DVI-I connector shares one DDC
-@@ -2022,7 +2023,7 @@ static bool intel_sdvo_detect_hdmi_audio(struct drm_connector *connector)
- 	if (!intel_sdvo->is_hdmi)
- 		return false;
- 
--	edid = intel_sdvo_get_edid(connector);
-+	edid = intel_sdvo_get_edid(connector, NULL);
- 	if (edid != NULL && edid->input & DRM_EDID_INPUT_DIGITAL)
- 		has_audio = drm_detect_monitor_audio(edid);
- 	kfree(edid);
+ 	/* Failed to get EDID, what about VBT? */
+ 	if (dev_priv->vbt.lfp_lvds_vbt_mode) {
 -- 
 1.8.5.2.229.g4448466
 
