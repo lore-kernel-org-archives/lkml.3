@@ -1,121 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932188AbaAGDSi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 22:18:38 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:40805 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753508AbaAGDSh (ORCPT
+	id S932145AbaAGDZU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 22:25:20 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:2200 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752108AbaAGDZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 22:18:37 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s073IXOv013695, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net] r8152: correct some messages
-Date: Tue, 7 Jan 2014 11:18:22 +0800
-Message-ID: <1389064702-1173-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1388999999-9218-1-git-send-email-hayeswang@realtek.com>
-References: <1388999999-9218-1-git-send-email-hayeswang@realtek.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+	Mon, 6 Jan 2014 22:25:16 -0500
+Date: Mon, 6 Jan 2014 22:25:13 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 5/5] tools lib traceevent: Get rid of die() finally!!
+Message-ID: <20140106222513.5198ef09@gandalf.local.home>
+In-Reply-To: <1389063612-18173-6-git-send-email-namhyung@kernel.org>
+References: <1389063612-18173-1-git-send-email-namhyung@kernel.org>
+	<1389063612-18173-6-git-send-email-namhyung@kernel.org>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- - Replace pr_warn_ratelimited() with net_ratelimit() and netdev_warn().
- - Adjust the algnment of some messages.
- - Remove the peroid.
- - Fix some messages don't have terminating newline.
+On Tue,  7 Jan 2014 12:00:12 +0900
+Namhyung Kim <namhyung@kernel.org> wrote:
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 23 +++++++++++++----------
- 1 file changed, 13 insertions(+), 10 deletions(-)
+> Now all of its users were gone. :)
+> 
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 5107372..49632ff 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -814,10 +814,12 @@ static void read_bulk_callback(struct urb *urb)
- 	case -ENOENT:
- 		return;	/* the urb is in unlink state */
- 	case -ETIME:
--		pr_warn_ratelimited("may be reset is needed?..\n");
-+		if (net_ratelimit())
-+			netdev_warn(netdev, "maybe reset is needed?\n");
- 		break;
- 	default:
--		pr_warn_ratelimited("Rx status %d\n", status);
-+		if (net_ratelimit())
-+			netdev_warn(netdev, "Rx status %d\n", status);
- 		break;
- 	}
- 
-@@ -850,7 +852,8 @@ static void write_bulk_callback(struct urb *urb)
- 
- 	stats = rtl8152_get_stats(tp->netdev);
- 	if (status) {
--		pr_warn_ratelimited("Tx status %d\n", status);
-+		if (net_ratelimit())
-+			netdev_warn(tp->netdev, "Tx status %d\n", status);
- 		stats->tx_errors += agg->skb_num;
- 	} else {
- 		stats->tx_packets += agg->skb_num;
-@@ -927,7 +930,7 @@ resubmit:
- 		netif_device_detach(tp->netdev);
- 	else if (res)
- 		netif_err(tp, intr, tp->netdev,
--			"can't resubmit intr, status %d\n", res);
-+			  "can't resubmit intr, status %d\n", res);
- }
- 
- static inline void *rx_agg_align(void *data)
-@@ -1336,7 +1339,7 @@ static void rtl8152_tx_timeout(struct net_device *netdev)
- 	struct r8152 *tp = netdev_priv(netdev);
- 	int i;
- 
--	netif_warn(tp, tx_err, netdev, "Tx timeout.\n");
-+	netif_warn(tp, tx_err, netdev, "Tx timeout\n");
- 	for (i = 0; i < RTL8152_MAX_TX; i++)
- 		usb_unlink_urb(tp->tx_info[i].urb);
- }
-@@ -1806,8 +1809,8 @@ static int rtl8152_open(struct net_device *netdev)
- 	if (res) {
- 		if (res == -ENODEV)
- 			netif_device_detach(tp->netdev);
--		netif_warn(tp, ifup, netdev,
--			"intr_urb submit failed: %d\n", res);
-+		netif_warn(tp, ifup, netdev, "intr_urb submit failed: %d\n",
-+			   res);
- 		return res;
- 	}
- 
-@@ -2094,7 +2097,7 @@ static int rtl8152_probe(struct usb_interface *intf,
- 
- 	netdev = alloc_etherdev(sizeof(struct r8152));
- 	if (!netdev) {
--		dev_err(&intf->dev, "Out of memory");
-+		dev_err(&intf->dev, "Out of memory\n");
- 		return -ENOMEM;
- 	}
- 
-@@ -2135,11 +2138,11 @@ static int rtl8152_probe(struct usb_interface *intf,
- 
- 	ret = register_netdev(netdev);
- 	if (ret != 0) {
--		netif_err(tp, probe, netdev, "couldn't register the device");
-+		netif_err(tp, probe, netdev, "couldn't register the device\n");
- 		goto out1;
- 	}
- 
--	netif_info(tp, probe, netdev, "%s", DRIVER_VERSION);
-+	netif_info(tp, probe, netdev, "%s\n", DRIVER_VERSION);
- 
- 	return 0;
- 
--- 
-1.8.4.2
+Die die!
 
+;-)
+
+-- Steve
