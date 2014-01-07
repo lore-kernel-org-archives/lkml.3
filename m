@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954AbaAGJ5u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 04:57:50 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:53477 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755096AbaAGJ5p (ORCPT
+	id S1756286AbaAGJ6k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 04:58:40 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:40000 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752885AbaAGJ6h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 04:57:45 -0500
-Date: Tue, 7 Jan 2014 10:57:23 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "pjt@google.com" <pjt@google.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "alex.shi@linaro.org" <alex.shi@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "amit.kucheria@linaro.org" <amit.kucheria@linaro.org>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>
-Subject: Re: [RFC] sched: CPU topology try
-Message-ID: <20140107095723.GB2480@laptop.programming.kicks-ass.net>
-References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
- <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
- <52B87149.4010801@arm.com>
- <20140106162813.GM31570@twins.programming.kicks-ass.net>
- <20140106171530.GC2936@e103034-lin>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140106171530.GC2936@e103034-lin>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 7 Jan 2014 04:58:37 -0500
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Andreas Heider <andreas@meetr.de>,
+        Seth Forshee <seth.forshee@canonical.com>
+Subject: [PATCH 0/4] Get EDID late for VGA switcheroo
+Date: Tue,  7 Jan 2014 15:28:39 +0530
+Message-Id: <1389088723-30959-1-git-send-email-artagnon@gmail.com>
+X-Mailer: git-send-email 1.8.5.2.229.g4448466
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 05:15:30PM +0000, Morten Rasmussen wrote:
-> Is there any examples of frequency domains not matching the span of a
-> sched_domain?
+Hi,
 
-nafaik, but I don't really know much about this anyway.
+VGA switcheroo doesn't work on my 2013 MBP, and I'm trying to fix
+it. From what I've gathered from previous patches, it seems that the
+EDID is not computed at boottime, because LVDS isn't connected to the
+i915 card (and is connected to the nouveau card instead). So, here's a
+series to get switcheroo-reprobe to call get-edid. I think it's a step
+in the right direction, although I think more stuff is required to fix
+the issue.
 
-> I would have thought that we would have a matching sched_domain to hang
-> the P and C state information from for most systems. If not, we could
-> just add it.
+Disclaimer: The series might be utter rubbish, because this is my
+first attempt at any driver code.
 
-This was my thought too.
+Thanks.
+
+Cc: Andreas Heider <andreas@meetr.de>
+Cc: Seth Forshee <seth.forshee@canonical.com>
+
+Ramkumar Ramachandra (4):
+  drm/i915: add support for vga_switcheroo reprobe
+  drm/i915: factor out intel_lvds_get_edid()
+  drm/i915: prepare intel_lvds_get_edid() for multiple calls
+  drm/i915: check LVDS for EDID on GPU switches
+
+ drivers/gpu/drm/i915/i915_dma.c   |   9 ++-
+ drivers/gpu/drm/i915/i915_drv.h   |   1 +
+ drivers/gpu/drm/i915/intel_drv.h  |   1 +
+ drivers/gpu/drm/i915/intel_lvds.c | 112 +++++++++++++++++++++++---------------
+ 4 files changed, 78 insertions(+), 45 deletions(-)
+
+-- 
+1.8.5.2.229.g4448466
+
