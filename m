@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610AbaAGKqs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 05:46:48 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:40557 "EHLO
+	id S1751860AbaAGKs3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 05:48:29 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:27582 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966AbaAGKqq (ORCPT
+	with ESMTP id S1751151AbaAGKs1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 05:46:46 -0500
+	Tue, 7 Jan 2014 05:48:27 -0500
+Message-ID: <52CBDB78.3050306@atmel.com>
+Date: Tue, 7 Jan 2014 11:48:24 +0100
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
 To: <gregkh@linuxfoundation.org>
 CC: Leilei Zhao <leilei.zhao@atmel.com>, <mark.roszko@gmail.com>,
         <mdeneen@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
-        <stable@vger.kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 4/4] tty/serial: at91: reset rx_ring when port is shutdown
-Date: Tue, 7 Jan 2014 11:45:09 +0100
-Message-ID: <ea90a2a581290cb8065ec1ca2ba4242b2adb39c2.1389090437.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <cover.1389090437.git.nicolas.ferre@atmel.com>
+        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>
+Subject: Re: [PATCH 0/4] tty/serial: at91: fixes dealing with port shutdown
 References: <cover.1389090437.git.nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <cover.1389090437.git.nicolas.ferre@atmel.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Deneen <mdeneen@gmail.com>
+On 07/01/2014 11:41, Nicolas Ferre :
+> Hi,
 
-When using RX DMA, the driver won't pass any data to the uart layer
-until the buffer is flipped. When the port is shutdown, the dma buffers
-are unmapped, but the head and tail of the ring buffer are not reseted.
-Since the serial console will keep the port open, this will only
-present itself when the uart is not shared.
+Sorry for the noise: I messed up with git-send-email...
 
-To reproduce the issue, with an unpatched driver, run a getty on /dev/ttyS0
-with no serial console and exit. Getty will exit, and when the new one returns
-you will be unable to log in.  If you hold down a key long enough to fill the
-DMA buffer and flip it, you can then log in.
+I re-sent the whole series.
 
-Signed-off-by: Mark Deneen <mdeneen@gmail.com>
-Acked-by: Leilei Zhao <leilei.zhao@atmel.com>
-[nicolas.ferre@atmel.com: adapt to mainline kernel, handle !DMA case]
-Cc: <stable@vger.kernel.org> # v3.12
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- drivers/tty/serial/atmel_serial.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+Bye,
 
-diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
-index 6e68486c83cb..2d925455c1ec 100644
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -1681,6 +1681,12 @@ static void atmel_shutdown(struct uart_port *port)
- 		atmel_port->release_tx(port);
- 
- 	/*
-+	 * Reset ring buffer pointers
-+	 */
-+	atmel_port->rx_ring.head = 0;
-+	atmel_port->rx_ring.tail = 0;
-+
-+	/*
- 	 * Free the interrupt
- 	 */
- 	free_irq(port->irq, port);
+
+> These four fixes are pretty important for our atmel_serial driver as they
+> deal with closing/re-opening of ports. They fix race condition and
+> null pointers dereference.
+> I added the "stable" tag to each of them (v3.12).
+> 
+> Even if we are late in the development cycle, can you please consider including
+> these patches for 3.13?
+> 
+> Thanks, best regards,
+>    Nicolas Ferre
+> 
+> Marek Roszko (3):
+>   tty/serial: at91: Handle shutdown more safely
+>   tty/serial: at91: fix race condition in atmel_serial_remove
+>   tty/serial: at91: prevent null dereference in tasklet function
+> 
+> Mark Deneen (1):
+>   tty/serial: at91: reset rx_ring when port is shutdown
+> 
+>  drivers/tty/serial/atmel_serial.c | 27 ++++++++++++++++++++++-----
+>  1 file changed, 22 insertions(+), 5 deletions(-)
+> 
+
+
 -- 
-1.8.2.2
-
+Nicolas Ferre
