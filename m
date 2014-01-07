@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741AbaAGRmD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 12:42:03 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:58184 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638AbaAGRlo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 12:41:44 -0500
+	id S1753323AbaAGRmh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 12:42:37 -0500
+Received: from mga02.intel.com ([134.134.136.20]:5084 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753234AbaAGRmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 12:42:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,620,1384329600"; 
+   d="scan'208";a="463015768"
+Subject: [PATCH v2] checkpatch: Only flag FSF address, not gnu.org URL
+To: joe@perches.com, gregkh@linuxfoundation.org, josh@joshtriplett.org
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Tue, 07 Jan 2014 09:41:50 -0800
+Message-ID: <20140107173926.8923.98340.stgit@ahduyck-cp2.jf.intel.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-In-Reply-To: <CAK5ve-K0aCVTo+21G47M0aYT8f-vkqLAd9etWxSY+ieib8KfMQ@mail.gmail.com>
-References: <1388394595-1347-1-git-send-email-tushar.behera@linaro.org>
-	<1388726757-7387-1-git-send-email-tushar.behera@linaro.org>
-	<CAK5ve-K0aCVTo+21G47M0aYT8f-vkqLAd9etWxSY+ieib8KfMQ@mail.gmail.com>
-Date: Tue, 7 Jan 2014 18:41:43 +0100
-Message-ID: <CACRpkdbqDHHb+z2eV-hYbQsdVfYYCHajQZ2=63ab4uDfqRaWmg@mail.gmail.com>
-Subject: Re: [PATCH V2] leds: s3c24xx: Fix build failure
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Bryan Wu <cooloney@gmail.com>
-Cc: Tushar Behera <tushar.behera@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 3, 2014 at 7:19 AM, Bryan Wu <cooloney@gmail.com> wrote:
-> On Thu, Jan 2, 2014 at 9:25 PM, Tushar Behera <tushar.behera@linaro.org> wrote:
->> Commit c67d0f29262b ("ARM: s3c24xx: get rid of custom <mach/gpio.h>")
->> removed the usage of mach/gpio.h file, but we need to include
->> plat/gpio-cfg.h to avoid following build error.
->>
->> Fixes following build error.
->> drivers/leds/leds-s3c24xx.c: In function ‘s3c24xx_led_probe’:
->> drivers/leds/leds-s3c24xx.c:100:2: error: implicit declaration of
->> function ‘s3c_gpio_setpull’ [-Werror=implicit-function-declaration]
->>
->
-> I think this patch should go with Linus's patchset.
+This change restricts the check for the for the FSF address in the GPL
+copyright statement so that it only flags the address, not the references to
+the gnu.org/licenses URL which appears to be used in numerous drivers.  The
+idea is to still allow some reference to an external copy of the GPL in the
+event that files are copied out of the kernel tree without the COPYING file.
 
-Patch applied to the GPIO tree. I added your ACK Bryan since
-that seems to be implied above ...
+So for example this statement will still return an error:
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-Yours,
-Linus Walleij
+However, this statement will not return an error after this patch:
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+---
+
+v2: Rebased patch off of linux-next tree.
+    Updated patch description to include motivation behind change.
+
+ scripts/checkpatch.pl |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 07331d6..e7f2c65 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1970,14 +1970,12 @@ sub process {
+ 		}
+ 
+ # Check for FSF mailing addresses.
+-		if ($rawline =~ /\bYou should have received a copy/i ||
+-		    $rawline =~ /\bwrite to the Free/i ||
++		if ($rawline =~ /\bwrite to the Free/i ||
+ 		    $rawline =~ /\b59\s+Temple\s+Pl/i ||
+ 		    $rawline =~ /\b51\s+Franklin\s+St/i) {
+ 			my $herevet = "$here\n" . cat_vet($rawline) . "\n";
+ 			my $msg_type = \&ERROR;
+ 			$msg_type = \&CHK if ($file);
+-			$msg_type = \&CHK if ($rawline =~ /\bYou should have received a copy/i);
+ 			&{$msg_type}("FSF_MAILING_ADDRESS",
+ 				     "Do not include the paragraph about writing to the Free Software Foundation's mailing address from the sample GPL notice. The FSF has changed addresses in the past, and may do so again. Linux already includes a copy of the GPL.\n" . $herevet)
+ 		}
+
