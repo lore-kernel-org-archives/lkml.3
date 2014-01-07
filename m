@@ -1,97 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001AbaAGUAd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 15:00:33 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:38448 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753904AbaAGUA3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 15:00:29 -0500
-From: Chris Mason <clm@fb.com>
-To: "darrick.wong@oracle.com" <darrick.wong@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "miklos@szeredi.hu" <miklos@szeredi.hu>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "rlb@defaultvalue.org" <rlb@defaultvalue.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "aurelien@aurel32.net" <aurelien@aurel32.net>,
-        "tytso@mit.edu" <tytso@mit.edu>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "david@fromorbit.com" <david@fromorbit.com>,
-        "jack@suse.cz" <jack@suse.cz>
-Subject: Re: [RFC PATCH] fs: xattr-based FS_IOC_[GS]ETFLAGS interface
-Thread-Topic: [RFC PATCH] fs: xattr-based FS_IOC_[GS]ETFLAGS interface
-Thread-Index: AQHPC1SBIuZZnKnCxkWv+a255Syox5p5vPyAgAAyl4CAABTvAIAALIsAgAAEagA=
-Date: Tue, 7 Jan 2014 19:59:15 +0000
-Message-ID: <1389124784.23310.15.camel@ret.masoncoding.com>
-References: <20140107025855.GA9229@birch.djwong.org>
-	 <20140107124831.GD16640@quack.suse.cz>
-	 <20140107154935.GA17609@infradead.org> <20140107170430.GA2822@thunk.org>
-	 <20140107194356.GC9229@birch.djwong.org>
-In-Reply-To: <20140107194356.GC9229@birch.djwong.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.57.29]
-Content-Type: text/plain; charset="utf-7"
-Content-ID: <58FB75862F7EA845BB0CC61650913C29@fb.com>
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Spam-Reason: safe
-X-FB-Internal: Safe
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-01-07_07:2014-01-07,2014-01-07,1970-01-01 signatures=0
+	id S1754028AbaAGUD0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 15:03:26 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:58767 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753251AbaAGUDU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 15:03:20 -0500
+From: Erik Faye-Lund <kusmabite@gmail.com>
+To: linux-tegra@vger.kernel.org
+Cc: thierry.reding@gmail.com, tbergstrom@nvidia.com,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Erik Faye-Lund <kusmabite@gmail.com>
+Subject: [PATCH] gpu: host1x: do not check previously handled gathers
+Date: Tue,  7 Jan 2014 21:03:06 +0100
+Message-Id: <1389124986-32501-1-git-send-email-kusmabite@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-01-07 at 11:43 -0800, Darrick J. Wong wrote:
-+AD4- On Tue, Jan 07, 2014 at 12:04:30PM -0500, Theodore Ts'o wrote:
-+AD4- +AD4- On Tue, Jan 07, 2014 at 07:49:35AM -0800, Christoph Hellwig wrote:
-+AD4- +AD4- +AD4- On Tue, Jan 07, 2014 at 01:48:31PM +-0100, Jan Kara wrote:
-+AD4- +AD4- +AD4- +AD4-   I have to say I'm not thrilled by the idea of juggling strings in
-+AD4- +AD4- +AD4- +AD4- userspace and in kernel to set a flag for an inode...
-+AD4- +AD4- +AD4- 
-+AD4- +AD4- +AD4- Nevermind the massive amounts of code that sit in the filesystem.
-+AD4- +AD4- 
-+AD4- +AD4- The reason for this patch was to address what Dave Chinner has called
-+AD4- +AD4- +ACI-a shitty interface+ACIAWw-1+AF0-.  Using bitfields that need to be coordinated
-+AD4- +AD4- across file systems, when sometimes a bit assignment is validly a fs
-+AD4- +AD4- specific thing, and then later becomes something that gets shared
-+AD4- +AD4- across file systems.
-+AD4- +AD4- 
-+AD4- +AD4- +AFs-1+AF0- http://thread.gmane.org/gmane.linux.file-systems/80164/focus+AD0-80396
-+AD4- +AD4- 
-+AD4- +AD4- If we don't go about it this way, there are alternatives: we could
-+AD4- +AD4- create new ioctls (or a new syscall) as we start running out of bits
-+AD4- +AD4- used by FS+AF8-IOC+AF8AWw-GS+AF0-ETFLAGS.  We can create new ioctls for bits which
-+AD4- +AD4- are intended for fs-specific flags, which then later get promoted to
-+AD4- +AD4- the new syscall when some functionality starts to get shared accross
-+AD4- +AD4- other file systems (probably with a different bit assignment).  This
-+AD4- +AD4- is certainly less code, but it does mean more complexity outside of
-+AD4- +AD4- the code when we try to coordinate new functionality across file
-+AD4- +AD4- systems.
-+AD4- 
-+AD4- I had thought of indexed inode flags as an alternative to the xattr/string
-+AD4- parsing thing.  Feature flags make their first appearance as part of a per-FS
-+AD4- flag-space and are migrated to the common flag-space when there is demand.
-+AD4- It would also avoid the need for each fs to create its own flag ioctl.
-+AD4- 
-+AD4- On the other hand, someone suggested I try remaking IOC+AF8AWw-GS+AF0-ETFLAG as an xattr,
-+AD4- so off I went. :)
-+AD4- 
+When patching gathers, we don't need to check against
+gathers with lower indices than the current one, as
+they are guaranteed to already have been handled.
 
-At least in btrfs xattrs are more expensive than something right in the
-inode.  We can cache it when we load the inode (it'll be right next to
-the inode most of the time) but for performance critical things I do
-like the good old fashioned flags.
+Signed-off-by: Erik Faye-Lund <kusmabite@gmail.com>
+---
 
-It's also possible to turn xattrs off, so we have to deal with
-filesystems that are mounted with them off and then back on again.  I
-can't think of huge problems from that right now, just something to be
-aware of.
+Here's a trivial optimization I have been running with for a while.
 
--chris
+ drivers/gpu/host1x/job.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/host1x/job.c b/drivers/gpu/host1x/job.c
+index de5ec33..e965805 100644
+--- a/drivers/gpu/host1x/job.c
++++ b/drivers/gpu/host1x/job.c
+@@ -534,7 +534,7 @@ int host1x_job_pin(struct host1x_job *job, struct device *dev)
+ 
+ 		g->base = job->gather_addr_phys[i];
+ 
+-		for (j = 0; j < job->num_gathers; j++)
++		for (j = i + 1; j < job->num_gathers; j++)
+ 			if (job->gathers[j].bo == g->bo)
+ 				job->gathers[j].handled = true;
+ 
+-- 
+1.8.1.2
 
