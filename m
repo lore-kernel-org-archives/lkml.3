@@ -1,177 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904AbaAGUZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 15:25:58 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:49831 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753379AbaAGUZt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 15:25:49 -0500
-Message-ID: <52CC62B7.3030004@gmail.com>
-Date: Tue, 07 Jan 2014 22:25:27 +0200
-From: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753893AbaAGUaH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 15:30:07 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:22099 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753007AbaAGU3z convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 15:29:55 -0500
+From: Chris Mason <clm@fb.com>
+To: "muthu.lkml@gmail.com" <muthu.lkml@gmail.com>
+CC: "kmo@daterainc.com" <kmo@daterainc.com>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lkp@linux.intel.com" <lkp@linux.intel.com>,
+        "axboe@kernel.dk" <axboe@kernel.dk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [block:for-3.14/core] kernel BUG at fs/bio.c:1748
+Thread-Topic: [block:for-3.14/core] kernel BUG at fs/bio.c:1748
+Thread-Index: AQHPCL03PcXQz/ImsUiAzg3MZ0ORWpp4zOEAgAAr4ACAAFVnAIAA8PCAgAAEF4A=
+Date: Tue, 7 Jan 2014 20:29:47 +0000
+Message-ID: <1389126617.23310.19.camel@ret.masoncoding.com>
+References: <20140102053101.GA29352@localhost>
+	 <CAFR8uee-WTy6cj8bB4aMuGP1B0sZkc70sq1Drg7uhHS49EqHcg@mail.gmail.com>
+	 <20140106221036.GE9037@kmo>
+	 <CAFR8uef3XUEsHUvfnkAbzsXict8qD_28fTgUQyA7gjUk03OUsw@mail.gmail.com>
+	 <20140107055318.GA19016@localhost>
+	 <CAFR8ueeC_fqpN+M5YOr8AT_o3BDgr+o1ELQQJQSW7s8uDm2y5Q@mail.gmail.com>
+In-Reply-To: <CAFR8ueeC_fqpN+M5YOr8AT_o3BDgr+o1ELQQJQSW7s8uDm2y5Q@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.57.29]
+Content-Type: text/plain; charset="utf-7"
+Content-ID: <48AD0F3D7F1105459BB718A49E168E80@fb.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-CC: "pali.rohar@gmail.com" <pali.rohar@gmail.com>,
-        "pavel@ucw.cz" <pavel@ucw.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: OMAPDSS: DISPC: horizontal timing too tight errors
-References: <52CA7ABB.4010401@gmail.com> <52CBF476.3070306@ti.com>
-In-Reply-To: <52CBF476.3070306@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-01-07_07:2014-01-07,2014-01-07,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=138.697591113007
+ compositescore=0.533125042697551 urlsuspect_oldscore=0.533125042697551
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=1996008
+ rbsscore=0.533125042697551 spamscore=0
+ recipient_to_sender_domain_totalscore=29 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1305240000
+ definitions=main-1401070124
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07.01.2014 14:35, Tomi Valkeinen wrote:
-> On 2014-01-06 11:43, Ivaylo Dimitrov wrote:
->> Hi,
->>
->> commit 7faa92339bbb1e6b9a80983b206642517327eb75 "OMAPDSS: DISPC: Handle
->> synclost errors in OMAP3" introduces some limits check to prevent
->> SYNCLOST errors on OMAP3 in a specific usecase. The problem I see here
->> (on Nokia N900, Maemo 5, linux 3.13-rc6, DSP accel video decoding) is
->> that those checks effectively prevent fullscreen video playback of
->> anything above lets say 640x350 with "horizontal timing too tight"
->> errors spit in dmesg log. If I hack check_horiz_timing_omap3 function to
->> always return true, I can happily play videos up to (and including) 720p
->> resolutions, with no SYNCLOST errors.
->
-> I never worked with the patch in question, but my understanding is that
-> the core issue is quite difficult to solve optimally for all cases.
-> There are so many variables involved. So it may well be that the patch
-> in question does it a bit over-safely. Then again, it might as well have
-> a bug =).
->
-> One option is also to increase the blanking timings and pixel clock,
-> presuming the panel is fine with it. That would allow some more time for
-> the DISPC to manage scaling.
->
-> So are you saying that you can't even play any video in the LCD's native
-> resolution (i.e. no scaling needed) with fullscreen?
->
->> So, a couple of questions:
->>
->> Where do the values in static const u8 limits[3] come from? Are those
->> documented somewhere?
->
-> If I remember right, these horizontal check timings information came
-> from some non-public TI guides. Not from the TRM.
->
->> Commit message says "This code is written based on code written by Ville
->> Syrjälä <ville.syrjala@nokia.com> in Linux OMAP kernel.", is that code
->> publicly available and where (if it is).
->
-> It should be in the Nokia's kernel for N9.
->
->> Besides compiling DSS driver with DEBUG enabled and providing the log
->> (yeah, I know I should've done it already and have the logs included in
->> this mail, but... :) ), is there anything else I can do to find the
->> culprit for those errors.
->
-> You could look at the original patch in the Nokia kernel to see if the
-> mainline version is ok. Or maybe even better, try the same use case on
-> Nokia's kernel to see if it works.
->
->   Tomi
->
->
+On Tue, 2014-01-07 at 12:15 -0800, Muthu Kumar wrote:
++AD4- Thanks Fengguang. Final patch with added comment. BTW, fengguang
++AD4- mentioned that git-am has trouble with the inline patch and +ACI-quilt
++AD4- import+ACI- worked fine for him...
++AD4- 
++AD4- ------------
++AD4- In btrfs+AF8-end+AF8-bio(), we increment bi+AF8-remaining if is+AF8-orig+AF8-bio. If not,
++AD4- we restore the orig+AF8-bio but failed to increment bi+AF8-remaining for
++AD4- orig+AF8-bio, which triggers a BUG+AF8-ON later when bio+AF8-endio is called. Fix
++AD4- is to increment bi+AF8-remaining when we restore the orig bio as well.
++AD4- 
 
-Ok, after looking at what both N900 and N9 Nokia kernels do, I came up 
-with the patch bellow. If you are ok with the changes, I'll submit the 
-patch as it should. With that patch I tried more than 20 videos of 
-different resolutions(including 720p), not a single failure :) . 
-Basically it changes the core clock calculation to be done in the same 
-way as in the Nokia kernels.
+Hi everyone,
 
-Regards,
-Ivo
+Which git tree is this against?  Just Jens or some extra code too?
 
+I'll run some tests here.  My original patch is below (it's slightly
+different from Muthu's).
 
+Btrfs is sometimes calling bio+AF8-endio twice on the same bio while
+we chain things.  This makes sure we don't trip over new assertions in
+fs/bio.c
 
-diff --git a/drivers/video/omap2/dss/dispc.c 
-b/drivers/video/omap2/dss/dispc.c
-index 67e413e..ab5aa05 100644
---- a/drivers/video/omap2/dss/dispc.c
-+++ b/drivers/video/omap2/dss/dispc.c
-@@ -1999,7 +1999,8 @@ static void calc_tiler_rotation_offset(u16 
-screen_width, u16 width,
-   */
-  static int check_horiz_timing_omap3(unsigned long pclk, unsigned long 
-lclk,
-  		const struct omap_video_timings *t, u16 pos_x,
--		u16 width, u16 height, u16 out_width, u16 out_height)
-+		u16 width, u16 height, u16 out_width, u16 out_height,
-+				    bool five_taps)
-  {
-  	const int ds = DIV_ROUND_UP(height, out_height);
-  	unsigned long nonactive;
-@@ -2019,6 +2020,10 @@ static int check_horiz_timing_omap3(unsigned long 
-pclk, unsigned long lclk,
-  	if (blank <= limits[i])
-  		return -EINVAL;
+Signed-off-by: Chris Mason +ADw-clm+AEA-fb.com+AD4-
 
-+	/* FIXME add checks for 3-tap filter once the limitations are known */
-+	if (!five_taps)
-+		return 0;
-+	
-  	/*
-  	 * Pixel data should be prepared before visible display point starts.
-  	 * So, atleast DS-2 lines must have already been fetched by DISPC
-@@ -2191,24 +2196,33 @@ static int dispc_ovl_calc_scaling_34xx(unsigned 
-long pclk, unsigned long lclk,
-  	const int maxsinglelinewidth =
-  			dss_feat_get_param_max(FEAT_PARAM_LINEWIDTH);
-
-+	*five_taps = height > out_height;
-+
-  	do {
-  		in_height = DIV_ROUND_UP(height, *decim_y);
-  		in_width = DIV_ROUND_UP(width, *decim_x);
--		*core_clk = calc_core_clk_five_taps(pclk, mgr_timings,
--			in_width, in_height, out_width, out_height, color_mode);
--
--		error = check_horiz_timing_omap3(pclk, lclk, mgr_timings,
--				pos_x, in_width, in_height, out_width,
--				out_height);
-
-  		if (in_width > maxsinglelinewidth)
-  			if (in_height > out_height &&
-  						in_height < out_height * 2)
-  				*five_taps = false;
--		if (!*five_taps)
-+again:
-+		if(*five_taps)
-+			*core_clk = calc_core_clk_five_taps(pclk, mgr_timings,
-+						in_width, in_height, out_width,
-+						out_height, color_mode);
-+		else
-  			*core_clk = dispc.feat->calc_core_clk(pclk, in_width,
--					in_height, out_width, out_height,
--					mem_to_mem);
-+				in_height, out_width, out_height,
-+				mem_to_mem);
-+
-+		error = check_horiz_timing_omap3(pclk, lclk, mgr_timings,
-+				pos_x, in_width, in_height, out_width,
-+				out_height, *five_taps);
-+		if(*five_taps && error) {
-+			*five_taps = false;
-+			goto again;
-+		}
-
-  		error = (error || in_width > maxsinglelinewidth * 2 ||
-  			(in_width > maxsinglelinewidth && *five_taps) ||
-@@ -2226,7 +2240,7 @@ static int dispc_ovl_calc_scaling_34xx(unsigned 
-long pclk, unsigned long lclk,
-  	} while (*decim_x <= *x_predecim && *decim_y <= *y_predecim && error);
-
-  	if (check_horiz_timing_omap3(pclk, lclk, mgr_timings, pos_x, width,
--				height, out_width, out_height)){
-+				height, out_width, out_height, *five_taps)){
-  			DSSERR("horizontal timing too tight\n");
-  			return -EINVAL;
-  	}
+diff --git a/fs/btrfs/check-integrity.c b/fs/btrfs/check-integrity.c
+index 7fcac70..5b30360 100644
+--- a/fs/btrfs/check-integrity.c
++-+-+- b/fs/btrfs/check-integrity.c
++AEAAQA- -2289,6 +-2289,10 +AEAAQA- static void btrfsic+AF8-bio+AF8-end+AF8-io(struct bio +ACo-bp, int bio+AF8-error+AF8-status)
+ 		block +AD0- next+AF8-block+ADs-
+ 	+AH0- while (NULL +ACEAPQ- block)+ADs-
+ 
++-	/+ACo-
++-	 +ACo- since we're not using bio+AF8-endio here, we don't need to worry about
++-	 +ACo- the remaining count
++-	 +ACo-/
+ 	bp-+AD4-bi+AF8-end+AF8-io(bp, bio+AF8-error+AF8-status)+ADs-
+ +AH0-
+ 
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index 62176ad..786ddac 100644
+--- a/fs/btrfs/disk-io.c
++-+-+- b/fs/btrfs/disk-io.c
++AEAAQA- -1684,7 +-1684,7 +AEAAQA- static void end+AF8-workqueue+AF8-fn(struct btrfs+AF8-work +ACo-work)
+ 	bio-+AD4-bi+AF8-private +AD0- end+AF8-io+AF8-wq-+AD4-private+ADs-
+ 	bio-+AD4-bi+AF8-end+AF8-io +AD0- end+AF8-io+AF8-wq-+AD4-end+AF8-io+ADs-
+ 	kfree(end+AF8-io+AF8-wq)+ADs-
+-	bio+AF8-endio(bio, error)+ADs-
++-	bio+AF8-endio+AF8-nodec(bio, error)+ADs-
+ +AH0-
+ 
+ static int cleaner+AF8-kthread(void +ACo-arg)
+diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+index ef48947..a31448f 100644
+--- a/fs/btrfs/volumes.c
++-+-+- b/fs/btrfs/volumes.c
++AEAAQA- -5284,9 +-5284,17 +AEAAQA- static void btrfs+AF8-end+AF8-bio(struct bio +ACo-bio, int err)
+ 		+AH0-
+ 	+AH0-
+ 
+-	if (bio +AD0APQ- bbio-+AD4-orig+AF8-bio)
++-	if (bio +AD0APQ- bbio-+AD4-orig+AF8-bio) +AHs-
+ 		is+AF8-orig+AF8-bio +AD0- 1+ADs-
+ 
++-		/+ACo-
++-		 +ACo- eventually we will call the bi+AF8-endio for the original bio,
++-		 +ACo- make sure that we've properly bumped bi+AF8-remaining to reflect
++-		 +ACo- our chain of endios here
++-		 +ACo-/
++-		atomic+AF8-inc(+ACY-bio-+AD4-bi+AF8-remaining)+ADs-
++-	+AH0-
++-
+ 	if (atomic+AF8-dec+AF8-and+AF8-test(+ACY-bbio-+AD4-stripes+AF8-pending)) +AHs-
+ 		if (+ACE-is+AF8-orig+AF8-bio) +AHs-
+ 			bio+AF8-put(bio)+ADs-
+--
+To unsubscribe from this list: send the line +ACI-unsubscribe linux-fsdevel+ACI- in
+the body of a message to majordomo+AEA-vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
