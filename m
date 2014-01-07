@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038AbaAGRsu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 12:48:50 -0500
-Received: from smtprelay0184.hostedemail.com ([216.40.44.184]:32886 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752366AbaAGRsm (ORCPT
+	id S1753551AbaAGRuF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 12:50:05 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:52301 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752819AbaAGRuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 12:48:42 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2538:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3865:3866:3867:3870:3871:3872:3874:4250:4321:5007:6119:6120:7652:7901:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: sea37_85b5fc25e410b
-X-Filterd-Recvd-Size: 1369
-Message-ID: <1389116918.32137.16.camel@joe-AO722>
-Subject: Re: [PATCH v2] checkpatch: Only flag FSF address, not gnu.org URL
-From: Joe Perches <joe@perches.com>
-To: Alexander Duyck <alexander.h.duyck@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: gregkh@linuxfoundation.org, josh@joshtriplett.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 07 Jan 2014 09:48:38 -0800
-In-Reply-To: <20140107173926.8923.98340.stgit@ahduyck-cp2.jf.intel.com>
-References: <20140107173926.8923.98340.stgit@ahduyck-cp2.jf.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Jan 2014 12:50:00 -0500
+MIME-Version: 1.0
+In-Reply-To: <1385460350-17543-5-git-send-email-mika.westerberg@linux.intel.com>
+References: <1385460350-17543-1-git-send-email-mika.westerberg@linux.intel.com>
+	<1385460350-17543-5-git-send-email-mika.westerberg@linux.intel.com>
+Date: Tue, 7 Jan 2014 18:50:00 +0100
+Message-ID: <CACRpkdZhw5At_X-mNkb3TmQ2n1hXc0FGWYAbkAVgxvzCw=xgtw@mail.gmail.com>
+Subject: Re: [PATCH v3 4/6] gpio / ACPI: register to ACPI events automatically
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Chris Ball <cjb@laptop.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Rob Landley <rob@landley.net>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-01-07 at 09:41 -0800, Alexander Duyck wrote:
-> This change restricts the check for the for the FSF address in the GPL
-> copyright statement so that it only flags the address, not the references to
-> the gnu.org/licenses URL which appears to be used in numerous drivers.  The
-> idea is to still allow some reference to an external copy of the GPL in the
-> event that files are copied out of the kernel tree without the COPYING file.
+On Tue, Nov 26, 2013 at 11:05 AM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
 
-Looks OK to me.
+> Instead of asking each driver to register to ACPI events we can just call
+> acpi_gpiochip_register_interrupts() for each chip that has an ACPI handle.
+> The function checks chip->to_irq and if it is set to NULL (a GPIO driver
+> that doesn't do interrupts) the function does nothing.
+>
+> We also add the a new header drivers/gpio/gpiolib.h that is used for
+> functions internal to gpiolib and add ACPI GPIO chip registering functions
+> to that header.
+>
+> Once that is done we can remove call to acpi_gpiochip_register_interrupts()
+> from its only user, pinctrl-baytrail.c
+>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
+Two questions:
 
+- Can you please rebase patches 3-6 on my GPIO tree "devel" branch?
+
+- Can this patch be placed first? It does not seem to depend on the
+  others, to to push dependent patches to the end of the series.
+
+Yours,
+Linus Walleij
