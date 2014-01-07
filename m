@@ -1,55 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558AbaAGTDS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 14:03:18 -0500
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:48212 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766AbaAGTDM (ORCPT
+	id S1753706AbaAGTEU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 14:04:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58354 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbaAGTEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 14:03:12 -0500
-Message-ID: <1389121384.6687.0.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] ipc: whitespace cleanup
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Joe Perches <joe@perches.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Rik van Riel <riel@redhat.com>
-Date: Tue, 07 Jan 2014 11:03:04 -0800
-In-Reply-To: <1389115444.32137.9.camel@joe-AO722>
-References: <1387897356-6140-1-git-send-email-manfred@colorfullife.com>
-	 <1389114734.3095.3.camel@buesod1.americas.hpqcorp.net>
-	 <1389115444.32137.9.camel@joe-AO722>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Jan 2014 14:04:10 -0500
+Date: Tue, 7 Jan 2014 11:04:38 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.12 000/144] 3.12.7-stable review
+Message-ID: <20140107190438.GA2346@kroah.com>
+References: <20140106223745.326293132@linuxfoundation.org>
+ <20140107190230.GA25199@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140107190230.GA25199@kroah.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-01-07 at 09:24 -0800, Joe Perches wrote:
-> On Tue, 2014-01-07 at 09:12 -0800, Davidlohr Bueso wrote:
-> > On Tue, 2013-12-24 at 16:02 +0100, Manfred Spraul wrote:
-> > > The ipc code does not adhere the typical linux coding style.
-> > > This patch fixes lots of simple whitespace errors.
-> > 
-> > While it's no big deal, the title of the patch doesn't really reflect
-> > the actual changes as it deals with much more than just whitespace
-> > cleanups. How about something like "ipc: checkpatch fixes"?
+On Tue, Jan 07, 2014 at 11:02:30AM -0800, Greg Kroah-Hartman wrote:
+> As there were lots of changes to the -rc1 release, I've now done a -rc2.
 > 
-> Isn't a patch where "git diff -w" is empty
-> whitespace only cleanups?
-> 
-> $ git diff --help
-> []
->        -w, --ignore-all-space
->            Ignore whitespace when comparing lines. This ignores differences
->            even if one line has whitespace where the other line has none.
-> 
+> Changes were with the mm NUMA patches (lots more added and reordered to
+> fix potential build issues), some ARM clock fixes added, and a SH patch.
 
-Ok, sorry about the noise then, I just didn't consider foo () >> foo() a
-whitespace cleanup.
+Oops, no, the ARM clock fixes were for the 3.10.26-rc1 release, not
+3.12.7-rc1, sorry abou that.
 
+Too many trees...
 
+greg k-h
