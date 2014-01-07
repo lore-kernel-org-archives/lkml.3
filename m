@@ -1,114 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354AbaAGAeM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 19:34:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49366 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752411AbaAGAeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 19:34:10 -0500
-Date: Tue, 7 Jan 2014 11:33:57 +1100
-From: NeilBrown <neilb@suse.de>
-To: Andrea Mazzoleni <amadvance@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, clm@fb.com, jbacik@fb.com
-Subject: Re: [RFC] lib: raid: New RAID library supporting up to six parities
-Message-ID: <20140107113357.3bd67ad0@notabene.brown>
-In-Reply-To: <20140106094523.GA4602@gmail.com>
-References: <1388742436-3754-1-git-send-email-amadvance@gmail.com>
-	<20140106111529.7bcff024@notabene.brown>
-	<20140106094523.GA4602@gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/=Ci+F7FClBMEgb/_8_j5c+W"; protocol="application/pgp-signature"
+	id S1756423AbaAGArh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:47:37 -0500
+Received: from mail-we0-f182.google.com ([74.125.82.182]:61738 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785AbaAGArf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 19:47:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <1386204578-6018-1-git-send-email-nm@ti.com>
+References: <1386204578-6018-1-git-send-email-nm@ti.com>
+Date: Mon, 6 Jan 2014 18:47:33 -0600
+X-Google-Sender-Auth: mFfLlu_cFP_v6PEmqEva7V1tsKU
+Message-ID: <CAGo_u6o+Lcf0wzmsSir1APd4T3A4D+GPtdRmkBM79mjW2aEGHA@mail.gmail.com>
+Subject: Re: [PATCH V2 0/2] ARM: OMAP2+/dts: standardize SoC naming
+From: Nishanth Menon <nm@ti.com>
+To: Rob Herring <rob.herring@calxeda.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <bcousson@baylibre.com>
+Cc: Mark Rutland <mark.rutland@arm.com>, dt list <devicetree@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        lkml <linux-kernel@vger.kernel.org>, Rob Landley <rob@landley.net>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/=Ci+F7FClBMEgb/_8_j5c+W
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi Benoit, Tony,
 
-On Mon, 6 Jan 2014 10:45:23 +0100 Andrea Mazzoleni <amadvance@gmail.com>
-wrote:
+On Wed, Dec 4, 2013 at 6:49 PM, Nishanth Menon <nm@ti.com> wrote:
+> Originally attempted partially in [1], the missing binding were
+> reported as part of Rob's report in [2].
 
-> Hi Neil,
->=20
-> Thanks for your feedback. In the meantime I went further in developing and
-> I've just sent version 2 of the patch, that contains a preliminary btrfs
-> modification to use the new interface.
->=20
-> Please use this one for any kind of review because it contains a modifica=
-tion
-> of the interface to match better the btrfs use.
-> I'll now try to do something similar to the async_tx layer and to improve=
- the
-> code documentation as you recommended.
+Would you like me to send this series again since I do not see this in:
+https://git.kernel.org/cgit/linux/kernel/git/bcousson/linux-omap-dt.git/log/?h=for_3.14/dts
 
-Thanks.
+patchwork links:
+https://patchwork.kernel.org/patch/3286051/
+https://patchwork.kernel.org/patch/3286061/
 
->=20
-> Anyway, a good entry point to understand the code is to start from the
-> include/linux/raid/raid.h file. It contains the functions that external
-> modules should call with a complete description of them.
->=20
-> There is raid_par() used to compute parity, and raid_rec() to recover dam=
-aged
-> blocks. These two functions replace all the old xor_blocks and raid6 call=
-s.
->=20
-> And there is the raid_sort() you mention. It's an helper function that ca=
-n be
-> used to ensure that the blocks indexes are passed at the raid interface in
-> proper order. In existing code I saw that the indexes are often sorted be=
-fore
-> calling raid6, with something like:
->=20
-> 	if (faila > failb) {
-> 		int tmp =3D failb;
-> 		failb =3D faila;
-> 		faila =3D tmp;
-> 	}
->=20
-> To do the same with up to six failures, it's now required some kind of so=
-rt
-> function.
-
-I'm not totally convinced by this, but then I haven't played with the code
-so maybe I'm wrong.
-I don't see the above as "sorting" faila and failb, but rather determining
-which one is first.  Once you know which one is first, the remainder follow
-in order.
-So I would probably just make sure we always process the block is the "righ=
-t"
-order.  Then sorting would be irrelevant.
-But as I say, I haven't fiddled with the code, so maybe that would end up
-being more complex.
-
-Thanks,
-NeilBrown
-
-
---Sig_/=Ci+F7FClBMEgb/_8_j5c+W
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBUstLdTnsnt1WYoG5AQKlmQ//TzKGXzAskIf3bSswe+RzUj80HmxPPgy9
-PYSSQgDlNEAiNhBa2xVB6aVFLk5atsxCwVI4o8ckif+vXkDyQCdS3o7usTjYCt9W
-/vFmtxzRCrCg9em5iv0KGk8Au2HV1EtF2+6mDlGGJQptoB4/zaG/k2ivMWn62v6A
-ELkdOy0ZGq6Z3bRprkntCqRBq/eNmkdHKquIvJpgjNx0VxOJS29vwzhknXesO012
-TwpXEFVC06MBuQ06TRmQQLSWM6ocA+1Cgzi5/5ZYySSQTd4FgSMhfhkRWfFVw2yJ
-Y/npgWQhcrp6xJUaAJEhko+KnyvpkdqjhE2fPd3xXsyvoRxEaW9w1qFXC5J5d4te
-vSB4iZcJ9xy5ADN2N8/gi1DUXfZzdSOPjG3rq996mYyaYiz2d6RluzcusY6/zyQK
-wUSNAOuxBYuNaj8lETmrpmzb6Xh15Fj+dANYme+CqpOS6rhV/qiHcl97UVtEnGe1
-ggnDwzfKiA1609edJ1uPu3QOa7ZVzEIEnjavkdL+Et01cWAt0yQI+McB7TnsKdoC
-bAs9zvBcfpQovxw60LM/YrZmqsXg6dRDQIjHKM4utNgwsSB0QXrBTl1In/tj6Y7M
-DMW5RDocTkCcUNl2ohmHsz46q0GhUfhuRG49ylc/BW19eWHArRVqttH6VdORqczD
-InnoV3U+lkc=
-=EmBH
------END PGP SIGNATURE-----
-
---Sig_/=Ci+F7FClBMEgb/_8_j5c+W--
+>
+> So, here is take two of the series, lacking an standard causes issues
+> that was fixed such as [3]. Ideally, we should never again introduce a
+> board file without a exact compatible SoC match.
+>
+> I have stayed a bit away from updating board and SoC dts files yet
+> to look at the direction we'd like to go here. If we feel things are
+> good, I would gladly try to clean our mess up.
+>
+> Nishanth Menon (2):
+>   Documentation: dt: OMAP: explicitly state SoC compatible strings
+>   ARM: OMAP2+: board-generic: update SoC compatibility strings
+>
+>  .../devicetree/bindings/arm/omap/omap.txt          |   53 ++++++++++++++++++++
+>  arch/arm/mach-omap2/board-generic.c                |    7 +++
+>  2 files changed, 60 insertions(+)
+>
+> [1] https://patchwork.kernel.org/patch/2998201/
+> [2] http://marc.info/?l=linux-arm-kernel&m=138378029113665&w=2
+> [3] https://patchwork.kernel.org/patch/3279281/
+>
+> --
+> 1.7.9.5
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
