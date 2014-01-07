@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757812AbaAGA4K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 19:56:10 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:43114 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757770AbaAGA4F (ORCPT
+	id S1757836AbaAGA4S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:56:18 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:38077 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757816AbaAGA4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 19:56:05 -0500
-Subject: [PATCH v7 07/15] agp/intel: Rename gtt_bus_addr to gtt_phys_addr
+	Mon, 6 Jan 2014 19:56:12 -0500
+Subject: [PATCH v7 08/15] agp/intel: Support 64-bit GMADR
 To: linux-pci@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>
 From: Bjorn Helgaas <bhelgaas@google.com>
 Cc: David Airlie <airlied@linux.ie>, Yinghai Lu <yinghai@kernel.org>,
         Guo Chao <yan@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Date: Mon, 06 Jan 2014 17:56:02 -0700
-Message-ID: <20140107005602.10786.2964.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Date: Mon, 06 Jan 2014 17:56:09 -0700
+Message-ID: <20140107005609.10786.29922.stgit@bhelgaas-glaptop.roam.corp.google.com>
 In-Reply-To: <20140107005003.10786.85164.stgit@bhelgaas-glaptop.roam.corp.google.com>
 References: <20140107005003.10786.85164.stgit@bhelgaas-glaptop.roam.corp.google.com>
 User-Agent: StGit/0.16
@@ -24,76 +24,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only use of gtt_bus_addr is as an argument to ioremap(), so it is a CPU
-physical address, not a bus address.  Rename it to gtt_phys_addr to reflect
-this.
+From: Yinghai Lu <yinghai@kernel.org>
 
-No functional change.
+Per the Intel 915G/915GV/... Chipset spec (document number 301467-005),
+GMADR is a standard PCI BAR.
 
+The PCI core reads GMADR at enumeration-time.  Use pci_bus_address()
+instead of reading it again in the driver.  This works correctly for both
+32-bit and 64-bit BARs.  The spec above only mentions 32-bit GMADR, but
+Yinghai's patch (link below) indicates some devices have a 64-bit GMADR.
+
+[bhelgaas: reworked starting from http://lkml.kernel.org/r/1385851238-21085-13-git-send-email-yinghai@kernel.org]
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
- drivers/char/agp/intel-gtt.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/char/agp/intel-agp.h |    4 ++--
+ drivers/char/agp/intel-gtt.c |   12 ++++--------
+ 2 files changed, 6 insertions(+), 10 deletions(-)
 
+diff --git a/drivers/char/agp/intel-agp.h b/drivers/char/agp/intel-agp.h
+index 1042c1b90376..0bf5590fd0f9 100644
+--- a/drivers/char/agp/intel-agp.h
++++ b/drivers/char/agp/intel-agp.h
+@@ -55,7 +55,7 @@
+ #define INTEL_I860_ERRSTS	0xc8
+ 
+ /* Intel i810 registers */
+-#define I810_GMADDR		0x10
++#define I810_GMADR_BAR		0
+ #define I810_MMADDR		0x14
+ #define I810_PTE_BASE		0x10000
+ #define I810_PTE_MAIN_UNCACHED	0x00000000
+@@ -113,7 +113,7 @@
+ #define INTEL_I850_ERRSTS	0xc8
+ 
+ /* intel 915G registers */
+-#define I915_GMADDR	0x18
++#define I915_GMADR_BAR	2
+ #define I915_MMADDR	0x10
+ #define I915_PTEADDR	0x1C
+ #define I915_GMCH_GMS_STOLEN_48M	(0x6 << 4)
 diff --git a/drivers/char/agp/intel-gtt.c b/drivers/char/agp/intel-gtt.c
-index b8e2014cb9cb..54202ffcf467 100644
+index 54202ffcf467..560f66bffebb 100644
 --- a/drivers/char/agp/intel-gtt.c
 +++ b/drivers/char/agp/intel-gtt.c
-@@ -64,7 +64,7 @@ static struct _intel_private {
- 	struct pci_dev *pcidev;	/* device one */
- 	struct pci_dev *bridge_dev;
- 	u8 __iomem *registers;
--	phys_addr_t gtt_bus_addr;
-+	phys_addr_t gtt_phys_addr;
- 	u32 PGETBL_save;
- 	u32 __iomem *gtt;		/* I915G */
- 	bool clear_fake_agp; /* on first access via agp, fill with scratch */
-@@ -191,7 +191,7 @@ static int i810_setup(void)
- 	writel(virt_to_phys(gtt_table) | I810_PGETBL_ENABLED,
- 	       intel_private.registers+I810_PGETBL_CTL);
+@@ -608,9 +608,8 @@ static bool intel_gtt_can_wc(void)
  
--	intel_private.gtt_bus_addr = reg_addr + I810_PTE_BASE;
-+	intel_private.gtt_phys_addr = reg_addr + I810_PTE_BASE;
+ static int intel_gtt_init(void)
+ {
+-	u32 gma_addr;
+ 	u32 gtt_map_size;
+-	int ret;
++	int ret, bar;
  
- 	if ((readl(intel_private.registers+I810_DRAM_CTL)
- 		& I810_DRAM_ROW_0) == I810_DRAM_ROW_0_SDRAM) {
-@@ -636,10 +636,10 @@ static int intel_gtt_init(void)
+ 	ret = intel_private.driver->setup();
+ 	if (ret != 0)
+@@ -660,14 +659,11 @@ static int intel_gtt_init(void)
+ 	}
  
- 	intel_private.gtt = NULL;
- 	if (intel_gtt_can_wc())
--		intel_private.gtt = ioremap_wc(intel_private.gtt_bus_addr,
-+		intel_private.gtt = ioremap_wc(intel_private.gtt_phys_addr,
- 					       gtt_map_size);
- 	if (intel_private.gtt == NULL)
--		intel_private.gtt = ioremap(intel_private.gtt_bus_addr,
-+		intel_private.gtt = ioremap(intel_private.gtt_phys_addr,
- 					    gtt_map_size);
- 	if (intel_private.gtt == NULL) {
- 		intel_private.driver->cleanup();
-@@ -796,7 +796,7 @@ static int i830_setup(void)
- 	if (!intel_private.registers)
- 		return -ENOMEM;
+ 	if (INTEL_GTT_GEN <= 2)
+-		pci_read_config_dword(intel_private.pcidev, I810_GMADDR,
+-				      &gma_addr);
++		bar = I810_GMADR_BAR;
+ 	else
+-		pci_read_config_dword(intel_private.pcidev, I915_GMADDR,
+-				      &gma_addr);
+-
+-	intel_private.gma_bus_addr = (gma_addr & PCI_BASE_ADDRESS_MEM_MASK);
++		bar = I915_GMADR_BAR;
  
--	intel_private.gtt_bus_addr = reg_addr + I810_PTE_BASE;
-+	intel_private.gtt_phys_addr = reg_addr + I810_PTE_BASE;
- 
++	intel_private.gma_bus_addr = pci_bus_address(intel_private.pcidev, bar);
  	return 0;
  }
-@@ -1123,13 +1123,13 @@ static int i9xx_setup(void)
- 	case 3:
- 		pci_read_config_dword(intel_private.pcidev,
- 				      I915_PTEADDR, &gtt_addr);
--		intel_private.gtt_bus_addr = gtt_addr;
-+		intel_private.gtt_phys_addr = gtt_addr;
- 		break;
- 	case 5:
--		intel_private.gtt_bus_addr = reg_addr + MB(2);
-+		intel_private.gtt_phys_addr = reg_addr + MB(2);
- 		break;
- 	default:
--		intel_private.gtt_bus_addr = reg_addr + KB(512);
-+		intel_private.gtt_phys_addr = reg_addr + KB(512);
- 		break;
- 	}
  
 
