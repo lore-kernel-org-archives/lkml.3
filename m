@@ -1,83 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041AbaAGMuF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 07:50:05 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59180 "EHLO arroyo.ext.ti.com"
+	id S1751646AbaAGMuW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 07:50:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23923 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751445AbaAGMtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 07:49:53 -0500
-Message-ID: <52CBF7D9.6050602@ti.com>
-Date: Tue, 7 Jan 2014 14:49:29 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        <boris.ostrovsky@oracle.com>, <plagnioj@jcrosoft.com>,
-        <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH v2] allow xenfb initialization for hvm guests
-References: <1388775730-2984-1-git-send-email-stefano.stabellini@eu.citrix.com> <20140103203422.GA2668@phenom.dumpdata.com>
-In-Reply-To: <20140103203422.GA2668@phenom.dumpdata.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="brmrbF089gFfMnvoao7WWtqq70TPj1JG7"
+	id S1751867AbaAGMsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 07:48:38 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Ahern <dsahern@gmail.com>, Jean Pihet <jean.pihet@linaro.org>
+Subject: [PATCH 16/16] perf tests: Add NO_LIBDW_DWARF_UNWIND make test
+Date: Tue,  7 Jan 2014 13:47:33 +0100
+Message-Id: <1389098853-14466-17-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1389098853-14466-1-git-send-email-jolsa@redhat.com>
+References: <1389098853-14466-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---brmrbF089gFfMnvoao7WWtqq70TPj1JG7
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Adding make test for NO_LIBDW_DWARF_UNWIND option,
+plus updating minimal build test with it.
 
-On 2014-01-03 22:34, Konrad Rzeszutek Wilk wrote:
-> On Fri, Jan 03, 2014 at 07:02:09PM +0000, Stefano Stabellini wrote:
->=20
-> The title needs 'xen/fb' prefixed but that is easy enough.
->=20
->> There is no reasons why an HVM guest shouldn't be allowed to use xenfb=
-=2E
->> As a matter of fact ARM guests, HVM from Linux POV, can use xenfb.
->> Given that no Xen toolstacks configure a xenfb backend for x86 HVM
->> guests, they are not affected.
->>
->> Please note that at this time QEMU needs few outstanding fixes to
->> provide xenfb on ARM:
->>
->> http://marc.info/?l=3Dqemu-devel&m=3D138739419700837&w=3D2
->=20
-> Cool. Is the video maintainer OK with the Xen maintainers stashing it
-> in the Xen tree for Linus?
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+---
+ tools/perf/tests/make | 63 +++++++++++++++++++++++++++------------------------
+ 1 file changed, 33 insertions(+), 30 deletions(-)
 
-Yep, fine for me.
+diff --git a/tools/perf/tests/make b/tools/perf/tests/make
+index e341088..a38e6a0 100644
+--- a/tools/perf/tests/make
++++ b/tools/perf/tests/make
+@@ -14,41 +14,43 @@ endif
+ has = $(shell which $1 2>/dev/null)
+ 
+ # standard single make variable specified
+-make_clean_all      := clean all
+-make_python_perf_so := python/perf.so
+-make_debug          := DEBUG=1
+-make_no_libperl     := NO_LIBPERL=1
+-make_no_libpython   := NO_LIBPYTHON=1
+-make_no_scripts     := NO_LIBPYTHON=1 NO_LIBPERL=1
+-make_no_newt        := NO_NEWT=1
+-make_no_slang       := NO_SLANG=1
+-make_no_gtk2        := NO_GTK2=1
+-make_no_ui          := NO_NEWT=1 NO_SLANG=1 NO_GTK2=1
+-make_no_demangle    := NO_DEMANGLE=1
+-make_no_libelf      := NO_LIBELF=1
+-make_no_libunwind   := NO_LIBUNWIND=1
+-make_no_backtrace   := NO_BACKTRACE=1
+-make_no_libnuma     := NO_LIBNUMA=1
+-make_no_libaudit    := NO_LIBAUDIT=1
+-make_no_libbionic   := NO_LIBBIONIC=1
+-make_tags           := tags
+-make_cscope         := cscope
+-make_help           := help
+-make_doc            := doc
+-make_perf_o         := perf.o
+-make_util_map_o     := util/map.o
+-make_install        := install
+-make_install_bin    := install-bin
+-make_install_doc    := install-doc
+-make_install_man    := install-man
+-make_install_html   := install-html
+-make_install_info   := install-info
+-make_install_pdf    := install-pdf
++make_clean_all             := clean all
++make_python_perf_so        := python/perf.so
++make_debug                 := DEBUG=1
++make_no_libperl            := NO_LIBPERL=1
++make_no_libpython          := NO_LIBPYTHON=1
++make_no_scripts            := NO_LIBPYTHON=1 NO_LIBPERL=1
++make_no_newt               := NO_NEWT=1
++make_no_slang              := NO_SLANG=1
++make_no_gtk2               := NO_GTK2=1
++make_no_ui                 := NO_NEWT=1 NO_SLANG=1 NO_GTK2=1
++make_no_demangle           := NO_DEMANGLE=1
++make_no_libelf             := NO_LIBELF=1
++make_no_libunwind          := NO_LIBUNWIND=1
++make_no_libdw_dwarf_unwind := NO_LIBDW_DWARF_UNWIND=1
++make_no_backtrace          := NO_BACKTRACE=1
++make_no_libnuma            := NO_LIBNUMA=1
++make_no_libaudit           := NO_LIBAUDIT=1
++make_no_libbionic          := NO_LIBBIONIC=1
++make_tags                  := tags
++make_cscope                := cscope
++make_help                  := help
++make_doc                   := doc
++make_perf_o                := perf.o
++make_util_map_o            := util/map.o
++make_install               := install
++make_install_bin           := install-bin
++make_install_doc           := install-doc
++make_install_man           := install-man
++make_install_html          := install-html
++make_install_info          := install-info
++make_install_pdf           := install-pdf
+ 
+ # all the NO_* variable combined
+ make_minimal        := NO_LIBPERL=1 NO_LIBPYTHON=1 NO_NEWT=1 NO_GTK2=1
+ make_minimal        += NO_DEMANGLE=1 NO_LIBELF=1 NO_LIBUNWIND=1 NO_BACKTRACE=1
+ make_minimal        += NO_LIBNUMA=1 NO_LIBAUDIT=1 NO_LIBBIONIC=1
++make_minimal        += NO_LIBDW_DWARF_UNWIND=1
+ 
+ # $(run) contains all available tests
+ run := make_pure
+@@ -65,6 +67,7 @@ run += make_no_ui
+ run += make_no_demangle
+ run += make_no_libelf
+ run += make_no_libunwind
++run += make_no_libdw_dwarf_unwind
+ run += make_no_backtrace
+ run += make_no_libnuma
+ run += make_no_libaudit
+-- 
+1.8.3.1
 
- Tomi
-
-
-
---brmrbF089gFfMnvoao7WWtqq70TPj1JG7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJSy/fZAAoJEPo9qoy8lh71w08P/RlAHiaj9Ece7pg9DMw16o7+
-+KRe4v+J9izF2Vj41y70qR2qvy3FM3QuTnhg3caN6xyZBHy2QQwy9Ybw5oolU5TQ
-9m8eBCcAsp6+IzE/OuDaRCRupI0u8gcmhxCcIM3+ZSUhNM1gFzYc0be9GVyyj796
-lLFBQ6vijkfgZgbYH7QtdwNrr6b3nO7k+LIpB0Yh6D0aY957Rq1mUsFHfm5FMd76
-esbnSNnRCMHpOJkWWAlvd4kKJN7eZVzuXq/0zX14s68kqiom5MrxAEDyvL+usofj
-NqMn47GH7cgyaGrJBEJ++wf1qdY0wkhi30+DuGeDmGCfVALk6Hk6DvcX+va+pGKH
-p/M9mMeFRYZAspfTJjbN7856b2cBP1HFJrEAQZCQXfru9vfYH3ThAj9RhDAp6hr3
-nZm4x7owiHuiEX5ohpatWueTxfKhfsJvZ+YiRPa+wTksvruMwofj7HkL1mGPfgUS
-4A+xuKtylWZ/98T9uUAQQBMk8StllYTlyzTTHUXPInwQM+ObfOqcv/S3BZ9h4uam
-TZhqsO8WMMdRuE4kv3H2ydcLMBft+KEXGCqx1miNf0KumJr5nfKuIxk44lDH5y8T
-3JHmc5X/I/lDzPH4ZF5nFvpfWhHHU01pShpTKrlIKOuUbXj0EcNlJYfLZsKbVbT9
-RgX/XB1nCsnTbXv74bzy
-=EOHX
------END PGP SIGNATURE-----
-
---brmrbF089gFfMnvoao7WWtqq70TPj1JG7--
