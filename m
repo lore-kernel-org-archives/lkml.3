@@ -1,119 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654AbaAGGJr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 01:09:47 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:10749 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752013AbaAGGJp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 01:09:45 -0500
-X-AuditID: cbfee690-b7f266d00000287c-7a-52cb9a15f240
-Message-id: <52CB9A16.9010305@samsung.com>
-Date: Tue, 07 Jan 2014 15:09:26 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: RongJun Ying <rjying@gmail.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, Barry Song <Barry.Song@csr.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Workgroup.linux@csr.com, Rongjun Ying <rongjun.ying@csr.com>
-Subject: Re: [PATCH v3] extcon: gpio: Add power resume support
-References: <1389070590-3139-1-git-send-email-rongjun.ying@csr.com>
-In-reply-to: <1389070590-3139-1-git-send-email-rongjun.ying@csr.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsWyRsSkWFd01ukgg3NPOC0uT1rPZLHp8TVW
-	i8u75rBZ3G5cwWZxq/cAs8W+C39YLTb09TM5sHvs2jmH1WPnrLvsHpuX1Hv0bVnF6PF5k1wA
-	axSXTUpqTmZZapG+XQJXxqzPncwFqwQrWg6eY2xg3MrXxcjBISFgIrGmubKLkRPIFJO4cG89
-	WxcjF4eQwFJGia7vd9ggEiYSey/dZYRILGKUeNZ8kBXCecUosXXxAbAqXgEtiU97NzOD2CwC
-	qhLXDy1nBbHZgOL7X9wAqxEVCJNYOf0KC0S9oMSPyffAbBEBZYmb3XOYQIYyC1xilOi/8Y8J
-	JCEsYCfRevE/O4gtJOAssWjjK7AFnAIuEg9+ngVbwCygI7G/dRobhC0vsXnNW2aQQRICl9gl
-	Xn17zAZxkYDEt8mHWCB+lpXYdIAZ4jVJiYMrbrBMYBSbheSmWUjGzkIydgEj8ypG0dSC5ILi
-	pPQiE73ixNzi0rx0veT83E2MwLg7/e/ZhB2M9w5YH2JMBlo5kVlKNDkfGLd5JfGGxmZGFqYm
-	psZG5pZmpAkrifOqPUoKEhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cC4TKTVL3rGAgPetB8X
-	u5TKRbpz9kZbLVwvq5+i8rEjIMPXwXPRP1MniyYjg8raJwfOzfD/cnaz3uoprKtrVI/W/y7p
-	ZPctcLIMdbp4ePL/o6Y1QlcU7v/1OlTscvFIj/Ku0laRV4sPFz+RsttbYpFpzHznR2LBnLL0
-	a1XFC0USkhyr1J8eElFiKc5INNRiLipOBABlaglP0QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDKsWRmVeSWpSXmKPExsVy+t9jAV3RWaeDDHa3MllcnrSeyWLT42us
-	Fpd3zWGzuN24gs3iVu8BZot9F/6wWmzo62dyYPfYtXMOq8fOWXfZPTYvqffo27KK0ePzJrkA
-	1qgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoDOU
-	FMoSc0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYQ1jBmzPncyF6wSrGg5eI6xgXEr
-	XxcjJ4eEgInE3kt3GSFsMYkL99azdTFycQgJLGKUeNZ8kBXCecUosXXxATaQKl4BLYlPezcz
-	g9gsAqoS1w8tZwWx2YDi+1/cAKsRFQiTWDn9CgtEvaDEj8n3wGwRAWWJm91zmECGMgtcYpTo
-	v/GPCSQhLGAn0XrxPzuILSTgLLFo4yuwBZwCLhIPfp4FW8AsoCOxv3UaG4QtL7F5zVvmCYwC
-	s5DsmIWkbBaSsgWMzKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxguP6mdQOxpUNFocYBTgY
-	lXh4X+w9FSTEmlhWXJl7iFGCg1lJhFcz5XSQEG9KYmVValF+fFFpTmrxIcZkYBBMZJYSTc4H
-	ppy8knhDYxMzI0sjc0MLI2Nz0oSVxHkPtFoHCgmkJ5akZqemFqQWwWxh4uCUamCMerd80+HH
-	ar8ZNr+of7H2Z7v7u5eh6uubBQru2a1avOmbavXiKVrFchKdk14X1FTc8DC0S5er29m8ffvk
-	R59fnXeWUVRvjDgvp/xWeYPnxZYzm56bXX68MbHKde9qnXvJJ4wZZmd8Xh/oM1P40vqOm5eW
-	5ssbaUR4e063TNE+zd60tjbg6a1IJZbijERDLeai4kQAbnmkDS8DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1755056AbaAGGLG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 01:11:06 -0500
+Received: from ozlabs.org ([203.10.76.45]:59456 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751929AbaAGGLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 01:11:04 -0500
+Date: Tue, 7 Jan 2014 17:00:41 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lans Zhang <jia.zhang@windriver.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: linux-next: manual merge of the akpm-current tree with the tip tree
+Message-Id: <20140107170041.3a0b3ada016d250b1f9f0572@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__7_Jan_2014_17_00_41_+1100_JMhaqLsdVJWhU4p8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi RongJun,
+--Signature=_Tue__7_Jan_2014_17_00_41_+1100_JMhaqLsdVJWhU4p8
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 01/07/2014 01:56 PM, RongJun Ying wrote:
-> From: Rongjun Ying <rongjun.ying@csr.com>
-> 
-> When system on the suspend state, Some SoC can't get gpio interrupt.
-> After system resume, need send extcon uevent to userspace.
-> 
-> Signed-off-by: Rongjun Ying <rongjun.ying@csr.com>
-> Reviewed-by: Barry Song <Baohua.Song@csr.com>
-> ---
->  -v3:
->  'check_on_resume' instead of 'load_sleep_irq' as Chanwoo Choi's proposal.
-> 
->  drivers/extcon/extcon-gpio.c       |   20 ++++++++++++++++++++
->  include/linux/extcon/extcon-gpio.h |    1 +
->  2 files changed, 21 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
-> index 7e0dff5..fde52c1 100644
-> --- a/drivers/extcon/extcon-gpio.c
-> +++ b/drivers/extcon/extcon-gpio.c
-> @@ -40,6 +40,7 @@ struct gpio_extcon_data {
->  	int irq;
->  	struct delayed_work work;
->  	unsigned long debounce_jiffies;
-> +	bool check_on_resume;
->  };
-> 
->  static void gpio_extcon_work(struct work_struct *work)
-> @@ -103,6 +104,7 @@ static int gpio_extcon_probe(struct platform_device *pdev)
->  	extcon_data->gpio_active_low = pdata->gpio_active_low;
->  	extcon_data->state_on = pdata->state_on;
->  	extcon_data->state_off = pdata->state_off;
-> +	extcon_data->check_on_resume = pdata->check_on_resume;
->  	if (pdata->state_on && pdata->state_off)
->  		extcon_data->edev.print_state = extcon_gpio_print_state;
->  	if (pdata->debounce) {
-> @@ -159,12 +161,30 @@ static int gpio_extcon_remove(struct platform_device *pdev)
->  	return 0;
->  }
-> 
-> +#ifdef CONFIG_PM_SLEEP
-> +static int gpio_extcon_resume(struct device *dev)
-> +{
-> +	struct gpio_extcon_data *extcon_data;
-> +
-> +	extcon_data = dev_get_drvdata(dev);
-> +	if (extcon_data->check_on_resume)
-> +		queue_delayed_work(system_power_efficient_wq,
-> +			&extcon_data->work, extcon_data->debounce_jiffies);
-> +	return 0;
-> +}
-> +#endif
-> +
-> +static const struct dev_pm_ops gpio_extcon_pm_ops = {
-> +	SET_SYSTEM_SLEEP_PM_OPS(NULL, gpio_extcon_resume)
+Hi Andrew,
 
-If CONFIG_PM_SLEEP is undefined, gpio_extcon_pm_ops cannot find gpio_extcon_resume function.
-You should define dummy function for gpio_extcon_resume function.
+Today's linux-next merge of the akpm-current tree got a conflict in
+arch/x86/mm/numa.c between commit f3d815cb854b ("x86/mm/numa: Fix 32-bit
+kernel NUMA boot") from the tip tree and commit 1459be89954e ("x86: get
+pg_data_t's memory from other node") from the akpm-current tree.
 
+These appear to be two very similar solutions, I fixed it up (see below -
+I (arbitrarily) chose to keep the actual allocation from the tip tree, but
+the messages from the akpm-current tree) and can carry the fix as
+necessary (no action is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/x86/mm/numa.c
+index c85da7bb6b60,f26b16f0d3e0..000000000000
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@@ -211,11 -211,12 +211,12 @@@ static void __init setup_node_data(int=20
+  	 */
+  	nd_pa =3D memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
+  	if (!nd_pa) {
++ 		pr_warn("Cannot find %zu bytes in node %d, so try other nodes",
++ 			nd_size, nid);
+ -		nd_pa =3D memblock_alloc_nid(nd_size, SMP_CACHE_BYTES,
+ -					   MAX_NUMNODES);
+ +		nd_pa =3D __memblock_alloc_base(nd_size, SMP_CACHE_BYTES,
+ +					      MEMBLOCK_ALLOC_ACCESSIBLE);
+  		if (!nd_pa) {
+- 			pr_err("Cannot find %zu bytes in node %d\n",
+- 			       nd_size, nid);
++ 			pr_err("Cannot find %zu bytes in any node\n", nd_size);
+  			return;
+  		}
+  	}
+
+--Signature=_Tue__7_Jan_2014_17_00_41_+1100_JMhaqLsdVJWhU4p8
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSy5gNAAoJEMDTa8Ir7ZwV8ocP/j64fesEWSJLml18z8IhXY2j
++WUApqxJYISDiH9s26NvjY0zp1CC+5BxbFHHOGg22rE+OwJmO5uQavrG1cNK7KkO
+EoXDgljoRJXnLO9svlNnNuKg+MvxHQkgWUdFE9ncyiP5e2724NvoglwCfSNsbaVF
+fKyQ73lUAMLGo6dtYeePMrjZd/ZjlH0SqP+MsupZ+EJ8qUPBGWOrH+EMckG9+4k3
+c2loLK/fhOcf0Wn4yqYE/rr1TEa0oT7P45F6sbor2QXd2Z7PBqoCwywAOQT5y0JH
+R8+V9m0IaDRJbd//srK2rk2yo8ycidr8Qlz9xmXRA2NyhaXvdCuv+uXdcGUi4I0h
+dZgXr4ppI3wVpkbL8NyskyMMH0/nROIzXmpYjB94buQFN9IJHhwTXi6UkpgDOoDk
+SRoqau/D42Pq2dZu7YTzZbMde78Axg+5Q65BGya7eEGAzeIwnYjUR9KbcFVb0+Ww
+j2nkYSkbVESO8W23Cp/x1KD/kwPRqP4UJ8TS+049O9QR8h82dAQ4MS+Gwb7jGZaN
+/h87t32Af6miaD3bSjS5TazMyGkL9QLgqBA3ZH6t2x+CGpxLjgxGKKJ2gddaTgac
+agRJoU8DUnSGnsUy2Rmtdo37fd8MrcTEj+1cbrjROzplwAaVhKR4r351O2Gt1l2f
+XfCAVeSW0Lb87kGpMiP8
+=ZjRD
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__7_Jan_2014_17_00_41_+1100_JMhaqLsdVJWhU4p8--
