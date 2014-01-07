@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028AbaAGUD0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 15:03:26 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:58767 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753251AbaAGUDU (ORCPT
+	id S1753865AbaAGUMY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 15:12:24 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:53004 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753480AbaAGUMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 15:03:20 -0500
-From: Erik Faye-Lund <kusmabite@gmail.com>
-To: linux-tegra@vger.kernel.org
-Cc: thierry.reding@gmail.com, tbergstrom@nvidia.com,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Erik Faye-Lund <kusmabite@gmail.com>
-Subject: [PATCH] gpu: host1x: do not check previously handled gathers
-Date: Tue,  7 Jan 2014 21:03:06 +0100
-Message-Id: <1389124986-32501-1-git-send-email-kusmabite@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Tue, 7 Jan 2014 15:12:17 -0500
+MIME-Version: 1.0
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <Pine.LNX.4.44L0.1401071341180.1296-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1401071341180.1296-100000@iolanthe.rowland.org>
+Date: Tue, 7 Jan 2014 21:12:16 +0100
+Message-ID: <CAKMK7uFEzOKYjojVop1ouRsJWyeK-rnKH-udBxZcc9fwKCOV6w@mail.gmail.com>
+Subject: Re: Excessive WARN()s in Intel 915 driver
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When patching gathers, we don't need to check against
-gathers with lower indices than the current one, as
-they are guaranteed to already have been handled.
+On Tue, Jan 7, 2014 at 7:50 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> After all, it's not like there's anything I can do to fix the hardware,
+> is there?  And it doesn't look like the pipe state mismatch is going to
+> go away by itself.  Or is this a genuine, fixable, software bug?
 
-Signed-off-by: Erik Faye-Lund <kusmabite@gmail.com>
----
+These are genuine software bugs - every time one of these WARNs fires
+our software tracking and the actual hardware state have diverged,
+which eventually will lead to really subtle and hard to reproduce
+bugs.
 
-Here's a trivial optimization I have been running with for a while.
+> In any case, wouldn't it be good enough for this message to be
+> dev_warn() instead of WARN()?
 
- drivers/gpu/host1x/job.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I really want users to report these issues, and excessive WARNs seems
+to be the only way to get those reports. Please boot with
+drm.debug=0xe added to your kernel cmdline and reproduce this issues.
+Also, which precise kernel are you running? Testing latest -rc is
+always recommended, this state checker code is fairly new and gets
+constantly extended and bugs fixed ...
 
-diff --git a/drivers/gpu/host1x/job.c b/drivers/gpu/host1x/job.c
-index de5ec33..e965805 100644
---- a/drivers/gpu/host1x/job.c
-+++ b/drivers/gpu/host1x/job.c
-@@ -534,7 +534,7 @@ int host1x_job_pin(struct host1x_job *job, struct device *dev)
- 
- 		g->base = job->gather_addr_phys[i];
- 
--		for (j = 0; j < job->num_gathers; j++)
-+		for (j = i + 1; j < job->num_gathers; j++)
- 			if (job->gathers[j].bo == g->bo)
- 				job->gathers[j].handled = true;
- 
+Yours, Daniel
 -- 
-1.8.1.2
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
