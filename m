@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481AbaAGRqY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 12:46:24 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:51900 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751963AbaAGRqQ (ORCPT
+	id S1753540AbaAGRre (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 12:47:34 -0500
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:35299 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751963AbaAGRrZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 12:46:16 -0500
-Message-ID: <52CC3D46.3090102@ti.com>
-Date: Tue, 7 Jan 2014 12:45:42 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 7 Jan 2014 12:47:25 -0500
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: =?UTF-8?B?S3J6eXN6dG9mIEhhxYJhc2E=?= <khalasa@piap.pl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Regression (ARM) arch/arm/mm/init.c doesn't build without CONFIG_ARM_PATCH_PHYS_VIRT.
-References: <m38uv1uuzr.fsf@t19.piap.pl> <m3ha9gx63v.fsf@t19.piap.pl> <20140106223906.GH27432@n2100.arm.linux.org.uk> <52CB3F55.1050404@ti.com> <20140107011121.GI27432@n2100.arm.linux.org.uk>
-In-Reply-To: <20140107011121.GI27432@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1385460350-17543-4-git-send-email-mika.westerberg@linux.intel.com>
+References: <1385460350-17543-1-git-send-email-mika.westerberg@linux.intel.com>
+	<1385460350-17543-4-git-send-email-mika.westerberg@linux.intel.com>
+Date: Tue, 7 Jan 2014 18:47:23 +0100
+Message-ID: <CACRpkdbkntK0_PzWiEXg+nAfHXpTraEq_9tEkBpcuk_ZxyoQkA@mail.gmail.com>
+Subject: Re: [PATCH v3 3/6] mmc: sdhci-acpi: convert to use GPIO descriptor API
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Chris Ball <cjb@laptop.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Rob Landley <rob@landley.net>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 06 January 2014 08:11 PM, Russell King - ARM Linux wrote:
-> On Mon, Jan 06, 2014 at 06:42:13PM -0500, Santosh Shilimkar wrote:
->> On Monday 06 January 2014 05:39 PM, Russell King - ARM Linux wrote:
->>> On Mon, Jan 06, 2014 at 08:28:20PM +0100, Krzysztof Hałasa wrote:
->>>> Russell, Santosh,
->>>>
->>>> the unneeded commit causing regression is still in place. Please try to
->>>> compile an ARM kernel without CONFIG_ARM_PATCH_PHYS_VIRT and with
->>>> CONFIG_ZONE_DMA and see for yourself, if you don't believe me.
->>>>
->>>> Please be aware that this commit fixes nothing, its only function is
->>>> causing the regression - so we don't lose anything by reverting it.
->>>>
->>>> If the attached wasn't clear, what the defective commit presently does
->>>> is changing a perfectly valid code into a code referencing a variable
->>>> which (without CONFIG_ARM_PATCH_PHYS_VIRT set) doesn't at all exist.
->>>>
->>>> With CONFIG_ARM_PATCH_PHYS_VIRT set, this commit does precisely nothing.
->>>
-> 
-> /--------------------------------------------------------------
-> | > > Right, so, with Assabet, which has CONFIG_DMA_ZONE=y and
-> | > > CONFIG_ARM_PATCH_PHYS_VIRT=y:
-> | > > 
-> | > > $ make O=../build/assabet arch/arm/mm/init.i
-> | > > 
-> | > > gives:
-> | > >   arm_dma_limit = __pv_phys_offset + arm_dma_zone_size - 1;
-> | > > 
-> | > > with or without Santosh's patch.
-> \--------------------------------------------------------------
-> 
->> May be I missed your point but I ended up creating the patch because
->> the CMA reservation was failing on Keystone since the arm_dma_limit
->> wasn't right since it wasn't considering the actual __pv_phys_offset.
->>
->> Isn't that an issue ?
-> 
-> See the above.  Your patch has _no_ effect what so ever when
-> CONFIG_ARM_PATCH_PHYS_VIRT=y - which you have on the Keystone, right?
-> 
-> If you don't believe me, ask make to produce arch/arm/mm/init.i, which
-> is the output from the preprocessor, comparing the resulting generated
-> file both with and without your patch applied.
-> 
-Looks like you are right. I did two fixes to have right arm_dma_limit in
-below order.
+On Tue, Nov 26, 2013 at 11:05 AM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> The new descriptor based GPIO interface is now the recommended and safer
+> way of using GPIOs from device drivers. Convert the ACPI SDHCI driver to
+> use that interface.
+>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Acked-by: Adrian Hunter <adrian.hunter@intel.com>
+> Acked-by: Alexandre Courbot <acourbot@nvidia.com>
 
-1. 787b0d5 {ARM: 7908/1: mm: Fix the arm_dma_limit calculation}
-2. 7c92732 {ARM: 7909/1: mm: Call setup_dma_zone() post early_paging_init()}
+Chris, can I have your ACK on this patch?
 
-But with 2 alone the issue gets fixed since with ARM_PATCH_PHYS_VIRT and
-below pre-processor, the PHYS_OFFSET also gets an updated value. I never
-realised that 1 becomes redundant after second patch while creating them. 
-
-#define PHYS_OFFSET __pv_phys_offset
-
-So indeed, 787b0d5{ARM: 7908/1: mm: Fix the arm_dma_limit calculation}
-won't be needed anymore and can be reverted. Sorry it took some time
-for me to reach to your conclusion.
-
-Regards,
-Santosh
-
-
-
+Yours,
+Linus Walleij
