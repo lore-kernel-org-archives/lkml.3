@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080AbaAGSCL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 13:02:11 -0500
-Received: from mail-qe0-f52.google.com ([209.85.128.52]:38112 "EHLO
-	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753466AbaAGSAQ (ORCPT
+	id S1754116AbaAGSCU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 13:02:20 -0500
+Received: from mail-qe0-f49.google.com ([209.85.128.49]:51146 "EHLO
+	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753811AbaAGSAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 13:00:16 -0500
+	Tue, 7 Jan 2014 13:00:15 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
         heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
         JBottomley@parallels.com, bhelgaas@google.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 08/12] kernfs, sysfs, driver-core: implement kernfs_remove_self() and its wrappers
-Date: Tue,  7 Jan 2014 12:59:46 -0500
-Message-Id: <1389117590-25705-9-git-send-email-tj@kernel.org>
+Subject: [PATCH 07/12] kernfs: remove KERNFS_REMOVED
+Date: Tue,  7 Jan 2014 12:59:45 -0500
+Message-Id: <1389117590-25705-8-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1389117590-25705-1-git-send-email-tj@kernel.org>
 References: <1389117590-25705-1-git-send-email-tj@kernel.org>
@@ -23,300 +23,225 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes it's necessary to implement a node which wants to delete
-nodes including itself.  This isn't straightforward because of kernfs
-active reference.  While a file operation is in progress, an active
-reference is held and kernfs_remove() waits for all such references to
-drain before completing.  For a self-deleting node, this is a deadlock
-as kernfs_remove() ends up waiting for an active reference that itself
-is sitting on top of.
+KERNFS_REMOVED is used to mark half-initialized and dying nodes so
+that they don't show up in lookups and deny adding new nodes under or
+renaming it.  Marking half-initialized nodes is unnecessary as linking
+to the hierarchy is always atomic w.r.t. kernfs_mutex as are the
+lookups.
 
-This currently is worked around in the sysfs layer using
-sysfs_schedule_callback() which makes such removals asynchronous.
-While it works, it's rather cumbersome and inherently breaks
-synchronicity of the operation - the file operation which triggered
-the operation may complete before the removal is finished (or even
-started) and the removal may fail asynchronously.  If a removal
-operation is immmediately followed by another operation which expects
-the specific name to be available (e.g. removal followed by rename
-onto the same name), there's no way to make the latter operation
-reliable.
+It's necessary at least to deny addition of new children while removal
+is in progress; however, this role considerably intersects with
+deactivation - KERNFS_REMOVED prevents new children while deactivation
+prevents new file operations.  There's no reason to have them separate
+making things more complex than necessary.  This patch removes
+KERNFS_REMOVED and gives its function to deactivation.
 
-The thing is there's no inherent reason for this to be asynchrnous.
-All that's necessary to do this synchronous is a dedicated operation
-which drops its own active ref and deactivates self.  This patch
-implements kernfs_remove_self() and its wrappers in sysfs and driver
-core.  kernfs_remove_self() is to be called from one of the file
-operations, drops the active ref the task is holding, removes the self
-node, and restores active ref to the dead node so that the ref is
-balanced afterwards.  __kernfs_remove() is updated so that it takes an
-early exit if the target node is already fully removed so that the
-active ref restored by kernfs_remove_self() after removal doesn't
-confuse the deactivation path.
+* KERNFS_REMOVED diddling in the addition path removed.
 
-This makes implementing self-deleting nodes very easy.  The normal
-removal path doesn't even need to be changed to use
-kernfs_remove_self() for the self-deleting node.  The method can
-invoke kernfs_remove_self() on itself before proceeding the normal
-removal path.  kernfs_remove() invoked on the node by the normal
-deletion path will simply be ignored.
+* A new helper kernfs_active() which tests whether kn->active >= 0 is
+  added for convenience and lockdep annotation.  All KERNFS_REMOVED
+  tests are replaced with negated kernfs_active() tests.
 
-This will replace sysfs_schedule_callback().  A subtle feature of
-sysfs_schedule_callback() is that it collapses multiple invocations -
-even if multiple removals are triggered, the removal callback is run
-only once.  An equivalent effect can be achieved by testing the return
-value of kernfs_remove_self() - only the one which gets %true return
-value should proceed with actual deletion.  All other instances of
-kernfs_remove_self() will wait till the enclosing kernfs operation
-which invoked the winning instance of kernfs_remove_self() finishes
-and then return %false.  This trivially makes all users of
-kernfs_remove_self() automatically show correct synchronous behavior
-even when there are multiple concurrent operations - all "echo 1 >
-delete" instances will finish only after the whole operation is
-completed by one of the instances.
+* __kernfs_remove() is updated to deactivate, but not drain, all nodes
+  in the subtree instead of setting KERNFS_REMOVED.  This removes
+  deactivation from kernfs_deactivate(), which is now renamed to
+  kernfs_drain().
+
+* Sanity check on KERNFS_REMOVED in kernfs_put() is replaced with
+  checks on the active ref.
+
+* Some comment style updates in the affected area.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>
 ---
- drivers/base/core.c    | 17 +++++++++
- fs/kernfs/dir.c        | 93 +++++++++++++++++++++++++++++++++++++++++++++++++-
- fs/sysfs/file.c        | 23 +++++++++++++
- include/linux/device.h |  2 ++
- include/linux/kernfs.h |  3 ++
- include/linux/sysfs.h  |  6 ++++
- 6 files changed, 143 insertions(+), 1 deletion(-)
+ fs/kernfs/dir.c        | 66 +++++++++++++++++++++++++-------------------------
+ include/linux/kernfs.h |  1 -
+ 2 files changed, 33 insertions(+), 34 deletions(-)
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 2b56717..9db57af 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -571,6 +571,23 @@ void device_remove_file(struct device *dev,
- EXPORT_SYMBOL_GPL(device_remove_file);
- 
- /**
-+ * device_remove_file_self - remove sysfs attribute file from its own method.
-+ * @dev: device.
-+ * @attr: device attribute descriptor.
-+ *
-+ * See kernfs_remove_self() for details.
-+ */
-+bool device_remove_file_self(struct device *dev,
-+			     const struct device_attribute *attr)
-+{
-+	if (dev)
-+		return sysfs_remove_file_self(&dev->kobj, &attr->attr);
-+	else
-+		return false;
-+}
-+EXPORT_SYMBOL_GPL(device_remove_file_self);
-+
-+/**
-  * device_create_bin_file - create sysfs binary attribute file for device.
-  * @dev: device.
-  * @attr: device binary attribute descriptor.
 diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-index 71faef9..df630b3 100644
+index 8abdf07..71faef9 100644
 --- a/fs/kernfs/dir.c
 +++ b/fs/kernfs/dir.c
-@@ -745,7 +745,11 @@ static void __kernfs_remove(struct kernfs_node *kn)
+@@ -22,6 +22,12 @@ DEFINE_MUTEX(kernfs_mutex);
  
- 	lockdep_assert_held(&kernfs_mutex);
+ #define rb_to_kn(X) rb_entry((X), struct kernfs_node, rb)
  
--	if (!kn)
-+	/*
-+	 * Short-circuit if @kn has already finished removal.  This is for
-+	 * kernfs_remove_self() which plays with active ref after removal.
-+	 */
-+	if (!kn || RB_EMPTY_NODE(&kn->rb))
- 		return;
- 
- 	pr_debug("kernfs %s: removing\n", kn->name);
-@@ -807,6 +811,93 @@ void kernfs_remove(struct kernfs_node *kn)
++static bool kernfs_active(struct kernfs_node *kn)
++{
++	lockdep_assert_held(&kernfs_mutex);
++	return atomic_read(&kn->active) >= 0;
++}
++
+ static bool kernfs_lockdep(struct kernfs_node *kn)
+ {
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+@@ -183,25 +189,20 @@ void kernfs_put_active(struct kernfs_node *kn)
  }
  
  /**
-+ * kernfs_remove_self - remove a kernfs_node from its own method
-+ * @kn: the self kernfs_node to remove
-+ *
-+ * The caller must be running off of a kernfs operation which is invoked
-+ * with an active reference - e.g. one of kernfs_ops.  This can be used to
-+ * implement a file operation which deletes itself.
-+ *
-+ * For example, the "delete" file for a sysfs device directory can be
-+ * implemented by invoking kernfs_remove_self() on the "delete" file
-+ * itself.  This function breaks the circular dependency of trying to
-+ * deactivate self while holding an active ref itself.  It isn't necessary
-+ * to modify the usual removal path to use kernfs_remove_self().  The
-+ * "delete" implementation can simply invoke kernfs_remove_self() on self
-+ * before proceeding with the usual removal path.  kernfs will ignore later
-+ * kernfs_remove() on self.
-+ *
-+ * kernfs_remove_self() can be called multiple times concurrently on the
-+ * same kernfs_node.  Only the first one actually performs removal and
-+ * returns %true.  All others will wait until the kernfs operation which
-+ * won self-removal finishes and return %false.  Note that the losers wait
-+ * for the completion of not only the winning kernfs_remove_self() but also
-+ * the whole kernfs_ops which won the arbitration.  This can be used to
-+ * guarantee, for example, all concurrent writes to a "delete" file to
-+ * finish only after the whole operation is complete.
-+ */
-+bool kernfs_remove_self(struct kernfs_node *kn)
-+{
-+	bool ret;
-+
-+	mutex_lock(&kernfs_mutex);
-+
-+	/*
-+	 * Take out ourself out of the active ref dependency chain.  If
-+	 * we're called without an active ref, lockdep will complain.
-+	 */
-+	kernfs_put_active(kn);
-+
-+	/*
-+	 * SUICIDAL is used to arbitrate among competing invocations.  Only
-+	 * the first one will actually perform removal.  When the removal
-+	 * is complete, SUICIDED is set and the active ref is restored
-+	 * while holding kernfs_mutex.  The ones which lost arbitration
-+	 * waits for SUICDED && drained which can happen only after the
-+	 * enclosing kernfs operation which executed the winning instance
-+	 * of kernfs_remove_self() finished.
-+	 */
-+	if (!(kn->flags & KERNFS_SUICIDAL)) {
-+		kn->flags |= KERNFS_SUICIDAL;
-+		__kernfs_remove(kn);
-+		kn->flags |= KERNFS_SUICIDED;
-+		ret = true;
-+	} else {
-+		wait_queue_head_t *waitq = &kernfs_root(kn)->deactivate_waitq;
-+		DEFINE_WAIT(wait);
-+
-+		while (true) {
-+			prepare_to_wait(waitq, &wait, TASK_UNINTERRUPTIBLE);
-+
-+			if ((kn->flags & KERNFS_SUICIDED) &&
-+			    atomic_read(&kn->active) == KN_DEACTIVATED_BIAS)
-+				break;
-+
-+			mutex_unlock(&kernfs_mutex);
-+			schedule();
-+			mutex_lock(&kernfs_mutex);
-+		}
-+		finish_wait(waitq, &wait);
-+		WARN_ON_ONCE(!RB_EMPTY_NODE(&kn->rb));
-+		ret = false;
-+	}
-+
-+	/*
-+	 * @kn is fully removed now and future kernfs_remove() invocations
-+	 * on it will be treated as noop and we can safely bump the active
-+	 * ref back up so that it's balanced when the enclosing kernfs
-+	 * operation finshes.
-+	 */
-+	atomic_inc(&kn->active);
-+	if (kernfs_lockdep(kn))
-+		rwsem_acquire(&kn->dep_map, 0, 1, _RET_IP_);
-+
-+	mutex_unlock(&kernfs_mutex);
-+
-+	return ret;
-+}
-+
-+/**
-  * kernfs_remove_by_name_ns - find a kernfs_node by name and remove it
-  * @parent: parent of the target
-  * @name: name of the kernfs_node to remove
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 810cf6e..1b8b91b 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -372,6 +372,29 @@ void sysfs_remove_file_ns(struct kobject *kobj, const struct attribute *attr,
- }
- EXPORT_SYMBOL_GPL(sysfs_remove_file_ns);
- 
-+/**
-+ * sysfs_remove_file_self - remove an object attribute from its own method
-+ * @kobj: object we're acting for
-+ * @attr: attribute descriptor
-+ *
-+ * See kernfs_remove_self() for details.
-+ */
-+bool sysfs_remove_file_self(struct kobject *kobj, const struct attribute *attr)
-+{
-+	struct kernfs_node *parent = kobj->sd;
-+	struct kernfs_node *kn;
-+	bool ret;
-+
-+	kn = kernfs_find_and_get(parent, attr->name);
-+	if (WARN_ON_ONCE(!kn))
-+		return false;
-+
-+	ret = kernfs_remove_self(kn);
-+
-+	kernfs_put(kn);
-+	return ret;
-+}
-+
- void sysfs_remove_files(struct kobject *kobj, const struct attribute **ptr)
+- *	kernfs_deactivate - deactivate kernfs_node
+- *	@kn: kernfs_node to deactivate
++ * kernfs_drain - drain kernfs_node
++ * @kn: kernfs_node to drain
+  *
+- *	Deny new active references, drain existing ones and nuke all
+- *	existing mmaps.  Mutiple removers may invoke this function
+- *	concurrently on @kn and all will return after deactivation and
+- *	draining are complete.
++ * Drain existing usages and nuke all existing mmaps of @kn.  Mutiple
++ * removers may invoke this function concurrently on @kn and all will
++ * return after draining is complete.
+  */
+-static void kernfs_deactivate(struct kernfs_node *kn)
++static void kernfs_drain(struct kernfs_node *kn)
+ 	__releases(&kernfs_mutex) __acquires(&kernfs_mutex)
  {
- 	int i;
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 952b010..1ff3f16 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -560,6 +560,8 @@ extern int device_create_file(struct device *device,
- 			      const struct device_attribute *entry);
- extern void device_remove_file(struct device *dev,
- 			       const struct device_attribute *attr);
-+extern bool device_remove_file_self(struct device *dev,
-+				    const struct device_attribute *attr);
- extern int __must_check device_create_bin_file(struct device *dev,
- 					const struct bin_attribute *attr);
- extern void device_remove_bin_file(struct device *dev,
+ 	struct kernfs_root *root = kernfs_root(kn);
+ 
+ 	lockdep_assert_held(&kernfs_mutex);
+-	BUG_ON(!(kn->flags & KERNFS_REMOVED));
+-
+-	/* only the first invocation on @kn should deactivate it */
+-	if (atomic_read(&kn->active) >= 0)
+-		atomic_add(KN_DEACTIVATED_BIAS, &kn->active);
++	WARN_ON_ONCE(kernfs_active(kn));
+ 
+ 	mutex_unlock(&kernfs_mutex);
+ 
+@@ -253,13 +254,16 @@ void kernfs_put(struct kernfs_node *kn)
+ 		return;
+ 	root = kernfs_root(kn);
+  repeat:
+-	/* Moving/renaming is always done while holding reference.
++	/*
++	 * Moving/renaming is always done while holding reference.
+ 	 * kn->parent won't change beneath us.
+ 	 */
+ 	parent = kn->parent;
+ 
+-	WARN(!(kn->flags & KERNFS_REMOVED), "kernfs: free using entry: %s/%s\n",
+-	     parent ? parent->name : "", kn->name);
++	WARN_ONCE(atomic_read(&kn->active) != 0 &&
++		  atomic_read(&kn->active) != KN_DEACTIVATED_BIAS,
++		  "kernfs_put: %s/%s: released with incorrect active_ref %d\n",
++		  parent ? parent->name : "", kn->name, atomic_read(&kn->active));
+ 
+ 	if (kernfs_type(kn) == KERNFS_LINK)
+ 		kernfs_put(kn->symlink.target_kn);
+@@ -301,8 +305,8 @@ static int kernfs_dop_revalidate(struct dentry *dentry, unsigned int flags)
+ 	kn = dentry->d_fsdata;
+ 	mutex_lock(&kernfs_mutex);
+ 
+-	/* The kernfs node has been deleted */
+-	if (kn->flags & KERNFS_REMOVED)
++	/* The kernfs node has been deactivated */
++	if (!kernfs_active(kn))
+ 		goto out_bad;
+ 
+ 	/* The kernfs node has been moved? */
+@@ -375,7 +379,7 @@ struct kernfs_node *kernfs_new_node(struct kernfs_root *root, const char *name,
+ 
+ 	kn->name = name;
+ 	kn->mode = mode;
+-	kn->flags = flags | KERNFS_REMOVED;
++	kn->flags = flags;
+ 
+ 	return kn;
+ 
+@@ -417,7 +421,7 @@ int kernfs_add_one(struct kernfs_node *kn, struct kernfs_node *parent)
+ 		goto out_unlock;
+ 
+ 	ret = -ENOENT;
+-	if (parent->flags & KERNFS_REMOVED)
++	if (!kernfs_active(parent))
+ 		goto out_unlock;
+ 
+ 	kn->hash = kernfs_name_hash(kn->name, kn->ns);
+@@ -434,9 +438,6 @@ int kernfs_add_one(struct kernfs_node *kn, struct kernfs_node *parent)
+ 		struct iattr *ps_iattrs = &ps_iattr->ia_iattr;
+ 		ps_iattrs->ia_ctime = ps_iattrs->ia_mtime = CURRENT_TIME;
+ 	}
+-
+-	/* Mark the entry added into directory tree */
+-	kn->flags &= ~KERNFS_REMOVED;
+ 	ret = 0;
+ out_unlock:
+ 	mutex_unlock(&kernfs_mutex);
+@@ -535,7 +536,6 @@ struct kernfs_root *kernfs_create_root(struct kernfs_dir_ops *kdops, void *priv)
+ 		return ERR_PTR(-ENOMEM);
+ 	}
+ 
+-	kn->flags &= ~KERNFS_REMOVED;
+ 	kn->priv = priv;
+ 	kn->dir.root = root;
+ 
+@@ -750,13 +750,13 @@ static void __kernfs_remove(struct kernfs_node *kn)
+ 
+ 	pr_debug("kernfs %s: removing\n", kn->name);
+ 
+-	/* disable lookup and node creation under @kn */
++	/* prevent any new usage under @kn by deactivating all nodes */
+ 	next = NULL;
+ 	do {
+ 		pos = next;
+ 		next = kernfs_next_descendant_post(pos, kn);
+-		if (pos)
+-			pos->flags |= KERNFS_REMOVED;
++		if (pos && kernfs_active(pos))
++			atomic_add(KN_DEACTIVATED_BIAS, &pos->active);
+ 	} while (next);
+ 
+ 	/* deactivate and unlink the subtree node-by-node */
+@@ -764,14 +764,14 @@ static void __kernfs_remove(struct kernfs_node *kn)
+ 		pos = kernfs_leftmost_descendant(kn);
+ 
+ 		/*
+-		 * kernfs_deactivate() drops kernfs_mutex temporarily and
+-		 * @pos's base ref could have been put by someone else by
+-		 * the time the function returns.  Make sure it doesn't go
+-		 * away underneath us.
++		 * kernfs_drain() drops kernfs_mutex temporarily and @pos's
++		 * base ref could have been put by someone else by the time
++		 * the function returns.  Make sure it doesn't go away
++		 * underneath us.
+ 		 */
+ 		kernfs_get(pos);
+ 
+-		kernfs_deactivate(pos);
++		kernfs_drain(pos);
+ 
+ 		/*
+ 		 * kernfs_unlink_sibling() succeeds once per node.  Use it
+@@ -855,7 +855,7 @@ int kernfs_rename_ns(struct kernfs_node *kn, struct kernfs_node *new_parent,
+ 	mutex_lock(&kernfs_mutex);
+ 
+ 	error = -ENOENT;
+-	if ((kn->flags | new_parent->flags) & KERNFS_REMOVED)
++	if (!kernfs_active(kn) || !kernfs_active(new_parent))
+ 		goto out;
+ 
+ 	error = 0;
+@@ -915,7 +915,7 @@ static struct kernfs_node *kernfs_dir_pos(const void *ns,
+ 	struct kernfs_node *parent, loff_t hash, struct kernfs_node *pos)
+ {
+ 	if (pos) {
+-		int valid = !(pos->flags & KERNFS_REMOVED) &&
++		int valid = kernfs_active(pos) &&
+ 			pos->parent == parent && hash == pos->hash;
+ 		kernfs_put(pos);
+ 		if (!valid)
 diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index 1238a66..7ef1b85 100644
+index bff6e08..1238a66 100644
 --- a/include/linux/kernfs.h
 +++ b/include/linux/kernfs.h
-@@ -42,6 +42,8 @@ enum kernfs_node_flag {
+@@ -37,7 +37,6 @@ enum kernfs_node_type {
+ #define KERNFS_FLAG_MASK	~KERNFS_TYPE_MASK
+ 
+ enum kernfs_node_flag {
+-	KERNFS_REMOVED		= 0x0010,
+ 	KERNFS_NS		= 0x0020,
+ 	KERNFS_HAS_SEQ_SHOW	= 0x0040,
  	KERNFS_HAS_MMAP		= 0x0080,
- 	KERNFS_LOCKDEP		= 0x0100,
- 	KERNFS_STATIC_NAME	= 0x0200,
-+	KERNFS_SUICIDAL		= 0x0400,
-+	KERNFS_SUICIDED		= 0x0800,
- };
- 
- /* type-specific structures for kernfs_node union members */
-@@ -233,6 +235,7 @@ struct kernfs_node *kernfs_create_link(struct kernfs_node *parent,
- 				       const char *name,
- 				       struct kernfs_node *target);
- void kernfs_remove(struct kernfs_node *kn);
-+bool kernfs_remove_self(struct kernfs_node *kn);
- int kernfs_remove_by_name_ns(struct kernfs_node *parent, const char *name,
- 			     const void *ns);
- int kernfs_rename_ns(struct kernfs_node *kn, struct kernfs_node *new_parent,
-diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-index 30b2ebe..5278eb4 100644
---- a/include/linux/sysfs.h
-+++ b/include/linux/sysfs.h
-@@ -198,6 +198,7 @@ int __must_check sysfs_chmod_file(struct kobject *kobj,
- 				  const struct attribute *attr, umode_t mode);
- void sysfs_remove_file_ns(struct kobject *kobj, const struct attribute *attr,
- 			  const void *ns);
-+bool sysfs_remove_file_self(struct kobject *kobj, const struct attribute *attr);
- void sysfs_remove_files(struct kobject *kobj, const struct attribute **attr);
- 
- int __must_check sysfs_create_bin_file(struct kobject *kobj,
-@@ -301,6 +302,11 @@ static inline void sysfs_remove_file_ns(struct kobject *kobj,
- {
- }
- 
-+static inline void sysfs_remove_file_self(struct kobject *kobj,
-+					  const struct attribute *attr)
-+{
-+}
-+
- static inline void sysfs_remove_files(struct kobject *kobj,
- 				     const struct attribute **attr)
- {
 -- 
 1.8.4.2
 
