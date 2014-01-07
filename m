@@ -1,147 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756775AbaAGJHJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 04:07:09 -0500
-Received: from mga09.intel.com ([134.134.136.24]:40167 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750849AbaAGJAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 04:00:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,617,1384329600"; 
-   d="scan'208";a="454739644"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
-        Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Subject: [Patch Part2 V1 02/14] iommu/vt-d: move private structures and variables into intel-iommu.c
-Date: Tue,  7 Jan 2014 17:00:22 +0800
-Message-Id: <1389085234-22296-3-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1389085234-22296-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1389085234-22296-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1754918AbaAGJJr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 04:09:47 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:40655 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbaAGJJn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 04:09:43 -0500
+Date: Tue, 7 Jan 2014 09:09:38 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Add GPIO support for the MAX6650/6651 ICs
+Message-ID: <20140107090938.GF3182@lee--X1>
+References: <1387814889-16670-1-git-send-email-lpapp@kde.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1387814889-16670-1-git-send-email-lpapp@kde.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move private structures and variables into intel-iommu.c, which will
-help to simplify locking policy for hotplug. Also delete redundant
-declarations.
+Don't send private, off-list emails for poking or anything else
+related to upstreamming patches.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- drivers/iommu/intel-iommu.c |   31 +++++++++++++++++++++++++------
- include/linux/dmar.h        |   23 +----------------------
- 2 files changed, 26 insertions(+), 28 deletions(-)
+> Important text here later. It is now just an attempt to get some feedback about
+> the design of the new features. This set has only been compilation tested, and
+> has many errors with checkpatch.pl, et al. Really, the point is only to get
+> feedback about the direction, as there has been a lot of paid work put into
+> this to work better with upstream after the previously rejected change simple
+> hwmon change.
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 0863e25..1704e97 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -380,6 +380,29 @@ struct device_domain_info {
- 	struct dmar_domain *domain; /* pointer to domain */
- };
- 
-+struct dmar_rmrr_unit {
-+	struct list_head list;		/* list of rmrr units	*/
-+	struct acpi_dmar_header *hdr;	/* ACPI header		*/
-+	u64	base_address;		/* reserved base address*/
-+	u64	end_address;		/* reserved end address */
-+	struct pci_dev **devices;	/* target devices */
-+	int	devices_cnt;		/* target device count */
-+};
-+
-+struct dmar_atsr_unit {
-+	struct list_head list;		/* list of ATSR units */
-+	struct acpi_dmar_header *hdr;	/* ACPI header */
-+	struct pci_dev **devices;	/* target devices */
-+	int devices_cnt;		/* target device count */
-+	u8 include_all:1;		/* include all ports */
-+};
-+
-+static LIST_HEAD(dmar_atsr_units);
-+static LIST_HEAD(dmar_rmrr_units);
-+
-+#define for_each_rmrr_units(rmrr) \
-+	list_for_each_entry(rmrr, &dmar_rmrr_units, list)
-+
- static void flush_unmaps_timeout(unsigned long data);
- 
- static DEFINE_TIMER(unmap_timer,  flush_unmaps_timeout, 0, 0);
-@@ -403,6 +426,8 @@ static int timer_on;
- static long list_size;
- 
- static void domain_remove_dev_info(struct dmar_domain *domain);
-+static void domain_remove_one_dev_info(struct dmar_domain *domain,
-+				       struct pci_dev *pdev);
- 
- #ifdef CONFIG_INTEL_IOMMU_DEFAULT_ON
- int dmar_disabled = 0;
-@@ -2243,8 +2268,6 @@ static int __init si_domain_init(int hw)
- 	return 0;
- }
- 
--static void domain_remove_one_dev_info(struct dmar_domain *domain,
--					  struct pci_dev *pdev);
- static int identity_mapping(struct pci_dev *pdev)
- {
- 	struct device_domain_info *info;
-@@ -3430,8 +3453,6 @@ static void __init init_iommu_pm_ops(void)
- static inline void init_iommu_pm_ops(void) {}
- #endif	/* CONFIG_PM */
- 
--LIST_HEAD(dmar_rmrr_units);
--
- static void __init dmar_register_rmrr_unit(struct dmar_rmrr_unit *rmrr)
- {
- 	list_add(&rmrr->list, &dmar_rmrr_units);
-@@ -3468,8 +3489,6 @@ rmrr_parse_dev(struct dmar_rmrr_unit *rmrru)
- 				    rmrr->segment);
- }
- 
--static LIST_HEAD(dmar_atsr_units);
--
- int __init dmar_parse_one_atsr(struct acpi_dmar_header *hdr)
- {
- 	struct acpi_dmar_atsr *atsr;
-diff --git a/include/linux/dmar.h b/include/linux/dmar.h
-index 198eb09..dc8c7d5 100644
---- a/include/linux/dmar.h
-+++ b/include/linux/dmar.h
-@@ -127,28 +127,7 @@ extern int arch_setup_dmar_msi(unsigned int irq);
- 
- #ifdef CONFIG_INTEL_IOMMU
- extern int iommu_detected, no_iommu;
--extern struct list_head dmar_rmrr_units;
--struct dmar_rmrr_unit {
--	struct list_head list;		/* list of rmrr units	*/
--	struct acpi_dmar_header *hdr;	/* ACPI header		*/
--	u64	base_address;		/* reserved base address*/
--	u64	end_address;		/* reserved end address */
--	struct pci_dev **devices;	/* target devices */
--	int	devices_cnt;		/* target device count */
--};
--
--#define for_each_rmrr_units(rmrr) \
--	list_for_each_entry(rmrr, &dmar_rmrr_units, list)
--
--struct dmar_atsr_unit {
--	struct list_head list;		/* list of ATSR units */
--	struct acpi_dmar_header *hdr;	/* ACPI header */
--	struct pci_dev **devices;	/* target devices */
--	int devices_cnt;		/* target device count */
--	u8 include_all:1;		/* include all ports */
--};
--
--int dmar_parse_rmrr_atsr_dev(void);
-+extern int dmar_parse_rmrr_atsr_dev(void);
- extern int dmar_parse_one_rmrr(struct acpi_dmar_header *header);
- extern int dmar_parse_one_atsr(struct acpi_dmar_header *header);
- extern void *dmar_alloc_dev_scope(void *start, void *end, int *cnt);
+If you want to obtain time/advice from maintainers, most of which are
+already snowed-under, you have to earn it. Making submissions such as
+these are not conducive to your cause. Fix the Checkpatch errors and
+do your damnedest to ensure the code is the finest standard it can be.
+
+If you fail to adhere to these [1] three documents accidentally, then
+you will be guided. If you do so on purpose by sending intentionally
+sloppy code, then you are unlikely to gain any attention at all.
+
+[1]
+  Documentation/CodingStyle
+  Documentation/email-clients.txt
+  Documentation/SubmittingPatches
+
+> Laszlo Papp (3):
+>   mfd: MAX6650/6651 support
+>   hwmon: (max6650) Convert to be a platform driver
+>   gpio: MAX6650/6651 support
+> 
+>  drivers/gpio/Kconfig                |  14 ++
+>  drivers/gpio/Makefile               |   2 +
+>  drivers/gpio/gpio-max6651.c         |  72 +++++++++
+>  drivers/gpio/gpio-max665x.c         | 301 ++++++++++++++++++++++++++++++++++++
+>  drivers/hwmon/Kconfig               |   2 +-
+>  drivers/hwmon/max6650.c             | 150 +++++++++---------
+>  drivers/mfd/Kconfig                 |  11 ++
+>  drivers/mfd/Makefile                |   1 +
+>  drivers/mfd/max6651.c               | 132 ++++++++++++++++
+>  include/linux/mfd/max6651-private.h |  63 ++++++++
+>  10 files changed, 675 insertions(+), 73 deletions(-)
+>  create mode 100644 drivers/gpio/gpio-max6651.c
+>  create mode 100644 drivers/gpio/gpio-max665x.c
+>  create mode 100644 drivers/mfd/max6651.c
+>  create mode 100644 include/linux/mfd/max6651-private.h
+> 
+
 -- 
-1.7.10.4
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
