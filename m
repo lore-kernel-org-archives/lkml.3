@@ -1,93 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177AbaAGBlu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 20:41:50 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:49664 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932114AbaAGBlt (ORCPT
+	id S932204AbaAGBm2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 20:42:28 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:12634 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932180AbaAGBm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 20:41:49 -0500
-X-AuditID: 9c93017e-b7cd8ae000002ce9-96-52cb5b5a9419
-Date: Tue, 7 Jan 2014 10:41:59 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Andi Kleen <ak@linux.intel.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@iki.fi>, linux-kernel@vger.kernel.org,
-        linux-parisc@vger.kernel.org
-Subject: Re: [PATCH] fix crash when using XFS on loopback
-Message-ID: <20140107014159.GA26726@lge.com>
-References: <alpine.LRH.2.02.1401041241590.4648@file01.intranet.prod.int.rdu2.redhat.com>
- <20140106073549.GA25771@lge.com>
- <alpine.LRH.2.02.1401061237120.6190@file01.intranet.prod.int.rdu2.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.02.1401061237120.6190@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 6 Jan 2014 20:42:26 -0500
+X-AuditID: cbfee691-b7efc6d0000039d3-d9-52cb5b745a40
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Levente Kurusa'" <levex@linux.com>
+Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Jean-Christophe Plagniol-Villard'" <plagnioj@jcrosoft.com>,
+        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
+        linux-fbdev@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+References: <1386959996-7958-1-git-send-email-levex@linux.com>
+ <1386959996-7958-4-git-send-email-levex@linux.com>
+In-reply-to: <1386959996-7958-4-git-send-email-levex@linux.com>
+Subject: Re: [PATCH 3/4] backlight: lcd: call put_device if device_register
+ fails
+Date: Tue, 07 Jan 2014 10:42:11 +0900
+Message-id: <000001cf0b49$af5ab7f0$0e1027d0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac74NRY3NiDn4atoQRqaMVlhgTIpMwTE+USg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOIsWRmVeSWpSXmKPExsVy+t8zY92S6NNBBive8lrMWb+GzeLywkus
+	Fks73rJbnOj7wGpxedccNot1D18wWayff4vNgd3j1YU7LB4nZvxm8XhyZTqTR9+WVYwex29s
+	Z/L4vEkugC2KyyYlNSezLLVI3y6BK2PDjRVMBZ+4Kp69aGNvYNzJ0cXIySEhYCKx48ZHNghb
+	TOLCvfVANheHkMAyRom3D/+ywBTN2POBFSKxiFFi+sNnLBDOL0aJo9PvsYJUsQmoSXz5cpi9
+	i5GDQwTI3r8uGqSGWaCZSeLtmtdgk4QEiiX2fX/NDGJzCthLzGmewAhiCwsES9xYugPMZhFQ
+	lTh1/QTYSbwCthJfvz1khLAFJX5Mvgc2h1lAS2L9zuNMELa8xOY1b5lB9koIqEs8+qsLEhYR
+	MJLY+fcQM0SJiMS+F+8YQe6REPjJLnH79DEWiF0CEt8mH2KB6JWV2HSAGeJhSYmDK26wTGCU
+	mIVk8ywkm2ch2TwLyYoFjCyrGEVTC5ILipPSi0z1ihNzi0vz0vWS83M3MUIieeIOxvsHrA8x
+	JgOtn8gsJZqcD0wEeSXxhsZmRhamJqbGRuaWZqQJK4nzpj9KChISSE8sSc1OTS1ILYovKs1J
+	LT7EyMTBKdXAuNDtyhMGjTtBqtaRVk+zHHlP5L1xZj+b6N4g8XFx2ZqfRhePXjk9+3Sl53Mv
+	nqac3RMenpq/KjLhQlYkj/bzKyba5ye96+E96Lci1DawMvzz8S2B++YI7D1ZtVRUZuZyV69f
+	Nr8vuJxT0eIwL/au8apM3NC1/r/P7ut+pfXikxZvTnmg0GzwVYmlOCPRUIu5qDgRALehRZr6	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCKsWRmVeSWpSXmKPExsVy+t9jAd2S6NNBBpfPcVrMWb+GzeLywkus
+	Fks73rJbnOj7wGpxedccNot1D18wWayff4vNgd3j1YU7LB4nZvxm8XhyZTqTR9+WVYwex29s
+	Z/L4vEkugC2qgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE31VbJxSdA
+	1y0zB+gYJYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYGaCBhHWPGhhsrmAo+cVU8
+	e9HG3sC4k6OLkZNDQsBEYsaeD6wQtpjEhXvr2boYuTiEBBYxSkx/+IwFwvnFKHF0+j2wKjYB
+	NYkvXw6zdzFycIgA2fvXRYPUMAs0M0m8XfOaBaRGSKBYYt/318wgNqeAvcSc5gmMILawQLDE
+	jaU7wGwWAVWJU9dPsIHYvAK2El+/PWSEsAUlfky+BzaHWUBLYv3O40wQtrzE5jVvmUH2Sgio
+	Szz6qwsSFhEwktj59xAzRImIxL4X7xgnMArNQjJpFpJJs5BMmoWkZQEjyypG0dSC5ILipPRc
+	I73ixNzi0rx0veT83E2M4DTxTHoH46oGi0OMAhyMSjy8L/aeChJiTSwrrsw9xCjBwawkwiui
+	dDpIiDclsbIqtSg/vqg0J7X4EGMy0KMTmaVEk/OBKSyvJN7Q2MTMyNLIzMLIxNycNGElcd6D
+	rdaBQgLpiSWp2ampBalFMFuYODilGhg57Z2MVJg9pmfafwrsufnvYXj0zR93YqZ+7u9x03t7
+	tdrC59Q5RoXp2Tczy2b87OUwN8k5soonJ6uh4dEr26YcreOM0flBgS3HD79iLJu7u3/yYUOD
+	wzeiVfWYi9OV1sYb1N8p179l3N66d4Lt3Zy4Otelunf17/XJP92odLO7hH2VzMS1skosxRmJ
+	hlrMRcWJALBZBslXAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 12:54:22PM -0500, Mikulas Patocka wrote:
-> Hi
+On Saturday, December 14, 2013 3:40 AM, Levente Kurusa wrote:
 > 
-> On Mon, 6 Jan 2014, Joonsoo Kim wrote:
+> Currently we kfree the container of the device which failed to register.
+> This is wrong as the last reference is not given up with a put_device
+> call. Also, now that we have put_device() callen, we no longer need
+> the kfree as the new_ld->dev.release function will take care of kfreeing
+> the associated memory.
 > 
-> > Hello,
-> > 
-> > I'm surprised that this VM_BUG_ON() has not been triggered until now. It was
-> > introduced in 2007 by commit (b5fab14). Maybe there is no person who test
-> > with CONFIG_DEBUG_VM.
+> Signed-off-by: Levente Kurusa <levex@linux.com>
+> ---
+>  drivers/video/backlight/lcd.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> Last time I tried it, PS-RISC didn't work with CONFIG_DEBUG_VM at all.
+> diff --git a/drivers/video/backlight/lcd.c b/drivers/video/backlight/lcd.c
+> index 93cf15e..7de847d 100644
+> --- a/drivers/video/backlight/lcd.c
+> +++ b/drivers/video/backlight/lcd.c
+> @@ -228,7 +228,7 @@ struct lcd_device *lcd_device_register(const char *name, struct device *parent,
 > 
-> > There is one more bug report same as this.
-> > * possible regression on 3.13 when calling flush_dcache_page
-> >   (lkml.org/lkml/2013/12/12/255)
-> 
-> That link doesn't show anything.
-> 
-> > As mentioned in the description of commit (b5fab14), slab object may not be
-> > properly aligned and use of page oriented function to this object can be
-> > dangerous. I searched the XFS code and found that they only try to allocate
-> > multiple of 512 bytes, so there is no problem for now. But, IMHO, it is better
-> > not to use slab objects for this purpose.
-> 
-> If slab debugging is enabled, kmalloc memory is not aligned.
-> 
-> In XFS in xfs_buf_allocate_memory they test if the kmalloc memory crosses 
-> page boundary - if it does, they free the kmalloc memory and allocate a 
-> full page. Maybe this approach could still run into problems with some 
-> bus-master adapters that assume alignment in hardware...
-> 
-> 
-> dm-bufio also does I/O to slab-allocated buffers, but it allocates the 
-> object from slab (not kmalloc) with proper alignment.
+>  	rc = device_register(&new_ld->dev);
+>  	if (rc) {
+> -		kfree(new_ld);
+> +		put_device(&new_ld->dev);
+>  		return ERR_PTR(rc);
+>  	}
 
-Hello,
+(+cc Andrew Morton)
 
-Okay. I see.
-Thanks for good explanation.
+Hi Levente Kurusa,
 
-> 
-> > And I rapidly searched every callsites of page_mapping() and, IMHO, this 
-> > patch would work correctly. But possibly reverting original commit is 
-> > better solution.
-> 
-> Reverting the original commit wouldn't fix that VM_BUG_ON.
+Would you fix the same thing for 'backlight.c' file?
 
-Initially, I thought that VM_BUG_ON() isn't wrong and it was better to remove
-the callsites where do I/O with slab-allocated buffers, because doing I/O
-with slab-allocated buffers needs a great care. So I didn't fully agreed with
-your patch and recommended to revert original commit yesterday. After reverting
-that, I would attempt to remove the callsites.
+./drivers/video/backlight/backlight.c
+struct backlight_device *backlight_device_register(const char *name,
+    .....
+    rc = device_register(&new_bd->dev);
+            if (rc) {
+                    kfree(new_bd);
+                    return ERR_PTR(rc);
+            }
 
-But, now, I change my thought, because of your explanation. There are already
-some users to do I/O with slab-allocated buffers and they already did it with
-some cares, so I guess that admitting this usage is more beneficial than
-forbidding it.
+Best regards,
+Jingoo Han
 
-Reviewed-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-Thanks.
