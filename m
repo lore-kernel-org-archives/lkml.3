@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751370AbaAGMcB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 07:32:01 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:50566 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892AbaAGMby (ORCPT
+	id S1751414AbaAGMeJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 07:34:09 -0500
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:34145 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865AbaAGMeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 07:31:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <52CBD96B.4050103@linux.vnet.ibm.com>
-References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
- <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
- <52CBCB85.8050607@linux.vnet.ibm.com> <20140107095039.GA2480@laptop.programming.kicks-ass.net>
- <52CBD96B.4050103@linux.vnet.ibm.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Tue, 7 Jan 2014 13:31:33 +0100
-Message-ID: <CAKfTPtAVTW6w5QPQW5c3Gcf6VSU07E5PA+MrFdp-aP1m9twNLA@mail.gmail.com>
-Subject: Re: [RFC] sched: CPU topology try
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        Alex Shi <alex.shi@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Jon Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Len Brown <len.brown@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>, james.hogan@imgtec.com,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 7 Jan 2014 07:34:05 -0500
+Subject: Re: [PATCH -next] misc: genwqe: fix return value check in
+ genwqe_device_create()
+From: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Reply-To: haver@linux.vnet.ibm.com
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: gregkh@linuxfoundation.org, yongjun_wei@trendmicro.com.cn,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CAPgLHd9DJxmadJQb_0-J_2DZ1aVpOZ65J4iVCid-tJ=OLmKBNA@mail.gmail.com>
+References: <CAPgLHd9DJxmadJQb_0-J_2DZ1aVpOZ65J4iVCid-tJ=OLmKBNA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Tue, 07 Jan 2014 13:33:53 +0100
+Message-ID: <1389098033.15325.10.camel@oc7383187364.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14010712-0542-0000-0000-000007956FC7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 January 2014 11:39, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
-> On 01/07/2014 03:20 PM, Peter Zijlstra wrote:
->> On Tue, Jan 07, 2014 at 03:10:21PM +0530, Preeti U Murthy wrote:
->>> What if we want to add arch specific flags to the NUMA domain? Currently
->>> with Peter's patch:https://lkml.org/lkml/2013/11/5/239 and this patch,
->>> the arch can modify the sd flags of the topology levels till just before
->>> the NUMA domain. In sd_init_numa(), the flags for the NUMA domain get
->>> initialized. We need to perhaps call into arch here to probe for
->>> additional flags?
->>
->> What are you thinking of? I was hoping all NUMA details were captured in
->> the distance table.
->>
->> Its far easier to talk of specifics in this case.
->>
-> If the processor can be core gated, then there is very little power
-> savings that we could yield from consolidating all the load onto a
-> single node in a NUMA domain. 6 cores on one node or 3 cores each on two
-> nodes, the power is drawn by 6 cores in all. So I was thinking under
-> this circumstance we might want to set the SD_SHARE_POWERDOMAIN flag at
-> the NUMA domain and spread the load if it favours the workload.
+Am Dienstag, den 07.01.2014, 16:56 +0800 schrieb Wei Yongjun:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> In case of error, the function device_create_with_groups()
+> returns ERR_PTR() and never returns NULL. The NULL test in
+> the return value check should be replaced with IS_ERR().
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+>  drivers/misc/genwqe/card_dev.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/misc/genwqe/card_dev.c b/drivers/misc/genwqe/card_dev.c
+> index 9b231bb..46fa2ca 100644
+> --- a/drivers/misc/genwqe/card_dev.c
+> +++ b/drivers/misc/genwqe/card_dev.c
+> @@ -1378,8 +1378,8 @@ int genwqe_device_create(struct genwqe_dev *cd)
+>  					    genwqe_attribute_groups,
+>  					    GENWQE_DEVNAME "%u_card",
+>  					    cd->card_idx);
+> -	if (cd->dev == NULL) {
+> -		rc = -ENODEV;
+> +	if (IS_ERR(cd->dev)) {
+> +		rc = PTR_ERR(cd->dev);
+>  		goto err_cdev;
+>  	}
+> 
+> 
 
-The policy of keeping the tasks running on cores that are close (same
-node) to the memory, is the more power efficient, isn't it ? so it's
-probably more about where to place the memory than about where to
-place the tasks ?
+Thanks for finding this potential problem and proposing a fix.
 
-Vincent
+Acked-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
 
->
-> Regards
-> Preeti U Murthy
->
