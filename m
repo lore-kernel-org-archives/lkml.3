@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691AbaAGTeS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 14:34:18 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:37135 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750851AbaAGTeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 14:34:05 -0500
-Date: Tue, 7 Jan 2014 13:34:00 -0600
-From: Ben Myers <bpm@sgi.com>
-To: Jeff Liu <jeff.liu@oracle.com>, Chuansheng Liu <chuansheng.liu@intel.com>
-Cc: dchinner@fromorbit.com, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 2/3] xfs: Calling destroy_work_on_stack() to pair with
- INIT_WORK_ONSTACK()
-Message-ID: <20140107193400.GC1935@sgi.com>
-References: <1389084605.3650.66.camel@cliu38-desktop-build>
- <1389084814.3650.70.camel@cliu38-desktop-build>
- <52CBE321.4050906@oracle.com>
+	id S1751577AbaAGTht (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 14:37:49 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:37585 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751248AbaAGThj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 14:37:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52CBE321.4050906@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAEPRUYrPXf7QNzput0bz_UPfytRy1eYgyOJYnH5v2v4DCEKSNA@mail.gmail.com>
+References: <1386271244-3927-1-git-send-email-tim.kryger@linaro.org>
+	<1386271244-3927-6-git-send-email-tim.kryger@linaro.org>
+	<CAEPRUYrPXf7QNzput0bz_UPfytRy1eYgyOJYnH5v2v4DCEKSNA@mail.gmail.com>
+Date: Tue, 7 Jan 2014 11:37:38 -0800
+Message-ID: <CAAYSxhoCrveHd5Wkc7Z0qzpGr41qG6-neYSSsuHQuC7AcuJmZQ@mail.gmail.com>
+Subject: Re: [PATCH v4 5/8] mmc: sdhci-bcm-kona: Add basic use of clocks
+From: Tim Kryger <tim.kryger@linaro.org>
+To: Christian Daudt <bcm@fixthebug.org>, Chris Ball <cjb@laptop.org>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Axel Lin <axel.lin@ingics.com>,
+        Device Tree List <devicetree@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linaro Patches List <patches@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 07:21:05PM +0800, Jeff Liu wrote:
-> Hi Chuansheng,
-> 
-> On 01/07 2014 16:53 PM, Chuansheng Liu wrote:
-> > 
-> > In case CONFIG_DEBUG_OBJECTS_WORK is defined, it is needed to
-> > call destroy_work_on_stack() which frees the debug object to pair
-> > with INIT_WORK_ONSTACK().
-> > 
-> > Signed-off-by: Liu, Chuansheng <chuansheng.liu@intel.com>
-> > ---
-> >  fs/xfs/xfs_bmap_util.c |    1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/fs/xfs/xfs_bmap_util.c b/fs/xfs/xfs_bmap_util.c
-> > index 1394106..82e0dab 100644
-> > --- a/fs/xfs/xfs_bmap_util.c
-> > +++ b/fs/xfs/xfs_bmap_util.c
-> > @@ -287,6 +287,7 @@ xfs_bmapi_allocate(
-> >  	INIT_WORK_ONSTACK(&args->work, xfs_bmapi_allocate_worker);
-> >  	queue_work(xfs_alloc_wq, &args->work);
-> >  	wait_for_completion(&done);
-> > +	destroy_work_on_stack(&args->work);
-> >  	return args->result;
-> >  }
-> 
-> Thanks for your patch and it work fine for my testing.  I missed this in an
-> old commit: [ 3b876c8f2a xfs: fix debug_object WARN at xfs_alloc_vextent() ] 
+On Sat, Dec 14, 2013 at 12:14 AM, Christian Daudt <bcm@fixthebug.org> wrote:
+> On Thu, Dec 5, 2013 at 11:20 AM, Tim Kryger <tim.kryger@linaro.org> wrote:
+>> Enable the external clock needed by the host controller during the
+>> probe and disable it during the remove.
+>>
+>> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+>> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+>> Reviewed-by: Matt Porter <matt.porter@linaro.org>
+>
+> Reviewed-by: Christian Daudt <bcm@fixthebug.org>
+>
+> Chris,
+>  Are you ok with me pulling this patch along with the rest of the
+> patchset into the bcm tree?
+>
+>  Thanks,
+>    csd
 
-Looks good to me too.
-Reviewed-by: Ben Myers <bpm@sgi.com>
+Chris,
+
+Can you please provide an answer to csd?
+
+Thanks,
+Tim Kryger
