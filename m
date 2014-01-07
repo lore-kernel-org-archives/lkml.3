@@ -1,89 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832AbaAGTol (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 14:44:41 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:33088 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752610AbaAGToa (ORCPT
+	id S1753932AbaAGTpE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 14:45:04 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:43628 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752610AbaAGToz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 14:44:30 -0500
-Date: Tue, 7 Jan 2014 11:44:25 -0800
-From: Joel Becker <jlbec@evilplan.org>
-To: "faibish, sorin" <faibish_sorin@emc.com>
-Cc: Ric Wheeler <ricwheeler@gmail.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "lsf-pc@lists.linux-foundation.org" 
-	<lsf-pc@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [LSF/MM TOPIC] [ATTEND] persistent memory progress, management
- of storage & file systems
-Message-ID: <20140107194424.GN5272@localhost>
-Mail-Followup-To: "faibish, sorin" <faibish_sorin@emc.com>,
-	Ric Wheeler <ricwheeler@gmail.com>,
-	"linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-	"linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-	"linux-mm@kvack.org" <linux-mm@kvack.org>,
-	"linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-	"lsf-pc@lists.linux-foundation.org" <lsf-pc@lists.linux-foundation.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <20131220093022.GV11295@suse.de>
- <52CB2C3A.3010207@gmail.com>
- <2512424DBC01FD48843E938C780FA97C02B002A583@MX23A.corp.emc.com>
+	Tue, 7 Jan 2014 14:44:55 -0500
+Date: Tue, 7 Jan 2014 11:43:56 -0800
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Christoph Hellwig <hch@infradead.org>,
+        Jan Kara <jack@suse.cz>, Aurelien Jarno <aurelien@aurel32.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Rob Browning <rlb@defaultvalue.org>,
+        Dave Chinner <david@fromorbit.com>, Miklos Szeredi <miklos@szeredi.hu>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [RFC PATCH] fs: xattr-based FS_IOC_[GS]ETFLAGS interface
+Message-ID: <20140107194356.GC9229@birch.djwong.org>
+References: <20140107025855.GA9229@birch.djwong.org>
+ <20140107124831.GD16640@quack.suse.cz>
+ <20140107154935.GA17609@infradead.org>
+ <20140107170430.GA2822@thunk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2512424DBC01FD48843E938C780FA97C02B002A583@MX23A.corp.emc.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
+In-Reply-To: <20140107170430.GA2822@thunk.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 05:32:56PM -0500, faibish, sorin wrote:
-> Speaking of persistent memory I would like to discuss the PMFS as well as RDMA aspects of the persistent memory model. Also I would like to discuss KV stores and object stores on persistent memory. I was involved in the PMFS as a tester and I found several issues that I would like to discuss with the community. I assume that maybe others from Intel could join this discussion except for Andy and Matt which already asked for this topic. Thanks
+On Tue, Jan 07, 2014 at 12:04:30PM -0500, Theodore Ts'o wrote:
+> On Tue, Jan 07, 2014 at 07:49:35AM -0800, Christoph Hellwig wrote:
+> > On Tue, Jan 07, 2014 at 01:48:31PM +0100, Jan Kara wrote:
+> > >   I have to say I'm not thrilled by the idea of juggling strings in
+> > > userspace and in kernel to set a flag for an inode...
+> > 
+> > Nevermind the massive amounts of code that sit in the filesystem.
+> 
+> The reason for this patch was to address what Dave Chinner has called
+> "a shitty interface"[1].  Using bitfields that need to be coordinated
+> across file systems, when sometimes a bit assignment is validly a fs
+> specific thing, and then later becomes something that gets shared
+> across file systems.
+> 
+> [1] http://thread.gmane.org/gmane.linux.file-systems/80164/focus=80396
+> 
+> If we don't go about it this way, there are alternatives: we could
+> create new ioctls (or a new syscall) as we start running out of bits
+> used by FS_IOC_[GS]ETFLAGS.  We can create new ioctls for bits which
+> are intended for fs-specific flags, which then later get promoted to
+> the new syscall when some functionality starts to get shared accross
+> other file systems (probably with a different bit assignment).  This
+> is certainly less code, but it does mean more complexity outside of
+> the code when we try to coordinate new functionality across file
+> systems.
 
-Ooh, and the cluster/remote filesystem stories there (eg, RDMA etc) are
-probably pretty cool.
+I had thought of indexed inode flags as an alternative to the xattr/string
+parsing thing.  Feature flags make their first appearance as part of a per-FS
+flag-space and are migrated to the common flag-space when there is demand.
+It would also avoid the need for each fs to create its own flag ioctl.
 
-Joel
+On the other hand, someone suggested I try remaking IOC_[GS]ETFLAG as an xattr,
+so off I went. :)
 
+#define FS_IOC_FLAGS_COMMON	0
+#define FS_IOC_FLAGS_COMMON2	1
+#define FS_IOC_FLAGS_EXT4	0xEF53
+
+struct inode_flag_ioctl {
+	u32 flag;
+	u32 value;	/* or u64? */
+};
+#define FS_IOC_GETFLAGS2 _IOR('f', 12, struct inode_flag_ioctl);
+#define FS_IOC_SETFLAGS2 _IOW('f', 13, struct inode_flag_ioctl);
+
+foo() {
+	struct inode_flag_ioctl if;
+
+	if.flag = FS_IOC_FLAGS_COMMON;
+	ioctl(fd, FS_IOC_GETFLAGS2, &if);
+	printf("%d\n", if.value);
+
+	if.flag = FS_IOC_FLAGS_EXT4;
+	if.value = EXT5_BONGHITS_FL | EXT4_EA_INODE_FL;
+	ioctl(fd, FS_IOC_SETFLAGS2, &if);
+}
+
+> Personally, I don't mind dealing with codepoint assignments, but my
+> impression is that this is a minority viewpoint.  Al and Linus have
+> historically hated bitfields, and Al in the past has spoken favorably
+> of Plan 9's approach of using strings for the system interface.
+
+I prefer strings too, but I suppose one pays for the complexity.  Given that
+all the flags so far seem to have been booleans, this could be good enough.
+
+> So while I have a preference towards using bitfields, as opposed to
+> using the xattr approach, what I'd really like is that we make a
+> decision, one way or another, about what's the best way to move
+> forward.
+
+Agreed.
+
+--D
 > 
-> ./Sorin
-> 
-> -----Original Message-----
-> From: linux-fsdevel-owner@vger.kernel.org [mailto:linux-fsdevel-owner@vger.kernel.org] On Behalf Of Ric Wheeler
-> Sent: Monday, January 06, 2014 5:21 PM
-> To: linux-scsi@vger.kernel.org; linux-ide@vger.kernel.org; linux-mm@kvack.org; linux-fsdevel@vger.kernel.org; lsf-pc@lists.linux-foundation.org
-> Cc: linux-kernel@vger.kernel.org
-> Subject: [LSF/MM TOPIC] [ATTEND] persistent memory progress, management of storage & file systems
-> 
-> 
-> I would like to attend this year and continue to talk about the work on enabling the new class of persistent memory devices. Specifically, very interested in talking about both using a block driver under our existing stack and also progress at the file system layer (adding xip/mmap tweaks to existing file systems and looking at new file systems).
-> 
-> We also have a lot of work left to do on unifying management, it would be good to resync on that.
-> 
-> Regards,
-> 
-> Ric
-> 
+>    	    	     	      	      	  - Ted
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-
- The herd instinct among economists makes sheep look like
- independant thinkers.
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
