@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751662AbaAGMPJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 07:15:09 -0500
-Received: from 15.mo3.mail-out.ovh.net ([87.98.150.177]:47483 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750892AbaAGMPF (ORCPT
+	id S1751700AbaAGMPP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 07:15:15 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59525 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207AbaAGMPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Jan 2014 07:15:05 -0500
-X-Greylist: delayed 564 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Jan 2014 07:15:04 EST
-Message-ID: <52CBED8D.2010402@overkiz.com>
-Date: Tue, 07 Jan 2014 13:05:33 +0100
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+Date: Tue, 7 Jan 2014 13:15:02 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Luciano Coelho <luca@coelho.fi>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        freemangordon@abv.bg, aaro.koskinen@iki.fi, sre@ring0.de,
+        joni.lapilainen@gmail.com, Johannes Berg <johannes@sipsolutions.net>,
+        Felipe Contreras <felipe.contreras@gmail.com>
+Subject: Re: [PATCH v2 00/16] wl1251 patches from linux-n900 tree
+Message-ID: <20140107121502.GB10358@amd.pavel.ucw.cz>
+References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
+ <1386494714-21070-1-git-send-email-pali.rohar@gmail.com>
+ <201312311047.30147@pali>
+ <20140106200050.GG10885@tuxdriver.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-usb@vger.kernel.org
-Subject: Re: ohci-at91 mismerge build error
-References: <20240208.HaoioSGuhF@wuerfel>
-In-Reply-To: <20240208.HaoioSGuhF@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 17126907909138708484
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrvdelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrvdelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140106200050.GG10885@tuxdriver.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Arnd,
+Hi!
 
-On 07/01/2014 12:54, Arnd Bergmann wrote:
-> After commit 99f14bd4d1 "Merge 3.13-rc5 into usb-next" (in linux-next as of
-> today), I'm getting this error building any at91 kernel:
->
-> drivers/usb/host/ohci-at91.c: In function 'usb_hcd_at91_probe':
-> drivers/usb/host/ohci-at91.c:190:4: error: label 'err' used but not defined
->      goto err;
->      ^
-> drivers/usb/host/ohci-at91.c: At top level:
-> drivers/usb/host/ohci-at91.c:206:2: warning: data definition has no type or storage class [enabled by default]
->    at91_stop_hc(pdev);
->    ^
-> ...
->
-> The problem is obviously a mismerge between two unrelated changes that
-> resulted in missing opening braces.
+> > > Second version contains new patch for fixing NULL pointer
+> > > dereference which sometimes cause kernel panic and fixes code
+> > > suggested by Pavel Machek.
+>  
+> > So far, there are no new comments for patches 01, 03-13 and 16. 
+> > Are there any other problems with that patches or can be accepted 
+> > for upstream?
+>  
+> They are probably fine to merge now.  Of course, I was still deleting
+> wl12xx patches when they were originally posted, so I'll need someone
+> to resend the patches to me...
 
-Thanks for fixing this: I was about to propose the same patch to resolve
-the issue introduced by this merge (reported by Olof yesterday).
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Boris BREZILLON <b.brezillon@overkiz.com>
-> ---
-> Please just ignore if this has been reported before
->
-> diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
-> index 2d0ee5e..091ae49 100644
-> --- a/drivers/usb/host/ohci-at91.c
-> +++ b/drivers/usb/host/ohci-at91.c
-> @@ -197,7 +197,7 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
->   	at91_start_hc(pdev);
->   
->   	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
-> -	if (retval == 0)
-> +	if (retval == 0) {
->   		device_wakeup_enable(hcd->self.controller);
->   		return retval;
->   	}
->
+Patches should be in your inbox now, with subjects "[PATCH v3 13/13]
+wl1251:". I hand selected patches 01, 03-13 and 16. I was doing
+forwarding by hand, sorry for extra (fwd) in 06/13.
 
+Best regards,
+									Pavel
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
