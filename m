@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396AbaAGSPO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 13:15:14 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38256 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752765AbaAGSPH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 13:15:07 -0500
-Message-ID: <52CC4427.20405@infradead.org>
-Date: Tue, 07 Jan 2014 10:15:03 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1753540AbaAGSQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 13:16:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35794 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752085AbaAGSQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 13:16:23 -0500
+Date: Tue, 7 Jan 2014 13:16:05 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: Mike Snitzer <snitzer@redhat.com>, Bart Van Assche <bvanassche@acm.org>,
+        Jeff Mahoney <jeffm@suse.com>, linux-kernel@vger.kernel.org,
+        device-mapper development <dm-devel@redhat.com>, tglx@linutronix.de,
+        paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
+        mingo@kernel.org
+Subject: Re: kobject: provide kobject_put_wait to fix module unload race
+In-Reply-To: <20140107141622.GA32290@kroah.com>
+Message-ID: <alpine.LRH.2.02.1401071306160.8158@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1401021733250.27775@file01.intranet.prod.int.rdu2.redhat.com> <52C98BCC.9040900@acm.org> <20140105182640.GA2522@kroah.com> <alpine.LRH.2.02.1401061347120.15626@file01.intranet.prod.int.rdu2.redhat.com> <20140106213111.GA2536@redhat.com>
+ <alpine.LRH.2.02.1401062249020.17811@file01.intranet.prod.int.rdu2.redhat.com> <20140107141622.GA32290@kroah.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-To: "David E. Box" <david.e.box@linux.intel.com>, mjg59@srcf.ucam.org,
-        rjw@rjwysocki.net
-CC: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH v6][RESEND] platform: x86: New BayTrail IOSF-SB MBI driver
-References: <1388427149-25456-1-git-send-email-david.e.box@linux.intel.com> <1389117812-28061-1-git-send-email-david.e.box@linux.intel.com>
-In-Reply-To: <1389117812-28061-1-git-send-email-david.e.box@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/14 10:03, David E. Box wrote:
-> From: "David E. Box" <david.e.box@linux.intel.com>
+
+
+On Tue, 7 Jan 2014, Greg Kroah-Hartman wrote:
+
+> > Index: linux-3.13-rc7/drivers/md/dm-sysfs.c
+> > ===================================================================
+> > --- linux-3.13-rc7.orig/drivers/md/dm-sysfs.c	2014-01-07 02:06:08.000000000 +0100
+> > +++ linux-3.13-rc7/drivers/md/dm-sysfs.c	2014-01-07 02:07:09.000000000 +0100
+> > @@ -79,6 +79,11 @@ static const struct sysfs_ops dm_sysfs_o
+> >  	.show	= dm_attr_show,
+> >  };
+> >  
+> > +static void dm_kobject_release(struct kobject *kobj)
+> > +{
+> > +	complete(dm_get_completion_from_kobject(kobj));
+> > +}
 > 
-> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-> index b51a746..6e199a5 100644
-> --- a/drivers/platform/x86/Kconfig
-> +++ b/drivers/platform/x86/Kconfig
-> @@ -819,4 +819,14 @@ config PVPANIC
->  	  a paravirtualized device provided by QEMU; it lets a virtual machine
->  	  (guest) communicate panic events to the host.
->  
-> +config INTEL_BAYTRAIL_MBI
-> +	tristate
+> Please read the kobject documentation in the kernel tree for why this
+> isn't ok.  The fact that you didn't have a release function at all means
+> this code has always been broken, why have you been ignoring the kernel
+> complaining about this for so long before?
 
-Is this kconfig option displayed when you run menuconfig/nconfig/xconfig/gconfig etc.?
-Doesn't it need a prompt string?
-How did you enable it and test it?
+I read that file and I say that the usage pattern presented in that file 
+is broken w.r.t. module unload.
 
-> +	depends on PCI
-> +	---help---
-> +	  Needed on Baytrail platforms for access to the IOSF Sideband Mailbox
-> +	  Interface. This is a requirement for systems that need to configure
-> +	  the PUNIT for power management features such as RAPL. Register
-> +	  addresses and r/w opcodes are defined in
+I don't want to fix one race condition and introduce another one (albeit 
+smaller).
 
-Think of users reading this.  At least change "r/w" to read/write.
-What is IOSF?  does it matter here?
-PUNIT?  RAPL?
+> You need to free the memory in the release function, not just sit around
+> and wait for potentially forever.
 
-> +	  drivers/platform/x86/intel_baytrail.c.
-> +
->  endif # X86_PLATFORM_DEVICES
+How could that code wait forever? Even if userspace keeps the appropriate 
+files in sysfs open, the dm device can be unloaded, it doesn't wait 
+forever.
 
+> thanks,
+> 
+> greg k-h
 
--- 
-~Randy
+Mikulas
