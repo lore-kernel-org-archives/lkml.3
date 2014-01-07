@@ -1,108 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057AbaAGOmI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 09:42:08 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:44683 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673AbaAGOlj (ORCPT
+	id S1752116AbaAGOmO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 09:42:14 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:58256 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751743AbaAGOlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 09:41:39 -0500
-From: Frank Haverkamp <haver@linux.vnet.ibm.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        dan.carpenter@oracle.com, fengguang.wu@intel.com, weiyj.lk@gmail.com,
-        jim.epost@gmail.com, sfr@canb.auug.org.au, jsvogt@de.ibm.com,
-        MIJUNG@de.ibm.com, michael@ibmra.de, schwidefsky@de.ibm.com,
-        cody@linux.vnet.ibm.com, cascardo@linux.vnet.ibm.com,
-        kernel-janitors@vger.kernel.org, haver@linux.vnet.ibm.com
-Subject: [PATCH 3/3] GenWQE: Fix warnings for sparc
-Date: Tue,  7 Jan 2014 15:41:25 +0100
-Message-Id: <1389105685-25245-3-git-send-email-haver@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1389105556.15325.22.camel@oc7383187364.ibm.com>
-References: <1389105556.15325.22.camel@oc7383187364.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14010714-0542-0000-0000-00000795DA2E
+	Tue, 7 Jan 2014 09:41:49 -0500
+Date: Tue, 7 Jan 2014 14:41:30 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, sahara <keun-o.park@windriver.com>,
+        Keun-O Park <kpark3469@gmail.com>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Dave Martin <Dave.Martin@arm.com>
+Subject: Re: [PATCH 19/19] [INCOMPLETE] ARM: make return_address available
+	for ARM_UNWIND
+Message-ID: <20140107144130.GJ27432@n2100.arm.linux.org.uk>
+References: <1359123276-15833-1-git-send-email-arnd@arndb.de> <20130128125023.GA2027@linaro.org> <CA+KhAHYvbxANa84FMDVV96udwhif2P2_XirPhWVWTKy_8iK72A@mail.gmail.com> <201401071533.35309.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201401071533.35309.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dma_addr_t was not used, where it should have been used.
-Some format strings were not optimal.
+On Tue, Jan 07, 2014 at 03:33:34PM +0100, Arnd Bergmann wrote:
+> On Tuesday 29 January 2013, Keun-O Park wrote:
+> > On Mon, Jan 28, 2013 at 9:50 PM, Dave Martin <dave.martin@linaro.org> wrote:
+> > > On Mon, Jan 28, 2013 at 11:33:11AM +0900, Keun-O Park wrote:
+> > >> Hello guys,
+> > >>
+> > >> Could you please review the patch of fixing bug first of returning
+> > >> wrong address when using frame pointer?
+> > >> I am wondering if the first patch is not delivered to the mailing.
+> > >
+> > > I posted a similar patch to alkml a couple of months ago, but I got
+> > > no response and it looks like I forgot about it.
+> > >
+> > > http://lists.infradead.org/pipermail/linux-arm-kernel/2012-November/129381.html
+> > 
+> > Yes, same except initialization of data.addr. :)
+> > This means there might be no one interested in using
+> > ftrace-irqsoff/premptoff in ARM during a couple of months?
+> 
+> 
+> It's been almost a year since we last discussed the patches that were
+> posted by Dave and sahara, but nothing has changed in the mainline kernel.
+> 
+> Any chance that someone could be motivated to pick this work up again
+> and finally fix return_address().
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
----
- drivers/misc/genwqe/card_dev.c |   23 ++++++++++++++---------
- 1 file changed, 14 insertions(+), 9 deletions(-)
+I thought that we had _actively_ decided that we would not use the
+unwinder for these paths - that it was too expensive for these paths,
+and you had to use frame pointers instead.
 
---- a/drivers/misc/genwqe/card_dev.c
-+++ b/drivers/misc/genwqe/card_dev.c
-@@ -214,9 +214,9 @@ static void genwqe_remove_mappings(struc
- 		 */
- 		dev_err(&pci_dev->dev,
- 			"[%s] %d. cleanup mapping: u_vaddr=%p "
--			"u_kaddr=%016lx dma_addr=%llx\n", __func__, i++,
-+			"u_kaddr=%016lx dma_addr=%lx\n", __func__, i++,
- 			dma_map->u_vaddr, (unsigned long)dma_map->k_vaddr,
--			dma_map->dma_addr);
-+			(unsigned long)dma_map->dma_addr);
- 
- 		if (dma_map->type == GENWQE_MAPPING_RAW) {
- 			/* we allocated this dynamically */
-@@ -507,7 +507,8 @@ static int do_flash_update(struct genwqe
- {
- 	int rc = 0;
- 	int blocks_to_flash;
--	u64 dma_addr, flash = 0;
-+	dma_addr_t dma_addr;
-+	u64 flash = 0;
- 	size_t tocopy = 0;
- 	u8 __user *buf;
- 	u8 *xbuf;
-@@ -558,8 +559,9 @@ static int do_flash_update(struct genwqe
- 		crc = genwqe_crc32(xbuf, tocopy, 0xffffffff);
- 
- 		dev_dbg(&pci_dev->dev,
--			"[%s] DMA: 0x%llx CRC: %08x SZ: %ld %d\n",
--			__func__, dma_addr, crc, tocopy, blocks_to_flash);
-+			"[%s] DMA: %lx CRC: %08x SZ: %ld %d\n",
-+			__func__, (unsigned long)dma_addr, crc, tocopy,
-+			blocks_to_flash);
- 
- 		/* prepare DDCB for SLU process */
- 		req = ddcb_requ_alloc();
-@@ -638,7 +640,8 @@ static int do_flash_read(struct genwqe_f
- 			 struct genwqe_bitstream *load)
- {
- 	int rc, blocks_to_flash;
--	u64 dma_addr, flash = 0;
-+	dma_addr_t dma_addr;
-+	u64 flash = 0;
- 	size_t tocopy = 0;
- 	u8 __user *buf;
- 	u8 *xbuf;
-@@ -680,8 +683,9 @@ static int do_flash_read(struct genwqe_f
- 		tocopy = min_t(size_t, load->size, FLASH_BLOCK);
- 
- 		dev_dbg(&pci_dev->dev,
--			"[%s] DMA: 0x%llx SZ: %ld %d\n",
--			__func__, dma_addr, tocopy, blocks_to_flash);
-+			"[%s] DMA: %lx SZ: %ld %d\n",
-+			__func__, (unsigned long)dma_addr, tocopy,
-+			blocks_to_flash);
- 
- 		/* prepare DDCB for SLU process */
- 		cmd = ddcb_requ_alloc();
-@@ -864,7 +868,8 @@ static int ddcb_cmd_fixups(struct genwqe
- 	for (i = 0, asiv_offs = 0x00; asiv_offs <= 0x58;
- 	     i++, asiv_offs += 0x08) {
- 
--		u64 u_addr, d_addr;
-+		u64 u_addr;
-+		dma_addr_t d_addr;
- 		u32 u_size = 0;
- 		u64 ats_flags;
- 
-
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
