@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454AbaAGRfR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 12:35:17 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:34541 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753338AbaAGRfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 12:35:03 -0500
-Date: Tue, 7 Jan 2014 18:19:55 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 1/6] edac: Don't try to cancel workqueue when it's
- never setup
-Message-ID: <20140107171955.GA4164@pd.tnic>
-References: <1388434457-4194-1-git-send-email-sboyd@codeaurora.org>
- <1388434457-4194-2-git-send-email-sboyd@codeaurora.org>
+	id S1753171AbaAGRhW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 12:37:22 -0500
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:38944 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752564AbaAGRhQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 12:37:16 -0500
+Message-ID: <52CC3B48.7080100@koalo.de>
+Date: Tue, 07 Jan 2014 18:37:12 +0100
+From: Florian Meier <florian.meier@koalo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1388434457-4194-2-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vinod Koul <vinod.koul@intel.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, devicetree <devicetree@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Mark Brown <broonie@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        dmaengine <dmaengine@vger.kernel.org>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCHv10] dmaengine: Add support for BCM2835
+References: <52CB0180.1040605@koalo.de> <20140107161547.GA16227@intel.com>
+In-Reply-To: <20140107161547.GA16227@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 30, 2013 at 12:14:12PM -0800, Stephen Boyd wrote:
-> We only setup a workqueue for edac devices that use the polling
-> method. We still try to cancel the workqueue if an edac_device
-> uses the irq method though. This causes a warning from debug
-> objects when we remove an edac device:
-> 
-> WARNING: CPU: 0 PID: 56 at lib/debugobjects.c:260 debug_print_object+0x98/0xc0()
-> ODEBUG: assert_init not available (active state 0) object type: timer_list hint: stub_timer+0x0/0x28
-> Modules linked in: krait_edac(-)
-> CPU: 0 PID: 56 Comm: rmmod Not tainted 3.12.0-rc2-00035-g15292a0 #69
-> (unwind_backtrace+0x0/0x144)
-> (show_stack+0x20/0x24)
-> (dump_stack+0x74/0xb4)
-> (warn_slowpath_common+0x78/0x9c)
-> (warn_slowpath_fmt+0x40/0x48)
-> (debug_print_object+0x98/0xc0)
-> (debug_object_assert_init+0xdc/0xec)
-> (del_timer+0x24/0x7c)
-> (try_to_grab_pending+0xc0/0x1b0)
-> (cancel_delayed_work+0x2c/0xa0)
-> (edac_device_workq_teardown+0x1c/0x38)
-> (edac_device_del_device+0xb8/0xe4)
-> (krait_edac_remove+0x50/0x70 [krait_edac])
-> (platform_drv_remove+0x24/0x28)
-> (__device_release_driver+0x68/0xc0)
-> (driver_detach+0xc4/0xc8)
-> (bus_remove_driver+0xac/0x114)
-> (driver_unregister+0x38/0x58)
-> (platform_driver_unregister+0x1c/0x20)
-> (krait_edac_driver_exit+0x14/0x1c [krait_edac])
-> (SyS_delete_module+0x178/0x2b4)
-> 
-> Fix it by skipping the workqueue teardown for such devices.
-> 
-> Acked-by: Borislav Petkov <bp@suse.de>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Thanks to you and to all who have looked at/corrected my patch!
+I learned a lot!
 
-Applied, thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+On 01/07/2014 05:15 PM, Vinod Koul wrote:
+> On Mon, Jan 06, 2014 at 08:18:24PM +0100, Florian Meier wrote:
+>> Add support for DMA controller of BCM2835 as used in the Raspberry Pi.
+>> Currently it only supports cyclic DMA.
+> Applied, thanks
+> 
+> --
+> ~Vinod
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
