@@ -1,287 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932252AbaAGD5N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 22:57:13 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:41297 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932065AbaAGD5L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 22:57:11 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Miroslav Lichvar <mlichvar@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>
-Subject: [PATCH] [RFC] timekeeping: Rework frequency adjustments to work better w/ nohz
-Date: Mon,  6 Jan 2014 19:57:03 -0800
-Message-Id: <1389067023-13541-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
+	id S1757012AbaAGEBl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 23:01:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26265 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755354AbaAGEBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 23:01:40 -0500
+Date: Mon, 6 Jan 2014 23:01:22 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Mike Snitzer <snitzer@redhat.com>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bart Van Assche <bvanassche@acm.org>, Jeff Mahoney <jeffm@suse.com>,
+        linux-kernel@vger.kernel.org,
+        device-mapper development <dm-devel@redhat.com>, tglx@linutronix.de,
+        paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
+        mingo@kernel.org
+Subject: Re: kobject: provide kobject_put_wait to fix module unload race
+In-Reply-To: <20140106213111.GA2536@redhat.com>
+Message-ID: <alpine.LRH.2.02.1401062249020.17811@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1401021733250.27775@file01.intranet.prod.int.rdu2.redhat.com> <52C98BCC.9040900@acm.org> <20140105182640.GA2522@kroah.com> <alpine.LRH.2.02.1401061347120.15626@file01.intranet.prod.int.rdu2.redhat.com>
+ <20140106213111.GA2536@redhat.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Got a few cycles to take another look at this, and tried to address
-Miroslav's latest comments. Please let me know if you have further
-thoughts!
-
-thanks
--john
 
 
-The existing timekeeping_adjust logic has always been complicated
-to understand. Further, since it was developed prior to NOHZ becoming
-common, its not surprising it performs poorly when NOHZ is enabled.
+On Mon, 6 Jan 2014, Mike Snitzer wrote:
 
-Since Miroslav pointed out the problematic nature of the existing code
-in the NOHZ case, I've tried to refactor the code to perform better.
+> On Mon, Jan 06 2014 at  1:55pm -0500,
+> Mikulas Patocka <mpatocka@redhat.com> wrote:
+> 
+> > 
+> > 
+> > On Sun, 5 Jan 2014, Greg Kroah-Hartman wrote:
+> > 
+> > > On Sun, Jan 05, 2014 at 05:43:56PM +0100, Bart Van Assche wrote:
+> > > > On 01/04/14 19:06, Mikulas Patocka wrote:
+> > > > > -	if (t && !t->release)
+> > > > > -		pr_debug("kobject: '%s' (%p): does not have a release() "
+> > > > > -			 "function, it is broken and must be fixed.\n",
+> > > > > -			 kobject_name(kobj), kobj);
+> > > > > -
+> > > > 
+> > > > Has it been considered to issue a warning if no release function has
+> > > > been defined and free_completion == NULL instead of removing the above
+> > > > debug message entirely ? I think even with this patch applied it is
+> > > > still wrong to invoke kobject_put() on an object without defining a
+> > > > release function.
+> > > 
+> > > This patch isn't going to be applied, and I've reverted the original
+> > > commit, so there shouldn't be any issues anymore with this code.
+> > 
+> > Why? This patch does the same thing as 
+> > eee031649707db3c9920d9498f8d03819b74fc23, but it's smaller. So why did you 
+> > accept eee031649707db3c9920d9498f8d03819b74fc23 and not this?
+> > 
+> > The code to wait for kobject destruction using completion already exists 
+> > in cpufreq_sysfs_release, cpuidle_sysfs_release, 
+> > cpuidle_state_sysfs_release, cpuidle_driver_sysfs_release, 
+> > ext4_sb_release, ext4_feat_release, f2fs_sb_release (these are the only 
+> > kobject users that are correct w.r.t. module unloading), so if you accept 
+> > this patch, you can simplify them to use kobject_put_wait.
+> 
+> Hi Mikulas,
+> 
+> Please just submit a DM-only patch that follows the same racey pattern
+> of firing a completion from the kobj_type .release method in dm_mod.
+> I'll get it queued up for 3.14.
+> 
+> If/when we gets reports of a crash due to dm_mod unload racing with
+> kobject_put we can revisit this.
+> 
+> Thanks,
+> Mike
 
-The problem with the previous approach was that it tried to adjust
-for the total cumulative error using a scaled dampening factor. This
-resulted in large errors to be corrected slowly, while small errors
-were corrected quickly. With NOHZ the timekeeping code doesn't know
-how far out the next tick will be, so this results in bad
-over-correction to small errors, and insufficient correction to large
-errors.
+Here I'm sending dm-only patch.
 
-Inspired by Miroslav's patch, I've refactored the code to try to
-address the correction in two steps.
 
-1) Check the future freq error for the next tick, and if the frequency
-error is large, try to make sure we correct that error as best we can.
 
-2) Then make a small single unit adjustment to correct any cumulative
-error that we've collected.
+dm: wait until kobject is destroyed
 
-This method performs fairly well in the simulator Miroslav created.
+There may be other parts of the kernel taking reference to the dm kobject.
+We must wait until they drop the references before deallocating the md
+structure.
 
-I also dropped the tk->ntp_error adjustments, as I've never quite
-been able to recall how that was correct, and it doesn't seem to 
-have any affect in the simulator. Will have to proceed carefully
-with testing here.
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: stable@vger.kernel.org
 
-I still think this is probably 3.15 or later material, but I'd be
-very interested in feedback, thoughts, and testing.
-
-Cc: Miroslav Lichvar <mlichvar@redhat.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Reported-by: Miroslav Lichvar <mlichvar@redhat.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- kernel/time/timekeeping.c | 163 +++++++++++++++++-----------------------------
- 1 file changed, 61 insertions(+), 102 deletions(-)
+ drivers/md/dm-sysfs.c |   10 +++++++++-
+ drivers/md/dm.c       |   11 +++++++++++
+ drivers/md/dm.h       |    2 ++
+ 3 files changed, 22 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 87b4f00..15354d4 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1048,54 +1048,50 @@ static int __init timekeeping_init_ops(void)
- device_initcall(timekeeping_init_ops);
+Index: linux-3.13-rc7/drivers/md/dm-sysfs.c
+===================================================================
+--- linux-3.13-rc7.orig/drivers/md/dm-sysfs.c	2014-01-07 02:06:08.000000000 +0100
++++ linux-3.13-rc7/drivers/md/dm-sysfs.c	2014-01-07 02:07:09.000000000 +0100
+@@ -79,6 +79,11 @@ static const struct sysfs_ops dm_sysfs_o
+ 	.show	= dm_attr_show,
+ };
+ 
++static void dm_kobject_release(struct kobject *kobj)
++{
++	complete(dm_get_completion_from_kobject(kobj));
++}
++
+ /*
+  * dm kobject is embedded in mapped_device structure
+  * no need to define release function here
+@@ -86,6 +91,7 @@ static const struct sysfs_ops dm_sysfs_o
+ static struct kobj_type dm_ktype = {
+ 	.sysfs_ops	= &dm_sysfs_ops,
+ 	.default_attrs	= dm_attrs,
++	.release	= dm_kobject_release,
+ };
  
  /*
-- * If the error is already larger, we look ahead even further
-- * to compensate for late or lost adjustments.
-+ * Calculate the future error caused by incorrect freq value
-+ * and adjust the timekeeper to correct that.
+@@ -104,5 +110,7 @@ int dm_sysfs_init(struct mapped_device *
   */
--static __always_inline int timekeeping_bigadjust(struct timekeeper *tk,
--						 s64 error, s64 *interval,
--						 s64 *offset)
-+static __always_inline void timekeeping_freqadjust(struct timekeeper *tk,
-+						 s64 interval,
-+						 s64 offset)
+ void dm_sysfs_exit(struct mapped_device *md)
  {
- 	s64 tick_error, i;
--	u32 look_ahead, adj;
--	s32 error2, mult;
-+	u32 adj;
-+	s32 mult = 1;
- 
--	/*
--	 * Use the current error value to determine how much to look ahead.
--	 * The larger the error the slower we adjust for it to avoid problems
--	 * with losing too many ticks, otherwise we would overadjust and
--	 * produce an even larger error.  The smaller the adjustment the
--	 * faster we try to adjust for it, as lost ticks can do less harm
--	 * here.  This is tuned so that an error of about 1 msec is adjusted
--	 * within about 1 sec (or 2^20 nsec in 2^SHIFT_HZ ticks).
--	 */
--	error2 = tk->ntp_error >> (NTP_SCALE_SHIFT + 22 - 2 * SHIFT_HZ);
--	error2 = abs(error2);
--	for (look_ahead = 0; error2 > 0; look_ahead++)
--		error2 >>= 2;
-+	/* Calculate current error per tick */
-+	tick_error = ntp_tick_length() >> tk->ntp_error_shift;
-+	tick_error -= tk->xtime_interval;
- 
--	/*
--	 * Now calculate the error in (1 << look_ahead) ticks, but first
--	 * remove the single look ahead already included in the error.
--	 */
--	tick_error = ntp_tick_length() >> (tk->ntp_error_shift + 1);
--	tick_error -= tk->xtime_interval >> 1;
--	error = ((error - tick_error) >> look_ahead) + tick_error;
-+	/* Don't worry about correcting it if its small */
-+	if (likely(abs(tick_error) < 2*interval))
-+		return;
- 
--	/* Finally calculate the adjustment shift value.  */
--	i = *interval;
--	mult = 1;
--	if (error < 0) {
--		error = -error;
--		*interval = -*interval;
--		*offset = -*offset;
--		mult = -1;
-+	if (tick_error < 0) {
-+		interval = -interval;
-+		offset = -offset;
-+		mult = -mult;
- 	}
--	for (adj = 0; error > i; adj++)
--		error >>= 1;
- 
--	*interval <<= adj;
--	*offset <<= adj;
--	return mult << adj;
-+	/* Sort out the magnitude of the correction */
-+	tick_error = abs(tick_error);
-+	i = abs(interval);
-+	for (adj = 0; tick_error > i; adj++)
-+		tick_error >>= 1;
-+
-+	/* scale the corrections */
-+	interval <<= adj;
-+	offset <<= adj;
-+	mult <<= adj;
-+
-+	/*
-+	 * Apply the correction to the timekeeper.
-+	 * See long comment in timekeeping_adjust to explain the math.
-+	 */
-+	tk->mult += mult;
-+	tk->xtime_interval += interval;
-+	tk->xtime_nsec -= offset;
-+
+-	kobject_put(dm_kobject(md));
++	struct kobject *kobj = dm_kobject(md);
++	kobject_put(kobj);
++	wait_for_completion(dm_get_completion_from_kobject(kobj));
  }
+Index: linux-3.13-rc7/drivers/md/dm.c
+===================================================================
+--- linux-3.13-rc7.orig/drivers/md/dm.c	2014-01-07 02:07:09.000000000 +0100
++++ linux-3.13-rc7/drivers/md/dm.c	2014-01-07 04:58:37.000000000 +0100
+@@ -203,6 +203,9 @@ struct mapped_device {
+ 	/* sysfs handle */
+ 	struct kobject kobj;
+ 
++	/* wait until the kobject is released */
++	struct completion kobj_completion;
++
+ 	/* zero-length flush that will be cloned and submitted to targets */
+ 	struct bio flush_bio;
+ 
+@@ -2049,6 +2052,7 @@ static struct mapped_device *alloc_dev(i
+ 	init_waitqueue_head(&md->wait);
+ 	INIT_WORK(&md->work, dm_wq_work);
+ 	init_waitqueue_head(&md->eventq);
++	init_completion(&md->kobj_completion);
+ 
+ 	md->disk->major = _major;
+ 	md->disk->first_minor = minor;
+@@ -2931,6 +2935,13 @@ struct mapped_device *dm_get_from_kobjec
+ 	return md;
+ }
+ 
++struct completion *dm_get_completion_from_kobject(struct kobject *kobj)
++{
++	struct mapped_device *md = container_of(kobj, struct mapped_device, kobj);
++
++	return &md->kobj_completion;
++}
++
+ int dm_suspended_md(struct mapped_device *md)
+ {
+ 	return test_bit(DMF_SUSPENDED, &md->flags);
+Index: linux-3.13-rc7/drivers/md/dm.h
+===================================================================
+--- linux-3.13-rc7.orig/drivers/md/dm.h	2014-01-07 02:06:08.000000000 +0100
++++ linux-3.13-rc7/drivers/md/dm.h	2014-01-07 02:07:09.000000000 +0100
+@@ -15,6 +15,7 @@
+ #include <linux/list.h>
+ #include <linux/blkdev.h>
+ #include <linux/hdreg.h>
++#include <linux/completion.h>
+ 
+ #include "dm-stats.h"
+ 
+@@ -152,6 +153,7 @@ int dm_sysfs_init(struct mapped_device *
+ void dm_sysfs_exit(struct mapped_device *md);
+ struct kobject *dm_kobject(struct mapped_device *md);
+ struct mapped_device *dm_get_from_kobject(struct kobject *kobj);
++struct completion *dm_get_completion_from_kobject(struct kobject *kobj);
  
  /*
-@@ -1108,65 +1104,23 @@ static void timekeeping_adjust(struct timekeeper *tk, s64 offset)
- 	s64 error, interval = tk->cycle_interval;
- 	int adj;
- 
--	/*
--	 * The point of this is to check if the error is greater than half
--	 * an interval.
--	 *
--	 * First we shift it down from NTP_SHIFT to clocksource->shifted nsecs.
--	 *
--	 * Note we subtract one in the shift, so that error is really error*2.
--	 * This "saves" dividing(shifting) interval twice, but keeps the
--	 * (error > interval) comparison as still measuring if error is
--	 * larger than half an interval.
--	 *
--	 * Note: It does not "save" on aggravation when reading the code.
--	 */
--	error = tk->ntp_error >> (tk->ntp_error_shift - 1);
--	if (error > interval) {
--		/*
--		 * We now divide error by 4(via shift), which checks if
--		 * the error is greater than twice the interval.
--		 * If it is greater, we need a bigadjust, if its smaller,
--		 * we can adjust by 1.
--		 */
--		error >>= 2;
--		/*
--		 * XXX - In update_wall_time, we round up to the next
--		 * nanosecond, and store the amount rounded up into
--		 * the error. This causes the likely below to be unlikely.
--		 *
--		 * The proper fix is to avoid rounding up by using
--		 * the high precision tk->xtime_nsec instead of
--		 * xtime.tv_nsec everywhere. Fixing this will take some
--		 * time.
--		 */
--		if (likely(error <= interval))
--			adj = 1;
--		else
--			adj = timekeeping_bigadjust(tk, error, &interval, &offset);
--	} else {
--		if (error < -interval) {
--			/* See comment above, this is just switched for the negative */
--			error >>= 2;
--			if (likely(error >= -interval)) {
--				adj = -1;
--				interval = -interval;
--				offset = -offset;
--			} else {
--				adj = timekeeping_bigadjust(tk, error, &interval, &offset);
--			}
--		} else {
--			goto out_adjust;
--		}
--	}
-+	/* First correct for the current frequency error */
-+	timekeeping_freqadjust(tk, interval, offset);
-+
-+
-+	/* Next make a small adjustment to fix any cumulative error */
-+	error = tk->ntp_error >> tk->ntp_error_shift;
-+	if (likely(abs(error) <= interval/2))
-+		goto out_adjust;
-+
-+	if (error < 0) {
-+		adj = -1;
-+		interval = -interval;
-+		offset = -offset;
-+	} else
-+		adj = 1;
-+
- 
--	if (unlikely(tk->clock->maxadj &&
--		(tk->mult + adj > tk->clock->mult + tk->clock->maxadj))) {
--		printk_once(KERN_WARNING
--			"Adjusting %s more than 11%% (%ld vs %ld)\n",
--			tk->clock->name, (long)tk->mult + adj,
--			(long)tk->clock->mult + tk->clock->maxadj);
--	}
- 	/*
- 	 * So the following can be confusing.
- 	 *
-@@ -1213,15 +1167,21 @@ static void timekeeping_adjust(struct timekeeper *tk, s64 offset)
- 	 *	xtime_nsec_2 = xtime_nsec_1 - offset
- 	 * Which simplfies to:
- 	 *	xtime_nsec -= offset
--	 *
--	 * XXX - TODO: Doc ntp_error calculation.
- 	 */
- 	tk->mult += adj;
- 	tk->xtime_interval += interval;
- 	tk->xtime_nsec -= offset;
--	tk->ntp_error -= (interval - offset) << tk->ntp_error_shift;
- 
- out_adjust:
-+
-+	if (unlikely(tk->clock->maxadj &&
-+		(tk->mult > tk->clock->mult + tk->clock->maxadj))) {
-+		printk_once(KERN_WARNING
-+			"Adjusting %s more than 11%% (%ld vs %ld)\n",
-+			tk->clock->name, (long)tk->mult,
-+			(long)tk->clock->mult + tk->clock->maxadj);
-+	}
-+
- 	/*
- 	 * It may be possible that when we entered this function, xtime_nsec
- 	 * was very small.  Further, if we're slightly speeding the clocksource
-@@ -1241,7 +1201,6 @@ out_adjust:
- 		tk->xtime_nsec = 0;
- 		tk->ntp_error += neg << tk->ntp_error_shift;
- 	}
--
- }
- 
- /**
--- 
-1.8.3.2
-
+  * Targets for linear and striped mappings
