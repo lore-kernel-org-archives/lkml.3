@@ -1,111 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808AbaAGLU3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 06:20:29 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:58397 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751322AbaAGLUD (ORCPT
+	id S1751400AbaAGLVS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 06:21:18 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:24189 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919AbaAGLVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 06:20:03 -0500
-Date: Tue, 7 Jan 2014 12:19:54 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, Roger Quadros <rogerq@ti.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH v2 2/2] reset: Add GPIO support to reset controller
- framework
-Message-ID: <20140107111954.GA2849@lukather>
-References: <1389030903-27684-1-git-send-email-p.zabel@pengutronix.de>
- <1389030903-27684-2-git-send-email-p.zabel@pengutronix.de>
- <20140106181422.GS3144@lukather>
- <1389088341.4815.9.camel@pizza.hi.pengutronix.de>
+	Tue, 7 Jan 2014 06:21:16 -0500
+Message-ID: <52CBE321.4050906@oracle.com>
+Date: Tue, 07 Jan 2014 19:21:05 +0800
+From: Jeff Liu <jeff.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AqsLC8rIMeq19msA"
-Content-Disposition: inline
-In-Reply-To: <1389088341.4815.9.camel@pizza.hi.pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chuansheng Liu <chuansheng.liu@intel.com>, dchinner@fromorbit.com,
+        bpm@sgi.com
+CC: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 2/3] xfs: Calling destroy_work_on_stack() to pair with
+ INIT_WORK_ONSTACK()
+References: <1389084605.3650.66.camel@cliu38-desktop-build> <1389084814.3650.70.camel@cliu38-desktop-build>
+In-Reply-To: <1389084814.3650.70.camel@cliu38-desktop-build>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Chuansheng,
 
---AqsLC8rIMeq19msA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 01/07 2014 16:53 PM, Chuansheng Liu wrote:
+> 
+> In case CONFIG_DEBUG_OBJECTS_WORK is defined, it is needed to
+> call destroy_work_on_stack() which frees the debug object to pair
+> with INIT_WORK_ONSTACK().
+> 
+> Signed-off-by: Liu, Chuansheng <chuansheng.liu@intel.com>
+> ---
+>  fs/xfs/xfs_bmap_util.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/fs/xfs/xfs_bmap_util.c b/fs/xfs/xfs_bmap_util.c
+> index 1394106..82e0dab 100644
+> --- a/fs/xfs/xfs_bmap_util.c
+> +++ b/fs/xfs/xfs_bmap_util.c
+> @@ -287,6 +287,7 @@ xfs_bmapi_allocate(
+>  	INIT_WORK_ONSTACK(&args->work, xfs_bmapi_allocate_worker);
+>  	queue_work(xfs_alloc_wq, &args->work);
+>  	wait_for_completion(&done);
+> +	destroy_work_on_stack(&args->work);
+>  	return args->result;
+>  }
 
-Hi Philipp,
+Thanks for your patch and it work fine for my testing.  I missed this in an
+old commit: [ 3b876c8f2a xfs: fix debug_object WARN at xfs_alloc_vextent() ] 
 
-On Tue, Jan 07, 2014 at 10:52:21AM +0100, Philipp Zabel wrote:
-> > > +	const char *gpio_con_id =3D "reset";
-> > > +	struct reset_controller_dev *rcdev;
-> > > +	struct reset_control *rstc;
-> > > +	struct gpio_desc *gpiod;
-> > > +	bool asserted =3D false;
-> > > +	char scratch[48];
-> > > +	int ret;
-> > > +
-> > > +	if (id) {
-> > > +		snprintf(scratch, 48, "%s-reset-boot-asserted", id);
-> > > +		assert_prop =3D scratch;
-> > > +	}
-> > > +
-> > > +	asserted =3D of_property_read_bool(dev->of_node, assert_prop);
-> > > +
-> > > +	if (id) {
-> > > +		snprintf(scratch, 48, "%s-reset", id);
-> > > +		gpio_con_id =3D scratch;
-> > > +	}
-> > > +
-> > > +	gpiod =3D gpiod_get(dev, gpio_con_id);
-> > > +	if (IS_ERR(gpiod)) {
-> > > +		dev_err(dev, "Failed to get GPIO reset: %ld\n", PTR_ERR(gpiod));
-> > > +		return ERR_CAST(gpiod);
-> > > +	}
-> > > +
-> > > +	ret =3D gpiod_direction_output(gpiod, asserted);
-> > > +	if (ret < 0)
-> > > +		goto err_put;
-> >=20
-> > What happens if the GPIO is active low? I see no way in your binding
-> > and driver to give that information, and that would change the
-> > behaviour quite a bit.
->=20
-> I was under the (wrong) impression that gpiod_direction_output takes a
-> logical value as gpiod_set_value does. Will fix that.
+Just out of curious, do you notice memory leaks or other hints which help you
+finding out this problem?   
 
-I don't think gpiod_set_value does either unfortunately.
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---AqsLC8rIMeq19msA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSy+LaAAoJEBx+YmzsjxAgurkP/j1S/53OnITJ/mXhsokQDhX2
-Xse9Ah+5fytIyI7A7DWWP1LmQiQZl17SOdHrTOLbGKpWFybeMC6G6Zx4E086vGWR
-AIAfKye7Y9MHcgm40QiNr570JrgffL38GP0zr16kKyeszT6wAHvy5vQET599+l9f
-akr+g7FIbe1uslsmf0uFBFr6s9Z01Tg1FWCFbx5w1LzYrTI0fO9fM50s7vRDEv0C
-r/OE0IGSmqXYMKKPPjnCpdHIBgOasRBPam1VjM62TrRoi+X8GldrkqAEGAutcUWX
-csCKKpC1S9W50/PvkNljW/ykvy3hkI4PTWMryA8xGSE+d4ywfG+HKCkFIVAPtcIr
-wIWX4tKqWOMcDZ66F/3PklnrbrfCBMG4/YxERgXsrJeJwD1bQrQnY5J8L9cOtBr9
-MULletcIHBivsE/etvE3AxaMnpDAHFhJOO9VcElWYLrTaH/NFX5O9qy/Zon5szKA
-nJLkAd62dF9AhrsjpfSuOCRx7YTVoCn6nKQ+l3pczv+zUbVByvQEa9j97OVvRajI
-rl1O12w0V30wFpsBvEwGLAhHiSV1u17+YEfScmoMWRGU13ci2wESXf9WdcxWoL7I
-g22rXLKd8BaXKVHztvs74dpwePUHgDOg0vzVyto+bniLqpnnX12ZAYqittUqqFl9
-YQpRSS7V28FiPJQFPUK7
-=jtX/
------END PGP SIGNATURE-----
-
---AqsLC8rIMeq19msA--
+Thanks,
+-Jeff
