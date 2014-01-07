@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434AbaAGVjz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 16:39:55 -0500
-Received: from 6.77.broadband6.iol.cz ([88.101.77.6]:50137 "EHLO
+	id S1754491AbaAGVkF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 16:40:05 -0500
+Received: from 6.77.broadband6.iol.cz ([88.101.77.6]:50128 "EHLO
 	dhcp-26-207.brq.redhat.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754346AbaAGVjk (ORCPT
+	by vger.kernel.org with ESMTP id S1754235AbaAGVj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 16:39:40 -0500
-X-Greylist: delayed 545 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Jan 2014 16:39:39 EST
+	Tue, 7 Jan 2014 16:39:26 -0500
+X-Greylist: delayed 568 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Jan 2014 16:39:21 EST
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
-        linux-ide@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH 3/7] ahci: Use new interfaces for MSI/MSI-X enablement
-Date: Tue,  7 Jan 2014 19:05:38 +0100
-Message-Id: <7fe2a5563efac19c87213a48b58cae6b4d76c91d.1389103215.git.agordeev@redhat.com>
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Kalle Valo <kvalo@qca.qualcomm.com>, linux-wireless@vger.kernel.org,
+        ath10k@lists.infradead.org, linux-pci@vger.kernel.org
+Subject: [PATCH 6/7] ath10k: Use new interfaces for MSI enablement
+Date: Tue,  7 Jan 2014 19:05:41 +0100
+Message-Id: <dc640013c28e6e24b4f7293a8adbd2b60a8f48c4.1389103215.git.agordeev@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <cover.1389103215.git.agordeev@redhat.com>
 References: <cover.1389103215.git.agordeev@redhat.com>
@@ -22,55 +23,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This update also fixes a stylistic (naming and messaging only)
+confusion of MSI-X vs multiple MSIs which are not the same.
+
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- drivers/ata/ahci.c |   15 ++++++---------
- 1 files changed, 6 insertions(+), 9 deletions(-)
+ drivers/net/wireless/ath/ath10k/pci.c |   22 +++++++++++-----------
+ 1 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 8516f4d..cfdb079 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -1098,13 +1098,13 @@ static inline void ahci_gtf_filter_workaround(struct ata_host *host)
- int ahci_init_interrupts(struct pci_dev *pdev, unsigned int n_ports,
- 			 struct ahci_host_priv *hpriv)
+diff --git a/drivers/net/wireless/ath/ath10k/pci.c b/drivers/net/wireless/ath/ath10k/pci.c
+index 9e86a81..08807fe 100644
+--- a/drivers/net/wireless/ath/ath10k/pci.c
++++ b/drivers/net/wireless/ath/ath10k/pci.c
+@@ -2073,14 +2073,14 @@ static void ath10k_pci_tasklet(unsigned long data)
+ 	}
+ }
+ 
+-static int ath10k_pci_start_intr_msix(struct ath10k *ar, int num)
++static int ath10k_pci_start_intr_multi_msi(struct ath10k *ar, int num)
  {
--	int rc, nvec;
-+	int nvec;
+ 	struct ath10k_pci *ar_pci = ath10k_pci_priv(ar);
+ 	int ret;
+ 	int i;
  
- 	if (hpriv->flags & AHCI_HFLAG_NO_MSI)
- 		goto intx;
+-	ret = pci_enable_msi_block(ar_pci->pdev, num);
+-	if (ret)
++	ret = pci_enable_msi_range(ar_pci->pdev, num, num);
++	if (ret < 0)
+ 		return ret;
  
--	rc = pci_msi_vec_count(pdev);
--	if (rc < 0)
-+	nvec = pci_msi_vec_count(pdev);
-+	if (nvec < 0)
- 		goto intx;
+ 	ret = request_irq(ar_pci->pdev->irq + MSI_ASSIGN_FW,
+@@ -2111,16 +2111,16 @@ static int ath10k_pci_start_intr_msix(struct ath10k *ar, int num)
+ 		}
+ 	}
  
- 	/*
-@@ -1112,19 +1112,16 @@ int ahci_init_interrupts(struct pci_dev *pdev, unsigned int n_ports,
- 	 * Message mode could be enforced. In this case assume that advantage
- 	 * of multipe MSIs is negated and use single MSI mode instead.
- 	 */
--	if (rc < n_ports)
-+	if (nvec < n_ports)
- 		goto single_msi;
+-	ath10k_info("MSI-X interrupt handling (%d intrs)\n", num);
++	ath10k_info("Multi MSI interrupt handling (%d intrs)\n", num);
+ 	return 0;
+ }
  
--	nvec = rc;
--	rc = pci_enable_msi_block(pdev, nvec);
--	if (rc)
-+	if (pci_enable_msi_range(pdev, nvec, nvec) < 0)
- 		goto intx;
+-static int ath10k_pci_start_intr_msi(struct ath10k *ar)
++static int ath10k_pci_start_intr_single_msi(struct ath10k *ar)
+ {
+ 	struct ath10k_pci *ar_pci = ath10k_pci_priv(ar);
+ 	int ret;
  
- 	return nvec;
+-	ret = pci_enable_msi(ar_pci->pdev);
++	ret = pci_enable_msi_range(ar_pci->pdev, 1, 1);
+ 	if (ret < 0)
+ 		return ret;
  
- single_msi:
--	rc = pci_enable_msi(pdev);
--	if (rc)
-+	if (pci_enable_msi_range(pdev, 1, 1) < 0)
- 		goto intx;
- 	return 1;
+@@ -2132,7 +2132,7 @@ static int ath10k_pci_start_intr_msi(struct ath10k *ar)
+ 		return ret;
+ 	}
  
+-	ath10k_info("MSI interrupt handling\n");
++	ath10k_info("Single MSI interrupt handling\n");
+ 	return 0;
+ }
+ 
+@@ -2199,20 +2199,20 @@ static int ath10k_pci_start_intr(struct ath10k *ar)
+ 		num = 1;
+ 
+ 	if (num > 1) {
+-		ret = ath10k_pci_start_intr_msix(ar, num);
++		ret = ath10k_pci_start_intr_multi_msi(ar, num);
+ 		if (ret == 0)
+ 			goto exit;
+ 
+-		ath10k_warn("MSI-X didn't succeed (%d), trying MSI\n", ret);
++		ath10k_warn("Multi MSI failed (%d), trying single MSI\n", ret);
+ 		num = 1;
+ 	}
+ 
+ 	if (num == 1) {
+-		ret = ath10k_pci_start_intr_msi(ar);
++		ret = ath10k_pci_start_intr_single_msi(ar);
+ 		if (ret == 0)
+ 			goto exit;
+ 
+-		ath10k_warn("MSI didn't succeed (%d), trying legacy INTR\n",
++		ath10k_warn("Single MSI failed (%d), trying legacy INTR\n",
+ 			    ret);
+ 		num = 0;
+ 	}
 -- 
 1.7.7.6
 
