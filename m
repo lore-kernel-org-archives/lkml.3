@@ -1,49 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754AbaAGSuh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 13:50:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58231 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330AbaAGSub (ORCPT
+	id S1753855AbaAGSuz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 13:50:55 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49733 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753797AbaAGSus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 13:50:31 -0500
-Date: Tue, 7 Jan 2014 10:50:59 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [PATCH 3.12 000/144] 3.12.7-stable review
-Message-ID: <20140107185059.GC4223@kroah.com>
-References: <20140106223745.326293132@linuxfoundation.org>
- <52CB8B0D.2090000@roeck-us.net>
+	Tue, 7 Jan 2014 13:50:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52CB8B0D.2090000@roeck-us.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1389103548-23458-1-git-send-email-larsi@wh2.tu-dresden.de>
+References: <1389103548-23458-1-git-send-email-larsi@wh2.tu-dresden.de>
+Date: Tue, 7 Jan 2014 19:50:47 +0100
+Message-ID: <CACRpkdYqLamX6P=0he2Swy=_io2u6SKjGHPNziMdDj2j+UR+Uw@mail.gmail.com>
+Subject: Re: [PATCH] gpio: mcp23s08: Add irq functionality for i2c chips
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lars Poeschel <larsi@wh2.tu-dresden.de>
+Cc: Lars Poeschel <poeschel@lemonage.de>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 09:05:17PM -0800, Guenter Roeck wrote:
-> On 01/06/2014 02:36 PM, Greg Kroah-Hartman wrote:
-> >This is the start of the stable review cycle for the 3.12.7 release.
-> >There are 144 patches in this series, all will be posted as a response
-> >to this one.  If anyone has any issues with these being applied, please
-> >let me know.
-> >
-> >Responses should be made by Wed Jan  8 22:37:25 UTC 2014.
-> >Anything received after that time might be too late.
-> >
-> 
-> Build results:
-> 	total: 111 pass: 107 skipped: 4 fail: 0	
-> 
-> qemu tests all passed.
-> 
-> Results are as expected.
-> Details are available as usual at http://server.roeck-us.net:8010/builders.
+On Tue, Jan 7, 2014 at 3:05 PM, Lars Poeschel <larsi@wh2.tu-dresden.de> wrote:
 
-Thanks for testing.
+> From: Lars Poeschel <poeschel@lemonage.de>
+>
+> This adds interrupt functionality for i2c chips to the driver.
+> They can act as a interrupt-controller and generate interrupts, if
+> the inputs change.
+> This is tested on a mcp23017 chip.
+>
+> Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+(...)
+>         u8                      addr;
+>
+>         u16                     cache[11];
+> +       u16                     irq_rise;
+> +       u16                     irq_fall;
+> +       int                     irq;
+>         /* lock protects the cached values */
+>         struct mutex            lock;
+> +       struct mutex            irq_lock;
+> +       struct irq_domain       *irq_domain;
 
-greg k-h
+(...)
+> +static int mcp23s08_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+> +{
+> +       struct mcp23s08 *mcp = container_of(chip, struct mcp23s08, chip);
+> +
+> +       return irq_create_mapping(mcp->irq_domain, offset);
+
+We have recently established that the mapping shall not be created in
+gpio_to_irq().
+Instead call irq_create_mapping() for all valid IRQ lines in probe() and
+use irq_find_mapping() here.
+
+> +static struct irq_chip mcp23s08_irq_chip = {
+> +       .name = "gpio-mcp23xxx",
+> +       .irq_mask = mcp23s08_irq_mask,
+> +       .irq_unmask = mcp23s08_irq_unmask,
+> +       .irq_set_type = mcp23s08_irq_set_type,
+> +       .irq_bus_lock = mcp23s08_irq_bus_lock,
+> +       .irq_bus_sync_unlock = mcp23s08_irq_bus_unlock,
+> +};
+
+Add irq_startup() and irq_shutdown() hooks in accordance with something
+like this patch:
+http://marc.info/?l=linux-gpio&m=138571851304612&w=2
+
+The important thing is that you call
+gpio_lock_as_irq()/gpio_unlock_as_irq()
+
+Yours,
+Linus Walleij
