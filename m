@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755886AbaAGIXH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 03:23:07 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:48601 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754662AbaAGIXD (ORCPT
+	id S1755636AbaAGI2w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 03:28:52 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:49252 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063AbaAGI2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 03:23:03 -0500
+	Tue, 7 Jan 2014 03:28:51 -0500
+Message-ID: <52CBBABD.50902@gmail.com>
+Date: Tue, 07 Jan 2014 16:28:45 +0800
+From: Ric Wheeler <ricwheeler@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140106162145.GL31570@twins.programming.kicks-ass.net>
-References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
- <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org> <20140106162145.GL31570@twins.programming.kicks-ass.net>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Tue, 7 Jan 2014 09:22:40 +0100
-Message-ID: <CAKfTPtAhSL99gTx8=wvaq=1ENzB9DQ697DQsOMqWMaj6o31LMg@mail.gmail.com>
-Subject: Re: [RFC] sched: CPU topology try
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        Alex Shi <alex.shi@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Jon Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Len Brown <len.brown@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Martin K. Petersen" <mkp@mkp.net>, Christoph Hellwig <hch@infradead.org>
+CC: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: Re: status of block-integrity
+References: <20131222192128.GA28532@infradead.org> <yq11u134rmt.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq11u134rmt.fsf@sermon.lab.mkp.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 January 2014 17:21, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, Dec 18, 2013 at 02:13:51PM +0100, Vincent Guittot wrote:
->> This patch applies on top of the two patches [1][2] that have been proposed by
->> Peter for creating a new way to initialize sched_domain. It includes some minor
->> compilation fixes and a trial of using this new method on ARM platform.
->> [1] https://lkml.org/lkml/2013/11/5/239
->> [2] https://lkml.org/lkml/2013/11/5/449
->>
->> Based on the results of this tests, my feeling about this new way to init the
->> sched_domain is a bit mitigated.
+On 12/23/2013 09:35 PM, Martin K. Petersen wrote:
+>>>>>> "Christoph" == Christoph Hellwig <hch@infradead.org> writes:
+> Christoph> We have the block integrity code to support DIF/DIX in the
+> Christoph> the tree for about 5 and a half years, and we still don't
+> Christoph> have a single consumer of it.
 >
-> Yay :-)
+> What do you mean? If you have a DIX-capable HBA (lpfc, qla2xxx, zfcp)
+> then integrity protection is active from the block layer down. The only
+> code that's not currently being exercised are the tag interleaving
+> functions.  I was hoping the FS people would use them for back pointers
+> but nobody seemed to bite.
 >
->> We can add more levels that will describe other dependency/independency like
->> the frequency scaling dependency and as a result the final sched_domain
->> topology will have additional levels (if they have not been removed during
->> the degenerate sequence)
 >
-> Yeah, this 'creative' use of degenerate domains is pretty neat ;-)
-
-thanks :-)
-
+> Christoph> Given that we'll have a lot of work to do in this area with
+> Christoph> block multiqueue I think it's time to either kill it off for
+> Christoph> good or make sure we can actually use and test it.
 >
->> My concern is about the configuration of the table that is used to create the
->> sched_domain. Some levels are "duplicated" with different flags configuration
->> which make the table not easily readable and we must also take care of the
->> order  because parents have to gather all cpus of its childs. So we must
->> choose which capabilities will be a subset of the other one. The order is
->> almost straight forward when we describe 1 or 2 kind of capabilities
->> (package ressource sharing and power sharing) but it can become complex if we
->> want to add more.
+> I don't understand why multiqueue would require a lot of work? It's just
+> an extra scatterlist per request.
 >
-> I think I see what you're saying, although I hope that won't actually
-> happen in real hardware -- that said, people do tend to do crazy with
-> these ARM chips :/
-
-it should be ok for ARM chip because the cores in a cluster share the
-same clock but it doesn't mean that it will not be possible in a near
-future or on other arch.
-
+> And obviously, if there's anything that needs to be done in this area
+> I'll be happy to do so...
 >
-> We should also try and be conservative in the topology flags we want to
-> add, which should further reduce the amount of pain here.
 
-yes, i see a interest for powerdomain sharing and clock sharing flags
-so it should minimize the complexity
+One of the major knocks on linux file systems (except for btrfs) that I hear is 
+the lack of full data path checksums. DIF/DIX + xfs or ext4 done right will give 
+us another answer here.  I don't think it will be common, it is a request that 
+comes in for very large storage customers most commonly.
 
->
-> For now I do think this is a viable approach.. Yes its a bit cumbersome
-> for these asymmetric systems but it does give us enough to start
-> playing.
+We do have devices that support this and are working to get more vendor testing 
+done, so I would hate to see us throw out the code instead of fixing it up for 
+the end users that see value here.
 
-ok
+I think that we can get this working & agree with the call to continue this 
+discussion (here and at LSF :))
 
-Vincent
->
-> I yet have to read Morton's emails on the P and C states, will try to
-> have a look at those tomorrow with a hopefully fresher brain -- somehow
-> its the end of the day already..
+Ric
+
