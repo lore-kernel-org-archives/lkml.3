@@ -1,73 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631AbaAGPXX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 10:23:23 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:11122 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751198AbaAGPXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 10:23:19 -0500
-X-IronPort-AV: E=Sophos;i="4.95,619,1384300800"; 
-   d="scan'208";a="90479728"
-Message-ID: <52CC1BE3.8080502@citrix.com>
-Date: Tue, 7 Jan 2014 15:23:15 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752657AbaAGPXn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 10:23:43 -0500
+Received: from mail-qe0-f53.google.com ([209.85.128.53]:38358 "EHLO
+	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752637AbaAGPXc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 10:23:32 -0500
+Date: Tue, 7 Jan 2014 10:23:28 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
+Cc: akpm@linux-foundation.org, jiang.liu@huawei.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        iamjoonsoo.kim@lge.com, hannes@cmpxchg.org, tangchen@cn.fujitsu.com,
+        toshi.kani@hp.com
+Subject: Re: [PATCH 2/2] mm: free memblock.memory in free_all_bootmem
+Message-ID: <20140107152328.GB3231@htj.dyndns.org>
+References: <1389107774-54978-1-git-send-email-phacht@linux.vnet.ibm.com>
+ <1389107774-54978-3-git-send-email-phacht@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Wei Liu <wei.liu2@citrix.com>
-CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next v2 6/9] xen-netback: Handle guests with too many
- frags
-References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com> <1386892097-15502-7-git-send-email-zoltan.kiss@citrix.com> <20131213154307.GN21900@zion.uk.xensource.com> <52AF2602.2000409@citrix.com> <20131216180908.GC25969@zion.uk.xensource.com>
-In-Reply-To: <20131216180908.GC25969@zion.uk.xensource.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389107774-54978-3-git-send-email-phacht@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/12/13 18:09, Wei Liu wrote:
->>>> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
->>>> index e26cdda..f6ed1c8 100644
->>>> --- a/drivers/net/xen-netback/netback.c
->>>> +++ b/drivers/net/xen-netback/netback.c
->>>> @@ -906,11 +906,15 @@ static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
->>>>   	u16 pending_idx = *((u16 *)skb->data);
->>>>   	int start;
->>>>   	pending_ring_idx_t index;
->>>> -	unsigned int nr_slots;
->>>> +	unsigned int nr_slots, frag_overflow = 0;
->>>>
->>>>   	/* At this point shinfo->nr_frags is in fact the number of
->>>>   	 * slots, which can be as large as XEN_NETBK_LEGACY_SLOTS_MAX.
->>>>   	 */
->>>> +	if (shinfo->nr_frags > MAX_SKB_FRAGS) {
->>>> +		frag_overflow = shinfo->nr_frags - MAX_SKB_FRAGS;
->>>> +		shinfo->nr_frags = MAX_SKB_FRAGS;
->>>> +	}
->>>>   	nr_slots = shinfo->nr_frags;
->>>>
->>>
->>> It is also probably better to check whether shinfo->nr_frags is too
->>> large which makes frag_overflow > MAX_SKB_FRAGS. I know skb should be
->>> already be valid at this point but it wouldn't hurt to be more careful.
->> Ok, I've added this:
->> 	/* At this point shinfo->nr_frags is in fact the number of
->> 	 * slots, which can be as large as XEN_NETBK_LEGACY_SLOTS_MAX.
->> 	 */
->> +	if (shinfo->nr_frags > MAX_SKB_FRAGS) {
->> +		if (shinfo->nr_frags > XEN_NETBK_LEGACY_SLOTS_MAX) return NULL;
->> +		frag_overflow = shinfo->nr_frags - MAX_SKB_FRAGS;
->>
->
-> What I suggested is
->
->     BUG_ON(frag_overflow > MAX_SKB_FRAGS)
+On Tue, Jan 07, 2014 at 04:16:14PM +0100, Philipp Hachtmann wrote:
+> When calling free_all_bootmem() the free areas under memblock's
+> control are released to the buddy allocator. Additionally the
+> reserved list is freed if it was reallocated by memblock.
+> The same should apply for the memory list.
+> 
+> Signed-off-by: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
 
-Ok, I've changed it.
+Reviewed-by: Tejun Heo <tj@kernel.org>
 
-Zoli
+Thanks.
 
+-- 
+tejun
