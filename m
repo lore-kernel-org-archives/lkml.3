@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756291AbaAGImi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 03:42:38 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:51613 "EHLO
+	id S1755550AbaAGIrw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 03:47:52 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51680 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752392AbaAGImh (ORCPT
+	with ESMTP id S1751373AbaAGIrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 03:42:37 -0500
-Date: Tue, 7 Jan 2014 09:42:15 +0100
+	Tue, 7 Jan 2014 03:47:51 -0500
+Date: Tue, 7 Jan 2014 09:47:34 +0100
 From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
- tracing units
-Message-ID: <20140107084215.GO30183@twins.programming.kicks-ass.net>
-References: <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219103134.GD30183@twins.programming.kicks-ass.net>
- <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219112812.GY21999@twins.programming.kicks-ass.net>
- <20131219123955.GA18186@gmail.com>
- <87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219151024.GI16438@laptop.programming.kicks-ass.net>
- <87iotw6bwx.fsf@tassilo.jf.intel.com>
- <20140106220509.GI30183@twins.programming.kicks-ass.net>
- <20140107005231.GZ20765@two.firstfloor.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Kevin Hilman <khilman@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [LNG] Re: [Query] Ticks happen in pair for NO_HZ_FULL cores ?
+Message-ID: <20140107084734.GP30183@twins.programming.kicks-ass.net>
+References: <CAKohponch=o3nBKTmakA87OiN=HbgnEwJUL23mGkjQiNoJWjWw@mail.gmail.com>
+ <20131211132212.GA7862@localhost.localdomain>
+ <CAKohponKxw8F6djaXaw0MEzGRWGTSQ=peiYuTGBCOHE0VaJR5Q@mail.gmail.com>
+ <87wqj34eqs.fsf@linaro.org>
+ <CAKohpo=Btb8ChRJ4Be9gbDE-nOxSaCVkQ_Qg5g7AVRxOMbXEQQ@mail.gmail.com>
+ <87r49al12j.fsf@linaro.org>
+ <CAKohpokDBga18BhZm=r+EOoY40=+E7Ndtfooq9rXbqc=wUg2Ng@mail.gmail.com>
+ <CAKohpo=bzfnb6aBDRX6AfjVoRquTaboO5wmiHfjb=bD0bAgBcA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140107005231.GZ20765@two.firstfloor.org>
+In-Reply-To: <CAKohpo=bzfnb6aBDRX6AfjVoRquTaboO5wmiHfjb=bD0bAgBcA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 01:52:31AM +0100, Andi Kleen wrote:
-> > > Also of course it requires disabling/enabling PT explicitly for 
-> > > every perf message, which is slow. So you add at least 2*WRMSR cost
-> > > (thousands of cycles).
-> > 
-> > That's just dumb, no flush the entire PT buffer into a few large
-> > records.
-> 
-> How would that work?
-> 
-> You mean a separate buffer and then copy or map?
-> 
-> ------
-> 
-> Also here are some more problems with interleaving: 
-> 
-> A common PT config is to just run it as a ring buffer in the background
-> and only take the data out when something happens (sample, crash etc.)
-> 
-> But the side band still needs to be logged and at arbitary times.
-> 
-> So the PT wrapping will happen much more often than the perf wrapping.
+On Mon, Dec 23, 2013 at 01:48:02PM +0530, Viresh Kumar wrote:
+> *But wouldn't it make sense if we can tell scheduler that don't queue
+> these works on a CPU that is running in NO_HZ_FULL mode?*
 
-So create two events, one for the PT stuff and one to track the
-side-band stuff. We have a NOP event for just this purpose.
+No,.. that's the wrong way around.
+
+> Also any suggestions on how to get rid of __prandom_timer events on
+> such CPUs?
+
+That looks to be a normal unpinned timer, it should migrate to a 'busy'
+cpu once the one its running on it going idle.
+
+ISTR people trying to make that active and also migrating on nohz full
+or somesuch, just like the workqueues. Forgot what happened with that;
+if it got dropped it should probably be ressurected.
