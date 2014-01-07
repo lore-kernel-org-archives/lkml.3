@@ -1,72 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907AbaAGUlc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 15:41:32 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56361 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541AbaAGUlY (ORCPT
+	id S1753282AbaAGUmk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 15:42:40 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35588 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753339AbaAGUmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 15:41:24 -0500
-Message-ID: <52CC666F.1010501@wwwdotorg.org>
-Date: Tue, 07 Jan 2014 13:41:19 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 7 Jan 2014 15:42:35 -0500
+Date: Tue, 7 Jan 2014 21:42:33 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: cooloney@gmail.com, rpurdie@rpsys.net, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org, milo.kim@ti.com
+Cc: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Broken locking in leds-lp5523.c
+Message-ID: <20140107204233.GA22413@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Landley <rob@landley.net>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Danny Huang <dahuang@nvidia.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 2/6] misc: fuse: Add efuse driver for Tegra
-References: <1387891931-9854-1-git-send-email-pdeschrijver@nvidia.com> <1387891931-9854-3-git-send-email-pdeschrijver@nvidia.com> <52CB12D8.7000203@wwwdotorg.org> <20140107140502.GE26588@tbergstrom-lnx.Nvidia.com>
-In-Reply-To: <20140107140502.GE26588@tbergstrom-lnx.Nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2014 07:05 AM, Peter De Schrijver wrote:
-> On Mon, Jan 06, 2014 at 09:32:24PM +0100, Stephen Warren wrote:
->> On 12/24/2013 06:32 AM, Peter De Schrijver wrote:
->>> Implement fuse driver for Tegra20, Tegra30, Tegra114 and Tegra124.
+Hi!
 
->>> diff --git a/drivers/misc/fuse/tegra/fuse-tegra20.c b/drivers/misc/fuse/tegra/fuse-tegra20.c
->>
->>> +static int fuse_size;
->>
->> I don't think that's used.
->>
->>> +static u32 tegra20_fuse_readl(const unsigned int offset)
->> ...
->>> +	ret = tegra_apb_readl_using_dma(fuse_phys + FUSE_BEGIN + offset, &val);
->>
->> Shouldn't this use the generic tegra_apb_readl(), so that it works
->> irrespective of whether the Tegra20 APB DMA driver is available?
->
-> tegra_apb_readl() doesn't work reliably on Tegra20 for reading the fuses.
-> So if the Tegra20 APB DMA, this driver should also be unavailable.
+There's some locking weirdness, and few missing comments in lp5523
+driver.
 
-There's no "depends TEGRA20_APB_DMA" in the Kconfig. Perhaps
-ARCH_TEGRA_2x_SOC or FUSE_TEGRA should "select TEGRA20_APB_DMA"?
+Now, this is untested patch from my reverse-engineering. I hope I
+understood things right...
 
->>> +static int tegra_fuse_probe(struct platform_device *pdev)
->> ...
->>> +	fuse_randomness();
->>
->> If this is a driver, and particularly if this could be in a module, is
->> there any guarantee at all that fuse_randomness() gets called early
->> enough to be useful?
-> 
-> For a module this might be true yes... Should we disallow this making a
-> module?
+In particular, there's unbalanced unlock in
+lp5523_update_program_memory, and lp5523_update_program_memory needs
+to be protected by the lock.
 
-That would simplify things, I expect...
+Comments? Does someone maintain this?
 
+Thanks,
+								Pavel
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
+
+
+diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
+index c00f55e4..e8b83e9 100644
+--- a/drivers/leds/leds-lp5523.c
++++ b/drivers/leds/leds-lp5523.c
+@@ -34,7 +34,15 @@
+ 
+ #include "leds-lp55xx-common.h"
+ 
+-#define LP5523_PROGRAM_LENGTH		32
++#define LP5523_PROGRAM_LENGTH		32	/* bytes */
++/* Memory is used like this:
++   0x00 engine 1 program
++   0x10 engine 2 program
++   0x20 engine 3 program
++   0x30 engine 1 muxing info
++   0x40 engine 2 muxing info
++   0x50 engine 3 muxing info
++   ...and offsets are hard-coded all around :-( */
+ #define LP5523_MAX_LEDS			9
+ 
+ /* Registers */
+@@ -265,20 +273,25 @@ static int lp5523_init_program_engine(struct lp55xx_chip *chip)
+ 	/* one pattern per engine setting LED MUX start and stop addresses */
+ 	static const u8 pattern[][LP5523_PROGRAM_LENGTH] =  {
+ 		{ 0x9c, 0x30, 0x9c, 0xb0, 0x9d, 0x80, 0xd8, 0x00, 0},
++		/* 9c30 -- mux_map_start(0x30)
++		   9cb0 -- mux_ld_end(0x50)
++		   9d80 -- mux_sel???(0x00)
++		   d800 -- invalid?? */
+ 		{ 0x9c, 0x40, 0x9c, 0xc0, 0x9d, 0x80, 0xd8, 0x00, 0},
+ 		{ 0x9c, 0x50, 0x9c, 0xd0, 0x9d, 0x80, 0xd8, 0x00, 0},
+ 	};
+ 
+-	/* hardcode 32 bytes of memory for each engine from program memory */
++	/* hardcode LP5523_PROGRAM_LENGTH bytes of memory for each
++	   engine from program memory */
+ 	ret = lp55xx_write(chip, LP5523_REG_CH1_PROG_START, 0x00);
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = lp55xx_write(chip, LP5523_REG_CH2_PROG_START, 0x10);
++	ret = lp55xx_write(chip, LP5523_REG_CH2_PROG_START, LP5523_PROGRAM_LENGTH / 2);
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = lp55xx_write(chip, LP5523_REG_CH3_PROG_START, 0x20);
++	ret = lp55xx_write(chip, LP5523_REG_CH3_PROG_START, LP5523_PROGRAM_LENGTH);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -346,10 +359,8 @@ static int lp5523_update_program_memory(struct lp55xx_chip *chip,
+ 
+ 	for (i = 0; i < LP5523_PROGRAM_LENGTH; i++) {
+ 		ret = lp55xx_write(chip, LP5523_REG_PROG_MEM + i, pattern[i]);
+-		if (ret) {
+-			mutex_unlock(&chip->lock);
++		if (ret)
+ 			return -EINVAL;
+-		}
+ 	}
+ 
+ 	return size;
+@@ -551,15 +562,17 @@ static ssize_t store_engine_load(struct device *dev,
+ {
+ 	struct lp55xx_led *led = i2c_get_clientdata(to_i2c_client(dev));
+ 	struct lp55xx_chip *chip = led->chip;
++	ssize_t res;
+ 
+ 	mutex_lock(&chip->lock);
+ 
+ 	chip->engine_idx = nr;
+ 	lp5523_load_engine_and_select_page(chip);
+ 
++	res = lp5523_update_program_memory(chip, buf, len);
+ 	mutex_unlock(&chip->lock);
+ 
+-	return lp5523_update_program_memory(chip, buf, len);
++	return res;
+ }
+ store_load(1)
+ store_load(2)
+diff --git a/drivers/leds/leds-lp8501.c b/drivers/leds/leds-lp8501.c
+index 8d55a780..ae5c6fe 100644
+--- a/drivers/leds/leds-lp8501.c
++++ b/drivers/leds/leds-lp8501.c
+@@ -262,7 +262,7 @@ static void lp8501_firmware_loaded(struct lp55xx_chip *chip)
+ 	}
+ 
+ 	/*
+-	 * Program momery sequence
++	 * Program memory sequence
+ 	 *  1) set engine mode to "LOAD"
+ 	 *  2) write firmware data into program memory
+ 	 */
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
