@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567AbaAGSa5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 13:30:57 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:46056 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752618AbaAGSat (ORCPT
+	id S1753666AbaAGSbW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 13:31:22 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:22757 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752618AbaAGSbO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 13:30:49 -0500
-Message-ID: <52CC47D0.8070606@gmail.com>
-Date: Tue, 07 Jan 2014 20:30:40 +0200
-From: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>, Tomi Valkeinen <tomi.valkeinen@ti.com>
-CC: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        "pali.rohar@gmail.com" <pali.rohar@gmail.com>,
+	Tue, 7 Jan 2014 13:31:14 -0500
+Date: Tue, 7 Jan 2014 13:31:11 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Martin <Dave.Martin@arm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        sahara <keun-o.park@windriver.com>, Keun-O Park <kpark3469@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: OMAPDSS: DISPC: horizontal timing too tight errors
-References: <52CA7ABB.4010401@gmail.com> <52CBF476.3070306@ti.com> <20140107180509.GC18316@amd.pavel.ucw.cz>
-In-Reply-To: <20140107180509.GC18316@amd.pavel.ucw.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Subject: Re: [PATCH 19/19] [INCOMPLETE] ARM: make return_address available
+ for ARM_UNWIND
+Message-ID: <20140107133111.0fe49c21@gandalf.local.home>
+In-Reply-To: <20140107163629.GC3350@e103592.cambridge.arm.com>
+References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
+	<201401071533.35309.arnd@arndb.de>
+	<20140107144130.GJ27432@n2100.arm.linux.org.uk>
+	<4325142.7drL5ndxN9@wuerfel>
+	<20140107163629.GC3350@e103592.cambridge.arm.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07.01.2014 20:05, Pavel Machek wrote:
-> On Tue 2014-01-07 14:35:02, Tomi Valkeinen wrote:
->> On 2014-01-06 11:43, Ivaylo Dimitrov wrote:
->>> Hi,
->>>
->>> commit 7faa92339bbb1e6b9a80983b206642517327eb75 "OMAPDSS: DISPC: Handle
->>> synclost errors in OMAP3" introduces some limits check to prevent
->>> SYNCLOST errors on OMAP3 in a specific usecase. The problem I see here
->>> (on Nokia N900, Maemo 5, linux 3.13-rc6, DSP accel video decoding) is
->>> that those checks effectively prevent fullscreen video playback of
->>> anything above lets say 640x350 with "horizontal timing too tight"
->>> errors spit in dmesg log. If I hack check_horiz_timing_omap3 function to
->>> always return true, I can happily play videos up to (and including) 720p
->>> resolutions, with no SYNCLOST errors.
->>
->> I never worked with the patch in question, but my understanding is that
->> the core issue is quite difficult to solve optimally for all cases.
->> There are so many variables involved. So it may well be that the patch
->> in question does it a bit over-safely. Then again, it might as well have
->> a bug =).
->
-> Can we simply revert 7faa92339bbb1e6b9a80983b206642517327eb75 ?
->
-> Working around undocumented problems on unspecified machine, but
-> breaking configuration people actually use seems like a bad idea.
->
-> 									Pavel
->
-The similar code exists in both omap1(N900 stock) and N9 kernels, I 
-guess there is some other bug (somewhere else), trying to find it as we 
-speak :)
+On Tue, 7 Jan 2014 16:36:29 +0000
+Dave Martin <Dave.Martin@arm.com> wrote:
 
-Ivo
+> My other concern was that we might end up in a recursive trace due to
+> the use of non-notrace core functions in the unwinder.  But I seem to
+> remember Steve Rostedt saying the the tracer guards against recursive
+> invocation nowadays -- if so, that shouldn't be a problem.
+
+I guess it matters what type of tracing you are talking about. The
+function tracer protects against all recursive contexts (normal,
+softirq, irq and NMI) and so does the ring buffer (same levels).
+
+Those may be the only ones that matter, as things like events shouldn't
+recurse, unless you have an event in the unwinder itself. But that's
+where you take the doctor's advice of "don't do that".
+
+-- Steve
