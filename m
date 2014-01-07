@@ -1,70 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651AbaAGIBd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 03:01:33 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:46193 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752162AbaAGIBb (ORCPT
+	id S1755413AbaAGIWm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 03:22:42 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:38047 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755187AbaAGIWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 03:01:31 -0500
-Date: Tue, 7 Jan 2014 00:01:27 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: thierry.reding@gmail.com, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pwm: core: Use devm_kzalloc instead of kzalloc
-Message-ID: <20140107080127.GD20074@core.coreip.homeip.net>
-References: <1389074700-1825-1-git-send-email-Li.Xiubo@freescale.com>
+	Tue, 7 Jan 2014 03:22:40 -0500
+Date: Tue, 7 Jan 2014 08:22:33 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 3/7] mfd: pm8921: Migrate to irqdomains
+Message-ID: <20140107082233.GB3182@lee--X1>
+References: <1387831563-13535-1-git-send-email-sboyd@codeaurora.org>
+ <1387831563-13535-4-git-send-email-sboyd@codeaurora.org>
+ <20140106155350.GI30156@lee--X1>
+ <52CB1323.6080200@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1389074700-1825-1-git-send-email-Li.Xiubo@freescale.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <52CB1323.6080200@codeaurora.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Xiubo,
-
-On Tue, Jan 07, 2014 at 02:05:00PM +0800, Xiubo Li wrote:
-> Use devm_kzalloc instead of kzalloc to free automatically and make
-> the cleanup paths simpler and the code slightly shorter.
+> >>  	unsigned int		num_irqs;
+> >>  	unsigned int		num_blocks;
+> >>  	unsigned int		num_masters;
+> >> @@ -138,7 +137,7 @@ static int pm8xxx_irq_block_handler(struct pm_irq_chip *chip, int block)
+> >>  	for (i = 0; i < 8; i++) {
+> >>  		if (bits & (1 << i)) {
+> >>  			pmirq = block * 8 + i;
+> >> -			irq = pmirq + chip->irq_base;
+> >> +			irq = irq_find_mapping(chip->domain, pmirq);
+> > Going by this patch only, it appears you're calling irq_find_mapping()
+> > before you've called irq_create_mapping(). This won't work, so unless
+> > you've called the latter in a previous patch, you should ensure that
+> > you do so.
+> >
 > 
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> ---
->  drivers/pwm/core.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
+> Interrupts seem to work. I think that's because the mapping is created
+> when the consumer drivers call request_irq().
 > 
-> diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
-> index 2ca9504..74c9f9a 100644
-> --- a/drivers/pwm/core.c
-> +++ b/drivers/pwm/core.c
-> @@ -80,7 +80,6 @@ static void free_pwms(struct pwm_chip *chip)
->  
->  	bitmap_clear(allocated_pwms, chip->base, chip->npwm);
->  
-> -	kfree(chip->pwms);
->  	chip->pwms = NULL;
->  }
->  
-> @@ -245,7 +244,9 @@ int pwmchip_add(struct pwm_chip *chip)
->  	if (ret < 0)
->  		goto out;
->  
-> -	chip->pwms = kzalloc(chip->npwm * sizeof(*pwm), GFP_KERNEL);
-> +	chip->pwms = devm_kzalloc(chip->dev,
-> +				  chip->npwm * sizeof(*pwm),
-> +				  GFP_KERNEL);
->  	if (!chip->pwms) {
->  		ret = -ENOMEM;
->  		goto out;
+> From what I can tell, if we call irq_find_mapping() and there is no
+> mapping associated with it then we have a spurious irq. If that happens
+> we'll call handle_generic_irq() with 0 and that will cause
+> handle_bad_irq() to be called and a debug message to be logged. That
+> seems like a good outcome.
 
-Is it guaranteed that pwmchip_add()/free_pwms() will only be called in
-probe() and remove() paths? It is probably safe assumption, but maybe it
-should be mentioned in comments now that we definitely have this
-restricion.
+I would try to adhere to the documentation in case we are missing
+something or some of the semantics change. Please read:
+Documentation/IRQ-domain.txt. Specifically, "=== irq_domain usage ==="
+from line 39, which says to call irq_create_mapping() to indeed, create
+the mapping.
 
-Thanks.
+> > What does the sizeof(u8) add here?
+> >
+> 
+> This was just keeping the same code that was already there. I will do
+> sizeof(chip->config[0]) instead which is more future proof if that array
+> changes type later on.
+
+Ah, now I see what it's doing. Perhaps brackets would be of use to
+ensure readers aren't confused. I also think the sizeof() would be
+helpful too, so:
+
+        chip = devm_kzalloc(&pdev->dev, sizeof(*chip) +
+                            (sizeof(chip->config[0]) * nirqs), GFP_KERNEL);
+
+> >> +	return of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
+> >> +}
+> > Can't you use the MFD core instead?
+> >
+> 
+> Are you suggesting using mfd_add_devices()? At first glance it looks
+> like that would require an array of mfd_cell structures that do nothing
+> besides match compatible strings in the DT. Using of_platform_populate()
+> achieves the same goal and doesn't require an array of mfd_cell
+> structures for each different pm8xxx chip that comes along, meaning
+> simpler code.
+
+I'm inclined to agree, but playing Devil's advocate here, as a device
+using the MFD subsystem it's often clearer to readers and other people
+looking for examples if the MFD core functionality is used. For
+instance, I now have no idea what devices the PM8xxx encompasses
+without looking at the DTS file. A small cell structure is a small
+price to pay for code clarity IMHO.
 
 -- 
-Dmitry
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
