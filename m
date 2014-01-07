@@ -1,80 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751696AbaAGLUF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 06:20:05 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:13695 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751030AbaAGLUD (ORCPT
+	id S1751808AbaAGLU3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 06:20:29 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:58397 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751322AbaAGLUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Jan 2014 06:20:03 -0500
-Date: Tue, 7 Jan 2014 11:20:01 +0000
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "pjt@google.com" <pjt@google.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "alex.shi@linaro.org" <alex.shi@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "amit.kucheria@linaro.org" <amit.kucheria@linaro.org>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>
-Subject: Re: [RFC] sched: CPU topology try
-Message-ID: <20140107112001.GD2936@e103034-lin>
-References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
- <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
- <52CBCB85.8050607@linux.vnet.ibm.com>
- <20140107095039.GA2480@laptop.programming.kicks-ass.net>
- <52CBD96B.4050103@linux.vnet.ibm.com>
+Date: Tue, 7 Jan 2014 12:19:54 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de, Roger Quadros <rogerq@ti.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH v2 2/2] reset: Add GPIO support to reset controller
+ framework
+Message-ID: <20140107111954.GA2849@lukather>
+References: <1389030903-27684-1-git-send-email-p.zabel@pengutronix.de>
+ <1389030903-27684-2-git-send-email-p.zabel@pengutronix.de>
+ <20140106181422.GS3144@lukather>
+ <1389088341.4815.9.camel@pizza.hi.pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AqsLC8rIMeq19msA"
 Content-Disposition: inline
-In-Reply-To: <52CBD96B.4050103@linux.vnet.ibm.com>
+In-Reply-To: <1389088341.4815.9.camel@pizza.hi.pengutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 10:39:39AM +0000, Preeti U Murthy wrote:
-> On 01/07/2014 03:20 PM, Peter Zijlstra wrote:
-> > On Tue, Jan 07, 2014 at 03:10:21PM +0530, Preeti U Murthy wrote:
-> >> What if we want to add arch specific flags to the NUMA domain? Currently
-> >> with Peter's patch:https://lkml.org/lkml/2013/11/5/239 and this patch,
-> >> the arch can modify the sd flags of the topology levels till just before
-> >> the NUMA domain. In sd_init_numa(), the flags for the NUMA domain get
-> >> initialized. We need to perhaps call into arch here to probe for
-> >> additional flags?
-> > 
-> > What are you thinking of? I was hoping all NUMA details were captured in
-> > the distance table.
-> > 
-> > Its far easier to talk of specifics in this case.
-> > 
-> If the processor can be core gated, then there is very little power
-> savings that we could yield from consolidating all the load onto a
-> single node in a NUMA domain. 6 cores on one node or 3 cores each on two
-> nodes, the power is drawn by 6 cores in all.
 
-Not being a NUMA expert, I would have thought that load consolidation at
-node level would nearly always save power even when cpus can be power
-gated individually. The number of cpus awake is the same, but you only
-need to power the caches, memory, and other node peripherals for one
-node instead of two in your example. Wouldn't that save power?
+--AqsLC8rIMeq19msA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Memory/cache intensive workloads might benefit from spreading at node
-level though. 
+Hi Philipp,
 
-Am I missing something?
+On Tue, Jan 07, 2014 at 10:52:21AM +0100, Philipp Zabel wrote:
+> > > +	const char *gpio_con_id =3D "reset";
+> > > +	struct reset_controller_dev *rcdev;
+> > > +	struct reset_control *rstc;
+> > > +	struct gpio_desc *gpiod;
+> > > +	bool asserted =3D false;
+> > > +	char scratch[48];
+> > > +	int ret;
+> > > +
+> > > +	if (id) {
+> > > +		snprintf(scratch, 48, "%s-reset-boot-asserted", id);
+> > > +		assert_prop =3D scratch;
+> > > +	}
+> > > +
+> > > +	asserted =3D of_property_read_bool(dev->of_node, assert_prop);
+> > > +
+> > > +	if (id) {
+> > > +		snprintf(scratch, 48, "%s-reset", id);
+> > > +		gpio_con_id =3D scratch;
+> > > +	}
+> > > +
+> > > +	gpiod =3D gpiod_get(dev, gpio_con_id);
+> > > +	if (IS_ERR(gpiod)) {
+> > > +		dev_err(dev, "Failed to get GPIO reset: %ld\n", PTR_ERR(gpiod));
+> > > +		return ERR_CAST(gpiod);
+> > > +	}
+> > > +
+> > > +	ret =3D gpiod_direction_output(gpiod, asserted);
+> > > +	if (ret < 0)
+> > > +		goto err_put;
+> >=20
+> > What happens if the GPIO is active low? I see no way in your binding
+> > and driver to give that information, and that would change the
+> > behaviour quite a bit.
+>=20
+> I was under the (wrong) impression that gpiod_direction_output takes a
+> logical value as gpiod_set_value does. Will fix that.
 
-Morten
+I don't think gpiod_set_value does either unfortunately.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--AqsLC8rIMeq19msA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSy+LaAAoJEBx+YmzsjxAgurkP/j1S/53OnITJ/mXhsokQDhX2
+Xse9Ah+5fytIyI7A7DWWP1LmQiQZl17SOdHrTOLbGKpWFybeMC6G6Zx4E086vGWR
+AIAfKye7Y9MHcgm40QiNr570JrgffL38GP0zr16kKyeszT6wAHvy5vQET599+l9f
+akr+g7FIbe1uslsmf0uFBFr6s9Z01Tg1FWCFbx5w1LzYrTI0fO9fM50s7vRDEv0C
+r/OE0IGSmqXYMKKPPjnCpdHIBgOasRBPam1VjM62TrRoi+X8GldrkqAEGAutcUWX
+csCKKpC1S9W50/PvkNljW/ykvy3hkI4PTWMryA8xGSE+d4ywfG+HKCkFIVAPtcIr
+wIWX4tKqWOMcDZ66F/3PklnrbrfCBMG4/YxERgXsrJeJwD1bQrQnY5J8L9cOtBr9
+MULletcIHBivsE/etvE3AxaMnpDAHFhJOO9VcElWYLrTaH/NFX5O9qy/Zon5szKA
+nJLkAd62dF9AhrsjpfSuOCRx7YTVoCn6nKQ+l3pczv+zUbVByvQEa9j97OVvRajI
+rl1O12w0V30wFpsBvEwGLAhHiSV1u17+YEfScmoMWRGU13ci2wESXf9WdcxWoL7I
+g22rXLKd8BaXKVHztvs74dpwePUHgDOg0vzVyto+bniLqpnnX12ZAYqittUqqFl9
+YQpRSS7V28FiPJQFPUK7
+=jtX/
+-----END PGP SIGNATURE-----
+
+--AqsLC8rIMeq19msA--
