@@ -1,126 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752475AbaAGPIc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 10:08:32 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:53309 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751158AbaAGPI3 (ORCPT
+	id S1752480AbaAGPJh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 10:09:37 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:23093 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751364AbaAGPJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 10:08:29 -0500
-Message-ID: <1389107305.26646.20.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH] netfilter: nf_conntrack: fix RCU race in
- nf_conntrack_find_get
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andrey Vagin <avagin@openvz.org>
-Cc: netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vvs@openvz.org,
-        Florian Westphal <fw@strlen.de>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Date: Tue, 07 Jan 2014 07:08:25 -0800
-In-Reply-To: <1389090711-15843-1-git-send-email-avagin@openvz.org>
-References: <1389090711-15843-1-git-send-email-avagin@openvz.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 7 Jan 2014 10:09:30 -0500
+Date: Tue, 7 Jan 2014 15:09:21 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Mark Zhang <markz@nvidia.com>
+Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "steve.capper@linaro.org" <steve.capper@linaro.org>,
+        "nico@linaro.org" <nico@linaro.org>,
+        "ccross@android.com" <ccross@android.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "lauraa@codeaurora.org" <lauraa@codeaurora.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "gregory.clement@free-electrons.com" 
+	<gregory.clement@free-electrons.com>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Gary King <gking@nvidia.com>
+Subject: Re: [PATCH] arm: mm: add memory type for inner-writeback
+Message-ID: <20140107150918.GA16947@localhost>
+References: <1388120328-17148-1-git-send-email-markz@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1388120328-17148-1-git-send-email-markz@nvidia.com>
+Thread-Topic: [PATCH] arm: mm: add memory type for inner-writeback
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-01-07 at 14:31 +0400, Andrey Vagin wrote:
-> Lets look at destroy_conntrack:
+On Fri, Dec 27, 2013 at 04:58:48AM +0000, Mark Zhang wrote:
+> From: Colin Cross <ccross@android.com>
 > 
-> hlist_nulls_del_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode);
-> ...
-> nf_conntrack_free(ct)
-> 	kmem_cache_free(net->ct.nf_conntrack_cachep, ct);
+> For streaming-style operations (e.g., software rendering of graphics
+> surfaces shared with non-coherent DMA devices), the cost of performing
+> L2 cache maintenance can exceed the benefit of having the larger cache
+> (this is particularly true for OUTER_CACHE configurations like the ARM
+> PL2x0).
 > 
-> net->ct.nf_conntrack_cachep is created with SLAB_DESTROY_BY_RCU.
+> This change uses the currently-unused mapping 5 (TEX[0]=1, C=0, B=1)
+> in the tex remapping tables as an inner-writeback-write-allocate, outer
+> non-cacheable memory type, so that this mapping will be available to
+> clients which will benefit from the reduced L2 maintenance.
 > 
-> The hash is protected by rcu, so readers look up conntracks without
-> locks.
-> A conntrack is removed from the hash, but in this moment a few readers
-> still can use the conntrack. Then this conntrack is released and another
-> thread creates conntrack with the same address and the equal tuple.
-> After this a reader starts to validate the conntrack:
-> * It's not dying, because a new conntrack was created
-> * nf_ct_tuple_equal() returns true.
-> 
-> But this conntrack is not initialized yet, so it can not be used by two
-> threads concurrently. In this case BUG_ON may be triggered from
-> nf_nat_setup_info().
-> 
-> Florian Westphal suggested to check the confirm bit too. I think it's
-> right.
-> 
-> task 1			task 2			task 3
-> 			nf_conntrack_find_get
-> 			 ____nf_conntrack_find
-> destroy_conntrack
->  hlist_nulls_del_rcu
->  nf_conntrack_free
->  kmem_cache_free
-> 						__nf_conntrack_alloc
-> 						 kmem_cache_alloc
-> 						 memset(&ct->tuplehash[IP_CT_DIR_MAX],
-> 			 if (nf_ct_is_dying(ct))
-> 			 if (!nf_ct_tuple_equal()
-> 
-> I'm not sure, that I have ever seen this race condition in a real life.
-> Currently we are investigating a bug, which is reproduced on a few node.
-> In our case one conntrack is initialized from a few tasks concurrently,
-> we don't have any other explanation for this.
+> Signed-off-by: Gary King <gking@nvidia.com>
 
-> 
-> Cc: Florian Westphal <fw@strlen.de>
-> Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-> Cc: Patrick McHardy <kaber@trash.net>
-> Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-> Signed-off-by: Andrey Vagin <avagin@openvz.org>
-> ---
->  net/netfilter/nf_conntrack_core.c | 6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
-> index 43549eb..7a34bb2 100644
-> --- a/net/netfilter/nf_conntrack_core.c
-> +++ b/net/netfilter/nf_conntrack_core.c
-> @@ -387,8 +387,12 @@ begin:
->  			     !atomic_inc_not_zero(&ct->ct_general.use)))
->  			h = NULL;
->  		else {
-> +			/* A conntrack can be recreated with the equal tuple,
-> +			 * so we need to check that the conntrack is initialized
-> +			 */
->  			if (unlikely(!nf_ct_tuple_equal(tuple, &h->tuple) ||
-> -				     nf_ct_zone(ct) != zone)) {
-> +				     nf_ct_zone(ct) != zone) ||
-> +				     !nf_ct_is_confirmed(ct)) {
->  				nf_ct_put(ct);
->  				goto begin;
->  			}
+Is Colin signing off this patch as well?
 
-I do not think this is the right way to fix this problem (if said
-problem is confirmed)
+> --- a/arch/arm/mm/proc-v7-2level.S
+> +++ b/arch/arm/mm/proc-v7-2level.S
+> @@ -144,8 +144,8 @@ ENDPROC(cpu_v7_set_pte_ext)
+>  	 *   NS1 = PRRR[19] = 1		- normal shareable property
+>  	 *   NOS = PRRR[24+n] = 1	- not outer shareable
+>  	 */
+> -.equ	PRRR,	0xff0a81a8
+> -.equ	NMRR,	0x40e040e0
+> +.equ	PRRR,	0xff0a89a8
+> +.equ	NMRR,	0x40e044e0
 
-Remember the rule about SLAB_DESTROY_BY_RCU :
+It should be done for the *-3level files.
 
-When a struct is freed, then reused, its important to set the its refcnt
-(from 0 to 1) only when the structure is fully ready for use.
-
-If a lookup finds a structure which is not yet setup, the
-atomic_inc_not_zero() will fail.
-
-Take a look at sk_clone_lock() and Documentation/RCU/rculist_nulls.txt
-
-
-
-
-
+-- 
+Catalin
