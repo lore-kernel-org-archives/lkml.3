@@ -1,78 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585AbaAGW2I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 17:28:08 -0500
-Received: from imap.thunk.org ([74.207.234.97]:46713 "EHLO imap.thunk.org"
+	id S1754037AbaAGWru (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 17:47:50 -0500
+Received: from 8bytes.org ([85.214.48.195]:37060 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753493AbaAGW2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 17:28:04 -0500
-Date: Tue, 7 Jan 2014 17:27:39 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
-        Aurelien Jarno <aurelien@aurel32.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Rob Browning <rlb@defaultvalue.org>,
-        Dave Chinner <david@fromorbit.com>, Miklos Szeredi <miklos@szeredi.hu>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [RFC PATCH] fs: xattr-based FS_IOC_[GS]ETFLAGS interface
-Message-ID: <20140107222739.GA22610@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	"Darrick J. Wong" <darrick.wong@oracle.com>,
-	Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
-	Aurelien Jarno <aurelien@aurel32.net>,
-	Alexander Viro <viro@zeniv.linux.org.uk>,
-	Rob Browning <rlb@defaultvalue.org>,
-	Dave Chinner <david@fromorbit.com>,
-	Miklos Szeredi <miklos@szeredi.hu>,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-	linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-References: <20140107025855.GA9229@birch.djwong.org>
- <20140107124831.GD16640@quack.suse.cz>
- <20140107154935.GA17609@infradead.org>
- <20140107170430.GA2822@thunk.org>
- <20140107194356.GC9229@birch.djwong.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140107194356.GC9229@birch.djwong.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1750945AbaAGWrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 17:47:43 -0500
+From: Joerg Roedel <joro@8bytes.org>
+To: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: Rob Clark <robdclark@gmail.com>, Joerg Roedel <joro@8bytes.org>
+Subject: [PATCH] drm/msm: Fix link error with !MSM_IOMMU
+Date: Tue,  7 Jan 2014 23:47:26 +0100
+Message-Id: <1389134846-1000-1-git-send-email-joro@8bytes.org>
+X-Mailer: git-send-email 1.7.9.5
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Tue Jan  7 23:47:40 2014
+X-DSPAM-Confidence: 0.9984
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 52cc840c20861967921452
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 11:43:56AM -0800, Darrick J. Wong wrote:
-> I had thought of indexed inode flags as an alternative to the xattr/string
-> parsing thing.  Feature flags make their first appearance as part of a per-FS
-> flag-space and are migrated to the common flag-space when there is demand.
-> It would also avoid the need for each fs to create its own flag ioctl.
-> 
-> On the other hand, someone suggested I try remaking IOC_[GS]ETFLAG as an xattr,
-> so off I went. :)
-> 
-> #define FS_IOC_FLAGS_COMMON	0
-> #define FS_IOC_FLAGS_COMMON2	1
-> #define FS_IOC_FLAGS_EXT4	0xEF53
-> 
-> struct inode_flag_ioctl {
-> 	u32 flag;
-> 	u32 value;	/* or u64? */
-> };
-> #define FS_IOC_GETFLAGS2 _IOR('f', 12, struct inode_flag_ioctl);
-> #define FS_IOC_SETFLAGS2 _IOW('f', 13, struct inode_flag_ioctl);
+The DRM driver for MSM depends on symbols from the MSM
+IOMMU driver. Add this dependency to the Kconfig file.
 
-Is having this structure and demultiplexing based on
-inode_flag_ioctl.flag really worth it?
+Fixes this comile error:
 
-I'd just simply introduce two new ioctl's for generic flags:
-FS_IOC_COMMON_[GS]ETFLAGS, and then two new ioctl's for each file
-system: FS_IOC_EXT4_[GS]ETFLAGS, FS_IOC_BTRFS_[GS]ETFLAGS, etc.
+  Kernel: arch/arm/boot/zImage is ready
+  ERROR: "msm_iommu_get_ctx" [drivers/gpu/drm/msm/msm.ko]
+  undefined!
+  make[2]: *** [__modpost] Error 1
 
-Is this uglier or pretier than using strings?  Eh.... six of one, half
-dozen of the other.  I think it's mostly a matter of personal taste.
+Cc: Rob Clark <robdclark@gmail.com>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
+---
+ drivers/gpu/drm/msm/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-      	     	       	     	  	 - Ted
+diff --git a/drivers/gpu/drm/msm/Kconfig b/drivers/gpu/drm/msm/Kconfig
+index f39ab75..d3de8e1 100644
+--- a/drivers/gpu/drm/msm/Kconfig
++++ b/drivers/gpu/drm/msm/Kconfig
+@@ -4,6 +4,7 @@ config DRM_MSM
+ 	depends on DRM
+ 	depends on ARCH_MSM
+ 	depends on ARCH_MSM8960
++	depends on MSM_IOMMU
+ 	select DRM_KMS_HELPER
+ 	select SHMEM
+ 	select TMPFS
+-- 
+1.7.9.5
+
+
