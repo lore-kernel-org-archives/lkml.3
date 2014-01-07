@@ -1,189 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177AbaAGOWW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 09:22:22 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:30979 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695AbaAGOWL (ORCPT
+	id S1752170AbaAGOWu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 09:22:50 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:50476 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695AbaAGOWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 09:22:11 -0500
-Date: Tue, 7 Jan 2014 15:21:48 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Frodo Looijaard <frodol@dds.nl>,
-        <lm-sensors@lm-sensors.org>, Zhang Rui <rui.zhang@intel.com>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] hwmon/sensors: fix SENSORS_LM75 dependencies
-Message-ID: <20140107152148.36768345@endymion.delvare>
-In-Reply-To: <52CBF1CF.2000603@ti.com>
-References: <20140106204020.b47e53cc3ead8f90164ef5b7@canb.auug.org.au>
-	<52CB0948.6030702@infradead.org>
-	<20140106203209.GA21630@roeck-us.net>
-	<52CB53DC.4030901@infradead.org>
-	<52CB65DA.2010103@roeck-us.net>
-	<20140107130401.23bffcd2@endymion.delvare>
-	<52CBF1CF.2000603@ti.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Jan 2014 09:22:31 -0500
+From: Jiang Liu <liuj97@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Jiang Liu <liuj97@gmail.com>
+Subject: [PATCH v8 6/7] arm64, jump label: optimize jump label implementation
+Date: Tue,  7 Jan 2014 22:17:13 +0800
+Message-Id: <1389104234-15239-7-git-send-email-liuj97@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1389104234-15239-1-git-send-email-liuj97@gmail.com>
+References: <1389104234-15239-1-git-send-email-liuj97@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eduardo,
+Optimize jump label implementation for ARM64 by dynamically patching
+kernel text.
 
-On Tue, 7 Jan 2014 08:23:43 -0400, Eduardo Valentin wrote:
-> On 07-01-2014 08:04, Jean Delvare wrote:
-> > On Mon, 06 Jan 2014 18:26:34 -0800, Guenter Roeck wrote:
-> >> This needs to be addressed
-> >> in the thermal code, for example with dummy declarations if THERMAL=m but
-> >> SENSORS_LM75=y. The functions are already declared as dummies if THERMAL_OF=n.
-> > 
-> > This won't fly I'm afraid, the number of hwmon drivers affected will
-> > grow in the future and you certainly don't want to have to change the
-> > generic thermal code every time a new driver is added/converted.
-> 
-> Agreed
-> 
-> > 
-> > I've looked at the problem this morning and I will admit I do not even
-> > understand what the problem is. In Randy's config, CONFIG_THERMAL_OF=y
-> > so both thermal_zone_of_sensor_unregister and
-> > thermal_zone_of_sensor_register are built-in. SENSORS_LM75=y so the
-> > calls to these functions are built-in too. I just can't see how this
-> > can be a problem at link time. Can anyone enlighten me?
-> 
-> I believe the problem is more in the fact that THERMAL_OF is a bool, but
-> the way it is in thermal Kconfig, it will link to the thermal module, in
-> case CONFIG_THERMAL=m.
-
-Doh. I've been looking at this for an hour and managed to miss
-that :( Thanks for explaining.
-
-> Thus I am proposing the following,
-> which limits the user to have THERMAL_OF only as builtin and whenever
-> is selected, it will select THERMAL too. That is:
-> 
-> 
-> From b643aa260ed4f3514d1ca51b1ecbe4be7652a8d0 Mon Sep 17 00:00:00 2001
-> From: Eduardo Valentin <eduardo.valentin@ti.com>
-> Date: Tue, 7 Jan 2014 08:04:02 -0400
-> Subject: [PATCH 1/1] thermal: fix compilation issue on CONFIG_THERMAL_OF
->  dependencies
-> 
-> Users of API provided by THERMAL_OF config may suffer when
-> CONFIG_THERMAL=y, causing linking issues, such as:
-> 
-> drivers/built-in.o: In function `lm75_remove':
-> lm75.c:(.text+0x12bd8c): undefined reference to
-> `thermal_zone_of_sensor_unregister'
-> drivers/built-in.o: In function `lm75_probe':
-> lm75.c:(.text+0x12c123): undefined reference to
-> `thermal_zone_of_sensor_register'
-> 
-> Therefore, this patch limits the compilation build to always
-> have THERMAL=y, whenever THERMAL_OF=y. In this way, whenever
-> the API user is built, if THERMAL_OF=y, the build shall have
-> the full thermal support, otherwise, the thermal API will provide
-> stubs.
-> 
-> Cc: Zhang Rui <rui.zhang@intel.com>
-> Cc: linux-pm@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
-> ---
->  drivers/thermal/Kconfig | 29 ++++++++++++++++-------------
->  1 file changed, 16 insertions(+), 13 deletions(-)
-> 
-> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-> index 58f98bd..dc315e9 100644
-> --- a/drivers/thermal/Kconfig
-> +++ b/drivers/thermal/Kconfig
-> @@ -29,19 +29,6 @@ config THERMAL_HWMON
->  	  Say 'Y' here if you want all thermal sensors to
->  	  have hwmon sysfs interface too.
-> 
-> -config THERMAL_OF
-> -	bool
-> -	prompt "APIs to parse thermal data out of device tree"
-> -	depends on OF
-> -	default y
-> -	help
-> -	  This options provides helpers to add the support to
-> -	  read and parse thermal data definitions out of the
-> -	  device tree blob.
-> -
-> -	  Say 'Y' here if you need to build thermal infrastructure
-> -	  based on device tree.
-> -
->  choice
->  	prompt "Default Thermal governor"
->  	default THERMAL_DEFAULT_GOV_STEP_WISE
-> @@ -235,3 +222,19 @@ source "drivers/thermal/samsung/Kconfig"
->  endmenu
-> 
->  endif
-> +
-> +menuconfig THERMAL_OF
-> +	bool
-> +	prompt "APIs to parse thermal data out of device tree"
-> +	depends on OF
-> +	select THERMAL
-> +	default y
-> +	help
-> +	  This options enables DT thermal API which adds support to
-> +	  read and parse thermal data definitions out of the
-> +	  device tree blob. This option is mostly used by embedded
-> +	  thermal drivers.
-> +
-> +	  Say 'Y' here if you need to build thermal infrastructure
-> +	  based on device tree.
-> +
-
-I suppose this works, however I believe there is value in allowing for
-modular building of as much code as possible.
-
-I have an alternative proposal, which lets thermal be built as module,
-and hopefully also addresses the issue (I can't test...) The only
-drawback is that the same dependency must be added for every other
-hwmon driver which optionally uses THERMAL_OF.
-
-From: Jean Delvare <khali@linux-fr.org>
-
-Based on an earlier attempt by Randy Dunlap.
-
-Fix SENSORS_LM75 dependencies to eliminate build errors:
-
-drivers/built-in.o: In function `lm75_remove':
-lm75.c:(.text+0x12bd8c): undefined reference to `thermal_zone_of_sensor_unregister'
-drivers/built-in.o: In function `lm75_probe':
-lm75.c:(.text+0x12c123): undefined reference to `thermal_zone_of_sensor_register'
-
-Add depends on THERMAL since that is what provides the
-register/unregister functions above, but only if THERMAL_OF was
-selected as this is an optional feature of the driver.
-
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Eduardo Valentin <eduardo.valentin@ti.com>
+Signed-off-by: Jiang Liu <liuj97@gmail.com>
 ---
- drivers/hwmon/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm64/Kconfig                  |  1 +
+ arch/arm64/include/asm/jump_label.h | 52 +++++++++++++++++++++++++++++++++
+ arch/arm64/kernel/Makefile          |  1 +
+ arch/arm64/kernel/jump_label.c      | 58 +++++++++++++++++++++++++++++++++++++
+ 4 files changed, 112 insertions(+)
+ create mode 100644 arch/arm64/include/asm/jump_label.h
+ create mode 100644 arch/arm64/kernel/jump_label.c
 
---- linux-3.13-rc7.orig/drivers/hwmon/Kconfig	2014-01-07 09:01:24.812848091 +0100
-+++ linux-3.13-rc7/drivers/hwmon/Kconfig	2014-01-07 15:19:11.039472329 +0100
-@@ -650,6 +650,7 @@ config SENSORS_LM73
- config SENSORS_LM75
- 	tristate "National Semiconductor LM75 and compatibles"
- 	depends on I2C
-+	depends on THERMAL || !THERMAL_OF
- 	help
- 	  If you say yes here you get support for one common type of
- 	  temperature sensor chip, with models including:
-
-
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 6d4dd22..5f962e8 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -19,6 +19,7 @@ config ARM64
+ 	select GENERIC_SMP_IDLE_THREAD
+ 	select GENERIC_TIME_VSYSCALL
+ 	select HARDIRQS_SW_RESEND
++	select HAVE_ARCH_JUMP_LABEL
+ 	select HAVE_ARCH_TRACEHOOK
+ 	select HAVE_DEBUG_BUGVERBOSE
+ 	select HAVE_DEBUG_KMEMLEAK
+diff --git a/arch/arm64/include/asm/jump_label.h b/arch/arm64/include/asm/jump_label.h
+new file mode 100644
+index 0000000..076a1c7
+--- /dev/null
++++ b/arch/arm64/include/asm/jump_label.h
+@@ -0,0 +1,52 @@
++/*
++ * Copyright (C) 2013 Huawei Ltd.
++ * Author: Jiang Liu <liuj97@gmail.com>
++ *
++ * Based on arch/arm/include/asm/jump_label.h
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __ASM_JUMP_LABEL_H
++#define __ASM_JUMP_LABEL_H
++#include <linux/types.h>
++#include <asm/insn.h>
++
++#ifdef __KERNEL__
++
++#define JUMP_LABEL_NOP_SIZE		AARCH64_INSN_SIZE
++
++static __always_inline bool arch_static_branch(struct static_key *key)
++{
++	asm goto("1: nop\n\t"
++		 ".pushsection __jump_table,  \"aw\"\n\t"
++		 ".align 3\n\t"
++		 ".quad 1b, %l[l_yes], %c0\n\t"
++		 ".popsection\n\t"
++		 :  :  "i"(key) :  : l_yes);
++
++	return false;
++l_yes:
++	return true;
++}
++
++#endif /* __KERNEL__ */
++
++typedef u64 jump_label_t;
++
++struct jump_entry {
++	jump_label_t code;
++	jump_label_t target;
++	jump_label_t key;
++};
++
++#endif	/* __ASM_JUMP_LABEL_H */
+diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
+index cd95a25..e155d56 100644
+--- a/arch/arm64/kernel/Makefile
++++ b/arch/arm64/kernel/Makefile
+@@ -18,6 +18,7 @@ arm64-obj-$(CONFIG_SMP)			+= smp.o smp_spin_table.o
+ arm64-obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o
+ arm64-obj-$(CONFIG_HAVE_HW_BREAKPOINT)+= hw_breakpoint.o
+ arm64-obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
++arm64-obj-$(CONFIG_JUMP_LABEL)		+= jump_label.o
+ 
+ obj-y					+= $(arm64-obj-y) vdso/
+ obj-m					+= $(arm64-obj-m)
+diff --git a/arch/arm64/kernel/jump_label.c b/arch/arm64/kernel/jump_label.c
+new file mode 100644
+index 0000000..263a166
+--- /dev/null
++++ b/arch/arm64/kernel/jump_label.c
+@@ -0,0 +1,58 @@
++/*
++ * Copyright (C) 2013 Huawei Ltd.
++ * Author: Jiang Liu <liuj97@gmail.com>
++ *
++ * Based on arch/arm/kernel/jump_label.c
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#include <linux/kernel.h>
++#include <linux/jump_label.h>
++#include <asm/insn.h>
++
++#ifdef HAVE_JUMP_LABEL
++
++static void __arch_jump_label_transform(struct jump_entry *entry,
++					enum jump_label_type type,
++					bool is_static)
++{
++	void *addr = (void *)entry->code;
++	u32 insn;
++
++	if (type == JUMP_LABEL_ENABLE) {
++		insn = aarch64_insn_gen_branch_imm(entry->code,
++						   entry->target,
++						   AARCH64_INSN_BRANCH_NOLINK);
++	} else {
++		insn = aarch64_insn_gen_nop();
++	}
++
++	if (is_static)
++		aarch64_insn_patch_text_nosync(addr, insn);
++	else
++		aarch64_insn_patch_text(&addr, &insn, 1);
++}
++
++void arch_jump_label_transform(struct jump_entry *entry,
++			       enum jump_label_type type)
++{
++	__arch_jump_label_transform(entry, type, false);
++}
++
++void arch_jump_label_transform_static(struct jump_entry *entry,
++				      enum jump_label_type type)
++{
++	__arch_jump_label_transform(entry, type, true);
++}
++
++#endif	/* HAVE_JUMP_LABEL */
 -- 
-Jean Delvare
+1.8.1.2
+
