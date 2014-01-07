@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755636AbaAGI2w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 03:28:52 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:49252 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063AbaAGI2v (ORCPT
+	id S1755873AbaAGIc0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 03:32:26 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:38134 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755096AbaAGIcZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 03:28:51 -0500
-Message-ID: <52CBBABD.50902@gmail.com>
-Date: Tue, 07 Jan 2014 16:28:45 +0800
-From: Ric Wheeler <ricwheeler@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 7 Jan 2014 03:32:25 -0500
 MIME-Version: 1.0
-To: "Martin K. Petersen" <mkp@mkp.net>, Christoph Hellwig <hch@infradead.org>
-CC: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: Re: status of block-integrity
-References: <20131222192128.GA28532@infradead.org> <yq11u134rmt.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq11u134rmt.fsf@sermon.lab.mkp.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140106163123.GN31570@twins.programming.kicks-ass.net>
+References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
+ <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
+ <52B87149.4010801@arm.com> <CAKfTPtDmb1fa8PUcrqEGaoQLxoPBddu-Yn_oS8KwsCJJWJzQug@mail.gmail.com>
+ <20140106163123.GN31570@twins.programming.kicks-ass.net>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Tue, 7 Jan 2014 09:32:04 +0100
+Message-ID: <CAKfTPtDind8HGJwu0odSnNdRpaxp3VB3JWw3eADAp4bL4Ex-Mw@mail.gmail.com>
+Subject: Re: [RFC] sched: CPU topology try
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "pjt@google.com" <pjt@google.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "alex.shi@linaro.org" <alex.shi@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "amit.kucheria@linaro.org" <amit.kucheria@linaro.org>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/2013 09:35 PM, Martin K. Petersen wrote:
->>>>>> "Christoph" == Christoph Hellwig <hch@infradead.org> writes:
-> Christoph> We have the block integrity code to support DIF/DIX in the
-> Christoph> the tree for about 5 and a half years, and we still don't
-> Christoph> have a single consumer of it.
+On 6 January 2014 17:31, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, Jan 06, 2014 at 02:41:31PM +0100, Vincent Guittot wrote:
+>> IMHO, these settings will disappear sooner or later, as an example the
+>> idle/busy _idx are going to be removed by Alex's patch.
 >
-> What do you mean? If you have a DIX-capable HBA (lpfc, qla2xxx, zfcp)
-> then integrity protection is active from the block layer down. The only
-> code that's not currently being exercised are the tag interleaving
-> functions.  I was hoping the FS people would use them for back pointers
-> but nobody seemed to bite.
+> Well I'm still entirely unconvinced by them..
 >
+> removing the cpu_load array makes sense, but I'm starting to doubt the
+> removal of the _idx things.. I think we want to retain them in some
+> form, it simply makes sense to look at longer term averages when looking
+> at larger CPU groups.
 >
-> Christoph> Given that we'll have a lot of work to do in this area with
-> Christoph> block multiqueue I think it's time to either kill it off for
-> Christoph> good or make sure we can actually use and test it.
->
-> I don't understand why multiqueue would require a lot of work? It's just
-> an extra scatterlist per request.
->
-> And obviously, if there's anything that needs to be done in this area
-> I'll be happy to do so...
->
+> So maybe we can express the things in log_2(group-span) or so, but we
+> need a working replacement for the cpu_load array. Ideally some
+> expression involving the blocked load.
 
-One of the major knocks on linux file systems (except for btrfs) that I hear is 
-the lack of full data path checksums. DIF/DIX + xfs or ext4 done right will give 
-us another answer here.  I don't think it will be common, it is a request that 
-comes in for very large storage customers most commonly.
+Using the blocked load can surely give benefit in the load balance
+because it gives a view of potential load on a core but it still decay
+with the same speed than runnable load average so it doesn't solve the
+issue for longer term average. One way is to have a runnable average
+load with longer time window
 
-We do have devices that support this and are working to get more vendor testing 
-done, so I would hate to see us throw out the code instead of fixing it up for 
-the end users that see value here.
-
-I think that we can get this working & agree with the call to continue this 
-discussion (here and at LSF :))
-
-Ric
-
+>
+> Its another one of those things I need to ponder more :-)
