@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585AbaAGLOX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 06:14:23 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:54888 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857AbaAGLOW (ORCPT
+	id S1751755AbaAGLQz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 06:16:55 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:45697 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966AbaAGLQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 06:14:22 -0500
-Date: Tue, 7 Jan 2014 12:13:41 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, pjt@google.com, Morten.Rasmussen@arm.com,
-        cmetcalf@tilera.com, tony.luck@intel.com, alex.shi@linaro.org,
-        linaro-kernel@lists.linaro.org, rjw@sisk.pl,
-        paulmck@linux.vnet.ibm.com, corbet@lwn.net, tglx@linutronix.de,
-        len.brown@intel.com, arjan@linux.intel.com, amit.kucheria@linaro.org,
-        james.hogan@imgtec.com, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, Dietmar.Eggemann@arm.com
-Subject: Re: [RFC] sched: CPU topology try
-Message-ID: <20140107111341.GS31570@twins.programming.kicks-ass.net>
-References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
- <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
- <52CBCB85.8050607@linux.vnet.ibm.com>
- <20140107095039.GA2480@laptop.programming.kicks-ass.net>
- <52CBD96B.4050103@linux.vnet.ibm.com>
+	Tue, 7 Jan 2014 06:16:54 -0500
+Date: Tue, 7 Jan 2014 11:16:48 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: linus.walleij@linaro.org, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org, swarren@wwwdotorg.org,
+        Mallikarjun Kasoju <mkasoju@nvidia.com>
+Subject: Re: [PATCH] pinctrl: as3722: Set pin to output mode for some function
+Message-ID: <20140107111648.GH3182@lee--X1>
+References: <1389084056-17076-1-git-send-email-ldewangan@nvidia.com>
+ <20140107085831.GE3182@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <52CBD96B.4050103@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140107085831.GE3182@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 04:09:39PM +0530, Preeti U Murthy wrote:
-> On 01/07/2014 03:20 PM, Peter Zijlstra wrote:
-> > On Tue, Jan 07, 2014 at 03:10:21PM +0530, Preeti U Murthy wrote:
-> >> What if we want to add arch specific flags to the NUMA domain? Currently
-> >> with Peter's patch:https://lkml.org/lkml/2013/11/5/239 and this patch,
-> >> the arch can modify the sd flags of the topology levels till just before
-> >> the NUMA domain. In sd_init_numa(), the flags for the NUMA domain get
-> >> initialized. We need to perhaps call into arch here to probe for
-> >> additional flags?
+> > From: Mallikarjun Kasoju <mkasoju@nvidia.com>
 > > 
-> > What are you thinking of? I was hoping all NUMA details were captured in
-> > the distance table.
+> > If pins are used for function output like pwm, clk32k,
+> > power good etc then set it as output mode default.
 > > 
-> > Its far easier to talk of specifics in this case.
-> > 
-> If the processor can be core gated, then there is very little power
-> savings that we could yield from consolidating all the load onto a
-> single node in a NUMA domain. 6 cores on one node or 3 cores each on two
-> nodes, the power is drawn by 6 cores in all. So I was thinking under
-> this circumstance we might want to set the SD_SHARE_POWERDOMAIN flag at
-> the NUMA domain and spread the load if it favours the workload.
+> > Signed-off-by: Mallikarjun Kasoju <mkasoju@nvidia.com>
+> > Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> > ---
+> >  drivers/pinctrl/pinctrl-as3722.c |   20 ++++++++++++++++++++
+> >  include/linux/mfd/as3722.h       |    1 +
+> >  2 files changed, 21 insertions(+)
+> 
+> For the MFD change:
+>   Lee Jones <lee.jones@linaro.org>
 
-So Intel has so far not said a lot of sensible things about power
-management on their multi-socket platform.
+Whoops.
 
-And I've not heard anything at all from IBM on the POWER chips.
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-What I know from the Intel side is that packet idle hardly saves
-anything when compared to the DRAM power and the cost of having to do
-remote memory accesses.
-
-In other words, I'm not at all considering power aware scheduling for
-NUMA systems until someone starts talking sense :-)
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
