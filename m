@@ -1,124 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670AbaAGFx3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 00:53:29 -0500
-Received: from mga09.intel.com ([134.134.136.24]:9180 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752995AbaAGFx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 00:53:27 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,617,1384329600"; 
-   d="scan'208";a="454668385"
-Date: Tue, 7 Jan 2014 13:53:18 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Muthu Kumar <muthu.lkml@gmail.com>
-Cc: Kent Overstreet <kmo@daterainc.com>, Chris Mason <clm@fb.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@linux.intel.com
-Subject: Re: [block:for-3.14/core] kernel BUG at fs/bio.c:1748
-Message-ID: <20140107055318.GA19016@localhost>
-References: <20140102053101.GA29352@localhost>
- <CAFR8uee-WTy6cj8bB4aMuGP1B0sZkc70sq1Drg7uhHS49EqHcg@mail.gmail.com>
- <20140106221036.GE9037@kmo>
- <CAFR8uef3XUEsHUvfnkAbzsXict8qD_28fTgUQyA7gjUk03OUsw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFR8uef3XUEsHUvfnkAbzsXict8qD_28fTgUQyA7gjUk03OUsw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754951AbaAGF4L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 00:56:11 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:37648 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752204AbaAGF4J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 00:56:09 -0500
+Date: Tue, 07 Jan 2014 00:56:07 -0500 (EST)
+Message-Id: <20140107.005607.716747884959539511.davem@davemloft.net>
+To: shh.xie@gmail.com
+Cc: jg1.han@samsung.com, mugunthanvnm@ti.com, f.fainelli@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shaohui.Xie@freescale.com, afleming@gmail.com
+Subject: Re: [PATCH 5/6] [v4] phylib: Support attaching to generic 10g
+ driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1389060865-7143-1-git-send-email-shh.xie@gmail.com>
+References: <1389060865-7143-1-git-send-email-shh.xie@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 06 Jan 2014 21:56:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 04:47:38PM -0800, Muthu Kumar wrote:
-> OK, after a bit more staring I believe the correct fix is the following.
-> 
-> Fengguang, Please try this one?
+From: <shh.xie@gmail.com>
+Date: Tue, 7 Jan 2014 10:14:25 +0800
 
-Yes, it runs fine now!
+> -static int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
+> +int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
+>  			     u32 flags, phy_interface_t interface)
 
-Tested-by: Fengguang Wu <fengguang.wu@intel.com>
-
-Thanks,
-Fengguang
-
-> ------------
-> In btrfs_end_bio(), we increment bi_remaining if is_orig_bio. If not,
-> we restore the orig_bio but failed to increment bi_remaining for
-> orig_bio, which triggers a BUG_ON later when bio_endio is called. Fix
-> is to increment bi_remaining when we restore the orig bio as well.
-> 
-> Reported-by: fengguang.wu@intel.com
-> CC: Kent Overstreet <kmo@daterainc.com>
-> CC: Jens Axboe <axboe@kernel.dk>
-> CC: Chris Mason <clm@fv
-> Signed-off-by: Muthukumar Ratty <muthur@gmail.com>
-> ----------------
->  fs/btrfs/volumes.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-> index 37972d5..2011cc0 100644
-> --- a/fs/btrfs/volumes.c
-> +++ b/fs/btrfs/volumes.c
-> @@ -5297,9 +5297,9 @@ static void btrfs_end_bio(struct bio *bio, int err)
->                 if (!is_orig_bio) {
->                         bio_put(bio);
->                         bio = bbio->orig_bio;
-> -               } else {
-> -                       atomic_inc(&bio->bi_remaining);
->                 }
-> +               atomic_inc(&bio->bi_remaining);
-> +
->                 bio->bi_private = bbio->private;
->                 bio->bi_end_io = bbio->end_io;
->                 btrfs_io_bio(bio)->mirror_num = bbio->mirror_num;
-> 
-> --------------------------
-> 
-> 
-> 
-> On Mon, Jan 6, 2014 at 2:10 PM, Kent Overstreet <kmo@daterainc.com> wrote:
-> > Chris, the patch below seems to be incorrect - with it we get hangs, so
-> > bi_remaining (probably) isn't getting decremented when it should be. You sent
-> > Jens fixes for btrfs which I somehow lost when I rebased, do you remember how
-> > this is supposed to work? Looking at the code I'm not quite sure what's going on
-> > here.
-> >
-> > On Fri, Jan 03, 2014 at 11:51:31AM -0800, Muthu Kumar wrote:
-> >> Looks like Kent missed the btrfs endio in the original commit. How
-> >> about this patch:
-> >>
-> >> ---------
-> >>
-> >> In btrfs_end_bio, call bio_endio_nodec on the restored bio so the
-> >> bi_remaining is accounted for correctly.
-> >>
-> >> Reported-by: fengguang.wu@intel.com
-> >> Cc: Kent Overstreet <kmo@daterainc.com>
-> >> CC: Jens Axboe <axboe@kernel.dk>
-> >> Signed-off-by: Muthukumar Ratty <muthur@gmail.com>
-> >> --------
-> >>
-> >>  fs/btrfs/volumes.c |    6 +++++-
-> >>  1 files changed, 5 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-> >> index f2130de..edfed52 100644
-> >> --- a/fs/btrfs/volumes.c
-> >> +++ b/fs/btrfs/volumes.c
-> >> @@ -5316,7 +5316,11 @@ static void btrfs_end_bio(struct bio *bio, int err)
-> >>                 }
-> >>                 kfree(bbio);
-> >>
-> >> -               bio_endio(bio, err);
-> >> +                /*
-> >> +                 * Call endio_nodec on the restored bio so the bi_remaining is
-> >> +                 * accounted for correctly
-> >> +                 */
-> >> +               bio_endio_nodec(bio, err);
-> >>         } else if (!is_orig_bio) {
-> >>                 bio_put(bio);
-> >>         }
+Since you are changing where the open parenthesis is, you must reindent
+the arguments on the second line so that they start exactly at the
+first column after that openning parenthesis.
