@@ -1,87 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751158AbaAGLpJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 06:45:09 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:58485 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750747AbaAGLpC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 06:45:02 -0500
-Date: Tue, 7 Jan 2014 12:40:55 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, Roger Quadros <rogerq@ti.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Subject: Re: [PATCH v2 2/2] reset: Add GPIO support to reset controller
- framework
-Message-ID: <20140107114055.GA10151@lukather>
-References: <1389030903-27684-1-git-send-email-p.zabel@pengutronix.de>
- <1389030903-27684-2-git-send-email-p.zabel@pengutronix.de>
- <20140106181422.GS3144@lukather>
- <1389088341.4815.9.camel@pizza.hi.pengutronix.de>
- <20140107111954.GA2849@lukather>
- <1389094089.4815.22.camel@pizza.hi.pengutronix.de>
+	id S1751219AbaAGLqF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 06:46:05 -0500
+Received: from ring0.de ([91.143.88.219]:55372 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751168AbaAGLp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 06:45:56 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Tue, 7 Jan 2014 12:45:53 +0100
+From: Sebastian Reichel <sre@ring0.de>
+To: Satish Patel <satish.patel@ti.com>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH v1 2/5] misc: tda8026: Add NXP TDA8026 PHY driver
+Message-ID: <20140107114552.GA900@earth.universe>
+Mail-Followup-To: Satish Patel <satish.patel@ti.com>,
+	Mark Rutland <mark.rutland@arm.com>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	"arnd@arndb.de" <arnd@arndb.de>,
+	"gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"rob@landley.net" <rob@landley.net>,
+	"linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>
+References: <1389010062-17185-1-git-send-email-satish.patel@ti.com>
+ <1389010062-17185-3-git-send-email-satish.patel@ti.com>
+ <20140106153033.GB24664@e106331-lin.cambridge.arm.com>
+ <52CBA075.8080506@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OXfL5xGRrasGEqWY"
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="Qxx1br4bt0+wmkIi"
 Content-Disposition: inline
-In-Reply-To: <1389094089.4815.22.camel@pizza.hi.pengutronix.de>
+In-Reply-To: <52CBA075.8080506@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---OXfL5xGRrasGEqWY
+--Qxx1br4bt0+wmkIi
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jan 07, 2014 at 12:28:09PM +0100, Philipp Zabel wrote:
-> Am Dienstag, den 07.01.2014, 12:19 +0100 schrieb Maxime Ripard:
-> > > I was under the (wrong) impression that gpiod_direction_output takes a
-> > > logical value as gpiod_set_value does. Will fix that.
+On Tue, Jan 07, 2014 at 12:06:37PM +0530, Satish Patel wrote:
+> >> +       if (pdata->irq =3D=3D 0) {
+> >> +               /* look for the field irq-gpio in DT */
+> >> +               irq_gpio =3D of_get_named_gpio(np, "irq-gpio", 0);
+> >> +               if (!gpio_is_valid(irq_gpio)) {
+> >> +                       dev_err(dev, "Failed to get irq gpio,\n");
+> >> +                       return -EIO;
+> >> +               }
 > >=20
-> > I don't think gpiod_set_value does either unfortunately.
+> > This is horrible. If the gpio controller can act as an irq controller
 >=20
-> It does, and Alexandre (added to Cc:) suggested that
-> gpiod_direction_output probably should, too.  I'll send a patch.
+> No it's not true. Let me clarify the signal flow,
+>=20
+> Pins =3D> GPIO =3D> GPIO BANK =3D> Interrupt controller =3D> CPU/MPU
 
-Ah, yes, I was looking at 3.12, and this has been changed in 3.13.
+This is done automatically if you use the gpio controller as
+interrupt source (here with GPIO line 22 as example):
 
-Nevermind then.
+device-tree-node {
+    interrupts-extended =3D <&gpio1 22>;
+};
 
-Thanks!
-Maxime
+alternatively, but then the irqs from the normal irq controller
+can't be used:
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+device-tree-node {
+    interrupt-parent =3D <&gpio1>;
+    interrupts =3D <22>;
+};
 
---OXfL5xGRrasGEqWY
+-- Sebastian
+
+--Qxx1br4bt0+wmkIi
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSy+fHAAoJEBx+YmzsjxAgELgP/AsYzEchUDwx/ATOu9B6oXMm
-pce2L0oi9OfMJ5p+arLVNFqQOfri3SUia59hm1nnh5JNUvhLRNgmaGsecLmg9BMp
-mBGIccVZa78zaDU5sOMGTEfJfgsANZG+BHCmY39+gASYsI2ury27InEGARjq+6AO
-ZNc76hv2KXQbmYr1aNercyn0/bfV8ohRqitMKZVO6Y0NeTLHk2Fit1yJbVlBGsqs
-z0zS5yT73YPXYl1cQVaXGahK+FOrZgkbiDvKscAQOtDsD+6/jYf1c4dprS8U6tDk
-nqIHCqcme8GI9pX3jTmiUBJsikeA5c3DO0VA54JcmaNMMhh2lQa52Hn8FymKuxiV
-DHEgYscywDv9maiDwmmGUi+e+lxqFQAPmA7Dp3okFUZPaVuoRd+d4XB7q/1f5Y0Y
-bVy0S0CujPEaJtvKwDW6i+CrJYmW9I6G/xQbvKo7rpFLh2y+XNwLrAGW60KQQdmP
-aR18u/VU5dnnoT5W1MaxzsimAgy6ej6XdDvkA92BXobQ7siEOumVN9Ffxv0/L+TF
-9gN2DZu7jtiHCOVcMA9szwqJ4uXkp5PgT87l07gcliFZZd9uKO1DroS7FOrr5Ixh
-8VP/SujAzE7MU01fwvUX7CdB6kGWWbI92j+iDtt9suy/+F5zDPtL94SbGG5nw0VL
-LuEjrZ6fxTzWOm7/c29x
-=ol9G
+iQIcBAEBCAAGBQJSy+jwAAoJENju1/PIO/qaOIoP/0tsaStyDB2S3j3R6eoEEiST
+rytQS559jkb5Q37AOXKuc+4+oNqkGj8y/26VppiefRZnKlYHQ8cesPs2USh0Xhkq
+agd43W6Oha7iPZajrbc0pmx7Wc/xq4vKHNJEQ8KiQLOLOm6zDAPDenTH3SUJoVzw
+Eq8ms/a0at/hAo8sLy+yH+ugaX9QeE9c9/QA9vx1wtkxfY4D/83PwjiRmUDoB1NS
+QE4Iaulf3/Vit4YdJWpj2BJhPiyhBmF3+xi2ePGJ5zIlT/nIABi4JxhhemSYcO5h
+14cFQnBpkG/rzekBav2vRL62f5QIagQOI1PhQ5Vz9qWTyftWW4ZEl6liJf9Sj3c0
+gcmxnk914WzNwK47smryCt5B/juAS+njSlVLbaiuNglUb3JVbzmG7M3X/d9XB15V
+ZNPvfyqy6juEKEjudXF1kcKAm9GGLXMCdrWDoVl4dbemC+eDP7U6C3581jOgTlNV
+o73nQd2SdWEPy3qBIebq4hqWCA45aSJXg4nu4s9M4d0cZvL1TYpAcciSYFOxpVSN
+r9Gao3vrWNhatA7R4mvuEwJXFkYFvxXjFXPVZJ0JQYUKoSeizg78qTlZLpfj+cv9
+NkLpqmYJ6W8Jkevex8EjDkUW2sCbAT9ErEsMs2Skbe+HXaGqNqhCJMcr9UkvEaM2
+07oTIH9E+Yq5sVVRm0aS
+=H4KI
 -----END PGP SIGNATURE-----
 
---OXfL5xGRrasGEqWY--
+--Qxx1br4bt0+wmkIi--
