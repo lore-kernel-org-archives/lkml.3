@@ -1,170 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689AbaAGXOt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 18:14:49 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:41856 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753007AbaAGXOj (ORCPT
+	id S1754749AbaAGXQX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 18:16:23 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:50411 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754168AbaAGXQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 18:14:39 -0500
-Date: Wed, 8 Jan 2014 07:13:10 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: jslaby@suse.cz, airlied@redhat.com, akpm@linux-foundation.org,
-        kilobyte@angband.pl, peter@hurleysoftware.com, rosslagerwall@gmail.com,
-        tiwai@suse.de, linux-kernel@vger.kernel.org
-Subject: [PATCH v4]vt: use vc_allocate in con_init
-Message-ID: <20140107231310.GA3397@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	gregkh@linuxfoundation.org, jslaby@suse.cz, airlied@redhat.com,
-	akpm@linux-foundation.org, kilobyte@angband.pl,
-	peter@hurleysoftware.com, rosslagerwall@gmail.com, tiwai@suse.de,
-	linux-kernel@vger.kernel.org
+	Tue, 7 Jan 2014 18:16:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131216221229.3393.6171.stgit@bling.home>
+References: <20131216221229.3393.6171.stgit@bling.home>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 7 Jan 2014 16:15:54 -0700
+Message-ID: <CAErSpo7ZYsES6kZXjcwr-gwKaXm7DzHBvUGz+cpZBBH7stAAAQ@mail.gmail.com>
+Subject: Re: [PATCH] pci: Add "try" reset interfaces
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After a5f4f52e82114e85aa1a066bd1a450acc19a464d
-("vt: use kzalloc() instead of the bootmem allocator"),
-con_init began to use kzalloc to initialize vc_data,
-this patch convert con_init to use vc_allocate.
+Hi Alex,
 
-The benefit we get:
-1: reduce code duplication
-2: vc_allocate is more robust
-3: use kmalloc instead of kzalloc for vc_screenbuf
+Sorry for the delay in looking at this.
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- this patch don't have v2 :) I jump to v3 directly
- from v1, but I keep the mistake for less confusion.
+On Mon, Dec 16, 2013 at 3:14 PM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> When doing a function/slot/bus reset PCI grabs the device_lock for
+> each device to block things like suspend and driver probes, which is
+> all well and good, but call paths exist where this lock may already be
+> held.  This creates an opportunity for deadlock.  For instance, vfio
+> allows userspace to issue resets so long as it owns the device(s).
+> If a driver unbind .remove callback races with userspace issuing a
+> reset, we have a deadlock as userspace gets stuck waiting on
+> device_lock while another thread has device_lock and waits for .remove
+> to complete.
 
- Changes v3-v4:
- 1: use bool/true/false instead of int/1/0
+Are you talking about vfio_pci_remove() (the vfio_pci_driver .remove()
+method) racing with vfio_pci_ioctl()?
 
- Thanks for Jiri Slaby
+Or maybe it's vfio_pci_release (the vfio_pci_ops .release() method),
+since it looks like you want to use pci_try_reset_function() there and
+in vfio_pci_ioctl()?
 
- drivers/tty/vt/vt.c       | 28 ++++++++++++++--------------
- drivers/tty/vt/vt_ioctl.c |  8 ++++----
- include/linux/vt_kern.h   |  2 +-
- 3 files changed, 19 insertions(+), 19 deletions(-)
+Either way, aren't there at least potentially more locking issues than
+just the reset problem?  Seems like any ioctl that might take the
+device_lock could have the same problem.  How do you make sure there's
+no userspace owner of the device before you release the device or
+remove the driver?
 
-diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-index 15aaa01..c0d6255 100644
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -748,7 +748,8 @@ static void visual_init(struct vc_data *vc, int num, int init)
- 	vc->vc_screenbuf_size = vc->vc_rows * vc->vc_size_row;
- }
- 
--int vc_allocate(unsigned int currcons)	/* return 0 on success */
-+/* return 0 on success */
-+int vc_allocate(unsigned int currcons, bool early)
- {
- 	WARN_CONSOLE_UNLOCKED();
- 
-@@ -789,9 +790,13 @@ int vc_allocate(unsigned int currcons)	/* return 0 on success */
- 	    if (global_cursor_default == -1)
- 		    global_cursor_default = 1;
- 
--	    vc_init(vc, vc->vc_rows, vc->vc_cols, 1);
--	    vcs_make_sysfs(currcons);
--	    atomic_notifier_call_chain(&vt_notifier_list, VT_ALLOCATE, &param);
-+	    vc_init(vc, vc->vc_rows, vc->vc_cols,
-+		    currcons == 0 ? !vc->vc_sw->con_save_screen : 1);
-+	    if (!early) {
-+		vcs_make_sysfs(currcons);
-+		atomic_notifier_call_chain(&vt_notifier_list, VT_ALLOCATE,
-+					   &param);
-+	    }
- 	}
- 	return 0;
- }
-@@ -2765,7 +2770,7 @@ static int con_install(struct tty_driver *driver, struct tty_struct *tty)
- 	int ret;
- 
- 	console_lock();
--	ret = vc_allocate(currcons);
-+	ret = vc_allocate(currcons, false);
- 	if (ret)
- 		goto unlock;
- 
-@@ -2901,15 +2906,10 @@ static int __init con_init(void)
- 		mod_timer(&console_timer, jiffies + (blankinterval * HZ));
- 	}
- 
--	for (currcons = 0; currcons < MIN_NR_CONSOLES; currcons++) {
--		vc_cons[currcons].d = vc = kzalloc(sizeof(struct vc_data), GFP_NOWAIT);
--		INIT_WORK(&vc_cons[currcons].SAK_work, vc_SAK);
--		tty_port_init(&vc->port);
--		visual_init(vc, currcons, 1);
--		vc->vc_screenbuf = kzalloc(vc->vc_screenbuf_size, GFP_NOWAIT);
--		vc_init(vc, vc->vc_rows, vc->vc_cols,
--			currcons || !vc->vc_sw->con_save_screen);
--	}
-+	for (currcons = 0; currcons < MIN_NR_CONSOLES; currcons++)
-+		if (vc_allocate(currcons, true))
-+			panic("Can't initialize console %d!", currcons + 1);
-+
- 	currcons = fg_console = 0;
- 	master_display_fg = vc = vc_cons[currcons].d;
- 	set_origin(vc);
-diff --git a/drivers/tty/vt/vt_ioctl.c b/drivers/tty/vt/vt_ioctl.c
-index 2bd78e2..2f78d25 100644
---- a/drivers/tty/vt/vt_ioctl.c
-+++ b/drivers/tty/vt/vt_ioctl.c
-@@ -680,7 +680,7 @@ int vt_ioctl(struct tty_struct *tty,
- 		else {
- 			arg--;
- 			console_lock();
--			ret = vc_allocate(arg);
-+			ret = vc_allocate(arg, false);
- 			console_unlock();
- 			if (ret)
- 				break;
-@@ -705,7 +705,7 @@ int vt_ioctl(struct tty_struct *tty,
- 		else {
- 			vsa.console--;
- 			console_lock();
--			ret = vc_allocate(vsa.console);
-+			ret = vc_allocate(vsa.console, false);
- 			if (ret == 0) {
- 				struct vc_data *nvc;
- 				/* This is safe providing we don't drop the
-@@ -778,7 +778,7 @@ int vt_ioctl(struct tty_struct *tty,
- 				int newvt;
- 				newvt = vc->vt_newvt;
- 				vc->vt_newvt = -1;
--				ret = vc_allocate(newvt);
-+				ret = vc_allocate(newvt, false);
- 				if (ret) {
- 					console_unlock();
- 					break;
-@@ -1441,7 +1441,7 @@ int vt_move_to_console(unsigned int vt, int alloc)
- 	}
- 	prev = fg_console;
- 
--	if (alloc && vc_allocate(vt)) {
-+	if (alloc && vc_allocate(vt, false)) {
- 		/* we can't have a free VC for now. Too bad,
- 		 * we don't want to mess the screen for now. */
- 		console_unlock();
-diff --git a/include/linux/vt_kern.h b/include/linux/vt_kern.h
-index 8d76342..89cfa33 100644
---- a/include/linux/vt_kern.h
-+++ b/include/linux/vt_kern.h
-@@ -33,7 +33,7 @@ extern int fg_console, last_console, want_console;
- 
- /* console.c */
- 
--int vc_allocate(unsigned int console);
-+int vc_allocate(unsigned int console, bool early);
- int vc_cons_allocated(unsigned int console);
- int vc_resize(struct vc_data *vc, unsigned int cols, unsigned int lines);
- struct vc_data *vc_deallocate(unsigned int console);
--- 
-1.8.3.4.8.g69490f3.dirty
+Bjorn
+
+> To resolve this, we can make a version of the reset
+> interfaces which use trylock.  With this, we can safely attempt a
+> reset and return error to userspace if there is contention.
+>
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
+>  drivers/pci/pci.c   |  155 +++++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/pci.h |    3 +
+>  2 files changed, 158 insertions(+)
+>
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index 33120d1..de6416f 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -3445,6 +3445,18 @@ static void pci_dev_lock(struct pci_dev *dev)
+>         device_lock(&dev->dev);
+>  }
+>
+> +/* Return 1 on successful lock, 0 on contention */
+> +static int pci_dev_trylock(struct pci_dev *dev)
+> +{
+> +       if (pci_cfg_access_trylock(dev)) {
+> +               if (device_trylock(&dev->dev))
+> +                       return 1;
+> +               pci_cfg_access_unlock(dev);
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+>  static void pci_dev_unlock(struct pci_dev *dev)
+>  {
+>         device_unlock(&dev->dev);
+> @@ -3588,6 +3600,34 @@ int pci_reset_function(struct pci_dev *dev)
+>  }
+>  EXPORT_SYMBOL_GPL(pci_reset_function);
+>
+> +/**
+> + * pci_try_reset_function - quiesce and reset a PCI device function
+> + * @dev: PCI device to reset
+> + *
+> + * Same as above, except return -EAGAIN if unable to lock device.
+> + */
+> +int pci_try_reset_function(struct pci_dev *dev)
+> +{
+> +       int rc;
+> +
+> +       rc = pci_dev_reset(dev, 1);
+> +       if (rc)
+> +               return rc;
+> +
+> +       pci_dev_save_and_disable(dev);
+> +
+> +       if (pci_dev_trylock(dev)) {
+> +               rc = __pci_dev_reset(dev, 0);
+> +               pci_dev_unlock(dev);
+> +       } else
+> +               rc = -EAGAIN;
+> +
+> +       pci_dev_restore(dev);
+> +
+> +       return rc;
+> +}
+> +EXPORT_SYMBOL_GPL(pci_try_reset_function);
+> +
+>  /* Lock devices from the top of the tree down */
+>  static void pci_bus_lock(struct pci_bus *bus)
+>  {
+> @@ -3612,6 +3652,32 @@ static void pci_bus_unlock(struct pci_bus *bus)
+>         }
+>  }
+>
+> +/* Return 1 on successful lock, 0 on contention */
+> +static int pci_bus_trylock(struct pci_bus *bus)
+> +{
+> +       struct pci_dev *dev;
+> +
+> +       list_for_each_entry(dev, &bus->devices, bus_list) {
+> +               if (!pci_dev_trylock(dev))
+> +                       goto unlock;
+> +               if (dev->subordinate) {
+> +                       if (!pci_bus_trylock(dev->subordinate)) {
+> +                               pci_dev_unlock(dev);
+> +                               goto unlock;
+> +                       }
+> +               }
+> +       }
+> +       return 1;
+> +
+> +unlock:
+> +       list_for_each_entry_continue_reverse(dev, &bus->devices, bus_list) {
+> +               if (dev->subordinate)
+> +                       pci_bus_unlock(dev->subordinate);
+> +               pci_dev_unlock(dev);
+> +       }
+> +       return 0;
+> +}
+> +
+>  /* Lock devices from the top of the tree down */
+>  static void pci_slot_lock(struct pci_slot *slot)
+>  {
+> @@ -3640,6 +3706,37 @@ static void pci_slot_unlock(struct pci_slot *slot)
+>         }
+>  }
+>
+> +/* Return 1 on successful lock, 0 on contention */
+> +static int pci_slot_trylock(struct pci_slot *slot)
+> +{
+> +       struct pci_dev *dev;
+> +
+> +       list_for_each_entry(dev, &slot->bus->devices, bus_list) {
+> +               if (!dev->slot || dev->slot != slot)
+> +                       continue;
+> +               if (!pci_dev_trylock(dev))
+> +                       goto unlock;
+> +               if (dev->subordinate) {
+> +                       if (!pci_bus_trylock(dev->subordinate)) {
+> +                               pci_dev_unlock(dev);
+> +                               goto unlock;
+> +                       }
+> +               }
+> +       }
+> +       return 1;
+> +
+> +unlock:
+> +       list_for_each_entry_continue_reverse(dev,
+> +                                            &slot->bus->devices, bus_list) {
+> +               if (!dev->slot || dev->slot != slot)
+> +                       continue;
+> +               if (dev->subordinate)
+> +                       pci_bus_unlock(dev->subordinate);
+> +               pci_dev_unlock(dev);
+> +       }
+> +       return 0;
+> +}
+> +
+>  /* Save and disable devices from the top of the tree down */
+>  static void pci_bus_save_and_disable(struct pci_bus *bus)
+>  {
+> @@ -3763,6 +3860,35 @@ int pci_reset_slot(struct pci_slot *slot)
+>  }
+>  EXPORT_SYMBOL_GPL(pci_reset_slot);
+>
+> +/**
+> + * pci_try_reset_slot - Try to reset a PCI slot
+> + * @slot: PCI slot to reset
+> + *
+> + * Same as above except return -EAGAIN if the slot cannot be locked
+> + */
+> +int pci_try_reset_slot(struct pci_slot *slot)
+> +{
+> +       int rc;
+> +
+> +       rc = pci_slot_reset(slot, 1);
+> +       if (rc)
+> +               return rc;
+> +
+> +       pci_slot_save_and_disable(slot);
+> +
+> +       if (pci_slot_trylock(slot)) {
+> +               might_sleep();
+> +               rc = pci_reset_hotplug_slot(slot->hotplug, 0);
+> +               pci_slot_unlock(slot);
+> +       } else
+> +               rc = -EAGAIN;
+> +
+> +       pci_slot_restore(slot);
+> +
+> +       return rc;
+> +}
+> +EXPORT_SYMBOL_GPL(pci_try_reset_slot);
+> +
+>  static int pci_bus_reset(struct pci_bus *bus, int probe)
+>  {
+>         if (!bus->self)
+> @@ -3822,6 +3948,35 @@ int pci_reset_bus(struct pci_bus *bus)
+>  EXPORT_SYMBOL_GPL(pci_reset_bus);
+>
+>  /**
+> + * pci_try_reset_bus - Try to reset a PCI bus
+> + * @bus: top level PCI bus to reset
+> + *
+> + * Same as above except return -EAGAIN if the bus cannot be locked
+> + */
+> +int pci_try_reset_bus(struct pci_bus *bus)
+> +{
+> +       int rc;
+> +
+> +       rc = pci_bus_reset(bus, 1);
+> +       if (rc)
+> +               return rc;
+> +
+> +       pci_bus_save_and_disable(bus);
+> +
+> +       if (pci_bus_trylock(bus)) {
+> +               might_sleep();
+> +               pci_reset_bridge_secondary_bus(bus->self);
+> +               pci_bus_unlock(bus);
+> +       } else
+> +               rc = -EAGAIN;
+> +
+> +       pci_bus_restore(bus);
+> +
+> +       return rc;
+> +}
+> +EXPORT_SYMBOL_GPL(pci_try_reset_bus);
+> +
+> +/**
+>   * pcix_get_max_mmrbc - get PCI-X maximum designed memory read byte count
+>   * @dev: PCI device to query
+>   *
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 1084a15..34629df 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -951,10 +951,13 @@ int pcie_get_minimum_link(struct pci_dev *dev, enum pci_bus_speed *speed,
+>  int __pci_reset_function(struct pci_dev *dev);
+>  int __pci_reset_function_locked(struct pci_dev *dev);
+>  int pci_reset_function(struct pci_dev *dev);
+> +int pci_try_reset_function(struct pci_dev *dev);
+>  int pci_probe_reset_slot(struct pci_slot *slot);
+>  int pci_reset_slot(struct pci_slot *slot);
+> +int pci_try_reset_slot(struct pci_slot *slot);
+>  int pci_probe_reset_bus(struct pci_bus *bus);
+>  int pci_reset_bus(struct pci_bus *bus);
+> +int pci_try_reset_bus(struct pci_bus *bus);
+>  void pci_reset_bridge_secondary_bus(struct pci_dev *dev);
+>  void pci_update_resource(struct pci_dev *dev, int resno);
+>  int __must_check pci_assign_resource(struct pci_dev *dev, int i);
+>
