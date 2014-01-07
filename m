@@ -1,144 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531AbaAGPaq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 10:30:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23444 "EHLO mx1.redhat.com"
+	id S1752558AbaAGPbf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 10:31:35 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:44959 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751632AbaAGPai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 10:30:38 -0500
-Date: Tue, 7 Jan 2014 16:30:36 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Sergio Durigan Junior <sergiodj@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Roland McGrath <roland@hack.frob.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>, Pedro Alves <palves@redhat.com>,
-        Tom Tromey <tromey@redhat.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC/PATCH] Implement new PTRACE_EVENT_SYSCALL_{ENTER,EXIT}
-Message-ID: <20140107153036.GA4749@redhat.com>
-References: <m3wqic205t.fsf@redhat.com>
+	id S1751631AbaAGPbc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 10:31:32 -0500
+Message-ID: <52CC1D37.40604@ti.com>
+Date: Tue, 7 Jan 2014 11:28:55 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m3wqic205t.fsf@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Jean Delvare <khali@linux-fr.org>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>, Guenter Roeck <linux@roeck-us.net>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <lm-sensors@lm-sensors.org>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] hwmon/sensors: fix SENSORS_LM75 dependencies
+References: <20140106204020.b47e53cc3ead8f90164ef5b7@canb.auug.org.au> <52CB0948.6030702@infradead.org> <20140106203209.GA21630@roeck-us.net> <52CB53DC.4030901@infradead.org> <52CB65DA.2010103@roeck-us.net> <20140107130401.23bffcd2@endymion.delvare> <52CBF1CF.2000603@ti.com> <744357E9AAD1214791ACBA4B0B909263011BC64C@SHSMSX101.ccr.corp.intel.com> <52CC15F0.6020209@ti.com> <20140107160738.4a76a6d0@endymion.delvare>
+In-Reply-To: <20140107160738.4a76a6d0@endymion.delvare>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="QgwbA2aqk28CVpiw55qa319MSVul2MVnC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06, Sergio Durigan Junior wrote:
->
-> This patch implements the new PTRACE_EVENT_SYSCALL_{ENTER,EXIT} events
-> for ptrace.  The goal is kind of obvious: it lets the tracer to request
-> for notifications when a syscall is called or has returned in the
-> tracee.  This is very useful because currently there is no easy/direct
-> way to inspect whether we are dealing with a call or a return of a
-> syscall.  GDB itself has an open bug about this, because it can get
-> confused when the program being debugged is restarted in the middle of a
-> syscall that has been caught by "catch syscall".
+--QgwbA2aqk28CVpiw55qa319MSVul2MVnC
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Yes, this was suggested many times, probably makes sense.
+On 07-01-2014 11:07, Jean Delvare wrote:
+> On Tue, 7 Jan 2014 10:57:52 -0400, Eduardo Valentin wrote:
+>> On 07-01-2014 10:05, Zhang, Rui wrote:
+>>> BTW, I've been thinking of make CONFIG_THERMAL a bool since long time=
+ ago, the only thing that blocks me is that Thermal subsystem needs to re=
+gister a hwmon device for each thermal zone and CONFIG_HWMON is a tristat=
+e.
+>>
+>> I agree with the move of having CONFIG_THERMAL as bool. Unless you hav=
+e
+>> use cases where users are dynamically loading and unloading thermal pe=
+r
+>> user demand, which I doubt.
+>=20
+> Modularity is not only about reloading modules (although this can be
+> useful for developers in particular.) It's also about enabling many
+> features in a generic distribution kernel and each feature only gets
+> loaded/used on the hardware which needs it. This is why, as a
 
-But I am not sure about semantics, let me add more cc's.
+In fact, no one has said anything different than the above. I definitely
+agree with you. Except that this needs to be taken with a bit of care.
 
-> The other nice thing that I have implemented is the ability to obtain
-> the syscall number related to the event by using PTRACE_GET_EVENTMSG.
-> This way, we don't need to inspect registers anymore when we want to
-> know which syscall is responsible for this or that event.
+> distribution kernel maintainer, I keep complaining when I see boolean
+> options which might easily be tristates.
 
-I won't argue, but it is not clear to me if this is really useful,
-given that the debugger can read the regs.
+Well, I would say it is not that 'easy' and not that straight forward.
+there a couple of items to be considered in the thermal case, the boot
+requirements and API provisioning are two, just to mention. There are
+use cases that waiting for init to be loaded and modules to be linked is
+just no go for thermal constraints, in case the system is already booted
+'hot'.
 
-And even if we do this, I disagree with this implementation, please
-see below.
+Besides, hiding APIs when a component is build is module is not very
+'modular', even considering the statements you brought above.
 
-> --- a/arch/alpha/kernel/ptrace.c
-> +++ b/arch/alpha/kernel/ptrace.c
-> @@ -317,7 +317,8 @@ asmlinkage unsigned long syscall_trace_enter(void)
->  {
->  	unsigned long ret = 0;
->  	if (test_thread_flag(TIF_SYSCALL_TRACE) &&
-> -	    tracehook_report_syscall_entry(current_pt_regs()))
-> +	    tracehook_report_syscall_entry(current_pt_regs(),
-> +					current_pt_regs()->r0))
->  		ret = -1UL;
->  	return ret ?: current_pt_regs()->r0;
->  }
-> @@ -326,5 +327,6 @@ asmlinkage void
->  syscall_trace_leave(void)
->  {
->  	if (test_thread_flag(TIF_SYSCALL_TRACE))
-> -		tracehook_report_syscall_exit(current_pt_regs(), 0);
-> +		tracehook_report_syscall_exit(current_pt_regs(), 0,
-> +						current_pt_regs()->r0);
->  }
-
-And every arch/ is changed the same way. I do not think this is needed.
-We already have syscall_get_nr(), this is what ptrace_report_syscall()
-needs. So afaics this patch do not need to touch arch/ at all.
+>=20
 
 
-> +static inline int ptrace_report_syscall(struct pt_regs *regs, int entry,
-> +	unsigned int sysno)
->  {
->  	int ptrace = current->ptrace;
-> +	int is_sysenter = ptrace & PT_TRACE_SYSCALL_ENTER;
-> +	int is_sysexit = ptrace & PT_TRACE_SYSCALL_EXIT;
-> +	int is_ptsysgood = ptrace & PT_TRACESYSGOOD;
->
->  	if (!(ptrace & PT_PTRACED))
->  		return 0;
->
-> -	ptrace_notify(SIGTRAP | ((ptrace & PT_TRACESYSGOOD) ? 0x80 : 0));
-> +	if (is_sysenter || is_sysexit) {
-> +		if (entry && is_sysenter)
-> +			ptrace_event(PTRACE_EVENT_SYSCALL_ENTER, sysno);
-> +		else if (!entry && is_sysexit)
-> +			ptrace_event(PTRACE_EVENT_SYSCALL_EXIT, sysno);
-> +		else
-> +			return 0;
-> +	} else
-> +		ptrace_notify(SIGTRAP | (is_ptsysgood ? 0x80 : 0));
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
 
-OK. So PTRACE_O_SYSCALL_ENTER acts like PTRACE_O_TRACESYSGOOD, you still
-need ptrace(PTRACE_SYSCALL) if you want PTRACE_EVENT_SYSCALL_ENTER.
-
-If we add the new API, perhaps we should change ptrace_resume ?
-I mean,
-
-	--- x/kernel/ptrace.c
-	+++ x/kernel/ptrace.c
-	@@ -723,7 +723,9 @@ static int ptrace_resume(struct task_str
-		if (!valid_signal(data))
-			return -EIO;
-	 
-	-	if (request == PTRACE_SYSCALL)
-	+	if (request == PTRACE_SYSCALL ||
-	+	    ptrace_event_enabled(PTRACE_EVENT_SYSCALL_ENTER) ||
-	+	    ptrace_event_enabled(PTRACE_EVENT_SYSCALL_EXIT))
-			set_tsk_thread_flag(child, TIF_SYSCALL_TRACE);
-		else
-			clear_tsk_thread_flag(child, TIF_SYSCALL_TRACE);
+Eduardo Valentin
 
 
-This way PTRACE_O_SYSCALL_* will work like other ptrace options which
-ask to report an event.
+--QgwbA2aqk28CVpiw55qa319MSVul2MVnC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Or. Instead, perhaps we can add a single option PTRACE_O_TRACESYSREALLYGOOD
-which doesn't report the new event and simply does something like
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-	current->ptrace_message = syscall_get_nr() | (entry << 31);
-	ptrace_notify(SIGTRAP | 0x80);
+iF4EAREIAAYFAlLMHTcACgkQCXcVR3XQvP2L/AEA4/uDi0hCpifWJeYLb+YQgufP
+1lslHDJXpn5p02CzRyIBAMydMpbvxLHckrsoQvd6xF4hkIcsPxG+sAZIWRpRMghc
+=XGl3
+-----END PGP SIGNATURE-----
 
-Finally. If we add this feature, we should probably also report
-is_compat_task() somehow. Currently the debugger can't know if, say,
-a 64bit tracee does int80.
-
-OTOH, perhaps it would be better to report this via regs->flags as
-(iirc) Linus suggested.
-
-Once again, personally I am fine either way. Just I think we should
-discuss every possible option.
-
-Oleg.
-
+--QgwbA2aqk28CVpiw55qa319MSVul2MVnC--
