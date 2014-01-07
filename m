@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755578AbaAGItU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 03:49:20 -0500
-Received: from mga11.intel.com ([192.55.52.93]:48677 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750766AbaAGItT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 03:49:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,617,1384329600"; 
-   d="scan'208";a="461249877"
-Subject: [PATCH 1/3] workqueue: Calling destroy_work_on_stack() to pair
- with INIT_WORK_ONSTACK()
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: tj@kernel.org
-Cc: linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 07 Jan 2014 16:50:05 +0800
-Message-ID: <1389084605.3650.66.camel@cliu38-desktop-build>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756003AbaAGIts (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 03:49:48 -0500
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:50765 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752375AbaAGItr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 03:49:47 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140106183000.GG1096@mudshark.cambridge.arm.com>
+References: <1388420732-13961-1-git-send-email-jean.pihet@linaro.org>
+	<1388420732-13961-2-git-send-email-jean.pihet@linaro.org>
+	<20140106183000.GG1096@mudshark.cambridge.arm.com>
+Date: Tue, 7 Jan 2014 09:49:46 +0100
+Message-ID: <CAFrcx1kMkdxemipi7W3pTQZQEfLTsJ0L_X2j8OT1Nf0+Jy+7qg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] ARM64: perf: add support for perf registers API
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo <acme@ghostprotocols.net>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Jean Pihet <jean.pihet@newoldbits.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Will,
 
-In case CONFIG_DEBUG_OBJECTS_WORK is defined, it is needed to
-call destroy_work_on_stack() which frees the debug object to pair
-with INIT_WORK_ONSTACK().
+On 6 January 2014 19:30, Will Deacon <will.deacon@arm.com> wrote:
+> Hi Jean,
+>
+> Thanks for the updated patches. One minor comment on this one.
+Thanks for reviewing!
 
-Signed-off-by: Liu, Chuansheng <chuansheng.liu@intel.com>
----
- kernel/workqueue.c |    2 ++
- 1 file changed, 2 insertions(+)
+> On Mon, Dec 30, 2013 at 04:25:30PM +0000, Jean Pihet wrote:
+>> From: Jean Pihet <jean.pihet@newoldbits.com>
+>>
+>> This patch implements the functions required for the perf registers API,
+>> allowing the perf tool to interface kernel register dumps with libunwind
+>> in order to provide userspace backtracing.
+>> Compat mode is also supported.
+>
+> [...]
+>
+>> +u64 perf_reg_value(struct pt_regs *regs, int idx)
+>> +{
+>> +     if (WARN_ON_ONCE((u32)idx >= PERF_REG_ARM64_MAX))
+>> +             return 0;
+>
+> While this is probably fine, I'd feel more comfortable if you had separate
+> limit checks for native and compat...
+>
+>> +     /*
+>> +      * Compat (i.e. 32 bit) mode:
+>> +      * - PC has been set in the pt_regs struct in kernel_entry,
+>> +      * - Handle SP and LR here.
+>> +      */
+>> +     if (compat_user_mode(regs)) {
+>
+> i.e. have a WARN_ON_ONCE here for the compat structure size.
+>
+>> +             if ((u32)idx == PERF_REG_ARM64_SP)
+>> +                     return regs->compat_sp;
+>> +             if ((u32)idx == PERF_REG_ARM64_LR)
+>> +                     return regs->compat_lr;
+>> +     }
+>
+> then stick an else here with the original check.
+>
+> Make sense?
+Yes
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index b010eac..82ef9f3 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -4789,6 +4789,7 @@ static int workqueue_cpu_down_callback(struct notifier_block *nfb,
- 
- 		/* wait for per-cpu unbinding to finish */
- 		flush_work(&unbind_work);
-+		destroy_work_on_stack(&unbind_work);
- 		break;
- 	}
- 	return NOTIFY_OK;
-@@ -4828,6 +4829,7 @@ long work_on_cpu(int cpu, long (*fn)(void *), void *arg)
- 	INIT_WORK_ONSTACK(&wfc.work, work_for_cpu_fn);
- 	schedule_work_on(cpu, &wfc.work);
- 	flush_work(&wfc.work);
-+	destroy_work_on_stack(&wfc.work);
- 	return wfc.ret;
- }
- EXPORT_SYMBOL_GPL(work_on_cpu);
--- 
-1.7.9.5
+I will resend an updated version asap.
 
+>
+> Will
 
-
+Jean
