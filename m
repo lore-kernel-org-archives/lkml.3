@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051AbaAGUrQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 15:47:16 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58804 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892AbaAGUrJ (ORCPT
+	id S1754097AbaAGUuW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 15:50:22 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:41323 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753339AbaAGUuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 15:47:09 -0500
-Message-ID: <52CC67C9.9000704@wwwdotorg.org>
-Date: Tue, 07 Jan 2014 13:47:05 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+	Tue, 7 Jan 2014 15:50:16 -0500
+Date: Tue, 7 Jan 2014 21:49:51 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Alex Courbot <acourbot@nvidia.com>, Olof Johansson <olof@lixom.net>,
-        Danny Huang <dahuang@nvidia.com>
-Subject: Re: [PATCH v2 4/6] ARM: tegra: rework fuse.c
-References: <1387891931-9854-1-git-send-email-pdeschrijver@nvidia.com> <1387891931-9854-5-git-send-email-pdeschrijver@nvidia.com> <52CB1722.70306@wwwdotorg.org> <20140107141004.GF26588@tbergstrom-lnx.Nvidia.com>
-In-Reply-To: <20140107141004.GF26588@tbergstrom-lnx.Nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "pjt@google.com" <pjt@google.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "alex.shi@linaro.org" <alex.shi@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "amit.kucheria@linaro.org" <amit.kucheria@linaro.org>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>
+Subject: Re: [RFC] sched: CPU topology try
+Message-ID: <20140107204951.GD2480@laptop.programming.kicks-ass.net>
+References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
+ <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
+ <52B87149.4010801@arm.com>
+ <CAKfTPtDmb1fa8PUcrqEGaoQLxoPBddu-Yn_oS8KwsCJJWJzQug@mail.gmail.com>
+ <20140106163123.GN31570@twins.programming.kicks-ass.net>
+ <CAKfTPtDind8HGJwu0odSnNdRpaxp3VB3JWw3eADAp4bL4Ex-Mw@mail.gmail.com>
+ <20140107132220.GZ31570@twins.programming.kicks-ass.net>
+ <20140107141059.GY3694@twins.programming.kicks-ass.net>
+ <20140107154154.GH2936@e103034-lin>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140107154154.GH2936@e103034-lin>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2014 07:10 AM, Peter De Schrijver wrote:
-> On Mon, Jan 06, 2014 at 09:50:42PM +0100, Stephen Warren wrote:
->> On 12/24/2013 06:32 AM, Peter De Schrijver wrote:
->>> Reduce fuse.c to the minimum functionality required for the early bootstages.
->>>
->>> Also export tegra_read_straps() for use by the fuse driver.
+On Tue, Jan 07, 2014 at 03:41:54PM +0000, Morten Rasmussen wrote:
+> I think that could work if we sort of the priority scaling issue that I
+> mentioned before.
 
->>> diff --git a/arch/arm/mach-tegra/fuse.c b/arch/arm/mach-tegra/fuse.c
+We talked a bit about this on IRC a month or so ago, right? My memories
+from that are that your main complaint is that we don't detect the
+overload scenario right.
 
->>> -int tegra_sku_id;
->>> -int tegra_cpu_process_id;
->>> -int tegra_core_process_id;
->>>  int tegra_chip_id;
->>> -int tegra_cpu_speedo_id;		/* only exist in Tegra30 and later */
->>> -int tegra_soc_speedo_id;
->>>  enum tegra_revision tegra_revision;
->>
->> It's a bit odd to remove most of this, but leave a few parts hanging
->> around. Wouldn't it be better to the drivers/misc/fuse code to export
->> this, so that /all/ the fuse logic was there, rather than part of it
->> being left over in arch/arm/? We'll need to fix that up anyway when we
->> start using these globals on ARMv8, so may as well get it right now.
->> Also, I rather think that the new drivers/misc/fuse code shouldn't be a
->> module or driver, so that we can guarantee it's always there to provide
->> the globals and that they are initialized early enough...
-> 
-> tegra_revision is used in tegra_dt_init() to initialize soc_dev_attr->revision
-> Hence this needs to be available before the fuse driver is initialized.
+That is; the point at which we should start caring about SMP-nice is
+when all our CPUs are fully occupied, because up to that point we're
+under utilized and work preservation mandates we utilize idle time.
 
-Yes, the same for tegra_chip_id too.
+Currently we detect overload by sg.nr_running >= sg.capacity, which can
+be very misleading because while a cpu might have a task running 'now'
+it might be 99% idle.
 
-My point is: Why not move all the globals into the fuse driver, and make
-an early call to that fuse driver to initialize all these globals.
-Basically, rework this patch series to simply move the code to
-drivers/misc/fuse/, and keep initializing it by function call rather
-than as a driver probe(). The code can still scan DT to get the required
-reg/clock/... resources, in a similar fashion to e.g. the Tegra timer or
-cpufreq drivers IIRC. Perhaps the sysfs exports could be associated with
-a driver still though - just initialize the globals early?
+At which point I argued we should change the capacity thing anyhow. Ever
+since the runnable_avg patch set I've been arguing to change that into
+an actual utilization test.
+
+So I think that if we measure overload by something like >95% utilization
+on the entire group the load scaling again makes perfect sense.
+
+Given the 3 task {A,B,C} workload where A and B are niced, to land on a
+symmetric dual CPU system like: {A,B}+{C}, assuming they're all while(1)
+loops :-).
+
+The harder case is where all 3 tasks are of equal weight; in which case
+fairness would mandate we (slowly) rotate the tasks such that they all
+get 2/3 time -- we also horribly fail at this :-)
