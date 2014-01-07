@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751725AbaAGKiR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 05:38:17 -0500
-Received: from relay6-d.mail.gandi.net ([217.70.183.198]:42230 "EHLO
-	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751148AbaAGKiQ (ORCPT
+	id S1751885AbaAGKjR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 05:39:17 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:58163 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065AbaAGKjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 05:38:16 -0500
-X-Greylist: delayed 94800 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Jan 2014 05:38:16 EST
-X-Originating-IP: 50.43.14.201
-Date: Tue, 7 Jan 2014 02:38:06 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Sam Ravnborg <sam@ravnborg.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rashika Kheria <rashika.kheria@gmail.com>
-Subject: Re: #pragma once?
-Message-ID: <20140107103806.GA4891@leaf>
-References: <20140106204706.GA16924@leaf>
- <20140107055532.GA16581@ravnborg.org>
- <CAMuHMdWPq4YgUoxE1GvQbsEJQu-wjhpra2fRDgkNfEZP0sqpVQ@mail.gmail.com>
- <52CBD247.8080508@suse.cz>
+	Tue, 7 Jan 2014 05:39:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52CBD247.8080508@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140106215335.GC9894@breakpoint.cc>
+References: <1389023672-14351-1-git-send-email-avagin@openvz.org>
+	<20140106170235.GJ28854@breakpoint.cc>
+	<20140106205414.GA19788@gmail.com>
+	<20140106215335.GC9894@breakpoint.cc>
+Date: Tue, 7 Jan 2014 14:39:14 +0400
+Message-ID: <CANaxB-w0-ErUvrEiGmG7dxV-dBwnYX3eX8rE0NQ=boKbc6HU8w@mail.gmail.com>
+Subject: Re: [PATCH] netfilter: nf_conntrack: release conntrack from rcu callback
+From: Andrey Wagin <avagin@gmail.com>
+To: Florian Westphal <fw@strlen.de>
+Cc: netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, vvs@openvz.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 11:09:11AM +0100, Michal Marek wrote:
-> On 2014-01-07 10:48, Geert Uytterhoeven wrote:
-> > Furthermore some userspace may rely on doing #define XXX to avoid
-> > including a specific kernel header (yes, it's ugly).
-> 
-> This pattern is also sometimes used:
-> $ head -6 include/linux/spinlock_up.h
-> #ifndef __LINUX_SPINLOCK_UP_H
-> #define __LINUX_SPINLOCK_UP_H
-> 
-> #ifndef __LINUX_SPINLOCK_H
-> # error "please don't include this file directly"
-> #endif
-> 
-> And there is nothing ugly about it.
+Hi Florian,
 
-That's debatable, but it's certainly reasonable to try to enforce
-non-inclusion of "internal" headers directly.  However, for headers not
-exposed to userspace, it'd be easy to write that as:
+2014/1/7 Florian Westphal <fw@strlen.de>:
+> Andrew Vagin <avagin@gmail.com> wrote:
 
-include/linux/spinlock.h:
-#pragma once
-#define LINUX_SPINLOCK_H_INCLUDED
+>> >                 ct = nf_ct_tuplehash_to_ctrack(h);
+>> >                 if (unlikely(nf_ct_is_dying(ct) ||
+>> >                              !atomic_inc_not_zero(&ct->ct_general.use)))
+>> >                     // which means we should hit this path (0 ref).
+>> >                         h = NULL;
+>> >                 else {
+>> >                     // otherwise, it cannot go away from under us, since
+>> >                     // we own a reference now.
+>> >                         if (unlikely(!nf_ct_tuple_equal(tuple, &h->tuple) ||
+>> >                                      nf_ct_zone(ct) != zone)) {
+>
+> Perhaps this needs additional !nf_ct_is_confirmed()?
 
-include/linux/spinlock_up.h:
-#pragma once
-#ifndef LINUX_SPINLOCK_H_INCLUDED
-#error "Only include this file via spinlock.h, never directly"
-#endif
+Yes, it think it must help. Thank you for the comments. I resent this patch:
+[PATCH] netfilter: nf_conntrack: fix RCU race in nf_conntrack_find_get
 
-> So #pragma once is probably a good
-> idea for most headers that are not exposed to userspace. But making it a
-> requirement in scripts/checkpatch.pl or Documentation/CodingStyle means
-> that it will become hard to defend the few legitimate uses of ifndef
-> guards against people who have a printed copy of checkpatch.pl under
-> their pillow.
+>
+> It would cover your case (found a recycled element that has been put on
+> the unconfirmed list (refcnt already set to 1, ct->tuple is set) on another cpu,
+> extensions possibly not yet fully initialised), and the same tuple).
+>
+> Regards,
+> Florian
 
-Any mention in CodingStyle or check in checkpatch would need to cover
-the two exceptions: uapi, and headers that are intentionally parsed
-multiple times for preprocessor magic (TRACE_HEADER_MULTI_READ).
-
-- Josh Triplett
+Thanks,
+Andrey
