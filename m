@@ -1,86 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756804AbaAGEmc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 23:42:32 -0500
-Received: from ozlabs.org ([203.10.76.45]:33972 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755673AbaAGEma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 23:42:30 -0500
-Date: Tue, 7 Jan 2014 15:42:22 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Xen Devel <Xen-devel@lists.xensource.com>,
-        Russell King <rmk@arm.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, Wei Liu <liuw@liuw.name>
-Subject: linux-next: manual merge of the xen-tip tree with the arm-current
- tree
-Message-Id: <20140107154222.b2c0c8081441671f32d78bc1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__7_Jan_2014_15_42_22_+1100_o1XXANa77vLhDjqz"
+	id S1753369AbaAGEsk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 23:48:40 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:34395 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751395AbaAGEsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 23:48:38 -0500
+X-IronPort-AV: E=Sophos;i="4.95,616,1384272000"; 
+   d="scan'208";a="9382778"
+Message-ID: <52CB877E.4030902@cn.fujitsu.com>
+Date: Tue, 07 Jan 2014 12:50:06 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: rjw@sisk.pl, lenb@kernel.org, toshi.kani@hp.com,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] acpi: Return -ENOENT in acpi_table_parse() and fix wrong
+ comment.
+References: <1388998079-28160-1-git-send-email-tangchen@cn.fujitsu.com> <2420572.xQX3sn8lDK@vostro.rjw.lan>
+In-Reply-To: <2420572.xQX3sn8lDK@vostro.rjw.lan>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/01/07 12:46:35,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/01/07 12:46:36,
+	Serialize complete at 2014/01/07 12:46:36
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__7_Jan_2014_15_42_22_+1100_o1XXANa77vLhDjqz
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 01/06/2014 07:50 PM, Rafael J. Wysocki wrote:
+> On Monday, January 06, 2014 04:47:59 PM Tang Chen wrote:
+>> The comment about return value of acpi_table_parse() is incorrect.
+>> This patch fix it.
+>>
+>> Since all callers only check if the function succeeded or not, this
+>> patch simplifies the semantics by returning -errno for all failure
+>> cases. This will also simply the comment.
+>>
+>> As suggested by Toshi Kani<toshi.kani@hp.com>, also change the stub
+>> in linux/acpi.h to return -ENODEV.
+>>
+>> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
+>
+> Queued up for 3.14 (but please use the e-mail address from MAINTAINERS next
+> time) with a modified subject.  Thanks!
 
-Hi all,
+OK, will use the email address from MAINTAINERS next time.
 
-Today's linux-next merge of the xen-tip tree got a conflict in
-arch/arm/include/asm/xen/page.h between commit 0a5ccc86507f ("ARM:
-7933/1: rename ioremap_cached to ioremap_cache") from the  tree and
-commit 02bcf053e9c5 ("asm/xen/page.h: remove redundant semicolon") from
-the xen-tip tree.
+Thanks.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/include/asm/xen/page.h
-index 3759cacdd7f8,709c4b4d2f1d..000000000000
---- a/arch/arm/include/asm/xen/page.h
-+++ b/arch/arm/include/asm/xen/page.h
-@@@ -117,6 -117,7 +117,7 @@@ static inline bool set_phys_to_machine(
-  	return __set_phys_to_machine(pfn, mfn);
-  }
- =20
-- #define xen_remap(cookie, size) ioremap_cache((cookie), (size));
- -#define xen_remap(cookie, size) ioremap_cached((cookie), (size))
-++#define xen_remap(cookie, size) ioremap_cache((cookie), (size))
-+ #define xen_unmap(cookie) iounmap((cookie))
- =20
-  #endif /* _ASM_ARM_XEN_PAGE_H */
-
---Signature=_Tue__7_Jan_2014_15_42_22_+1100_o1XXANa77vLhDjqz
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSy4WzAAoJEMDTa8Ir7ZwVUnUP/0EHDRFLLab9spxf8kCH6AIN
-a5Bpk3xpkVU/8Yx2so9pVA9lmo9NfizhCvrJ+eX+P0rOSt7wGag3Bu/9U3R9znrX
-AwFr9b1awuSFP9qXGqDqmGKY4Cf8fwZC3YPa5keQ4DJoyxCCZ8e8fjWTgDMaA5xD
-AK3Dfy+eYwRDdhvAnGj9MUxzLMGeuqGF9YCdtSCtiWtz343kJDzRJmEGoimnAyYU
-GSG9za3HYkl3ElBNF1Vjkklfph5vnn0zuMd3hLsRBufRlAsUuM95WguJwAvxMrbW
-hP66ONsbLMihIGlRo0si5gmTsWiquk1Yhb3X9uHcDq662I8iwW4JW8+oXyNAYlKd
-V/BmzAoK2vp/8vVyCOqp4gN6NHbhy9dL9K8WQZOOgUegPq3YxQOAjXCb7OCoYxFo
-1E/XoeAqu+dXVTKbsnLdeVRCEmfh/yPj22mSpfrN16RvJFSUjQbXWzK1vhGOuQK6
-4Jajbz5mBhrs+gDYCMRORvxaCE1/TK+k4nMt4ON8W9hVU6TeFPv9YKAfPqPLqlp2
-GaSjwsXzSoBe3TIObtPG34uYf2ec2J7LRu0YLddZ8s3s+HyoClxygmL4ELtmZtUu
-2bEA0t3jTOR98KrNd1u2KYFMT8pxs0KoheHq8X2Y8hK07Ety3J4OpIZ+p5x22xwi
-5axr1xKdt7hLTkDB4Xg9
-=udXo
------END PGP SIGNATURE-----
-
---Signature=_Tue__7_Jan_2014_15_42_22_+1100_o1XXANa77vLhDjqz--
+>
+>> ---
+>>   drivers/acpi/tables.c | 7 ++++---
+>>   include/linux/acpi.h  | 2 +-
+>>   2 files changed, 5 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+>> index 5a5263b..10022ae 100644
+>> --- a/drivers/acpi/tables.c
+>> +++ b/drivers/acpi/tables.c
+>> @@ -278,12 +278,13 @@ acpi_table_parse_madt(enum acpi_madt_type id,
+>>
+>>   /**
+>>    * acpi_table_parse - find table with @id, run @handler on it
+>> - *
+>>    * @id: table id to find
+>>    * @handler: handler to run
+>>    *
+>>    * Scan the ACPI System Descriptor Table (STD) for a table matching @id,
+>> - * run @handler on it.  Return 0 if table found, return on if not.
+>> + * run @handler on it.
+>> + *
+>> + * Return 0 if table found, -errno if not.
+>>    */
+>>   int __init acpi_table_parse(char *id, acpi_tbl_table_handler handler)
+>>   {
+>> @@ -306,7 +307,7 @@ int __init acpi_table_parse(char *id, acpi_tbl_table_handler handler)
+>>   		early_acpi_os_unmap_memory(table, tbl_size);
+>>   		return 0;
+>>   	} else
+>> -		return 1;
+>> +		return -ENODEV;
+>>   }
+>>
+>>   /*
+>> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+>> index d9099b1..fecfbcd 100644
+>> --- a/include/linux/acpi.h
+>> +++ b/include/linux/acpi.h
+>> @@ -460,7 +460,7 @@ struct acpi_table_header;
+>>   static inline int acpi_table_parse(char *id,
+>>   				int (*handler)(struct acpi_table_header *))
+>>   {
+>> -	return -1;
+>> +	return -ENODEV;
+>>   }
+>>
+>>   static inline int acpi_nvs_register(__u64 start, __u64 size)
+>>
+>
