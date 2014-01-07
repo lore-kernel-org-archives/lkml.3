@@ -1,119 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755639AbaAGIWz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 03:22:55 -0500
-Received: from mga09.intel.com ([134.134.136.24]:64096 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755044AbaAGIWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 03:22:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,617,1384329600"; 
-   d="scan'208";a="434983247"
-Message-ID: <52CBB94D.6010405@intel.com>
-Date: Tue, 07 Jan 2014 00:22:37 -0800
-From: John Fastabend <john.r.fastabend@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1755886AbaAGIXH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 03:23:07 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:48601 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754662AbaAGIXD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 03:23:03 -0500
 MIME-Version: 1.0
-To: Jason Wang <jasowang@redhat.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, Neil Horman <nhorman@tuxdriver.com>,
-        e1000-devel@lists.sourceforge.net
-Subject: Re: [PATCH net 2/2] net: core: explicitly select a txq before doing
- l2 forwarding
-References: <1388978467-2075-1-git-send-email-jasowang@redhat.com> <1388978467-2075-2-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1388978467-2075-2-git-send-email-jasowang@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140106162145.GL31570@twins.programming.kicks-ass.net>
+References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
+ <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org> <20140106162145.GL31570@twins.programming.kicks-ass.net>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Tue, 7 Jan 2014 09:22:40 +0100
+Message-ID: <CAKfTPtAhSL99gTx8=wvaq=1ENzB9DQ697DQsOMqWMaj6o31LMg@mail.gmail.com>
+Subject: Re: [RFC] sched: CPU topology try
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        Alex Shi <alex.shi@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Jon Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Len Brown <len.brown@intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/5/2014 7:21 PM, Jason Wang wrote:
-> Currently, the tx queue were selected implicitly in ndo_dfwd_start_xmit(). The
-> will cause several issues:
+On 6 January 2014 17:21, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, Dec 18, 2013 at 02:13:51PM +0100, Vincent Guittot wrote:
+>> This patch applies on top of the two patches [1][2] that have been proposed by
+>> Peter for creating a new way to initialize sched_domain. It includes some minor
+>> compilation fixes and a trial of using this new method on ARM platform.
+>> [1] https://lkml.org/lkml/2013/11/5/239
+>> [2] https://lkml.org/lkml/2013/11/5/449
+>>
+>> Based on the results of this tests, my feeling about this new way to init the
+>> sched_domain is a bit mitigated.
 >
-> - NETIF_F_LLTX was forced for macvlan device in this case which lead extra lock
->    contention.
-> - dev_hard_start_xmit() was called with NULL txq which bypasses the net device
->    watchdog
-> - dev_hard_start_xmit() does not check txq everywhere which will lead a crash
->    when tso is disabled for lower device.
+> Yay :-)
 >
-> Fix this by explicitly introducing a select queue method just for l2 forwarding
-> offload (ndo_dfwd_select_queue), and introducing dfwd_direct_xmit() to do the
-> queue selecting and transmitting for l2 forwarding.
+>> We can add more levels that will describe other dependency/independency like
+>> the frequency scaling dependency and as a result the final sched_domain
+>> topology will have additional levels (if they have not been removed during
+>> the degenerate sequence)
 >
-> With this fixes, NETIF_F_LLTX could be preserved for macvlan and there's no need
-> to check txq against NULL in dev_hard_start_xmit().
+> Yeah, this 'creative' use of degenerate domains is pretty neat ;-)
+
+thanks :-)
+
 >
-> In the future, it was also required for macvtap l2 forwarding support since it
-> provides a necessary synchronization method.
+>> My concern is about the configuration of the table that is used to create the
+>> sched_domain. Some levels are "duplicated" with different flags configuration
+>> which make the table not easily readable and we must also take care of the
+>> order  because parents have to gather all cpus of its childs. So we must
+>> choose which capabilities will be a subset of the other one. The order is
+>> almost straight forward when we describe 1 or 2 kind of capabilities
+>> (package ressource sharing and power sharing) but it can become complex if we
+>> want to add more.
 >
-> Cc: John Fastabend <john.r.fastabend@intel.com>
-> Cc: Neil Horman <nhorman@tuxdriver.com>
-> Cc: e1000-devel@lists.sourceforge.net
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
+> I think I see what you're saying, although I hope that won't actually
+> happen in real hardware -- that said, people do tend to do crazy with
+> these ARM chips :/
 
-[...]
+it should be ok for ARM chip because the cores in a cluster share the
+same clock but it doesn't mean that it will not be possible in a near
+future or on other arch.
 
-> index 4fc1722..bc2b03f 100644
-> --- a/net/core/dev.c
-> +++ b/net/core/dev.c
-> @@ -2538,6 +2538,32 @@ static inline int skb_needs_linearize(struct sk_buff *skb,
->   				!(features & NETIF_F_SG)));
->   }
 >
-> +int dfwd_direct_xmit(struct sk_buff *skb, struct net_device *dev,
-> +		     void *accel_priv)
-> +{
-> +	struct netdev_queue *txq;
-> +	int ret = NETDEV_TX_BUSY;
-> +	int index;
-> +
-> +	BUG_ON(!dev->netdev_ops->ndo_dfwd_select_queue);
-> +	index =	dev->netdev_ops->ndo_dfwd_select_queue(dev, skb,
-> +						       accel_priv);
-> +
-> +	local_bh_disable();
-> +
-> +	skb_set_queue_mapping(skb, index);
+> We should also try and be conservative in the topology flags we want to
+> add, which should further reduce the amount of pain here.
 
-How about replacing the index calculation and skb_set_queue_mapping with
-netdev_pick_tx(). Then we don't need to add a new op and the existing
-XPS, tx hash and select_queue() op works.
+yes, i see a interest for powerdomain sharing and clock sharing flags
+so it should minimize the complexity
 
-> +	txq = netdev_get_tx_queue(dev, index);
-> +
-> +	HARD_TX_LOCK(dev, txq, smp_processor_id());
-> +	if (!netif_xmit_frozen_or_stopped(txq))
-> +		ret = dev_hard_start_xmit(skb, dev, txq, accel_priv);
-> +	HARD_TX_UNLOCK(dev, txq);
-> +
-> +	local_bh_enable();
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(dfwd_direct_xmit);
-> +
->   int dev_hard_start_xmit(struct sk_buff *skb, struct net_device *dev,
->   			struct netdev_queue *txq, void *accel_priv)
->   {
-> @@ -2611,7 +2637,7 @@ int dev_hard_start_xmit(struct sk_buff *skb, struct net_device *dev,
->   			rc = ops->ndo_start_xmit(skb, dev);
 >
->   		trace_net_dev_xmit(skb, rc, dev, skb_len);
-> -		if (rc == NETDEV_TX_OK && txq)
-> +		if (rc == NETDEV_TX_OK)
->   			txq_trans_update(txq);
+> For now I do think this is a viable approach.. Yes its a bit cumbersome
+> for these asymmetric systems but it does give us enough to start
+> playing.
 
-Removing the check here rather than adding more checks in the gso case
-as I suggested in the other thread seems cleaner.
+ok
 
-Thanks!
-John
-
-
->   		return rc;
->   	}
+Vincent
 >
-
+> I yet have to read Morton's emails on the P and C states, will try to
+> have a look at those tomorrow with a hopefully fresher brain -- somehow
+> its the end of the day already..
