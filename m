@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751468AbaAGOsd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 09:48:33 -0500
-Received: from ks35366.kimsufi.com ([213.251.186.122]:59147 "EHLO meetr.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751481AbaAGOsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 09:48:25 -0500
-X-Greylist: delayed 330 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Jan 2014 09:48:25 EST
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Subject: Re: [PATCH 0/4] Get EDID late for VGA switcheroo
-X-PHP-Originating-Script: 33:rcmail.php
+	id S1751688AbaAGOvi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 09:51:38 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:37892 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983AbaAGOv3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 09:51:29 -0500
+X-IronPort-AV: E=Sophos;i="4.95,619,1384300800"; 
+   d="scan'208";a="88299966"
+Message-ID: <52CC1453.3090804@citrix.com>
+Date: Tue, 7 Jan 2014 14:50:59 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
+To: Wei Liu <wei.liu2@citrix.com>
+CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v2 1/9] xen-netback: Introduce TX grant map definitions
+References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com> <1386892097-15502-2-git-send-email-zoltan.kiss@citrix.com> <20131213153138.GL21900@zion.uk.xensource.com> <52AB506E.3040509@citrix.com> <20131213191423.GA12582@zion.uk.xensource.com> <52AF1A84.3090304@citrix.com> <20131216175036.GB25969@zion.uk.xensource.com>
+In-Reply-To: <20131216175036.GB25969@zion.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Tue, 07 Jan 2014 15:42:49 +0100
-From: andreas@meetr.de
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <CALkWK0nL3JOvznns2vApzV9+d1JDLgLX=x=6epw-JMEzANMWDA@mail.gmail.com>
-References: <1389088723-30959-1-git-send-email-artagnon@gmail.com>
- <20140107135409.GA21190@thinkpad-t410>
- <CALkWK0nL3JOvznns2vApzV9+d1JDLgLX=x=6epw-JMEzANMWDA@mail.gmail.com>
-Message-ID: <ab8110369e392324f0d90368d638bc38@meetr.de>
-User-Agent: Roundcube Webmail/0.9.2
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-01-07 15:30, schrieb Ramkumar Ramachandra:
-> Seth Forshee wrote:
+On 16/12/13 17:50, Wei Liu wrote:
+> On Mon, Dec 16, 2013 at 03:21:40PM +0000, Zoltan Kiss wrote:
+> [...]
+>>>>>>>
+>>>>>>> Should this be BUG_ON? AIUI this kthread should be the only one doing
+>>>>>>> unmap, right?
+>>>>> The NAPI instance can do it as well if it is a small packet fits
+>>>>> into PKT_PROT_LEN. But still this scenario shouldn't really happen,
+>>>>> I was just not sure we have to crash immediately. Maybe handle it as
+>>>>> a fatal error and destroy the vif?
+>>>>>
+>>> It depends. If this is within the trust boundary, i.e. everything at the
+>>> stage should have been sanitized then we should BUG_ON because there's
+>>> clearly a bug somewhere in the sanitization process, or in the
+>>> interaction of various backend routines.
+>>
+>> My understanding is that crashing should be avoided if we can bail
+>> out somehow. At this point there is clearly a bug in netback
+>> somewhere, something unmapped that page before it should have
+>> happened, or at least that array get corrupted somehow. However
+>> there is a chance that xenvif_fatal_tx_err() can contain the issue,
+>> and the rest of the system can go unaffected.
+>>
+>
+> That would make debugging much harder if a crash is caused by a previous
+> corrupted array and we pretend we can carry on serving IMHO. Now netback
+> is having three routines (NAPI, two kthreads) to serve a single vif, the
+> interation among them makes bug hard to reproduce.
 
->>  3. So what is really wanted is to be able to mux just the DDC over to
->>     the IGPU when the device is initialized to read the panel mode. 
->> One
->>     possible problem is that the hw might not support muxing the DDC
->>     separately, but Apple hw does so we'll ignore that for now. The
->>     basic code for muxing only the DDC isn't too difficult, and I had
->>     some patches for this at one point. The problem is that the 
->> handler
->>     must register with vga_switcheroo before this is possible, so
->>     there's a module initialization ordering issue that wasn't easily
->>     solved. Maybe now it would be possible to do something with
->>     EPROBE_DEFER, though I'm not sure how i915 would know whether or 
->> not
->>     it should wait for a switcheroo handler.
-> 
-> I didn't understand much of the above; I suppose it'll start making
-> sense when I'm deeper into the issue.
-> 
+OK, I'll make this a BUG() in the next series.
 
-You can switch the line used to detect the display separately from the 
-line which is used to display the picture, so you can just switch DDC to 
-the intel card when you know it will try to detect the display, without 
-having to introduce flickering. There were a few different versions of 
-patches that did this, I think this one is the latest: 
-http://lists.freedesktop.org/archives/dri-devel/2012-September/027528.html
+Zoli
 
-Sorry that I forgot about this yesterday, it has been quite some time 
-since I worked on this.
