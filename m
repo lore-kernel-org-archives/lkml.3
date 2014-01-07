@@ -1,98 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757628AbaAGAJB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 19:09:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47425 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756799AbaAFWi0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 17:38:26 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Witold Bazakbal <865perl@wp.pl>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.12 036/144] iscsi-target: Fix-up all zero data-length CDBs with R/W_BIT set
-Date: Mon,  6 Jan 2014 14:36:37 -0800
-Message-Id: <20140106223746.356538990@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140106223745.326293132@linuxfoundation.org>
-References: <20140106223745.326293132@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S1758277AbaAGAJS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:09:18 -0500
+Received: from mga09.intel.com ([134.134.136.24]:48538 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757665AbaAGAJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 19:09:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,615,1384329600"; 
+   d="scan'208";a="462584900"
+From: Andi Kleen <andi@firstfloor.org>
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] Add a sysctl for numa_balancing v2
+Date: Mon,  6 Jan 2014 16:08:46 -0800
+Message-Id: <1389053326-29462-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+From: Andi Kleen <ak@linux.intel.com>
 
-------------------
+[It turns out the documentation patch was already merged
+earlier. So just resending without documentation.]
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+As discussed earlier, this adds a working sysctl to enable/disable
+automatic numa memory balancing at runtime.
 
-commit 4454b66cb67f14c33cd70ddcf0ff4985b26324b7 upstream.
+This allows to track down performance problems with this
+feature and is generally a good idea.
 
-This patch changes special case handling for ISCSI_OP_SCSI_CMD
-where an initiator sends a zero length Expected Data Transfer
-Length (EDTL), but still sets the WRITE and/or READ flag bits
-when no payload transfer is requested.
+This was possible earlier through debugfs, but only with special
+debugging options set. Also fix the boot message.
 
-Many, many moons ago two special cases where added for an ancient
-version of ESX that has long since been fixed, so instead of adding
-a new special case for the reported bug with a Broadcom 57800 NIC,
-go ahead and always strip off the incorrect WRITE + READ flag bits.
-
-Also, avoid sending a reject here, as RFC-3720 does mandate this
-case be handled without protocol error.
-
-Reported-by: Witold Bazakbal <865perl@wp.pl>
-Tested-by: Witold Bazakbal <865perl@wp.pl>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+v2: Remove documentation as the documentation for this
+sysctl was already merged earlier.
+Acked-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/target/iscsi/iscsi_target.c |   26 ++++++++++++--------------
- 1 file changed, 12 insertions(+), 14 deletions(-)
+ include/linux/sched/sysctl.h |  4 ++++
+ kernel/sched/core.c          | 24 +++++++++++++++++++++++-
+ kernel/sysctl.c              |  9 +++++++++
+ mm/mempolicy.c               |  2 +-
+ 4 files changed, 37 insertions(+), 2 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -830,24 +830,22 @@ int iscsit_setup_scsi_cmd(struct iscsi_c
- 	if (((hdr->flags & ISCSI_FLAG_CMD_READ) ||
- 	     (hdr->flags & ISCSI_FLAG_CMD_WRITE)) && !hdr->data_length) {
- 		/*
--		 * Vmware ESX v3.0 uses a modified Cisco Initiator (v3.4.2)
--		 * that adds support for RESERVE/RELEASE.  There is a bug
--		 * add with this new functionality that sets R/W bits when
--		 * neither CDB carries any READ or WRITE datapayloads.
-+		 * From RFC-3720 Section 10.3.1:
-+		 *
-+		 * "Either or both of R and W MAY be 1 when either the
-+		 *  Expected Data Transfer Length and/or Bidirectional Read
-+		 *  Expected Data Transfer Length are 0"
-+		 *
-+		 * For this case, go ahead and clear the unnecssary bits
-+		 * to avoid any confusion with ->data_direction.
- 		 */
--		if ((hdr->cdb[0] == 0x16) || (hdr->cdb[0] == 0x17)) {
--			hdr->flags &= ~ISCSI_FLAG_CMD_READ;
--			hdr->flags &= ~ISCSI_FLAG_CMD_WRITE;
--			goto done;
--		}
-+		hdr->flags &= ~ISCSI_FLAG_CMD_READ;
-+		hdr->flags &= ~ISCSI_FLAG_CMD_WRITE;
+diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
+index 41467f8..e134535 100644
+--- a/include/linux/sched/sysctl.h
++++ b/include/linux/sched/sysctl.h
+@@ -100,4 +100,8 @@ extern int sched_rt_handler(struct ctl_table *table, int write,
+ 		void __user *buffer, size_t *lenp,
+ 		loff_t *ppos);
  
--		pr_err("ISCSI_FLAG_CMD_READ or ISCSI_FLAG_CMD_WRITE"
-+		pr_warn("ISCSI_FLAG_CMD_READ or ISCSI_FLAG_CMD_WRITE"
- 			" set when Expected Data Transfer Length is 0 for"
--			" CDB: 0x%02x. Bad iSCSI Initiator.\n", hdr->cdb[0]);
--		return iscsit_add_reject_cmd(cmd,
--					     ISCSI_REASON_BOOKMARK_INVALID, buf);
-+			" CDB: 0x%02x, Fixing up flags\n", hdr->cdb[0]);
++extern int sched_numa_balancing(struct ctl_table *table, int write,
++				 void __user *buffer, size_t *lenp,
++				 loff_t *ppos);
++
+ #endif /* _SCHED_SYSCTL_H */
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index a88f4a4..4dc22da 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1763,7 +1763,29 @@ void set_numabalancing_state(bool enabled)
+ 	numabalancing_enabled = enabled;
+ }
+ #endif /* CONFIG_SCHED_DEBUG */
+-#endif /* CONFIG_NUMA_BALANCING */
++
++#ifdef CONFIG_PROC_SYSCTL
++int sched_numa_balancing(struct ctl_table *table, int write,
++			 void __user *buffer, size_t *lenp, loff_t *ppos)
++{
++	struct ctl_table t;
++	int err;
++	int state = numabalancing_enabled;
++
++	if (write && !capable(CAP_SYS_ADMIN))
++		return -EPERM;
++
++	t = *table;
++	t.data = &state;
++	err = proc_dointvec_minmax(&t, write, buffer, lenp, ppos);
++	if (err < 0)
++		return err;
++	if (write)
++		set_numabalancing_state(state);
++	return err;
++}
++#endif
++#endif
+ 
+ /*
+  * fork()/clone()-time setup:
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 34a6047..9e0e790 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -398,6 +398,15 @@ static struct ctl_table kern_table[] = {
+ 		.mode           = 0644,
+ 		.proc_handler   = proc_dointvec,
+ 	},
++	{
++		.procname	= "numa_balancing",
++		.data		= NULL, /* filled in by handler */
++		.maxlen		= sizeof(unsigned int),
++		.mode		= 0644,
++		.proc_handler	= sched_numa_balancing,
++		.extra1		= &zero,
++		.extra2		= &one,
++	},
+ #endif /* CONFIG_NUMA_BALANCING */
+ #endif /* CONFIG_SCHED_DEBUG */
+ 	{
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 0cd2c4d..947293e 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2668,7 +2668,7 @@ static void __init check_numabalancing_enable(void)
+ 
+ 	if (nr_node_ids > 1 && !numabalancing_override) {
+ 		printk(KERN_INFO "Enabling automatic NUMA balancing. "
+-			"Configure with numa_balancing= or sysctl");
++			"Configure with numa_balancing= or the kernel.numa_balancing sysctl");
+ 		set_numabalancing_state(numabalancing_default);
  	}
--done:
- 
- 	if (!(hdr->flags & ISCSI_FLAG_CMD_READ) &&
- 	    !(hdr->flags & ISCSI_FLAG_CMD_WRITE) && (hdr->data_length != 0)) {
-
+ }
+-- 
+1.8.3.1
 
