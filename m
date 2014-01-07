@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508AbaAGPQh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 10:16:37 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:40182 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750983AbaAGPQc (ORCPT
+	id S1752388AbaAGPQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 10:16:58 -0500
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:52375 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983AbaAGPQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 10:16:32 -0500
-Date: Tue, 7 Jan 2014 15:16:32 +0000
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Alex Shi <alex.shi@linaro.org>, "mingo@redhat.com" <mingo@redhat.com>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "pjt@google.com" <pjt@google.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "jason.low2@hp.com" <jason.low2@hp.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] sched: bias to target cpu load to reduce task moving
-Message-ID: <20140107151632.GF2936@e103034-lin>
-References: <20131217141012.GG10134@e103034-lin>
- <20131217153809.GP21999@twins.programming.kicks-ass.net>
- <52B2F5D0.2050707@linaro.org>
- <20131220111926.GA11605@e103034-lin>
- <52BAF292.1070404@linaro.org>
- <20140102160404.GA3000@e103034-lin>
- <52CAB12B.4090701@linaro.org>
- <20140107125518.GE2936@e103034-lin>
- <20140107125930.GW31570@twins.programming.kicks-ass.net>
- <20140107131523.GX3694@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140107131523.GX3694@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 7 Jan 2014 10:16:50 -0500
+From: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
+To: akpm@linux-foundation.org, jiang.liu@huawei.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, iamjoonsoo.kim@lge.com,
+        hannes@cmpxchg.org, tangchen@cn.fujitsu.com, tj@kernel.org,
+        toshi.kani@hp.com, Philipp Hachtmann <phacht@linux.vnet.ibm.com>
+Subject: [PATCH 0/2] Small fixes to memblock and nobootmem
+Date: Tue,  7 Jan 2014 16:16:12 +0100
+Message-Id: <1389107774-54978-1-git-send-email-phacht@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.4.5
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14010715-8372-0000-0000-00000843F9A0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 01:15:23PM +0000, Peter Zijlstra wrote:
-> On Tue, Jan 07, 2014 at 01:59:30PM +0100, Peter Zijlstra wrote:
-> > On Tue, Jan 07, 2014 at 12:55:18PM +0000, Morten Rasmussen wrote:
-> > > My understanding is that should_we_balance() decides which cpu is
-> > > eligible for doing the load balancing for a given domain (and the
-> > > domains above). That is, only one cpu in a group is allowed to load
-> > > balance between the local group and other groups. That cpu would
-> > > therefore be reponsible for pulling enough load that the groups are
-> > > balanced even if it means temporarily overloading itself. The other cpus
-> > > in the group will take care of load balancing the extra load within the
-> > > local group later.
-> > 
-> > Correct.
-> 
-> On that; one of the things I wanted to (and previously did attempt but
-> failed) is trying to rotate this cpu. Currently its always the first cpu
-> (of the group) and that gives a noticeable bias.
-> 
-> If we could slowly rotate the cpu that does this that would alleviate
-> both the load and cost bias.
+While working on the conversion of the s390 port to use memblock and
+nobootmem instead of bootmem I discovered two small bugs:
 
->From a load perspective wouldn't it be better to pick the least loaded
-cpu in the group? It is not cheap to implement, but in theory it should
-give less balancing within the group later an less unfairness until it
-happens.
+alloc_memory_core_early() in mm/nobootmem.c called memblock_reserve()
+without forwarding the return value of memblock_reserve().
 
-Rotating the cpu is probably good enough for most cases and certainly
-easier to implement.
+free_low_memory_core() (used by free_all_bootmem) in mm/nobootmem.c
+already took care of releasing the memblock.reserved array in case
+it has been allocated using memblock itself. This behaviour was
+missing for memblock.memory.
+Cases where memblock.memory grows bigger than the initial 128 entries
+have been seen. So this should be supported as well.
 
-> 
-> One thing I was thinking of is keeping a global counter maybe:
->  'x := jiffies >> n'
-> might be good enough and using the 'x % nr_cpus_in_group'-th cpu
-> instead.
-> 
-> Then again, these are micro issue and not a lot of people complain
-> about this.
+Philipp Hachtmann (2):
+  mm, nobootmem: Add return value check in __alloc_memory_core_early()
+  mm: free memblock.memory in free_all_bootmem
 
-The bias continues after they first round of load balance by the other
-cpus?
+ include/linux/memblock.h |  1 +
+ mm/memblock.c            | 12 ++++++++++++
+ mm/nobootmem.c           | 11 +++++++++--
+ 3 files changed, 22 insertions(+), 2 deletions(-)
 
-Pulling everything to one cpu is not ideal from a performance point of
-view. You loose some available cpu cycles until the balance settles.
-However, it is not easy to do better and maintain scalability at the
-same time.
+-- 
+1.8.4.5
+
