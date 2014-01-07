@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961AbaAGUin (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 15:38:43 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:41083 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753382AbaAGUih (ORCPT
+	id S1753907AbaAGUlc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 15:41:32 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56361 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751541AbaAGUlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 15:38:37 -0500
-Date: Tue, 7 Jan 2014 21:37:52 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: Alex Shi <alex.shi@linaro.org>, "mingo@redhat.com" <mingo@redhat.com>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "pjt@google.com" <pjt@google.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "jason.low2@hp.com" <jason.low2@hp.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] sched: bias to target cpu load to reduce task moving
-Message-ID: <20140107203752.GC2480@laptop.programming.kicks-ass.net>
-References: <20131217153809.GP21999@twins.programming.kicks-ass.net>
- <52B2F5D0.2050707@linaro.org>
- <20131220111926.GA11605@e103034-lin>
- <52BAF292.1070404@linaro.org>
- <20140102160404.GA3000@e103034-lin>
- <52CAB12B.4090701@linaro.org>
- <20140107125518.GE2936@e103034-lin>
- <20140107125930.GW31570@twins.programming.kicks-ass.net>
- <20140107131523.GX3694@twins.programming.kicks-ass.net>
- <20140107151632.GF2936@e103034-lin>
+	Tue, 7 Jan 2014 15:41:24 -0500
+Message-ID: <52CC666F.1010501@wwwdotorg.org>
+Date: Tue, 07 Jan 2014 13:41:19 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140107151632.GF2936@e103034-lin>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Landley <rob@landley.net>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Danny Huang <dahuang@nvidia.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 2/6] misc: fuse: Add efuse driver for Tegra
+References: <1387891931-9854-1-git-send-email-pdeschrijver@nvidia.com> <1387891931-9854-3-git-send-email-pdeschrijver@nvidia.com> <52CB12D8.7000203@wwwdotorg.org> <20140107140502.GE26588@tbergstrom-lnx.Nvidia.com>
+In-Reply-To: <20140107140502.GE26588@tbergstrom-lnx.Nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 03:16:32PM +0000, Morten Rasmussen wrote:
-> From a load perspective wouldn't it be better to pick the least loaded
-> cpu in the group? It is not cheap to implement, but in theory it should
-> give less balancing within the group later an less unfairness until it
-> happens.
+On 01/07/2014 07:05 AM, Peter De Schrijver wrote:
+> On Mon, Jan 06, 2014 at 09:32:24PM +0100, Stephen Warren wrote:
+>> On 12/24/2013 06:32 AM, Peter De Schrijver wrote:
+>>> Implement fuse driver for Tegra20, Tegra30, Tegra114 and Tegra124.
 
-I tried that; see 04f733b4afac5dc93ae9b0a8703c60b87def491e for why it
-doesn't work.
+>>> diff --git a/drivers/misc/fuse/tegra/fuse-tegra20.c b/drivers/misc/fuse/tegra/fuse-tegra20.c
+>>
+>>> +static int fuse_size;
+>>
+>> I don't think that's used.
+>>
+>>> +static u32 tegra20_fuse_readl(const unsigned int offset)
+>> ...
+>>> +	ret = tegra_apb_readl_using_dma(fuse_phys + FUSE_BEGIN + offset, &val);
+>>
+>> Shouldn't this use the generic tegra_apb_readl(), so that it works
+>> irrespective of whether the Tegra20 APB DMA driver is available?
+>
+> tegra_apb_readl() doesn't work reliably on Tegra20 for reading the fuses.
+> So if the Tegra20 APB DMA, this driver should also be unavailable.
 
-> Rotating the cpu is probably good enough for most cases and certainly
-> easier to implement.
+There's no "depends TEGRA20_APB_DMA" in the Kconfig. Perhaps
+ARCH_TEGRA_2x_SOC or FUSE_TEGRA should "select TEGRA20_APB_DMA"?
 
-Indeed.
+>>> +static int tegra_fuse_probe(struct platform_device *pdev)
+>> ...
+>>> +	fuse_randomness();
+>>
+>> If this is a driver, and particularly if this could be in a module, is
+>> there any guarantee at all that fuse_randomness() gets called early
+>> enough to be useful?
+> 
+> For a module this might be true yes... Should we disallow this making a
+> module?
 
-> The bias continues after they first round of load balance by the other
-> cpus?
-
-The cost, yes. Even when perfectly balanced, we still get to iterate the
-entire machine computing s[gd]_lb_stats to find out we're good and don't
-need to move tasks about.
-
-> Pulling everything to one cpu is not ideal from a performance point of
-> view. You loose some available cpu cycles until the balance settles.
-> However, it is not easy to do better and maintain scalability at the
-> same time.
-
-Right, its part of the cost we pay for scaling better. And rotating this
-cost around a bit would alleviate the obvious bias.
-
+That would simplify things, I expect...
 
