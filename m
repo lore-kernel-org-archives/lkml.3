@@ -1,168 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751152AbaAGLhp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 06:37:45 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57319 "EHLO arroyo.ext.ti.com"
+	id S1750958AbaAGLnj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 06:43:39 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:26129 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750851AbaAGLhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 06:37:37 -0500
-Message-ID: <52CBE66B.7050802@ti.com>
-Date: Tue, 7 Jan 2014 07:35:07 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1750747AbaAGLna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 06:43:30 -0500
+Message-ID: <52CBE83A.3080105@parallels.com>
+Date: Tue, 07 Jan 2014 15:42:50 +0400
+From: Vasily Averin <vvs@parallels.com>
+Organization: Parallels
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Frodo Looijaard <frodol@dds.nl>,
-        <lm-sensors@lm-sensors.org>,
-        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>, <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] hwmon/sensors: fix SENSORS_LM75 dependencies
-References: <20140106204020.b47e53cc3ead8f90164ef5b7@canb.auug.org.au> <52CB0948.6030702@infradead.org> <20140106203209.GA21630@roeck-us.net> <52CB53DC.4030901@infradead.org> <52CB65DA.2010103@roeck-us.net>
-In-Reply-To: <52CB65DA.2010103@roeck-us.net>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="jOKTowXeSpRJfk0k0foVC5uN3dqI6oJq0"
+To: netfilter-devel@vger.kernel.org
+CC: Andrey Vagin <avagin@openvz.org>, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vvs@openvz.org,
+        Florian Westphal <fw@strlen.de>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: Re: [PATCH] netfilter: nf_conntrack: fix RCU race in nf_conntrack_find_get
+References: <1389090711-15843-1-git-send-email-avagin@openvz.org>
+In-Reply-To: <1389090711-15843-1-git-send-email-avagin@openvz.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---jOKTowXeSpRJfk0k0foVC5uN3dqI6oJq0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 01/07/2014 02:31 PM, Andrey Vagin wrote:
+> Lets look at destroy_conntrack:
+> 
+> hlist_nulls_del_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode);
+> ...
+> nf_conntrack_free(ct)
+> 	kmem_cache_free(net->ct.nf_conntrack_cachep, ct);
+> 
+> net->ct.nf_conntrack_cachep is created with SLAB_DESTROY_BY_RCU.
+> 
+> The hash is protected by rcu, so readers look up conntracks without
+> locks.
+> A conntrack is removed from the hash, but in this moment a few readers
+> still can use the conntrack. Then this conntrack is released and another
+> thread creates conntrack with the same address and the equal tuple.
+> After this a reader starts to validate the conntrack:
+> * It's not dying, because a new conntrack was created
+> * nf_ct_tuple_equal() returns true.
+> 
+> But this conntrack is not initialized yet, so it can not be used by two
+> threads concurrently. In this case BUG_ON may be triggered from
+> nf_nat_setup_info().
+> 
+> Florian Westphal suggested to check the confirm bit too. I think it's
+> right.
+> 
+> task 1			task 2			task 3
+> 			nf_conntrack_find_get
+> 			 ____nf_conntrack_find
+> destroy_conntrack
+>  hlist_nulls_del_rcu
+>  nf_conntrack_free
+>  kmem_cache_free
+> 						__nf_conntrack_alloc
+> 						 kmem_cache_alloc
+> 						 memset(&ct->tuplehash[IP_CT_DIR_MAX],
+> 			 if (nf_ct_is_dying(ct))
+> 			 if (!nf_ct_tuple_equal()
+> 
+> I'm not sure, that I have ever seen this race condition in a real life.
+> Currently we are investigating a bug, which is reproduced on a few node.
+> In our case one conntrack is initialized from a few tasks concurrently,
+> we don't have any other explanation for this.
 
-On 06-01-2014 22:26, Guenter Roeck wrote:
-> On 01/06/2014 05:09 PM, Randy Dunlap wrote:
->> On 01/06/14 12:32, Guenter Roeck wrote:
->>> On Mon, Jan 06, 2014 at 11:51:36AM -0800, Randy Dunlap wrote:
->>>> On 01/06/14 01:40, Stephen Rothwell wrote:
->>>>> Hi all,
->>>>>
->>>>> This tree fails (more than usual) the powerpc allyesconfig build.
->>>>>
->>>>> Changes since 20131224:
->>>>>
->>>>
->>>>
->>>> on i386:
->>>>
->>>> drivers/built-in.o: In function `lm75_remove':
->>>> lm75.c:(.text+0x12bd8c): undefined reference to
->>>> `thermal_zone_of_sensor_unregister'
->>>> drivers/built-in.o: In function `lm75_probe':
->>>> lm75.c:(.text+0x12c123): undefined reference to
->>>> `thermal_zone_of_sensor_register'
->>>>
->>>
->>> AFAICS that is a dependency problem in thermal code.
->>> CONFIG_THERMAL=3Dm defines the symbols, but CONFIG_SENSORS_LM75=3Dy.
->>
->> CONFIG_THERMAL_OF defines the symbols.
->>
->> It looks to me like drivers/hwmon/Kconfig SENSORS_LM75 entry needs a
->>     depends on THERMAL_OF
->> line, but that won't fix this build error.
->> The problem (once again, not the first time that I have seen this one)=
+I would add; this strange traffic is generated by botnet clients (/etc/atdd and /boot/.IptabLes)
+Several threads are send lot of identical tcp packets via RAW socket.
+https://bugzilla.openvz.org/show_bug.cgi?id=2851
 
->> is that
->> we have a tristate =3Dm that depends on a bool =3Dy.
->>
->> Hm, I bet a "depends on THERMAL" for SENSORS_LM75 will fix this.
->> [test]
->> Yes, that restricts (limits) SENSORS_LM75 to n/m; y is not possible.
->>
->> Patch for your consideration is below.
->>
->>>
->>> Up to the thermal folks to fix; if the code ends up in mainline we'll=
+> <2>[46267.083061] kernel BUG at net/ipv4/netfilter/nf_nat_core.c:322!
+> ...
+> <4>[46267.083951] RIP: 0010:[<ffffffffa01e00a4>]  [<ffffffffa01e00a4>] nf_nat_setup_info+0x564/0x590 [nf_nat]
+> ...
+> <4>[46267.085549] Call Trace:
+> <4>[46267.085622]  [<ffffffffa023421b>] alloc_null_binding+0x5b/0xa0 [iptable_nat]
+> <4>[46267.085697]  [<ffffffffa02342bc>] nf_nat_rule_find+0x5c/0x80 [iptable_nat]
+> <4>[46267.085770]  [<ffffffffa0234521>] nf_nat_fn+0x111/0x260 [iptable_nat]
+> <4>[46267.085843]  [<ffffffffa0234798>] nf_nat_out+0x48/0xd0 [iptable_nat]
+> <4>[46267.085919]  [<ffffffff814841b9>] nf_iterate+0x69/0xb0
+> <4>[46267.085991]  [<ffffffff81494e70>] ? ip_finish_output+0x0/0x2f0
+> <4>[46267.086063]  [<ffffffff81484374>] nf_hook_slow+0x74/0x110
+> <4>[46267.086133]  [<ffffffff81494e70>] ? ip_finish_output+0x0/0x2f0
+> <4>[46267.086207]  [<ffffffff814b5890>] ? dst_output+0x0/0x20
+> <4>[46267.086277]  [<ffffffff81495204>] ip_output+0xa4/0xc0
+> <4>[46267.086346]  [<ffffffff814b65a4>] raw_sendmsg+0x8b4/0x910
+> <4>[46267.086419]  [<ffffffff814c10fa>] inet_sendmsg+0x4a/0xb0
+> <4>[46267.086491]  [<ffffffff814459aa>] ? sock_update_classid+0x3a/0x50
+> <4>[46267.086562]  [<ffffffff81444d67>] sock_sendmsg+0x117/0x140
+> <4>[46267.086638]  [<ffffffff8151997b>] ? _spin_unlock_bh+0x1b/0x20
+> <4>[46267.086712]  [<ffffffff8109d370>] ? autoremove_wake_function+0x0/0x40
+> <4>[46267.086785]  [<ffffffff81495e80>] ? do_ip_setsockopt+0x90/0xd80
+> <4>[46267.086858]  [<ffffffff8100be0e>] ? call_function_interrupt+0xe/0x20
+> <4>[46267.086936]  [<ffffffff8118cb10>] ? ub_slab_ptr+0x20/0x90
+> <4>[46267.087006]  [<ffffffff8118cb10>] ? ub_slab_ptr+0x20/0x90
+> <4>[46267.087081]  [<ffffffff8118f2e8>] ? kmem_cache_alloc+0xd8/0x1e0
+> <4>[46267.087151]  [<ffffffff81445599>] sys_sendto+0x139/0x190
+> <4>[46267.087229]  [<ffffffff81448c0d>] ? sock_setsockopt+0x16d/0x6f0
+> <4>[46267.087303]  [<ffffffff810efa47>] ? audit_syscall_entry+0x1d7/0x200
+> <4>[46267.087378]  [<ffffffff810ef795>] ? __audit_syscall_exit+0x265/0x290
+> <4>[46267.087454]  [<ffffffff81474885>] ? compat_sys_setsockopt+0x75/0x210
+> <4>[46267.087531]  [<ffffffff81474b5f>] compat_sys_socketcall+0x13f/0x210
+> <4>[46267.087607]  [<ffffffff8104dea3>] ia32_sysret+0x0/0x5
+> <4>[46267.087676] Code: 91 20 e2 01 75 29 48 89 de 4c 89 f7 e8 56 fa ff ff 85 c0 0f 84 68 fc ff ff 0f b6 4d c6 41 8b 45 00 e9 4d fb ff ff e8 7c 19 e9 e0 <0f> 0b eb fe f6 05 17 91 20 e2 80 74 ce 80 3d 5f 2e 00 00 00 74
+> <1>[46267.088023] RIP  [<ffffffffa01e00a4>] nf_nat_setup_info+0x564/0x590
+> 
+> Cc: Florian Westphal <fw@strlen.de>
+> Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+> Cc: Patrick McHardy <kaber@trash.net>
+> Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+> Signed-off-by: Andrey Vagin <avagin@openvz.org>
+> ---
+>  net/netfilter/nf_conntrack_core.c | 6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
+> index 43549eb..7a34bb2 100644
+> --- a/net/netfilter/nf_conntrack_core.c
+> +++ b/net/netfilter/nf_conntrack_core.c
+> @@ -387,8 +387,12 @@ begin:
+>  			     !atomic_inc_not_zero(&ct->ct_general.use)))
+>  			h = NULL;
+>  		else {
+> +			/* A conntrack can be recreated with the equal tuple,
+> +			 * so we need to check that the conntrack is initialized
+> +			 */
+>  			if (unlikely(!nf_ct_tuple_equal(tuple, &h->tuple) ||
+> -				     nf_ct_zone(ct) != zone)) {
+> +				     nf_ct_zone(ct) != zone) ||
+> +				     !nf_ct_is_confirmed(ct)) {
+>  				nf_ct_put(ct);
+>  				goto begin;
+>  			}
+> 
 
->>> have to
->>> revert the patch introducing the calls to the lm75 driver (and the
->>> tmp102 driver
->>> which has the same issue).
->>>
->>> Another oddity is the help text to THERMAL_OF, which states that it
->>> supports
->>> reading and parsing thermal data definitions out of dt but fails to
->>> mention
->>> that it also provides the above API functions.
->>
->> ---
->> From: Randy Dunlap <rdunlap@infradead.org>
->>
->> Fix SENSORS_LM75 dependencies to eliminate build errors:
->>
->> drivers/built-in.o: In function `lm75_remove':
->> lm75.c:(.text+0x12bd8c): undefined reference to
->> `thermal_zone_of_sensor_unregister'
->> drivers/built-in.o: In function `lm75_probe':
->> lm75.c:(.text+0x12c123): undefined reference to
->> `thermal_zone_of_sensor_register'
->>
->> Add depends on THERMAL_OF since that is what provides the
->> register/unregister functions above.
->>
->> Add depends on THERMAL since THERMAL is a tristate (while THERMAL_OF
->> is a bool) and SENSORS_LM75 (tristate) needs to be limited to modular
->> builds when THERMAL=3Dm.
->>
->> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
->> ---
->>   drivers/hwmon/Kconfig |    2 ++
->>   1 file changed, 2 insertions(+)
->>
->> --- linux-next-20140106.orig/drivers/hwmon/Kconfig
->> +++ linux-next-20140106/drivers/hwmon/Kconfig
->> @@ -650,6 +650,8 @@ config SENSORS_LM73
->>   config SENSORS_LM75
->>       tristate "National Semiconductor LM75 and compatibles"
->>       depends on I2C
->> +    depends on THERMAL
->> +    depends on THERMAL_OF
->>       help
->>         If you say yes here you get support for one common type of
->>         temperature sensor chip, with models including:
->>
->>
-> NACK. The driver does not and must not depend on THERMAL. This needs to=
-
-> be addressed
-> in the thermal code, for example with dummy declarations if THERMAL=3Dm=
- but
-> SENSORS_LM75=3Dy. The functions are already declared as dummies if
-> THERMAL_OF=3Dn.
-
-What do you mean by that? The code of an API provider needs to keep
-track of all its users?
-
->=20
-> Guenter
->=20
->=20
->=20
-
-
---=20
-You have got to be excited about what you are doing. (L. Lamport)
-
-Eduardo Valentin
-
-
---jOKTowXeSpRJfk0k0foVC5uN3dqI6oJq0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlLL5msACgkQCXcVR3XQvP2LAwEA0pXFKG7PN4uQojQ8P5XC0u5V
-aeWxolVJd3s/QXXq8rEBAIKwaUkbVdk4rLbGfuA4XLZRODBVky/PN5V3qgpjRW5X
-=wMDs
------END PGP SIGNATURE-----
-
---jOKTowXeSpRJfk0k0foVC5uN3dqI6oJq0--
