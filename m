@@ -1,54 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752408AbaAGPIG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 10:08:06 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:48261 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910AbaAGPH5 (ORCPT
+	id S1752475AbaAGPIc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 10:08:32 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:53309 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158AbaAGPI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 10:07:57 -0500
-Date: Tue, 7 Jan 2014 16:07:38 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: "Zhang, Rui" <rui.zhang@intel.com>, Guenter Roeck <linux@roeck-us.net>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH] hwmon/sensors: fix SENSORS_LM75 dependencies
-Message-ID: <20140107160738.4a76a6d0@endymion.delvare>
-In-Reply-To: <52CC15F0.6020209@ti.com>
-References: <20140106204020.b47e53cc3ead8f90164ef5b7@canb.auug.org.au>
-	<52CB0948.6030702@infradead.org>
-	<20140106203209.GA21630@roeck-us.net>
-	<52CB53DC.4030901@infradead.org>
-	<52CB65DA.2010103@roeck-us.net>
-	<20140107130401.23bffcd2@endymion.delvare>
-	<52CBF1CF.2000603@ti.com>
-	<744357E9AAD1214791ACBA4B0B909263011BC64C@SHSMSX101.ccr.corp.intel.com>
-	<52CC15F0.6020209@ti.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 7 Jan 2014 10:08:29 -0500
+Message-ID: <1389107305.26646.20.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] netfilter: nf_conntrack: fix RCU race in
+ nf_conntrack_find_get
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrey Vagin <avagin@openvz.org>
+Cc: netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vvs@openvz.org,
+        Florian Westphal <fw@strlen.de>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Date: Tue, 07 Jan 2014 07:08:25 -0800
+In-Reply-To: <1389090711-15843-1-git-send-email-avagin@openvz.org>
+References: <1389090711-15843-1-git-send-email-avagin@openvz.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Jan 2014 10:57:52 -0400, Eduardo Valentin wrote:
-> On 07-01-2014 10:05, Zhang, Rui wrote:
-> > BTW, I've been thinking of make CONFIG_THERMAL a bool since long time ago, the only thing that blocks me is that Thermal subsystem needs to register a hwmon device for each thermal zone and CONFIG_HWMON is a tristate.
+On Tue, 2014-01-07 at 14:31 +0400, Andrey Vagin wrote:
+> Lets look at destroy_conntrack:
 > 
-> I agree with the move of having CONFIG_THERMAL as bool. Unless you have
-> use cases where users are dynamically loading and unloading thermal per
-> user demand, which I doubt.
+> hlist_nulls_del_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode);
+> ...
+> nf_conntrack_free(ct)
+> 	kmem_cache_free(net->ct.nf_conntrack_cachep, ct);
+> 
+> net->ct.nf_conntrack_cachep is created with SLAB_DESTROY_BY_RCU.
+> 
+> The hash is protected by rcu, so readers look up conntracks without
+> locks.
+> A conntrack is removed from the hash, but in this moment a few readers
+> still can use the conntrack. Then this conntrack is released and another
+> thread creates conntrack with the same address and the equal tuple.
+> After this a reader starts to validate the conntrack:
+> * It's not dying, because a new conntrack was created
+> * nf_ct_tuple_equal() returns true.
+> 
+> But this conntrack is not initialized yet, so it can not be used by two
+> threads concurrently. In this case BUG_ON may be triggered from
+> nf_nat_setup_info().
+> 
+> Florian Westphal suggested to check the confirm bit too. I think it's
+> right.
+> 
+> task 1			task 2			task 3
+> 			nf_conntrack_find_get
+> 			 ____nf_conntrack_find
+> destroy_conntrack
+>  hlist_nulls_del_rcu
+>  nf_conntrack_free
+>  kmem_cache_free
+> 						__nf_conntrack_alloc
+> 						 kmem_cache_alloc
+> 						 memset(&ct->tuplehash[IP_CT_DIR_MAX],
+> 			 if (nf_ct_is_dying(ct))
+> 			 if (!nf_ct_tuple_equal()
+> 
+> I'm not sure, that I have ever seen this race condition in a real life.
+> Currently we are investigating a bug, which is reproduced on a few node.
+> In our case one conntrack is initialized from a few tasks concurrently,
+> we don't have any other explanation for this.
 
-Modularity is not only about reloading modules (although this can be
-useful for developers in particular.) It's also about enabling many
-features in a generic distribution kernel and each feature only gets
-loaded/used on the hardware which needs it. This is why, as a
-distribution kernel maintainer, I keep complaining when I see boolean
-options which might easily be tristates.
+> 
+> Cc: Florian Westphal <fw@strlen.de>
+> Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+> Cc: Patrick McHardy <kaber@trash.net>
+> Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+> Signed-off-by: Andrey Vagin <avagin@openvz.org>
+> ---
+>  net/netfilter/nf_conntrack_core.c | 6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
+> index 43549eb..7a34bb2 100644
+> --- a/net/netfilter/nf_conntrack_core.c
+> +++ b/net/netfilter/nf_conntrack_core.c
+> @@ -387,8 +387,12 @@ begin:
+>  			     !atomic_inc_not_zero(&ct->ct_general.use)))
+>  			h = NULL;
+>  		else {
+> +			/* A conntrack can be recreated with the equal tuple,
+> +			 * so we need to check that the conntrack is initialized
+> +			 */
+>  			if (unlikely(!nf_ct_tuple_equal(tuple, &h->tuple) ||
+> -				     nf_ct_zone(ct) != zone)) {
+> +				     nf_ct_zone(ct) != zone) ||
+> +				     !nf_ct_is_confirmed(ct)) {
+>  				nf_ct_put(ct);
+>  				goto begin;
+>  			}
 
--- 
-Jean Delvare
+I do not think this is the right way to fix this problem (if said
+problem is confirmed)
+
+Remember the rule about SLAB_DESTROY_BY_RCU :
+
+When a struct is freed, then reused, its important to set the its refcnt
+(from 0 to 1) only when the structure is fully ready for use.
+
+If a lookup finds a structure which is not yet setup, the
+atomic_inc_not_zero() will fail.
+
+Take a look at sk_clone_lock() and Documentation/RCU/rculist_nulls.txt
+
+
+
+
+
