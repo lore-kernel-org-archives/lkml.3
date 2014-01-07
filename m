@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186AbaAGPkY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 10:40:24 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:37100 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753136AbaAGPkK (ORCPT
+	id S1752741AbaAGPmD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 10:42:03 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:48642 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750933AbaAGPly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 10:40:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140105222346.GA25152@amd.pavel.ucw.cz>
-References: <1388362275-1618-1-git-send-email-lgxue@hotmail.com>
-	<20131230162158.7420e811@alan.etchedpixels.co.uk>
-	<BLU172-W451DF59115DB2B0A7F694AACC90@phx.gbl>
-	<20140101201053.12be7d27@alan.etchedpixels.co.uk>
-	<alpine.DEB.2.02.1401011423180.27645@nftneq.ynat.uz>
-	<20140101230135.48f6f781@alan.etchedpixels.co.uk>
-	<alpine.DEB.2.02.1401011547340.27645@nftneq.ynat.uz>
-	<CAK5ve-KTQvJeLXmJt-NgPy6Ju+kBzWVoSQB7TKR9TW+mfD=bxg@mail.gmail.com>
-	<20140103152313.4fd5c48f@alan.etchedpixels.co.uk>
-	<20140105222346.GA25152@amd.pavel.ucw.cz>
-Date: Tue, 7 Jan 2014 16:40:06 +0100
-Message-ID: <CACRpkdZT+fd0nZmzqwO+PVZWG_4M4Fas1SqG9CRAho6LwSAFgQ@mail.gmail.com>
-Subject: Re: n900 led compiler (was Re: [PATCH] Add LED pattern trigger)
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        Sebastian Reichel <sre@ring0.de>, "Kim, Milo" <milo.kim@ti.com>,
-        Bryan Wu <cooloney@gmail.com>, David Lang <david@lang.hm>,
-        Joe Xue <lgxue@hotmail.com>, "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+	Tue, 7 Jan 2014 10:41:54 -0500
+Date: Tue, 7 Jan 2014 15:41:54 +0000
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "pjt@google.com" <pjt@google.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "alex.shi@linaro.org" <alex.shi@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "amit.kucheria@linaro.org" <amit.kucheria@linaro.org>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>
+Subject: Re: [RFC] sched: CPU topology try
+Message-ID: <20140107154154.GH2936@e103034-lin>
+References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
+ <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
+ <52B87149.4010801@arm.com>
+ <CAKfTPtDmb1fa8PUcrqEGaoQLxoPBddu-Yn_oS8KwsCJJWJzQug@mail.gmail.com>
+ <20140106163123.GN31570@twins.programming.kicks-ass.net>
+ <CAKfTPtDind8HGJwu0odSnNdRpaxp3VB3JWw3eADAp4bL4Ex-Mw@mail.gmail.com>
+ <20140107132220.GZ31570@twins.programming.kicks-ass.net>
+ <20140107141059.GY3694@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140107141059.GY3694@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 5, 2014 at 11:23 PM, Pavel Machek <pavel@ucw.cz> wrote:
+On Tue, Jan 07, 2014 at 02:10:59PM +0000, Peter Zijlstra wrote:
+> On Tue, Jan 07, 2014 at 02:22:20PM +0100, Peter Zijlstra wrote:
+> 
+> I just realized there's two different p's in there.
+> 
+> > Ah, another way of looking at it is that the avg without blocked
+> > component is a 'now' picture. It is the load we are concerned with right
+> > now.
+> > 
+> > The more blocked we add the further out we look; with the obvious limit
+> > of the entire averaging period.
+> > 
+> > So the avg that is runnable is right now, t_0; the avg that is runnable +
+> > blocked is t_0 + p, where p is the avg period over which we expect the
+> > blocked contribution to appear.
+> 
+> So the above p for period, is unrelated to the below p which is a
+> probability function.
+> 
+> > So something like:
+> > 
+> >   avg = runnable + p(i) * blocked; where p(i) \e [0,1]
+> > 
+> > could maybe be used to replace the cpu_load array and still represent
+> > the concept of looking at a bigger picture for larger sets. Leaving open
+> > the details of the map p.
+> 
+> We probably want to assume task wakeup is constant over time, so p (our
+> probability function) should probably be an exponential distribution.
 
-> I implemented compiler for it (should we put it into tools/ somewhere?)
+Ah, makes more sense now.
 
-We have a precedent for putting firmware compilers into the kernel
-tree:
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/drivers/scsi/aic7xxx/aicasm
+You propose that we don't actually try keep track of which tasks that
+might wake up when, but just factor in more and more of the blocked load
+depending on how conservative the load estimate we want?
 
-But that one used FLEX. And I think the assumption is that then
-you store the firmware source with the driver, and the sysfs (or similar)
-interface would just load and trigger one of the pre-defined firmware
-programs, not have it be sent in from userspace.
-
-Yours,
-Linus Walleij
+I think that could work if we sort of the priority scaling issue that I
+mentioned before.
