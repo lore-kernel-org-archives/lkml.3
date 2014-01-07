@@ -1,113 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932AbaAGTpE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 14:45:04 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:43628 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752610AbaAGToz (ORCPT
+	id S1753540AbaAGTyY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 14:54:24 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:48506 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752413AbaAGTyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 14:44:55 -0500
-Date: Tue, 7 Jan 2014 11:43:56 -0800
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Christoph Hellwig <hch@infradead.org>,
-        Jan Kara <jack@suse.cz>, Aurelien Jarno <aurelien@aurel32.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Rob Browning <rlb@defaultvalue.org>,
-        Dave Chinner <david@fromorbit.com>, Miklos Szeredi <miklos@szeredi.hu>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [RFC PATCH] fs: xattr-based FS_IOC_[GS]ETFLAGS interface
-Message-ID: <20140107194356.GC9229@birch.djwong.org>
-References: <20140107025855.GA9229@birch.djwong.org>
- <20140107124831.GD16640@quack.suse.cz>
- <20140107154935.GA17609@infradead.org>
- <20140107170430.GA2822@thunk.org>
+	Tue, 7 Jan 2014 14:54:14 -0500
+Date: Tue, 7 Jan 2014 11:54:12 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 3/7] mfd: pm8921: Migrate to irqdomains
+Message-ID: <20140107195412.GC14405@codeaurora.org>
+References: <1387831563-13535-1-git-send-email-sboyd@codeaurora.org>
+ <1387831563-13535-4-git-send-email-sboyd@codeaurora.org>
+ <20140106155350.GI30156@lee--X1>
+ <52CB1323.6080200@codeaurora.org>
+ <20140107082233.GB3182@lee--X1>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140107170430.GA2822@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <20140107082233.GB3182@lee--X1>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 12:04:30PM -0500, Theodore Ts'o wrote:
-> On Tue, Jan 07, 2014 at 07:49:35AM -0800, Christoph Hellwig wrote:
-> > On Tue, Jan 07, 2014 at 01:48:31PM +0100, Jan Kara wrote:
-> > >   I have to say I'm not thrilled by the idea of juggling strings in
-> > > userspace and in kernel to set a flag for an inode...
+On 01/07, Lee Jones wrote:
+> > >> +	return of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
+> > >> +}
+> > > Can't you use the MFD core instead?
+> > >
 > > 
-> > Nevermind the massive amounts of code that sit in the filesystem.
+> > Are you suggesting using mfd_add_devices()? At first glance it looks
+> > like that would require an array of mfd_cell structures that do nothing
+> > besides match compatible strings in the DT. Using of_platform_populate()
+> > achieves the same goal and doesn't require an array of mfd_cell
+> > structures for each different pm8xxx chip that comes along, meaning
+> > simpler code.
 > 
-> The reason for this patch was to address what Dave Chinner has called
-> "a shitty interface"[1].  Using bitfields that need to be coordinated
-> across file systems, when sometimes a bit assignment is validly a fs
-> specific thing, and then later becomes something that gets shared
-> across file systems.
+> I'm inclined to agree, but playing Devil's advocate here, as a device
+> using the MFD subsystem it's often clearer to readers and other people
+> looking for examples if the MFD core functionality is used. For
+> instance, I now have no idea what devices the PM8xxx encompasses
+> without looking at the DTS file. A small cell structure is a small
+> price to pay for code clarity IMHO.
 > 
-> [1] http://thread.gmane.org/gmane.linux.file-systems/80164/focus=80396
-> 
-> If we don't go about it this way, there are alternatives: we could
-> create new ioctls (or a new syscall) as we start running out of bits
-> used by FS_IOC_[GS]ETFLAGS.  We can create new ioctls for bits which
-> are intended for fs-specific flags, which then later get promoted to
-> the new syscall when some functionality starts to get shared accross
-> other file systems (probably with a different bit assignment).  This
-> is certainly less code, but it does mean more complexity outside of
-> the code when we try to coordinate new functionality across file
-> systems.
 
-I had thought of indexed inode flags as an alternative to the xattr/string
-parsing thing.  Feature flags make their first appearance as part of a per-FS
-flag-space and are migrated to the common flag-space when there is demand.
-It would also avoid the need for each fs to create its own flag ioctl.
+Why not just put that information in the binding document? And
+how is this different from adding a bunch of C files to match a
+set of compatible strings that a dts file has just so that we can
+add all the devices on a board (think board files for an SoC).
+Sure it documents the devices on a board, but we've been moving
+away from that by using of_platform_populate().
 
-On the other hand, someone suggested I try remaking IOC_[GS]ETFLAG as an xattr,
-so off I went. :)
+IMHO the code is clear. I want to add all subnodes of this
+device's node as children struct devices. Using
+of_platform_populate() says that, whereas mfd_add_devices() says
+I want to add these specific subnodes of this device's node.
 
-#define FS_IOC_FLAGS_COMMON	0
-#define FS_IOC_FLAGS_COMMON2	1
-#define FS_IOC_FLAGS_EXT4	0xEF53
+Also, as more drivers are written and more bindings are ratified
+this platform driver will need to be updated with more cells and
+more compatible strings, causing more inter-tree dependencies and
+more patches. Please, let's avoid this if we can.
 
-struct inode_flag_ioctl {
-	u32 flag;
-	u32 value;	/* or u64? */
-};
-#define FS_IOC_GETFLAGS2 _IOR('f', 12, struct inode_flag_ioctl);
-#define FS_IOC_SETFLAGS2 _IOW('f', 13, struct inode_flag_ioctl);
-
-foo() {
-	struct inode_flag_ioctl if;
-
-	if.flag = FS_IOC_FLAGS_COMMON;
-	ioctl(fd, FS_IOC_GETFLAGS2, &if);
-	printf("%d\n", if.value);
-
-	if.flag = FS_IOC_FLAGS_EXT4;
-	if.value = EXT5_BONGHITS_FL | EXT4_EA_INODE_FL;
-	ioctl(fd, FS_IOC_SETFLAGS2, &if);
-}
-
-> Personally, I don't mind dealing with codepoint assignments, but my
-> impression is that this is a minority viewpoint.  Al and Linus have
-> historically hated bitfields, and Al in the past has spoken favorably
-> of Plan 9's approach of using strings for the system interface.
-
-I prefer strings too, but I suppose one pays for the complexity.  Given that
-all the flags so far seem to have been booleans, this could be good enough.
-
-> So while I have a preference towards using bitfields, as opposed to
-> using the xattr approach, what I'd really like is that we make a
-> decision, one way or another, about what's the best way to move
-> forward.
-
-Agreed.
-
---D
-> 
->    	    	     	      	      	  - Ted
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
