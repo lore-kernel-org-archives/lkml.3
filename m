@@ -1,314 +1,411 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723AbaAGXp1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 18:45:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38576 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754426AbaAGXpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 18:45:21 -0500
-Message-ID: <1389138319.3209.142.camel@bling.home>
-Subject: Re: [PATCH] pci: Add "try" reset interfaces
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 07 Jan 2014 16:45:19 -0700
-In-Reply-To: <CAErSpo7ZYsES6kZXjcwr-gwKaXm7DzHBvUGz+cpZBBH7stAAAQ@mail.gmail.com>
-References: <20131216221229.3393.6171.stgit@bling.home>
-	 <CAErSpo7ZYsES6kZXjcwr-gwKaXm7DzHBvUGz+cpZBBH7stAAAQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754533AbaAGXsJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 18:48:09 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43910 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753380AbaAGXsA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 18:48:00 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: lwn@lwn.net
+Subject: [3.8.y.z extended stable] Linux 3.8.13.15
+Date: Tue,  7 Jan 2014 15:47:53 -0800
+Message-Id: <1389138474-27141-1-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-01-07 at 16:15 -0700, Bjorn Helgaas wrote:
-> Hi Alex,
-> 
-> Sorry for the delay in looking at this.
-> 
-> On Mon, Dec 16, 2013 at 3:14 PM, Alex Williamson
-> <alex.williamson@redhat.com> wrote:
-> > When doing a function/slot/bus reset PCI grabs the device_lock for
-> > each device to block things like suspend and driver probes, which is
-> > all well and good, but call paths exist where this lock may already be
-> > held.  This creates an opportunity for deadlock.  For instance, vfio
-> > allows userspace to issue resets so long as it owns the device(s).
-> > If a driver unbind .remove callback races with userspace issuing a
-> > reset, we have a deadlock as userspace gets stuck waiting on
-> > device_lock while another thread has device_lock and waits for .remove
-> > to complete.
-> 
-> Are you talking about vfio_pci_remove() (the vfio_pci_driver .remove()
-> method) racing with vfio_pci_ioctl()?
+I am announcing the release of the Linux 3.8.13.15 kernel.
 
-Yes, for instance if the admin does something like attempt to unbind the
-device from vfio-pci while it's in use.  This can also happen indirectly
-if the device is going away, such as a PF driver attempting to remove
-its VFs.
+The updated 3.8.y tree can be found at: 
+  git://kernel.ubuntu.com/ubuntu/linux.git linux-3.8.y
+and can be browsed at:
+  http://kernel.ubuntu.com/git?p=ubuntu/linux.git;h=refs/heads/linux-3.8.y;a=shortlog
 
-> Or maybe it's vfio_pci_release (the vfio_pci_ops .release() method),
-> since it looks like you want to use pci_try_reset_function() there and
-> in vfio_pci_ioctl()?
+The diff from v3.8.13.14 is posted as a follow-up to this email.
 
-That one too.  If any reset races with pci_driver.remove, whether it be
-from ioctl or my own release callback, we'll hit a deadlock.
+The 3.8.y extended stable tree is maintained by the Ubuntu Kernel Team.
+For more info, see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
 
-> Either way, aren't there at least potentially more locking issues than
-> just the reset problem?  Seems like any ioctl that might take the
-> device_lock could have the same problem.
+ -Kamal
 
-I don't know of any others, but our QE folks hit this one pretty
-regularly.  It can all be explained away as user error, but a user
-should not be able to cause a kernel deadlock, which is why the user
-exposed interfaces are converted to use this try-lock interface.
+-- 
+ Documentation/networking/ip-sysctl.txt       |  3 -
+ Makefile                                     |  2 +-
+ arch/arm/boot/dts/armada-370-xp.dtsi         |  2 +-
+ arch/arm/include/asm/pgtable.h               |  2 +-
+ arch/arm/mach-footbridge/common.c            |  3 +
+ arch/arm/mach-footbridge/dc21285.c           |  2 -
+ arch/arm/mach-footbridge/ebsa285.c           | 22 ++++---
+ arch/arm/mm/mmap.c                           |  2 +-
+ arch/arm/mm/pgd.c                            |  3 +-
+ arch/arm/plat-omap/include/plat/dmtimer.h    |  5 +-
+ arch/powerpc/kernel/signal_32.c              | 16 ++---
+ arch/powerpc/kernel/signal_64.c              |  6 ++
+ arch/s390/crypto/aes_s390.c                  | 50 +++++++++------
+ arch/x86/Makefile                            |  8 ++-
+ block/blk-cgroup.h                           |  8 +--
+ crypto/algif_hash.c                          |  5 +-
+ crypto/algif_skcipher.c                      |  4 +-
+ crypto/authenc.c                             |  7 +-
+ crypto/ccm.c                                 |  3 +-
+ drivers/ata/ahci.c                           |  2 +
+ drivers/ata/ahci_platform.c                  |  1 +
+ drivers/ata/libata-scsi.c                    |  1 +
+ drivers/atm/idt77252.c                       |  2 +-
+ drivers/connector/cn_proc.c                  | 66 +++++++++++--------
+ drivers/cpuidle/cpuidle.c                    |  6 +-
+ drivers/firewire/sbp2.c                      |  1 +
+ drivers/firmware/efivars.c                   | 16 +++--
+ drivers/gpio/gpio-mpc8xxx.c                  |  8 ++-
+ drivers/gpio/gpio-mvebu.c                    |  2 +-
+ drivers/isdn/isdnloop/isdnloop.c             |  8 ++-
+ drivers/isdn/mISDN/socket.c                  | 13 ++--
+ drivers/media/dvb-frontends/cxd2820r_core.c  |  4 +-
+ drivers/misc/enclosure.c                     |  7 ++
+ drivers/net/bonding/bond_sysfs.c             | 11 +++-
+ drivers/net/can/c_can/c_can.c                | 21 ++++--
+ drivers/net/can/flexcan.c                    |  2 +-
+ drivers/net/can/sja1000/sja1000.c            | 15 +++--
+ drivers/net/ethernet/realtek/8139cp.c        |  5 +-
+ drivers/net/ethernet/realtek/r8169.c         |  5 ++
+ drivers/net/ethernet/smsc/smc91x.h           | 20 +-----
+ drivers/net/macvtap.c                        |  8 ++-
+ drivers/net/ppp/pppoe.c                      |  2 -
+ drivers/net/tun.c                            | 10 ++-
+ drivers/net/usb/usbnet.c                     |  3 -
+ drivers/net/xen-netback/interface.c          | 10 +--
+ drivers/scsi/3w-9xxx.c                       |  3 +-
+ drivers/scsi/3w-sas.c                        |  3 +-
+ drivers/scsi/3w-xxxx.c                       |  3 +-
+ drivers/scsi/aacraid/linit.c                 |  1 +
+ drivers/scsi/arcmsr/arcmsr_hba.c             |  1 +
+ drivers/scsi/bfa/bfa_fcs.h                   |  1 +
+ drivers/scsi/bfa/bfa_fcs_lport.c             | 14 +++-
+ drivers/scsi/bfa/bfad_attr.c                 |  7 +-
+ drivers/scsi/gdth.c                          |  1 +
+ drivers/scsi/hosts.c                         |  1 +
+ drivers/scsi/hpsa.c                          |  5 +-
+ drivers/scsi/ipr.c                           |  3 +-
+ drivers/scsi/ips.c                           |  1 +
+ drivers/scsi/libsas/sas_ata.c                |  2 +-
+ drivers/scsi/megaraid.c                      |  1 +
+ drivers/scsi/megaraid/megaraid_mbox.c        |  1 +
+ drivers/scsi/megaraid/megaraid_sas_base.c    |  1 +
+ drivers/scsi/pmcraid.c                       |  1 +
+ drivers/scsi/sd.c                            |  6 ++
+ drivers/scsi/storvsc_drv.c                   |  1 +
+ drivers/staging/comedi/drivers/amplc_pc263.c |  3 +
+ drivers/staging/comedi/drivers/pcmuio.c      | 11 ++--
+ drivers/staging/comedi/drivers/ssv_dnp.c     |  6 +-
+ drivers/staging/tidspbridge/Kconfig          |  2 +-
+ drivers/staging/vt6656/baseband.c            | 11 ++++
+ drivers/staging/vt6656/rndis.h               |  1 +
+ drivers/staging/zsmalloc/zsmalloc-main.c     | 17 +++--
+ drivers/xen/grant-table.c                    |  6 +-
+ fs/nfs/nfs4proc.c                            | 13 ++--
+ fs/xfs/xfs_ioctl.c                           |  6 ++
+ include/crypto/scatterwalk.h                 |  3 +-
+ include/linux/net.h                          |  8 +++
+ include/linux/random.h                       |  6 +-
+ include/net/ip.h                             |  2 +-
+ include/net/ipv6.h                           |  6 +-
+ include/scsi/scsi_host.h                     |  6 ++
+ include/trace/ftrace.h                       |  5 +-
+ kernel/cpuset.c                              |  8 ++-
+ kernel/irq/pm.c                              |  2 +-
+ kernel/sched/debug.c                         | 10 +++
+ kernel/sched/fair.c                          |  2 +
+ kernel/time/timekeeping.c                    |  2 +-
+ lib/random32.c                               | 14 ++--
+ mm/rmap.c                                    |  4 ++
+ net/appletalk/ddp.c                          | 16 ++---
+ net/atm/common.c                             |  2 -
+ net/ax25/af_ax25.c                           |  4 +-
+ net/bluetooth/af_bluetooth.c                 |  4 --
+ net/bluetooth/hci_sock.c                     |  2 -
+ net/bluetooth/rfcomm/sock.c                  |  1 -
+ net/bluetooth/sco.c                          |  1 -
+ net/bridge/br_if.c                           |  2 +
+ net/caif/caif_socket.c                       |  4 --
+ net/compat.c                                 |  5 +-
+ net/core/dev.c                               |  2 +-
+ net/core/fib_rules.c                         |  3 +-
+ net/core/iovec.c                             |  3 +-
+ net/core/pktgen.c                            |  7 ++
+ net/ieee802154/6lowpan.c                     |  4 +-
+ net/ipv4/datagram.c                          |  2 +-
+ net/ipv4/ip_sockglue.c                       |  3 +-
+ net/ipv4/ip_vti.c                            |  1 +
+ net/ipv4/ping.c                              | 13 ++--
+ net/ipv4/raw.c                               |  6 +-
+ net/ipv4/route.c                             |  8 ++-
+ net/ipv4/tcp.c                               |  6 --
+ net/ipv4/tcp_ipv4.c                          |  2 +-
+ net/ipv4/tcp_metrics.c                       |  5 +-
+ net/ipv4/tcp_output.c                        |  7 +-
+ net/ipv4/udp.c                               | 14 ++--
+ net/ipv6/datagram.c                          |  8 ++-
+ net/ipv6/ip6_output.c                        |  7 +-
+ net/ipv6/ip6_tunnel.c                        |  2 -
+ net/ipv6/raw.c                               |  8 +--
+ net/ipv6/route.c                             |  7 +-
+ net/ipv6/udp.c                               |  9 +--
+ net/ipx/af_ipx.c                             |  3 +-
+ net/irda/af_irda.c                           |  4 --
+ net/iucv/af_iucv.c                           |  2 -
+ net/key/af_key.c                             |  1 -
+ net/l2tp/l2tp_ip.c                           |  4 +-
+ net/l2tp/l2tp_ip6.c                          |  2 +-
+ net/l2tp/l2tp_ppp.c                          |  2 -
+ net/llc/af_llc.c                             |  2 -
+ net/netlink/af_netlink.c                     |  2 -
+ net/netrom/af_netrom.c                       |  3 +-
+ net/nfc/llcp/sock.c                          |  2 -
+ net/nfc/rawsock.c                            |  2 -
+ net/packet/af_packet.c                       | 95 ++++++++++++++++------------
+ net/packet/internal.h                        |  1 +
+ net/phonet/datagram.c                        |  9 ++-
+ net/rds/recv.c                               |  2 -
+ net/rose/af_rose.c                           |  8 ++-
+ net/rxrpc/ar-recvmsg.c                       |  9 ++-
+ net/socket.c                                 | 24 ++++---
+ net/tipc/socket.c                            |  6 --
+ net/unix/af_unix.c                           |  5 --
+ net/x25/af_x25.c                             |  3 +-
+ sound/pci/hda/patch_realtek.c                | 24 +++++++
+ sound/soc/codecs/wm8731.c                    |  4 +-
+ sound/soc/codecs/wm8990.c                    |  2 +
+ 146 files changed, 597 insertions(+), 405 deletions(-)
 
->   How do you make sure there's
-> no userspace owner of the device before you release the device or
-> remove the driver?
+Alexei Starovoitov (1):
+      ipv4: fix race in concurrent ip_route_input_slow()
 
-Userspace has a file descriptor for the device, so we know through
-reference counting when the device becomes unused.  When our
-pci_driver.remove() callback happens we block until the user releases
-the device, so perhaps it more accurate to describe it as a nested lock
-problem than a race, but the paths are asynchronous so even if we tested
-the lock in advance there's a potential race.
+Andreas Henriksson (1):
+      net: Fix "ip rule delete table 256"
 
-If you have better ideas how to solve this, let me know.  Thanks,
+Andrey Vagin (1):
+      tcp: don't update snd_nxt, when a socket is switched from repair mode
 
-Alex
+Andy Adamson (1):
+      NFSv4 wait on recovery for async session errors
 
-> > To resolve this, we can make a version of the reset
-> > interfaces which use trylock.  With this, we can safely attempt a
-> > reset and return error to userspace if there is contention.
-> >
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > ---
-> >  drivers/pci/pci.c   |  155 +++++++++++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/pci.h |    3 +
-> >  2 files changed, 158 insertions(+)
-> >
-> > diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> > index 33120d1..de6416f 100644
-> > --- a/drivers/pci/pci.c
-> > +++ b/drivers/pci/pci.c
-> > @@ -3445,6 +3445,18 @@ static void pci_dev_lock(struct pci_dev *dev)
-> >         device_lock(&dev->dev);
-> >  }
-> >
-> > +/* Return 1 on successful lock, 0 on contention */
-> > +static int pci_dev_trylock(struct pci_dev *dev)
-> > +{
-> > +       if (pci_cfg_access_trylock(dev)) {
-> > +               if (device_trylock(&dev->dev))
-> > +                       return 1;
-> > +               pci_cfg_access_unlock(dev);
-> > +       }
-> > +
-> > +       return 0;
-> > +}
-> > +
-> >  static void pci_dev_unlock(struct pci_dev *dev)
-> >  {
-> >         device_unlock(&dev->dev);
-> > @@ -3588,6 +3600,34 @@ int pci_reset_function(struct pci_dev *dev)
-> >  }
-> >  EXPORT_SYMBOL_GPL(pci_reset_function);
-> >
-> > +/**
-> > + * pci_try_reset_function - quiesce and reset a PCI device function
-> > + * @dev: PCI device to reset
-> > + *
-> > + * Same as above, except return -EAGAIN if unable to lock device.
-> > + */
-> > +int pci_try_reset_function(struct pci_dev *dev)
-> > +{
-> > +       int rc;
-> > +
-> > +       rc = pci_dev_reset(dev, 1);
-> > +       if (rc)
-> > +               return rc;
-> > +
-> > +       pci_dev_save_and_disable(dev);
-> > +
-> > +       if (pci_dev_trylock(dev)) {
-> > +               rc = __pci_dev_reset(dev, 0);
-> > +               pci_dev_unlock(dev);
-> > +       } else
-> > +               rc = -EAGAIN;
-> > +
-> > +       pci_dev_restore(dev);
-> > +
-> > +       return rc;
-> > +}
-> > +EXPORT_SYMBOL_GPL(pci_try_reset_function);
-> > +
-> >  /* Lock devices from the top of the tree down */
-> >  static void pci_bus_lock(struct pci_bus *bus)
-> >  {
-> > @@ -3612,6 +3652,32 @@ static void pci_bus_unlock(struct pci_bus *bus)
-> >         }
-> >  }
-> >
-> > +/* Return 1 on successful lock, 0 on contention */
-> > +static int pci_bus_trylock(struct pci_bus *bus)
-> > +{
-> > +       struct pci_dev *dev;
-> > +
-> > +       list_for_each_entry(dev, &bus->devices, bus_list) {
-> > +               if (!pci_dev_trylock(dev))
-> > +                       goto unlock;
-> > +               if (dev->subordinate) {
-> > +                       if (!pci_bus_trylock(dev->subordinate)) {
-> > +                               pci_dev_unlock(dev);
-> > +                               goto unlock;
-> > +                       }
-> > +               }
-> > +       }
-> > +       return 1;
-> > +
-> > +unlock:
-> > +       list_for_each_entry_continue_reverse(dev, &bus->devices, bus_list) {
-> > +               if (dev->subordinate)
-> > +                       pci_bus_unlock(dev->subordinate);
-> > +               pci_dev_unlock(dev);
-> > +       }
-> > +       return 0;
-> > +}
-> > +
-> >  /* Lock devices from the top of the tree down */
-> >  static void pci_slot_lock(struct pci_slot *slot)
-> >  {
-> > @@ -3640,6 +3706,37 @@ static void pci_slot_unlock(struct pci_slot *slot)
-> >         }
-> >  }
-> >
-> > +/* Return 1 on successful lock, 0 on contention */
-> > +static int pci_slot_trylock(struct pci_slot *slot)
-> > +{
-> > +       struct pci_dev *dev;
-> > +
-> > +       list_for_each_entry(dev, &slot->bus->devices, bus_list) {
-> > +               if (!dev->slot || dev->slot != slot)
-> > +                       continue;
-> > +               if (!pci_dev_trylock(dev))
-> > +                       goto unlock;
-> > +               if (dev->subordinate) {
-> > +                       if (!pci_bus_trylock(dev->subordinate)) {
-> > +                               pci_dev_unlock(dev);
-> > +                               goto unlock;
-> > +                       }
-> > +               }
-> > +       }
-> > +       return 1;
-> > +
-> > +unlock:
-> > +       list_for_each_entry_continue_reverse(dev,
-> > +                                            &slot->bus->devices, bus_list) {
-> > +               if (!dev->slot || dev->slot != slot)
-> > +                       continue;
-> > +               if (dev->subordinate)
-> > +                       pci_bus_unlock(dev->subordinate);
-> > +               pci_dev_unlock(dev);
-> > +       }
-> > +       return 0;
-> > +}
-> > +
-> >  /* Save and disable devices from the top of the tree down */
-> >  static void pci_bus_save_and_disable(struct pci_bus *bus)
-> >  {
-> > @@ -3763,6 +3860,35 @@ int pci_reset_slot(struct pci_slot *slot)
-> >  }
-> >  EXPORT_SYMBOL_GPL(pci_reset_slot);
-> >
-> > +/**
-> > + * pci_try_reset_slot - Try to reset a PCI slot
-> > + * @slot: PCI slot to reset
-> > + *
-> > + * Same as above except return -EAGAIN if the slot cannot be locked
-> > + */
-> > +int pci_try_reset_slot(struct pci_slot *slot)
-> > +{
-> > +       int rc;
-> > +
-> > +       rc = pci_slot_reset(slot, 1);
-> > +       if (rc)
-> > +               return rc;
-> > +
-> > +       pci_slot_save_and_disable(slot);
-> > +
-> > +       if (pci_slot_trylock(slot)) {
-> > +               might_sleep();
-> > +               rc = pci_reset_hotplug_slot(slot->hotplug, 0);
-> > +               pci_slot_unlock(slot);
-> > +       } else
-> > +               rc = -EAGAIN;
-> > +
-> > +       pci_slot_restore(slot);
-> > +
-> > +       return rc;
-> > +}
-> > +EXPORT_SYMBOL_GPL(pci_try_reset_slot);
-> > +
-> >  static int pci_bus_reset(struct pci_bus *bus, int probe)
-> >  {
-> >         if (!bus->self)
-> > @@ -3822,6 +3948,35 @@ int pci_reset_bus(struct pci_bus *bus)
-> >  EXPORT_SYMBOL_GPL(pci_reset_bus);
-> >
-> >  /**
-> > + * pci_try_reset_bus - Try to reset a PCI bus
-> > + * @bus: top level PCI bus to reset
-> > + *
-> > + * Same as above except return -EAGAIN if the bus cannot be locked
-> > + */
-> > +int pci_try_reset_bus(struct pci_bus *bus)
-> > +{
-> > +       int rc;
-> > +
-> > +       rc = pci_bus_reset(bus, 1);
-> > +       if (rc)
-> > +               return rc;
-> > +
-> > +       pci_bus_save_and_disable(bus);
-> > +
-> > +       if (pci_bus_trylock(bus)) {
-> > +               might_sleep();
-> > +               pci_reset_bridge_secondary_bus(bus->self);
-> > +               pci_bus_unlock(bus);
-> > +       } else
-> > +               rc = -EAGAIN;
-> > +
-> > +       pci_bus_restore(bus);
-> > +
-> > +       return rc;
-> > +}
-> > +EXPORT_SYMBOL_GPL(pci_try_reset_bus);
-> > +
-> > +/**
-> >   * pcix_get_max_mmrbc - get PCI-X maximum designed memory read byte count
-> >   * @dev: PCI device to query
-> >   *
-> > diff --git a/include/linux/pci.h b/include/linux/pci.h
-> > index 1084a15..34629df 100644
-> > --- a/include/linux/pci.h
-> > +++ b/include/linux/pci.h
-> > @@ -951,10 +951,13 @@ int pcie_get_minimum_link(struct pci_dev *dev, enum pci_bus_speed *speed,
-> >  int __pci_reset_function(struct pci_dev *dev);
-> >  int __pci_reset_function_locked(struct pci_dev *dev);
-> >  int pci_reset_function(struct pci_dev *dev);
-> > +int pci_try_reset_function(struct pci_dev *dev);
-> >  int pci_probe_reset_slot(struct pci_slot *slot);
-> >  int pci_reset_slot(struct pci_slot *slot);
-> > +int pci_try_reset_slot(struct pci_slot *slot);
-> >  int pci_probe_reset_bus(struct pci_bus *bus);
-> >  int pci_reset_bus(struct pci_bus *bus);
-> > +int pci_try_reset_bus(struct pci_bus *bus);
-> >  void pci_reset_bridge_secondary_bus(struct pci_dev *dev);
-> >  void pci_update_resource(struct pci_dev *dev, int resno);
-> >  int __must_check pci_assign_resource(struct pci_dev *dev, int i);
-> >
+Ben Segall (1):
+      sched: Avoid throttle_cfs_rq() racing with period_timer stopping
 
+Bo Shen (1):
+      ASoC: wm8731: fix dsp mode configuration
 
+Chris Metcalf (1):
+      connector: improved unaligned access error fix
+
+Dan Carpenter (3):
+      isdnloop: use strlcpy() instead of strcpy()
+      net: clamp ->msg_namelen instead of returning an error
+      gpio: mvebu: make mvchip->irqbase signed for error handling
+
+Dan Williams (1):
+      [SCSI] libsas: fix usage of ata_tf_to_fis
+
+Daniel Borkmann (2):
+      random32: fix off-by-one in seeding requirement
+      packet: fix use after free race in send path when dev is released
+
+David Chang (1):
+      r8169: check ALDPS bit and disable it if enabled for the 8168g
+
+Ding Tianhong (1):
+      bridge: flush br's address entry in fdb when remove the bridge dev
+
+Duan Jiong (1):
+      ipv6: use rt6_get_dflt_router to get default router in rt6_route_rcv
+
+Dwight Engen (1):
+      xfs: add capability check to free eofblocks ioctl
+
+Eric Dumazet (4):
+      tcp: tsq: restore minimal amount of queueing
+      net-tcp: fix panic in tcp_fastopen_cache_set()
+      ipv4: fix possible seqlock deadlock
+      inet: fix possible seqlock deadlocks
+
+Felix Fietkau (1):
+      usbnet: fix status interrupt urb handling
+
+Gerald Schaefer (1):
+      crypto: s390 - Fix aes-xts parameter corruption
+
+Girish K S (1):
+      ahci: sata: add support for exynos5440 sata
+
+Greg Kroah-Hartman (1):
+      Staging: tidspbridge: disable driver
+
+Gregory CLEMENT (1):
+      ARM: mvebu: use the virtual CPU registers to access coherency registers
+
+H. Peter Anvin (1):
+      x86-64, build: Always pass in -mno-sse
+
+Hannes Frederic Sowa (6):
+      inet: prevent leakage of uninitialized memory to user in recv syscalls
+      net: rework recvmsg handler msg_name and msg_namelen logic
+      net: add BUG_ON if kernel advertises msg_namelen > sizeof(struct sockaddr_storage)
+      inet: fix addr_len/msg->msg_namelen assignment in recv_error and rxpmtu functions
+      ipv6: fix leaking uninitialized port number of offender sockaddr
+      ipv6: fix possible seqlock deadlock in ip6_finish_output2
+
+Hans Verkuil (1):
+      [media] cxd2820r_core: fix sparse warnings
+
+Herbert Xu (1):
+      crypto: s390 - Fix aes-cbc IV corruption
+
+Hong Zhiguo (1):
+      Update of blkg_stat and blkg_rwstat may happen in bh context.     While u64_stats_fetch_retry is only preempt_disable on 32bit     UP system. This is not enough to avoid preemption by bh and     may read strange 64 bit value.
+
+Horia Geanta (1):
+      crypto: ccm - Fix handling of zero plaintext when computing mac
+
+Ian Abbott (3):
+      staging: comedi: ssv_dnp: use comedi_dio_update_state()
+      staging: comedi: amplc_pc263: correct insn_bits result
+      staging: comedi: pcmuio: fix possible NULL deref on detach
+
+James Bottomley (1):
+      [SCSI] enclosure: fix WARN_ON in dual path device removing
+
+Jason Wang (2):
+      tuntap: limit head length of skb allocated
+      macvtap: limit head length of skb allocated
+
+Jianguo Wu (1):
+      mm/hugetlb: check for pte NULL pointer in __page_check_address()
+
+Jiri Pirko (1):
+      ip6_output: fragment outgoing reassembled skb properly
+
+Joel Fernandes (1):
+      ARM: OMAP2+: Disable POSTED mode for errata i103 and i767
+
+Jukka Rissanen (1):
+      6lowpan: Uncompression of traffic class field was incorrect
+
+Kailang Yang (2):
+      ALSA: hda/realtek - Add support of ALC231 codec
+      ALSA: hda/realtek - Set pcbeep amp for ALC668
+
+Kamal Mostafa (1):
+      Linux 3.8.13.15
+
+Konrad Rzeszutek Wilk (1):
+      cpuidle: Check for dev before deregistering it.
+
+Laxman Dewangan (1):
+      irq: Enable all irqs unconditionally in irq_resume
+
+Linus Walleij (1):
+      net: smc91: fix crash regression on the versatile
+
+Liu Gang (1):
+      powerpc/gpio: Fix the wrong GPIO input data on MPC8572/MPC8536
+
+Madper Xie (1):
+      efi-pstore: Make efi-pstore return a unique id
+
+Malcolm Priestley (1):
+      staging: vt6656: [BUG] Fix for TX USB resets from vendors driver.
+
+Marc Kleine-Budde (2):
+      can: c_can: don't call pm_runtime_get_sync() from interrupt context
+      can: flexcan: use correct clock as base for bit rate calculation
+
+Mark Brown (1):
+      ASoC: wm8990: Mark the register map as dirty when powering down
+
+Martin K. Petersen (1):
+      [SCSI] Disable WRITE SAME for RAID and virtual host adapter drivers
+
+Martin Schwidefsky (1):
+      time: Fix 1ns/tick drift w/ GENERIC_TIME_VSYSCALL_OLD
+
+Matt Wilson (1):
+      xen/gnttab: leave lazy MMU mode in the case of a m2p override failure
+
+Michael Neuling (1):
+      powerpc/signals: Improved mark VSX not saved with small contexts fix
+
+Nicolas Dichtel (1):
+      ip6tnl: fix use after free of fb_tnl_dev
+
+Nikolay Aleksandrov (1):
+      bonding: fix two race conditions in bond_store_updelay/downdelay
+
+Olav Haugan (1):
+      staging: zsmalloc: Ensure handle is never 0 on success
+
+Oliver Hartkopp (1):
+      can: sja1000: fix {pre,post}_irq() handling and IRQ handler return value
+
+Peter Zijlstra (1):
+      cpuset: Fix memory allocator deadlock
+
+Russell King (3):
+      ARM: fix booting low-vectors machines
+      ARM: footbridge: fix VGA initialisation
+      ARM: footbridge: fix EBSA285 LEDs
+
+Samir Benmendil (1):
+      ahci: add Marvell 9230 to the AHCI PCI device list
+
+Shawn Landden (1):
+      net: update consumers of MSG_MORE to recognize MSG_SENDPAGE_NOTLAST
+
+Stephen M. Cameron (2):
+      [SCSI] hpsa: do not discard scsi status on aborted commands
+      [SCSI] hpsa: return 0 from driver probe function on success, not 1
+
+Steven Rostedt (Red Hat) (1):
+      tracing: Allow events to have NULL strings
+
+Takashi Iwai (3):
+      ALSA: hda - Initialize missing bass speaker pin for ASUS AIO ET2700
+      ALSA: hda - Fix silent output on ASUS W7J laptop
+      ALSA: hda - Another fixup for ASUS laptop with ALC660 codec
+
+Tom Lendacky (3):
+      crypto: authenc - Find proper IV address in ablkcipher callback
+      crypto: scatterwalk - Set the chain pointer indication bit
+      crypto: scatterwalk - Use sg_chain_ptr on chain entries
+
+Trond Myklebust (1):
+      NFSv4: Update list of irrecoverable errors on DELEGRETURN
+
+Veaceslav Falico (2):
+      bonding: don't permit to use ARP monitoring in 802.3ad mode
+      af_packet: block BH in prb_shutdown_retire_blk_timer()
+
+Vijaya Mohan Guvva (1):
+      [SCSI] bfa: Fix crash when symb name set for offline vport
+
+Vlad Yasevich (1):
+      net: core: Always propagate flag changes to interfaces
+
+Wei Liu (1):
+      xen-netback: fix refcnt unbalance for 3.11 and earlier versions
+
+Yang Yingliang (1):
+      net: 8139cp: fix a BUG_ON triggered by wrong bytes_compl
+
+Ying Xue (1):
+      atm: idt77252: fix dev refcnt leak
+
+fan.du (2):
+      xfrm: Release dst if this dst is improper for vti tunnel
+      {pktgen, xfrm} Update IPv4 header total len and checksum after tranformation
 
