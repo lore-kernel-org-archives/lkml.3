@@ -1,121 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932160AbaAGCwT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 21:52:19 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:55758 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756646AbaAGCwQ (ORCPT
+	id S932114AbaAGCwS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 21:52:18 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:28883 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756431AbaAGCwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Jan 2014 21:52:16 -0500
-Date: Mon, 6 Jan 2014 18:52:10 -0800
-From: Kent Overstreet <kmo@daterainc.com>
-To: Muthu Kumar <muthu.lkml@gmail.com>
-Cc: Chris Mason <clm@fb.com>, Fengguang Wu <fengguang.wu@intel.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@linux.intel.com
-Subject: Re: [block:for-3.14/core] kernel BUG at fs/bio.c:1748
-Message-ID: <20140107025210.GJ9037@kmo>
-References: <20140102053101.GA29352@localhost>
- <CAFR8uee-WTy6cj8bB4aMuGP1B0sZkc70sq1Drg7uhHS49EqHcg@mail.gmail.com>
- <20140106221036.GE9037@kmo>
- <CAFR8uef3XUEsHUvfnkAbzsXict8qD_28fTgUQyA7gjUk03OUsw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFR8uef3XUEsHUvfnkAbzsXict8qD_28fTgUQyA7gjUk03OUsw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-AuditID: cbfee691-b7efc6d0000039d3-23-52cb6bde3add
+Message-id: <52CB6BE0.1090409@samsung.com>
+Date: Tue, 07 Jan 2014 11:52:16 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: rjying <rjying@gmail.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, Barry Song <Barry.Song@csr.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Workgroup.linux@csr.com, Rongjun Ying <rongjun.ying@csr.com>
+Subject: Re: [PATCH v2] extcon: gpio: Add power resume support
+References: <1388122847-3276-1-git-send-email-rongjun.ying@csr.com>
+In-reply-to: <1388122847-3276-1-git-send-email-rongjun.ying@csr.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLIsWRmVeSWpSXmKPExsWyRsSkUPde9ukggym/lSwuT1rPZLHp8TVW
+	i8u75rBZ3G5cwWZxq/cAs8W+C39YLTb09TM5sHvs2jmH1WPnrLvsHpuX1Hv0bVnF6PF5k1wA
+	axSXTUpqTmZZapG+XQJXxvempawFJ0UrTjScZGlgPCDYxcjJISFgItExaw8rhC0mceHeerYu
+	Ri4OIYGljBJn//5mgyl6vnkDK0RiEaPEs93HoZxXjBI915awg1TxCmhJtLY8BhvFIqAqceru
+	a0YQmw0ovv/FDbBJogJhEiunX2GBqBeU+DH5HpDNwSEiICtx9mw4yExmgUuMEv03/jGB1AgL
+	2ElsenISbI6QgLPEryffwOZwCrhIvF57kRnEZhbQkdjfOo0NwpaX2LzmLTPE1ZfYJY5szIa4
+	R0Di2+RDYLskgHZtOgBVIilxcMUNlgmMYrOQXDQLydRZSKYuYGRexSiaWpBcUJyUXmSqV5yY
+	W1yal66XnJ+7iREYdaf/PZu4g/H+AetDjMlAKycyS4km5wOjNq8k3tDYzMjC1MTU2Mjc0ow0
+	YSVx3vRHSUFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGDvctwWviVkheFl1++1+M/f81a8Z
+	Vu/ukDV6Ue/Y+r1fiq95s/2syplbd0n1vS0t3yGr/qH77HqlIB8z3R03IuP3eS5lWXlw5aRT
+	0/WeaJz7FBd6w1j9cmlmDvfZB8WXJkz4uenZG1eDc+U+37h6vQqKT4vrTE3dEiKzSetuhfP7
+	BfJfbq499laJpTgj0VCLuag4EQCxmYpj0AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jAd172aeDDN7/kbK4PGk9k8Wmx9dY
+	LS7vmsNmcbtxBZvFrd4DzBb7LvxhtdjQ18/kwO6xa+ccVo+ds+6ye2xeUu/Rt2UVo8fnTXIB
+	rFENjDYZqYkpqUUKqXnJ+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QGco
+	KZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJAAwlrGDO+Ny1lLTgpWnGi4SRLA+MB
+	wS5GTg4JAROJ55s3sELYYhIX7q1n62Lk4hASWMQo8Wz3cVYI5xWjRM+1JewgVbwCWhKtLY/B
+	OlgEVCVO3X3NCGKzAcX3v7jBBmKLCoRJrJx+hQWiXlDix+R7QDYHh4iArMTZs+EgM5kFLjFK
+	9N/4xwRSIyxgJ7HpyUmwOUICzhK/nnwDm8Mp4CLxeu1FZhCbWUBHYn/rNDYIW15i85q3zBMY
+	BWYhWTELSdksJGULGJlXMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgRH9TOpHYwrGywOMQpw
+	MCrx8L7YeypIiDWxrLgy9xCjBAezkgivZsrpICHelMTKqtSi/Pii0pzU4kOMycAQmMgsJZqc
+	D0w4eSXxhsYmZkaWRuaGFkbG5qQJK4nzHmi1DhQSSE8sSc1OTS1ILYLZwsTBKdXAOOv07IAv
+	7d/yGi+qFbF+szxvFvX1lcGsoJkHfFzfi01Rm2dTHXD+cmfohNtf9ZiEG4IlP1bMmOHPek5K
+	eL7XvEXlHH17FngIyTnrPPh1v2T66Z6dMrdM058msbG6dTvIBG4NSAyxM91S+3XFPqagn+6S
+	BvcWLQiV/cS4POdYXF12TPyynfNeKLEUZyQaajEXFScCACVUA7suAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 04:47:38PM -0800, Muthu Kumar wrote:
-> OK, after a bit more staring I believe the correct fix is the following.
+On 12/27/2013 02:40 PM, rjying wrote:
+> From: Rongjun Ying <rongjun.ying@csr.com>
+> 
+> When system on the suspend state, Some SoC can't get gpio interrupt.
+> After system resume, need send extcon uevent to userspace.
+> 
+> Signed-off-by: Rongjun Ying <rongjun.ying@csr.com>
+> ---
+>  -v2: Add lost_sleep_irq flags.
+> 
+>  drivers/extcon/extcon-gpio.c       |   20 ++++++++++++++++++++
+>  include/linux/extcon/extcon-gpio.h |    1 +
+>  2 files changed, 21 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
+> index 7e0dff5..fde52c1 100644
+> --- a/drivers/extcon/extcon-gpio.c
+> +++ b/drivers/extcon/extcon-gpio.c
+> @@ -40,6 +40,7 @@ struct gpio_extcon_data {
+>  	int irq;
+>  	struct delayed_work work;
+>  	unsigned long debounce_jiffies;
+> +	bool lost_sleep_irq;
 
-This code still confuses me but I think you're correct, the fix certainly
-matches the evidence we have.
+I prefer 'check_on_resume' instead of 'load_sleep_irq'. 
 
-> Fengguang, Please try this one?
-> 
-> Regards,
-> Muthu
-> 
-> ------------
-> In btrfs_end_bio(), we increment bi_remaining if is_orig_bio. If not,
-> we restore the orig_bio but failed to increment bi_remaining for
-> orig_bio, which triggers a BUG_ON later when bio_endio is called. Fix
-> is to increment bi_remaining when we restore the orig bio as well.
-> 
-> Reported-by: fengguang.wu@intel.com
-> CC: Kent Overstreet <kmo@daterainc.com>
-> CC: Jens Axboe <axboe@kernel.dk>
-> CC: Chris Mason <clm@fv
-> Signed-off-by: Muthukumar Ratty <muthur@gmail.com>
-> ----------------
->  fs/btrfs/volumes.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-> index 37972d5..2011cc0 100644
-> --- a/fs/btrfs/volumes.c
-> +++ b/fs/btrfs/volumes.c
-> @@ -5297,9 +5297,9 @@ static void btrfs_end_bio(struct bio *bio, int err)
->                 if (!is_orig_bio) {
->                         bio_put(bio);
->                         bio = bbio->orig_bio;
-> -               } else {
-> -                       atomic_inc(&bio->bi_remaining);
->                 }
-> +               atomic_inc(&bio->bi_remaining);
+>  };
+>  
+>  static void gpio_extcon_work(struct work_struct *work)
+> @@ -103,6 +104,7 @@ static int gpio_extcon_probe(struct platform_device *pdev)
+>  	extcon_data->gpio_active_low = pdata->gpio_active_low;
+>  	extcon_data->state_on = pdata->state_on;
+>  	extcon_data->state_off = pdata->state_off;
+> +	extcon_data->lost_sleep_irq = pdata->lost_sleep_irq;
+
+ditto.
+
+>  	if (pdata->state_on && pdata->state_off)
+>  		extcon_data->edev.print_state = extcon_gpio_print_state;
+>  	if (pdata->debounce) {
+> @@ -159,12 +161,30 @@ static int gpio_extcon_remove(struct platform_device *pdev)
+>  	return 0;
+>  }
+>  
+> +#ifdef CONFIG_PM_SLEEP
+> +static int gpio_extcon_resume(struct device *dev)
+> +{
+> +	struct gpio_extcon_data *extcon_data;
 > +
->                 bio->bi_private = bbio->private;
->                 bio->bi_end_io = bbio->end_io;
->                 btrfs_io_bio(bio)->mirror_num = bbio->mirror_num;
+> +	extcon_data = dev_get_drvdata(dev);
+> +	if (extcon_data->lost_sleep_irq)
+
+ditto.
+
+> +		queue_delayed_work(system_power_efficient_wq,
+> +			&extcon_data->work, extcon_data->debounce_jiffies);
+> +	return 0;
+> +}
+> +#endif
+> +
+> +static const struct dev_pm_ops gpio_extcon_pm_ops = {
+> +	SET_SYSTEM_SLEEP_PM_OPS(NULL, gpio_extcon_resume)
+> +};
+> +
+>  static struct platform_driver gpio_extcon_driver = {
+>  	.probe		= gpio_extcon_probe,
+>  	.remove		= gpio_extcon_remove,
+>  	.driver		= {
+>  		.name	= "extcon-gpio",
+>  		.owner	= THIS_MODULE,
+> +		.pm = &gpio_extcon_pm_ops,
+>  	},
+>  };
+>  
+> diff --git a/include/linux/extcon/extcon-gpio.h b/include/linux/extcon/extcon-gpio.h
+> index 4195810..c7f0c3e 100644
+> --- a/include/linux/extcon/extcon-gpio.h
+> +++ b/include/linux/extcon/extcon-gpio.h
+> @@ -51,6 +51,7 @@ struct gpio_extcon_platform_data {
+>  	/* if NULL, "0" or "1" will be printed */
+>  	const char *state_on;
+>  	const char *state_off;
+> +	bool lost_sleep_irq;
+
+ditto.
+
+>  };
+>  
+>  #endif /* __EXTCON_GPIO_H__ */
 > 
-> --------------------------
-> 
-> 
-> 
-> On Mon, Jan 6, 2014 at 2:10 PM, Kent Overstreet <kmo@daterainc.com> wrote:
-> > Chris, the patch below seems to be incorrect - with it we get hangs, so
-> > bi_remaining (probably) isn't getting decremented when it should be. You sent
-> > Jens fixes for btrfs which I somehow lost when I rebased, do you remember how
-> > this is supposed to work? Looking at the code I'm not quite sure what's going on
-> > here.
-> >
-> > On Fri, Jan 03, 2014 at 11:51:31AM -0800, Muthu Kumar wrote:
-> >> Looks like Kent missed the btrfs endio in the original commit. How
-> >> about this patch:
-> >>
-> >> ---------
-> >>
-> >> In btrfs_end_bio, call bio_endio_nodec on the restored bio so the
-> >> bi_remaining is accounted for correctly.
-> >>
-> >> Reported-by: fengguang.wu@intel.com
-> >> Cc: Kent Overstreet <kmo@daterainc.com>
-> >> CC: Jens Axboe <axboe@kernel.dk>
-> >> Signed-off-by: Muthukumar Ratty <muthur@gmail.com>
-> >> --------
-> >>
-> >>  fs/btrfs/volumes.c |    6 +++++-
-> >>  1 files changed, 5 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-> >> index f2130de..edfed52 100644
-> >> --- a/fs/btrfs/volumes.c
-> >> +++ b/fs/btrfs/volumes.c
-> >> @@ -5316,7 +5316,11 @@ static void btrfs_end_bio(struct bio *bio, int err)
-> >>                 }
-> >>                 kfree(bbio);
-> >>
-> >> -               bio_endio(bio, err);
-> >> +                /*
-> >> +                 * Call endio_nodec on the restored bio so the bi_remaining is
-> >> +                 * accounted for correctly
-> >> +                 */
-> >> +               bio_endio_nodec(bio, err);
-> >>         } else if (!is_orig_bio) {
-> >>                 bio_put(bio);
-> >>         }
+
+Thanks,
+Chanwoo Choi
