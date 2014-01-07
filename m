@@ -1,144 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752139AbaAGNlI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 08:41:08 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60733 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751264AbaAGNlD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 08:41:03 -0500
-Message-ID: <52CC03D4.50603@ti.com>
-Date: Tue, 7 Jan 2014 19:10:36 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752179AbaAGNlg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 08:41:36 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:58391 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910AbaAGNlY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 08:41:24 -0500
+Date: Tue, 7 Jan 2014 14:40:55 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Morten Rasmussen <morten.rasmussen@arm.com>,
+        Alex Shi <alex.shi@linaro.org>, "mingo@redhat.com" <mingo@redhat.com>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "pjt@google.com" <pjt@google.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "jason.low2@hp.com" <jason.low2@hp.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] sched: bias to target cpu load to reduce task moving
+Message-ID: <20140107134055.GA31570@twins.programming.kicks-ass.net>
+References: <20131217153809.GP21999@twins.programming.kicks-ass.net>
+ <52B2F5D0.2050707@linaro.org>
+ <20131220111926.GA11605@e103034-lin>
+ <52BAF292.1070404@linaro.org>
+ <20140102160404.GA3000@e103034-lin>
+ <52CAB12B.4090701@linaro.org>
+ <20140107125518.GE2936@e103034-lin>
+ <20140107125930.GW31570@twins.programming.kicks-ass.net>
+ <20140107131523.GX3694@twins.programming.kicks-ass.net>
+ <CAKfTPtDPc0xQ22f+-5bduK3bEObeUu=QCdOPDL3Xxecgy9VzSg@mail.gmail.com>
 MIME-Version: 1.0
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCH 2/5] phy: add support for indexed lookup
-References: <1386601737-8735-1-git-send-email-heikki.krogerus@linux.intel.com> <1386601737-8735-3-git-send-email-heikki.krogerus@linux.intel.com> <52AEDDE2.8060406@ti.com> <20131216143227.GA22944@xps8300>
-In-Reply-To: <20131216143227.GA22944@xps8300>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKfTPtDPc0xQ22f+-5bduK3bEObeUu=QCdOPDL3Xxecgy9VzSg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Jan 07, 2014 at 02:32:07PM +0100, Vincent Guittot wrote:
+> On 7 January 2014 14:15, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Tue, Jan 07, 2014 at 01:59:30PM +0100, Peter Zijlstra wrote:
+> >> On Tue, Jan 07, 2014 at 12:55:18PM +0000, Morten Rasmussen wrote:
+> >> > My understanding is that should_we_balance() decides which cpu is
+> >> > eligible for doing the load balancing for a given domain (and the
+> >> > domains above). That is, only one cpu in a group is allowed to load
+> >> > balance between the local group and other groups. That cpu would
+> >> > therefore be reponsible for pulling enough load that the groups are
+> >> > balanced even if it means temporarily overloading itself. The other cpus
+> >> > in the group will take care of load balancing the extra load within the
+> >> > local group later.
+> >>
+> >> Correct.
+> >
+> > On that; one of the things I wanted to (and previously did attempt but
+> > failed) is trying to rotate this cpu. Currently its always the first cpu
+> > (of the group) and that gives a noticeable bias.
+> 
+> Isn't the current policy (it's the 1st idle cpu in priority). a good
+> enough way to rotate the cpus ? Are you need the rotation for loaded
+> use case too ?
 
-On Monday 16 December 2013 08:02 PM, Heikki Krogerus wrote:
-> Hi Kishon,
-> 
-> On Mon, Dec 16, 2013 at 04:32:58PM +0530, Kishon Vijay Abraham I wrote:
->> On Monday 09 December 2013 08:38 PM, Heikki Krogerus wrote:
->>> Removes the need for the consumer drivers requesting the
->>> phys to provide name for the phy. This should ease the use
->>> of the framework considerable when using only one phy, which
->>> is usually the case when except with USB, but it can also
->>> be useful with multiple phys.
->>
->> If index has to be used with multiple PHYs, the controller should be aware of
->> the order in which it is populated in dt data. That's not good.
-> 
-> The Idea is not to replace the name based lookup. Just to provide
-> possibility for index based lookup.
-> 
-> With ACPI, if we get the device entries for PHYs, the order will be
-> fixed and we will not have any other reference to the phys. In case
-> of USB, the first one should always be USB2 PHY and the second the
-> USB3 PHY.
-> 
->>> This will also reduce noise from the framework when there is
->>> no phy by changing warnings to debug messages.
->>>
->>> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
->>> ---
->>>  drivers/phy/phy-core.c  | 106 ++++++++++++++++++++++++++++++++++--------------
->>>  include/linux/phy/phy.h |  14 +++++++
->>>  2 files changed, 89 insertions(+), 31 deletions(-)
->>>
->>> diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
->>> index 1102aef..99dc046 100644
->>> --- a/drivers/phy/phy-core.c
->>> +++ b/drivers/phy/phy-core.c
->>> @@ -53,7 +53,8 @@ static int devm_phy_match(struct device *dev, void *res, void *match_data)
->>>  	return res == match_data;
->>>  }
->>>  
->>> -static struct phy *phy_lookup(struct device *device, const char *con_id)
->>> +static struct phy *phy_lookup(struct device *device, const char *con_id,
->>> +			      unsigned int idx)
->>>  {
->>>  	unsigned int count;
->>>  	struct phy *phy;
->>> @@ -67,6 +68,10 @@ static struct phy *phy_lookup(struct device *device, const char *con_id)
->>>  		count = phy->init_data->num_consumers;
->>>  		consumers = phy->init_data->consumers;
->>>  		while (count--) {
->>> +			/* index must always match exactly */
->>> +			if (!con_id)
->>> +				if (idx != count)
->>> +					continue;
->>>  			if (!strcmp(consumers->dev_name, dev_name(device)) &&
->>>  					!strcmp(consumers->port, con_id)) {
->>>  				class_dev_iter_exit(&iter);
->>> @@ -242,7 +247,8 @@ EXPORT_SYMBOL_GPL(phy_power_off);
->>>  /**
->>>   * of_phy_get() - lookup and obtain a reference to a phy by phandle
->>>   * @dev: device that requests this phy
->>> - * @index: the index of the phy
->>> + * @con_id: name of the phy from device's point of view
->>> + * @idx: the index of the phy if name is not used
->>>   *
->>>   * Returns the phy associated with the given phandle value,
->>>   * after getting a refcount to it or -ENODEV if there is no such phy or
->>> @@ -250,12 +256,20 @@ EXPORT_SYMBOL_GPL(phy_power_off);
->>>   * not yet loaded. This function uses of_xlate call back function provided
->>>   * while registering the phy_provider to find the phy instance.
->>>   */
->>> -static struct phy *of_phy_get(struct device *dev, int index)
->>> +static struct phy *of_phy_get(struct device *dev, const char *con_id,
->>> +			      unsigned int idx)
->>>  {
->>>  	int ret;
->>>  	struct phy_provider *phy_provider;
->>>  	struct phy *phy = NULL;
->>>  	struct of_phandle_args args;
->>> +	int index;
->>> +
->>> +	if (!con_id)
->>> +		index = idx;
->>> +	else
->>> +		index = of_property_match_string(dev->of_node, "phy-names",
->>> +						 con_id);
->>>  
->>>  	ret = of_parse_phandle_with_args(dev->of_node, "phys", "#phy-cells",
->>>  		index, &args);
->>> @@ -348,38 +362,36 @@ struct phy *of_phy_simple_xlate(struct device *dev, struct of_phandle_args
->>>  EXPORT_SYMBOL_GPL(of_phy_simple_xlate);
->>>  
->>>  /**
->>> - * phy_get() - lookup and obtain a reference to a phy.
->>> + * phy_get_index() - obtain a phy based on index
->>
->> NAK. It still takes a 'char' argument and the name is misleading.
->> Btw are you replacing phy_get() or adding a new API in addition to phy_get()?
-> 
-> Additional API. The phy_get() would in practice act as a wrapper after
+Yeah its for the fully loaded case. And like I said, there's not been
+many complaints on this.
 
-In this patch it looks like you've replaced phy_get().
-> this. It could actually be just a #define macro in the include file.
-> The function naming I just copied straight from gpiolib.c. I did not
-> have the imagination for anything fancier.
-> 
-> I would like to be able to use some function like phy_get_index() and
-> be able to deliver it both the name and the index. With DT you guys
-> will always be able to use the name (and the string will always
-> supersede the index if we do it like this), but with ACPI, and possibly
-> the platform lookup tables, the index can be used...
+The 'problem' is that its always same cpu that does the most expensive
+full machine balance; and always that cpu that is the one that gains
+extra load to redistribute in the group. So its penalized twice.
 
-I think in that case, we should drop the 'string' from phy_get_index since we
-have the other API to handle that? I don't know about ACPI, but is it not
-possible to use strings with ACPI?
-
-Thanks
-Kishon
+Like said, really minor issue. Just something I thought I'd mention.
