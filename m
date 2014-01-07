@@ -1,66 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756605AbaAGBj3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 20:39:29 -0500
-Received: from mga02.intel.com ([134.134.136.20]:61803 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755257AbaAGBj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 20:39:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,615,1384329600"; 
-   d="scan'208";a="434817020"
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: sarah.a.sharp@linux.intel.com, gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Cohen <david.a.cohen@linux.intel.com>
-Subject: [PATCH] usb/xhci: fix compilation warning when !CONFIG_PCI && !CONFIG_PM
-Date: Mon,  6 Jan 2014 17:44:28 -0800
-Message-Id: <1389059068-18491-1-git-send-email-david.a.cohen@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1756673AbaAGBkZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 20:40:25 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:48755 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755972AbaAGBkX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 20:40:23 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@rjwysocki.net
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH Resend 1/4] cpufreq: stats: handle cpufreq_unregister_driver() and suspend/resume properly
+Date: Tue,  7 Jan 2014 07:10:10 +0530
+Message-Id: <b4c2b7c1f5e480e6ae6fcbc737ae52c1e0a88549.1389058746.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_PCI and CONFIG_PM are not selected, xhci.c gets this
-warning:
-drivers/usb/host/xhci.c:409:13: warning: ‘xhci_msix_sync_irqs’ defined
-but not used [-Wunused-function]
+There are several problems cpufreq stats in the way it handles
+cpufreq_unregister_driver() and suspend/resume..
 
-Instead of creating nested #ifdefs, this patch fixes it by defining the
-xHCI PCI stubs as inline.
+- We must not loose data collected so far when suspend/resume happens and so
+  stats directories must not be removed/allocated during these operations, Which
+  is done currently.
 
-Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+- cpufreq_stat has registered notifiers with both cpufreq and hotplug. It adds
+  sysfs stats directory with a cpufreq notifier: CPUFREQ_NOTIFY and removes this
+  directory with a notifier from hotplug core.
+
+  In case cpufreq_unregister_driver() is called (on rmmod cpufreq driver), stats
+  directories per cpu aren't removed as CPUs are still online. The only call
+  cpufreq_stats gets is cpufreq_stats_update_policy_cpu for all CPUs except the
+  last of each policy. And pointer to stat information is stored in the entry
+  for last cpu in per-cpu cpufreq_stats_table. But policy structure would be
+  freed inside cpufreq core and so that will result in memory leak inside
+  cpufreq stats (as we are never freeing memory for stats).
+
+  Now if we again insert the module cpufreq_register_driver() will be called and
+  we will again allocate stats data and put it on for first cpu of every policy.
+  In case we only have a single cpu per policy we will return with a error from
+  cpufreq_stats_create_table() due to below code:
+
+	if (per_cpu(cpufreq_stats_table, cpu))
+		return -EBUSY;
+
+  And so probably cpufreq stats directory would show up anymore (as it was added
+  inside last policies->kobj which doesn't exist anymore). I haven't tested it
+  though. Also the values in stats files wouldn't be refreshed as we are using
+  the earlier stats structure.
+
+- CPUFREQ_NOTIFY is called from cpufreq_set_policy() which is called for
+  scenarios where we don't really want cpufreq_stat_notifier_policy() to get
+  called. For example whenever we are changing anything related to a policy:
+  min/max/current freq, etc.. cpufreq_set_policy() is called and so cpufreq
+  stats is notified. Where we don't do any useful stuff other than simply
+  returning with -EBUSY from cpufreq_stats_create_table(). And so this isn't the
+  right notifier that cpufreq stats..
+
+Due to all above reasons this patch does following changes:
+- Add new notifiers CPUFREQ_CREATE_POLICY and CPUFREQ_REMOVE_POLICY, which are
+  only called when policy is created/destroyed. They aren't called for
+  suspend/resume paths..
+- Use these notifiers in cpufreq_stat_notifier_policy() to create/destory stats
+  sysfs entries. And so cpufreq_unregister_driver() or suspend/resume shouldn't
+  be a problem for cpufreq_stats.
+- Return early from cpufreq_stat_cpu_callback() for suspend/resume sequence, so
+  that we don't free stats structure.
+
+Acked-and-tested-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/usb/host/xhci.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/cpufreq/cpufreq.c       |  5 +++++
+ drivers/cpufreq/cpufreq_stats.c | 24 +++++++++++++++++-------
+ include/linux/cpufreq.h         |  2 ++
+ 3 files changed, 24 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 4265b48856f6..672df9840014 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -397,16 +397,16 @@ static int xhci_try_enable_msi(struct usb_hcd *hcd)
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 3509ca0..1afbe52 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -943,6 +943,9 @@ static void cpufreq_policy_put_kobj(struct cpufreq_policy *policy)
+ 	struct kobject *kobj;
+ 	struct completion *cmp;
  
- #else
++	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
++			CPUFREQ_REMOVE_POLICY, policy);
++
+ 	down_read(&policy->rwsem);
+ 	kobj = &policy->kobj;
+ 	cmp = &policy->kobj_unregister;
+@@ -1148,6 +1151,8 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
+ 		ret = cpufreq_add_dev_interface(policy, dev);
+ 		if (ret)
+ 			goto err_out_unregister;
++		blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
++				CPUFREQ_CREATE_POLICY, policy);
+ 	}
  
--static int xhci_try_enable_msi(struct usb_hcd *hcd)
-+static inline int xhci_try_enable_msi(struct usb_hcd *hcd)
+ 	write_lock_irqsave(&cpufreq_driver_lock, flags);
+diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+index 4cf0d28..0f71562 100644
+--- a/drivers/cpufreq/cpufreq_stats.c
++++ b/drivers/cpufreq/cpufreq_stats.c
+@@ -277,7 +277,7 @@ static void cpufreq_stats_update_policy_cpu(struct cpufreq_policy *policy)
+ static int cpufreq_stat_notifier_policy(struct notifier_block *nb,
+ 		unsigned long val, void *data)
  {
- 	return 0;
+-	int ret;
++	int ret = 0;
+ 	struct cpufreq_policy *policy = data;
+ 	struct cpufreq_frequency_table *table;
+ 	unsigned int cpu = policy->cpu;
+@@ -287,15 +287,21 @@ static int cpufreq_stat_notifier_policy(struct notifier_block *nb,
+ 		return 0;
+ 	}
+ 
+-	if (val != CPUFREQ_NOTIFY)
+-		return 0;
+ 	table = cpufreq_frequency_get_table(cpu);
+ 	if (!table)
+ 		return 0;
+-	ret = cpufreq_stats_create_table(policy, table);
+-	if (ret)
+-		return ret;
+-	return 0;
++
++	if (val == CPUFREQ_CREATE_POLICY)
++		ret = cpufreq_stats_create_table(policy, table);
++	else if (val == CPUFREQ_REMOVE_POLICY) {
++		/* This might already be freed by cpu hotplug notifier */
++		if (per_cpu(cpufreq_stats_table, cpu)) {
++			cpufreq_stats_free_sysfs(cpu);
++			cpufreq_stats_free_table(cpu);
++		}
++	}
++
++	return ret;
  }
  
--static void xhci_cleanup_msix(struct xhci_hcd *xhci)
-+static inline void xhci_cleanup_msix(struct xhci_hcd *xhci)
+ static int cpufreq_stat_notifier_trans(struct notifier_block *nb,
+@@ -340,6 +346,10 @@ static int cpufreq_stat_cpu_callback(struct notifier_block *nfb,
  {
- }
+ 	unsigned int cpu = (unsigned long)hcpu;
  
--static void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
-+static inline void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
- {
- }
++	/* Don't free/allocate stats during suspend/resume */
++	if (action & CPU_TASKS_FROZEN)
++		return 0;
++
+ 	switch (action) {
+ 	case CPU_DOWN_PREPARE:
+ 		cpufreq_stats_free_sysfs(cpu);
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index aaf800e..bb727eb 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -308,6 +308,8 @@ cpufreq_verify_within_cpu_limits(struct cpufreq_policy *policy)
+ #define CPUFREQ_NOTIFY			(2)
+ #define CPUFREQ_START			(3)
+ #define CPUFREQ_UPDATE_POLICY_CPU	(4)
++#define CPUFREQ_CREATE_POLICY		(5)
++#define CPUFREQ_REMOVE_POLICY		(6)
  
+ #ifdef CONFIG_CPU_FREQ
+ int cpufreq_register_notifier(struct notifier_block *nb, unsigned int list);
 -- 
-1.8.4.2
+1.7.12.rc2.18.g61b472e
 
