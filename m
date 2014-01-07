@@ -1,71 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456AbaAGHEv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 02:04:51 -0500
-Received: from mail-bn1blp0186.outbound.protection.outlook.com ([207.46.163.186]:29019
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753283AbaAGHEs convert rfc822-to-8bit (ORCPT
+	id S1755269AbaAGHOl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 02:14:41 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:44969 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753283AbaAGHOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 02:04:48 -0500
-From: Shaohui Xie <Shaohui.Xie@freescale.com>
-To: David Miller <davem@davemloft.net>,
-        "shh.xie@gmail.com" <shh.xie@gmail.com>
-CC: "jg1.han@samsung.com" <jg1.han@samsung.com>,
-        "mugunthanvnm@ti.com" <mugunthanvnm@ti.com>,
-        "f.fainelli@gmail.com" <f.fainelli@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "afleming@gmail.com" <afleming@gmail.com>
-Subject: RE: [PATCH 5/6] [v4] phylib: Support attaching to generic 10g driver
-Thread-Topic: [PATCH 5/6] [v4] phylib: Support attaching to generic 10g
- driver
-Thread-Index: AQHPC1p3FDOeT9ey5UWp4xHijrVHipp4w5uAgAASpjA=
-Date: Tue, 7 Jan 2014 07:04:35 +0000
-Message-ID: <242e28ff23a8472a8e13d2f32c764374@BN1PR03MB069.namprd03.prod.outlook.com>
-References: <1389060865-7143-1-git-send-email-shh.xie@gmail.com>
- <20140107.005607.716747884959539511.davem@davemloft.net>
-In-Reply-To: <20140107.005607.716747884959539511.davem@davemloft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.50]
-x-forefront-prvs: 008421A8FF
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(51704005)(377454003)(189002)(199002)(13464003)(74316001)(74366001)(33646001)(56776001)(76796001)(85306002)(76786001)(76576001)(77982001)(59766001)(66066001)(80022001)(65816001)(79102001)(63696002)(47736001)(49866001)(4396001)(47976001)(50986001)(76482001)(54316002)(74502001)(74706001)(47446002)(74876001)(74662001)(31966008)(83322001)(19580405001)(19580395003)(69226001)(54356001)(51856001)(46102001)(53806001)(81686001)(83072002)(85852003)(80976001)(56816005)(2656002)(87266001)(90146001)(87936001)(81542001)(81342001)(77096001)(81816001)(41533002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR03MB071;H:BN1PR03MB069.namprd03.prod.outlook.com;CLIP:123.151.195.50;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 7 Jan 2014 02:14:39 -0500
+Date: Mon, 6 Jan 2014 23:14:36 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Andrey Smirnov <andrew.smirnov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] ims-pcu: Add commands supported by the new version of
+ the FW
+Message-ID: <20140107071436.GB20074@core.coreip.homeip.net>
+References: <1388623621-32245-1-git-send-email-andrew.smirnov@gmail.com>
+ <20140104013957.GA19702@core.coreip.homeip.net>
+ <CAHQ1cqEvXn3u2joA7dNaiz6fmHELnKjZTWF2F-7vvvBAx+9Drw@mail.gmail.com>
+ <20140104044433.GA20272@core.coreip.homeip.net>
+ <CAHQ1cqHJOi5mLptHSTw3W8dpdyJrUp8QnmCTtYdNX4YCTTNoaA@mail.gmail.com>
+ <20140104054133.GC32576@core.coreip.homeip.net>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140104054133.GC32576@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: David Miller [mailto:davem@davemloft.net]
-> Sent: Tuesday, January 07, 2014 1:56 PM
-> To: shh.xie@gmail.com
-> Cc: jg1.han@samsung.com; mugunthanvnm@ti.com; f.fainelli@gmail.com;
-> netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Xie Shaohui-B21989;
-> afleming@gmail.com
-> Subject: Re: [PATCH 5/6] [v4] phylib: Support attaching to generic 10g
-> driver
+On Fri, Jan 03, 2014 at 09:41:33PM -0800, Dmitry Torokhov wrote:
+> On Fri, Jan 03, 2014 at 09:03:11PM -0800, Andrey Smirnov wrote:
+> > On Fri, Jan 3, 2014 at 8:44 PM, Dmitry Torokhov
+> > <dmitry.torokhov@gmail.com> wrote:
+> > > On Fri, Jan 03, 2014 at 08:24:17PM -0800, Andrey Smirnov wrote:
+> > >> On Fri, Jan 3, 2014 at 5:39 PM, Dmitry Torokhov
+> > >> <dmitry.torokhov@gmail.com> wrote:
+> > >> > Hi Andrey,
+> > >> >
+> > >> > On Wed, Jan 01, 2014 at 04:47:01PM -0800, Andrey Smirnov wrote:
+> > >> >> New version of the PCU firmware supports two new commands:
+> > >> >>   - IMS_PCU_CMD_OFN_SET_CONFIG which allows to write data to the
+> > >> >>   registers of one finger navigation(OFN) chip present on the device
+> > >> >>   - IMS_PCU_CMD_OFN_GET_CONFIG which allows to read data form the
+> > >> >>   registers of said chip.
+> > >> >>
+> > >> >> This commit adds two helper functions to use those commands and sysfs
+> > >> >> attributes to use them. It also exposes some OFN configuration
+> > >> >> parameters via sysfs.
+> > >> >
+> > >> > Thank you for making the changes. I do not still quite like the games we
+> > >> > play with the OFN attributes, how about the patch below (on top of
+> > >> > yours)?
+> > >> >
+> > >>
+> > >> Yeah, I agree I like it the "two separate sysfs groups" group approach
+> > >> better. The only small nitpick about your patch is that I think we
+> > >> should use "get_unaligned_le16" instead of "le16_to_cpup"(In case
+> > >> anyone decides to run the driver on SuperH or C6x DSPs from TI :-)).
+> > >> Let me test it and if everything works as expected I'll apply you
+> > >> patch, convert it to "get_unaligned_le16", squash and send v3 of the
+> > >> patch.
+> > >
+> > > Why do we need get_unaligned_le16()? As far as I can see pcu->cmd_buf is
+> > > aligned and therefore pcu->cmd_buf[2] is also aligned on word boundary.
+> > 
+> > * The "pcu" structure is allocated with kmalloc which doesn't give any
+> > guarantees about address alignment.
+> > * I am not sure if the cmd_buf field in that structure is aligned, and
+> > even if it is, any future changes to that structure may shift its
+> > offset.
+> > * Also even if the data we are interested in is aligned on 2-byte
+> > border, I think all those architectures require 4-byte border
+> > alignment.
 > 
-> From: <shh.xie@gmail.com>
-> Date: Tue, 7 Jan 2014 10:14:25 +0800
-> 
-> > -static int phy_attach_direct(struct net_device *dev, struct
-> > phy_device *phydev,
-> > +int phy_attach_direct(struct net_device *dev, struct phy_device
-> > +*phydev,
-> >  			     u32 flags, phy_interface_t interface)
-> 
-> Since you are changing where the open parenthesis is, you must reindent
-> the arguments on the second line so that they start exactly at the first
-> column after that openning parenthesis.
-> 
-[S.H] OK. Thank you!
-Will fix it in next version.
+> As far as I know word access only requires word alignment. Please see
+> the other patch I just posted that adds alignment check in balcklight
+> handling code.
 
-Best Regards, 
-Shaohui Xie
+Andrey, were you able to test the patch?
+
+Thanks.
+
+-- 
+Dmitry
