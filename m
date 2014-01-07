@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265AbaAGWNY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 17:13:24 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:37172 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707AbaAGWNS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 17:13:18 -0500
-Date: Tue, 7 Jan 2014 23:13:16 +0100
+	id S1751350AbaAGWOT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 17:14:19 -0500
+Received: from mga02.intel.com ([134.134.136.20]:53273 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754583AbaAGWON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 17:14:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,621,1384329600"; 
+   d="scan'208";a="435345594"
 From: Andi Kleen <andi@firstfloor.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH] Add a sysctl for numa_balancing v2
-Message-ID: <20140107221316.GF20765@two.firstfloor.org>
-References: <1389053326-29462-1-git-send-email-andi@firstfloor.org>
- <20140107135817.7f3befadebe843761d08b812@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140107135817.7f3befadebe843761d08b812@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: acme@infradead.org
+Cc: jolsa@redhat.com, namhyung@kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/2] perf, tools: Fix --delay option in stat man page
+Date: Tue,  7 Jan 2014 14:14:06 -0800
+Message-Id: <1389132847-31982-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 01:58:17PM -0800, Andrew Morton wrote:
-> On Mon,  6 Jan 2014 16:08:46 -0800 Andi Kleen <andi@firstfloor.org> wrote:
-> 
-> > From: Andi Kleen <ak@linux.intel.com>
-> > 
-> > [It turns out the documentation patch was already merged
-> > earlier. So just resending without documentation.]
-> 
-> Confused.  How could we have merged the documentation for this feature
-> but not the feature itself?
+From: Andi Kleen <ak@linux.intel.com>
 
-Originally all numa balancing sysctl were undocumented. I had 
-a TBD for this in my original patch. Mel then documented them,
-but also included the documentation for the new sysctl in that patch.
-Mel's documentation patch was then merged
-(as part of his regular merges I suppose), but the global sysctl
-patch wasn't.
+The --delay option was documented as --initial-delay in the perf
+stat manpage. Fix this.
 
--Andi
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/Documentation/perf-stat.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index 80c7da6..29ee857 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -133,7 +133,7 @@ use --per-core in addition to -a. (system-wide).  The output includes the
+ core number and the number of online logical processors on that physical processor.
+ 
+ -D msecs::
+---initial-delay msecs::
++--delay msecs::
+ After starting the program, wait msecs before measuring. This is useful to
+ filter out the startup phase of the program, which is often very different.
+ 
+-- 
+1.8.3.1
+
