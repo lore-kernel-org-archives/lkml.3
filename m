@@ -1,53 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751493AbaAGKfv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 05:35:51 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:34164 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005AbaAGKft (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 05:35:49 -0500
-Date: Tue, 7 Jan 2014 11:35:43 +0100
-From: Andrea Mazzoleni <amadvance@gmail.com>
-To: Chris Mason <clm@fb.com>
-Cc: "amadvance@gmail.com" <amadvance@gmail.com>, Josef Bacik <jbacik@fb.com>,
-        "neilb@suse.de" <neilb@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Subject: Re: [RFC v2 2/2] fs: btrfs: Extends btrfs/raid56 to support up to
- six parities
-Message-ID: <20140107103543.GB16044@gmail.com>
-References: <1389000716-3274-1-git-send-email-amadvance@gmail.com>
- <1389000716-3274-3-git-send-email-amadvance@gmail.com>
- <1389017609.23310.0.camel@ret.masoncoding.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389017609.23310.0.camel@ret.masoncoding.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751561AbaAGKgM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 05:36:12 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:24402 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750966AbaAGKgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 05:36:08 -0500
+From: Andrey Vagin <avagin@openvz.org>
+To: netfilter-devel@vger.kernel.org
+Cc: netfilter@vger.kernel.org, coreteam@netfilter.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vvs@openvz.org,
+        Andrey Vagin <avagin@openvz.org>, Florian Westphal <fw@strlen.de>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: [PATCH] netfilter: nf_conntrack: fix RCU race in nf_conntrack_find_get
+Date: Tue,  7 Jan 2014 14:31:51 +0400
+Message-Id: <1389090711-15843-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+Lets look at destroy_conntrack:
 
-On 01/06, Chris Mason wrote:
-> Neat.  The faila/failb were always my least favorite part of the btrfs
-> code ;)  Did you test just raid5/6 or also the higher parity counts?
-At this stage no real testing was made with btrfs.
+hlist_nulls_del_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode);
+...
+nf_conntrack_free(ct)
+	kmem_cache_free(net->ct.nf_conntrack_cachep, ct);
 
-The intention of this btrfs patch is mainly to get feedback on the new raid
-inteface, and see if it matches the needs of btrfs, and if it results in
-cleaner code than before.
+net->ct.nf_conntrack_cachep is created with SLAB_DESTROY_BY_RCU.
 
-And besides the removal of the faila/failb variables, something other that
-likely you can appreciate is the removal of all the P/Q logic from btrfs,
-that it's now replaced with a single raid_rec() call.
+The hash is protected by rcu, so readers look up conntracks without
+locks.
+A conntrack is removed from the hash, but in this moment a few readers
+still can use the conntrack. Then this conntrack is released and another
+thread creates conntrack with the same address and the equal tuple.
+After this a reader starts to validate the conntrack:
+* It's not dying, because a new conntrack was created
+* nf_ct_tuple_equal() returns true.
 
-After the raid interface stabilizes, this patch can be used as starting
-point for a real btrfs patch. But at now it's just to show
-some example code of what kind of modification btrfs will need.
+But this conntrack is not initialized yet, so it can not be used by two
+threads concurrently. In this case BUG_ON may be triggered from
+nf_nat_setup_info().
 
-Ciao,
-Andrea
+Florian Westphal suggested to check the confirm bit too. I think it's
+right.
+
+task 1			task 2			task 3
+			nf_conntrack_find_get
+			 ____nf_conntrack_find
+destroy_conntrack
+ hlist_nulls_del_rcu
+ nf_conntrack_free
+ kmem_cache_free
+						__nf_conntrack_alloc
+						 kmem_cache_alloc
+						 memset(&ct->tuplehash[IP_CT_DIR_MAX],
+			 if (nf_ct_is_dying(ct))
+			 if (!nf_ct_tuple_equal()
+
+I'm not sure, that I have ever seen this race condition in a real life.
+Currently we are investigating a bug, which is reproduced on a few node.
+In our case one conntrack is initialized from a few tasks concurrently,
+we don't have any other explanation for this.
+
+<2>[46267.083061] kernel BUG at net/ipv4/netfilter/nf_nat_core.c:322!
+...
+<4>[46267.083951] RIP: 0010:[<ffffffffa01e00a4>]  [<ffffffffa01e00a4>] nf_nat_setup_info+0x564/0x590 [nf_nat]
+...
+<4>[46267.085549] Call Trace:
+<4>[46267.085622]  [<ffffffffa023421b>] alloc_null_binding+0x5b/0xa0 [iptable_nat]
+<4>[46267.085697]  [<ffffffffa02342bc>] nf_nat_rule_find+0x5c/0x80 [iptable_nat]
+<4>[46267.085770]  [<ffffffffa0234521>] nf_nat_fn+0x111/0x260 [iptable_nat]
+<4>[46267.085843]  [<ffffffffa0234798>] nf_nat_out+0x48/0xd0 [iptable_nat]
+<4>[46267.085919]  [<ffffffff814841b9>] nf_iterate+0x69/0xb0
+<4>[46267.085991]  [<ffffffff81494e70>] ? ip_finish_output+0x0/0x2f0
+<4>[46267.086063]  [<ffffffff81484374>] nf_hook_slow+0x74/0x110
+<4>[46267.086133]  [<ffffffff81494e70>] ? ip_finish_output+0x0/0x2f0
+<4>[46267.086207]  [<ffffffff814b5890>] ? dst_output+0x0/0x20
+<4>[46267.086277]  [<ffffffff81495204>] ip_output+0xa4/0xc0
+<4>[46267.086346]  [<ffffffff814b65a4>] raw_sendmsg+0x8b4/0x910
+<4>[46267.086419]  [<ffffffff814c10fa>] inet_sendmsg+0x4a/0xb0
+<4>[46267.086491]  [<ffffffff814459aa>] ? sock_update_classid+0x3a/0x50
+<4>[46267.086562]  [<ffffffff81444d67>] sock_sendmsg+0x117/0x140
+<4>[46267.086638]  [<ffffffff8151997b>] ? _spin_unlock_bh+0x1b/0x20
+<4>[46267.086712]  [<ffffffff8109d370>] ? autoremove_wake_function+0x0/0x40
+<4>[46267.086785]  [<ffffffff81495e80>] ? do_ip_setsockopt+0x90/0xd80
+<4>[46267.086858]  [<ffffffff8100be0e>] ? call_function_interrupt+0xe/0x20
+<4>[46267.086936]  [<ffffffff8118cb10>] ? ub_slab_ptr+0x20/0x90
+<4>[46267.087006]  [<ffffffff8118cb10>] ? ub_slab_ptr+0x20/0x90
+<4>[46267.087081]  [<ffffffff8118f2e8>] ? kmem_cache_alloc+0xd8/0x1e0
+<4>[46267.087151]  [<ffffffff81445599>] sys_sendto+0x139/0x190
+<4>[46267.087229]  [<ffffffff81448c0d>] ? sock_setsockopt+0x16d/0x6f0
+<4>[46267.087303]  [<ffffffff810efa47>] ? audit_syscall_entry+0x1d7/0x200
+<4>[46267.087378]  [<ffffffff810ef795>] ? __audit_syscall_exit+0x265/0x290
+<4>[46267.087454]  [<ffffffff81474885>] ? compat_sys_setsockopt+0x75/0x210
+<4>[46267.087531]  [<ffffffff81474b5f>] compat_sys_socketcall+0x13f/0x210
+<4>[46267.087607]  [<ffffffff8104dea3>] ia32_sysret+0x0/0x5
+<4>[46267.087676] Code: 91 20 e2 01 75 29 48 89 de 4c 89 f7 e8 56 fa ff ff 85 c0 0f 84 68 fc ff ff 0f b6 4d c6 41 8b 45 00 e9 4d fb ff ff e8 7c 19 e9 e0 <0f> 0b eb fe f6 05 17 91 20 e2 80 74 ce 80 3d 5f 2e 00 00 00 74
+<1>[46267.088023] RIP  [<ffffffffa01e00a4>] nf_nat_setup_info+0x564/0x590
+
+Cc: Florian Westphal <fw@strlen.de>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+---
+ net/netfilter/nf_conntrack_core.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
+index 43549eb..7a34bb2 100644
+--- a/net/netfilter/nf_conntrack_core.c
++++ b/net/netfilter/nf_conntrack_core.c
+@@ -387,8 +387,12 @@ begin:
+ 			     !atomic_inc_not_zero(&ct->ct_general.use)))
+ 			h = NULL;
+ 		else {
++			/* A conntrack can be recreated with the equal tuple,
++			 * so we need to check that the conntrack is initialized
++			 */
+ 			if (unlikely(!nf_ct_tuple_equal(tuple, &h->tuple) ||
+-				     nf_ct_zone(ct) != zone)) {
++				     nf_ct_zone(ct) != zone) ||
++				     !nf_ct_is_confirmed(ct)) {
+ 				nf_ct_put(ct);
+ 				goto begin;
+ 			}
+-- 
+1.8.4.2
+
