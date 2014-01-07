@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754918AbaAGJJr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 04:09:47 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:40655 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaAGJJn (ORCPT
+	id S1756476AbaAGJKO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 04:10:14 -0500
+Received: from mail-db9lp0252.outbound.messaging.microsoft.com ([213.199.154.252]:4215
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755256AbaAGJKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 04:09:43 -0500
-Date: Tue, 7 Jan 2014 09:09:38 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] Add GPIO support for the MAX6650/6651 ICs
-Message-ID: <20140107090938.GF3182@lee--X1>
-References: <1387814889-16670-1-git-send-email-lpapp@kde.org>
+	Tue, 7 Jan 2014 04:10:12 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(z551bizzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <shawn.guo@linaro.org>, <thierry.reding@gmail.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-pwm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCHv9 3/4] ARM: dts: Enables FTM PWM device for Vybrid VF610 TOWER board.
+Date: Tue, 7 Jan 2014 16:13:58 +0800
+Message-ID: <1389082438-2199-2-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1389082438-2199-1-git-send-email-Li.Xiubo@freescale.com>
+References: <1389082438-2199-1-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1387814889-16670-1-git-send-email-lpapp@kde.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't send private, off-list emails for poking or anything else
-related to upstreamming patches.
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+Reviewed-by: Sascha Hauer <s.hauer@pengutronix.de>
+---
 
-> Important text here later. It is now just an attempt to get some feedback about
-> the design of the new features. This set has only been compilation tested, and
-> has many errors with checkpatch.pl, et al. Really, the point is only to get
-> feedback about the direction, as there has been a lot of paid work put into
-> this to work better with upstream after the previously rejected change simple
-> hwmon change.
 
-If you want to obtain time/advice from maintainers, most of which are
-already snowed-under, you have to earn it. Making submissions such as
-these are not conducive to your cause. Fix the Checkpatch errors and
-do your damnedest to ensure the code is the finest standard it can be.
+No changes since v7.
 
-If you fail to adhere to these [1] three documents accidentally, then
-you will be guided. If you do so on purpose by sending intentionally
-sloppy code, then you are unlikely to gain any attention at all.
 
-[1]
-  Documentation/CodingStyle
-  Documentation/email-clients.txt
-  Documentation/SubmittingPatches
 
-> Laszlo Papp (3):
->   mfd: MAX6650/6651 support
->   hwmon: (max6650) Convert to be a platform driver
->   gpio: MAX6650/6651 support
-> 
->  drivers/gpio/Kconfig                |  14 ++
->  drivers/gpio/Makefile               |   2 +
->  drivers/gpio/gpio-max6651.c         |  72 +++++++++
->  drivers/gpio/gpio-max665x.c         | 301 ++++++++++++++++++++++++++++++++++++
->  drivers/hwmon/Kconfig               |   2 +-
->  drivers/hwmon/max6650.c             | 150 +++++++++---------
->  drivers/mfd/Kconfig                 |  11 ++
->  drivers/mfd/Makefile                |   1 +
->  drivers/mfd/max6651.c               | 132 ++++++++++++++++
->  include/linux/mfd/max6651-private.h |  63 ++++++++
->  10 files changed, 675 insertions(+), 73 deletions(-)
->  create mode 100644 drivers/gpio/gpio-max6651.c
->  create mode 100644 drivers/gpio/gpio-max665x.c
->  create mode 100644 drivers/mfd/max6651.c
->  create mode 100644 include/linux/mfd/max6651-private.h
-> 
 
+ arch/arm/boot/dts/vf610-twr.dts | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/arch/arm/boot/dts/vf610-twr.dts b/arch/arm/boot/dts/vf610-twr.dts
+index c3a3237..d5c6a39 100644
+--- a/arch/arm/boot/dts/vf610-twr.dts
++++ b/arch/arm/boot/dts/vf610-twr.dts
+@@ -100,6 +100,12 @@
+ 	status = "okay";
+ };
+ 
++&pwm0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_pwm0_1>;
++	status = "okay";
++};
++
+ &uart1 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_uart1_1>;
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.4
+
+
