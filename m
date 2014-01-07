@@ -1,82 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121AbaAGNyV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 08:54:21 -0500
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:35803 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889AbaAGNyL (ORCPT
+	id S1752194AbaAGNyw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 08:54:52 -0500
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:9398 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640AbaAGNyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 08:54:11 -0500
-Date: Tue, 7 Jan 2014 07:54:09 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andreas Heider <andreas@meetr.de>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH 0/4] Get EDID late for VGA switcheroo
-Message-ID: <20140107135409.GA21190@thinkpad-t410>
-Mail-Followup-To: Ramkumar Ramachandra <artagnon@gmail.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Andreas Heider <andreas@meetr.de>,
-	Chris Wilson <chris@chris-wilson.co.uk>
-References: <1389088723-30959-1-git-send-email-artagnon@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389088723-30959-1-git-send-email-artagnon@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 7 Jan 2014 08:54:46 -0500
+X-AuditID: cbfec373-b7f4a6d000005e0a-bb-52cc0724332d
+Date: Tue, 07 Jan 2014 11:54:38 -0200
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Ding Tianhong <dingtianhong@huawei.com>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        linux-media@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH v3 13/19] media: dvb_core: slight optimization of addr
+ compare
+Message-id: <20140107115438.02c7424e@samsung.com>
+In-reply-to: <52BC0E56.80003@huawei.com>
+References: <52BA5113.7070908@huawei.com> <52BABA23.2040709@cogentembedded.com>
+ <52BC0E56.80003@huawei.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKLMWRmVeSWpSXmKPExsVy+t/hYF0V9jNBBieOili8ObqDzeLyrjls
+	Fj0btrJaHFsgZnFm1S12B1aPB1P/M3m0HHnL6vF5k1wAcxSXTUpqTmZZapG+XQJXxuvDCQX7
+	xCr6rig0MC7l72Lk5JAQMJFYfqqDFcIWk7hwbz1bFyMXh5DAEkaJC1+3sIMkhAR6mCT6/ouC
+	2CwCqhIH9nxiArHZBIwkXjW2gDWLCGhLvLsyjQWkmVlgN6PE7UPtYEXCAiESr398ZQSxeQUM
+	JWYffgM2lFNAQ6J9+SWgGg6gBbkSx78Jg5gSAk4Suw9IQVQLSvyYfI8FxGYW0JLYvK2JFcKW
+	l9i85i3zBEaBWUjKZiEpm4WkbAEj8ypG0dLi5ILipPRcI73ixNzi0rx0veT83E2MkKAt3sH4
+	YoPVIUYBDkYlHt6Ju08FCbEmlhVX5h5ilOBgVhLhZb5xOkiINyWxsiq1KD++qDQntfgQIxMH
+	p1QDo+sCnjOsEzqWvUm3fmy4zsXutOmMqkjR/WWS8eriVa92RZapXMqeLHvu9x8eS1GJgqAj
+	wh5ejvblB22kNu6tkN02q2ky+yp+mauV2u2u7Asezo+cz7vSNGb2xYSwxVJubRGXZO5afXwc
+	dnaP0Zys+G2GaRd2xtmz5zUov4wWdrCqkF3owrlNiaU4I9FQi7moOBEAfk/d/zgCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 03:28:39PM +0530, Ramkumar Ramachandra wrote:
-> Hi,
+Em Thu, 26 Dec 2013 19:09:10 +0800
+Ding Tianhong <dingtianhong@huawei.com> escreveu:
+
+> On 2013/12/25 18:57, Sergei Shtylyov wrote:
+> > Hello.
+> > 
+> > On 25-12-2013 7:29, Ding Tianhong wrote:
+> > 
+> >> Use possibly more efficient ether_addr_equal
+> >> instead of memcmp.
+> > 
+> >> Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+> >> Cc: linux-media@vger.kernel.org
+> >> Cc: linux-kernel@vger.kernel.org
+> >> Signed-off-by: Yang Yingliang <yangyingliang@huawei.com>
+> >> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+> >> ---
+> >>   drivers/media/dvb-core/dvb_net.c | 8 ++++----
+> >>   1 file changed, 4 insertions(+), 4 deletions(-)
+> > 
+> >> diff --git a/drivers/media/dvb-core/dvb_net.c b/drivers/media/dvb-core/dvb_net.c
+> >> index f91c80c..3dfc33b 100644
+> >> --- a/drivers/media/dvb-core/dvb_net.c
+> >> +++ b/drivers/media/dvb-core/dvb_net.c
+> >> @@ -179,7 +179,7 @@ static __be16 dvb_net_eth_type_trans(struct sk_buff *skb,
+> >>       eth = eth_hdr(skb);
+> >>
+> >>       if (*eth->h_dest & 1) {
+> >> -        if(memcmp(eth->h_dest,dev->broadcast, ETH_ALEN)==0)
+> >> +        if(ether_addr_equal(eth->h_dest,dev->broadcast))
+> > 
+> >    There should be space after comma.
+> > 
+> >> @@ -674,11 +674,11 @@ static void dvb_net_ule( struct net_device *dev, const u8 *buf, size_t buf_len )
+> >>                       if (priv->rx_mode != RX_MODE_PROMISC) {
+> >>                           if (priv->ule_skb->data[0] & 0x01) {
+> >>                               /* multicast or broadcast */
+> >> -                            if (memcmp(priv->ule_skb->data, bc_addr, ETH_ALEN)) {
+> >> +                            if (!ether_addr_equal(priv->ule_skb->data, bc_addr)) {
+> >>                                   /* multicast */
+> >>                                   if (priv->rx_mode == RX_MODE_MULTI) {
+> >>                                       int i;
+> >> -                                    for(i = 0; i < priv->multi_num && memcmp(priv->ule_skb->data, priv->multi_macs[i], ETH_ALEN); i++)
+> >> +                                    for(i = 0; i < priv->multi_num && !ether_addr_equal(priv->ule_skb->data, priv->multi_macs[i]); i++)
+> > 
+> >    Shouldn't this line be broken?
+> > 
 > 
-> VGA switcheroo doesn't work on my 2013 MBP, and I'm trying to fix
-> it. From what I've gathered from previous patches, it seems that the
-> EDID is not computed at boottime, because LVDS isn't connected to the
-> i915 card (and is connected to the nouveau card instead). So, here's a
-> series to get switcheroo-reprobe to call get-edid. I think it's a step
-> in the right direction, although I think more stuff is required to fix
-> the issue.
+> ok, thanks.
 
-It's been a while since I've thought about this, so my memory is
-suspect. It's also a bit dated, and I haven't kept up to know what's
-changed in since then. But I don't think just reading the mode on
-reprobe gets you very far.
+Also, since you're touching on those lines, could you please add an space
+after 'if' (on the first hunk) and after 'for' (on the second one)?
 
-These are the main problems as I remember them:
+> 
+> Regards
+> >>                                           ;
+> >>                                       if (i == priv->multi_num)
+> >>                                           drop = 1;
+> > 
+> > WBR, Sergei
+> > 
+> > 
+> > 
+> > 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
- 1. On many Macbook models the firmware isn't putting LVDS information
-    in opregion. Reading the EDID during device initialization also
-    fails since the DDC is muxed to the DGPU, so i915 concludes there's
-    no LVDS and doesn't register an LVDS connector at all. I also think
-    it was impossible to register a new connector at a later time,
-    though I'm not sure about that.
-
- 2. If i915 is forced to register the LVDS connector (say via a quirk)
-    it still may not know the panel mode and guesses something rather
-    conservative. This mode it assumes is used to allocate framebuffer
-    memory, which is likely to end up being too small, and I don't think
-    there was any support for resizing it later. This resulted in VTs
-    not working because there isn't enough framebuffer memory for the
-    mode they're trying to use.
-
- 3. So what is really wanted is to be able to mux just the DDC over to
-    the IGPU when the device is initialized to read the panel mode. One
-    possible problem is that the hw might not support muxing the DDC
-    separately, but Apple hw does so we'll ignore that for now. The
-    basic code for muxing only the DDC isn't too difficult, and I had
-    some patches for this at one point. The problem is that the handler
-    must register with vga_switcheroo before this is possible, so
-    there's a module initialization ordering issue that wasn't easily
-    solved. Maybe now it would be possible to do something with
-    EPROBE_DEFER, though I'm not sure how i915 would know whether or not
-    it should wait for a switcheroo handler.
-
-I just didn't have enough time to spend on this issue to work through
-all of this. I also never looked at doing this with eDP, which is what I
-thought all the Macbooks have been using for the last couple of years.
-Are you sure your machine uses LVDS and not eDP?
-
-Seth
-
+Thanks,
+Mauro
