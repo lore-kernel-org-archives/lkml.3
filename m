@@ -1,45 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751455AbaAGLMy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 06:12:54 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:52963 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095AbaAGLMx (ORCPT
+	id S1751585AbaAGLOX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 06:14:23 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:54888 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857AbaAGLOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 06:12:53 -0500
+	Tue, 7 Jan 2014 06:14:22 -0500
+Date: Tue, 7 Jan 2014 12:13:41 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, pjt@google.com, Morten.Rasmussen@arm.com,
+        cmetcalf@tilera.com, tony.luck@intel.com, alex.shi@linaro.org,
+        linaro-kernel@lists.linaro.org, rjw@sisk.pl,
+        paulmck@linux.vnet.ibm.com, corbet@lwn.net, tglx@linutronix.de,
+        len.brown@intel.com, arjan@linux.intel.com, amit.kucheria@linaro.org,
+        james.hogan@imgtec.com, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, Dietmar.Eggemann@arm.com
+Subject: Re: [RFC] sched: CPU topology try
+Message-ID: <20140107111341.GS31570@twins.programming.kicks-ass.net>
+References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
+ <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
+ <52CBCB85.8050607@linux.vnet.ibm.com>
+ <20140107095039.GA2480@laptop.programming.kicks-ass.net>
+ <52CBD96B.4050103@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20140107104553.GC8991@nuc-i3427.alporthouse.com>
-References: <1389088723-30959-1-git-send-email-artagnon@gmail.com>
- <1389088723-30959-5-git-send-email-artagnon@gmail.com> <20140107104553.GC8991@nuc-i3427.alporthouse.com>
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Tue, 7 Jan 2014 16:42:12 +0530
-Message-ID: <CALkWK0mSPvjDUaGDS9jP=PSynFFTtw5U8WX40PzzixUwvgokSg@mail.gmail.com>
-Subject: Re: [PATCH 4/4] drm/i915: check LVDS for EDID on GPU switches
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andreas Heider <andreas@meetr.de>,
-        Seth Forshee <seth.forshee@canonical.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52CBD96B.4050103@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris Wilson wrote:
-> On Tue, Jan 07, 2014 at 03:28:43PM +0530, Ramkumar Ramachandra wrote:
->> If the LVDS panel wasn't connected at boot then we won't have an EDID
->> for it. To fix this, call intel_lvds_get_edid() from the vga_switcheroo
->> reprobe callback.
->
-> I would rather have an iterator over all our connectors (or perhaps
-> encoders would be the right semantic, except we have
-> connectors==encoders) and a reprobe callback.
+On Tue, Jan 07, 2014 at 04:09:39PM +0530, Preeti U Murthy wrote:
+> On 01/07/2014 03:20 PM, Peter Zijlstra wrote:
+> > On Tue, Jan 07, 2014 at 03:10:21PM +0530, Preeti U Murthy wrote:
+> >> What if we want to add arch specific flags to the NUMA domain? Currently
+> >> with Peter's patch:https://lkml.org/lkml/2013/11/5/239 and this patch,
+> >> the arch can modify the sd flags of the topology levels till just before
+> >> the NUMA domain. In sd_init_numa(), the flags for the NUMA domain get
+> >> initialized. We need to perhaps call into arch here to probe for
+> >> additional flags?
+> > 
+> > What are you thinking of? I was hoping all NUMA details were captured in
+> > the distance table.
+> > 
+> > Its far easier to talk of specifics in this case.
+> > 
+> If the processor can be core gated, then there is very little power
+> savings that we could yield from consolidating all the load onto a
+> single node in a NUMA domain. 6 cores on one node or 3 cores each on two
+> nodes, the power is drawn by 6 cores in all. So I was thinking under
+> this circumstance we might want to set the SD_SHARE_POWERDOMAIN flag at
+> the NUMA domain and spread the load if it favours the workload.
 
-I don't follow; iterate over which connectors? There's one
-lvds_connector for which we get EDID.
+So Intel has so far not said a lot of sensible things about power
+management on their multi-socket platform.
 
-> Saves exporting private
-> functions and prevent me asking silly questions like what about eDP?
+And I've not heard anything at all from IBM on the POWER chips.
 
-Avoid exporting intel_lvds_get_edid()? Why?
+What I know from the Intel side is that packet idle hardly saves
+anything when compared to the DRAM power and the cost of having to do
+remote memory accesses.
 
-p.s- Excuse the stupidity of the questions; I know close to nothing
-about how i915 or switcheroo work.
+In other words, I'm not at all considering power aware scheduling for
+NUMA systems until someone starts talking sense :-)
