@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013AbaAGNyO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 08:54:14 -0500
-Received: from [217.140.96.21] ([217.140.96.21]:50499 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751264AbaAGNyJ (ORCPT
+	id S1752121AbaAGNyV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 08:54:21 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:35803 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751889AbaAGNyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 08:54:09 -0500
-Date: Tue, 7 Jan 2014 13:53:14 +0000
-From: Dave Martin <Dave.Martin@arm.com>
-To: Anurag Aggarwal <anurag19aggarwal@gmail.com>
-Cc: Anurag Aggarwal <a.anurag@samsung.com>,
-        Naveen Kumar <naveen.sel@samsung.com>,
-        Narendra Meher <narendra.m1@samsung.com>,
-        "nico@linaro.org" <nico@linaro.org>,
-        Ashish Kalra <ashish.kalra@samsung.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cpgs ." <cpgs@samsung.com>,
-        "naveenkrishna.ch@gmail.com" <naveenkrishna.ch@gmail.com>,
-        Rajat Suri <rajat.suri@samsung.com>,
-        Poorva Srivastava <poorva.s@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mohammad Irfan Ansari <mohammad.a2@samsung.com>
-Subject: Re: [PATCH V6] ARM : unwinder : Prevent data abort due to stack
- overflow
-Message-ID: <20140107135254.GA3241@e103592.cambridge.arm.com>
+	Tue, 7 Jan 2014 08:54:11 -0500
+Date: Tue, 7 Jan 2014 07:54:09 -0600
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andreas Heider <andreas@meetr.de>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [PATCH 0/4] Get EDID late for VGA switcheroo
+Message-ID: <20140107135409.GA21190@thinkpad-t410>
+Mail-Followup-To: Ramkumar Ramachandra <artagnon@gmail.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Andreas Heider <andreas@meetr.de>,
+	Chris Wilson <chris@chris-wilson.co.uk>
+References: <1389088723-30959-1-git-send-email-artagnon@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1389088723-30959-1-git-send-email-artagnon@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 14, 2013 at 03:47:49PM +0530, Anurag Aggarwal wrote:
-> >You could try adding some debug printks to see how the backtrace fails.
-> >You could also try adding a few hand-crafted assembler functions
-> >with appropriate code and unwind directives to trigger different kinds
-> >of backtrace failure.  You might have to add a way to artificially limit
-> >sp_high to check the cases where you run out of stack in the middle of
-> >popping multiple registers.
+On Tue, Jan 07, 2014 at 03:28:39PM +0530, Ramkumar Ramachandra wrote:
+> Hi,
 > 
-> I added a a printk statement
-> +               if (*vsp >= (unsigned long *)ctrl->sp_high) {
-> +                       printk(KERN_ERR "Stack Overflow Detected, vsp = %lx",
-> +                               (unsigned long)*vsp);
-> +                       return -URC_FAILURE;
-> +               }
-> 
-> I ran a many test cases to try and get the above print in the dmesg log.
-> 
-> I tried the following things :
-> 
-> 1) Calling unwind_backtrace from diffrenet locations in the kernel, I
-> added the unwind call
-> in some irq, fork, exit and some sysfs entries call.
-> 2) I limited the value of sp_high in unwind_frame() itself, I tried
-> many values of sp_high,
-> varrying from (low + sizeof(ctrl.vrs)/4) to (low + 4*sizeof(ctrl.vrs)).
-> 
-> When running the above cases I was able to see the above printk quiet
-> a few times in dmesg log.
-> 
-> So, the error condition is being handled.
-> 
-> If you have some test cases for verifying the unwinder, please share
-> the same. They might help
-> in thorough testing of unwinder.
+> VGA switcheroo doesn't work on my 2013 MBP, and I'm trying to fix
+> it. From what I've gathered from previous patches, it seems that the
+> EDID is not computed at boottime, because LVDS isn't connected to the
+> i915 card (and is connected to the nouveau card instead). So, here's a
+> series to get switcheroo-reprobe to call get-edid. I think it's a step
+> in the right direction, although I think more stuff is required to fix
+> the issue.
 
-I think that sounds OK to give us reasonable confidence that the code is
-working correctly.
+It's been a while since I've thought about this, so my memory is
+suspect. It's also a bit dated, and I haven't kept up to know what's
+changed in since then. But I don't think just reading the mode on
+reprobe gets you very far.
 
-Go ahead and add my Reviewed-by on the patch, if you're still waiting
-for it.
+These are the main problems as I remember them:
 
-Cheers
----Dave
+ 1. On many Macbook models the firmware isn't putting LVDS information
+    in opregion. Reading the EDID during device initialization also
+    fails since the DDC is muxed to the DGPU, so i915 concludes there's
+    no LVDS and doesn't register an LVDS connector at all. I also think
+    it was impossible to register a new connector at a later time,
+    though I'm not sure about that.
+
+ 2. If i915 is forced to register the LVDS connector (say via a quirk)
+    it still may not know the panel mode and guesses something rather
+    conservative. This mode it assumes is used to allocate framebuffer
+    memory, which is likely to end up being too small, and I don't think
+    there was any support for resizing it later. This resulted in VTs
+    not working because there isn't enough framebuffer memory for the
+    mode they're trying to use.
+
+ 3. So what is really wanted is to be able to mux just the DDC over to
+    the IGPU when the device is initialized to read the panel mode. One
+    possible problem is that the hw might not support muxing the DDC
+    separately, but Apple hw does so we'll ignore that for now. The
+    basic code for muxing only the DDC isn't too difficult, and I had
+    some patches for this at one point. The problem is that the handler
+    must register with vga_switcheroo before this is possible, so
+    there's a module initialization ordering issue that wasn't easily
+    solved. Maybe now it would be possible to do something with
+    EPROBE_DEFER, though I'm not sure how i915 would know whether or not
+    it should wait for a switcheroo handler.
+
+I just didn't have enough time to spend on this issue to work through
+all of this. I also never looked at doing this with eDP, which is what I
+thought all the Macbooks have been using for the last couple of years.
+Are you sure your machine uses LVDS and not eDP?
+
+Seth
+
