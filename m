@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751688AbaAGOvi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 09:51:38 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:37892 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983AbaAGOv3 (ORCPT
+	id S1752004AbaAGOyI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 09:54:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41397 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158AbaAGOyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 09:51:29 -0500
-X-IronPort-AV: E=Sophos;i="4.95,619,1384300800"; 
-   d="scan'208";a="88299966"
-Message-ID: <52CC1453.3090804@citrix.com>
-Date: Tue, 7 Jan 2014 14:50:59 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 7 Jan 2014 09:54:00 -0500
 MIME-Version: 1.0
-To: Wei Liu <wei.liu2@citrix.com>
-CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next v2 1/9] xen-netback: Introduce TX grant map definitions
-References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com> <1386892097-15502-2-git-send-email-zoltan.kiss@citrix.com> <20131213153138.GL21900@zion.uk.xensource.com> <52AB506E.3040509@citrix.com> <20131213191423.GA12582@zion.uk.xensource.com> <52AF1A84.3090304@citrix.com> <20131216175036.GB25969@zion.uk.xensource.com>
-In-Reply-To: <20131216175036.GB25969@zion.uk.xensource.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+In-Reply-To: <20140107075600.GC20074@core.coreip.homeip.net>
+References: <1370520110-32293-1-git-send-email-ming.lei@canonical.com>
+	<1370520110-32293-3-git-send-email-ming.lei@canonical.com>
+	<20140107075600.GC20074@core.coreip.homeip.net>
+Date: Tue, 7 Jan 2014 22:53:57 +0800
+Message-ID: <CACVXFVNMofvYpsiFFxFaCtN7XHAEtBmJEHCW2mJRS4x+O0+utg@mail.gmail.com>
+Subject: Re: [PATCH v1 2/4] firmware loader: simplify holding module for request_firmware
+From: Ming Lei <ming.lei@canonical.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/12/13 17:50, Wei Liu wrote:
-> On Mon, Dec 16, 2013 at 03:21:40PM +0000, Zoltan Kiss wrote:
-> [...]
->>>>>>>
->>>>>>> Should this be BUG_ON? AIUI this kthread should be the only one doing
->>>>>>> unmap, right?
->>>>> The NAPI instance can do it as well if it is a small packet fits
->>>>> into PKT_PROT_LEN. But still this scenario shouldn't really happen,
->>>>> I was just not sure we have to crash immediately. Maybe handle it as
->>>>> a fatal error and destroy the vif?
->>>>>
->>> It depends. If this is within the trust boundary, i.e. everything at the
->>> stage should have been sanitized then we should BUG_ON because there's
->>> clearly a bug somewhere in the sanitization process, or in the
->>> interaction of various backend routines.
->>
->> My understanding is that crashing should be avoided if we can bail
->> out somehow. At this point there is clearly a bug in netback
->> somewhere, something unmapped that page before it should have
->> happened, or at least that array get corrupted somehow. However
->> there is a chance that xenvif_fatal_tx_err() can contain the issue,
->> and the rest of the system can go unaffected.
->>
+Hi Dmitry,
+
+On Tue, Jan 7, 2014 at 3:56 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> Hi Ming,
 >
-> That would make debugging much harder if a crash is caused by a previous
-> corrupted array and we pretend we can carry on serving IMHO. Now netback
-> is having three routines (NAPI, two kthreads) to serve a single vif, the
-> interation among them makes bug hard to reproduce.
+> On Thu, Jun 06, 2013 at 08:01:48PM +0800, Ming Lei wrote:
+>> module reference doesn't cover direct loading path, so this patch
+>> simply holds the module in the whole life time of request_firmware()
+>> to fix the problem.
+>
+> This does not make sense to me. If request_firmware() is executing that
+> means some other module references it and module refcount already
+> reflects that.
 
-OK, I'll make this a BUG() in the next series.
+Yes, you are right, holding this module references in both
+request_firmware() and request_firmware_direct() shouldn't
+be necessary.
 
-Zoli
+>
+> We needed to pin module before Tejun's work ensuring that currently open
+> sysfs entries won't keep related kobjects pinned after kernel marked
+> them inactive. We can probably delete __module_get()/module_put() from
+> firmware_class.c now.
 
+But holding the reference for request_firmware_nowait() is needed.
+
+
+Thanks,
+--
+Ming Lei
