@@ -1,93 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756711AbaAGEU4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 23:20:56 -0500
-Received: from ozlabs.org ([203.10.76.45]:34050 "EHLO ozlabs.org"
+	id S1756889AbaAGEXn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 23:23:43 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49300 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755102AbaAGEUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 23:20:54 -0500
-Date: Tue, 7 Jan 2014 15:20:43 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: linux-next: manual merge of the tip tree with the pm tree
-Message-Id: <20140107152043.6595eb01fbe10a5b32952fbf@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__7_Jan_2014_15_20_43_+1100_vQxbrKtQM6BG4Sw7"
+	id S1755379AbaAGEXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 23:23:42 -0500
+Message-ID: <52CB8118.30601@zytor.com>
+Date: Mon, 06 Jan 2014 20:22:48 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Josh Boyer <jwboyer@fedoraproject.org>
+CC: Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Torsten Duwe <duwe@lst.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
+        kexec <kexec@lists.infradead.org>, Peter Jones <pjones@redhat.com>
+Subject: Re: [PATCH 4/6] kexec: A new system call, kexec_file_load, for in
+ kernel kexec
+References: <20131121191907.GA26366@srcf.ucam.org>	<20131122185706.GK4046@redhat.com>	<87vbzju6ql.fsf@xmission.com>	<20131125163920.GC23094@redhat.com>	<87fvqj2vxz.fsf@xmission.com>	<20131126142759.GA5473@redhat.com>	<20131219125439.GA6379@lst.de>	<20131220141917.GB27063@redhat.com>	<87a9fvqfs4.fsf@xmission.com>	<CAGXu5jKJ88J-++nvkPVvghkXbN+_mB=T1siSDF7yoXQ-d-ONxg@mail.gmail.com>	<20140102203912.GB22822@redhat.com>	<52C5D28F.6030008@zytor.com> <CA+5PVA60FLTXZxf1hVuzD=_vUdg10Y7sYG9iZCs4voxurV_t0g@mail.gmail.com>
+In-Reply-To: <CA+5PVA60FLTXZxf1hVuzD=_vUdg10Y7sYG9iZCs4voxurV_t0g@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__7_Jan_2014_15_20_43_+1100_vQxbrKtQM6BG4Sw7
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 01/06/2014 01:33 PM, Josh Boyer wrote:
+> On Thu, Jan 2, 2014 at 3:56 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 01/02/2014 12:39 PM, Vivek Goyal wrote:
+>>>
+>>> If secureboot is enabled, it enforces module signature verification. I
+>>> think similar will happen for kexec too. How would kernel know that on
+>>> a secureboot platform fd original verification will happen and it is
+>>> sufficient.
+>>>
+>>> I personally want to support bzImage as well (apart from ELF) because
+>>> distributions has been shipping bzImage for a long time and I don't
+>>> want to enforce a change there because of secureboot. It is not necessary.
+>>> Right now I am thinking more about storing detached bzImage signatures
+>>> and passing those signatures to kexec system call.
+>>>
+>>
+>> Since the secureboot scenario probably means people will be signing
+>> those kernels, and those kernels are going to be EFI images, that in
+>> order to have "one kernel, one signature" there will be a desire to
+>> support signed PE images.  Yes, PE is ugly but it shouldn't be too bad.
+>>  However, it is probably one of those things that can be dealt with one
+>> bit at a time.
+> 
+> David Howells posted patches to support signed PE binaries early last
+> year.  They were rejected rather quickly.
+> 
+> https://lkml.org/lkml/2013/2/21/196
+> 
+> That was for loading keys via PE binaries, but the parser is needed
+> either way.  Unless I'm misunderstanding what you're suggesting?
+> 
 
-Hi all,
+I know.  I think the kexec is a better motivation, though.
 
-Today's linux-next merge of the tip tree got a conflict in
-drivers/acpi/processor_idle.c between commit 6cb85b2b9df9 ("ACPI /
-cpuidle: fix max idle state handling with hotplug CPU support") from the
-pm tree and commit 16824255394f ("x86, acpi, idle: Restructure the mwait
-idle routines") from the tip tree.
+	-hpa
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/acpi/processor_idle.c
-index 1fc455b8ce17,f90c56c8379e..000000000000
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@@ -783,18 -780,6 +778,13 @@@ static int acpi_idle_enter_simple(struc
-  	if (unlikely(!pr))
-  		return -EINVAL;
- =20
- +#ifdef CONFIG_HOTPLUG_CPU
- +	if ((cx->type !=3D ACPI_STATE_C1) && (num_online_cpus() > 1) &&
- +	    !pr->flags.has_cst &&
- +	    !(acpi_gbl_FADT.flags & ACPI_FADT_C2_MP_SUPPORTED))
- +		return acpi_idle_enter_c1(dev, drv, CPUIDLE_DRIVER_STATE_START);
- +#endif
- +
-- 	if (cx->entry_method =3D=3D ACPI_CSTATE_FFH) {
-- 		if (current_set_polling_and_test())
-- 			return -EINVAL;
-- 	}
--=20
-  	/*
-  	 * Must be done before busmaster disable as we might need to
-  	 * access HPET !
-
---Signature=_Tue__7_Jan_2014_15_20_43_+1100_vQxbrKtQM6BG4Sw7
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSy4ChAAoJEMDTa8Ir7ZwVei0P/At8p4VELYY3DR4ZlHLwimdr
-wPRcm/nuk4LUuEHNgkEt5x44QlZcRjb7SSuUO/TZ0HG+cRvx+G4be06sLshp/20G
-C8eScN+Mk82Zclhn0J2Oe+C37THT24CYQt3fBsWCBplncz8F37b2AUgx6hChW2nc
-HAPzf9lg4fj1CEhsZ2kpfG2nBVQ2DorBT71/OvuTpqC5ooyTQfKuAOetTK7ZqP8R
-vlGp7qoh1NUdfYzJah6jEcgTMQJRPnAaLfiHbr+aKiweDp/oiEwmSQL+41r5vVq6
-yXgchx/31OMbzAbHqCD1k0rwC/5n9oYr+YJGefASUAAVqtjKDTRAnEKwVl5xfQ2A
-pXM4jIhjna4c9LZIVppnKFIvSueUvTXXcpOKbh382g5nubCnXTNE5h1y6yc+3gIG
-GhDBBr4NjV3mg3HdB9cdr6+3yaZs48o09lg6eMVAaJqusrnCDws9/Io6pB6PtiXf
-lXB/y5njf5qLJlAOtdhE18adPP1VKCju6rZQOvD2pQQWxh3yESO41NRGG9uV9o3v
-Y7wZumTTpk4z8ZkxK+shbr9yftMndPMGV6ixmN735q5Pi/4hfFS3FyKVCTzEul6e
-r0fAAzxgi1tdZvCVMuqlLOq1B2++UUQIf+Ug64Hp6W6G0r9LiiWFpCGlE0UMydLH
-A4AHxy0nr/VeGGSZ1HQq
-=XVgD
------END PGP SIGNATURE-----
-
---Signature=_Tue__7_Jan_2014_15_20_43_+1100_vQxbrKtQM6BG4Sw7--
