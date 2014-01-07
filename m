@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187AbaAGJ2k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 04:28:40 -0500
-Received: from emea01-am1-ndr.ptr.protection.outlook.com ([157.56.116.104]:61407
-	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751325AbaAGJ2K convert rfc822-to-8bit (ORCPT
+	id S1756070AbaAGJc7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 04:32:59 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:48809 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755704AbaAGJcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 04:28:10 -0500
-Content-Type: text/plain; charset=US-ASCII
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: My Name is Collins Jeff
-To: Recipients <a1@uy407.onmicrosoft.com>
-From: Collins Jeff <a1@uy407.onmicrosoft.com>
-Date: Tue, 7 Jan 2014 14:57:36 +0530
-Reply-To: <william102collins@outlook.com>
-X-Antivirus: avast! (VPS 140106-1, 01/07/2014), Outbound message
-X-Antivirus-Status: Clean
-Message-ID: <fb4ae24b-08bf-4e10-a6db-4af78028b6b0@DB4PR06MB281.eurprd06.prod.outlook.com>
-X-Originating-IP: [180.215.166.204]
-X-ClientProxiedBy: BN1PR06CA009.namprd06.prod.outlook.com (10.242.217.147)
- To DB4PR06MB281.eurprd06.prod.outlook.com (10.242.231.143)
-X-Forefront-PRVS: 008421A8FF
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(10009001)(189002)(199002)(89136003)(64872005)(85852003)(83072002)(56816005)(1496004)(81542001)(90146001)(76176001)(74662001)(76786001)(76796001)(76576001)(81342001)(69226001)(47446002)(74502001)(54316002)(63696002)(47776003)(65816001)(66066001)(80022001)(555904002)(54356001)(42186004)(46102001)(51856001)(23756003)(76482001)(59766001)(77982001)(53256004)(79102001)(47976001)(50986001)(56776001)(47736001)(4396001)(49866001)(50466002)(74706001)(83322001)(19580405001)(19580395003)(558084003)(33646001)(74876001)(85306002)(74366001)(74316001)(77096001)(325944007)(43066001)(81686001)(81816001)(80976001)(87976001)(31686002)(87266001)(62346011);DIR:OUT;SFP:1501;SCL:5;SRVR:DB4PR06MB281;H:[180.215.166.204];CLIP:180.215.166.204;FPR:;RD:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: uy407.onmicrosoft.com
+	Tue, 7 Jan 2014 04:32:50 -0500
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: davem@davemloft.net
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ethan Zhao <ethan.kernel@gmail.com>
+Subject: [PATCH] sparc: replace __GFP_NOFAIL with GFP_ATOMIC in mdesc_kmalloc()
+Date: Tue,  7 Jan 2014 17:31:17 +0800
+Message-Id: <1389087077-311-1-git-send-email-ethan.kernel@gmail.com>
+X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear one
+Has kmalloc() failure checking there, so it is unnecessary to allocate with
+__GFP_NOFAIL flag that might block forever.
 
-My Name is Collins Jeff  i am a Director of Lintot Oil Company in UK i needed a  land property that can be sold to me
-please do contact me on my e-mail william102collins@outlook.com
+Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
+---
+ arch/sparc/kernel/mdesc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-waiting to hear soon from you
+diff --git a/arch/sparc/kernel/mdesc.c b/arch/sparc/kernel/mdesc.c
+index b90bf23..e8d678c 100644
+--- a/arch/sparc/kernel/mdesc.c
++++ b/arch/sparc/kernel/mdesc.c
+@@ -136,7 +136,7 @@ static struct mdesc_handle *mdesc_kmalloc(unsigned int mdesc_size)
+ 		       sizeof(struct mdesc_hdr) +
+ 		       mdesc_size);
+ 
+-	base = kmalloc(handle_size + 15, GFP_KERNEL | __GFP_NOFAIL);
++	base = kmalloc(handle_size + 15, GFP_KERNEL | GFP_ATOMIC);
+ 	if (base) {
+ 		struct mdesc_handle *hp;
+ 		unsigned long addr;
+-- 
+1.8.3.4 (Apple Git-47)
 
-regards.
-Collins  Jeff
-+44-8712340074
