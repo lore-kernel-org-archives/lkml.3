@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989AbaAGTQX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 14:16:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58675 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753005AbaAGTQL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 14:16:11 -0500
-Date: Tue, 7 Jan 2014 11:16:39 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [PATCH 3.12 000/144] 3.12.7-stable review
-Message-ID: <20140107191639.GA2825@kroah.com>
-References: <20140106223745.326293132@linuxfoundation.org>
- <52CC5062.3080708@samsung.com>
+	id S1753030AbaAGTTj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 14:19:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41170 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751114AbaAGTTb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 14:19:31 -0500
+Date: Tue, 7 Jan 2014 14:19:10 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bart Van Assche <bvanassche@acm.org>, Jeff Mahoney <jeffm@suse.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        device-mapper development <dm-devel@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: kobject: provide kobject_put_wait to fix module unload race
+Message-ID: <20140107191910.GA8884@redhat.com>
+References: <alpine.LRH.2.02.1401021733250.27775@file01.intranet.prod.int.rdu2.redhat.com>
+ <52C98BCC.9040900@acm.org>
+ <20140105182640.GA2522@kroah.com>
+ <alpine.LRH.2.02.1401061347120.15626@file01.intranet.prod.int.rdu2.redhat.com>
+ <20140106213111.GA2536@redhat.com>
+ <alpine.LRH.2.02.1401062249020.17811@file01.intranet.prod.int.rdu2.redhat.com>
+ <CA+55aFw+kS-jJencvQgQcn0yTw_a4=2RDynopL7Gu0PNemkUvA@mail.gmail.com>
+ <alpine.LRH.2.02.1401071253510.8158@file01.intranet.prod.int.rdu2.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52CC5062.3080708@samsung.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <alpine.LRH.2.02.1401071253510.8158@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 12:07:14PM -0700, Shuah Khan wrote:
-> On 01/06/2014 03:36 PM, Greg Kroah-Hartman wrote:
-> >This is the start of the stable review cycle for the 3.12.7 release.
-> >There are 144 patches in this series, all will be posted as a response
-> >to this one.  If anyone has any issues with these being applied, please
-> >let me know.
-> >
-> >Responses should be made by Wed Jan  8 22:37:25 UTC 2014.
-> >Anything received after that time might be too late.
-> >
-> >The whole patch series can be found in one patch at:
-> >	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.12.7-rc1.gz
-> >and the diffstat can be found below.
-> >
-> >thanks,
-> >
-> >greg k-h
-> 
-> Patches testing - passed
-> Compile testing - passed
-> Boot testing - passed
-> dmesg regression testing - passed
-> 
-> Test systems
-> 
->     Samsung Series 9 900X4C Intel Corei5 (3.4 and later)
->     HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
->     Dell OptiPlex 790 Intel(R) Core(TM) i5-2400
-> 
-> Detailed test status
-> 
-> Patches applied cleanly
-> dmesgs look good. No regressions compared to the previous dmesgs for this
-> release. dmesg emerg, crit, alert, err are clean. No regressions in warn.
+On Tue, Jan 07 2014 at  1:00pm -0500,
+Mikulas Patocka <mpatocka@redhat.com> wrote:
 
-Just in time for me to do a -rc2 release for this, and the 3.10 -rc1
-announcement, sorry :)
+> 
+> 
+> On Tue, 7 Jan 2014, Linus Torvalds wrote:
+> 
+> > This looks completely broken to me. You do a "kobject_put()" and then
+> > after you've dropped that last use, you wait for the completion of
+> > something that may already have been free'd.
+> > 
+> > Wtf? Am I missing something?
+> > 
+> >                Linus
+> 
+> It is correct. The release method dm_kobject_release doesn't free the 
+> kobject. It just signals the completion and returns.
+> 
+> This is the sequence of operations:
+> * call kobject_put
+> * wait until all users stop using the kobject, when it happens the release 
+>   method is called
+> * the release method signals the completion and returns
+> * the unload code that waits on the completion continues
+> * the unload code frees the mapped_device structure that contains the 
+>   kobject
+> 
+> Using kobject this way avoids the module unload race that was mentioned at 
+> the beginning of this thread.
 
-thanks for testing all 3 of these and letting me know.
-
-greg k-h
+I've staged your patch in linux-next for 3.14, see:
+http://git.kernel.org/cgit/linux/kernel/git/device-mapper/linux-dm.git/commit/?h=for-next&id=af7b1e5c767fc895788c971c8f4686402ac8344f
