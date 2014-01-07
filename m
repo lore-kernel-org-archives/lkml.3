@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751668AbaAGKm1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 05:42:27 -0500
-Received: from smtp.nue.novell.com ([195.135.221.5]:55696 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857AbaAGKmZ (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Tue, 7 Jan 2014 05:42:25 -0500
-Subject: Re: [RFC PATCH 04/14] ACPI: Add ACPI 5.0 Time and Alarm Device
- driver
-From: joeyli <jlee@suse.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
-        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
-        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        x86@kernel.org,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-acpi@vger.kernel.org
-In-Reply-To: <52CB929C.6050403@zytor.com>
-References: <1387439515-8926-1-git-send-email-jlee@suse.com>
-	 <1387439515-8926-5-git-send-email-jlee@suse.com>
-	 <52B30F43.1060306@zytor.com> <1387518099.3539.4453.camel@linux-s257.site>
-	 <52C3647B.7000708@zytor.com> <1388998707.3539.6070.camel@linux-s257.site>
-	 <52CB929C.6050403@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 07 Jan 2014 18:40:44 +0800
-Message-ID: <1389091244.3539.6095.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1751935AbaAGKnN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 05:43:13 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:41870 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751005AbaAGKnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 05:43:11 -0500
+Message-ID: <52CBD96B.4050103@linux.vnet.ibm.com>
+Date: Tue, 07 Jan 2014 16:09:39 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Vincent Guittot <vincent.guittot@linaro.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, pjt@google.com, Morten.Rasmussen@arm.com,
+        cmetcalf@tilera.com, tony.luck@intel.com, alex.shi@linaro.org,
+        linaro-kernel@lists.linaro.org, rjw@sisk.pl,
+        paulmck@linux.vnet.ibm.com, corbet@lwn.net, tglx@linutronix.de,
+        len.brown@intel.com, arjan@linux.intel.com, amit.kucheria@linaro.org,
+        james.hogan@imgtec.com, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, Dietmar.Eggemann@arm.com
+Subject: Re: [RFC] sched: CPU topology try
+References: <20131105222752.GD16117@laptop.programming.kicks-ass.net> <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org> <52CBCB85.8050607@linux.vnet.ibm.com> <20140107095039.GA2480@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140107095039.GA2480@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14010710-7182-0000-0000-0000097D83F8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 一，2014-01-06 於 21:37 -0800，H. Peter Anvin 提到：
-> On 01/06/2014 12:58 AM, joeyli wrote:
-> > 於 二，2013-12-31 於 16:42 -0800，H. Peter Anvin 提到：
-> >> On 12/19/2013 09:41 PM, joeyli wrote:
-> >>>>
-> >>>> What platform do you have that has TAD support?  I am wondering how this
-> >>>> was tested.
-> >>>>
-> >>>
-> >>> It's a testing platform that's only support get/set time functions of
-> >>> ACPI TAD.
-> >>>
-> >>
-> >> It would be really, really good to get this into Qemu (either SeaBIOS or
-> >> OVMF, or ideally both) so we can have anyone test.
-> >>
-> >> 	-hpa
-> > 
-> > I will try to add to OVMF first.
-> > 
+On 01/07/2014 03:20 PM, Peter Zijlstra wrote:
+> On Tue, Jan 07, 2014 at 03:10:21PM +0530, Preeti U Murthy wrote:
+>> What if we want to add arch specific flags to the NUMA domain? Currently
+>> with Peter's patch:https://lkml.org/lkml/2013/11/5/239 and this patch,
+>> the arch can modify the sd flags of the topology levels till just before
+>> the NUMA domain. In sd_init_numa(), the flags for the NUMA domain get
+>> initialized. We need to perhaps call into arch here to probe for
+>> additional flags?
 > 
-> For the record, I posted a patch to Qemu about a year ago to store the
-> timezone in the CMOS, which might be useful for this implementation.  It
-> was rejected because of no firmware support, so if you implement it for
-> OVMF we can (update and) push this patch again.
+> What are you thinking of? I was hoping all NUMA details were captured in
+> the distance table.
 > 
-> 	-hpa
+> Its far easier to talk of specifics in this case.
 > 
-
-Thanks for your patch. 
-
-Due to accessing CMOS through ASL need enable SMM support in OVMF, I am
-looking Laszlo's OVMF S3 patches:
-
-https://www.mail-archive.com/edk2-devel@lists.sourceforge.net/msg04969.html
-
-Honestly I am not good on this area, I need to spend more time to
-understand it.
-
+If the processor can be core gated, then there is very little power
+savings that we could yield from consolidating all the load onto a
+single node in a NUMA domain. 6 cores on one node or 3 cores each on two
+nodes, the power is drawn by 6 cores in all. So I was thinking under
+this circumstance we might want to set the SD_SHARE_POWERDOMAIN flag at
+the NUMA domain and spread the load if it favours the workload.
 
 Regards
-Joey Lee
+Preeti U Murthy
 
