@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226AbaAGIvM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 03:51:12 -0500
-Received: from mga09.intel.com ([134.134.136.24]:29271 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753315AbaAGIvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 03:51:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,617,1384329600"; 
-   d="scan'208";a="462792533"
-Subject: [PATCH 3/3] dm snapshot: Calling destroy_work_on_stack() to pair
- with INIT_WORK_ONSTACK()
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: agk@redhat.com, snitzer@redhat.com
-Cc: linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
-In-Reply-To: <1389084605.3650.66.camel@cliu38-desktop-build>
-References: <1389084605.3650.66.camel@cliu38-desktop-build>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 07 Jan 2014 16:56:18 +0800
-Message-ID: <1389084978.3650.73.camel@cliu38-desktop-build>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755393AbaAGIzF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 03:55:05 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:53010 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751890AbaAGIzB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 03:55:01 -0500
+Date: Tue, 7 Jan 2014 08:54:56 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Jonathan Cameron <jic23@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: am335x: IIO/ADC fixes if used together with TSC, v2
+Message-ID: <20140107085456.GD3182@lee--X1>
+References: <1387466911-3732-1-git-send-email-bigeasy@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1387466911-3732-1-git-send-email-bigeasy@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dmitry, Jonathan,
 
-In case CONFIG_DEBUG_OBJECTS_WORK is defined, it is needed to
-call destroy_work_on_stack() which frees the debug object to pair
-with INIT_WORK_ONSTACK().
+This is for you.
 
-Signed-off-by: Liu, Chuansheng <chuansheng.liu@intel.com>
----
- drivers/md/dm-snap-persistent.c |    1 +
- 1 file changed, 1 insertion(+)
+The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
 
-diff --git a/drivers/md/dm-snap-persistent.c b/drivers/md/dm-snap-persistent.c
-index 2d2b1b7..2f5a9f8 100644
---- a/drivers/md/dm-snap-persistent.c
-+++ b/drivers/md/dm-snap-persistent.c
-@@ -257,6 +257,7 @@ static int chunk_io(struct pstore *ps, void *area, chunk_t chunk, int rw,
- 	INIT_WORK_ONSTACK(&req.work, do_metadata);
- 	queue_work(ps->metadata_wq, &req.work);
- 	flush_workqueue(ps->metadata_wq);
-+	destroy_work_on_stack(&req.work);
- 
- 	return req.result;
- }
+  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
+
+are available in the git repository at:
+
+  git://git.linaro.org/people/ljones/mfd.git tags/ib-iio-input-3.13-1
+
+for you to fetch changes up to 7ca6740cd1cd410828a01151a044b51910d06eff:
+
+  mfd: input: iio: ti_amm335x: Rework TSC/ADC synchronization (2014-01-07 08:45:00 +0000)
+
+----------------------------------------------------------------
+Immutable branch for IIO and Input
+
+----------------------------------------------------------------
+Sebastian Andrzej Siewior (5):
+      iio: ti_am335x_adc: Adjust the closing bracket in tiadc_read_raw()
+      mfd: ti_am335x_tscadc: Make am335x_tsc_se_update() local
+      mfd: ti_am335x_tscadc: Don't read back REG_SE
+      mfd: ti_am335x: Drop am335x_tsc_se_update() from resume path
+      mfd: input: iio: ti_amm335x: Rework TSC/ADC synchronization
+
+ drivers/iio/adc/ti_am335x_adc.c           | 68 +++++++++++++++++++++++++++++++++++++++++++++++++-------------------
+ drivers/input/touchscreen/ti_am335x_tsc.c |  4 ++--
+ drivers/mfd/ti_am335x_tscadc.c            | 71 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-----------
+ include/linux/mfd/ti_am335x_tscadc.h      |  8 ++++++--
+ 4 files changed, 117 insertions(+), 34 deletions(-)
+
 -- 
-1.7.9.5
-
-
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
