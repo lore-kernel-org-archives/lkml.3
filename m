@@ -1,66 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757010AbaAGDfw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 22:35:52 -0500
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:53212 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752392AbaAGDfv convert rfc822-to-8bit (ORCPT
+	id S1757044AbaAGDkh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 22:40:37 -0500
+Received: from mail-db9lp0251.outbound.messaging.microsoft.com ([213.199.154.251]:27461
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752392AbaAGDkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 22:35:51 -0500
+	Mon, 6 Jan 2014 22:40:36 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1f42h1ee6h1ce5h1fdah201ch2073h2146h1202h1fd0h1e76h2189h1d1ah1cabh1d2ah1fc6hzz1de098h8275bh1de097hz31h87h2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1ad9h1b0ah1b2fh224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h129fi1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+From: <shh.xie@gmail.com>
+To: <davem@davemloft.net>, <jg1.han@samsung.com>, <mugunthanvnm@ti.com>,
+        <f.fainelli@gmail.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <Shaohui.Xie@freescale.com>, Andy Fleming <afleming@gmail.com>
+Subject: [PATCH 1/6] [v4] phylib: Add Clause 45 read/write functions
+Date: Tue, 7 Jan 2014 10:12:19 +0800
+Message-ID: <1389060739-6955-1-git-send-email-shh.xie@gmail.com>
+X-Mailer: git-send-email 1.8.4.1
 MIME-Version: 1.0
-In-Reply-To: <20140107024050.GA8903@kroah.com>
-References: <CANthSfZij7=q1azM1wrRNDWjFY972zFpe4njBKr3bzUVsm5m-Q@mail.gmail.com>
-	<20140107024050.GA8903@kroah.com>
-Date: Tue, 7 Jan 2014 11:35:50 +0800
-Message-ID: <CANthSfb+t53BZSXGe2VUUuHRYzphuT=-3vJtCSoERF_WChUr-A@mail.gmail.com>
-Subject: Re: [PATCH] usb:hub set hub->change_bits when over-current happens
-From: =?UTF-8?B?5rKI5YWJ?= <shenguang10@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 7, 2014 at 10:40 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Tue, Jan 07, 2014 at 10:33:14AM +0800, 沈光 wrote:
->> set hub->change_bits when we plug in a device which causes
->> over-current condition, so that hub_events() will check it.
->
-> Why?
->
-> What does this solve?  Is this a bug with existing devices that needs to
-> be backported to older kernels?
->
-> thanks,
->
-> greg k-h
+From: Andy Fleming <afleming@gmail.com>
 
-This is something that we found when we are doing compliance test with xHCI.
-If we enable CONFIG_USB_SUSPEND, and plug in a bad device which causes
-over-current condition to the root port, the hub->change_bits will not
-be set in current code in the function of hub_activate.
-Then hub_events() will ignore this change, below is a code fragment of
-hub_events()
-                /* deal with port status changes */
-                for (i = 1; i <= hub->descriptor->bNbrPorts; i++) {
-                        if (test_bit(i, hub->busy_bits))
-                                continue;
-                        connect_change = test_bit(i, hub->change_bits);
-                        wakeup_change = test_and_clear_bit(i, hub->wakeup_bits);
-                        if (!test_and_clear_bit(i, hub->event_bits) &&
-                                        !connect_change && !wakeup_change)
-                                continue;
+Need an extra parameter to read or write Clause 45 PHYs, so
+need a different API with the extra parameter.
 
-According to spec, software need to disable the port if there is an
-over-current condition, while current code will not, since it will not
-detect such condition.
+Signed-off-by: Andy Fleming <afleming@gmail.com>
+Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
+---
+resend for v4.
 
-but if we disable CONFIG_USB_SUSPEND, software can detect the
-over-current condition. I am still checking the code to get the
-reason.
+ include/linux/phy.h | 39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
 
+diff --git a/include/linux/phy.h b/include/linux/phy.h
+index 48a4dc3..0ff2476 100644
+--- a/include/linux/phy.h
++++ b/include/linux/phy.h
+@@ -498,6 +498,24 @@ static inline int phy_read(struct phy_device *phydev, u32 regnum)
+ }
+ 
+ /**
++ * phy_read_mmd - Convenience function for reading a register
++ * from an MMD on a given PHY.
++ * @phydev: The phy_device struct
++ * @devad: The MMD to read from
++ * @regnum: The register on the MMD to read
++ *
++ * Same rules as for phy_read();
++ */
++static inline int phy_read_mmd(struct phy_device *phydev, int devad, u32 regnum)
++{
++	if (!phydev->is_c45)
++		return -EOPNOTSUPP;
++
++	return mdiobus_read(phydev->bus, phydev->addr,
++		MII_ADDR_C45 | (devad << 16) | (regnum & 0xffff));
++}
++
++/**
+  * phy_write - Convenience function for writing a given PHY register
+  * @phydev: the phy_device struct
+  * @regnum: register number to write
+@@ -533,6 +551,27 @@ static inline bool phy_is_internal(struct phy_device *phydev)
+ 	return phydev->is_internal;
+ }
+ 
++/**
++ * phy_write_mmd - Convenience function for writing a register
++ * on an MMD on a given PHY.
++ * @phydev: The phy_device struct
++ * @devad: The MMD to read from
++ * @regnum: The register on the MMD to read
++ * @val: value to write to @regnum
++ *
++ * Same rules as for phy_write();
++ */
++static inline int phy_write_mmd(struct phy_device *phydev, int devad,
++		u32 regnum, u16 val)
++{
++	if (!phydev->is_c45)
++		return -EOPNOTSUPP;
++
++	regnum = MII_ADDR_C45 | ((devad & 0x1f) << 16) | (regnum & 0xffff);
++
++	return mdiobus_write(phydev->bus, phydev->addr, regnum, val);
++}
++
+ struct phy_device *phy_device_create(struct mii_bus *bus, int addr, int phy_id,
+ 		bool is_c45, struct phy_c45_device_ids *c45_ids);
+ struct phy_device *get_phy_device(struct mii_bus *bus, int addr, bool is_c45);
 -- 
-Shen Guang
+1.8.4.1
+
+
