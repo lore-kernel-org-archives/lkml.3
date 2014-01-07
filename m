@@ -1,82 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754435AbaAGVok (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 16:44:40 -0500
-Received: from mga09.intel.com ([134.134.136.24]:43471 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754257AbaAGVoe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 16:44:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,621,1384329600"; 
-   d="scan'208";a="463124522"
-Date: Tue, 7 Jan 2014 13:43:00 -0800
-From: "David E. Box" <david.e.box@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Randy Dunlap <rdunlap@infradead.org>, mjg59@srcf.ucam.org,
-        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH v6][RESEND] platform: x86: New BayTrail IOSF-SB MBI driver
-Message-ID: <20140107214300.GA30423@linux.intel.com>
-References: <1388427149-25456-1-git-send-email-david.e.box@linux.intel.com>
- <52CC4427.20405@infradead.org>
- <20140107184805.GA28135@linux.intel.com>
- <4364833.i22acYTaeM@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4364833.i22acYTaeM@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754108AbaAGV62 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 16:58:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59553 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753914AbaAGV6U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 16:58:20 -0500
+Date: Tue, 7 Jan 2014 13:58:17 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH] Add a sysctl for numa_balancing v2
+Message-Id: <20140107135817.7f3befadebe843761d08b812@linux-foundation.org>
+In-Reply-To: <1389053326-29462-1-git-send-email-andi@firstfloor.org>
+References: <1389053326-29462-1-git-send-email-andi@firstfloor.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 09:46:57PM +0100, Rafael J. Wysocki wrote:
-> On Tuesday, January 07, 2014 10:48:05 AM David E. Box wrote:
-> > On Tue, Jan 07, 2014 at 10:15:03AM -0800, Randy Dunlap wrote:
-> > > On 01/07/14 10:03, David E. Box wrote:
-> > > > From: "David E. Box" <david.e.box@linux.intel.com>
-> > > > 
-> > > > diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-> > > > index b51a746..6e199a5 100644
-> > > > --- a/drivers/platform/x86/Kconfig
-> > > > +++ b/drivers/platform/x86/Kconfig
-> > > > @@ -819,4 +819,14 @@ config PVPANIC
-> > > >  	  a paravirtualized device provided by QEMU; it lets a virtual machine
-> > > >  	  (guest) communicate panic events to the host.
-> > > >  
-> > > > +config INTEL_BAYTRAIL_MBI
-> > > > +	tristate
-> > > 
-> > > Is this kconfig option displayed when you run menuconfig/nconfig/xconfig/gconfig etc.?
-> > > Doesn't it need a prompt string?
-> > > How did you enable it and test it?
-> > > 
-> > 
-> > It is not displayed on purpose. The driver isn't exposed to user space.
-> > It was tested by adding the option to .config, both as module and built-in.
-> > 
-> > > > +	depends on PCI
-> > > > +	---help---
-> > > > +	  Needed on Baytrail platforms for access to the IOSF Sideband Mailbox
-> > > > +	  Interface. This is a requirement for systems that need to configure
-> > > > +	  the PUNIT for power management features such as RAPL. Register
-> > > > +	  addresses and r/w opcodes are defined in
-> > > 
-> > > Think of users reading this.  At least change "r/w" to read/write.
-> > > What is IOSF?  does it matter here?
-> > > PUNIT?  RAPL?
-> > > 
-> > 
-> > If you don't know what the IOSF Sideband is you probably shouldn't be enabling
-> > this feature.
+On Mon,  6 Jan 2014 16:08:46 -0800 Andi Kleen <andi@firstfloor.org> wrote:
+
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> What about generic x86 distro kernels?  They won't know in advance whether or
-> not they will need this feature.
+> [It turns out the documentation patch was already merged
+> earlier. So just resending without documentation.]
 
-Ok, I spoke with other developers and I apparently misunderstood the context
-here. Distro's enable these features and this is too detailed for them to know
-what to do with it. How about simply "Required to enable platform specific power
-managemnet features on Baytrail"?
+Confused.  How could we have merged the documentation for this feature
+but not the feature itself?
 
-KISS is easier said than done.
+> As discussed earlier, this adds a working sysctl to enable/disable
+> automatic numa memory balancing at runtime.
+> 
+> This allows to track down performance problems with this
+> feature and is generally a good idea.
+> 
+> This was possible earlier through debugfs, but only with special
+> debugging options set. Also fix the boot message.
+> 
+> ...
+>
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -398,6 +398,15 @@ static struct ctl_table kern_table[] = {
+>  		.mode           = 0644,
+>  		.proc_handler   = proc_dointvec,
+>  	},
+> +	{
+> +		.procname	= "numa_balancing",
+> +		.data		= NULL, /* filled in by handler */
+> +		.maxlen		= sizeof(unsigned int),
+> +		.mode		= 0644,
+> +		.proc_handler	= sched_numa_balancing,
+> +		.extra1		= &zero,
+> +		.extra2		= &one,
+> +	},
 
-Dave
+The name "sched_numa_balancing" is wrong.  All the other entries use
+"sysctl_numa_balancing_foo", and so should this one.
+
+--- a/include/linux/sched/sysctl.h~numa-add-a-sysctl-for-numa_balancing-fix
++++ a/include/linux/sched/sysctl.h
+@@ -100,7 +100,7 @@ extern int sched_rt_handler(struct ctl_t
+ 		void __user *buffer, size_t *lenp,
+ 		loff_t *ppos);
+ 
+-extern int sched_numa_balancing(struct ctl_table *table, int write,
++extern int sysctl_numa_balancing(struct ctl_table *table, int write,
+ 				 void __user *buffer, size_t *lenp,
+ 				 loff_t *ppos);
+ 
+--- a/kernel/sched/core.c~numa-add-a-sysctl-for-numa_balancing-fix
++++ a/kernel/sched/core.c
+@@ -1766,7 +1766,7 @@ void set_numabalancing_state(bool enable
+ #endif /* CONFIG_SCHED_DEBUG */
+ 
+ #ifdef CONFIG_PROC_SYSCTL
+-int sched_numa_balancing(struct ctl_table *table, int write,
++int sysctl_numa_balancing(struct ctl_table *table, int write,
+ 			 void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+ 	struct ctl_table t;
+--- a/kernel/sysctl.c~numa-add-a-sysctl-for-numa_balancing-fix
++++ a/kernel/sysctl.c
+@@ -401,7 +401,7 @@ static struct ctl_table kern_table[] = {
+ 		.data		= NULL, /* filled in by handler */
+ 		.maxlen		= sizeof(unsigned int),
+ 		.mode		= 0644,
+-		.proc_handler	= sched_numa_balancing,
++		.proc_handler	= sysctl_numa_balancing,
+ 		.extra1		= &zero,
+ 		.extra2		= &one,
+ 	},
+_
+
