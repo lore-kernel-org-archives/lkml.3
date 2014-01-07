@@ -1,98 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751121AbaAGMC4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 07:02:56 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53324 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750843AbaAGMCw (ORCPT
+	id S1751232AbaAGMEo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 07:04:44 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:7777 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892AbaAGMEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 07:02:52 -0500
-Date: Tue, 7 Jan 2014 12:02:48 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Wei Ni <wni@nvidia.com>
-Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Matthew Longnecker <MLongnecker@nvidia.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "durgadoss.r@intel.com" <durgadoss.r@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv9 02/20] thermal: introduce device tree parser
-Message-ID: <20140107120248.GD4180@e106331-lin.cambridge.arm.com>
-References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
- <1384285582-16933-3-git-send-email-eduardo.valentin@ti.com>
- <52C4D612.2090808@nvidia.com>
- <52C5A6CE.5060904@nvidia.com>
- <20140106135145.GD21906@e106331-lin.cambridge.arm.com>
- <52CAC3AF.9020401@ti.com>
- <52CB69FA.9080903@nvidia.com>
+	Tue, 7 Jan 2014 07:04:38 -0500
+Date: Tue, 7 Jan 2014 13:04:01 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Frodo Looijaard <frodol@dds.nl>,
+        lm-sensors@lm-sensors.org, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH] hwmon/sensors: fix SENSORS_LM75 dependencies
+Message-ID: <20140107130401.23bffcd2@endymion.delvare>
+In-Reply-To: <52CB65DA.2010103@roeck-us.net>
+References: <20140106204020.b47e53cc3ead8f90164ef5b7@canb.auug.org.au>
+	<52CB0948.6030702@infradead.org>
+	<20140106203209.GA21630@roeck-us.net>
+	<52CB53DC.4030901@infradead.org>
+	<52CB65DA.2010103@roeck-us.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52CB69FA.9080903@nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 02:44:10AM +0000, Wei Ni wrote:
-> On 01/06/2014 10:54 PM, Eduardo Valentin wrote:
-> > * PGP Signed by an unknown key
-> > 
-> > On 06-01-2014 09:51, Mark Rutland wrote:
-> >> On Thu, Jan 02, 2014 at 05:50:06PM +0000, Matthew Longnecker wrote:
-> >>>
-> >>>> I think the platform driver may set governor for the thermal zone,
-> >>>> so how about to add a property named as "governor",
-> >>>> and parse it to tzp->governor_name,
-> >>>> something like:
-> >>>>                  ret = of_property_read_string(child, "governor", &str);
-> >>>>                  if (ret == 0)
-> >>>>                          if (strlen(str) < THERMAL_NAME_LENGTH)
-> >>>>                                  strcpy(tzp->governor_name, str);
-> >>>>
-> >>>> Thanks.
-> >>>> Wei.
-> >>>
-> >>> DT is supposed to describe the hardware, right? The governor isn't 
-> >>> hardware -- it's a software control policy. On the other hand, that 
-> >>> control policy must be tuned according to the behaviors of the platform 
-> >>> hardware otherwise the system will be unstable.
-> >>>
-> >>> Is it appropriate to be naming the governor in DT? If so, is it equally 
-> >>> appropriate to describe any governor-specific parameters in DT (even 
-> >>> though they are pure software constructs)?
-> >>
-> >> The dt should be relatively static -- if the hardware doesn't change the
-> >> dt shouldn't have to.
-> >>
-> >> The governers are not static. We can introduce new ones and throw away
-> >> old ones at any time. Tuning parameters can also change at any time.
-> >>
-> >> I'd prefer to not have governer details described in the dt, and the
-> >> choice of governer and configuration of its tuning parameters should be
-> >> made at runtime somehow.
+Hi Guenter, Randy,
+
+On Mon, 06 Jan 2014 18:26:34 -0800, Guenter Roeck wrote:
+> On 01/06/2014 05:09 PM, Randy Dunlap wrote:
+> > From: Randy Dunlap <rdunlap@infradead.org>
 > >
-> > Agreed.
-> 
-> Yes, I think so, but the of-thermal driver handle the
-> thermal_zone_device_register, and pass the "tzp" without governor_name,
-> so the created thermal_zone's governor will be NULL, then it can't run
-> into the governor->throttle() if needed. And currently there have no
-> interface to support updating governor and configuration at runtime.
-> I think it's better to initialize the governor_name when register the
-> thermal zone device in the of-thermal driver.
+> > Fix SENSORS_LM75 dependencies to eliminate build errors:
+> >
+> > drivers/built-in.o: In function `lm75_remove':
+> > lm75.c:(.text+0x12bd8c): undefined reference to `thermal_zone_of_sensor_unregister'
+> > drivers/built-in.o: In function `lm75_probe':
+> > lm75.c:(.text+0x12c123): undefined reference to `thermal_zone_of_sensor_register'
+> >
+> > Add depends on THERMAL_OF since that is what provides the
+> > register/unregister functions above.
+> >
+> > Add depends on THERMAL since THERMAL is a tristate (while THERMAL_OF
+> > is a bool) and SENSORS_LM75 (tristate) needs to be limited to modular
+> > builds when THERMAL=m.
+> >
+> > Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> > ---
+> >   drivers/hwmon/Kconfig |    2 ++
+> >   1 file changed, 2 insertions(+)
+> >
+> > --- linux-next-20140106.orig/drivers/hwmon/Kconfig
+> > +++ linux-next-20140106/drivers/hwmon/Kconfig
+> > @@ -650,6 +650,8 @@ config SENSORS_LM73
+> >   config SENSORS_LM75
+> >   	tristate "National Semiconductor LM75 and compatibles"
+> >   	depends on I2C
+> > +	depends on THERMAL
+> > +	depends on THERMAL_OF
+> >   	help
+> >   	  If you say yes here you get support for one common type of
+> >   	  temperature sensor chip, with models including:
+> >
+> >
+> NACK. The driver does not and must not depend on THERMAL.
 
-Initialising it in the driver doesn't mean it has to come from the
-device tree. That's still a run-time decision, even though it's made
-immediately after parsing the DT.
+Correct.
 
-Thanks,
-Mark.
+> This needs to be addressed
+> in the thermal code, for example with dummy declarations if THERMAL=m but
+> SENSORS_LM75=y. The functions are already declared as dummies if THERMAL_OF=n.
+
+This won't fly I'm afraid, the number of hwmon drivers affected will
+grow in the future and you certainly don't want to have to change the
+generic thermal code every time a new driver is added/converted.
+
+I've looked at the problem this morning and I will admit I do not even
+understand what the problem is. In Randy's config, CONFIG_THERMAL_OF=y
+so both thermal_zone_of_sensor_unregister and
+thermal_zone_of_sensor_register are built-in. SENSORS_LM75=y so the
+calls to these functions are built-in too. I just can't see how this
+can be a problem at link time. Can anyone enlighten me?
+
+-- 
+Jean Delvare
