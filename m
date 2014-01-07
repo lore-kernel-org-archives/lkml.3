@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851AbaAGIhn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 03:37:43 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49656 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754551AbaAGIhm (ORCPT
+	id S1756173AbaAGIib (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 03:38:31 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51516 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755554AbaAGIia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 03:37:42 -0500
-Date: Tue, 7 Jan 2014 09:37:40 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Joe Perches <joe@perches.com>
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, keescook@chromium.org,
-        akpm@linux-foundation.org, geert@linux-m68k.org, jkosina@suse.cz,
-        viro@zeniv.linux.org.uk, davem@davemloft.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lib/vsprintf: add %pT[C012] format specifier
-Message-ID: <20140107083740.GA5683@amd.pavel.ucw.cz>
-References: <201401041126.BHJ81291.VOHLOtMFOJFQFS@I-love.SAKURA.ne.jp>
- <201401051215.ACJ30759.MJSHtFFFVOOOQL@I-love.SAKURA.ne.jp>
- <1388945392.5808.19.camel@joe-AO722>
- <201401062300.GFE12908.FOQLFFJOSOMVHt@I-love.SAKURA.ne.jp>
- <1389029698.2433.3.camel@joe-AO722>
- <201401070641.HAC18733.VOFMFOLOJQSFHt@I-love.SAKURA.ne.jp>
- <1389047143.2433.14.camel@joe-AO722>
- <20140107001604.GD24243@amd.pavel.ucw.cz>
- <1389056635.2433.22.camel@joe-AO722>
+	Tue, 7 Jan 2014 03:38:30 -0500
+Date: Tue, 7 Jan 2014 09:38:03 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
+ tracing units
+Message-ID: <20140107083803.GM30183@twins.programming.kicks-ass.net>
+References: <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131219103134.GD30183@twins.programming.kicks-ass.net>
+ <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131219112812.GY21999@twins.programming.kicks-ass.net>
+ <20131219123955.GA18186@gmail.com>
+ <87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131219151024.GI16438@laptop.programming.kicks-ass.net>
+ <87iotw6bwx.fsf@tassilo.jf.intel.com>
+ <20140106221528.GK30183@twins.programming.kicks-ass.net>
+ <8761pw6717.fsf@tassilo.jf.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389056635.2433.22.camel@joe-AO722>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <8761pw6717.fsf@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2014-01-06 17:03:55, Joe Perches wrote:
-> On Tue, 2014-01-07 at 01:16 +0100, Pavel Machek wrote:
-> > > > > > diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-> > > > > []
-> > > > > > @@ -1232,7 +1248,7 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
-> > > > > >  {
-> > > > > >  	int default_width = 2 * sizeof(void *) + (spec.flags & SPECIAL ? 2 : 0);
-> > > > > >  
-> > > > > > -	if (!ptr && *fmt != 'K') {
-> > > > > > +	if (!ptr && *fmt != 'K' && *fmt != 'T') {
-> > > > > 
-> > > > > I think this new 'T' comparison isn't necessary.
-> > > > 
-> > > > This is needed for allowing comm_name() to accept NULL instead of current.
-> > > 
-> > > Yeah, that's what I think isn't necessary.
-> > > 
-> > > current is current_thread_info()->task.
-> > > 
-> > > I think it's pretty lightweight in all arches and
-> > > it'd be simpler/more intelligible to not use NULL.
-> > > 
-> > > Andrew?  Any opinion?  Anyone else?
-> > 
-> > Andrew was worried about all the "current" duplication, IIRC. It is in
-> > the mail thread somewhere. And one condition in printk is price worth paying.
+On Mon, Jan 06, 2014 at 03:10:28PM -0800, Andi Kleen wrote:
+> Peter Zijlstra <peterz@infradead.org> writes:
+> > Also, do clarify the other points I asked about. Esp. the non
+> > FREEZE_ON_PMI behaviour of the PT PMI is worrying me immensely.
 > 
-> Hi Pavel.
+> The only reason for hardware freeze is when you have a few entries (like
+> with LBRs) so the interrupt entry code could overwhelm it.
 > 
-> I'm not nacking this, just stating my view.
+> But PT is not small, it's gigantic: even with the smallest buffer you
+> have many thousands of entries.
+> 
+> So you will get a few branches in the interrupt entry, but it's not a problem
+> because everything you really wanted to trace is still there.
+> 
+> Eventually the handler disables PT, so there's no risk of racing with
+> the update or anything like that.
+> 
+> Did I miss anything?
 
-And I believe Andrew clearly stated his view, on the very topic you
-asked him on.
+Yes; go read this:
 
-> I believe I showed how many uses of vsprintf w/ current
-> there are.  Passing NULL vs passing current as the %pT
-> argument is I think a negligible overall size delta too.
-
-One condition in if () is negligible, too, so passing NULL will still
-be overall win. And that was the point of this patch series.
-
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+ lkml.kernel.org/r/20131219125205.GT3694@twins.programming.kicks-ass.net
