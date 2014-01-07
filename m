@@ -1,55 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113AbaAGIho (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 03:37:44 -0500
-Received: from mga02.intel.com ([134.134.136.20]:10234 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754631AbaAGIhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755851AbaAGIhn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 03:37:43 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49656 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754551AbaAGIhm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Jan 2014 03:37:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,617,1384329600"; 
-   d="scan'208";a="434989398"
-Message-ID: <52CBBCCB.6030000@intel.com>
-Date: Tue, 07 Jan 2014 00:37:31 -0800
-From: John Fastabend <john.r.fastabend@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+Date: Tue, 7 Jan 2014 09:37:40 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Joe Perches <joe@perches.com>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, keescook@chromium.org,
+        akpm@linux-foundation.org, geert@linux-m68k.org, jkosina@suse.cz,
+        viro@zeniv.linux.org.uk, davem@davemloft.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lib/vsprintf: add %pT[C012] format specifier
+Message-ID: <20140107083740.GA5683@amd.pavel.ucw.cz>
+References: <201401041126.BHJ81291.VOHLOtMFOJFQFS@I-love.SAKURA.ne.jp>
+ <201401051215.ACJ30759.MJSHtFFFVOOOQL@I-love.SAKURA.ne.jp>
+ <1388945392.5808.19.camel@joe-AO722>
+ <201401062300.GFE12908.FOQLFFJOSOMVHt@I-love.SAKURA.ne.jp>
+ <1389029698.2433.3.camel@joe-AO722>
+ <201401070641.HAC18733.VOFMFOLOJQSFHt@I-love.SAKURA.ne.jp>
+ <1389047143.2433.14.camel@joe-AO722>
+ <20140107001604.GD24243@amd.pavel.ucw.cz>
+ <1389056635.2433.22.camel@joe-AO722>
 MIME-Version: 1.0
-To: Jason Wang <jasowang@redhat.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, Neil Horman <nhorman@tuxdriver.com>,
-        e1000-devel@lists.sourceforge.net
-Subject: Re: [PATCH net 2/2] net: core: explicitly select a txq before doing
- l2 forwarding
-References: <1388978467-2075-1-git-send-email-jasowang@redhat.com> <1388978467-2075-2-git-send-email-jasowang@redhat.com> <52CBB94D.6010405@intel.com>
-In-Reply-To: <52CBB94D.6010405@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389056635.2433.22.camel@joe-AO722>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
+On Mon 2014-01-06 17:03:55, Joe Perches wrote:
+> On Tue, 2014-01-07 at 01:16 +0100, Pavel Machek wrote:
+> > > > > > diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+> > > > > []
+> > > > > > @@ -1232,7 +1248,7 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+> > > > > >  {
+> > > > > >  	int default_width = 2 * sizeof(void *) + (spec.flags & SPECIAL ? 2 : 0);
+> > > > > >  
+> > > > > > -	if (!ptr && *fmt != 'K') {
+> > > > > > +	if (!ptr && *fmt != 'K' && *fmt != 'T') {
+> > > > > 
+> > > > > I think this new 'T' comparison isn't necessary.
+> > > > 
+> > > > This is needed for allowing comm_name() to accept NULL instead of current.
+> > > 
+> > > Yeah, that's what I think isn't necessary.
+> > > 
+> > > current is current_thread_info()->task.
+> > > 
+> > > I think it's pretty lightweight in all arches and
+> > > it'd be simpler/more intelligible to not use NULL.
+> > > 
+> > > Andrew?  Any opinion?  Anyone else?
+> > 
+> > Andrew was worried about all the "current" duplication, IIRC. It is in
+> > the mail thread somewhere. And one condition in printk is price worth paying.
+> 
+> Hi Pavel.
+> 
+> I'm not nacking this, just stating my view.
 
->>
->> +int dfwd_direct_xmit(struct sk_buff *skb, struct net_device *dev,
->> +             void *accel_priv)
->> +{
->> +    struct netdev_queue *txq;
->> +    int ret = NETDEV_TX_BUSY;
->> +    int index;
->> +
->> +    BUG_ON(!dev->netdev_ops->ndo_dfwd_select_queue);
->> +    index =    dev->netdev_ops->ndo_dfwd_select_queue(dev, skb,
->> +                               accel_priv);
->> +
->> +    local_bh_disable();
->> +
->> +    skb_set_queue_mapping(skb, index);
->
-> How about replacing the index calculation and skb_set_queue_mapping with
-> netdev_pick_tx(). Then we don't need to add a new op and the existing
-> XPS, tx hash and select_queue() op works.
->
+And I believe Andrew clearly stated his view, on the very topic you
+asked him on.
 
-Sorry for the noise that was dumb it wouldn't work.
+> I believe I showed how many uses of vsprintf w/ current
+> there are.  Passing NULL vs passing current as the %pT
+> argument is I think a negligible overall size delta too.
 
+One condition in if () is negligible, too, so passing NULL will still
+be overall win. And that was the point of this patch series.
+
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
