@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049AbaAGKwG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 05:52:06 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:44258 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005AbaAGKwE convert rfc822-to-8bit (ORCPT
+	id S1752071AbaAGKy0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 05:54:26 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:58162 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124AbaAGKyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 05:52:04 -0500
-X-Originating-IP: 50.43.14.201
-Date: Tue, 7 Jan 2014 02:51:54 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Jakob Bornecrantz <wallbraker@gmail.com>
-Cc: Rashika Kheria <rashika.kheria@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        Dave Airlie <airlied@redhat.com>, Rob Clark <rob@ti.com>
-Subject: Re: [PATCH 82/85] drivers: gpu: Mark functions as static in
- vmwgfx_kms.c
-Message-ID: <20140107105154.GC4891@leaf>
-References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
- <477dcfde0b9247c91030dedcbf71af7dafdb7bf4.1389018325.git.rashika.kheria@gmail.com>
- <CADdNU4TUh-Xe=UpzT8=j5+VVi6pYGa4rPsrDCqrmCOuNfcJTRA@mail.gmail.com>
+	Tue, 7 Jan 2014 05:54:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CADdNU4TUh-Xe=UpzT8=j5+VVi6pYGa4rPsrDCqrmCOuNfcJTRA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140107104324.GB8991@nuc-i3427.alporthouse.com>
+References: <1389088723-30959-1-git-send-email-artagnon@gmail.com>
+ <1389088723-30959-2-git-send-email-artagnon@gmail.com> <20140107104324.GB8991@nuc-i3427.alporthouse.com>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+Date: Tue, 7 Jan 2014 16:23:44 +0530
+Message-ID: <CALkWK0nuXpDGZYEcR2_2zYY=7X_Ot3FXVmZLvQiCmbZQaSM-+w@mail.gmail.com>
+Subject: Re: [PATCH 1/4] drm/i915: add support for vga_switcheroo reprobe
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andreas Heider <andreas@meetr.de>,
+        Seth Forshee <seth.forshee@canonical.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 11:21:12AM +0100, Jakob Bornecrantz wrote:
-> On Mon, Jan 6, 2014 at 5:48 PM, Rashika Kheria <rashika.kheria@gmail.com> wrote:
-> > Mark functions as static because they are not used outside the file
-> > drm/vmwgfx/vmwgfx_kms.c.
-> >
-> > This eliminates the following warnings in drm/vmwgfx/vmwgfx_kms.c:
-> > drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:43:6: warning: no previous prototype for ‘vmw_clip_cliprects’ [-Wmissing-prototypes]
-> > drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:426:6: warning: no previous prototype for ‘vmw_framebuffer_surface_destroy’ [-Wmissing-prototypes]
-> > drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:592:5: warning: no previous prototype for ‘vmw_framebuffer_surface_dirty’ [-Wmissing-prototypes]
-> > drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:757:6: warning: no previous prototype for ‘vmw_framebuffer_dmabuf_destroy’ [-Wmissing-prototypes]
-> > drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:943:5: warning: no previous prototype for ‘vmw_framebuffer_dmabuf_dirty’ [-Wmissing-prototypes]
-> > drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:1666:5: warning: no previous prototype for ‘vmw_du_update_layout’ [-Wmissing-prototypes]
-> >
-> > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> > ---
-> >  drivers/gpu/drm/vmwgfx/vmwgfx_kms.c |   12 ++++++------
-> >  1 file changed, 6 insertions(+), 6 deletions(-)
-> 
-> 
-> This and patch 83, 84, 85 are
-> Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+Hi Chris,
 
-Can you take them through your tree, or are you expecting them to follow
-another path?
+Chris Wilson wrote:
+>> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+>> index 5c64842..336a835b 100644
+>> --- a/drivers/gpu/drm/i915/i915_dma.c
+>> +++ b/drivers/gpu/drm/i915/i915_dma.c
+>> @@ -1265,6 +1265,12 @@ static void i915_switcheroo_set_state(struct pci_dev *pdev, enum vga_switcheroo_
+>>       }
+>>  }
+>>
+>> +static void i915_switcheroo_reprobe(struct pci_dev *pdev)
+>> +{
+>> +     struct drm_device *dev = pci_get_drvdata(pdev);
+>> +     intel_fbdev_output_poll_changed(dev);
+>> +}
+>
+> switcheroo should be sending a hotplug notification, which should
+> trigger both this kernel listener and userspace.
 
-- Josh Triplett
+If I understand correctly, switcheroo will send a hotplug notification
+when LVDS is connected to the i915 device, and trigger this reprobe
+function(), which in a later patch calls get-edid. Right?
