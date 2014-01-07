@@ -1,59 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751608AbaAGNQq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 08:16:46 -0500
-Received: from [85.220.129.32] ([85.220.129.32]:56453 "EHLO smtp1-3.goneo.de"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750834AbaAGNQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 08:16:39 -0500
-X-Greylist: delayed 639 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Jan 2014 08:16:39 EST
-X-Spam-Flag: NO
-X-Spam-Score: -2.777
-From: Lars Poeschel <poeschel@lemonage.de>
-To: gregkh@linuxfoundation.org, jslaby@suse.cz, linux-kernel@vger.kernel.org
-Subject: [RFC DO NOT MERGE] tty: n_gsm: support buggy modem
-Date: Tue, 07 Jan 2014 14:05:26 +0100
-Message-ID: <4386658.RncifLMAGy@lem-wkst-02>
-User-Agent: KMail/4.11.3 (Linux/3.11-2-amd64; KDE/4.11.3; x86_64; ; )
+	id S1751824AbaAGNRv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 08:17:51 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:35172 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650AbaAGNRm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 08:17:42 -0500
+Date: Tue, 7 Jan 2014 08:17:30 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, John Fastabend <john.r.fastabend@intel.com>,
+        e1000-devel@lists.sourceforge.net
+Subject: Re: [PATCH net 2/2] net: core: explicitly select a txq before doing
+ l2 forwarding
+Message-ID: <20140107131730.GA12366@hmsreliant.think-freely.org>
+References: <1388978467-2075-1-git-send-email-jasowang@redhat.com>
+ <1388978467-2075-2-git-send-email-jasowang@redhat.com>
+ <20140106124248.GB24280@hmsreliant.think-freely.org>
+ <52CB77A0.3030106@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52CB77A0.3030106@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lars Poeschel <poeschel@lemonage.de>
+On Tue, Jan 07, 2014 at 11:42:24AM +0800, Jason Wang wrote:
+> On 01/06/2014 08:42 PM, Neil Horman wrote:
+> > On Mon, Jan 06, 2014 at 11:21:07AM +0800, Jason Wang wrote:
+> >> Currently, the tx queue were selected implicitly in ndo_dfwd_start_xmit(). The
+> >> will cause several issues:
+> >>
+> >> - NETIF_F_LLTX was forced for macvlan device in this case which lead extra lock
+> >>   contention.
+> >> - dev_hard_start_xmit() was called with NULL txq which bypasses the net device
+> >>   watchdog
+> >> - dev_hard_start_xmit() does not check txq everywhere which will lead a crash
+> >>   when tso is disabled for lower device.
+> >>
+> >> Fix this by explicitly introducing a select queue method just for l2 forwarding
+> >> offload (ndo_dfwd_select_queue), and introducing dfwd_direct_xmit() to do the
+> >> queue selecting and transmitting for l2 forwarding.
+> >>
+> >> With this fixes, NETIF_F_LLTX could be preserved for macvlan and there's no need
+> >> to check txq against NULL in dev_hard_start_xmit().
+> >>
+> >> In the future, it was also required for macvtap l2 forwarding support since it
+> >> provides a necessary synchronization method.
+> >>
+> >> Cc: John Fastabend <john.r.fastabend@intel.com>
+> >> Cc: Neil Horman <nhorman@tuxdriver.com>
+> >> Cc: e1000-devel@lists.sourceforge.net
+> >> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> > Instead of creating another operation here to do special queue selection, why
+> > not just have ndo_dfwd_start_xmit include a pointer to a pointer in its argument
+> > list, so it can pass the txq it used back to the caller (dev_hard_start_xmit)?
+> > ndo_dfwd_start_xmit already knows which queue set to pick from (since their
+> > reserved for the device doing the transmitting).  It seems more clear to me than
+> > creating a new netdevice operation.  
+> 
+> See commit 8ffab51b3dfc54876f145f15b351c41f3f703195 ("macvlan: lockless
+> tx path"). The point is keep the tx path lockless to be efficient and
+> simplicity for management. And macvtap multiqueue was also implemented
+> with this assumption. The real contention should be done in the txq of
+> lower device instead of macvlan itself. This is also needed for
+> multiqueue macvtap.
+> >
+Ok, I see how you're preserving LLTX here, and thats great, but it doesn't
+really buy us anything that I can see.  If a macvlan is using hardware
+acceleration, it needs to arbitrate access to that hardware.  Weather thats done
+by locking the lowerdev's tx queue lock or by enforcing locking on the macvlan
+itself is equivalent.  The decision to use dfwd hardware acceleration is made on
+open, so its not like theres any traffic that can avoid the lock, as it all goes
+through the hardware.  All I see that this has bought us is an extra net_device
+method (which isn't a big deal, but not necessecary as I see it).
 
-This is obiviously a bad patch. Do not merge it!
-I have a GSM Modem (Quectel M95 Revision: M95AR01A11) that I have a problem
-with when using the n_gsm mux line discipline. After attaching the line
-discipline and opening a muxed channel, the open never returns. The
-problem is that the tty code waits for the TIOCM_CD flag to be set. According
-to the 3GPP TS 07.10 specification the modem can set this virtual flag by
-setting the DV bit in it's modem status control message. My modem sends the
-modem status command, but this DV bit is not set. With this patch the modem
-and the whole mux is working fine. Another way makeing all this work is
-setting the carrier_raised function to NULL. The tty code assumes that
-everything is alright then.
-My question is: What could be the best way to support this modem in mailine
-kernel ? I do not see a way to detect this buggy modem inside the line
-discipline and use this patch's method as a work around then. But the
-detection would only be possible using AT command before the line discipline
-is attached or using the muxed channel after the mux is set up.
+It seems like the right solution here is to use ethtool to disable the dfwd
+acceleration feature on the hardware if you don't want to incur the additional
+locking.
 
-Thanks,
-Lars
----
-diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-index c0f76da..a1a6f57 100644
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -1061,6 +1061,7 @@ static void gsm_process_modem(struct tty_struct *tty, struct gsm_dlci *dlci,
- 		mlines |= TIOCM_RI;
- 	if (modem & MDM_DV)
- 		mlines |= TIOCM_CD;
-+	mlines |= TIOCM_CD;
- 
- 	/* Carrier drop -> hangup */
- 	if (tty) {
+> > As for the crash issue, I'm not sure what you mean.  Where in
+> > dev_hard_start_xmit would we need to check txq that we're not currently, and
+> > what crash results?
+> 
+> Well, see current dev_hard_start_xmit(), if lower device does not
+> support tso or tso is disabled, in gso path:
+> 
+> gso:
+> ...
+>         txq_trans_update(txq);
+>         if (unlikely(netif_xmit_stopped(txq) && skb->next))
+> 
+> There's an obvious NULL pointer dereference.
+Yeah, I saw that after I wrote my note, sorry about that.  However, it doesn't
+change what I said above.  i don't think theres a need to add an additional
+select_queue method here, just add a pointer to a pointer arg to the dfwd xmit
+routine to fill in the queue that was selected on transmit.  That should resolve
+all the potential NULL pointers without the need to ad additional methods to
+net_device_ops.
 
+> >
+> > Also, can you elaborate on what you mean by additional lock contention? 
+> 
+> If the lower device has NETIF_F_LLTX, then both macvlan txq lock and the
+> lock of device itself must be held before doing transmission. In the
+> case, the macvlan txq lock contention is obvious unnecessary.
+Not in its current implementation.  The lowerdevice's NETIF_F_LLTX are ignored
+during transmit because we're using a privately allocated set of queues assigned
+to the transmitting macvlan (i.e. there is not contention on the lowerdevice for
+any single given macvlan).  Thats why we have to clear the NETIF_F_LLTX field on
+the macvlan itself.  using dfwd acceleration is effectively giving a macvlan its
+own hardware, that needs arbitration between every context thats trying to
+transmit over it.
+
+
+That said, I did just notice that if the macvlan has multiple queues we will
+still use a single tx queue on transmit, we should map those queues to multiple
+hardware queues.  I'll fix that shortly.
+
+> >  What
+> > contention do you see that goes above and beyond the normal locking required by
+> > txq access?  
+> 
+> As I said above, the point is keeping the lockess tx path and make the
+> contention of txq for real device instead of macvlan itself.
+But you've not done that.  You've just moved the locking down to the lowerdev,
+which is fine I suppose, but doesn't actually improve anything, since we will
+still lock exactly as many time as if we do the locking in the macvlan.
+
+Regards
+Neil
+
+> > I suppose its extra locking above and beyond in the macvtap case,
+> > where you would otherwise never hit hardware, but that not the only use case,
+> > and I think the solution there is likely to add some code in the macvlan feature
+> > set handler so that NETIF_F_LLTX is cleared if you disable the hardware
+> > forwarding acceleration via ethtool.
+> >
+> > Regards
+> > Neil
+> >
+> 
+> 
