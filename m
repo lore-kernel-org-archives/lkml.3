@@ -1,26 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486AbaAGOQr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 09:16:47 -0500
-Received: from smtp.domeneshop.no ([194.63.252.54]:43098 "EHLO
-	smtp.domeneshop.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752382AbaAGOQh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 09:16:37 -0500
-Message-ID: <52CC0B8A.9000106@ovekarlsen.com>
-Date: Tue, 07 Jan 2014 15:13:30 +0100
-From: Ove Karlsen <mail@ovekarlsen.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752657AbaAGORA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 09:17:00 -0500
+Received: from 8bytes.org ([85.214.48.195]:36149 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751974AbaAGOQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 09:16:51 -0500
+Date: Tue, 7 Jan 2014 15:16:48 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        iommu@lists.linux-foundation.org, Hiroshi DOYU <hdoyu@nvidia.com>
+Subject: Re: [PATCH] iommu: add missing include
+Message-ID: <20140107141646.GB2742@8bytes.org>
+References: <1386206573-16158-1-git-send-email-computersforpeace@gmail.com>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Gnu - "if its not a dick, its wrong" - as any facist.
-References: <52CAFCC6.3070504@ovekarlsen.com> <52CAFE7A.9090106@infradead.org> <52CB0132.2050705@ovekarlsen.com> <52CB03BA.2070508@infradead.org> <52CB054B.6070504@ovekarlsen.com>
-In-Reply-To: <52CB054B.6070504@ovekarlsen.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386206573-16158-1-git-send-email-computersforpeace@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Tue Jan  7 15:16:50 2014
+X-DSPAM-Confidence: 0.9991
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 52cc0c5220864868522277
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PS: I am going to be using the code for my purpose. So slave away 
-fucking faggots.
+On Wed, Dec 04, 2013 at 05:22:53PM -0800, Brian Norris wrote:
+> Fix a warning in of_iommu.c:
+> 
+> drivers/iommu/of_iommu.c:38:5: warning: no previous prototype for 'of_get_dma_window' [-Wmissing-prototypes]
+> 
+> Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+> Cc: Hiroshi DOYU <hdoyu@nvidia.com>
+
+Applied, thanks.
+
+
