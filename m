@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087AbaAGQLq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 11:11:46 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:33969 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752546AbaAGQLl (ORCPT
+	id S1751690AbaAGQTi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 11:19:38 -0500
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:44579 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041AbaAGQTf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 11:11:41 -0500
-Date: Tue, 7 Jan 2014 16:11:36 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Angus Clark <angus.clark@st.com>
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org, linus.walleij@linaro.org,
-        linux-mtd@lists.infradead.org
-Subject: Re: [PATCH v3 09/36] mtd: st_spi_fsm: Provide device look-up table
-Message-ID: <20140107161136.GK3182@lee--X1>
-References: <1385727565-25794-1-git-send-email-lee.jones@linaro.org>
- <1385727565-25794-10-git-send-email-lee.jones@linaro.org>
- <20131210220338.GF27149@ld-irv-0074.broadcom.com>
- <52B016A0.3080201@st.com>
+	Tue, 7 Jan 2014 11:19:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <52B016A0.3080201@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4218b28ed65d616abc33aaf6fcc2424a3b14b03b.1389018325.git.rashika.kheria@gmail.com>
+References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
+	<4218b28ed65d616abc33aaf6fcc2424a3b14b03b.1389018325.git.rashika.kheria@gmail.com>
+Date: Tue, 7 Jan 2014 11:19:34 -0500
+Message-ID: <CADnq5_PSH4rMN5AFYzgw3rz83=PC9hADP9HbFERoVrnSrMA0ww@mail.gmail.com>
+Subject: Re: [PATCH 76/85] drivers: gpu: Move prototype declaration to header
+ file radeon_drv.h from radeon_drv.c
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Rashika Kheria <rashika.kheria@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>,
+        =?ISO-8859-1?Q?Christian_K=F6nig?= <christian.koenig@amd.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> +/* SPI Flash Device Table */
-> >> +struct flash_info {
-> >> +	char		*name;
-> >> +	/*
-> >> +	 * JEDEC id zero means "no ID" (most older chips); otherwise it has
-> >> +	 * a high byte of zero plus three data bytes: the manufacturer id,
-> >> +	 * then a two byte device id.
-> >> +	 */
-> >> +	u32		jedec_id;
-> >> +	u16             ext_id;
-> > 
-> > Will 5 bytes of ID be enough? I think we're running into a need for 6
-> > bytes of ID in m25p80.c right about now. Might make sense to start with
-> > the right number of bytes.
-> 
-> Yes, we will need 6 bytes of ID.  The "dirty" stm_spi_fsm driver already handles
-> arbitrary-length IDs.  This will need to be pulled into the "upstream" version
-> at some point.
+On Mon, Jan 6, 2014 at 11:41 AM, Rashika Kheria
+<rashika.kheria@gmail.com> wrote:
+> Move prototype declaration of function radeon_kms_compat_ioctl() to
+> header file drm/radeon/radeon_drv.h because it is used by more than one
+> file.
+>
+> This eliminates the following warning in
+> drivers/gpu/drm/radeon/radeon_ioc32.c:413:6: warning: no previous prototype for ‘radeon_kms_compat_ioctl’ [-Wmissing-prototypes]
+>
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> ---
+>  drivers/gpu/drm/radeon/radeon_drv.c |    2 --
+>  drivers/gpu/drm/radeon/radeon_drv.h |    3 ++-
+>  2 files changed, 2 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/radeon/radeon_drv.c b/drivers/gpu/drm/radeon/radeon_drv.c
+> index 9f5ff28..7868d4e 100644
+> --- a/drivers/gpu/drm/radeon/radeon_drv.c
+> +++ b/drivers/gpu/drm/radeon/radeon_drv.c
+> @@ -127,8 +127,6 @@ int radeon_gem_prime_pin(struct drm_gem_object *obj);
+>  void radeon_gem_prime_unpin(struct drm_gem_object *obj);
+>  void *radeon_gem_prime_vmap(struct drm_gem_object *obj);
+>  void radeon_gem_prime_vunmap(struct drm_gem_object *obj, void *vaddr);
+> -extern long radeon_kms_compat_ioctl(struct file *filp, unsigned int cmd,
+> -                                   unsigned long arg);
+>
+>  #if defined(CONFIG_DEBUG_FS)
+>  int radeon_debugfs_init(struct drm_minor *minor);
+> diff --git a/drivers/gpu/drm/radeon/radeon_drv.h b/drivers/gpu/drm/radeon/radeon_drv.h
+> index 00e0d44..7e1f2215 100644
+> --- a/drivers/gpu/drm/radeon/radeon_drv.h
+> +++ b/drivers/gpu/drm/radeon/radeon_drv.h
+> @@ -425,7 +425,8 @@ extern int radeon_driver_open(struct drm_device *dev,
+>                               struct drm_file *file_priv);
+>  extern long radeon_compat_ioctl(struct file *filp, unsigned int cmd,
+>                                 unsigned long arg);
+> -
+> +extern long radeon_kms_compat_ioctl(struct file *filp, unsigned int cmd,
+> +                                   unsigned long arg);
 
-Just looking at this now. May I do this subsequently? It's a pretty
-big change and I don't want to disturb the patch-set too much at this
-moment. The "dirty" kernel has only been updated with this change
-recently. We will need it too, but we can definitely do without it for
-a little while.
+This needs to be moved to the top of the file, outside of the
+CONFIG_DRM_RADEON_UMS ifdef.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org â”‚ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Alex
+
+>  extern int radeon_master_create(struct drm_device *dev, struct drm_master *master);
+>  extern void radeon_master_destroy(struct drm_device *dev, struct drm_master *master);
+>  extern void radeon_cp_dispatch_flip(struct drm_device *dev, struct drm_master *master);
+> --
+> 1.7.9.5
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
