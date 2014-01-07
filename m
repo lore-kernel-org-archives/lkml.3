@@ -1,53 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558AbaAGShz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 13:37:55 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:48637 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349AbaAGShq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 13:37:46 -0500
+	id S1751350AbaAGSqi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 13:46:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47539 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750766AbaAGSqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 13:46:31 -0500
+Message-ID: <52CC4B77.9090401@redhat.com>
+Date: Tue, 07 Jan 2014 13:46:15 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20140107155830.GA28395@infradead.org>
-References: <CA+QCeVQRrqx=CrxyuAe7k0e0y4Nqo7x_8jtkuD99VM8L9Dxp+g@mail.gmail.com>
- <20140106201032.GA13491@quack.suse.cz> <20140107155830.GA28395@infradead.org>
-From: Sergey Meirovich <rathamahata@gmail.com>
-Date: Tue, 7 Jan 2014 20:37:23 +0200
-Message-ID: <CA+QCeVRiwHU+C5utaLQXf_MpjoYMYEF4LKRyDPaqcd=H6n-RRw@mail.gmail.com>
-Subject: Re: Terrible performance of sequential O_DIRECT 4k writes in SAN
- environment. ~3 times slower then Solars 10 with the same HBA/Storage.
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jan Kara <jack@suse.cz>, linux-scsi <linux-scsi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Gluk <git.user@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: "Luck, Tony" <tony.luck@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>, Michel Lespinasse <walken@google.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        "Zhang, Yang Z" <yang.z.zhang@intel.com>,
+        "Gortmaker, Paul (Wind River)" <paul.gortmaker@windriver.com>,
+        "Morgan, Janet" <janet.morgan@intel.com>,
+        Ruiv Wang <ruiv.wang@gmail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        chen gong <gong.chen@linux.intel.com>
+Subject: Re: [PATCH] x86: Add check for number of available vectors before
+ CPU down [v6]
+References: <1389098827-12050-1-git-send-email-prarit@redhat.com> <3908561D78D1C84285E8C5FCA982C28F31D96D8F@ORSMSX106.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31D96D8F@ORSMSX106.amr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
 
-On 7 January 2014 17:58, Christoph Hellwig <hch@infradead.org> wrote:
-> On Mon, Jan 06, 2014 at 09:10:32PM +0100, Jan Kara wrote:
->>   This is likely a problem of Linux direct IO implementation. The thing is
->> that in Linux when you are doing appending direct IO (i.e., direct IO which
->> changes file size), the IO is performed synchronously so that we have our
->> life simpler with inode size update etc. (and frankly our current locking
->> rules make inode size update on IO completion almost impossible). Since
->> appending direct IO isn't very common, we seem to get away with this
->> simplification just fine...
->
-> Shouldn't be too much of a problem at least for XFS and maybe even ext4
-> with the workqueue based I/O end handler.  For XFS we protect size
-> updates by the ilock which we already taken in that handler, not sure
-> what ext4 would do there.
->
 
-Actually my initial report (14.67Mb/sec  3755.41 Requests/sec) was about ext4
-However I have tried XFS as well. It was a bit slower than ext4 on all
-occasions.
-On the same machine results for XFS were:
+On 01/07/2014 12:54 PM, Luck, Tony wrote:
+> +	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
+> +		irq = __this_cpu_read(vector_irq[vector]);
+> +		if (irq >= 0) {
+> +			desc = irq_to_desc(irq);
+> +			data = irq_desc_get_irq_data(desc);
+> +			cpumask_copy(&affinity_new, data->affinity);
+> +			cpu_clear(this_cpu, affinity_new);
+> +			/*
+> +			 * The check below determines if this irq requires
+> +			 * an empty vector_irq[irq] entry on an online
+> +			 * cpu.
+> +			 *
+> +			 * The code only counts active non-percpu irqs, and
+> +			 * those irqs that are not linked to on an online cpu.
+> +			 * The first test is trivial, the second is not.
+> +			 *
+> +			 * The second test takes into account the
+> +			 * account that a single irq may be mapped to multiple
+> +			 * cpu's vector_irq[] (for example IOAPIC cluster
+> +			 * mode).  In this case we have two
+> +			 * possibilities:
+> +			 *
+> +			 * 1) the resulting affinity mask is empty; that is
+> +			 * this the down'd cpu is the last cpu in the irq's
+> +			 * affinity mask, and
+> Code says "||" - so I think comment should say "or".
+> +			 *
+> +			 * 2) the resulting affinity mask is no longer
+> +			 * a subset of the online cpus but the affinity
+> +			 * mask is not zero; that is the down'd cpu is the
+> +			 * last online cpu in a user set affinity mask.
+> +			 *
+> +			 * In both possibilities, we need to remap the irq
+> +			 * to a new vector_irq[].
+> +			 *
+> +			 */
+> +			if (irq_has_action(irq) && !irqd_is_per_cpu(data) &&
+> +			    (cpumask_empty(&affinity_new) ||
+> +			     !cpumask_subset(&affinity_new, &online_new)))
+> +				this_count++;
+> +		}
+> 
+> That's an impressive 6:1 ratio of lines-of-comment to lines-of-code!
 
-    13.97Mb/sec  3576..27 Requests/sec
+Heh -- I couldn't decide if I should keep it all together in one comment or
+divide it up.  I guess it does look less scary if I divide it up.  So how about
+(sorry for the cut-and-paste)
 
-/dev/mapper/mpathc on /mnt/xfs type xfs (rw,noatime,nodiratime,nobarrier)
+
+        for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
+                irq = __this_cpu_read(vector_irq[vector]);
+                if (irq >= 0) {
+                        desc = irq_to_desc(irq);
+                        data = irq_desc_get_irq_data(desc);
+                        cpumask_copy(&affinity_new, data->affinity);
+                        cpu_clear(this_cpu, affinity_new);
+
+                        /* Do not count inactive or per-cpu irqs. */
+                        if (!irq_has_action(irq) || irqd_is_per_cpu(data))
+                                continue;
+
+                        /*
+                         * A single irq may be mapped to multiple
+                         * cpu's vector_irq[] (for example IOAPIC cluster
+                         * mode).  In this case we have two
+                         * possibilities:
+                         *
+                         * 1) the resulting affinity mask is empty; that is
+                         * this the down'd cpu is the last cpu in the irq's
+                         * affinity mask, or
+                         *
+                         * 2) the resulting affinity mask is no longer
+                         * a subset of the online cpus but the affinity
+                         * mask is not zero; that is the down'd cpu is the
+                         * last online cpu in a user set affinity mask.
+                         */
+                        if (cpumask_empty(&affinity_new) ||
+                            !cpumask_subset(&affinity_new, &online_new))
+                                this_count++;
+                }
+        }
+
+
+Everyone okay with that?
+
+P.
