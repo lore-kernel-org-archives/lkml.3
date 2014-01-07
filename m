@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756753AbaAGB6T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 20:58:19 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:47251 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756131AbaAGB6R (ORCPT
+	id S1756417AbaAGCEs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 21:04:48 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:37850 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753544AbaAGCEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 20:58:17 -0500
-Message-ID: <52CB5F2D.6020908@infradead.org>
-Date: Mon, 06 Jan 2014 17:58:05 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 6 Jan 2014 21:04:46 -0500
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: akpm@linux-foundation.org, rmody@brocade.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: mmotm 2014-01-02-14-35 uploaded (brocade/bna)
-References: <20140102223649.D8FB931C206@corp2gmr1-1.hot.corp.google.com>	<52C700B9.8040504@infradead.org>	<20140106.172427.1901836894729408800.davem@davemloft.net> <20140106.203806.913798650848633178.davem@davemloft.net>
-In-Reply-To: <20140106.203806.913798650848633178.davem@davemloft.net>
+In-Reply-To: <1387415531-10713-1-git-send-email-kmo@daterainc.com>
+References: <1387415531-10713-1-git-send-email-kmo@daterainc.com>
+From: Mike Snitzer <snitzer@redhat.com>
+Date: Mon, 6 Jan 2014 21:04:25 -0500
+X-Google-Sender-Auth: VZny_YLWsT_N1DN9ZYPQLliWlL0
+Message-ID: <CAMM=eLcGTYcSdYW9vWYWk64dRuwgyY_O90NySb_jR9zQTCBTJg@mail.gmail.com>
+Subject: Re: [PATCH] bcache/md: Use raid stripe size
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-bcache@vger.kernel.org, Neil Brown <neilb@suse.de>,
+        Jens Axboe <axboe@kernel.dk>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/14 17:38, David Miller wrote:
-> From: David Miller <davem@davemloft.net>
-> Date: Mon, 06 Jan 2014 17:24:27 -0500 (EST)
-> 
->> From: Randy Dunlap <rdunlap@infradead.org>
->> Date: Fri, 03 Jan 2014 10:26:01 -0800
->>
->>> as reported for linux-next of Dec.20, 2013
->>> when CONFIG_NEED_DMA_MAP_STATE is not enabled:
->>>
->>> drivers/net/ethernet/brocade/bna/bnad.c: In function 'bnad_start_xmit':
->>> drivers/net/ethernet/brocade/bna/bnad.c:3074:26: error: 'struct bnad_tx_vector' has no member named 'dma_len'
->>
->> Sorry for taking so long, I plan to look into this tonight Randy.
-> 
-> I just committed the following fix for this, thanks!
-> 
-
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
-
-Thanks, Dave.
-
-
-> ====================
-> [PATCH] bna: Fix build due to missing use of dma_unmap_len_set()
-> 
->> as reported for linux-next of Dec.20, 2013
->> when CONFIG_NEED_DMA_MAP_STATE is not enabled:
->>
->> drivers/net/ethernet/brocade/bna/bnad.c: In function 'bnad_start_xmit':
->> drivers/net/ethernet/brocade/bna/bnad.c:3074:26: error: 'struct bnad_tx_vector' has no member named 'dma_len'
-> 
-> Reported-by: Randy Dunlap <rdunlap@infradead.org>
-> Signed-off-by: David S. Miller <davem@davemloft.net>
+On Wed, Dec 18, 2013 at 8:12 PM, Kent Overstreet <kmo@daterainc.com> wrote:
+> Now that we've got code for raid5/6 stripe awareness, bcache just needs
+> to know about the stripes and when writing partial stripes is expensive
+> - we probably don't want to enable this optimization for raid1 or 10,
+> even though they have stripes. So add a flag to queue_limits.
+>
+> Signed-off-by: Kent Overstreet <kmo@daterainc.com>
 > ---
->  drivers/net/ethernet/brocade/bna/bnad.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/brocade/bna/bnad.c b/drivers/net/ethernet/brocade/bna/bnad.c
-> index d31524f..5f24a9f 100644
-> --- a/drivers/net/ethernet/brocade/bna/bnad.c
-> +++ b/drivers/net/ethernet/brocade/bna/bnad.c
-> @@ -3071,11 +3071,11 @@ bnad_start_xmit(struct sk_buff *skb, struct net_device *netdev)
->  
->  		dma_addr = skb_frag_dma_map(&bnad->pcidev->dev, frag,
->  					    0, size, DMA_TO_DEVICE);
-> -		unmap->vectors[vect_id].dma_len = size;
-> +		dma_unmap_len_set(&unmap->vectors[vect_id], dma_len, size);
->  		BNA_SET_DMA_ADDR(dma_addr, &txqent->vector[vect_id].host_addr);
->  		txqent->vector[vect_id].length = htons(size);
->  		dma_unmap_addr_set(&unmap->vectors[vect_id], dma_addr,
-> -						dma_addr);
-> +				   dma_addr);
->  		head_unmap->nvecs++;
->  	}
->  
-> 
+> This is in my pile of bcache stuff queued up for 3.14 - if no one objects it'll
+> be in my bcache pull request:
+>
+>  drivers/md/bcache/super.c | 6 ++++++
+>  drivers/md/raid5.c        | 1 +
+>  include/linux/blkdev.h    | 1 +
+>  3 files changed, 8 insertions(+)
 
+Hi Kent,
 
--- 
-~Randy
+> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> index 02cb6f0ea7..0375654adb 100644
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -291,6 +291,7 @@ struct queue_limits {
+>         unsigned char           discard_misaligned;
+>         unsigned char           cluster;
+>         unsigned char           discard_zeroes_data;
+> +       unsigned char           raid_partial_stripes_expensive;
+>  };
+>
+>  struct request_queue {
+
+If you add a new member to queue_limits you need to update
+blk_stack_limits() so that it propagates as you stack devices.
+
+You probably also want to update blk_set_default_limits.
+
+Mike
