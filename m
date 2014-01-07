@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298AbaAGN4A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 08:56:00 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:53087 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360AbaAGNzt (ORCPT
+	id S1751858AbaAGN6x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 08:58:53 -0500
+Received: from smtp.domeneshop.no ([194.63.252.54]:38554 "EHLO
+	smtp.domeneshop.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904AbaAGN6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 08:55:49 -0500
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-To: Hans Verkuil <hverkuil@xs4all.nl>, Pawel Osciak <pawel@osciak.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org (open list:VIDEOBUF2 FRAMEWORK),
-        linux-kernel@vger.kernel.org (open list)
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH] vb2: Check if there are buffers before streamon
-Date: Tue,  7 Jan 2014 14:55:35 +0100
-Message-Id: <1389102935-4266-1-git-send-email-ricardo.ribalda@gmail.com>
-X-Mailer: git-send-email 1.8.5.2
+	Tue, 7 Jan 2014 08:58:47 -0500
+Message-ID: <52CC075C.3060700@ovekarlsen.com>
+Date: Tue, 07 Jan 2014 14:55:40 +0100
+From: Ove Karlsen <mail@ovekarlsen.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Gnu - censorship
+References: <52CAFCC6.3070504@ovekarlsen.com> <52CAFE7A.9090106@infradead.org> <52CB0132.2050705@ovekarlsen.com> <52CB03BA.2070508@infradead.org> <52CB054B.6070504@ovekarlsen.com>
+In-Reply-To: <52CB054B.6070504@ovekarlsen.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a test preventing streamon() if there is no buffer
-ready.
+Richard Stallmans fanboys in pure brattyness and wish for dicks up their 
+ass, has now contacted my email provider, claiming I am spamming the 
+list. This again censorship.
 
-Without this patch, a user could call streamon() before
-preparing any buffer. This leads to a situation where if he calls
-close() before calling streamoff() the device is kept streaming.
+If retardation is what you want, you should take their side.
 
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
----
- drivers/media/v4l2-core/videobuf2-core.c | 5 +++++
- 1 file changed, 5 insertions(+)
+If excellence and brilliance is what you want, you should listen. No 
+doubt a lot of people have chosen the side of pride and retardation. And 
+that is what is commonly known about linux-circles. Arrongant nerds who 
+are very backward, and against any idea of superiority in excellence.
 
-diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
-index 098df28..6f20e5a 100644
---- a/drivers/media/v4l2-core/videobuf2-core.c
-+++ b/drivers/media/v4l2-core/videobuf2-core.c
-@@ -1776,6 +1776,11 @@ static int vb2_internal_streamon(struct vb2_queue *q, enum v4l2_buf_type type)
- 		return 0;
- 	}
- 
-+	if (!q->num_buffers) {
-+		dprintk(1, "streamon: no frames have been requested\n");
-+		return -EINVAL;
-+	}
-+
- 	/*
- 	 * If any buffers were queued before streamon,
- 	 * we can now pass them to driver for processing.
--- 
-1.8.5.2
+And that is ofcourse not compatible with what a hacker is either.
+
+More like a bunch of blind sheep, upset unless they get the semenload of 
+Stallman.
+
+This is the DSP I did, and is the worlds best, and ofcourse not 
+percieved by those blocked in intelligence by pride, and phallos object 
+worship. And neither apebrains.
+
+http://ovekarlsen.com/tmp/clean_mix+master.wav
+
+Open-source. Obviously they are in a very conflict with this. And try to 
+manipulate my email provider too.
+
+Censorship, lack of recognition of intelligence, phallic objects used to 
+manipulate people, the list is quickly getting long, and already after 
+just little discussion, shows how incompetent these people are, and how 
+obviously stupid they are.
+
+So - I guess you will choose the semenoriented fantasyworld, or actual 
+reality and brilliance.
+
+To me, it really matters less. I have what I want, and use open-source 
+as I wish. Rergardless of the apebrains who in their fantasyworld 
+percieved otherwise, in complete patheticness. Go fuck like squirrel, in 
+your fantasyworld, never knowing any reality or true level, or what kind 
+of excellence I am doing.
+
+PBWY :)
+
 
