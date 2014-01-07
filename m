@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755319AbaAGKH6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 05:07:58 -0500
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:65118 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063AbaAGKHy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 05:07:54 -0500
-Date: Tue, 7 Jan 2014 11:07:50 +0100
-From: Andrea Mazzoleni <amadvance@gmail.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Andrea Mazzoleni <amadvance@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, linux-btrfs@vger.kernel.org, clm@fb.com,
-        jbacik@fb.com
-Subject: Re: [RFC] lib: raid: New RAID library supporting up to six parities
-Message-ID: <20140107100750.GA16044@gmail.com>
-References: <1388742436-3754-1-git-send-email-amadvance@gmail.com>
- <20140106111529.7bcff024@notabene.brown>
- <20140106094523.GA4602@gmail.com>
- <20140107113357.3bd67ad0@notabene.brown>
+	id S1755811AbaAGKJS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 05:09:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55013 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751395AbaAGKJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 05:09:15 -0500
+Message-ID: <52CBD247.8080508@suse.cz>
+Date: Tue, 07 Jan 2014 11:09:11 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140107113357.3bd67ad0@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Sam Ravnborg <sam@ravnborg.org>, Josh Triplett <josh@joshtriplett.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rashika Kheria <rashika.kheria@gmail.com>
+Subject: Re: #pragma once?
+References: <20140106204706.GA16924@leaf>	<20140107055532.GA16581@ravnborg.org> <CAMuHMdWPq4YgUoxE1GvQbsEJQu-wjhpra2fRDgkNfEZP0sqpVQ@mail.gmail.com>
+In-Reply-To: <CAMuHMdWPq4YgUoxE1GvQbsEJQu-wjhpra2fRDgkNfEZP0sqpVQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Neil,
+On 2014-01-07 10:48, Geert Uytterhoeven wrote:
+> Furthermore some userspace may rely on doing #define XXX to avoid
+> including a specific kernel header (yes, it's ugly).
 
-On 01/07, NeilBrown wrote:
-> > To do the same with up to six failures, it's now required some kind of sort
-> > function.
-> 
-> So I would probably just make sure we always process the block is the "right"
-> order.  Then sorting would be irrelevant.
-> But as I say, I haven't fiddled with the code, so maybe that would end up
-> being more complex.
+This pattern is also sometimes used:
+$ head -6 include/linux/spinlock_up.h
+#ifndef __LINUX_SPINLOCK_UP_H
+#define __LINUX_SPINLOCK_UP_H
 
-If the the async_tx and btrfs layers can always provide indexes in order,
-for sure this sort function can be removed. I agree with you that it would be
-a better design.
+#ifndef __LINUX_SPINLOCK_H
+# error "please don't include this file directly"
+#endif
 
-In fact, the raid library never uses it directly. It's just provided to help the
-callers that for whatever reason cannot provide such indexes in order.
-And seeing these swap operations between faila/failb in both btrfs and async_tx,
-made me to assume that the order is not always correct.
+And there is nothing ugly about it. So #pragma once is probably a good
+idea for most headers that are not exposed to userspace. But making it a
+requirement in scripts/checkpatch.pl or Documentation/CodingStyle means
+that it will become hard to defend the few legitimate uses of ifndef
+guards against people who have a printed copy of checkpatch.pl under
+their pillow.
 
-> I don't see the above as "sorting" faila and failb, but rather determining
-> which one is first.  Once you know which one is first, the remainder follow
-> in order.
-
-The new raid library, like the existing raid6, requires to have the indexes of
-the failed blocks in order. With only two indexes faila/failb this means
-faila < failb and sorting is equivalent to find the first one.
-
-But with up to six failures, is like to have six fail variables:
-faila/failb/failc/faild/faile/failf and the raid library requires them
-to be in order as: faila < failb < failc < faild < faile < failf.
-In this general case a sort function is the only one that gives the guarantee
-to fulfill this requirement whatever is the original order.
-
-Ciao,
-Andrea
-
+Michal
