@@ -1,92 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756335AbaAGBc1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 20:32:27 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:44874 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755496AbaAGBc0 (ORCPT
+	id S1756511AbaAGBeZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 20:34:25 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:47015 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751373AbaAGBeX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 20:32:26 -0500
-X-AuditID: cbfee68f-b7f156d00000276c-fa-52cb5929175b
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Milo Kim'" <milo.kim@ti.com>
-References: <002101cf0b48$0d38a280$27a9e780$%han@samsung.com>
-In-reply-to: <002101cf0b48$0d38a280$27a9e780$%han@samsung.com>
-Subject: [PATCH 3/3] backlight: lp8788: remove unnecessary parentheses
-Date: Tue, 07 Jan 2014 10:32:25 +0900
-Message-id: <002301cf0b48$51bb8b70$f532a250$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8LSA0gEKLTvq6wRRuOH6kV6zbuQQAAC+MQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsVy+t8zY13NyNNBBjMnqVrMWb+GzeLywkus
-	Fpd3zWGzWP5rHYsDi8eJGb9ZPPq2rGL0OH5jO5PH501yASxRXDYpqTmZZalF+nYJXBmXVv9i
-	KnjEUXHp91HmBsYt7F2MnBwSAiYSbUfOQtliEhfurWfrYuTiEBJYxiix8esili5GDrCirwsK
-	IeKLGCVWTtvKBOH8YpRYsGkVK0g3m4CaxJcvh9lBGkQE9CXaWjRAwswCKRJnrq1mA7GFBGwl
-	XjYfYAaxOQXsJLb8+swCYgsLuEm8278dzGYRUJV4sOMKWD0vUP2pv5cYIWxBiR+T77FAzNSS
-	2LytiRXClpfYvOYtM8Sd6hKP/uqChEUEjCReLV/BBlEiIrHvxTtGkJMlBM6xSxz7NRVql4DE
-	t8mHoH6UldgEcZqEgKTEwRU3WCYwSsxCsnkWks2zkGyehWTFAkaWVYyiqQXJBcVJ6UXGesWJ
-	ucWleel6yfm5mxghMdm/g/HuAetDjMlA6ycyS4km5wNjOq8k3tDYzMjC1MTU2Mjc0ow0YSVx
-	3vsPk4KEBNITS1KzU1MLUovii0pzUosPMTJxcEo1MBobtYlsX3F85qfcyQoCd4LWbVTO5rJ/
-	rrHlpz3HkxzGQxb6z+anTz5l//r2ws/73dP425l//LjaX7aFW+lB9suzldtU43Vv7by35rha
-	0B8hU/nfrKLF87qtOAqzN3S11dyzTZxn6lYW4C7NHTftavYsi0tbWS+nJMV0LO/sn5V3dIf1
-	wf4FLUosxRmJhlrMRcWJANv55mrfAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsVy+t9jAV3NyNNBBss3KFrMWb+GzeLywkus
-	Fpd3zWGzWP5rHYsDi8eJGb9ZPPq2rGL0OH5jO5PH501yASxRDYw2GamJKalFCql5yfkpmXnp
-	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
-	WsA0Ruj6hgTB9RgZoIGEdYwZl1b/Yip4xFFx6fdR5gbGLexdjBwcEgImEl8XFHYxcgKZYhIX
-	7q1n62Lk4hASWMQosXLaViYI5xejxIJNq1hBqtgE1CS+fDkM1iwioC/R1qIBEmYWSJE4c201
-	G4gtJGAr8bL5ADOIzSlgJ7Hl12cWEFtYwE3i3f7tYDaLgKrEgx1XwOp5gepP/b3ECGELSvyY
-	fI8FYqaWxOZtTawQtrzE5jVvmSFuVpd49FcXJCwiYCTxavkKNogSEYl9L94xTmAUmoVk0iwk
-	k2YhmTQLScsCRpZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMER/0x6B+OqBotDjAIcjEo8
-	vC/2ngoSYk0sK67MPcQowcGsJMIronQ6SIg3JbGyKrUoP76oNCe1+BBjMtCjE5mlRJPzgcko
-	ryTe0NjEzMjSyMzCyMTcnDRhJXHeg63WgUIC6YklqdmpqQWpRTBbmDg4pRoYF7G0t7avfe0Q
-	+PDd9rNWfVpFtYH1rdlGyTucp7Tk+MaFZ13wrqg8fukft2JPX/7l5hvHrnwJml2tzcxfrShh
-	MjPiWMK5fl3RQFYu3ponZ0tOsl370faJSTK97ZIAS8MBrwePIk29t6apBS9JU8yq2zj9md3n
-	NjUtpe7Ts7/wWzx5UbXvmLUSS3FGoqEWc1FxIgAJjiZzPAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 6 Jan 2014 20:34:23 -0500
+Date: Mon, 6 Jan 2014 17:34:07 -0800
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        fuse-devel@lists.sourceforge.net,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Richard Hansen <rhansen@rhansen.org>
+Subject: Re: [fuse-devel] [PATCH v2] fuse: Fix IOC_[GS]ET{FLAGS, VERSION}
+ argument size brokenness.
+Message-ID: <20140107013407.GA10297@birch.djwong.org>
+References: <20131219232739.GA10192@birch.djwong.org>
+ <20131220233534.GC10192@birch.djwong.org>
+ <20140106175020.GG16230@tucsk.piliscsaba.szeredi.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140106175020.GG16230@tucsk.piliscsaba.szeredi.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove unnecessary parentheses in order to fix the following
-checkpatch error.
+On Mon, Jan 06, 2014 at 06:50:20PM +0100, Miklos Szeredi wrote:
+> On Fri, Dec 20, 2013 at 03:35:34PM -0800, Darrick J. Wong wrote:
+> > The IOC_[GS]ETFLAGS and IOC_[GS]ETVERSION ioctls, despite being
+> > defined to take a "long" parameter, actually take "int" parameters.
+> > FUSE unfortunately assumed that the ioctl definitions never lie, and
+> 
+> FUSE doesn't really assume anything.  It just says, that ioctl's that *properly*
+> use the _IO* macros will work.  Everything else will not.
+> 
+> It's unfortunate that IOC_SET/GETFLAGS is something that may actually make sense
+> on a fuse filesystem...
+> 
+> Two ways out of this:
+> 
+>  A) Add quirks to fuse
+>  B) Add new, fixed ioctls and use those from chattr if available
+> 
+> I'd very much prefer B.
 
-  ERROR: return is not a function, parentheses are not required
+Ok.  I'll work on a new interface, then.  It was suggested that I explore an
+interface that isn't limited to bitmasks.  The xattr interface seems like it
+could be hooked for that, so I'll play with that for a while.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/video/backlight/lp8788_bl.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Something along the lines of:
 
-diff --git a/drivers/video/backlight/lp8788_bl.c b/drivers/video/backlight/lp8788_bl.c
-index e49905d..daba34d 100644
---- a/drivers/video/backlight/lp8788_bl.c
-+++ b/drivers/video/backlight/lp8788_bl.c
-@@ -63,13 +63,13 @@ static struct lp8788_bl_config default_bl_config = {
- 
- static inline bool is_brightness_ctrl_by_pwm(enum lp8788_bl_ctrl_mode mode)
- {
--	return (mode == LP8788_BL_COMB_PWM_BASED);
-+	return mode == LP8788_BL_COMB_PWM_BASED;
- }
- 
- static inline bool is_brightness_ctrl_by_register(enum lp8788_bl_ctrl_mode mode)
- {
--	return (mode == LP8788_BL_REGISTER_ONLY ||
--		mode == LP8788_BL_COMB_REGISTER_BASED);
-+	return mode == LP8788_BL_REGISTER_ONLY ||
-+		mode == LP8788_BL_COMB_REGISTER_BASED;
- }
- 
- static int lp8788_backlight_configure(struct lp8788_bl *bl)
--- 
-1.7.10.4
+attr -s system.iflags -V e,i,c,weird_fs_specific_flag /path/to/file ?
 
+(Pretend that attr will actually set system.* attributes, which it won't.)
 
+--D
+> 
+> Thanks,
+> Miklos
+> 
+> > transfers a long's worth of data in and out of userspace, which causes
+> > stack smashing in chattr, and other bugs elsewhere.
+> > 
+> > So, special-case this in FUSE so that we don't crash userland.
+> > 
+> > v2: Do the same for the IOC_[GS]ETVERSION ioctls, as Richard Hansen
+> >     points out.
+> > 
+> > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+> > ---
+> >  fs/fuse/file.c |   16 ++++++++++++++++
+> >  1 file changed, 16 insertions(+)
+> > 
+> > diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+> > index 7e70506..f8766ab 100644
+> > --- a/fs/fuse/file.c
+> > +++ b/fs/fuse/file.c
+> > @@ -2385,6 +2385,22 @@ long fuse_do_ioctl(struct file *file, unsigned int cmd, unsigned long arg,
+> >  		iov->iov_base = (void __user *)arg;
+> >  		iov->iov_len = _IOC_SIZE(cmd);
+> >  
+> > +		/*
+> > +		 * The IOC_[GS]ETFLAGS and IOC_[GS]ETVERSION ioctls take int
+> > +		 * parameters even though the ioctl definition specifies long.
+> > +		 * Userland has been expecting int for ages (and chattr
+> > +		 * segfaults on FUSE filesystems), so special case that here.
+> > +		 * The IOC32 variants were declared with int, so they don't
+> > +		 * need this correction.
+> > +		 */
+> > +		switch (cmd) {
+> > +		case FS_IOC_GETFLAGS:
+> > +		case FS_IOC_SETFLAGS:
+> > +		case FS_IOC_GETVERSION:
+> > +		case FS_IOC_SETVERSION:
+> > +			iov->iov_len = sizeof(int);
+> > +		}
+> > +
+> >  		if (_IOC_DIR(cmd) & _IOC_WRITE) {
+> >  			in_iov = iov;
+> >  			in_iovs = 1;
+> > 
+> > ------------------------------------------------------------------------------
+> > Rapidly troubleshoot problems before they affect your business. Most IT 
+> > organizations don't have a clear picture of how application performance 
+> > affects their revenue. With AppDynamics, you get 100% visibility into your 
+> > Java,.NET, & PHP application. Start your 15-day FREE TRIAL of AppDynamics Pro!
+> > http://pubads.g.doubleclick.net/gampad/clk?id=84349831&iu=/4140/ostg.clktrk
+> > _______________________________________________
+> > fuse-devel mailing list
+> > fuse-devel@lists.sourceforge.net
+> > https://lists.sourceforge.net/lists/listinfo/fuse-devel
