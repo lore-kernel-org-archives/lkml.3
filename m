@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870AbaAGTHY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 14:07:24 -0500
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:29818 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766AbaAGTHS (ORCPT
+	id S1753696AbaAGTJX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 14:09:23 -0500
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:32109 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857AbaAGTJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 14:07:18 -0500
-X-AuditID: cbfec37c-b7f0d6d0000057bc-ac-52cc506434ed
-Message-id: <52CC5062.3080708@samsung.com>
-Date: Tue, 07 Jan 2014 12:07:14 -0700
+	Tue, 7 Jan 2014 14:09:15 -0500
+X-AuditID: cbfec37c-b7f0d6d0000057bc-27-52cc50dac90a
+Message-id: <52CC50D8.10704@samsung.com>
+Date: Tue, 07 Jan 2014 12:09:12 -0700
 From: Shuah Khan <shuah.kh@samsung.com>
 Reply-to: shuah.kh@samsung.com
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
@@ -20,38 +20,38 @@ To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         stable@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>,
         "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [PATCH 3.12 000/144] 3.12.7-stable review
-References: <20140106223745.326293132@linuxfoundation.org>
-In-reply-to: <20140106223745.326293132@linuxfoundation.org>
+Subject: Re: [PATCH 3.10 000/129] 3.10.26-stable review
+References: <20140106223859.589799655@linuxfoundation.org>
+In-reply-to: <20140106223859.589799655@linuxfoundation.org>
 Content-type: text/plain; charset=UTF-8; format=flowed
 Content-transfer-encoding: 7bit
 X-Originating-IP: [105.144.21.63]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t9hP92UgDNBBotem1jMWb+GzaJ58Xo2
-	i8u75rBZfP3pYLFg4yNGi0d9b9kd2Dx2zrrL7nFixm8Wj/1z17B7fN4kF8ASxWWTkpqTWZZa
-	pG+XwJWx6lMja0ETV8WklzuZGxg/sXcxcnJICJhITFr8GcoWk7hwbz1bFyMXh5DAMkaJlX23
-	mCGcXiaJKU8es0A4Gxkl7k7pYAJp4RXQkjix8hEziM0ioCpx4fJBFhCbTUBd4vPrHWBjhQTk
-	JJqWrAarERWIkHh1diILRK+gxI/J98BsEYFgibVfFzKCLGAWWMEocfzlSzaQhLCAmUTDwr8s
-	EIOsJD6d7gOyOTg4Bawl9t9IAwkzA5U8alnHDGHLS2xe85YZolxZ4s/lU0wg5RICihLbV1tN
-	YBSZhWTzLCTds5B0L2BkXsUoVlqcXFCclJ5aYaxXnJhbXJqXrpecn7uJERIzNTsY7321OcQo
-	wMGoxMN7Q+1MkBBrYllxZe4hRgkOZiUR3iAvoBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbGldwM
-	59XUU9daRSTphjAbCL/a7l/B4Mxlr8zkNi/u7eraO3/Zo05uWdsutfxD+R3m/mVuh1lZ7pd+
-	Zp17xHrT8udvu2clXPt2Z3fwVc/Qz7FnSmt0P7cdOPYph3fjzZMqXeyhWQkR/Ke2REtOaOZf
-	er9jQ8IfJ/3SZxNOrWF8d3VhQaFesZaBEktxRqKhFnNRcSIATR1WK3cCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9hX91bAWeCDK4tV7SYs34Nm0Xz4vVs
+	Fpd3zWGz+PrTwWLBxkeMFo/63rI7sHnsnHWX3ePEjN8sHvvnrmH3+LxJLoAlissmJTUnsyy1
+	SN8ugSvj3pdlzAVtXBVd12ezNDB+Ye9i5OSQEDCR+Nk1E8oWk7hwbz1bFyMXh5DAMkaJLZ+X
+	sEA4vUwSTReaWCGcjYwSvd86mUFaeAU0JN63/GYBsVkEVCVW7+8Ds9kE1CU+v94BNlZIQE6i
+	aclqsHpRgQiJV2cnskD0Ckr8mHwPzBYRCJZY+3UhI8gCZoEVjBLHX75kA0kIC5hLrL7xmw1i
+	kJXEpCc7wRo4BawlJl95yQhiMwuYSTxqWccMYctLbF7zlhmiXlniz+VTTF2MHEC/KUpsX201
+	gVFkFpLVs5B0z0LSvYCReRWjWGlxckFxUnpqhbFecWJucWleul5yfu4mRkjU1OxgvPfV5hCj
+	AAejEg/vDbUzQUKsiWXFlbmHGCU4mJVEeIO8gEK8KYmVValF+fFFpTmpxYcYmTg4pRoY+TlO
+	7Xlz88rzeo0Qvo3Hv9T82n1px9EFtyyvZjj5i3o/PlD4e8WN4PvLr0ZMu1fEuKknt8GR6dq3
+	UysOZW145Hy7/aPMKcU7Jm7nZ86vnCJ3b4WuVW/zaVn7lUHX2Lz0Xb/clG3d0CUw//CKOk+H
+	//LvOc+u8Jvjvv05n8DOCfM8Hbwdw78fFVViKc5INNRiLipOBAAtBpv3eAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2014 03:36 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.12.7 release.
-> There are 144 patches in this series, all will be posted as a response
+On 01/06/2014 03:37 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.26 release.
+> There are 129 patches in this series, all will be posted as a response
 > to this one.  If anyone has any issues with these being applied, please
 > let me know.
 >
-> Responses should be made by Wed Jan  8 22:37:25 UTC 2014.
+> Responses should be made by Wed Jan  8 22:38:42 UTC 2014.
 > Anything received after that time might be too late.
 >
 > The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.12.7-rc1.gz
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.26-rc1.gz
 > and the diffstat can be found below.
 >
 > thanks,
@@ -77,6 +77,7 @@ this release. dmesg emerg, crit, alert, err are clean. No regressions in
 warn.
 
 -- Shuah
+
 
 -- 
 Shuah Khan
