@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911AbaAGPrz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 10:47:55 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:55930 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707AbaAGPrp (ORCPT
+	id S1753055AbaAGPsP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 10:48:15 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:36098 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752995AbaAGPsG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 10:47:45 -0500
-Date: Tue, 7 Jan 2014 07:47:43 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3 v2] Use lockless lists for smp_call_function_single()
-Message-ID: <20140107154743.GA17462@infradead.org>
-References: <1387387418-10005-1-git-send-email-jack@suse.cz>
- <20131219153154.GI30200@kernel.dk>
+	Tue, 7 Jan 2014 10:48:06 -0500
+Date: Tue, 7 Jan 2014 16:48:05 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
+ tracing units
+Message-ID: <20140107154805.GD20765@two.firstfloor.org>
+References: <20131219103134.GD30183@twins.programming.kicks-ass.net>
+ <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131219112812.GY21999@twins.programming.kicks-ass.net>
+ <20131219123955.GA18186@gmail.com>
+ <87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131219151024.GI16438@laptop.programming.kicks-ass.net>
+ <87iotw6bwx.fsf@tassilo.jf.intel.com>
+ <20140106220509.GI30183@twins.programming.kicks-ass.net>
+ <20140107005231.GZ20765@two.firstfloor.org>
+ <20140107084215.GO30183@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131219153154.GI30200@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20140107084215.GO30183@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 08:31:54AM -0700, Jens Axboe wrote:
-> On Wed, Dec 18 2013, Jan Kara wrote:
-> >   Hello,
-> > 
-> >   these three patches make smp_call_function_single() use lockless lists and
-> > cleanup abuse of csd.list in the block layer. I have some use for lockless
-> > smp_call_function_single() in printk code and that's why I've picked up
-> > Christoph's patch. Jens, can you have a look at the series please?
-> > 
-> > Changes since v1:
-> > * Reordered patches to a more sensible order.
-> 
-> Thanks Jan, I'll throw this into the testing mix for 3.14. Will be a
-> little delayed over christmas, with holidays and family visiting.
+> So create two events, one for the PT stuff and one to track the
+> side-band stuff. We have a NOP event for just this purpose.
 
-Did you make any progress?  Btw, I'd love if you could queue up the
-patch to use __smp_call_function_single directly in the block layer
-for 3.14.  Independent of wether a llist using
-__smp_call_function_single is faster than one using the lock we get
-down from a list plus llist to just one of them, so I can't see how
-that patch will cause an issue.  With all the prep patches already in
-it can be queue up independently of Jan's series as well.
+Ok I guess that could work.
+
+Essentially replace the magic mmap offset with a second fd.
+
+Alex, what do you think?
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
