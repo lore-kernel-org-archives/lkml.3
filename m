@@ -1,73 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051AbaAGUPt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 15:15:49 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:46285 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752741AbaAGUPk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 15:15:40 -0500
+	id S1754100AbaAGURS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 15:17:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19886 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753737AbaAGURL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 15:17:11 -0500
+Date: Tue, 7 Jan 2014 15:16:41 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Mike Snitzer <snitzer@redhat.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bart Van Assche <bvanassche@acm.org>, Jeff Mahoney <jeffm@suse.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        device-mapper development <dm-devel@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: kobject: provide kobject_put_wait to fix module unload race
+In-Reply-To: <20140107191910.GA8884@redhat.com>
+Message-ID: <alpine.LRH.2.02.1401071506420.26598@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1401021733250.27775@file01.intranet.prod.int.rdu2.redhat.com> <52C98BCC.9040900@acm.org> <20140105182640.GA2522@kroah.com> <alpine.LRH.2.02.1401061347120.15626@file01.intranet.prod.int.rdu2.redhat.com> <20140106213111.GA2536@redhat.com>
+ <alpine.LRH.2.02.1401062249020.17811@file01.intranet.prod.int.rdu2.redhat.com> <CA+55aFw+kS-jJencvQgQcn0yTw_a4=2RDynopL7Gu0PNemkUvA@mail.gmail.com> <alpine.LRH.2.02.1401071253510.8158@file01.intranet.prod.int.rdu2.redhat.com>
+ <20140107191910.GA8884@redhat.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20140107055318.GA19016@localhost>
-References: <20140102053101.GA29352@localhost>
-	<CAFR8uee-WTy6cj8bB4aMuGP1B0sZkc70sq1Drg7uhHS49EqHcg@mail.gmail.com>
-	<20140106221036.GE9037@kmo>
-	<CAFR8uef3XUEsHUvfnkAbzsXict8qD_28fTgUQyA7gjUk03OUsw@mail.gmail.com>
-	<20140107055318.GA19016@localhost>
-Date: Tue, 7 Jan 2014 12:15:39 -0800
-Message-ID: <CAFR8ueeC_fqpN+M5YOr8AT_o3BDgr+o1ELQQJQSW7s8uDm2y5Q@mail.gmail.com>
-Subject: Re: [block:for-3.14/core] kernel BUG at fs/bio.c:1748
-From: Muthu Kumar <muthu.lkml@gmail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Kent Overstreet <kmo@daterainc.com>, Chris Mason <clm@fb.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Fengguang. Final patch with added comment. BTW, fengguang
-mentioned that git-am has trouble with the inline patch and "quilt
-import" worked fine for him...
 
-------------
-In btrfs_end_bio(), we increment bi_remaining if is_orig_bio. If not,
-we restore the orig_bio but failed to increment bi_remaining for
-orig_bio, which triggers a BUG_ON later when bio_endio is called. Fix
-is to increment bi_remaining when we restore the orig bio as well.
 
-Reported-and-Tested-by: Fengguang wu <fengguang.wu@intel.com>
-CC: Kent Overstreet <kmo@daterainc.com>
-CC: Jens Axboe <axboe@kernel.dk>
-CC: Chris Mason <clm@fb.com>
-Signed-off-by: Muthukumar Ratty <muthur@gmail.com>
+On Tue, 7 Jan 2014, Mike Snitzer wrote:
 
------------
- fs/btrfs/volumes.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+> On Tue, Jan 07 2014 at  1:00pm -0500,
+> Mikulas Patocka <mpatocka@redhat.com> wrote:
+> 
+> > 
+> > 
+> > On Tue, 7 Jan 2014, Linus Torvalds wrote:
+> > 
+> > > This looks completely broken to me. You do a "kobject_put()" and then
+> > > after you've dropped that last use, you wait for the completion of
+> > > something that may already have been free'd.
+> > > 
+> > > Wtf? Am I missing something?
+> > > 
+> > >                Linus
+> > 
+> > It is correct. The release method dm_kobject_release doesn't free the 
+> > kobject. It just signals the completion and returns.
+> > 
+> > This is the sequence of operations:
+> > * call kobject_put
+> > * wait until all users stop using the kobject, when it happens the release 
+> >   method is called
+> > * the release method signals the completion and returns
+> > * the unload code that waits on the completion continues
+> > * the unload code frees the mapped_device structure that contains the 
+> >   kobject
+> > 
+> > Using kobject this way avoids the module unload race that was mentioned at 
+> > the beginning of this thread.
+> 
+> I've staged your patch in linux-next for 3.14, see:
+> http://git.kernel.org/cgit/linux/kernel/git/device-mapper/linux-dm.git/commit/?h=for-next&id=af7b1e5c767fc895788c971c8f4686402ac8344f
 
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index 37972d5..34aba2b 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -5297,9 +5297,13 @@ static void btrfs_end_bio(struct bio *bio, int err)
-                if (!is_orig_bio) {
-                        bio_put(bio);
-                        bio = bbio->orig_bio;
--               } else {
--                       atomic_inc(&bio->bi_remaining);
-                }
-+                /*
-+                 * We have original bio now. So increment bi_remaining to
-+                 * account for it in endio
-+                 */
-+               atomic_inc(&bio->bi_remaining);
-+
-                bio->bi_private = bbio->private;
-                bio->bi_end_io = bbio->end_io;
-                btrfs_io_bio(bio)->mirror_num = bbio->mirror_num;
+Looking at this patch, I realize that it is buggy too. If module unload 
+happens at this point (after the completion is signaled, but before the 
+release function returns), it crashes.
 
--------------------------------------
+static void dm_kobject_release(struct kobject *kobj)
+{
+	complete(dm_get_completion_from_kobject(kobj));
+	>========== module unload here ===============<
+}
+
+The patch that I sent initially in this thread doesn't have this bug 
+because the completion is signaled in non-module code.
+
+That goes back to my initial claim - it is impossible to use the kobject 
+interface correctly! But if Greg doesn't want a patch that fixes the 
+kobject interface, I don't really know what to do about it.
+
+Maybe another possibility - maintain a list of all kobjects and walk them 
+in the generic module unload code to check if their release method ponits 
+to the module that is being unloaded? Greg, would you accept a patch like 
+this?
+
+Mikulas
