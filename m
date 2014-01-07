@@ -1,113 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756888AbaAGDKW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 22:10:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56449 "EHLO mx1.redhat.com"
+	id S932119AbaAGDR1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 22:17:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25432 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752460AbaAGDKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 22:10:20 -0500
-Message-ID: <52CB7009.2030903@redhat.com>
-Date: Tue, 07 Jan 2014 11:10:01 +0800
+	id S1753005AbaAGDR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 22:17:26 -0500
+Message-ID: <52CB71B2.4070005@redhat.com>
+Date: Tue, 07 Jan 2014 11:17:06 +0800
 From: Jason Wang <jasowang@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Neil Horman <nhorman@tuxdriver.com>
-CC: John Fastabend <john.fastabend@gmail.com>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, mst@redhat.com,
-        John Fastabend <john.r.fastabend@intel.com>,
-        Vlad Yasevich <vyasevic@redhat.com>
+To: David Miller <davem@davemloft.net>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, mst@redhat.com,
+        john.r.fastabend@intel.com, nhorman@tuxdriver.com
 Subject: Re: [PATCH net 1/2] macvlan: forbid L2 fowarding offload for macvtap
-References: <1388978467-2075-1-git-send-email-jasowang@redhat.com> <52CA5CDA.1020503@gmail.com> <52CA612D.2000902@redhat.com> <20140106122628.GA24280@hmsreliant.think-freely.org>
-In-Reply-To: <20140106122628.GA24280@hmsreliant.think-freely.org>
+References: <1388978467-2075-1-git-send-email-jasowang@redhat.com> <20140106.154740.590358835696689785.davem@davemloft.net>
+In-Reply-To: <20140106.154740.590358835696689785.davem@davemloft.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2014 08:26 PM, Neil Horman wrote:
-> On Mon, Jan 06, 2014 at 03:54:21PM +0800, Jason Wang wrote:
->> On 01/06/2014 03:35 PM, John Fastabend wrote:
->>> On 01/05/2014 07:21 PM, Jason Wang wrote:
->>>> L2 fowarding offload will bypass the rx handler of real device. This
->>>> will make
->>>> the packet could not be forwarded to macvtap device. Another problem
->>>> is the
->>>> dev_hard_start_xmit() called for macvtap does not have any
->>>> synchronization.
->>>>
->>>> Fix this by forbidding L2 forwarding for macvtap.
->>>>
->>>> Cc: John Fastabend <john.r.fastabend@intel.com>
->>>> Cc: Neil Horman <nhorman@tuxdriver.com>
->>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
->>>> ---
->>>>   drivers/net/macvlan.c |    5 ++++-
->>>>   1 files changed, 4 insertions(+), 1 deletions(-)
->>>>
->>> I must be missing something.
->>>
->>> The lower layer device should set skb->dev to the correct macvtap
->>> device on receive so that in netif_receive_skb_core() the macvtap
->>> handler is hit. Skipping the macvlan receive handler should be OK
->>> because the switching was done by the hardware. If I read macvtap.c
->>> correctly macvlan_common_newlink() is called with 'dev' where 'dev'
->>> is the macvtap device. Any idea what I'm missing? I guess I'll need
->>> to setup a macvtap test case.
->> Unlike macvlan, macvtap depends on rx handler on the lower device to
->> work. In this case macvlan_handle_frame() will call macvtap_receive().
->> So doing netif_receive_skb_core() for macvtap device directly won't work
->> since we need to forward the packet to userspace instead of kernel.
+On 01/07/2014 04:47 AM, David Miller wrote:
+> From: Jason Wang <jasowang@redhat.com>
+> Date: Mon,  6 Jan 2014 11:21:06 +0800
+>
+>> L2 fowarding offload will bypass the rx handler of real device. This will make
+>> the packet could not be forwarded to macvtap device. Another problem is the
+>> dev_hard_start_xmit() called for macvtap does not have any synchronization.
 >>
->> For net-next.git, it may work since commit
->> 6acf54f1cf0a6747bac9fea26f34cfc5a9029523 let macvtap device register an
->> rx handler for itself.
-> I agree, this seems like it should already be fixed with the above commit.  With
-> this the macvlan rx handler should effectively be a no-op as far as the
-> reception of frames is concerned.  As long as the driver sets the dev correctly
-> to the macvtap device (and it appears to), macvtap will get frames to user
-> space, regardless of weather the software or hardware did the switching.  If
-> thats the case though, I think the solution is moving that fix to -stable
-> (pending testing of course), rather than comming up with a new fix.
->
->>> And what synchronization are you worried about on dev_hard_start_xmit()?
->>> In the L2 forwarding offload case macvlan_open() clears the NETIF_F_LLTX
->>> flag so HARD_TX_LOCK protects the driver txq. We might hit this warning
->>> in dev_queue_xmit() though,
->>>
->>>   net_crit_ratelimited("Virtual device %s asks to queue packet!\n",
->>>
->>> Perhaps we can remove it.
->> The problem is macvtap does not call dev_queue_xmit() for macvlan
->> device. It calls macvlan_start_xmit() directly from macvtap_get_user().
->> So HARD_TX_LOCK was not done for the txq.
-> This seems to also be fixed by 6acf54f1cf0a6747bac9fea26f34cfc5a9029523.
-> Macvtap does, as of that commit use dev_queue_xmit for the transmission of
-> frames to the lowerdevice.
+>> Fix this by forbidding L2 forwarding for macvtap.
+>>
+>> Cc: John Fastabend <john.r.fastabend@intel.com>
+>> Cc: Neil Horman <nhorman@tuxdriver.com>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> I think I agree with Neil that the rx_handler change might be the best
+> way to fix this.  That change seems to have a lot of nice unintended
+> side effects, no?
 
-Unfortunately not. This commit has a side effect that it in fact
-disables the multiqueue macvtap transmission. Since all macvtap queues
-will contend on a single qdisc lock.
+Not all sides effects are nice.
 
-For L2 forwarding offload itself, more issues need to be addressed for
-multiqueue macvtap:
+One obvious issue is it disables the multiqueue macvtap transmission,
+since all queues will contend on a single qdisc lock of macvlan. And
+even more, multiqueue macvtap support creating and destroying a queue on
+demand which is not supported by L2 forwarding offload.
 
-- ndo_dfwd_add_station() can only create queues per device at ndo_open,
-but multiqueue macvtap allows user to create and destroy queues at their
-will and at any time.
-- it looks that ixgbe has a upper limit of 4 queues per station, but
-macvtap currently allows up to 16 queues per device.
-
-So more works need to be done and unless those above 3 issues were
-addressed, this patch is really needed to make sure macvtap works.
-
->
-> Regards
-> Neil
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+So L2 forwarding offload needs more fixes to let the multiqueue macvtap
+works. Currently, we really need this patch to make sure macvtap works
+as expected.
